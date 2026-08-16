@@ -1,0 +1,469 @@
+{
+	"info": {
+		"_postman_id": "cms-agent-test-collection",
+		"name": "OpenRegister Agent & CMS Tool Testing",
+		"description": "Test collection for OpenRegister agents with OpenCatalogi CMS Tool integration",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{username}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{password}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost",
+			"type": "string"
+		},
+		{
+			"key": "username",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "password",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "agentUuid",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "endpointUuid",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "menuUuid",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "01 - Setup",
+			"item": [
+				{
+					"name": "Check Ollama Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Ollama is accessible', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Ollama has models', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.models).to.be.an('array');",
+									"    pm.expect(jsonData.models.length).to.be.above(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:11434/api/tags",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "11434",
+							"path": ["api", "tags"]
+						},
+						"description": "Verify Ollama is running and has models available"
+					},
+					"response": []
+				}
+			],
+			"description": "Setup and verification tests"
+		},
+		{
+			"name": "02 - Agent Tests",
+			"item": [
+				{
+					"name": "Create CMS Agent",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Agent created successfully', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Response has agent UUID', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.uuid).to.be.a('string');",
+									"    pm.collectionVariables.set('agentUuid', jsonData.uuid);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"CMS Test Agent\",\n  \"description\": \"Agent for testing CMS operations with OpenCatalogi\",\n  \"provider\": \"ollama\",\n  \"model\": \"llama3.2:latest\",\n  \"prompt\": \"You are a helpful assistant that manages website content. You can create menus and menu items for websites using the CMS tools available to you.\",\n  \"tools\": [\"CMS Tool\"],\n  \"temperature\": 0.7,\n  \"active\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/agents",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "agents"]
+						},
+						"description": "Create an agent with CMS Tool enabled"
+					},
+					"response": []
+				},
+				{
+					"name": "List Agents",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('List agents successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response contains agents array', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('results');",
+									"    pm.expect(jsonData.results).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/agents",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "agents"]
+						},
+						"description": "List all agents"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Agent Details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Get agent successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Agent has CMS Tool', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.tools).to.include('CMS Tool');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/agents/{{agentUuid}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "agents", "{{agentUuid}}"]
+						},
+						"description": "Get agent by UUID"
+					},
+					"response": []
+				}
+			],
+			"description": "Agent CRUD operations"
+		},
+		{
+			"name": "03 - Endpoint Tests",
+			"item": [
+				{
+					"name": "Create Agent Endpoint",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Endpoint created successfully', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Response has endpoint UUID', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.uuid).to.be.a('string');",
+									"    pm.collectionVariables.set('endpointUuid', jsonData.uuid);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"CMS Agent Endpoint\",\n  \"description\": \"Endpoint for testing CMS operations via agent\",\n  \"endpoint\": \"/test/cms/agent\",\n  \"method\": \"POST\",\n  \"targetType\": \"agent\",\n  \"targetId\": \"{{agentUuid}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/endpoints",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "endpoints"]
+						},
+						"description": "Create an endpoint that routes to the CMS agent"
+					},
+					"response": []
+				},
+				{
+					"name": "List Endpoints",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('List endpoints successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/endpoints",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "endpoints"]
+						},
+						"description": "List all endpoints"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoint CRUD operations"
+		},
+		{
+			"name": "04 - CMS Operations",
+			"item": [
+				{
+					"name": "Create Menu via Agent",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Agent executed successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response contains menu UUID', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.result).to.have.property('menuUuid');",
+									"    pm.collectionVariables.set('menuUuid', jsonData.result.menuUuid);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"Create a new menu called 'Main Navigation' with description 'Primary navigation menu for the website'\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/endpoints/{{endpointUuid}}/execute",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "endpoints", "{{endpointUuid}}", "execute"]
+						},
+						"description": "Send a natural language request to create a menu"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Menu Item via Agent",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Menu item created successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"Add a menu item called 'Home' to the Main Navigation menu with link to /home\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/endpoints/{{endpointUuid}}/execute",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "endpoints", "{{endpointUuid}}", "execute"]
+						},
+						"description": "Send a natural language request to create a menu item"
+					},
+					"response": []
+				},
+				{
+					"name": "List Menu Items",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('List menu items successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Menu items exist', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.results.length).to.be.above(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects?schema=menuItem",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects"],
+							"query": [
+								{
+									"key": "schema",
+									"value": "menuItem"
+								}
+							]
+						},
+						"description": "List all menu items"
+					},
+					"response": []
+				}
+			],
+			"description": "CMS operations via agent"
+		},
+		{
+			"name": "05 - Cleanup",
+			"item": [
+				{
+					"name": "Delete Agent",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Agent deleted successfully', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/agents/{{agentUuid}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "agents", "{{agentUuid}}"]
+						},
+						"description": "Delete the test agent"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Endpoint",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Endpoint deleted successfully', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/endpoints/{{endpointUuid}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "endpoints", "{{endpointUuid}}"]
+						},
+						"description": "Delete the test endpoint"
+					},
+					"response": []
+				}
+			],
+			"description": "Cleanup test data"
+		}
+	]
+}
+

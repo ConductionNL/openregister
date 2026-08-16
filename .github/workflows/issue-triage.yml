@@ -1,0 +1,23 @@
+name: Issue Triage
+
+on:
+  issues:
+    types: [opened, labeled]
+  workflow_dispatch:
+    inputs:
+      backlog-existing:
+        description: "Triage all existing untriaged open issues"
+        type: boolean
+        default: true
+
+jobs:
+  triage:
+    # `@main`, not `@feature/openspec-project-sync` — that branch no longer
+    # exists on ConductionNL/.github, so this reference was unresolvable and the
+    # triage workflow never ran.
+    uses: ConductionNL/.github/.github/workflows/issue-triage.yml@main
+    with:
+      app-name: openregister
+      backlog-existing: ${{ github.event_name == 'workflow_dispatch' && inputs.backlog-existing || false }}
+    secrets:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}

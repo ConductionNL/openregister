@@ -1,0 +1,397 @@
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+</script>
+
+<template>
+	<SettingsSection
+		:name="t('openregister', 'Multitenancy')"
+		:description="
+			t(
+				'openregister',
+				'Configure multi-organization support and tenant isolation',
+			)
+		"
+		:loading="loading"
+		:loadingMessage="t('openregister', 'Loading multitenancy settings...')">
+		<template #actions>
+			<NcButton
+				variant="error"
+				:disabled="loading || saving || rebasing"
+				@click="showRebaseDialog">
+				<template #icon>
+					<NcLoadingIcon v-if="rebasing" :size="20" />
+					<Refresh v-else :size="20" />
+				</template>
+				Rebase
+			</NcButton>
+			<NcButton
+				variant="primary"
+				:disabled="loading || saving || rebasing"
+				@click="saveSettings">
+				<template #icon>
+					<NcLoadingIcon v-if="saving" :size="20" />
+					<Save v-else :size="20" />
+				</template>
+				Save
+			</NcButton>
+		</template>
+
+		<!-- Section Description -->
+		<div class="section-description-full">
+			<p class="main-description">
+				Multitenancy enables multiple organizations to use the same Open
+				Register instance while keeping their data completely separate. Each
+				tenant (organization) has isolated access to their own registers,
+				schemas, and objects, ensuring data privacy and security.
+			</p>
+			<p class="toggle-status">
+				<strong>Current Status:</strong>
+				<span
+					:class="
+						multitenancyOptions.enabled
+							? 'status-enabled'
+							: 'status-disabled'
+					">
+					{{
+						multitenancyOptions.enabled
+							? 'Multitenancy enabled'
+							: 'Multitenancy disabled'
+					}}
+				</span>
+			</p>
+			<p class="impact-description">
+				<strong
+					>{{
+						multitenancyOptions.enabled ? 'Disabling' : 'Enabling'
+					}}
+					Multitenancy will:</strong
+				><br />
+				<span v-if="!multitenancyOptions.enabled">
+					• Enable multiple organizations to share the same system
+					instance<br />
+					• Provide complete data isolation between different tenants<br />
+					• Allow centralized management while maintaining security
+					boundaries<br />
+					• Reduce infrastructure costs by sharing resources across
+					organizations
+				</span>
+				<span v-else>
+					• Merge all tenant data into a single shared environment<br />
+					• Remove data isolation between organizations<br />
+					• Simplify the system to single-tenant mode<br />
+					• May expose sensitive data to unauthorized users
+				</span>
+			</p>
+		</div>
+
+		<!-- Enable Multitenancy Toggle -->
+		<div class="option-section">
+			<NcCheckboxRadioSwitch
+				v-model="multitenancyOptions.enabled"
+				:disabled="saving"
+				type="switch">
+				{{
+					multitenancyOptions.enabled
+						? 'Multitenancy enabled'
+						: 'Multitenancy disabled'
+				}}
+			</NcCheckboxRadioSwitch>
+		</div>
+
+		<!-- Admin Override -->
+		<div v-if="multitenancyOptions.enabled" class="option-section">
+			<NcCheckboxRadioSwitch
+				v-model="multitenancyOptions.adminOverride"
+				:disabled="saving"
+				type="switch">
+				{{
+					multitenancyOptions.adminOverride
+						? 'Admin override enabled'
+						: 'Admin override disabled'
+				}}
+			</NcCheckboxRadioSwitch>
+			<p class="option-description">
+				Allow administrators to bypass all multi-tenancy restrictions
+			</p>
+		</div>
+
+		<!-- Default Tenants -->
+		<div v-if="multitenancyOptions.enabled">
+			<h4>Default Tenants</h4>
+			<p class="option-description">
+				Configure default tenant assignments for users and objects
+			</p>
+
+			<div class="groups-table">
+				<div class="groups-row">
+					<div class="group-label">
+						<strong>Default User Tenant</strong>
+						<p class="user-type-description">
+							The tenant assigned to users who are not part of any
+							specific organization
+						</p>
+					</div>
+					<div class="group-select">
+						<NcSelect
+							v-model="multitenancyOptions.defaultUserTenant"
+							:options="tenantOptions"
+							:inputLabel="t('openregister', 'Default User Tenant')"
+							:disabled="loading || saving" />
+					</div>
+				</div>
+
+				<div class="groups-row">
+					<div class="group-label">
+						<strong>Default Object Tenant</strong>
+						<p class="user-type-description">
+							The tenant assigned to objects when no specific
+							organization is specified
+						</p>
+					</div>
+					<div class="group-select">
+						<NcSelect
+							v-model="multitenancyOptions.defaultObjectTenant"
+							:options="tenantOptions"
+							:inputLabel="t('openregister', 'Default Object Tenant')"
+							:disabled="loading || saving" />
+					</div>
+				</div>
+			</div>
+		</div>
+	</SettingsSection>
+</template>
+
+<script>
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcLoadingIcon,
+	NcSelect,
+} from '@nextcloud/vue'
+import { mapStores } from 'pinia'
+import Save from 'vue-material-design-icons/ContentSave.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import { useSettingsStore } from '../../../store/settings.js'
+
+export default {
+	name: 'MultitenancyConfiguration',
+
+	components: {
+		SettingsSection,
+		NcButton,
+		NcLoadingIcon,
+		NcCheckboxRadioSwitch,
+		NcSelect,
+		Refresh,
+		Save,
+	},
+
+	computed: {
+		...mapStores(useSettingsStore),
+
+		multitenancyOptions: {
+			/**
+			 * Read multitenancy options from the settings store.
+			 *
+			 * @spec exclude UI plumbing — store passthrough getter; tenant config owned by tenant-lifecycle.
+			 * @return {object}
+			 */
+			get() {
+				return this.settingsStore.multitenancyOptions
+			},
+
+			/**
+			 * Write multitenancy options to the settings store.
+			 *
+			 * @spec exclude UI plumbing — store passthrough setter; tenant config owned by tenant-lifecycle.
+			 * @param {object} value - new options
+			 * @return {void}
+			 */
+			set(value) {
+				this.settingsStore.multitenancyOptions = value
+			},
+		},
+
+		/**
+		 * Tenant options from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {Array}
+		 */
+		tenantOptions() {
+			return this.settingsStore.tenantOptions
+		},
+
+		/**
+		 * Loading flag from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {boolean}
+		 */
+		loading() {
+			return this.settingsStore.loading
+		},
+
+		/**
+		 * Saving flag from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {boolean}
+		 */
+		saving() {
+			return this.settingsStore.saving
+		},
+
+		/**
+		 * Rebasing flag from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {boolean}
+		 */
+		rebasing() {
+			return this.settingsStore.rebasing
+		},
+	},
+
+	methods: {
+		/**
+		 * Open the tenant-rebase confirmation dialog.
+		 *
+		 * @spec exclude UI plumbing — store passthrough; rebase contract owned by tenant-lifecycle.
+		 * @return {void}
+		 */
+		showRebaseDialog() {
+			this.settingsStore.showRebaseDialog()
+		},
+
+		/**
+		 * Persist multitenancy settings.
+		 *
+		 * @spec exclude UI plumbing — store delegation; tenant config contract owned by tenant-lifecycle.
+		 * @return {Promise<void>}
+		 */
+		async saveSettings() {
+			await this.settingsStore.updateMultitenancySettings(
+				this.multitenancyOptions,
+			)
+		},
+	},
+}
+</script>
+
+<style scoped>
+/* SettingsSection handles all action button positioning and spacing */
+
+.section-description-full {
+	margin-bottom: 24px;
+	padding: 16px;
+	background: var(--color-background-hover);
+	border-radius: var(--border-radius);
+	border: 1px solid var(--color-border);
+}
+
+.main-description {
+	color: var(--color-text-light);
+	line-height: 1.5;
+	margin: 0 0 12px 0;
+}
+
+.toggle-status {
+	margin: 0 0 12px 0;
+	color: var(--color-text-light);
+}
+
+.impact-description {
+	margin: 0;
+	color: var(--color-text-light);
+	line-height: 1.5;
+}
+
+.status-enabled {
+	color: var(--color-success);
+	font-weight: 500;
+}
+
+.status-disabled {
+	color: var(--color-text-maxcontrast);
+	font-weight: 500;
+}
+
+.option-section {
+	margin: 24px 0;
+}
+
+.option-description {
+	color: var(--color-text-maxcontrast);
+	margin: 8px 0 16px 0;
+	line-height: 1.4;
+}
+
+.option-section h4 {
+	color: var(--color-text-light);
+	margin: 24px 0 16px 0;
+	font-size: 16px;
+}
+
+.groups-table {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	margin-top: 16px;
+}
+
+.groups-row {
+	display: grid;
+	grid-template-columns: 1fr 300px;
+	gap: 20px;
+	align-items: start;
+	padding: 16px;
+	background: var(--color-main-background);
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+}
+
+.group-label strong {
+	color: var(--color-text-light);
+	font-weight: 500;
+	display: block;
+	margin-bottom: 4px;
+}
+
+.user-type-description {
+	color: var(--color-text-maxcontrast);
+	font-size: 14px;
+	margin: 0;
+	line-height: 1.3;
+}
+
+.group-select {
+	display: flex;
+	align-items: center;
+}
+
+.loading-icon {
+	margin: 40px auto;
+	display: block;
+}
+
+@media (max-width: 768px) {
+	.groups-row {
+		grid-template-columns: 1fr;
+		gap: 12px;
+	}
+
+	.section-header-inline {
+		position: static;
+		flex-direction: column;
+		gap: 12px;
+		align-items: stretch;
+		margin-bottom: 20px;
+	}
+
+	.button-group {
+		justify-content: center;
+	}
+}
+</style>

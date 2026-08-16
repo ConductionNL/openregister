@@ -1,0 +1,818 @@
+{
+  "info": {
+    "_postman_id": "openregister-referential-integrity-v2",
+    "name": "OpenRegister Referential Integrity Tests",
+    "description": "Integration tests for referential integrity on delete.\n\nTests all five onDelete actions (CASCADE, RESTRICT, SET_NULL, SET_DEFAULT, NO_ACTION),\nthe can-delete pre-flight endpoint, chained cascades, fallback logic,\nand the 409 error response format.\n\nSelf-contained: creates its own register, schemas, and objects, then cleans up.\nIdempotent: uses timestamped titles so re-runs never conflict.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      { "key": "username", "value": "{{admin_user}}", "type": "string" },
+      { "key": "password", "value": "{{admin_password}}", "type": "string" }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const isInitialized = pm.collectionVariables.get('_ri_initialized');",
+          "if (!isInitialized || isInitialized === '') {",
+          "    const ts = Date.now();",
+          "    pm.collectionVariables.set('test_timestamp', ts);",
+          "    pm.collectionVariables.set('_ri_initialized', 'true');",
+          "    console.log('RI test run initialized: ' + ts);",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "base_url", "value": "http://localhost", "type": "string" },
+    { "key": "admin_user", "value": "admin", "type": "string" },
+    { "key": "admin_password", "value": "admin", "type": "string" },
+    { "key": "ri_register_id", "value": "", "type": "string" },
+    { "key": "ri_person_schema_id", "value": "", "type": "string" },
+    { "key": "ri_contact_schema_id", "value": "", "type": "string" },
+    { "key": "ri_service_schema_id", "value": "", "type": "string" },
+    { "key": "ri_order_schema_id", "value": "", "type": "string" },
+    { "key": "ri_task_schema_id", "value": "", "type": "string" },
+    { "key": "ri_log_schema_id", "value": "", "type": "string" },
+    { "key": "person_a_uuid", "value": "", "type": "string" },
+    { "key": "person_b_uuid", "value": "", "type": "string" },
+    { "key": "person_c_uuid", "value": "", "type": "string" },
+    { "key": "person_d_uuid", "value": "", "type": "string" },
+    { "key": "person_e_uuid", "value": "", "type": "string" },
+    { "key": "contact_uuid", "value": "", "type": "string" },
+    { "key": "service_uuid", "value": "", "type": "string" },
+    { "key": "order_uuid", "value": "", "type": "string" },
+    { "key": "task_uuid", "value": "", "type": "string" },
+    { "key": "log_uuid", "value": "", "type": "string" },
+    { "key": "test_timestamp", "value": "", "type": "string" },
+    { "key": "_ri_initialized", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "1. Create Register",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "type": "text/javascript", "exec": [
+                "const ts = pm.collectionVariables.get('test_timestamp');",
+                "pm.request.body.raw = JSON.stringify({",
+                "    title: 'RI Test Register ' + ts,",
+                "    description: 'Referential integrity integration test register'",
+                "});"
+              ]}
+            },
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('Register created (201)', function() { pm.response.to.have.status(201); });",
+                "const d = pm.response.json();",
+                "pm.collectionVariables.set('ri_register_id', String(d.id));",
+                "console.log('Register ID: ' + d.id);"
+              ]}
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/registers", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","registers"] }
+          }
+        },
+        {
+          "name": "2. Create Person Schema",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "type": "text/javascript", "exec": [
+                "const ts = pm.collectionVariables.get('test_timestamp');",
+                "pm.request.body.raw = JSON.stringify({",
+                "    title: 'RI Person ' + ts,",
+                "    description: 'Person schema for RI testing',",
+                "    properties: {",
+                "        name: { type: 'string', title: 'Name' },",
+                "        email: { type: 'string', title: 'Email' }",
+                "    }",
+                "});"
+              ]}
+            },
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('Person schema created (201)', function() { pm.response.to.have.status(201); });",
+                "const d = pm.response.json();",
+                "pm.collectionVariables.set('ri_person_schema_id', String(d.id));",
+                "console.log('Person schema ID: ' + d.id);"
+              ]}
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/schemas", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","schemas"] }
+          }
+        },
+        {
+          "name": "3. Create Contact Schema (CASCADE)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "type": "text/javascript", "exec": [
+                "const ts = pm.collectionVariables.get('test_timestamp');",
+                "const personId = pm.collectionVariables.get('ri_person_schema_id');",
+                "pm.request.body.raw = JSON.stringify({",
+                "    title: 'RI Contact ' + ts,",
+                "    description: 'Contact with CASCADE on person',",
+                "    properties: {",
+                "        phone: { type: 'string', title: 'Phone' },",
+                "        person: { type: 'string', title: 'Person', '$ref': personId, onDelete: 'CASCADE' }",
+                "    }",
+                "});"
+              ]}
+            },
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('Contact schema created (201)', function() { pm.response.to.have.status(201); });",
+                "const d = pm.response.json();",
+                "pm.collectionVariables.set('ri_contact_schema_id', String(d.id));",
+                "console.log('Contact schema ID: ' + d.id);"
+              ]}
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/schemas", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","schemas"] }
+          }
+        },
+        {
+          "name": "4. Create Service Schema (RESTRICT)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "type": "text/javascript", "exec": [
+                "const ts = pm.collectionVariables.get('test_timestamp');",
+                "const personId = pm.collectionVariables.get('ri_person_schema_id');",
+                "pm.request.body.raw = JSON.stringify({",
+                "    title: 'RI Service ' + ts,",
+                "    description: 'Service with RESTRICT on manager',",
+                "    properties: {",
+                "        serviceName: { type: 'string', title: 'Service Name' },",
+                "        manager: { type: 'string', title: 'Manager', '$ref': personId, onDelete: 'RESTRICT' }",
+                "    }",
+                "});"
+              ]}
+            },
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('Service schema created (201)', function() { pm.response.to.have.status(201); });",
+                "const d = pm.response.json();",
+                "pm.collectionVariables.set('ri_service_schema_id', String(d.id));",
+                "console.log('Service schema ID: ' + d.id);"
+              ]}
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/schemas", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","schemas"] }
+          }
+        },
+        {
+          "name": "5. Create Order Schema (SET_NULL)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "type": "text/javascript", "exec": [
+                "const ts = pm.collectionVariables.get('test_timestamp');",
+                "const personId = pm.collectionVariables.get('ri_person_schema_id');",
+                "pm.request.body.raw = JSON.stringify({",
+                "    title: 'RI Order ' + ts,",
+                "    description: 'Order with SET_NULL on assignee',",
+                "    properties: {",
+                "        orderName: { type: 'string', title: 'Order Name' },",
+                "        assignee: { type: 'string', title: 'Assignee', '$ref': personId, onDelete: 'SET_NULL' }",
+                "    }",
+                "});"
+              ]}
+            },
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('Order schema created (201)', function() { pm.response.to.have.status(201); });",
+                "const d = pm.response.json();",
+                "pm.collectionVariables.set('ri_order_schema_id', String(d.id));",
+                "console.log('Order schema ID: ' + d.id);"
+              ]}
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/schemas", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","schemas"] }
+          }
+        },
+        {
+          "name": "6. Create Task Schema (SET_DEFAULT)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "type": "text/javascript", "exec": [
+                "const ts = pm.collectionVariables.get('test_timestamp');",
+                "const personId = pm.collectionVariables.get('ri_person_schema_id');",
+                "pm.request.body.raw = JSON.stringify({",
+                "    title: 'RI Task ' + ts,",
+                "    description: 'Task with SET_DEFAULT on assignee',",
+                "    properties: {",
+                "        taskName: { type: 'string', title: 'Task Name' },",
+                "        assignee: { type: 'string', title: 'Assignee', '$ref': personId, onDelete: 'SET_DEFAULT', 'default': 'unassigned' }",
+                "    }",
+                "});"
+              ]}
+            },
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('Task schema created (201)', function() { pm.response.to.have.status(201); });",
+                "const d = pm.response.json();",
+                "pm.collectionVariables.set('ri_task_schema_id', String(d.id));",
+                "console.log('Task schema ID: ' + d.id);"
+              ]}
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/schemas", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","schemas"] }
+          }
+        },
+        {
+          "name": "7. Create Log Schema (NO_ACTION)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "type": "text/javascript", "exec": [
+                "const ts = pm.collectionVariables.get('test_timestamp');",
+                "const personId = pm.collectionVariables.get('ri_person_schema_id');",
+                "pm.request.body.raw = JSON.stringify({",
+                "    title: 'RI Log ' + ts,",
+                "    description: 'Log with no onDelete action (NO_ACTION)',",
+                "    properties: {",
+                "        action: { type: 'string', title: 'Action' },",
+                "        user: { type: 'string', title: 'User', '$ref': personId }",
+                "    }",
+                "});"
+              ]}
+            },
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('Log schema created (201)', function() { pm.response.to.have.status(201); });",
+                "const d = pm.response.json();",
+                "pm.collectionVariables.set('ri_log_schema_id', String(d.id));",
+                "console.log('Log schema ID: ' + d.id);"
+              ]}
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/schemas", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","schemas"] }
+          }
+        },
+        {
+          "name": "8. Enable Magic Mapping on Register",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.request.body.raw = JSON.stringify({",
+                "    configuration: {",
+                "        enableMagicMapping: true,",
+                "        magicMappingSchemas: [",
+                "            pm.collectionVariables.get('ri_person_schema_id'),",
+                "            pm.collectionVariables.get('ri_contact_schema_id'),",
+                "            pm.collectionVariables.get('ri_service_schema_id'),",
+                "            pm.collectionVariables.get('ri_order_schema_id'),",
+                "            pm.collectionVariables.get('ri_task_schema_id'),",
+                "            pm.collectionVariables.get('ri_log_schema_id')",
+                "        ]",
+                "    }",
+                "});"
+              ]}
+            },
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('Register updated (200)', function() { pm.response.to.have.status(200); });",
+                "const d = pm.response.json();",
+                "pm.test('Magic mapping enabled', function() {",
+                "    pm.expect(d.configuration).to.have.property('enableMagicMapping', true);",
+                "});",
+                "console.log('Magic mapping enabled for register ' + pm.collectionVariables.get('ri_register_id'));"
+              ]}
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{ri_register_id}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","registers","{{ri_register_id}}"] }
+          }
+        },
+        {
+          "name": "9. Create Person A (for CASCADE test)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Person A created (201)', function() { pm.response.to.have.status(201); });",
+            "const d = pm.response.json();",
+            "pm.collectionVariables.set('person_a_uuid', d.id);",
+            "console.log('Person A UUID: ' + d.id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"name\": \"Alice\", \"email\": \"alice@test.nl\"}" },
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_person_schema_id}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_person_schema_id}}"] }
+          }
+        },
+        {
+          "name": "10. Create Person B (for RESTRICT test)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Person B created (201)', function() { pm.response.to.have.status(201); });",
+            "pm.collectionVariables.set('person_b_uuid', pm.response.json().id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"name\": \"Bob\", \"email\": \"bob@test.nl\"}" },
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_person_schema_id}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_person_schema_id}}"] }
+          }
+        },
+        {
+          "name": "11. Create Person C (for SET_NULL test)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Person C created (201)', function() { pm.response.to.have.status(201); });",
+            "pm.collectionVariables.set('person_c_uuid', pm.response.json().id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"name\": \"Carol\", \"email\": \"carol@test.nl\"}" },
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_person_schema_id}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_person_schema_id}}"] }
+          }
+        },
+        {
+          "name": "12. Create Person D (for SET_DEFAULT test)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Person D created (201)', function() { pm.response.to.have.status(201); });",
+            "pm.collectionVariables.set('person_d_uuid', pm.response.json().id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"name\": \"Diana\", \"email\": \"diana@test.nl\"}" },
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_person_schema_id}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_person_schema_id}}"] }
+          }
+        },
+        {
+          "name": "13. Create Person E (no deps, simple delete)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Person E created (201)', function() { pm.response.to.have.status(201); });",
+            "pm.collectionVariables.set('person_e_uuid', pm.response.json().id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"name\": \"Eve\", \"email\": \"eve@test.nl\"}" },
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_person_schema_id}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_person_schema_id}}"] }
+          }
+        },
+        {
+          "name": "14. Create Contact (refs Person A, CASCADE)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.request.body.raw = JSON.stringify({",
+                "    phone: '+31612345678',",
+                "    person: pm.collectionVariables.get('person_a_uuid')",
+                "});"
+              ]}
+            },
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('Contact created (201)', function() { pm.response.to.have.status(201); });",
+                "pm.collectionVariables.set('contact_uuid', pm.response.json().id);"
+              ]}
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_contact_schema_id}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_contact_schema_id}}"] }
+          }
+        },
+        {
+          "name": "15. Create Service (refs Person B, RESTRICT)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.request.body.raw = JSON.stringify({",
+                "    serviceName: 'Web Platform',",
+                "    manager: pm.collectionVariables.get('person_b_uuid')",
+                "});"
+              ]}
+            },
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('Service created (201)', function() { pm.response.to.have.status(201); });",
+                "pm.collectionVariables.set('service_uuid', pm.response.json().id);"
+              ]}
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_service_schema_id}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_service_schema_id}}"] }
+          }
+        },
+        {
+          "name": "16. Create Order (refs Person C, SET_NULL)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.request.body.raw = JSON.stringify({",
+                "    orderName: 'Order #001',",
+                "    assignee: pm.collectionVariables.get('person_c_uuid')",
+                "});"
+              ]}
+            },
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('Order created (201)', function() { pm.response.to.have.status(201); });",
+                "pm.collectionVariables.set('order_uuid', pm.response.json().id);"
+              ]}
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_order_schema_id}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_order_schema_id}}"] }
+          }
+        },
+        {
+          "name": "17. Create Task (refs Person D, SET_DEFAULT)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.request.body.raw = JSON.stringify({",
+                "    taskName: 'Review PR',",
+                "    assignee: pm.collectionVariables.get('person_d_uuid')",
+                "});"
+              ]}
+            },
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('Task created (201)', function() { pm.response.to.have.status(201); });",
+                "pm.collectionVariables.set('task_uuid', pm.response.json().id);"
+              ]}
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_task_schema_id}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_task_schema_id}}"] }
+          }
+        },
+        {
+          "name": "18. Create Log (refs Person E, NO_ACTION)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.request.body.raw = JSON.stringify({",
+                "    action: 'login',",
+                "    user: pm.collectionVariables.get('person_e_uuid')",
+                "});"
+              ]}
+            },
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('Log created (201)', function() { pm.response.to.have.status(201); });",
+                "pm.collectionVariables.set('log_uuid', pm.response.json().id);"
+              ]}
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_log_schema_id}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_log_schema_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Can-Delete Tests",
+      "item": [
+        {
+          "name": "can-delete: Person E (no deps) - deletable",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+            "const d = pm.response.json();",
+            "pm.test('Deletable is true', function() { pm.expect(d.deletable).to.be.true; });",
+            "pm.test('No blockers', function() { pm.expect(d.blockers).to.be.an('array').with.lengthOf(0); });",
+            "pm.test('No cascade targets', function() { pm.expect(d.cascadeTargets).to.be.an('array').with.lengthOf(0); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_person_schema_id}}/{{person_e_uuid}}/can-delete", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_person_schema_id}}","{{person_e_uuid}}","can-delete"] }
+          }
+        },
+        {
+          "name": "can-delete: Person A (CASCADE dep) - deletable with targets",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+            "const d = pm.response.json();",
+            "pm.test('Deletable is true', function() { pm.expect(d.deletable).to.be.true; });",
+            "pm.test('Has cascade targets', function() { pm.expect(d.cascadeTargets).to.be.an('array').with.lengthOf.at.least(1); });",
+            "pm.test('Cascade target is contact', function() {",
+            "    const contact = d.cascadeTargets.find(t => t.objectUuid === pm.collectionVariables.get('contact_uuid'));",
+            "    pm.expect(contact).to.not.be.undefined;",
+            "});"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_person_schema_id}}/{{person_a_uuid}}/can-delete", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_person_schema_id}}","{{person_a_uuid}}","can-delete"] }
+          }
+        },
+        {
+          "name": "can-delete: Person B (RESTRICT dep) - blocked",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+            "const d = pm.response.json();",
+            "pm.test('Deletable is false', function() { pm.expect(d.deletable).to.be.false; });",
+            "pm.test('Has blockers', function() { pm.expect(d.blockers).to.be.an('array').with.lengthOf.at.least(1); });",
+            "pm.test('Blocker action is RESTRICT', function() { pm.expect(d.blockers[0].action).to.equal('RESTRICT'); });",
+            "pm.test('Blocker references service', function() {",
+            "    pm.expect(d.blockers[0].objectUuid).to.equal(pm.collectionVariables.get('service_uuid'));",
+            "});"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_person_schema_id}}/{{person_b_uuid}}/can-delete", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_person_schema_id}}","{{person_b_uuid}}","can-delete"] }
+          }
+        },
+        {
+          "name": "can-delete: Person C (SET_NULL dep) - deletable with nullify",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+            "const d = pm.response.json();",
+            "pm.test('Deletable is true', function() { pm.expect(d.deletable).to.be.true; });",
+            "pm.test('Has nullify targets', function() { pm.expect(d.nullifyTargets).to.be.an('array').with.lengthOf.at.least(1); });",
+            "pm.test('Nullify target is order', function() {",
+            "    pm.expect(d.nullifyTargets[0].objectUuid).to.equal(pm.collectionVariables.get('order_uuid'));",
+            "});"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_person_schema_id}}/{{person_c_uuid}}/can-delete", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_person_schema_id}}","{{person_c_uuid}}","can-delete"] }
+          }
+        },
+        {
+          "name": "can-delete: Person D (SET_DEFAULT dep) - deletable with defaults",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+            "const d = pm.response.json();",
+            "pm.test('Deletable is true', function() { pm.expect(d.deletable).to.be.true; });",
+            "pm.test('Has default targets', function() { pm.expect(d.defaultTargets).to.be.an('array').with.lengthOf.at.least(1); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_person_schema_id}}/{{person_d_uuid}}/can-delete", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_person_schema_id}}","{{person_d_uuid}}","can-delete"] }
+          }
+        },
+        {
+          "name": "can-delete: Non-existent object - 404",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 404', function() { pm.response.to.have.status(404); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_person_schema_id}}/00000000-0000-0000-0000-000000000000/can-delete", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_person_schema_id}}","00000000-0000-0000-0000-000000000000","can-delete"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete Action Tests",
+      "item": [
+        {
+          "name": "DELETE Person B (RESTRICT) - 409 Conflict",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 409 Conflict', function() { pm.response.to.have.status(409); });",
+            "const d = pm.response.json();",
+            "pm.test('Error is DELETION_BLOCKED', function() { pm.expect(d.error).to.equal('DELETION_BLOCKED'); });",
+            "pm.test('Message mentions dependent objects', function() { pm.expect(d.message).to.include('block deletion'); });",
+            "pm.test('Blockers array present', function() { pm.expect(d.blockers).to.be.an('array').with.lengthOf.at.least(1); });",
+            "pm.test('Blocker has correct structure', function() {",
+            "    pm.expect(d.blockers[0]).to.have.property('objectUuid');",
+            "    pm.expect(d.blockers[0]).to.have.property('schema');",
+            "    pm.expect(d.blockers[0]).to.have.property('property');",
+            "    pm.expect(d.blockers[0]).to.have.property('action', 'RESTRICT');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_person_schema_id}}/{{person_b_uuid}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_person_schema_id}}","{{person_b_uuid}}"] }
+          }
+        },
+        {
+          "name": "Verify Person B still exists after RESTRICT",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Person B still accessible (200)', function() { pm.response.to.have.status(200); });",
+            "pm.test('Name is Bob', function() { pm.expect(pm.response.json().name).to.equal('Bob'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_person_schema_id}}/{{person_b_uuid}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_person_schema_id}}","{{person_b_uuid}}"] }
+          }
+        },
+        {
+          "name": "DELETE Person C (SET_NULL) - clears Order.assignee",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Delete succeeds (200 or 204)', function() { pm.expect(pm.response.code).to.be.oneOf([200, 204]); });"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_person_schema_id}}/{{person_c_uuid}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_person_schema_id}}","{{person_c_uuid}}"] }
+          }
+        },
+        {
+          "name": "Verify Order.assignee is null after SET_NULL",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Order still accessible (200)', function() { pm.response.to.have.status(200); });",
+            "const d = pm.response.json();",
+            "pm.test('Order.assignee is null or absent', function() { pm.expect(d.assignee === null || d.assignee === undefined).to.be.true; });",
+            "pm.test('Order still has orderName', function() { pm.expect(d.orderName).to.equal('Order #001'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_order_schema_id}}/{{order_uuid}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_order_schema_id}}","{{order_uuid}}"] }
+          }
+        },
+        {
+          "name": "Verify Person C is soft-deleted (404)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Person C not found (404)', function() { pm.response.to.have.status(404); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_person_schema_id}}/{{person_c_uuid}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_person_schema_id}}","{{person_c_uuid}}"] }
+          }
+        },
+        {
+          "name": "DELETE Person D (SET_DEFAULT) - sets Task.assignee to default",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Delete succeeds (200 or 204)', function() { pm.expect(pm.response.code).to.be.oneOf([200, 204]); });"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_person_schema_id}}/{{person_d_uuid}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_person_schema_id}}","{{person_d_uuid}}"] }
+          }
+        },
+        {
+          "name": "Verify Task.assignee is set to default after SET_DEFAULT",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Task still accessible (200)', function() { pm.response.to.have.status(200); });",
+            "const d = pm.response.json();",
+            "pm.test('Task.assignee is default value', function() { pm.expect(d.assignee).to.equal('unassigned'); });",
+            "pm.test('Task still has taskName', function() { pm.expect(d.taskName).to.equal('Review PR'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_task_schema_id}}/{{task_uuid}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_task_schema_id}}","{{task_uuid}}"] }
+          }
+        },
+        {
+          "name": "DELETE Person A (CASCADE) - cascades to Contact",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Delete succeeds (200 or 204)', function() { pm.expect(pm.response.code).to.be.oneOf([200, 204]); });"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_person_schema_id}}/{{person_a_uuid}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_person_schema_id}}","{{person_a_uuid}}"] }
+          }
+        },
+        {
+          "name": "Verify Person A is soft-deleted (404)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Person A not found (404)', function() { pm.response.to.have.status(404); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_person_schema_id}}/{{person_a_uuid}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_person_schema_id}}","{{person_a_uuid}}"] }
+          }
+        },
+        {
+          "name": "Verify Contact is cascade-deleted (404)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Contact cascade-deleted (404)', function() { pm.response.to.have.status(404); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_contact_schema_id}}/{{contact_uuid}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_contact_schema_id}}","{{contact_uuid}}"] }
+          }
+        },
+        {
+          "name": "DELETE Person E (NO_ACTION) - log unchanged",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Delete succeeds (200 or 204)', function() { pm.expect(pm.response.code).to.be.oneOf([200, 204]); });"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_person_schema_id}}/{{person_e_uuid}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_person_schema_id}}","{{person_e_uuid}}"] }
+          }
+        },
+        {
+          "name": "Verify Log still exists with orphaned ref (NO_ACTION)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Log still accessible (200)', function() { pm.response.to.have.status(200); });",
+            "const d = pm.response.json();",
+            "pm.test('Log.user still has orphaned UUID', function() {",
+            "    pm.expect(d.user).to.equal(pm.collectionVariables.get('person_e_uuid'));",
+            "});",
+            "pm.test('Log.action unchanged', function() { pm.expect(d.action).to.equal('login'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_log_schema_id}}/{{log_uuid}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_log_schema_id}}","{{log_uuid}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cleanup",
+      "item": [
+        {
+          "name": "Delete remaining test objects",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Cleanup request sent', function() { pm.expect(pm.response.code).to.be.below(500); });"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_log_schema_id}}/{{log_uuid}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_log_schema_id}}","{{log_uuid}}"] }
+          }
+        },
+        {
+          "name": "Delete service object",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Cleanup', function() { pm.expect(pm.response.code).to.be.below(500); });"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_service_schema_id}}/{{service_uuid}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_service_schema_id}}","{{service_uuid}}"] }
+          }
+        },
+        {
+          "name": "Delete Person B (now unblocked)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Person B deleted', function() { pm.expect(pm.response.code).to.be.oneOf([200, 204]); });"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ri_register_id}}/{{ri_person_schema_id}}/{{person_b_uuid}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{ri_register_id}}","{{ri_person_schema_id}}","{{person_b_uuid}}"] }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,654 @@
+<?php
+
+/**
+ * Mapper for chunk entities.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Db
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://www.OpenRegister.nl
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Db;
+
+use OCP\AppFramework\Db\Entity;
+use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IDBConnection;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
+
+/**
+ * Class ChunkMapper
+ *
+ * @method Chunk insert(Entity $entity)
+ * @method Chunk update(Entity $entity)
+ * @method Chunk insertOrUpdate(Entity $entity)
+ * @method Chunk delete(Entity $entity)
+ * @method Chunk find(int|string $id)
+ * @method Chunk findEntity(IQueryBuilder $query)
+ * @method Chunk[] findAll(int|null $limit=null, int|null $offset=null)
+ * @method list<Chunk> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<Chunk>
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) Data-mapper surface: each method is one
+ *   query over openregister_chunks (counts, source lookups, work queues, keyword search);
+ *   splitting the mapper would scatter the table's query surface without reducing complexity.
+ */
+class ChunkMapper extends QBMapper {
+
+	/**
+	 * PSR-3 logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IDBConnection $db Database connection.
+	 * @param LoggerInterface|null $logger PSR-3 logger (nullable for BC with existing constructions).
+	 */
+	public function __construct(IDBConnection $db, ?LoggerInterface $logger = null) {
+		parent::__construct(db: $db, tableName: 'openregister_chunks', entityClass: Chunk::class);
+		$this->logger = $logger ?? new NullLogger();
+	}//end __construct()
+
+	/**
+	 * Public wrapper for findEntities (parent protected method).
+	 *
+	 * @param IQueryBuilder $query The query builder.
+	 *
+	 * @return list<Chunk> Array of chunks.
+	 */
+	public function findEntitiesPublic(IQueryBuilder $query): array {
+		return parent::findEntities(query: $query);
+	}//end findEntitiesPublic()
+
+	/**
+	 * Find chunks by source reference.
+	 *
+	 * @param string $sourceType Source type identifier.
+	 * @param int $sourceId Source identifier.
+	 *
+	 * @phpstan-param non-empty-string $sourceType
+	 *
+	 * @psalm-param non-empty-string   $sourceType
+	 *
+	 * @return Chunk[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Chunk>
+	 */
+	public function findBySource(string $sourceType, int $sourceId): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->andX(
+					$qb->expr()->eq('source_type', $qb->createNamedParameter($sourceType, IQueryBuilder::PARAM_STR)),
+					$qb->expr()->eq('source_id', $qb->createNamedParameter($sourceId, IQueryBuilder::PARAM_INT))
+				)
+			)
+			->orderBy('chunk_index', 'ASC');
+
+		return $this->findEntities(query: $qb);
+	}//end findBySource()
+
+	/**
+	 * Delete chunks by source reference.
+	 *
+	 * @param string $sourceType Source type identifier.
+	 * @param int $sourceId Source identifier.
+	 *
+	 * @phpstan-param non-empty-string $sourceType
+	 * @psalm-param   non-empty-string   $sourceType
+	 *
+	 * @return void
+	 */
+	public function deleteBySource(string $sourceType, int $sourceId): void {
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete($this->getTableName())
+			->where(
+				$qb->expr()->andX(
+					$qb->expr()->eq('source_type', $qb->createNamedParameter($sourceType, IQueryBuilder::PARAM_STR)),
+					$qb->expr()->eq('source_id', $qb->createNamedParameter($sourceId, IQueryBuilder::PARAM_INT))
+				)
+			)
+			->executeStatement();
+	}//end deleteBySource()
+
+	/**
+	 * Get the latest updated timestamp for a source's chunks.
+	 *
+	 * @param string $sourceType Source type identifier.
+	 * @param int $sourceId Source identifier.
+	 *
+	 * @phpstan-param non-empty-string $sourceType
+	 * @psalm-param   non-empty-string   $sourceType
+	 *
+	 * @return int|null Unix timestamp of the latest update or null when unavailable.
+	 */
+	public function getLatestUpdatedTimestamp(string $sourceType, int $sourceId): ?int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectAlias($qb->createFunction('MAX(updated_at)'), 'max_updated_at')
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->andX(
+					$qb->expr()->eq('source_type', $qb->createNamedParameter($sourceType, IQueryBuilder::PARAM_STR)),
+					$qb->expr()->eq('source_id', $qb->createNamedParameter($sourceId, IQueryBuilder::PARAM_INT))
+				)
+			);
+
+		$result = $qb->executeQuery();
+		$value = $result->fetchOne();
+		$result->closeCursor();
+
+		if ($value === false || $value === null) {
+			return null;
+		}
+
+		$timestamp = strtotime((string)$value);
+
+		if ($timestamp === false) {
+			return null;
+		}
+
+		return $timestamp;
+	}//end getLatestUpdatedTimestamp()
+
+	/**
+	 * Count all chunks in the database.
+	 *
+	 * @return int Total chunk count
+	 */
+	public function countAll(): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('id'))
+			->from($this->getTableName());
+
+		$result = $qb->executeQuery();
+		$count = (int)$result->fetchOne();
+		$result->closeCursor();
+
+		return $count;
+	}//end countAll()
+
+	/**
+	 * Count indexed chunks.
+	 *
+	 * Chunks are considered indexed if they have been processed by the search engine.
+	 *
+	 * @return int Indexed chunk count
+	 */
+	public function countIndexed(): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('id'))
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->eq(
+					'indexed',
+					$qb->createNamedParameter(
+						true,
+						\OCP\DB\QueryBuilder\IQueryBuilder::PARAM_BOOL
+					)
+				)
+			);
+
+		$result = $qb->executeQuery();
+		$count = (int)$result->fetchOne();
+		$result->closeCursor();
+
+		return $count;
+	}//end countIndexed()
+
+	/**
+	 * Count unindexed chunks.
+	 *
+	 * Chunks that have been extracted but not yet indexed in the search engine.
+	 *
+	 * @return int Unindexed chunk count
+	 */
+	public function countUnindexed(): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('id'))
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->eq(
+					'indexed',
+					$qb->createNamedParameter(
+						false,
+						\OCP\DB\QueryBuilder\IQueryBuilder::PARAM_BOOL
+					)
+				)
+			);
+
+		$result = $qb->executeQuery();
+		$count = (int)$result->fetchOne();
+		$result->closeCursor();
+
+		return $count;
+	}//end countUnindexed()
+
+	/**
+	 * Count vectorized chunks.
+	 *
+	 * Chunks that have been converted to vector embeddings.
+	 *
+	 * @return int Vectorized chunk count
+	 */
+	public function countVectorized(): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('id'))
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->eq(
+					'vectorized',
+					$qb->createNamedParameter(
+						true,
+						\OCP\DB\QueryBuilder\IQueryBuilder::PARAM_BOOL
+					)
+				)
+			);
+
+		$result = $qb->executeQuery();
+		$count = (int)$result->fetchOne();
+		$result->closeCursor();
+
+		return $count;
+	}//end countVectorized()
+
+	/**
+	 * Get file source summaries grouped by source_id.
+	 *
+	 * Aggregates chunks where source_type='file', joining filecache and mimetypes
+	 * to return file metadata alongside chunk statistics.
+	 *
+	 * @param int|null $limit Maximum number of results
+	 * @param int|null $offset Offset for pagination
+	 * @param string|null $search Optional search filter on file name
+	 * @param string $sort Sort field (fileName, fileSize, extractedAt, chunkCount)
+	 * @param string $order Sort direction (ASC or DESC)
+	 *
+	 * @return array List of file source summaries
+	 */
+	public function getFileSourceSummaries(
+		?int $limit = null,
+		?int $offset = null,
+		?string $search = null,
+		string $sort = 'extractedAt',
+		string $order = 'DESC',
+	): array {
+		$sortMap = [
+			'fileName' => 'fc.name',
+			'fileSize' => 'fc.size',
+			'extractedAt' => 'last_extracted',
+			'chunkCount' => 'chunk_count',
+		];
+
+		$sqlSort = $sortMap[$sort] ?? 'last_extracted';
+		$sqlOrder = 'DESC';
+		if (strtoupper($order) === 'ASC') {
+			$sqlOrder = 'ASC';
+		}
+
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('ch.source_id')
+			->selectAlias($qb->func()->count('ch.id'), 'chunk_count')
+			->selectAlias($qb->createFunction('MIN(ch.created_at)'), 'first_extracted')
+			->selectAlias($qb->createFunction('MAX(ch.created_at)'), 'last_extracted')
+			->selectAlias('fc.name', 'file_name')
+			->selectAlias('mt.mimetype', 'mime_type')
+			->selectAlias('fc.size', 'file_size')
+			->from($this->getTableName(), 'ch')
+			->innerJoin('ch', 'filecache', 'fc', $qb->expr()->eq('ch.source_id', 'fc.fileid'))
+			->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
+			->where($qb->expr()->eq('ch.source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR)))
+			->groupBy('ch.source_id', 'fc.name', 'mt.mimetype', 'fc.size')
+			->orderBy($sqlSort, $sqlOrder);
+
+		if ($search !== null && $search !== '') {
+			$searchPattern = '%' . $this->db->escapeLikeParameter($search) . '%';
+			$qb->andWhere(
+				$qb->expr()->iLike(
+					'fc.name',
+					$qb->createNamedParameter($searchPattern, IQueryBuilder::PARAM_STR)
+				)
+			);
+		}
+
+		if ($limit !== null) {
+			$qb->setMaxResults($limit);
+		}
+
+		if ($offset !== null) {
+			$qb->setFirstResult($offset);
+		}
+
+		$result = $qb->executeQuery();
+		$rows = [];
+
+		$row = $result->fetch();
+		while ($row !== false) {
+			$rows[] = [
+				'sourceId' => (int)$row['source_id'],
+				'chunkCount' => (int)$row['chunk_count'],
+				'firstExtracted' => $row['first_extracted'],
+				'lastExtracted' => $row['last_extracted'],
+				'fileName' => $row['file_name'],
+				'mimeType' => $row['mime_type'],
+				'fileSize' => (int)$row['file_size'],
+			];
+			$row = $result->fetch();
+		}
+
+		$result->closeCursor();
+
+		return $rows;
+	}//end getFileSourceSummaries()
+
+	/**
+	 * Count distinct file sources that have chunks.
+	 *
+	 * @param string|null $search Optional search filter on file name
+	 *
+	 * @return int Number of distinct file sources
+	 */
+	public function countFileSourceSummaries(?string $search = null): int {
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select($qb->createFunction('COUNT(DISTINCT ch.source_id) as count'))
+			->from($this->getTableName(), 'ch')
+			->innerJoin('ch', 'filecache', 'fc', $qb->expr()->eq('ch.source_id', 'fc.fileid'))
+			->where($qb->expr()->eq('ch.source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR)));
+
+		if ($search !== null && $search !== '') {
+			$searchPattern = '%' . $this->db->escapeLikeParameter($search) . '%';
+			$qb->andWhere(
+				$qb->expr()->iLike(
+					'fc.name',
+					$qb->createNamedParameter($searchPattern, IQueryBuilder::PARAM_STR)
+				)
+			);
+		}
+
+		$result = $qb->executeQuery();
+		$count = (int)$result->fetchOne();
+		$result->closeCursor();
+
+		return $count;
+	}//end countFileSourceSummaries()
+
+	/**
+	 * Find unindexed chunks.
+	 *
+	 * Retrieves chunks that need to be indexed.
+	 *
+	 * @param int|null $limit Maximum number of chunks to return
+	 * @param int|null $offset Offset for pagination
+	 *
+	 * @return Chunk[] Array of unindexed chunks
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Chunk>
+	 */
+	public function findUnindexed(?int $limit = null, ?int $offset = null): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->eq(
+					'indexed',
+					$qb->createNamedParameter(
+						false,
+						\OCP\DB\QueryBuilder\IQueryBuilder::PARAM_BOOL
+					)
+				)
+			)
+			->orderBy('created_at', 'ASC');
+
+		if ($limit !== null) {
+			$qb->setMaxResults($limit);
+		}
+
+		if ($offset !== null) {
+			$qb->setFirstResult($offset);
+		}
+
+		return $this->findEntities(query: $qb);
+	}//end findUnindexed()
+
+	/**
+	 * Find unvectorized chunks.
+	 *
+	 * Retrieves chunks that have been extracted but not yet vectorized, in
+	 * FIFO order (`created_at ASC` — this is a work queue, not a relevance
+	 * ranking). Consumed by ChunkVectorizationJob.
+	 *
+	 * @param int|null $limit Maximum number of chunks to return
+	 * @param int|null $offset Offset for pagination
+	 *
+	 * @return Chunk[] Array of unvectorized chunks
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Chunk>
+	 *
+	 * @spec openspec/changes/hybrid-document-search/tasks.md#5.1
+	 */
+	public function findUnvectorized(?int $limit = null, ?int $offset = null): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->eq(
+					'vectorized',
+					$qb->createNamedParameter(
+						false,
+						\OCP\DB\QueryBuilder\IQueryBuilder::PARAM_BOOL
+					)
+				)
+			)
+			->orderBy('created_at', 'ASC');
+
+		if ($limit !== null) {
+			$qb->setMaxResults($limit);
+		}
+
+		if ($offset !== null) {
+			$qb->setFirstResult($offset);
+		}
+
+		return $this->findEntities(query: $qb);
+	}//end findUnvectorized()
+
+	/**
+	 * Ranked keyword search over chunk text (PostgreSQL only).
+	 *
+	 * Queries `to_tsvector('simple', text_content) @@ plainto_tsquery('simple',
+	 * :query)`, ranked by `ts_rank` descending. The expression form matches the
+	 * functional GIN index created by Version1Date20260706101000 (a STORED
+	 * tsvector generated column is not viable on Nextcloud: Doctrine schema
+	 * introspection throws on unknown column types — live-verified amendment,
+	 * 2026-07-06). The 'simple' configuration avoids English-only stemming bias
+	 * given OpenRegister's Dutch-government usage context (decision 7).
+	 *
+	 * Each row is shaped for VectorSearchHandler::reciprocalRankFusion()'s
+	 * `$keywordResults` input. On non-PostgreSQL platforms, or when the query
+	 * fails, returns [] with a logged warning — never throws (no ranked
+	 * keyword path existed before this change on any platform, so this is
+	 * purely additive).
+	 *
+	 * @param string $query Search query text
+	 * @param int $limit Maximum number of results
+	 * @param array $filters Optional filters (source_type)
+	 * @param bool $allowUnrankedFallback When true, non-PostgreSQL platforms run an
+	 *                                    unranked `LIKE` scan over `text_content`
+	 *                                    instead of returning `[]` (see {@see
+	 *                                    searchByKeywordUnranked()}). Defaults to
+	 *                                    false so the pre-existing hybrid-search
+	 *                                    RRF caller ({@see
+	 *                                    \OCA\OpenRegister\Controller\FileSearchController::hybridSearch()})
+	 *                                    keeps its documented empty-on-non-Postgres
+	 *                                    behaviour unchanged.
+	 *
+	 * @return array<int, array{entity_type: string, entity_id: string, score: float,
+	 *                          chunk_text: string|null, chunk_index: int, metadata: array}>
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Established pattern across this codebase
+	 *   for opt-in behaviour flags (see SearchBackendInterface).
+	 * @SuppressWarnings(PHPMD.LongVariable)        Descriptive variable name improves readability.
+	 *
+	 * @spec openspec/changes/hybrid-document-search/tasks.md#3.3
+	 * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
+	 */
+	public function searchByKeyword(string $query, int $limit, array $filters = [], bool $allowUnrankedFallback = false): array {
+		$platform = $this->db->getDatabasePlatform();
+
+		if (str_contains(get_class($platform), 'PostgreSQL') === false) {
+			if ($allowUnrankedFallback === true) {
+				return $this->searchByKeywordUnranked(query: $query, limit: $limit, filters: $filters);
+			}
+
+			$this->logger->warning(
+				message: '[ChunkMapper] Ranked keyword search unavailable: requires PostgreSQL '
+					. 'with the tsvector keyword-search index',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'platform' => get_class($platform),
+				]
+			);
+			return [];
+		}
+
+		$tsVector = "to_tsvector('simple', text_content)";
+		$where = [$tsVector . " @@ plainto_tsquery('simple', :query)"];
+		$params = ['query' => $query];
+
+		if (($filters['source_type'] ?? null) !== null) {
+			$where[] = 'source_type = :sourceType';
+			$params['sourceType'] = $filters['source_type'];
+		}
+
+		$sql = 'SELECT id, source_type, source_id, text_content, chunk_index, '
+			. 'ts_rank(' . $tsVector . ", plainto_tsquery('simple', :query)) AS score "
+			. 'FROM *PREFIX*openregister_chunks '
+			. 'WHERE ' . implode(' AND ', $where) . ' '
+			. 'ORDER BY score DESC '
+			. 'LIMIT ' . max(1, $limit);
+
+		try {
+			$result = $this->db->executeQuery($sql, $params);
+			$rows = $result->fetchAll();
+			$result->closeCursor();
+		} catch (\Exception $e) {
+			// Query failure (a missing GIN index alone does not fail the
+			// expression form, it only slows it) — degrade, don't throw.
+			$this->logger->warning(
+				message: '[ChunkMapper] Keyword search query failed; returning empty result',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
+		}
+
+		$results = [];
+		foreach ($rows as $row) {
+			$results[] = [
+				'entity_type' => (string)($row['source_type'] ?? 'file'),
+				'entity_id' => (string)$row['source_id'],
+				'score' => (float)$row['score'],
+				'chunk_text' => $row['text_content'],
+				'chunk_index' => (int)$row['chunk_index'],
+				'metadata' => [],
+			];
+		}
+
+		return $results;
+	}//end searchByKeyword()
+
+	/**
+	 * Unranked `LIKE` fallback for platforms without a `tsvector` index (e.g. MariaDB).
+	 *
+	 * Preserves the match set (every chunk whose `text_content` contains the query as a
+	 * substring) while degrading ranking — every row scores `0.0` and ordering is by
+	 * chunk id rather than relevance. Called only from {@see searchByKeyword()} when
+	 * `$allowUnrankedFallback` is true; the pre-existing hybrid-search RRF caller does not
+	 * opt in and keeps seeing `[]` on non-PostgreSQL platforms.
+	 *
+	 * @param string $query Search query text.
+	 * @param int $limit Maximum number of results.
+	 * @param array $filters Optional filters (source_type).
+	 *
+	 * @return array<int, array{entity_type: string, entity_id: string, score: float,
+	 *                          chunk_text: string|null, chunk_index: int, metadata: array}>
+	 *
+	 * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
+	 */
+	private function searchByKeywordUnranked(string $query, int $limit, array $filters = []): array {
+		$qb = $this->db->getQueryBuilder();
+		$searchPattern = '%' . $this->db->escapeLikeParameter($query) . '%';
+
+		$qb->select('id', 'source_type', 'source_id', 'text_content', 'chunk_index')
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->iLike(
+					'text_content',
+					$qb->createNamedParameter($searchPattern, IQueryBuilder::PARAM_STR)
+				)
+			)
+			->orderBy('id', 'ASC')
+			->setMaxResults(max(1, $limit));
+
+		if (($filters['source_type'] ?? null) !== null) {
+			$qb->andWhere(
+				$qb->expr()->eq(
+					'source_type',
+					$qb->createNamedParameter($filters['source_type'], IQueryBuilder::PARAM_STR)
+				)
+			);
+		}
+
+		try {
+			$result = $qb->executeQuery();
+			$rows = $result->fetchAll();
+			$result->closeCursor();
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[ChunkMapper] Unranked keyword search query failed; returning empty result',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
+		}
+
+		$results = [];
+		foreach ($rows as $row) {
+			$results[] = [
+				'entity_type' => (string)($row['source_type'] ?? 'file'),
+				'entity_id' => (string)$row['source_id'],
+				'score' => 0.0,
+				'chunk_text' => $row['text_content'],
+				'chunk_index' => (int)$row['chunk_index'],
+				'metadata' => [],
+			];
+		}
+
+		return $results;
+	}//end searchByKeywordUnranked()
+}//end class

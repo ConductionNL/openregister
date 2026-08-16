@@ -1,0 +1,11 @@
+name: Branch Protection
+
+on:
+  pull_request:
+    branches: [main, beta]
+
+permissions: {}
+
+jobs:
+  branch-protection:
+    uses: ConductionNL/.github/.github/workflows/branch-protection.yml@main

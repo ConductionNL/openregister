@@ -1,0 +1,110 @@
+{
+  "$schema": "https://docs.conduction.nl/openregister/configuration/schema.json",
+  "title": "Rapportage Template — WOO transparantie",
+  "description": "Pre-configured Woo (Wet open overheid) transparency dashboard. Imports a single dashboard object into the operator's `reports` register, wired against the `publication` schema in the `publication` register. The widgets reference aggregations the operator is expected to declare on their publication schema under `x-openregister-aggregations`: `publishedPerMonth` (count grouped by month-of-publishedAt), `byPublicationCategory` (count grouped by publicationCategory), and `withoutRecentActivity` (count of publications whose lastEvaluatedAt is older than the SLA window). The dashboard renders gracefully even when an aggregation is missing — the corresponding widget shows \"No data available\". Prerequisite: the `report-bundle.json` (reports register + dashboard schema) MUST be imported first.",
+  "version": "1.0.0",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "reports",
+          "schema": "dashboard",
+          "slug": "woo-transparantie"
+        },
+        "titel": "Woo-transparantie",
+        "beschrijving": "Maandelijkse transparantierapportage conform de Wet open overheid: gepubliceerde objecten per maand, verdeling over publicatiecategorieën, en SLA-tracker voor publicaties zonder recente actualisatie.",
+        "category": "transparency",
+        "layout": {
+          "cols": 3
+        },
+        "widgets": [
+          {
+            "type": "kpi",
+            "title": "Publicaties (totaal)",
+            "subtitle": "Alle gepubliceerde objecten",
+            "dataSource": {
+              "mode": "aggregation",
+              "register": "publication",
+              "schema": "publication",
+              "aggregation": "totalPublished"
+            },
+            "options": {
+              "valueField": "value",
+              "valueFormat": "number"
+            }
+          },
+          {
+            "type": "chart",
+            "title": "Gepubliceerd per maand",
+            "subtitle": "Aantal publicaties per maand (laatste 12 maanden)",
+            "dataSource": {
+              "mode": "aggregation",
+              "register": "publication",
+              "schema": "publication",
+              "aggregation": "publishedPerMonth"
+            },
+            "options": {
+              "chartType": "bar",
+              "valueField": "value"
+            }
+          },
+          {
+            "type": "chart",
+            "title": "Per publicatiecategorie",
+            "subtitle": "Verdeling over Woo-publicatiecategorieën",
+            "dataSource": {
+              "mode": "aggregation",
+              "register": "publication",
+              "schema": "publication",
+              "aggregation": "byPublicationCategory"
+            },
+            "options": {
+              "chartType": "pie",
+              "valueField": "value"
+            }
+          },
+          {
+            "type": "table",
+            "title": "Per organisatie",
+            "subtitle": "Aantal publicaties per organisatie",
+            "dataSource": {
+              "mode": "aggregation",
+              "register": "publication",
+              "schema": "publication",
+              "aggregation": "byOrganization"
+            },
+            "options": {
+              "valueField": "value"
+            }
+          },
+          {
+            "type": "kpi",
+            "title": "Zonder recente actualisatie",
+            "subtitle": "Publicaties die de SLA-grens overschrijden",
+            "dataSource": {
+              "mode": "aggregation",
+              "register": "publication",
+              "schema": "publication",
+              "aggregation": "withoutRecentActivity"
+            },
+            "options": {
+              "valueField": "value",
+              "valueFormat": "number"
+            }
+          },
+          {
+            "type": "stats",
+            "title": "Tijd sinds laatste publicatie",
+            "subtitle": "Min / max / gemiddeld in dagen",
+            "dataSource": {
+              "mode": "aggregation",
+              "register": "publication",
+              "schema": "publication",
+              "aggregation": "daysSinceLastPublication"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+schema_version: 2
+spec_slug: add-approval-step-events
+app: openregister
+repo: https://codeberg.org/Conduction/openregister
+status: proposed
+issue: null
+depends_on: []
+cycles: []
+capabilities:
+  - slug: approval-workflow
+    type: backend
+    action: modified
+unblocks:
+  - app: docudesk
+    change: migrate-signing-to-or-approval-workflow

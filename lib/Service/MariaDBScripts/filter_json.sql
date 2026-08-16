@@ -1,0 +1,4 @@
+-- DEPRECATED: The oc_openregister_objects blob table has been retired.
+-- Objects are now stored in per-register/schema magic tables (oc_openregister_table_{register}_{schema}).
+-- Example for magic table filtering:
+-- SELECT * FROM oc_openregister_table_1_1 WHERE _tooi = '0935';

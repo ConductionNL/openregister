@@ -1,0 +1,2009 @@
+<?php
+
+/**
+ * OpenRegister Configuration Controller
+ *
+ * This file contains the controller class for handling configuration-related API requests.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
+ */
+
+namespace OCA\OpenRegister\Controller;
+
+use DateTime;
+use Exception;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Db\Configuration;
+use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Service\Configuration\GitHubHandler;
+use OCA\OpenRegister\Service\Configuration\GitLabHandler;
+use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\NotificationService;
+use OCA\OpenRegister\Service\SecurityService;
+use OCP\App\IAppManager;
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
+use OCP\IRequest;
+use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
+
+/**
+ * Class ConfigurationController
+ *
+ * Controller for managing configurations (CRUD and management operations).
+ *
+ * @package OCA\OpenRegister\Controller
+ *
+ * @psalm-suppress UnusedClass
+ *
+ * @suppressWarnings(PHPMD.ExcessiveClassLength)
+ * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @suppressWarnings(PHPMD.TooManyMethods)
+ * @suppressWarnings(PHPMD.TooManyPublicMethods)
+ * @suppressWarnings(PHPMD.CouplingBetweenObjects)
+ */
+class ConfigurationController extends Controller {
+	use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
+
+	/**
+	 * Configuration mapper instance.
+	 *
+	 * @var ConfigurationMapper The configuration mapper instance.
+	 */
+	private ConfigurationMapper $configurationMapper;
+
+	/**
+	 * Configuration service instance.
+	 *
+	 * @var ConfigurationService The configuration service instance.
+	 */
+	private ConfigurationService $configurationService;
+
+	/**
+	 * Notification service instance.
+	 *
+	 * @var NotificationService The notification service instance.
+	 */
+	private NotificationService $notificationService;
+
+	/**
+	 * GitHub handler instance.
+	 *
+	 * @var GitHubHandler The GitHub handler instance.
+	 */
+	private GitHubHandler $githubHandler;
+
+	/**
+	 * GitLab handler instance.
+	 *
+	 * @var GitLabHandler The GitLab handler instance.
+	 */
+	private GitLabHandler $gitlabHandler;
+
+	/**
+	 * Logger instance.
+	 *
+	 * @var LoggerInterface The logger instance.
+	 */
+	private LoggerInterface $logger;
+
+	/**
+	 * App manager instance.
+	 *
+	 * @var IAppManager The app manager instance.
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Constructor
+	 *
+	 * @param string $appName The app name
+	 * @param IRequest $request The request object
+	 * @param ConfigurationMapper $configurationMapper Configuration mapper
+	 * @param ConfigurationService $configurationService Configuration service
+	 * @param NotificationService $notificationService Notification service
+	 * @param GitHubHandler $githubHandler GitHub handler
+	 * @param GitLabHandler $gitlabHandler GitLab handler
+	 * @param IAppManager $appManager App manager
+	 * @param LoggerInterface $logger Logger
+	 * @param IUserSession $userSession User session for admin checks
+	 * @param IGroupManager $groupManager Group manager for admin checks
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		ConfigurationMapper $configurationMapper,
+		ConfigurationService $configurationService,
+		NotificationService $notificationService,
+		GitHubHandler $githubHandler,
+		GitLabHandler $gitlabHandler,
+		IAppManager $appManager,
+		LoggerInterface $logger,
+		private readonly IUserSession $userSession,
+		private readonly IGroupManager $groupManager,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+
+		$this->configurationMapper = $configurationMapper;
+		$this->configurationService = $configurationService;
+		$this->notificationService = $notificationService;
+		$this->githubHandler = $githubHandler;
+		$this->gitlabHandler = $gitlabHandler;
+		$this->appManager = $appManager;
+		$this->logger = $logger;
+	}//end __construct()
+
+	/**
+	 * Check whether the currently authenticated user is a Nextcloud administrator.
+	 *
+	 * @return bool True if a user is signed in and belongs to the admin group.
+	 */
+	private function isCurrentUserAdmin(): bool {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return false;
+		}
+
+		return $this->groupManager->isAdmin($user->getUID());
+	}//end isCurrentUserAdmin()
+
+	/**
+	 * Get all configurations.
+	 *
+	 * @return JSONResponse JSON response with configurations list
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @psalm-return JSONResponse<200|500, array<'Failed to fetch configurations'|Configuration>, array<never, never>>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function index(): JSONResponse {
+		try {
+			$configurations = $this->configurationMapper->findAll();
+
+			return new JSONResponse(data: $configurations, statusCode: 200);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[ConfigurationController] Failed to fetch configurations: ' . $e->getMessage(),
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+				]
+			);
+
+			return new JSONResponse(data: ['error' => 'Failed to fetch configurations'], statusCode: 500);
+		}//end try
+	}//end index()
+
+	/**
+	 * Get a single configuration by ID.
+	 *
+	 * @param int $id The configuration ID
+	 *
+	 * @return JSONResponse JSON response with single configuration
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @psalm-return JSONResponse<200, Configuration,
+	 *     array<never, never>>|JSONResponse<404|500,
+	 *     array{error: 'Configuration not found'|'Failed to fetch configuration'},
+	 *     array<never, never>>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function show(int $id): JSONResponse {
+		// SEC-CTRL-3: prevent IDOR — only admins may read a configuration by id.
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+		}
+
+		try {
+			$configuration = $this->configurationMapper->find($id);
+
+			return new JSONResponse(data: $configuration, statusCode: 200);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: "[ConfigurationController] Failed to fetch configuration {$id}: " . $e->getMessage(),
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+				]
+			);
+
+			return new JSONResponse(data: ['error' => 'Failed to fetch configuration'], statusCode: 500);
+		}//end try
+	}//end show()
+
+	/**
+	 * Enrich configuration details by fetching actual file contents
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with enriched configuration details
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function enrichDetails(): JSONResponse {
+		// SEC-CTRL: admin-only — reaches external repo content via the
+		// instance-wide admin-configured GitHub/GitLab credential (matches the
+		// guard on this controller's create/update/import/publish siblings).
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+		}
+
+		try {
+			$data = $this->request->getParams();
+			$source = strtolower($data['source'] ?? 'github');
+			$owner = $data['owner'] ?? '';
+			$repo = $data['repo'] ?? '';
+			$path = $data['path'] ?? '';
+			$branch = $data['branch'] ?? 'main';
+
+			// Validate required parameters.
+			if (empty($owner) === true || empty($repo) === true || empty($path) === true) {
+				return new JSONResponse(
+					data: ['error' => 'Missing required parameters: owner, repo, path'],
+					statusCode: 400
+				);
+			}
+
+			$this->logger->debug(
+				message: '[ConfigurationController] Enriching configuration details',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'source' => $source,
+					'owner' => $owner,
+					'repo' => $repo,
+					'path' => $path,
+				]
+			);
+
+			// Call appropriate service.
+			$details = null;
+			if ($source === 'github') {
+				$details = $this->githubHandler->enrichConfigurationDetails(
+					owner: $owner,
+					repo: $repo,
+					path: $path,
+					branch: $branch
+				);
+			}
+
+			if ($source === 'gitlab') {
+				// GitLab enrichment can be added later if needed.
+				$this->logger->warning(
+					message: '[ConfigurationController] GitLab enrichment not yet implemented',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+					]
+				);
+			}
+
+			if ($details === null) {
+				return new JSONResponse(data: ['error' => 'Failed to fetch configuration details'], statusCode: 404);
+			}
+
+			return new JSONResponse(data: $details, statusCode: 200);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[ConfigurationController] Configuration enrichment failed: ' . $e->getMessage(),
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'exception' => get_class($e),
+					'trace' => $e->getTraceAsString(),
+				]
+			);
+
+			return $this->errorResponse(e: $e, context: 'Failed to enrich configuration');
+		}//end try
+	}//end enrichDetails()
+
+	/**
+	 * Create a new configuration.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with created configuration
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function create(): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+		}
+
+		try {
+			$data = $this->request->getParams();
+
+			$configuration = new Configuration();
+			$configuration->setTitle($data['title'] ?? 'New Configuration');
+			$configuration->setDescription($data['description'] ?? '');
+			$configuration->setType($data['type'] ?? 'manual');
+			$configuration->setSourceType($data['sourceType'] ?? 'local');
+			$configuration->setSourceUrl($data['sourceUrl'] ?? null);
+			$configuration->setApp($data['app'] ?? null);
+			$version = $data['version'] ?? '1.0.0';
+			$configuration->setVersion($version);
+			// For local configurations, sync version to localVersion.
+			$configuration->setLocalVersion($data['localVersion'] ?? null);
+			if ($configuration->getIsLocal() === true) {
+				$configuration->setLocalVersion($data['localVersion'] ?? $version);
+			}
+
+			$configuration->setRegisters($data['registers'] ?? []);
+			$configuration->setSchemas($data['schemas'] ?? []);
+			$configuration->setObjects($data['objects'] ?? []);
+			$configuration->setAutoUpdate($data['autoUpdate'] ?? false);
+			$configuration->setNotificationGroups($data['notificationGroups'] ?? []);
+			$configuration->setGithubRepo($data['githubRepo'] ?? null);
+			$configuration->setGithubBranch($data['githubBranch'] ?? null);
+			$configuration->setGithubPath($data['githubPath'] ?? null);
+
+			$created = $this->configurationMapper->insert($configuration);
+
+			$this->logger->debug(
+				message: "[ConfigurationController] Created configuration: {$created->getTitle()} (ID: {$created->getId()})",
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+				]
+			);
+
+			// Return 201 Created with explicit status code.
+			return new JSONResponse($created->jsonSerialize(), Http::STATUS_CREATED);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[ConfigurationController] Failed to create configuration: ' . $e->getMessage(),
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+				]
+			);
+
+			return $this->errorResponse(e: $e, context: 'Failed to create configuration');
+		}//end try
+	}//end create()
+
+	/**
+	 * Update an existing configuration.
+	 *
+	 * @param int $id The configuration ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with updated configuration
+	 *
+	 * @SuppressWarnings(PHPMD.NPathComplexity) Already refactored — NPath from try/catch + field mapping
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function update(int $id): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+		}
+
+		try {
+			$configuration = $this->configurationMapper->find($id);
+			$data = $this->request->getParams();
+
+			// Apply updates using data-driven approach.
+			$this->applyConfigurationUpdates(
+				configuration: $configuration,
+				data: $data
+			);
+
+			$updated = $this->configurationMapper->update($configuration);
+
+			$this->logger->debug(
+				message: "[ConfigurationController] Updated configuration: {$updated->getTitle()} (ID: {$updated->getId()})",
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+
+			return new JSONResponse(data: $updated, statusCode: 200);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(
+				data: ['error' => 'Configuration not found'],
+				statusCode: 404
+			);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: "[ConfigurationController] Failed to update configuration {$id}: " . $e->getMessage(),
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+				]
+			);
+
+			return $this->errorResponse(e: $e, context: 'Failed to update configuration');
+		}//end try
+	}//end update()
+
+	/**
+	 * Apply configuration updates from request data.
+	 *
+	 * @param Configuration $configuration Configuration entity to update
+	 * @param array $data Request data with field updates
+	 *
+	 * @return void
+	 */
+	private function applyConfigurationUpdates(Configuration $configuration, array $data): void {
+		// Define field mappings: field name => setter method.
+		$fieldMappings = [
+			'title' => 'setTitle',
+			'description' => 'setDescription',
+			'type' => 'setType',
+			'sourceType' => 'setSourceType',
+			'sourceUrl' => 'setSourceUrl',
+			'app' => 'setApp',
+			'localVersion' => 'setLocalVersion',
+			'registers' => 'setRegisters',
+			'schemas' => 'setSchemas',
+			'objects' => 'setObjects',
+			'autoUpdate' => 'setAutoUpdate',
+			'notificationGroups' => 'setNotificationGroups',
+			'githubRepo' => 'setGithubRepo',
+			'githubBranch' => 'setGithubBranch',
+			'githubPath' => 'setGithubPath',
+		];
+
+		// Apply standard field updates.
+		foreach ($fieldMappings as $field => $setter) {
+			if (($data[$field] ?? null) !== null) {
+				$configuration->$setter($data[$field]);
+			}
+		}
+
+		// Handle version field with special logic for local configurations.
+		if (($data['version'] ?? null) !== null) {
+			$configuration->setVersion($data['version']);
+
+			// For local configurations, sync version to localVersion.
+			if ($configuration->getIsLocal() === true) {
+				$configuration->setLocalVersion($data['version']);
+			}
+		}
+	}//end applyConfigurationUpdates()
+
+	/**
+	 * Delete a configuration.
+	 *
+	 * @param int $id The configuration ID
+	 *
+	 * @return JSONResponse Success response
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function destroy(int $id): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+		}
+
+		try {
+			$configuration = $this->configurationMapper->find($id);
+			$this->configurationMapper->delete($configuration);
+
+			$this->logger->debug(
+				message: "[ConfigurationController] Deleted configuration: {$configuration->getTitle()} (ID: {$id})",
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+				]
+			);
+
+			return new JSONResponse(data: ['success' => true], statusCode: 200);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: "[ConfigurationController] Failed to delete configuration {$id}: " . $e->getMessage(),
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+				]
+			);
+
+			return new JSONResponse(data: ['error' => 'Failed to delete configuration'], statusCode: 500);
+		}//end try
+	}//end destroy()
+
+	/**
+	 * Check remote version of a configuration.
+	 *
+	 * @param int $id The configuration ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with version comparison
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function versionStatus(int $id): JSONResponse {
+		try {
+			$configuration = $this->configurationMapper->find($id);
+
+			// Check remote version.
+			$remoteVersion = $this->configurationService->checkRemoteVersion($configuration);
+
+			if ($remoteVersion === null) {
+				return new JSONResponse(data: ['error' => 'Could not check remote version'], statusCode: 500);
+			}
+
+			// Get version comparison.
+			$comparison = $this->configurationService->compareVersions($configuration);
+
+			return new JSONResponse(data: $comparison, statusCode: 200);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
+		} catch (GuzzleException $e) {
+			$this->logger->error(
+				message: "[ConfigurationController] Failed to check version for configuration {$id}: " . $e->getMessage(),
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+				]
+			);
+
+			return $this->errorResponse(e: $e, context: 'Failed to fetch remote version');
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: "[ConfigurationController] Failed to check version for configuration {$id}: " . $e->getMessage(),
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+				]
+			);
+
+			return new JSONResponse(data: ['error' => 'Failed to check version'], statusCode: 500);
+		}//end try
+	}//end versionStatus()
+
+	/**
+	 * Preview configuration changes.
+	 *
+	 * @param int $id The configuration ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @psalm-suppress InvalidReturnStatement
+	 * @psalm-suppress InvalidReturnType
+	 *
+	 * @return JSONResponse JSON response with configuration preview
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function preview(int $id): JSONResponse {
+		// SEC-CTRL-3: prevent IDOR — only admins may preview a configuration by id.
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+		}
+
+		try {
+			$configuration = $this->configurationMapper->find($id);
+
+			$preview = $this->configurationService->previewConfigurationChanges(
+				$configuration
+			);
+
+			if ($preview instanceof JSONResponse) {
+				return $preview;
+			}
+
+			return new JSONResponse(data: $preview, statusCode: 200);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: "[ConfigurationController] Failed to preview configuration {$id}: " . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+
+			return new JSONResponse(data: ['error' => 'Failed to preview configuration changes'], statusCode: 500);
+		}//end try
+	}//end preview()
+
+	/**
+	 * Import configuration with user selection.
+	 *
+	 * @param int $id The configuration ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with import result
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function import(int $id): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+		}
+
+		try {
+			$configuration = $this->configurationMapper->find($id);
+			$data = $this->request->getParams();
+			$selection = $data['selection'] ?? [];
+
+			$result = $this->configurationService->importConfigurationWithSelection(
+				configuration: $configuration,
+				selection: $selection
+			);
+
+			// Mark notifications as processed.
+			$this->notificationService->markConfigurationUpdated($configuration);
+
+			$this->logger->debug(
+				message: "[ConfigurationController] Imported configuration {$configuration->getTitle()}",
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'registers' => count($result['registers']),
+					'schemas' => count($result['schemas']),
+					'objects' => count($result['objects']),
+				]
+			);
+
+			return new JSONResponse(
+				data: [
+					'success' => true,
+					'registersCount' => count($result['registers']),
+					'schemasCount' => count($result['schemas']),
+					'objectsCount' => count($result['objects']),
+				],
+				statusCode: 200
+			);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: "[ConfigurationController] Failed to import configuration {$id}: " . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+
+			return $this->errorResponse(e: $e, context: 'Failed to import configuration');
+		}//end try
+	}//end import()
+
+	/**
+	 * Export configuration to download or GitHub.
+	 *
+	 * @param int $id The configuration ID
+	 *
+	 * @return JSONResponse JSON response with configuration data
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @psalm-return JSONResponse<200|404|500, array, array<never, never>>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function export(int $id): JSONResponse {
+		// SEC-CTRL-3: prevent IDOR — export (incl. ?includeObjects=true) serialises a
+		// configuration's objects; restrict to admins to block bulk exfiltration by id.
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+		}
+
+		try {
+			$configuration = $this->configurationMapper->find($id);
+			$data = $this->request->getParams();
+			$includeObjects = ($data['includeObjects'] ?? false) === true;
+
+			// Export the configuration.
+			$exportData = $this->configurationService->exportConfig(
+				input: $configuration,
+				includeObjects: $includeObjects
+			);
+
+			// Return the export data directly for download.
+			return new JSONResponse(data: $exportData, statusCode: 200);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: "[ConfigurationController] Failed to export configuration {$id}: " . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+
+			return $this->errorResponse(e: $e, context: 'Failed to export configuration');
+		}//end try
+	}//end export()
+
+	/**
+	 * Discover OpenRegister configurations on GitHub or GitLab
+	 *
+	 * @return JSONResponse JSON response with search results from GitHub
+	 *
+	 * @since 0.2.10
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @psalm-return JSONResponse<200|400|500,
+	 *     array{error?: string, total_count?: int<0, max>|mixed,
+	 *     results?: list{0?: array{repository?: mixed, owner?: string,
+	 *     repo?: string, path: mixed|string, url: ''|mixed, stars?: 0|mixed,
+	 *     description?: ''|mixed, name: string, branch?: string,
+	 *     raw_url?: string, sha?: null|string,
+	 *     organization?: array{name: string, avatar_url: ''|mixed,
+	 *     type: 'User'|mixed, url: ''|mixed}, config: array,
+	 *     project_id?: mixed, ref?: 'main'|mixed}|mixed,...},
+	 *     page?: int, per_page?: int}, array<never, never>>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function discover(): JSONResponse {
+		// SEC-CTRL: admin-only — reaches external repo content via the
+		// instance-wide admin-configured GitHub/GitLab credential (matches the
+		// guard on this controller's create/update/import/publish siblings).
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+		}
+
+		try {
+			$data = $this->request->getParams();
+			$source = strtolower($data['source'] ?? 'github');
+			$search = $data['_search'] ?? '';
+			$page = (int)($data['page'] ?? 1);
+
+			$this->logger->debug(
+				message: '[ConfigurationController] Discovering configurations',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'source' => $source,
+					'_search' => $search,
+					'page' => $page,
+				]
+			);
+
+			// Validate source.
+			if (in_array($source, ['github', 'gitlab']) === false) {
+				return new JSONResponse(data: ['error' => 'Invalid source. Must be "github" or "gitlab"'], statusCode: 400);
+			}
+
+			// Initialize before conditional assignment.
+			$results = [];
+
+			// Call appropriate service.
+			// Default to GitLab search.
+			$this->logger->debug(
+				message: '[ConfigurationController] About to call GitLab search service',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			$results = $this->gitlabHandler->searchConfigurations(
+				search: $search,
+				page: $page
+			);
+			$this->logger->debug(
+				message: '[ConfigurationController] GitLab search completed',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'result_count' => count($results['results'] ?? [])]
+			);
+
+			if ($source === 'github') {
+				$this->logger->debug(
+					message: '[ConfigurationController] About to call GitHub search service',
+					context: ['file' => __FILE__, 'line' => __LINE__]
+				);
+				$results = $this->githubHandler->searchConfigurations(search: $search, page: $page);
+				$this->logger->debug(
+					message: '[ConfigurationController] GitHub search completed',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'result_count' => count($results['results'] ?? [])]
+				);
+			}
+
+			return new JSONResponse(data: $results, statusCode: 200);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[ConfigurationController] Configuration discovery failed: ' . $e->getMessage(),
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'source' => $source ?? 'unknown',
+					'exception' => get_class($e),
+					'trace' => $e->getTraceAsString(),
+				]
+			);
+
+			return $this->errorResponse(e: $e, context: 'Failed to discover configurations');
+		}//end try
+	}//end discover()
+
+	/**
+	 * Get branches from a GitHub repository
+	 *
+	 * @since 0.2.10
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with branches list
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function getGitHubBranches(): JSONResponse {
+		// SEC-CTRL: admin-only — reaches external repo content via the
+		// instance-wide admin-configured GitHub/GitLab credential (matches the
+		// guard on this controller's create/update/import/publish siblings).
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+		}
+
+		try {
+			$data = $this->request->getParams();
+			$owner = $data['owner'] ?? '';
+			$repo = $data['repo'] ?? '';
+
+			if (empty($owner) === true || empty($repo) === true) {
+				return new JSONResponse(data: ['error' => 'Owner and repo parameters are required'], statusCode: 400);
+			}
+
+			$this->logger->debug(
+				message: '[ConfigurationController] Fetching GitHub branches',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'owner' => $owner,
+					'repo' => $repo,
+				]
+			);
+
+			$branches = $this->githubHandler->getBranches(owner: $owner, repo: $repo);
+
+			return new JSONResponse(data: ['branches' => $branches], statusCode: 200);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[ConfigurationController] Failed to get GitHub branches: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+
+			return $this->errorResponse(e: $e, context: 'Failed to fetch branches');
+		}//end try
+	}//end getGitHubBranches()
+
+	/**
+	 * Get repositories that the authenticated user has access to
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with repositories list
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function getGitHubRepositories(): JSONResponse {
+		// SEC-CTRL: admin-only — enumerates repositories reachable by the
+		// instance-wide admin-configured GitHub credential (matches the guard
+		// on this controller's create/update/import/publish siblings).
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+		}
+
+		try {
+			$data = $this->request->getParams();
+			$page = 1;
+			$perPage = 100;
+			if (($data['page'] ?? null) !== null) {
+				$page = (int)$data['page'];
+			}
+
+			if (($data['per_page'] ?? null) !== null) {
+				$perPage = (int)$data['per_page'];
+			}
+
+			$this->logger->debug(
+				message: '[ConfigurationController] Fetching GitHub repositories',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'page' => $page,
+					'per_page' => $perPage,
+				]
+			);
+
+			$repositories = $this->githubHandler->getRepositories(
+				page: $page,
+				perPage: $perPage
+			);
+
+			return new JSONResponse(data: ['repositories' => $repositories], statusCode: 200);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[ConfigurationController] Failed to get GitHub repositories: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+
+			return $this->errorResponse(e: $e, context: 'Failed to fetch repositories');
+		}//end try
+	}//end getGitHubRepositories()
+
+	/**
+	 * Get configuration files from a GitHub repository
+	 *
+	 * @since 0.2.10
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with configuration files
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function getGitHubConfigurations(): JSONResponse {
+		// SEC-CTRL: admin-only — reaches external repo content via the
+		// instance-wide admin-configured GitHub credential (matches the guard
+		// on this controller's create/update/import/publish siblings).
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+		}
+
+		try {
+			$data = $this->request->getParams();
+			$owner = $data['owner'] ?? '';
+			$repo = $data['repo'] ?? '';
+			$branch = $data['branch'] ?? 'main';
+
+			if (empty($owner) === true || empty($repo) === true) {
+				return new JSONResponse(data: ['error' => 'Owner and repo parameters are required'], statusCode: 400);
+			}
+
+			$this->logger->debug(
+				message: '[ConfigurationController] Fetching GitHub configurations',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'owner' => $owner,
+					'repo' => $repo,
+					'branch' => $branch,
+				]
+			);
+
+			$files = $this->githubHandler->listConfigurationFiles(owner: $owner, repo: $repo, branch: $branch);
+
+			return new JSONResponse(data: ['files' => $files], statusCode: 200);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[ConfigurationController] Failed to get GitHub configurations: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+
+			return $this->errorResponse(e: $e, context: 'Failed to fetch configurations');
+		}//end try
+	}//end getGitHubConfigurations()
+
+	/**
+	 * Get branches from a GitLab project
+	 *
+	 * @since 0.2.10
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with branches list
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function getGitLabBranches(): JSONResponse {
+		// SEC-CTRL: admin-only — reaches external repo content via the
+		// instance-wide admin-configured GitLab credential (matches the guard
+		// on this controller's create/update/import/publish siblings).
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+		}
+
+		try {
+			$data = $this->request->getParams();
+			$namespace = $data['namespace'] ?? '';
+			$project = $data['project'] ?? '';
+
+			if (empty($namespace) === true || empty($project) === true) {
+				return new JSONResponse(data: ['error' => 'Namespace and project parameters are required'], statusCode: 400);
+			}
+
+			// Get project ID from namespace/project path.
+			$projectData = $this->gitlabHandler->getProjectByPath(namespace: $namespace, project: $project);
+			$projectId = $projectData['id'];
+
+			$this->logger->debug(
+				message: '[ConfigurationController] Fetching GitLab branches',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'namespace' => $namespace,
+					'project' => $project,
+					'project_id' => $projectId,
+				]
+			);
+
+			$branches = $this->gitlabHandler->getBranches($projectId);
+
+			return new JSONResponse(data: ['branches' => $branches], statusCode: 200);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[ConfigurationController] Failed to get GitLab branches: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+
+			return $this->errorResponse(e: $e, context: 'Failed to fetch branches');
+		}//end try
+	}//end getGitLabBranches()
+
+	/**
+	 * Get configuration files from a GitLab project
+	 *
+	 * @since 0.2.10
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with configuration files
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function getGitLabConfigurations(): JSONResponse {
+		// SEC-CTRL: admin-only — reaches external repo content via the
+		// instance-wide admin-configured GitLab credential (matches the guard
+		// on this controller's create/update/import/publish siblings).
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+		}
+
+		try {
+			$data = $this->request->getParams();
+			$namespace = $data['namespace'] ?? '';
+			$project = $data['project'] ?? '';
+			$ref = $data['ref'] ?? 'main';
+
+			if (empty($namespace) === true || empty($project) === true) {
+				return new JSONResponse(data: ['error' => 'Namespace and project parameters are required'], statusCode: 400);
+			}
+
+			// Get project ID from namespace/project path.
+			$projectData = $this->gitlabHandler->getProjectByPath(namespace: $namespace, project: $project);
+			$projectId = $projectData['id'];
+
+			$this->logger->debug(
+				message: '[ConfigurationController] Fetching GitLab configurations',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'namespace' => $namespace,
+					'project' => $project,
+					'project_id' => $projectId,
+					'ref' => $ref,
+				]
+			);
+
+			$files = $this->gitlabHandler->listConfigurationFiles(projectId: $projectId, ref: $ref);
+
+			return new JSONResponse(data: ['files' => $files], statusCode: 200);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[ConfigurationController] Failed to get GitLab configurations: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+
+			return $this->errorResponse(e: $e, context: 'Failed to fetch configurations');
+		}//end try
+	}//end getGitLabConfigurations()
+
+	/**
+	 * Fetch configuration data from GitHub repository.
+	 *
+	 * @param array $params Request parameters containing owner, repo, path, branch
+	 *
+	 * @return array Config data with source URL and metadata.
+	 *
+	 * @throws Exception If parameters are missing or GitHub API call fails.
+	 */
+	private function fetchConfigFromGitHub(array $params): array {
+		$owner = $params['owner'] ?? '';
+		$repo = $params['repo'] ?? '';
+		$path = $params['path'] ?? '';
+		$branch = $params['branch'] ?? 'main';
+
+		if (empty($owner) === true || empty($repo) === true || empty($path) === true) {
+			throw new Exception('Owner, repo, and path parameters are required', 400);
+		}
+
+		// Get file content from GitHub.
+		$configData = $this->githubHandler->getFileContent(owner: $owner, repo: $repo, path: $path, branch: $branch);
+
+		// Build source URL.
+		$sourceUrl = "https://github.com/{$owner}/{$repo}/blob/{$branch}/{$path}";
+
+		return [
+			'configData' => $configData,
+			'sourceUrl' => $sourceUrl,
+			'metadata' => [
+				'owner' => $owner,
+				'repo' => $repo,
+				'path' => $path,
+				'branch' => $branch,
+			],
+		];
+	}//end fetchConfigFromGitHub()
+
+	/**
+	 * Fetch configuration data from GitLab repository.
+	 *
+	 * @param array $params Request parameters containing namespace, project, path, ref
+	 *
+	 * @return array Configuration data, source URL, and metadata
+	 *
+	 * @throws Exception If parameters are missing or GitLab API call fails
+	 */
+	private function fetchConfigFromGitLab(array $params): array {
+		$namespace = $params['namespace'] ?? '';
+		$project = $params['project'] ?? '';
+		$path = $params['path'] ?? '';
+		$ref = $params['ref'] ?? 'main';
+
+		if (empty($namespace) === true || empty($project) === true || empty($path) === true) {
+			throw new Exception('Namespace, project, and path parameters are required', 400);
+		}
+
+		// Get project ID from namespace/project path.
+		$projectData = $this->gitlabHandler->getProjectByPath(namespace: $namespace, project: $project);
+		$projectId = $projectData['id'];
+
+		// Get file content from GitLab.
+		$configData = $this->gitlabHandler->getFileContent(projectId: $projectId, path: $path, ref: $ref);
+
+		// Build GitLab URL for sourceUrl.
+		$gitlabBase = $this->gitlabHandler->getApiBase();
+		$webBase = str_replace('/api/v4', '', $gitlabBase);
+		$sourceUrl = "{$webBase}/{$namespace}/{$project}/-/blob/{$ref}/{$path}";
+
+		return [
+			'configData' => $configData,
+			'sourceUrl' => $sourceUrl,
+			'metadata' => [
+				'namespace' => $namespace,
+				'project' => $project,
+				'projectId' => $projectId,
+				'path' => $path,
+				'ref' => $ref,
+			],
+		];
+	}//end fetchConfigFromGitLab()
+
+	/**
+	 * Fetch configuration data from URL.
+	 *
+	 * @param array $params Request parameters containing url
+	 *
+	 * @return array Configuration data, source URL, and metadata
+	 *
+	 * @throws Exception If URL is missing, invalid, or fetch fails
+	 *
+	 * @psalm-return array{configData: array, sourceUrl: string, metadata: array{url: string}}
+	 */
+	private function fetchConfigFromUrl(array $params): array {
+		$url = $params['url'] ?? '';
+
+		if (empty($url) === true) {
+			throw new Exception('URL parameter is required', 400);
+		}
+
+		// Validate URL: must be a valid URL.
+		if (filter_var($url, FILTER_VALIDATE_URL) === false) {
+			throw new Exception('Invalid URL provided', 400);
+		}
+
+		// SEC-SVC-6: replace the ad-hoc (DNS-rebinding/IPv6-bypassable) guard with the
+		// shared anti-SSRF check that resolves every A and AAAA record and rejects any
+		// loopback/private/reserved/link-local target.
+		try {
+			SecurityService::assertSafeFetchUrl($url);
+		} catch (\InvalidArgumentException $e) {
+			throw new Exception($e->getMessage(), 400);
+		}
+
+		// Fetch content from URL. Redirects are disabled so a public host cannot
+		// 302 us to an internal address after the point-in-time DNS validation.
+		$client = new Client();
+		$response = $client->request('GET', $url, ['allow_redirects' => false]);
+		$content = $response->getBody()->getContents();
+
+		$configData = json_decode($content, true);
+		if (json_last_error() !== JSON_ERROR_NONE) {
+			throw new Exception('Invalid JSON in URL response: ' . json_last_error_msg());
+		}
+
+		return [
+			'configData' => $configData,
+			'sourceUrl' => $url,
+			'metadata' => [
+				'url' => $url,
+			],
+		];
+	}//end fetchConfigFromUrl()
+
+	/**
+	 * Common import pipeline for all configuration sources.
+	 *
+	 * This method handles the standard import flow:
+	 * 1. Fetch configuration data from source (via callback)
+	 * 2. Extract metadata
+	 * 3. Check for existing configuration
+	 * 4. Create configuration entity
+	 * 5. Import using standard flow
+	 * 6. Update sync status
+	 * 7. Return success response
+	 *
+	 * @param callable $fetchConfig Function that fetches config data from source
+	 * @param array $params Request parameters
+	 * @param string $sourceType Source type (github, gitlab, url)
+	 *
+	 * @psalm-suppress InvalidReturnType
+	 * @psalm-suppress InvalidReturnStatement
+	 * @psalm-suppress InvalidArgument
+	 *
+	 * @return JSONResponse JSON response with import result
+	 *
+	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+	 */
+	private function importFromSource(callable $fetchConfig, array $params, string $sourceType): JSONResponse {
+		try {
+			// Extract common parameters.
+			$syncEnabled = ($params['syncEnabled'] ?? true) === true;
+			$syncInterval = (int)($params['syncInterval'] ?? 24);
+
+			// Log import start.
+			$this->logger->debug(
+				message: "[ConfigurationController] Importing configuration from {$sourceType}",
+				context: ['file' => __FILE__, 'line' => __LINE__, 'params' => $params]
+			);
+
+			// Step 1: Fetch configuration data from source (source-specific logic).
+			$fetchResult = $fetchConfig($params);
+			$configData = $fetchResult['configData'];
+			$sourceUrl = $fetchResult['sourceUrl'];
+			$metadata = $fetchResult['metadata'];
+
+			// Step 2: Extract metadata from config.
+			$info = $configData['info'] ?? [];
+			$xOpenregister = $configData['x-openregister'] ?? [];
+
+			// Derive the configuration's app id. Prefer the explicit
+			// x-openregister.app; otherwise derive a stable id from the first
+			// register's slug so two independent URL imports (e.g. a Woo and a
+			// DCAT register) don't both collapse onto the generic 'imported'
+			// bucket and 409 the second import. Idempotent: re-importing the
+			// same register yields the same id, so it updates instead of
+			// colliding.
+			$appId = $xOpenregister['app'] ?? null;
+			if (empty($appId) === true) {
+				$registers = $configData['components']['registers'] ?? [];
+				$firstSlug = null;
+				if (is_array($registers) === true && empty($registers) === false) {
+					$first = reset($registers);
+					if (is_array($first) === true) {
+						$firstSlug = ($first['slug'] ?? null);
+					} else {
+						$firstSlug = null;
+					}
+
+					if ($firstSlug === null) {
+						$key = array_key_first($registers);
+						if (is_string($key) === true) {
+							$firstSlug = $key;
+						}
+					}
+				}
+
+				if (empty($firstSlug) === false) {
+					$appId = 'imported-' . preg_replace('/[^a-z0-9_-]+/', '', strtolower((string)$firstSlug));
+				} else {
+					$appId = 'imported';
+				}
+			}//end if
+
+			$version = $info['version'] ?? $xOpenregister['version'] ?? '1.0.0';
+			$title = $info['title'] ?? $xOpenregister['title'] ?? "Configuration from {$sourceType}";
+			$description = $info['description'] ?? $xOpenregister['description'] ?? "Imported from {$sourceType}";
+
+			// Step 3: Check if configuration already exists for this app.
+			$existingConfigs = $this->configurationMapper->findByApp($appId);
+			if (count($existingConfigs) > 0) {
+				return new JSONResponse(
+					data: [
+						'error' => $this->getExistingConfigErrorMessage(appId: $appId),
+						'existingConfigurationId' => $existingConfigs[0]->getId(),
+					],
+					statusCode: 409
+				);
+			}
+
+			// Step 4: Create Configuration entity.
+			$configuration = new Configuration();
+			$configuration->setTitle($title);
+			$configuration->setDescription($description);
+			$configuration->setType($xOpenregister['type'] ?? $sourceType);
+			$configuration->setSourceType($sourceType);
+			$configuration->setSourceUrl($sourceUrl);
+			$configuration->setApp($appId);
+			$configuration->setVersion($version);
+			$configuration->setLocalVersion(null);
+			// Will be set after import.
+			$configuration->setIsLocal(false);
+			$configuration->setSyncEnabled($syncEnabled);
+			$configuration->setSyncInterval($syncInterval);
+			$configuration->setAutoUpdate(false);
+			$configuration->setRegisters([]);
+			$configuration->setSchemas([]);
+			$configuration->setObjects([]);
+
+			// Set source-specific fields if available.
+			$hasGithubMeta = isset($metadata['owner'], $metadata['repo'], $metadata['path'], $metadata['branch']);
+			if ($sourceType === 'github' && $hasGithubMeta === true) {
+				$configuration->setGithubRepo("{$metadata['owner']}/{$metadata['repo']}");
+				$configuration->setGithubBranch($metadata['branch']);
+				$configuration->setGithubPath($metadata['path']);
+			}
+
+			$configuration = $this->configurationMapper->insert($configuration);
+
+			$configId = $configuration->getId();
+			$msg = "[ConfigurationController] Created configuration entity with ID {$configId} for app {$appId}";
+			$this->logger->debug(
+				message: $msg,
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+
+			// Step 5: Import using the standard flow with the configuration entity.
+			$result = $this->configurationService->importFromJson(
+				data: $configData,
+				configuration: $configuration,
+				owner: $appId,
+				appId: $appId,
+				version: $version,
+				force: false
+			);
+
+			// Step 6: Update configuration with sync status and imported entity IDs.
+			$configuration->setLocalVersion($version);
+			$configuration->setSyncStatus('success');
+			$configuration->setLastSyncDate(new DateTime());
+
+			// The importFromJson already updates the configuration with entity IDs via createOrUpdateConfiguration.
+			// But we need to save the sync status.
+			$this->configurationMapper->update($configuration);
+
+			$configTitle = $configuration->getTitle();
+			$msg = "[ConfigurationController] Successfully imported configuration {$configTitle} from {$sourceType}";
+			$this->logger->debug(
+				message: $msg,
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+
+			// Step 7: Return success response.
+			return new JSONResponse(
+				data: [
+					'success' => true,
+					'message' => "Configuration imported successfully from {$sourceType}",
+					'configurationId' => $configuration->getId(),
+					'result' => [
+						'registersCount' => count($result['registers']),
+						'schemasCount' => count($result['schemas']),
+						'objectsCount' => count($result['objects']),
+					],
+				],
+				statusCode: 201
+			);
+		} catch (Exception $e) {
+			// Determine status code from exception or default to 500.
+			$statusCode = (int)$e->getCode();
+			if ($statusCode < 400 || $statusCode >= 600) {
+				$statusCode = 500;
+			}
+
+			$this->logger->error(
+				message: "[ConfigurationController] Failed to import from {$sourceType}: " . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+
+			// SEC-CTRL-7: only 4xx validation responses keep the specific message;
+			// 500s return a generic envelope (the real error is logged above).
+			if ($statusCode >= 500) {
+				return new JSONResponse(data: ['error' => 'Internal server error'], statusCode: $statusCode);
+			}
+
+			return new JSONResponse(
+				data: ['error' => 'Failed to import configuration: ' . $e->getMessage()],
+				statusCode: $statusCode
+			);
+		}//end try
+	}//end importFromSource()
+
+	/**
+	 * Import configuration from GitHub
+	 *
+	 * This method creates a Configuration entity and then imports it using the standard import flow.
+	 *
+	 * @since 0.2.10
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with import result
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function importFromGitHub(): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+		}
+
+		return $this->importFromSource(
+			fetchConfig: fn (array $params) => $this->fetchConfigFromGitHub(params: $params),
+			params: $this->request->getParams(),
+			sourceType: 'github'
+		);
+	}//end importFromGitHub()
+
+	/**
+	 * Import configuration from GitLab
+	 *
+	 * This method creates a Configuration entity and then imports it using the standard import flow.
+	 *
+	 * @since 0.2.10
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with import result
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function importFromGitLab(): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+		}
+
+		return $this->importFromSource(
+			fetchConfig: fn (array $params) => $this->fetchConfigFromGitLab(params: $params),
+			params: $this->request->getParams(),
+			sourceType: 'gitlab'
+		);
+	}//end importFromGitLab()
+
+	/**
+	 * Import configuration from URL
+	 *
+	 * This method creates a Configuration entity and then imports it using the standard import flow.
+	 *
+	 * @since 0.2.10
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with import result
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function importFromUrl(): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+		}
+
+		return $this->importFromSource(
+			fetchConfig: fn (array $params) => $this->fetchConfigFromUrl(params: $params),
+			params: $this->request->getParams(),
+			sourceType: 'url'
+		);
+	}//end importFromUrl()
+
+	/**
+	 * Publish a local configuration to GitHub
+	 *
+	 * Exports the configuration and publishes it to the specified GitHub repository.
+	 * Updates the configuration with GitHub source information.
+	 *
+	 * @param int $id Configuration ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @psalm-suppress InvalidReturnType
+	 * @psalm-suppress InvalidReturnStatement
+	 *
+	 * @return JSONResponse JSON response with publish result
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function publishToGitHub(int $id): JSONResponse {
+		// Authorization: publishToGitHub uses the shared app-level
+		// `github_api_token` to push to any repo that token can write. Restrict
+		// to administrators (mirror the importFromGitHub gate). Ideally
+		// callers would use a per-user token, but until that lands the
+		// endpoint must be admin-only.
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(
+				data: ['error' => 'Only administrators may publish configurations to GitHub'],
+				statusCode: 403
+			);
+		}
+
+		try {
+			$configuration = $this->configurationMapper->find($id);
+
+			// Validate configuration is publishable.
+			$validationResponse = $this->validateConfigurationForPublishing(configuration: $configuration);
+			if ($validationResponse !== null) {
+				return $validationResponse;
+			}
+
+			// Extract and validate request parameters.
+			$params = $this->extractGitHubPublishParams(configuration: $configuration);
+			if (isset($params['error']) === true) {
+				return new JSONResponse(data: ['error' => $params['error']], statusCode: 400);
+			}
+
+			$this->logPublishingAttempt(id: $id, params: $params);
+
+			// Prepare configuration data for GitHub.
+			$jsonContent = $this->prepareConfigurationForGitHub(
+				configuration: $configuration,
+				params: $params
+			);
+
+			// Get existing file SHA for updates.
+			$fileSha = $this->getExistingFileSha(params: $params);
+
+			// Publish to GitHub.
+			$result = $this->publishConfigurationToGitHub(
+				params: $params,
+				content: $jsonContent,
+				fileSha: $fileSha
+			);
+
+			// Update local configuration with GitHub info.
+			$this->updateConfigurationWithGitHubInfo(configuration: $configuration, params: $params);
+
+			$this->logPublishingSuccess(configuration: $configuration, params: $params, result: $result);
+
+			// Build success response with indexing information.
+			return $this->buildPublishSuccessResponse(
+				configuration: $configuration,
+				params: $params,
+				result: $result
+			);
+		} catch (Exception $e) {
+			return $this->handlePublishingError(exception: $e);
+		}//end try
+	}//end publishToGitHub()
+
+	/**
+	 * Get error message for existing configuration.
+	 *
+	 * @param string $appId Application ID
+	 *
+	 * @return string Error message
+	 */
+	private function getExistingConfigErrorMessage(string $appId): string {
+		$message = "Configuration for app '{$appId}' already exists. ";
+		$message .= 'Please update the existing configuration instead.';
+
+		return $message;
+	}//end getExistingConfigErrorMessage()
+
+	/**
+	 * Validate configuration can be published
+	 *
+	 * Checks if configuration is local and can be published to GitHub.
+	 *
+	 * @param object $configuration Configuration entity.
+	 *
+	 * @return JSONResponse|null Error response if validation fails, null if valid.
+	 *
+	 * @psalm-return JSONResponse<400, array{error: 'Only local configurations can be published'}, array<never, never>>|null
+	 */
+	private function validateConfigurationForPublishing(object $configuration): ?JSONResponse {
+		// Only allow publishing local configurations.
+		if ($configuration->getIsLocal() !== true) {
+			return new JSONResponse(
+				data: ['error' => 'Only local configurations can be published'],
+				statusCode: 400
+			);
+		}
+
+		return null;
+	}//end validateConfigurationForPublishing()
+
+	/**
+	 * Extract and validate GitHub publishing parameters
+	 *
+	 * Extracts owner, repo, path, branch, and commit message from request.
+	 * Validates required parameters and normalizes path.
+	 *
+	 * @param object $configuration Configuration entity.
+	 *
+	 * @return array<string, string> Parameters array or error array.
+	 */
+	private function extractGitHubPublishParams(object $configuration): array {
+		$data = $this->request->getParams();
+		$owner = $data['owner'] ?? '';
+		$repo = $data['repo'] ?? '';
+		$path = $data['path'] ?? '';
+		$branch = $data['branch'] ?? 'main';
+		$commitMessage = $data['commitMessage'] ?? "Update configuration: {$configuration->getTitle()}";
+
+		// Validate required parameters.
+		if (empty($owner) === true || empty($repo) === true) {
+			return ['error' => 'Owner and repo parameters are required'];
+		}
+
+		// Normalize path: strip leading slash, generate default if empty.
+		$path = ltrim($path, '/');
+		if (empty($path) === true) {
+			$title = $configuration->getTitle();
+			$snakeCaseTitle = $this->toSnakeCase(string: $title ?? 'configuration');
+			$path = $snakeCaseTitle . '_openregister.json';
+		}
+
+		return [
+			'owner' => $owner,
+			'repo' => $repo,
+			'path' => $path,
+			'branch' => $branch,
+			'commitMessage' => $commitMessage,
+		];
+	}//end extractGitHubPublishParams()
+
+	/**
+	 * Log publishing attempt
+	 *
+	 * Logs configuration publishing details for debugging.
+	 *
+	 * @param int $id Configuration ID.
+	 * @param array<string, string> $params Publishing parameters.
+	 *
+	 * @return void
+	 */
+	private function logPublishingAttempt(int $id, array $params): void {
+		$this->logger->debug(
+			message: '[ConfigurationController] Publishing configuration to GitHub',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'configuration_id' => $id,
+				'owner' => $params['owner'],
+				'repo' => $params['repo'],
+				'path' => $params['path'],
+				'branch' => $params['branch'],
+			]
+		);
+	}//end logPublishingAttempt()
+
+	/**
+	 * Prepare configuration for GitHub publishing
+	 *
+	 * Exports configuration and adds GitHub metadata.
+	 *
+	 * @param object $configuration Configuration entity.
+	 * @param array<string, string> $params Publishing parameters.
+	 *
+	 * @return false|string JSON content ready for GitHub.
+	 */
+	private function prepareConfigurationForGitHub(object $configuration, array $params): string|false {
+		// Export configuration to array.
+		$configData = $this->configurationService->exportConfig(
+			input: $configuration,
+			includeObjects: false
+		);
+
+		// Initialize x-openregister metadata if not present.
+		if (isset($configData['x-openregister']) === false) {
+			$configData['x-openregister'] = [];
+		}
+
+		// Remove local source information.
+		unset($configData['x-openregister']['sourceType']);
+		unset($configData['x-openregister']['sourceUrl']);
+
+		// Add OpenRegister version and GitHub info.
+		$openregisterVersion = $this->appManager->getAppVersion('openregister');
+		$githubRepo = "{$params['owner']}/{$params['repo']}";
+
+		$configData['x-openregister']['openregister'] = $openregisterVersion;
+		$configData['x-openregister']['github'] = [
+			'repo' => $githubRepo,
+			'branch' => $params['branch'],
+			'path' => $params['path'],
+		];
+
+		return json_encode($configData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+	}//end prepareConfigurationForGitHub()
+
+	/**
+	 * Get existing file SHA for updates
+	 *
+	 * Retrieves the SHA of existing file on GitHub for update operations.
+	 *
+	 * @param array<string, string> $params Publishing parameters.
+	 *
+	 * @return string|null File SHA if exists, null for new files.
+	 */
+	private function getExistingFileSha(array $params): ?string {
+		try {
+			return $this->githubHandler->getFileSha(
+				owner: $params['owner'],
+				repo: $params['repo'],
+				path: $params['path'],
+				branch: $params['branch']
+			);
+		} catch (Exception $e) {
+			// File doesn't exist, which is fine for new files.
+			$this->logger->debug(
+				message: '[ConfigurationController] File does not exist, will create new file',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'path' => $params['path']]
+			);
+			return null;
+		}
+	}//end getExistingFileSha()
+
+	/**
+	 * Publish configuration to GitHub
+	 *
+	 * Calls GitHub handler to publish/update the configuration file.
+	 *
+	 * @param array<string, string> $params Publishing parameters.
+	 * @param string $content JSON content to publish.
+	 * @param string|null $fileSha Existing file SHA for updates.
+	 *
+	 * @return array Result from GitHub API with commit info.
+	 */
+	private function publishConfigurationToGitHub(array $params, string $content, ?string $fileSha): array {
+		return $this->githubHandler->publishConfiguration(
+			owner: $params['owner'],
+			repo: $params['repo'],
+			path: $params['path'],
+			branch: $params['branch'],
+			content: $content,
+			commitMessage: $params['commitMessage'],
+			fileSha: $fileSha
+		);
+	}//end publishConfigurationToGitHub()
+
+	/**
+	 * Update configuration with GitHub information
+	 *
+	 * Updates local configuration entity with GitHub publishing details.
+	 *
+	 * @param object $configuration Configuration entity.
+	 * @param array<string, string> $params Publishing parameters.
+	 *
+	 * @return void
+	 */
+	private function updateConfigurationWithGitHubInfo(object $configuration, array $params): void {
+		$githubRepo = "{$params['owner']}/{$params['repo']}";
+		$sourceUrl = "https://github.com/{$githubRepo}/blob/{$params['branch']}/{$params['path']}";
+
+		$configuration->setGithubRepo($githubRepo);
+		$configuration->setGithubBranch($params['branch']);
+		$configuration->setGithubPath($params['path']);
+		$configuration->setSourceUrl($sourceUrl);
+		// Don't change isLocal - it stays local, but now has a published source.
+		$this->configurationMapper->update($configuration);
+	}//end updateConfigurationWithGitHubInfo()
+
+	/**
+	 * Log publishing success
+	 *
+	 * Logs successful GitHub publishing operation.
+	 *
+	 * @param object $configuration Configuration entity.
+	 * @param array<string, string> $params Publishing parameters.
+	 * @param array<string, mixed> $result GitHub API result.
+	 *
+	 * @return void
+	 */
+	private function logPublishingSuccess(object $configuration, array $params, array $result): void {
+		$this->logger->debug(
+			message: "[ConfigurationController] Successfully published configuration {$configuration->getTitle()} to GitHub",
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'owner' => $params['owner'],
+				'repo' => $params['repo'],
+				'branch' => $params['branch'],
+				'path' => $params['path'],
+				'file_url' => $result['file_url'] ?? null,
+			]
+		);
+	}//end logPublishingSuccess()
+
+	/**
+	 * Build success response with indexing information
+	 *
+	 * Creates success response including GitHub URLs and indexing notes.
+	 *
+	 * @param object $configuration Configuration entity.
+	 * @param array<string, string> $params Publishing parameters.
+	 * @param array<string, mixed> $result GitHub API result.
+	 *
+	 * @return JSONResponse JSON response with publish success data
+	 */
+	private function buildPublishSuccessResponse(object $configuration, array $params, array $result): JSONResponse {
+		// Get default branch for indexing note.
+		$defaultBranch = $this->getRepositoryDefaultBranch(params: $params);
+
+		// Build success message with indexing information.
+		$message = 'Configuration published successfully to GitHub';
+		if ($defaultBranch !== null && $params['branch'] !== $defaultBranch) {
+			$message .= ". Note: Published to branch '{$params['branch']}' (default is '{$defaultBranch}'). ";
+			$message .= 'GitHub Code Search primarily indexes the default branch, ';
+			$message .= 'so this configuration may not appear in search results immediately.';
+		}
+
+		if ($defaultBranch === null || $params['branch'] === $defaultBranch) {
+			$message .= '. Note: GitHub Code Search may take a few minutes to index new files.';
+		}
+
+		return new JSONResponse(
+			data: [
+				'success' => true,
+				'message' => $message,
+				'configurationId' => $configuration->getId(),
+				'commit_sha' => $result['commit_sha'],
+				'commit_url' => $result['commit_url'],
+				'file_url' => $result['file_url'],
+				'branch' => $params['branch'],
+				'default_branch' => $defaultBranch,
+				'indexing_note' => $this->getIndexingNote(
+					defaultBranch: $defaultBranch,
+					branch: $params['branch']
+				),
+			],
+			statusCode: 200
+		);
+	}//end buildPublishSuccessResponse()
+
+	/**
+	 * Get repository default branch
+	 *
+	 * Fetches the default branch name from GitHub repository.
+	 *
+	 * @param array<string, string> $params Publishing parameters.
+	 *
+	 * @return string|null Default branch name or null if unable to fetch.
+	 */
+	private function getRepositoryDefaultBranch(array $params): ?string {
+		try {
+			$repoInfo = $this->githubHandler->getRepositoryInfo(
+				owner: $params['owner'],
+				repo: $params['repo']
+			);
+			return $repoInfo['default_branch'] ?? 'main';
+		} catch (Exception $e) {
+			$this->logger->warning(
+				message: '[ConfigurationController] Could not fetch repository default branch',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'owner' => $params['owner'],
+					'repo' => $params['repo'],
+					'error' => $e->getMessage(),
+				]
+			);
+			return null;
+		}
+	}//end getRepositoryDefaultBranch()
+
+	/**
+	 * Handle publishing error
+	 *
+	 * Logs error and returns error response.
+	 *
+	 * @param Exception $exception The exception that occurred.
+	 *
+	 * @return JSONResponse JSON response with error message
+	 */
+	private function handlePublishingError(Exception $exception): JSONResponse {
+		$this->logger->error(
+			message: '[ConfigurationController] Failed to publish to GitHub: ' . $exception->getMessage(),
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+
+		// SEC-CTRL-7: generic 500 envelope; the real error is logged above.
+		return new JSONResponse(
+			data: ['error' => 'Internal server error'],
+			statusCode: 500
+		);
+	}//end handlePublishingError()
+
+	/**
+	 * Get indexing note based on branch information.
+	 *
+	 * @param string|null $defaultBranch Default branch name
+	 * @param string $branch Current branch name
+	 *
+	 * @return string Indexing note message
+	 */
+	private function getIndexingNote(?string $defaultBranch, string $branch): string {
+		if ($defaultBranch !== null && $branch !== $defaultBranch) {
+			return "Published to non-default branch. For discovery, publish to '{$defaultBranch}' branch.";
+		}
+
+		return 'File published successfully. GitHub Code Search indexing may take a few minutes.';
+	}//end getIndexingNote()
+
+	/**
+	 * Convert a string to snake_case
+	 *
+	 * @param string $string The string to convert
+	 *
+	 * @return string The snake_case version
+	 */
+	private function toSnakeCase(string $string): string {
+		// Convert to lowercase.
+		$string = strtolower($string);
+
+		// Replace spaces and hyphens with underscores.
+		$string = preg_replace('/[\s\-]+/', '_', $string);
+
+		// Remove any non-alphanumeric characters except underscores.
+		$string = preg_replace('/[^a-z0-9_]/', '', $string);
+
+		// Remove multiple consecutive underscores.
+		$string = preg_replace('/_+/', '_', $string);
+
+		// Trim underscores from start and end.
+		$string = trim($string, '_');
+
+		return $string;
+	}//end toSnakeCase()
+}//end class

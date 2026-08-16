@@ -1,0 +1,130 @@
+{
+  "change": "files-sidebar-tabs",
+  "repo": "ConductionNL/openregister",
+  "tracking_issue": 1086,
+  "parent_issue": 1000,
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Create FilesSidebarListener event listener",
+      "phase": "Backend Foundation",
+      "spec_ref": "Sidebar Tab Registration > Script is injected for Files app; Script Loading via Event Listener",
+      "github_issue": 1088,
+      "status": "todo",
+      "files_likely_affected": ["lib/Listener/FilesSidebarListener.php", "lib/AppInfo/Application.php"],
+      "acceptance_criteria": [
+        "GIVEN the OpenRegister app is enabled WHEN a user opens the Files app THEN the openregister-filesSidebar.js script is injected",
+        "The listener is registered in Application::registerEventListeners()"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Create FileSidebarService with getObjectsForFile method",
+      "phase": "Backend Foundation",
+      "spec_ref": "Objects-by-File API Endpoint",
+      "github_issue": 1091,
+      "status": "todo",
+      "files_likely_affected": ["lib/Service/FileSidebarService.php"],
+      "acceptance_criteria": [
+        "GIVEN file 42 is referenced in two objects WHEN getObjectsForFile(42) is called THEN both objects are returned",
+        "GIVEN file 99 is not referenced WHEN getObjectsForFile(99) is called THEN an empty array is returned"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Add getExtractionStatus method to FileSidebarService",
+      "phase": "Backend Foundation",
+      "spec_ref": "Extraction Status API Endpoint",
+      "github_issue": 1092,
+      "status": "todo",
+      "files_likely_affected": ["lib/Service/FileSidebarService.php"],
+      "acceptance_criteria": [
+        "GIVEN file 42 has been extracted WHEN getExtractionStatus(42) is called THEN it returns complete status",
+        "GIVEN file 99 has never been extracted WHEN getExtractionStatus(99) is called THEN it returns extractionStatus none"
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Create FileSidebarController with API routes",
+      "phase": "Backend Foundation",
+      "spec_ref": "Objects-by-File API Endpoint; Extraction Status API Endpoint",
+      "github_issue": 1094,
+      "status": "todo",
+      "files_likely_affected": ["lib/Controller/FileSidebarController.php", "appinfo/routes.php"],
+      "acceptance_criteria": [
+        "GET /api/files/{fileId}/objects returns HTTP 200 for authenticated users",
+        "GET /api/files/{fileId}/extraction-status returns HTTP 200 for authenticated users"
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Add filesSidebar webpack entry point",
+      "phase": "Frontend Implementation",
+      "spec_ref": "Webpack Entry Point",
+      "github_issue": 1098,
+      "status": "todo",
+      "files_likely_affected": ["webpack.config.js"],
+      "acceptance_criteria": ["filesSidebar entry exists in webpack config"]
+    },
+    {
+      "id": 6,
+      "title": "Create files-sidebar.js entry point with tab registration",
+      "phase": "Frontend Implementation",
+      "spec_ref": "Sidebar Tab Registration",
+      "github_issue": 1099,
+      "status": "todo",
+      "files_likely_affected": ["src/files-sidebar.js"],
+      "acceptance_criteria": ["Two tabs registered on DOMContentLoaded", "Graceful exit if OCA.Files.Sidebar is undefined"]
+    },
+    {
+      "id": 7,
+      "title": "Create RegisterObjectsTab Vue component",
+      "phase": "Frontend Implementation",
+      "spec_ref": "Register Objects Tab",
+      "github_issue": 1101,
+      "status": "todo",
+      "files_likely_affected": ["src/components/files-sidebar/RegisterObjectsTab.vue"],
+      "acceptance_criteria": ["Objects displayed in semantic list", "NcEmptyContent for no results", "Links to OpenRegister object detail"]
+    },
+    {
+      "id": 8,
+      "title": "Create ExtractionTab Vue component",
+      "phase": "Frontend Implementation",
+      "spec_ref": "Extraction & Metadata Tab",
+      "github_issue": 1103,
+      "status": "todo",
+      "files_likely_affected": ["src/components/files-sidebar/ExtractionTab.vue"],
+      "acceptance_criteria": ["Extraction status displayed", "Extract Now button for unextracted files", "Risk level badges with text labels"]
+    },
+    {
+      "id": 9,
+      "title": "Add translations for sidebar tab strings",
+      "phase": "Integration & Quality",
+      "spec_ref": "Internationalization",
+      "github_issue": 1106,
+      "status": "todo",
+      "files_likely_affected": ["l10n/en.js", "l10n/nl.js"],
+      "acceptance_criteria": ["Dutch and English translations provided for all sidebar tab strings"]
+    },
+    {
+      "id": 10,
+      "title": "Write PHPUnit tests for FileSidebarService and FileSidebarController",
+      "phase": "Integration & Quality",
+      "spec_ref": "All API endpoints",
+      "github_issue": 1108,
+      "status": "todo",
+      "files_likely_affected": ["tests/Unit/Service/FileSidebarServiceTest.php", "tests/Unit/Controller/FileSidebarControllerTest.php"],
+      "acceptance_criteria": ["Service tests cover objects-by-file and extraction status", "Controller tests cover HTTP status codes"]
+    },
+    {
+      "id": 11,
+      "title": "Verify integration with Files app and test edge cases",
+      "phase": "Integration & Quality",
+      "spec_ref": "All requirements",
+      "github_issue": 1110,
+      "status": "todo",
+      "files_likely_affected": [],
+      "acceptance_criteria": ["Tabs appear in Files sidebar", "Tabs do NOT appear outside Files app"]
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "change": "deprecate-published-metadata",
+  "repo": "ConductionNL/openregister",
+  "tracking_issue": 1127,
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Remove addPublishedDateToObjects from ImportService",
+      "spec_ref": "specs/deprecate-published-metadata/spec.md#REQ-1",
+      "acceptance_criteria": [
+        "GIVEN an import with publish=true WHEN objects are imported THEN addPublishedDateToObjects() is removed and publish parameter logs deprecation warning",
+        "GIVEN an import without publish flag WHEN objects are imported THEN import works as before"
+      ],
+      "github_issue": 1128,
+      "files_likely_affected": [
+        "lib/Service/ImportService.php"
+      ],
+      "status": "todo"
+    },
+    {
+      "id": 2,
+      "title": "Remove @self.published/depublished from frontend copy modals",
+      "spec_ref": "specs/deprecate-published-metadata/spec.md#REQ-2",
+      "acceptance_criteria": [
+        "GIVEN a user copies an object WHEN @self metadata is stripped THEN published and depublished keys are no longer referenced"
+      ],
+      "github_issue": 1129,
+      "files_likely_affected": [
+        "src/modals/object/CopyObject.vue",
+        "src/modals/object/MassCopyObjects.vue"
+      ],
+      "status": "todo"
+    },
+    {
+      "id": 3,
+      "title": "Remove published object stats from frontend views",
+      "spec_ref": "specs/deprecate-published-metadata/spec.md#REQ-3",
+      "acceptance_criteria": [
+        "GIVEN dashboard, register, or schema views WHEN stats are displayed THEN published count is not shown"
+      ],
+      "github_issue": 1130,
+      "files_likely_affected": [
+        "src/components/SchemaStatsBlock.vue",
+        "src/views/register/RegisterDetail.vue",
+        "src/views/schema/SchemaDetails.vue",
+        "src/sidebars/dashboard/DashboardSideBar.vue",
+        "src/sidebars/register/RegisterSideBar.vue",
+        "src/sidebars/register/RegistersSideBar.vue",
+        "src/modals/schema/DeleteSchemaObjects.vue",
+        "src/modals/schema/ExploreSchema.vue",
+        "src/modals/schema/ValidateSchema.vue",
+        "src/entities/register/register.types.ts",
+        "src/entities/register/register.mock.ts",
+        "src/entities/schema/schema.types.ts",
+        "src/entities/schema/schema.mock.ts"
+      ],
+      "status": "todo"
+    },
+    {
+      "id": 4,
+      "title": "Remove auto-publish toggle from ImportRegister modal",
+      "spec_ref": "specs/deprecate-published-metadata/spec.md#REQ-4",
+      "acceptance_criteria": [
+        "GIVEN the ImportRegister modal WHEN configuring import THEN auto-publish toggle is not present"
+      ],
+      "github_issue": 1131,
+      "files_likely_affected": [
+        "src/modals/register/ImportRegister.vue"
+      ],
+      "status": "todo"
+    },
+    {
+      "id": 5,
+      "title": "Update MultiTenancyTrait documentation and add deprecation warnings",
+      "spec_ref": "specs/deprecate-published-metadata/spec.md#REQ-5,REQ-6",
+      "acceptance_criteria": [
+        "GIVEN MultiTenancyTrait docblock WHEN describing bypass THEN object-level published bypass is not mentioned",
+        "GIVEN a schema with objectPublishedField/objectDepublishedField/autoPublish WHEN object is saved THEN deprecation warning is logged"
+      ],
+      "github_issue": 1132,
+      "files_likely_affected": [
+        "lib/Db/MultiTenancyTrait.php",
+        "lib/Service/Object/SaveObject/MetadataHydrationHandler.php"
+      ],
+      "status": "todo"
+    },
+    {
+      "id": 6,
+      "title": "Verify migration and add tests",
+      "spec_ref": "specs/deprecate-published-metadata/spec.md#REQ-1,REQ-6",
+      "acceptance_criteria": [
+        "GIVEN Version1Date20260313130000 migration WHEN run on DB with or without published columns THEN migration is idempotent",
+        "GIVEN ImportService WHEN publish=true THEN deprecation warning is logged",
+        "GIVEN MetadataHydrationHandler WHEN deprecated config keys present THEN deprecation warning is logged"
+      ],
+      "github_issue": 1133,
+      "files_likely_affected": [
+        "tests/Unit/Service/ImportServicePublishDeprecationTest.php",
+        "tests/Unit/Db/Migration/Version1Date20260313130000Test.php",
+        "tests/Unit/Service/Object/SaveObject/MetadataHydrationHandlerDeprecationTest.php"
+      ],
+      "status": "todo"
+    }
+  ]
+}

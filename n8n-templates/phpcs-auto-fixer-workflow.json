@@ -1,0 +1,157 @@
+{
+  "name": "PHPCS Auto-Fixer with Ollama",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container || 'nextcloud' }} bash -c \"cd /var/www/html/custom_apps/openregister && vendor/bin/phpcs --report=json --standard=phpcs.xml lib/ 2>&1 || true\""
+      },
+      "id": "run-phpcs",
+      "name": "Run PHPCS",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse PHPCS JSON output and extract errors\nconst stdout = $input.item.json.stdout;\nconst errors = [];\n\ntry {\n  // Find JSON in output (PHPCS might have warnings before JSON)\n  const jsonMatch = stdout.match(/\\{[\\s\\S]*\\}/);\n  if (!jsonMatch) {\n    return [{ json: { error: 'No JSON found in PHPCS output', stdout } }];\n  }\n  \n  const phpcsOutput = JSON.parse(jsonMatch[0]);\n  \n  // Extract errors from all files\n  for (const [filePath, fileData] of Object.entries(phpcsOutput.files || {})) {\n    if (fileData.messages && fileData.messages.length > 0) {\n      fileData.messages.forEach((msg, index) => {\n        if (msg.type === 'ERROR') {\n          errors.push({\n            id: `${filePath}-${msg.line}-${index}`,\n            file: filePath,\n            line: msg.line,\n            column: msg.column,\n            message: msg.message,\n            source: msg.source,\n            severity: msg.severity || 5,\n            fixable: msg.fixable || false\n          });\n        }\n      });\n    }\n  }\n  \n  // Sort by severity (highest first)\n  errors.sort((a, b) => b.severity - a.severity);\n  \n  console.log(`Found ${errors.length} PHPCS errors`);\n  \n  return errors.map(error => ({ json: error }));\n  \n} catch (error) {\n  console.error('Error parsing PHPCS output:', error);\n  return [{ json: { error: error.message, stdout } }];\n}"
+      },
+      "id": "parse-errors",
+      "name": "Parse PHPCS Errors",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 5,
+        "options": {}
+      },
+      "id": "split-batches",
+      "name": "Split Into Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Read the file content around the error\nconst error = $input.item.json;\nconst filePath = error.file;\n\n// Read file (in real implementation, use Execute Command or HTTP Request)\nconst readCommand = `docker exec -u 33 nextcloud cat \"${filePath}\"`;\n\n// For now, create a prompt with the error details\nconst prompt = `You are a PHP coding standards expert. Fix this PHPCS error:\n\n**File:** ${filePath}\n**Line:** ${error.line}\n**Column:** ${error.column}\n**Error:** ${error.message}\n**Rule:** ${error.source}\n\n**Instructions:**\n1. Understand the error and the coding standard rule\n2. Provide the corrected code for the specific line\n3. Include 2 lines of context before and after\n4. Return ONLY the corrected code block, no explanations\n5. Maintain the exact indentation and formatting\n\n**Example Response Format:**\n\\`\\`\\`php\n// Context line before\n// Fixed line here\n// Context line after\n\\`\\`\\`\n\nProvide the fix:`;\n\nreturn [{ json: { ...error, prompt } }];"
+      },
+      "id": "prepare-prompt",
+      "name": "Prepare Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://ollama:11434/api/generate",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"model\": \"codellama:7b-instruct\",\n  \"prompt\": $json.prompt,\n  \"stream\": false,\n  \"options\": {\n    \"temperature\": 0.1,\n    \"top_p\": 0.9,\n    \"num_predict\": 500\n  }\n} }}",
+        "options": {}
+      },
+      "id": "call-ollama",
+      "name": "Call Ollama",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract the fix from Ollama response\nconst error = $input.item.json;\nconst ollamaResponse = JSON.parse($input.item.json.body || '{}');\nconst suggestedFix = ollamaResponse.response || '';\n\n// Extract code block from markdown if present\nlet fixedCode = suggestedFix;\nconst codeBlockMatch = suggestedFix.match(/```(?:php)?\\n([\\s\\S]*?)```/);\nif (codeBlockMatch) {\n  fixedCode = codeBlockMatch[1].trim();\n}\n\nconsole.log(`Generated fix for ${error.file}:${error.line}`);\n\nreturn [{\n  json: {\n    ...error,\n    suggestedFix: fixedCode,\n    rawResponse: suggestedFix,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "extract-fix",
+      "name": "Extract Fix",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "id": "merge-results",
+      "name": "Merge Results",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [1780, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate summary report\nconst fixes = $input.all();\nconst totalErrors = fixes.length;\nconst fixesGenerated = fixes.filter(f => f.json.suggestedFix).length;\n\n// Group by file\nconst fileGroups = {};\nfixes.forEach(fix => {\n  const file = fix.json.file;\n  if (!fileGroups[file]) {\n    fileGroups[file] = [];\n  }\n  fileGroups[file].push(fix.json);\n});\n\nconst report = {\n  summary: {\n    totalErrors: totalErrors,\n    fixesGenerated: fixesGenerated,\n    filesAffected: Object.keys(fileGroups).length,\n    timestamp: new Date().toISOString()\n  },\n  fixes: fixes.map(f => ({\n    file: f.json.file,\n    line: f.json.line,\n    error: f.json.message,\n    fix: f.json.suggestedFix ? 'Generated' : 'Failed'\n  })),\n  byFile: fileGroups\n};\n\nconsole.log(`Summary: ${fixesGenerated}/${totalErrors} fixes generated`);\n\nreturn [{ json: report }];"
+      },
+      "id": "generate-report",
+      "name": "Generate Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 300]
+    },
+    {
+      "parameters": {
+        "mode": "writeToFile",
+        "fileName": "=/tmp/phpcs-fixes-{{ $json.summary.timestamp }}.json",
+        "options": {}
+      },
+      "id": "save-report",
+      "name": "Save Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2220, 300]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Start": {
+      "main": [[{ "node": "Run PHPCS", "type": "main", "index": 0 }]]
+    },
+    "Run PHPCS": {
+      "main": [[{ "node": "Parse PHPCS Errors", "type": "main", "index": 0 }]]
+    },
+    "Parse PHPCS Errors": {
+      "main": [[{ "node": "Split Into Batches", "type": "main", "index": 0 }]]
+    },
+    "Split Into Batches": {
+      "main": [[{ "node": "Prepare Prompt", "type": "main", "index": 0 }]]
+    },
+    "Prepare Prompt": {
+      "main": [[{ "node": "Call Ollama", "type": "main", "index": 0 }]]
+    },
+    "Call Ollama": {
+      "main": [[{ "node": "Extract Fix", "type": "main", "index": 0 }]]
+    },
+    "Extract Fix": {
+      "main": [[{ "node": "Merge Results", "type": "main", "index": 0 }]]
+    },
+    "Merge Results": {
+      "main": [[{ "node": "Generate Report", "type": "main", "index": 0 }]]
+    },
+    "Generate Report": {
+      "main": [[{ "node": "Save Report", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "id": "phpcs-auto-fixer",
+  "meta": {
+    "instanceId": "openregister"
+  },
+  "tags": []
+}
+
+
+
+

@@ -1,0 +1,150 @@
+{
+    "components": {
+        "mappings": {
+            "openwoo-app-elasticsearch": {
+                "name": "OpenWoo.app -> ElasticSearch",
+                "description": "",
+                "version": "0.0.3",
+                "reference": "",
+                "mapping": {
+                    "doctype": "{% if tooiCategorieNaam|default and (tooiCategorieNaam == 'Convenanten' or tooiCategorieNaam == 'Convenant') %}{{ tooiCategorieNaam }}{% else %}{{ 'OpenWoo' }}{% endif %}",
+                    "title": "titel",
+                    "excerpt": "samenvatting",
+                    "date": "@self.published",
+                    "slug": "{{ titel|lower|striptags|replace({' ': '-'})|replace({'--': '-'})|trim('-') }}",
+                    "link": "/openwoo/{{ titel|lower|striptags|replace({' ': '-'})|replace({'--': '-'})|trim('-') }}",
+                    "content_filtered": "beschrijving"
+                },
+                "unset": [],
+                "cast": [],
+                "passThrough": false,
+                "configurations": [],
+                "dateCreated": "2025-07-01T13:01:07+00:00",
+                "dateModified": "2025-07-01T13:01:07+00:00",
+                "slug": "openwoo-app-elasticsearch"
+            },
+            "openwoo-app-elasticsearch-update": {
+                "id": 4,
+                "uuid": "",
+                "name": "OpenWoo.app -> ElasticSearch UPDATE",
+                "description": "Mapping for updating objects in elastic",
+                "version": "0.0.3",
+                "reference": "",
+                "mapping": {
+                    "doc.doctype": "doctype",
+                    "doc.title": "title",
+                    "doc.excerpt": "excerpt",
+                    "doc.date": "date",
+                    "doc.slug": "slug",
+                    "doc.link": "link",
+                    "doc.content_filtered": "content_filtered"
+                },
+                "unset": [],
+                "cast": [],
+                "passThrough": false,
+                "configurations": [],
+                "dateCreated": "2025-07-01T14:34:37+00:00",
+                "dateModified": "2025-07-01T14:34:37+00:00",
+                "slug": "openwoo-app-elasticsearch-update"
+            }
+        },
+        "sources": {
+            "elastic-api": {
+                "name": "Elastic API",
+                "description": "",
+                "version": "0.0.1",
+                "reference": "",
+                "location": "url",
+                "isEnabled": true,
+                "type": "api",
+                "locale": "",
+                "accept": "",
+                "documentation": "",
+                "loggingConfig": [],
+                "oas": "Array",
+                "paths": [],
+                "headers": [],
+                "translationConfig": [],
+                "configuration": {
+                    "headers.Accept": "application/json",
+                    "headers.Content-Type": "application/json"
+                },
+                "endpointsConfig": [],
+                "status": "",
+                "logRetention": 0,
+                "errorRetention": 0,
+                "objectCount": 0,
+                "test": false,
+                "rateLimitLimit": null,
+                "rateLimitRemaining": null,
+                "rateLimitReset": null,
+                "rateLimitWindow": null,
+                "lastCall": "2025-07-02T15:38:57+00:00",
+                "lastSync": "2025-07-01T12:47:07+00:00",
+                "dateCreated": "2025-07-01T12:47:08+00:00",
+                "dateModified": "2025-07-01T12:47:08+00:00",
+                "configurations": [],
+                "slug": "elastic-api"
+            }
+        },
+        "rules": [],
+        "endpoints": [],
+        "synchronizations": {
+            "openwoo-app-elasticsearch": {
+                "name": "OpenWoo.app -> ElasticSearch",
+                "description": "",
+                "reference": null,
+                "version": "0.0.8",
+                "sourceId": "woo/woo_verzoeken_en_besluiten",
+                "sourceType": "register/schema",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "3",
+                "sourceConfig": {
+                    "idPosition": "_id",
+                    "resultsPosition": "",
+                    "endpoint": "/_doc",
+                    "headers": [],
+                    "query": []
+                },
+                "sourceLastChanged": "2025-07-01T13:38:14+00:00",
+                "sourceLastChecked": "2025-07-01T13:38:14+00:00",
+                "sourceLastSynced": "2025-07-01T13:38:14+00:00",
+                "currentPage": 1,
+                "targetId": "3",
+                "targetType": "api",
+                "targetHash": "",
+                "targetSourceMapping": "",
+                "targetConfig": {
+                    "updateMethod": "POST",
+                    "updateEndpoint": "/_update/{{originId}}",
+                    "updateMapping": "4",
+                    "endpoint": "/_doc",
+                    "idPosition": "_id"
+                },
+                "targetLastChanged": "2025-07-01T13:38:14+00:00",
+                "targetLastChecked": "2025-07-01T13:38:14+00:00",
+                "targetLastSynced": "2025-07-01T13:38:14+00:00",
+                "created": "2025-07-01T13:38:14+00:00",
+                "updated": "2025-07-01T14:51:24+00:00",
+                "conditions": [],
+                "followUps": [],
+                "actions": [],
+                "configurations": [],
+                "status": null,
+                "slug": "openwoo-app-elasticsearch"
+            }
+        },
+        "jobs": [],
+        "registers": {},
+        "schemas": [],
+        "objects": []
+    },
+    "openapi": "3.0.0",
+    "info": {
+        "id": 2,
+        "title": "Woo",
+        "description": "Woo-register met TOOI-informatiecategorie\u00ebn",
+        "version": "1.0.2"
+    }
+}

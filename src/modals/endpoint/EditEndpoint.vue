@@ -1,0 +1,182 @@
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+import { endpointStore, navigationStore } from '../../store/store.js'
+</script>
+
+<template>
+	<NcDialog
+		v-if="navigationStore.modal === 'editEndpoint'"
+		:name="
+			endpointStore.endpointItem?.id
+				? t('openregister', 'Edit Endpoint')
+				: t('openregister', 'Add Endpoint')
+		"
+		size="large"
+		:canClose="true"
+		@update:open="navigationStore.setModal(false)">
+		<div class="formContainer">
+			<div class="form">
+				<NcTextField
+					v-model="endpointStore.endpointItem.name"
+					:label="t('openregister', 'Name*')"
+					required
+					maxlength="255" />
+				<NcTextArea
+					v-model="endpointStore.endpointItem.description"
+					:label="t('openregister', 'Description')"
+					rows="3" />
+				<NcTextField
+					v-model="endpointStore.endpointItem.endpoint"
+					:label="t('openregister', 'Endpoint Path*')"
+					:placeholder="endpointPlaceholder"
+					required
+					maxlength="255" />
+				<NcSelect
+					v-model="endpointStore.endpointItem.method"
+					inputLabel="Endpoint Store Endpoint Item Method"
+					:options="methodOptions"
+					:label="t('openregister', 'Method*')"
+					:placeholder="t('openregister', 'Select HTTP method')" />
+				<NcSelect
+					v-model="endpointStore.endpointItem.targetType"
+					inputLabel="Endpoint Store Endpoint Item Target Type"
+					:options="targetTypeOptions"
+					:label="t('openregister', 'Target Type*')"
+					:placeholder="t('openregister', 'Select target type')" />
+				<NcTextField
+					v-model="endpointStore.endpointItem.targetId"
+					:label="t('openregister', 'Target ID')"
+					:placeholder="t('openregister', 'ID of the target resource')" />
+				<NcTextField
+					v-model="endpointStore.endpointItem.version"
+					:label="t('openregister', 'Version')"
+					placeholder="0.0.0" />
+				<NcTextField
+					v-model="endpointStore.endpointItem.inputMapping"
+					:label="t('openregister', 'Input Mapping')"
+					:placeholder="
+						t('openregister', 'ID of input mapping (optional)')
+					" />
+				<NcTextField
+					v-model="endpointStore.endpointItem.outputMapping"
+					:label="t('openregister', 'Output Mapping')"
+					:placeholder="
+						t('openregister', 'ID of output mapping (optional)')
+					" />
+			</div>
+			<div class="modalFooter">
+				<NcButton @click="navigationStore.setModal(false)">
+					<template #icon>
+						<Cancel :size="20" />
+					</template>
+					{{ t('openregister', 'Cancel') }}
+				</NcButton>
+				<NcButton
+					:disabled="
+						!endpointStore.endpointItem.name
+						|| !endpointStore.endpointItem.endpoint
+						|| !endpointStore.endpointItem.method
+						|| !endpointStore.endpointItem.targetType
+					"
+					variant="primary"
+					@click="saveEndpoint()">
+					<template #icon>
+						<ContentSaveOutline :size="20" />
+					</template>
+					{{ t('openregister', 'Save') }}
+				</NcButton>
+			</div>
+		</div>
+	</NcDialog>
+</template>
+
+<script>
+import {
+	NcButton,
+	NcDialog,
+	NcSelect,
+	NcTextArea,
+	NcTextField,
+} from '@nextcloud/vue'
+import Cancel from 'vue-material-design-icons/Cancel.vue'
+import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
+
+export default {
+	name: 'EditEndpoint',
+	components: {
+		NcDialog,
+		NcTextField,
+		NcTextArea,
+		NcButton,
+		NcSelect,
+		ContentSaveOutline,
+		Cancel,
+	},
+
+	data() {
+		return {
+			methodOptions: [
+				'GET',
+				'POST',
+				'PUT',
+				'DELETE',
+				'PATCH',
+				'OPTIONS',
+				'HEAD',
+			],
+
+			targetTypeOptions: ['view', 'agent', 'webhook', 'register', 'schema'],
+			endpointPlaceholder: '/api/example/{{id}}',
+		}
+	},
+
+	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
+		saveEndpoint() {
+			if (endpointStore.endpointItem.id) {
+				endpointStore
+					.updateEndpoint(endpointStore.endpointItem)
+					.then(() => {
+						navigationStore.setModal(false)
+						OCP.Toast.success('Endpoint updated successfully')
+					})
+					.catch((error) => {
+						OCP.Toast.error(`Error updating endpoint: ${error.message}`)
+					})
+			} else {
+				endpointStore
+					.createEndpoint(endpointStore.endpointItem)
+					.then(() => {
+						navigationStore.setModal(false)
+						OCP.Toast.success('Endpoint created successfully')
+					})
+					.catch((error) => {
+						OCP.Toast.error(`Error creating endpoint: ${error.message}`)
+					})
+			}
+		},
+	},
+}
+</script>
+
+<style>
+.formContainer {
+	margin: 20px;
+}
+
+.form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-bottom: 20px;
+}
+
+.modalFooter {
+	display: flex;
+	gap: 10px;
+	justify-content: flex-end;
+	margin-top: 20px;
+}
+</style>

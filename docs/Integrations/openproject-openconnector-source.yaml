@@ -1,0 +1,153 @@
+# OpenConnector source template — OpenProject
+#
+# Import this into OpenConnector (Settings → OpenConnector → Sources →
+# Import) and fill in the `location` + auth fields for your OpenProject
+# instance. OpenRegister's `OpenProjectProvider` (id: `openproject`,
+# group: `external`) routes all of its CRUD through this source via
+# ExternalIntegrationRouter; it never holds credentials itself.
+#
+# (The repo's `config/` directory is gitignored, so this template
+# lives under docs/Integrations/ — copy it to wherever your
+# OpenConnector instance imports source definitions from.)
+#
+# OpenProject version notes:
+#   - OpenProject 12.x+ exposes a REST API v3 at `/api/v3`. Earlier
+#     versions used v2 (`/api/v2`) which is not supported — upgrade.
+#   - Authentication is OAuth2 in modern OpenProject deployments;
+#     long-lived API keys (Bearer token) remain available for
+#     server-to-server integrations on most instances. Pick ONE of the
+#     `auth` blocks below and delete the other.
+#
+# Spec: openspec/changes/integration-openproject/design.md
+#   - AD-1: OpenConnector source name is conventional (`openproject`).
+#     OpenProjectProvider::getOpenConnectorSource() returns 'openproject'
+#     — re-aliasing on the OpenConnector side is supported, but the
+#     provider doesn't probe for alternative names.
+#   - AD-2: No local caching beyond request-scope. OpenConnector may
+#     add its own caching layer; the provider doesn't duplicate it.
+#   - AD-3: Auth expiry surfaces an explicit "Reconnect" banner in the
+#     tab — the health probe must return `authStatus: 'expired'` when
+#     the OAuth token can't be refreshed; do not silently 401.
+
+source:
+  # Stable id — MUST be `openproject` (matches OpenProjectProvider::getOpenConnectorSource()).
+  reference: openproject
+  name: OpenProject
+  description: >-
+    OpenProject work packages linked to OpenRegister objects. Surfaced
+    as the "Projects" integration (sidebar tab + dashboard/detail
+    widgets) with status, type, priority, assignee, and project columns.
+  type: api
+
+  # Base URL of the OpenProject REST API v3. Example for a community
+  # instance at https://op.example.org:
+  #   https://op.example.org/api/v3
+  location: "https://op.example.org/api/v3"
+
+  # ---------------------------------------------------------------
+  # Authentication — keep exactly ONE of the two blocks below.
+  # ---------------------------------------------------------------
+
+  # Option A — OAuth2 (preferred; AD-3 expiry banner requires this).
+  auth:
+    type: oauth2
+    grantType: authorization_code
+    tokenUrl: "https://op.example.org/oauth/token"
+    authorizationUrl: "https://op.example.org/oauth/authorize"
+    clientId: "${OPENPROJECT_OAUTH_CLIENT_ID}"
+    clientSecret: "${OPENPROJECT_OAUTH_CLIENT_SECRET}"
+    scope: "api_v3"
+
+  # Option B — API key / Bearer token (works for server-to-server).
+  # auth:
+  #   type: bearer
+  #   token: "${OPENPROJECT_API_KEY}"
+
+  headers:
+    Accept: application/hal+json
+
+  # ---------------------------------------------------------------
+  # Endpoint mapping consumed by OpenProjectProvider. The provider
+  # sends the object context as query params (register / schema /
+  # object) plus optional _search / _limit / _page; OpenConnector
+  # resolves those to the appropriate OpenProject REST calls and
+  # normalises the response rows. OpenProjectProvider::normalizeRow()
+  # additionally flattens hAL `_links` / `_embedded` envelopes onto
+  # top-level `type`, `priority`, `assignee`, `project` so the
+  # CnOpenprojectTab columns render without hand-walking nested data.
+  # ---------------------------------------------------------------
+  #
+  # OpenProject hAL+JSON shape — verified against OpenProject 13.x:
+  #   GET /api/v3/work_packages/{id}                  →
+  #     { id, subject, description: { raw, html }, lockVersion,
+  #       _links: { self, status, type, priority, assignee, project, … },
+  #       _embedded: { status: { name, isClosed, … },
+  #                    type: { name, color, … },
+  #                    priority: { name, color, … },
+  #                    assignee: { name, … },
+  #                    project: { name, identifier, … }, … }, … }
+  #   GET /api/v3/work_packages?filters=…              →
+  #     { _embedded: { elements: [WorkPackage, …] },
+  #       total, count, pageSize, offset, _links }
+  endpoints:
+    # GET  — list linked work packages for an object.
+    #
+    # The pairing store — which OpenProject work packages are linked
+    # to which OR object — lives in OpenConnector's pairing model,
+    # keyed by the {register, schema, object} context. For instances
+    # without a pairing model, scope `list` to a hard-coded project
+    # filter and let `link-by-id` carry the rest.
+    list:
+      method: GET
+      path: "work_packages"
+      response:
+        rowsPath: "$._embedded.elements"
+        map:
+          id: "id"
+          reference: "id"
+          subject: "subject"
+          # _links titles are populated by OpenProject for every linked
+          # resource; safe to map directly. OpenProjectProvider::pickHalLabel
+          # also falls through to _embedded.<field>.name when a label is
+          # blank, so either side of the envelope works.
+          status: "_links.status.title"
+          type: "_links.type.title"
+          priority: "_links.priority.title"
+          assignee: "_links.assignee.title"
+          project: "_links.project.title"
+          url: "_links.self.href"
+
+    # GET {id}  — one linked work package.
+    get:
+      method: GET
+      path: "work_packages/{id}"
+
+    # POST  — link a work package. The body carries either `reference`
+    # (a numeric WP id or a full OpenProject URL — OpenConnector
+    # resolves both to canonical) or a complete WP payload for the
+    # create-and-link flow.
+    create:
+      method: POST
+      path: "work_packages"
+
+    # PUT {id}  — update a pairing.
+    update:
+      method: PUT
+      path: "work_packages/{id}"
+
+    # DELETE {id}  — unlink (removes the pairing; does NOT delete the
+    # work package in OpenProject).
+    delete:
+      method: DELETE
+      path: "work_packages/{id}"
+
+  # Health probe used by OpenRegister's admin UI / OCS capabilities.
+  # A cheap authenticated GET that returns 200 when the instance is
+  # reachable and the credentials are valid; OpenProject's `/api/v3`
+  # root endpoint returns the API description without requiring any
+  # particular permission. Per AD-3, the health probe MUST surface
+  # `authStatus: 'expired'` when the OAuth token cannot be refreshed —
+  # do not silently 401.
+  healthCheck:
+    method: GET
+    path: ""

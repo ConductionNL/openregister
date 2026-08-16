@@ -1,0 +1,537 @@
+<script setup>
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
+import formatBytes from '../../services/formatBytes.js'
+import { dashboardStore, navigationStore, schemaStore } from '../../store/store.js'
+</script>
+
+<template>
+	<NcAppContent>
+		<!-- Loading and error states -->
+		<div v-if="dashboardStore.loading" class="error">
+			<NcEmptyContent
+				name="Loading"
+				description="Loading schema statistics...">
+				<template #icon>
+					<NcLoadingIcon :size="64" />
+				</template>
+			</NcEmptyContent>
+		</div>
+		<div v-else-if="dashboardStore.error" class="error">
+			<NcEmptyContent name="Error" :description="dashboardStore.error">
+				<template #icon>
+					<AlertCircle :size="64" />
+				</template>
+			</NcEmptyContent>
+		</div>
+		<div v-else>
+			<span class="pageHeaderContainer">
+				<h2 class="pageHeader">
+					{{ schemaStore.schemaItem.title }}
+				</h2>
+				<div class="headerActionsContainer">
+					<NcActions :primary="true" menuName="Actions">
+						<template #icon>
+							<DotsHorizontal :size="20" />
+						</template>
+						<NcActionButton
+							closeAfterClick
+							@click="navigationStore.setModal('editSchema')">
+							<template #icon>
+								<Pencil :size="20" />
+							</template>
+							Edit
+						</NcActionButton>
+						<NcActionButton
+							closeAfterClick
+							@click="
+								() => {
+									schemaStore.setSchemaPropertyKey(null)
+									navigationStore.setModal('editSchemaProperty')
+								}
+							">
+							<template #icon>
+								<PlusCircleOutline />
+							</template>
+							Add Property
+						</NcActionButton>
+						<NcActionButton
+							closeAfterClick
+							@click="navigationStore.setModal('uploadSchema')">
+							<template #icon>
+								<Upload :size="20" />
+							</template>
+							Upload
+						</NcActionButton>
+						<NcActionButton
+							closeAfterClick
+							@click="
+								schemaStore.downloadSchema(schemaStore.schemaItem)
+							">
+							<template #icon>
+								<Download :size="20" />
+							</template>
+							Download
+						</NcActionButton>
+						<NcActionButton
+							closeAfterClick
+							@click="navigationStore.setDialog('deleteSchema')">
+							<template #icon>
+								<TrashCanOutline :size="20" />
+							</template>
+							Delete
+						</NcActionButton>
+					</NcActions>
+				</div>
+			</span>
+
+			<!-- Tab navigation -->
+			<div class="schemaTabNav">
+				<button
+					class="tabButton"
+					:class="[{ active: activeTab === 'dashboard' }]"
+					@click="activeTab = 'dashboard'">
+					<ChartBox :size="16" />
+					{{ t('openregister', 'Dashboard') }}
+				</button>
+				<button
+					class="tabButton"
+					:class="[{ active: activeTab === 'calendar' }]"
+					@click="activeTab = 'calendar'">
+					<CalendarMonth :size="16" />
+					{{ t('openregister', 'Calendar') }}
+				</button>
+				<button
+					class="tabButton"
+					:class="[{ active: activeTab === 'workflows' }]"
+					@click="activeTab = 'workflows'">
+					<Cog :size="16" />
+					{{ t('openregister', 'Workflows') }}
+				</button>
+			</div>
+
+			<!-- Calendar Provider Tab -->
+			<CalendarProviderTab
+				v-if="activeTab === 'calendar'"
+				:schema="schemaStore.schemaItem" />
+
+			<!-- Workflows Tab — execution history, scheduled workflows, approval chains -->
+			<SchemaWorkflowTab
+				v-if="activeTab === 'workflows'"
+				:schema="schemaStore.schemaItem" />
+
+			<!-- Dashboard Tab (original content) -->
+			<div v-show="activeTab === 'dashboard'" class="dashboardContent">
+				<span>{{ schemaStore.schemaItem.description }}</span>
+
+				<!-- Schema Statistics -->
+				<div v-if="schemaStats" class="statsContainer">
+					<h3>{{ t('openregister', 'Schema Statistics') }}</h3>
+					<table class="statisticsTable schemaStats">
+						<thead>
+							<tr>
+								<th scope="col">
+									{{ t('openregister', 'Type') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Total') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Size') }}
+								</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>{{ t('openregister', 'Objects') }}</td>
+								<td>{{ schemaStats.objects?.total || 0 }}</td>
+								<td>
+									{{ formatBytes(schemaStats.objects?.size || 0) }}
+								</td>
+							</tr>
+							<tr class="subRow">
+								<td class="indented">
+									{{ t('openregister', 'Invalid') }}
+								</td>
+								<td>{{ schemaStats.objects?.invalid || 0 }}</td>
+								<td>-</td>
+							</tr>
+							<tr class="subRow">
+								<td class="indented">
+									{{ t('openregister', 'Deleted') }}
+								</td>
+								<td>{{ schemaStats.objects?.deleted || 0 }}</td>
+								<td>-</td>
+							</tr>
+							<tr>
+								<td>{{ t('openregister', 'Files') }}</td>
+								<td>{{ schemaStats.files?.total || 0 }}</td>
+								<td>
+									{{ formatBytes(schemaStats.files?.size || 0) }}
+								</td>
+							</tr>
+							<tr>
+								<td>{{ t('openregister', 'Logs') }}</td>
+								<td>{{ schemaStats.logs?.total || 0 }}</td>
+								<td>
+									{{ formatBytes(schemaStats.logs?.size || 0) }}
+								</td>
+							</tr>
+							<tr>
+								<td>{{ t('openregister', 'Registers') }}</td>
+								<td>{{ schemaStats.registers || 0 }}</td>
+								<td>-</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<div class="chartGrid">
+					<!-- Audit Trail Actions Chart -->
+					<div class="chartCard">
+						<h3>Audit Trail Actions</h3>
+						<Apexchart
+							type="line"
+							height="350"
+							:options="auditTrailChartOptions"
+							:series="
+								dashboardStore.chartData?.auditTrailActions?.series
+								|| []
+							" />
+					</div>
+
+					<!-- Objects by Register Chart -->
+					<div class="chartCard">
+						<h3>Objects by Register</h3>
+						<Apexchart
+							type="pie"
+							height="350"
+							:options="registerChartOptions"
+							:series="
+								dashboardStore.chartData?.objectsByRegister?.series
+								|| []
+							"
+							:labels="
+								dashboardStore.chartData?.objectsByRegister?.labels
+								|| []
+							" />
+					</div>
+
+					<!-- Objects by Size Chart -->
+					<div class="chartCard">
+						<h3>Objects by Size Distribution</h3>
+						<Apexchart
+							type="bar"
+							height="350"
+							:options="sizeChartOptions"
+							:series="[
+								{
+									name: 'Objects',
+									data:
+										dashboardStore.chartData?.objectsBySize
+											?.series || [],
+								},
+							]" />
+					</div>
+				</div>
+			</div>
+		</div>
+	</NcAppContent>
+</template>
+
+<script>
+import {
+	NcActionButton,
+	NcActions,
+	NcAppContent,
+	NcEmptyContent,
+	NcLoadingIcon,
+} from '@nextcloud/vue'
+import VueApexCharts from 'vue3-apexcharts'
+import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
+import CalendarMonth from 'vue-material-design-icons/CalendarMonth.vue'
+import ChartBox from 'vue-material-design-icons/ChartBox.vue'
+import Cog from 'vue-material-design-icons/Cog.vue'
+import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
+import SchemaWorkflowTab from '../schemas/SchemaWorkflowTab.vue'
+import CalendarProviderTab from './CalendarProviderTab.vue'
+
+export default {
+	name: 'SchemaDetails',
+	components: {
+		NcActions,
+		NcActionButton,
+		NcAppContent,
+		NcEmptyContent,
+		NcLoadingIcon,
+		Apexchart: VueApexCharts,
+		DotsHorizontal,
+		Pencil,
+		TrashCanOutline,
+		PlusCircleOutline,
+		Download,
+		Upload,
+		AlertCircle,
+		CalendarMonth,
+		ChartBox,
+		Cog,
+		CalendarProviderTab,
+		SchemaWorkflowTab,
+	},
+
+	data() {
+		return {
+			activeTab: 'dashboard',
+			schemaStats: null,
+			statsLoading: false,
+			statsError: null,
+		}
+	},
+
+	computed: {
+		/**
+		 * Chart options for the Audit Trail Actions chart
+		 *
+		 * @spec exclude UI plumbing — static chart configuration for display
+		 * @return {object}
+		 */
+		auditTrailChartOptions() {
+			return {
+				chart: {
+					type: 'line',
+					toolbar: { show: true },
+					zoom: { enabled: true },
+				},
+
+				xaxis: {
+					categories:
+						dashboardStore.chartData?.auditTrailActions?.labels || [],
+
+					title: { text: 'Date' },
+				},
+
+				yaxis: { title: { text: 'Number of Actions' } },
+				colors: ['#41B883', '#E46651', '#00D8FF'],
+				stroke: { curve: 'smooth', width: 2 },
+				legend: { position: 'top' },
+				theme: { mode: 'light' },
+			}
+		},
+
+		/**
+		 * Chart options for the Objects by Register chart
+		 *
+		 * @spec exclude UI plumbing — static chart configuration for display
+		 * @return {object}
+		 */
+		registerChartOptions() {
+			return {
+				chart: { type: 'pie' },
+				labels: dashboardStore.chartData?.objectsByRegister?.labels || [],
+				legend: { position: 'bottom' },
+				responsive: [
+					{
+						breakpoint: 480,
+						options: {
+							chart: { width: 200 },
+							legend: { position: 'bottom' },
+						},
+					},
+				],
+			}
+		},
+
+		/**
+		 * Chart options for the Objects by Size Distribution chart
+		 *
+		 * @spec exclude UI plumbing — static chart configuration for display
+		 * @return {object}
+		 */
+		sizeChartOptions() {
+			return {
+				chart: { type: 'bar' },
+				plotOptions: {
+					bar: {
+						horizontal: false,
+						columnWidth: '55%',
+						endingShape: 'rounded',
+					},
+				},
+
+				xaxis: {
+					categories:
+						dashboardStore.chartData?.objectsBySize?.labels || [],
+
+					title: { text: 'Size Range' },
+				},
+
+				yaxis: { title: { text: 'Number of Objects' } },
+				fill: { opacity: 1 },
+			}
+		},
+	},
+
+	/**
+	 * Lifecycle hook: load chart data and schema stats on mount.
+	 *
+	 * @spec exclude UI plumbing — view-mount data fetch for display only
+	 * @return {Promise<void>}
+	 */
+	async mounted() {
+		// Fetch dashboard data if not already loaded
+		if (
+			!dashboardStore.chartData
+			|| Object.keys(dashboardStore.chartData).length === 0
+		) {
+			await dashboardStore.fetchAllChartData()
+		}
+
+		// Fetch schema stats if schema is available
+		if (schemaStore.schemaItem?.id) {
+			await this.loadSchemaStats()
+		}
+	},
+
+	methods: {
+		/**
+		 * Load schema statistics from the dedicated stats endpoint
+		 *
+		 * @spec exclude UI plumbing — delegates to the schema store stats fetch
+		 * @return {Promise<void>}
+		 */
+		async loadSchemaStats() {
+			if (!schemaStore.schemaItem?.id) {
+				return
+			}
+
+			this.statsLoading = true
+			this.statsError = null
+
+			try {
+				this.schemaStats = await schemaStore.getSchemaStats(
+					schemaStore.schemaItem.id,
+				)
+			} catch (error) {
+				console.error('Error loading schema stats:', error)
+				this.statsError = error.message
+			} finally {
+				this.statsLoading = false
+			}
+		},
+
+		/**
+		 * Set the active property for editing
+		 *
+		 * @param {string|null} key - The key to process
+		 * @spec exclude UI plumbing — toggles active-property selection state
+		 * @return {void}
+		 */
+		setActiveProperty(key) {
+			if (
+				JSON.stringify(schemaStore.schemaPropertyKey) === JSON.stringify(key)
+			) {
+				schemaStore.setSchemaPropertyKey(null)
+			} else {
+				schemaStore.setSchemaPropertyKey(key)
+			}
+		},
+	},
+}
+</script>
+
+<style lang="scss" scoped>
+.pageHeaderContainer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0;
+}
+
+.dashboardContent {
+	margin-inline: auto;
+	max-width: 1200px;
+	padding-block: 20px;
+	padding-inline: 20px;
+}
+
+.chartGrid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 20px;
+	padding: 20px;
+}
+
+.chartCard {
+	background: var(--color-main-background);
+	border-radius: 8px;
+	padding: 20px;
+	box-shadow: 0 2px 8px var(--color-box-shadow);
+	border: 1px solid var(--color-border);
+
+	h3 {
+		margin: 0 0 20px 0;
+		font-size: 1.2em;
+		color: var(--color-main-text);
+	}
+}
+
+@media screen and (max-width: 1024px) {
+	.chartGrid {
+		grid-template-columns: 1fr;
+	}
+}
+
+.statsContainer {
+	margin-bottom: 30px;
+
+	h3 {
+		margin-bottom: 15px;
+		color: var(--color-main-text);
+	}
+}
+
+.schemaTabNav {
+	display: flex;
+	gap: 0;
+	border-bottom: 2px solid var(--color-border);
+	margin-inline: 20px;
+	margin-bottom: 0;
+
+	.tabButton {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 10px 16px;
+		background: none;
+		border: none;
+		border-bottom: 2px solid transparent;
+		margin-bottom: -2px;
+		cursor: pointer;
+		color: var(--color-text-maxcontrast);
+		font-size: 14px;
+		font-weight: 500;
+		transition:
+			color 0.15s,
+			border-color 0.15s;
+
+		&:hover {
+			color: var(--color-main-text);
+		}
+
+		&.active {
+			color: var(--color-primary);
+			border-bottom-color: var(--color-primary);
+		}
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.schemaTabNav .tabButton {
+		transition: none;
+	}
+}
+</style>

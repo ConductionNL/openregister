@@ -1,0 +1,2783 @@
+<template>
+	<CnIndexSidebar
+		ref="sidebar"
+		:schema="objectStore.searchSchema"
+		:visibleColumns="objectStore.searchVisibleColumns"
+		:searchValue="searchValueForSidebar"
+		:open="navigationStore.sidebarState.search"
+		:activeFilters="objectStore.searchParams.filters"
+		:facetData="objectStore.searchFacets"
+		:searchTabLabel="t('openregister', 'Search')"
+		:searchPlaceholder="t('openregister', 'Type to search...')"
+		@update:open="(e) => navigationStore.setSidebarState('search', e)"
+		@search="onSearchInput"
+		@filterChange="onFilterChange"
+		@columnsChange="onColumnsChange">
+		<template #search-above>
+			<!-- Save View Action -->
+			<div class="saveViewSection">
+				<!-- Active View Mode: Show view name with Save and Delete buttons -->
+				<div
+					v-if="viewsStore.activeView && !showSaveForm"
+					class="activeViewActions">
+					<div class="activeViewHeader">
+						<NcTextField
+							v-model="activeViewName"
+							:placeholder="t('openregister', 'View name')"
+							:label="t('openregister', 'View Name')"
+							class="activeViewNameInput">
+							<template #trailing-button-icon>
+								<Pencil :size="20" />
+							</template>
+						</NcTextField>
+						<NcButton
+							variant="tertiary"
+							:aria-label="t('openregister', 'Edit view details')"
+							@click="openEditDialogForActiveView">
+							<template #icon>
+								<CogOutline :size="20" />
+							</template>
+						</NcButton>
+					</div>
+					<div class="activeViewButtons">
+						<NcButton
+							variant="primary"
+							:disabled="!canSaveView || !activeViewName.trim()"
+							@click="updateActiveView">
+							<template #icon>
+								<ContentSaveOutline :size="20" />
+							</template>
+							{{ t('openregister', 'Save') }}
+						</NcButton>
+						<NcButton variant="error" @click="confirmDeleteActiveView">
+							<template #icon>
+								<Delete :size="20" />
+							</template>
+							{{ t('openregister', 'Delete') }}
+						</NcButton>
+					</div>
+				</div>
+
+				<!-- No Active View: Show "Save current search as view" button -->
+				<NcButton
+					v-else-if="!showSaveForm && !viewsStore.activeView"
+					variant="primary"
+					:disabled="!canSaveView"
+					@click="showSaveForm = true">
+					<template #icon>
+						<ContentSaveOutline :size="20" />
+					</template>
+					{{ t('openregister', 'Save current search as view') }}
+				</NcButton>
+
+				<!-- Show inline form when creating new view -->
+				<div v-else-if="showSaveForm" class="saveViewForm">
+					<NcTextField
+						v-model="viewName"
+						:placeholder="t('openregister', 'Enter view name...')"
+						:label="t('openregister', 'View Name')"
+						:required="true"
+						:error="viewName.trim() === '' && viewNameTouched"
+						:helperText="
+							viewName.trim() === '' && viewNameTouched
+								? t('openregister', 'View name is required')
+								: ''
+						"
+						@blur="viewNameTouched = true"
+						@keyup.enter="saveView">
+						<template #icon>
+							<ContentSaveOutline :size="20" />
+						</template>
+					</NcTextField>
+					<div class="saveViewFormActions">
+						<NcButton
+							variant="primary"
+							:disabled="!viewName.trim()"
+							@click="saveView">
+							{{ t('openregister', 'Save') }}
+						</NcButton>
+						<NcButton variant="secondary" @click="cancelSaveView">
+							{{ t('openregister', 'Cancel') }}
+						</NcButton>
+					</div>
+				</div>
+
+				<p
+					v-if="!canSaveView && !showSaveForm && !viewsStore.activeView"
+					class="saveViewHint">
+					{{
+						t(
+							'openregister',
+							'Select registers and schemas to save a view',
+						)
+					}}
+				</p>
+			</div>
+
+			<!-- Filter Section -->
+			<div class="filterSection">
+				<h3>{{ t('openregister', 'Filter Objects') }}</h3>
+				<div class="filterGroup">
+					<label for="registerSelect">{{
+						t('openregister', 'Registers')
+					}}</label>
+					<NcSelect
+						v-bind="registerOptions"
+						id="registerSelect"
+						:modelValue="selectedRegisters"
+						:loading="registerLoading"
+						:disabled="registerLoading"
+						:inputLabel="t('openregister', 'Registers')"
+						:multiple="true"
+						:closeOnSelect="false"
+						:placeholder="
+							t('openregister', 'Select one or more registers')
+						"
+						@update:modelValue="handleRegisterChange">
+						<template #option="{ title, description }">
+							<div class="option-content">
+								<span class="option-title">{{ title }}</span>
+								<span
+									v-if="description"
+									class="option-description"
+									>{{ description }}</span
+								>
+							</div>
+						</template>
+					</NcSelect>
+					<p class="field-hint">
+						{{ selectedRegisters.length }}
+						{{ t('openregister', 'register(s) selected') }}
+					</p>
+				</div>
+				<div class="filterGroup">
+					<label for="schemaSelect">{{
+						t('openregister', 'Schemas')
+					}}</label>
+					<NcSelect
+						v-bind="schemaOptions"
+						id="schemaSelect"
+						:modelValue="selectedSchemas"
+						:loading="schemaLoading"
+						:disabled="selectedRegisters.length === 0 || schemaLoading"
+						:inputLabel="t('openregister', 'Schemas')"
+						:multiple="true"
+						:closeOnSelect="false"
+						:placeholder="
+							t('openregister', 'Select one or more schemas')
+						"
+						@update:modelValue="handleSchemaChange">
+						<template #option="{ title, description }">
+							<div class="option-content">
+								<span class="option-title">{{ title }}</span>
+								<span
+									v-if="description"
+									class="option-description"
+									>{{ description }}</span
+								>
+							</div>
+						</template>
+					</NcSelect>
+					<p class="field-hint">
+						{{ selectedSchemas.length }}
+						{{ t('openregister', 'schema(s) selected') }}
+					</p>
+				</div>
+			</div>
+
+			<!-- Unified Faceting Section -->
+			<div class="section">
+				<h3 class="sectionTitle">
+					{{ t('openregister', 'Advanced Filters') }}
+				</h3>
+
+				<!-- Stage 1: Facet Discovery -->
+				<div
+					v-if="!facetableFields && canSearch"
+					class="facets-discovery-container">
+					<NcButton
+						variant="secondary"
+						:disabled="facetsLoading"
+						@click="discoverFacets">
+						<template #icon>
+							<NcLoadingIcon v-if="facetsLoading" :size="20" />
+							<FilterIcon v-else :size="20" />
+						</template>
+						{{ t('openregister', 'Load Advanced Filters') }}
+					</NcButton>
+					<p class="facets-description">
+						{{
+							t(
+								'openregister',
+								'Load advanced filters with live data from your search index',
+							)
+						}}
+					</p>
+				</div>
+
+				<!-- Loading -->
+				<div
+					v-if="facetsLoading && !facetableFields"
+					class="loading-container">
+					<NcLoadingIcon :size="20" />
+					<span>{{
+						t('openregister', 'Loading advanced filters...')
+					}}</span>
+				</div>
+
+				<!-- Available Facets (Stage 1 Complete) -->
+				<div v-else-if="facetableFields" class="available-facets-container">
+					<h4 class="available-facets-title">
+						{{ t('openregister', 'Available Filters') }}
+					</h4>
+
+					<!-- Metadata Facets -->
+					<div v-if="facetableFields['@self']" class="facet-category">
+						<h5 class="facet-category-title">
+							{{ t('openregister', 'Metadata Filters') }}
+						</h5>
+						<div class="facet-checkboxes">
+							<div
+								v-for="(field, fieldName) in facetableFields[
+									'@self'
+								]"
+								:key="`@self.${fieldName}`"
+								class="facet-checkbox">
+								<input
+									:id="`facet-@self-${fieldName}`"
+									v-model="enabledFacets[`@self.${fieldName}`]"
+									type="checkbox"
+									@change="
+										toggleFacet(`@self.${fieldName}`, field)
+									" />
+								<label
+									:for="`facet-@self-${fieldName}`"
+									class="facet-checkbox-label">
+									{{ field.description || fieldName }}
+									<span class="facet-types"
+										>({{ field.facet_types.join(', ') }})</span
+									>
+								</label>
+							</div>
+						</div>
+					</div>
+
+					<!-- Object Field Facets -->
+					<div v-if="facetableFields.object_fields" class="facet-category">
+						<h5 class="facet-category-title">
+							{{ t('openregister', 'Content Filters') }}
+						</h5>
+						<div class="facet-checkboxes">
+							<div
+								v-for="(
+									field, fieldName
+								) in facetableFields.object_fields"
+								:key="fieldName"
+								class="facet-checkbox">
+								<input
+									:id="`facet-${fieldName}`"
+									v-model="enabledFacets[fieldName]"
+									type="checkbox"
+									@change="toggleFacet(fieldName, field)" />
+								<label
+									:for="`facet-${fieldName}`"
+									class="facet-checkbox-label">
+									{{
+										field.title || field.description || fieldName
+									}}
+									<span class="facet-types"
+										>({{ field.facet_types.join(', ') }})</span
+									>
+								</label>
+							</div>
+						</div>
+					</div>
+
+					<!-- Info about loaded facets -->
+					<div
+						v-if="facetData && Object.keys(facetData).length > 0"
+						class="facets-loaded-info">
+						<p class="facets-loaded-description">
+							{{
+								t(
+									'openregister',
+									'Filter data loaded automatically. Use the filters below to refine your search.',
+								)
+							}}
+						</p>
+					</div>
+				</div>
+
+				<!-- Stage 2 Loading -->
+				<div v-if="facetDataLoading" class="loading-container">
+					<NcLoadingIcon :size="20" />
+					<span>{{ t('openregister', 'Loading filter data...') }}</span>
+				</div>
+
+				<!-- Stage 2: Facet Data (Active Filters) -->
+				<div
+					v-else-if="facetData && Object.keys(facetData).length > 0"
+					class="active-facets-container">
+					<h4 class="active-facets-title">
+						{{ t('openregister', 'Active Filters') }}
+					</h4>
+
+					<!-- Metadata facets (@self) -->
+					<div
+						v-for="(facet, field) in facetData?.['@self'] || {}"
+						:key="`@self.${field}`"
+						class="facet-group">
+						<label class="facet-label">{{
+							getFacetLabel(field, facet, true)
+						}}</label>
+						<NcSelect
+							:modelValue="facetFilters[`@self.${field}`] || []"
+							:options="getFacetOptions(facet)"
+							:multiple="true"
+							:placeholder="t('openregister', 'Select options...')"
+							:inputLabel="getFacetLabel(field, facet, true)"
+							@update:modelValue="
+								(value) => updateFacetFilter(`@self.${field}`, value)
+							" />
+					</div>
+
+					<!-- Object field facets -->
+					<div
+						v-for="(facet, field) in facetData?.object_fields || {}"
+						:key="field"
+						class="facet-group">
+						<label class="facet-label">{{
+							getFacetLabel(field, facet, false)
+						}}</label>
+						<NcSelect
+							:modelValue="facetFilters[field] || []"
+							:options="getFacetOptions(facet)"
+							:multiple="true"
+							:placeholder="t('openregister', 'Select options...')"
+							:inputLabel="getFacetLabel(field, facet, false)"
+							@update:modelValue="
+								(value) => updateFacetFilter(field, value)
+							" />
+					</div>
+
+					<!-- Reset Facets Button -->
+					<div class="facets-reset-container">
+						<NcButton variant="secondary" @click="resetFacets">
+							{{ t('openregister', 'Reset Filters') }}
+						</NcButton>
+					</div>
+				</div>
+			</div>
+		</template>
+
+		<!-- Views Tab (custom tab via slots) -->
+		<template #tabs>
+			<NcAppSidebarTab
+				id="views-tab"
+				:name="t('openregister', 'Views')"
+				:order="3">
+				<template #icon>
+					<ViewDashboardOutline :size="20" />
+				</template>
+
+				<div class="viewsSection">
+					<h3>{{ t('openregister', 'Saved Views') }}</h3>
+					<p class="viewsDescription">
+						{{
+							t(
+								'openregister',
+								'Manage your saved search configurations',
+							)
+						}}
+					</p>
+
+					<!-- Search Views -->
+					<div class="viewsSearchContainer">
+						<NcTextField
+							v-model="viewSearchQuery"
+							:placeholder="t('openregister', 'Search views...')"
+							:label="t('openregister', 'Search Views')">
+							<template #icon>
+								<Magnify :size="20" />
+							</template>
+						</NcTextField>
+					</div>
+
+					<!-- Views Table -->
+					<div v-if="viewsStore.isLoading" class="viewsLoading">
+						<NcLoadingIcon :size="32" />
+						<p>{{ t('openregister', 'Loading views...') }}</p>
+					</div>
+
+					<div v-else-if="filteredViews.length === 0" class="noViews">
+						<NcNoteCard type="info">
+							{{
+								viewSearchQuery
+									? t('openregister', 'No views match your search')
+									: t(
+											'openregister',
+											'No saved views yet. create one in the search tab!',
+										)
+							}}
+						</NcNoteCard>
+					</div>
+
+					<div v-else class="viewsTable">
+						<div
+							v-for="view in filteredViews"
+							:key="view.id || view.uuid"
+							class="viewRow"
+							:class="{ 'viewRow--active': isActiveView(view) }">
+							<div class="viewRowHeader">
+								<div class="viewRowTitle">
+									<strong>{{
+										view.name
+										|| t('openregister', 'Untitled View')
+									}}</strong>
+									<span
+										v-if="view.isDefault"
+										class="viewBadge viewBadge--default">
+										{{ t('openregister', 'Default') }}
+									</span>
+									<span
+										v-if="view.isPublic"
+										class="viewBadge viewBadge--public">
+										{{ t('openregister', 'Public') }}
+									</span>
+								</div>
+								<div class="viewRowActions">
+									<!-- Star/Favorite button -->
+									<NcButton
+										:variant="
+											isFavorited(view)
+												? 'primary'
+												: 'secondary'
+										"
+										:aria-label="
+											isFavorited(view)
+												? t(
+														'openregister',
+														'Remove from favorites',
+													)
+												: t(
+														'openregister',
+														'Add to favorites',
+													)
+										"
+										@click="toggleFavorite(view)">
+										<template #icon>
+											<Star
+												v-if="isFavorited(view)"
+												:size="20" />
+											<StarOutline v-else :size="20" />
+										</template>
+									</NcButton>
+
+									<!-- Load View (Magnify) -->
+									<NcButton
+										:variant="
+											isActiveView(view)
+												? 'primary'
+												: 'secondary'
+										"
+										:aria-label="t('openregister', 'Load view')"
+										@click="loadView(view)">
+										<template #icon>
+											<Magnify :size="20" />
+										</template>
+									</NcButton>
+
+									<!-- Edit View (Pencil) -->
+									<NcButton
+										variant="secondary"
+										:aria-label="t('openregister', 'Edit view')"
+										@click="openEditDialog(view)">
+										<template #icon>
+											<Pencil :size="20" />
+										</template>
+									</NcButton>
+
+									<!-- Delete View -->
+									<NcButton
+										variant="error"
+										:aria-label="
+											t('openregister', 'Delete view')
+										"
+										@click="confirmDeleteView(view)">
+										<template #icon>
+											<Delete :size="20" />
+										</template>
+									</NcButton>
+								</div>
+							</div>
+							<p v-if="view.description" class="viewRowDescription">
+								{{ view.description }}
+							</p>
+							<p
+								v-else
+								class="viewRowDescription viewRowDescription--empty">
+								{{ t('openregister', 'No description provided') }}
+							</p>
+						</div>
+					</div>
+				</div>
+			</NcAppSidebarTab>
+		</template>
+	</CnIndexSidebar>
+
+	<!-- Edit View Modal -->
+	<EditView v-if="showEditDialog" :view="editingView" @close="cancelEditView" />
+
+	<!-- Delete View Modal -->
+	<DeleteView
+		v-if="showDeleteDialog"
+		:view="viewToDelete"
+		@close="handleDeleteClose" />
+</template>
+
+<script>
+import { CnIndexSidebar } from '@conduction/nextcloud-vue'
+import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
+import {
+	NcAppSidebarTab,
+	NcButton,
+	NcLoadingIcon,
+	NcNoteCard,
+	NcSelect,
+	NcTextField,
+} from '@nextcloud/vue'
+import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
+import FilterIcon from 'vue-material-design-icons/Filter.vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Star from 'vue-material-design-icons/Star.vue'
+import StarOutline from 'vue-material-design-icons/StarOutline.vue'
+import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline.vue'
+import DeleteView from '../../modals/view/DeleteView.vue'
+import EditView from '../../modals/view/EditView.vue'
+import {
+	navigationStore,
+	objectStore,
+	registerStore,
+	schemaStore,
+	viewsStore,
+} from '../../store/store.js'
+
+export default {
+	name: 'SearchSideBar',
+	components: {
+		CnIndexSidebar,
+		NcAppSidebarTab,
+		NcSelect,
+		NcNoteCard,
+		NcTextField,
+		NcButton,
+		NcLoadingIcon,
+		Magnify,
+		FilterIcon,
+		ContentSaveOutline,
+		Delete,
+		ViewDashboardOutline,
+		Star,
+		StarOutline,
+		Pencil,
+		CogOutline,
+		EditView,
+		DeleteView,
+	},
+
+	data() {
+		return {
+			navigationStore,
+			objectStore,
+			registerStore,
+			schemaStore,
+			viewsStore,
+			activeTab: 'search-tab', // Active tab tracker
+			registerLoading: false,
+			schemaLoading: false,
+			// Multi-select state
+			selectedRegisters: [], // Array of register IDs
+			selectedSchemas: [], // Array of schema IDs
+			searchQuery: '',
+			searchTerms: [],
+			searchLoading: false,
+			lastSearchStats: null,
+			// Unified Faceting System
+			facetableFields: null, // Stage 1: Available facetable fields
+			facetData: null, // Stage 2: Actual facet data with counts
+			facetFilters: {}, // Applied facet filters
+			enabledFacets: {}, // Which facets user has enabled
+			facetsLoading: false, // Stage 1 loading
+			facetDataLoading: false, // Stage 2 loading
+			// View management
+			viewSearchQuery: '', // Search query for filtering views
+			showSaveForm: false, // Show inline save form
+			viewName: '',
+			viewNameTouched: false, // Track if user has touched the name field
+			viewDescription: '',
+			viewIsPublic: false,
+			viewIsDefault: false,
+			activeViewName: '', // Editable name for the active view
+			// Edit view dialog
+			showEditDialog: false,
+			editingView: null,
+			// Delete view dialog
+			showDeleteDialog: false,
+			viewToDelete: null,
+			// Column visibility collapsible state
+			expandedSchemas: {}, // Track which schema groups are expanded
+			metadataExpanded: true, // Metadata section expanded by default
+		}
+	},
+
+	computed: {
+		/**
+		 * Search string for CnIndexSidebar; synced to store and used for fetch.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @return {string} Current search string
+		 */
+		searchValueForSidebar() {
+			return objectStore.searchParams.search || ''
+		},
+
+		/**
+		 * Build the register dropdown options (multi-select) for the search sidebar.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object} NcSelect options bag for registers
+		 */
+		registerOptions() {
+			return {
+				options: registerStore.registerList.map((register) => ({
+					value: register.id,
+					label: register.title,
+					title: register.title,
+					description: register.description,
+					register,
+				})),
+
+				reduce: (option) => option.value, // Return only the ID for multi-select
+				label: 'title',
+				getOptionLabel: (option) => {
+					return option.title || option.label || ''
+				},
+			}
+		},
+
+		/**
+		 * Build the schema dropdown options (multi-select) for the selected registers.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object} NcSelect options bag for schemas
+		 */
+		schemaOptions() {
+			// Get all schemas from selected registers
+			if (this.selectedRegisters.length === 0) return { options: [] }
+
+			const schemaIds = new Set()
+			this.selectedRegisters.forEach((registerId) => {
+				const register = registerStore.registerList.find(
+					(r) => r.id === registerId,
+				)
+				if (register && register.schemas) {
+					register.schemas.forEach((schema) => schemaIds.add(schema.id))
+				}
+			})
+
+			return {
+				options: schemaStore.schemaList
+					.filter((schema) => schemaIds.has(schema.id))
+					.map((schema) => ({
+						value: schema.id,
+						label: schema.title,
+						title: schema.title,
+						description: schema.description,
+						schema,
+					})),
+
+				reduce: (option) => option.value, // Return only the ID for multi-select
+				label: 'title',
+				getOptionLabel: (option) => {
+					return option.title || option.label || ''
+				},
+			}
+		},
+
+		/**
+		 * Map saved views into NcSelect options for the view picker.
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md
+		 * @return {Array} View options
+		 */
+		viewOptions() {
+			return viewsStore.getAllViews.map((view) => ({
+				value: view.id || view.uuid,
+				label: view.name,
+				description: view.description,
+				isDefault: view.isDefault,
+				isPublic: view.isPublic,
+			}))
+		},
+
+		/**
+		 * Resolve the active saved view into NcSelect value shape.
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md
+		 * @return {object|null} Active view option, or null
+		 */
+		selectedViewValue() {
+			if (!viewsStore.activeView) return null
+			const view = viewsStore.activeView
+			return {
+				value: view.id || view.uuid,
+				label: view.name,
+			}
+		},
+
+		/**
+		 * Filter the saved-view list by search query and sort favorites first.
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md
+		 * @return {Array} Filtered, favorite-sorted views
+		 */
+		filteredViews() {
+			// Filter views based on search query
+			let views = viewsStore.getAllViews
+			if (this.viewSearchQuery) {
+				const query = this.viewSearchQuery.toLowerCase()
+				views = views.filter((view) => {
+					return (
+						view.name.toLowerCase().includes(query)
+						|| (view.description
+							&& view.description.toLowerCase().includes(query))
+					)
+				})
+			}
+
+			// Sort: favorited views first, then by name
+			return views.sort((a, b) => {
+				const aFavorited = this.isFavorited(a)
+				const bFavorited = this.isFavorited(b)
+
+				if (aFavorited && !bFavorited) return -1
+				if (!aFavorited && bFavorited) return 1
+
+				// Both favorited or both not favorited - sort by name
+				return (a.name || '').localeCompare(b.name || '')
+			})
+		},
+
+		/**
+		 * Whether a search can run (requires at least one register and one schema).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @return {boolean}
+		 */
+		canSearch() {
+			// Allow search if at least one register and one schema are selected
+			return (
+				this.selectedRegisters.length > 0 && this.selectedSchemas.length > 0
+			)
+		},
+
+		/**
+		 * Whether the current search configuration can be saved as a view.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {boolean}
+		 */
+		canSaveView() {
+			// Can save view if we have search configuration
+			return this.canSearch
+		},
+
+		/**
+		 * Placeholder text for the search input, varying by current term state.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @return {string}
+		 */
+		searchPlaceholder() {
+			return this.searchTerms.length > 0
+				? 'Add more search terms...'
+				: 'Type to search...'
+		},
+
+		hasEnabledFacets() {
+			return Object.values(this.enabledFacets).some((enabled) => enabled)
+		},
+
+		/**
+		 * Flatten the object metadata map into column descriptors for display.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {Array} Metadata column descriptors
+		 */
+		metadataColumns() {
+			return Object.entries(objectStore.metadata).map(([id, meta]) => ({
+				id,
+				...meta,
+			}))
+		},
+
+		/**
+		 * Get properties for all selected schemas
+		 *
+		 * Returns an array of objects containing schema info and properties
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @return {Array} Array of schema data with properties
+		 */
+		selectedSchemasWithProperties() {
+			if (!this.selectedSchemas || this.selectedSchemas.length === 0) {
+				return []
+			}
+
+			return this.selectedSchemas
+				.map((schemaId) => {
+					const schema = schemaStore.schemaList.find(
+						(s) => s.id === schemaId,
+					)
+					if (!schema || !schema.properties) {
+						return null
+					}
+
+					return {
+						id: schema.id,
+						title: schema.title || schema.name || `Schema ${schema.id}`,
+						properties: this.resolveInheritedProperties(schema),
+					}
+				})
+				.filter(Boolean) // Remove null entries
+		},
+	},
+
+	watch: {
+		// React to query param changes as single source of truth (only on /tables)
+		'$route.query': {
+			/**
+			 * @spec exclude Vue watch handler plumbing; re-syncs sidebar state from the route query on /tables.
+			 */
+			handler() {
+				if (this.$route.path !== '/tables') return
+				this.applyQueryParamsFromRoute()
+			},
+
+			deep: true,
+		},
+
+		// Re-apply the query params once the register list arrives. The mount-
+		// time `applyQueryParamsFromRoute()` retry loop (10 × 200ms) is shorter
+		// than the actual `_extend=schemas&stats` register-list response on
+		// busy dev envs (~5s observed), so deep-links with ?register=… stayed
+		// empty and downstream tables never populated. Reacting to the list
+		// transition closes that race without polling. See the e2e investigation
+		// in tests/e2e/spec-coverage/{entity-management-modals, saved-search-views}.
+		'$root.registerStore.registerList': {
+			/**
+			 * @param newList
+			 * @spec exclude Vue watch handler plumbing; re-runs applyQueryParamsFromRoute when the register list finishes loading on /tables deep-links.
+			 */
+			handler(newList) {
+				if (this.$route.path !== '/tables') return
+				if (Array.isArray(newList) === false || newList.length === 0) return
+				if (this.$route.query.register === undefined) return
+				if (this.selectedRegisters.length > 0) return
+				this.applyQueryParamsFromRoute()
+			},
+		},
+
+		// Watch for schema changes to initialize properties
+		// Use immediate: true equivalent in mounted
+		// This watcher will update properties when schema changes
+		'$root.schemaStore.schemaItem': {
+			/**
+			 * @param newSchema
+			 * @spec exclude Vue watch handler plumbing; re-initialises object properties when the selected schema changes.
+			 */
+			handler(newSchema) {
+				if (newSchema) {
+					objectStore.initializeProperties(newSchema)
+				} else {
+					objectStore.properties = {}
+					objectStore.initializeColumnFilters()
+				}
+			},
+
+			deep: true,
+		},
+
+		// Watch for selected schemas changes to auto-expand new schemas
+		selectedSchemas: {
+			/**
+			 * @param newSchemas
+			 * @param oldSchemas
+			 * @spec exclude Vue watch handler plumbing; auto-expands newly selected schema groups in the UI.
+			 */
+			handler(newSchemas, oldSchemas) {
+				// Auto-expand newly selected schemas
+				if (newSchemas && newSchemas.length > 0) {
+					const newExpanded = { ...this.expandedSchemas }
+					newSchemas.forEach((schemaId) => {
+						// Only auto-expand if not already in the list
+						if (!oldSchemas || !oldSchemas.includes(schemaId)) {
+							newExpanded[schemaId] = true
+						}
+					})
+					this.expandedSchemas = newExpanded
+				}
+			},
+
+			deep: true,
+		},
+
+		// Watch for active view changes to sync the name input
+		'viewsStore.activeView': {
+			/**
+			 * @param newView
+			 * @spec exclude Vue watch handler plumbing; mirrors the active view's name into the editable name input.
+			 */
+			handler(newView) {
+				if (newView && newView.name) {
+					this.activeViewName = newView.name
+				} else {
+					this.activeViewName = ''
+				}
+			},
+
+			deep: true,
+		},
+	},
+
+	/**
+	 * @spec exclude Lifecycle plumbing; fetches views/lists, applies the default view, and seeds state from the route via already-annotated methods.
+	 */
+	mounted() {
+		// objectStore.initializeColumnFilters()
+		this.registerLoading = true
+		this.schemaLoading = true
+
+		// Initialize activeViewName if there's already an active view
+		if (viewsStore.activeView && viewsStore.activeView.name) {
+			this.activeViewName = viewsStore.activeView.name
+		}
+
+		// Load views
+		viewsStore.fetchViews().catch((error) => {
+			console.error('Error loading views:', error)
+		})
+
+		// Only load lists if they're empty
+		if (!registerStore.registerList.length) {
+			registerStore
+				.refreshRegisterList()
+				.finally(() => (this.registerLoading = false))
+		} else {
+			this.registerLoading = false
+		}
+
+		if (!schemaStore.schemaList.length) {
+			schemaStore
+				.refreshSchemaList()
+				.finally(() => (this.schemaLoading = false))
+		} else {
+			this.schemaLoading = false
+		}
+
+		// Load default view if available
+		const defaultView = viewsStore.getDefaultView
+		if (defaultView) {
+			this.applyViewConfiguration(defaultView)
+		}
+
+		// Initialize from query params after lists potentially load
+		this.applyQueryParamsFromRoute()
+	},
+
+	methods: {
+		t,
+		/**
+		 * CnIndexSidebar @search: update store, keep searchTerms in sync for URL, and refetch.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @param value
+		 */
+		onSearchInput(value) {
+			const search = value || ''
+			objectStore.updateSearchParams({ search })
+			this.searchTerms = search
+				? search.trim().split(/\s+/).filter(Boolean)
+				: []
+			objectStore.refetchSearchCollection()
+		},
+
+		/**
+		 * CnIndexSidebar @filter-change: update store filters, keep facetFilters in sync, and refetch.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @param root0
+		 * @param root0.key
+		 * @param root0.values
+		 */
+		onFilterChange({ key, values }) {
+			const filters = {
+				...objectStore.searchParams.filters,
+				[key]: values || [],
+			}
+			objectStore.updateSearchParams({ filters })
+			this.facetFilters = { ...this.facetFilters, [key]: values || [] }
+			objectStore.refetchSearchCollection()
+		},
+
+		/**
+		 * CnIndexSidebar @columns-change: persist visible columns.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @param columns
+		 */
+		onColumnsChange(columns) {
+			objectStore.setSearchVisibleColumns(columns)
+		},
+
+		/**
+		 * Build URL query params from current sidebar state.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
+		 * @return {object} Query object
+		 */
+		buildQueryFromState() {
+			const query = {}
+			if (this.selectedRegisters.length > 0) {
+				query.register = this.selectedRegisters.join(',')
+			}
+			if (this.selectedSchemas.length > 0) {
+				query.schema = this.selectedSchemas.join(',')
+			}
+			if (this.searchTerms && this.searchTerms.length > 0) {
+				query.q = this.searchTerms.join(',')
+			}
+			return query
+		},
+
+		/**
+		 * Shallow-compare two query objects (keys/values as strings).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
+		 * @param {object} a - First query object
+		 * @param {object} b - Second query object
+		 * @return {boolean} Whether the queries are equal
+		 */
+		queriesEqual(a, b) {
+			const ka = Object.keys(a).sort()
+			const kb = Object.keys(b).sort()
+			if (ka.length !== kb.length) return false
+			for (let i = 0; i < ka.length; i++) {
+				if (ka[i] !== kb[i]) return false
+				if (String(a[ka[i]]) !== String(b[kb[i]])) return false
+			}
+			return true
+		},
+
+		/**
+		 * Write current sidebar state to the URL query (only on /tables).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
+		 * @return {void}
+		 */
+		updateRouteQueryFromState() {
+			if (this.$route.path !== '/tables') return
+			const nextQuery = this.buildQueryFromState()
+			if (this.queriesEqual(nextQuery, this.$route.query || {})) return
+			this.$router.replace({
+				path: this.$route.path,
+				query: nextQuery,
+			})
+		},
+
+		/**
+		 * Apply URL query params into component/store state and run the initial search.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
+		 * @return {void}
+		 */
+		applyQueryParamsFromRoute() {
+			if (this.$route.path !== '/tables') return
+			const { register, schema, q } = this.$route.query || {}
+			// Clear selection when params absent so table empties
+			if (!register) this.selectedRegisters = []
+			if (!schema) this.selectedSchemas = []
+			// Search terms
+			if (typeof q === 'string') {
+				const terms = q
+					.split(',')
+					.map((s) => s.trim())
+					.filter(Boolean)
+				this.searchTerms = Array.from(new Set(terms))
+			}
+			// Registers and schemas depend on lists being loaded
+			const applyRegisters = () => {
+				if (!register) return true
+				if (!registerStore.registerList.length) return false
+				const registerIds = String(register)
+					.split(',')
+					.map((id) => parseInt(id, 10))
+					.filter(Boolean)
+				this.selectedRegisters = registerIds.filter((id) =>
+					registerStore.registerList.some((r) => r.id === id),
+				)
+				return true
+			}
+			const applySchemas = () => {
+				if (!schema) return true
+				if (!schemaStore.schemaList.length) return false
+				const schemaIds = String(schema)
+					.split(',')
+					.map((id) => parseInt(id, 10))
+					.filter(Boolean)
+				this.selectedSchemas = schemaIds.filter((id) =>
+					schemaStore.schemaList.some((s) => s.id === id),
+				)
+				return true
+			}
+			// Try apply now, or retry shortly if lists not yet loaded.
+			//
+			// The register list (`GET /api/registers?_extend=schemas&stats`)
+			// takes 3–4.5s on a populated instance — longer than the former
+			// 10×200ms (2s) budget — so a `/tables?register=…&schema=…`
+			// deep-link gave up before the list arrived and the table stayed
+			// on "No objects found. Select registers and schemas…", never
+			// firing the search. The `$root.registerStore.registerList`
+			// watcher was meant to cover this but did not re-trigger the
+			// search reliably. Extend the retry window to 40×200ms (8s) so it
+			// comfortably outlasts the real list-load time. Verified via the
+			// e2e investigation in tests/e2e/spec-coverage/
+			// {entity-management-modals, saved-search-views}.
+			const tryApply = (attempt = 0) => {
+				const regOk = applyRegisters()
+				const schOk = applySchemas()
+				if (regOk && schOk) {
+					if (
+						this.selectedRegisters.length > 0
+						&& this.selectedSchemas.length > 0
+					) {
+						this.performSearchWithFacets()
+					} else {
+						objectStore.clearSearchCollection()
+					}
+					return
+				}
+				if (attempt < 40) {
+					setTimeout(() => tryApply(attempt + 1), 200)
+				}
+			}
+			tryApply()
+		},
+
+		/**
+		 * Apply a multi-select register change, prune now-invalid schemas, and sync the route.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
+		 * @param {Array|number} options - Selected register ids
+		 * @return {void}
+		 */
+		handleRegisterChange(options) {
+			// Handle multi-select - options is an array of values
+			// NcSelect with reduce returns the reduced values directly
+			// For multi-select, it's an array of the reduced values (IDs)
+			if (!options || options.length === 0) {
+				this.selectedRegisters = []
+			} else if (Array.isArray(options)) {
+				// Options should already be an array of IDs thanks to reduce
+				this.selectedRegisters = options
+			} else {
+				// Fallback for single value
+				this.selectedRegisters = [options]
+			}
+
+			// Clear schemas that are no longer valid for selected registers
+			const validSchemaIds = new Set()
+			this.selectedRegisters.forEach((registerId) => {
+				const register = registerStore.registerList.find(
+					(r) => r.id === registerId,
+				)
+				if (register && register.schemas) {
+					register.schemas.forEach((schemaId) =>
+						validSchemaIds.add(schemaId),
+					)
+				}
+			})
+			this.selectedSchemas = this.selectedSchemas.filter((id) =>
+				validSchemaIds.has(id),
+			)
+
+			if (this.selectedRegisters.length === 0) {
+				objectStore.clearSearchCollection()
+				this.resetFacets()
+			}
+			// Only update URL; route watcher will trigger applyQueryParamsFromRoute -> performSearchWithFacets once
+			this.updateRouteQueryFromState()
+		},
+
+		/**
+		 * Apply a multi-select schema change and sync the route.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
+		 * @param {Array|number} options - Selected schema ids
+		 * @return {Promise<void>}
+		 */
+		async handleSchemaChange(options) {
+			// Handle multi-select - options is an array of values
+			if (!options || options.length === 0) {
+				this.selectedSchemas = []
+			} else if (Array.isArray(options)) {
+				this.selectedSchemas = options
+			} else {
+				this.selectedSchemas = [options]
+			}
+
+			if (this.selectedSchemas.length === 0) {
+				objectStore.clearSearchCollection()
+				this.resetFacets()
+			}
+			// Only update URL; route watcher will trigger applyQueryParamsFromRoute -> performSearchWithFacets once
+			this.updateRouteQueryFromState()
+		},
+
+		/**
+		 * Push sidebar state into objectStore.searchParams and refetch type 'search'. Sets
+		 * register/schema context for dialogs and discoverFacets.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @return {void}
+		 */
+		syncSearchParamsAndRefetch() {
+			const registerId =
+				this.selectedRegisters.length > 0 ? this.selectedRegisters[0] : null
+			const schemaId =
+				this.selectedSchemas.length > 0 ? this.selectedSchemas[0] : null
+			const search =
+				this.searchTerms.length > 0 ? this.searchTerms.join(' ') : ''
+			const filters = { ...this.facetFilters }
+			if (registerId) {
+				const reg = registerStore.registerList.find(
+					(r) => r.id === registerId,
+				)
+				if (reg) registerStore.setRegisterItem(reg)
+			} else {
+				registerStore.setRegisterItem(null)
+			}
+			if (schemaId) {
+				const schema = schemaStore.schemaList.find((s) => s.id === schemaId)
+				if (schema) schemaStore.setSchemaItem(schema)
+			} else {
+				schemaStore.setSchemaItem(null)
+			}
+			objectStore.setSearchParams({
+				register: registerId,
+				schema: schemaId,
+				search,
+				filters,
+			})
+			objectStore.refetchSearchCollection()
+		},
+
+		/**
+		 * Parse the search input into de-duplicated search terms.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @return {void}
+		 */
+		handleSearchInput() {
+			// Parse search terms from input (support comma and space separation)
+			const inputTerms = this.searchQuery
+				.split(/[,\s]+/)
+				.map((term) => term.trim())
+				.filter((term) => term.length > 0)
+
+			// Find terms that are new (not already in searchTerms)
+			const newTerms = inputTerms.filter(
+				(term) => !this.searchTerms.includes(term),
+			)
+
+			// Add only new terms to existing ones
+			if (newTerms.length > 0) {
+				this.searchTerms = [...this.searchTerms, ...newTerms]
+			}
+		},
+
+		/**
+		 * Commit input terms to the search-term set, clear the input, and sync the route.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @return {void}
+		 */
+		addSearchTerms() {
+			// This method adds terms from the input to the existing search terms
+			this.handleSearchInput()
+			// Clear the input after adding terms
+			this.searchQuery = ''
+			// Reflect change in URL
+			this.updateRouteQueryFromState()
+		},
+
+		/**
+		 * Remove a search term, re-run the search if possible, and sync the route.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @param {number} index - Index of the term to remove
+		 * @return {Promise<void>}
+		 */
+		async removeSearchTerm(index) {
+			this.searchTerms.splice(index, 1)
+			this.searchQuery = this.searchTerms.join(', ')
+
+			// Automatically apply filters after removing a term
+			// This will either search with remaining terms or show all results if no terms left
+			if (this.canSearch) {
+				// applyFacetFilters now manages objectStore.loading state
+				await this.applyFacetFilters()
+			}
+			// Reflect change in URL
+			this.updateRouteQueryFromState()
+		},
+
+		/**
+		 * Run the object search for the current configuration and record timing stats.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @return {Promise<void>}
+		 */
+		async performSearch() {
+			if (!this.canSearch) return
+
+			// Add any terms from the input to the search terms
+			this.handleSearchInput()
+			// Clear the input after adding terms
+			this.searchQuery = ''
+
+			// Start performance timing
+			const startTime = performance.now()
+
+			try {
+				this.searchLoading = true
+				objectStore.loading = true
+				this.lastSearchStats = null
+
+				// Apply all filters (search terms + facet filters) and perform search with facets
+				await this.performSearchWithFacets()
+
+				// Calculate performance statistics
+				const endTime = performance.now()
+				const executionTime = Math.round(endTime - startTime)
+
+				this.lastSearchStats = {
+					total: objectStore.pagination.total || 0,
+					time: executionTime,
+				}
+			} catch (error) {
+				// Search failed - error is handled by setting lastSearchStats to defaults
+				this.lastSearchStats = {
+					total: 0,
+					time: 0,
+				}
+			} finally {
+				this.searchLoading = false
+				objectStore.loading = false
+			}
+			// Reflect search terms in URL
+			this.updateRouteQueryFromState()
+		},
+
+		/**
+		 * Merge inherited properties from allOf parent schemas into the given schema's own properties.
+		 * Own properties take precedence over inherited ones.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @param {object} schema - Schema object with optional allOf and properties
+		 * @return {object} Merged properties object
+		 */
+		resolveInheritedProperties(schema) {
+			const allOf = schema?.allOf || []
+			const inherited = {}
+			for (const ref of allOf) {
+				const schemaId = typeof ref === 'object' ? ref.id : ref
+				const parentSchema = schemaStore.schemaList.find(
+					(s) =>
+						s.id === schemaId
+						|| s.uuid === schemaId
+						|| String(s.id) === String(schemaId),
+				)
+				if (parentSchema?.properties) {
+					Object.assign(inherited, parentSchema.properties)
+				}
+			}
+			return { ...inherited, ...(schema?.properties || {}) }
+		},
+
+		/**
+		 * Load facet options for type 'search' via _facets=extend; facet data then comes from objectStore.searchFacets.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
+		 * @return {Promise<void>}
+		 */
+		async discoverFacets() {
+			if (
+				!objectStore.searchParams.register
+				|| !objectStore.searchParams.schema
+			)
+				return
+			try {
+				this.facetsLoading = true
+				this.facetableFields = null
+				await objectStore.refetchSearchCollection({
+					_facets: 'extend',
+					_limit: 0,
+				})
+				this.facetData = objectStore.searchFacets || null
+				const searchSchema = objectStore.searchSchema
+				this.facetableFields = searchSchema?.properties
+					? {
+							object_fields:
+								this.resolveInheritedProperties(searchSchema),
+						}
+					: {}
+			} catch (error) {
+				console.error('Error loading complete faceting data:', error)
+				this.facetableFields = null
+				this.facetData = null
+			} finally {
+				this.facetsLoading = false
+			}
+		},
+
+		/**
+		 * Toggle an individual facet on/off, clearing its filter when disabled.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
+		 * @param {string} fieldName - Facet field name
+		 * @param {object} _fieldInfo - Unused field metadata
+		 * @return {void}
+		 */
+		toggleFacet(fieldName, _fieldInfo) {
+			// When toggling facet, clear any existing data for that field
+			if (this.enabledFacets[fieldName]) {
+				// Facet was enabled, now being disabled
+				delete this.facetFilters[fieldName]
+			}
+
+			// The v-model will handle the enabledFacets update
+		},
+
+		/**
+		 * Build the `_facets` request configuration from the enabled facets.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
+		 * @return {object} Facet request configuration
+		 */
+		buildFacetConfiguration() {
+			const config = {}
+
+			// Process enabled facets
+			Object.entries(this.enabledFacets).forEach(([fieldName, enabled]) => {
+				if (!enabled) return
+
+				if (fieldName.startsWith('@self.')) {
+					// Metadata facet
+					const field = fieldName.replace('@self.', '')
+					if (!config['@self']) config['@self'] = {}
+
+					const fieldInfo = this.facetableFields?.['@self']?.[field]
+					const facetType = fieldInfo?.facet_types?.[0] || 'terms'
+
+					config['@self'][field] = { type: facetType }
+					if (facetType === 'date_histogram') {
+						config['@self'][field].interval = 'month'
+					}
+				} else {
+					// Object field facet
+					const fieldInfo =
+						this.facetableFields?.object_fields?.[fieldName]
+					const facetType = fieldInfo?.facet_types?.[0] || 'terms'
+
+					config[fieldName] = { type: facetType }
+					if (facetType === 'date_histogram') {
+						config[fieldName].interval = 'month'
+					}
+				}
+			})
+
+			return { _facets: config }
+		},
+
+		/**
+		 * Reset all facet/filter state (local and store) so CnIndexSidebar and Advanced Filters UI are cleared.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
+		 * @return {void}
+		 */
+		resetFacets() {
+			this.enabledFacets = {}
+			this.facetFilters = {}
+			this.facetData = null
+			this.facetDataLoading = false
+			objectStore.updateSearchParams({ filters: {} })
+			if (this.canSearch) {
+				objectStore.refetchSearchCollection()
+			}
+		},
+
+		/**
+		 * Run a faceted search by syncing params and refetching, then mirror store facets locally.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
+		 * @return {Promise<void>}
+		 */
+		async performSearchWithFacets() {
+			if (!this.canSearch) return
+			try {
+				this.searchLoading = true
+				this.syncSearchParamsAndRefetch()
+				// Sync store facets to local facetData for custom Advanced Filters UI
+				this.facetData = objectStore.searchFacets || null
+			} catch (error) {
+				console.error('Error performing search with facets:', error)
+			} finally {
+				this.searchLoading = false
+			}
+		},
+
+		/**
+		 * Resolve a human-readable label for a facet field.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
+		 * @param {string} field - Facet field name
+		 * @param {object} facet - Facet data
+		 * @param {boolean} isMetadata - Whether the facet is a @self metadata facet
+		 * @return {string} Display label
+		 */
+		getFacetLabel(field, facet, isMetadata) {
+			// Get human-readable label for facet
+			if (isMetadata) {
+				const fieldInfo = this.facetableFields?.['@self']?.[field]
+				return fieldInfo?.description || this.capitalizeFieldName(field)
+			} else {
+				const fieldInfo = this.facetableFields?.object_fields?.[field]
+				return (
+					fieldInfo?.title
+					|| fieldInfo?.description
+					|| this.capitalizeFieldName(field)
+				)
+			}
+		},
+
+		/**
+		 * Normalise a facet (terms/range/date_histogram, new or legacy shape) into select options.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
+		 * @param {object} facet - Facet data
+		 * @return {Array} Select options for the facet
+		 */
+		getFacetOptions(facet) {
+			// CnIndexSidebar / package store format: { values: [{ value, count }] }
+			if (facet?.values?.length) {
+				return facet.values.map((v) => ({
+					value: v.value,
+					label: `${v.value} (${v.count ?? 0})`,
+				}))
+			}
+			// Legacy _facets=extend format: facet.data with type and buckets
+			if (!facet || !facet.data) return []
+			const facetData = facet.data
+
+			if (facetData.type === 'terms') {
+				// Terms facet: simple buckets with value and count
+				return (facetData.buckets || []).map((bucket) => ({
+					value: bucket.value,
+					label: `${bucket.label || bucket.value} (${bucket.count || 0})`,
+				}))
+			} else if (facetData.type === 'range') {
+				// Range facet: numeric ranges
+				return (facetData.buckets || []).map((bucket) => ({
+					value: `${bucket.from}-${bucket.to}`,
+					label: `${bucket.label || `${bucket.from} - ${bucket.to}`} (${bucket.count || 0})`,
+				}))
+			} else if (facetData.type === 'date_histogram') {
+				// Date histogram facet: multiple time brackets
+				const options = []
+
+				// Add yearly options
+				if (facetData.brackets?.yearly?.buckets) {
+					facetData.brackets.yearly.buckets.forEach((bucket) => {
+						options.push({
+							value: `year:${bucket.date}`,
+							label: `${bucket.label} (${bucket.count || 0})`,
+						})
+					})
+				}
+
+				// Add monthly options
+				if (facetData.brackets?.monthly?.buckets) {
+					facetData.brackets.monthly.buckets.forEach((bucket) => {
+						options.push({
+							value: `month:${bucket.date}`,
+							label: `${bucket.label} (${bucket.count || 0})`,
+						})
+					})
+				}
+
+				// Add daily options (limit to recent entries to avoid clutter)
+				if (facetData.brackets?.daily?.buckets) {
+					facetData.brackets.daily.buckets
+						.slice(0, 30)
+						.forEach((bucket) => {
+							options.push({
+								value: `day:${bucket.date}`,
+								label: `${bucket.label} (${bucket.count || 0})`,
+							})
+						})
+				}
+
+				return options
+			}
+
+			// Fallback for unknown facet types
+			return []
+		},
+
+		/**
+		 * @spec exclude Presentation-only helper; humanises a camelCase facet field name for the label.
+		 * @param {string} fieldName - Raw field name
+		 * @return {string} Humanised label
+		 */
+		capitalizeFieldName(fieldName) {
+			// Convert field names like 'tooiCategorieNaam' to 'Tooi Categorie Naam'
+			return fieldName
+				.replace(/([a-z])([A-Z])/g, '$1 $2') // Split camelCase
+				.replace(/^./, (str) => str.toUpperCase()) // Capitalize first letter
+		},
+
+		/**
+		 * Toggle schema group expanded/collapsed state
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @param {number} schemaId - The schema ID
+		 * @return {void}
+		 */
+		toggleSchemaGroup(schemaId) {
+			// Toggle the expanded state for this schema
+			this.expandedSchemas = {
+				...this.expandedSchemas,
+				[schemaId]: !this.expandedSchemas[schemaId],
+			}
+		},
+
+		/**
+		 * Activate a selected saved view by fetching it and applying its configuration.
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md
+		 * @param {object|null} option - Selected view option (or null to clear)
+		 * @return {Promise<void>}
+		 */
+		async handleViewChange(option) {
+			if (!option) {
+				viewsStore.clearActiveView()
+				return
+			}
+
+			try {
+				// Fetch the full view details
+				const view = await viewsStore.fetchView(option.value)
+
+				// Apply the view configuration to current search state
+				this.applyViewConfiguration(view)
+			} catch (error) {
+				console.error('Error loading view:', error)
+			}
+		},
+
+		/**
+		 * Apply a saved view's stored query config to the live search state and re-run search.
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md
+		 * @param {object} view - The saved view (with query/configuration block)
+		 * @return {void}
+		 */
+		applyViewConfiguration(view) {
+			if (!view) return
+
+			// Support both 'query' (new) and 'configuration' (old) for backwards compatibility
+			const config = view.query || view.configuration
+			if (!config) return
+
+			// Apply registers (define data scope)
+			if (config.registers && Array.isArray(config.registers)) {
+				this.selectedRegisters = config.registers
+			}
+
+			// Apply schemas (define object types)
+			if (config.schemas && Array.isArray(config.schemas)) {
+				this.selectedSchemas = config.schemas
+			}
+
+			// Apply search terms (default filters)
+			if (config.searchTerms && Array.isArray(config.searchTerms)) {
+				this.searchTerms = config.searchTerms
+			}
+
+			// Apply facet filters (default filters)
+			if (config.facetFilters) {
+				this.facetFilters = config.facetFilters
+			}
+
+			// Apply enabled facets
+			if (config.enabledFacets) {
+				this.enabledFacets = config.enabledFacets
+			}
+
+			// Set as active view
+			viewsStore.setActiveView(view)
+
+			// Perform search with new configuration
+			if (this.canSearch) {
+				this.performSearchWithFacets()
+			}
+		},
+
+		/**
+		 * Persist the current search configuration as a new saved view.
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md
+		 * @return {Promise<void>}
+		 */
+		async saveView() {
+			if (!this.viewName.trim()) return
+
+			try {
+				// Only save query parameters (not UI state like pagination, sorting, columns)
+				const viewData = {
+					name: this.viewName.trim(),
+					description: this.viewDescription || '',
+					isPublic: this.viewIsPublic,
+					isDefault: this.viewIsDefault,
+					configuration: {
+						// Query parameters only
+						registers: this.selectedRegisters,
+						schemas: this.selectedSchemas,
+						searchTerms: this.searchTerms,
+						facetFilters: this.facetFilters,
+						enabledFacets: this.enabledFacets,
+					},
+				}
+
+				const newView = await viewsStore.createView(viewData)
+
+				// Refresh the view list to show the newly created view
+				await viewsStore.fetchViews()
+
+				// Set the newly created view as active
+				viewsStore.activeView = newView
+				this.activeViewName = viewsStore.activeView.name
+
+				// Clear form data and hide form
+				this.viewName = ''
+				this.viewNameTouched = false
+				this.viewDescription = ''
+				this.viewIsPublic = false
+				this.viewIsDefault = false
+				this.showSaveForm = false
+
+				// Show success message
+				OC.Notification.showTemporary(
+					this.t('openregister', 'View saved successfully!'),
+				)
+			} catch (error) {
+				console.error('Error saving view:', error)
+				OC.Notification.showTemporary(
+					this.t('openregister', 'Failed to save view: {error}', {
+						error: error.message,
+					}),
+				)
+			}
+		},
+
+		/**
+		 * Reset and hide the save-view form without persisting.
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md
+		 * @return {void}
+		 */
+		cancelSaveView() {
+			// Reset form and hide it
+			this.viewName = ''
+			this.viewNameTouched = false
+			this.viewDescription = ''
+			this.showSaveForm = false
+		},
+
+		/**
+		 * Persist the current search configuration onto the active saved view.
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md
+		 * @return {Promise<void>}
+		 */
+		async updateActiveView() {
+			if (!viewsStore.activeView || !this.activeViewName.trim()) return
+
+			try {
+				// Get the current search state
+				const viewData = {
+					name: this.activeViewName.trim(),
+					description: viewsStore.activeView.description || '',
+					isPublic: viewsStore.activeView.isPublic,
+					isDefault: viewsStore.activeView.isDefault,
+					configuration: {
+						// Query parameters only
+						registers: this.selectedRegisters,
+						schemas: this.selectedSchemas,
+						searchTerms: this.searchTerms,
+						facetFilters: this.facetFilters,
+						enabledFacets: this.enabledFacets,
+					},
+				}
+
+				const updatedView = await viewsStore.updateView(
+					viewsStore.activeView.id || viewsStore.activeView.uuid,
+					viewData,
+				)
+
+				// Refresh the view list to show the updated view
+				await viewsStore.fetchViews()
+
+				// Update the active view with the latest data
+				viewsStore.activeView = updatedView
+				this.activeViewName = viewsStore.activeView.name
+
+				OC.Notification.showTemporary(
+					this.t('openregister', 'View updated successfully!'),
+				)
+			} catch (error) {
+				console.error('Error updating view:', error)
+				OC.Notification.showTemporary(
+					this.t('openregister', 'Failed to update view: {error}', {
+						error: error.message,
+					}),
+				)
+			}
+		},
+
+		/**
+		 * Open the view-edit dialog for the currently active view.
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md
+		 * @return {void}
+		 */
+		openEditDialogForActiveView() {
+			if (!viewsStore.activeView) return
+			this.openEditDialog(viewsStore.activeView)
+		},
+
+		/**
+		 * Stage the active view for deletion and open the confirm dialog.
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md
+		 * @return {void}
+		 */
+		confirmDeleteActiveView() {
+			if (!viewsStore.activeView) return
+			this.viewToDelete = viewsStore.activeView
+			this.showDeleteDialog = true
+		},
+
+		/**
+		 * Fetch and activate a saved view, apply its config, and switch to the search tab.
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md
+		 * @param {object} view - The view to load
+		 * @return {Promise<void>}
+		 */
+		async loadView(view) {
+			try {
+				// Fetch the full view details
+				const fullView = await viewsStore.fetchView(view.id || view.uuid)
+
+				// Set as active view
+				viewsStore.activeView = fullView
+				this.activeViewName = fullView.name || ''
+
+				// Apply the view configuration to current search state
+				this.applyViewConfiguration(fullView)
+
+				// Switch to search tab to see the applied configuration
+				this.activeTab = 'search-tab'
+			} catch (error) {
+				console.error('Error loading view:', error)
+				OC.Notification.showTemporary(
+					this.t('openregister', 'Failed to load view: {error}', {
+						error: error.message,
+					}),
+				)
+			}
+		},
+
+		/**
+		 * Stage a view for deletion and open the confirm dialog.
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md
+		 * @param {object} view - The view to delete
+		 * @return {void}
+		 */
+		confirmDeleteView(view) {
+			this.viewToDelete = view
+			this.showDeleteDialog = true
+		},
+
+		/**
+		 * Whether the given view is the currently active view.
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md
+		 * @param {object} view - The view to test
+		 * @return {boolean}
+		 */
+		isActiveView(view) {
+			if (!viewsStore.activeView) return false
+			const activeId = viewsStore.activeView.id || viewsStore.activeView.uuid
+			const viewId = view.id || view.uuid
+			return activeId === viewId
+		},
+
+		/**
+		 * Whether the current user has favorited the given view.
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md
+		 * @param {object} view - The view to test
+		 * @return {boolean}
+		 */
+		isFavorited(view) {
+			// Check if current user has favorited this view
+			// TODO: Remove this once we have a proper user store
+			// eslint-disable-next-line @nextcloud/no-deprecations
+			const currentUser = OC.getCurrentUser()?.uid
+			if (!currentUser || !view || !view.favoredBy) return false
+			return view.favoredBy.includes(currentUser)
+		},
+
+		/**
+		 * Add or remove the current user from a view's favoredBy via PATCH, then refresh.
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md
+		 * @param {object} view - The view to favorite/unfavorite
+		 * @return {Promise<void>}
+		 */
+		async toggleFavorite(view) {
+			try {
+				// TODO: Remove this once we have a proper user store
+				// eslint-disable-next-line @nextcloud/no-deprecations
+				const currentUser = OC.getCurrentUser()?.uid
+				if (!currentUser) {
+					OC.Notification.showTemporary(
+						this.t(
+							'openregister',
+							'You must be logged in to favorite views',
+						),
+					)
+					return
+				}
+
+				const isFavorited = this.isFavorited(view)
+				const currentFavoredBy = view.favoredBy || []
+
+				// Add or remove user from favoredBy array
+				const updatedFavoredBy = isFavorited
+					? currentFavoredBy.filter((uid) => uid !== currentUser)
+					: [...currentFavoredBy, currentUser]
+
+				// Use PATCH to update only the favoredBy property
+				const response = await fetch(
+					generateUrl(
+						`/apps/openregister/api/views/${view.id || view.uuid}`,
+					),
+					{
+						method: 'PATCH',
+						headers: {
+							'Content-Type': 'application/json',
+							requesttoken: OC.requestToken,
+						},
+						body: JSON.stringify({
+							favoredBy: updatedFavoredBy,
+						}),
+					},
+				)
+
+				if (!response.ok) {
+					throw new Error('Failed to toggle favorite status')
+				}
+
+				// Refresh views list to get updated favoredBy
+				await viewsStore.fetchViews()
+
+				OC.Notification.showTemporary(
+					!isFavorited
+						? this.t('openregister', 'Added to favorites')
+						: this.t('openregister', 'Removed from favorites'),
+				)
+			} catch (error) {
+				console.error('Error toggling favorite:', error)
+				OC.Notification.showTemporary(
+					this.t('openregister', 'Failed to update favorite status'),
+				)
+			}
+		},
+
+		/**
+		 * Open the view-edit dialog for a given view.
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md
+		 * @param {object} view - The view to edit
+		 * @return {void}
+		 */
+		openEditDialog(view) {
+			this.editingView = view
+			this.showEditDialog = true
+		},
+
+		/**
+		 * Close the view-edit dialog without saving.
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md
+		 * @return {void}
+		 */
+		cancelEditView() {
+			this.showEditDialog = false
+			this.editingView = null
+		},
+
+		/**
+		 * After a delete dialog closes, refresh the view list and clear the active view if deleted.
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md
+		 * @return {Promise<void>}
+		 */
+		async handleDeleteClose() {
+			const wasActiveView =
+				this.viewToDelete
+				&& viewsStore.activeView
+				&& (this.viewToDelete.id === viewsStore.activeView.id
+					|| this.viewToDelete.uuid === viewsStore.activeView.uuid)
+
+			this.showDeleteDialog = false
+			this.viewToDelete = null
+
+			// Refresh the view list
+			await viewsStore.fetchViews()
+
+			// If the deleted view was the active view, clear it
+			if (wasActiveView) {
+				viewsStore.activeView = null
+				this.activeViewName = ''
+			}
+		},
+
+		/**
+		 * Update a single facet filter's selected values and re-run the faceted search.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
+		 * @param {string} field - Facet field name
+		 * @param {Array} selectedValues - Selected facet values
+		 * @return {void}
+		 */
+		updateFacetFilter(field, selectedValues) {
+			// Update facet filter and refresh search
+			this.facetFilters = {
+				...this.facetFilters,
+				[field]: selectedValues,
+			}
+
+			// Apply facet filters to search
+			this.applyFacetFilters()
+		},
+
+		/**
+		 * Sync facet filters into search params (used before refetch when custom facet UI changes).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
+		 * @return {void}
+		 */
+		applyFiltersToObjectStore() {
+			const activeFilters = {}
+			Object.entries(this.facetFilters).forEach(([field, values]) => {
+				if (values && values.length > 0) {
+					const filterValues = values.map((option) =>
+						option && option.value !== undefined ? option.value : option,
+					)
+					activeFilters[field] = filterValues
+				}
+			})
+			objectStore.updateSearchParams({
+				search:
+					this.searchTerms.length > 0 ? this.searchTerms.join(' ') : '',
+				filters: activeFilters,
+			})
+		},
+
+		/**
+		 * Apply facet filters and refresh the faceted search, managing the loading state.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
+		 * @return {Promise<void>}
+		 */
+		async applyFacetFilters() {
+			// Apply facet filters and refresh search with facets
+			// Note: performSearchWithFacets manages its own searchLoading state
+			// but we also need to manage objectStore.loading for the main view
+			objectStore.loading = true
+			try {
+				await this.performSearchWithFacets()
+			} finally {
+				objectStore.loading = false
+			}
+		},
+	},
+}
+</script>
+
+<style lang="scss" scoped>
+.section {
+	padding: 16px;
+	margin-bottom: 0;
+}
+
+.sectionTitle {
+	color: var(--color-text-maxcontrast);
+	font-size: 14px;
+	font-weight: bold;
+	margin: 0 0 12px 0;
+}
+
+.saveViewSection {
+	padding: 16px;
+	border-bottom: 1px solid var(--color-border);
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+
+	> button {
+		width: 100%;
+	}
+}
+
+.activeViewActions {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.activeViewHeader {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	justify-content: space-between;
+}
+
+.activeViewNameInput {
+	flex: 1;
+}
+
+.activeViewButtons {
+	display: flex;
+	gap: 8px;
+
+	button {
+		flex: 1;
+	}
+}
+
+.saveViewForm {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	width: 100%;
+}
+
+.saveViewFormActions {
+	display: flex;
+	gap: 8px;
+
+	button {
+		flex: 1;
+	}
+}
+
+.saveViewHint {
+	font-size: 0.85em;
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+	text-align: center;
+}
+
+.viewsSection {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding: 16px;
+	min-height: calc(100vh - 200px); // Ensure section fills available height
+
+	h3 {
+		margin: 0 0 8px 0;
+		font-size: 1.1em;
+		color: var(--color-main-text);
+	}
+}
+
+.viewsDescription {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
+	margin: 0;
+}
+
+.viewsSearchContainer {
+	margin-top: 8px;
+}
+
+.viewsLoading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 32px;
+	gap: 16px;
+
+	p {
+		color: var(--color-text-maxcontrast);
+		margin: 0;
+	}
+}
+
+.noViews {
+	padding: 16px 0;
+}
+
+.viewsTable {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.viewRow {
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	padding: 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	transition: background-color 0.2s ease;
+
+	&:hover {
+		background-color: var(--color-background-hover);
+	}
+
+	&--active {
+		border: 2px solid var(--color-success) !important;
+		background-color: var(--color-success-light);
+	}
+}
+
+.viewRowHeader {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 8px;
+}
+
+.viewRowTitle {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+
+	strong {
+		font-size: 1em;
+		color: var(--color-main-text);
+	}
+}
+
+.viewBadge {
+	font-size: 0.75em;
+	padding: 2px 6px;
+	border-radius: 3px;
+	font-weight: 600;
+	text-transform: uppercase;
+
+	&--default {
+		background-color: var(--color-success);
+		color: white;
+	}
+
+	&--public {
+		background-color: var(--color-primary-element);
+		color: white;
+	}
+}
+
+.viewRowActions {
+	display: flex;
+	gap: 4px;
+}
+
+.viewRowDescription {
+	font-size: 0.9em;
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+	font-style: italic;
+}
+
+.viewRowDescription--empty {
+	opacity: 0.6;
+}
+
+.viewRowMeta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	font-size: 0.85em;
+	color: var(--color-text-maxcontrast);
+}
+
+.viewMetaItem {
+	strong {
+		font-weight: 600;
+	}
+}
+
+.filterSection {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding: 16px;
+
+	h3 {
+		margin: 0 0 12px 0;
+		font-size: 1.1em;
+		color: var(--color-main-text);
+	}
+}
+
+.filterGroup {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+
+	label {
+		font-size: 0.9em;
+		font-weight: 500;
+		color: var(--color-text-maxcontrast);
+	}
+}
+
+.field-hint {
+	font-size: 0.875rem;
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+	padding-top: 4px;
+}
+
+.option-content {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.option-title {
+	font-weight: 500;
+}
+
+.option-description {
+	font-size: 0.875rem;
+	color: var(--color-text-maxcontrast);
+	max-width: 100%;
+	white-space: normal;
+	word-break: break-word;
+}
+
+.search-input-container {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 10px;
+}
+
+.search-input-container .nc-text-field {
+	flex: 1;
+}
+
+.search-terms {
+	margin-bottom: 10px;
+}
+
+.search-terms-label {
+	display: block;
+	margin-bottom: 5px;
+	font-size: 14px;
+	color: var(--color-text-maxcontrast);
+}
+
+.search-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+
+.search-chip {
+	display: inline-flex;
+	align-items: center;
+	background: var(--color-primary-element-light);
+	color: var(--color-primary-element-text);
+	border-radius: 16px;
+	padding: 4px 8px;
+	font-size: 12px;
+	max-width: 200px;
+}
+
+.chip-text {
+	margin-right: 4px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.chip-remove {
+	background: none;
+	border: none;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: inherit;
+	opacity: 0.7;
+	transition: opacity 0.2s;
+}
+
+.chip-remove:hover {
+	opacity: 1;
+}
+
+.search-stats {
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
+	margin-bottom: 10px;
+}
+
+.search-hint {
+	margin: 0;
+}
+
+.loading-container {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--color-text-maxcontrast);
+}
+
+.facets-container {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.facet-group {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.facet-label {
+	font-size: 0.9em;
+	font-weight: 500;
+	color: var(--color-text-maxcontrast);
+}
+
+.no-facets-message {
+	padding: 16px;
+	text-align: center;
+	color: var(--color-text-maxcontrast);
+	font-style: italic;
+}
+
+.facets-enable-container {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	align-items: center;
+	text-align: center;
+}
+
+.facets-enable-description {
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+	line-height: 1.4;
+}
+
+.database-source-notice {
+	padding: 12px;
+	background-color: var(--color-warning-light);
+	border-radius: 6px;
+	text-align: center;
+}
+
+.database-notice-text {
+	font-size: 12px;
+	color: var(--color-warning-dark);
+	margin: 0;
+	line-height: 1.4;
+}
+
+/* Unified Faceting System Styles */
+.facets-discovery-container,
+.facets-load-container,
+.facets-reset-container {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	align-items: center;
+	text-align: center;
+	padding: 12px;
+}
+
+.facets-description,
+.facets-load-description {
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+	line-height: 1.4;
+}
+
+.available-facets-container,
+.active-facets-container {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.available-facets-title,
+.active-facets-title {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-main-text);
+	margin: 0 0 8px 0;
+}
+
+.facet-category {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.facet-category-title {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+}
+
+.facet-checkboxes {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.facet-checkbox {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+}
+
+.facet-checkbox input[type='checkbox'] {
+	margin-top: 2px;
+	flex-shrink: 0;
+}
+
+.facet-checkbox-label {
+	font-size: 12px;
+	color: var(--color-main-text);
+	line-height: 1.4;
+	cursor: pointer;
+	flex: 1;
+}
+
+.facet-types {
+	font-size: 11px;
+	color: var(--color-text-maxcontrast);
+	font-style: italic;
+}
+
+.facets-reset-container {
+	border-top: 1px solid var(--color-border);
+	padding-top: 12px;
+	margin-top: 8px;
+}
+
+/* Edit View Modal */
+.editViewDialogContent {
+	padding: 0;
+	min-width: 500px;
+	max-width: 700px;
+}
+
+.editViewTabs {
+	display: flex;
+	border-bottom: 1px solid var(--color-border);
+	background-color: var(--color-background-hover);
+}
+
+.editViewTab {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 12px 24px;
+	cursor: pointer;
+	border-bottom: 2px solid transparent;
+	transition: all 0.2s ease;
+	color: var(--color-text-maxcontrast);
+}
+
+.editViewTab:hover {
+	background-color: var(--color-background-dark);
+	color: var(--color-main-text);
+}
+
+.editViewTab.active {
+	border-bottom-color: var(--color-primary-element);
+	color: var(--color-primary-element);
+	font-weight: 600;
+}
+
+.editViewTabContent {
+	padding: 24px;
+	max-height: 60vh;
+	overflow-y: auto;
+}
+
+.editViewField {
+	margin-bottom: 16px;
+}
+
+.fieldHint {
+	margin-top: -8px;
+	margin-bottom: 16px;
+	font-size: 0.9em;
+	color: var(--color-text-maxcontrast);
+}
+
+.shareSection {
+	margin-bottom: 24px;
+}
+
+.shareSection h4 {
+	margin-bottom: 12px;
+	font-weight: 600;
+	color: var(--color-main-text);
+}
+
+.editViewActions {
+	display: flex;
+	gap: 8px;
+	justify-content: flex-end;
+	padding: 16px 24px;
+	border-top: 1px solid var(--color-border);
+	background-color: var(--color-background-hover);
+}
+
+/* Columns Tab */
+.columnsSection {
+	padding: 16px;
+	min-height: calc(100vh - 200px); // Ensure section fills available height
+}
+
+.columnsSection h3 {
+	margin-top: 0;
+	margin-bottom: 8px;
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.columnsDescription {
+	color: var(--color-text-maxcontrast);
+	margin-bottom: 16px;
+	font-size: 14px;
+}
+
+.columnGroup {
+	margin-bottom: 24px;
+}
+
+.columnGroup h4 {
+	margin-top: 0;
+	margin-bottom: 12px;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-text-light);
+	border-bottom: 1px solid var(--color-border);
+	padding-bottom: 8px;
+}
+
+.columnGroup :deep(.checkbox-radio-switch) {
+	margin-bottom: 8px;
+}
+
+.columnGroup :deep(.checkbox-radio-switch__content) {
+	padding: 4px 0;
+}
+
+/* Collapsible Column Groups */
+.columnGroup.collapsible {
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	padding: 0;
+	margin-bottom: 12px;
+}
+
+.columnGroupHeader {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 12px;
+	cursor: pointer;
+	user-select: none;
+	transition: background-color 0.2s ease;
+}
+
+.columnGroupHeader:hover {
+	background-color: var(--color-background-hover);
+}
+
+.columnGroupHeader h4 {
+	margin: 0;
+	padding: 0;
+	border: none;
+	flex: 1;
+	color: var(--color-main-text);
+}
+
+.columnGroupContent {
+	padding: 12px;
+	border-top: 1px solid var(--color-border);
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.viewRow,
+	.chip-remove,
+	.editViewTab,
+	.columnGroupHeader {
+		transition: none;
+	}
+}
+</style>

@@ -1,0 +1,587 @@
+<?php
+
+/**
+ * OpenRegister Audit Trail
+ *
+ * This file contains the class for handling audit trail related operations
+ * in the OpenRegister application.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ */
+
+namespace OCA\OpenRegister\Db;
+
+use DateTime;
+use JsonSerializable;
+use OCP\AppFramework\Db\Entity;
+
+/**
+ * Entity class representing an Audit Trail entry
+ *
+ * Manages audit trail data and operations
+ *
+ * @package OCA\OpenRegister\Db
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method int|null getSchema()
+ * @method void setSchema(?int $schema)
+ * @method int|null getRegister()
+ * @method void setRegister(?int $register)
+ * @method int|null getObject()
+ * @method void setObject(?int $object)
+ * @method int|null getSize()
+ * @method void setSize(?int $size)
+ * @method string|null getObjectUuid()
+ * @method void setObjectUuid(?string $objectUuid)
+ * @method string|null getRegisterUuid()
+ * @method void setRegisterUuid(?string $registerUuid)
+ * @method string|null getSchemaUuid()
+ * @method void setSchemaUuid(?string $schemaUuid)
+ * @method string|null getAction()
+ * @method void setAction(?string $action)
+ * @method array|null getChanged()
+ * @method void setChanged(?array $changed)
+ * @method string|null getUser()
+ * @method void setUser(?string $user)
+ * @method string|null getUserName()
+ * @method void setUserName(?string $userName)
+ * @method string|null getSession()
+ * @method void setSession(?string $session)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method string|null getOrganisation()
+ * @method void setOrganisation(?string $organisation)
+ * @method DateTime|null getExpires()
+ * @method void setExpires(?DateTime $expires)
+ * @method string|null getHash()
+ * @method void setHash(?string $hash)
+ * @method string|null getPreviousHash()
+ * @method void setPreviousHash(?string $previousHash)
+ * @method DateTime|null getPurgedAt()
+ * @method void setPurgedAt(?DateTime $purgedAt)
+ * @method string|null getRetentionPeriod()
+ * @method void setRetentionPeriod(?string $retentionPeriod)
+ * @method string|null getToolId()
+ * @method void setToolId(?string $toolId)
+ * @method string|null getParamsDigest()
+ * @method void setParamsDigest(?string $paramsDigest)
+ * @method array|null getResultSummary()
+ * @method void setResultSummary(?array $resultSummary)
+ *
+ * @psalm-suppress PossiblyUnusedMethod
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields) Domain entity requires many fields for complete audit trail data
+ * @SuppressWarnings(PHPMD.LongVariable)
+ */
+class AuditTrail extends Entity implements JsonSerializable {
+
+	/**
+	 * Unique identifier for the audit trail entry
+	 *
+	 * @var string|null Unique identifier for the audit trail entry
+	 */
+	protected ?string $uuid = null;
+
+	/**
+	 * Schema ID associated with the audit trail entry
+	 *
+	 * @var integer|null Schema ID associated with the audit trail entry
+	 */
+	protected ?int $schema = null;
+
+	/**
+	 * Register ID associated with the audit trail entry
+	 *
+	 * @var integer|null Register ID associated with the audit trail entry
+	 */
+	protected ?int $register = null;
+
+	/**
+	 * Object ID associated with the audit trail entry
+	 *
+	 * @var integer|null Object ID associated with the audit trail entry
+	 */
+	protected ?int $object = null;
+
+	/**
+	 * Size of the log in byte
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $size = null;
+
+	/**
+	 * UUID of the object associated with the audit trail entry
+	 *
+	 * @var string|null UUID of the object associated with the audit trail entry
+	 */
+	protected ?string $objectUuid = null;
+
+	/**
+	 * UUID of the register associated with the audit trail entry
+	 *
+	 * @var string|null UUID of the register associated with the audit trail entry
+	 */
+	protected ?string $registerUuid = null;
+
+	/**
+	 * UUID of the schema associated with the audit trail entry
+	 *
+	 * @var string|null UUID of the schema associated with the audit trail entry
+	 */
+	protected ?string $schemaUuid = null;
+
+	/**
+	 * Action performed in the audit trail entry
+	 *
+	 * @var string|null Action performed in the audit trail entry
+	 */
+	protected ?string $action = null;
+
+	/**
+	 * Changed data in the audit trail entry
+	 *
+	 * @var array|null Changed data in the audit trail entry
+	 */
+	protected ?array $changed = null;
+
+	/**
+	 * User ID associated with the audit trail entry
+	 *
+	 * @var string|null User ID associated with the audit trail entry
+	 */
+	protected ?string $user = null;
+
+	/**
+	 * Username associated with the audit trail entry
+	 *
+	 * @var string|null Username associated with the audit trail entry
+	 */
+	protected ?string $userName = null;
+
+	/**
+	 * Session ID associated with the audit trail entry
+	 *
+	 * @var string|null Session ID associated with the audit trail entry
+	 */
+	protected ?string $session = null;
+
+	/**
+	 * Request data associated with the audit trail entry
+	 *
+	 * @var string|null Request data associated with the audit trail entry
+	 */
+	protected ?string $request = null;
+
+	/**
+	 * IP address associated with the audit trail entry
+	 *
+	 * @var string|null IP address associated with the audit trail entry
+	 */
+	protected ?string $ipAddress = null;
+
+	/**
+	 * Version of the audit trail entry
+	 *
+	 * @var string|null Version of the audit trail entry
+	 */
+	protected ?string $version = null;
+
+	/**
+	 * Creation timestamp of the audit trail entry
+	 *
+	 * @var DateTime|null Creation timestamp of the audit trail entry
+	 */
+	protected ?DateTime $created = null;
+
+	/**
+	 * The unique identifier of the organization processing personal data
+	 *
+	 * This can be an OIN (Organisatie Identificatie Nummer), RSIN (Rechtspersonen en Samenwerkingsverbanden
+	 * Informatienummer), KVK (Kamer van Koophandel) number, or any other official organization identifier.
+	 *
+	 * @var string|null The unique identifier of the organization processing personal data
+	 */
+	protected ?string $organisationId = null;
+
+	/**
+	 * The type of organization identifier used
+	 *
+	 * Common values include:
+	 * - 'OIN': Organisatie Identificatie Nummer
+	 * - 'RSIN': Rechtspersonen en Samenwerkingsverbanden Informatienummer
+	 * - 'KVK': Kamer van Koophandel
+	 * - 'OTHER': Other type of organization identifier
+	 *
+	 * @var string|null The type of organization identifier used
+	 */
+	protected ?string $organisationIdType = null;
+
+	/**
+	 * The Processing Activity ID that identifies the specific processing operation
+	 *
+	 * @var string|null The Processing Activity ID that identifies the specific processing operation
+	 */
+	protected ?string $processingActivityId = null;
+
+	/**
+	 * The URL where the processing activity is registered
+	 *
+	 * @var string|null The URL where the processing activity is registered
+	 */
+	protected ?string $processingActivityUrl = null;
+
+	/**
+	 * The unique identifier for this specific processing operation
+	 *
+	 * @var string|null The unique identifier for this specific processing operation
+	 */
+	protected ?string $processingId = null;
+
+	/**
+	 * The confidentiality level of the processed data
+	 *
+	 * @var string|null The confidentiality level of the processed data (e.g., 'public', 'internal', 'confidential')
+	 */
+	protected ?string $confidentiality = null;
+
+	/**
+	 * The retention period for the processed data in ISO 8601 duration format
+	 *
+	 * @var string|null The retention period for the processed data in ISO 8601 duration format
+	 */
+	protected ?string $retentionPeriod = null;
+
+	/**
+	 * The expiration timestamp for this audit trail entry
+	 *
+	 * When this timestamp is reached, the audit trail entry can be safely removed
+	 * from the database during cleanup operations.
+	 *
+	 * @var DateTime|null The expiration timestamp for this audit trail entry
+	 */
+	protected ?DateTime $expires = null;
+
+	/**
+	 * SHA-256 hash of this entry chained to the previous entry
+	 *
+	 * @var string|null SHA-256 hash of this entry chained to the previous entry
+	 */
+	protected ?string $hash = null;
+
+	/**
+	 * SHA-256 hash of the previous audit trail entry in the chain
+	 *
+	 * @var string|null SHA-256 hash of the previous audit trail entry
+	 */
+	protected ?string $previousHash = null;
+
+	/**
+	 * When this row's payload was purged, leaving a chain tombstone.
+	 *
+	 * Retention purges used to HARD-delete rows. Because the chain is walked
+	 * in id order and each hash covers the previous row's hash, removing a row
+	 * mid-chain makes the next row fail verification — so a lawful purge and a
+	 * tampering event produced the identical symptom (or#2265).
+	 *
+	 * A purge now blanks the payload columns and stamps this timestamp,
+	 * keeping the row's `id`, `created`, `hash` and `previousHash`. The link
+	 * survives, and {@see \OCA\OpenRegister\Service\AuditHashService::verifyChain()}
+	 * can report the row as a declared tombstone rather than as a break.
+	 *
+	 * ⚠️ Deliberately ABSENT from {@see self::jsonSerialize()}, which is what
+	 * `getCanonicalJson()` hashes. Adding a key to the canonical form would
+	 * change the hash of every row ever written and invalidate the entire
+	 * existing chain. The consequence is that this field is not itself
+	 * covered by the hash — see the residual-limitation note on
+	 * `verifyChain()`.
+	 *
+	 * @var DateTime|null Purge timestamp, or null while the row is intact.
+	 */
+	protected ?DateTime $purgedAt = null;
+
+	/**
+	 * Import-job tag attached to every `create` audit row generated
+	 * during a bulk import. Powers the import-rollback contract: when
+	 * a critical failure (or an explicit rollback request) hits, every
+	 * object whose creation audit row carries this UUID can be
+	 * soft-deleted as a unit. Null on rows produced by single-object
+	 * writes outside of an import context.
+	 *
+	 * @var string|null UUID of the import job that produced this row.
+	 */
+	protected ?string $importJobId = null;
+
+	/**
+	 * The full namespaced MCP tool id this row records an invocation of
+	 * (e.g. `pipelinq.lead.search`), when this row is an MCP tool-invocation
+	 * audit entry (ADR-063 chain 2/3). Null on ordinary object-CRUD rows.
+	 *
+	 * @var string|null Namespaced MCP tool id.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 *   (Requirement: REQ-DERIVED-006 — Every invocation is audited)
+	 */
+	protected ?string $toolId = null;
+
+	/**
+	 * A digest (never the raw values) of the MCP tool invocation's
+	 * arguments — a SHA-256 hex digest of their canonical JSON form.
+	 * Deliberately excludes raw argument values so this immutable row never
+	 * persists PII (ADR-063 chain 2/3, EU AI Act art.12/14).
+	 *
+	 * @var string|null SHA-256 hex digest of the invocation arguments.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 *   (Requirement: REQ-DERIVED-006 — A params digest, not raw params, is stored)
+	 */
+	protected ?string $paramsDigest = null;
+
+	/**
+	 * A small structured summary of an MCP tool invocation's outcome
+	 * (e.g. object count / affected ids / `isError` + error class). Null on
+	 * ordinary object-CRUD rows.
+	 *
+	 * @var array|null Result summary of an MCP tool invocation.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 *   (Requirement: REQ-DERIVED-006 — Every invocation is audited)
+	 */
+	protected ?array $resultSummary = null;
+
+	/**
+	 * Constructor for the AuditTrail class
+	 *
+	 * Sets up field types for all properties
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'uuid', type: 'string');
+		$this->addType(fieldName: 'schema', type: 'integer');
+		$this->addType(fieldName: 'register', type: 'integer');
+		$this->addType(fieldName: 'object', type: 'integer');
+		$this->addType(fieldName: 'objectUuid', type: 'string');
+		$this->addType(fieldName: 'registerUuid', type: 'string');
+		$this->addType(fieldName: 'schemaUuid', type: 'string');
+		$this->addType(fieldName: 'action', type: 'string');
+		$this->addType(fieldName: 'changed', type: 'json');
+		$this->addType(fieldName: 'user', type: 'string');
+		$this->addType(fieldName: 'userName', type: 'string');
+		$this->addType(fieldName: 'session', type: 'string');
+		$this->addType(fieldName: 'request', type: 'string');
+		$this->addType(fieldName: 'ipAddress', type: 'string');
+		$this->addType(fieldName: 'version', type: 'string');
+		$this->addType(fieldName: 'created', type: 'datetime');
+		$this->addType(fieldName: 'organisationId', type: 'string');
+		$this->addType(fieldName: 'organisationIdType', type: 'string');
+		$this->addType(fieldName: 'processingActivityId', type: 'string');
+		$this->addType(fieldName: 'processingActivityUrl', type: 'string');
+		$this->addType(fieldName: 'processingId', type: 'string');
+		$this->addType(fieldName: 'confidentiality', type: 'string');
+		$this->addType(fieldName: 'retentionPeriod', type: 'string');
+		$this->addType(fieldName: 'size', type: 'integer');
+		$this->addType(fieldName: 'expires', type: 'datetime');
+		$this->addType(fieldName: 'hash', type: 'string');
+		$this->addType(fieldName: 'previousHash', type: 'string');
+		$this->addType(fieldName: 'importJobId', type: 'string');
+		$this->addType(fieldName: 'toolId', type: 'string');
+		$this->addType(fieldName: 'paramsDigest', type: 'string');
+		$this->addType(fieldName: 'resultSummary', type: 'json');
+		$this->addType(fieldName: 'purgedAt', type: 'datetime');
+	}//end __construct()
+
+	/**
+	 * Whether this row is a purge tombstone rather than an intact audit record.
+	 *
+	 * @return bool True when the payload has been purged under a retention policy.
+	 */
+	public function isPurged(): bool {
+		return $this->purgedAt !== null;
+	}//end isPurged()
+
+	/**
+	 * Get the changed data
+	 *
+	 * @return array The changed data or empty array if null
+	 */
+	public function getChanged(): array {
+		return ($this->changed ?? []);
+	}//end getChanged()
+
+	/**
+	 * Get JSON fields from the entity
+	 *
+	 * Returns all fields that are of type 'json'
+	 *
+	 * @return string[] List of JSON field names
+	 *
+	 * @psalm-return list<string>
+	 */
+	public function getJsonFields(): array {
+		return array_keys(
+			array_filter(
+				$this->getFieldTypes(),
+				function ($field) {
+					return $field === 'json';
+				}
+			)
+		);
+	}//end getJsonFields()
+
+	/**
+	 * Hydrate the entity with data from an array
+	 *
+	 * Sets entity properties based on input array values
+	 *
+	 * @param array $object The data array to hydrate from
+	 *
+	 * @return static Returns $this for method chaining
+	 */
+	public function hydrate(array $object): static {
+		$jsonFields = $this->getJsonFields();
+
+		foreach ($object as $key => $value) {
+			if (in_array($key, $jsonFields) === true && $value === []) {
+				$value = null;
+			}
+
+			$method = 'set' . ucfirst($key);
+
+			try {
+				$this->$method($value);
+			} catch (\Exception $exception) {
+				// Silently ignore invalid properties.
+			}
+		}
+
+		return $this;
+	}//end hydrate()
+
+	/**
+	 * Convert entity to JSON serializable array
+	 *
+	 * Prepares the entity data for JSON serialization
+	 *
+	 * @return (array|int|null|string)[] Array of serializable entity data
+	 *
+	 * @psalm-return array{
+	 *     id: int,
+	 *     uuid: null|string,
+	 *     schema: int|null,
+	 *     register: int|null,
+	 *     object: int|null,
+	 *     objectUuid: null|string,
+	 *     registerUuid: null|string,
+	 *     schemaUuid: null|string,
+	 *     action: null|string,
+	 *     changed: array|null,
+	 *     user: null|string,
+	 *     userName: null|string,
+	 *     session: null|string,
+	 *     request: null|string,
+	 *     ipAddress: null|string,
+	 *     version: null|string,
+	 *     created: null|string,
+	 *     organisationId: null|string,
+	 *     organisationIdType: null|string,
+	 *     processingActivityId: null|string,
+	 *     processingActivityUrl: null|string,
+	 *     processingId: null|string,
+	 *     confidentiality: null|string,
+	 *     retentionPeriod: null|string,
+	 *     size: int|null,
+	 *     expires: null|string,
+	 *     hash: null|string,
+	 *     previousHash: null|string,
+	 *     toolId: null|string,
+	 *     paramsDigest: null|string,
+	 *     resultSummary: array|null
+	 * }
+	 */
+	public function jsonSerialize(): array {
+		$created = null;
+		if ($this->created !== null) {
+			$created = $this->created->format('c');
+		}
+
+		$expires = null;
+		if ($this->expires !== null) {
+			$expires = $this->expires->format('c');
+		}
+
+		return [
+			'id' => $this->id,
+			'uuid' => $this->uuid,
+			'schema' => $this->schema,
+			'register' => $this->register,
+			'object' => $this->object,
+			'objectUuid' => $this->objectUuid,
+			'registerUuid' => $this->registerUuid,
+			'schemaUuid' => $this->schemaUuid,
+			'action' => $this->action,
+			'changed' => $this->changed,
+			'user' => $this->user,
+			'userName' => $this->userName,
+			'session' => $this->session,
+			'request' => $this->request,
+			'ipAddress' => $this->ipAddress,
+			'version' => $this->version,
+			'created' => $created,
+			'organisationId' => $this->organisationId,
+			'organisationIdType' => $this->organisationIdType,
+			'processingActivityId' => $this->processingActivityId,
+			'processingActivityUrl' => $this->processingActivityUrl,
+			'processingId' => $this->processingId,
+			'confidentiality' => $this->confidentiality,
+			'retentionPeriod' => $this->retentionPeriod,
+			'size' => $this->size,
+			'expires' => $expires,
+			'hash' => $this->hash,
+			'previousHash' => $this->previousHash,
+			'toolId' => $this->toolId,
+			'paramsDigest' => $this->paramsDigest,
+			'resultSummary' => $this->resultSummary,
+		];
+	}//end jsonSerialize()
+
+	/**
+	 * String representation of the audit trail
+	 *
+	 * This magic method is required for proper entity handling in Nextcloud
+	 * when the framework needs to convert the object to a string.
+	 *
+	 * @return string String representation of the audit trail
+	 */
+	public function __toString(): string {
+		// Return the UUID if available, otherwise return a descriptive string.
+		if ($this->uuid !== null && $this->uuid !== '') {
+			return $this->uuid;
+		}
+
+		// Fallback to action if available.
+		if ($this->action !== null && $this->action !== '') {
+			return 'Audit: ' . $this->action;
+		}
+
+		// Fallback to ID if available.
+		if ($this->id !== null) {
+			return 'AuditTrail #' . $this->id;
+		}
+
+		// Final fallback.
+		return 'Audit Trail';
+	}//end __toString()
+}//end class

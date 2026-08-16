@@ -1,0 +1,8 @@
+{
+	"label": "User track",
+	"position": 1,
+	"link": {
+		"type": "generated-index",
+		"description": "Day-to-day walkthroughs for anyone using Open Register: create a register, attach a schema, add and find objects, look at the audit trail, attach files, and round-trip through Excel / JSON."
+	}
+}

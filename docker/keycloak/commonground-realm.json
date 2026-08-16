@@ -1,0 +1,236 @@
+{
+  "realm": "commonground",
+  "enabled": true,
+  "displayName": "Common Ground",
+  "displayNameHtml": "<b>Common Ground</b>",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 5,
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "Administrator role"
+      },
+      {
+        "name": "user",
+        "description": "Regular user role"
+      },
+      {
+        "name": "case-manager",
+        "description": "Case manager role for Valtimo/OpenZaak"
+      }
+    ]
+  },
+  "defaultRoles": ["user"],
+  "clients": [
+    {
+      "clientId": "nextcloud",
+      "name": "Nextcloud",
+      "description": "Nextcloud file sharing and collaboration",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "nextcloud-secret-change-me",
+      "redirectUris": [
+        "http://localhost:8080/*",
+        "http://nextcloud/*",
+        "https://nextcloud/*"
+      ],
+      "webOrigins": ["+"],
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true,
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "groups",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "openzaak",
+      "name": "OpenZaak",
+      "description": "OpenZaak ZGW API backend",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "openzaak-secret-change-me",
+      "redirectUris": [
+        "http://localhost:8089/*",
+        "http://nc_app_openzaak:*/*"
+      ],
+      "webOrigins": ["+"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true
+    },
+    {
+      "clientId": "openklant",
+      "name": "OpenKlant",
+      "description": "OpenKlant customer interaction registry",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "openklant-secret-change-me",
+      "redirectUris": [
+        "http://localhost:8090/*",
+        "http://nc_app_openklant:*/*"
+      ],
+      "webOrigins": ["+"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true
+    },
+    {
+      "clientId": "opentalk",
+      "name": "OpenTalk",
+      "description": "OpenTalk video conferencing",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "opentalk-secret-change-me",
+      "redirectUris": [
+        "http://localhost:11311/*",
+        "http://nc_app_opentalk:*/*"
+      ],
+      "webOrigins": ["+"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true
+    },
+    {
+      "clientId": "valtimo",
+      "name": "Valtimo",
+      "description": "Valtimo BPM and case management",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "valtimo-secret-change-me",
+      "redirectUris": [
+        "http://localhost:8088/*",
+        "http://nc_app_valtimo:*/*"
+      ],
+      "webOrigins": ["+"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true
+    },
+    {
+      "clientId": "kiss",
+      "name": "KISS Frontend",
+      "description": "Klantinteractie-Servicesysteem",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "kiss-secret-change-me",
+      "redirectUris": [
+        "http://localhost:9030/*",
+        "http://kiss-bff:8080/*"
+      ],
+      "webOrigins": ["+"],
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true,
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "groups",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Admin",
+      "lastName": "User",
+      "email": "admin@example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["admin", "user", "case-manager"]
+    },
+    {
+      "username": "user",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Regular",
+      "lastName": "User",
+      "email": "user@example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "user",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["user"]
+    },
+    {
+      "username": "casemanager",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Case",
+      "lastName": "Manager",
+      "email": "casemanager@example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "casemanager",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["user", "case-manager"]
+    }
+  ]
+}
