@@ -237,8 +237,11 @@ export default {
 	 */
 	render() {
 		// Referenced so a child registration invalidates this render.
-
-		this.registrationTick
+		// `void` marks the read as deliberate: a bare `this.registrationTick`
+		// is indistinguishable from `this.someFn` written instead of
+		// `this.someFn()`, which is exactly what no-unused-expressions exists
+		// to catch. The dependency is still tracked — `void` evaluates it.
+		void this.registrationTick
 		return h('div', { class: 'app-tabs' }, [
 			this.renderTabList(),
 			h(

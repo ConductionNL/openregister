@@ -155,9 +155,9 @@ identity* — and neither `public` nor `authenticated` describes it. Task 3
 cannot land safely until that kind has an answer, and deciding it per-app,
 twelve times, is how twelve different answers happen.
 
-### That answer now exists: ADR-085
+### That answer now exists: ADR-091
 
-**hydra ADR-085 — "Externally-Authenticated API Surface Belongs to
+**hydra ADR-091 — "Externally-Authenticated API Surface Belongs to
 OpenConnector"** (amends ADR-081 §2) resolves this, and it resolves it by
 removing the population rather than by giving it an RBAC value:
 
@@ -174,10 +174,10 @@ The deciding argument in that ADR is not code duplication — it is that ZGW,
 StUF, DSO, Notificaties, iWmo/iJw and Berichtenbox are **national** standards.
 A leaf app that implements one only works in one country.
 
-⚠️ **Sequencing, therefore:** Task 3 waits on ADR-085's population having a
-migration path, not merely on ADR-085 being accepted. The fleet-wide census
+⚠️ **Sequencing, therefore:** Task 3 waits on ADR-091's population having a
+migration path, not merely on ADR-091 being accepted. The fleet-wide census
 behind it — 44 controllers, 210 public methods across 10 apps — is in
-`hydra/scripts/adr-085-self-auth-endpoint-census.py`.
+`hydra/scripts/adr-091-self-auth-endpoint-census.py`.
 
 ## Before the default flips
 

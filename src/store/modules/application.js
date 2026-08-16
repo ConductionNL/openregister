@@ -179,7 +179,9 @@ export const useApplicationStore = defineStore('application', {
 			} catch (error) {
 				console.error('Error deleting application:', error)
 				this.error = error.message
-				throw new Error(`Failed to delete application: ${error.message}`)
+				throw new Error(`Failed to delete application: ${error.message}`, {
+					cause: error,
+				})
 			} finally {
 				this.loading = false
 			}
@@ -227,7 +229,9 @@ export const useApplicationStore = defineStore('application', {
 			} catch (error) {
 				console.error('Error saving application:', error)
 				this.error = error.message
-				throw new Error(`Failed to save application: ${error.message}`)
+				throw new Error(`Failed to save application: ${error.message}`, {
+					cause: error,
+				})
 			} finally {
 				this.loading = false
 			}
