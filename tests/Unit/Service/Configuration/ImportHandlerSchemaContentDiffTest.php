@@ -183,4 +183,138 @@ class ImportHandlerSchemaContentDiffTest extends TestCase {
 
 	}//end testAbsentEqualsEmpty()
 
+	/**
+	 * The openbuild `exportJob` case, reduced.
+	 *
+	 * An incoming definition whose ONLY change is a top-level
+	 * `x-openregister-lifecycle` block must read as different. Before this was
+	 * detected, the version gate skipped the import (declared 0.1.0 against a
+	 * stored 1.0.0) and the content check compared only properties/required/
+	 * authorization, so the lifecycle never reached the running schema —
+	 * `TransitionEngine` found no state machine, every export stayed at
+	 * `status: queued` forever, and nothing logged it.
+	 *
+	 * @return void
+	 */
+	public function testDeclaredAnnotationMissingFromStoredDiffers(): void {
+		$existing = $this->makeSchema(properties: ['naam' => ['type' => 'string']]);
+		$existing->setConfiguration(['objectNameField' => 'naam']);
+
+		$data = [
+			'properties' => ['naam' => ['type' => 'string']],
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'initial' => 'queued',
+				'transitions' => ['start' => ['from' => ['queued'], 'to' => 'running']],
+			],
+		];
+
+		$this->assertTrue($this->differs(data: $data, existing: $existing));
+
+	}//end testDeclaredAnnotationMissingFromStoredDiffers()
+
+	/**
+	 * An annotation whose value changed is a difference too.
+	 *
+	 * @return void
+	 */
+	public function testChangedAnnotationValueDiffers(): void {
+		$existing = $this->makeSchema();
+		$existing->setConfiguration(
+			[
+				'x-openregister-lifecycle' => [
+					'field' => 'status',
+					'transitions' => ['start' => ['from' => ['queued'], 'to' => 'running']],
+				],
+			]
+		);
+
+		$data = [
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'transitions' => ['start' => ['from' => ['queued'], 'to' => 'building']],
+			],
+		];
+
+		$this->assertTrue($this->differs(data: $data, existing: $existing));
+
+	}//end testChangedAnnotationValueDiffers()
+
+	/**
+	 * An identical annotation is NOT a difference, whichever level it is
+	 * declared at.
+	 *
+	 * `Schema::hydrate()` folds sibling-of-properties `x-openregister-*` keys
+	 * into `configuration`, so the app declares them at the top level and the
+	 * stored schema keeps them nested. Both forms must compare equal or every
+	 * settings load would rewrite the schema.
+	 *
+	 * @return void
+	 */
+	public function testIdenticalAnnotationDoesNotDiffer(): void {
+		$lifecycle = [
+			'field' => 'status',
+			'initial' => 'queued',
+			'transitions' => ['start' => ['from' => ['queued'], 'to' => 'running']],
+		];
+
+		$existing = $this->makeSchema();
+		$existing->setConfiguration(
+			['objectNameField' => 'naam', 'x-openregister-lifecycle' => $lifecycle]
+		);
+
+		$this->assertFalse(
+			$this->differs(data: ['x-openregister-lifecycle' => $lifecycle], existing: $existing)
+		);
+		$this->assertFalse(
+			$this->differs(
+				data: ['configuration' => ['x-openregister-lifecycle' => $lifecycle]],
+				existing: $existing
+			)
+		);
+
+	}//end testIdenticalAnnotationDoesNotDiffer()
+
+	/**
+	 * A key OUTSIDE the declared vocabulary must NOT count as a difference.
+	 *
+	 * openbuild really declares `x-openregister-lifecycle-exception`, which is
+	 * dropped on every save because it is not in the vocabulary. Comparing it
+	 * would differ forever and re-import the schema on every settings load —
+	 * turning a stale-schema fix into permanent write churn.
+	 *
+	 * @return void
+	 */
+	public function testUnknownAnnotationKeyDoesNotDiffer(): void {
+		$existing = $this->makeSchema();
+		$existing->setConfiguration(['objectNameField' => 'naam']);
+
+		$data = ['x-openregister-lifecycle-exception' => ['whatever' => true]];
+
+		$this->assertFalse($this->differs(data: $data, existing: $existing));
+
+	}//end testUnknownAnnotationKeyDoesNotDiffer()
+
+	/**
+	 * A stored annotation the incoming no longer declares is NOT a difference.
+	 *
+	 * The stored configuration also carries keys OpenRegister maintains itself
+	 * and annotations an operator may have added through the UI; treating
+	 * their absence as a change would rewrite them away on the next import.
+	 *
+	 * @return void
+	 */
+	public function testStoredOnlyAnnotationDoesNotDiffer(): void {
+		$existing = $this->makeSchema();
+		$existing->setConfiguration(
+			[
+				'objectNameField' => 'naam',
+				'x-openregister-mcp' => ['enabled' => true],
+			]
+		);
+
+		$this->assertFalse($this->differs(data: ['properties' => []], existing: $existing));
+
+	}//end testStoredOnlyAnnotationDoesNotDiffer()
+
 }//end class

@@ -2290,9 +2290,16 @@ class Schema extends Entity implements JsonSerializable {
 	 * configuration column and having the corresponding listener
 	 * never fire.
 	 *
+	 * PUBLIC because the import path needs it too: ImportHandler compares an
+	 * incoming schema's annotations against the stored ones to decide whether
+	 * a version-skipped import is really a no-op, and it must compare ONLY the
+	 * keys that can actually persist. Comparing a key outside this vocabulary
+	 * would make the comparison differ forever — the key is dropped on every
+	 * save — and re-import the schema on every single settings load.
+	 *
 	 * @var array<int, string>
 	 */
-	private const ANNOTATION_VOCABULARY = [
+	public const ANNOTATION_VOCABULARY = [
 		'x-openregister-lifecycle',
 		'x-openregister-aggregations',
 		'x-openregister-calculations',
