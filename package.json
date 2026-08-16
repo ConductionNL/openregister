@@ -4,7 +4,7 @@
   "license": "EUPL-1.2",
   "engines": {
     "node": "^22.14 || ^24 || >=26",
-    "npm": "^10.0.0"
+    "npm": "^11.0.0"
   },
   "scripts": {
     "prebuild": "node scripts/build-features-manifest.js",
