@@ -1204,8 +1204,91 @@ class ImportHandler {
 			}
 		}
 
-		return false;
+		return $this->schemaAnnotationsDiffer(data: $data, existing: $existing);
 	}//end schemaContentDiffers()
+
+	/**
+	 * Whether the incoming schema declares an `x-openregister-*` annotation
+	 * that the stored schema does not carry with the same value.
+	 *
+	 * WHY THIS EXISTS
+	 * ---------------
+	 * `schemaContentDiffers()` compared `properties`, `required` and
+	 * `authorization` and nothing else, so a change that ONLY adds or edits an
+	 * annotation block was invisible to it. Combined with the version gate
+	 * above ("skip when incoming <= existing") that produced a silent,
+	 * permanent no-op: the annotation sits declared in the app's register JSON,
+	 * visible in the repo, and never reaches the running system.
+	 *
+	 * Measured on openbuild (2026-08-16): `exportJob` declares
+	 * `x-openregister-lifecycle` at version 0.1.0 while the instance carried
+	 * 1.0.0 (a schema edited once through the UI bumps to 1.0.0). The version
+	 * said skip, the content check could not see the missing lifecycle, so
+	 * `TransitionEngine::transition()` found no state machine and returned
+	 * without doing anything — every export sat at `status: queued` forever,
+	 * its background job consumed, with not one line in the log. The same trap
+	 * applies to every key in the vocabulary: `mcp`, `calculations`,
+	 * `notifications`, `widgets`, `relations`, `archival`.
+	 *
+	 * TWO DELIBERATE NARROWINGS, both to avoid re-importing on every load:
+	 *
+	 *  1. Only keys in `Schema::ANNOTATION_VOCABULARY` are compared. An
+	 *     unknown key (openbuild really does declare
+	 *     `x-openregister-lifecycle-exception`) is dropped on every save, so
+	 *     comparing it would differ forever.
+	 *  2. Only keys the INCOMING declares are compared. The stored
+	 *     configuration also holds keys OpenRegister maintains itself
+	 *     (`objectNameField`, `objectDescriptionField`, …) plus annotations an
+	 *     operator may have added through the UI; treating those as a
+	 *     difference would rewrite them away on the next import.
+	 *
+	 * Incoming annotations are read from BOTH the top level and
+	 * `configuration`, because `Schema::hydrate()` folds sibling-of-properties
+	 * `x-openregister-*` keys into `configuration` — app register JSON declares
+	 * them at the top level, the stored schema keeps them nested.
+	 *
+	 * @param array<string,mixed> $data     Incoming schema definition.
+	 * @param Schema              $existing The stored schema.
+	 *
+	 * @return bool True when a declared annotation is missing or different.
+	 */
+	private function schemaAnnotationsDiffer(array $data, Schema $existing): bool {
+		$stored = ($existing->getConfiguration() ?? []);
+		if (is_array($stored) === false) {
+			$stored = [];
+		}
+
+		$incomingConfig = ($data['configuration'] ?? []);
+		if (is_array($incomingConfig) === false) {
+			$incomingConfig = [];
+		}
+
+		// Top level first, then `configuration` — the nested form wins, which
+		// is the same precedence hydrate() applies when it folds.
+		$incoming = [];
+		foreach ([$data, $incomingConfig] as $source) {
+			foreach ($source as $key => $value) {
+				if (is_string($key) === false || str_starts_with($key, 'x-openregister-') === false) {
+					continue;
+				}
+
+				if (in_array($key, Schema::ANNOTATION_VOCABULARY, true) === false) {
+					continue;
+				}
+
+				$incoming[$key] = $value;
+			}
+		}
+
+		foreach ($incoming as $key => $value) {
+			$storedValue = ($stored[$key] ?? null);
+			if ($this->normaliseForCompare(value: $value) !== $this->normaliseForCompare(value: $storedValue)) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end schemaAnnotationsDiffer()
 
 	/**
 	 * Normalise a JSON-ish value into an order-insensitive canonical string.
