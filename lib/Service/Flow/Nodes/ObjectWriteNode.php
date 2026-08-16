@@ -90,6 +90,7 @@ use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
+use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCP\WorkflowEngine\IManager;
 use RuntimeException;
 use Throwable;
@@ -1049,14 +1050,29 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys {
 			throw new UnexpectedValueException($this->l10n->t('An object-write step needs a schema.'));
 		}
 
+		// The step always carries a register, so the register is the boundary: a
+		// slug it does not carry is refused rather than resolved globally. Writing
+		// is the dangerous direction — a global match here would create an object
+		// under a schema belonging to a register its owner never chose, and a
+		// looser `required` set on that foreign schema would accept the row
+		// silently.
 		if (is_numeric($identifier) === false) {
-			$scoped = $this->schemas->findBySlugInIds(
+			$registerSchemaIds = (array)($register->getSchemas() ?? []);
+			$scoped            = $this->schemas->findBySlugInIds(
 				slug: $identifier,
-				schemaIds: (array)($register->getSchemas() ?? [])
+				schemaIds: $registerSchemaIds
 			);
 			if ($scoped !== null) {
 				return $scoped;
 			}
+
+			throw new SchemaNotInRegisterException(
+				schemaSlug: $identifier,
+				registerId: $register->getId(),
+				registerSlug: $register->getSlug(),
+				candidatesElsewhere: $this->schemas->countBySlug(slug: $identifier),
+				registerListEmpty: ($registerSchemaIds === [])
+			);
 		}
 
 		try {

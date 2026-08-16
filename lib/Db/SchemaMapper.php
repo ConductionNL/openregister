@@ -617,6 +617,44 @@ class SchemaMapper extends QBMapper {
 	}//end findBySlugInIds()
 
 	/**
+	 * Count how many schemas on the instance carry a slug.
+	 *
+	 * Used only to build the message of {@see SchemaNotInRegisterException}. A
+	 * register-scoped miss reads as "your slug is wrong" unless the caller is told
+	 * how many same-slug schemas exist — and when that number is nine, as measured
+	 * for `anonymizationLink` on 2026-08-16, "your slug is wrong" is the one
+	 * conclusion that is certainly false.
+	 *
+	 * Deliberately unscoped by organisation and application: the point is to report
+	 * the size of the ambiguity the caller just escaped, not to resolve anything.
+	 *
+	 * @param string $slug The schema slug (matched case-insensitively).
+	 *
+	 * @return int The number of schemas carrying this slug.
+	 *
+	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
+	 */
+	public function countBySlug(string $slug): int {
+		$this->traceRead(method: 'countBySlug');
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('*', 'slug_count'))
+			->from('openregister_schemas')
+			->where(
+				$qb->expr()->eq(
+					$qb->func()->lower('slug'),
+					$qb->createNamedParameter(value: strtolower($slug), type: IQueryBuilder::PARAM_STR)
+				)
+			);
+
+		$result = $qb->executeQuery();
+		$row    = $result->fetch();
+		$result->closeCursor();
+
+		return (int)($row['slug_count'] ?? 0);
+	}//end countBySlug()
+
+	/**
 	 * Clear the request-scoped find cache for a specific schema
 	 *
 	 * Used by the runtime-schema-api CRUD path to drop the in-memory
