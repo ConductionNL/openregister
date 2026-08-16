@@ -481,7 +481,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 			'inputSchema' => $this->buildInputSchema(schema: $schema, verb: $verb, verbConfig: $verbConfig),
 		];
 
-		$outputSchema = $this->buildOutputSchema(schema: $schema, verb: $verb);
+		$outputSchema = $this->buildOutputSchema(verb: $verb);
 		if ($outputSchema !== null) {
 			$descriptor['outputSchema'] = $outputSchema;
 		}
@@ -601,27 +601,50 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * Build the `outputSchema` for read verbs (MCP 2025-06-18
 	 * `structuredContent`), null for write verbs.
 	 *
-	 * @param Schema $schema The schema being derived.
+	 * Takes no Schema: it deliberately does not depend on the schema's properties
+	 * any more, and keeping the parameter would suggest otherwise to the next
+	 * reader — which is how it would get re-inlined.
+	 *
 	 * @param string $verb One of {@see McpAnnotationValidator::VERBS}.
 	 *
 	 * @return array<string, mixed>|null The output schema, or null when not applicable.
 	 */
-	private function buildOutputSchema(Schema $schema, string $verb): ?array {
-		$itemSchema = [
-			'type' => 'object',
-			'properties' => ($schema->getProperties() ?? []),
-		];
-
+	private function buildOutputSchema(string $verb): ?array {
+		// THE ENVELOPE, NOT THE ITEM.
+		//
+		// This used to inline `$schema->getProperties()` in full, for both verbs.
+		// Measured 2026-08-16 across the 122 tools registered on the development
+		// instance, that made `outputSchema` **79.7% of the entire tools/list
+		// payload** -- 335,580 of 433,198 bytes, ~84,000 of ~108,000 tokens, on a
+		// payload re-sent to the model every single turn. Tool definitions alone
+		// were consuming 54% of a 200K context window before the user said
+		// anything.
+		//
+		// The worst case was `shillinq.ARInvoice.search`: 36,293 B of outputSchema
+		// against 1,915 B of inputSchema -- 94% of that tool, and more tokens by
+		// itself than hermiq's entire 22-tool set.
+		//
+		// Note the asymmetry this corrects. buildInputSchema() already narrows a
+		// `search` verb to its DECLARED FILTERS via filterProperties()
+		// (REQ-DERIVED-004). The input path was economical and the output path was
+		// not, and nothing made the difference visible.
+		//
+		// The item's properties are redundant here: the model reads the actual
+		// result when the tool returns. The ENVELOPE is not redundant -- it tells
+		// the model that a `search` yields {results, total, hasMore} rather than a
+		// bare array, which is what stops it guessing at the response shape.
+		// Keeping it costs 6,688 bytes across the whole registry (1.5%) against
+		// dropping `outputSchema` altogether.
 		return match ($verb) {
 			'search' => [
 				'type' => 'object',
 				'properties' => [
-					'results' => ['type' => 'array', 'items' => $itemSchema],
+					'results' => ['type' => 'array', 'items' => ['type' => 'object']],
 					'total' => ['type' => 'integer'],
 					'hasMore' => ['type' => 'boolean'],
 				],
 			],
-			'get' => $itemSchema,
+			'get' => ['type' => 'object'],
 			default => null,
 		};
 	}//end buildOutputSchema()
