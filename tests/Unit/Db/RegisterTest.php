@@ -957,4 +957,57 @@ class RegisterTest extends TestCase {
 
 		$this->assertSame([], $this->register->getSchemasWithMagicMapping());
 	}
+
+	public function testAddSchemaIdAppendsAndReportsTheChange(): void {
+		$this->register->setSchemas([7]);
+
+		$this->assertTrue($this->register->addSchemaId(schemaId: 18));
+		$this->assertSame([7, 18], $this->register->getSchemas());
+	}
+
+	public function testAddSchemaIdIsIdempotent(): void {
+		$this->register->setSchemas([7, 18]);
+
+		$this->assertFalse($this->register->addSchemaId(schemaId: 18));
+		$this->assertSame([7, 18], $this->register->getSchemas());
+	}
+
+	/**
+	 * A numeric-string entry is the SAME membership as its integer form.
+	 *
+	 * `setSchemas()` keeps ints and strings alike and the resolver compares
+	 * numerically, so a string "18" already means "schema 18" — appending the int
+	 * would duplicate the membership rather than add one.
+	 *
+	 * @return void
+	 */
+	public function testAddSchemaIdMatchesNumericStringEntries(): void {
+		$this->register->setSchemas(['18']);
+
+		$this->assertFalse($this->register->addSchemaId(schemaId: 18));
+		$this->assertSame(['18'], $this->register->getSchemas());
+	}
+
+	/**
+	 * Existing entries are preserved verbatim; the list is not normalised.
+	 *
+	 * A normalising rewrite would silently drop a non-numeric legacy entry, and
+	 * that is data loss rather than cleanup. `occ
+	 * openregister:registers:relink-schemas` owns repair of an existing list.
+	 *
+	 * @return void
+	 */
+	public function testAddSchemaIdPreservesNonNumericEntries(): void {
+		$this->register->setSchemas(['legacy-slug', 7]);
+
+		$this->assertTrue($this->register->addSchemaId(schemaId: 18));
+		$this->assertSame(['legacy-slug', 7, 18], $this->register->getSchemas());
+	}
+
+	public function testAddSchemaIdOnAnEmptyListStartsIt(): void {
+		$this->register->setSchemas([]);
+
+		$this->assertTrue($this->register->addSchemaId(schemaId: 18));
+		$this->assertSame([18], $this->register->getSchemas());
+	}
 }
