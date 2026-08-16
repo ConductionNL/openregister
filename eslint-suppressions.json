@@ -153,11 +153,6 @@
       "count": 2
     }
   },
-  "src/components/tabs/AppTabs.vue": {
-    "@typescript-eslint/no-unused-expressions": {
-      "count": 1
-    }
-  },
   "src/components/workflow/ApprovalChainPanel.vue": {
     "no-console": {
       "count": 2
@@ -284,11 +279,6 @@
   },
   "src/entities/database/database.spec.ts": {
     "import-extensions/extensions": {
-      "count": 1
-    }
-  },
-  "src/entities/index.js": {
-    "import/export": {
       "count": 1
     }
   },
@@ -460,9 +450,6 @@
     },
     "no-console": {
       "count": 2
-    },
-    "no-undef": {
-      "count": 1
     }
   },
   "src/modals/Modals.vue": {
@@ -830,9 +817,6 @@
     },
     "no-console": {
       "count": 3
-    },
-    "preserve-caught-error": {
-      "count": 1
     },
     "vue/prefer-define-options": {
       "count": 1
@@ -1253,11 +1237,6 @@
       "count": 3
     }
   },
-  "src/reference/init.ts": {
-    "import/no-unresolved": {
-      "count": 1
-    }
-  },
   "src/services/AppInitializationService.js": {
     "no-console": {
       "count": 2
@@ -1354,9 +1333,6 @@
   "src/store/modules/application.js": {
     "no-console": {
       "count": 6
-    },
-    "preserve-caught-error": {
-      "count": 2
     }
   },
   "src/store/modules/auditTrail.js": {
@@ -1375,9 +1351,6 @@
     },
     "no-unused-vars": {
       "count": 1
-    },
-    "preserve-caught-error": {
-      "count": 3
     }
   },
   "src/store/modules/dashboard.js": {
@@ -1406,9 +1379,6 @@
   "src/store/modules/organisation.js": {
     "no-console": {
       "count": 10
-    },
-    "preserve-caught-error": {
-      "count": 7
     }
   },
   "src/store/modules/quality.js": {
@@ -1419,9 +1389,6 @@
   "src/store/modules/register.js": {
     "no-console": {
       "count": 8
-    },
-    "preserve-caught-error": {
-      "count": 2
     }
   },
   "src/store/modules/reports.js": {

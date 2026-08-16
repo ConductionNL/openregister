@@ -193,7 +193,7 @@ export const useRegisterStore = defineStore('register', {
 				return { response, data: responseData }
 			} catch (error) {
 				console.error('Error deleting register:', error)
-				throw new Error(`Failed to delete register: ${error.message}`)
+				throw new Error(`Failed to delete register: ${error.message}`, { cause: error })
 			}
 		},
 		// Create or save a register from store
@@ -242,7 +242,7 @@ export const useRegisterStore = defineStore('register', {
 				return { response, data }
 			} catch (error) {
 				console.error('Error saving register:', error)
-				throw new Error(`Failed to save register: ${error.message}`)
+				throw new Error(`Failed to save register: ${error.message}`, { cause: error })
 			}
 		},
 		// Clean register data for saving - remove read-only fields

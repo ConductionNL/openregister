@@ -120,7 +120,7 @@ export const useConfigurationStore = defineStore('configuration', {
 				return { response }
 			} catch (error) {
 				console.error('Error deleting configuration:', error)
-				throw new Error(`Failed to delete configuration: ${error.message}`)
+				throw new Error(`Failed to delete configuration: ${error.message}`, { cause: error })
 			}
 		},
 		/**
@@ -168,7 +168,7 @@ export const useConfigurationStore = defineStore('configuration', {
 				return { response, data }
 			} catch (error) {
 				console.error('Error saving configuration:', error)
-				throw new Error(`Failed to save configuration: ${error.message}`)
+				throw new Error(`Failed to save configuration: ${error.message}`, { cause: error })
 			}
 		},
 		// Clean configuration data for saving - remove read-only fields
@@ -229,7 +229,7 @@ export const useConfigurationStore = defineStore('configuration', {
 				return { response, data }
 			} catch (error) {
 				console.error('Error uploading configuration:', error)
-				throw new Error(`Failed to upload configuration: ${error.message}`)
+				throw new Error(`Failed to upload configuration: ${error.message}`, { cause: error })
 			}
 		},
 		/**
