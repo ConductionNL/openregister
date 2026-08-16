@@ -23,6 +23,16 @@
  */
 import { test, expect, type Page } from '@playwright/test'
 import * as path from 'path'
+// Routes are imported by COMPONENT NAME (see tests/e2e/_page-routes.ts): the
+// binding records which page host each route mounts, which a bare path string
+// cannot say. Also what makes this suite legible to gate-26.
+import {
+	FilesIndex,
+	AvgIndex,
+	ReportsIndex,
+	MyAccount,
+	FeaturesRoadmapIndex,
+} from '../_page-routes'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 
@@ -124,7 +134,7 @@ test.describe('feature-pages — real UI render + actions', () => {
 
 	test('Files: heading + Refresh + Filters toggle + content', async ({ page }) => {
 		const e = trackErrors(page)
-		await gotoPage(page, '/files')
+		await gotoPage(page, FilesIndex)
 		await expectHeading(page, /^Files$/)
 		await expectButton(page, /Refresh/i)
 		// FilesIndex exposes a "Toggle search sidebar" action (not a
@@ -141,7 +151,7 @@ test.describe('feature-pages — real UI render + actions', () => {
 
 	test('AVG: heading + New activity + section tabs switch', async ({ page }) => {
 		const e = trackErrors(page)
-		await gotoPage(page, '/avg')
+		await gotoPage(page, AvgIndex)
 		await expectHeading(page, /AVG \/ Verwerkingsregister/i)
 		await expectButton(page, /New activity/i)
 		// The four AVG section buttons act as a tab strip.
@@ -167,7 +177,7 @@ test.describe('feature-pages — real UI render + actions', () => {
 			'reports',
 			'Failed to load resource: the server responded with a status of 404',
 		])
-		await gotoPage(page, '/reports')
+		await gotoPage(page, ReportsIndex)
 		await expectHeading(page, /^Reports$/)
 		await expectButton(page, /Refresh/i)
 		const surface = page.locator(
@@ -192,7 +202,7 @@ test.describe('feature-pages — real UI render + actions', () => {
 			'user/',
 			'Failed to load resource: the server responded with a status of 404',
 		])
-		await gotoPage(page, '/mijn-account')
+		await gotoPage(page, MyAccount)
 		await expectHeading(page, /My Account/i)
 		await expectHeading(page, /Password/i)
 		await expectHeading(page, /API Tokens/i)
@@ -206,7 +216,7 @@ test.describe('feature-pages — real UI render + actions', () => {
 		page,
 	}) => {
 		const e = trackErrors(page)
-		await gotoPage(page, '/features-roadmap')
+		await gotoPage(page, FeaturesRoadmapIndex)
 		await expectHeading(page, /^Features$|Your input is the roadmap/i)
 		await expectButton(page, /Suggest (a )?feature/i)
 		await expectButton(page, /Show roadmap/i)

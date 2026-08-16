@@ -7,6 +7,9 @@
 
 declare(strict_types=1);
 
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\FlowRunController;
@@ -315,4 +318,77 @@ class FlowRunControllerTest extends TestCase {
 
 		$this->assertSame([], $controller->index()->getData()['results']);
 	}//end testTheHistoryReadReturnsNothingWithoutASession()
+
+	public function testResumeSignalsTheSuspendedRunWithTheRequestBody(): void {
+		$run = new FlowRun();
+		$run->setUuid('run-1');
+		$run->setFlowId('flow-1');
+		$run->setStatus(FlowRun::STATUS_SUSPENDED);
+
+		$signalled = new FlowRun();
+		$signalled->setUuid('run-1');
+		$signalled->setStatus(FlowRun::STATUS_SUSPENDED);
+
+		$this->mapper->method('findByUuid')->with('run-1')->willReturn($run);
+		$this->flows->method('find')->with('flow-1');
+
+		// The routing artefacts must not reach the run as signal payload.
+		$this->request->method('getParams')->willReturn(
+			['uuid' => 'run-1', '_route' => 'openregister.flowRun.resume', 'approved' => true]
+		);
+
+		$this->runner->expects($this->once())
+			->method('signal')
+			->with($run, ['approved' => true])
+			->willReturn($signalled);
+
+		$response = $this->controller->resume('run-1');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame('run-1', $response->getData()['uuid']);
+		$this->assertSame(FlowRun::STATUS_SUSPENDED, $response->getData()['status']);
+	}//end testResumeSignalsTheSuspendedRunWithTheRequestBody()
+
+	public function testResumeIsNotFoundForAnUnknownRun(): void {
+		$this->mapper->method('findByUuid')
+			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('no such run'));
+		$this->runner->expects($this->never())->method('signal');
+
+		$response = $this->controller->resume('nope');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		$this->assertSame('No such run', $response->getData()['error']);
+	}//end testResumeIsNotFoundForAnUnknownRun()
+
+	public function testResumeIsNotFoundWhenTheCallerMayNotSeeTheFlow(): void {
+		$run = new FlowRun();
+		$run->setUuid('run-1');
+		$run->setFlowId('someone-elses-flow');
+		$run->setStatus(FlowRun::STATUS_SUSPENDED);
+
+		$this->mapper->method('findByUuid')->willReturn($run);
+		$this->flows->method('find')->willThrowException(new \RuntimeException('not visible'));
+		$this->runner->expects($this->never())->method('signal');
+
+		$response = $this->controller->resume('run-1');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		$this->assertStringContainsString('No such flow', $response->getData()['error']);
+	}//end testResumeIsNotFoundWhenTheCallerMayNotSeeTheFlow()
+
+	public function testResumeConflictsWhenTheRunIsNotSuspended(): void {
+		$run = new FlowRun();
+		$run->setUuid('run-1');
+		$run->setFlowId('flow-1');
+		$run->setStatus('running');
+
+		$this->mapper->method('findByUuid')->willReturn($run);
+		$this->request->method('getParams')->willReturn([]);
+		$this->runner->method('signal')->willReturn(null);
+
+		$response = $this->controller->resume('run-1');
+
+		$this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+		$this->assertStringContainsString('running', $response->getData()['error']);
+	}//end testResumeConflictsWhenTheRunIsNotSuspended()
 }//end class

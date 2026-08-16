@@ -18,6 +18,17 @@
  */
 import { test, expect, type Page } from '@playwright/test'
 import * as path from 'path'
+// Routes are imported by COMPONENT NAME (see tests/e2e/_page-routes.ts): the
+// binding records which page host each route mounts, which a bare path string
+// cannot say. Also what makes this suite legible to gate-26.
+import {
+	OrganisationsIndex,
+	ConfigurationsIndex,
+	WebhooksIndex,
+	WebhookLogsIndex,
+	EndpointsIndex,
+	SearchTrailIndex,
+} from '../_page-routes'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 
@@ -125,7 +136,7 @@ test.describe('admin-settings-pages — real UI render + actions', () => {
 		page,
 	}) => {
 		const e = trackErrors(page)
-		await gotoPage(page, '/organisation')
+		await gotoPage(page, OrganisationsIndex)
 		await expectHeading(page, /^Organisations$/)
 		await expectButton(page, /Create Organisation/i)
 		// NOT "Switch Organisation": that button is `v-if="userStats.total > 1"`
@@ -163,7 +174,7 @@ test.describe('admin-settings-pages — real UI render + actions', () => {
 
 	test('Configurations: heading + Create + Import + list', async ({ page }) => {
 		const e = trackErrors(page)
-		await gotoPage(page, '/configurations')
+		await gotoPage(page, ConfigurationsIndex)
 		await expectHeading(page, /^Configurations$/)
 		await expectButton(page, /Create Configuration/i)
 		await expectButton(page, /Import Configuration/i)
@@ -174,7 +185,7 @@ test.describe('admin-settings-pages — real UI render + actions', () => {
 
 	test('Webhooks: heading + Create Webhook + list/empty', async ({ page }) => {
 		const e = trackErrors(page)
-		await gotoPage(page, '/webhooks')
+		await gotoPage(page, WebhooksIndex)
 		await expectHeading(page, /^Webhooks$/)
 		await expectButton(page, /Create Webhook/i)
 		await expectListSurface(page)
@@ -186,7 +197,7 @@ test.describe('admin-settings-pages — real UI render + actions', () => {
 		page,
 	}) => {
 		const e = trackErrors(page)
-		await gotoPage(page, '/webhooks/logs')
+		await gotoPage(page, WebhookLogsIndex)
 		await expectHeading(page, /Webhook Logs/i)
 		await expectButton(page, /Back to Webhooks/i)
 		await expectListSurface(page)
@@ -196,7 +207,7 @@ test.describe('admin-settings-pages — real UI render + actions', () => {
 
 	test('Endpoints: Add endpoint + list/empty surface', async ({ page }) => {
 		const e = trackErrors(page)
-		await gotoPage(page, '/endpoints')
+		await gotoPage(page, EndpointsIndex)
 		// NOTE: EndpointsIndex renders no page <h1>; assert the primary action.
 		await expectButton(page, /Add endpoint/i)
 		await expectListSurface(page)
@@ -208,7 +219,7 @@ test.describe('admin-settings-pages — real UI render + actions', () => {
 		page,
 	}) => {
 		const e = trackErrors(page)
-		await gotoPage(page, '/search-trails')
+		await gotoPage(page, SearchTrailIndex)
 		await expectHeading(page, /Search Trail/i)
 		await expectButton(page, /Cleanup Old Trails/i)
 		// Switch through the three tabs and assert each pane heading renders.

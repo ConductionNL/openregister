@@ -174,6 +174,14 @@ class WebPushController extends Controller {
 	 *
 	 * @return DataDisplayResponse The image bytes.
 	 *
+	 * @no-admin-idor-exempt $app is a Nextcloud APP ID, not an object reference —
+	 *   HexIconService sanitises it to `[a-z0-9_-]` and renders (or serves from
+	 *   cache) a generated cobalt-hex glyph for that app. No mapper, no register,
+	 *   no schema and no user data is reached, so there is no object to scope to a
+	 *   caller. The endpoint is deliberately anonymous because the Service Worker /
+	 *   OS notification surface fetches it without a Nextcloud session; the
+	 *   #[AnonRateLimit] above bounds the anonymous render cost.
+	 *
 	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
 	 */
 	#[PublicPage]
@@ -193,6 +201,12 @@ class WebPushController extends Controller {
 	 * @param string $app The originApp id.
 	 *
 	 * @return DataDisplayResponse The image bytes.
+	 *
+	 * @no-admin-idor-exempt Same subject as hexIcon(): $app is a sanitised Nextcloud
+	 *   app id and the response is a generated monochrome badge glyph. No mapper,
+	 *   no register/schema and no user data is reached, so there is no object to
+	 *   scope to the caller. Anonymous by design (the OS notification surface has
+	 *   no session) and bounded by the #[AnonRateLimit] below.
 	 *
 	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
 	 */

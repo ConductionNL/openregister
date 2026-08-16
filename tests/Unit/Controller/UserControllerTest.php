@@ -7,6 +7,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use OCA\OpenRegister\Controller\UserController;
 use OCA\OpenRegister\Service\SecurityService;
 use OCA\OpenRegister\Service\UserService;
+use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
@@ -652,5 +653,125 @@ class UserControllerTest extends TestCase {
 
 		$result = $this->controller->cancelDeactivation();
 		$this->assertEquals(404, $result->getStatus());
+	}
+
+	// ── GET /api/user/me/export — GDPR personal-data export ────────────────
+
+	/**
+	 * The export is a FILE download, not a JSON envelope: the browser must be
+	 * handed an attachment whose name carries the exporting uid and the export
+	 * date, and whose body is the pretty-printed personal-data document.
+	 */
+	public function testExportDataReturnsADownloadableJsonDocument(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('testuser');
+		$exportData = [
+			'profile' => ['uid' => 'testuser', 'displayName' => 'Test User'],
+			'objects' => [],
+		];
+
+		$this->userService->method('getCurrentUser')->willReturn($user);
+		$this->userService
+			->expects($this->once())
+			->method('exportPersonalData')
+			->with($user)
+			->willReturn($exportData);
+
+		$result = $this->controller->exportData();
+
+		$this->assertInstanceOf(DataDownloadResponse::class, $result);
+		$this->assertEquals(200, $result->getStatus());
+		$this->assertSame($exportData, json_decode($result->render(), true));
+		$this->assertStringContainsString(
+			'openregister-export-testuser-' . date('Y-m-d') . '.json',
+			$result->getHeaders()['Content-Disposition']
+		);
+	}
+
+	/**
+	 * Unicode must survive the export unescaped — an export that mangles a
+	 * name is not a lawful copy of the subject's data.
+	 */
+	public function testExportDataPreservesUnicodeUnescaped(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('testuser');
+
+		$this->userService->method('getCurrentUser')->willReturn($user);
+		$this->userService->method('exportPersonalData')
+			->willReturn(['displayName' => 'Renée Müller']);
+
+		$result = $this->controller->exportData();
+
+		$this->assertStringContainsString('Renée Müller', $result->render());
+	}
+
+	/**
+	 * No session, no export — the endpoint must never fall back to exporting
+	 * "some" user's data.
+	 */
+	public function testExportDataRejectsAnonymousSession(): void {
+		$this->userService->method('getCurrentUser')->willReturn(null);
+		$this->userService->expects($this->never())->method('exportPersonalData');
+
+		$result = $this->controller->exportData();
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertEquals(401, $result->getStatus());
+		$this->assertEquals('Not authenticated', $result->getData()['error']);
+	}
+
+	/**
+	 * The export is rate-limited. A throttled caller must get a 429 carrying
+	 * the service's own structured payload, not a flattened 500.
+	 */
+	public function testExportDataSurfacesTheThrottlePayloadAs429(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('testuser');
+
+		$this->userService->method('getCurrentUser')->willReturn($user);
+		$this->userService->method('exportPersonalData')
+			->willThrowException(
+				new \RuntimeException(json_encode(['error' => 'Too many exports', 'retryAfter' => 3600]), 429)
+			);
+
+		$result = $this->controller->exportData();
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertEquals(429, $result->getStatus());
+		$this->assertEquals(3600, $result->getData()['retryAfter']);
+	}
+
+	public function testExportDataMapsARuntimeExceptionCodeToTheStatus(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('testuser');
+
+		$this->userService->method('getCurrentUser')->willReturn($user);
+		$this->userService->method('exportPersonalData')
+			->willThrowException(new \RuntimeException('Export not permitted', 403));
+
+		$result = $this->controller->exportData();
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertEquals(403, $result->getStatus());
+	}
+
+	/**
+	 * An unexpected failure must become a generic 500 — the raw exception text
+	 * can name internal storage paths and must not reach the wire.
+	 */
+	public function testExportDataHidesUnexpectedFailuresBehindA500(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('testuser');
+
+		$this->userService->method('getCurrentUser')->willReturn($user);
+		$this->userService->method('exportPersonalData')
+			->willThrowException(new \Exception('/var/www/html/data/testuser is unreadable'));
+
+		$result = $this->controller->exportData();
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertEquals(500, $result->getStatus());
+		$this->assertEquals('Failed to export data', $result->getData()['error']);
+		$this->assertStringNotContainsString('/var/www', $result->getData()['error']);
 	}
 }
