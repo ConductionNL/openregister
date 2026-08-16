@@ -27,20 +27,60 @@ use PHPUnit\Framework\TestCase;
 
 class FlowRunControllerTest extends TestCase {
 
+	/**
+	 * HTTP request mock.
+	 *
+	 * @var IRequest&MockObject
+	 */
 	private IRequest&MockObject $request;
 
+	/**
+	 * Run mapper mock.
+	 *
+	 * @var FlowRunMapper&MockObject
+	 */
 	private FlowRunMapper&MockObject $mapper;
 
+	/**
+	 * Run execution service mock.
+	 *
+	 * @var FlowRunService&MockObject
+	 */
 	private FlowRunService&MockObject $runner;
 
+	/**
+	 * Flow subject resolver mock.
+	 *
+	 * @var FlowLocator&MockObject
+	 */
 	private FlowLocator&MockObject $resolvers;
 
+	/**
+	 * Organisation service mock.
+	 *
+	 * @var OrganisationService&MockObject
+	 */
 	private OrganisationService&MockObject $organisations;
 
+	/**
+	 * Flow CRUD surface mock.
+	 *
+	 * @var \OCA\OpenRegister\Service\Flow\FlowService&MockObject
+	 */
 	private \OCA\OpenRegister\Service\Flow\FlowService&MockObject $flows;
 
+	/**
+	 * User session mock.
+	 *
+	 * @var IUserSession&MockObject
+	 */
 	private IUserSession&MockObject $userSession;
 
+	/**
+	 * Controller under test.
+	 *
+	 * @var FlowRunController
+	 */
 	private FlowRunController $controller;
 
 	protected function setUp(): void {
@@ -80,6 +120,10 @@ class FlowRunControllerTest extends TestCase {
 
 	/**
 	 * Make getActiveOrganisation() answer with an organisation of this uuid.
+	 *
+	 * @param string|null $uuid The organisation uuid, or null for "no active organisation".
+	 *
+	 * @return void
 	 */
 	private function activeOrganisation(?string $uuid): void {
 		if ($uuid === null) {
@@ -94,6 +138,10 @@ class FlowRunControllerTest extends TestCase {
 
 	/**
 	 * Map a params array onto the request mock's getParam(name, default).
+	 *
+	 * @param array<string,mixed> $values The params the request should answer.
+	 *
+	 * @return void
 	 */
 	private function params(array $values): void {
 		$this->request->method('getParam')->willReturnCallback(
@@ -248,7 +296,7 @@ class FlowRunControllerTest extends TestCase {
 		$this->params(['flowId' => 'f1', 'pins' => $pins]);
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'f1']);
 
-		// queue() must receive the pins on the context so the engine can read them.
+		// Queue() must receive the pins on the context so the engine can read them.
 		$this->runner->expects($this->once())->method('queue')
 			->with(
 				'f1',
@@ -273,6 +321,8 @@ class FlowRunControllerTest extends TestCase {
 	 * The assertion is on the ARGUMENTS reaching the mapper, because that is
 	 * the only place the difference is observable: an unscoped query and a
 	 * scoped one that happens to match everything return the same rows.
+	 *
+	 * @return void
 	 */
 	public function testTheHistoryReadIsScopedToTheCaller(): void {
 		$this->params([]);
@@ -296,6 +346,8 @@ class FlowRunControllerTest extends TestCase {
 	/**
 	 * Positive control for the guard above: with no session there is no caller
 	 * to scope to, so nothing comes back rather than everything.
+	 *
+	 * @return void
 	 */
 	public function testTheHistoryReadReturnsNothingWithoutASession(): void {
 		$this->params([]);

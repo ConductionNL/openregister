@@ -353,6 +353,8 @@ class TasksControllerTest extends TestCase {
 	/**
 	 * The page size is capped server-side at 200 — an uncapped `_limit` would
 	 * let one request walk every VTODO in every calendar.
+	 *
+	 * @return void
 	 */
 	public function testAllUserTasksCapsThePageSizeAtTwoHundred(): void {
 		$params = ['_limit' => '100000'];

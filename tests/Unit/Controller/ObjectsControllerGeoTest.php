@@ -57,6 +57,11 @@ use Psr\Log\LoggerInterface;
 
 class ObjectsControllerGeoTest extends TestCase {
 
+	/**
+	 * HTTP request mock for the controller under test.
+	 *
+	 * @var IRequest
+	 */
 	private IRequest $request;
 
 	/**

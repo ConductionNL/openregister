@@ -17,9 +17,32 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 class WorkflowEngineControllerTest extends TestCase {
+	/**
+	 * Controller under test.
+	 *
+	 * @var WorkflowEngineController
+	 */
 	private WorkflowEngineController $controller;
+
+	/**
+	 * HTTP request mock.
+	 *
+	 * @var IRequest&MockObject
+	 */
 	private IRequest&MockObject $request;
+
+	/**
+	 * Engine registry mock.
+	 *
+	 * @var WorkflowEngineRegistry&MockObject
+	 */
 	private WorkflowEngineRegistry&MockObject $registry;
+
+	/**
+	 * Logger mock.
+	 *
+	 * @var LoggerInterface&MockObject
+	 */
 	private LoggerInterface&MockObject $logger;
 
 	protected function setUp(): void {
