@@ -1253,10 +1253,9 @@ class ImportHandler {
 	 * @return bool True when a declared annotation is missing or different.
 	 */
 	private function schemaAnnotationsDiffer(array $data, Schema $existing): bool {
+		// `getConfiguration(): ?array`, so the null-coalesce already yields an
+		// array — an is_array() guard here is dead code and PHPStan says so.
 		$stored = ($existing->getConfiguration() ?? []);
-		if (is_array($stored) === false) {
-			$stored = [];
-		}
 
 		$incomingConfig = ($data['configuration'] ?? []);
 		if (is_array($incomingConfig) === false) {
