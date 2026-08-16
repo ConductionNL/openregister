@@ -7,7 +7,7 @@
     "npm": "^11.0.0"
   },
   "scripts": {
-    "prebuild": "node scripts/build-features-manifest.js",
+    "prepare": "git config core.hooksPath .githooks || true",
     "build": "webpack --config webpack.config.js --progress --mode production",
     "dev": "NODE_ENV=development webpack --config webpack.config.js --progress",
     "watch": "NODE_ENV=development webpack --config webpack.config.js --progress --watch",
@@ -31,8 +31,6 @@
     "check:manifest": "node tests/validate-manifest.js",
     "check:register": "node tests/validate-register.js",
     "check:specs": "npm run check:json-strict && npm run check:manifest && npm run check:register",
-    "manifest:build": "node scripts/build-features-manifest.js",
-    "manifest:check": "node scripts/build-features-manifest.js --check",
     "format": "prettier --check \"**/*.{js,ts,vue,css,scss}\"",
     "format:fix": "prettier --write \"**/*.{js,ts,vue,css,scss}\""
   },
