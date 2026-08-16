@@ -1,9 +1,0 @@
-{
-  "schema_version": 2,
-  "spec_slug": "add-approval-step-events",
-  "app": "openregister",
-  "repo": "https://codeberg.org/Conduction/openregister",
-  "issue": null,
-  "depends_on": [],
-  "cycles": []
-}
