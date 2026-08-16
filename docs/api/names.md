@@ -74,65 +74,23 @@ POST /api/names
 }
 ```
 
-### 2. Get Single Object Name
+## ❌ Removed Endpoints (SEC-CTRL-2)
 
-```
-GET /api/names/{id}
-```
+Three endpoints that used to be documented here have been **removed**. All three were
+`#[PublicPage]`, i.e. reachable with no Nextcloud session at all.
 
-**Response Example:**
-```json
-{
-  "id": "uuid-123",
-  "name": "Organization Alpha",
-  "found": true,
-  "cached": true,
-  "execution_time": "1.2ms"
-}
-```
+| Removed | Why | What to use instead |
+| --- | --- | --- |
+| `GET /api/names/{id}` | Resolved **any** object's name through `findAcrossAllSources(_rbac: false, _multitenancy: false)`, trying organisations first. An anonymous caller holding a UUID could read names across every register, schema and tenant. | `POST /api/names` with `{"ids": ["<id>"]}` — same `{"names": {...}}` response shape, requires a session. |
+| `GET /api/names/stats` | Exposed cache internals anonymously. | No public equivalent. Cache metrics belong in admin settings. |
+| `POST /api/names/warmup` | Let an anonymous caller make the server rebuild the entire name cache — a cheap denial-of-service lever. | `POST /api/settings/cache/warmup-names` (admin only). |
 
-### 3. Cache Statistics
+Both surviving endpoints (`GET /api/names`, `POST /api/names`) return `401` without a session.
 
-```
-GET /api/names/stats
-```
-
-**Response Example:**
-```json
-{
-  "cache_statistics": {
-    "name_hits": 1245,
-    "name_misses": 23,
-    "name_hit_rate": 98.2,
-    "name_cache_size": 1564,
-    "name_warmups": 2
-  },
-  "performance_metrics": {
-    "name_cache_enabled": true,
-    "distributed_cache_available": true,
-    "warmup_available": true
-  }
-}
-```
-
-### 4. Manual Cache Warmup
-
-```
-POST /api/names/warmup
-```
-
-**Response Example:**
-```json
-{
-  "success": true,
-  "loaded_names": 782,
-  "execution_time": "39.54ms",
-  "cache_stats": {
-    "name_cache_size": 1564,
-    "name_warmups": 1
-  }
-}
-```
+> ⚠️ Name resolution is still **not** RBAC- or tenant-aware once you are authenticated —
+> `getMultipleObjectNames()` returns names across all organisations. See the open TODO in
+> `NamesController::index()`. Requiring a session closed the anonymous hole; it did not make the
+> resolver permission-aware.
 
 ## 🔗 Enhanced Search Responses
 
