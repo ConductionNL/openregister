@@ -2130,7 +2130,9 @@ export default {
 					try {
 						dataToSave = JSON.parse(this.jsonData)
 					} catch (e) {
-						throw new Error('Invalid JSON format: ' + e.message, { cause: e })
+						throw new Error('Invalid JSON format: ' + e.message, {
+							cause: e,
+						})
 					}
 				} else {
 					dataToSave = this.formData

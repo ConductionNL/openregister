@@ -224,7 +224,9 @@ export const useOrganisationStore = defineStore('organisation', {
 				return { response, data }
 			} catch (error) {
 				console.error('Error joining organisation:', error)
-				throw new Error(`Failed to join organisation: ${error.message}`, { cause: error })
+				throw new Error(`Failed to join organisation: ${error.message}`, {
+					cause: error,
+				})
 			}
 		},
 		// Leave an organisation
@@ -252,7 +254,9 @@ export const useOrganisationStore = defineStore('organisation', {
 				return { response, data }
 			} catch (error) {
 				console.error('Error leaving organisation:', error)
-				throw new Error(`Failed to leave organisation: ${error.message}`, { cause: error })
+				throw new Error(`Failed to leave organisation: ${error.message}`, {
+					cause: error,
+				})
 			}
 		},
 		// Delete an organisation (owner only)
@@ -316,7 +320,9 @@ export const useOrganisationStore = defineStore('organisation', {
 				return { response, data: savedOrganisation }
 			} catch (error) {
 				console.error('Error creating organisation:', error)
-				throw new Error(`Failed to create organisation: ${error.message}`, { cause: error })
+				throw new Error(`Failed to create organisation: ${error.message}`, {
+					cause: error,
+				})
 			}
 		},
 
@@ -383,7 +389,9 @@ export const useOrganisationStore = defineStore('organisation', {
 				return { response, data: savedOrganisation }
 			} catch (error) {
 				console.error('Error updating organisation:', error)
-				throw new Error(`Failed to update organisation: ${error.message}`, { cause: error })
+				throw new Error(`Failed to update organisation: ${error.message}`, {
+					cause: error,
+				})
 			}
 		},
 
@@ -471,7 +479,9 @@ export const useOrganisationStore = defineStore('organisation', {
 				return data.organisations || []
 			} catch (error) {
 				console.error('Error searching organisations:', error)
-				throw new Error(`Failed to search organisations: ${error.message}`, { cause: error })
+				throw new Error(`Failed to search organisations: ${error.message}`, {
+					cause: error,
+				})
 			}
 		},
 		// Clear cache
@@ -494,7 +504,9 @@ export const useOrganisationStore = defineStore('organisation', {
 				return { response, data }
 			} catch (error) {
 				console.error('Error clearing cache:', error)
-				throw new Error(`Failed to clear cache: ${error.message}`, { cause: error })
+				throw new Error(`Failed to clear cache: ${error.message}`, {
+					cause: error,
+				})
 			}
 		},
 		/**
