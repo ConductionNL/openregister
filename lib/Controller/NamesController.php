@@ -372,9 +372,23 @@ class NamesController extends Controller {
 	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
+	// NOT #[PublicPage] — deliberately. This resolves an arbitrary caller-supplied
+	// identifier through CacheHandler::getSingleObjectName(), which queries with
+	// `_rbac: false, _multitenancy: false`. Anonymous, that returned ANY object's
+	// name from ANY register/schema, ACROSS tenants, to anyone holding a UUID —
+	// and names are person names, case titles, document titles.
+	//
+	// The sibling endpoints on this controller (index, create) were already
+	// session-only; `show` being the public one was the anomaly.
+	//
+	// Verified before removing: `GET /api/names/{id}` has NO caller anywhere —
+	// not in the 18 fleet apps, not in @conduction/nextcloud-vue. The only
+	// `api/names` reference in the fleet is a POST to `.../names/warmup`.
+	//
+	// #[AnonRateLimit] is kept: it costs nothing now that a session is required,
+	// and it stays correct if this ever becomes public again.
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
-	#[PublicPage]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function show(string $id): JSONResponse {
 		$startTime = microtime(true);
