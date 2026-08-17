@@ -20,6 +20,16 @@
  */
 import { test, expect, type Page } from '@playwright/test'
 import * as path from 'path'
+// Routes are imported by COMPONENT NAME (see tests/e2e/_page-routes.ts): the
+// binding records which page host each route mounts, which a bare path string
+// cannot say. Also what makes this suite legible to gate-26.
+import {
+	SchemasIndex,
+	TemplatesIndex,
+	SourcesIndex,
+	ApplicationsIndex,
+	ObjectsIndex,
+} from '../_page-routes'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 
@@ -193,7 +203,7 @@ test.describe('core-list-pages — real UI render + actions', () => {
 
 	test('Schemas page: heading + Add Schema + list surface', async ({ page }) => {
 		const e = trackErrors(page)
-		await gotoPage(page, '/schemas')
+		await gotoPage(page, SchemasIndex)
 		await expectHeading(page, /^Schemas$/)
 		await expectButton(page, /Add Schema/i)
 		await expectListSurface(page)
@@ -203,7 +213,7 @@ test.describe('core-list-pages — real UI render + actions', () => {
 
 	test('Templates page: heading + Refresh + list surface', async ({ page }) => {
 		const e = trackErrors(page)
-		await gotoPage(page, '/templates')
+		await gotoPage(page, TemplatesIndex)
 		await expectHeading(page, /^Templates$/)
 		await expectButton(page, /Refresh/i)
 		await expectListSurface(page)
@@ -213,7 +223,7 @@ test.describe('core-list-pages — real UI render + actions', () => {
 
 	test('Sources page: heading + Add Source + list surface', async ({ page }) => {
 		const e = trackErrors(page)
-		await gotoPage(page, '/sources')
+		await gotoPage(page, SourcesIndex)
 		await expectHeading(page, /^Sources$/)
 		await expectButton(page, /Add Source/i)
 		await expectListSurface(page)
@@ -225,7 +235,7 @@ test.describe('core-list-pages — real UI render + actions', () => {
 		page,
 	}) => {
 		const e = trackErrors(page)
-		await gotoPage(page, '/applications')
+		await gotoPage(page, ApplicationsIndex)
 		await expectHeading(page, /^Applications$/)
 		await expectButton(page, /Add Application/i)
 		await expectListSurface(page)
@@ -235,7 +245,7 @@ test.describe('core-list-pages — real UI render + actions', () => {
 
 	test('Objects page: Add Object + list surface', async ({ page }) => {
 		const e = trackErrors(page)
-		await gotoPage(page, '/objects')
+		await gotoPage(page, ObjectsIndex)
 		// NOTE: ObjectsIndex renders no page <h1> when no register/schema is
 		// selected — assert the primary action + list surface instead.
 		await expectButton(page, /Add Object/i)

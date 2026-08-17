@@ -22,6 +22,9 @@
 
 declare(strict_types=1);
 
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\FlowController;
@@ -29,6 +32,7 @@ use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -61,6 +65,13 @@ class FlowControllerTest extends TestCase {
 	 * @var FlowNodePreflight
 	 */
 	private FlowNodePreflight $preflight;
+
+	/**
+	 * The mocked trigger catalog.
+	 *
+	 * @var EventCatalogService
+	 */
+	private EventCatalogService $eventCatalog;
 
 	/**
 	 * The flow CRUD surface, mocked.
@@ -101,6 +112,7 @@ class FlowControllerTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->nodes = $this->createMock(FlowNodeRegistry::class);
 		$this->preflight = $this->createMock(FlowNodePreflight::class);
+		$this->eventCatalog = $this->createMock(EventCatalogService::class);
 
 		$this->flows = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowService::class);
 
@@ -120,7 +132,7 @@ class FlowControllerTest extends TestCase {
 		$this->controller = new FlowController(
 			'openregister',
 			$this->request,
-			$this->createMock(EventCatalogService::class),
+			$this->eventCatalog,
 			$this->nodes,
 			$this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class),
 			$this->preflight,
@@ -654,4 +666,73 @@ class FlowControllerTest extends TestCase {
 		}
 
 	}//end testAWriteIsRefusedWhenTheRightIsNotHeld()
+
+	/**
+	 * The trigger catalog is served in the documented `{results,total}`
+	 * envelope, straight from the catalog service.
+	 *
+	 * @return void
+	 */
+	public function testEventCatalogReturnsTheTriggerCatalogWithATotal(): void {
+		$catalog = [
+			['id' => 'object.created', 'label' => 'Object created', 'group' => 'objects'],
+			['id' => 'object.updated', 'label' => 'Object updated', 'group' => 'objects'],
+			['id' => 'schema.changed', 'label' => 'Schema changed', 'group' => 'schemas', 'legacy' => true],
+		];
+
+		$this->eventCatalog->expects($this->once())
+			->method('getCatalog')
+			->willReturn($catalog);
+
+		$response = $this->controller->eventCatalog();
+
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(3, $response->getData()['total']);
+		$this->assertSame('object.created', $response->getData()['results'][0]['id']);
+	}//end testEventCatalogReturnsTheTriggerCatalogWithATotal()
+
+	/**
+	 * logActions() forwards the POSTed log entry to the node registry and
+	 * returns whatever the contributing node says the entry points at.
+	 *
+	 * @return void
+	 */
+	public function testLogActionsForwardsTheEntryToTheNodeRegistry(): void {
+		$entry = ['type' => 'openconnector.source-call', 'callLogId' => 7];
+
+		$this->request->method('getParam')->willReturn($entry);
+
+		$this->nodes->expects($this->once())
+			->method('logActions')
+			->with($entry)
+			->willReturn([['label' => 'Call log', 'href' => '/apps/openconnector/call-logs/7']]);
+
+		$response = $this->controller->logActions();
+
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(200, $response->getStatus());
+		$this->assertCount(1, $response->getData()['results']);
+		$this->assertSame('Call log', $response->getData()['results'][0]['label']);
+	}//end testLogActionsForwardsTheEntryToTheNodeRegistry()
+
+	/**
+	 * An absent entry degrades to an empty action list rather than failing —
+	 * losing the log an operator is reading is the worse outcome.
+	 *
+	 * @return void
+	 */
+	public function testLogActionsReturnsAnEmptyListForAnAbsentEntry(): void {
+		$this->request->method('getParam')->willReturn(null);
+
+		$this->nodes->expects($this->once())
+			->method('logActions')
+			->with([])
+			->willReturn([]);
+
+		$response = $this->controller->logActions();
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame([], $response->getData()['results']);
+	}//end testLogActionsReturnsAnEmptyListForAnAbsentEntry()
 }//end class

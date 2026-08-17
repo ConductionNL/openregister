@@ -1071,7 +1071,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys {
 				registerId: $register->getId(),
 				registerSlug: $register->getSlug(),
 				candidatesElsewhere: $this->schemas->countBySlug(slug: $identifier),
-				registerListEmpty: ($registerSchemaIds === [])
+				registerSchemaCount: count($registerSchemaIds)
 			);
 		}
 

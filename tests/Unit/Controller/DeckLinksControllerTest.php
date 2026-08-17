@@ -300,4 +300,60 @@ class DeckLinksControllerTest extends TestCase {
 		$this->assertSame(1, $response->getData()['total']);
 		$this->assertSame(11, $response->getData()['results'][0]['id']);
 	}//end testStacksReturnsList()
+
+	public function testGetDefaultReturnsTheStoredStickyDefault(): void {
+		$this->settingsService->expects($this->once())
+			->method('getDeckDefault')
+			->with('zaak')
+			->willReturn(['boardId' => 7, 'stackId' => 11]);
+
+		$response = $this->controller->getDefault('zaak');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(7, $response->getData()['boardId']);
+		$this->assertSame(11, $response->getData()['stackId']);
+	}//end testGetDefaultReturnsTheStoredStickyDefault()
+
+	public function testGetDefaultReturnsANullPairWhenNothingIsStored(): void {
+		$this->settingsService->method('getDeckDefault')->willReturn(null);
+
+		$response = $this->controller->getDefault('zaak');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertNull($response->getData()['boardId']);
+		$this->assertNull($response->getData()['stackId']);
+	}//end testGetDefaultReturnsANullPairWhenNothingIsStored()
+
+	public function testSetDefaultPersistsTheBoardAndStackAndEchoesThem(): void {
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, mixed $default = null): mixed {
+				return (['boardId' => 7, 'stackId' => 11][$key] ?? $default);
+			}
+		);
+
+		$this->settingsService->expects($this->once())
+			->method('setDeckDefault')
+			->with('zaak', 7, 11);
+
+		$response = $this->controller->setDefault('zaak');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(7, $response->getData()['boardId']);
+		$this->assertSame(11, $response->getData()['stackId']);
+	}//end testSetDefaultPersistsTheBoardAndStackAndEchoesThem()
+
+	public function testSetDefaultRejectsAMissingStackWith400(): void {
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, mixed $default = null): mixed {
+				return (['boardId' => 7][$key] ?? $default);
+			}
+		);
+
+		$this->settingsService->expects($this->never())->method('setDeckDefault');
+
+		$response = $this->controller->setDefault('zaak');
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertSame('boardId and stackId are required', $response->getData()['error']);
+	}//end testSetDefaultRejectsAMissingStackWith400()
 }//end class

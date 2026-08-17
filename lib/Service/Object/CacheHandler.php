@@ -952,6 +952,23 @@ class CacheHandler {
 	 * Provides ultra-fast name lookup for frontend rendering.
 	 * Falls back to database if not cached.
 	 *
+	 * ⚠️ THIS RESOLVER IS DELIBERATELY UNSCOPED. The database fallback below calls
+	 * `findAcrossAllSources(..., _rbac: false, _multitenancy: false)` and tries
+	 * organisations first, so it will happily return the name of an object in any
+	 * register, any schema, any tenant, to whoever asks. It knows nothing about the
+	 * caller.
+	 *
+	 * DO NOT EXPOSE IT DIRECTLY FROM A CONTROLLER. It used to back
+	 * `GET /api/names/{id}`, which was `#[PublicPage]` — so any anonymous caller
+	 * holding a UUID could read that object's name across tenant boundaries. That
+	 * endpoint was removed (SEC-CTRL-2, gate-7); this method survives only as an
+	 * internal cache primitive.
+	 *
+	 * Any new caller must apply the caller's read permissions and active
+	 * organisation BEFORE calling this, or resolve names through a path that does.
+	 * Note the sibling `getMultipleObjectNames()` carries the same limitation and
+	 * the same open TODO in NamesController::index().
+	 *
 	 * @param string|int $identifier Object ID or UUID
 	 *
 	 * @return string|null Object name or null if not found

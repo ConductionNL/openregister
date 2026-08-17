@@ -266,6 +266,23 @@ import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
+/**
+ * OrganisationDetails — single-organisation surface.
+ *
+ * @visual exclude Not reachable in a browser, so there is no screen to
+ *   baseline. Verified 2026-08-16 across the whole tree: this component has NO
+ *   `src/manifest.json` page entry, NO `src/registry.js` entry, and no import
+ *   from any other component — the string "OrganisationDetails" does not occur
+ *   anywhere in the repository outside this file. Nothing imports it, so
+ *   webpack never emits it and no route mounts it; a Playwright spec has no URL
+ *   to navigate to. The organisation surface that IS shipped is
+ *   `OrganisationsIndex.vue` on `/organisation`, which renders the
+ *   single-organisation card inline and IS driven by
+ *   `tests/e2e/spec-coverage/admin-settings-pages.spec.ts`. Remove this waiver
+ *   and write a real spec on the change that gives this component a manifest
+ *   route; it records that the screen is not wired up yet, not that it needs
+ *   no proof.
+ */
 export default {
 	name: 'OrganisationDetails',
 	components: {
@@ -426,7 +443,7 @@ export default {
 		},
 
 		/**
-		 * @param userId
+		 * @param {string} userId The Nextcloud uid of the member to remove.
 		 * @spec exclude detail-view member-removal stub (confirm + toast; API endpoint not yet implemented)
 		 */
 		async removeMember(userId) {
@@ -468,7 +485,7 @@ export default {
 		},
 
 		/**
-		 * @param text
+		 * @param {string} text The text to place on the clipboard.
 		 * @spec exclude detail-view clipboard helper with success/error toast
 		 */
 		async copyToClipboard(text) {
@@ -482,7 +499,7 @@ export default {
 		},
 
 		/**
-		 * @param dateString
+		 * @param {string} dateString A date string parseable by `new Date()`.
 		 * @spec exclude detail-view date-formatting display helper
 		 */
 		formatDate(dateString) {
@@ -501,7 +518,7 @@ export default {
 		},
 
 		/**
-		 * @param bytes
+		 * @param {number} bytes A size in bytes.
 		 * @spec exclude detail-view byte-size formatting display helper
 		 */
 		formatBytes(bytes) {

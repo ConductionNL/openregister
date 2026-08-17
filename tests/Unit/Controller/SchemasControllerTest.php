@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace Unit\Controller;
 
 use Exception;
@@ -1327,4 +1330,148 @@ class SchemasControllerTest extends TestCase {
 			// see testStatsPassesMultitenancyFalseToFind
 		}
 	}//end testUploadPassesMultitenancyDefaultTrueToFind()
+
+	/**
+	 * Build a controller whose semantic-type resolver is REAL, wired over
+	 * mocked mappers.
+	 *
+	 * {@see \OCA\OpenRegister\Service\SemanticTypeResolver} is `final`, so it
+	 * cannot be doubled; the resolution behaviour is driven through the schema
+	 * enumeration and the implemented-type markers instead.
+	 *
+	 * @param array<int,\OCA\OpenRegister\Db\Schema> $schemas The installed schemas.
+	 * @param array<int,string> $implementedTypes The semantic types every schema implements.
+	 * @param array<int,\OCA\OpenRegister\Db\Register> $registers The installed registers.
+	 *
+	 * @return SchemasController
+	 */
+	private function controllerWithSemanticResolver(
+		array $schemas,
+		array $implementedTypes,
+		array $registers = [],
+	): SchemasController {
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('findAll')->willReturn($schemas);
+
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$registerMapper->method('findAll')->willReturn($registers);
+
+		$jsonLdContext = $this->createMock(\OCA\OpenRegister\Service\JsonLd\JsonLdContextService::class);
+		$jsonLdContext->method('getImplementedTypes')->willReturn($implementedTypes);
+
+		$resolver = new \OCA\OpenRegister\Service\SemanticTypeResolver(
+			$schemaMapper,
+			$registerMapper,
+			$jsonLdContext,
+			$this->logger,
+			null
+		);
+
+		return new SchemasController(
+			'openregister',
+			$this->request,
+			$this->config,
+			$schemaMapper,
+			$registerMapper,
+			$this->objectMapper,
+			$this->uploadService,
+			$this->auditTrailMapper,
+			$this->organisationService,
+			$this->schemaCacheService,
+			$this->facetCacheSvc,
+			$this->schemaService,
+			$this->logger,
+			$this->container,
+			$this->schemaVersioningService,
+			null,
+			null,
+			$resolver
+		);
+	}//end controllerWithSemanticResolver()
+
+	/**
+	 * A URI an installed schema implements resolves to that schema plus its
+	 * owning register, so a consuming app can build a picker over it.
+	 *
+	 * @return void
+	 */
+	public function testResolveByImplementsReturnsTheProviderSchemaAndRegister(): void {
+		$schema = new \OCA\OpenRegister\Db\Schema();
+		$schema->setId(12);
+		$schema->setSlug('organisatie');
+
+		$register = new \OCA\OpenRegister\Db\Register();
+		$register->setId(3);
+		$register->setSlug('basisregister');
+		$register->setSchemas([12]);
+
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, mixed $default = null): mixed {
+				return (['uri' => 'https://schema.org/Organization'][$key] ?? $default);
+			}
+		);
+
+		$controller = $this->controllerWithSemanticResolver(
+			[$schema],
+			['https://schema.org/Organization'],
+			[$register]
+		);
+
+		$response = $controller->resolveByImplements();
+
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(200, $response->getStatus());
+		$data = $response->getData();
+		$this->assertTrue($data['resolved']);
+		$this->assertSame(12, $data['schema']);
+		$this->assertSame('organisatie', $data['schemaSlug']);
+		$this->assertSame(3, $data['register']);
+		$this->assertSame('basisregister', $data['registerSlug']);
+	}//end testResolveByImplementsReturnsTheProviderSchemaAndRegister()
+
+	/**
+	 * No installed schema implements the type: `{resolved:false}` with HTTP
+	 * 200 — never a 500 — so a consuming form degrades to a disabled field.
+	 *
+	 * @return void
+	 */
+	public function testResolveByImplementsDegradesToUnresolvedWithHttp200(): void {
+		$schema = new \OCA\OpenRegister\Db\Schema();
+		$schema->setId(12);
+		$schema->setSlug('organisatie');
+
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, mixed $default = null): mixed {
+				return (['uri' => 'https://schema.org/Person'][$key] ?? $default);
+			}
+		);
+
+		$controller = $this->controllerWithSemanticResolver(
+			[$schema],
+			['https://schema.org/Organization']
+		);
+
+		$response = $controller->resolveByImplements();
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertFalse($response->getData()['resolved']);
+		$this->assertArrayNotHasKey('schema', $response->getData());
+	}//end testResolveByImplementsDegradesToUnresolvedWithHttp200()
+
+	/**
+	 * An absent `uri` short-circuits to `{resolved:false}` without enumerating
+	 * a single schema.
+	 *
+	 * @return void
+	 */
+	public function testResolveByImplementsWithoutAUriIsUnresolved(): void {
+		$this->request->method('getParam')->willReturn(null);
+
+		$controller = $this->controllerWithSemanticResolver([], []);
+
+		$response = $controller->resolveByImplements();
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertFalse($response->getData()['resolved']);
+	}//end testResolveByImplementsWithoutAUriIsUnresolved()
 }//end class

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- PHPUnit arrange/act/assert conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
+
 use OCA\OpenRegister\Controller\TasksController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
@@ -16,9 +19,32 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class TasksControllerTest extends TestCase {
+	/**
+	 * The controller under test.
+	 *
+	 * @var TasksController
+	 */
 	private TasksController $controller;
+
+	/**
+	 * The mocked HTTP request.
+	 *
+	 * @var IRequest&MockObject
+	 */
 	private IRequest&MockObject $request;
+
+	/**
+	 * The mocked CalDAV task service.
+	 *
+	 * @var TaskService&MockObject
+	 */
 	private TaskService&MockObject $taskService;
+
+	/**
+	 * The mocked object service.
+	 *
+	 * @var ObjectService&MockObject
+	 */
 	private ObjectService&MockObject $objectService;
 
 	protected function setUp(): void {
@@ -231,5 +257,133 @@ class TasksControllerTest extends TestCase {
 
 		$this->assertEquals(404, $result->getStatus());
 		$this->assertEquals('Task not found', $result->getData()['error']);
+	}
+
+	// ── GET /api/tasks — the caller's own tasks across all calendars ───────
+
+	/**
+	 * Record the arguments TaskService::getAllUserTasks() is called with.
+	 *
+	 * @param array<int, mixed> $capture Receives [status, limit, offset, assignee].
+	 * @param array<string, mixed> $result The payload the service returns.
+	 *
+	 * @return void
+	 */
+	private function expectAllUserTasksCall(array &$capture, array $result): void {
+		$this->taskService
+			->expects($this->once())
+			->method('getAllUserTasks')
+			->willReturnCallback(
+				static function (?string $status, int $limit, int $offset, ?string $assignee) use (&$capture, $result) {
+					$capture = [$status, $limit, $offset, $assignee];
+					return $result;
+				}
+			);
+	}
+
+	public function testAllUserTasksReturnsTheServicePayload(): void {
+		$payload = [
+			'results' => [
+				['id' => 'task-1', 'summary' => 'Review permit application', 'status' => 'NEEDS-ACTION'],
+			],
+			'total' => 1,
+		];
+
+		$this->request->method('getParam')->willReturn(null);
+
+		$capture = [];
+		$this->expectAllUserTasksCall($capture, $payload);
+
+		$result = $this->controller->allUserTasks();
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertEquals(200, $result->getStatus());
+		$this->assertEquals($payload, $result->getData());
+		// Defaults when the caller sends no query parameters at all.
+		$this->assertEquals([null, 50, 0, null], $capture);
+	}
+
+	public function testAllUserTasksForwardsStatusPagingAndAssigneeFilters(): void {
+		$params = [
+			'status' => 'NEEDS-ACTION',
+			'_limit' => '25',
+			'_offset' => '10',
+			'assignee' => 'alice',
+		];
+		$this->request->method('getParam')
+			->willReturnCallback(
+				static function (string $key, $default = null) use ($params) {
+					return ($params[$key] ?? $default);
+				}
+			);
+
+		$capture = [];
+		$this->expectAllUserTasksCall($capture, ['results' => [], 'total' => 0]);
+
+		$result = $this->controller->allUserTasks();
+
+		$this->assertEquals(200, $result->getStatus());
+		$this->assertEquals(['NEEDS-ACTION', 25, 10, 'alice'], $capture);
+	}
+
+	/**
+	 * `limit`/`offset` are the legacy spellings of `_limit`/`_offset`; both
+	 * must reach the service or a client written against either one silently
+	 * gets the default page.
+	 *
+	 * @return void
+	 */
+	public function testAllUserTasksAcceptsTheLegacyLimitAndOffsetSpellings(): void {
+		$params = ['limit' => '15', 'offset' => '5'];
+		$this->request->method('getParam')
+			->willReturnCallback(
+				static function (string $key, $default = null) use ($params) {
+					return ($params[$key] ?? $default);
+				}
+			);
+
+		$capture = [];
+		$this->expectAllUserTasksCall($capture, ['results' => [], 'total' => 0]);
+
+		$this->controller->allUserTasks();
+
+		$this->assertEquals([null, 15, 5, null], $capture);
+	}
+
+	/**
+	 * The page size is capped server-side at 200 — an uncapped `_limit` would
+	 * let one request walk every VTODO in every calendar.
+	 *
+	 * @return void
+	 */
+	public function testAllUserTasksCapsThePageSizeAtTwoHundred(): void {
+		$params = ['_limit' => '100000'];
+		$this->request->method('getParam')
+			->willReturnCallback(
+				static function (string $key, $default = null) use ($params) {
+					return ($params[$key] ?? $default);
+				}
+			);
+
+		$capture = [];
+		$this->expectAllUserTasksCall($capture, ['results' => [], 'total' => 0]);
+
+		$this->controller->allUserTasks();
+
+		$this->assertEquals(200, $capture[1]);
+	}
+
+	public function testAllUserTasksReturns500WhenTheCalendarBackendFails(): void {
+		$this->request->method('getParam')->willReturn(null);
+
+		$this->taskService
+			->method('getAllUserTasks')
+			->willThrowException(new \Exception('No user logged in'));
+
+		$result = $this->controller->allUserTasks();
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertEquals(500, $result->getStatus());
+		$this->assertEquals('No user logged in', $result->getData()['error']);
 	}
 }

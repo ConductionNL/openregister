@@ -686,7 +686,11 @@ export default {
 		 */
 		async warmupNamesCache() {
 			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/names/warmup`
+			// Was `/api/names/warmup`, which was #[PublicPage] — anyone could make
+			// the server rebuild the entire name cache. That route is gone
+			// (SEC-CTRL-2); this is the admin-only equivalent, which is what a
+			// maintenance action on an admin screen should have been calling.
+			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/settings/cache/warmup-names`
 
 			try {
 				showSuccess(t('openregister', 'Starting names cache warmup...'))

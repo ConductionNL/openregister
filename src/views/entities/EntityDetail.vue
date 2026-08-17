@@ -279,6 +279,22 @@ import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 /**
  * Entity detail view showing entity information and relations
  *
+ * @visual exclude No hermetic e2e can reach this page, because nothing can
+ *   create the record it displays. `openregister_entities` rows are DETECTED
+ *   PII, and the routed surface is read-only: `appinfo/routes.php` registers
+ *   `gdprEntities#index`, `#show`, `#destroy`, `#getTypes`, `#getCategories`
+ *   and `#getStats` — and NO create. The only writer anywhere is
+ *   `fileText#addManualEntity`, which `ManualEntityService` refuses unless the
+ *   target Nextcloud file already carries EXTRACTED CHUNKS, i.e. it needs an
+ *   uploaded file plus a completed text-extraction run — neither hermetic nor
+ *   available in CI. The alternative was a spec that navigates to whatever row
+ *   happens to exist and guards its assertions, which passes without asserting
+ *   on an empty instance; `tests/e2e/ci/playwright.config.ts` names that shape
+ *   as admission criterion 3 and refuses it, and so does this file. Remove this
+ *   waiver and write a real spec on the change that gives entities a create
+ *   endpoint or a seedable extraction fixture; it records that the record
+ *   cannot be made, not that the screen needs no proof.
+ *
  * @package
  * @category View
  * @author Ruben Linde <ruben@conduction.nl>

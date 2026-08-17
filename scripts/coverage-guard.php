@@ -53,7 +53,121 @@ const CG_INPUT   = 2;
  * check that did not run looking exactly like one that passed. The probe turns
  * that into a loud failure.
  */
-const CG_CAPABILITIES = ['against', 'update-baseline', 'capabilities'];
+const CG_CAPABILITIES = ['against', 'update-baseline', 'capabilities', 'changed-files'];
+
+/**
+ * Sum clover metrics for a named subset of files.
+ *
+ * WHY THIS EXISTS. Comparing the project-wide aggregate made the ratchet fire on
+ * measurement noise. Measured on doriath#240 — a pull request whose entire diff
+ * was `webpack.config.js`, containing no PHP at all:
+ *
+ *     Coverage current:       60.50%  (8303/13723 statements)
+ *     Coverage merge base:    60.55%  (8309/13723 statements)
+ *     FAIL: coverage dropped by 0.05% against the merge base.
+ *
+ * The denominator is identical, so both runs compiled the same source, and both
+ * reported exactly `Tests: 948, Assertions: 3051, Skipped: 1`. Only which six
+ * statements xdebug recorded as covered moved. The header above argues that a
+ * measured `--against` floor cancels driver variance, and it does — but it does
+ * not cancel RUN-TO-RUN variance, and the ratchet has no tolerance.
+ *
+ * A tolerance band was the obvious alternative and is the wrong one: it blinds
+ * the gate to small real regressions permanently, at a threshold nobody can
+ * justify. Scoping to the files the change actually touched keeps full strength
+ * where it matters and makes the noise unreachable — a diff with no PHP cannot
+ * fail, by construction, rather than by being forgiven.
+ *
+ * Matching is by path SUFFIX. Clover records absolute paths from the machine
+ * that produced it, and the two reports here are produced from two different
+ * checkouts, so absolute equality would match nothing and silently measure zero.
+ *
+ * @param string             $file  Clover report to read.
+ * @param string             $label Human label for error messages.
+ * @param array<int,string>  $only  Repo-relative paths to include.
+ *
+ * @return array{0:int,1:int,2:float} statements, covered, percentage
+ */
+function cgMeasureFiles(string $file, string $label, array $only): array
+{
+    if (file_exists($file) === false) {
+        fwrite(STDERR, "Error: {$label} clover file not found: {$file}\n");
+        exit(CG_INPUT);
+    }
+
+    $xml = @simplexml_load_file($file);
+    if ($xml === false) {
+        fwrite(STDERR, "Error: could not parse {$label} report {$file}\n");
+        exit(CG_INPUT);
+    }
+
+    $statements = 0;
+    $covered    = 0;
+    $matched    = 0;
+
+    foreach ($xml->xpath('//file') as $entry) {
+        $name = (string) $entry['name'];
+        if ($name === '') {
+            continue;
+        }
+
+        foreach ($only as $wanted) {
+            if (str_ends_with($name, $wanted) === false) {
+                continue;
+            }
+
+            $matched++;
+            $statements += (int) $entry->metrics['statements'];
+            $covered    += (int) $entry->metrics['coveredstatements'];
+            break;
+        }
+    }
+
+    // Zero matches is NOT zero coverage. It means the changed files are absent
+    // from this report — typically because they are new on the head side and do
+    // not exist at the merge base, which is normal and must not read as a drop.
+    if ($matched === 0) {
+        return [0, 0, 0.0];
+    }
+
+    $percentage = 0.0;
+    if ($statements > 0) {
+        $percentage = round((($covered / $statements) * 100), 2);
+    }
+
+    return [$statements, $covered, $percentage];
+}
+
+/**
+ * Read the changed-file list, keeping only PHP files the guard can measure.
+ *
+ * @param string $path File containing one repo-relative path per line.
+ *
+ * @return array<int,string>
+ */
+function cgReadChangedFiles(string $path): array
+{
+    if (file_exists($path) === false) {
+        fwrite(STDERR, "Error: changed-files list not found: {$path}\n");
+        exit(CG_INPUT);
+    }
+
+    $lines = file($path, (FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES));
+    if ($lines === false) {
+        fwrite(STDERR, "Error: could not read changed-files list: {$path}\n");
+        exit(CG_INPUT);
+    }
+
+    $php = [];
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line !== '' && str_ends_with($line, '.php') === true) {
+            $php[] = $line;
+        }
+    }
+
+    return array_values(array_unique($php));
+}
 
 /**
  * Parse `--key=value` / `--flag` into a map, and everything else in order.
@@ -184,6 +298,61 @@ if (isset($options['capabilities']) === true) {
 $cloverFile   = ($positional[0] ?? 'coverage/clover.xml');
 $baselineFile = (__DIR__ . '/../.coverage-baseline');
 $against      = ($options['against'] ?? null);
+$changedList  = ($options['changed-files'] ?? null);
+
+// ── scoped mode: compare ONLY the PHP the change touched ────────────────────
+//
+// Requires --against. Without a merge-base report there is nothing to compare a
+// file subset to, and falling back to the committed whole-project constant here
+// would compare a subset against a whole and fail everything.
+if (is_string($changedList) === true && $changedList !== '') {
+    if (is_string($against) === false || $against === '') {
+        fwrite(STDERR, "Error: --changed-files requires --against; a file subset has no meaning against the committed whole-project baseline.\n");
+        exit(CG_INPUT);
+    }
+
+    $changed = cgReadChangedFiles($changedList);
+
+    if (empty($changed) === true) {
+        echo "OK: this change touches no PHP files, so there is no coverage to compare.\n";
+        echo "    (Whole-project drift between two runs of identical code is measurement noise, not a regression.)\n";
+        exit(CG_OK);
+    }
+
+    echo 'Scoped to ' . count($changed) . " changed PHP file(s).\n";
+
+    [$statements, $covered, $current]             = cgMeasureFiles($cloverFile, 'current', $changed);
+    [$baseStatements, $baseCovered, $base]        = cgMeasureFiles($against, 'merge-base', $changed);
+
+    if ($statements === 0 && $baseStatements === 0) {
+        echo "OK: none of the changed PHP files appear in either coverage report.\n";
+        echo "    Nothing was measured, so nothing is claimed about them.\n";
+        exit(CG_OK);
+    }
+
+    cgReport('Changed files, head:', $statements, $covered, $current);
+    cgReport('Changed files, base:', $baseStatements, $baseCovered, $base);
+
+    if ($baseStatements === 0) {
+        echo "OK: the changed PHP is new at the merge base, so there is no prior figure to drop below.\n";
+        exit(CG_OK);
+    }
+
+    if (cgRatioDropped($covered, $statements, $baseCovered, $baseStatements) === true) {
+        $delta = round(($base - $current), 2);
+        echo "FAIL: coverage of the files this change touches dropped by {$delta}%.\n";
+        echo "      base {$baseCovered}/{$baseStatements} -> head {$covered}/{$statements} statements.\n";
+        if ($statements > $baseStatements) {
+            $added = ($statements - $baseStatements);
+            echo "      This change adds {$added} statements to those files. Adding code without tests drops coverage.\n";
+        }
+
+        exit(CG_DROPPED);
+    }
+
+    echo "OK: coverage of the changed files did not drop.\n";
+    exit(CG_OK);
+}//end if
 
 [$statements, $covered, $current] = cgMeasure($cloverFile, 'current');
 cgReport('Coverage current:', $statements, $covered, $current);
