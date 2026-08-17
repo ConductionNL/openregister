@@ -490,7 +490,7 @@ class CacheHandler {
 			return false;
 		}
 
-		$user = $this->userSession?->getUser();
+		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return false;
 		}
@@ -524,7 +524,7 @@ class CacheHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function resolveActiveOrganisationUuid(): ?string {
-		$user = $this->userSession?->getUser();
+		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return $this->organisationMapper->getDefaultOrganisationFromConfig();
 		}
@@ -1692,7 +1692,10 @@ class CacheHandler {
 			$this->nameCache,
 			function ($name, $key) {
 				// Only return entries where key looks like a UUID (contains hyphens).
-				if (is_string($key) === false || str_contains($key, '-') === false) {
+				// Cast rather than is_string(): PHP narrows numeric-looking array keys
+				// to int, and phpstan reads the declared key type as string, so an
+				// is_string() test here is always-true dead code.
+				if (str_contains((string)$key, '-') === false) {
 					return false;
 				}
 
