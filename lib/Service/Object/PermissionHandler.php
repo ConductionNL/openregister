@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
+use OCA\OpenRegister\Event\ActionEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -398,8 +399,77 @@ class PermissionHandler {
 			$this->permissionCache[$cacheKey] = $verdict;
 		}
 
+		// Telemetry, after the verdict is final and for BOTH outcomes. A
+		// refusal is what an audit rule most wants to hear — an event that
+		// fires only on success can say what happened but never "who tried".
+		//
+		// Dispatched here rather than inside evaluatePermission() so it sits on
+		// the cache MISS path: the event marks a DECISION, and a memoised
+		// repeat within the same request is not a new one.
+		$this->dispatchActionEvaluated(
+			schema: $schema,
+			action: $action,
+			granted: $verdict,
+			userId: $userId,
+			object: $object
+		);
+
 		return $verdict;
 	}//end hasPermission()
+
+	/**
+	 * Dispatch the per-action telemetry event.
+	 *
+	 * Best-effort in every direction: no dispatcher means no event, and a
+	 * listener that throws is caught and logged. Audit must never be able to
+	 * change an access decision — and a decision that has already been cached
+	 * and returned cannot be un-made by an observer anyway, so swallowing here
+	 * keeps the failure honest instead of surfacing it as a permission error.
+	 *
+	 * @param Schema            $schema  Schema the action was evaluated against.
+	 * @param string            $action  The action verb.
+	 * @param bool              $granted The final verdict.
+	 * @param string|null       $userId  The acting user, or null when anonymous.
+	 * @param ObjectEntity|null $object  The object under evaluation, when there was one.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 */
+	private function dispatchActionEvaluated(
+		Schema $schema,
+		string $action,
+		bool $granted,
+		?string $userId,
+		?ObjectEntity $object,
+	): void {
+		if ($this->eventDispatcher === null) {
+			return;
+		}
+
+		try {
+			$this->eventDispatcher->dispatchTyped(
+				new ActionEvaluatedEvent(
+					schema: $schema,
+					action: $action,
+					granted: $granted,
+					actor: $userId,
+					object: $object
+				)
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[PermissionHandler] ActionEvaluatedEvent dispatch failed; verdict unaffected',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'action' => $action,
+					'granted' => $granted,
+					'error' => $e->getMessage(),
+				]
+			);
+		}//end try
+	}//end dispatchActionEvaluated()
 
 	/**
 	 * Build a stable cache key for hasPermission().
