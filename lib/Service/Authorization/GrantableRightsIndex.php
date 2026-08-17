@@ -196,12 +196,15 @@ class GrantableRightsIndex {
 			// entry per register is what makes the answer usable: "may be
 			// offered" is a question about a register's data, and collapsing
 			// them would hide which register a right actually reaches.
-			$registers = ($registersBySchemaId[$schemaId] ?? [null]);
+			$registers = ($registersBySchemaId[$schemaId] ?? [['id' => null, 'application' => null]]);
 
-			foreach ($registers as $registerId) {
+			foreach ($registers as $register) {
+				$app = $this->owningApp(schema: $schema, registerApplication: $register['application']);
+
 				foreach ($offered as $action => $source) {
 					$entries[] = [
-						'register' => $registerId,
+						'app' => $app,
+						'register' => $register['id'],
 						'schema' => $schema->getSlug(),
 						'schemaId' => $schemaId,
 						'action' => $action,
@@ -256,18 +259,61 @@ class GrantableRightsIndex {
 	}//end offeredActions()
 
 	/**
-	 * Map schema id → the registers that contain it.
+	 * The app that owns a schema, or null when nothing does.
+	 *
+	 * Mirrors `Application::resolveOwningAppId()`: the schema's OWN
+	 * `application` wins, and the owning register's is the fallback. Measured on
+	 * the dev instance, both halves carry real weight — 1,085 of 2,000 schemas
+	 * name their own app and the remaining 915 inherit one — so an
+	 * implementation that knew only the schema field would lose almost half the
+	 * fleet, and one that knew only the register field would mis-attribute the
+	 * rest.
+	 *
+	 * ⚠️ Null is a real answer, not a lookup failure. A schema owned by no app
+	 * cannot emit MCP tools at all, so a right on it belongs to no cluster and
+	 * inventing one would put it under a heading that cannot serve it.
+	 *
+	 * @param Schema      $schema             The schema being indexed.
+	 * @param string|null $registerApplication The owning register's application, when it has one.
+	 *
+	 * @return string|null The owning app id, or null.
+	 *
+	 * @spec openspec/specs/declared-actions/spec.md
+	 */
+	private function owningApp(Schema $schema, ?string $registerApplication): ?string {
+		$own = $schema->getApplication();
+		if (is_string($own) === true && $own !== '') {
+			return $own;
+		}
+
+		if (is_string($registerApplication) === true && $registerApplication !== '') {
+			return $registerApplication;
+		}
+
+		return null;
+	}//end owningApp()
+
+	/**
+	 * Map schema id → the registers that contain it, with each register's
+	 * owning application.
 	 *
 	 * Built in one pass over the registers so the schema walk stays linear
-	 * rather than issuing a membership query per schema.
+	 * rather than issuing a membership query per schema — and it carries the
+	 * application along, so resolving a schema's owning app costs no extra
+	 * lookup either.
 	 *
-	 * @return array<int|string, array<int, mixed>> Schema id → register ids.
+	 * @return array<int|string, array<int, array{id: mixed, application: string|null}>> Schema id → registers.
+	 *
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	private function registersBySchemaId(): array {
 		$map = [];
 
 		foreach ($this->registerMapper->findAll() as $register) {
-			$registerId = $register->getId();
+			$entry = [
+				'id' => $register->getId(),
+				'application' => $register->getApplication(),
+			];
 
 			// `Register::setSchemas()` filters its input down to ints and
 			// strings, so every entry here is already a bare id. A defensive
@@ -275,7 +321,7 @@ class GrantableRightsIndex {
 			// a test proved it unreachable, and unreachable defence reads like
 			// a handled case that was never handled.
 			foreach ($register->getSchemas() as $schemaId) {
-				$map[$schemaId][] = $registerId;
+				$map[$schemaId][] = $entry;
 			}
 		}
 

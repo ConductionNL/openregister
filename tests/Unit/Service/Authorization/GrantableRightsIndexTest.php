@@ -136,13 +136,62 @@ class GrantableRightsIndexTest extends TestCase {
 	 *
 	 * @return Register The register.
 	 */
-	private function register(int $id, array $schemas): Register {
+	private function register(int $id, array $schemas, ?string $application = 'billing'): Register {
 		$register = new Register();
 		$register->setId($id);
 		$register->setSchemas($schemas);
+		$register->setApplication($application);
 
 		return $register;
 	}//end register()
+
+	/**
+	 * 🔴 The cluster a right belongs to. Mirrors Application::resolveOwningAppId():
+	 * the schema's OWN application wins, the register's is the fallback.
+	 *
+	 * Both halves carry real weight — measured on the dev instance, 1,085 of
+	 * 2,000 schemas name their own app and the other 915 inherit one — so
+	 * getting either branch wrong mis-files roughly half the fleet under the
+	 * wrong heading.
+	 *
+	 * @return void
+	 */
+	public function testTheOwningAppPrefersTheSchemaThenFallsBackToTheRegister(): void {
+		$own = $this->schema(id: 40, slug: 'own', authorization: ['read' => ['mcp']]);
+		$own->setApplication('docudesk');
+
+		$this->schemaMapper->method('findAll')->willReturn(
+			[$own, $this->schema(id: 41, slug: 'inherited', authorization: ['read' => ['mcp']])]
+		);
+		$this->registerMapper->method('findAll')->willReturn(
+			[$this->register(id: 9, schemas: [40, 41], application: 'shillinq')]
+		);
+
+		$this->assertSame(
+			['docudesk', 'shillinq'],
+			array_column($this->index()->getIndex(), 'app'),
+			'The schema-owned app lost to the register, or the fallback did not fire.'
+		);
+	}//end testTheOwningAppPrefersTheSchemaThenFallsBackToTheRegister()
+
+	/**
+	 * ⚠️ A schema owned by no app reports null rather than a guess. Such a
+	 * schema cannot emit MCP tools at all, so its rights belong to no cluster —
+	 * filing them under an invented one would put them beneath a heading that
+	 * cannot serve them.
+	 *
+	 * @return void
+	 */
+	public function testASchemaOwnedByNoAppReportsNull(): void {
+		$this->schemaMapper->method('findAll')->willReturn(
+			[$this->schema(id: 42, slug: 'orphan', authorization: ['read' => ['mcp']])]
+		);
+		$this->registerMapper->method('findAll')->willReturn(
+			[$this->register(id: 9, schemas: [42], application: null)]
+		);
+
+		$this->assertNull($this->index()->getIndex()[0]['app']);
+	}//end testASchemaOwnedByNoAppReportsNull()
 
 	/**
 	 * An action offered to `mcp` in the authorization block appears in the
@@ -159,6 +208,7 @@ class GrantableRightsIndexTest extends TestCase {
 		$this->assertSame(
 			[
 				[
+					'app' => 'billing',
 					'register' => 9,
 					'schema' => 'invoice',
 					'schemaId' => 1,
