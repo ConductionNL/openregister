@@ -95,6 +95,7 @@ class ObjectShareLinkController extends Controller {
 	 * @param IRequest $request Request.
 	 * @param IManager $shareManager Core share manager — validates the token.
 	 * @param ObjectService $objectService Loads the addressed object.
+	 * @param IThrottler $throttler Brute-force throttler for rejected share tokens.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(

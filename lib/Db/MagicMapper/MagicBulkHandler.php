@@ -360,6 +360,7 @@ class MagicBulkHandler {
 	 * @param Register $register Register context
 	 * @param Schema $schema Schema context
 	 * @param string $tableName Target table name
+	 * @param bool $needsPreUpdateState Whether the caller reads the pre-update rows; false narrows the pre-fetch to the uuid
 	 *
 	 * @return array Array of complete objects with object_status field
 	 *
@@ -449,6 +450,7 @@ class MagicBulkHandler {
 	 * @param array $chunk Chunk of prepared objects
 	 * @param string $tableName Target table name
 	 * @param int $chunkNumber Chunk number for logging
+	 * @param bool $needsPreUpdateState Whether the caller reads the pre-update rows; false narrows the pre-fetch to the uuid
 	 *
 	 * @return array Array of complete objects with object_status
 	 *
@@ -594,7 +596,10 @@ class MagicBulkHandler {
 			// bulk save, from a variable name.
 			$existsColumns = '*';
 			if ($needsPreUpdateState === false) {
-				$existsColumns = ($isPostgres === true) ? '"_uuid"' : '`_uuid`';
+				$existsColumns = '`_uuid`';
+				if ($isPostgres === true) {
+					$existsColumns = '"_uuid"';
+				}
 			}
 
 			$existsSql = "SELECT {$existsColumns} FROM `{$fullTableName}` WHERE `_uuid` IN ({$placeholders})";

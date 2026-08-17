@@ -2066,6 +2066,7 @@ class SaveObjects {
 	 * @param array $transformedObjects Valid objects ready for database operations
 	 * @param Register|string|int|null $register Caller-supplied register context (forwarded to mapper)
 	 * @param Schema|string|int|null $schema Caller-supplied schema context (forwarded to mapper)
+	 * @param bool $needsPreUpdateState Whether anything reads the pre-update rows; false narrows the mapper's pre-fetch to the uuid
 	 *
 	 * @return mixed The bulk operation result from the mapper
 	 *
