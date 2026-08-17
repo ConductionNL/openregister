@@ -225,6 +225,67 @@ graph TB
     style ADMIN fill:#E74C3C
 ```
 
+### The action vocabulary: closed by default, extensible by declaration
+
+An `authorization` block may name `create`, `read`, `update` or `delete`, plus
+any action the schema **declares** for itself:
+
+```json
+"x-openregister-action": {
+  "sendMail": {
+    "name": "Send mail",
+    "description": "Send a message as the acting user."
+  }
+}
+```
+
+With that declaration in the schema's `configuration`, `"sendMail": ["staff"]`
+is a legal authorization rule. Without it, the import **fails**, naming the
+offending action and listing what is allowed.
+
+That refusal is the point, not a safety rail bolted onto it. An open vocabulary
+would let a typo — `raed` for `read` — save cleanly as a permission that is
+never granted and never errors: a rule that appears to protect something and
+protects nothing. A schema that declares a permission nobody can satisfy is the
+bug being prevented.
+
+Declaring an action **grants and enforces nothing**. It defines a *name* that an
+authorization block, an event listener and the grantable-rights index can all
+refer to; the app still enforces its own operation. A declaration with no
+`description` is ignored, because an action that reaches a permission matrix
+without telling the person granting it what they are agreeing to is worse than
+no entry at all.
+
+### The `mcp` scope: what may be OFFERED, never what is HELD
+
+`mcp` sits beside `public`, `authenticated` and `admin`, and means: *this action,
+on this schema, may be offered to an agent.*
+
+It does **not** mean an agent has it. RBAC resolves through Nextcloud groups,
+which are per **user** — two agents owned by one person are indistinguishable to
+it. Whether a specific agent holds a right stays resolved in Hermiq against that
+agent's own grants, where the request-and-approve flow already lives. The
+relationship is: **`mcp` bounds the menu, Hermiq picks from it.**
+
+Because it describes rather than decides, the scope is **inert in both
+directions**, and both halves are enforced in code rather than promised in prose:
+
+- **It never grants.** An administrator can create a real Nextcloud group called
+  `mcp`; without a guard, its members would inherit every action any schema ever
+  documented as an agent surface. The evaluator refuses the match outright, in
+  both the bare-string and `{"group": "mcp"}` rule forms.
+- **It never revokes.** An authorization block is fail-closed once non-empty — an
+  action it does not list is denied. So annotating a previously unrestricted
+  schema with `"read": ["mcp"]` would silently strip every human of create,
+  update and delete. The scope is therefore stripped before any verdict is
+  computed, by both rule interpreters, and a block holding nothing else collapses
+  back to "no authorization configured".
+
+One distinction survives that strip: an **explicitly empty** rule list
+(`"read": []`) means *grant this action to nobody* and is preserved. It is the
+strictest rule the grammar can express, and treating it as "no rule" would flip
+it to default-open.
+
 ### Authorization Exception System
 
 ```mermaid

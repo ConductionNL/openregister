@@ -79,6 +79,8 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.NPathComplexity)          RBAC rules handle user/group/owner/public/conditional combos - cartesian product drives NPath
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   RBAC needs IUserSession, IUserManager, IGroupManager, ConditionMatcher, Register/Schema mappers
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     All RBAC logic is centralised per ADR-011; splitting would re-scatter the security policy
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)     stripMcpScope()/mcpOfferedActions() are public so the SQL-layer
+ *      interpreter applies the IDENTICAL transform; a private copy is how two evaluators drift apart
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
@@ -146,6 +148,28 @@ class PermissionHandler {
 		'delete',
 		'list',
 	];
+
+	/**
+	 * The reserved scope token marking an action as one that MAY be offered to
+	 * an agent.
+	 *
+	 * 🔴 It is a DESCRIPTION of a surface, never a grant. Whether a specific
+	 * agent holds a right stays resolved in Hermiq against that agent's own
+	 * grants — Nextcloud groups are per USER and cannot separate two agents
+	 * owned by one person, so RBAC is structurally unable to answer the
+	 * question and must not appear to.
+	 *
+	 * Named `mcp` rather than `agents` deliberately: "agents" is a credible
+	 * domain group in a commercial deployment (sales agents), and a special
+	 * token that collides with a real group surfaces as a privilege bug. That
+	 * naming is a mitigation, not a guarantee — nothing stops an administrator
+	 * creating a group called `mcp` either, which is why
+	 * {@see hasGroupPermission()} refuses the match outright rather than
+	 * relying on the name being unlikely.
+	 *
+	 * @var string
+	 */
+	public const SCOPE_MCP = 'mcp';
 
 	/**
 	 * Write actions that fail closed for anonymous callers.
@@ -1271,6 +1295,21 @@ class PermissionHandler {
 
 		// Check each authorization entry for this action.
 		foreach ($authorization[$action] as $entry) {
+			// 🔴 The `mcp` scope never matches a caller, whatever the caller is
+			// in. A block reaching here should already have been stripped (see
+			// stripMcpScope()), but hasGroupPermission() is public and is
+			// called with raw blocks from outside this class, so the refusal is
+			// enforced at the point of match as well.
+			//
+			// The concrete attack this closes: an administrator creates a real
+			// Nextcloud group called `mcp`, and every schema that documented an
+			// agent surface silently becomes a grant to its members. Verified
+			// as reachable before this guard existed — both branches below
+			// admitted such a user.
+			if (self::isMcpScopeEntry(entry: $entry) === true) {
+				continue;
+			}
+
 			// User-level override entry (delegation): a bare string `user:<uid>`
 			// or a complex entry `{ "user": "<uid>", "match": {...} }` grants the
 			// action to that one user independent of group membership. This is the
@@ -1795,6 +1834,25 @@ class PermissionHandler {
 	 * @spec openspec/specs/authorization-rbac/spec.md#requirement-authorization-resolution-fails-closed
 	 */
 	public function resolveAuthorization(Schema $schema, ?ObjectEntity $object = null): ?array {
+		return self::stripMcpScope(
+			authorization: $this->resolveAuthorizationRaw(schema: $schema, object: $object)
+		);
+	}//end resolveAuthorization()
+
+	/**
+	 * Resolve the cascade WITHOUT stripping the `mcp` scope.
+	 *
+	 * Separated so the strip is a single, unmissable step on the way out
+	 * rather than four edits spread over the cascade's return points.
+	 *
+	 * @param Schema           $schema The schema to resolve authorization for.
+	 * @param ObjectEntity|null $object Optional object whose own block overrides action-by-action.
+	 *
+	 * @return array|null The cascaded authorization array, mcp scope included.
+	 *
+	 * @throws AuthorizationUnresolvableException When the register cascade cannot be resolved. Callers MUST deny.
+	 */
+	private function resolveAuthorizationRaw(Schema $schema, ?ObjectEntity $object = null): ?array {
 		$schemaAuthorization = $schema->getAuthorization();
 
 		// Compute the schema-or-register baseline first.
@@ -1833,7 +1891,166 @@ class PermissionHandler {
 		}
 
 		return $baseline;
-	}//end resolveAuthorization()
+	}//end resolveAuthorizationRaw()
+
+	/**
+	 * Remove the `mcp` scope from a block, leaving enforcement exactly as it
+	 * was before the annotation was added.
+	 *
+	 * ⚠️ This exists because an authorization block is FAIL-CLOSED once it is
+	 * non-empty: an action it does not list is denied. Without this, annotating
+	 * a previously unrestricted schema with `"read": ["mcp"]` — to record that
+	 * agents may be offered reads — would silently strip every human of
+	 * create, update and delete. A descriptive annotation that changes
+	 * enforcement is not descriptive, so the scope is stripped before any
+	 * verdict is computed and the block is judged on its real rules alone.
+	 *
+	 * An action key emptied by the strip is dropped, and a block left with no
+	 * rule-bearing key at all collapses to `null` — "no authorization
+	 * configured", which is precisely what the schema meant before anyone
+	 * documented its agent surface. Control keys that are not rule lists
+	 * (notably the `public: true` opt-in, which is read back off the RESOLVED
+	 * block) are preserved; dropping those would turn a deliberately public
+	 * schema fail-closed, which is the same bug in a different costume.
+	 *
+	 * Static and pure so both rule interpreters — this one and the SQL-layer
+	 * {@see \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler} — can apply the
+	 * identical transform and cannot drift apart on it.
+	 *
+	 * @param array|null $authorization The block to strip, or null.
+	 *
+	 * @return array|null The block with the mcp scope removed, or null when
+	 *                    nothing enforceable remains.
+	 *
+	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 */
+	public static function stripMcpScope(?array $authorization): ?array {
+		if ($authorization === null || $authorization === []) {
+			return $authorization;
+		}
+
+		$stripped = [];
+
+		foreach ($authorization as $key => $rules) {
+			// Not a rule list (inheritFromPublic, public, objectScope, ...):
+			// carry it through untouched. These are behaviour toggles read at
+			// runtime, and the mcp scope has no business editing them.
+			if (is_array($rules) === false) {
+				$stripped[$key] = $rules;
+				continue;
+			}
+
+			$kept = self::stripMcpFromRuleList(rules: $rules);
+			if ($kept === null) {
+				continue;
+			}
+
+			$stripped[$key] = $kept;
+		}//end foreach
+
+		if ($stripped === []) {
+			return null;
+		}
+
+		return $stripped;
+	}//end stripMcpScope()
+
+	/**
+	 * Strip the mcp scope from one action's rule list.
+	 *
+	 * @param array $rules One action's rule list.
+	 *
+	 * @return array|null The surviving rules, or null when the key should be
+	 *                    dropped because the scope was all it held.
+	 */
+	private static function stripMcpFromRuleList(array $rules): ?array {
+		// ⚠️ An ALREADY-empty rule list is a deliberate statement — it reads as
+		// "grant this action to nobody" and denies outright. It must survive,
+		// and it counts as an enforceable rule so the block does not collapse
+		// to null. Dropping it turns the strictest rule the grammar can express
+		// into no rule at all, which is default-OPEN — a fail-open regression,
+		// caught by PermissionHandlerCustomScopeTest before it could ship.
+		if ($rules === []) {
+			return [];
+		}
+
+		$kept = [];
+		foreach ($rules as $entry) {
+			if (self::isMcpScopeEntry(entry: $entry) === true) {
+				continue;
+			}
+
+			$kept[] = $entry;
+		}
+
+		// Emptied BY the strip, so the schema never had a rule here for anyone
+		// real — signal a drop rather than leave `[]`, which would silently
+		// convert an agent offer into a denial for everyone.
+		if ($kept === []) {
+			return null;
+		}
+
+		return $kept;
+	}//end stripMcpFromRuleList()
+
+	/**
+	 * Read back the actions a block offers to agents.
+	 *
+	 * This is the half of the annotation that survives as DATA: the
+	 * grantable-rights index serves it to Hermiq as the menu of rights that
+	 * could be granted. It answers "what may be offered here", and never
+	 * "who holds it".
+	 *
+	 * @param array|null $authorization The block to read.
+	 *
+	 * @return array<int, string> The offered action names, in declaration order.
+	 *
+	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 */
+	public static function mcpOfferedActions(?array $authorization): array {
+		if ($authorization === null || $authorization === []) {
+			return [];
+		}
+
+		$offered = [];
+		foreach ($authorization as $action => $rules) {
+			if (is_array($rules) === false || is_string($action) === false) {
+				continue;
+			}
+
+			foreach ($rules as $entry) {
+				if (self::isMcpScopeEntry(entry: $entry) === true) {
+					$offered[] = $action;
+					break;
+				}
+			}
+		}
+
+		return $offered;
+	}//end mcpOfferedActions()
+
+	/**
+	 * Whether a single authorization entry names the `mcp` scope.
+	 *
+	 * Covers both spellings the rule grammar accepts — the bare string and the
+	 * `{"group": "mcp"}` object — because they are independent match branches
+	 * and a guard that knows only one of them is a guard with a hole.
+	 *
+	 * @param mixed $entry One entry from an action's rule list.
+	 *
+	 * @return bool True when the entry names the mcp scope.
+	 */
+	private static function isMcpScopeEntry(mixed $entry): bool {
+		if (is_string($entry) === true) {
+			return ($entry === self::SCOPE_MCP);
+		}
+
+		if (is_array($entry) === true) {
+			return (($entry['group'] ?? null) === self::SCOPE_MCP);
+		}
+
+		return false;
+	}//end isMcpScopeEntry()
 
 	/**
 	 * Resolve whether authenticated users inherit `public` group rights for a schema.
