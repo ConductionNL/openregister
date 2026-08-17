@@ -267,24 +267,30 @@ it. Whether a specific agent holds a right stays resolved in Hermiq against that
 agent's own grants, where the request-and-approve flow already lives. The
 relationship is: **`mcp` bounds the menu, Hermiq picks from it.**
 
-Because it describes rather than decides, the scope is **inert in both
-directions**, and both halves are enforced in code rather than promised in prose:
+**It never grants.** An administrator can create a real Nextcloud group called
+`mcp`; without a guard, its members would inherit every action any schema ever
+documented as an agent surface. The evaluator refuses the match outright, in both
+the bare-string and `{"group": "mcp"}` rule forms, in both rule interpreters.
 
-- **It never grants.** An administrator can create a real Nextcloud group called
-  `mcp`; without a guard, its members would inherit every action any schema ever
-  documented as an agent surface. The evaluator refuses the match outright, in
-  both the bare-string and `{"group": "mcp"}` rule forms.
-- **It never revokes.** An authorization block is fail-closed once non-empty — an
-  action it does not list is denied. So annotating a previously unrestricted
-  schema with `"read": ["mcp"]` would silently strip every human of create,
-  update and delete. The scope is therefore stripped before any verdict is
-  computed, by both rule interpreters, and a block holding nothing else collapses
-  back to "no authorization configured".
+⚠️ **Writing `mcp` into `authorization` DOES opt the schema into authorization.**
+A block is fail-closed once non-empty, so `{"read": ["mcp"]}` denies every action
+it does not list — including `read` itself, since the scope satisfies nobody. If
+you want to record an agent surface *without* changing enforcement, use the
+`x-openregister-mcp` dialect instead. That is where the surface belongs, and
+where every live declaration on this instance already is.
 
-One distinction survives that strip: an **explicitly empty** rule list
-(`"read": []`) means *grant this action to nobody* and is preserved. It is the
-strictest rule the grammar can express, and treating it as "no rule" would flip
-it to default-open.
+That rule was chosen after the alternative was measured and rejected. Treating an
+offers-only block as *absent* — so the annotation changed nothing — sounds like
+the right reading of a descriptive token, but "absent" means **default-open**: the
+schema became readable by every authenticated user and by anonymous callers. An
+author documenting an agent surface would have published the schema instead of
+restricting it. Between a fail-safe and a fail-open reading of an ambiguous block,
+the block gets the fail-safe one: a denial is loud and quickly fixed, a silent
+grant to anonymous is a breach.
+
+An **explicitly empty** rule list (`"read": []"`) means *grant this action to
+nobody* and is preserved for the same reason — it is the strictest rule the
+grammar can express, and reading it as "no rule" would flip it to default-open.
 
 ### Authorization Exception System
 

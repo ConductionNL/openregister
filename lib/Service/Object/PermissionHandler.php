@@ -1967,21 +1967,34 @@ class PermissionHandler {
 	 * Remove the `mcp` scope from a block, leaving enforcement exactly as it
 	 * was before the annotation was added.
 	 *
-	 * ⚠️ This exists because an authorization block is FAIL-CLOSED once it is
-	 * non-empty: an action it does not list is denied. Without this, annotating
-	 * a previously unrestricted schema with `"read": ["mcp"]` — to record that
-	 * agents may be offered reads — would silently strip every human of
-	 * create, update and delete. A descriptive annotation that changes
-	 * enforcement is not descriptive, so the scope is stripped before any
-	 * verdict is computed and the block is judged on its real rules alone.
+	 * The scope is removed so it can never satisfy a caller. What it does NOT
+	 * do is make the block disappear: an action key emptied by the strip stays
+	 * as `[]`, which the grammar reads as "grant this action to nobody", and a
+	 * block that held nothing but offers remains a non-empty block.
 	 *
-	 * An action key emptied by the strip is dropped, and a block left with no
-	 * rule-bearing key at all collapses to `null` — "no authorization
-	 * configured", which is precisely what the schema meant before anyone
-	 * documented its agent surface. Control keys that are not rule lists
-	 * (notably the `public: true` opt-in, which is read back off the RESOLVED
-	 * block) are preserved; dropping those would turn a deliberately public
-	 * schema fail-closed, which is the same bug in a different costume.
+	 * 🔴 That shape is deliberate, and an earlier cut of this method got it
+	 * backwards. Collapsing an offers-only block to `null` made it "no
+	 * authorization configured" — which is default-OPEN — so a schema annotated
+	 * `{"read": ["mcp"]}` became readable by every authenticated user AND by
+	 * anonymous callers. An author documenting an agent surface would have
+	 * published the schema instead of restricting it.
+	 *
+	 * The reasoning that produced it was: a descriptive annotation should not
+	 * change enforcement, so an mcp-only block should evaluate as though absent.
+	 * The flaw is the direction of the failure. Treating the annotation as
+	 * enforcement-bearing can only ever DENY — loud, visible, quickly fixed.
+	 * Treating it as absent can GRANT — silent, and to anonymous callers. Between
+	 * a fail-safe and a fail-open reading of an ambiguous block, the block gets
+	 * the fail-safe one.
+	 *
+	 * So: writing an `mcp` entry into `authorization` opts the schema into
+	 * authorization, exactly as writing any other rule does. To record an agent
+	 * surface WITHOUT touching enforcement, use the `x-openregister-mcp` dialect,
+	 * which is where the surface belongs and where every live declaration on the
+	 * instance already is.
+	 *
+	 * Control keys that are not rule lists (notably the `public: true` opt-in,
+	 * read back off the RESOLVED block) are carried through untouched.
 	 *
 	 * Static and pure so both rule interpreters — this one and the SQL-layer
 	 * {@see \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler} — can apply the
@@ -2010,17 +2023,8 @@ class PermissionHandler {
 				continue;
 			}
 
-			$kept = self::stripMcpFromRuleList(rules: $rules);
-			if ($kept === null) {
-				continue;
-			}
-
-			$stripped[$key] = $kept;
+			$stripped[$key] = self::stripMcpFromRuleList(rules: $rules);
 		}//end foreach
-
-		if ($stripped === []) {
-			return null;
-		}
 
 		return $stripped;
 	}//end stripMcpScope()
@@ -2028,22 +2032,15 @@ class PermissionHandler {
 	/**
 	 * Strip the mcp scope from one action's rule list.
 	 *
+	 * An emptied list stays `[]` rather than being dropped. The grammar reads
+	 * `[]` as "grant this action to nobody", which is the fail-safe reading of
+	 * an action whose only rule was an offer to agents.
+	 *
 	 * @param array $rules One action's rule list.
 	 *
-	 * @return array|null The surviving rules, or null when the key should be
-	 *                    dropped because the scope was all it held.
+	 * @return array The surviving rules, possibly empty.
 	 */
-	private static function stripMcpFromRuleList(array $rules): ?array {
-		// ⚠️ An ALREADY-empty rule list is a deliberate statement — it reads as
-		// "grant this action to nobody" and denies outright. It must survive,
-		// and it counts as an enforceable rule so the block does not collapse
-		// to null. Dropping it turns the strictest rule the grammar can express
-		// into no rule at all, which is default-OPEN — a fail-open regression,
-		// caught by PermissionHandlerCustomScopeTest before it could ship.
-		if ($rules === []) {
-			return [];
-		}
-
+	private static function stripMcpFromRuleList(array $rules): array {
 		$kept = [];
 		foreach ($rules as $entry) {
 			if (self::isMcpScopeEntry(entry: $entry) === true) {
@@ -2051,13 +2048,6 @@ class PermissionHandler {
 			}
 
 			$kept[] = $entry;
-		}
-
-		// Emptied BY the strip, so the schema never had a rule here for anyone
-		// real — signal a drop rather than leave `[]`, which would silently
-		// convert an agent offer into a denial for everyone.
-		if ($kept === []) {
-			return null;
 		}
 
 		return $kept;

@@ -54,16 +54,19 @@ It SHALL NOT make any tool callable by any agent. Whether a specific agent holds
 a right SHALL remain resolved by Hermiq against that agent's own grants, because
 RBAC groups are per user and cannot separate two agents owned by one person.
 
-Because it describes rather than decides, the scope SHALL be inert for
-enforcement in BOTH directions. It SHALL NOT grant an action to any caller,
-including a member of a real Nextcloud group named `mcp`. It SHALL NOT cause an
-action to be refused that would otherwise be permitted: an authorization block
-is fail-closed once non-empty, so a block whose only content is an `mcp` offer
-SHALL evaluate as though no authorization were configured.
+The scope SHALL NOT grant an action to any caller, including a member of a real
+Nextcloud group named `mcp`.
 
-An explicitly empty rule list SHALL survive that treatment. `"read": []` means
-"grant this action to nobody" and is the strictest rule the grammar can express;
-treating it as "no rule" would make it default-open.
+An `mcp` entry written into an `authorization` block SHALL opt the schema into
+authorization, exactly as any other rule does. A block whose only content is an
+`mcp` offer SHALL remain a non-empty, fail-closed block and SHALL NOT be treated
+as absent — "absent" is default-open, which would publish the schema to
+anonymous callers rather than restrict it. Recording an agent surface without
+affecting enforcement SHALL be done with the `x-openregister-mcp` dialect.
+
+An explicitly empty rule list SHALL be preserved. `"read": []` means "grant this
+action to nobody" and is the strictest rule the grammar can express; treating it
+as "no rule" would make it default-open.
 
 #### Scenario: The scope does not confer the right
 - **GIVEN** a schema authorises `read` to `mcp`
@@ -77,10 +80,11 @@ treating it as "no rule" would make it default-open.
 - **WHEN** a member of that group reads
 - **THEN** the scope does not admit them
 
-#### Scenario: Annotating a schema does not revoke
-- **GIVEN** a schema with no authorization block
-- **WHEN** `"read": ["mcp"]` is added to record its agent surface
-- **THEN** every other action remains permitted exactly as before
+#### Scenario: An offers-only block does not become world-readable
+- **GIVEN** a schema whose only authorization content is `"read": ["mcp"]`
+- **WHEN** an anonymous caller reads
+- **THEN** the read is refused
+- **AND** an unrelated authenticated user is refused as well
 
 #### Scenario: A deny-all rule survives the scope being stripped
 - **GIVEN** a schema authorising `read` to nobody via an empty rule list

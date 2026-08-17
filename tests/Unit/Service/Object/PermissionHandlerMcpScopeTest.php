@@ -156,38 +156,45 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 	}//end testComplexEntryNamingMcpGrantsNothing()
 
 	/**
-	 * 🔴 The opposite direction: annotating a schema must not take rights away.
+	 * 🔴 An offers-only block stays an ENFORCEABLE block.
 	 *
-	 * A block is fail-closed once it is non-empty, so a schema whose ONLY
-	 * content is an mcp offer has to keep evaluating as an unannotated one.
-	 * Otherwise "document which actions agents may be offered" becomes
-	 * "revoke everything you did not document".
+	 * The first cut of this collapsed it to null — "no authorization
+	 * configured" — reasoning that a descriptive annotation should not change
+	 * enforcement. But "no authorization configured" is default-OPEN, so the
+	 * schema became readable by every authenticated user and by anonymous
+	 * callers. An author documenting an agent surface published it instead.
+	 *
+	 * The direction of failure is what decides this. Treating the annotation as
+	 * enforcement-bearing can only DENY — loud and quickly fixed. Treating it as
+	 * absent can GRANT, silently, to anonymous. The block gets the fail-safe
+	 * reading.
 	 *
 	 * @covers ::stripMcpScope
 	 * @covers ::hasGroupPermission
 	 *
 	 * @return void
 	 */
-	public function testAnMcpOnlyBlockDoesNotMakeTheSchemaFailClosed(): void {
+	public function testAnOffersOnlyBlockStaysEnforceable(): void {
 		$stripped = PermissionHandler::stripMcpScope(['read' => ['mcp']]);
 
-		$this->assertNull(
+		$this->assertSame(
+			['read' => []],
 			$stripped,
-			'An mcp-only block survived as an enforceable block, which flips the schema fail-closed.'
+			'An offers-only block collapsed to "no authorization", which is default-OPEN.'
 		);
 
 		$this->stageUser(['users']);
 
-		$this->assertTrue(
+		$this->assertFalse(
 			$this->handler->hasGroupPermission(
 				authorization: $stripped,
 				groupId: 'users',
-				action: 'update',
+				action: 'read',
 				userId: 'alice'
 			),
-			'Annotating a schema with an mcp offer revoked an unrelated action from a real user.'
+			'An mcp offer admitted a caller who held no rule for the action.'
 		);
-	}//end testAnMcpOnlyBlockDoesNotMakeTheSchemaFailClosed()
+	}//end testAnOffersOnlyBlockStaysEnforceable()
 
 	/**
 	 * Stripping the scope must leave every real rule exactly where it was —
@@ -251,7 +258,7 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 	 */
 	public function testThePublicOptInSurvivesAnMcpOnlyBlock(): void {
 		$this->assertSame(
-			['public' => true],
+			['read' => [], 'public' => true],
 			PermissionHandler::stripMcpScope(['read' => ['mcp'], 'public' => true]),
 			'The public opt-in was dropped along with the mcp scope.'
 		);
@@ -278,7 +285,7 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 		);
 
 		$this->assertSame(
-			['read' => []],
+			['read' => [], 'update' => []],
 			PermissionHandler::stripMcpScope(['read' => [], 'update' => ['mcp']]),
 			'The deny-all rule did not survive alongside a stripped mcp offer.'
 		);
