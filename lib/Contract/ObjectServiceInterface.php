@@ -516,6 +516,19 @@ interface ObjectServiceInterface {
 	 * @return ObjectEntityInterface The patched object.
 	 *
 	 * @see self::updateObject() for the replacing counterpart.
+	 *
+	 * @contract-shift announced — openregister#2543 sweeps every fleet app for
+	 * `implements ObjectServiceInterface` and names the THREE test doubles that
+	 * must declare this method or fatal at class load: pipelinq
+	 * tests/Stubs/Service/ObjectService.php (with its paired
+	 * tests/Stubs/Contract/ObjectServiceInterface.php), and shillinq
+	 * tests/Unit/Service/Support/{InMemoryObjectServiceStub,DuckObjectServiceAdapter}.php.
+	 * docudesk tests/stubs/OpenRegisterStubs.php wants the same for parity but
+	 * implements nothing, so it cannot fatal. All 239 createMock() sites are
+	 * unaffected — a generated mock tracks whatever the interface declares. The
+	 * break lands on a `conduction/hydra-gates` RELEASE carrying this contract,
+	 * not on this merge, because leaf apps read it from vendor/: land those
+	 * three doubles before the release, or pin.
 	 */
 	public function patchObject(
 		string $objectId,
