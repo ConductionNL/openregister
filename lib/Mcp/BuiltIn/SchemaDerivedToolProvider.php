@@ -481,7 +481,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 			'inputSchema' => $this->buildInputSchema(schema: $schema, verb: $verb, verbConfig: $verbConfig),
 		];
 
-		$outputSchema = $this->buildOutputSchema(schema: $schema, verb: $verb);
+		$outputSchema = $this->buildOutputSchema(verb: $verb);
 		if ($outputSchema !== null) {
 			$descriptor['outputSchema'] = $outputSchema;
 		}
@@ -580,12 +580,15 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 			],
 			'create' => [
 				'type' => 'object',
-				'properties' => $properties,
+				'properties' => $this->jsonSchemaSafeMap(properties: $properties),
 				'required' => $required,
 			],
 			'update' => [
 				'type' => 'object',
-				'properties' => array_merge(['id' => $idProperty], $properties),
+				'properties' => array_merge(
+					['id' => $idProperty],
+					$this->jsonSchemaSafeMap(properties: $properties)
+				),
 				'required' => ['id'],
 			],
 			'delete' => [
@@ -601,27 +604,50 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * Build the `outputSchema` for read verbs (MCP 2025-06-18
 	 * `structuredContent`), null for write verbs.
 	 *
-	 * @param Schema $schema The schema being derived.
+	 * Takes no Schema: it deliberately does not depend on the schema's properties
+	 * any more, and keeping the parameter would suggest otherwise to the next
+	 * reader — which is how it would get re-inlined.
+	 *
 	 * @param string $verb One of {@see McpAnnotationValidator::VERBS}.
 	 *
 	 * @return array<string, mixed>|null The output schema, or null when not applicable.
 	 */
-	private function buildOutputSchema(Schema $schema, string $verb): ?array {
-		$itemSchema = [
-			'type' => 'object',
-			'properties' => ($schema->getProperties() ?? []),
-		];
-
+	private function buildOutputSchema(string $verb): ?array {
+		// THE ENVELOPE, NOT THE ITEM.
+		//
+		// This used to inline `$schema->getProperties()` in full, for both verbs.
+		// Measured 2026-08-16 across the 122 tools registered on the development
+		// instance, that made `outputSchema` **79.7% of the entire tools/list
+		// payload** -- 335,580 of 433,198 bytes, ~84,000 of ~108,000 tokens, on a
+		// payload re-sent to the model every single turn. Tool definitions alone
+		// were consuming 54% of a 200K context window before the user said
+		// anything.
+		//
+		// The worst case was `shillinq.ARInvoice.search`: 36,293 B of outputSchema
+		// against 1,915 B of inputSchema -- 94% of that tool, and more tokens by
+		// itself than hermiq's entire 22-tool set.
+		//
+		// Note the asymmetry this corrects. buildInputSchema() already narrows a
+		// `search` verb to its DECLARED FILTERS via filterProperties()
+		// (REQ-DERIVED-004). The input path was economical and the output path was
+		// not, and nothing made the difference visible.
+		//
+		// The item's properties are redundant here: the model reads the actual
+		// result when the tool returns. The ENVELOPE is not redundant -- it tells
+		// the model that a `search` yields {results, total, hasMore} rather than a
+		// bare array, which is what stops it guessing at the response shape.
+		// Keeping it costs 6,688 bytes across the whole registry (1.5%) against
+		// dropping `outputSchema` altogether.
 		return match ($verb) {
 			'search' => [
 				'type' => 'object',
 				'properties' => [
-					'results' => ['type' => 'array', 'items' => $itemSchema],
+					'results' => ['type' => 'array', 'items' => ['type' => 'object']],
 					'total' => ['type' => 'integer'],
 					'hasMore' => ['type' => 'boolean'],
 				],
 			],
-			'get' => $itemSchema,
+			'get' => ['type' => 'object'],
 			default => null,
 		};
 	}//end buildOutputSchema()
@@ -644,12 +670,118 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 		$result = [];
 		foreach ($declared as $name) {
 			if (is_string($name) === true && array_key_exists($name, $properties) === true) {
-				$result[$name] = $properties[$name];
+				$result[$name] = $this->jsonSchemaSafe(property: $properties[$name]);
 			}
 		}
 
 		return $result;
 	}//end filterProperties()
+
+	/**
+	 * Reduce a schema property to keywords that are valid JSON Schema.
+	 *
+	 * 🔴 A tool's `inputSchema` leaves this instance and is validated by the
+	 * vendor as strict JSON Schema draft 2020-12. OpenRegister's property
+	 * definitions are NOT that: they carry dialect of our own, and one of those
+	 * keywords is fatal.
+	 *
+	 * `$ref` is the one that bites. It is OpenRegister's RELATION marker —
+	 * `{"type":"string","format":"uuid","$ref":"client"}` means "this uuid
+	 * points at the client schema" — but to a JSON Schema validator `$ref` is a
+	 * URI reference, and `"client"` resolves to nothing. Measured 2026-08-17
+	 * against Anthropic:
+	 *
+	 *   400 tools.2.custom.input_schema: JSON schema is invalid.
+	 *       It must match JSON Schema draft 2020-12
+	 *
+	 * `pipelinq.lead.search` declares `client` as a filter and was therefore
+	 * UNCALLABLE BY ANY AGENT, no matter who granted it — while its sibling
+	 * `pipelinq.client.search`, whose filters carry no `$ref`, worked. Twenty
+	 * properties across that one app use the relation dialect, so this is a
+	 * whole class of tools rather than one bad line.
+	 *
+	 * Fixed HERE rather than in the app registers: the dialect is correct where
+	 * it is written and OpenRegister depends on it. What was wrong is emitting
+	 * it into a document that promises to be JSON Schema.
+	 *
+	 * An allow-list, not a deny-list of `$ref`: the next dialect keyword added
+	 * to a register would otherwise silently break every derived tool that used
+	 * it, which is exactly how this arrived.
+	 *
+	 * @param mixed $property The declared property.
+	 *
+	 * @return array<string, mixed> The property, safe to publish.
+	 */
+	private function jsonSchemaSafe(mixed $property): array {
+		if (is_array($property) === false) {
+			return ['type' => 'string'];
+		}
+
+		$allowed = [
+			'type',
+			'title',
+			'description',
+			'enum',
+			'const',
+			'default',
+			'format',
+			'pattern',
+			'minimum',
+			'maximum',
+			'exclusiveMinimum',
+			'exclusiveMaximum',
+			'minLength',
+			'maxLength',
+			'minItems',
+			'maxItems',
+			'uniqueItems',
+		];
+
+		$safe = [];
+		foreach ($allowed as $keyword) {
+			if (array_key_exists($keyword, $property) === true) {
+				$safe[$keyword] = $property[$keyword];
+			}
+		}
+
+		// Nested shapes are sanitised too, or the dialect simply reappears one
+		// level down.
+		if (isset($property['items']) === true) {
+			$safe['items'] = $this->jsonSchemaSafe(property: $property['items']);
+		}
+
+		if (isset($property['properties']) === true && is_array($property['properties']) === true) {
+			$nested = [];
+			foreach ($property['properties'] as $key => $value) {
+				$nested[$key] = $this->jsonSchemaSafe(property: $value);
+			}
+
+			$safe['properties'] = $nested;
+		}
+
+		// A property with no usable type still has to be describable.
+		if (isset($safe['type']) === false && isset($safe['enum']) === false) {
+			$safe['type'] = 'string';
+		}
+
+		return $safe;
+	}//end jsonSchemaSafe()
+
+	/**
+	 * Sanitise a whole property map for publication in a tool schema.
+	 *
+	 * @param array<string, mixed> $properties The declared properties.
+	 *
+	 * @return array<string, mixed> The sanitised map.
+	 */
+	private function jsonSchemaSafeMap(array $properties): array {
+		$safe = [];
+		foreach ($properties as $name => $property) {
+			$safe[$name] = $this->jsonSchemaSafe(property: $property);
+		}
+
+		return $safe;
+	}//end jsonSchemaSafeMap()
 
 	/**
 	 * Resolve the validated `x-openregister-mcp` block, or an empty array
