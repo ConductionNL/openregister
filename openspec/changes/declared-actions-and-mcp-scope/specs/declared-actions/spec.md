@@ -54,11 +54,38 @@ It SHALL NOT make any tool callable by any agent. Whether a specific agent holds
 a right SHALL remain resolved by Hermiq against that agent's own grants, because
 RBAC groups are per user and cannot separate two agents owned by one person.
 
+Because it describes rather than decides, the scope SHALL be inert for
+enforcement in BOTH directions. It SHALL NOT grant an action to any caller,
+including a member of a real Nextcloud group named `mcp`. It SHALL NOT cause an
+action to be refused that would otherwise be permitted: an authorization block
+is fail-closed once non-empty, so a block whose only content is an `mcp` offer
+SHALL evaluate as though no authorization were configured.
+
+An explicitly empty rule list SHALL survive that treatment. `"read": []` means
+"grant this action to nobody" and is the strictest rule the grammar can express;
+treating it as "no rule" would make it default-open.
+
 #### Scenario: The scope does not confer the right
 - **GIVEN** a schema authorises `read` to `mcp`
 - **AND** an agent holds no grant for that tool
 - **WHEN** the agent calls it
 - **THEN** it is refused exactly as an ungranted tool is
+
+#### Scenario: A real group named `mcp` is not the scope
+- **GIVEN** an administrator has created a Nextcloud group named `mcp`
+- **AND** a schema authorises `read` to `mcp`
+- **WHEN** a member of that group reads
+- **THEN** the scope does not admit them
+
+#### Scenario: Annotating a schema does not revoke
+- **GIVEN** a schema with no authorization block
+- **WHEN** `"read": ["mcp"]` is added to record its agent surface
+- **THEN** every other action remains permitted exactly as before
+
+#### Scenario: A deny-all rule survives the scope being stripped
+- **GIVEN** a schema authorising `read` to nobody via an empty rule list
+- **WHEN** the `mcp` scope is stripped from the block
+- **THEN** the action is still denied
 
 #### Scenario: Two agents under one owner differ
 - **GIVEN** two agents owned by the same user
