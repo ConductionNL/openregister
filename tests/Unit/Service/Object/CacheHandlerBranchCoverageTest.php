@@ -8,6 +8,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCP\IAppConfig;
 use OCP\ICacheFactory;
 use OCP\IMemcache;
 use OCP\IUserSession;
@@ -59,12 +60,30 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 				return null;
 			});
 
+		// These branch-coverage tests predate SEC-CTRL-2 step 2 and assert the
+		// resolver with no tenant boundary in force — a real supported
+		// configuration. CacheHandlerTenantScopeTest covers the scoped behaviour.
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')
+			->willReturnCallback(function (string $app, string $key, string $default = '') {
+				if ($app === 'openregister' && $key === 'multitenancy') {
+					return '{"enabled":false}';
+				}
+
+				return $default;
+			});
+
 		$this->handler = new CacheHandler(
 			$this->organisationMapper,
 			$this->logger,
 			$this->cacheFactory,
 			$this->userSession,
-			$container
+			$container,
+			null,
+			null,
+			null,
+			null,
+			$appConfig
 		);
 	}
 
@@ -191,7 +210,7 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 	public function testSetObjectNameStoresInBothCaches(): void {
 		$this->nameDistCache->expects($this->once())
 			->method('set')
-			->with('name_uuid-123', 'Test Object', $this->anything());
+			->with('name_uuid-123', ['n' => 'Test Object', 'o' => null], $this->anything());
 
 		$this->handler->setObjectName('uuid-123', 'Test Object');
 	}
