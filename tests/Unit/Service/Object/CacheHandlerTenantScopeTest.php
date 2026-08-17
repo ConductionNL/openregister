@@ -462,4 +462,57 @@ class CacheHandlerTenantScopeTest extends TestCase {
 
 		$this->assertSame([], $handler->getMultipleObjectNames([]));
 	}
+
+	/**
+	 * THE CALLER CONTRACT. Scoping makes the answer a PARTIAL map: requested
+	 * identifiers the caller may not see are simply absent, never present with a
+	 * null/empty value and never an exception.
+	 *
+	 * That is the only behaviour change the six internal callers can observe, and
+	 * every one of them already handles an absent key:
+	 *
+	 * - Controller\ObjectsController::collectNamesForResponse() returns the map
+	 *   straight to the client; an absent key renders as the raw UUID.
+	 *   (It only ever asks for UUIDs found inside an object the caller already
+	 *   read, so its identifiers are in scope by construction.)
+	 * - Service\ObjectService::collectNamesForResults() likewise returns the map.
+	 * - Service\ExportService::resolveUuidNameMap() array_merge()s it onto a
+	 *   pre-seeded map.
+	 * - Service\Object\SaveObject\MetadataHydrationHandler tests
+	 *   `empty($names[$uuid]) === false` and falls back to the UUID.
+	 * - Service\Object\PerformanceHandler assigns the map to `relatedNames`.
+	 * - Db\MagicMapper\MagicFacetHandler tests `isset($names[$value])` at both of
+	 *   its single-value sites and falls back to a shortened UUID, and its batch
+	 *   site foreach()es over exactly what came back.
+	 *
+	 * @return void
+	 */
+	public function testPartialMapContractHoldsForCallersThatIndexTheResult(): void {
+		$this->organisationMapper->method('findMultipleByUuid')->willReturn([]);
+		$this->objectMapper->method('findMultiple')->willReturn([
+			$this->createObject('99999999-9999-9999-9999-999999999999', 'Visible Beta', self::ORG_B),
+			$this->createObject('aaaa1111-aaaa-1111-aaaa-111111111111', 'Hidden Alpha', self::ORG_A),
+		]);
+
+		$handler = $this->buildHandler();
+
+		$names = $handler->getMultipleObjectNames([
+			'99999999-9999-9999-9999-999999999999',
+			'aaaa1111-aaaa-1111-aaaa-111111111111',
+			'bbbb2222-bbbb-2222-bbbb-222222222222',
+		]);
+
+		// Present for the in-scope id...
+		$this->assertSame('Visible Beta', $names['99999999-9999-9999-9999-999999999999'] ?? null);
+		// ...and ABSENT — not null, not '' — for the out-of-scope and unknown ones.
+		$this->assertArrayNotHasKey('aaaa1111-aaaa-1111-aaaa-111111111111', $names);
+		$this->assertArrayNotHasKey('bbbb2222-bbbb-2222-bbbb-222222222222', $names);
+
+		// Every value in the map is a non-empty string, which is what the callers
+		// that index it (MetadataHydrationHandler, MagicFacetHandler) rely on.
+		foreach ($names as $uuid => $name) {
+			$this->assertIsString($name, 'Name for ' . $uuid . ' must be a string.');
+			$this->assertNotSame('', $name);
+		}
+	}
 }
