@@ -368,6 +368,87 @@ class GrantableRightsIndexTest extends TestCase {
 	}//end testABuildFailureServesEmptyAndCachesNothing()
 
 	/**
+	 * A register's schema list only ever holds bare ids: `setSchemas()` filters
+	 * its input down to ints and strings. Pinned because the index once carried
+	 * a defensive branch for hydrated schema arrays, and this is what proved it
+	 * unreachable — a hydrated entry never survives the setter to reach it.
+	 *
+	 * @covers ::getIndex
+	 *
+	 * @return void
+	 */
+	public function testARegisterSchemaListHoldsBareIdsOnly(): void {
+		$register = new Register();
+		$register->setId(31);
+		$register->setSchemas([['id' => 20, 'slug' => 'claim'], 20]);
+
+		$this->assertSame(
+			[20],
+			array_values($register->getSchemas()),
+			'setSchemas() stopped filtering to scalars; the index needs its normalising branch back.'
+		);
+	}//end testARegisterSchemaListHoldsBareIdsOnly()
+
+	/**
+	 * A malformed dialect block must not throw. A schema with a bad annotation
+	 * should cost that schema its entries, never the whole menu — an exception
+	 * here would empty the index for every other schema too.
+	 *
+	 * @covers ::getIndex
+	 *
+	 * @return void
+	 */
+	public function testAMalformedDialectIsIgnoredNotFatal(): void {
+		$this->schemaMapper->method('findAll')->willReturn(
+			[
+				$this->schema(
+					id: 21,
+					slug: 'broken',
+					configuration: ['x-openregister-mcp' => ['enabled' => true, 'tools' => 'not-an-object']]
+				),
+				$this->schema(id: 22, slug: 'fine', authorization: ['read' => ['mcp']]),
+			]
+		);
+		$this->registerMapper->method('findAll')->willReturn([]);
+
+		$this->assertSame(['fine'], array_column($this->index()->getIndex(), 'schema'));
+	}//end testAMalformedDialectIsIgnoredNotFatal()
+
+	/**
+	 * A dialect block that is not an object at all is ignored the same way.
+	 *
+	 * @covers ::getIndex
+	 *
+	 * @return void
+	 */
+	public function testANonObjectDialectIsIgnored(): void {
+		$this->schemaMapper->method('findAll')->willReturn(
+			[$this->schema(id: 23, slug: 'odd', configuration: ['x-openregister-mcp' => 'yes please'])]
+		);
+		$this->registerMapper->method('findAll')->willReturn([]);
+
+		$this->assertSame([], $this->index()->getIndex());
+	}//end testANonObjectDialectIsIgnored()
+
+	/**
+	 * Repeated reads within one request do not re-hit the distributed cache.
+	 *
+	 * @covers ::getIndex
+	 *
+	 * @return void
+	 */
+	public function testTheMemoServesRepeatedReadsInOneRequest(): void {
+		$this->schemaMapper->expects($this->once())
+			->method('findAll')
+			->willReturn([$this->schema(id: 24, slug: 'memo', authorization: ['read' => ['mcp']])]);
+		$this->registerMapper->method('findAll')->willReturn([]);
+
+		$index = $this->index();
+
+		$this->assertSame($index->getIndex(), $index->getIndex());
+	}//end testTheMemoServesRepeatedReadsInOneRequest()
+
+	/**
 	 * A schema belonging to no register still appears, with a null register.
 	 * Dropping it would hide a real offer; inventing a register would be worse.
 	 *

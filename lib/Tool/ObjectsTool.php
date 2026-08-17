@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use ReflectionMethod;
 use RuntimeException;
 
 /**
@@ -257,7 +258,7 @@ class ObjectsTool extends AbstractTool {
 			$named = $parameters;
 			if ($parameters !== [] && array_is_list($parameters) === false) {
 				$known = [];
-				foreach ((new \ReflectionMethod($this, $methodName))->getParameters() as $parameter) {
+				foreach ((new ReflectionMethod($this, $methodName))->getParameters() as $parameter) {
 					$known[$parameter->getName()] = true;
 				}
 

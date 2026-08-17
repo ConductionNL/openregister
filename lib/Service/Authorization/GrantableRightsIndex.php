@@ -186,10 +186,6 @@ class GrantableRightsIndex {
 
 		$entries = [];
 		foreach ($this->schemaMapper->findAll(_rbac: false) as $schema) {
-			if (($schema instanceof Schema) === false) {
-				continue;
-			}
-
 			$offered = $this->offeredActions(schema: $schema);
 			if ($offered === []) {
 				continue;
@@ -272,20 +268,13 @@ class GrantableRightsIndex {
 
 		foreach ($this->registerMapper->findAll() as $register) {
 			$registerId = $register->getId();
-			foreach ($register->getSchemas() as $schemaRef) {
-				// A register's schema list holds ids, and historically also
-				// hydrated schema arrays. Normalise both rather than assume,
-				// because an unrecognised shape here silently drops a whole
-				// register's rights out of the menu.
-				$schemaId = $schemaRef;
-				if (is_array($schemaRef) === true) {
-					$schemaId = ($schemaRef['id'] ?? null);
-				}
 
-				if ($schemaId === null) {
-					continue;
-				}
-
+			// `Register::setSchemas()` filters its input down to ints and
+			// strings, so every entry here is already a bare id. A defensive
+			// branch for hydrated schema arrays was written and then removed:
+			// a test proved it unreachable, and unreachable defence reads like
+			// a handled case that was never handled.
+			foreach ($register->getSchemas() as $schemaId) {
 				$map[$schemaId][] = $registerId;
 			}
 		}

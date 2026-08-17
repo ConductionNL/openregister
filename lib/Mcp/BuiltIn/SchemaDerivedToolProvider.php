@@ -744,8 +744,30 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 			}
 		}
 
-		// Nested shapes are sanitised too, or the dialect simply reappears one
-		// level down.
+		$safe = $this->jsonSchemaSafeNested(property: $property, safe: $safe);
+
+		// A property with no usable type still has to be describable.
+		if (isset($safe['type']) === false && isset($safe['enum']) === false) {
+			$safe['type'] = 'string';
+		}
+
+		return $safe;
+	}//end jsonSchemaSafe()
+
+	/**
+	 * Sanitise the nested shapes of a property.
+	 *
+	 * Split out of {@see jsonSchemaSafe()} to keep that method under the
+	 * complexity threshold. The recursion is the point: without it the dialect
+	 * simply reappears one level down, inside `items` or `properties`, and the
+	 * published document is still not JSON Schema.
+	 *
+	 * @param array<string, mixed> $property The declared property.
+	 * @param array<string, mixed> $safe     The keywords accepted so far.
+	 *
+	 * @return array<string, mixed> The accepted keywords plus sanitised nested shapes.
+	 */
+	private function jsonSchemaSafeNested(array $property, array $safe): array {
 		if (isset($property['items']) === true) {
 			$safe['items'] = $this->jsonSchemaSafe(property: $property['items']);
 		}
@@ -759,13 +781,8 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 			$safe['properties'] = $nested;
 		}
 
-		// A property with no usable type still has to be describable.
-		if (isset($safe['type']) === false && isset($safe['enum']) === false) {
-			$safe['type'] = 'string';
-		}
-
 		return $safe;
-	}//end jsonSchemaSafe()
+	}//end jsonSchemaSafeNested()
 
 	/**
 	 * Sanitise a whole property map for publication in a tool schema.

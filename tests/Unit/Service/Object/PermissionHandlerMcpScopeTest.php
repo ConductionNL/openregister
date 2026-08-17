@@ -292,6 +292,51 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 	}//end testAnAlreadyEmptyRuleListIsPreservedNotDropped()
 
 	/**
+	 * Null and empty blocks pass through unchanged. These are the overwhelmingly
+	 * common inputs — the strip runs on every authorization resolution — so a
+	 * regression would hide here rather than in the interesting cases.
+	 *
+	 * @covers ::stripMcpScope
+	 *
+	 * @return void
+	 */
+	public function testNullAndEmptyBlocksArePassedThrough(): void {
+		$this->assertNull(PermissionHandler::stripMcpScope(null));
+		$this->assertSame([], PermissionHandler::stripMcpScope([]));
+	}//end testNullAndEmptyBlocksArePassedThrough()
+
+	/**
+	 * An entry that is neither a string nor an array is not the scope, and must
+	 * survive rather than be silently swallowed by the guard.
+	 *
+	 * @covers ::stripMcpScope
+	 *
+	 * @return void
+	 */
+	public function testAnUnrecognisedEntryShapeIsKept(): void {
+		$this->assertSame(
+			['read' => [42]],
+			PermissionHandler::stripMcpScope(['read' => [42, 'mcp']]),
+			'The guard discarded an entry it did not recognise instead of leaving it alone.'
+		);
+	}//end testAnUnrecognisedEntryShapeIsKept()
+
+	/**
+	 * Reading the offer surface off an absent block yields nothing rather than
+	 * failing — the index calls this for every schema, most of which offer
+	 * nothing.
+	 *
+	 * @covers ::mcpOfferedActions
+	 *
+	 * @return void
+	 */
+	public function testOfferedActionsOfAnAbsentBlockIsEmpty(): void {
+		$this->assertSame([], PermissionHandler::mcpOfferedActions(null));
+		$this->assertSame([], PermissionHandler::mcpOfferedActions([]));
+		$this->assertSame([], PermissionHandler::mcpOfferedActions(['read' => ['staff'], 'public' => true]));
+	}//end testOfferedActionsOfAnAbsentBlockIsEmpty()
+
+	/**
 	 * The offer surface is what the grantable-rights index reads, so it has to
 	 * survive as data even though it is inert for enforcement.
 	 *
