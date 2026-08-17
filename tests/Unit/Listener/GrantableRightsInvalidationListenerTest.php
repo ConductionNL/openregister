@@ -35,7 +35,14 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * @coversDefaultClass \OCA\OpenRegister\Listener\GrantableRightsInvalidationListener
+ * Coverage metadata is deliberately absent. This suite runs under
+ * `beStrictAboutCoverageMetadata="true"`, where the deprecated
+ * covers-default-class docblock form does not resolve — an annotated test
+ * records NO coverage at all and is reported risky. (Named rather than written
+ * literally: a docblock parser reading this comment would find the annotation
+ * and defeat the point of removing it.) Leaving the annotations off
+ * is what the well-covered suites in this repo do, and it is why this file's
+ * subject counts toward coverage instead of reading 0%.
  */
 class GrantableRightsInvalidationListenerTest extends TestCase {
 
@@ -59,8 +66,6 @@ class GrantableRightsInvalidationListenerTest extends TestCase {
 	/**
 	 * A schema write invalidates the index.
 	 *
-	 * @covers ::handle
-	 *
 	 * @return void
 	 */
 	public function testAWriteInvalidatesTheIndex(): void {
@@ -73,8 +78,6 @@ class GrantableRightsInvalidationListenerTest extends TestCase {
 	 * Every schema write does, not just updates. A create that did not
 	 * invalidate would leave a newly-offered right unlistable; a delete that
 	 * did not would keep offering a right whose schema is gone.
-	 *
-	 * @covers ::handle
 	 *
 	 * @return void
 	 */
@@ -91,8 +94,6 @@ class GrantableRightsInvalidationListenerTest extends TestCase {
 	 * invalidation to do and inspecting the event would only add a way to get
 	 * it wrong. An unrelated event reaching it still invalidates.
 	 *
-	 * @covers ::handle
-	 *
 	 * @return void
 	 */
 	public function testItDoesNotInspectTheEvent(): void {
@@ -107,8 +108,6 @@ class GrantableRightsInvalidationListenerTest extends TestCase {
 	 * into a failed schema write — but it MUST be logged at error level. That
 	 * log line is the only trace that the index is now stale, and a stale
 	 * permission menu is a bug that looks exactly like a correct one.
-	 *
-	 * @covers ::handle
 	 *
 	 * @return void
 	 */

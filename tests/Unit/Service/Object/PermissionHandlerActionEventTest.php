@@ -43,7 +43,8 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * @coversDefaultClass \OCA\OpenRegister\Service\Object\PermissionHandler
+ * Coverage metadata is deliberately absent — see the note in
+ * GrantableRightsInvalidationListenerTest.
  */
 class PermissionHandlerActionEventTest extends TestCase {
 
@@ -153,8 +154,6 @@ class PermissionHandlerActionEventTest extends TestCase {
 	/**
 	 * 🔴 A refusal is observable. This is the scenario the spec names first.
 	 *
-	 * @covers ::hasPermission
-	 *
 	 * @return void
 	 */
 	public function testARefusalIsDispatched(): void {
@@ -178,8 +177,6 @@ class PermissionHandlerActionEventTest extends TestCase {
 
 	/**
 	 * A permitted action is observable too, carrying the same payload.
-	 *
-	 * @covers ::hasPermission
 	 *
 	 * @return void
 	 */
@@ -206,8 +203,6 @@ class PermissionHandlerActionEventTest extends TestCase {
 	 * whole point of declaring it is that the surrounding machinery treats it
 	 * as an equal.
 	 *
-	 * @covers ::hasPermission
-	 *
 	 * @return void
 	 */
 	public function testADeclaredActionIsDispatched(): void {
@@ -227,8 +222,6 @@ class PermissionHandlerActionEventTest extends TestCase {
 	/**
 	 * The event carries the object and its register when the decision
 	 * concerned one — the identifiers an audit record is useless without.
-	 *
-	 * @covers ::hasPermission
 	 *
 	 * @return void
 	 */
@@ -258,8 +251,6 @@ class PermissionHandlerActionEventTest extends TestCase {
 	 * several. Null is the honest answer, and a listener must be able to tell
 	 * it apart from a real id rather than receive a guess.
 	 *
-	 * @covers ::hasPermission
-	 *
 	 * @return void
 	 */
 	public function testASchemaLevelDecisionReportsNoRegisterRatherThanGuessing(): void {
@@ -279,8 +270,6 @@ class PermissionHandlerActionEventTest extends TestCase {
 	/**
 	 * 🔴 A listener that throws must not change the verdict, in either
 	 * direction. Telemetry that can deny access is not telemetry.
-	 *
-	 * @covers ::hasPermission
 	 *
 	 * @return void
 	 */
@@ -325,8 +314,6 @@ class PermissionHandlerActionEventTest extends TestCase {
 	 * would otherwise silently under-count, and a silent under-count in an
 	 * audit trail reads exactly like nothing having happened.
 	 *
-	 * @covers ::hasPermission
-	 *
 	 * @return void
 	 */
 	public function testRepeatedIdenticalChecksProduceOneDecisionEvent(): void {
@@ -348,8 +335,6 @@ class PermissionHandlerActionEventTest extends TestCase {
 	 * An RBAC bypass is not a decision this handler made, so it must not be
 	 * reported as one. Attributing a system-context grant to the acting user
 	 * would put a permission the rules never evaluated into the audit trail.
-	 *
-	 * @covers ::hasPermission
 	 *
 	 * @return void
 	 */

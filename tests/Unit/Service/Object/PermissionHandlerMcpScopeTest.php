@@ -54,7 +54,10 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * @coversDefaultClass \OCA\OpenRegister\Service\Object\PermissionHandler
+ * Coverage metadata is deliberately absent — see the note in
+ * GrantableRightsInvalidationListenerTest. Under
+ * `beStrictAboutCoverageMetadata="true"` the deprecated covers-default-class
+ * docblock form records NO coverage and reports the test risky.
  */
 class PermissionHandlerMcpScopeTest extends TestCase {
 
@@ -115,8 +118,6 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 	 * only helps if the evaluator actually reserves it. Nothing stops an
 	 * administrator creating the group; the guard has to be in the code.
 	 *
-	 * @covers ::hasGroupPermission
-	 *
 	 * @return void
 	 */
 	public function testMembershipInARealGroupNamedMcpGrantsNothing(): void {
@@ -136,8 +137,6 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 	/**
 	 * The same guard for the object-entry form `{"group": "mcp"}`, which is a
 	 * second, independent match branch in the rule grammar.
-	 *
-	 * @covers ::hasGroupPermission
 	 *
 	 * @return void
 	 */
@@ -169,9 +168,6 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 	 * absent can GRANT, silently, to anonymous. The block gets the fail-safe
 	 * reading.
 	 *
-	 * @covers ::stripMcpScope
-	 * @covers ::hasGroupPermission
-	 *
 	 * @return void
 	 */
 	public function testAnOffersOnlyBlockStaysEnforceable(): void {
@@ -200,8 +196,6 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 	 * Stripping the scope must leave every real rule exactly where it was —
 	 * including on the same action the offer was attached to.
 	 *
-	 * @covers ::stripMcpScope
-	 *
 	 * @return void
 	 */
 	public function testStrippingKeepsEveryRealRule(): void {
@@ -229,8 +223,6 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 	 * strip runs on every authorization resolution, so its no-op case is the
 	 * overwhelmingly common one and the one a regression would hide in.
 	 *
-	 * @covers ::stripMcpScope
-	 *
 	 * @return void
 	 */
 	public function testABlockWithoutMcpIsUntouched(): void {
@@ -252,8 +244,6 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 	 * has to preserve it even when it removes every action key around it.
 	 * Losing it would turn a deliberately public schema fail-closed.
 	 *
-	 * @covers ::stripMcpScope
-	 *
 	 * @return void
 	 */
 	public function testThePublicOptInSurvivesAnMcpOnlyBlock(): void {
@@ -272,8 +262,6 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 	 *
 	 * Caught by PermissionHandlerCustomScopeTest on the first run of this
 	 * change, against a schema authorising `besluit_nemen` to nobody.
-	 *
-	 * @covers ::stripMcpScope
 	 *
 	 * @return void
 	 */
@@ -296,8 +284,6 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 	 * common inputs — the strip runs on every authorization resolution — so a
 	 * regression would hide here rather than in the interesting cases.
 	 *
-	 * @covers ::stripMcpScope
-	 *
 	 * @return void
 	 */
 	public function testNullAndEmptyBlocksArePassedThrough(): void {
@@ -308,8 +294,6 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 	/**
 	 * An entry that is neither a string nor an array is not the scope, and must
 	 * survive rather than be silently swallowed by the guard.
-	 *
-	 * @covers ::stripMcpScope
 	 *
 	 * @return void
 	 */
@@ -326,8 +310,6 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 	 * failing — the index calls this for every schema, most of which offer
 	 * nothing.
 	 *
-	 * @covers ::mcpOfferedActions
-	 *
 	 * @return void
 	 */
 	public function testOfferedActionsOfAnAbsentBlockIsEmpty(): void {
@@ -339,8 +321,6 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 	/**
 	 * The offer surface is what the grantable-rights index reads, so it has to
 	 * survive as data even though it is inert for enforcement.
-	 *
-	 * @covers ::mcpOfferedActions
 	 *
 	 * @return void
 	 */
@@ -366,8 +346,6 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 	 * The refusal is Hermiq's to make, and the property this asserts is the
 	 * OpenRegister half of it: the schema annotation contributes nothing to
 	 * the verdict, so there is no path by which the offer alone admits anyone.
-	 *
-	 * @covers ::hasGroupPermission
 	 *
 	 * @return void
 	 */
@@ -395,8 +373,6 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 	 * the thing that decides, and the observable form of that here is:
 	 * the block yields the SAME verdict regardless of which agent is asking,
 	 * leaving the difference entirely to Hermiq's per-agent grants.
-	 *
-	 * @covers ::hasGroupPermission
 	 *
 	 * @return void
 	 */

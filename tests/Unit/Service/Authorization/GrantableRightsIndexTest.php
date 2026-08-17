@@ -37,7 +37,10 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * @coversDefaultClass \OCA\OpenRegister\Service\Authorization\GrantableRightsIndex
+ * Coverage metadata is deliberately absent — see the note in
+ * GrantableRightsInvalidationListenerTest. With the annotations in place this
+ * suite exercised GrantableRightsIndex thoroughly and the coverage report still
+ * read 0.0%, which is how the coverage ratchet failed a change that had tests.
  */
 class GrantableRightsIndexTest extends TestCase {
 
@@ -145,8 +148,6 @@ class GrantableRightsIndexTest extends TestCase {
 	 * An action offered to `mcp` in the authorization block appears in the
 	 * menu, attributed to that source.
 	 *
-	 * @covers ::getIndex
-	 *
 	 * @return void
 	 */
 	public function testAnAuthorizationOfferIsIndexed(): void {
@@ -173,8 +174,6 @@ class GrantableRightsIndexTest extends TestCase {
 	 * The `x-openregister-mcp` dialect is the OTHER source of offers, and it is
 	 * the one that emits live tools. An index knowing only the authorization
 	 * block would present itself as the complete menu while missing half of it.
-	 *
-	 * @covers ::getIndex
 	 *
 	 * @return void
 	 */
@@ -210,8 +209,6 @@ class GrantableRightsIndexTest extends TestCase {
 	 * is the opt-in gate, and reading the tool list past it would offer rights
 	 * for a surface the schema deliberately switched off.
 	 *
-	 * @covers ::getIndex
-	 *
 	 * @return void
 	 */
 	public function testADisabledDialectOffersNothing(): void {
@@ -238,8 +235,6 @@ class GrantableRightsIndexTest extends TestCase {
 	 * A schema with no offer at all contributes nothing — the index is a menu
 	 * of what CAN be granted, not a listing of every schema.
 	 *
-	 * @covers ::getIndex
-	 *
 	 * @return void
 	 */
 	public function testASchemaThatOffersNothingIsAbsent(): void {
@@ -255,8 +250,6 @@ class GrantableRightsIndexTest extends TestCase {
 	 * A schema in several registers yields an entry per register. "May be
 	 * offered" is a question about a register's data, so collapsing them would
 	 * hide which register a right actually reaches.
-	 *
-	 * @covers ::getIndex
 	 *
 	 * @return void
 	 */
@@ -275,9 +268,6 @@ class GrantableRightsIndexTest extends TestCase {
 	 * 🔴 The property the whole design depends on: a revoked right stops being
 	 * offered. The index must not be able to outlive the schema that justified
 	 * it.
-	 *
-	 * @covers ::getIndex
-	 * @covers ::invalidate
 	 *
 	 * @return void
 	 */
@@ -305,8 +295,6 @@ class GrantableRightsIndexTest extends TestCase {
 	 * cache. A memo that survives its own invalidation is a stale index with a
 	 * shorter lifetime, which is not the same thing as a fresh one.
 	 *
-	 * @covers ::invalidate
-	 *
 	 * @return void
 	 */
 	public function testInvalidationClearsTheCacheItself(): void {
@@ -329,8 +317,6 @@ class GrantableRightsIndexTest extends TestCase {
 	 * A cache hit must not re-walk the schemas. This is the entire reason the
 	 * index exists — 406 registers and 1,000+ schemas is not a per-request
 	 * query — so it is asserted rather than assumed.
-	 *
-	 * @covers ::getIndex
 	 *
 	 * @return void
 	 */
@@ -355,8 +341,6 @@ class GrantableRightsIndexTest extends TestCase {
 	 * Caching it would make one transient failure permanent, so the next read
 	 * has to get to try again.
 	 *
-	 * @covers ::getIndex
-	 *
 	 * @return void
 	 */
 	public function testABuildFailureServesEmptyAndCachesNothing(): void {
@@ -372,8 +356,6 @@ class GrantableRightsIndexTest extends TestCase {
 	 * its input down to ints and strings. Pinned because the index once carried
 	 * a defensive branch for hydrated schema arrays, and this is what proved it
 	 * unreachable — a hydrated entry never survives the setter to reach it.
-	 *
-	 * @covers ::getIndex
 	 *
 	 * @return void
 	 */
@@ -393,8 +375,6 @@ class GrantableRightsIndexTest extends TestCase {
 	 * A malformed dialect block must not throw. A schema with a bad annotation
 	 * should cost that schema its entries, never the whole menu — an exception
 	 * here would empty the index for every other schema too.
-	 *
-	 * @covers ::getIndex
 	 *
 	 * @return void
 	 */
@@ -417,8 +397,6 @@ class GrantableRightsIndexTest extends TestCase {
 	/**
 	 * A dialect block that is not an object at all is ignored the same way.
 	 *
-	 * @covers ::getIndex
-	 *
 	 * @return void
 	 */
 	public function testANonObjectDialectIsIgnored(): void {
@@ -432,8 +410,6 @@ class GrantableRightsIndexTest extends TestCase {
 
 	/**
 	 * Repeated reads within one request do not re-hit the distributed cache.
-	 *
-	 * @covers ::getIndex
 	 *
 	 * @return void
 	 */
@@ -451,8 +427,6 @@ class GrantableRightsIndexTest extends TestCase {
 	/**
 	 * A schema belonging to no register still appears, with a null register.
 	 * Dropping it would hide a real offer; inventing a register would be worse.
-	 *
-	 * @covers ::getIndex
 	 *
 	 * @return void
 	 */

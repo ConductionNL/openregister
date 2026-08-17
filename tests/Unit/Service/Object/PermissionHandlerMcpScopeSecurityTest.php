@@ -39,7 +39,8 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * @coversDefaultClass \OCA\OpenRegister\Service\Object\PermissionHandler
+ * Coverage metadata is deliberately absent — see the note in
+ * GrantableRightsInvalidationListenerTest.
  */
 class PermissionHandlerMcpScopeSecurityTest extends TestCase {
 
@@ -107,8 +108,6 @@ class PermissionHandlerMcpScopeSecurityTest extends TestCase {
 	 * schema — plausibly believing they had RESTRICTED it to agents — has
 	 * instead published it to the anonymous internet.
 	 *
-	 * @covers ::hasPermission
-	 *
 	 * @return void
 	 */
 	public function testAnonymousReadOfAnMcpOnlyBlock(): void {
@@ -128,8 +127,6 @@ class PermissionHandlerMcpScopeSecurityTest extends TestCase {
 
 	/**
 	 * 🔴 PROBE 2 — the same block, an authenticated stranger.
-	 *
-	 * @covers ::hasPermission
 	 *
 	 * @return void
 	 */
@@ -158,8 +155,6 @@ class PermissionHandlerMcpScopeSecurityTest extends TestCase {
 	 * denying everything and the suite would look green while breaking every
 	 * unconfigured schema on the instance.
 	 *
-	 * @covers ::hasPermission
-	 *
 	 * @return void
 	 */
 	public function testAnUnconfiguredSchemaStaysDefaultOpen(): void {
@@ -184,8 +179,6 @@ class PermissionHandlerMcpScopeSecurityTest extends TestCase {
 	 * actions. `{"read": ["mcp"], "create": ["staff"]}` still has real rules, so
 	 * it stays fail-closed and `read` is denied to a non-staff caller.
 	 *
-	 * @covers ::hasPermission
-	 *
 	 * @return void
 	 */
 	public function testAnOfferAlongsideRealRulesDoesNotWiden(): void {
@@ -209,8 +202,6 @@ class PermissionHandlerMcpScopeSecurityTest extends TestCase {
 	 * PROBE 5 — a delegation entry must survive the strip. The mcp guard sits
 	 * in front of the user-override branch, so a bug there would silently
 	 * revoke every delegated grant.
-	 *
-	 * @covers ::hasGroupPermission
 	 *
 	 * @return void
 	 */

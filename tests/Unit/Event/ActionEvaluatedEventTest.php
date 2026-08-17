@@ -29,7 +29,12 @@ use OCA\OpenRegister\Event\ActionEvaluatedEvent;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @coversDefaultClass \OCA\OpenRegister\Event\ActionEvaluatedEvent
+ * Coverage metadata is deliberately absent — see the note in
+ * GrantableRightsInvalidationListenerTest. Under
+ * `beStrictAboutCoverageMetadata="true"` the deprecated covers-default-class
+ * docblock form records NO coverage and reports the test risky. (Spelled out
+ * rather than written literally: a docblock parser reading this comment would
+ * find the annotation and defeat the point of removing it.)
  */
 class ActionEvaluatedEventTest extends TestCase {
 
@@ -63,16 +68,6 @@ class ActionEvaluatedEventTest extends TestCase {
 	/**
 	 * A granted decision, with an object, carries the whole payload.
 	 *
-	 * @covers ::__construct
-	 * @covers ::getSchema
-	 * @covers ::getAction
-	 * @covers ::getActor
-	 * @covers ::getObject
-	 * @covers ::getObjectId
-	 * @covers ::getRegister
-	 * @covers ::isGranted
-	 * @covers ::isRefused
-	 *
 	 * @return void
 	 */
 	public function testAGrantedDecisionCarriesEveryField(): void {
@@ -102,9 +97,6 @@ class ActionEvaluatedEventTest extends TestCase {
 	 * cannot subscribe to only the flattering half by accident, and it must
 	 * never disagree with `isGranted()`.
 	 *
-	 * @covers ::isGranted
-	 * @covers ::isRefused
-	 *
 	 * @return void
 	 */
 	public function testARefusalReportsItselfConsistently(): void {
@@ -125,10 +117,6 @@ class ActionEvaluatedEventTest extends TestCase {
 	 * several — so null is the honest answer rather than a guess a listener
 	 * could not tell apart from a fact.
 	 *
-	 * @covers ::getRegister
-	 * @covers ::getObject
-	 * @covers ::getObjectId
-	 *
 	 * @return void
 	 */
 	public function testASchemaLevelDecisionReportsNulls(): void {
@@ -148,8 +136,6 @@ class ActionEvaluatedEventTest extends TestCase {
 	 * An anonymous principal is a null actor, not an empty string. A listener
 	 * writing `""` into an audit column cannot distinguish "nobody was logged
 	 * in" from "a user with a blank name".
-	 *
-	 * @covers ::getActor
 	 *
 	 * @return void
 	 */
