@@ -1242,6 +1242,9 @@ return [
 		// MCP Discovery - Tiered API discovery for AI agents.
 		// CORS preflight (OPTIONS) is handled automatically by the @CORS annotation.
 		['name' => 'mcp#discover', 'url' => '/api/mcp/v1/discover', 'verb' => 'GET'],
+		// The menu of rights that may be OFFERED to an agent. Reading it confers
+		// nothing — whether a given agent HOLDS a right is resolved by Hermiq.
+		['name' => 'mcp#grantableRights', 'url' => '/api/mcp/v1/grantable-rights', 'verb' => 'GET'],
 		['name' => 'mcp#discoverCapability', 'url' => '/api/mcp/v1/discover/{capability}', 'verb' => 'GET', 'requirements' => ['capability' => '[a-z-]+']],
 
 		// MCP Standard Protocol — JSON-RPC 2.0 Streamable HTTP endpoint.
