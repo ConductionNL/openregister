@@ -4400,16 +4400,33 @@ class ObjectService implements ObjectServiceInterface
     }//end createObject()
 
     /**
-     * Update existing object (full update)
+     * REPLACE an existing object's data wholesale. This does NOT merge.
+     *
+     * PUT semantics, inherited from `saveObject()`: `$data` becomes the object's
+     * data in full, so a stored property absent from `$data` is written away
+     * rather than left alone. There is no read of the existing object here — the
+     * commented-out `find()` below is the whole history of that idea — so a
+     * one-key payload stores a one-key object and reports success.
+     *
+     * Callers holding a PARTIAL payload want `patchObject()`, which reads,
+     * merges and then saves. Both are published on `ObjectServiceInterface`;
+     * the contract's docblock for this method used to say "apply a partial
+     * update", which is the opposite of the behaviour and is what sent at least
+     * one consuming app down the erasing path.
+     *
+     * Replace semantics are deliberate and must not change: existing callers
+     * pass a complete object and rely on an omitted property being cleared.
      *
      * @param string $objectId      Object ID or UUID
-     * @param array  $data          New object data
+     * @param array  $data          The object's COMPLETE new data. Anything omitted is dropped.
      * @param bool   $_rbac         Apply RBAC checks
      * @param bool   $_multitenancy Apply multitenancy filtering
      *
-     * @return ObjectEntity Updated object entity
+     * @return ObjectEntity Replaced object entity
      *
      * @throws \Exception If update fails
+     *
+     * @see self::patchObject() for the merging counterpart.
      *
      * @spec exclude Facade delegating to saveObject() with id; update behavior owned by object-interactions / object-lifecycle.
      */
