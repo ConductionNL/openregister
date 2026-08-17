@@ -331,6 +331,27 @@ class Schema extends Entity implements JsonSerializable {
 	protected bool $searchable = true;
 
 	/**
+	 * Whether this schema opts in to its own Smart Picker entry
+	 *
+	 * Gates functionality only for a schema-scoped Smart Picker provider
+	 * (`AbstractSchemaReferenceProvider`/`AbstractSchemaSearchProvider`
+	 * subclass registered by a consuming app): when `false`, that provider's
+	 * `matchReference()`/`resolveReference()`/`search()` are all functionally
+	 * inert for this schema. It does NOT remove the provider's entry from
+	 * the Smart Picker's "Select provider" list — that list is populated
+	 * once at app boot from static class registration, which never consults
+	 * this runtime flag. Default `false`: opt-in, unlike `searchable`'s
+	 * opt-out default, because exposing a schema as its own picker entry is
+	 * a more visible, deliberate choice than being included in generic
+	 * search.
+	 *
+	 * @var boolean Whether this schema opts in to its own Smart Picker entry (default: false)
+	 *
+	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d2a
+	 */
+	protected bool $smartPickerEnabled = false;
+
+	/**
 	 * An array defining group-based permissions for CRUD actions.
 	 * The keys are the CRUD actions ('create', 'read', 'update', 'delete'),
 	 * and the values are arrays of group IDs that are permitted to perform that action.
@@ -460,6 +481,7 @@ class Schema extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'immutable', type: Types::BOOLEAN);
 		$this->addType(fieldName: 'appendOnly', type: Types::BOOLEAN);
 		$this->addType(fieldName: 'searchable', type: Types::BOOLEAN);
+		$this->addType(fieldName: 'smartPickerEnabled', type: Types::BOOLEAN);
 		$this->addType(fieldName: 'updated', type: 'datetime');
 		$this->addType(fieldName: 'created', type: 'datetime');
 		$this->addType(fieldName: 'maxDepth', type: Types::INTEGER);
@@ -1517,7 +1539,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *     version: null|string, summary: null|string, icon: null|string,
 	 *     required: array, properties: array, archive: array|null,
 	 *     source: null|string, hardValidation: bool, immutable: bool, appendOnly: bool,
-	 *     searchable: bool, updated: null|string, created: null|string,
+	 *     searchable: bool, smartPickerEnabled: bool, updated: null|string, created: null|string,
 	 *     maxDepth: int, owner: null|string, application: null|string,
 	 *     organisation: null|string,
 	 *     groups: array<string, list<string>>|null, authorization: array|null,
@@ -1576,6 +1598,7 @@ class Schema extends Entity implements JsonSerializable {
 			'immutable' => $this->immutable,
 			'appendOnly' => $this->appendOnly,
 			'searchable' => $this->searchable,
+			'smartPickerEnabled' => $this->smartPickerEnabled,
 			// @todo: should be refactored to strict.
 			'updated' => $updated,
 			'created' => $created,
@@ -2549,6 +2572,40 @@ class Schema extends Entity implements JsonSerializable {
 		$this->searchable = $searchable;
 		$this->markFieldUpdated(attribute: 'searchable');
 	}//end setSearchable()
+
+	/**
+	 * Check whether this schema opts in to its own Smart Picker entry
+	 *
+	 * Named `is...()` rather than `get...()` to match this class's REAL
+	 * existing boolean-getter convention (`isSearchable()`, not
+	 * `getSearchable()`) and PHPMD's `BooleanGetMethodName` rule, which a
+	 * real declared `get...()` boolean getter — unlike a magic `@method`
+	 * one — triggers.
+	 *
+	 * @return bool True if a schema-scoped Smart Picker provider for this
+	 *              schema should be functionally active
+	 *
+	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d2a
+	 */
+	public function isSmartPickerEnabled(): bool {
+		return $this->smartPickerEnabled;
+	}//end isSmartPickerEnabled()
+
+	/**
+	 * Set whether this schema opts in to its own Smart Picker entry
+	 *
+	 * @param bool $smartPickerEnabled Whether a schema-scoped Smart Picker
+	 *                                 provider for this schema should be
+	 *                                 functionally active
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d2a
+	 */
+	public function setSmartPickerEnabled(bool $smartPickerEnabled): void {
+		$this->smartPickerEnabled = $smartPickerEnabled;
+		$this->markFieldUpdated(attribute: 'smartPickerEnabled');
+	}//end setSmartPickerEnabled()
 
 	/**
 	 * Check whether objects of this schema are append-only.
