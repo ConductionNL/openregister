@@ -766,6 +766,9 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * @param array<string, mixed> $safe     The keywords accepted so far.
 	 *
 	 * @return array<string, mixed> The accepted keywords plus sanitised nested shapes.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 *   (Requirement: REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools)
 	 */
 	private function jsonSchemaSafeNested(array $property, array $safe): array {
 		if (isset($property['items']) === true) {

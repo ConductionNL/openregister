@@ -2039,6 +2039,8 @@ class PermissionHandler {
 	 * @param array $rules One action's rule list.
 	 *
 	 * @return array The surviving rules, possibly empty.
+	 *
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	private static function stripMcpFromRuleList(array $rules): array {
 		$kept = [];
@@ -2099,6 +2101,8 @@ class PermissionHandler {
 	 * @param mixed $entry One entry from an action's rule list.
 	 *
 	 * @return bool True when the entry names the mcp scope.
+	 *
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	private static function isMcpScopeEntry(mixed $entry): bool {
 		if (is_string($entry) === true) {
