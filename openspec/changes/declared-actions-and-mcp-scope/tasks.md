@@ -2,8 +2,8 @@
 
 ## 1. Declare actions, and gate them
 
-- [ ] Accept `x-openregister-action` on a schema: a map of action key → `{name, description}`
-- [ ] Reject an authorization block naming an action that is neither canonical nor declared
+- [x] Accept `x-openregister-action` on a schema: a map of action key → `{name, description}`
+- [x] Reject an authorization block naming an action that is neither canonical nor declared
 - [ ] Document the vocabulary and the gate beside the existing authorization docs
 
 Acceptance criteria:

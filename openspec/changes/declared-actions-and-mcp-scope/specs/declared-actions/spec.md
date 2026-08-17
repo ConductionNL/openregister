@@ -1,12 +1,11 @@
 # Declared actions and the `mcp` scope
 
-**Status**: in-progress
-**OpenSpec changes**: declared-actions-and-mcp-scope
-
 An extensible but gated action vocabulary, a scope describing what may be offered
 to an agent, and an index of the rights that exist to give.
 
-## Requirement: a schema may declare additional actions, and only declared ones may be authorised
+## ADDED Requirements
+
+### Requirement: A schema may declare additional actions, and only declared ones may be authorised
 
 A schema MAY declare actions under `x-openregister-action`, each with a `name`
 and a `description`. An `authorization` block MAY name an action only when it is
@@ -32,7 +31,7 @@ refer to.
 - **THEN** the import fails
 - **AND** it does NOT import as a right that can never be granted and never errors
 
-## Requirement: actions raise events
+### Requirement: Actions raise events
 
 Every action SHALL dispatch an event carrying the register, schema, action,
 object id and actor. Events SHALL fire for refused actions as well as permitted
@@ -42,15 +41,18 @@ ones. No listener SHALL be registered by default.
 - **WHEN** an actor attempts an action they are not permitted
 - **THEN** an event is dispatched recording the attempt and its refusal
 
-## Requirement: `mcp` describes what may be offered, never what is held
+#### Scenario: A permitted action is observable
+- **WHEN** an actor performs a declared action successfully
+- **THEN** an event is dispatched carrying register, schema, action, object id and actor
+
+### Requirement: The `mcp` scope describes what may be offered, never what is held
 
 `mcp` SHALL be recognised beside `public`, `authenticated` and `admin`. An action
 authorised to `mcp` on a schema means that action MAY be offered to an agent.
 
-🔴 It SHALL NOT make any tool callable by any agent. Whether a specific agent
-holds a right SHALL remain resolved by Hermiq against that agent's own grants,
-because RBAC groups are per user and cannot separate two agents owned by one
-person.
+It SHALL NOT make any tool callable by any agent. Whether a specific agent holds
+a right SHALL remain resolved by Hermiq against that agent's own grants, because
+RBAC groups are per user and cannot separate two agents owned by one person.
 
 #### Scenario: The scope does not confer the right
 - **GIVEN** a schema authorises `read` to `mcp`
@@ -63,7 +65,7 @@ person.
 - **WHEN** one is granted a tool and the other is not
 - **THEN** only the granted one may call it
 
-## Requirement: the grantable-rights index is cached and write-invalidated
+### Requirement: The grantable-rights index is cached and write-invalidated
 
 The system SHALL maintain an index of every `(register, schema, action)` that may
 be offered, built across all schemas. It SHALL be invalidated when a schema is
