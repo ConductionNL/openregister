@@ -205,20 +205,17 @@ All user-visible strings in both the PHP reference provider and the Vue widget M
 
 ## Current Implementation Status
 
-**Not yet implemented.** The following existing infrastructure supports this feature:
-
-- `ObjectsProvider` (search provider, ID `openregister_objects`) already provides search functionality that the Smart Picker can leverage via `ISearchableReferenceProvider::getSupportedSearchProviderIds()`.
+**Fully implemented:**
+- `ObjectReferenceProvider` PHP class (`lib/Reference/ObjectReferenceProvider.php`) -- registered via `$context->registerReferenceProvider(ObjectReferenceProvider::class)` in `Application::register()`, alongside `$context->registerSearchProvider(ObjectsProvider::class)`. URL parsing and rich-preview formatting are delegated to the shared `ObjectPreviewFormatter` service (`lib/Service/Reference/ObjectPreviewFormatter.php`), reused by the schema-scoped-smart-picker change's `AbstractSchemaReferenceProvider`.
+- `ObjectsProvider` (search provider, ID `openregister_objects`) provides the search functionality the Smart Picker leverages via `ISearchableReferenceProvider::getSupportedSearchProviderIds()`.
 - `DeepLinkRegistryService` provides `resolveUrl()` and `resolveIcon()` for consuming-app URL resolution.
-- `ObjectService::getObject()` and `ObjectService::searchObjectsPaginated()` provide the data access layer.
-- `Application::register()` already calls `$context->registerSearchProvider(ObjectsProvider::class)` -- the reference provider registration will be added alongside it.
+- `ObjectService::find()` and `ObjectService::searchObjectsPaginated()` provide the data access layer.
+- Vue widget component for inline rendering, registered in the frontend entry point.
+- Translation strings for the provider and widget (Dutch and English).
+- Cache invalidation on object updates: `ObjectService::saveObject()` invalidates every canonical reference-URL prefix (via `ObjectPreviewFormatter::buildCanonicalUrls()`/`resolveCachePrefix()`) plus the resolved deep-link URL, through `IReferenceManager::invalidateCache()`.
+- Public reference support: `ObjectReferenceProvider` implements `OCP\Collaboration\Reference\IPublicReferenceProvider` (`resolveReferencePublic()`, `getCacheKeyPublic()`), delegating to the same RBAC-aware `resolveReference()` logic used for authenticated requests.
 
-**Not yet implemented:**
-- `ObjectReferenceProvider` PHP class
-- Vue widget component for inline rendering
-- Widget registration in frontend entry point
-- Cache invalidation on object updates
-- Public reference support
-- Translation strings for provider and widget
+See [`schema-scoped-smart-picker`](../../changes/archive/2026-08-17-schema-scoped-smart-picker/) _(archived 2026-08-17)_ for the change that closed the cache-invalidation and public-reference-support gaps, and added the schema-scoped `AbstractSchemaReferenceProvider`/`AbstractSchemaSearchProvider` base classes on top of this shared infrastructure (see `schema-scoped-reference-providers` for that capability's own spec).
 
 ## Standards & References
 
