@@ -55,7 +55,12 @@ use OCP\IUser;
  *
  *     829 consumer classes call 28 distinct methods.
  *
- * This interface declares 25 of them, covering 819 of the 829 classes (98.8%).
+ * This interface declared 25 of them, covering 819 of the 829 classes (98.8%).
+ * `patchObject()` was added afterwards and is the 26th. It is NOT part of that
+ * measurement — no consumer called it, because it was not reachable through
+ * this contract. It is published because `updateObject()` REPLACES, so a
+ * consumer holding a partial payload had no correct method to call and either
+ * hand-rolled read-merge-write or silently erased the fields it omitted.
  * The four it omits are omitted for a reason, and the ten classes they hold
  * back are listed rather than left to be discovered:
  *
@@ -127,7 +132,7 @@ use OCP\IUser;
  *
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   RBAC and multitenancy flags — see above.
  * @SuppressWarnings(PHPMD.ExcessiveParameterList) Mirrors ObjectService::saveObject().
- * @SuppressWarnings(PHPMD.ExcessivePublicCount)  25 methods, measured — see Scope above.
+ * @SuppressWarnings(PHPMD.ExcessivePublicCount)  26 methods, measured — see Scope above.
  */
 interface ObjectServiceInterface {
 
@@ -447,20 +452,92 @@ interface ObjectServiceInterface {
 	): array;
 
 	/**
-	 * Apply a partial update to an existing object.
+	 * REPLACE an existing object's data wholesale. This does NOT merge.
+	 *
+	 * `$data` becomes the object's data in full. It is PUT semantics: a property
+	 * that is stored but absent from `$data` is NOT left alone — it is written
+	 * away. Sending `['status' => 'withdrawn']` for an object that also holds a
+	 * title, a summary and three dates stores an object with a status and
+	 * nothing else, and returns successfully while doing it.
+	 *
+	 * This docblock previously read "apply a partial update", which is the
+	 * opposite of what the method does. A caller who migrated a one-key update
+	 * onto that description silently erased every field it did not send. If you
+	 * want partial-update semantics, call `patchObject()` — it reads, merges and
+	 * saves, and it is on this contract for exactly that reason.
+	 *
+	 * Replace semantics are deliberate and unchanged: existing callers pass a
+	 * complete object and depend on an omitted property being cleared.
 	 *
 	 * @param string $objectId      The object UUID.
-	 * @param array  $data          The fields to change.
+	 * @param array  $data          The object's COMPLETE new data. Anything omitted is dropped.
 	 * @param bool   $_rbac         Apply register RBAC.
 	 * @param bool   $_multitenancy Apply organisation scoping.
 	 *
-	 * @return ObjectEntityInterface The updated object.
+	 * @return ObjectEntityInterface The replaced object.
+	 *
+	 * @see self::patchObject() for the merging counterpart.
 	 */
 	public function updateObject(
 		string $objectId,
 		array $data,
 		bool $_rbac=true,
 		bool $_multitenancy=true
+	): ObjectEntityInterface;
+
+	/**
+	 * MERGE a partial payload onto an existing object, leaving the rest intact.
+	 *
+	 * This is the PATCH-semantic counterpart to `updateObject()`, and the one a
+	 * caller holding an incomplete payload wants. The read-merge-save cycle
+	 * lives here, once, rather than being reimplemented by every consumer.
+	 *
+	 * MERGE RULES (RFC 7386 shaped):
+	 *  - a key present with a non-null value overwrites the stored value;
+	 *  - a key ABSENT from the payload leaves the stored value untouched;
+	 *  - a key present with an explicit `null` clears the stored value, so
+	 *    "unset this" stays expressible and distinct from "not mentioned";
+	 *  - two associative arrays merge recursively on the same three rules;
+	 *  - lists (JSON arrays) are replaced wholesale, never element-merged.
+	 *
+	 * The merged result goes through the same save path as `saveObject()`, so
+	 * schema validation, the audit trail and event dispatch all still apply.
+	 *
+	 * @param string          $objectId      Object id, UUID or slug.
+	 * @param array           $data          The partial data to merge. Omitted keys are PRESERVED.
+	 * @param string|int|null $register      Register id, UUID or slug.
+	 * @param string|int|null $schema        Schema id, UUID or slug.
+	 * @param bool            $_rbac         Apply register RBAC.
+	 * @param bool            $_multitenancy Apply organisation scoping.
+	 * @param ?IUser          $currentUser   Explicit acting user; null uses the session.
+	 *                                       Non-HTTP callers (cron, flow runs, imports)
+	 *                                       should pass one to avoid a default-deny.
+	 *
+	 * @return ObjectEntityInterface The patched object.
+	 *
+	 * @see self::updateObject() for the replacing counterpart.
+	 *
+	 * @contract-shift announced — openregister#2543 sweeps every fleet app for
+	 * `implements ObjectServiceInterface` and names the THREE test doubles that
+	 * must declare this method or fatal at class load: pipelinq
+	 * tests/Stubs/Service/ObjectService.php (with its paired
+	 * tests/Stubs/Contract/ObjectServiceInterface.php), and shillinq
+	 * tests/Unit/Service/Support/{InMemoryObjectServiceStub,DuckObjectServiceAdapter}.php.
+	 * docudesk tests/stubs/OpenRegisterStubs.php wants the same for parity but
+	 * implements nothing, so it cannot fatal. All 239 createMock() sites are
+	 * unaffected — a generated mock tracks whatever the interface declares. The
+	 * break lands on a `conduction/hydra-gates` RELEASE carrying this contract,
+	 * not on this merge, because leaf apps read it from vendor/: land those
+	 * three doubles before the release, or pin.
+	 */
+	public function patchObject(
+		string $objectId,
+		array $data,
+		string|int|null $register=null,
+		string|int|null $schema=null,
+		bool $_rbac=true,
+		bool $_multitenancy=true,
+		?IUser $currentUser=null
 	): ObjectEntityInterface;
 
 	/**
