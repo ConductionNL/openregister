@@ -1690,18 +1690,18 @@ class CacheHandler {
 		// tenant's request is handed to the next tenant that asks.
 		$uuidNames = array_filter(
 			$this->nameCache,
-			function ($name, $key) {
+			function ($key) {
 				// Only return entries where key looks like a UUID (contains hyphens).
 				// Cast rather than is_string(): PHP narrows numeric-looking array keys
-				// to int, and phpstan reads the declared key type as string, so an
-				// is_string() test here is always-true dead code.
+				// to int. ARRAY_FILTER_USE_KEY (not USE_BOTH) on purpose — the value is
+				// not needed, and taking it would be an unused formal parameter.
 				if (str_contains((string)$key, '-') === false) {
 					return false;
 				}
 
 				return $this->hasOrganisationAccess(organisation: ($this->nameOrganisations[$key] ?? null));
 			},
-			ARRAY_FILTER_USE_BOTH
+			ARRAY_FILTER_USE_KEY
 		);
 
 		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
