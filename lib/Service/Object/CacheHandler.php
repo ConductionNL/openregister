@@ -109,7 +109,7 @@ class CacheHandler {
 	 *
 	 * @var array<string, string|null>
 	 */
-	private array $nameCacheOrganisation = [];
+	private array $nameOrganisations = [];
 
 	/**
 	 * Memoised name-visibility scope for the current request (SEC-CTRL-2 step 2)
@@ -202,6 +202,10 @@ class CacheHandler {
 	 * @param IDBConnection|null $db Database connection for magic table queries
 	 * @param IGroupManager|null $groupManager Group manager for the admin-override arm of the name scope
 	 * @param IAppConfig|null $appConfig App config for the multitenancy switches read by the name scope
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud constructor injection:
+	 * every parameter is a distinct collaborator resolved by the DI container, and the
+	 * two added by SEC-CTRL-2 step 2 are the same pair Db\MultiTenancyTrait consumes.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -565,7 +569,7 @@ class CacheHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function rememberNameOrganisation(string $key, ?string $organisation): void {
-		$this->nameCacheOrganisation[$key] = $organisation;
+		$this->nameOrganisations[$key] = $organisation;
 	}//end rememberNameOrganisation()
 
 	/**
@@ -985,8 +989,8 @@ class CacheHandler {
 				// Remove from in-memory name cache (name AND its recorded tenancy).
 				unset($this->nameCache[$object->getUuid()]);
 				unset($this->nameCache[(string)$object->getId()]);
-				unset($this->nameCacheOrganisation[$object->getUuid()]);
-				unset($this->nameCacheOrganisation[(string)$object->getId()]);
+				unset($this->nameOrganisations[$object->getUuid()]);
+				unset($this->nameOrganisations[(string)$object->getId()]);
 
 				// Remove from distributed name cache.
 				if ($this->nameDistributedCache !== null) {
@@ -1098,7 +1102,7 @@ class CacheHandler {
 
 		foreach ($keys as $key) {
 			unset($this->nameCache[$key]);
-			unset($this->nameCacheOrganisation[$key]);
+			unset($this->nameOrganisations[$key]);
 
 			if ($this->nameDistributedCache !== null) {
 				try {
@@ -1134,7 +1138,7 @@ class CacheHandler {
 		$this->objectCache = [];
 		$this->inMemoryQueryCache = [];
 		$this->nameCache = [];
-		$this->nameCacheOrganisation = [];
+		$this->nameOrganisations = [];
 		$this->stats = [
 			'hits' => 0,
 			'misses' => 0,
@@ -1295,6 +1299,8 @@ class CacheHandler {
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Three cache layers plus a
+	 * two-source database fallback, each now gated on the caller's organisation.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -1306,7 +1312,7 @@ class CacheHandler {
 		// is only served to a caller whose organisation may see the entity it
 		// belongs to; an entry with no recorded tenancy is refused.
 		if (($this->nameCache[$key] ?? null) !== null) {
-			if ($this->hasOrganisationAccess($this->nameCacheOrganisation[$key] ?? null) === false) {
+			if ($this->hasOrganisationAccess(organisation: ($this->nameOrganisations[$key] ?? null)) === false) {
 				return null;
 			}
 
@@ -1321,9 +1327,9 @@ class CacheHandler {
 		// Check distributed cache.
 		if ($this->nameDistributedCache !== null) {
 			try {
-				$envelope = $this->readNameEnvelope($this->nameDistributedCache->get('name_' . $key));
+				$envelope = $this->readNameEnvelope(cached: $this->nameDistributedCache->get('name_' . $key));
 				if ($envelope !== null) {
-					if ($this->hasOrganisationAccess($envelope['o']) === false) {
+					if ($this->hasOrganisationAccess(organisation: $envelope['o']) === false) {
 						return null;
 					}
 
@@ -1378,7 +1384,7 @@ class CacheHandler {
 						);
 					}
 
-					if ($this->hasOrganisationAccess($organisation->getUuid()) === false) {
+					if ($this->hasOrganisationAccess(organisation: $organisation->getUuid()) === false) {
 						return null;
 					}
 
@@ -1407,7 +1413,7 @@ class CacheHandler {
 					);
 				}
 
-				if ($this->hasOrganisationAccess($objectOrganisation) === false) {
+				if ($this->hasOrganisationAccess(organisation: $objectOrganisation) === false) {
 					return null;
 				}
 
@@ -1467,11 +1473,11 @@ class CacheHandler {
 		$unrestricted = ($this->resolveNameScope() === null);
 		foreach ($identifiers as $identifier) {
 			$key = (string)$identifier;
-			$cachedOrganisation = $this->nameCacheOrganisation[$key] ?? null;
+			$cachedOrganisation = $this->nameOrganisations[$key] ?? null;
 			if (($this->nameCache[$key] ?? null) !== null
 				&& ($cachedOrganisation !== null || $unrestricted === true)
 			) {
-				if ($this->hasOrganisationAccess($cachedOrganisation) === true) {
+				if ($this->hasOrganisationAccess(organisation: $cachedOrganisation) === true) {
 					$results[$key] = $this->nameCache[$key];
 					$this->stats['name_hits']++;
 				}
@@ -1487,7 +1493,7 @@ class CacheHandler {
 			$decided = [];
 			foreach ($missingIdentifiers as $key) {
 				try {
-					$envelope = $this->readNameEnvelope($this->nameDistributedCache->get('name_' . $key));
+					$envelope = $this->readNameEnvelope(cached: $this->nameDistributedCache->get('name_' . $key));
 					if ($envelope === null) {
 						continue;
 					}
@@ -1503,7 +1509,7 @@ class CacheHandler {
 					$this->rememberNameOrganisation(key: $key, organisation: $envelope['o']);
 					$decided[] = $key;
 
-					if ($this->hasOrganisationAccess($envelope['o']) === true) {
+					if ($this->hasOrganisationAccess(organisation: $envelope['o']) === true) {
 						$results[$key] = $envelope['n'];
 						$this->stats['name_hits']++;
 					}
@@ -1530,7 +1536,7 @@ class CacheHandler {
 					// Cache for future use (UUID only).
 					$this->setObjectName(identifier: $key, name: $name, organisation: $key);
 
-					if ($this->hasOrganisationAccess($key) === true) {
+					if ($this->hasOrganisationAccess(organisation: $key) === true) {
 						$results[$key] = $name;
 					}
 
@@ -1584,7 +1590,7 @@ class CacheHandler {
 							continue;
 						}
 
-						if ($this->hasOrganisationAccess($objectOrganisation) === true) {
+						if ($this->hasOrganisationAccess(organisation: $objectOrganisation) === true) {
 							// Store result with UUID key (for consistent return format).
 							$results[$uuid] = $name;
 						}
@@ -1606,7 +1612,7 @@ class CacheHandler {
 							name: $entry['name'],
 							organisation: $entry['organisation']
 						);
-						if ($this->hasOrganisationAccess($entry['organisation']) === true) {
+						if ($this->hasOrganisationAccess(organisation: $entry['organisation']) === true) {
 							$results[$uuid] = $entry['name'];
 						}
 					}
@@ -1690,7 +1696,7 @@ class CacheHandler {
 					return false;
 				}
 
-				return $this->hasOrganisationAccess($this->nameCacheOrganisation[$key] ?? null);
+				return $this->hasOrganisationAccess(organisation: ($this->nameOrganisations[$key] ?? null));
 			},
 			ARRAY_FILTER_USE_BOTH
 		);
@@ -1927,6 +1933,8 @@ class CacheHandler {
 	 * @return array<string, array{name: string, organisation: string|null}> Map of UUID to name + owning organisation.
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Batch loading across multiple table types requires branching
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Table discovery, schema bulk-load
+	 * and the per-table batch query, now also carrying each row's owning organisation.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -2081,10 +2089,14 @@ class CacheHandler {
 					$uuid = $row['_uuid'];
 					$name = $row['name_value'];
 					$rowOrganisation = $row['_organisation'] ?? null;
+					if ($rowOrganisation !== null) {
+						$rowOrganisation = (string)$rowOrganisation;
+					}
+
 					if ($name !== null && trim((string)$name) !== '') {
 						$results[$uuid] = [
 							'name' => (string)$name,
-							'organisation' => ($rowOrganisation === null) ? null : (string)$rowOrganisation,
+							'organisation' => $rowOrganisation,
 						];
 					}
 				}
@@ -2132,7 +2144,7 @@ class CacheHandler {
 					'name_' . $identifier,
 					$this->buildNameEnvelope(
 						name: $name,
-						organisation: ($this->nameCacheOrganisation[(string)$identifier] ?? null)
+						organisation: ($this->nameOrganisations[(string)$identifier] ?? null)
 					),
 					$ttl
 				);
@@ -2203,7 +2215,7 @@ class CacheHandler {
 	public function clearNameCache(): void {
 		// Clear in-memory name cache and the tenancy recorded alongside it.
 		$this->nameCache = [];
-		$this->nameCacheOrganisation = [];
+		$this->nameOrganisations = [];
 
 		// Clear distributed name cache.
 		if ($this->nameDistributedCache !== null) {
