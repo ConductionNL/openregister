@@ -228,6 +228,8 @@ class GrantableRightsIndex {
 	 * @param Schema $schema The schema to read.
 	 *
 	 * @return array<string, string> Action name → source.
+	 *
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	private function offeredActions(Schema $schema): array {
 		$offered = [];

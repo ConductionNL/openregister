@@ -611,6 +611,9 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * @param string $verb One of {@see McpAnnotationValidator::VERBS}.
 	 *
 	 * @return array<string, mixed>|null The output schema, or null when not applicable.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 *   (Requirement: REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools)
 	 */
 	private function buildOutputSchema(string $verb): ?array {
 		// THE ENVELOPE, NOT THE ITEM.
@@ -711,6 +714,9 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * @param mixed $property The declared property.
 	 *
 	 * @return array<string, mixed> The property, safe to publish.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 *   (Requirement: REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools)
 	 */
 	private function jsonSchemaSafe(mixed $property): array {
 		if (is_array($property) === false) {
@@ -793,6 +799,9 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * @param array<string, mixed> $properties The declared properties.
 	 *
 	 * @return array<string, mixed> The sanitised map.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 *   (Requirement: REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools)
 	 */
 	private function jsonSchemaSafeMap(array $properties): array {
 		$safe = [];

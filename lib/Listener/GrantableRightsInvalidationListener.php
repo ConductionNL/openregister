@@ -64,6 +64,8 @@ class GrantableRightsInvalidationListener implements IEventListener {
 	 * @param Event $event The schema create/update/delete event.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function handle(Event $event): void {
 		try {
