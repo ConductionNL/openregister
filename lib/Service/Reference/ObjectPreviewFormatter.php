@@ -342,9 +342,6 @@ final class ObjectPreviewFormatter {
 
 			$objectData = $object->jsonSerialize();
 			$selfData = $objectData['@self'];
-			if (is_array($selfData) === false) {
-				$selfData = [];
-			}
 
 			// Extract title.
 			$title = $this->extractTitle(objectData: $objectData, selfData: $selfData);
