@@ -43,10 +43,35 @@ by counting formal vs informal markers across core (`server/core`, `lib`,
 `apps/files`, `apps/settings`, `apps/dav`, …) for that locale.
 
 Measured results: informal for `nl`, `de`, `sv`, `da`, `nb`, `pl`, `fi`, `hu`,
-`et`; formal for `fr`, `cs`, `ru`, `uk`, `tr`, `el`, `sr`, `bg`, `ca`, `hr`, `lt`.
-Russian and Lithuanian were the least ambiguous of any: `ru` 328 formal pronouns
-and 164 formal imperatives, `lt` 689 formal markers, each against **zero**
+`et`, `lv`; formal for `fr`, `cs`, `ru`, `uk`, `tr`, `el`, `sr`, `bg`, `ca`, `hr`,
+`lt`. Russian and Lithuanian were the least ambiguous of any: `ru` 328 formal
+pronouns and 164 formal imperatives, `lt` 689 formal markers, each against **zero**
 informal markers.
+
+**Core can contradict the bundle's own pre-existing keys, and core wins.** This has
+now happened twice, both times with the same shape: core measured *informal* while
+the 1053 keys the file arrived with measured *formal*.
+
+| Locale | Core | Pre-existing bundle | Outcome |
+| --- | --- | --- | --- |
+| `et` | informal, 420 vs 2 | **formal**, 26 vs 1 | followed core; 24 pre-existing values corrected |
+| `lv` | informal, 44 vs 3 | **formal**, 85 vs 1 | followed core; 78 pre-existing values corrected |
+
+The corrections are not optional cleanup — leaving them makes the bundle mix
+registers inside a single dialog, which reads worse than either choice made
+consistently. They go through `apply.js --allow-replace` with a reason recorded per
+key in `locales/<loc>.json`, so the change is auditable rather than a silent side
+effect of a bulk apply. For `lv` that means `Izvēlieties reģistru` → `Izvēlies
+reģistru`, `jūsu filtriem` → `taviem filtriem`, and `Lūdzu, uzgaidiet` → the
+impersonal `Lūgums uzgaidīt` that core lv itself prefers.
+
+Latvian's evidence base is small (890 values in 9 catalogues — core ships far less
+Latvian than Lithuanian) but one-sided: **zero** `jūs`-series pronouns anywhere in
+core, 44 `tu`-series markers spread across `core`, `lib`, `settings`, `oauth2` and
+`files_trashbin`, and the informal usage appears in UI prose (`Kuras datnes vēlies
+paturēt?`) rather than only in notification email. The three formal hits are two
+imperatives: `Skatiet dokumentāciju` twice, plus the tagline `Turiet savus kolēģus
+un draugus vienuviet`.
 
 **Button labels follow their own convention, and there are three patterns.**
 Measure the *prose* register, then establish the button style separately from
@@ -56,7 +81,14 @@ core's own short labels — a single verdict for the locale is usually meaningle
 | --- | --- | --- |
 | same register throughout | `tr`, `ru` | formal imperative |
 | bare 2sg imperative, whatever the prose | `ca`, `et`, `hr` | `Desa`, `Salvesta`, `Spremi` |
-| **infinitive — register-neutral** | `cs`, `lt` | `Zobrazit`/`Smazat`, `Įrašyti`/`Ištrinti`/`Atsisakyti` |
+| **infinitive — register-neutral** | `cs`, `lt`, `lv` | `Zobrazit`/`Smazat`, `Įrašyti`/`Ištrinti`/`Atsisakyti`, `Saglabāt`/`Dzēst`/`Atcelt` |
+
+Latvian makes the infinitive convention load-bearing for the *detector*, not just for
+the translations: the Latvian infinitive ends in `-t`/`-āt`/`-at`, which is also the
+2pl present ending. Every one of the 12 distinct `-at`/`-āt` words in core lv is an
+infinitive or an adverb (`atjaunināt`, `saglabāt`, `turpināt`, `turklāt`) and **not
+one** is a 2pl verb, so a suffix rule would score every button label in the language
+as formal and invert the whole measurement.
 
 Infinitive buttons must **not** be "corrected" to imperatives. Bare 2sg
 imperatives must be **excluded from the detector**, because they are also
@@ -173,12 +205,44 @@ locale's expression**. Equal counts do not mean equal boundaries:
   array pasted here is wrong for every count 5–9 — the two locales share
   `nplurals=3` and disagree on where the forms switch
 
+- `lv` — `nplurals=3`, and the third form is **a dedicated zero form**, not a
+  "many" form: the categories are zero / numerals ending in 1 except 11 / everything
+  else, which is exactly Latvian numeral agreement (genitive plural after 0,
+  singular after 1 and 21, plural otherwise). See the order warning below
+
 All are 3-form and mutually incompatible. `npm run test:l10n:parity` catches
 wrong *length*; nothing can catch a Polish array pasted into Czech. Verify the
 forms are reachable by driving the real `@nextcloud/l10n`: call `unregister()` and
 `setLanguage(loc)` first, because `register(app, bundle)` **ignores** a plural
 function passed to it and installs the library's own `getPlural`. For `hr`,
 counts 1/3/7 must select three *different* indices.
+
+### The header and the library can disagree on ORDER, not just count
+
+Writing an array to match the file's own `plural=` header is the obvious thing to
+do, and for Latvian it is wrong at **every** count. Measured against the real
+library over counts 0–1001:
+
+| | index 0 | index 1 | index 2 |
+| --- | --- | --- | --- |
+| `lv.js` header (legacy gettext) | 1, 21, 101 | 2–20, 22–100 | 0 |
+| `@nextcloud/l10n` (what renders) | **0** | **1, 21, 101** | **everything else** |
+
+Same three categories, rotated. An array ordered by the header therefore renders
+the singular for zero, the plural for one, and the zero form for two — while
+`nplurals` matches, every array has three forms, nothing renders blank and nothing
+renders English. Arity, parity and the not-English assertions all pass. It was found
+only by asking which array *index* the library picks per count, which
+`runtime-check.mjs` now does for every locale.
+
+So `lv` arrays are ordered **by the library**, and `locales/lv.json` records
+`"pluralOrder": "library"` to say so. Without that record the runtime check fails,
+which is deliberate: the next reader's instinct will be to "fix" the order back to
+the header. Among the 22 finished locales only `lv` is affected — `hr`, `lt`, `ru`,
+`cs`, `pl`, `uk` and the rest agree with their headers exactly, and `tr`/`rm`/`ga`
+disagree only on form *count*, where the unreachable extra forms cannot be
+mis-ordered. Of the locales still to do, `is` and `mk` also disagree (at 21/101 and
+at 11 respectively) — check before writing their arrays.
 
 ## Known source-side defect: `object{plural}`
 
@@ -264,9 +328,52 @@ view, embeddings and `Tip`/`Filtri` conventions were all already present in the
 the locale's own terminology. `lt` was the same, and stronger: `webhook` looked
 like an obvious keep-the-English case until the file showed 40 keys translating it.
 
-Twenty-one locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
-`nb`, `pl`, `cs`, `ru`, `uk`, `el`, `fi`, `hu`, `tr`, `ca`, `et`, `hr`, `lt`.
-Remaining high-confidence order: `lv`, `ro`, `sk`, `sl`, `bg`, `sr`. The nine
+`lv` proves the rule by breaking it mid-pass, twice. The pass coined `šķautne` for
+*facet* and wrote `AI aģentus`; the bundle already had `Iespējot fasetēšanu` and
+`MI aģents` at HEAD. Both were reverted to the file's own terms through the audited
+`--allow-replace` path — the split was invisible until the pre-existing values were
+read side by side with the new ones, which is why that read belongs *before* the
+first batch, not after the last. Latvian's own established terms, followed here:
+`Reģistrs`, `Shēma`, `Objekts`, `Fails`, `Entītijas`, `Tīmekļa āķis` (webhook *is*
+translated), `Informācijas panelis` for dashboard (not the harvest's `Vadības
+panelis`), `Fragments` for chunk, and `fasete`/`fasetēšana`.
+
+### `lv` homograph traps
+
+Latvian has two *systematic* homograph classes, not a handful of exceptions, and both
+make the obvious 2sg markers unusable:
+
+1. **For `-ēt` and `-āt` verbs the 2sg form is spelled exactly like the third
+   person**, because Latvian third person makes no number distinction: `meklē` is both
+   "you search" and "it searches"; likewise `saglabā`, `aizver`, `atver`. Counting
+   them turns ordinary third-person prose (`Sistēma saglabā izmaiņas`) into informal
+   hits.
+2. **Feminine nouns in `-e` have an accusative singular in `-i`, colliding with the
+   2sg imperative**: `pārbaudi` is both "check!" and the accusative of `pārbaude`
+   (a check); `redzi` collides with `redze` (vision), `atlasi` with `atlase` (a
+   selection). `ievadi` is the same trap from the masculine side — nominative plural
+   of `ievads` (an input).
+
+What is left and genuinely unambiguous is the pronoun series plus 2sg forms whose
+third person differs: `vari` (vs `var`), `zini` (vs `zina`), `esi` (vs `ir`), `spied`
+(vs `spiež`). Also note `-i` is the nominative plural of masculine nouns (`faili`,
+`objekti`, `lietotāji`) — the same trap Lithuanian has with `-ai` — and `-iet` is not
+a 2pl marker either: of the four distinct `-iet` words in core lv, `skatiet` and
+`turiet` are 2pl imperatives while `vienuviet` is an adverb and `nešķiet` is third
+person.
+
+Two consequences worth keeping: the detector's informal count for `lv` is *low*
+(109 markers across 2052 values) because most correct informal Latvian is
+undetectable by design, so **zero formal markers is the assertion that matters**, not
+a high informal count. And the `{plural}` source hack takes the **nominative plural**
+(`faili`, `žurnāli`, `objekti`, `reģistri`, `shēmas`): Latvian needs the plural after
+every numeral except those ending in 1, so it is right for the large majority of
+counts, and those keys render as a `countLabel` beside a figure rather than inside a
+sentence.
+
+Twenty-two locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
+`nb`, `pl`, `cs`, `ru`, `uk`, `el`, `fi`, `hu`, `tr`, `ca`, `et`, `hr`, `lt`, `lv`.
+Remaining high-confidence order: `ro`, `sk`, `sl`, `bg`, `sr`. The nine
 low-resource locales (`ga`, `mt`, `rm`, `is`, `lb`, `sq`, `mk`, `be`, `bs`) are
 deliberately last — **ask before starting them.**
 

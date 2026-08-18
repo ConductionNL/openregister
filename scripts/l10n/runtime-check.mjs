@@ -116,6 +116,58 @@ ok(short.length === 0, `no plural array shorter than the ${libForms} form(s) the
 console.log(`      declared nplurals=${declared}, library uses ${libForms}`
 	+ (libForms !== declared ? '  (extra declared forms are never selected — harmless)' : ''))
 
+// 1b. The library and the file's own `plural=` header must agree on WHICH index
+// each count selects — not merely on how many forms there are.
+//
+// This is the defect that ordering an array "correctly" produces. Latvian ships
+// the legacy gettext order in its header ([one, other, zero]) while the library
+// partitions it as [zero, one, other]. Both say nplurals=3, every array has 3
+// forms, arity passes, nothing renders blank, nothing renders English — and every
+// single count renders the WRONG form. Assertion 1 cannot see it and neither can a
+// reader, because the file's own header is the misleading part.
+//
+// A mismatch is only tolerated where the library uses FEWER forms than declared
+// (tr and rm select 1, ga selects 3 of 5): those extra forms are unreachable, so
+// no ordering of them is wrong.
+const headerExpr = /plural\s*=\s*([^;]+)/.exec(String(pluralForm))
+if (!headerExpr) {
+	ok(false, 'the bundle header declares a plural= expression', String(pluralForm).slice(0, 60))
+} else {
+	let headerIdx = null
+	try {
+		headerIdx = new Function('n', `return Number(${headerExpr[1]})`)
+	} catch {
+		ok(false, `the header plural= expression parses: ${headerExpr[1]}`)
+	}
+	if (headerIdx) {
+		const disagree = []
+		for (let i = 0; i <= 200; i++) {
+			if (getPlural(i, loc) !== headerIdx(i)) disagree.push(i)
+		}
+		const acknowledged = loadLocaleConfig(loc).pluralOrder === 'library'
+		if (libForms < declared) {
+			console.log(`NOTE  library selects only ${libForms} of the ${declared} declared form(s) for ${loc},`
+				+ ' so the unreachable ones cannot be mis-ordered'
+				+ (disagree.length ? ` (${disagree.length} count(s) map differently)` : ''))
+		} else if (disagree.length && acknowledged) {
+			// The mismatch is a property of the locale, not a defect to fix here: the
+			// header comes from Transifex. Acknowledging it in locales/<loc>.json is
+			// what keeps it from being silently "corrected" back to the header order.
+			console.log(`NOTE  ${loc} header and library disagree on form ORDER at ${disagree.length} count(s), and`
+				+ ' locales/' + loc + '.json records pluralOrder="library" — arrays are ordered by the library,'
+				+ ' which is what renders. See its pluralNote.')
+		} else {
+			ok(disagree.length === 0,
+				'library and header agree on which index each count selects '
+				+ '(if they disagree, order the ARRAYS by the library — it renders — and record '
+				+ 'pluralOrder:"library" in locales/<loc>.json)',
+				disagree.length
+					? disagree.slice(0, 6).map(i => `n=${i}: lib ${getPlural(i, loc)} vs header ${headerIdx(i)}`)
+					: undefined)
+		}
+	}
+}
+
 // 2. Every form the library can select must actually be reachable and render
 // something that is not the English source.
 for (const [key] of arrays) {

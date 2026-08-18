@@ -580,10 +580,17 @@ function configuredLocales() {
  */
 function loadLocaleConfig(loc) {
 	const f = path.join(LOCALES_DIR, `${loc}.json`)
-	if (!fs.existsSync(f)) return { register: null, cognates: {}, corrections: {} }
+	if (!fs.existsSync(f)) {
+		return { register: null, pluralOrder: null, cognates: {}, corrections: {} }
+	}
 	const raw = JSON.parse(fs.readFileSync(f, 'utf8'))
 	return {
 		register: raw.register || null,
+		// "library" acknowledges that this locale's plural= header and the runtime
+		// library disagree on which index each count selects, and that the arrays are
+		// deliberately ordered by the library. Read by runtime-check.mjs; without it a
+		// mismatch is a hard failure, so the ordering cannot be silently reverted.
+		pluralOrder: raw.pluralOrder || null,
 		cognates: raw.cognates || {},
 		corrections: raw.corrections || {},
 	}

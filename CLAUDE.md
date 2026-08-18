@@ -26,7 +26,7 @@ belongs in `en.js`, never in `en.json`.** There is no scanner for the backend se
 
 Re-measure before trusting any number here — `npm run check:l10n` prints it all.
 **As of 2026-08-18**: `en.js` holds 2052 keys, `src/` uses all of them, 0 unused,
-100 unwrapped literals outstanding. 21 locales at full parity, 15 in progress.
+100 unwrapped literals outstanding. 22 locales at full parity, 14 in progress.
 
 ## Commands
 
@@ -108,7 +108,7 @@ indistinguishable from finished work, so nobody revisits it. Audit with
 `npm run test:l10n:parity -- --strict-identical`.
 
 **Cognate enforcement is opt-in per locale**, keyed on `locales/<loc>.json`
-existing. Only `tr ca et hr lt` are held to it; the other 16 predate the rule and
+existing. Only `tr ca et hr lt lv` are held to it; the other 16 predate the rule and
 carry ~400 unreviewed identical values, some legitimate. The gate prints which
 locales are enforced and which are merely unreviewed, so a green run cannot be read
 as verified. **Reviewing those 16 is open work.**
@@ -129,6 +129,15 @@ At runtime the form index comes from the library's own per-language `getPlural`,
 **not** the file's `plural=` expression: `register(app, bundle)` ignores a plural
 function passed to it. The header governs the arity gate; the library governs which
 element renders.
+
+**They can disagree on the ORDER, not just the count — and then a file that matches
+its own header is wrong at every count.** Latvian's header carries the legacy gettext
+order (`[one, other, zero]`) while the library partitions it `[zero, one, other]`, so
+`lv` arrays are deliberately ordered by the library and `locales/lv.json` records
+`"pluralOrder": "library"`. `runtime-check.mjs` compares the two partitions and fails
+without that acknowledgement, so the order cannot be silently "corrected" back. Of
+the 22 finished locales only `lv` is affected; `tr`, `rm` and `ga` disagree on form
+*count* only, which is harmless because the extra forms are never selected.
 
 **Never overwrite an existing real translation.** `l10n-ai.js` refuses without
 `--force`; trust the refusal. Only replace a real value when it is genuinely wrong,
