@@ -38,6 +38,7 @@
     "l10n:apply": "node scripts/l10n/apply.js",
     "l10n:selfcheck": "node scripts/l10n/selfcheck.js",
     "l10n:runtime": "node scripts/l10n/runtime-check.mjs",
+    "l10n:gatetest": "node scripts/l10n/gate-negative-test.js",
     "check:json-strict": "node tests/validate-json-strict.js",
     "check:manifest": "node tests/validate-manifest.js",
     "check:register": "node tests/validate-register.js",

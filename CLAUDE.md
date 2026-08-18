@@ -1,5 +1,9 @@
 # openregister — l10n tooling
 
+When working on l10n, follow the @docs/l10n-workflow.md workflow.
+
+---
+
 The app id is **`openregister`**. Every wrap is:
 
 ```js
@@ -46,13 +50,15 @@ unused + unwrapped, no write mode). Both read `en.js` through the same extractor
 
 ## Translating one locale
 
-Everything lives in **`scripts/l10n/`**. Read two documents, in this order:
+Everything lives in **`scripts/l10n/`**. Read three documents, in this order:
 
-1. **`scripts/l10n/README.md`** — the mechanical pass: which command in which order,
-   and what each gate refuses.
-2. **`docs/l10n-ui-translation.md`** — what is *not* mechanical: measuring register
-   against core rather than assuming it (five consecutive locales measured
-   differently, and there are three separate *button* conventions), the plural
+1. **`docs/l10n-workflow.md`** — the runbook, and the only one you strictly need:
+   the twelve-step pass in order, every gate refusal and what it means, the traps
+   catalogue, and the state of the remaining locales. Start here every time.
+2. **`scripts/l10n/README.md`** — the tooling layout and what each script refuses.
+3. **`docs/l10n-ui-translation.md`** — what is *not* mechanical: measuring register
+   against core rather than assuming it (nine consecutive locales measured
+   differently, and there are four separate *button* conventions), the plural
    boundaries per language, and the conventions already established.
 
 | You want to… | Run |
@@ -98,8 +104,9 @@ That splits into two cases, and getting the split wrong is the easy mistake:
   a *stale* record whose value is no longer identical.
 
 Measure that split, never eyeball it: a key is untranslatable only if **no locale
-has ever carried a value differing from it**. Strings that look like pure
-punctuation keep failing that test — see README.
+has ever carried a value differing from it** — `node scripts/l10n-ai.js get <key>`
+answers that in one command. Strings that look like pure punctuation or pure branding
+keep failing the test (`UUID:` has a value in `fr`; core `lt` translates `Slug`).
 
 Writing `value === key` for anything that is **not** a recorded cognate remains the
 worst option available: absent falls back to English and stays visibly untranslated
@@ -119,46 +126,29 @@ identifier `"_<singular>_::_<plural>_"` — see `pluralIdentifier` in
 for count === 1 and falls back to English for every other count, which is what
 shipped in all 37 bundles until 2026-08-14 while passing every gate.
 
-**Plural arrays must match that locale's own `nplurals`.** Languages sharing a form
-count do not share boundaries — `ru`/`pl`/`cs` are all 3 with mutually incompatible
-expressions, and `hr`/`lt` disagree about where forms switch. Never copy an array
-between languages. An array SHORTER than the index the runtime asks for renders
-blank, and it is the only l10n defect you cannot see by reading the file.
+**Plural arrays must match that locale's own `nplurals`, and never be copied between
+languages.** An array shorter than the index the runtime asks for renders **blank**, and
+it is the only l10n defect you cannot see by reading the file. Four separate ways this
+goes wrong — equal form counts with different boundaries, modular vs absolute
+arithmetic, the header and the library disagreeing on ORDER, and Slovenian's dual — are
+worked through with the per-locale table in **`docs/l10n-workflow.md` §7.1**. Read it
+before writing an array. `npm run l10n:runtime -- <loc>` is the only check that catches
+a wrong boundary.
 
 At runtime the form index comes from the library's own per-language `getPlural`,
 **not** the file's `plural=` expression: `register(app, bundle)` ignores a plural
 function passed to it. The header governs the arity gate; the library governs which
 element renders.
 
-**They can disagree on the ORDER, not just the count — and then a file that matches
-its own header is wrong at every count.** Latvian's header carries the legacy gettext
-order (`[one, other, zero]`) while the library partitions it `[zero, one, other]`, so
-`lv` arrays are deliberately ordered by the library and `locales/lv.json` records
-`"pluralOrder": "library"`. `runtime-check.mjs` compares the two partitions and fails
-without that acknowledgement, so the order cannot be silently "corrected" back. Of
-the 25 finished locales only `lv` is affected; `tr`, `rm` and `ga` disagree on form
-*count* only, which is harmless because the extra forms are never selected.
-
-**Sharing a form COUNT with a neighbour does not mean sharing its arithmetic.** `sk`
-and `cs` bound their three forms *absolutely* — `(n>=2 && n<=4) ? 1 : 2` — while
-`hr`, `ru`, `pl` and `lt` bound theirs *modularly* on `n%10` / `n%100`. So 22 selects
-form 2 in Slovak ("22 objektov", correct) and form 1 in Croatian. An array copied
-between two `nplurals=3` Slavic locales is wrong at every compound number.
-
-**`sl` has four forms because Slovenian has a DUAL**, and the dual is not a spelling
-variant: it governs noun case, adjective agreement and **verb number** together, so a
-count of 2 needs "Objekta sta bila izbrisana" where the plural needs "Objekti so bili
-izbrisani". It is the only four-form locale in the finished set. Form 3 carries zero
-as well as 5+, as in `sk`.
-
 **Never overwrite an existing real translation.** `l10n-ai.js` refuses without
-`--force`; trust the refusal. Only replace a real value when it is genuinely wrong,
-and say why in the commit.
+`--force` and `apply.js` without `--allow-replace`; trust the refusal. Only replace a
+real value when it is genuinely wrong, and say why in the commit.
 
-**When adding a string, `en` is required; other locales are optional.** Demanding a
-hand-written value for 37 locales per string invites exactly the placeholder-shaped
-filler the first rule forbids. Add `en` (identical to the key is correct — `en` *is*
-the source), plus any locale you can genuinely do well. Use `--locales=` to narrow.
+**When adding a string, `en` is required; other locales are optional.** Add `en`
+(identical to the key is correct — `en` *is* the source), plus any locale you can
+genuinely do well; `--locales=` narrows. But note a new English string puts every
+finished locale one key short, which the parity gate treats as fatal — the procedure is
+`docs/l10n-workflow.md` §6.15.
 
 **Commit one language at a time**, so a bad locale can be reverted alone.
 

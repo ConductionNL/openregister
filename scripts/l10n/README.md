@@ -4,10 +4,14 @@ Everything for `l10n/*.js` (the **frontend** catalogue, read by `OC.L10N.registe
 `t()` / `n()`). The backend `l10n/*.json` set is a separate concern with a separate
 consumer (PHP `IL10N`) and no scanner yet.
 
-Read **`docs/l10n-ui-translation.md`** before translating a locale. It covers the
-parts that are not mechanical: measuring register against Nextcloud core instead of
-assuming it, why harvested values must be checked at their call site, the plural
-boundaries per language, and the conventions already established.
+**Read `docs/l10n-workflow.md` first.** It is the runbook: the pass in order, what to
+do when any of these scripts refuses, and the traps catalogue. This file is the
+reference for the tooling itself — what lives where, and what each gate rejects.
+
+Then **`docs/l10n-ui-translation.md`** for the parts that are not mechanical:
+measuring register against Nextcloud core instead of assuming it, why harvested
+values must be checked at their call site, the plural boundaries per language, and
+the conventions already established per locale.
 
 ## Layout
 
@@ -20,6 +24,7 @@ boundaries per language, and the conventions already established.
 | `patchcheck.js` | Runs a locale's register detector over a patch **before** it is applied. |
 | `selfcheck.js` | Full pre-commit verification for one locale. |
 | `runtime-check.mjs` | Drives the real `@nextcloud/l10n` against a real bundle. |
+| `gate-negative-test.js` | Proves `test:l10n:parity` really fails when one locale loses a key. Snapshots, breaks, asserts, restores. |
 | `detectors/<loc>.js` | Per-locale register detector: closed word lists + must-fire / must-not-fire controls. |
 | `locales/<loc>.json` | Per-locale record: measured register, justified cognates, audited corrections. |
 
@@ -44,14 +49,17 @@ node scripts/l10n/patchcheck.js lv patch-1.json     # register slip? catch it no
 node scripts/l10n/apply.js      lv patch-1.json     # dry run
 node scripts/l10n/apply.js      lv patch-1.json --apply
 
-node scripts/l10n/selfcheck.js     lv          # 12 assertions, must be all-pass
+node scripts/l10n/selfcheck.js     lv          # 16 assertions, must be all-pass
 node scripts/l10n/runtime-check.mjs lv         # what actually renders
 npm run check:l10n && npm run test:l10n:parity
+
+# add lv to FINISHED_DEFAULT, then prove the gate now holds it
+node scripts/l10n/gate-negative-test.js lv
 ```
 
-Then add `lv` to `FINISHED_DEFAULT` in `tests/l10n/check-l10n-parity.js`, bump the
-counts in `CLAUDE.md`, add the locale's conventions to `docs/l10n-ui-translation.md`,
-and negative-test that the gate now fails without a key. One commit per language.
+Then bump the counts in `CLAUDE.md`, add the locale's conventions to
+`docs/l10n-ui-translation.md`, tick the locale off the order-of-work list in
+`docs/l10n-workflow.md`, and commit. One commit per language.
 
 ## The two rules the tooling enforces for you
 

@@ -6,8 +6,11 @@ and the translatable-object-property machinery in `docs/i18n.md` are separate
 concerns.
 
 The hard rules (never `value === key`; plural arity per locale; don't overwrite
-real translations) are in `CLAUDE.md`. This document covers the judgement calls
-that tooling cannot make for you.
+real translations) are in `CLAUDE.md`. **The workflow — the pass in order, what each
+gate refusal means, and the traps catalogue — is `docs/l10n-workflow.md`; read that
+first.** This document is the per-locale *linguistic* reference behind it: the
+judgement calls that no tooling can make for you, and what each finished locale
+decided.
 
 ## Why `value === key` is the cardinal sin
 
