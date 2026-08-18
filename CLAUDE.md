@@ -26,7 +26,7 @@ belongs in `en.js`, never in `en.json`.** There is no scanner for the backend se
 
 Re-measure before trusting any number here — `npm run check:l10n` prints it all.
 **As of 2026-08-18**: `en.js` holds 2052 keys, `src/` uses all of them, 0 unused,
-100 unwrapped literals outstanding. 22 locales at full parity, 14 in progress.
+100 unwrapped literals outstanding. 23 locales at full parity, 13 in progress.
 
 ## Commands
 
@@ -108,7 +108,7 @@ indistinguishable from finished work, so nobody revisits it. Audit with
 `npm run test:l10n:parity -- --strict-identical`.
 
 **Cognate enforcement is opt-in per locale**, keyed on `locales/<loc>.json`
-existing. Only `tr ca et hr lt lv` are held to it; the other 16 predate the rule and
+existing. Only `tr ca et hr lt lv ro` are held to it; the other 16 predate the rule and
 carry ~400 unreviewed identical values, some legitimate. The gate prints which
 locales are enforced and which are merely unreviewed, so a green run cannot be read
 as verified. **Reviewing those 16 is open work.**

@@ -23,7 +23,7 @@ const fs = require('fs')
 const path = require('path')
 const vm = require('vm')
 const {
-	loadJsTranslations, serializeJs, APP_ROOT, isIdentical, placeholders, npluralsOf,
+	loadJsTranslations, serializeJs, APP_ROOT, isIdentical, hasIdenticalForm, placeholders, npluralsOf,
 	PLURAL_HACK_KEYS, loadLocaleConfig, loadDetector, bundleAtHead,
 } = require('./lib.js')
 
@@ -100,7 +100,13 @@ const identical = keys.filter(k => isIdentical(k, cur.translations[k]))
 const undocumented = identical.filter(k => !(k in cfg.cognates))
 checkRecorded('no undocumented value === key', undocumented.length === 0,
 	undocumented.length ? JSON.stringify(undocumented.slice(0, 5)) : `${identical.length} recorded cognates`)
-const staleCognates = Object.keys(cfg.cognates).filter(k => !identical.includes(k))
+// A record is stale only when NOTHING is left for it to excuse. For a plural key
+// that means no form renders the English source — requiring every form to match
+// (isIdentical) would call Romanian's email array stale while runtime-check.mjs
+// still needs its record to excuse the singular. See hasIdenticalForm in lib.js.
+const staleCognates = Object.keys(cfg.cognates)
+	.filter(k => !identical.includes(k)
+		&& !(k in cur.translations && hasIdenticalForm(k, cur.translations[k])))
 checkRecorded('no stale cognate record', staleCognates.length === 0,
 	staleCognates.length ? JSON.stringify(staleCognates.slice(0, 5)) : `${Object.keys(cfg.cognates).length} all in use`)
 const thin = Object.entries(cfg.cognates).filter(([, r]) => String(r).trim().length < 15).map(([k]) => k)

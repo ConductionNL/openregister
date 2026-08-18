@@ -518,6 +518,31 @@ function isIdentical(key, value) {
 }
 
 /**
+ * Whether ANY single form of a value renders the English source — the weaker
+ * condition a cognate record for a plural key has to answer for.
+ *
+ * `isIdentical` requires EVERY form to match, which no partially-cognate plural
+ * ever does, while runtime-check.mjs flags a single English-rendering form and
+ * consults the same cognate record to excuse it. So the two gates disagreed about
+ * what one record means: Romanian's email array is
+ * ["{count} email", "{count} emailuri", "{count} de emailuri"] — the singular IS
+ * the English string, because Romanian borrows 'email' unchanged, while the other
+ * two forms differ. runtime-check needed the record; selfcheck then called the
+ * same record stale. A record is stale only when NOTHING is left to excuse.
+ *
+ * @param {string} key Catalogue key, possibly a plural identifier.
+ * @param {string|string[]} value Its value.
+ * @return {boolean} True if the whole value, or one plural form, is the source.
+ */
+function hasIdenticalForm(key, value) {
+	if (isIdentical(key, value)) return true
+	if (typeof value === 'string' || !Array.isArray(value)) return false
+	const m = /^_([\s\S]*)_::_([\s\S]*)_$/.exec(key)
+	if (!m) return false
+	return value.some((x, i) => x === (i === 0 ? m[1] : m[2]))
+}
+
+/**
  * Every placeholder token a translated value must carry over from the English
  * source. Checked in BOTH directions: a dropped `{count}` renders a sentence with
  * a hole in it, and an invented one renders a literal brace to the user.
@@ -758,6 +783,7 @@ module.exports = {
 	LOCALES_DIR,
 	DETECTORS_DIR,
 	isIdentical,
+	hasIdenticalForm,
 	placeholders,
 	npluralsOf,
 	PLURAL_HACK_KEYS,

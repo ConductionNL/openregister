@@ -87,7 +87,7 @@ const EUROPEAN = [
 // a deliberate cognate apart from placeholder-shaped filler — without it, "19
 // English-identical" is a number nobody can act on. Still dependency-free pure
 // Node; it is a sibling file in this repo, not an npm package.
-const { loadLocaleConfig, configuredLocales } = require('../../scripts/l10n/lib.js')
+const { loadLocaleConfig, configuredLocales, hasIdenticalForm } = require('../../scripts/l10n/lib.js')
 
 // Locales whose identical values are held to a recorded justification. This is
 // OPT-IN per locale, keyed on the existence of scripts/l10n/locales/<loc>.json,
@@ -126,7 +126,7 @@ const REQUIRED = (process.env.L10N_REQUIRED_LOCALES || EUROPEAN)
 const FINISHED_DEFAULT = [
 	'nl', 'de', 'fr', 'es', 'it', 'pt', 'sv', 'da', 'nb',
 	'pl', 'cs', 'ru', 'uk', 'el', 'fi', 'hu', 'tr', 'ca', 'et',
-	'hr', 'lt', 'lv',
+	'hr', 'lt', 'lv', 'ro',
 ].join(',')
 const FINISHED = new Set((process.env.L10N_FINISHED_LOCALES || FINISHED_DEFAULT)
 	.split(',').map((s) => s.trim()).filter(Boolean))
@@ -285,7 +285,19 @@ for (const set of sets) {
 			: []
 		// A reason recorded for a key that is no longer identical is a stale
 		// permission slip: it would silently license the next value written there.
-		const staleCognates = enforced ? Object.keys(cognates).filter((k) => !identical.includes(k)) : []
+		//
+		// "No longer identical" has to mean NOTHING is left to excuse, not "the whole
+		// value differs". A plural key can legitimately have ONE form that renders the
+		// English source while the others differ — Romanian's email array is
+		// ["{count} email", "{count} emailuri", "{count} de emailuri"], because Romanian
+		// borrows 'email' unchanged and inserts 'de' from 20 up. runtime-check.mjs needs
+		// that record to excuse the singular, so calling it stale here would make one
+		// record simultaneously required and forbidden. See hasIdenticalForm in lib.js.
+		const staleCognates = enforced
+			? Object.keys(cognates).filter((k) => !identical.includes(k)
+				&& !(Object.prototype.hasOwnProperty.call(locObj, k)
+					&& hasIdenticalForm(k, locObj[k])))
+			: []
 
 		const finished = FINISHED.has(loc)
 		// Empty values and wrong plural arity are RUNTIME faults — the string renders

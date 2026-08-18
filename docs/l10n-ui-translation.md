@@ -56,6 +56,18 @@ the 1053 keys the file arrived with measured *formal*.
 | --- | --- | --- | --- |
 | `et` | informal, 420 vs 2 | **formal**, 26 vs 1 | followed core; 24 pre-existing values corrected |
 | `lv` | informal, 44 vs 3 | **formal**, 85 vs 1 | followed core; 78 pre-existing values corrected |
+| `ro` | **MIXED**, 124 vs 66 | formal, 84 vs 0 | followed the BUNDLE — core gave no verdict |
+
+`ro` is why the rule is "measure core", not "obey core". Core ro is the first
+genuinely mixed catalogue in this project: 124 formal markers against 66 informal
+over 1078 values, with the informal strings concentrated in `core/ro.json` and
+reading as newer work (`Te rugăm să alegi un fișier`, `Conectează-te la contul tău`)
+while the formal ones dominate the email templates. A 2:1 split is not a verdict, so
+the tiebreaker was the bundle's own 1053 keys — 25 formal pronouns and 59 formal 2pl
+verb forms against **zero** informal pronouns — and, independently, the project
+owner's native-speaker advice that Romanian users expect formal address in a web UI.
+Note the direction: for `et` and `lv` core was one-sided and overruled the file; here
+core was inconclusive and the file won. Both follow from the same rule.
 
 The corrections are not optional cleanup — leaving them makes the bundle mix
 registers inside a single dialog, which reads worse than either choice made
@@ -82,6 +94,25 @@ core's own short labels — a single verdict for the locale is usually meaningle
 | same register throughout | `tr`, `ru` | formal imperative |
 | bare 2sg imperative, whatever the prose | `ca`, `et`, `hr` | `Desa`, `Salvesta`, `Spremi` |
 | **infinitive — register-neutral** | `cs`, `lt`, `lv` | `Zobrazit`/`Smazat`, `Įrašyti`/`Ištrinti`/`Atsisakyti`, `Saglabāt`/`Dzēst`/`Atcelt` |
+| **verbal noun — register-neutral** | `ro` | `Salvare`/`Ștergere`/`Anulare`/`Adăugare endpoint` |
+
+`ro` is the one locale where the button convention is a **project decision that
+knowingly diverges from core**, rather than a measurement. Core ro uses the bare 2sg
+imperative for 15 of its 16 short labels (`Salvează`, `Adaugă`, `Șterge`), but the
+project chose no-familiar-address anywhere, so a bare 2sg imperative in label
+position is a *deviation* for `ro` and `detectors/ro.js` counts it as informal — the
+exact opposite of how `ca`/`et`/`hr` treat theirs. Within that, the split is by
+string role, which is what the bundle already did: action labels take a verbal noun
+(`Salvare`, `Adăugare endpoint`, matching core's own `Adăugare punct final`), while
+anything addressing the user takes formal 2pl (`Selectați un registru`, `Sigur doriți
+să ștergeți...`).
+
+Uniform 2pl imperatives on buttons were measured to be **unavailable** without a
+source fix: `Create`, `Read`, `Update` and `Delete` are single keys rendered both as
+`<th>` column headers and audit-action filter labels (`AvgIndex.vue`,
+`AuditTrailSideBar.vue` `actionOptions`) *and* as buttons. A header reading
+`Ștergeți` — "delete!" — above a count column is wrong, so those four force the
+verbal noun and the rest follow them. Same open defect class as `Url` vs `URL`.
 
 Latvian makes the infinitive convention load-bearing for the *detector*, not just for
 the translations: the Latvian infinitive ends in `-t`/`-āt`/`-at`, which is also the
@@ -209,6 +240,11 @@ locale's expression**. Equal counts do not mean equal boundaries:
   "many" form: the categories are zero / numerals ending in 1 except 11 / everything
   else, which is exactly Latvian numeral agreement (genitive plural after 0,
   singular after 1 and 21, plural otherwise). See the order warning below
+- `ro` — `nplurals=3` with boundaries no other locale here uses: form 0 is `n==1`
+  **only**, form 1 covers **0 and 2–19**, form 2 is 20+. Zero joins the teens branch
+  rather than having its own form, the mirror image of Latvian. The third form exists
+  because Romanian inserts `de` before the noun from 20 up, which the runtime
+  confirms: `1 email` / `2 emailuri` / `20 de emailuri`
 
 All are 3-form and mutually incompatible. `npm run test:l10n:parity` catches
 wrong *length*; nothing can catch a Polish array pasted into Czech. Verify the
@@ -338,6 +374,40 @@ first batch, not after the last. Latvian's own established terms, followed here:
 translated), `Informācijas panelis` for dashboard (not the harvest's `Vadības
 panelis`), `Fragments` for chunk, and `fasete`/`fasetēšana`.
 
+### `ro` traps
+
+Four, and every one of them is live in this app's data:
+
+1. **`vă` (formal you) vs `va` (3sg future auxiliary).** One diacritic apart, and
+   `va` is everywhere — `Acest proces va genera embeddings` is an ordinary future
+   tense, not formal address. Match only `vă`.
+2. **`ai` is unusable and is excluded.** It is the 2sg of *avea*, but also the
+   masculine plural possessive article (`ai tăi`), and under case folding it collides
+   with the acronym **AI**, which this bundle carries in `Setări chat Fireworks AI`.
+3. **CEDILLA vs COMMA diacritics.** Romanian ș/ț exist as two codepoint pairs:
+   ș U+0219 / ț U+021B (correct) and ş U+015F / ţ U+0163 (legacy Turkish cedilla).
+   Core ro mixes them — 362 values comma-form, 5 legacy strings cedilla
+   (`contactaţi`, `fişiere`) — so `detectors/ro.js` normalises cedilla to comma in
+   `fold()`, or its closed lists silently miss those strings. Write the comma form:
+   this bundle is already consistent at 419 values, 0 cedilla.
+4. **`-ați` / `-eți` is not a 2pl suffix.** It also ends the masculine plural of a
+   large class of adjectives and nouns: `curați` (clean), `bogați` (rich), `pereți`
+   (walls), `băieți` (boys). Likewise `-ești` ends `povești` (stories) as well as 2sg
+   verbs. Closed lists only.
+
+Also note the 3sg/imperative homograph that decided the correction scope: `Creează
+automat o organizație implicită` is *"automatically creates"*, not *"create!"*. A
+string-initial 2sg-imperative scan reports 11 hits in `ro.js`, but only the 4 short
+ones are buttons; the other 7 are long toggle descriptions where the same form is
+third person. The detector's 40-character label-position bound is what separates
+them, and `Copiază` in a table cell would still be a false positive — see
+`UNDETECTABLE` in the detector.
+
+Terminology worth keeping: `ro` **borrows** where `lv`/`lt` translate — `Webhook` /
+`Webhook-uri`, `Endpoint` / `Endpoint-uri`, `Driver`, `Token`, and `AI` (not `MI`).
+GDPR is `RGPD`, and *data subject* is the official `persoana vizată`. `Bucket` became
+`Segment` because `Interval` was already taken by its own key.
+
 ### `lv` homograph traps
 
 Latvian has two *systematic* homograph classes, not a handful of exceptions, and both
@@ -371,9 +441,9 @@ every numeral except those ending in 1, so it is right for the large majority of
 counts, and those keys render as a `countLabel` beside a figure rather than inside a
 sentence.
 
-Twenty-two locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
-`nb`, `pl`, `cs`, `ru`, `uk`, `el`, `fi`, `hu`, `tr`, `ca`, `et`, `hr`, `lt`, `lv`.
-Remaining high-confidence order: `ro`, `sk`, `sl`, `bg`, `sr`. The nine
+Twenty-three locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
+`nb`, `pl`, `cs`, `ru`, `uk`, `el`, `fi`, `hu`, `tr`, `ca`, `et`, `hr`, `lt`, `lv`,
+`ro`. Remaining high-confidence order: `sk`, `sl`, `bg`, `sr`. The nine
 low-resource locales (`ga`, `mt`, `rm`, `is`, `lb`, `sq`, `mk`, `be`, `bs`) are
 deliberately last — **ask before starting them.**
 
