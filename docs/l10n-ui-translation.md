@@ -44,9 +44,17 @@ by counting formal vs informal markers across core (`server/core`, `lib`,
 
 Measured results: informal for `nl`, `de`, `sv`, `da`, `nb`, `pl`, `fi`, `hu`,
 `et`, `lv`; formal for `fr`, `cs`, `ru`, `uk`, `tr`, `el`, `sr`, `bg`, `ca`, `hr`,
-`lt`. Russian and Lithuanian were the least ambiguous of any: `ru` 328 formal
-pronouns and 164 formal imperatives, `lt` 689 formal markers, each against **zero**
-informal markers.
+`lt`, `sk`. **`sk` is the least ambiguous of any locale measured for this app**:
+1001 formal markers against 1 informal over 4991 values in 31 catalogues, beating
+`lt`'s 689 vs 0 on volume. Russian is next: 328 formal pronouns and 164 formal
+imperatives against zero informal.
+
+That single Slovak informal hit is worth keeping rather than explaining away. It is
+`Zruš prihlasovanie` in `core/sk.json` — a bare 2sg imperative where core uses the
+infinitive for all 27 of its other short labels. One deviation in 4991 values is a
+slip in core, not a second register; a detector that returned **zero** here would be
+the more suspicious result, because it would mean the 2sg imperative was invisible
+to it.
 
 **Core can contradict the bundle's own pre-existing keys, and core wins.** This has
 now happened twice, both times with the same shape: core measured *informal* while
@@ -93,7 +101,7 @@ core's own short labels — a single verdict for the locale is usually meaningle
 | --- | --- | --- |
 | same register throughout | `tr`, `ru` | formal imperative |
 | bare 2sg imperative, whatever the prose | `ca`, `et`, `hr` | `Desa`, `Salvesta`, `Spremi` |
-| **infinitive — register-neutral** | `cs`, `lt`, `lv` | `Zobrazit`/`Smazat`, `Įrašyti`/`Ištrinti`/`Atsisakyti`, `Saglabāt`/`Dzēst`/`Atcelt` |
+| **infinitive — register-neutral** | `cs`, `lt`, `lv`, `sk` | `Zobrazit`/`Smazat`, `Įrašyti`/`Ištrinti`/`Atsisakyti`, `Saglabāt`/`Dzēst`/`Atcelt`, `Uložiť`/`Odstrániť`/`Zrušiť` |
 | **verbal noun — register-neutral** | `ro` | `Salvare`/`Ștergere`/`Anulare`/`Adăugare endpoint` |
 
 `ro` is the one locale where the button convention is a **project decision that
@@ -128,6 +136,13 @@ homographs — of the Catalan/Croatian 3sg present indicative (`uredi` = "edit!"
 would flag every button in the app. Lithuanian is the reason the table exists: its
 informal count is a clean 0 precisely *because* core never produces a 2sg
 imperative at all.
+
+**`sk` is the exception, and it earns it.** Slovak's 2sg imperative is *not* a 3sg
+homograph (`ulož` vs `uloží`), and its labels are infinitives, so `detectors/sk.js`
+counts a bare imperative as informal where `ca`/`et`/`hr` must not. Before adding
+that to any new locale, check both halves: the imperative must be distinguishable
+from the third person *and* must not be the locale's own label convention. See the
+`sk` section below.
 
 Three consecutive locales came out three different ways (`tr` formal 841:0, `ca`
 formal 491:32, `et` **informal** 415:3). Carrying an answer over from the previous
@@ -246,6 +261,15 @@ locale's expression**. Equal counts do not mean equal boundaries:
 - `ru` — `nplurals=3`, form 0 on `n%10==1 && n%100!=11`
 - `pl` — `nplurals=3`, keyed on `n%10` ranges
 - `cs` — `nplurals=3`, plain `1 / 2-4 / 5+`
+- `sk` — `nplurals=3`, byte-identical expression to `cs`, and the boundaries are
+  **absolute, not modular**: `(n>=2 && n<=4) ? 1 : 2`. That is the load-bearing
+  difference from `hr`/`ru`/`pl`/`lt`, which all key on `n%10`/`n%100`. So **22
+  selects form 2 in Slovak and form 1 in Croatian** — and form 2 is right, because
+  standard Slovak takes the genitive plural on compound numerals (`22 objektov`,
+  not `22 objekty`). An array copied between two `nplurals=3` Slavic locales is
+  wrong at every compound number, not just at the obvious 5–9 boundary. Note also
+  that form 2 carries **zero** as well as 5+, so `0 objektov` must read correctly
+  from the same string as `100 objektov`
 - `hr` — `nplurals=3`, same expression as `ru`; the three forms are Croatian
   nominative singular / genitive singular / genitive plural
   (`1 objekt` / `3 objekta` / `7 objekata`)
@@ -460,9 +484,75 @@ every numeral except those ending in 1, so it is right for the large majority of
 counts, and those keys render as a `countLabel` beside a figure rather than inside a
 sentence.
 
-Twenty-three locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
+### `sk` is the one locale where the 2sg imperative IS detectable
+
+Every other locale so far has had to leave the bare 2sg imperative *unmatched*, for
+one of two reasons: it is the correct button convention (`hr`, `ca`, `et`), or it is a
+homograph of the third person (`ro`'s `Creează`, `lv`'s `meklē`, `hr`'s `uredi`).
+Slovak has neither problem, and `detectors/sk.js` therefore counts it as **informal**
+— the opposite of how `ca`/`et`/`hr` treat theirs. That is not a policy difference; it
+follows from three measured facts:
+
+1. the label convention is the **infinitive** — 27 of 30 short action keys in core sk
+   resolve to one (`Uložiť`, `Zmazať`, `Pridať`, `Vybrať`), and **zero** to an
+   imperative, so an imperative label is a deviation rather than the house style;
+2. the 2sg imperative is **not** a homograph of the 3sg present — `ulož` vs `uloží`,
+   `pridaj` vs `pridá`, `zmeň` vs `zmení` — so no `automatically creates` description
+   can be mistaken for a command;
+3. the infinitive ends in `-ť`, which no imperative does.
+
+Because of (2), `sk` needs **no label-position bound**. `ro.js` carries a
+40-character one only because Romanian's imperative *is* a 3sg homograph.
+
+So `sk` pairs `lv`'s infinitive labels with `ro`'s formal 2pl prose — the fourth
+distinct combination in this app. The role split is the same as `ro`'s: infinitive for
+buttons, menu items, dialog titles and bare field captions; formal 2pl for anything
+addressing the reader. The English source marks the boundary reliably here, which it
+did not for `ro`: `Select backend` is a field label (`Vybrať backend`) while
+`Select a branch` is a prompt (`Vyberte vetvu`), and the indefinite article is the
+tell.
+
+### `sk` traps
+
+1. **`vy-` is the most productive verbal prefix in the language.** `vybrať`,
+   `vymazať`, `vytvoriť`, `vyhľadať`, `vypnúť`, `vyčistiť`, `vypočítať` — an unguarded
+   `vy` pronoun marker matches most of the buttons in this app. `Vybrať všetko` is a
+   must-not-fire control for exactly this.
+2. **DIACRITICS MUST NOT BE FOLDED.** Three of the detector's distinctions are
+   carried by the acute alone, so `fold()` only lowercases — the opposite of `ro`,
+   where `fold()` *must* normalise cedilla to comma:
+   - `ti` (dative of `ty`, informal) vs **`tí`** (masculine animate nominative plural
+     of `ten` — `tí používatelia` = *those users*);
+   - `vyber` (2sg imperative) vs **`výber`** (*selection*, which this bundle uses in
+     five keys — `Výber typu súboru`);
+   - `uprav` (2sg imperative) vs **`úprav`** (genitive plural of *edit*).
+3. **`-te` is not a 2pl suffix.** It is the locative singular of every hard masculine
+   noun (`v dokumente`, `v objekte`, `v elemente`) and it ends **`ešte`** (*still*,
+   *yet*), one of the commonest adverbs in the language — which appears in this
+   bundle's own `notify_push je nainštalovaný, ale ešte nie je aktívny`.
+4. **`-š` inverts polarity, exactly as in `hr`.** It looks like the 2sg ending but
+   ends `váš` (*your*-FORMAL), `náš` (*our*) and `kôš` (*basket*).
+5. **Bare `si` is unusable.** Besides the 2sg of *byť* it is the reflexive dative
+   clitic, which is at its most common in *formal* prose — this bundle's own
+   `Pred rozhodnutím si záznam prečítajte` and `môžete si vybrať`.
+
+Terminology: `sk` sits between `ro` (borrow) and `lv`/`lt` (translate). It keeps
+`Webhook`/`Webhooky`, `Slug`, `Audit`, `Avatar` and `Register` (which genuinely *is*
+the Slovak word — `ID registra`, `Všetky registre`), but translates `Driver` →
+`Ovládač`, `Mappings` → `Mapovania` (**not** openconnector's `Mappingy`), `Right` →
+`Právo`, and `Bucket` → `Pásmo`, since `Interval` was already taken by its own key —
+the same collision `ro` resolved with `Segment`. `audítny záznam` for *audit trail*,
+`záznam auditu` for an *audit entry*, `úsek` for *chunk*, `vloženie` for *embedding*,
+`nástenka` for *dashboard*, `tok` for *flow* but `pracovný postup` for *workflow*,
+`riešiteľ` for a DSAR *handler* (not `spracovateľ`, which is the GDPR *processor* and
+would collide), and `Osoby` for `People` — core sk says `Ľudia`, but the bundle's own
+`Person` → `Osoba` wins on lexicon. The `{plural}` hack reuses the bundle's own
+pre-existing parenthesised style: `register(s)` was already `register(-tre)` and
+`schema(s)` already `schéma(-y)`, so those two keys are literally the existing values.
+
+Twenty-four locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
 `nb`, `pl`, `cs`, `ru`, `uk`, `el`, `fi`, `hu`, `tr`, `ca`, `et`, `hr`, `lt`, `lv`,
-`ro`. Remaining high-confidence order: `sk`, `sl`, `bg`, `sr`. The nine
+`ro`, `sk`. Remaining high-confidence order: `sl`, `bg`, `sr`. The nine
 low-resource locales (`ga`, `mt`, `rm`, `is`, `lb`, `sq`, `mk`, `be`, `bs`) are
 deliberately last — **ask before starting them.**
 

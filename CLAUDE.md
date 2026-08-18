@@ -26,7 +26,7 @@ belongs in `en.js`, never in `en.json`.** There is no scanner for the backend se
 
 Re-measure before trusting any number here — `npm run check:l10n` prints it all.
 **As of 2026-08-18**: `en.js` holds 2052 keys, `src/` uses all of them, 0 unused,
-100 unwrapped literals outstanding. 23 locales at full parity, 13 in progress.
+100 unwrapped literals outstanding. 24 locales at full parity, 12 in progress.
 
 ## Commands
 
@@ -108,7 +108,7 @@ indistinguishable from finished work, so nobody revisits it. Audit with
 `npm run test:l10n:parity -- --strict-identical`.
 
 **Cognate enforcement is opt-in per locale**, keyed on `locales/<loc>.json`
-existing. Only `tr ca et hr lt lv ro` are held to it; the other 16 predate the rule and
+existing. Only `tr ca et hr lt lv ro sk` are held to it; the other 16 predate the rule and
 carry ~400 unreviewed identical values, some legitimate. The gate prints which
 locales are enforced and which are merely unreviewed, so a green run cannot be read
 as verified. **Reviewing those 16 is open work.**
@@ -136,8 +136,14 @@ order (`[one, other, zero]`) while the library partitions it `[zero, one, other]
 `lv` arrays are deliberately ordered by the library and `locales/lv.json` records
 `"pluralOrder": "library"`. `runtime-check.mjs` compares the two partitions and fails
 without that acknowledgement, so the order cannot be silently "corrected" back. Of
-the 22 finished locales only `lv` is affected; `tr`, `rm` and `ga` disagree on form
+the 24 finished locales only `lv` is affected; `tr`, `rm` and `ga` disagree on form
 *count* only, which is harmless because the extra forms are never selected.
+
+**Sharing a form COUNT with a neighbour does not mean sharing its arithmetic.** `sk`
+and `cs` bound their three forms *absolutely* — `(n>=2 && n<=4) ? 1 : 2` — while
+`hr`, `ru`, `pl` and `lt` bound theirs *modularly* on `n%10` / `n%100`. So 22 selects
+form 2 in Slovak ("22 objektov", correct) and form 1 in Croatian. An array copied
+between two `nplurals=3` Slavic locales is wrong at every compound number.
 
 **Never overwrite an existing real translation.** `l10n-ai.js` refuses without
 `--force`; trust the refusal. Only replace a real value when it is genuinely wrong,
