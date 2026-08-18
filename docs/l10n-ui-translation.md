@@ -219,6 +219,25 @@ Two precedence rules, applied consistently:
 - **Bundle-internal consistency outranks core.** If the bundle already says
   `Дашборд`, new strings say `Дашборд`, not core's `Панель управления`.
 
+### A whole catalogue can be the wrong language
+
+Wrong-sense values are the common failure. The `sk` pass found the other kind:
+`apps-custom/openbuild/l10n/sk.json` is **Croatian**, all 586 keys of it, and
+offered `Dodaj shemu` and `Radnje` as Slovak. Fingerprinting every openbuild
+catalogue showed one Croatian file shipped under **seven** names —
+`bs cs hr mk sk sl sr` are value-identical — plus `da == sv` and `de == lb`. So
+this poisons four more locales still in the queue (`sl`, `sr`, `mk`, `bs`), and it
+is invisible to a call-site check because each hit *is* a plausible Slavic
+translation of the right key.
+
+`harvest.js` now drops any source whose value set matches the same app's catalogue
+for a different **base** language, and prints what it dropped and what it
+duplicates. Two real languages do not agree on hundreds of prose values, so this is
+a measurement rather than a heuristic, and dropping only ever loses candidates.
+The first cut of that check compared locale *names* and so reported core's
+`et_EE.js` == `et_EE.json` as a mislabel, dropping 33 of 40 sources for `et` and
+`lt` — the region-variant trap again. Compare `loc.split('_')[0]`.
+
 ## Plurals
 
 Take `nplurals` from the locale file's own header and build arrays against **that
