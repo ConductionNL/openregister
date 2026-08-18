@@ -876,6 +876,7 @@ OC.L10N.register(
     "Key" : "Chiave",
     "Keyword GIN index" : "Indice GIN per parole chiave",
     "Kill switch — stop all flow execution now" : "Arresto d'emergenza: ferma subito ogni esecuzione di flusso",
+    "KvK Company Register" : "Registro delle imprese KvK",
     "Label" : "Etichetta",
     "Labels" : "Etichette",
     "Languages" : "Lingue",

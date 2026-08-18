@@ -876,6 +876,7 @@ OC.L10N.register(
     "Key" : "Võti",
     "Keyword GIN index" : "Märksõnade GIN indeks",
     "Kill switch — stop all flow execution now" : "Hädaseiskamine — peata kohe kogu voogude täitmine",
+    "KvK Company Register" : "KvK äriregister",
     "Label" : "Silt",
     "Labels" : "Sildid",
     "Languages" : "Keeled",

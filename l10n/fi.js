@@ -876,6 +876,7 @@ OC.L10N.register(
     "Key" : "Avain",
     "Keyword GIN index" : "Avainsanojen GIN-indeksi",
     "Kill switch — stop all flow execution now" : "Hätäkatkaisin — pysäytä kaikki vuosuoritus nyt",
+    "KvK Company Register" : "KvK-kaupparekisteri",
     "Label" : "Nimike",
     "Labels" : "Nimikkeet",
     "Languages" : "Kielet",

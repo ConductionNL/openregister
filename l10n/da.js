@@ -876,6 +876,7 @@ OC.L10N.register(
     "Key" : "Nøgle",
     "Keyword GIN index" : "GIN-indeks til nøgleord",
     "Kill switch — stop all flow execution now" : "Nødstop — stop al flowudførelse nu",
+    "KvK Company Register" : "KvK-handelsregister",
     "Label" : "Etiket",
     "Labels" : "Etiketter",
     "Languages" : "Sprog",

@@ -25,7 +25,7 @@ belongs in `en.js`, never in `en.json`.** There is no scanner for the backend se
 (it would have to walk `lib/` for PHP `$l->t()`), so `en.json` is maintained by hand.
 
 Re-measure before trusting any number here — `npm run check:l10n` prints it all.
-**As of 2026-08-14**: `en.js` holds 2051 keys, `src/` uses all of them, 0 unused,
+**As of 2026-08-18**: `en.js` holds 2052 keys, `src/` uses all of them, 0 unused,
 100 unwrapped literals outstanding. 21 locales at full parity, 15 in progress.
 
 ## Commands

@@ -126,3 +126,7 @@ tests/e2e/test-results/
 tests/e2e/test-results-ci/
 tests/e2e/.mdm-seed.json
 .hydra
+
+# harvest.js writes its candidate list next to itself, one file per locale. It is
+# scratch input for a translation pass, not something a locale commit should carry.
+scripts/l10n/harvest-*.json

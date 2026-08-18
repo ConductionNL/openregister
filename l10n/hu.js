@@ -876,6 +876,7 @@ OC.L10N.register(
     "Key" : "Kulcs",
     "Keyword GIN index" : "Kulcsszavas GIN-index",
     "Kill switch — stop all flow execution now" : "Vészleállító — minden folyamatvégrehajtás azonnali leállítása",
+    "KvK Company Register" : "KvK cégjegyzék",
     "Label" : "Címke",
     "Labels" : "Címkék",
     "Languages" : "Nyelvek",

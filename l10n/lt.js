@@ -876,6 +876,7 @@ OC.L10N.register(
     "Key" : "Raktas",
     "Keyword GIN index" : "Reikšminių žodžių GIN indeksas",
     "Kill switch — stop all flow execution now" : "Avarinis jungiklis — nedelsiant sustabdyti visų srautų vykdymą",
+    "KvK Company Register" : "KvK komercinis registras",
     "Label" : "Etiketė",
     "Labels" : "Etiketės",
     "Languages" : "Kalbos",

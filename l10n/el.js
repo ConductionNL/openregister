@@ -876,6 +876,7 @@ OC.L10N.register(
     "Key" : "Κλειδί",
     "Keyword GIN index" : "Ευρετήριο GIN λέξεων-κλειδιών",
     "Kill switch — stop all flow execution now" : "Διακόπτης έκτακτης ανάγκης — διακοπή κάθε εκτέλεσης ροών τώρα",
+    "KvK Company Register" : "Εμπορικό μητρώο KvK",
     "Label" : "Ετικέτα",
     "Labels" : "Ετικέτες",
     "Languages" : "Γλώσσες",

@@ -876,6 +876,7 @@ OC.L10N.register(
     "Key" : "Klucz",
     "Keyword GIN index" : "Indeks GIN dla słów kluczowych",
     "Kill switch — stop all flow execution now" : "Wyłącznik awaryjny — zatrzymaj teraz wykonywanie wszystkich przepływów",
+    "KvK Company Register" : "Rejestr handlowy KvK",
     "Label" : "Etykieta",
     "Labels" : "Etykiety",
     "Languages" : "Języki",

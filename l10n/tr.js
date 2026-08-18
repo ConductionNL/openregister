@@ -876,6 +876,7 @@ OC.L10N.register(
     "Key" : "Anahtar",
     "Keyword GIN index" : "Anahtar sözcük GIN dizini",
     "Kill switch — stop all flow execution now" : "Acil durdurma — tüm akış yürütmesini şimdi durdur",
+    "KvK Company Register" : "KvK ticaret sicili",
     "Label" : "Etiket",
     "Labels" : "Etiketler",
     "Languages" : "Diller",
