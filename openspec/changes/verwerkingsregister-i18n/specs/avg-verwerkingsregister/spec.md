@@ -164,3 +164,40 @@ The complete verwerkingsregister MUST be exportable in formats suitable for AP s
 - **WHEN** the privacy officer requests an incremental export with `?since=2025-06-01`
 - **THEN** the export MUST include only verwerkingsactiviteiten that were created or modified after that date
 - **AND** the export MUST clearly mark which activities are new vs. modified
+
+### Requirement: The system MUST expose the data-subject rights as an admin-gated DSAR HTTP surface
+
+> **Scope correction.** This requirement describes real, shipped code — `DsarController` — not
+> aspirational functionality. It was originally left out of this change's delta on the mistaken
+> assumption that nothing here was built yet; `verwerkingsregister-i18n` renames these methods and
+> routes in the same PR as the `Verwerkingsactiviteit` entity fields.
+
+`DsarController` MUST provide the shipped HTTP slice of the AVG data-subject rights as a thin wrapper over `DsarService` and `AvgComplianceService`. Every endpoint MUST require membership of the Nextcloud `admin` group, returning HTTP 403 before doing any work otherwise, because DSAR operations span the whole register surface and bypass per-schema RBAC.
+
+- `access` (renamed from `inzage`, Art 15) MUST accept `subject` (required), optional `type`, and optional `mode` (`exact` default or `ilike`), delegate to `DsarService::findObjectsForSubject()`, and return `{subject, type, count, results}`. A missing `subject` MUST return HTTP 422.
+- `portability` (renamed from `portabiliteit`, Art 20) MUST use the same lookup but reduce the envelope to the machine-readable export shape `{subject, generated, count, objects}` (object payloads only, no match annotations).
+- `erasure` (renamed from `vergetelheid`, Art 17) MUST accept `subject` (required), optional `type`, and a `dryRun` boolean; when `dryRun` is true it MUST return the matches without erasing. It MUST delegate to `DsarService::eraseObjectsForSubject()` and return the service summary.
+- `rectification` (renamed from `rectificatie`, Art 16) MUST require `objectId` (non-zero int) and a non-empty `changes` object, returning HTTP 422 when either is missing, HTTP 404 when the object is not found / the update fails, and delegate to `DsarService::rectifyObjectForSubject()`.
+- `compliance` (unchanged, already English) MUST return `AvgComplianceService::runAllChecks()`.
+
+Routes move accordingly: `/api/avg/inzage` → `/api/avg/access`, `/api/avg/portabiliteit` → `/api/avg/portability`, `/api/avg/vergetelheid` → `/api/avg/erasure`, `/api/avg/rectificatie` → `/api/avg/rectification`.
+
+#### Scenario: DSAR endpoints are admin-gated
+- **GIVEN** a non-admin authenticated user
+- **WHEN** they call any of `access`, `portability`, `erasure`, `rectification`, or `compliance`
+- **THEN** the response MUST be HTTP 403 with `{error}` and no DSAR work MUST be performed
+
+#### Scenario: Inzage requires a subject
+- **GIVEN** an admin calls `access` (renamed from `inzage`) with no `subject`
+- **THEN** the response MUST be HTTP 422 with `{error: "`subject` query parameter is required"}`
+- **AND** a valid call MUST return `{subject, type, count, results}` from `DsarService::findObjectsForSubject()`
+
+#### Scenario: Erasure supports dry-run
+- **GIVEN** an admin calls `erasure` with `dryRun=true` for a subject with matches
+- **WHEN** the request is processed
+- **THEN** the matches MUST be returned without any object being erased
+
+#### Scenario: Rectification validates input
+- **GIVEN** an admin calls `rectification` with `objectId=0` or empty `changes`
+- **THEN** the response MUST be HTTP 422
+- **AND** a valid call against a non-existent object MUST return HTTP 404 with `{error, objectId}`
