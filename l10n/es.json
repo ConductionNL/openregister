@@ -1,5 +1,7 @@
 {
     "translations": {
+        "3": "3",
+        "30": "30",
         "%n entries have no hash yet": "%n entradas aún no tienen hash",
         "%n entry has no hash yet": "%n entrada aún no tiene hash",
         "(Dolphin required)": "(Se requiere Dolphin)",
@@ -10,8 +12,6 @@
         "({count} selected)": "({count} seleccionados)",
         ", {failed} failed": ", {failed} fallidos",
         "0 = unlimited": "0 = ilimitado",
-        "3": "3",
-        "30": "30",
         "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.",
         "A deactivation request is pending.": "Hay una solicitud de desactivación pendiente.",
         "AI Assistant": "Asistente de IA",
@@ -2689,7 +2689,18 @@
         "🔍 SOLR is a powerful enterprise search platform built on Apache Lucene...": "🔍 SOLR is a powerful enterprise search platform built on Apache Lucene...",
         "🔢 Vectorization Settings": "🔢 Ajustes de vectorización",
         "🚀 Auto-scaling can dynamically add or remove nodes based on load...": "🚀 Auto-scaling can dynamically add or remove nodes based on load...",
-        "🛡️ Security features include authentication, authorization, and SSL encryption...": "🛡️ Security features include authentication, authorization, and SSL encryption..."
+        "🛡️ Security features include authentication, authorization, and SSL encryption...": "🛡️ Security features include authentication, authorization, and SSL encryption...",
+        "Access (Art 15)": "Acceso (Art. 15)",
+        "Access results": "Resultados de acceso",
+        "Accountability": "Responsabilidad proactiva",
+        "Archive this processing activity? Audit-trail rows will keep referring to it.": "¿Archivar esta actividad de tratamiento? Las filas del registro de auditoría seguirán haciendo referencia a ella.",
+        "Create the first processing activity to start tagging audit-trail rows with their AVG Art 30 attribution.": "Cree la primera actividad de tratamiento para empezar a etiquetar las filas del registro de auditoría con su atribución del art. 30 del RGPD.",
+        "GDPR / AVG processing register": "RGPD / AVG registro de actividades de tratamiento",
+        "Generate the accountability document": "Generar el documento de responsabilidad proactiva",
+        "Legal basis": "Base jurídica",
+        "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Localice cada objeto que haga referencia a un interesado (art. 15), previsualice una supresión (art. 17), o exporte sus datos (art. 20).",
+        "Portability (Art 20)": "Portabilidad (Art. 20)",
+        "Retention period": "Período de conservación"
     },
     "plurals": {
         "{count} email": [
