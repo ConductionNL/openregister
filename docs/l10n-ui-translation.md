@@ -103,7 +103,7 @@ core's own short labels — a single verdict for the locale is usually meaningle
 | Pattern | Locales | Buttons |
 | --- | --- | --- |
 | same register throughout | `tr`, `ru` | formal imperative |
-| bare 2sg imperative, whatever the prose | `ca`, `et`, `hr`, `sl` | `Desa`, `Salvesta`, `Spremi`, `Shrani` |
+| bare 2sg imperative, whatever the prose | `ca`, `et`, `hr`, `sl`, `sr` | `Desa`, `Salvesta`, `Spremi`, `Shrani`, `Сачувај` |
 | **infinitive — register-neutral** | `cs`, `lt`, `lv`, `sk` | `Zobrazit`/`Smazat`, `Įrašyti`/`Ištrinti`/`Atsisakyti`, `Saglabāt`/`Dzēst`/`Atcelt`, `Uložiť`/`Odstrániť`/`Zrušiť` |
 | **verbal noun — register-neutral** | `ro`, `bg` | `Salvare`/`Ștergere`/`Anulare`/`Adăugare endpoint`; `Запазване`/`Изтриване`/`Отказ`/`Добавяне на крайна точка` |
 
@@ -412,7 +412,8 @@ Per-language decisions that later work should stay consistent with, and which ar
 
 - **Domain-term capitalisation** — `da` lowercases (1:15), `sv` capitalises
   (54:2). `pl` follows `sv` but keeps `organizacja` lowercase (0:18). `cs`, `nb`
-  and `ru` follow `da`.
+  and `ru` follow `da`. `sr` is the strongest case and the only one that splits by
+  *term*: six concepts capitalised, everything else lowercase — see the `sr` section.
 - **Imperative accent** — `da` `Aktivér` (13:0) vs `nb` `Aktiver` (13:0), despite
   the two agreeing on capitalisation.
 - **Error voice** — `da` passive; `nb` active `Kunne ikke`; `ru` `Не удалось`.
@@ -662,6 +663,56 @@ catalogue under `sl.json`, a Croatian word turning up in a Slovenian bundle is n
 coincidence to shrug at. A cheap check that caught nothing else: scan the finished
 bundle for `ć đ ě ř ů ą ę ł ń ś ź ż`, none of which exist in Slovenian orthography.
 
+### `sr` capitalises its domain terms, and that is the convention most easily broken
+
+Serbian is the `hr`/`sl` shape on register and buttons — formal 2pl prose, bare 2sg
+imperative labels, split by string role — so the interesting part of the pass is elsewhere.
+This bundle capitalises the **six first-class register concepts** mid-sentence, like proper
+nouns, and lowercases everything else. Measured rather than assumed:
+
+| Capitalised mid-sentence | Lowercase |
+| --- | --- |
+| `Шема` 33:1 · `Регистар` 30:0 · `Објекат` 62:0 · `Својство` 25:0 · `Датотека` 43:0 · `Извор` 5:1 | `приказ` 0:41 · `ентитет` 0:13 · `ток` 0:25 |
+
+So `Обриши све Објекте у овој Шеми` but `Обриши приказ`, and `Управљајте вашим Шемама
+података и њиховим Својствима`. It touches roughly a third of all values, no other locale
+here does it, and **nothing automated checks it** — which makes it the single most likely
+thing to get wrong at scale. Measure it before the first batch, the same way you measure
+register: count capitalised-mid-sentence against lowercase per term. The two 1-of-N outliers
+(`Додај извор`, `по овој шеми`) were normalised rather than left to explain later.
+
+Register is a clean **formal**: 911 markers against **zero** informal over 4631 values in 32
+catalogues, one-sided like `lt`, `sk` and `sl`. That zero is what made the two register
+corrections unarguable rather than a judgement call — core never produces a 2sg present at
+all, so `имаш` and `сачуваш` in the `Select …` family had no defence. The split point matters
+though, and the bundle had already drawn it: instruction sentences take 2pl (`Изаберите које
+Својство…`), bare labels and dropdown placeholders take 2sg (`Изабери све`, `Изабери грану`).
+The corrections moved two long strings from the label side to the sentence side, which is
+where `sl` puts the same strings.
+
+**The trap that nearly produced a wrong correction.** A third value in that same family,
+`Изабери модел или унеси прилагођени назив модела`, looks identical in kind and is
+**correct**: `унеси` is a 2sg *imperative*, so it is the label convention, where its siblings
+carried 2sg *presents*. Serbian spells the 2sg present with a `-ш` the 3sg drops (`сачуваш`
+vs `сачува`), so the presents are safe to enumerate in a detector while the imperatives are
+not — and that asymmetry is exactly what separates a style choice from an address slip here.
+Recorded in `UNDETECTABLE` in `detectors/sr.js` rather than "fixed".
+
+Terminology: `ревизорски траг` for audit trail (24 uses; the three `ревизијски` outliers were
+normalised — both adjectives are formable Serbian, so this is consistency, not a fix),
+`приказ` for view, `део` for chunk, `уграђивање` for embedding, `веб-кукица` for webhook,
+`ток` for flow against `радни ток` for workflow, `корисни терет` for payload, `ентитет` for
+entity, `контролна табла` for dashboard, `привремена меморија` for clipboard, `печат` for
+seal, `поузданост` for confidence, `предмет` for a DSAR case, `субјекат података` for the
+GDPR data subject, `Рок чувања` for `Bewaartermijn`, `активност обраде` for
+`verwerkingsactiviteit`, `Одговорност` for `Verantwoording`. Initialisms are **not** handled
+uniformly and that is deliberate pre-existing practice: `ID` → `ИД` and `Slug` → `Слаг` are
+transliterated, while `URL`, `API`, `HTTP`, `LLM`, `PDF`, `CSV`, `RBAC`, `JSON` and `OAS`
+stay in Latin and take a hyphenated Cyrillic case ending where they inflect (`URL-у`,
+`OpenRegister-у`). Two coinages avoided collisions: **Revoke** → `Повуци` so that `Опозови`
+stays free for **Reverse** (a merge), and **Bucket** → `Сегмент`, never "интервал", since
+`Interval` is its own key.
+
 ### `bg` is the first locale where the imperative is detectable in *part* of the verb system
 
 Every locale before this one was all-or-nothing about the bare 2sg imperative: `sk`
@@ -763,11 +814,11 @@ takes an em dash with spaces, and the dative clitic is written `ѝ` with the gra
 never `и`. That last one is a marker of careful Bulgarian and the pre-existing bundle
 already got it right (`може вече да не ѝ съответстват`).
 
-Twenty-six locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
+Twenty-seven locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
 `nb`, `pl`, `cs`, `ru`, `uk`, `el`, `fi`, `hu`, `tr`, `ca`, `et`, `hr`, `lt`, `lv`,
-`ro`, `sk`, `sl`, `bg`. Remaining high-confidence: `sr`. The nine
-low-resource locales (`ga`, `mt`, `rm`, `is`, `lb`, `sq`, `mk`, `be`, `bs`) are
-deliberately last — **ask before starting them.**
+`ro`, `sk`, `sl`, `bg`, `sr` — the whole high-confidence group. Only the nine
+low-resource locales (`ga`, `mt`, `rm`, `is`, `lb`, `sq`, `mk`, `be`, `bs`) remain, and
+they are deliberately last — **ask before starting them.**
 
 For non-Latin locales (`ru`, `uk`, `bg`, `be`, `mk`, `sr`, `el`) a script-coverage
 check replaces the English-leftover check, and it is now a committed script:
@@ -778,3 +829,11 @@ legitimately retains 11 such values (`conversationId`, `fileCollection`,
 16, and all 16 are recorded: the 14 cognates plus the two case normalisations
 (`Id` → `ID`, `Url` → `URL`). The script prints Latin runs found *inside* otherwise
 translated values too, which is the half the older ad-hoc checks missed.
+
+**On `sr` it earned the whole exercise.** Of 2052 values, exactly two Latin-only ones
+were not recorded cognates, and both were genuine defects that had passed every gate for
+the life of the file: `NO ACTION` → `NEMA RADNJE`, which is correct Serbian in the
+**wrong alphabet**, and `Audit trail #{id}` → `Revizijski trag #{id}`, which is the wrong
+alphabet *and* Croatian *and* inconsistent with the bundle's 24 other audit-trail values.
+Neither is empty, identical to English, or a bad plural, so nothing else could see them.
+Run the sweep before assuming a non-Latin bundle's pre-existing half is sound.

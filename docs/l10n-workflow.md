@@ -109,17 +109,16 @@ is how you tell "in progress" from "broken".
 
 ### 2.3 Order of work
 
-One locale remains in the high-confidence group: **`sr`.** After it, nine low-resource
-locales: `ga mt rm is lb sq mk be bs`. The owner does not want the low-resource group
-prioritised — take them last, and **ask before starting them.**
+The high-confidence group is **done**. Nine low-resource locales remain:
+`ga mt rm is lb sq mk be bs`. The owner does not want them prioritised — they are last, and
+**ask before starting them.**
 
 Durable per-locale notes for the ones not yet done (facts about the language or the
 sources, not counts — these will not go stale):
 
 | Locale | Note |
 | --- | --- |
-| `sr` `mk` `be` | Non-Latin. `npm run l10n:script` replaces the English-leftover sweep in §5 step 8 |
-| `sr` | Same plural expression as `hr`/`ru`; also written in both scripts in the wild — check which this bundle uses, and record it in `SCRIPTS` in `script-coverage.js` |
+| `mk` `be` | Non-Latin. `npm run l10n:script` replaces the English-leftover sweep in §5 step 8 |
 | `ga` | Header declares 5 forms, the library selects only 3. Harmless dead forms (§6.7) |
 | `mt` | Already ships a **suspect array** — forms 2 and 3 fall back to the singular. Verify before trusting it |
 | `rm` | Library selects **1** form, so a plural key can never render its plural. Library constraint, not a data defect |
@@ -127,6 +126,7 @@ sources, not counts — these will not go stale):
 | `lb` | openbuild ships **German** under `lb.json`; harvest drops it automatically (§6.6) |
 | `bs` `sq` | Very few harvest sources (7 and 12) — expect to translate almost everything by hand |
 | `bs` | openbuild's Croatian catalogue also ships under `bs.json`; dropped automatically |
+| `bs` `mk` | Same openbuild Croatian catalogue again. It has now been observed under **seven** names (`bs cs hr mk sk sl sr`), and in `sr` the contamination had already reached the *committed* bundle as `Revizijski trag #{id}` — so for these two, expect the defect **inside** the file and not only in the harvest sources (§8.4) |
 
 **The closing task**, once the last locale lands, is §9.1. It is not optional cleanup.
 
@@ -420,8 +420,11 @@ Every control should be a real value from this bundle or from core where possibl
 roughly half the key set already. You are looking for the
 domain terms — audit trail, view, chunk, embedding, webhook, flow vs workflow, payload,
 token, dashboard, hash, soft delete, `Delete` vs `Remove`, `Type`, `Filters` — and for the
-locale's **typographic conventions**: ellipsis spacing, dash choice, whether `%` takes a
-space, how progressive states are phrased. Also note anything that looks *wrong* (§6.9).
+locale's **typographic and orthographic conventions**: ellipsis spacing, dash choice, whether
+`%` takes a space, how progressive states are phrased, and **whether domain terms are
+capitalised mid-sentence**. Measure that last one per term rather than eyeballing it (§8.10);
+in `sr` it decides a third of all values and no gate can check it. Also note anything that
+looks *wrong* (§6.9).
 
 **6. Worklist, then harvest.**
 
@@ -473,6 +476,19 @@ the bundle, so records and values must land together.
   `Nextcloud`, `HTTP`, `localhost`, `config.json` or similar. The script requires the locale
   as an argument and refuses a locale whose expected alphabet is not recorded in it, since
   `sr` also ships in Latin in the wild.
+
+  **This check finds a defect class the Latin-script locales cannot have**, which is why it is
+  a replacement rather than a nice-to-have. In `sr` it isolated the only two non-cognate
+  Latin-only values out of 2052, and both were real:
+
+  - `NO ACTION` → `NEMA RADNJE` — correct Serbian, written in the **wrong alphabet**. No
+    other gate can see this: it is not empty, not identical to English, not a wrong plural,
+    and it reads as a translation to anyone skimming the file.
+  - `Audit trail #{id}` → `Revizijski trag #{id}` — wrong alphabet **and** Croatian **and**
+    inconsistent with the bundle's own 24 other audit-trail values.
+
+  So on a non-Latin locale, run the sweep **before** concluding the bundle's pre-existing
+  half is sound. Both of those had survived every gate for the whole life of the file.
 - **Your own typos.** Grep for the near-miss spellings of the words you used most. The `sl`
   pass shipped `namesčen` for `nameščen` in 8 values this way.
 
@@ -665,7 +681,20 @@ A **NOTE** that the library uses *fewer* forms than declared (`tr`, `rm`, `ga`) 
 Fix it, through the audited path (§6.3), with the reason in `corrections`. Recent examples:
 `sl` carried `Revizijski trag` for *audit trail* where `trag` is **Croatian** (Slovenian is
 `sled`) and one dialog used `Predmeti` against 74 uses of `objekt`; `lv` had 78 register
-deviations; `et` had 24.
+deviations; `et` had 24; `sr` had nine, spanning four different defect classes at once
+(wrong alphabet, Croatian, register, and capitalisation).
+
+**Check what makes a value wrong before calling it wrong — the same shape can be correct in
+one locale and a defect in the next.** Two cases from `sr`, both worth internalising:
+
+- `Изабери модел или унеси прилагођени назив модела` **looks** like the informal slip its two
+  siblings were, and is not: `унеси` is a 2sg *imperative*, which is Serbian's label
+  convention, where the siblings carried 2sg *presents* (`имаш`, `сачуваш`). One is style, the
+  other is address. Recorded in `UNDETECTABLE` rather than "fixed".
+- `Write an audit-trail entry for every step` opens with a bare 2sg imperative in **both**
+  `bg` and `sr`. In `bg` that had to be rewritten as a verbal noun; in `sr` it is correct and
+  was left alone. Same English source, same apparent shape, opposite verdicts — decided by
+  each locale's measured button convention (§7.3) and nothing else.
 
 Two judgement calls:
 
@@ -768,7 +797,7 @@ this goes wrong:
 
 | Locale | Forms | Boundaries |
 | --- | --- | --- |
-| `hr` `ru` `sr` `be` `bs` | 3 | modular: `1,21` / **2–4** / `0,5–20` |
+| `hr` `ru` `sr` `be` `bs` | 3 | modular: `1,21` / **2–4** / `0,5–20`. `sr` verified over 1–1001: 22 → form 1, 111 → form 2 |
 | `lt` | 3 | modular, **wider form 1**: `1,21` / **2–9** / `0,10–20` |
 | `pl` | 3 | modular, `n==1` exact for form 0 |
 | `cs` `sk` | 3 | **absolute**: `1` / `2–4` / everything else incl. 0 |
@@ -838,6 +867,7 @@ Formal: `fr cs ru uk tr el sr bg ca hr lt ro sk sl`.
 | `ca` | formal | 491 vs 32 |
 | `et` | **informal** | 415 vs 3 — core overruled the file |
 | `sl` | formal | 304 vs 0 |
+| `sr` | formal | 911 vs 0 over 4631 values / 32 catalogues |
 | `bg` | formal | 699 vs 43 — but the 43 needs splitting; **prose is 699 vs 11** |
 | `ro` | formal | core **MIXED** 124 vs 66 → decided by the bundle (84 vs 0) + owner |
 | `lv` | **informal** | 44 vs 3 — core overruled the file; 78 values corrected |
@@ -860,7 +890,7 @@ decide.
 | Pattern | Locales | Example |
 | --- | --- | --- |
 | same register as prose | `tr` `ru` | formal imperative |
-| bare 2sg imperative, whatever the prose | `ca` `et` `hr` `sl` | `Desa`, `Salvesta`, `Spremi`, `Shrani` |
+| bare 2sg imperative, whatever the prose | `ca` `et` `hr` `sl` `sr` | `Desa`, `Salvesta`, `Spremi`, `Shrani`, `Сачувај` |
 | **infinitive — register-neutral** | `cs` `lt` `lv` `sk` | `Zobrazit`, `Įrašyti`, `Saglabāt`, `Uložiť` |
 | **verbal noun — register-neutral** | `ro` `bg` | `Salvare`, `Adăugare endpoint`; `Запазване`, `Добавяне на крайна точка` |
 
@@ -1089,7 +1119,34 @@ capitalised `Read`/`Create`/… — the lowercase set are the matrix columns.
   plausibility.** The `lt` draft used `negrįžtamai` ("irreversibly") for *soft-deleted* — the
   exact opposite — where the file already had `minkštai pašalinti`.
 
----
+### 8.10 Measure the locale's house conventions, not just its register
+
+Register, buttons and plurals all have a step in §5. **Orthographic and typographic house
+conventions do not, and they touch more values than register does.** Measure them from the
+pre-existing half of the bundle before the first batch, and record the counts in
+`locales/<loc>.json` — the same standard of evidence.
+
+The sharpest case is `sr`, which capitalises the six first-class register concepts
+mid-sentence, like proper nouns, and lowercases everything else:
+
+| Capitalised | Lowercase |
+| --- | --- |
+| `Шема` 33:1 · `Регистар` 30:0 · `Објекат` 62:0 · `Својство` 25:0 · `Датотека` 43:0 · `Извор` 5:1 | `приказ` 0:41 · `ентитет` 0:13 · `ток` 0:25 |
+
+So `Обриши све Објекте у овој Шеми` but `Обриши приказ`. That affects roughly a third of all
+values, no other locale here does it, and **no gate can see it** — a wrongly-cased value is
+otherwise a perfectly good translation. Get it wrong and you have introduced 300 small
+inconsistencies that nothing will ever flag.
+
+How to measure: count capitalised-mid-sentence against lowercase **per term** (the
+`(?<=.)(?<!\p{L})` guard keeps sentence-initial positions out of the count). A one-sided
+split is a convention to follow; a 1-of-34 outlier is a slip worth normalising while you are
+there, since leaving it means explaining later why the rule has exceptions.
+
+The same applies to the conventions already collected in `docs/l10n-ui-translation.md`:
+ellipsis spacing (`nb` and `sl` put a space before, `ru` and `bg` do not), dash choice,
+whether `%` takes a space, quote glyphs (`da` opens with `”`, `ru` uses guillemets), and
+weaker domain-term capitalisation in `da` `sv` `pl`.
 
 ## 9. Remaining work
 

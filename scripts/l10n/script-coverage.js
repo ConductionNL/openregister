@@ -45,6 +45,8 @@ const SCRIPTS = {
 	bg: 'Cyrillic',
 	mk: 'Cyrillic',
 	be: 'Cyrillic',
+	// sr: measured, not assumed — 945 of this bundle's 1055 pre-existing values are
+	// Cyrillic-only and the Latin-only ones were two defects. See locales/sr.json.
 	sr: 'Cyrillic',
 	el: 'Greek',
 	uk: 'Cyrillic',
