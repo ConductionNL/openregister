@@ -508,6 +508,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * @param string $id The fully-namespaced tool id.
 	 *
 	 * @return array{id: string, name: string, description: string, inputSchema: array,
+	 *         app: string, subject: string, action: string,
 	 *         outputSchema?: array, readOnlyHint?: bool, destructiveHint?: bool,
 	 *         idempotentHint?: bool, scope?: string}
 	 */
@@ -517,6 +518,21 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 			'name' => $slug . '_' . $verb,
 			'description' => $this->description(slug: $slug, verb: $verbConfig['description'] ?? null, verbName: $verb),
 			'inputSchema' => $this->buildInputSchema(schema: $schema, verb: $verb, verbConfig: $verbConfig),
+
+			// The id's three parts, carried as FIELDS rather than only joined
+			// into a string.
+			//
+			// ⚠️ This provider composes `{app}.{slug}.{verb}` from values it
+			// already holds, and previously published only the joined result —
+			// so every consumer had to take the structure apart again. A grant
+			// UI doing that ended up splitting camelCase and singularising
+			// English ("courses" → "cours", `webFetch` → subject "fetch"),
+			// which is guesswork standing in for data that was never lost, only
+			// discarded. A consumer must never have to parse an identifier to
+			// recover something the producer knew.
+			'app' => $this->appId,
+			'subject' => $slug,
+			'action' => $verb,
 		];
 
 		$outputSchema = $this->buildOutputSchema(verb: $verb);
