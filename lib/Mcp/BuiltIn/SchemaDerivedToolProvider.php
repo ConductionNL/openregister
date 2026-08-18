@@ -68,6 +68,10 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass - Instantiated by Application::registerMcpToolProviders()
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) One IMcpToolProvider implementation: the ABI's id/verb contract, the
+ *      two collision rules (hand-written > derived, first-definition > duplicate) and the JSON-Schema sanitiser are one
+ *      story about what this app publishes. Splitting them would scatter the derived-tool contract across files.
+ *
  * @spec openspec/specs/ai-mcp/spec.md
  *   (Requirement: REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools)
  */
@@ -149,6 +153,23 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	public function getTools(): array {
 		$descriptors = [];
 
+		// Ids already emitted by THIS provider.
+		//
+		// ⚠️ A tool id is `{app}.{slug}.{verb}`, which carries no register — so
+		// every duplicate definition of one schema slug collides on a single
+		// id. Measured on the dev instance: 16 schema rows share the slug
+		// `generatedDocument` and 11 share `correspondence`, 13 of each
+		// MCP-enabled, so the catalogue served 207 rows for 159 distinct tools
+		// and an agent saw the same tool thirteen times.
+		//
+		// The existing REQ-DERIVED-003 suppression only covers derived-vs-
+		// HAND-WRITTEN collisions; this is derived-vs-derived and went
+		// unguarded. First definition wins, matching that rule's precedence
+		// direction, and the rest are logged rather than dropped silently —
+		// duplicate schema rows are a data problem this provider can only
+		// report, not fix.
+		$emittedIds = [];
+
 		foreach ($this->schemaEntries as $entry) {
 			$schema = $entry['schema'];
 			$annotation = $this->mcpAnnotation(schema: $schema);
@@ -172,6 +193,23 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 				if (in_array($id, $this->suppressedIds, true) === true) {
 					continue;
 				}
+
+				// A second schema row claiming the same id — see $emittedIds.
+				if (array_key_exists($id, $emittedIds) === true) {
+					$this->logger->warning(
+						message: '[SchemaDerivedToolProvider] duplicate tool id suppressed — two schema rows share one slug',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'toolId' => $id,
+							'keptSchemaId' => $emittedIds[$id],
+							'droppedSchemaId' => $schema->getId(),
+						]
+					);
+					continue;
+				}
+
+				$emittedIds[$id] = $schema->getId();
 
 				$verbConfig = [];
 				if (is_array($toolsConfig) === true && is_array($toolsConfig[$verb] ?? null) === true) {
