@@ -341,7 +341,10 @@ final class ObjectPreviewFormatter {
 			}
 
 			$objectData = $object->jsonSerialize();
-			$selfData = $objectData['@self'] ?? [];
+			$selfData = $objectData['@self'];
+			if (is_array($selfData) === false) {
+				$selfData = [];
+			}
 
 			// Extract title.
 			$title = $this->extractTitle(objectData: $objectData, selfData: $selfData);
@@ -386,7 +389,7 @@ final class ObjectPreviewFormatter {
 			$properties = $this->extractPreviewProperties(objectData: $objectData);
 
 			// Get updated timestamp.
-			$updated = $selfData['updated'] ?? $objectData['updated'] ?? '';
+			$updated = $selfData['updated'] ?? '';
 
 			// Build rich data.
 			$richData = [
