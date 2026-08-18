@@ -2,9 +2,9 @@
 	<SettingsSection
 		:name="title"
 		:description="description"
-		:doc-url="docUrl"
+		:docUrl="docUrl"
 		:loading="loading"
-		loading-message="Loading version information...">
+		loadingMessage="Loading version information...">
 		<!-- Actions slot -->
 		<template #actions>
 			<!-- Update Button -->
@@ -77,10 +77,10 @@
 </template>
 
 <script>
-import SettingsSection from './SettingsSection.vue'
-import { NcLoadingIcon, NcButton } from '@nextcloud/vue'
+import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import Check from 'vue-material-design-icons/Check.vue'
 import Update from 'vue-material-design-icons/Update.vue'
+import SettingsSection from './SettingsSection.vue'
 
 /**
  * Reusable version information card component for displaying application information
@@ -106,6 +106,7 @@ export default {
 	props: {
 		/**
 		 * Section title
+		 *
 		 * @default 'Version Information'
 		 */
 		title: {
@@ -131,6 +132,7 @@ export default {
 
 		/**
 		 * Card title/heading with emoji
+		 *
 		 * @default '📦 Application Information'
 		 */
 		cardTitle: {

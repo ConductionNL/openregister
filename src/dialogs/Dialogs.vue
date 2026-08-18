@@ -15,11 +15,11 @@ import { navigationStore } from '../store/store.js'
 </script>
 
 <script>
-import DeleteAuditTrail from '../modals/logs/DeleteAuditTrail.vue'
-import AuditTrailDetails from '../modals/logs/AuditTrailDetails.vue'
-import AuditTrailChanges from '../modals/logs/AuditTrailChanges.vue'
-import ClearAuditTrails from '../modals/logs/ClearAuditTrails.vue'
 import DeleteApplication from '../modals/application/DeleteApplication.vue'
+import AuditTrailChanges from '../modals/logs/AuditTrailChanges.vue'
+import AuditTrailDetails from '../modals/logs/AuditTrailDetails.vue'
+import ClearAuditTrails from '../modals/logs/ClearAuditTrails.vue'
+import DeleteAuditTrail from '../modals/logs/DeleteAuditTrail.vue'
 
 export default {
 	name: 'Dialogs',

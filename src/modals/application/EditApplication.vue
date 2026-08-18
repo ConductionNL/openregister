@@ -2,8 +2,8 @@
 import { translate as t } from '@nextcloud/l10n'
 import {
 	applicationStore,
-	organisationStore,
 	navigationStore,
+	organisationStore,
 } from '../../store/store.js'
 </script>
 
@@ -16,7 +16,7 @@ import {
 		"
 		:open="true"
 		size="large"
-		:can-close="true"
+		:canClose="true"
 		@update:open="handleDialogOpen">
 		<NcNoteCard v-if="success" type="success">
 			<p>
@@ -33,7 +33,7 @@ import {
 		<div v-if="!success">
 			<!-- Tabs -->
 			<div class="tabContainer">
-				<AppTabs v-model="activeTab" content-class="mt-3" justified>
+				<AppTabs v-model="activeTab" contentClass="mt-3" justified>
 					<AppTab active>
 						<template #title>
 							<Cog :size="16" />
@@ -41,18 +41,18 @@ import {
 						</template>
 						<div class="form-editor">
 							<NcTextField
+								v-model="applicationItem.name"
 								:disabled="loading"
 								:label="t('openregister', 'Name *')"
-								v-model="applicationItem.name"
 								:error="!applicationItem.name.trim()"
 								:placeholder="
 									t('openregister', 'Enter application name')
 								" />
 
 							<NcTextArea
+								v-model="applicationItem.description"
 								:disabled="loading"
 								:label="t('openregister', 'Description')"
-								v-model="applicationItem.description"
 								:placeholder="
 									t(
 										'openregister',
@@ -67,18 +67,18 @@ import {
 								<label class="groups-label">Nextcloud Groups</label>
 								<NcSelect
 									v-model="selectedGroups"
-									input-label="Selected Groups"
+									inputLabel="Selected Groups"
 									:disabled="loading || loadingGroups"
 									:options="availableGroups"
 									label="name"
-									track-by="id"
+									trackBy="id"
 									:multiple="true"
-									:label-outside="true"
+									:labelOutside="true"
 									:filterable="false"
 									:placeholder="
 										t('openregister', 'Search groups...')
 									"
-									@search-change="searchGroups"
+									@searchChange="searchGroups"
 									@update:modelValue="updateGroups">
 									<template #option="{ name }">
 										<div class="group-option">
@@ -118,7 +118,7 @@ import {
 								label="Storage Quota (MB)"
 								type="number"
 								placeholder="0 = unlimited"
-								:model-value="storageQuotaMB"
+								:modelValue="storageQuotaMB"
 								@update:modelValue="updateStorageQuota" />
 
 							<NcTextField
@@ -126,7 +126,7 @@ import {
 								label="Bandwidth Quota (MB/month)"
 								type="number"
 								placeholder="0 = unlimited"
-								:model-value="bandwidthQuotaMB"
+								:modelValue="bandwidthQuotaMB"
 								@update:modelValue="updateBandwidthQuota" />
 
 							<NcTextField
@@ -134,7 +134,7 @@ import {
 								label="API Request Quota (requests/day)"
 								type="number"
 								placeholder="0 = unlimited"
-								:model-value="applicationItem.quota?.requests || 0"
+								:modelValue="applicationItem.quota?.requests || 0"
 								@update:modelValue="updateRequestQuota" />
 
 							<NcTextField
@@ -142,7 +142,7 @@ import {
 								label="User Quota"
 								type="number"
 								placeholder="0 = unlimited (not applicable for applications)"
-								:model-value="applicationItem.quota?.users || 0"
+								:modelValue="applicationItem.quota?.users || 0"
 								@update:modelValue="updateUserQuota" />
 
 							<NcTextField
@@ -150,7 +150,7 @@ import {
 								label="Group Quota"
 								type="number"
 								placeholder="0 = unlimited"
-								:model-value="applicationItem.quota?.groups || 0"
+								:modelValue="applicationItem.quota?.groups || 0"
 								@update:modelValue="updateGroupQuota" />
 						</div>
 					</AppTab>
@@ -171,12 +171,12 @@ import {
 									</p>
 
 									<RbacTable
-										entity-type="application"
+										entityType="application"
 										:authorization="
 											applicationItem.authorization
 										"
-										:available-groups="availableGroups"
-										:organisation-groups="
+										:availableGroups="availableGroups"
+										:organisationGroups="
 											applicationItem.groups || []
 										"
 										@update="updateApplicationPermission" />
@@ -219,23 +219,21 @@ import {
 import {
 	NcButton,
 	NcDialog,
-	NcTextField,
-	NcTextArea,
-	NcSelect,
 	NcLoadingIcon,
 	NcNoteCard,
+	NcSelect,
+	NcTextArea,
+	NcTextField,
 } from '@nextcloud/vue'
-import AppTabs from '../../components/tabs/AppTabs.vue'
-import AppTab from '../../components/tabs/AppTab.vue'
-
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
+import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Database from 'vue-material-design-icons/Database.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
 import Shield from 'vue-material-design-icons/Shield.vue'
-
 import RbacTable from '../../components/RbacTable.vue'
+import AppTab from '../../components/tabs/AppTab.vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
 
 export default {
 	name: 'EditApplication',
@@ -258,6 +256,7 @@ export default {
 		Database,
 		Shield,
 	},
+
 	data() {
 		return {
 			activeTab: 0,
@@ -272,6 +271,7 @@ export default {
 					users: 0,
 					groups: 0,
 				},
+
 				groups: [],
 				authorization: {
 					create: [],
@@ -280,6 +280,7 @@ export default {
 					delete: [],
 				},
 			},
+
 			selectedGroups: [],
 			availableGroups: [],
 			loadingGroups: false,
@@ -290,6 +291,7 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude UI display helper — converts storage quota bytes to MB for the form.
@@ -298,6 +300,7 @@ export default {
 			if (!this.applicationItem.quota?.storage) return 0
 			return Math.round(this.applicationItem.quota.storage / (1024 * 1024))
 		},
+
 		/**
 		 * @spec exclude UI display helper — converts bandwidth quota bytes to MB for the form.
 		 */
@@ -305,6 +308,7 @@ export default {
 			if (!this.applicationItem.quota?.bandwidth) return 0
 			return Math.round(this.applicationItem.quota.bandwidth / (1024 * 1024))
 		},
+
 		/**
 		 * @spec exclude UI display helper — filters available groups to those assigned to the application.
 		 */
@@ -321,6 +325,7 @@ export default {
 			)
 		},
 	},
+
 	/**
 	 * @spec exclude Vue lifecycle hook — loads organisations/groups and hydrates the modal.
 	 */
@@ -331,6 +336,7 @@ export default {
 		// Initialize after groups are loaded
 		this.initializeApplicationItem()
 	},
+
 	methods: {
 		/**
 		 * Fetch available organisations from the store

@@ -55,7 +55,7 @@ class MdtoXmlGeneratorTest extends TestCase {
 			retention: [
 				'archiefnominatie' => 'bewaren',
 				'bewaartermijn' => 'P20Y',
-				'classificatie' => 'A1',
+				'classification' => 'A1',
 			],
 			objectData: ['title' => 'Test Document']
 		);
@@ -80,7 +80,7 @@ class MdtoXmlGeneratorTest extends TestCase {
 			retention: [
 				'archiefnominatie' => 'bewaren',
 				'bewaartermijn' => 'P10Y',
-				'classificatie' => 'B1',
+				'classification' => 'B1',
 			]
 		);
 
@@ -178,7 +178,8 @@ class MdtoXmlGeneratorTest extends TestCase {
 		$object = $this->getMockBuilder(ObjectEntity::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['jsonSerialize', 'getObject'])
-			->addMethods(['getUuid', 'getRetention'])
+			->onlyMethods(['getUuid'])
+			->addMethods(['getRetention'])
 			->getMock();
 		$object->method('getUuid')->willReturn($uuid);
 		$object->method('getRetention')->willReturn($retention);

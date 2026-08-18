@@ -24,15 +24,15 @@
 </template>
 
 <script>
-import SearchSideBar from './search/SearchSideBar.vue'
+import FlowDetailSidebar from '../views/flows/FlowDetailSidebar.vue'
 import DashboardSideBar from './dashboard/DashboardSideBar.vue'
-import RegisterSideBar from './register/RegisterSideBar.vue'
-import RegistersSideBar from './register/RegistersSideBar.vue'
 import DeletedSideBar from './deleted/DeletedSideBar.vue'
 import EntitiesSideBar from './entities/EntitiesSideBar.vue'
 import AuditTrailSideBar from './logs/AuditTrailSideBar.vue'
 import SearchTrailSideBar from './logs/SearchTrailSideBar.vue'
-import FlowDetailSidebar from '../views/flows/FlowDetailSidebar.vue'
+import RegisterSideBar from './register/RegisterSideBar.vue'
+import RegistersSideBar from './register/RegistersSideBar.vue'
+import SearchSideBar from './search/SearchSideBar.vue'
 
 export default {
 	name: 'SideBars',

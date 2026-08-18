@@ -165,12 +165,12 @@ class ExportBundleServiceTest extends TestCase {
 			$this->createMock(LoggerInterface::class)
 		);
 
-		$dossier = $service->assembleRegulatorDossier(caseUuid: '00000000-0000-0000-0000-000000000000');
+		$file = $service->assembleRegulatorDossier(caseUuid: '00000000-0000-0000-0000-000000000000');
 
-		$this->assertCount(1, $dossier['evidence']);
-		$this->assertCount(1, $dossier['redactions']);
-		$this->assertSame('third-party-data', $dossier['redactions'][0]['ground']);
-		$this->assertArrayHasKey('history', $dossier);
+		$this->assertCount(1, $file['evidence']);
+		$this->assertCount(1, $file['redactions']);
+		$this->assertSame('third-party-data', $file['redactions'][0]['ground']);
+		$this->assertArrayHasKey('history', $file);
 
 	}//end testDossierReflectsEvidenceRedactionsHistory()
 

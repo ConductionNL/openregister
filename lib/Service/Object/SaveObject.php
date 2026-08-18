@@ -914,7 +914,7 @@ class SaveObject {
 			}
 
 			try {
-				// Get the base property name (e.g., "organisatie" from "organisatie.0").
+				// Get the base property name (e.g., "organisation" from "organisatie.0").
 				$baseProperty = explode('.', $propertyPath)[0];
 
 				// Look up the target schema from the property configuration.
@@ -934,7 +934,7 @@ class SaveObject {
 					$ref = $propertyConfig['items']['$ref'];
 				}
 
-				// Parse the schema slug from the $ref (e.g., "#/components/schemas/organisatie" -> "organisatie").
+				// Parse the schema slug from the $ref (e.g., "#/components/schemas/organisatie" -> "organisation").
 				$targetSchemaSlug = '';
 				if (preg_match('~^\#/components/schemas/(.+)$~', $ref, $matches) === 1) {
 					$targetSchemaSlug = $matches[1];
@@ -3404,7 +3404,13 @@ class SaveObject {
 		$savedName = $savedEntity->getName();
 		$savedUuid = $savedEntity->getUuid();
 		if ($savedUuid !== null && $savedName !== null && trim($savedName) !== '') {
-			$this->cacheHandler->setObjectName(identifier: $savedUuid, name: $savedName);
+			// SEC-CTRL-2 step 2: the cached name carries the entity's tenancy, so it
+			// is only ever handed back to a caller in that organisation.
+			$this->cacheHandler->setObjectName(
+				identifier: $savedUuid,
+				name: $savedName,
+				organisation: $savedEntity->getOrganisation()
+			);
 		}
 
 		// Process file properties with rollback on failure.
@@ -5233,17 +5239,29 @@ class SaveObject {
 			return;
 		}
 
+		// SEC-CTRL-2 step 2: pre-cached parent names carry their owning organisation
+		// so the shared name cache can never disclose them across tenants.
+		$parentOrganisation = $objectEntity->getOrganisation();
+
 		$name = $objectEntity->getName();
 		if ($name !== null && trim($name) !== '') {
-			$this->cacheHandler->setObjectName(identifier: $uuid, name: $name);
+			$this->cacheHandler->setObjectName(
+				identifier: $uuid,
+				name: $name,
+				organisation: $parentOrganisation
+			);
 		}
 
 		// Also try the 'naam' field as a fallback (common in Dutch schemas).
 		// This covers cases where objectNameField is not configured but naam exists in data.
 		if (($name === null || trim($name) === '') && isset($data['naam']) === true) {
-			$naam = trim((string)$data['naam']);
-			if ($naam !== '') {
-				$this->cacheHandler->setObjectName(identifier: $uuid, name: $naam);
+			$name = trim((string)$data['naam']);
+			if ($name !== '') {
+				$this->cacheHandler->setObjectName(
+					identifier: $uuid,
+					name: $name,
+					organisation: $parentOrganisation
+				);
 			}
 		}
 	}//end preCacheParentName()
@@ -5322,7 +5340,7 @@ class SaveObject {
 		// Recalculate archiefactiedatum if source property changed.
 		try {
 			$retentionService = \OC::$server->get(\OCA\OpenRegister\Service\RetentionService::class);
-			$preparedObject = $retentionService->recalculateArchiefactiedatum(
+			$preparedObject = $retentionService->recalculateArchiveActionDate(
 				$preparedObject,
 				$schema,
 				$oldObject->getObject()

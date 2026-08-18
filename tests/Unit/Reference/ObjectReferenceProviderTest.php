@@ -4,7 +4,11 @@
  * Unit tests for ObjectReferenceProvider.
  *
  * Tests URL matching, reference resolution, caching, and error handling
- * for the OpenRegister Smart Picker reference provider.
+ * for the OpenRegister Smart Picker reference provider. The provider now
+ * delegates URL parsing and preview formatting to ObjectPreviewFormatter
+ * (see ObjectPreviewFormatterTest for that logic's own unit coverage); this
+ * suite constructs a real formatter from mocked lower-level dependencies so
+ * the provider's own, unchanged public behavior is verified end-to-end.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Reference
@@ -30,6 +34,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Reference\ObjectReferenceProvider;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
 use OCP\Collaboration\Reference\Reference;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -50,6 +55,13 @@ class ObjectReferenceProviderTest extends TestCase {
 	 * @var ObjectReferenceProvider
 	 */
 	private ObjectReferenceProvider $provider;
+
+	/**
+	 * The shared formatter the provider delegates to.
+	 *
+	 * @var ObjectPreviewFormatter
+	 */
+	private ObjectPreviewFormatter $formatter;
 
 	/**
 	 * Mock URL generator.
@@ -127,14 +139,20 @@ class ObjectReferenceProviderTest extends TestCase {
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->provider = new ObjectReferenceProvider(
+		$this->formatter = new ObjectPreviewFormatter(
 			$this->urlGenerator,
 			$this->l10n,
 			$this->objectService,
 			$this->deepLinkRegistry,
 			$this->schemaMapper,
 			$this->registerMapper,
-			$this->logger,
+			$this->logger
+		);
+
+		$this->provider = new ObjectReferenceProvider(
+			$this->urlGenerator,
+			$this->l10n,
+			$this->formatter,
 			'test-user'
 		);
 	}//end setUp()
@@ -372,11 +390,7 @@ class ObjectReferenceProviderTest extends TestCase {
 		$anonProvider = new ObjectReferenceProvider(
 			$this->urlGenerator,
 			$this->l10n,
-			$this->objectService,
-			$this->deepLinkRegistry,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->logger,
+			$this->formatter,
 			null
 		);
 
@@ -398,17 +412,26 @@ class ObjectReferenceProviderTest extends TestCase {
 	}//end testGetIconUrlUsesUrlGenerator()
 
 	/**
-	 * Test parseReference extracts correct data from API URL.
+	 * Test resolveReferencePublic delegates to resolveReference.
 	 *
 	 * @return void
 	 */
-	public function testParseReferenceApiUrl(): void {
-		$url = 'https://cloud.example.com/apps/openregister/api/objects/10/20/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
-		$parsed = $this->provider->parseReference($url);
+	public function testResolveReferencePublicDelegatesToResolveReference(): void {
+		$url = 'https://cloud.example.com/apps/openregister/#/registers/5/schemas/12/objects/550e8400-e29b-41d4-a716-446655440000';
 
-		$this->assertNotNull($parsed);
-		$this->assertSame(10, $parsed['registerId']);
-		$this->assertSame(20, $parsed['schemaId']);
-		$this->assertSame('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', $parsed['uuid']);
-	}//end testParseReferenceApiUrl()
+		$this->objectService->method('find')->willReturn(null);
+
+		$reference = $this->provider->resolveReferencePublic($url, 'some-token');
+		$this->assertNull($reference);
+	}//end testResolveReferencePublicDelegatesToResolveReference()
+
+	/**
+	 * Test getCacheKeyPublic returns the sharing token.
+	 *
+	 * @return void
+	 */
+	public function testGetCacheKeyPublicReturnsSharingToken(): void {
+		$key = $this->provider->getCacheKeyPublic('any-url', 'token-123');
+		$this->assertSame('token-123', $key);
+	}//end testGetCacheKeyPublicReturnsSharingToken()
 }//end class

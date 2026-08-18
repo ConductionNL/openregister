@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\VocabularyImportService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
@@ -119,18 +120,21 @@ class VocabularyController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	// Published vocabulary — resolution is the point of it, so these are
+	// runaway ceilings rather than gates.
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function resolveByUri(): JSONResponse {
 		$uri = trim((string)$this->request->getParam('uri', ''));
 		if ($uri === '') {
 			return $this->notFound();
 		}
 
-		$concept = $this->findOneBy(schema: self::SCHEMA_CONCEPT, filters: ['uri' => $uri]);
-		if ($concept === null) {
+		$draft = $this->findOneBy(schema: self::SCHEMA_CONCEPT, filters: ['uri' => $uri]);
+		if ($draft === null) {
 			return $this->notFound();
 		}
 
-		return new JSONResponse($concept->jsonSerialize());
+		return new JSONResponse($draft->jsonSerialize());
 	}//end resolveByUri()
 
 	/**
@@ -148,6 +152,7 @@ class VocabularyController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function resolveByNotation(): JSONResponse {
 		$scheme = trim((string)$this->request->getParam('scheme', ''));
 		$notation = trim((string)$this->request->getParam('notation', ''));
@@ -160,18 +165,18 @@ class VocabularyController extends Controller {
 			return $this->notFound();
 		}
 
-		$concept = $this->findOneBy(
+		$draft = $this->findOneBy(
 			schema: self::SCHEMA_CONCEPT,
 			filters: [
 				'inScheme' => $schemeUuid,
 				'notation' => $notation,
 			]
 		);
-		if ($concept === null) {
+		if ($draft === null) {
 			return $this->notFound();
 		}
 
-		return new JSONResponse($concept->jsonSerialize());
+		return new JSONResponse($draft->jsonSerialize());
 	}//end resolveByNotation()
 
 	/**
@@ -190,6 +195,7 @@ class VocabularyController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function listConcepts(): JSONResponse {
 		$scheme = trim((string)$this->request->getParam('scheme', ''));
 		if ($scheme === '') {

@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 /**
  * AvgIndex — Cases surface unit tests.
  *
@@ -217,7 +216,7 @@ describe('AvgIndex — Cases surface', () => {
 		const ids = computedCall('tabs', {}).map((t) => t.id)
 		expect(ids).toEqual([
 			'activities',
-			'verantwoording',
+			'accountability',
 			'dsar',
 			'cases',
 			'compliance',

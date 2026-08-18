@@ -1,8 +1,8 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
 import {
-	objectStore,
 	navigationStore,
+	objectStore,
 	registerStore,
 	schemaStore,
 } from '../../store/store.js'
@@ -34,10 +34,10 @@ import {
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcButton } from '@nextcloud/vue'
-import ObjectsList from './ObjectsList.vue'
-import ObjectDetails from './ObjectDetails.vue'
+import { NcAppContent, NcButton, NcEmptyContent } from '@nextcloud/vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
+import ObjectDetails from './ObjectDetails.vue'
+import ObjectsList from './ObjectsList.vue'
 
 export default {
 	name: 'ObjectsIndex',
@@ -49,6 +49,7 @@ export default {
 		ObjectDetails,
 		DatabaseOutline,
 	},
+
 	computed: {
 		// Both the original /objects route and the deep-link
 		// /objects/:register/:schema/:id route should render the
@@ -62,6 +63,7 @@ export default {
 			)
 		},
 	},
+
 	watch: {
 		'$route.params.id': {
 			/**
@@ -75,9 +77,11 @@ export default {
 			},
 		},
 	},
+
 	mounted() {
 		this.loadFromRoute()
 	},
+
 	methods: {
 		/**
 		 * Fetch the deep-linked object and prime the store for ObjectDetails.
@@ -137,6 +141,7 @@ export default {
 				console.error('[ObjectsIndex] deep-link fetch failed', e)
 			}
 		},
+
 		/**
 		 * Open the add-object modal with register/schema context.
 		 *

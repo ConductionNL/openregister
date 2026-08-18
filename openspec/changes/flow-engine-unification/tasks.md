@@ -41,9 +41,9 @@
 
 ## Phase 6 — Consumers
 - [ ] 6.1 OpenRegister: `/flows` + `/flows/:id` pages, menu entry, no app filter.
-- [ ] 6.2 OpenConnector: `/flows` + `/flows/:id` pages, menu entry, `app=openconnector`.
+- [x] 6.2 OpenConnector: `/flows` + `/flows/:id` pages, menu entry, `app=openconnector`. Live-verified 2026-08-16: list + detail (shared CnFlowDetail canvas), real run against openwoo.zaaksysteme.net, hard-reload survives the router-history-mode conversion. Left the pre-existing openconnector-native `flow`/`steps[]` backend running unmigrated — see openconnector#1255.
 - [ ] 6.3 hermiq: `/graphs` → `/flows` on the shared components, `app=hermiq`, old route kept as alias.
-- [ ] 6.4 OpenBuild: "Edit flows…" opens `CnFlowEditModal`.
+- [x] 6.4 OpenBuild: "Edit flows…" opens `CnFlowEditModal`. Live-verified 2026-08-16: button gated on an app selection, modal opens the shared canvas scoped to the selected app.
 
 ## Phase 7 — Verification
 - [ ] 7.1 `composer check:strict` green in openregister and hermiq.

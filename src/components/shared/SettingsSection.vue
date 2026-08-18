@@ -2,7 +2,7 @@
 	<NcSettingsSection
 		:name="name"
 		:description="description"
-		:doc-url="docUrl"
+		:docUrl="docUrl"
 		v-bind="$attrs">
 		<!-- Action buttons positioned top-right -->
 		<div v-if="$slots.actions" class="action-buttons">
@@ -62,10 +62,10 @@
 </template>
 
 <script>
-import { NcSettingsSection, NcLoadingIcon, NcButton } from '@nextcloud/vue'
+import { NcButton, NcLoadingIcon, NcSettingsSection } from '@nextcloud/vue'
 import DOMPurify from 'dompurify'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 
 /**
  * Reusable settings section wrapper component that provides consistent layout and functionality

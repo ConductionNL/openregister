@@ -367,14 +367,14 @@ if (typeof window !== 'undefined') {
 }
 
 export {
-	testFacetDiscovery,
-	testBasicFacets,
-	testCustomFacets,
+	checkStoreState,
 	testActiveFacets,
+	testBasicFacets,
+	testBuildSearchQuery,
+	testCompleteWorkflow,
+	testCustomFacets,
+	testExactUserURL,
+	testFacetDiscovery,
 	testObjectListWithFacets,
 	testObjectListWithoutFacets,
-	testCompleteWorkflow,
-	checkStoreState,
-	testExactUserURL,
-	testBuildSearchQuery,
 }

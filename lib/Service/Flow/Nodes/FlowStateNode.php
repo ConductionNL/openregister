@@ -61,6 +61,17 @@ use OCP\WorkflowEngine\IManager;
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Five over, and all five come
+ *   from `leaseExpired()`. Its branches are not logic — they are four separate
+ *   reasons to FAIL SAFE: no lease configured, a slot value that is not a record,
+ *   a `since` that is absent or not a string, and a timestamp that will not
+ *   parse. Each keeps the slot HELD, because displacing a live holder hands one
+ *   slot to two runs and destroys the mutual exclusion the pool exists for,
+ *   whereas keeping an expired one only delays a recovery. Collapsing them into
+ *   a single condition would satisfy the metric and remove the one property that
+ *   makes the lease safe to turn on — that every uncertain case resolves the same
+ *   way, and it is possible to see which.
  */
 class FlowStateNode implements IFlowNode, IFlowNodeConfigKeys {
 
@@ -197,6 +208,7 @@ class FlowStateNode implements IFlowNode, IFlowNodeConfigKeys {
 			'record',
 			'slots',
 			'capacity',
+			'leaseSeconds',
 			'holder',
 			'slot',
 		];
@@ -376,11 +388,39 @@ class FlowStateNode implements IFlowNode, IFlowNodeConfigKeys {
 
 		$slots = $this->slotTable(stored: (array)$state->get($slotsKey, []), capacity: $capacity);
 
-		// A slot is free when it holds nothing. Slots are numbered from 1 so
-		// the value reads naturally in a dashboard ("slot 3 of 10").
+		// A slot is free when it holds nothing, OR when whoever holds it has
+		// held it for longer than the configured lease.
+		//
+		// 🔑 WITHOUT A LEASE A SLOT IS LOST, NOT BORROWED. `claim` and `release`
+		// are separate steps, and everything that can happen between them
+		// happens: a node with `onError: stop`, a refusal, a crashed worker, a
+		// run that outlives its deadline. Any of those ends the run holding a
+		// slot that nothing will ever give back — and unlike the per-issue lock
+		// beside it, which `hydra-lock-reaper` ages out, nothing reaps a slot.
+		//
+		// ⚠️ THE SYMPTOM IS NOT AN ERROR, IT IS SILENCE. Once the pool is full
+		// of dead holders every claim routes to whatever the caller's "at
+		// capacity" branch is, which is a NORMAL outcome — the flow reports
+		// `completed`, the queue stops moving, and the pipeline looks busy.
+		// Measured on hydra's sequencer: one run stopped at `lock-issue` with
+		// `onError: stop` and its slot was still held hours later; three of
+		// those and that repository can never be built again.
+		//
+		// The lease is opt-in (`leaseSeconds`) and absent by default, because a
+		// caller that genuinely wants a slot held until it is released — a
+		// long-running import, a manual gate — must keep that behaviour. Where
+		// it is set, an expired holder is treated as gone rather than deleted:
+		// the claim below simply overwrites the entry, so a slot recovers on
+		// the next attempt to use it and no reaper has to run at all.
+		$leaseSeconds = (int)($config['leaseSeconds'] ?? 0);
+
+		// Slots are numbered from 1 so the value reads naturally in a dashboard
+		// ("slot 3 of 10").
 		for ($n = 1; $n <= $capacity; $n++) {
 			$slot = (string)$n;
-			if (($slots[$slot] ?? null) !== null) {
+			if (($slots[$slot] ?? null) !== null
+				&& $this->leaseExpired(entry: $slots[$slot], leaseSeconds: $leaseSeconds) === false
+			) {
 				continue;
 			}
 
@@ -483,6 +523,49 @@ class FlowStateNode implements IFlowNode, IFlowNodeConfigKeys {
 
 		return ['holder' => $holder, 'since' => null];
 	}//end slotRecord()
+
+	/**
+	/**
+	 * Whether a held slot's lease has run out.
+	 *
+	 * Answers FALSE whenever it cannot be sure, and that direction is chosen
+	 * deliberately: treating a live holder as expired would hand its slot to a
+	 * second run and destroy the mutual exclusion the pool exists for, whereas
+	 * treating an expired holder as live only delays a recovery. So a missing
+	 * lease, an absent `since`, or a timestamp that will not parse all keep the
+	 * slot held.
+	 *
+	 * @param mixed $entry        The stored slot value.
+	 * @param int   $leaseSeconds The lease, or 0 for none.
+	 *
+	 * @return bool True when the holder may be displaced.
+	 *
+	 * @spec exclude The slot/lease contract has no canonical spec.
+	 *  openspec/specs/flow-state/spec.md does not exist and never has; the tag
+	 *  pointed at a file rather than at a requirement. flow-engine's spec is
+	 *  the nearest home and it covers resume and suspend-on-signal, NOT slot
+	 *  leases, so citing it here would be a reference that reads as coverage
+	 *  and is not. Excluded with the gap named until the flow-state slot
+	 *  contract is written down.
+	 */
+	private function leaseExpired(mixed $entry, int $leaseSeconds): bool {
+		if ($leaseSeconds <= 0 || is_array($entry) === false) {
+			return false;
+		}
+
+		$since = ($entry['since'] ?? null);
+		if (is_string($since) === false || $since === '') {
+			return false;
+		}
+
+		$taken = strtotime($since);
+		if ($taken === false) {
+			return false;
+		}
+
+		return ((time() - $taken) > $leaseSeconds);
+
+	}//end leaseExpired()
 
 	/**
 	 * Give a held slot back.

@@ -1,9 +1,9 @@
 <script>
-import { NcAppContent } from '@nextcloud/vue'
 import {
 	CnIntegrationWidget,
 	useIntegrationRegistry,
 } from '@conduction/nextcloud-vue'
+import { NcAppContent } from '@nextcloud/vue'
 import { computed, ref } from 'vue'
 
 /**
@@ -56,6 +56,7 @@ export default {
 		register() {
 			return String(this.$route.params.register || '')
 		},
+
 		/**
 		 * Schema slug from the route.
 		 *
@@ -65,6 +66,7 @@ export default {
 		schema() {
 			return String(this.$route.params.schema || '')
 		},
+
 		/**
 		 * Object id from the route.
 		 *
@@ -74,6 +76,7 @@ export default {
 		objectId() {
 			return String(this.$route.params.objectId || '')
 		},
+
 		/**
 		 * Whether all params + providers are present to render tabs.
 		 *
@@ -128,7 +131,7 @@ export default {
 				<CnIntegrationWidget
 					:register="register"
 					:schema="schema"
-					:object-id="objectId"
+					:objectId="objectId"
 					surface="detail-page" />
 			</div>
 		</div>

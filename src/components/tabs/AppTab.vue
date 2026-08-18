@@ -1,5 +1,5 @@
 <script>
-import { h, getCurrentInstance } from 'vue'
+import { getCurrentInstance, h } from 'vue'
 
 /**
  * One panel inside {@link AppTabs}. Replaces `bootstrap-vue`'s `<BTab>`.
@@ -20,23 +20,27 @@ export default {
 	inject: {
 		appTabs: { default: null },
 	},
+
 	props: {
 		/** Plain-text tab label; ignored when a `#title` slot is supplied. */
 		title: {
 			type: String,
 			default: '',
 		},
+
 		/** Select this tab initially. */
 		active: {
 			type: Boolean,
 			default: false,
 		},
 	},
+
 	data() {
 		return {
 			uid: getCurrentInstance()?.uid ?? Math.random().toString(36).slice(2),
 		}
 	},
+
 	created() {
 		this.appTabs?.register({
 			uid: this.uid,
@@ -45,9 +49,11 @@ export default {
 			active: this.active,
 		})
 	},
+
 	beforeUnmount() {
 		this.appTabs?.unregister(this.uid)
 	},
+
 	/**
 	 * Render the panel, or nothing when this tab is not the active one.
 	 *

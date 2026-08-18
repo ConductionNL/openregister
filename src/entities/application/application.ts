@@ -1,5 +1,7 @@
-import { SafeParseReturnType, z } from 'zod'
-import { TApplication } from './application.types'
+import type { SafeParseReturnType } from 'zod'
+import type { TApplication } from './application.types'
+
+import { z } from 'zod'
 
 export class Application implements TApplication {
 	public id?: number

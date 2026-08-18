@@ -1,8 +1,6 @@
-/* eslint-disable no-console */
-import { setActivePinia, createPinia } from 'pinia'
-
+import { createPinia, setActivePinia } from 'pinia'
+import { mockObject, ObjectEntity } from '../../entities/index.js'
 import { useObjectStore } from './object.js'
-import { ObjectEntity, mockObject } from '../../entities/index.js'
 
 describe('Object Store', () => {
 	beforeEach(() => {

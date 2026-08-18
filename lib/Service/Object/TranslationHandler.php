@@ -137,9 +137,9 @@ class TranslationHandler {
 		// resolves independently — a missing NL value for `body`
 		// doesn't force `title` (which has NL) to fall back too.
 		$chain = [$resolvedLanguage];
-		foreach ($registerLanguages as $lang) {
-			if (in_array($lang, $chain, true) === false) {
-				$chain[] = $lang;
+		foreach ($registerLanguages as $long) {
+			if (in_array($long, $chain, true) === false) {
+				$chain[] = $long;
 			}
 		}
 

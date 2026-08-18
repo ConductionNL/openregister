@@ -2,17 +2,17 @@
 	<CnIndexSidebar
 		ref="sidebar"
 		:schema="objectStore.searchSchema"
-		:visible-columns="objectStore.searchVisibleColumns"
-		:search-value="searchValueForSidebar"
+		:visibleColumns="objectStore.searchVisibleColumns"
+		:searchValue="searchValueForSidebar"
 		:open="navigationStore.sidebarState.search"
-		:active-filters="objectStore.searchParams.filters"
-		:facet-data="objectStore.searchFacets"
-		:search-tab-label="t('openregister', 'Search')"
-		:search-placeholder="t('openregister', 'Type to search...')"
+		:activeFilters="objectStore.searchParams.filters"
+		:facetData="objectStore.searchFacets"
+		:searchTabLabel="t('openregister', 'Search')"
+		:searchPlaceholder="t('openregister', 'Type to search...')"
 		@update:open="(e) => navigationStore.setSidebarState('search', e)"
 		@search="onSearchInput"
-		@filter-change="onFilterChange"
-		@columns-change="onColumnsChange">
+		@filterChange="onFilterChange"
+		@columnsChange="onColumnsChange">
 		<template #search-above>
 			<!-- Save View Action -->
 			<div class="saveViewSection">
@@ -78,7 +78,7 @@
 						:label="t('openregister', 'View Name')"
 						:required="true"
 						:error="viewName.trim() === '' && viewNameTouched"
-						:helper-text="
+						:helperText="
 							viewName.trim() === '' && viewNameTouched
 								? t('openregister', 'View name is required')
 								: ''
@@ -124,12 +124,12 @@
 					<NcSelect
 						v-bind="registerOptions"
 						id="registerSelect"
-						:model-value="selectedRegisters"
+						:modelValue="selectedRegisters"
 						:loading="registerLoading"
 						:disabled="registerLoading"
-						:input-label="t('openregister', 'Registers')"
+						:inputLabel="t('openregister', 'Registers')"
 						:multiple="true"
-						:close-on-select="false"
+						:closeOnSelect="false"
 						:placeholder="
 							t('openregister', 'Select one or more registers')
 						"
@@ -157,12 +157,12 @@
 					<NcSelect
 						v-bind="schemaOptions"
 						id="schemaSelect"
-						:model-value="selectedSchemas"
+						:modelValue="selectedSchemas"
 						:loading="schemaLoading"
 						:disabled="selectedRegisters.length === 0 || schemaLoading"
-						:input-label="t('openregister', 'Schemas')"
+						:inputLabel="t('openregister', 'Schemas')"
 						:multiple="true"
-						:close-on-select="false"
+						:closeOnSelect="false"
 						:placeholder="
 							t('openregister', 'Select one or more schemas')
 						"
@@ -331,11 +331,11 @@
 							getFacetLabel(field, facet, true)
 						}}</label>
 						<NcSelect
-							:model-value="facetFilters[`@self.${field}`] || []"
+							:modelValue="facetFilters[`@self.${field}`] || []"
 							:options="getFacetOptions(facet)"
 							:multiple="true"
 							:placeholder="t('openregister', 'Select options...')"
-							:input-label="getFacetLabel(field, facet, true)"
+							:inputLabel="getFacetLabel(field, facet, true)"
 							@update:modelValue="
 								(value) => updateFacetFilter(`@self.${field}`, value)
 							" />
@@ -350,11 +350,11 @@
 							getFacetLabel(field, facet, false)
 						}}</label>
 						<NcSelect
-							:model-value="facetFilters[field] || []"
+							:modelValue="facetFilters[field] || []"
 							:options="getFacetOptions(facet)"
 							:multiple="true"
 							:placeholder="t('openregister', 'Select options...')"
-							:input-label="getFacetLabel(field, facet, false)"
+							:inputLabel="getFacetLabel(field, facet, false)"
 							@update:modelValue="
 								(value) => updateFacetFilter(field, value)
 							" />
@@ -536,6 +536,28 @@
 </template>
 
 <script>
+import { CnIndexSidebar } from '@conduction/nextcloud-vue'
+import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
+import {
+	NcAppSidebarTab,
+	NcButton,
+	NcLoadingIcon,
+	NcNoteCard,
+	NcSelect,
+	NcTextField,
+} from '@nextcloud/vue'
+import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
+import FilterIcon from 'vue-material-design-icons/Filter.vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Star from 'vue-material-design-icons/Star.vue'
+import StarOutline from 'vue-material-design-icons/StarOutline.vue'
+import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline.vue'
+import DeleteView from '../../modals/view/DeleteView.vue'
+import EditView from '../../modals/view/EditView.vue'
 import {
 	navigationStore,
 	objectStore,
@@ -543,28 +565,6 @@ import {
 	schemaStore,
 	viewsStore,
 } from '../../store/store.js'
-import {
-	NcAppSidebarTab,
-	NcSelect,
-	NcNoteCard,
-	NcTextField,
-	NcButton,
-	NcLoadingIcon,
-} from '@nextcloud/vue'
-import { CnIndexSidebar } from '@conduction/nextcloud-vue'
-import Magnify from 'vue-material-design-icons/Magnify.vue'
-import FilterIcon from 'vue-material-design-icons/Filter.vue'
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
-import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline.vue'
-import Star from 'vue-material-design-icons/Star.vue'
-import StarOutline from 'vue-material-design-icons/StarOutline.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import CogOutline from 'vue-material-design-icons/CogOutline.vue'
-import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
-import EditView from '../../modals/view/EditView.vue'
-import DeleteView from '../../modals/view/DeleteView.vue'
 
 export default {
 	name: 'SearchSideBar',
@@ -588,6 +588,7 @@ export default {
 		EditView,
 		DeleteView,
 	},
+
 	data() {
 		return {
 			navigationStore,
@@ -632,17 +633,21 @@ export default {
 			metadataExpanded: true, // Metadata section expanded by default
 		}
 	},
+
 	computed: {
 		/**
 		 * Search string for CnIndexSidebar; synced to store and used for fetch.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
 		 * @return {string} Current search string
 		 */
 		searchValueForSidebar() {
 			return objectStore.searchParams.search || ''
 		},
+
 		/**
 		 * Build the register dropdown options (multi-select) for the search sidebar.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {object} NcSelect options bag for registers
 		 */
@@ -655,6 +660,7 @@ export default {
 					description: register.description,
 					register,
 				})),
+
 				reduce: (option) => option.value, // Return only the ID for multi-select
 				label: 'title',
 				getOptionLabel: (option) => {
@@ -662,8 +668,10 @@ export default {
 				},
 			}
 		},
+
 		/**
 		 * Build the schema dropdown options (multi-select) for the selected registers.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {object} NcSelect options bag for schemas
 		 */
@@ -691,6 +699,7 @@ export default {
 						description: schema.description,
 						schema,
 					})),
+
 				reduce: (option) => option.value, // Return only the ID for multi-select
 				label: 'title',
 				getOptionLabel: (option) => {
@@ -698,8 +707,10 @@ export default {
 				},
 			}
 		},
+
 		/**
 		 * Map saved views into NcSelect options for the view picker.
+		 *
 		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {Array} View options
 		 */
@@ -712,8 +723,10 @@ export default {
 				isPublic: view.isPublic,
 			}))
 		},
+
 		/**
 		 * Resolve the active saved view into NcSelect value shape.
+		 *
 		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {object|null} Active view option, or null
 		 */
@@ -728,6 +741,7 @@ export default {
 
 		/**
 		 * Filter the saved-view list by search query and sort favorites first.
+		 *
 		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {Array} Filtered, favorite-sorted views
 		 */
@@ -760,6 +774,7 @@ export default {
 
 		/**
 		 * Whether a search can run (requires at least one register and one schema).
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
 		 * @return {boolean}
 		 */
@@ -769,8 +784,10 @@ export default {
 				this.selectedRegisters.length > 0 && this.selectedSchemas.length > 0
 			)
 		},
+
 		/**
 		 * Whether the current search configuration can be saved as a view.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {boolean}
 		 */
@@ -778,8 +795,10 @@ export default {
 			// Can save view if we have search configuration
 			return this.canSearch
 		},
+
 		/**
 		 * Placeholder text for the search input, varying by current term state.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
 		 * @return {string}
 		 */
@@ -788,11 +807,14 @@ export default {
 				? 'Add more search terms...'
 				: 'Type to search...'
 		},
+
 		hasEnabledFacets() {
 			return Object.values(this.enabledFacets).some((enabled) => enabled)
 		},
+
 		/**
 		 * Flatten the object metadata map into column descriptors for display.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {Array} Metadata column descriptors
 		 */
@@ -802,6 +824,7 @@ export default {
 				...meta,
 			}))
 		},
+
 		/**
 		 * Get properties for all selected schemas
 		 *
@@ -833,6 +856,7 @@ export default {
 				.filter(Boolean) // Remove null entries
 		},
 	},
+
 	watch: {
 		// React to query param changes as single source of truth (only on /tables)
 		'$route.query': {
@@ -843,8 +867,10 @@ export default {
 				if (this.$route.path !== '/tables') return
 				this.applyQueryParamsFromRoute()
 			},
+
 			deep: true,
 		},
+
 		// Re-apply the query params once the register list arrives. The mount-
 		// time `applyQueryParamsFromRoute()` retry loop (10 × 200ms) is shorter
 		// than the actual `_extend=schemas&stats` register-list response on
@@ -865,6 +891,7 @@ export default {
 				this.applyQueryParamsFromRoute()
 			},
 		},
+
 		// Watch for schema changes to initialize properties
 		// Use immediate: true equivalent in mounted
 		// This watcher will update properties when schema changes
@@ -881,8 +908,10 @@ export default {
 					objectStore.initializeColumnFilters()
 				}
 			},
+
 			deep: true,
 		},
+
 		// Watch for selected schemas changes to auto-expand new schemas
 		selectedSchemas: {
 			/**
@@ -903,8 +932,10 @@ export default {
 					this.expandedSchemas = newExpanded
 				}
 			},
+
 			deep: true,
 		},
+
 		// Watch for active view changes to sync the name input
 		'viewsStore.activeView': {
 			/**
@@ -918,9 +949,11 @@ export default {
 					this.activeViewName = ''
 				}
 			},
+
 			deep: true,
 		},
 	},
+
 	/**
 	 * @spec exclude Lifecycle plumbing; fetches views/lists, applies the default view, and seeds state from the route via already-annotated methods.
 	 */
@@ -965,10 +998,12 @@ export default {
 		// Initialize from query params after lists potentially load
 		this.applyQueryParamsFromRoute()
 	},
+
 	methods: {
 		t,
 		/**
 		 * CnIndexSidebar @search: update store, keep searchTerms in sync for URL, and refetch.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
 		 * @param value
 		 */
@@ -980,8 +1015,10 @@ export default {
 				: []
 			objectStore.refetchSearchCollection()
 		},
+
 		/**
 		 * CnIndexSidebar @filter-change: update store filters, keep facetFilters in sync, and refetch.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
 		 * @param root0
 		 * @param root0.key
@@ -996,16 +1033,20 @@ export default {
 			this.facetFilters = { ...this.facetFilters, [key]: values || [] }
 			objectStore.refetchSearchCollection()
 		},
+
 		/**
 		 * CnIndexSidebar @columns-change: persist visible columns.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
 		 * @param columns
 		 */
 		onColumnsChange(columns) {
 			objectStore.setSearchVisibleColumns(columns)
 		},
+
 		/**
 		 * Build URL query params from current sidebar state.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {object} Query object
 		 */
@@ -1022,8 +1063,10 @@ export default {
 			}
 			return query
 		},
+
 		/**
 		 * Shallow-compare two query objects (keys/values as strings).
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @param {object} a - First query object
 		 * @param {object} b - Second query object
@@ -1039,8 +1082,10 @@ export default {
 			}
 			return true
 		},
+
 		/**
 		 * Write current sidebar state to the URL query (only on /tables).
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {void}
 		 */
@@ -1053,8 +1098,10 @@ export default {
 				query: nextQuery,
 			})
 		},
+
 		/**
 		 * Apply URL query params into component/store state and run the initial search.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {void}
 		 */
@@ -1130,8 +1177,10 @@ export default {
 			}
 			tryApply()
 		},
+
 		/**
 		 * Apply a multi-select register change, prune now-invalid schemas, and sync the route.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
 		 * @param {Array|number} options - Selected register ids
 		 * @return {void}
@@ -1173,8 +1222,10 @@ export default {
 			// Only update URL; route watcher will trigger applyQueryParamsFromRoute -> performSearchWithFacets once
 			this.updateRouteQueryFromState()
 		},
+
 		/**
 		 * Apply a multi-select schema change and sync the route.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
 		 * @param {Array|number} options - Selected schema ids
 		 * @return {Promise<void>}
@@ -1196,9 +1247,11 @@ export default {
 			// Only update URL; route watcher will trigger applyQueryParamsFromRoute -> performSearchWithFacets once
 			this.updateRouteQueryFromState()
 		},
+
 		/**
 		 * Push sidebar state into objectStore.searchParams and refetch type 'search'. Sets
 		 * register/schema context for dialogs and discoverFacets.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
 		 * @return {void}
 		 */
@@ -1232,8 +1285,10 @@ export default {
 			})
 			objectStore.refetchSearchCollection()
 		},
+
 		/**
 		 * Parse the search input into de-duplicated search terms.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
 		 * @return {void}
 		 */
@@ -1254,8 +1309,10 @@ export default {
 				this.searchTerms = [...this.searchTerms, ...newTerms]
 			}
 		},
+
 		/**
 		 * Commit input terms to the search-term set, clear the input, and sync the route.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
 		 * @return {void}
 		 */
@@ -1267,8 +1324,10 @@ export default {
 			// Reflect change in URL
 			this.updateRouteQueryFromState()
 		},
+
 		/**
 		 * Remove a search term, re-run the search if possible, and sync the route.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
 		 * @param {number} index - Index of the term to remove
 		 * @return {Promise<void>}
@@ -1286,8 +1345,10 @@ export default {
 			// Reflect change in URL
 			this.updateRouteQueryFromState()
 		},
+
 		/**
 		 * Run the object search for the current configuration and record timing stats.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
 		 * @return {Promise<void>}
 		 */
@@ -1335,6 +1396,7 @@ export default {
 		/**
 		 * Merge inherited properties from allOf parent schemas into the given schema's own properties.
 		 * Own properties take precedence over inherited ones.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
 		 * @param {object} schema - Schema object with optional allOf and properties
 		 * @return {object} Merged properties object
@@ -1359,6 +1421,7 @@ export default {
 
 		/**
 		 * Load facet options for type 'search' via _facets=extend; facet data then comes from objectStore.searchFacets.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
 		 * @return {Promise<void>}
 		 */
@@ -1394,6 +1457,7 @@ export default {
 
 		/**
 		 * Toggle an individual facet on/off, clearing its filter when disabled.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
 		 * @param {string} fieldName - Facet field name
 		 * @param {object} _fieldInfo - Unused field metadata
@@ -1411,6 +1475,7 @@ export default {
 
 		/**
 		 * Build the `_facets` request configuration from the enabled facets.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
 		 * @return {object} Facet request configuration
 		 */
@@ -1451,6 +1516,7 @@ export default {
 
 		/**
 		 * Reset all facet/filter state (local and store) so CnIndexSidebar and Advanced Filters UI are cleared.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
 		 * @return {void}
 		 */
@@ -1467,6 +1533,7 @@ export default {
 
 		/**
 		 * Run a faceted search by syncing params and refetching, then mirror store facets locally.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
 		 * @return {Promise<void>}
 		 */
@@ -1486,6 +1553,7 @@ export default {
 
 		/**
 		 * Resolve a human-readable label for a facet field.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
 		 * @param {string} field - Facet field name
 		 * @param {object} facet - Facet data
@@ -1509,6 +1577,7 @@ export default {
 
 		/**
 		 * Normalise a facet (terms/range/date_histogram, new or legacy shape) into select options.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
 		 * @param {object} facet - Facet data
 		 * @return {Array} Select options for the facet
@@ -1609,6 +1678,7 @@ export default {
 
 		/**
 		 * Activate a selected saved view by fetching it and applying its configuration.
+		 *
 		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object|null} option - Selected view option (or null to clear)
 		 * @return {Promise<void>}
@@ -1632,6 +1702,7 @@ export default {
 
 		/**
 		 * Apply a saved view's stored query config to the live search state and re-run search.
+		 *
 		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object} view - The saved view (with query/configuration block)
 		 * @return {void}
@@ -1679,6 +1750,7 @@ export default {
 
 		/**
 		 * Persist the current search configuration as a new saved view.
+		 *
 		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {Promise<void>}
 		 */
@@ -1735,6 +1807,7 @@ export default {
 
 		/**
 		 * Reset and hide the save-view form without persisting.
+		 *
 		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {void}
 		 */
@@ -1748,6 +1821,7 @@ export default {
 
 		/**
 		 * Persist the current search configuration onto the active saved view.
+		 *
 		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {Promise<void>}
 		 */
@@ -1798,6 +1872,7 @@ export default {
 
 		/**
 		 * Open the view-edit dialog for the currently active view.
+		 *
 		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {void}
 		 */
@@ -1808,6 +1883,7 @@ export default {
 
 		/**
 		 * Stage the active view for deletion and open the confirm dialog.
+		 *
 		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {void}
 		 */
@@ -1819,6 +1895,7 @@ export default {
 
 		/**
 		 * Fetch and activate a saved view, apply its config, and switch to the search tab.
+		 *
 		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object} view - The view to load
 		 * @return {Promise<void>}
@@ -1849,6 +1926,7 @@ export default {
 
 		/**
 		 * Stage a view for deletion and open the confirm dialog.
+		 *
 		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object} view - The view to delete
 		 * @return {void}
@@ -1860,6 +1938,7 @@ export default {
 
 		/**
 		 * Whether the given view is the currently active view.
+		 *
 		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object} view - The view to test
 		 * @return {boolean}
@@ -1873,6 +1952,7 @@ export default {
 
 		/**
 		 * Whether the current user has favorited the given view.
+		 *
 		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object} view - The view to test
 		 * @return {boolean}
@@ -1888,6 +1968,7 @@ export default {
 
 		/**
 		 * Add or remove the current user from a view's favoredBy via PATCH, then refresh.
+		 *
 		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object} view - The view to favorite/unfavorite
 		 * @return {Promise<void>}
@@ -1954,6 +2035,7 @@ export default {
 
 		/**
 		 * Open the view-edit dialog for a given view.
+		 *
 		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object} view - The view to edit
 		 * @return {void}
@@ -1965,6 +2047,7 @@ export default {
 
 		/**
 		 * Close the view-edit dialog without saving.
+		 *
 		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {void}
 		 */
@@ -1975,6 +2058,7 @@ export default {
 
 		/**
 		 * After a delete dialog closes, refresh the view list and clear the active view if deleted.
+		 *
 		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {Promise<void>}
 		 */
@@ -2000,6 +2084,7 @@ export default {
 
 		/**
 		 * Update a single facet filter's selected values and re-run the faceted search.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
 		 * @param {string} field - Facet field name
 		 * @param {Array} selectedValues - Selected facet values
@@ -2018,6 +2103,7 @@ export default {
 
 		/**
 		 * Sync facet filters into search params (used before refetch when custom facet UI changes).
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
 		 * @return {void}
 		 */
@@ -2040,6 +2126,7 @@ export default {
 
 		/**
 		 * Apply facet filters and refresh the faceted search, managing the loading state.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
 		 * @return {Promise<void>}
 		 */

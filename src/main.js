@@ -1,23 +1,24 @@
+import {
+	buildManifest,
+	CnPageRenderer,
+	defaultPageTypes,
+	registerBuiltinDashboardWidgets,
+	registerIcons,
+} from '@conduction/nextcloud-vue'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { createApp, h } from 'vue'
 // eslint-disable-next-line n/no-unpublished-import
 import { createRouter, createWebHashHistory } from 'vue-router'
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import pinia from './pinia.js'
 import App from './App.vue'
-import {
-	CnPageRenderer,
-	defaultPageTypes,
-	registerIcons,
-	buildManifest,
-	registerBuiltinDashboardWidgets,
-} from '@conduction/nextcloud-vue'
-import '@conduction/nextcloud-vue/css/index.css'
-import 'gridstack/dist/gridstack.min.css'
+import appIcons from './icons.js'
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
 import bundledManifest from './manifest.json'
 import menuLayout from './menu-layout.json'
+import pinia from './pinia.js'
 import registry from './registry.js'
-import appIcons from './icons.js'
+
+import '@conduction/nextcloud-vue/css/index.css'
+import 'gridstack/dist/gridstack.min.css'
 
 // Navigation icons — registered by name so CnAppNav (manifest-driven
 // MainMenu) can resolve each menu item's `icon` against ICON_MAP.
@@ -33,40 +34,76 @@ import appIcons from './icons.js'
 // files-sidebar.js and mail-sidebar.js so the registry is consistently
 // populated regardless of which entry bundle loaded first on the page.
 ensureIntegrationRegistry()
-// xwiki is intentionally NOT in nc-vue's leafIntegrations[] — it ships with
-// a richer dedicated tab (CnXwikiTab) that consumer apps register separately.
-// For the per-leaf verification harness we want all 24 advertised providers
-// in the JS registry, so register a generic descriptor here. The tab + widget
-// components come from the registry's resolveWidget AD-19 fallback to the
-// default CnIntegrationTab / CnIntegrationCard set via the leaf descriptor.
+// Providers that are advertised in OCS capabilities but are NOT in nc-vue's
+// leafIntegrations[], so nothing else registers them JS-side. Each gets a
+// generic descriptor here; the tab + widget come from the registry's
+// resolveWidget AD-19 fallback to the default CnIntegrationTab /
+// CnIntegrationCard set via the leaf descriptor.
+//
+// The OCS side MUST be a subset of the JS side — a provider the backend
+// advertises but the frontend cannot render is an integration a user is
+// offered and then finds does nothing. `kvk` and `opencorporates` were added
+// PHP-side (CompanyLookupController + KvkProvider / OpenCorporatesProvider)
+// without descriptors, and decidesk's integration-registry e2e has been red on
+// `development` ever since, naming exactly those two.
+//
+// A list rather than three copied blocks: the next provider added PHP-side
+// needs one line here, and the omission that caused this drift is harder to
+// repeat.
+const GENERIC_INTEGRATION_DESCRIPTORS = [
+	{
+		// Ships a richer dedicated tab (CnXwikiTab) that consumer apps register
+		// separately, which is why it is absent from leafIntegrations[].
+		id: 'xwiki',
+		label: t('openregister', 'Articles'),
+		icon: 'FileDocumentMultiple',
+		order: 31,
+		referenceType: 'xwiki',
+	},
+	{
+		id: 'kvk',
+		label: t('openregister', 'KvK Company Register'),
+		icon: 'OfficeBuilding',
+		order: 32,
+		referenceType: 'kvk',
+	},
+	{
+		id: 'opencorporates',
+		label: t('openregister', 'OpenCorporates'),
+		icon: 'OfficeBuildingOutline',
+		order: 33,
+		referenceType: 'opencorporates',
+	},
+]
+
 try {
-	const xwikiAlreadyRegistered =
-		window?.OCA?.OpenRegister?.integrations?.has?.('xwiki')
-	if (
-		window?.OCA?.OpenRegister?.integrations?.register
-		&& !xwikiAlreadyRegistered
-	) {
+	const registry = window?.OCA?.OpenRegister?.integrations
+	const pending = registry?.register
+		? GENERIC_INTEGRATION_DESCRIPTORS.filter((d) => !registry.has?.(d.id))
+		: []
+	if (pending.length > 0) {
 		import('@conduction/nextcloud-vue')
 			.then(({ CnIntegrationTab, CnIntegrationCard }) => {
-				window.OCA.OpenRegister.integrations.register({
-					id: 'xwiki',
-					label: t('openregister', 'Articles'),
-					icon: 'FileDocumentMultiple',
-					requiredApp: 'openconnector',
-					order: 31,
-					group: 'external',
-					referenceType: 'xwiki',
-					tab: CnIntegrationTab,
-					widget: CnIntegrationCard,
-					defaultSize: { w: 4, h: 3 },
+				pending.forEach((descriptor) => {
+					registry.register({
+						...descriptor,
+						requiredApp: 'openconnector',
+						group: 'external',
+						tab: CnIntegrationTab,
+						widget: CnIntegrationCard,
+						defaultSize: { w: 4, h: 3 },
+					})
 				})
 			})
 			.catch((e) =>
-				console.error('[main] failed to register xwiki descriptor', e),
+				console.error(
+					'[main] failed to register generic integration descriptors',
+					e,
+				),
 			)
 	}
 } catch (e) {
-	console.error('[main] xwiki registry guard failed', e)
+	console.error('[main] integration registry guard failed', e)
 }
 
 registerIcons(appIcons)
@@ -93,6 +130,12 @@ const RoutePageRenderer = { ...CnPageRenderer }
 // Collect the app's manifest.d/*.json fragments — require.context is resolved
 // by this app's own webpack build, so it stays app-local — then hand the base
 // manifest, fragments, and menu-layout to the shared pipeline.
+// `require.context` is a WEBPACK build-time API, not CommonJS `require`: the
+// bundler rewrites this call at compile time and no `require` exists at
+// runtime. eslint's browser globals therefore report `no-undef` correctly —
+// the code is right and the linter is right. Scoped to this one identifier so
+// a genuinely undefined name elsewhere in the file still fails.
+/* global require */
 const fragmentCtx = require.context('./manifest.d/', false, /\.json$/)
 const fragments = fragmentCtx
 	.keys()

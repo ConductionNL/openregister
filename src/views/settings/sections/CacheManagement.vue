@@ -4,7 +4,7 @@
 			name="Cache Management"
 			description="Monitor and manage API caching for optimal performance"
 			:loading="loadingCache"
-			:loading-message="t('openregister', 'Loading cache statistics...')">
+			:loadingMessage="t('openregister', 'Loading cache statistics...')">
 			<template #actions>
 				<NcButton
 					variant="secondary"
@@ -388,14 +388,14 @@
 						<div class="warmup-select">
 							<label for="warmup-interval">Warmup Interval:</label>
 							<NcSelect
-								input-label="Warmup Interval"
-								input-id="warmup-interval"
-								:model-value="selectedWarmupOption"
+								inputLabel="Warmup Interval"
+								inputId="warmup-interval"
+								:modelValue="selectedWarmupOption"
 								:options="warmupIntervalOptions"
 								:clearable="false"
 								:disabled="savingWarmupInterval"
 								label="label"
-								track-by="value"
+								trackBy="value"
 								@update:modelValue="onWarmupIntervalChange" />
 						</div>
 						<div class="warmup-actions">
@@ -433,21 +433,21 @@
 			v-if="showClearCacheConfirmation"
 			:open="showClearCacheConfirmation"
 			:clearing="clearingCache"
-			:cache-type="clearCacheType"
-			@update:cache-type="clearCacheType = $event"
+			:cacheType="clearCacheType"
+			@update:cacheType="clearCacheType = $event"
 			@closing="hideClearCacheDialog"
 			@confirm="performClearCache" />
 	</div>
 </template>
 
 <script>
+import { NcButton, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
 import { mapStores } from 'pinia'
-import { useSettingsStore } from '../../../store/settings.js'
+import Delete from 'vue-material-design-icons/Delete.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import ClearCacheDialog from '../../../dialogs/settings/ClearCacheDialog.vue'
-import { NcButton, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
+import { useSettingsStore } from '../../../store/settings.js'
 
 export default {
 	name: 'CacheManagement',
@@ -525,6 +525,7 @@ export default {
 			get() {
 				return this.settingsStore.clearCacheType
 			},
+
 			/**
 			 * Write the selected clear-cache type to the store.
 			 *
@@ -624,6 +625,7 @@ export default {
 	methods: {
 		/**
 		 * Load cache statistics
+		 *
 		 * @spec exclude UI plumbing — delegates to the settings store
 		 * @return {void}
 		 */
@@ -633,6 +635,7 @@ export default {
 
 		/**
 		 * Show clear cache dialog
+		 *
 		 * @spec exclude UI plumbing — dialog visibility toggle via store
 		 * @return {void}
 		 */
@@ -642,6 +645,7 @@ export default {
 
 		/**
 		 * Hide clear cache dialog
+		 *
 		 * @spec exclude UI plumbing — dialog visibility toggle via store
 		 * @return {void}
 		 */
@@ -651,6 +655,7 @@ export default {
 
 		/**
 		 * Perform cache clearing
+		 *
 		 * @spec exclude UI plumbing — action delegates to the settings store
 		 * @return {void}
 		 */
@@ -743,6 +748,7 @@ export default {
 
 		/**
 		 * Trigger manual cache warmup
+		 *
 		 * @spec exclude UI plumbing — action delegates to the settings store
 		 * @return {void}
 		 */

@@ -17,7 +17,7 @@
 				v-for="obj in objects"
 				:key="obj.objectUuid"
 				:object="obj"
-				:show-unlink="false" />
+				:showUnlink="false" />
 		</div>
 	</section>
 </template>
@@ -34,11 +34,13 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+
 		loading: {
 			type: Boolean,
 			default: false,
 		},
 	},
+
 	methods: { t },
 }
 </script>

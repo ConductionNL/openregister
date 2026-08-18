@@ -527,10 +527,10 @@ class FileTextController extends Controller {
 				$scope = 'dossier';
 			}
 
-			$dossierKeyParam = $this->request->getParam('dossierKey', null);
-			$dossierKey = null;
-			if ($dossierKeyParam !== null && $dossierKeyParam !== '') {
-				$dossierKey = (string)$dossierKeyParam;
+			$fileKeyParam = $this->request->getParam('dossierKey', null);
+			$fileKey = null;
+			if ($fileKeyParam !== null && $fileKeyParam !== '') {
+				$fileKey = (string)$fileKeyParam;
 			}
 
 			// PDF-only tag-preserving-redaction option (REQ-ORTPR-004): tri-state,
@@ -547,7 +547,7 @@ class FileTextController extends Controller {
 				node: $fileNode,
 				entities: $entities,
 				scope: $scope,
-				dossierKey: $dossierKey,
+				fileKey: $fileKey,
 				preserveStructure: $preserveStructure
 			);
 

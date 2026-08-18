@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataResponse;
@@ -80,6 +81,7 @@ class ContextsController extends Controller {
 	 *
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function register(string $register): DataResponse {
 		try {
 			$registerEntity = $this->registerMapper->find($register);
@@ -110,6 +112,7 @@ class ContextsController extends Controller {
 	 *
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function schema(string $register, string $schema): DataResponse {
 		try {
 			$registerEntity = $this->registerMapper->find($register);

@@ -1,5 +1,7 @@
-import { SafeParseReturnType, z } from 'zod'
-import { TRegister } from './register.types'
+import type { SafeParseReturnType } from 'zod'
+import type { TRegister } from './register.types'
+
+import { z } from 'zod'
 
 export class Register implements TRegister {
 	public id: string

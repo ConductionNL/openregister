@@ -400,6 +400,44 @@ class Register extends Entity implements JsonSerializable {
 	}//end setSchemas()
 
 	/**
+	 * Record that a schema belongs to this register.
+	 *
+	 * The `schemas` list is a BOUNDARY since register-scoped slug resolution
+	 * landed: a slug it does not carry is refused with
+	 * {@see \OCA\OpenRegister\Exception\SchemaNotInRegisterException}. A boundary
+	 * that nothing maintains is worse than none — a write addressed by numeric id
+	 * lands while the matching slug read 404s.
+	 *
+	 * Additive and idempotent. Existing entries are preserved VERBATIM: a
+	 * normalising rewrite would silently drop a non-numeric legacy entry, and that
+	 * is data loss rather than cleanup. Repair of an existing list belongs to
+	 * `occ openregister:registers:relink-schemas`.
+	 *
+	 * Mutates the entity only; the caller persists it, so the register's own RBAC
+	 * and cross-tenant checks stay on the mapper where they already are.
+	 *
+	 * @param int $schemaId The schema id to record.
+	 *
+	 * @return bool True when the list gained the id, false when it already had it.
+	 *
+	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
+	 */
+	public function addSchemaId(int $schemaId): bool {
+		$existing = $this->getSchemas();
+
+		foreach ($existing as $candidate) {
+			if (is_numeric($candidate) === true && (int)$candidate === $schemaId) {
+				return false;
+			}
+		}
+
+		$existing[] = $schemaId;
+		$this->setSchemas(schemas: array_values($existing));
+
+		return true;
+	}//end addSchemaId()
+
+	/**
 	 * Get JSON fields from the entity
 	 *
 	 * Returns all fields that are of type 'json'

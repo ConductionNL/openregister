@@ -78,6 +78,8 @@ class SchemasControllerJsonLdMappingTest extends TestCase {
 			$this->request,
 			$this->createMock(IAppConfig::class),
 			$this->schemaMapper,
+			// Slot 5: `$registerMapper`, inserted mid-list rather than appended.
+			$this->createMock(\OCA\OpenRegister\Db\RegisterMapper::class),
 			$this->createMock(MagicMapper::class),
 			$this->createMock(UploadService::class),
 			$this->createMock(AuditTrailMapper::class),

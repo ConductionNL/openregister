@@ -121,7 +121,7 @@
 									>
 								</td>
 								<td>
-									<NcActions :force-name="false">
+									<NcActions :forceName="false">
 										<NcActionButton @click="openEditDialog(a)">
 											<template #icon>
 												<Pencil :size="20" />
@@ -143,10 +143,10 @@
 			</section>
 
 			<!-- Verantwoording -->
-			<section v-else-if="activeTab === 'verantwoording'">
+			<section v-else-if="activeTab === 'accountability'">
 				<div class="viewActionsBar">
 					<div class="viewInfo">
-						<span v-if="verantwoording" class="viewTotalCount">
+						<span v-if="accountability" class="viewTotalCount">
 							{{
 								t('openregister', 'Generated: {time}', {
 									time: formatTime(verantwoording.generated),
@@ -545,8 +545,8 @@
 							v-model="caseFilters.status"
 							class="caseFilterSelect"
 							:options="statusFilterOptions"
-							:label-outside="false"
-							:input-label="t('openregister', 'Filter by status')"
+							:labelOutside="false"
+							:inputLabel="t('openregister', 'Filter by status')"
 							:aria-label-combobox="
 								t('openregister', 'Filter by status')
 							"
@@ -555,8 +555,8 @@
 							v-model="caseFilters.handler"
 							class="caseFilterSelect"
 							:options="handlerFilterOptions"
-							:label-outside="false"
-							:input-label="t('openregister', 'Filter by handler')"
+							:labelOutside="false"
+							:inputLabel="t('openregister', 'Filter by handler')"
 							:aria-label-combobox="
 								t('openregister', 'Filter by handler')
 							"
@@ -1040,14 +1040,14 @@
 
 			<DenialComposerDialog
 				v-if="denialDialogOpen"
-				:case-id="selectedCaseId"
+				:caseId="selectedCaseId"
 				:pack="activePolicyPack"
 				@close="denialDialogOpen = false"
 				@drafted="onCaseMutated" />
 
 			<RedactionDialog
 				v-if="redactionDialogOpen"
-				:case-id="selectedCaseId"
+				:caseId="selectedCaseId"
 				:pack="activePolicyPack"
 				@close="redactionDialogOpen = false"
 				@redacted="onCaseMutated" />
@@ -1058,56 +1058,54 @@
 <script>
 import { translate as t } from '@nextcloud/l10n'
 import {
+	NcActionButton,
+	NcActions,
 	NcAppContent,
 	NcButton,
-	NcActions,
-	NcActionButton,
+	NcCheckboxRadioSwitch,
 	NcEmptyContent,
 	NcLoadingIcon,
-	NcTextField,
-	NcSelect,
-	NcCheckboxRadioSwitch,
 	NcNoteCard,
+	NcSelect,
+	NcTextField,
 } from '@nextcloud/vue'
-
-import Plus from 'vue-material-design-icons/Plus.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
+import AccountCheckOutline from 'vue-material-design-icons/AccountCheckOutline.vue'
+import AccountSearch from 'vue-material-design-icons/AccountSearch.vue'
+import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
+import AlertOutline from 'vue-material-design-icons/AlertOutline.vue'
 import Archive from 'vue-material-design-icons/Archive.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import ShieldLockOutline from 'vue-material-design-icons/ShieldLockOutline.vue'
-import ShieldAlertOutline from 'vue-material-design-icons/ShieldAlertOutline.vue'
+import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
+import BankOutline from 'vue-material-design-icons/BankOutline.vue'
+import CheckboxMarkedCircleOutline from 'vue-material-design-icons/CheckboxMarkedCircleOutline.vue'
+import CheckCircleOutline from 'vue-material-design-icons/CheckCircleOutline.vue'
+import ClipboardTextClockOutline from 'vue-material-design-icons/ClipboardTextClockOutline.vue'
+import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
+import DatabaseSearchOutline from 'vue-material-design-icons/DatabaseSearchOutline.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
+import FileDocumentEditOutline from 'vue-material-design-icons/FileDocumentEditOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import MagnifyClose from 'vue-material-design-icons/MagnifyClose.vue'
-import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import Download from 'vue-material-design-icons/Download.vue'
-import CheckCircleOutline from 'vue-material-design-icons/CheckCircleOutline.vue'
-import AccountSearch from 'vue-material-design-icons/AccountSearch.vue'
-import ClipboardTextClockOutline from 'vue-material-design-icons/ClipboardTextClockOutline.vue'
-import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
-import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
-import AlertOutline from 'vue-material-design-icons/AlertOutline.vue'
-import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
-import CheckboxMarkedCircleOutline from 'vue-material-design-icons/CheckboxMarkedCircleOutline.vue'
-import FileDocumentEditOutline from 'vue-material-design-icons/FileDocumentEditOutline.vue'
-import DatabaseSearchOutline from 'vue-material-design-icons/DatabaseSearchOutline.vue'
 import MarkerIcon from 'vue-material-design-icons/Marker.vue'
-import AccountCheckOutline from 'vue-material-design-icons/AccountCheckOutline.vue'
-import BankOutline from 'vue-material-design-icons/BankOutline.vue'
-
-import { avgStore } from '../../store/store.js'
+import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import ShieldAlertOutline from 'vue-material-design-icons/ShieldAlertOutline.vue'
+import ShieldLockOutline from 'vue-material-design-icons/ShieldLockOutline.vue'
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import DenialComposerDialog from '../../dialogs/avg/DenialComposerDialog.vue'
+import EditActivityDialog from '../../dialogs/avg/EditActivityDialog.vue'
+import RedactionDialog from '../../dialogs/avg/RedactionDialog.vue'
 import {
 	CASE_LIFECYCLE_TRANSITIONS,
 	CASE_STATUS_VOCABULARY,
+	resolveGroundOptions,
 	resolveStatusLabel,
 	resolveTierLabel,
-	resolveGroundOptions,
 } from '../../store/modules/avg.js'
-import EditActivityDialog from '../../dialogs/avg/EditActivityDialog.vue'
-import DenialComposerDialog from '../../dialogs/avg/DenialComposerDialog.vue'
-import RedactionDialog from '../../dialogs/avg/RedactionDialog.vue'
+import { avgStore } from '../../store/store.js'
 
 export default {
 	name: 'AvgIndex',
@@ -1163,6 +1161,7 @@ export default {
 				subject: '',
 				type: '',
 			},
+
 			// Case-management surface state.
 			selectedCaseId: null,
 			caseFilters: {
@@ -1170,6 +1169,7 @@ export default {
 				handler: null,
 				overdue: false,
 			},
+
 			regulatorReferenceDraft: '',
 			denialDialogOpen: false,
 			redactionDialogOpen: false,
@@ -1193,7 +1193,7 @@ export default {
 					icon: 'ShieldLockOutline',
 				},
 				{
-					id: 'verantwoording',
+					id: 'accountability',
 					label: t('openregister', 'Verantwoording'),
 					icon: 'FileDocumentOutline',
 				},
@@ -1214,6 +1214,7 @@ export default {
 				},
 			]
 		},
+
 		/**
 		 * Activities list from the AVG store, for display.
 		 *
@@ -1223,6 +1224,7 @@ export default {
 		activities() {
 			return avgStore.getActivities ?? []
 		},
+
 		/**
 		 * Verantwoording report from the AVG store, for display.
 		 *
@@ -1232,6 +1234,7 @@ export default {
 		verantwoording() {
 			return avgStore.getVerantwoording
 		},
+
 		/**
 		 * DSAR result rows from the AVG store, for display.
 		 *
@@ -1241,6 +1244,7 @@ export default {
 		dsarResults() {
 			return avgStore.getDsarResults
 		},
+
 		/**
 		 * DSAR summary from the AVG store, for display.
 		 *
@@ -1250,6 +1254,7 @@ export default {
 		dsarSummary() {
 			return avgStore.getDsarSummary
 		},
+
 		/**
 		 * Compliance report from the AVG store, for display.
 		 *
@@ -1259,6 +1264,7 @@ export default {
 		complianceReport() {
 			return avgStore.getComplianceReport
 		},
+
 		/**
 		 * Whether the AVG store is currently loading, for spinner display.
 		 *
@@ -1268,6 +1274,7 @@ export default {
 		loading() {
 			return avgStore.isLoading
 		},
+
 		/**
 		 * Store error string, for inline note display.
 		 *
@@ -1277,6 +1284,7 @@ export default {
 		error() {
 			return avgStore.getError
 		},
+
 		/**
 		 * Tracked DSAR cases from the store, for display.
 		 *
@@ -1286,6 +1294,7 @@ export default {
 		cases() {
 			return avgStore.getCases ?? []
 		},
+
 		/**
 		 * The active policy pack from the store (pack-driven labels/grounds).
 		 *
@@ -1295,6 +1304,7 @@ export default {
 		activePolicyPack() {
 			return avgStore.getActivePolicyPack
 		},
+
 		/**
 		 * The currently selected case object (detail view), matched by id.
 		 *
@@ -1309,6 +1319,7 @@ export default {
 				?? null
 			)
 		},
+
 		/**
 		 * Client-side filtered case list (status / handler / overdue),
 		 * applied on top of the RBAC/tenant-scoped set from the server.
@@ -1329,6 +1340,7 @@ export default {
 				return true
 			})
 		},
+
 		/**
 		 * Status filter options, with an "all" clear entry.
 		 *
@@ -1344,6 +1356,7 @@ export default {
 				})),
 			]
 		},
+
 		/**
 		 * Handler filter options, derived from the loaded case set.
 		 *
@@ -1359,6 +1372,7 @@ export default {
 				...handlers.map((h) => ({ value: h, label: h })),
 			]
 		},
+
 		/**
 		 * Declared lifecycle transitions available from the selected case's
 		 * current state (mirror of the register graph; server authoritative).
@@ -1373,6 +1387,7 @@ export default {
 				tr.from.includes(status),
 			)
 		},
+
 		/**
 		 * Whether a finaliseDenial control is offered from the current state.
 		 *
@@ -1384,6 +1399,7 @@ export default {
 				(tr) => tr.action === 'finaliseDenial',
 			)
 		},
+
 		/**
 		 * Whether the selected case carries a regulator reference (gates finalise).
 		 *
@@ -1393,6 +1409,7 @@ export default {
 		hasRegulatorReference() {
 			return !!this.selectedCase?.regulatorReference
 		},
+
 		/**
 		 * Evidence sub-collection of the selected case.
 		 *
@@ -1404,6 +1421,7 @@ export default {
 				? this.selectedCase.evidence
 				: []
 		},
+
 		/**
 		 * Redactions sub-collection of the selected case.
 		 *
@@ -1527,7 +1545,6 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async archiveActivity(activity) {
-			// eslint-disable-next-line no-alert
 			if (
 				!confirm(
 					t(
@@ -1602,7 +1619,6 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async confirmVergetelheid() {
-			// eslint-disable-next-line no-alert
 			if (
 				!confirm(
 					t(

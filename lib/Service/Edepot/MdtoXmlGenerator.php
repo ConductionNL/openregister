@@ -106,10 +106,10 @@ class MdtoXmlGenerator {
 		$root = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':informatieobject');
 		$dom->appendChild($root);
 
-		$this->addIdentificatie(dom: $dom, parent: $root, object: $object);
-		$this->addNaam(dom: $dom, parent: $root, object: $object);
-		$this->addWaardering(dom: $dom, parent: $root, retention: $retention);
-		$this->addBewaartermijn(dom: $dom, parent: $root, retention: $retention);
+		$this->addIdentification(dom: $dom, parent: $root, object: $object);
+		$this->addName(dom: $dom, parent: $root, object: $object);
+		$this->addRating(dom: $dom, parent: $root, retention: $retention);
+		$this->addRetentionPeriod(dom: $dom, parent: $root, retention: $retention);
 		$this->addInformatiecategorie(dom: $dom, parent: $root, retention: $retention);
 		$this->addArchiefvormer(dom: $dom, parent: $root);
 
@@ -118,7 +118,7 @@ class MdtoXmlGenerator {
 		}
 
 		foreach ($files as $file) {
-			$this->addBestand(dom: $dom, parent: $root, file: $file);
+			$this->addFile(dom: $dom, parent: $root, file: $file);
 		}
 
 		$xml = $dom->saveXML();
@@ -184,19 +184,19 @@ class MdtoXmlGenerator {
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
 	 */
-	private function addIdentificatie(DOMDocument $dom, DOMElement $parent, ObjectEntity $object): void {
-		$identificatie = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':identificatie');
+	private function addIdentification(DOMDocument $dom, DOMElement $parent, ObjectEntity $object): void {
+		$identification = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':identificatie');
 
-		$kenmerk = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':identificatieKenmerk');
-		$kenmerk->textContent = $object->getUuid();
-		$identificatie->appendChild($kenmerk);
+		$reference = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':identificatieKenmerk');
+		$reference->textContent = $object->getUuid();
+		$identification->appendChild($reference);
 
-		$bron = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':identificatieBron');
+		$source = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':identificatieBron');
 		$organisationId = $this->appConfig->getValueString('openregister', 'organisation_identifier', 'OpenRegister');
-		$bron->textContent = $organisationId;
-		$identificatie->appendChild($bron);
+		$source->textContent = $organisationId;
+		$identification->appendChild($source);
 
-		$parent->appendChild($identificatie);
+		$parent->appendChild($identification);
 	}//end addIdentificatie()
 
 	/**
@@ -210,7 +210,7 @@ class MdtoXmlGenerator {
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
 	 */
-	private function addNaam(DOMDocument $dom, DOMElement $parent, ObjectEntity $object): void {
+	private function addName(DOMDocument $dom, DOMElement $parent, ObjectEntity $object): void {
 		$data = ($object->getObject() ?? []);
 		$title = ($data['title'] ?? $data['naam'] ?? $data['name'] ?? $object->getUuid());
 		$this->addTextElement(dom: $dom, parent: $parent, name: 'naam', content: (string)$title);
@@ -227,10 +227,10 @@ class MdtoXmlGenerator {
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
 	 */
-	private function addWaardering(DOMDocument $dom, DOMElement $parent, array $retention): void {
+	private function addRating(DOMDocument $dom, DOMElement $parent, array $retention): void {
 		$nominatie = ($retention['archiefnominatie'] ?? '');
-		$waardering = (self::WAARDERING_MAP[$nominatie] ?? $nominatie);
-		$this->addTextElement(dom: $dom, parent: $parent, name: 'waardering', content: $waardering);
+		$rating = (self::WAARDERING_MAP[$nominatie] ?? $nominatie);
+		$this->addTextElement(dom: $dom, parent: $parent, name: 'waardering', content: $rating);
 	}//end addWaardering()
 
 	/**
@@ -244,9 +244,9 @@ class MdtoXmlGenerator {
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
 	 */
-	private function addBewaartermijn(DOMDocument $dom, DOMElement $parent, array $retention): void {
-		$bewaartermijn = ($retention['bewaartermijn'] ?? '');
-		$this->addTextElement(dom: $dom, parent: $parent, name: 'bewaartermijn', content: (string)$bewaartermijn);
+	private function addRetentionPeriod(DOMDocument $dom, DOMElement $parent, array $retention): void {
+		$retentionPeriod = ($retention['bewaartermijn'] ?? '');
+		$this->addTextElement(dom: $dom, parent: $parent, name: 'bewaartermijn', content: (string)$retentionPeriod);
 	}//end addBewaartermijn()
 
 	/**
@@ -261,8 +261,8 @@ class MdtoXmlGenerator {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
 	 */
 	private function addInformatiecategorie(DOMDocument $dom, DOMElement $parent, array $retention): void {
-		$classificatie = ($retention['classificatie'] ?? 'onbekend');
-		$this->addTextElement(dom: $dom, parent: $parent, name: 'informatiecategorie', content: (string)$classificatie);
+		$classification = ($retention['classification'] ?? 'onbekend');
+		$this->addTextElement(dom: $dom, parent: $parent, name: 'informatiecategorie', content: (string)$classification);
 	}//end addInformatiecategorie()
 
 	/**
@@ -287,13 +287,13 @@ class MdtoXmlGenerator {
 
 		$id = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':verwijzingIdentificatie');
 
-		$kenmerk = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':identificatieKenmerk');
-		$kenmerk->textContent = $organisationId;
-		$id->appendChild($kenmerk);
+		$reference = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':identificatieKenmerk');
+		$reference->textContent = $organisationId;
+		$id->appendChild($reference);
 
-		$bron = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':identificatieBron');
-		$bron->textContent = 'OpenRegister';
-		$id->appendChild($bron);
+		$source = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':identificatieBron');
+		$source->textContent = 'OpenRegister';
+		$id->appendChild($source);
 
 		$archiefvormer->appendChild($id);
 		$parent->appendChild($archiefvormer);
@@ -310,12 +310,12 @@ class MdtoXmlGenerator {
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
 	 */
-	private function addBestand(DOMDocument $dom, DOMElement $parent, array $file): void {
-		$bestand = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':bestand');
+	private function addFile(DOMDocument $dom, DOMElement $parent, array $file): void {
+		$fileElement = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':bestand');
 
-		$this->addTextElement(dom: $dom, parent: $bestand, name: 'naam', content: $file['name']);
-		$this->addTextElement(dom: $dom, parent: $bestand, name: 'omvang', content: (string)$file['size']);
-		$this->addTextElement(dom: $dom, parent: $bestand, name: 'bestandsformaat', content: $file['format']);
+		$this->addTextElement(dom: $dom, parent: $fileElement, name: 'naam', content: $file['name']);
+		$this->addTextElement(dom: $dom, parent: $fileElement, name: 'omvang', content: (string)$file['size']);
+		$this->addTextElement(dom: $dom, parent: $fileElement, name: 'bestandsformaat', content: $file['format']);
 
 		$checksumElement = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':checksum');
 
@@ -323,12 +323,12 @@ class MdtoXmlGenerator {
 		$algoritme->textContent = 'SHA-256';
 		$checksumElement->appendChild($algoritme);
 
-		$waarde = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':checksumWaarde');
-		$waarde->textContent = $file['checksum'];
-		$checksumElement->appendChild($waarde);
+		$value = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':checksumWaarde');
+		$value->textContent = $file['checksum'];
+		$checksumElement->appendChild($value);
 
-		$bestand->appendChild($checksumElement);
-		$parent->appendChild($bestand);
+		$fileElement->appendChild($checksumElement);
+		$parent->appendChild($fileElement);
 	}//end addBestand()
 
 	/**

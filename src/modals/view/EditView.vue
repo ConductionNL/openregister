@@ -2,7 +2,7 @@
 	<NcDialog
 		:name="t('openregister', 'Edit View')"
 		size="large"
-		:can-close="true"
+		:canClose="true"
 		@closing="handleClose">
 		<NcNoteCard v-if="success" type="success">
 			<p>{{ t('openregister', 'View successfully updated') }}</p>
@@ -14,7 +14,7 @@
 		<div v-if="!success">
 			<!-- Tabs -->
 			<div class="tabContainer">
-				<AppTabs v-model="activeTab" content-class="mt-3" justified>
+				<AppTabs v-model="activeTab" contentClass="mt-3" justified>
 					<AppTab active>
 						<template #title>
 							<Cog :size="16" />
@@ -22,14 +22,14 @@
 						</template>
 						<div class="form-editor">
 							<NcTextField
+								v-model="viewData.name"
 								:disabled="loading"
 								:label="t('openregister', 'View Name') + ' *'"
-								v-model="viewData.name"
 								:placeholder="
 									t('openregister', 'Enter view name...')
 								"
 								:error="!viewData.name.trim() && nameTouched"
-								:helper-text="
+								:helperText="
 									!viewData.name.trim() && nameTouched
 										? t('openregister', 'View name is required')
 										: ''
@@ -37,9 +37,9 @@
 								@blur="nameTouched = true" />
 
 							<NcTextField
+								v-model="viewData.description"
 								:disabled="loading"
 								:label="t('openregister', 'Description')"
-								v-model="viewData.description"
 								:placeholder="
 									t(
 										'openregister',
@@ -48,8 +48,8 @@
 								" />
 
 							<NcCheckboxRadioSwitch
-								:disabled="loading"
 								v-model="viewData.isPublic"
+								:disabled="loading"
 								type="switch">
 								{{ t('openregister', 'Public View') }}
 							</NcCheckboxRadioSwitch>
@@ -76,19 +76,19 @@
 								}}</label>
 								<NcSelect
 									v-model="selectedGroups"
-									input-label="Selected Groups"
+									inputLabel="Selected Groups"
 									:disabled="loading || loadingGroups"
 									:options="availableGroups"
 									label="name"
-									track-by="id"
+									trackBy="id"
 									:multiple="true"
-									:label-outside="true"
+									:labelOutside="true"
 									:filterable="false"
-									:close-on-select="false"
+									:closeOnSelect="false"
 									:placeholder="
 										t('openregister', 'Type to search groups...')
 									"
-									@search-change="searchGroups">
+									@searchChange="searchGroups">
 									<template #option="{ name }">
 										<div class="group-option">
 											<span class="group-name">{{
@@ -124,19 +124,19 @@
 								}}</label>
 								<NcSelect
 									v-model="selectedUsers"
-									input-label="Selected Users"
+									inputLabel="Selected Users"
 									:disabled="loading || loadingUsers"
 									:options="availableUsers"
 									label="name"
-									track-by="id"
+									trackBy="id"
 									:multiple="true"
-									:label-outside="true"
+									:labelOutside="true"
 									:filterable="false"
-									:close-on-select="false"
+									:closeOnSelect="false"
 									:placeholder="
 										t('openregister', 'Type to search users...')
 									"
-									@search-change="searchUsers">
+									@searchChange="searchUsers">
 									<template #option="{ name }">
 										<div class="user-option">
 											<span class="user-name">{{ name }}</span>
@@ -195,21 +195,21 @@
 </template>
 
 <script>
+import { translate as t } from '@nextcloud/l10n'
 import {
-	NcDialog,
-	NcTextField,
 	NcButton,
 	NcCheckboxRadioSwitch,
-	NcSelect,
+	NcDialog,
 	NcNoteCard,
+	NcSelect,
+	NcTextField,
 } from '@nextcloud/vue'
-import AppTabs from '../../components/tabs/AppTabs.vue'
-import AppTab from '../../components/tabs/AppTab.vue'
-import Cog from 'vue-material-design-icons/Cog.vue'
-import ShareVariant from 'vue-material-design-icons/ShareVariant.vue'
 import Close from 'vue-material-design-icons/Close.vue'
+import Cog from 'vue-material-design-icons/Cog.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
-import { translate as t } from '@nextcloud/l10n'
+import ShareVariant from 'vue-material-design-icons/ShareVariant.vue'
+import AppTab from '../../components/tabs/AppTab.vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
 import { viewsStore } from '../../store/store.js'
 
 export default {
@@ -228,12 +228,14 @@ export default {
 		Close,
 		ContentSave,
 	},
+
 	props: {
 		view: {
 			type: Object,
 			default: null,
 		},
 	},
+
 	data() {
 		return {
 			activeTab: 'settings',
@@ -250,6 +252,7 @@ export default {
 				isDefault: false,
 				query: {},
 			},
+
 			selectedGroups: [],
 			selectedUsers: [],
 			availableGroups: [],
@@ -258,6 +261,7 @@ export default {
 			userSearchDebounce: null,
 		}
 	},
+
 	watch: {
 		view: {
 			immediate: true,
@@ -298,6 +302,7 @@ export default {
 			},
 		},
 	},
+
 	methods: {
 		t,
 		/**
@@ -435,6 +440,7 @@ export default {
 				}
 			}, 300)
 		},
+
 		/**
 		 * @spec exclude Save handler delegating to viewsStore.updateView and refreshing the list; entity persistence lives in the store, this is modal orchestration plumbing.
 		 */
@@ -482,6 +488,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * @spec exclude Modal close handler resetting local state and emitting close; UI plumbing.
 		 */

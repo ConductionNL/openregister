@@ -2,7 +2,7 @@
 	<NcDialog
 		:name="t('openregister', 'Apply redaction')"
 		size="normal"
-		:can-close="!saving"
+		:canClose="!saving"
 		@closing="$emit('close')">
 		<form class="redactionForm" @submit.prevent="onSubmit">
 			<p class="redactionIntro">
@@ -31,8 +31,8 @@
 			<NcSelect
 				v-model="form.ground"
 				:options="groundOptions"
-				:label-outside="false"
-				:input-label="t('openregister', 'Redaction ground')"
+				:labelOutside="false"
+				:inputLabel="t('openregister', 'Redaction ground')"
 				:aria-label-combobox="t('openregister', 'Redaction ground')"
 				:reduce="(o) => o.value"
 				required />
@@ -64,16 +64,15 @@
 
 <script>
 import {
-	NcDialog,
-	NcTextField,
-	NcSelect,
 	NcButton,
+	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
+	NcSelect,
+	NcTextField,
 } from '@nextcloud/vue'
-
-import { avgStore } from '../../store/store.js'
 import { resolveGroundOptions } from '../../store/modules/avg.js'
+import { avgStore } from '../../store/store.js'
 
 export default {
 	name: 'RedactionDialog',
@@ -92,6 +91,7 @@ export default {
 			type: String,
 			required: true,
 		},
+
 		pack: {
 			type: Object,
 			default: null,
@@ -107,6 +107,7 @@ export default {
 				after: '',
 				ground: '',
 			},
+
 			saving: false,
 			error: null,
 		}

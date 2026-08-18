@@ -34,7 +34,6 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
-use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -120,11 +119,13 @@ class NamesController extends Controller {
 			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
 		}
 
-		// TODO(SEC-CTRL-2): make name resolution RBAC/tenant-aware. getMultipleObjectNames()
-		// and getAllObjectNames() in lib/Service/Object/CacheHandler.php
-		// (warmupNameCache / findAllWithUserCount / getObjectMapper()->findAll()) currently
-		// return names across ALL organisations with no RBAC filtering. Filter by the
-		// caller's read permissions + active organisation there before widening exposure.
+		// SEC-CTRL-2 step 2 (closed): name resolution is tenant-scoped in
+		// CacheHandler itself. getMultipleObjectNames() and getAllObjectNames()
+		// resolve the caller's active organisation (plus its parents, mirroring
+		// Db\MultiTenancyTrait) and refuse any name whose owning organisation is
+		// outside it — including names already sitting in the shared cache, whose
+		// tenancy is stored alongside the value. A name with no resolvable owning
+		// organisation is refused rather than guessed.
 		$startTime = microtime(true);
 
 		try {
@@ -269,8 +270,9 @@ class NamesController extends Controller {
 			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
 		}
 
-		// TODO(SEC-CTRL-2): getMultipleObjectNames() in CacheHandler resolves names with
-		// no RBAC/tenant filtering; restrict resolved ids to those the caller may read.
+		// SEC-CTRL-2 step 2 (closed): getMultipleObjectNames() only resolves ids
+		// whose owning organisation is inside the caller's active-organisation
+		// scope, so a caller-supplied UUID from another tenant resolves to nothing.
 		$startTime = microtime(true);
 
 		try {
@@ -346,231 +348,4 @@ class NamesController extends Controller {
 			);
 		}//end try
 	}//end create()
-
-	/**
-	 * Get name for specific object ID
-	 *
-	 * ULTRA-FAST ENDPOINT**: Single object name lookup with aggressive caching.
-	 * Optimized for individual name resolution needs.
-	 *
-	 * Response Format:**
-	 * ```json
-	 * {
-	 * "id": "uuid-123",
-	 * "name": "Object Name",
-	 * "cached": true,
-	 * "execution_time": "1.5ms"
-	 * }
-	 * ```
-	 *
-	 * @param string $id Object ID or UUID to get name for
-	 *
-	 * @throws \Exception If name lookup fails
-	 *
-	 * @return JSONResponse JSON response with object name or error
-	 *
-	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
-	 */
-	#[NoAdminRequired]
-	#[NoCSRFRequired]
-	#[PublicPage]
-	public function show(string $id): JSONResponse {
-		$startTime = microtime(true);
-
-		try {
-			$name = $this->objectCacheService->getSingleObjectName($id);
-
-			$executionTime = round((microtime(true) - $startTime) * 1000, 2);
-
-			if ($name === null) {
-				$this->logger->debug(
-					message: '[NamesController] ❌ SINGLE NAME NOT FOUND',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'id' => $id,
-						'execution_time' => $executionTime . 'ms',
-					]
-				);
-
-				return new JSONResponse(
-					data: [
-						'id' => $id,
-						'name' => null,
-						'found' => false,
-						'execution_time' => $executionTime . 'ms',
-					],
-					statusCode: 404
-				);
-			}//end if
-
-			$this->logger->debug(
-				message: '[NamesController] 🚀 SINGLE NAME LOOKUP',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'id' => $id,
-					'name' => $name,
-					'execution_time' => $executionTime . 'ms',
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'id' => $id,
-					'name' => $name,
-					'found' => true,
-					'cached' => true,
-					'execution_time' => $executionTime . 'ms',
-				]
-			);
-		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[NamesController] Single name lookup failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'id' => $id,
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'id' => $id,
-					'error' => 'Failed to retrieve object name',
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
-		}//end try
-	}//end show()
-
-	/**
-	 * Get cache statistics and performance metrics
-	 *
-	 * ADMINISTRATIVE ENDPOINT**: Provides cache performance insights
-	 * for monitoring and optimization.
-	 *
-	 * @return JSONResponse A JSON response with cache statistics and performance metrics
-	 *
-	 * @psalm-return JSONResponse<200|500,
-	 *     array{error?: 'Failed to retrieve cache statistics', message?: string,
-	 *     cache_statistics?: array{hits: int, misses: int, preloads: int,
-	 *     query_hits: int, query_misses: int, name_hits: int, name_misses: int,
-	 *     name_warmups: int, hit_rate: float, query_hit_rate: float,
-	 *     name_hit_rate: float, cache_size: int<0, max>,
-	 *     query_cache_size: int<0, max>, name_cache_size: int<0, max>},
-	 *     performance_metrics?: array{name_cache_enabled: true,
-	 *     distributed_cache_available: true, warmup_available: true}},
-	 *     array<never, never>>
-	 *
-	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
-	 */
-	#[NoAdminRequired]
-	#[NoCSRFRequired]
-	#[PublicPage]
-	public function stats(): JSONResponse {
-		try {
-			$stats = $this->objectCacheService->getStats();
-
-			return new JSONResponse(
-				data: [
-					'cache_statistics' => $stats,
-					'performance_metrics' => [
-						'name_cache_enabled' => true,
-						'distributed_cache_available' => true,
-						'warmup_available' => true,
-					],
-				]
-			);
-		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[NamesController] Failed to get cache statistics',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to retrieve cache statistics',
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
-		}//end try
-	}//end stats()
-
-	/**
-	 * Warmup name cache manually
-	 *
-	 * ADMINISTRATIVE ENDPOINT**: Triggers manual cache warmup
-	 * for improved performance after system maintenance.
-	 *
-	 * @return JSONResponse JSON response with warmup result or error
-	 *
-	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
-	 */
-	#[NoAdminRequired]
-	#[NoCSRFRequired]
-	#[PublicPage]
-	public function warmup(): JSONResponse {
-		$startTime = microtime(true);
-
-		try {
-			// Capture old cache stats before clearing.
-			$oldStats = $this->objectCacheService->getStats();
-
-			// Clear existing name cache before warmup.
-			$this->objectCacheService->clearNameCache();
-
-			// Warmup and capture new stats.
-			$loadedCount = $this->objectCacheService->warmupNameCache();
-			$newStats = $this->objectCacheService->getStats();
-			$executionTime = round((microtime(true) - $startTime) * 1000, 2);
-
-			$this->logger->info(
-				message: '[NamesController] Manual name cache warmup completed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'old_cache_size' => $oldStats['name_cache_size'] ?? 0,
-					'new_cache_size' => $newStats['name_cache_size'] ?? 0,
-					'loaded_names' => $loadedCount,
-					'execution_time' => $executionTime . 'ms',
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'loaded_names' => $loadedCount,
-					'execution_time' => $executionTime . 'ms',
-					'old_cache' => $oldStats,
-					'new_cache' => $newStats,
-				]
-			);
-		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[NamesController] Manual cache warmup failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => 'Cache warmup failed',
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
-		}//end try
-	}//end warmup()
 }//end class

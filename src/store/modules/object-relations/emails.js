@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: EUPL-1.2
  */
 
-import { defineStore } from 'pinia'
-import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
+import { defineStore } from 'pinia'
 
 /**
  * Store wrapping the per-object email-link endpoints.

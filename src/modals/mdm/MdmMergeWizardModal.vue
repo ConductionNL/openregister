@@ -6,7 +6,7 @@
 	<NcDialog
 		:name="t('openregister', 'Merge objects')"
 		size="large"
-		:can-close="!executing"
+		:canClose="!executing"
 		@closing="$emit('close')">
 		<div class="mergeWizard">
 			<template v-if="loading">
@@ -71,7 +71,7 @@
 						v-model="reasonModel"
 						data-testid="mdm-merge-reason"
 						:options="reasonOptions"
-						:input-label="t('openregister', 'Merge reason')"
+						:inputLabel="t('openregister', 'Merge reason')"
 						:placeholder="t('openregister', 'Select a reason')"
 						:clearable="false"
 						label="label" />
@@ -143,6 +143,7 @@ export default {
 			type: [String, Number],
 			required: true,
 		},
+
 		/**
 		 * Id of the surviving object (the merge target).
 		 */

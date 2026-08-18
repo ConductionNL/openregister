@@ -16,18 +16,15 @@
 		</template>
 	</CnAppNav>
 </template>
+
 <script>
-import { translate as t } from '@nextcloud/l10n'
-
-import { NcAppNavigationNew } from '@nextcloud/vue'
 import { CnAppNav } from '@conduction/nextcloud-vue'
-
+import { translate as t } from '@nextcloud/l10n'
+import { NcAppNavigationNew } from '@nextcloud/vue'
 // Icons
 import Finance from 'vue-material-design-icons/Finance.vue'
-
 // Manifest (menu declared declaratively; rendered by CnAppNav)
 import manifest from '../manifest.json'
-
 // Store
 import { organisationStore } from '../store/store.js'
 
@@ -38,11 +35,13 @@ export default {
 		NcAppNavigationNew,
 		Finance,
 	},
+
 	data() {
 		return {
 			manifest,
 		}
 	},
+
 	computed: {
 		/**
 		 * Get the active organisation name to display in navigation.
@@ -62,6 +61,7 @@ export default {
 			return t('openregister', 'No Organisation')
 		},
 	},
+
 	methods: {
 		t,
 		/**
@@ -75,6 +75,7 @@ export default {
 		translate(key) {
 			return t('openregister', key)
 		},
+
 		/**
 		 * Navigate to a router path (used by the primary-action button).
 		 *

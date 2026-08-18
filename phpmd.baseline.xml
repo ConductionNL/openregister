@@ -247,6 +247,8 @@
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Flow/FlowItemPlacement.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Flow/FlowTokenRouter.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/Flow/FlowExpression.php" method="registerOperators"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/SchemasController.php" method="resolveSchema"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Db/FlowRunMapper.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Flow/FlowItems.php"/>
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Service/Flow/FlowRunMarkingStore.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Service/Flow/FlowRunService.php"/>
@@ -474,7 +476,7 @@
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/WritePhaseProbe.php" method="flush"/>
   <violation rule="PHPMD\Rule\Controversial\Superglobals" file="lib/Service/WritePhaseProbe.php" method="flush"/>
   <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/WritePhaseProbe.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/ZaaktypeAuthorizationService.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/CaseTypeAuthorizationService.php"/>
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/WorkflowEngine/RegisterObjectEntity.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/WorkflowEngine/RunFlowOperation.php"/>
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/WorkflowEngine/RunFlowOperation.php"/>

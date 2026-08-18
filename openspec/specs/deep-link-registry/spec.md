@@ -17,10 +17,18 @@ The registry is event-driven and in-memory only: OpenRegister dispatches a `Deep
 
 Consuming Nextcloud apps SHALL be able to register URL patterns for OpenRegister schema/register combinations via the `DeepLinkRegistryService`. A registration maps a (register, schema) pair to a URL template and optional icon, so that OpenRegister can generate URLs pointing to the consuming app's detail view instead of its own. Registration is event-driven: OpenRegister dispatches a `DeepLinkRegistrationEvent` during its `Application::boot()` phase. Consuming apps listen for this event and call `register()` on the provided `DeepLinkRegistryService` (or use the convenience `register()` method on the event itself). The event MUST expose the wrapped registry service via `getRegistry()` so listeners can interact with the registry directly.
 
+Two registration mechanisms are both valid, and a consuming app MAY use either:
+
+1. **Bespoke per-app listener** (the original pattern): the app ships its own `IEventListener` implementation (e.g. `lib/Listener/DeepLinkRegistrationListener.php`) that hardcodes its `register()` calls in PHP and is registered on `DeepLinkRegistrationEvent` in the app's own `Application::register()`.
+2. **AppHost `GenericDeepLinkRegistrationListener`** (manifest-driven; engine-owned, `lib/AppHost/Listener/GenericDeepLinkRegistrationListener.php`): the app instead declares its deep links declaratively in its `src/manifest.json`, under a `deepLinks` array of `{registerSlug, schemaSlug, urlTemplate, icon?, displayName?}` entries, and registers the generic listener (constructed with its own `$appId`) on the same event. The generic listener reads the manifest via `IAppManager::getAppPath()`, parses `src/manifest.json`, and calls `$event->register()` once per declared entry -- a missing manifest, an unreadable file, invalid JSON, or a missing/empty `deepLinks` block all degrade to "no deep links registered" rather than a boot failure. Pipelinq and Procest have migrated to this manifest-driven path.
+
+Both mechanisms end up calling the identical `DeepLinkRegistrationEvent::register()` (or `DeepLinkRegistryService::register()`) contract described below -- the generic listener is a thin, declarative front-end over the same registration call a bespoke listener makes by hand. A future app MAY still hand-roll a bespoke listener when its registration logic needs more than the manifest's static shape (e.g. computed URL templates).
+
 **Key classes:**
 - `OCA\OpenRegister\Service\DeepLinkRegistryService` -- In-memory registry with `register()`, `resolve()`, `resolveUrl()`, `resolveIcon()`, `hasRegistrations()`, `reset()` methods
 - `OCA\OpenRegister\Event\DeepLinkRegistrationEvent` -- Event dispatched during boot; wraps the registry service
 - `OCA\OpenRegister\Dto\DeepLinkRegistration` -- Value object storing a single registration (appId, registerSlug, schemaSlug, urlTemplate, icon)
+- `OCA\OpenRegister\AppHost\Listener\GenericDeepLinkRegistrationListener` -- Engine-owned, manifest-driven alternative to a bespoke per-app listener; reads `src/manifest.json`'s `deepLinks` block and registers each entry
 
 #### Scenario: Pipelinq registers deep link patterns for CRM schemas
 - **GIVEN** Pipelinq is installed alongside OpenRegister
@@ -56,6 +64,18 @@ Consuming Nextcloud apps SHALL be able to register URL patterns for OpenRegister
 - **WHEN** the listener calls `getRegistry()` on the event
 - **THEN** it MUST receive the live `DeepLinkRegistryService` instance
 - **AND** calling `register()` on that service MUST be equivalent to calling the event's convenience `register()` method
+
+#### Scenario: App registers deep links declaratively via its manifest
+- **GIVEN** an app registers `OCA\OpenRegister\AppHost\Listener\GenericDeepLinkRegistrationListener` (constructed with its own `$appId`) on `DeepLinkRegistrationEvent`, and its `src/manifest.json` declares `"deepLinks": [{"registerSlug": "pipelinq", "schemaSlug": "lead", "urlTemplate": "/apps/pipelinq/#/leads/{uuid}"}]`
+- **WHEN** OpenRegister dispatches `DeepLinkRegistrationEvent` during `Application::boot()`
+- **THEN** the generic listener reads the manifest and calls `$event->register(appId: 'pipelinq', registerSlug: 'pipelinq', schemaSlug: 'lead', urlTemplate: '/apps/pipelinq/#/leads/{uuid}', icon: '', displayName: null)`
+- **AND** the resulting registration is indistinguishable from one made by a bespoke, hand-written listener
+
+#### Scenario: Missing or invalid manifest degrades to no registrations, not a boot failure
+- **GIVEN** an app registers `GenericDeepLinkRegistrationListener` but its `src/manifest.json` is missing, unreadable, contains invalid JSON, or has no `deepLinks` block
+- **WHEN** `DeepLinkRegistrationEvent` is dispatched
+- **THEN** the listener registers zero deep links for that app
+- **AND** no exception propagates out of the event dispatch
 
 ### Requirement: Deep link registry SHALL resolve URLs for unified search results
 
@@ -367,7 +387,8 @@ returning the registration's `displayName`, falling back to its
   - Slug-based registration with lazy ID-to-slug mapping via `RegisterMapper` and `SchemaMapper` (lazy via `ContainerInterface`)
   - In-memory only (static PHP arrays, no database tables), resets per request
   - Backward compatible: falls back to `openregister.objects.show` when no deep link is registered
-  - **Consumer implementations:** Pipelinq (`lib/Listener/DeepLinkRegistrationListener.php`, 4 schemas) and Procest (`lib/Listener/DeepLinkRegistrationListener.php`, 2 schemas)
+  - `OCA\OpenRegister\AppHost\Listener\GenericDeepLinkRegistrationListener` (`lib/AppHost/Listener/GenericDeepLinkRegistrationListener.php`) -- manifest-driven alternative to a bespoke per-app listener, reading `src/manifest.json`'s `deepLinks` block
+  - **Consumer implementations:** Pipelinq (4 schemas) and Procest (2 schemas) have migrated from their original bespoke `lib/Listener/DeepLinkRegistrationListener.php` classes to the manifest-driven `GenericDeepLinkRegistrationListener` path
 
 - **NOT implemented:**
   - `ICapability` exposure of deep link patterns

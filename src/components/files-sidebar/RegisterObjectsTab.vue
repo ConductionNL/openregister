@@ -53,9 +53,9 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import axios from '@nextcloud/axios'
 import { NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import DatabaseOffOutline from 'vue-material-design-icons/DatabaseOffOutline.vue'
@@ -97,6 +97,7 @@ export default {
 					this.fetchObjects()
 				}
 			},
+
 			immediate: true,
 		},
 	},
@@ -106,6 +107,7 @@ export default {
 
 		/**
 		 * Fetch objects referencing this file from the API.
+		 *
 		 * @spec exclude API passthrough loading file-referencing objects; object contract owned by object capability
 		 */
 		async fetchObjects() {

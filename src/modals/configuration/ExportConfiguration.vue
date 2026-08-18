@@ -1,8 +1,8 @@
 <script setup>
-import { translate as t } from '@nextcloud/l10n'
-import { configurationStore, navigationStore } from '../../store/store.js'
-import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
+import { configurationStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -11,7 +11,7 @@ import axios from '@nextcloud/axios'
 		name="export-configuration-dialog"
 		:title="t('openregister', 'Export Configuration')"
 		size="small"
-		:can-close="false">
+		:canClose="false">
 		<NcNoteCard v-if="errorMessage" type="error">
 			<p>{{ errorMessage }}</p>
 		</NcNoteCard>
@@ -20,7 +20,7 @@ import axios from '@nextcloud/axios'
 			<p v-if="configTitle">Export configuration "{{ configTitle }}"?</p>
 
 			<NcCheckboxRadioSwitch
-				:model-value="includeObjects"
+				:modelValue="includeObjects"
 				@update:modelValue="includeObjects = $event">
 				Include related objects
 			</NcCheckboxRadioSwitch>
@@ -50,12 +50,11 @@ import axios from '@nextcloud/axios'
 <script>
 import {
 	NcButton,
+	NcCheckboxRadioSwitch,
 	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Export from 'vue-material-design-icons/Export.vue'
 
@@ -71,6 +70,7 @@ export default {
 		Cancel,
 		Export,
 	},
+
 	data() {
 		return {
 			loading: false,
@@ -78,6 +78,7 @@ export default {
 			includeObjects: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude UI display helper — returns the configuration title for the modal heading.
@@ -86,6 +87,7 @@ export default {
 			const item = configurationStore.configurationItem
 			return item?.title || ''
 		},
+
 		/**
 		 * @spec exclude UI state helper — enables the export button when a configuration is selected.
 		 */
@@ -93,6 +95,7 @@ export default {
 			const item = configurationStore.configurationItem
 			return Boolean(item?.id)
 		},
+
 		/**
 		 * @spec exclude UI display helper — derives the reactive error message for the modal.
 		 */
@@ -104,6 +107,7 @@ export default {
 			return this.error
 		},
 	},
+
 	methods: {
 		/**
 		 * @spec exclude Modal close plumbing — clears modal state.
@@ -114,6 +118,7 @@ export default {
 			this.error = null
 			this.includeObjects = false
 		},
+
 		/**
 		 * @spec exclude Modal action plumbing — triggers configuration export download.
 		 */

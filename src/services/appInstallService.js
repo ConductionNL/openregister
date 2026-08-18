@@ -1,6 +1,3 @@
-/* eslint-disable no-trailing-spaces */
-/* eslint-disable jsdoc/check-tag-names */
-
 /**
  * ## AppInstallService Developer Documentation
  *
@@ -158,6 +155,7 @@ class AppInstallService {
 
 	/**
 	 * Caches the array of apps once fetched.
+	 *
 	 * @type {Promise<object[]>|null}
 	 */
 	#appList = null
@@ -178,6 +176,7 @@ class AppInstallService {
 
 	/**
 	 * Async initializer for the service, ensuring the app list is loaded.
+	 *
 	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
 	 */
 	async init() {
@@ -188,6 +187,7 @@ class AppInstallService {
 	/**
 	 * Fetches and stores the app list if not already loaded.
 	 * Ensures you only fetch once and cache the results in memory.
+	 *
 	 * @private
 	 */
 	async #ensureAppListLoaded() {
@@ -198,6 +198,7 @@ class AppInstallService {
 
 	/**
 	 * Retrieves the request token from the Nextcloud global object.
+	 *
 	 * @private
 	 * @return {string}
 	 */
@@ -207,6 +208,7 @@ class AppInstallService {
 
 	/**
 	 * Helper function for making fetch calls with uniform error handling.
+	 *
 	 * @private
 	 * @param {string} url - The URL to fetch
 	 * @param {object} [fetchOptions] - The fetch options
@@ -252,6 +254,7 @@ class AppInstallService {
 
 	/**
 	 * Fetch the full list of apps from the server.
+	 *
 	 * @private
 	 * @return {Promise<object[]>} - Resolves to an array of apps
 	 */
@@ -270,6 +273,7 @@ class AppInstallService {
 
 	/**
 	 * Retrieves the local cached list of apps (ensuring it's loaded first).
+	 *
 	 * @private
 	 * @return {Promise<object[]>}
 	 */
@@ -280,6 +284,7 @@ class AppInstallService {
 
 	/**
 	 * Finds an app in the cached list by ID.
+	 *
 	 * @private
 	 * @param {string} appId - The app ID
 	 * @return {Promise<object|null>}
@@ -291,6 +296,7 @@ class AppInstallService {
 
 	/**
 	 * Invalidates the cached app list.
+	 *
 	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
 	 */
 	async invalidateCache() {
@@ -299,6 +305,7 @@ class AppInstallService {
 
 	/**
 	 * Invalidates the apps list cache and then re-fetches the list and caches it.
+	 *
 	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
 	 */
 	async reloadCacheList() {
@@ -308,6 +315,7 @@ class AppInstallService {
 
 	/**
 	 * Check if an app is installed by passing it an app ID.
+	 *
 	 * @param { string } appId - The app ID
 	 * @return { Promise<boolean> } - True if the app is installed, false otherwise
 	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
@@ -322,6 +330,7 @@ class AppInstallService {
 
 	/**
 	 * Get app data by passing it an app ID
+	 *
 	 * @param { string } appId - The app ID
 	 * @return { Promise<object> } - The app data
 	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
@@ -338,6 +347,7 @@ class AppInstallService {
 	 * Install an app or multiple apps.
 	 * Skips any apps already installed.
 	 * Invalidates the cached app list after installation.
+	 *
 	 * @param {string | string[]} appIds - The app ID or an array of app IDs
 	 * @return {Promise<object|null>} The JSON response or null if no installation was necessary
 	 * @throws {RequestError} - If the network request fails or password confirmation is required (status 403)
@@ -381,6 +391,7 @@ class AppInstallService {
 	/**
 	 * Force-install an app or multiple apps.
 	 * Invalidates the cached app list after installation.
+	 *
 	 * @param {string | string[]} appIds - The app ID or an array of app IDs
 	 * @return {Promise<object>} The response from the final install call
 	 * @throws {RequestError} - If the force calls or install fails, or password confirmation is required (status 403)
@@ -409,6 +420,7 @@ class AppInstallService {
 	/**
 	 * Uninstall an app or multiple apps.
 	 * Invalidates the cached app list after uninstallation.
+	 *
 	 * @param {string | string[]} appIds - The app ID or an array of app IDs
 	 * @return {Promise<object>} The response from the final uninstall call
 	 * @throws {RequestError} - If the network request fails or password confirmation is required (status 403)
@@ -467,5 +479,5 @@ class RequestError extends Error {
 	}
 }
 
-export { RequestError, AppInstallService }
+export { AppInstallService, RequestError }
 export default AppInstallService

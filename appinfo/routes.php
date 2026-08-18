@@ -288,7 +288,7 @@ return [
         ['name' => 'verwerkingsactiviteiten#create',         'url' => '/api/avg/verwerkingsactiviteiten',        'verb' => 'POST'],
         ['name' => 'verwerkingsactiviteiten#update',         'url' => '/api/avg/verwerkingsactiviteiten/{id}',   'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'verwerkingsactiviteiten#destroy',        'url' => '/api/avg/verwerkingsactiviteiten/{id}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
-        ['name' => 'verwerkingsactiviteiten#verantwoording', 'url' => '/api/avg/verantwoording',                 'verb' => 'GET'],
+        ['name' => 'verwerkingsactiviteiten#accountability', 'url' => '/api/avg/verantwoording',                 'verb' => 'GET'],
         // AVG / GDPR data-subject rights endpoints (Phase 2b).
         ['name' => 'dsar#inzage',         'url' => '/api/avg/inzage',         'verb' => 'GET'],
         ['name' => 'dsar#portabiliteit',  'url' => '/api/avg/portabiliteit',  'verb' => 'GET'],
@@ -321,18 +321,20 @@ return [
         // AVG / GDPR per-access processing log (verwerkingenlogging) — read-only,
         // admin-default + FG-delegated, append-only by surface (no write routes).
         ['name' => 'processingLog#index',      'url' => '/api/avg/verwerkingen',            'verb' => 'GET'],
-        ['name' => 'processingLog#betrokkene', 'url' => '/api/avg/verwerkingen/betrokkene', 'verb' => 'GET'],
+        ['name' => 'processingLog#involvedParty', 'url' => '/api/avg/verwerkingen/betrokkene', 'verb' => 'GET'],
         // Translation sidecar — search, per-object slots + completeness, status updates.
         ['name' => 'translation#search',        'url' => '/api/translations/search',                                          'verb' => 'GET'],
         ['name' => 'translation#showByObject',  'url' => '/api/translations/object/{uuid}',                                   'verb' => 'GET'],
         ['name' => 'translation#setStatus',     'url' => '/api/translations/object/{uuid}/{property}/{language}/status',      'verb' => 'POST'],
         ['name' => 'translation#bulkTranslate', 'url' => '/api/translations/object/{uuid}/bulk-translate',                    'verb' => 'POST'],
-        // Names - Ultra-fast object name lookup endpoints (specific routes first).
-        ['name' => 'names#stats', 'url' => '/api/names/stats', 'verb' => 'GET'],
-        ['name' => 'names#warmup', 'url' => '/api/names/warmup', 'verb' => 'POST'],
+        // Names - object name lookup. Both remaining routes require a session and
+        // return 401 without one. The single-object route `/api/names/{id}` and the
+        // `/stats` + `/warmup` routes were REMOVED (SEC-CTRL-2): all three were
+        // #[PublicPage], and `{id}` resolved any object's name through
+        // findAcrossAllSources(_rbac: false, _multitenancy: false). Manual warmup
+        // still exists, admin-only, at POST /api/settings/cache/warmup-names.
         ['name' => 'names#index', 'url' => '/api/names', 'verb' => 'GET'],
         ['name' => 'names#create', 'url' => '/api/names', 'verb' => 'POST'],
-        ['name' => 'names#show', 'url' => '/api/names/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         // Dashbaord.
         ['name' => 'dashboard#index', 'url' => '/api/dashboard', 'verb' => 'GET'],
         ['name' => 'dashboard#calculate', 'url' => '/api/dashboard/calculate/{registerId}', 'verb' => 'POST', 'requirements' => ['registerId' => '\d+']],
@@ -1304,6 +1306,7 @@ return [
 		['name' => 'flowRun#active', 'url' => '/api/flow-runs/active', 'verb' => 'GET'],
 		['name' => 'flowRun#show', 'url' => '/api/flow-runs/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#retry', 'url' => '/api/flow-runs/{uuid}/retry', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'flowRun#resume', 'url' => '/api/flow-runs/{uuid}/resume', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		// Interactive test run (or-flow-partial-run): run synchronously with optional startAt + pins + seed.
 		['name' => 'flowRun#test', 'url' => '/api/flow-runs/test', 'verb' => 'POST'],
 		// Federated configuration sharing (federated-config-sharing): declare types, bundle a selection, install/publish/discover a bundle.

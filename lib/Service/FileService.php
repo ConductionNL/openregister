@@ -1006,6 +1006,45 @@ class FileService {
 	}//end checkOwnership()
 
 	/**
+	 * Transfer folder ownership to the OpenRegister user, sharing it back.
+	 *
+	 * The facade seam FolderManagementHandler needs. Four call sites there
+	 * carried `// TODO: Call $this->fileService->transferFolderOwnershipIfNeeded()
+	 * once FileOwnershipHandler is extracted.` — the extraction happened, but
+	 * this delegation never did, so the literal call in those TODOs would have
+	 * been a fatal: the facade exposed neither ownership-transfer variant.
+	 *
+	 * FILES were transferred and FOLDERS were not. CreateFileHandler and
+	 * UpdateFileHandler both call transferFileOwnershipIfNeeded() directly on
+	 * the handler, so a register's files ended up owned by the OpenRegister
+	 * user while the folder containing them stayed owned by whoever created
+	 * it — two halves of one register with different owners and, when that
+	 * user is deleted, different lifetimes.
+	 *
+	 * The sharing handler is passed explicitly because the ownership handler's
+	 * own docblock requires it: without it the transfer would move the folder
+	 * away from the current user WITHOUT sharing it back, which takes their
+	 * access away instead of preserving it.
+	 *
+	 * @param Node $folder The folder to potentially transfer ownership for.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If ownership transfer fails.
+	 *
+	 * @psalm-return   void
+	 * @phpstan-return void
+	 *
+	 * @spec exclude Ownership-transfer delegation; the behaviour is specified on FileOwnershipHandler, this adds no rule of its own.
+	 */
+	public function transferFolderOwnershipIfNeeded(Node $folder): void {
+		$this->fileOwnershipHandler->transferFolderOwnershipIfNeeded(
+			folder: $folder,
+			fileSharingHandler: $this->fileSharingHandler
+		);
+	}//end transferFolderOwnershipIfNeeded()
+
+	/**
 	 * Formats a single Node file into a metadata array (DELEGATED to FileFormattingHandler).
 	 *
 	 * @param Node $file The Node file to format.
@@ -1933,8 +1972,8 @@ class FileService {
 	 * @param Node $node The file node to anonymize.
 	 * @param array $entities Array of detected entities with 'text' and 'key' fields.
 	 * @param string $scope Placeholder-numbering scope: 'document' (default) or 'dossier'.
-	 * @param string|null $dossierKey Stable folder id of the dossier (per-dossier scope); null falls
-	 *                                back to the file's parent folder.
+	 * @param string|null $fileKey Stable folder id of the dossier (per-dossier scope); null falls
+	 *                             back to the file's parent folder.
 	 * @param bool|null $preserveStructure PDF only (REQ-ORTPR-004): tri-state structure-preservation
 	 *                                     option — null/absent = auto (preserve iff the input is a
 	 *                                     tagged PDF), true = attempt, false = skip but still measure.
@@ -1949,14 +1988,14 @@ class FileService {
 		Node $node,
 		array $entities,
 		string $scope = 'document',
-		?string $dossierKey = null,
+		?string $fileKey = null,
 		?bool $preserveStructure = null,
 	): Node {
 		return $this->documentProcessingHandler->anonymizeDocument(
 			node: $node,
 			entities: $entities,
 			scope: $scope,
-			dossierKey: $dossierKey,
+			fileKey: $fileKey,
 			preserveStructure: $preserveStructure
 		);
 	}//end anonymizeDocument()
@@ -2194,15 +2233,15 @@ class FileService {
 
 		$dotPos = strrpos($desiredName, '.');
 		// No extension or hidden file (".env"); append suffix to whole name.
-		$stem = $desiredName;
+		$vote = $desiredName;
 		$ext = '';
 		if ($dotPos !== false && $dotPos !== 0) {
-			$stem = substr($desiredName, 0, $dotPos);
+			$vote = substr($desiredName, 0, $dotPos);
 			$ext = substr($desiredName, $dotPos);
 		}
 
 		for ($i = 1; $i <= 999; $i++) {
-			$candidate = $stem . ' (' . $i . ')' . $ext;
+			$candidate = $vote . ' (' . $i . ')' . $ext;
 			if ($folder->nodeExists($candidate) === false) {
 				return $candidate;
 			}

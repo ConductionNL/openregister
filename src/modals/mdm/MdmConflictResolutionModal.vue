@@ -6,7 +6,7 @@
 	<NcDialog
 		:name="t('openregister', 'Resolve conflicts')"
 		size="large"
-		:can-close="!saving"
+		:canClose="!saving"
 		@closing="$emit('close')">
 		<div class="conflictResolution">
 			<template v-if="conflicts.length === 0">
@@ -45,7 +45,7 @@
 						v-model="selections[conflict.attribute]"
 						data-testid="mdm-conflict-source-select"
 						:options="conflict.options"
-						:input-label="
+						:inputLabel="
 							t('openregister', 'Winning source for {attribute}', {
 								attribute: conflict.attribute,
 							})
@@ -57,20 +57,20 @@
 					<div class="conflictRow__outcome">
 						<NcCheckboxRadioSwitch
 							v-model="outcomes[conflict.attribute]"
-							:button-variant="true"
+							:buttonVariant="true"
 							value="persistent"
 							:name="'outcome_' + conflict.attribute"
 							type="radio"
-							button-variant-grouped="horizontal">
+							buttonVariantGrouped="horizontal">
 							{{ t('openregister', 'Persistent (trust rule)') }}
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
 							v-model="outcomes[conflict.attribute]"
-							:button-variant="true"
+							:buttonVariant="true"
 							value="one-off"
 							:name="'outcome_' + conflict.attribute"
 							type="radio"
-							button-variant-grouped="horizontal">
+							buttonVariantGrouped="horizontal">
 							{{ t('openregister', 'One-off (this record only)') }}
 						</NcCheckboxRadioSwitch>
 					</div>
@@ -167,6 +167,7 @@ export default {
 			type: Object,
 			required: true,
 		},
+
 		/**
 		 * Entity type used when persisting a trust-configuration row. Falls
 		 * back to `object.entityType` / `object['@self']?.schema` when omitted.

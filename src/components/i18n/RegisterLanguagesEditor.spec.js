@@ -7,10 +7,11 @@ import RegisterLanguagesEditor from './RegisterLanguagesEditor.vue'
  * @param ctx
  */
 const callComputed = (key, ctx) => RegisterLanguagesEditor.computed[key].call(ctx)
-const callMethod = (key, ctx, ...args) =>
-	RegisterLanguagesEditor.methods[key].apply(ctx, args)
+function callMethod(key, ctx, ...args) {
+	return RegisterLanguagesEditor.methods[key].apply(ctx, args)
+}
 
-const buildCtx = (overrides = {}) => {
+function buildCtx(overrides = {}) {
 	const emitted = []
 	return {
 		value: [],

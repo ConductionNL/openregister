@@ -7,7 +7,7 @@
 				: t('openregister', 'Create Webhook')
 		"
 		size="large"
-		:can-close="true"
+		:canClose="true"
 		:open="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="error" type="error">
@@ -15,7 +15,7 @@
 		</NcNoteCard>
 
 		<div class="tabContainer">
-			<AppTabs v-model="activeTab" content-class="mt-3" justified>
+			<AppTabs v-model="activeTab" contentClass="mt-3" justified>
 				<!-- Settings Tab -->
 				<AppTab active>
 					<template #title>
@@ -27,7 +27,7 @@
 						<NcTextField
 							:label="t('openregister', 'Name') + ' *'"
 							:placeholder="t('openregister', 'Enter webhook name')"
-							:model-value="webhookItem?.name || ''"
+							:modelValue="webhookItem?.name || ''"
 							:error="!webhookItem?.name?.trim?.()"
 							@update:modelValue="updateName" />
 
@@ -56,11 +56,11 @@
 							}}</label>
 							<NcSelect
 								v-model="selectedMethod"
-								input-label="Selected Method"
+								inputLabel="Selected Method"
 								:options="httpMethodOptions"
 								label="label"
-								track-by="value"
-								:label-outside="true"
+								trackBy="value"
+								:labelOutside="true"
 								:placeholder="
 									t('openregister', 'Select HTTP method')
 								"
@@ -88,7 +88,7 @@
 
 						<div class="checkboxField">
 							<NcCheckboxRadioSwitch
-								:model-value="webhookItem?.enabled !== false"
+								:modelValue="webhookItem?.enabled !== false"
 								@update:modelValue="updateEnabled">
 								{{ t('openregister', 'Enabled') }}
 							</NcCheckboxRadioSwitch>
@@ -118,16 +118,16 @@
 							}}</label>
 							<NcSelect
 								v-model="selectedEvent"
-								input-label="Selected Event"
+								inputLabel="Selected Event"
 								:options="eventOptions"
 								label="label"
-								track-by="value"
-								:label-outside="true"
+								trackBy="value"
+								:labelOutside="true"
 								:filterable="true"
 								:placeholder="
 									t('openregister', 'Select event to listen to...')
 								"
-								@search-change="searchEvents"
+								@searchChange="searchEvents"
 								@update:modelValue="updateEvent">
 								<template
 									#option="{ label, description, category, type }">
@@ -173,11 +173,11 @@
 							}}</label>
 							<NcSelect
 								v-model="selectedEventProperty"
-								input-label="Selected Event Property"
+								inputLabel="Selected Event Property"
 								:options="eventPropertyOptions"
 								label="label"
-								track-by="value"
-								:label-outside="true"
+								trackBy="value"
+								:labelOutside="true"
 								:placeholder="
 									t(
 										'openregister',
@@ -218,7 +218,7 @@
 					<div class="form-editor">
 						<div class="checkboxField">
 							<NcCheckboxRadioSwitch
-								:model-value="configuration.sendCloudEvent !== false"
+								:modelValue="configuration.sendCloudEvent !== false"
 								@update:modelValue="updateSendCloudEvent">
 								{{ t('openregister', 'Send as CloudEvent') }}
 							</NcCheckboxRadioSwitch>
@@ -234,7 +234,7 @@
 
 						<div class="checkboxField">
 							<NcCheckboxRadioSwitch
-								:model-value="configuration.waitForResponse === true"
+								:modelValue="configuration.waitForResponse === true"
 								@update:modelValue="updateWaitForResponse">
 								{{ t('openregister', 'Wait for Response') }}
 							</NcCheckboxRadioSwitch>
@@ -250,7 +250,7 @@
 
 						<div class="checkboxField">
 							<NcCheckboxRadioSwitch
-								:model-value="
+								:modelValue="
 									configuration.allowPrivateTargets === true
 								"
 								@update:modelValue="updateAllowPrivateTargets">
@@ -277,11 +277,11 @@
 							}}</label>
 							<NcSelect
 								v-model="selectedRetryPolicy"
-								input-label="Selected Retry Policy"
+								inputLabel="Selected Retry Policy"
 								:options="retryPolicyOptions"
 								label="label"
-								track-by="value"
-								:label-outside="true"
+								trackBy="value"
+								:labelOutside="true"
 								:placeholder="
 									t('openregister', 'Select retry policy')
 								"
@@ -310,7 +310,7 @@
 						<NcTextField
 							:label="t('openregister', 'Max Retries')"
 							placeholder="3"
-							:model-value="webhookItem?.maxRetries?.toString() || '3'"
+							:modelValue="webhookItem?.maxRetries?.toString() || '3'"
 							type="number"
 							min="0"
 							max="10"
@@ -330,7 +330,7 @@
 						<NcTextField
 							:label="t('openregister', 'Timeout (seconds)')"
 							placeholder="30"
-							:model-value="webhookItem?.timeout?.toString() || '30'"
+							:modelValue="webhookItem?.timeout?.toString() || '30'"
 							type="number"
 							min="1"
 							max="300"
@@ -365,7 +365,7 @@
 									'Optional webhook secret for signature verification',
 								)
 							"
-							:model-value="webhookItem?.secret || ''"
+							:modelValue="webhookItem?.secret || ''"
 							type="password"
 							@update:modelValue="updateSecret">
 							<template #helper-text-message>
@@ -385,7 +385,7 @@
 								t('openregister', 'Headers')
 							}}</label>
 							<NcTextArea
-								:model-value="headersText"
+								:modelValue="headersText"
 								:placeholder="headersPlaceholder"
 								rows="4"
 								@update:modelValue="updateHeaders" />
@@ -404,7 +404,7 @@
 								t('openregister', 'Filters')
 							}}</label>
 							<NcTextArea
-								:model-value="filtersText"
+								:modelValue="filtersText"
 								:placeholder="filtersPlaceholder"
 								rows="4"
 								@update:modelValue="updateFilters" />
@@ -444,12 +444,10 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showSuccess } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { showSuccess } from '@nextcloud/dialogs'
-import axios from '@nextcloud/axios'
-import { navigationStore, webhookStore } from '../../store/store.js'
-
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
@@ -457,19 +455,18 @@ import {
 	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
-	NcTextField,
 	NcTextArea,
+	NcTextField,
 } from '@nextcloud/vue'
-
-import AppTabs from '../../components/tabs/AppTabs.vue'
-import AppTab from '../../components/tabs/AppTab.vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
+import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Database from 'vue-material-design-icons/Database.vue'
 import Tune from 'vue-material-design-icons/Tune.vue'
 import Webhook from 'vue-material-design-icons/Webhook.vue'
+import AppTab from '../../components/tabs/AppTab.vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
+import { navigationStore, webhookStore } from '../../store/store.js'
 
 export default {
 	name: 'EditWebhook',
@@ -491,6 +488,7 @@ export default {
 		Tune,
 		Webhook,
 	},
+
 	data() {
 		return {
 			loading: false,
@@ -508,6 +506,7 @@ export default {
 				eventProperty: null,
 				responseMapping: {},
 			},
+
 			availableEvents: [],
 			eventOptions: [],
 			loadingEvents: false,
@@ -526,6 +525,7 @@ export default {
 					description: 'HTTP DELETE method',
 				},
 			],
+
 			retryPolicyOptions: [
 				{
 					value: 'exponential',
@@ -554,6 +554,7 @@ export default {
 			],
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude UI accessor — exposes the navigation store to the template.
@@ -561,11 +562,13 @@ export default {
 		navigationStore() {
 			return navigationStore
 		},
+
 		isValid() {
 			return Boolean(
 				this.webhookItem?.name?.trim() && this.webhookItem?.url?.trim(),
 			)
 		},
+
 		/**
 		 * @spec exclude UI display helper — builds event-property select options for the selected event.
 		 */
@@ -587,6 +590,7 @@ export default {
 				label: prop,
 			}))
 		},
+
 		/**
 		 * @spec exclude UI display helper — serializes headers object to editable text.
 		 */
@@ -601,6 +605,7 @@ export default {
 				.map(([key, value]) => `${key}: ${value}`)
 				.join('\n')
 		},
+
 		// Placeholder strings are defined in script (not in the template attribute
 		// expression) because a literal `\n` inside a Vue template expression is
 		// compiled into an actual newline character inside a single-quoted JS
@@ -612,12 +617,14 @@ export default {
 		headersPlaceholder() {
 			return 'X-Custom-Header: value\nAuthorization: Bearer token'
 		},
+
 		/**
 		 * @spec exclude UI display helper — placeholder text for the filters field.
 		 */
 		filtersPlaceholder() {
 			return 'objectType: object\naction: created'
 		},
+
 		/**
 		 * @spec exclude UI display helper — serializes filters object to editable text.
 		 */
@@ -638,14 +645,16 @@ export default {
 				.join('\n')
 		},
 	},
+
 	watch: {
-		'navigationStore.modal'(newVal) {
+		'navigationStore.modal': function (newVal) {
 			if (newVal === 'editWebhook') {
 				// Modal opened, initialize webhook.
 				this.initializeWebhook()
 			}
 		},
 	},
+
 	/**
 	 * @spec exclude Vue lifecycle hook — loads events and initializes the webhook form.
 	 */
@@ -653,6 +662,7 @@ export default {
 		await this.loadAvailableEvents()
 		this.initializeWebhook()
 	},
+
 	methods: {
 		/**
 		 * @spec openspec/specs/entity-management-modals/spec.md
@@ -693,6 +703,7 @@ export default {
 				this.selectedEventProperty = null
 			}
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Form-field binding — sets the webhook name.
@@ -703,6 +714,7 @@ export default {
 			}
 			this.webhookItem.name = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Form-field binding — sets the webhook URL.
@@ -713,6 +725,7 @@ export default {
 			}
 			this.webhookItem.url = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Form-field binding — sets the HTTP method.
@@ -724,6 +737,7 @@ export default {
 			this.webhookItem.method = value ? value.value : 'POST'
 			this.selectedMethod = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Form-field binding — sets the enabled flag.
@@ -734,6 +748,7 @@ export default {
 			}
 			this.webhookItem.enabled = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Form-field binding — sets the subscribed event and resets event property.
@@ -757,6 +772,7 @@ export default {
 				this.selectedEvent = null
 			}
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Form-field binding — sets the selected event property.
@@ -771,6 +787,7 @@ export default {
 			this.webhookItem.configuration.eventProperty = value ? value.value : null
 			this.selectedEventProperty = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Form-field binding — sets the sendCloudEvent configuration flag.
@@ -785,6 +802,7 @@ export default {
 			this.configuration.sendCloudEvent = value
 			this.webhookItem.configuration.sendCloudEvent = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Form-field binding — sets the waitForResponse configuration flag.
@@ -799,6 +817,7 @@ export default {
 			this.configuration.waitForResponse = value
 			this.webhookItem.configuration.waitForResponse = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Form-field binding — sets the allowPrivateTargets configuration flag.
@@ -813,6 +832,7 @@ export default {
 			this.configuration.allowPrivateTargets = value
 			this.webhookItem.configuration.allowPrivateTargets = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Form-field binding — sets the retry policy.
@@ -824,6 +844,7 @@ export default {
 			this.webhookItem.retryPolicy = value ? value.value : 'exponential'
 			this.selectedRetryPolicy = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Form-field binding — sets the max-retries count.
@@ -834,6 +855,7 @@ export default {
 			}
 			this.webhookItem.maxRetries = parseInt(value) || 3
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Form-field binding — sets the request timeout.
@@ -844,6 +866,7 @@ export default {
 			}
 			this.webhookItem.timeout = parseInt(value) || 30
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Form-field binding — sets the webhook secret.
@@ -854,6 +877,7 @@ export default {
 			}
 			this.webhookItem.secret = value || null
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Form-field binding — parses header text into a headers object.
@@ -873,6 +897,7 @@ export default {
 			}
 			this.webhookItem.headers = headers
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Form-field binding — parses filter text into a filters object.
@@ -898,6 +923,7 @@ export default {
 			}
 			this.webhookItem.filters = filters
 		},
+
 		/**
 		 * @spec exclude Modal data-load plumbing — fetches subscribable webhook events.
 		 */
@@ -925,6 +951,7 @@ export default {
 				this.loadingEvents = false
 			}
 		},
+
 		/**
 		 * @param _query
 		 * @spec exclude UI event handler — no-op search hook (NcSelect filters internally).
@@ -934,6 +961,7 @@ export default {
 			// The NcSelect component handles filtering internally.
 			// Empty query is handled by the component itself.
 		},
+
 		/**
 		 * @spec exclude Modal hydration plumbing — maps stored webhook values onto select inputs.
 		 */
@@ -978,12 +1006,14 @@ export default {
 				}
 			}
 		},
+
 		/**
 		 * @spec exclude UI event handler — closes the modal on dialog dismiss.
 		 */
 		handleDialogClose() {
 			this.closeModal()
 		},
+
 		/**
 		 * @spec exclude Modal close plumbing — resets the webhook form and closes the modal.
 		 */
@@ -1004,6 +1034,7 @@ export default {
 				responseMapping: {},
 			}
 		},
+
 		/**
 		 * @spec exclude Modal save plumbing — assembles the payload and persists the webhook.
 		 */

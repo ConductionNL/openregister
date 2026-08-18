@@ -20,21 +20,21 @@
 			<h4>{{ t('openregister', 'Status') }}</h4>
 			<div class="filter-options">
 				<NcCheckboxRadioSwitch
-					:model-value="selectedEnabled === null"
+					:modelValue="selectedEnabled === null"
 					type="radio"
 					value="all"
 					@update:modelValue="updateEnabled(null)">
 					{{ t('openregister', 'All Webhooks') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:model-value="selectedEnabled === true"
+					:modelValue="selectedEnabled === true"
 					type="radio"
 					value="enabled"
 					@update:modelValue="updateEnabled(true)">
 					{{ t('openregister', 'Enabled') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:model-value="selectedEnabled === false"
+					:modelValue="selectedEnabled === false"
 					type="radio"
 					value="disabled"
 					@update:modelValue="updateEnabled(false)">
@@ -53,9 +53,9 @@
 </template>
 
 <script>
-import { NcTextField, NcCheckboxRadioSwitch, NcButton } from '@nextcloud/vue'
-import Magnify from 'vue-material-design-icons/Magnify.vue'
 import { t } from '@nextcloud/l10n'
+import { NcButton, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
 
 export default {
 	name: 'WebhooksSidebar',
@@ -75,6 +75,7 @@ export default {
 			type: String,
 			default: '',
 		},
+
 		/**
 		 * @spec exclude two-way-bound enabled-status filter prop, UI plumbing
 		 */
@@ -111,6 +112,7 @@ export default {
 		search(newVal) {
 			this.localSearch = newVal
 		},
+
 		/**
 		 * @param newVal
 		 * @spec exclude computed filter-state binding

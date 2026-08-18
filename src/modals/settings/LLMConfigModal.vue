@@ -36,7 +36,7 @@
 						v-model="selectedEmbeddingProvider"
 						:options="embeddingProviderOptions"
 						label="name"
-						:input-label="t('openregister', 'Embedding Provider')"
+						:inputLabel="t('openregister', 'Embedding Provider')"
 						:placeholder="t('openregister', 'Select provider')"
 						@update:modelValue="handleEmbeddingProviderChange">
 						<template #option="{ name, description }">
@@ -64,7 +64,7 @@
 						v-model="selectedChatProvider"
 						:options="chatProviderOptions"
 						label="name"
-						:input-label="t('openregister', 'Chat Provider')"
+						:inputLabel="t('openregister', 'Chat Provider')"
 						:placeholder="t('openregister', 'Select provider')">
 						<template #option="{ name, description }">
 							<div class="provider-option">
@@ -111,11 +111,11 @@
 					}}</label>
 					<NcSelect
 						v-model="openaiConfig.model"
-						input-label="Openai Config Model"
+						inputLabel="Openai Config Model"
 						:options="openaiModelOptions"
 						label="name"
 						:placeholder="t('openregister', 'Select model')"
-						:label-outside="true">
+						:labelOutside="true">
 						<template #option="{ name, dimensions, cost }">
 							<div class="model-option">
 								<strong>{{ name }}</strong>
@@ -172,13 +172,13 @@
 					<NcSelect
 						id="ollama-model"
 						v-model="ollamaConfig.model"
-						input-label="Ollama Config Model"
+						inputLabel="Ollama Config Model"
 						:options="ollamaModelOptions"
 						label="name"
 						:placeholder="t('openregister', 'Select model')"
-						:label-outside="true"
+						:labelOutside="true"
 						:taggable="true"
-						:create-option="(option) => ({ id: option, name: option })">
+						:createOption="(option) => ({ id: option, name: option })">
 						<template #option="{ name, description }">
 							<div class="model-option">
 								<strong>{{ name }}</strong>
@@ -235,11 +235,11 @@
 					}}</label>
 					<NcSelect
 						v-model="fireworksConfig.embeddingModel"
-						input-label="Fireworks Config Embedding Model"
+						inputLabel="Fireworks Config Embedding Model"
 						:options="fireworksEmbeddingModelOptions"
 						label="name"
 						:placeholder="t('openregister', 'Select model')"
-						:label-outside="true">
+						:labelOutside="true">
 						<template #option="{ name, dimensions, cost }">
 							<div class="model-option">
 								<strong>{{ name }}</strong>
@@ -305,11 +305,11 @@
 					}}</label>
 					<NcSelect
 						v-model="openaiConfig.chatModel"
-						input-label="Openai Config Chat Model"
+						inputLabel="Openai Config Chat Model"
 						:options="openaiChatModelOptions"
 						label="name"
 						:placeholder="t('openregister', 'Select chat model')"
-						:label-outside="true">
+						:labelOutside="true">
 						<template #option="{ name, contextWindow, cost }">
 							<div class="model-option">
 								<strong>{{ name }}</strong>
@@ -362,11 +362,11 @@
 					}}</label>
 					<NcSelect
 						v-model="fireworksConfig.chatModel"
-						input-label="Fireworks Config Chat Model"
+						inputLabel="Fireworks Config Chat Model"
 						:options="fireworksChatModelOptions"
 						label="name"
 						:placeholder="t('openregister', 'Select chat model')"
-						:label-outside="true">
+						:labelOutside="true">
 						<template #option="{ name, contextWindow, cost }">
 							<div class="model-option">
 								<strong>{{ name }}</strong>
@@ -409,13 +409,13 @@
 					<NcSelect
 						id="ollama-chat-model"
 						v-model="ollamaConfig.chatModel"
-						input-label="Ollama Config Chat Model"
+						inputLabel="Ollama Config Chat Model"
 						:options="ollamaModelOptions"
 						label="name"
 						:placeholder="t('openregister', 'Select model')"
-						:label-outside="true"
+						:labelOutside="true"
 						:taggable="true"
-						:create-option="(option) => ({ id: option, name: option })">
+						:createOption="(option) => ({ id: option, name: option })">
 						<template #option="{ name, description }">
 							<div class="model-option">
 								<strong>{{ name }}</strong>
@@ -450,7 +450,7 @@
 					}}</label>
 					<NcSelect
 						v-model="selectedVectorBackend"
-						input-label="Selected Vector Backend"
+						inputLabel="Selected Vector Backend"
 						:options="vectorBackendOptions"
 						label="name"
 						:placeholder="t('openregister', 'Select backend')"
@@ -637,20 +637,20 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
 import {
-	NcDialog,
 	NcButton,
+	NcCheckboxRadioSwitch,
+	NcDialog,
 	NcLoadingIcon,
 	NcSelect,
-	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
-import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
-import TestTube from 'vue-material-design-icons/TestTube.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { showSuccess, showError } from '@nextcloud/dialogs'
+import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import TestTube from 'vue-material-design-icons/TestTube.vue'
 
 export default {
 	name: 'LLMConfigModal',
@@ -777,6 +777,7 @@ export default {
 					description: 'Nomic embeddings',
 				},
 			],
+
 			loadingOllamaModels: false,
 
 			chatProviderOptions: [
@@ -1005,6 +1006,7 @@ export default {
 				this.fetchOllamaModels()
 			}
 		},
+
 		/**
 		 * @param newVal
 		 * @spec exclude UI watcher — fetches Ollama models when the chat provider is Ollama.
@@ -1014,8 +1016,9 @@ export default {
 				this.fetchOllamaModels()
 			}
 		},
+
 		// Refetch models when URL changes
-		'ollamaConfig.url'(newVal) {
+		'ollamaConfig.url': function (newVal) {
 			if (
 				newVal
 				&& (this.selectedEmbeddingProvider?.id === 'ollama'
@@ -1081,6 +1084,7 @@ export default {
 					this.ollamaConfig = {
 						url:
 							llmSettings.ollamaConfig.url || 'http://localhost:11434',
+
 						model: llmSettings.ollamaConfig.model || null,
 						chatModel: llmSettings.ollamaConfig.chatModel || null,
 					}
@@ -1092,6 +1096,7 @@ export default {
 						apiKey: llmSettings.fireworksConfig.apiKey || '',
 						embeddingModel:
 							llmSettings.fireworksConfig.embeddingModel || null,
+
 						chatModel: llmSettings.fireworksConfig.chatModel || null,
 						baseUrl:
 							llmSettings.fireworksConfig.baseUrl
@@ -1176,6 +1181,7 @@ export default {
 						model:
 							this.fireworksConfig.embeddingModel?.id
 							|| this.fireworksConfig.embeddingModel,
+
 						baseUrl: this.fireworksConfig.baseUrl,
 					}
 				} else if (provider === 'ollama') {
@@ -1244,6 +1250,7 @@ export default {
 						model:
 							this.fireworksConfig.chatModel?.id
 							|| this.fireworksConfig.chatModel,
+
 						baseUrl: this.fireworksConfig.baseUrl,
 					}
 				} else if (provider === 'ollama') {
@@ -1301,33 +1308,42 @@ export default {
 						apiKey: this.openaiConfig.apiKey,
 						model:
 							this.openaiConfig.model?.id || this.openaiConfig.model,
+
 						chatModel:
 							this.openaiConfig.chatModel?.id
 							|| this.openaiConfig.chatModel,
+
 						organizationId: this.openaiConfig.organizationId,
 					},
+
 					ollamaConfig: {
 						url: this.ollamaConfig.url,
 						model:
 							this.ollamaConfig.model?.id || this.ollamaConfig.model,
+
 						chatModel:
 							this.ollamaConfig.chatModel?.id
 							|| this.ollamaConfig.chatModel,
 					},
+
 					fireworksConfig: {
 						apiKey: this.fireworksConfig.apiKey,
 						embeddingModel:
 							this.fireworksConfig.embeddingModel?.id
 							|| this.fireworksConfig.embeddingModel,
+
 						chatModel:
 							this.fireworksConfig.chatModel?.id
 							|| this.fireworksConfig.chatModel,
+
 						baseUrl: this.fireworksConfig.baseUrl,
 					},
+
 					vectorConfig: {
 						backend: this.selectedVectorBackend?.id || 'php',
 						solrField: '_embedding_', // Reserved field in Solr schema
 					},
+
 					enabledFeatures: this.aiFeatures
 						.filter((f) => f.enabled)
 						.map((f) => f.id),

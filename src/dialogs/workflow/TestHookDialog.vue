@@ -20,7 +20,7 @@
 			</div>
 			<div v-if="result" class="test-result">
 				<h4>Result</h4>
-				<div :class="['status-badge', `status-${result.status}`]">
+				<div class="status-badge" :class="[`status-${result.status}`]">
 					{{ result.status }}
 				</div>
 				<pre v-if="result.data">{{
@@ -41,9 +41,9 @@
 </template>
 
 <script>
-import { NcButton, NcDialog } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { NcButton, NcDialog } from '@nextcloud/vue'
 
 export default {
 	name: 'TestHookDialog',
@@ -52,6 +52,7 @@ export default {
 		hook: { type: Object, default: null },
 		engineId: { type: Number, default: null },
 	},
+
 	emits: ['close'],
 	data() {
 		return {
@@ -61,6 +62,7 @@ export default {
 			sampleDataJson: JSON.stringify({}, null, 2),
 		}
 	},
+
 	methods: {
 		async runTest() {
 			this.loading = true

@@ -60,11 +60,8 @@
 						</span>
 					</div>
 					<div class="viewActions">
-						<NcActions
-							:force-name="true"
-							:inline="1"
-							menu-name="Actions">
-							<NcActionButton close-after-click @click="refreshEntity">
+						<NcActions :forceName="true" :inline="1" menuName="Actions">
+							<NcActionButton closeAfterClick @click="refreshEntity">
 								<template #icon>
 									<Refresh :size="20" />
 								</template>
@@ -257,32 +254,46 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showError } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { showError } from '@nextcloud/dialogs'
-import axios from '@nextcloud/axios'
-
 import {
+	NcActionButton,
+	NcActions,
 	NcAppContent,
 	NcButton,
-	NcLoadingIcon,
 	NcEmptyContent,
-	NcActions,
-	NcActionButton,
+	NcLoadingIcon,
 } from '@nextcloud/vue'
-
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
-import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
-import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
-import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
-import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
+import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 
 /**
  * Entity detail view showing entity information and relations
+ *
+ * @visual exclude No hermetic e2e can reach this page, because nothing can
+ *   create the record it displays. `openregister_entities` rows are DETECTED
+ *   PII, and the routed surface is read-only: `appinfo/routes.php` registers
+ *   `gdprEntities#index`, `#show`, `#destroy`, `#getTypes`, `#getCategories`
+ *   and `#getStats` — and NO create. The only writer anywhere is
+ *   `fileText#addManualEntity`, which `ManualEntityService` refuses unless the
+ *   target Nextcloud file already carries EXTRACTED CHUNKS, i.e. it needs an
+ *   uploaded file plus a completed text-extraction run — neither hermetic nor
+ *   available in CI. The alternative was a spec that navigates to whatever row
+ *   happens to exist and guards its assertions, which passes without asserting
+ *   on an empty instance; `tests/e2e/ci/playwright.config.ts` names that shape
+ *   as admission criterion 3 and refuses it, and so does this file. Remove this
+ *   waiver and write a real spec on the change that gives entities a create
+ *   endpoint or a seedable extraction fixture; it records that the record
+ *   cannot be made, not that the screen needs no proof.
  *
  * @package
  * @category View
@@ -311,6 +322,7 @@ export default {
 		TextBoxOutline,
 		EyeOutline,
 	},
+
 	data() {
 		return {
 			entity: null,
@@ -320,9 +332,11 @@ export default {
 			error: null,
 		}
 	},
+
 	mounted() {
 		this.loadEntity()
 	},
+
 	methods: {
 		t,
 

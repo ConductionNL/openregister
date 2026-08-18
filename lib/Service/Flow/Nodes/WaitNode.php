@@ -146,9 +146,35 @@ class WaitNode implements IFlowNode, IFlowNodeConfigKeys {
 	 *
 	 * @return array The items, unchanged, once the wait is over.
 	 *
-	 * @throws FlowSuspension On the first pass, to pause the run.
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-suspending-is-a-run-level-act-so-an-empty-firing-must-not-suspend
+	 *
+	 * @throws FlowSuspension On the first pass that carries items, to pause the
+	 *                        run. An EMPTY firing never suspends: there is
+	 *                        nothing to wait for, and pausing on it would pause
+	 *                        every other branch of the run with it.
 	 */
 	public function execute(array $items, array $config, array $context): array {
+		if ($items === []) {
+			// AN EMPTY FIRING IS NOT SOMETHING TO WAIT FOR.
+			//
+			// A transition can fire with no items — a gate sent every item down
+			// another branch, or the branch simply had no work this pass — and
+			// suspending on that pauses the WHOLE RUN, not just this branch.
+			// In a flow whose branches are priorities rather than alternatives,
+			// that is a live defect: hydra's sequencer routes an in-flight
+			// stage to a collect branch and leaves the dispatch branch empty,
+			// and the empty branch's wait suspended the run before the branch
+			// carrying the item could advance. On resume the marking had moved
+			// on and every remaining transition fired empty, so the item was
+			// gone and the log read as a clean pass — 40 transitions, all
+			// `completed`, `in=0 out=0`.
+			//
+			// Nothing is skipped by returning here: with no items there is no
+			// work to delay, and a later pass that DOES carry items reaches
+			// this node again and suspends then.
+			return $items;
+		}
+
 		if (($context['resuming'] ?? false) === true) {
 			// Woken by the worker: the wait is over by construction, because
 			// the run was only eligible once `resumeAt` had passed.

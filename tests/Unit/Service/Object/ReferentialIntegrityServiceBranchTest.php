@@ -64,7 +64,8 @@ class ReferentialIntegrityServiceBranchTest extends TestCase {
 
 	private function createObjectMock(string $uuid, ?string $schemaId = null): ObjectEntity&MockObject {
 		$mock = $this->getMockBuilder(ObjectEntity::class)
-			->addMethods(['getUuid', 'getSchema', 'getRegister', 'getDeleted'])
+			->onlyMethods(['getUuid', 'getSchema', 'getRegister'])
+			->addMethods(['getDeleted'])
 			->getMock();
 		$mock->method('getUuid')->willReturn($uuid);
 		$mock->method('getSchema')->willReturn($schemaId);

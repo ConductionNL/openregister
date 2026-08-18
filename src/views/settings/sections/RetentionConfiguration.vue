@@ -3,7 +3,7 @@
 		name="Retention"
 		description="Configure data and log retention policies"
 		:loading="loading"
-		:loading-message="t('openregister', 'Loading retention settings...')">
+		:loadingMessage="t('openregister', 'Loading retention settings...')">
 		<!-- Actions slot -->
 		<template #actions>
 			<NcButton
@@ -92,7 +92,7 @@
 						:options="recordingModeOptions"
 						:clearable="false"
 						:disabled="loading || saving"
-						:input-label="t('openregister', 'Search recording mode')"
+						:inputLabel="t('openregister', 'Search recording mode')"
 						label="label"
 						class="recording-mode-select" />
 					<p class="trail-description">
@@ -368,20 +368,20 @@
 </template>
 
 <script>
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcLoadingIcon,
+	NcSelect,
+} from '@nextcloud/vue'
 /**
  * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
  */
 import { mapStores } from 'pinia'
-import { useSettingsStore } from '../../../store/settings.js'
-import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import {
-	NcButton,
-	NcLoadingIcon,
-	NcCheckboxRadioSwitch,
-	NcSelect,
-} from '@nextcloud/vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Save from 'vue-material-design-icons/ContentSave.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import { useSettingsStore } from '../../../store/settings.js'
 
 export default {
 	name: 'RetentionConfiguration',
@@ -409,6 +409,7 @@ export default {
 			get() {
 				return this.settingsStore.retentionOptions
 			},
+
 			/**
 			 * Write retention options to the store.
 			 *
@@ -431,6 +432,7 @@ export default {
 			get() {
 				return this.settingsStore.retentionOptions.auditTrailsEnabled ?? true
 			},
+
 			/**
 			 * Write the audit-trails-enabled flag to the store.
 			 *
@@ -455,6 +457,7 @@ export default {
 					this.settingsStore.retentionOptions.searchTrailsEnabled ?? true
 				)
 			},
+
 			/**
 			 * Write the search-trails-enabled flag to the store.
 			 *
@@ -466,6 +469,7 @@ export default {
 				this.settingsStore.retentionOptions.searchTrailsEnabled = value
 			},
 		},
+
 		searchTrailRecordingMode: {
 			/**
 			 * Read the search-trail recording mode from the store.
@@ -479,6 +483,7 @@ export default {
 					?? '_search'
 				)
 			},
+
 			/**
 			 * Write the search-trail recording mode to the store.
 			 *
@@ -490,6 +495,7 @@ export default {
 				this.settingsStore.retentionOptions.searchTrailRecordingMode = value
 			},
 		},
+
 		/**
 		 * Options for the search-trail recording-mode select.
 		 *
@@ -506,6 +512,7 @@ export default {
 				{ value: 'none', label: this.t('openregister', 'Disabled') },
 			]
 		},
+
 		/**
 		 * The currently selected recording-mode option object (for NcSelect).
 		 *
@@ -520,6 +527,7 @@ export default {
 					) || this.recordingModeOptions[1]
 				)
 			},
+
 			set(option) {
 				this.searchTrailRecordingMode = option ? option.value : '_search'
 			},
@@ -603,6 +611,7 @@ export default {
 		async saveSettings() {
 			await this.settingsStore.updateRetentionSettings(this.retentionOptions)
 		},
+
 		/**
 		 * Format retention period from milliseconds to human readable format
 		 *

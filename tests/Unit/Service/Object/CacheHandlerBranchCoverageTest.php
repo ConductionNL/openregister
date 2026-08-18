@@ -8,6 +8,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCP\IAppConfig;
 use OCP\ICacheFactory;
 use OCP\IMemcache;
 use OCP\IUserSession;
@@ -59,12 +60,30 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 				return null;
 			});
 
+		// These branch-coverage tests predate SEC-CTRL-2 step 2 and assert the
+		// resolver with no tenant boundary in force — a real supported
+		// configuration. CacheHandlerTenantScopeTest covers the scoped behaviour.
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')
+			->willReturnCallback(function (string $app, string $key, string $default = '') {
+				if ($app === 'openregister' && $key === 'multitenancy') {
+					return '{"enabled":false}';
+				}
+
+				return $default;
+			});
+
 		$this->handler = new CacheHandler(
 			$this->organisationMapper,
 			$this->logger,
 			$this->cacheFactory,
 			$this->userSession,
-			$container
+			$container,
+			null,
+			null,
+			null,
+			null,
+			$appConfig
 		);
 	}
 
@@ -74,14 +93,19 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 	private function createObjectMock(
 		int $id,
 		string $uuid,
-		?int $register = null,
-		?int $schema = null,
+		// STRING, not int: `register` and `schema` are `addType(…, 'string')`
+		// fields backed by `?string` properties, so an int is a value the
+		// entity cannot hold. It went unnoticed while these getters were magic
+		// and therefore untyped.
+		?string $register = null,
+		?string $schema = null,
 		?string $organisation = null,
 		?string $name = null,
 		?string $deleted = null,
 	): ObjectEntity&MockObject {
 		$mock = $this->getMockBuilder(ObjectEntity::class)
-			->addMethods(['getId', 'getUuid', 'getRegister', 'getSchema', 'getOrganisation', 'getName', 'getDeleted'])
+			->onlyMethods(['getUuid', 'getRegister', 'getSchema', 'getOrganisation'])
+			->addMethods(['getId', 'getName', 'getDeleted'])
 			->getMock();
 		$mock->method('getId')->willReturn($id);
 		$mock->method('getUuid')->willReturn($uuid);
@@ -186,7 +210,7 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 	public function testSetObjectNameStoresInBothCaches(): void {
 		$this->nameDistCache->expects($this->once())
 			->method('set')
-			->with('name_uuid-123', 'Test Object', $this->anything());
+			->with('name_uuid-123', ['n' => 'Test Object', 'o' => null], $this->anything());
 
 		$this->handler->setObjectName('uuid-123', 'Test Object');
 	}
@@ -265,13 +289,13 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 	// =========================================================================
 
 	public function testInvalidateForObjectChangeCreate(): void {
-		$object = $this->createObjectMock(1, 'uuid-1', 10, 20, 'org-1', 'Test Object');
+		$object = $this->createObjectMock(1, 'uuid-1', '10', '20', 'org-1', 'Test Object');
 		$this->handler->invalidateForObjectChange($object, 'create');
 		$this->assertTrue(true);
 	}
 
 	public function testInvalidateForObjectChangeDelete(): void {
-		$object = $this->createObjectMock(1, 'uuid-1', 10, 20, 'org-1', null);
+		$object = $this->createObjectMock(1, 'uuid-1', '10', '20', 'org-1', null);
 		$this->nameDistCache->method('remove')
 			->willThrowException(new \Exception('Remove failed'));
 

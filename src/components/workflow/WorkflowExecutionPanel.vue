@@ -21,7 +21,9 @@
 					<td>{{ exec.hookId }}</td>
 					<td>{{ exec.objectUuid }}</td>
 					<td>
-						<span :class="['status-badge', `status-${exec.status}`]">
+						<span
+							class="status-badge"
+							:class="[`status-${exec.status}`]">
 							{{ exec.status }}
 						</span>
 					</td>
@@ -50,12 +52,12 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 /**
  * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
  */
 import { NcButton } from '@nextcloud/vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 import WorkflowExecutionDetail from './WorkflowExecutionDetail.vue'
 
 export default {
@@ -64,6 +66,7 @@ export default {
 	props: {
 		schemaId: { type: Number, default: null },
 	},
+
 	data() {
 		return {
 			executions: [],
@@ -74,9 +77,11 @@ export default {
 			selectedExecution: null,
 		}
 	},
+
 	mounted() {
 		this.fetchExecutions()
 	},
+
 	methods: {
 		/**
 		 * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
@@ -96,6 +101,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * @param dateStr
 		 * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
@@ -104,6 +110,7 @@ export default {
 			if (!dateStr) return '-'
 			return new Date(dateStr).toLocaleString()
 		},
+
 		/**
 		 * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
 		 */
@@ -111,6 +118,7 @@ export default {
 			this.offset = Math.max(0, this.offset - this.limit)
 			this.fetchExecutions()
 		},
+
 		/**
 		 * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
 		 */

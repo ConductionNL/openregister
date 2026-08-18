@@ -700,7 +700,7 @@ class MetaDataFacetHandler {
 		string $operator,
 		mixed $operatorValue,
 	): bool {
-		$opParam = $queryBuilder->createNamedParameter($operatorValue);
+		$onParam = $queryBuilder->createNamedParameter($operatorValue);
 		$methods = [
 			'gt' => 'gt',
 			'lt' => 'lt',
@@ -715,7 +715,7 @@ class MetaDataFacetHandler {
 		}
 
 		$method = $methods[$operator];
-		$queryBuilder->andWhere($queryBuilder->expr()->$method($field, $opParam));
+		$queryBuilder->andWhere($queryBuilder->expr()->$method($field, $onParam));
 		return true;
 	}//end applyComparisonMetadataOperator()
 
@@ -1026,23 +1026,23 @@ class MetaDataFacetHandler {
 		$extractSql = 'JSON_EXTRACT(object, ' . $jsonPathParam . ')';
 		$unquoteSql = 'JSON_UNQUOTE(' . $extractSql . ')';
 		$jsonExtract = $queryBuilder->createFunction($unquoteSql);
-		$opParam = $queryBuilder->createNamedParameter($operatorValue);
+		$onParam = $queryBuilder->createNamedParameter($operatorValue);
 
 		switch ($operator) {
 			case 'gt':
-				$queryBuilder->andWhere($queryBuilder->expr()->gt($jsonExtract, $opParam));
+				$queryBuilder->andWhere($queryBuilder->expr()->gt($jsonExtract, $onParam));
 				break;
 			case 'lt':
-				$queryBuilder->andWhere($queryBuilder->expr()->lt($jsonExtract, $opParam));
+				$queryBuilder->andWhere($queryBuilder->expr()->lt($jsonExtract, $onParam));
 				break;
 			case 'gte':
-				$queryBuilder->andWhere($queryBuilder->expr()->gte($jsonExtract, $opParam));
+				$queryBuilder->andWhere($queryBuilder->expr()->gte($jsonExtract, $onParam));
 				break;
 			case 'lte':
-				$queryBuilder->andWhere($queryBuilder->expr()->lte($jsonExtract, $opParam));
+				$queryBuilder->andWhere($queryBuilder->expr()->lte($jsonExtract, $onParam));
 				break;
 			case 'ne':
-				$queryBuilder->andWhere($queryBuilder->expr()->neq($jsonExtract, $opParam));
+				$queryBuilder->andWhere($queryBuilder->expr()->neq($jsonExtract, $onParam));
 				break;
 			case '~':
 				// Contains (case insensitive).
@@ -1061,7 +1061,7 @@ class MetaDataFacetHandler {
 				break;
 			case '===':
 				// Exact match (case sensitive).
-				$queryBuilder->andWhere($queryBuilder->expr()->eq($jsonExtract, $opParam));
+				$queryBuilder->andWhere($queryBuilder->expr()->eq($jsonExtract, $onParam));
 				break;
 			case 'exists':
 				$extractFunc = $queryBuilder->createFunction($extractSql);

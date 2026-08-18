@@ -1,7 +1,5 @@
-/* eslint-disable no-console */
-import { setActivePinia, createPinia } from 'pinia'
-
 import axios from '@nextcloud/axios'
+import { createPinia, setActivePinia } from 'pinia'
 import { useQualityStore } from './quality.js'
 
 jest.mock('@nextcloud/axios', () => ({

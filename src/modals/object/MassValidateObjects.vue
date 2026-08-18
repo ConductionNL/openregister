@@ -4,13 +4,13 @@ https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 * @version 1.0.0 *
 
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { objectStore, navigationStore } from '../../store/store.js'
+import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 
 <template>
 	<NcDialog
 		:name="`Validate ${selectedObjects.length} object${selectedObjects.length !== 1 ? 's' : ''}`"
-		:can-close="false"
+		:canClose="false"
 		size="normal">
 		<!-- Object Selection Review -->
 		<div v-if="success === null" class="validate-step">
@@ -109,7 +109,6 @@ import {
 	NcLoadingIcon,
 	NcNoteCard,
 } from '@nextcloud/vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import Close from 'vue-material-design-icons/Close.vue'
@@ -138,9 +137,11 @@ export default {
 			selectedObjects: [],
 		}
 	},
+
 	mounted() {
 		this.initializeSelection()
 	},
+
 	methods: {
 		/**
 		 * @spec openspec/specs/entity-management-modals/spec.md
@@ -152,6 +153,7 @@ export default {
 				this.closeDialog()
 			}
 		},
+
 		/**
 		 * @param objectId
 		 * @spec exclude UI selection plumbing — removes an object from the mass-validate selection.
@@ -166,6 +168,7 @@ export default {
 				this.closeDialog()
 			}
 		},
+
 		/**
 		 * @spec exclude Modal close plumbing — closes the mass-validate dialog.
 		 */
@@ -174,6 +177,7 @@ export default {
 			this.startClosing = true
 			navigationStore.setDialog(false)
 		},
+
 		/**
 		 * @spec exclude Modal action plumbing — re-saves each selected object to trigger validation.
 		 */

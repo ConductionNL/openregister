@@ -1,9 +1,9 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import {
-	registerStore,
-	navigationStore,
 	configurationStore,
+	navigationStore,
+	registerStore,
 	schemaStore,
 } from '../../store/store.js'
 </script>
@@ -19,61 +19,61 @@ import {
 					'Manage your data registers and their configurations',
 				)
 			"
-			:show-title="true"
+			:showTitle="true"
 			:objects="paginatedRegisters"
 			:columns="tableColumns"
 			:pagination="paginationData"
 			:loading="registerStore.loading"
-			:view-mode="registerStore.viewMode"
+			:viewMode="registerStore.viewMode"
 			:selectable="true"
-			:selected-ids="selectedRegisters"
+			:selectedIds="selectedRegisters"
 			:schema="registerSchema"
-			:show-edit-action="false"
-			:show-copy-action="false"
-			:show-delete-action="false"
-			:show-mass-import="false"
-			:show-mass-export="false"
-			:show-mass-copy="false"
-			:show-mass-delete="false"
-			show-view-toggle
-			:add-label="t('openregister', 'Add Register')"
-			row-key="id"
-			:empty-text="emptyContentName"
-			:row-class="getRowClass"
+			:showEditAction="false"
+			:showCopyAction="false"
+			:showDeleteAction="false"
+			:showMassImport="false"
+			:showMassExport="false"
+			:showMassCopy="false"
+			:showMassDelete="false"
+			showViewToggle
+			:addLabel="t('openregister', 'Add Register')"
+			rowKey="id"
+			:emptyText="emptyContentName"
+			:rowClass="getRowClass"
 			:refreshing="isRefreshing"
 			@create="onSaveRegister"
 			@edit="onSaveRegister"
 			@refresh="handleRefresh"
-			@page-changed="onPageChanged"
-			@page-size-changed="onPageSizeChanged"
-			@view-mode-change="registerStore.setViewMode($event)"
+			@pageChanged="onPageChanged"
+			@pageSizeChanged="onPageSizeChanged"
+			@viewModeChange="registerStore.setViewMode($event)"
 			@select="onSelect"
-			@row-click="viewRegisterDetails">
+			@rowClick="viewRegisterDetails">
 			<!-- Custom form fields for the built-in CnFormDialog -->
 			<template #form-fields="{ formData, errors, updateField }">
 				<div class="formContainer">
 					<NcTextField
 						:label="t('openregister', 'Title') + ' *'"
-						:model-value="formData.title || ''"
+						:modelValue="formData.title || ''"
 						:error="!!errors.title"
-						:helper-text="errors.title"
+						:helperText="errors.title"
 						@update:modelValue="(v) => updateField('title', v)" />
 					<NcTextField
 						:label="t('openregister', 'Slug') + ' *'"
-						:model-value="formData.slug || ''"
+						:modelValue="formData.slug || ''"
 						:error="!!errors.slug"
-						:helper-text="errors.slug"
+						:helperText="errors.slug"
 						@update:modelValue="(v) => updateField('slug', v)" />
 					<NcTextArea
 						:label="t('openregister', 'Description')"
-						:model-value="formData.description || ''"
+						:modelValue="formData.description || ''"
 						@update:modelValue="(v) => updateField('description', v)" />
 					<NcSelect
-						:input-label="t('openregister', 'Schemas')"
+						:inputLabel="t('openregister', 'Schemas')"
 						:options="schemaSelectOptions"
-						:model-value="getSchemaSelectValue(formData.schemas)"
+						:modelValue="getSchemaSelectValue(formData.schemas)"
 						:multiple="true"
-						:close-on-select="false"
+						:closeOnSelect="false"
 						:loading="schemasLoading"
 						@update:modelValue="
 							(vals) => updateField('schemas', vals)
@@ -84,7 +84,7 @@ import {
 			<!-- Custom action items in actions bar -->
 			<template #action-items>
 				<NcActionButton
-					close-after-click
+					closeAfterClick
 					@click="
 						() => {
 							registerStore.setRegisterItem(null)
@@ -96,13 +96,13 @@ import {
 					</template>
 					{{ t('openregister', 'Import') }}
 				</NcActionButton>
-				<NcActionButton close-after-click @click="openAllApisDoc">
+				<NcActionButton closeAfterClick @click="openAllApisDoc">
 					<template #icon>
 						<ApiIcon :size="20" />
 					</template>
 					{{ t('openregister', 'View APIs') }}
 				</NcActionButton>
-				<NcActionButton close-after-click @click="warmupNamesCache">
+				<NcActionButton closeAfterClick @click="warmupNamesCache">
 					<template #icon>
 						<CloudUploadOutline :size="20" />
 					</template>
@@ -211,7 +211,7 @@ import {
 									)
 								: ''
 						"
-						close-after-click
+						closeAfterClick
 						:disabled="isManagedByExternalConfig(row)"
 						@click="$refs.indexPage.openFormDialog(row)">
 						<template #icon>
@@ -220,7 +220,7 @@ import {
 						{{ t('openregister', 'Edit') }}
 					</NcActionButton>
 					<NcActionButton
-						close-after-click
+						closeAfterClick
 						@click="
 							() => {
 								registerStore.setRegisterItem(row)
@@ -233,7 +233,7 @@ import {
 						{{ t('openregister', 'Publish OAS') }}
 					</NcActionButton>
 					<NcActionButton
-						close-after-click
+						closeAfterClick
 						@click="
 							() => {
 								registerStore.setRegisterItem(row)
@@ -246,7 +246,7 @@ import {
 						{{ t('openregister', 'Import') }}
 					</NcActionButton>
 					<NcActionButton
-						close-after-click
+						closeAfterClick
 						@click="
 							() => {
 								registerStore.setRegisterItem(row)
@@ -259,7 +259,7 @@ import {
 						{{ t('openregister', 'View API Documentation') }}
 					</NcActionButton>
 					<NcActionButton
-						close-after-click
+						closeAfterClick
 						@click="
 							() => {
 								registerStore.setRegisterItem(row)
@@ -280,7 +280,7 @@ import {
 									)
 								: ''
 						"
-						close-after-click
+						closeAfterClick
 						:disabled="row.stats?.total > 0"
 						@click="
 							() => {
@@ -294,7 +294,7 @@ import {
 						{{ t('openregister', 'Delete') }}
 					</NcActionButton>
 					<NcActionButton
-						close-after-click
+						closeAfterClick
 						@click="viewRegisterDetails(row)">
 						<template #icon>
 							<InformationOutline :size="20" />
@@ -308,26 +308,26 @@ import {
 </template>
 
 <script>
-import {
-	NcAppContent,
-	NcActions,
-	NcActionButton,
-	NcTextField,
-	NcTextArea,
-	NcSelect,
-} from '@nextcloud/vue'
 import { CnIndexPage } from '@conduction/nextcloud-vue'
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
+import {
+	NcActionButton,
+	NcActions,
+	NcAppContent,
+	NcSelect,
+	NcTextArea,
+	NcTextField,
+} from '@nextcloud/vue'
+import ApiIcon from 'vue-material-design-icons/Api.vue'
+import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
+import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
-import ApiIcon from 'vue-material-design-icons/Api.vue'
-import Download from 'vue-material-design-icons/Download.vue'
-import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
-import CogOutline from 'vue-material-design-icons/CogOutline.vue'
-import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
-import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
 
 export default {
@@ -351,6 +351,7 @@ export default {
 		CloudUploadOutline,
 		RegisterSchemaCard,
 	},
+
 	data() {
 		return {
 			selectedRegisters: [],
@@ -359,6 +360,7 @@ export default {
 			schemasLoading: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude list-view store-reference passthrough (computed)
@@ -366,6 +368,7 @@ export default {
 		registerStore() {
 			return registerStore
 		},
+
 		/**
 		 * @spec exclude list-view inline form-schema definition for the register editor (computed)
 		 */
@@ -380,6 +383,7 @@ export default {
 						minLength: 1,
 						order: 1,
 					},
+
 					slug: {
 						type: 'string',
 						title: t('openregister', 'Slug'),
@@ -387,20 +391,24 @@ export default {
 						minLength: 1,
 						order: 2,
 					},
+
 					description: {
 						type: 'string',
 						title: t('openregister', 'Description'),
 						order: 3,
 					},
+
 					schemas: {
 						type: 'array',
 						title: t('openregister', 'Schemas'),
 						order: 4,
 					},
 				},
+
 				required: ['title', 'slug'],
 			}
 		},
+
 		/**
 		 * @spec exclude list-view list filtering of synthetic rows (computed)
 		 */
@@ -411,6 +419,7 @@ export default {
 					&& register.title !== 'Orphaned Items',
 			)
 		},
+
 		/**
 		 * @spec exclude list-view table column definitions (computed)
 		 */
@@ -430,6 +439,7 @@ export default {
 				},
 			]
 		},
+
 		/**
 		 * @spec exclude list-view pagination summary helper (computed)
 		 */
@@ -440,6 +450,7 @@ export default {
 			const pages = Math.ceil(total / limit)
 			return { page, pages, total, limit }
 		},
+
 		/**
 		 * The registers for the current page. The full list is loaded client-side,
 		 * so CnIndexPage (prop mode) does not slice — we slice here so paging works.
@@ -451,6 +462,7 @@ export default {
 			const start = (page - 1) * limit
 			return this.filteredRegisters.slice(start, start + limit)
 		},
+
 		/**
 		 * @spec exclude list-view empty-state title text helper (computed)
 		 */
@@ -463,6 +475,7 @@ export default {
 			return t('openregister', 'Loading registers...')
 		},
 	},
+
 	/**
 	 * @spec exclude list-view lifecycle; parallel-loads registers/configurations/schemas on mount
 	 */
@@ -484,6 +497,7 @@ export default {
 			this.schemasLoading = false
 		}
 	},
+
 	methods: {
 		/**
 		 * @spec exclude list-view manual refresh plumbing
@@ -672,7 +686,11 @@ export default {
 		 */
 		async warmupNamesCache() {
 			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/names/warmup`
+			// Was `/api/names/warmup`, which was #[PublicPage] — anyone could make
+			// the server rebuild the entire name cache. That route is gone
+			// (SEC-CTRL-2); this is the admin-only equivalent, which is what a
+			// maintenance action on an admin screen should have been calling.
+			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/settings/cache/warmup-names`
 
 			try {
 				showSuccess(t('openregister', 'Starting names cache warmup...'))

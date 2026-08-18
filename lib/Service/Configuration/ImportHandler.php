@@ -1204,8 +1204,90 @@ class ImportHandler {
 			}
 		}
 
-		return false;
+		return $this->schemaAnnotationsDiffer(data: $data, existing: $existing);
 	}//end schemaContentDiffers()
+
+	/**
+	 * Whether the incoming schema declares an `x-openregister-*` annotation
+	 * that the stored schema does not carry with the same value.
+	 *
+	 * WHY THIS EXISTS
+	 * ---------------
+	 * `schemaContentDiffers()` compared `properties`, `required` and
+	 * `authorization` and nothing else, so a change that ONLY adds or edits an
+	 * annotation block was invisible to it. Combined with the version gate
+	 * above ("skip when incoming <= existing") that produced a silent,
+	 * permanent no-op: the annotation sits declared in the app's register JSON,
+	 * visible in the repo, and never reaches the running system.
+	 *
+	 * Measured on openbuild (2026-08-16): `exportJob` declares
+	 * `x-openregister-lifecycle` at version 0.1.0 while the instance carried
+	 * 1.0.0 (a schema edited once through the UI bumps to 1.0.0). The version
+	 * said skip, the content check could not see the missing lifecycle, so
+	 * `TransitionEngine::transition()` found no state machine and returned
+	 * without doing anything — every export sat at `status: queued` forever,
+	 * its background job consumed, with not one line in the log. The same trap
+	 * applies to every key in the vocabulary: `mcp`, `calculations`,
+	 * `notifications`, `widgets`, `relations`, `archival`.
+	 *
+	 * TWO DELIBERATE NARROWINGS, both to avoid re-importing on every load:
+	 *
+	 *  1. Only keys in `Schema::ANNOTATION_VOCABULARY` are compared. An
+	 *     unknown key (openbuild really does declare
+	 *     `x-openregister-lifecycle-exception`) is dropped on every save, so
+	 *     comparing it would differ forever.
+	 *  2. Only keys the INCOMING declares are compared. The stored
+	 *     configuration also holds keys OpenRegister maintains itself
+	 *     (`objectNameField`, `objectDescriptionField`, …) plus annotations an
+	 *     operator may have added through the UI; treating those as a
+	 *     difference would rewrite them away on the next import.
+	 *
+	 * Incoming annotations are read from BOTH the top level and
+	 * `configuration`, because `Schema::hydrate()` folds sibling-of-properties
+	 * `x-openregister-*` keys into `configuration` — app register JSON declares
+	 * them at the top level, the stored schema keeps them nested.
+	 *
+	 * @param array<string,mixed> $data     Incoming schema definition.
+	 * @param Schema              $existing The stored schema.
+	 *
+	 * @return bool True when a declared annotation is missing or different.
+	 */
+	private function schemaAnnotationsDiffer(array $data, Schema $existing): bool {
+		// `getConfiguration(): ?array`, so the null-coalesce already yields an
+		// array — an is_array() guard here is dead code and PHPStan says so.
+		$stored = ($existing->getConfiguration() ?? []);
+
+		$incomingConfig = ($data['configuration'] ?? []);
+		if (is_array($incomingConfig) === false) {
+			$incomingConfig = [];
+		}
+
+		// Top level first, then `configuration` — the nested form wins, which
+		// is the same precedence hydrate() applies when it folds.
+		$incoming = [];
+		foreach ([$data, $incomingConfig] as $source) {
+			foreach ($source as $key => $value) {
+				if (is_string($key) === false || str_starts_with($key, 'x-openregister-') === false) {
+					continue;
+				}
+
+				if (in_array($key, Schema::ANNOTATION_VOCABULARY, true) === false) {
+					continue;
+				}
+
+				$incoming[$key] = $value;
+			}
+		}
+
+		foreach ($incoming as $key => $value) {
+			$storedValue = ($stored[$key] ?? null);
+			if ($this->normaliseForCompare(value: $value) !== $this->normaliseForCompare(value: $storedValue)) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end schemaAnnotationsDiffer()
 
 	/**
 	 * Normalise a JSON-ish value into an order-insensitive canonical string.
@@ -2000,7 +2082,9 @@ class ImportHandler {
 	 *     mappings: array<Mapping>,
 	 *     jobs: array,
 	 *     synchronizations: array,
-	 *     rules: array
+	 *     rules: array,
+	 *     skipped: array{registers: int, schemas: int, objects: int, mappings: int, seedObjects: int},
+	 *     failed: array{schemas: list<array{key: string, slug: string, error: string}>}
 	 * }
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force flag to override version checks
@@ -2093,6 +2177,10 @@ class ImportHandler {
 				);
 
 				// Return empty result to indicate no import was performed.
+				// The `skipped`/`failed` keys are present and zeroed on this path
+				// too: a caller that reads them must not have to know which return
+				// it got, and "nothing was imported" is not the same answer as
+				// "something was rejected".
 				return [
 					'registers' => [],
 					'schemas' => [],
@@ -2104,6 +2192,14 @@ class ImportHandler {
 					'synchronizations' => [],
 					'rules' => [],
 					'objects' => [],
+					'skipped' => [
+						'registers' => 0,
+						'schemas' => 0,
+						'objects' => 0,
+						'mappings' => 0,
+						'seedObjects' => 0,
+					],
+					'failed' => ['schemas' => []],
 				];
 			}//end if
 		}//end if
@@ -2133,9 +2229,19 @@ class ImportHandler {
 			// skipped (with a logged warning) instead of aborting the import.
 			'skipped' => [
 				'registers' => 0,
+				'schemas' => 0,
 				'objects' => 0,
 				'mappings' => 0,
 				'seedObjects' => 0,
+			],
+			// The entities this import REJECTED, named with the reason. A count
+			// alone tells an operator something went wrong but not what, and a
+			// rejected SCHEMA is the one failure that propagates: the registers
+			// that declare it are created without the link, so the damage
+			// surfaces layers away (empty `*_schema` config keys, a seed step
+			// that cannot resolve a schema) with nothing pointing back here.
+			'failed' => [
+				'schemas' => [],
 			],
 		];
 
@@ -2187,12 +2293,26 @@ class ImportHandler {
 					$schemaData['title'] = $key;
 				}
 
+				// Blanking `schemasMap` is a TEMPORARY mutation of shared state
+				// whose only purpose is to stop importSchema() resolving $refs in
+				// Pass 1. Its undo therefore belongs to leaving this region — on
+				// EVERY path — which is what `finally` is for.
+				//
+				// 🔴 It used to be undone on the success path only. One rejected
+				// schema then left the map empty for everything that followed, so
+				// each later schema re-saved an already-emptied map and the map
+				// ended Pass 1 holding ONLY the schemas declared after the LAST
+				// failure. The register pass resolves its slugs against that map,
+				// finds nothing, and creates the register WITHOUT those links.
+				// The fingerprint is arithmetic: in softwarecatalog 2 rejected
+				// schemas produced 18 missing register<->schema links out of 20.
+				// See ImportHandlerSchemaMapRestoreTest.
+				$savedSchemasMap = $this->schemasMap;
+				$this->schemasMap = [];
+				$schema = null;
+
 				try {
 					// Create schema without resolving cross-references.
-					// We'll temporarily skip schema lookups in importSchema by clearing the schemasMap.
-					$savedSchemasMap = $this->schemasMap;
-					$this->schemasMap = [];
-					// Temporarily empty to prevent $ref resolution.
 					$schemaSlugLower = strtolower((string)($schemaData['slug'] ?? $key));
 					$schema = $this->importSchema(
 						data: $schemaData,
@@ -2203,24 +2323,16 @@ class ImportHandler {
 						force: $force,
 						registerSchemaIds: $slugToSchemaIds[$schemaSlugLower] ?? null
 					);
-
-					// Restore schemasMap and add newly created schema.
-					$this->schemasMap = $savedSchemasMap;
-					$this->schemasMap[$schema->getSlug()] = $schema;
-					$result['schemas'][] = $schema;
-					$schemasToResolve[$key] = $schemaData;
-					// Save for Pass 2.
-					$this->logger->debug(
-						message: '[ImportHandler] Successfully created schema (Pass 1)',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'schemaKey' => $key,
-							'schemaSlug' => $schema->getSlug(),
-							'schemaId' => $schema->getId(),
-						]
-					);
 				} catch (Exception $e) {
+					// A rejected schema is CONTAINED (siblings still import) but it
+					// is never silent: it is counted and NAMED in the result, so the
+					// operator sees it here rather than three layers downstream.
+					$result['skipped']['schemas']++;
+					$result['failed']['schemas'][] = [
+						'key' => (string)$key,
+						'slug' => (string)($schemaData['slug'] ?? $key),
+						'error' => $e->getMessage(),
+					];
 					$this->logger->error(
 						message: '[ImportHandler] Failed to create schema (Pass 1)',
 						context: [
@@ -2232,8 +2344,55 @@ class ImportHandler {
 						]
 					);
 					// Continue with other schemas instead of failing the entire import.
+				} finally {
+					// Restore on every path — success, rejection, or an \Error
+					// escaping this loop entirely.
+					$this->schemasMap = $savedSchemasMap;
 				}//end try
+
+				if ($schema === null) {
+					continue;
+				}
+
+				$this->schemasMap[$schema->getSlug()] = $schema;
+				$result['schemas'][] = $schema;
+				$schemasToResolve[$key] = $schemaData;
+				// Save for Pass 2.
+				$this->logger->debug(
+					message: '[ImportHandler] Successfully created schema (Pass 1)',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'schemaKey' => $key,
+						'schemaSlug' => $schema->getSlug(),
+						'schemaId' => $schema->getId(),
+					]
+				);
 			}//end foreach
+
+			// One warning naming every rejected schema, at the end of the pass.
+			// The per-schema `error` lines above are one line each in a log that
+			// is otherwise almost all `debug`, so on a real import they are easy
+			// to miss; this is the line that says the import was PARTIAL.
+			if ($result['failed']['schemas'] !== []) {
+				$rejectedSlugs = array_column($result['failed']['schemas'], 'slug');
+				$this->logger->warning(
+					message: sprintf(
+						'[ImportHandler] PARTIAL IMPORT: %d of %d schema(s) were rejected and are NOT '
+						. 'linked to any register in this import: %s. Registers declaring them were '
+						. 'created without those schema references.',
+						count($rejectedSlugs),
+						count($data['components']['schemas']),
+						implode(', ', $rejectedSlugs)
+					),
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'appId' => $appId,
+						'failedSchemas' => $result['failed']['schemas'],
+					]
+				);
+			}
 
 			$this->logger->debug(
 				message: '[ImportHandler] Pass 1 completed - all schemas created',
@@ -2359,11 +2518,27 @@ class ImportHandler {
 							continue;
 						}
 
-						// Schema not in map - this should not happen after TWO-PASS schema import.
-						// Log a warning but don't try to look it up in database as that may fail due to
-						// organisation/multi-tenancy filters during cross-instance imports.
+						// Schema not in map. Since the Pass-1 restore fix this has
+						// exactly ONE cause — the schema pass rejected it — so name
+						// that reason here instead of leaving the operator to
+						// correlate two log lines. Do not fall back to a database
+						// lookup: it may fail on organisation/multi-tenancy filters
+						// during cross-instance imports.
+						$rejection = null;
+						foreach ($result['failed']['schemas'] as $failedSchema) {
+							if ($failedSchema['slug'] === $schemaSlug || $failedSchema['key'] === $schemaSlug) {
+								$rejection = $failedSchema['error'];
+								break;
+							}
+						}
+
+						$reason = 'This schema should have been created in the TWO-PASS schema import phase. ';
+						if ($rejection !== null) {
+							$reason = 'It was REJECTED by the schema import phase (' . $rejection . '). ';
+						}
+
 						$msg = 'Schema with slug %s not found in schemasMap during register import. ';
-						$msg .= 'This schema should have been created in the TWO-PASS schema import phase. ';
+						$msg .= $reason;
 						$msg .= 'This register will be created without this schema reference.';
 						$this->logger->warning(
 							message: '[ImportHandler] ' . sprintf($msg, $schemaSlug),

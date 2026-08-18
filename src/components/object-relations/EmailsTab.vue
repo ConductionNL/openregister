@@ -89,14 +89,14 @@ SPDX-License-Identifier: EUPL-1.2
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import axios from '@nextcloud/axios'
-import { NcEmptyContent, NcLoadingIcon, NcButton } from '@nextcloud/vue'
+import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
-import EmailOutline from 'vue-material-design-icons/EmailOutline.vue'
-import EmailOffOutline from 'vue-material-design-icons/EmailOffOutline.vue'
 import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
+import EmailOffOutline from 'vue-material-design-icons/EmailOffOutline.vue'
+import EmailOutline from 'vue-material-design-icons/EmailOutline.vue'
 
 /**
  * EmailsTab — display + manage emails linked to an OpenRegister object.
@@ -127,10 +127,12 @@ export default {
 			type: [String, Number],
 			required: true,
 		},
+
 		schema: {
 			type: [String, Number],
 			required: true,
 		},
+
 		objectId: {
 			type: String,
 			required: true,

@@ -74,6 +74,7 @@ export const useRegisterStore = defineStore('register', {
 		},
 		/**
 		 * Set pagination details
+		 *
 		 * @param {number} page - The current page number for pagination
 		 * @param {number} limit - The number of items to display per page
 		 *
@@ -84,6 +85,7 @@ export const useRegisterStore = defineStore('register', {
 		},
 		/**
 		 * Set query filters for register list
+		 *
 		 * @param {object} filters - The filter criteria to apply to the register list
 		 *
 		 * @spec exclude Pure client UI-state setter — list filter criteria. No backend contract.
@@ -191,7 +193,9 @@ export const useRegisterStore = defineStore('register', {
 				return { response, data: responseData }
 			} catch (error) {
 				console.error('Error deleting register:', error)
-				throw new Error(`Failed to delete register: ${error.message}`)
+				throw new Error(`Failed to delete register: ${error.message}`, {
+					cause: error,
+				})
 			}
 		},
 		// Create or save a register from store
@@ -240,7 +244,9 @@ export const useRegisterStore = defineStore('register', {
 				return { response, data }
 			} catch (error) {
 				console.error('Error saving register:', error)
-				throw new Error(`Failed to save register: ${error.message}`)
+				throw new Error(`Failed to save register: ${error.message}`, {
+					cause: error,
+				})
 			}
 		},
 		// Clean register data for saving - remove read-only fields
@@ -302,6 +308,7 @@ export const useRegisterStore = defineStore('register', {
 		},
 		/**
 		 * Start a heartbeat mechanism to prevent gateway timeouts during long imports
+		 *
 		 * @param {number} intervalMs - Heartbeat interval in milliseconds (default: 15 seconds)
 		 * @param {Function} onStatusChange - Callback for heartbeat status changes
 		 * @return {object} - Object with stop() method and status property

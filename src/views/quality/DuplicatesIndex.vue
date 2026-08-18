@@ -130,13 +130,13 @@
 <script>
 import {
 	NcAppContent,
+	NcButton,
 	NcEmptyContent,
 	NcLoadingIcon,
-	NcButton,
 } from '@nextcloud/vue'
 import ContentDuplicate from 'vue-material-design-icons/ContentDuplicate.vue'
-import RegisterSchemaSelector from './RegisterSchemaSelector.vue'
 import MdmMergeWizardModal from '../../modals/mdm/MdmMergeWizardModal.vue'
+import RegisterSchemaSelector from './RegisterSchemaSelector.vue'
 import { qualityStore } from '../../store/store.js'
 
 export default {

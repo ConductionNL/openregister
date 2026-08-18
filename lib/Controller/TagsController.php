@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -96,6 +97,7 @@ class TagsController extends Controller {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
 	 */
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function getAllTags(): JSONResponse {
 		// @PublicPage opens this route past the group-locked app gate so a
 		// consuming app (e.g. OpenCatalogi) can populate its label picker even

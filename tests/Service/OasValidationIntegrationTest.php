@@ -151,12 +151,12 @@ class OasValidationIntegrationTest extends TestCase {
 		$matchB = 0;
 		foreach ($oas['paths'] as $pathItem) {
 			foreach ($pathItem as $op) {
-				$opId = (string)($op['operationId'] ?? '');
-				if (str_contains($opId, 'Zaken')) {
+				$onId = (string)($op['operationId'] ?? '');
+				if (str_contains($onId, 'Zaken')) {
 					$matchA++;
 				}
 
-				if (str_contains($opId, 'Archief')) {
+				if (str_contains($onId, 'Archief')) {
 					$matchB++;
 				}
 			}

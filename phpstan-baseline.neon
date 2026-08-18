@@ -4523,22 +4523,22 @@ parameters:
 		-
 			message: "#^Call to function array_is_list\\(\\) with array\\<string, mixed\\> will always evaluate to false\\.$#"
 			count: 1
-			path: lib/Service/Integration/Providers/BrpPersoonProvider.php
+			path: lib/Service/Integration/Providers/BrpPersonProvider.php
 
 		-
 			message: "#^Offset 'body' on array\\{body\\: array\\<string, mixed\\>, meta\\: array\\{status\\: int, durationMs\\: int, correlationId\\: string\\|null, headers\\: array\\<string, string\\>\\}\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
-			path: lib/Service/Integration/Providers/BrpPersoonProvider.php
+			path: lib/Service/Integration/Providers/BrpPersonProvider.php
 
 		-
 			message: "#^Offset 'meta' on array\\{body\\: array\\<string, mixed\\>, meta\\: array\\{status\\: int, durationMs\\: int, correlationId\\: string\\|null, headers\\: array\\<string, string\\>\\}\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
-			path: lib/Service/Integration/Providers/BrpPersoonProvider.php
+			path: lib/Service/Integration/Providers/BrpPersonProvider.php
 
 		-
 			message: "#^Strict comparison using \\=\\=\\= between false and true will always evaluate to false\\.$#"
 			count: 1
-			path: lib/Service/Integration/Providers/BrpPersoonProvider.php
+			path: lib/Service/Integration/Providers/BrpPersonProvider.php
 
 		-
 			message: "#^Offset 'results' on array\\{results\\: array, total\\: int\\} on left side of \\?\\? always exists and is not nullable\\.$#"
@@ -5868,7 +5868,7 @@ parameters:
 		-
 			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
 			count: 1
-			path: lib/Service/ZaaktypeAuthorizationService.php
+			path: lib/Service/CaseTypeAuthorizationService.php
 
 		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Settings\\\\IntegrationsAdminSettings\\:\\:\\$l10n is never read, only written\\.$#"

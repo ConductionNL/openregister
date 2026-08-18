@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Adbar\Dot;
 use DateTime;
 use Exception;
@@ -84,6 +85,7 @@ use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -164,7 +166,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class ObjectService
+class ObjectService implements ObjectServiceInterface
 {
 
     /**
@@ -471,27 +473,47 @@ class ObjectService
     public function setSchema(Schema | string | int $schema): static
     {
         if (is_string($schema) === true || is_int($schema) === true) {
-            // REGISTER-SCOPED SLUG RESOLUTION (cross-app collision fix).
+            // REGISTER-SCOPED SLUG RESOLUTION.
             // SchemaMapper::find() resolves a slug by LOWER(slug) GLOBALLY across
-            // every app on the instance and returns the FIRST row it fetches. On
-            // the shared instance that lets a generic slug (e.g. 'conversation',
-            // 'order', 'task') resolve to another app's schema that shares the
-            // lower(slug). When a register context is present, the slug must
-            // resolve to the schema THAT REGISTER references. Try that first; it
-            // is a no-op (null) for numeric ids, uuids, or slugs the register
-            // does not carry, so we transparently fall back to the global find
-            // for every legacy / register-less caller.
+            // every register and every app on the instance, returning whichever row
+            // its tie-break orders first. Naming a register makes it a BOUNDARY: a
+            // caller that supplied one must never be served a schema from outside
+            // it, so a scoped miss throws here instead of falling through.
+            //
+            // This used to fall back, and the comment called that "transparent". It
+            // was not. Measured 2026-08-16: register `document` (id 6) carried an
+            // empty schemas list while nine docudesk-owned schemas shared the slug
+            // `anonymizationLink`; the fallback resolved to id 5084, which has no
+            // table under register 6 at all, so slug reads returned EMPTY while four
+            // real rows sat in oc_openregister_table_6_9177. An empty result set is
+            // indistinguishable from "this register has no objects", which is how
+            // the defect survived unnoticed.
+            //
+            // Scoping applies to SLUGS only. Numeric ids and uuids are resolved
+            // directly below, and callers with no register keep global resolution.
             if (is_string($schema) === true
                 && is_numeric($schema) === false
                 && $this->currentRegister !== null
             ) {
-                $scoped = $this->schemaMapper->findBySlugInIds(
+                $registerSchemaIds = ($this->currentRegister->getSchemas() ?? []);
+                $scoped            = $this->schemaMapper->findBySlugInIds(
                     slug: $schema,
-                    schemaIds: ($this->currentRegister->getSchemas() ?? [])
+                    schemaIds: $registerSchemaIds
                 );
                 if ($scoped !== null) {
                     $this->currentSchema = $scoped;
                     return $this;
+                }
+
+                // A uuid is not a slug and must still reach the global resolver.
+                if ($this->isUuidFormat(value: $schema) === false) {
+                    throw new SchemaNotInRegisterException(
+                        schemaSlug: $schema,
+                        registerId: $this->currentRegister->getId(),
+                        registerSlug: $this->currentRegister->getSlug(),
+                        candidatesElsewhere: $this->schemaMapper->countBySlug(slug: $schema),
+                        registerSchemaCount: count($registerSchemaIds)
+                    );
                 }
             }
 
@@ -1386,6 +1408,83 @@ class ObjectService
             // visible instead of being silently swallowed.
             $this->logger->warning(
                 message: '[ObjectService] Skipped contact-match cache invalidation: invalidation failed',
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'exception' => $e->getMessage(),
+                    'uuid'      => $savedObject->getUuid(),
+                    'register'  => $this->currentRegister?->getId(),
+                    'schema'    => $this->currentSchema?->getId(),
+                ]
+            );
+        }//end try
+
+        // Invalidate Smart Picker / reference-provider preview caches for the
+        // saved object, so an edit is reflected the next time the object is
+        // resolved as a reference (mail-smart-picker spec: "Cache invalidation
+        // on object update"). Every canonical URL shape OpenRegister itself
+        // recognises comes from ObjectPreviewFormatter::buildCanonicalUrls() —
+        // the SAME pattern list matchReference()/getCachePrefix() use — so
+        // this can never invalidate a different set of shapes than the ones
+        // the providers actually match against (design.md D4). Best-effort:
+        // never fails the save.
+        try {
+            $container = \OC::$server;
+            if ($container !== null) {
+                $referenceManager = $container->get(\OCP\Collaboration\Reference\IReferenceManager::class);
+                $formatter = $container->get(\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class);
+                $deepLinkRegistry = $container->get(\OCA\OpenRegister\Service\DeepLinkRegistryService::class);
+
+                $invalidationRegisterId = (int)$this->currentRegister?->getId();
+                $invalidationSchemaId = (int)$this->currentSchema?->getId();
+                $invalidationUuid = (string)$savedObject->getUuid();
+
+                $invalidatedPrefixes = [];
+                foreach (
+                    $formatter->buildCanonicalUrls(
+                        registerId: $invalidationRegisterId,
+                        schemaId: $invalidationSchemaId,
+                        uuid: $invalidationUuid
+                    ) as $canonicalUrl
+                ) {
+                    $prefix = $formatter->resolveCachePrefix(referenceText: $canonicalUrl);
+                    if (isset($invalidatedPrefixes[$prefix]) === false) {
+                        $referenceManager->invalidateCache(cachePrefix: $prefix);
+                        $invalidatedPrefixes[$prefix] = true;
+                    }
+                }
+
+                // Flat data shape deep link URL templates resolve placeholders
+                // against — same shape ObjectPreviewFormatter::buildReference()
+                // and ObjectSearchResultFormatter::format() build for the same
+                // purpose: the object's own fields plus the identity triple.
+                $deepLinkObjectData = array_merge(
+                    $savedObject->getObject(),
+                    [
+                        'uuid' => $invalidationUuid,
+                        'register' => $invalidationRegisterId,
+                        'schema' => $invalidationSchemaId,
+                    ]
+                );
+
+                $deepLinkUrl = $deepLinkRegistry->resolveUrl(
+                    registerId: $invalidationRegisterId,
+                    schemaId: $invalidationSchemaId,
+                    objectData: $deepLinkObjectData
+                );
+                if ($deepLinkUrl !== null) {
+                    $referenceManager->invalidateCache(cachePrefix: $deepLinkUrl);
+                }
+            }//end if
+        } catch (\Throwable $e) {
+            // Smart Picker cache invalidation is a non-essential post-save
+            // side-effect and must NEVER fail the save. Catch \Throwable (the
+            // reference manager or an unavailable formatter service can raise
+            // a runtime Error, not just a container exception) but log it with
+            // object context so the miss stays visible instead of being
+            // silently swallowed.
+            $this->logger->warning(
+                message: '[ObjectService] Skipped Smart Picker cache invalidation: invalidation failed',
                 context: [
                     'file'      => __FILE__,
                     'line'      => __LINE__,
@@ -2357,29 +2456,27 @@ class ObjectService
             );
         }
 
-        // Resolve schema slug → numeric ID. REGISTER-SCOPED first (cross-app
-        // collision fix): a generic slug must resolve to the schema THIS
-        // register references, not to whichever same-slug row find() fetches
-        // first across the shared instance. Fall back to the multi-tenancy
-        // scoped global find when the register does not carry the slug — a
-        // schema in another organisation MUST then throw, not return the
-        // foreign-org entity (principle of least surprise).
-        $schema = $this->schemaMapper->findBySlugInIds(
+        // Resolve schema slug → numeric ID, REGISTER-SCOPED and nothing else. The
+        // caller named a register, so the register is the boundary.
+        //
+        // This previously fell back to an organisation-scoped global find(). That
+        // guard is not sufficient: the nine same-slug `anonymizationLink` schemas
+        // measured on 2026-08-16 are owned by the SAME application, so an
+        // organisation filter still selects the wrong one. Only the register
+        // disambiguates them.
+        $registerSchemaIds = ($register->getSchemas() ?? []);
+        $schema            = $this->schemaMapper->findBySlugInIds(
             slug: $schemaSlug,
-            schemaIds: ($register->getSchemas() ?? [])
+            schemaIds: $registerSchemaIds
         );
         if ($schema === null) {
-            try {
-                $schema = $this->schemaMapper->find(
-                    id: $schemaSlug,
-                    _rbac: $_rbac,
-                    _multitenancy: $_multitenancy
-                );
-            } catch (OcpDoesNotExistException $e) {
-                throw new OcpDoesNotExistException(
-                    'searchObjectsBySlug: schema slug not found in caller organisation: '.$schemaSlug
-                );
-            }
+            throw new SchemaNotInRegisterException(
+                schemaSlug: $schemaSlug,
+                registerId: $register->getId(),
+                registerSlug: $register->getSlug(),
+                candidatesElsewhere: $this->schemaMapper->countBySlug(slug: $schemaSlug),
+                registerSchemaCount: count($registerSchemaIds)
+            );
         }
 
         // Merge resolved numeric IDs into the @self block of the filters.
@@ -4380,16 +4477,33 @@ class ObjectService
     }//end createObject()
 
     /**
-     * Update existing object (full update)
+     * REPLACE an existing object's data wholesale. This does NOT merge.
+     *
+     * PUT semantics, inherited from `saveObject()`: `$data` becomes the object's
+     * data in full, so a stored property absent from `$data` is written away
+     * rather than left alone. There is no read of the existing object here — the
+     * commented-out `find()` below is the whole history of that idea — so a
+     * one-key payload stores a one-key object and reports success.
+     *
+     * Callers holding a PARTIAL payload want `patchObject()`, which reads,
+     * merges and then saves. Both are published on `ObjectServiceInterface`;
+     * the contract's docblock for this method used to say "apply a partial
+     * update", which is the opposite of the behaviour and is what sent at least
+     * one consuming app down the erasing path.
+     *
+     * Replace semantics are deliberate and must not change: existing callers
+     * pass a complete object and rely on an omitted property being cleared.
      *
      * @param string $objectId      Object ID or UUID
-     * @param array  $data          New object data
+     * @param array  $data          The object's COMPLETE new data. Anything omitted is dropped.
      * @param bool   $_rbac         Apply RBAC checks
      * @param bool   $_multitenancy Apply multitenancy filtering
      *
-     * @return ObjectEntity Updated object entity
+     * @return ObjectEntity Replaced object entity
      *
      * @throws \Exception If update fails
+     *
+     * @see self::patchObject() for the merging counterpart.
      *
      * @spec exclude Facade delegating to saveObject() with id; update behavior owned by object-interactions / object-lifecycle.
      */

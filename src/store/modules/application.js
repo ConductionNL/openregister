@@ -58,6 +58,7 @@ export const useApplicationStore = defineStore('application', {
 		},
 		/**
 		 * Set pagination details
+		 *
 		 * @param {number} page - The current page number for pagination
 		 * @param {number} limit - The number of items to display per page
 		 *
@@ -68,6 +69,7 @@ export const useApplicationStore = defineStore('application', {
 		},
 		/**
 		 * Set query filters for application list
+		 *
 		 * @param {object} filters - The filter criteria to apply to the application list
 		 *
 		 * @spec exclude Pure client UI-state setter — list filter criteria. No backend contract.
@@ -177,7 +179,9 @@ export const useApplicationStore = defineStore('application', {
 			} catch (error) {
 				console.error('Error deleting application:', error)
 				this.error = error.message
-				throw new Error(`Failed to delete application: ${error.message}`)
+				throw new Error(`Failed to delete application: ${error.message}`, {
+					cause: error,
+				})
 			} finally {
 				this.loading = false
 			}
@@ -225,7 +229,9 @@ export const useApplicationStore = defineStore('application', {
 			} catch (error) {
 				console.error('Error saving application:', error)
 				this.error = error.message
-				throw new Error(`Failed to save application: ${error.message}`)
+				throw new Error(`Failed to save application: ${error.message}`, {
+					cause: error,
+				})
 			} finally {
 				this.loading = false
 			}

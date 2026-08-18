@@ -1,5 +1,7 @@
-import { SafeParseReturnType, z } from 'zod'
-import { TObject } from './object.types'
+import type { SafeParseReturnType } from 'zod'
+import type { TObject } from './object.types'
+
+import { z } from 'zod'
 
 /**
  * Entity class representing an Object with validation

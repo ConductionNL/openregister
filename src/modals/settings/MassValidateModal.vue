@@ -2,7 +2,7 @@
 	<NcDialog
 		v-if="show"
 		name="Mass Validate Objects"
-		:can-close="!massValidating"
+		:canClose="!massValidating"
 		size="large"
 		@closing="$emit('close')">
 		<div class="dialog-content">
@@ -498,14 +498,14 @@
 
 <script>
 import {
-	NcDialog,
 	NcButton,
-	NcLoadingIcon,
 	NcCheckboxRadioSwitch,
+	NcDialog,
+	NcLoadingIcon,
 } from '@nextcloud/vue'
+import Cancel from 'vue-material-design-icons/Cancel.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 
 export default {
 	name: 'MassValidateModal',
@@ -525,6 +525,7 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+
 		objectStats: {
 			type: Object,
 			default: () => ({
@@ -532,18 +533,22 @@ export default {
 				totalObjects: 0,
 			}),
 		},
+
 		massValidating: {
 			type: Boolean,
 			default: false,
 		},
+
 		completed: {
 			type: Boolean,
 			default: false,
 		},
+
 		results: {
 			type: Object,
 			default: null,
 		},
+
 		config: {
 			type: Object,
 			default: () => ({
@@ -553,6 +558,7 @@ export default {
 				collectErrors: false,
 			}),
 		},
+
 		memoryPrediction: {
 			type: Object,
 			default: () => ({
@@ -563,6 +569,7 @@ export default {
 				},
 			}),
 		},
+
 		memoryPredictionLoading: {
 			type: Boolean,
 			default: false,
@@ -586,8 +593,10 @@ export default {
 			handler(newConfig) {
 				this.localConfig = { ...newConfig }
 			},
+
 			deep: true,
 		},
+
 		localConfig: {
 			/**
 			 * @param newConfig
@@ -596,6 +605,7 @@ export default {
 			handler(newConfig) {
 				this.$emit('config-changed', newConfig)
 			},
+
 			deep: true,
 		},
 	},

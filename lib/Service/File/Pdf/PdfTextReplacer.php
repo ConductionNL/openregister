@@ -157,7 +157,7 @@ class PdfTextReplacer {
 			// the input (REQ-ORTPR-005), so tagCountAfter trivially equals
 			// tagCountBefore — still measured for a truthful report even on
 			// this fast path.
-			$structureResult = $this->measureNoOpStructurePreservation(pdfBytes: $pdfBytes, preserveStructure: $preserveStructure);
+			$structureResult = $this->measureNoOnStructurePreservation(pdfBytes: $pdfBytes, preserveStructure: $preserveStructure);
 			return $pdfBytes;
 		}
 
@@ -600,7 +600,7 @@ class PdfTextReplacer {
 	 *
 	 * @return StructurePreservation The result block for this no-op run.
 	 */
-	private function measureNoOpStructurePreservation(string $pdfBytes, ?bool $preserveStructure): StructurePreservation {
+	private function measureNoOnStructurePreservation(string $pdfBytes, ?bool $preserveStructure): StructurePreservation {
 		$tagCountBefore = 0;
 
 		try {

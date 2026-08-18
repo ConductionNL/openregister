@@ -6,7 +6,7 @@
 				<label for="token-name">{{ t('openregister', 'Token name') }}</label>
 				<NcTextField
 					id="token-name"
-					:model-value="tokenName"
+					:modelValue="tokenName"
 					:label="t('openregister', 'Token name')"
 					@update:modelValue="$emit('update:tokenName', $event)" />
 			</div>
@@ -16,7 +16,7 @@
 				}}</label>
 				<NcTextField
 					id="token-expires"
-					:model-value="tokenExpires"
+					:modelValue="tokenExpires"
 					:label="t('openregister', 'Expiration')"
 					@update:modelValue="$emit('update:tokenExpires', $event)" />
 			</div>
@@ -41,6 +41,7 @@ export default {
 		tokenName: { type: String, default: '' },
 		tokenExpires: { type: String, default: '' },
 	},
+
 	emits: ['close', 'create', 'update:tokenName', 'update:tokenExpires'],
 	methods: { t },
 }

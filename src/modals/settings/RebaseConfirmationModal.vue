@@ -2,7 +2,7 @@
 	<NcDialog
 		v-if="show"
 		name="Confirm Rebase Operation"
-		:can-close="!rebasing"
+		:canClose="!rebasing"
 		@closing="$emit('close')">
 		<div class="dialog-content">
 			<h3>⚠️ Confirm Rebase Operation</h3>
@@ -33,7 +33,7 @@
 </template>
 
 <script>
-import { NcDialog, NcButton, NcLoadingIcon } from '@nextcloud/vue'
+import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 
@@ -53,6 +53,7 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+
 		rebasing: {
 			type: Boolean,
 			default: false,

@@ -21,7 +21,7 @@
 			<div class="filterSection">
 				<div class="filterGroup">
 					<NcTextField
-						:model-value="localSearch"
+						:modelValue="localSearch"
 						:placeholder="t('openregister', 'Search by value')"
 						:label="t('openregister', 'Search by value')"
 						@update:modelValue="handleSearchInput">
@@ -37,7 +37,7 @@
 				<h3>{{ t('openregister', 'Type') }}</h3>
 				<div class="filterGroup filterGroupRadio">
 					<NcCheckboxRadioSwitch
-						:model-value="selectedType === null"
+						:modelValue="selectedType === null"
 						type="radio"
 						value="all"
 						name="entity_type_radio"
@@ -45,7 +45,7 @@
 						{{ t('openregister', 'All Types') }}
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
-						:model-value="selectedType === 'PERSON'"
+						:modelValue="selectedType === 'PERSON'"
 						type="radio"
 						value="PERSON"
 						name="entity_type_radio"
@@ -53,7 +53,7 @@
 						{{ t('openregister', 'Person') }}
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
-						:model-value="selectedType === 'ORGANIZATION'"
+						:modelValue="selectedType === 'ORGANIZATION'"
 						type="radio"
 						value="ORGANIZATION"
 						name="entity_type_radio"
@@ -61,7 +61,7 @@
 						{{ t('openregister', 'Organization') }}
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
-						:model-value="selectedType === 'EMAIL'"
+						:modelValue="selectedType === 'EMAIL'"
 						type="radio"
 						value="EMAIL"
 						name="entity_type_radio"
@@ -69,7 +69,7 @@
 						{{ t('openregister', 'Email') }}
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
-						:model-value="selectedType === 'PHONE'"
+						:modelValue="selectedType === 'PHONE'"
 						type="radio"
 						value="PHONE"
 						name="entity_type_radio"
@@ -84,7 +84,7 @@
 				<h3>{{ t('openregister', 'Category') }}</h3>
 				<div class="filterGroup filterGroupRadio">
 					<NcCheckboxRadioSwitch
-						:model-value="selectedCategory === null"
+						:modelValue="selectedCategory === null"
 						type="radio"
 						value="all"
 						name="entity_category_radio"
@@ -92,7 +92,7 @@
 						{{ t('openregister', 'All Categories') }}
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
-						:model-value="selectedCategory === 'personal_data'"
+						:modelValue="selectedCategory === 'personal_data'"
 						type="radio"
 						value="personal_data"
 						name="entity_category_radio"
@@ -100,7 +100,7 @@
 						{{ t('openregister', 'Personal Data') }}
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
-						:model-value="selectedCategory === 'sensitive_pii'"
+						:modelValue="selectedCategory === 'sensitive_pii'"
 						type="radio"
 						value="sensitive_pii"
 						name="entity_category_radio"
@@ -108,7 +108,7 @@
 						{{ t('openregister', 'Sensitive PII') }}
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
-						:model-value="selectedCategory === 'business_data'"
+						:modelValue="selectedCategory === 'business_data'"
 						type="radio"
 						value="business_data"
 						name="entity_category_radio"
@@ -156,14 +156,14 @@ import { t } from '@nextcloud/l10n'
 import {
 	NcAppSidebar,
 	NcAppSidebarTab,
-	NcTextField,
-	NcCheckboxRadioSwitch,
 	NcButton,
+	NcCheckboxRadioSwitch,
 	NcNoteCard,
+	NcTextField,
 } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
-import { navigationStore } from '../../store/store.js'
 import eventBus from '../../eventBus.js'
+import { navigationStore } from '../../store/store.js'
 
 export default {
 	name: 'EntitiesSideBar',
@@ -176,6 +176,7 @@ export default {
 		NcNoteCard,
 		Magnify,
 	},
+
 	data() {
 		return {
 			localSearch: '',
@@ -184,6 +185,7 @@ export default {
 			searchTimeout: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * Expose navigationStore to the template.
@@ -194,6 +196,7 @@ export default {
 		navigationStore() {
 			return navigationStore
 		},
+
 		/**
 		 * Whether any filter is currently active.
 		 *
@@ -207,6 +210,7 @@ export default {
 			)
 		},
 	},
+
 	methods: {
 		t,
 		/**
@@ -226,6 +230,7 @@ export default {
 				eventBus.emit('entities-search-changed', value)
 			}, 500)
 		},
+
 		/**
 		 * Update the entity-type filter and notify the parent view.
 		 *
@@ -237,6 +242,7 @@ export default {
 			this.selectedType = type
 			eventBus.emit('entities-type-changed', type)
 		},
+
 		/**
 		 * Update the entity-category filter and notify the parent view.
 		 *
@@ -248,6 +254,7 @@ export default {
 			this.selectedCategory = category
 			eventBus.emit('entities-category-changed', category)
 		},
+
 		/**
 		 * Clear all active filters and notify the parent view.
 		 *

@@ -1,6 +1,4 @@
-/* eslint-disable no-console */
-import { setActivePinia, createPinia } from 'pinia'
-
+import { createPinia, setActivePinia } from 'pinia'
 import { useNavigationStore } from './navigation.js'
 
 describe('Navigation Store', () => {

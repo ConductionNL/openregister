@@ -32,6 +32,7 @@ export const useConfigurationStore = defineStore('configuration', {
 		},
 		/**
 		 * Set pagination details
+		 *
 		 * @param {number} page - The current page number for pagination
 		 * @param {number} limit - The number of items to display per page
 		 *
@@ -42,6 +43,7 @@ export const useConfigurationStore = defineStore('configuration', {
 		},
 		/**
 		 * Set query filters for configuration list
+		 *
 		 * @param {object} filters - The filter criteria to apply to the configuration list
 		 *
 		 * @spec exclude Pure client UI-state setter — list filter criteria. No backend contract.
@@ -118,7 +120,9 @@ export const useConfigurationStore = defineStore('configuration', {
 				return { response }
 			} catch (error) {
 				console.error('Error deleting configuration:', error)
-				throw new Error(`Failed to delete configuration: ${error.message}`)
+				throw new Error(`Failed to delete configuration: ${error.message}`, {
+					cause: error,
+				})
 			}
 		},
 		/**
@@ -166,7 +170,9 @@ export const useConfigurationStore = defineStore('configuration', {
 				return { response, data }
 			} catch (error) {
 				console.error('Error saving configuration:', error)
-				throw new Error(`Failed to save configuration: ${error.message}`)
+				throw new Error(`Failed to save configuration: ${error.message}`, {
+					cause: error,
+				})
 			}
 		},
 		// Clean configuration data for saving - remove read-only fields
@@ -227,7 +233,9 @@ export const useConfigurationStore = defineStore('configuration', {
 				return { response, data }
 			} catch (error) {
 				console.error('Error uploading configuration:', error)
-				throw new Error(`Failed to upload configuration: ${error.message}`)
+				throw new Error(`Failed to upload configuration: ${error.message}`, {
+					cause: error,
+				})
 			}
 		},
 		/**

@@ -127,6 +127,16 @@ class MigrationPacksController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
+	 * @no-admin-idor-exempt Migration packs are instance-wide reference assets, not
+	 *   per-user objects: the spec's "Migration packs MUST be manageable via
+	 *   admin-gated REST CRUD" requirement states that index/show/export are
+	 *   "available to any authenticated user (packs are shared instance assets the
+	 *   import flow must browse)" while create/update/destroy/import stay admin-only.
+	 *   This method takes NO caller-supplied object id at all — it lists the whole
+	 *   catalogue — so there is no object reference to scope to the caller. The
+	 *   `owner` column records who authored a pack; it is not a visibility boundary
+	 *   (the seeded `zgw-zaken-json` pack ships with `builtin: true` and no owner).
+	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md
 	 */
 	#[NoAdminRequired]
@@ -152,6 +162,15 @@ class MigrationPacksController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
+	 *
+	 * @no-admin-idor-exempt A migration pack is an instance-wide reference asset, not
+	 *   a per-user object, and every authenticated user is entitled to read every
+	 *   pack by spec ("index/show/export available to any authenticated user (packs
+	 *   are shared instance assets the import flow must browse)"). There is no
+	 *   tenancy or ownership boundary to scope $id against: a pack carries no
+	 *   register, schema or organisation, and its payload is field-mapping
+	 *   configuration rather than object data. Mutation (create/update/destroy/
+	 *   import) IS admin-gated in this same controller.
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md
 	 */
@@ -182,6 +201,13 @@ class MigrationPacksController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
+	 *
+	 * @no-admin-idor-exempt Same subject as show(): the downloaded payload is the
+	 *   pack's own field-mapping definition — instance-wide reference configuration
+	 *   with no register, schema, organisation or object data in it — and the spec
+	 *   requires export to be "available to any authenticated user (packs are shared
+	 *   instance assets the import flow must browse)" so packs can round-trip
+	 *   between instances. There is no per-caller scope $id could be resolved under.
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md
 	 */

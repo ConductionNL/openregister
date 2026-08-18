@@ -176,9 +176,9 @@ final class ObjectEventProxyListener implements IEventListener {
 		}
 
 		$trace = $this->traceEnabled();
-		$begin = 0.0;
+		$start = 0.0;
 		if ($trace === true) {
-			$begin = (float)hrtime(true);
+			$start = (float)hrtime(true);
 			$this->trace['dispatch']++;
 		}
 
@@ -201,9 +201,9 @@ final class ObjectEventProxyListener implements IEventListener {
 
 			if ($trace === true) {
 				$this->trace['invoked']++;
-				$handlerBegin = (float)hrtime(true);
+				$handlerStart = (float)hrtime(true);
 				$listener->handle($event);
-				$listenerNs += ((float)hrtime(true) - $handlerBegin);
+				$listenerNs += ((float)hrtime(true) - $handlerStart);
 				continue;
 			}
 
@@ -211,7 +211,7 @@ final class ObjectEventProxyListener implements IEventListener {
 		}//end foreach
 
 		if ($trace === true) {
-			$total = ((float)hrtime(true) - $begin);
+			$total = ((float)hrtime(true) - $start);
 			$this->trace['proxyUs'] += (($total - $listenerNs) / 1000);
 			$this->trace['listenerUs'] += ($listenerNs / 1000);
 		}
@@ -370,7 +370,7 @@ final class ObjectEventProxyListener implements IEventListener {
 			return $this->registerIds;
 		}
 
-		$mapBegin = (float)hrtime(true);
+		$mapStart = (float)hrtime(true);
 
 		$tokens = ObjectEventSubscription::declaredSchemaTokens();
 		if ($isSchema === false) {
@@ -398,7 +398,7 @@ final class ObjectEventProxyListener implements IEventListener {
 				$decoded = json_decode($cached, true);
 				if (is_array($decoded) === true) {
 					$map = $decoded;
-					return $this->rememberMap(isSchema: $isSchema, map: $map, mapBegin: $mapBegin);
+					return $this->rememberMap(isSchema: $isSchema, map: $map, mapStart: $mapStart);
 				}
 			}
 
@@ -423,7 +423,7 @@ final class ObjectEventProxyListener implements IEventListener {
 			}//end try
 		}//end if
 
-		return $this->rememberMap(isSchema: $isSchema, map: $map, mapBegin: $mapBegin);
+		return $this->rememberMap(isSchema: $isSchema, map: $map, mapStart: $mapStart);
 	}//end tokenMap()
 
 	/**
@@ -431,18 +431,18 @@ final class ObjectEventProxyListener implements IEventListener {
 	 *
 	 * @param boolean $isSchema True for schemas, false for registers.
 	 * @param array<string, array<int, string>> $map The resolved map.
-	 * @param float $mapBegin hrtime at which resolution started.
+	 * @param float $mapStart hrtime at which resolution started.
 	 *
 	 * @return array<string, array<int, string>>
 	 */
-	private function rememberMap(bool $isSchema, array $map, float $mapBegin): array {
+	private function rememberMap(bool $isSchema, array $map, float $mapStart): array {
 		if ($isSchema === true) {
 			$this->schemaIds = $map;
 		} else {
 			$this->registerIds = $map;
 		}
 
-		$this->trace['mapUs'] += (((float)hrtime(true) - $mapBegin) / 1000);
+		$this->trace['mapUs'] += (((float)hrtime(true) - $mapStart) / 1000);
 
 		return $map;
 	}//end rememberMap()

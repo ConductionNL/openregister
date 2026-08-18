@@ -26,22 +26,20 @@ const SW_SOURCE = fs.readFileSync(
  */
 function loadServiceWorker(overrides = {}) {
 	const listeners = {}
-	const fakeSelf = Object.assign(
-		{
-			addEventListener: (type, handler) => {
-				listeners[type] = handler
-			},
-			skipWaiting: jest.fn(),
-			location: { origin: 'https://example-host.test' },
-			registration: { showNotification: jest.fn(() => Promise.resolve()) },
-			clients: {
-				claim: jest.fn(() => Promise.resolve()),
-				matchAll: jest.fn(() => Promise.resolve([])),
-				openWindow: jest.fn(() => Promise.resolve()),
-			},
+	const fakeSelf = {
+		addEventListener: (type, handler) => {
+			listeners[type] = handler
 		},
-		overrides,
-	)
+		skipWaiting: jest.fn(),
+		location: { origin: 'https://example-host.test' },
+		registration: { showNotification: jest.fn(() => Promise.resolve()) },
+		clients: {
+			claim: jest.fn(() => Promise.resolve()),
+			matchAll: jest.fn(() => Promise.resolve([])),
+			openWindow: jest.fn(() => Promise.resolve()),
+		},
+		...overrides,
+	}
 
 	const context = vm.createContext({ self: fakeSelf, URL })
 	vm.runInContext(SW_SOURCE, context)

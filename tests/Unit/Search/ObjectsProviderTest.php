@@ -10,6 +10,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\ObjectsProvider;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -21,6 +23,17 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
+/**
+ * Unit tests for ObjectsProvider.
+ *
+ * The provider now delegates per-result formatting (icon precedence,
+ * deep-link URL, subline/excerpt) to ObjectSearchResultFormatter, which in
+ * turn uses ObjectPreviewFormatter for schema/register name and icon
+ * resolution. This suite builds those two collaborators as REAL instances
+ * wired to the same mocked low-level dependencies the old, monolithic
+ * provider used directly, so the provider's own, unchanged public behavior
+ * is verified end-to-end exactly as before the Task 1 extraction.
+ */
 class ObjectsProviderTest extends TestCase {
 	private ObjectsProvider $provider;
 	private IL10N&MockObject $l10n;
@@ -29,6 +42,7 @@ class ObjectsProviderTest extends TestCase {
 	private LoggerInterface&MockObject $logger;
 	private DeepLinkRegistryService&MockObject $deepLinkRegistry;
 	private SchemaMapper&MockObject $schemaMapper;
+	private RegisterMapper&MockObject $registerMapper;
 
 	protected function setUp(): void {
 		$this->l10n = $this->createMock(IL10N::class);
@@ -44,19 +58,55 @@ class ObjectsProviderTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->deepLinkRegistry = $this->createMock(DeepLinkRegistryService::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->registerMapper = $this->createMock(RegisterMapper::class);
 
 		// Default: no schema opts out of search.
 		$this->schemaMapper->method('findNonSearchableIds')->willReturn([]);
 		$this->schemaMapper->method('findSearchableIds')->willReturn([1, 2, 3]);
 
-		$this->provider = new ObjectsProvider(
-			$this->l10n,
+		$this->provider = $this->buildProvider($this->schemaMapper, $this->registerMapper);
+	}
+
+	/**
+	 * Build an ObjectsProvider wired to a real ObjectSearchResultFormatter
+	 * (in turn wired to a real ObjectPreviewFormatter), so a caller can
+	 * substitute a fresh SchemaMapper/RegisterMapper double per test the
+	 * way the pre-refactor tests substituted the provider's own mapper
+	 * constructor arguments.
+	 *
+	 * @param SchemaMapper $schemaMapper Schema mapper double for this provider.
+	 * @param RegisterMapper $registerMapper Register mapper double for this provider.
+	 * @param ObjectService|null $objectService Object service double, defaults to the shared mock.
+	 *
+	 * @return ObjectsProvider
+	 */
+	private function buildProvider(
+		SchemaMapper $schemaMapper,
+		RegisterMapper $registerMapper,
+		?ObjectService $objectService = null,
+	): ObjectsProvider {
+		$formatter = new ObjectPreviewFormatter(
 			$this->urlGenerator,
-			$this->objectService,
-			$this->logger,
+			$this->l10n,
+			$objectService ?? $this->objectService,
 			$this->deepLinkRegistry,
-			$this->schemaMapper,
-			$this->createMock(RegisterMapper::class)
+			$schemaMapper,
+			$registerMapper,
+			$this->logger
+		);
+
+		$resultFormatter = new ObjectSearchResultFormatter(
+			$this->urlGenerator,
+			$this->deepLinkRegistry,
+			$formatter
+		);
+
+		return new ObjectsProvider(
+			$this->l10n,
+			$objectService ?? $this->objectService,
+			$this->logger,
+			$schemaMapper,
+			$resultFormatter
 		);
 	}
 
@@ -252,15 +302,7 @@ class ObjectsProviderTest extends TestCase {
 		$schemaMapper->method('findNonSearchableIds')->willReturn([9]);
 		$schemaMapper->method('findSearchableIds')->willReturn([1, 2, 3]);
 
-		$provider = new ObjectsProvider(
-			$this->l10n,
-			$this->urlGenerator,
-			$this->objectService,
-			$this->logger,
-			$this->deepLinkRegistry,
-			$schemaMapper,
-			$this->createMock(RegisterMapper::class)
-		);
+		$provider = $this->buildProvider($schemaMapper, $this->registerMapper);
 
 		$this->objectService->expects($this->once())
 			->method('searchObjectsPaginated')
@@ -285,15 +327,7 @@ class ObjectsProviderTest extends TestCase {
 		$schemaMapper->method('findNonSearchableIds')->willReturn([17]);
 		$schemaMapper->method('findSearchableIds')->willReturn([1, 2]);
 
-		$provider = new ObjectsProvider(
-			$this->l10n,
-			$this->urlGenerator,
-			$this->objectService,
-			$this->logger,
-			$this->deepLinkRegistry,
-			$schemaMapper,
-			$this->createMock(RegisterMapper::class)
-		);
+		$provider = $this->buildProvider($schemaMapper, $this->registerMapper);
 
 		// Opt-out wins: pipeline must NOT be queried at all.
 		$this->objectService->expects($this->never())->method('searchObjectsPaginated');
@@ -638,5 +672,91 @@ class ObjectsProviderTest extends TestCase {
 
 		$result = $this->provider->search($user, $query);
 		$this->assertSame('uuid-fallback', $result->jsonSerialize()['entries'][0]->jsonSerialize()['title']);
+	}
+
+	/**
+	 * The change itself: the provider must ASK for file text.
+	 *
+	 * Without `_content_search` the pipeline searches object metadata only, so
+	 * a term living solely inside an attached PDF finds nothing while
+	 * OpenRegister holds it indexed. Asserted on the flag reaching the
+	 * pipeline, because that is the whole of the change — the fan-out itself
+	 * is ContentSearchHandler's tested behaviour, not the provider's.
+	 */
+	public function testSearchAsksThePipelineForAttachedFileText(): void {
+		$user = $this->createMock(IUser::class);
+		$query = $this->mockQuery(['term' => 'aanbesteding']);
+
+		$this->objectService->expects($this->once())
+			->method('searchObjectsPaginated')
+			->with(
+				$this->callback(function (array $q) {
+					return ($q['_content_search'] ?? null) === true;
+				}),
+				$this->isTrue(),
+				$this->isTrue()
+			)
+			->willReturn(['results' => [], 'total' => 0]);
+
+		$this->provider->search($user, $query);
+	}
+
+	/**
+	 * Widening the MATCH must not widen the ENTITLEMENT.
+	 *
+	 * `_content_search` is only safe because the chunk fan-out receives the
+	 * same `_rbac` / `_multitenancy` flags as the metadata arm — a chunk hit
+	 * on an object the caller may not read is filtered by the same pipeline.
+	 * If a later edit ever turned content search on while relaxing either
+	 * flag, file text would become a side channel around object visibility.
+	 * That is the one way this change could become a disclosure, so it is
+	 * pinned rather than reasoned about.
+	 */
+	public function testContentSearchNeverTravelsWithRelaxedGuards(): void {
+		$user = $this->createMock(IUser::class);
+		$query = $this->mockQuery(['term' => 'aanbesteding']);
+
+		$seen = [];
+		$this->objectService->method('searchObjectsPaginated')
+			->willReturnCallback(
+				function (array $q, bool $rbac = true, bool $multitenancy = true) use (&$seen) {
+					$seen = ['content' => ($q['_content_search'] ?? null), 'rbac' => $rbac, 'mt' => $multitenancy];
+					return ['results' => [], 'total' => 0];
+				}
+			);
+
+		$this->provider->search($user, $query);
+
+		$this->assertTrue($seen['content'], 'content search must be on');
+		$this->assertTrue($seen['rbac'], 'and RBAC must still be on alongside it');
+		$this->assertTrue($seen['mt'], 'and so must multitenancy');
+	}
+
+	/**
+	 * A schema opted out of search stays opted out with content search on.
+	 *
+	 * The provider narrows by `searchable = true`. Content search widens the
+	 * match, and must not reach around that narrowing — otherwise a schema
+	 * excluded from search would still surface through the text of its
+	 * attached files.
+	 */
+	public function testAnOptedOutSchemaIsNotReachableViaFileText(): void {
+		// A provider of its own, because setUp() stubs findNonSearchableIds()
+		// to [] and a second stub on the same mock does not replace the first.
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('findNonSearchableIds')->willReturn([42]);
+		$schemaMapper->method('findSearchableIds')->willReturn([1, 2, 3]);
+
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->expects($this->never())->method('searchObjectsPaginated');
+
+		$provider = $this->buildProvider($schemaMapper, $this->registerMapper, $objectService);
+
+		$result = $provider->search(
+			$this->createMock(IUser::class),
+			$this->mockQuery(['term' => 'aanbesteding', 'schema' => '42'])
+		);
+
+		$this->assertSame([], $result->jsonSerialize()['entries']);
 	}
 }

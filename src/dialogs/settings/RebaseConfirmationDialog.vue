@@ -40,6 +40,7 @@ export default {
 		open: { type: Boolean, required: true },
 		rebasing: { type: Boolean, default: false },
 	},
+
 	emits: ['closing', 'confirm'],
 }
 </script>

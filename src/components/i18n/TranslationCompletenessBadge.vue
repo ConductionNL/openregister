@@ -6,10 +6,8 @@
 		<div
 			v-for="lang in languages"
 			:key="lang"
-			:class="[
-				'translation-completeness-badge__pill',
-				completenessClassFor(lang),
-			]">
+			class="translation-completeness-badge__pill"
+			:class="[completenessClassFor(lang)]">
 			<span class="translation-completeness-badge__lang">{{
 				lang.toUpperCase()
 			}}</span>
@@ -44,6 +42,7 @@ export default {
 			type: Object,
 			required: true,
 		},
+
 		/**
 		 * Optional language ordering. When omitted, languages are listed
 		 * alphabetically. Useful for matching the register's configured
@@ -54,6 +53,7 @@ export default {
 			default: () => [],
 		},
 	},
+
 	computed: {
 		/**
 		 * @spec exclude computed ordered language list from completeness prop, UI plumbing
@@ -69,6 +69,7 @@ export default {
 			}
 			return present.slice().sort()
 		},
+
 		/**
 		 * @spec exclude computed tooltip display helper from completeness prop, UI plumbing
 		 */
@@ -80,6 +81,7 @@ export default {
 			return `Translation completeness — ${parts.join(', ')}`
 		},
 	},
+
 	methods: {
 		/**
 		 * @param lang
@@ -90,6 +92,7 @@ export default {
 			if (!c || typeof c.ratio !== 'number') return '?'
 			return `${Math.round(c.ratio * 100)}%`
 		},
+
 		/**
 		 * @param lang
 		 * @spec exclude computed pill CSS-class display helper, UI plumbing

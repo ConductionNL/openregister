@@ -106,7 +106,7 @@
 							</label>
 							<div class="date-range-inputs">
 								<NcDateTimePickerNative
-									:model-value="
+									:modelValue="
 										getDateRangeValue(fieldName, 'from')
 									"
 									:placeholder="t('openregister', 'From date')"
@@ -118,7 +118,7 @@
 									t('openregister', 'to')
 								}}</span>
 								<NcDateTimePickerNative
-									:model-value="getDateRangeValue(fieldName, 'to')"
+									:modelValue="getDateRangeValue(fieldName, 'to')"
 									:placeholder="t('openregister', 'To date')"
 									type="date"
 									@update:modelValue="
@@ -162,7 +162,7 @@
 								</span>
 							</label>
 							<NcSelect
-								:model-value="
+								:modelValue="
 									getSelectedMetadataDropdownValues(fieldName)
 								"
 								:options="getMetadataDropdownOptions(fieldName)"
@@ -171,9 +171,9 @@
 										fieldName: capitalizeFieldName(fieldName),
 									})
 								"
-								:input-label="capitalizeFieldName(fieldName)"
+								:inputLabel="capitalizeFieldName(fieldName)"
 								:multiple="true"
-								:close-on-select="false"
+								:closeOnSelect="false"
 								:searchable="true"
 								:loading="objectStore.facetsLoading"
 								@update:modelValue="
@@ -212,7 +212,7 @@
 							:key="`meta-${fieldName}`"
 							class="facet-item">
 							<NcCheckboxRadioSwitch
-								:model-value="isActiveFacet(`@self.${fieldName}`)"
+								:modelValue="isActiveFacet(`@self.${fieldName}`)"
 								@update:modelValue="
 									(status) =>
 										toggleFacet(
@@ -265,7 +265,7 @@
 								<NcCheckboxRadioSwitch
 									v-for="bucket in facet.data.buckets"
 									:key="bucket.value"
-									:model-value="
+									:modelValue="
 										isDateRangeSelected(fieldName, bucket.value)
 									"
 									type="radio"
@@ -289,7 +289,7 @@
 								}}</span>
 								<div class="date-range-inputs">
 									<NcDateTimePickerNative
-										:model-value="
+										:modelValue="
 											getObjectDateRangeValue(
 												fieldName,
 												'from',
@@ -308,7 +308,7 @@
 										t('openregister', 'to')
 									}}</span>
 									<NcDateTimePickerNative
-										:model-value="
+										:modelValue="
 											getObjectDateRangeValue(fieldName, 'to')
 										"
 										:placeholder="t('openregister', 'To date')"
@@ -354,7 +354,7 @@
 								</span>
 							</label>
 							<NcSelect
-								:model-value="
+								:modelValue="
 									getSelectedDateHistogramValues(fieldName)
 								"
 								:options="getDateHistogramOptions(fieldName)"
@@ -365,11 +365,11 @@
 											|| capitalizeFieldName(fieldName),
 									})
 								"
-								:input-label="
+								:inputLabel="
 									facet.title || capitalizeFieldName(fieldName)
 								"
 								:multiple="true"
-								:close-on-select="false"
+								:closeOnSelect="false"
 								:searchable="true"
 								:loading="objectStore.facetsLoading"
 								@update:modelValue="
@@ -418,16 +418,16 @@
 								</span>
 							</label>
 							<NcSelect
-								:model-value="getSelectedDropdownValues(fieldName)"
+								:modelValue="getSelectedDropdownValues(fieldName)"
 								:options="getDropdownOptions(fieldName)"
 								:placeholder="
 									t('openregister', 'Select {fieldName} values', {
 										fieldName: capitalizeFieldName(fieldName),
 									})
 								"
-								:input-label="capitalizeFieldName(fieldName)"
+								:inputLabel="capitalizeFieldName(fieldName)"
 								:multiple="true"
-								:close-on-select="false"
+								:closeOnSelect="false"
 								:searchable="true"
 								:loading="objectStore.facetsLoading"
 								@update:modelValue="
@@ -463,7 +463,7 @@
 							:key="`checkbox-${fieldName}`"
 							class="facet-item">
 							<NcCheckboxRadioSwitch
-								:model-value="isActiveFacet(fieldName)"
+								:modelValue="isActiveFacet(fieldName)"
 								@update:modelValue="
 									(status) =>
 										toggleFacet(
@@ -516,11 +516,11 @@
  * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-response-standardized-format
  */
 import {
-	NcCheckboxRadioSwitch,
-	NcLoadingIcon,
 	NcButton,
-	NcSelect,
+	NcCheckboxRadioSwitch,
 	NcDateTimePickerNative,
+	NcLoadingIcon,
+	NcSelect,
 } from '@nextcloud/vue'
 import Close from 'vue-material-design-icons/Close.vue'
 import { objectStore } from '../store/store.js'
@@ -535,11 +535,13 @@ export default {
 		NcDateTimePickerNative,
 		Close,
 	},
+
 	data() {
 		return {
 			objectStore,
 		}
 	},
+
 	computed: {
 		hasActiveFilters() {
 			return (
@@ -547,6 +549,7 @@ export default {
 				&& Object.keys(this.objectStore.currentFacets).length > 0
 			)
 		},
+
 		/**
 		 * Get object fields that support terms faceting (excluding id)
 		 * These will be shown as dropdowns
@@ -569,6 +572,7 @@ export default {
 			)
 			return fields
 		},
+
 		/**
 		 * Get object fields that don't support terms faceting (excluding id field)
 		 * These will be shown as checkboxes
@@ -591,9 +595,11 @@ export default {
 			)
 			return fields
 		},
+
 		/**
 		 * Get metadata fields that support date range faceting
 		 * These will be shown as date range pickers
+		 *
 		 * @spec exclude computed filter of store facets for date-range UI, search contract owned by search capability
 		 */
 		metadataDateFields() {
@@ -613,9 +619,11 @@ export default {
 
 			return fields
 		},
+
 		/**
 		 * Get metadata fields that are not date fields (excluding id and uuid)
 		 * These will be shown as checkboxes
+		 *
 		 * @spec exclude computed filter of store facets for checkbox UI, search contract owned by search capability
 		 */
 		nonDateMetadataFields() {
@@ -636,12 +644,14 @@ export default {
 			)
 			return fields
 		},
+
 		/**
 		 * Get metadata fields that support terms faceting (excluding id and uuid)
 		 * These will be shown as dropdowns
 		 */
 		/**
 		 * Get object fields that use date_range faceting from current facet results
+		 *
 		 * @return {object} Date range facet entries keyed by field name
 		 * @spec exclude computed filter of current store facets, search contract owned by search capability
 		 */
@@ -656,8 +666,10 @@ export default {
 			)
 			return fields
 		},
+
 		/**
 		 * Get object fields that use date_histogram faceting from current facet results
+		 *
 		 * @return {object} Date histogram facet entries keyed by field name
 		 * @spec exclude computed filter of current store facets, search contract owned by search capability
 		 */
@@ -672,6 +684,7 @@ export default {
 			)
 			return fields
 		},
+
 		/**
 		 * @spec exclude computed filter of store metadata facets for dropdown UI, search contract owned by search capability
 		 */
@@ -693,9 +706,11 @@ export default {
 			return fields
 		},
 	},
+
 	methods: {
 		/**
 		 * Check if a facet is currently active
+		 *
 		 * @param {string} fieldName - Name of the field to check
 		 * @return {boolean} True if facet is active
 		 * @spec exclude computed read of active facet state from store, UI plumbing
@@ -710,8 +725,10 @@ export default {
 				return Boolean(this.objectStore.activeFacets._facets?.[fieldName])
 			}
 		},
+
 		/**
 		 * Toggle a facet's active state
+		 *
 		 * @param {string} fieldName - Name of the field to toggle
 		 * @param {string} facetType - Type of facet
 		 * @param {boolean} enabled - Whether to enable or disable the facet
@@ -722,8 +739,10 @@ export default {
 			// Trigger search after toggling facet
 			await this.objectStore.refreshObjectList()
 		},
+
 		/**
 		 * Get display name for a facet field
+		 *
 		 * @param {string} facetField - Name of the facet field
 		 * @return {string} Display name for the facet
 		 * @spec exclude computed display-name helper from store field metadata, UI plumbing
@@ -748,8 +767,10 @@ export default {
 
 			return facetField
 		},
+
 		/**
 		 * Get display name for an active facet field
+		 *
 		 * @param {string} facetField - Name of the facet field
 		 * @return {string} Display name for the active facet
 		 * @spec exclude computed display-name helper, UI plumbing
@@ -763,8 +784,10 @@ export default {
 			// For individual fields, use the same logic as getFacetDisplayName
 			return this.getFacetDisplayName(facetField)
 		},
+
 		/**
 		 * Remove a specific filter
+		 *
 		 * @param {string} facetField - Name of the facet field to remove
 		 * @spec exclude store passthrough removing facet + refreshing list, search contract owned by search capability
 		 */
@@ -789,8 +812,10 @@ export default {
 			// Trigger search after removing filter
 			await this.objectStore.refreshObjectList()
 		},
+
 		/**
 		 * Clear all active filters
+		 *
 		 * @spec exclude store passthrough clearing all facets/filters, search contract owned by search capability
 		 */
 		async clearAllFilters() {
@@ -799,9 +824,11 @@ export default {
 			this.objectStore.clearAllFilters()
 			await this.objectStore.refreshObjectList()
 		},
+
 		/**
 		 * Get dropdown options for a specific field
 		 * Uses facet results if available, otherwise uses sample values
+		 *
 		 * @param {string} fieldName - Name of the field
 		 * @return {Array} Array of dropdown options
 		 * @spec exclude computed dropdown-option builder from store facet buckets, UI plumbing
@@ -872,8 +899,10 @@ export default {
 					return (a.label || '').localeCompare(b.label || '')
 				})
 		},
+
 		/**
 		 * Get currently selected values for a dropdown
+		 *
 		 * @param {string} fieldName - Name of the field
 		 * @return {Array} Array of selected values
 		 * @spec exclude computed read of selected dropdown values from store filters, UI plumbing
@@ -905,8 +934,10 @@ export default {
 
 			return selectedValues
 		},
+
 		/**
 		 * Update dropdown selection for a field
+		 *
 		 * @param {string} fieldName - Name of the field
 		 * @param {Array} selectedOptions - Array of selected options
 		 * @spec exclude store filter writer + list refresh, search contract owned by search capability
@@ -933,8 +964,10 @@ export default {
 				console.error('Error in updateDropdownSelection:', error)
 			}
 		},
+
 		/**
 		 * Update a field facet with specific configuration
+		 *
 		 * @param {string} fieldName - Name of the field
 		 * @param {object} facetConfig - Facet configuration object
 		 * @spec exclude store facet-config writer + list refresh, search contract owned by search capability
@@ -955,8 +988,10 @@ export default {
 			this.objectStore.setActiveFacets(currentFacets)
 			await this.objectStore.refreshObjectList()
 		},
+
 		/**
 		 * Check if a predefined date range bucket is selected
+		 *
 		 * @param {string} fieldName - Name of the field
 		 * @param {string} bucketValue - The bucket key/value
 		 * @return {boolean} True if selected
@@ -966,8 +1001,10 @@ export default {
 			const filterKey = `${fieldName}._dateRange`
 			return this.objectStore.activeFilters[filterKey] === bucketValue
 		},
+
 		/**
 		 * Select a predefined date range bucket
+		 *
 		 * @param {string} fieldName - Name of the field
 		 * @param {object} bucket - The bucket with from/to/value/label
 		 * @spec exclude store filter writer for date-range preset + list refresh, search contract owned by search capability
@@ -996,8 +1033,10 @@ export default {
 			this.objectStore.setActiveFilters(currentFilters)
 			await this.objectStore.refreshObjectList()
 		},
+
 		/**
 		 * Get current custom date range value for an object date field
+		 *
 		 * @param {string} fieldName - Name of the field
 		 * @param {string} bound - 'from' or 'to'
 		 * @return {string|null} Date value
@@ -1016,8 +1055,10 @@ export default {
 			}
 			return null
 		},
+
 		/**
 		 * Update custom date range for an object date field
+		 *
 		 * @param {string} fieldName - Name of the field
 		 * @param {string} bound - 'from' or 'to'
 		 * @param {string} value - Date value
@@ -1039,8 +1080,10 @@ export default {
 			this.objectStore.setActiveFilters(currentFilters)
 			await this.objectStore.refreshObjectList()
 		},
+
 		/**
 		 * Check if an object date field has an active custom date range
+		 *
 		 * @param {string} fieldName - Name of the field
 		 * @return {boolean} True if has active date range
 		 * @spec exclude computed read of object date-range presence from store filters, UI plumbing
@@ -1051,8 +1094,10 @@ export default {
 				|| this.objectStore.activeFilters[`${fieldName}[<=]`],
 			)
 		},
+
 		/**
 		 * Clear date range for an object date field
+		 *
 		 * @param {string} fieldName - Name of the field
 		 * @spec exclude store filter writer clearing object date-range + list refresh, search contract owned by search capability
 		 */
@@ -1065,8 +1110,10 @@ export default {
 			this.objectStore.setActiveFilters(currentFilters)
 			await this.objectStore.refreshObjectList()
 		},
+
 		/**
 		 * Get dropdown options for a date histogram facet
+		 *
 		 * @param {string} fieldName - Name of the field
 		 * @return {Array} Array of options with value, label, count, from, to
 		 * @spec exclude computed option builder from store histogram buckets, UI plumbing
@@ -1085,8 +1132,10 @@ export default {
 				to: bucket.to,
 			}))
 		},
+
 		/**
 		 * Get currently selected date histogram values
+		 *
 		 * @param {string} fieldName - Name of the field
 		 * @return {Array} Array of selected options
 		 * @spec exclude computed read of selected histogram buckets from store filters, UI plumbing
@@ -1109,8 +1158,10 @@ export default {
 				return false
 			})
 		},
+
 		/**
 		 * Update date histogram selection (using from/to for query params)
+		 *
 		 * @param {string} fieldName - Name of the field
 		 * @param {Array} selectedOptions - Array of selected options with from/to
 		 * @spec exclude store filter writer for histogram selection + list refresh, search contract owned by search capability
@@ -1145,8 +1196,10 @@ export default {
 			this.objectStore.setActiveFilters(currentFilters)
 			await this.objectStore.refreshObjectList()
 		},
+
 		/**
 		 * Capitalize field names for display
+		 *
 		 * @param {string} fieldName - Name of the field to capitalize
 		 * @return {string} Capitalized field name
 		 * @spec exclude pure string-formatting display helper, UI plumbing
@@ -1180,8 +1233,10 @@ export default {
 				)
 				.join(' ')
 		},
+
 		/**
 		 * Format date range for display
+		 *
 		 * @param {object} dateRange - Date range object with min and max dates
 		 * @return {string} Formatted date range string
 		 *
@@ -1202,8 +1257,10 @@ export default {
 
 			return `${formatDate(dateRange.min)} - ${formatDate(dateRange.max)}`
 		},
+
 		/**
 		 * Get date range value for a specific field and bound (from/to)
+		 *
 		 * @param {string} fieldName - Name of the field
 		 * @param {string} bound - Bound type ('from' or 'to')
 		 * @return {string|null} Date value or null
@@ -1230,8 +1287,10 @@ export default {
 			const value = bound === 'from' ? range.from : range.to
 			return value
 		},
+
 		/**
 		 * Update date range for a field
+		 *
 		 * @param {string} fieldName - Name of the field
 		 * @param {string} bound - Bound type ('from' or 'to')
 		 * @param {string} value - Date value
@@ -1289,6 +1348,7 @@ export default {
 		/**
 		 * Update activeFilters based on date range facet
 		 * Converts range facets to proper filter parameters like @self[created][>=]=2025-06-24T00:00:00+00:00
+		 *
 		 * @param {string} fieldName - Name of the field
 		 * @param {object} rangeFacet - Range facet configuration object
 		 * @spec exclude internal helper converting range facet to store filter params, UI plumbing
@@ -1332,8 +1392,10 @@ export default {
 			// Update the store
 			this.objectStore.setActiveFilters(currentFilters)
 		},
+
 		/**
 		 * Check if a field has an active date range
+		 *
 		 * @param {string} fieldName - Name of the field to check
 		 * @return {boolean} True if field has an active date range
 		 * @spec exclude computed read of metadata date-range presence from store facets, UI plumbing
@@ -1349,8 +1411,10 @@ export default {
 				&& (activeFacetData.ranges[0].from || activeFacetData.ranges[0].to)
 			)
 		},
+
 		/**
 		 * Clear date range for a field
+		 *
 		 * @param {string} fieldName - Name of the field to clear date range for
 		 * @spec exclude store facet/filter writer clearing metadata date-range + list refresh, search contract owned by search capability
 		 */
@@ -1376,9 +1440,11 @@ export default {
 			this.objectStore.setActiveFilters(currentFilters)
 			await this.objectStore.refreshObjectList()
 		},
+
 		/**
 		 * Get dropdown options for a metadata field
 		 * Uses facet results if available, otherwise uses sample values
+		 *
 		 * @param {string} fieldName - Name of the metadata field
 		 * @return {Array} Array of dropdown options
 		 * @spec exclude computed dropdown-option builder from store metadata facets, UI plumbing
@@ -1452,8 +1518,10 @@ export default {
 
 			return finalOptions
 		},
+
 		/**
 		 * Get currently selected values for a metadata dropdown
+		 *
 		 * @param {string} fieldName - Name of the metadata field
 		 * @return {Array} Array of selected dropdown options
 		 * @spec exclude computed read of selected metadata values from store filters, UI plumbing
@@ -1486,8 +1554,10 @@ export default {
 
 			return selectedValues
 		},
+
 		/**
 		 * Update metadata dropdown selection for a field
+		 *
 		 * @param {string} fieldName - Name of the metadata field
 		 * @param {Array} selectedOptions - Array of selected options
 		 * @spec exclude store filter writer for metadata selection + list refresh, search contract owned by search capability

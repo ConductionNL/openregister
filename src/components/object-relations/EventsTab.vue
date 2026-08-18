@@ -108,7 +108,7 @@ SPDX-License-Identifier: EUPL-1.2
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import { NcEmptyContent, NcLoadingIcon, NcButton } from '@nextcloud/vue'
+import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import CalendarOutline from 'vue-material-design-icons/CalendarOutline.vue'
 import CalendarPlus from 'vue-material-design-icons/CalendarPlus.vue'
@@ -149,10 +149,12 @@ export default {
 			type: [String, Number],
 			required: true,
 		},
+
 		schema: {
 			type: [String, Number],
 			required: true,
 		},
+
 		objectId: {
 			type: String,
 			required: true,
@@ -174,18 +176,21 @@ export default {
 		key() {
 			return `${this.register}:${this.schema}:${this.objectId}`
 		},
+
 		/**
 		 * @spec exclude computed read of linked events from store; event-relations contract owned by integration-calendar capability
 		 */
 		events() {
 			return this.store.byObject[this.key] || []
 		},
+
 		/**
 		 * @spec exclude computed read of loading state from store, UI plumbing
 		 */
 		loading() {
 			return !!this.store.loading[this.key]
 		},
+
 		/**
 		 * @spec exclude computed read of integration-availability flag from store, UI plumbing
 		 */

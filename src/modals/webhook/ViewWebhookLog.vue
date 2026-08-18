@@ -3,7 +3,7 @@
 		v-if="navigationStore.modal === 'viewWebhookLog'"
 		:name="t('openregister', 'Webhook Log Details')"
 		size="large"
-		:can-close="true"
+		:canClose="true"
 		:open="true"
 		@update:open="handleDialogClose">
 		<div v-if="logItem" class="logDetailsContainer">
@@ -139,13 +139,13 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import axios from '@nextcloud/axios'
-import { navigationStore } from '../../store/store.js'
 import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import { navigationStore } from '../../store/store.js'
 
 /**
  * ViewWebhookLog modal component
@@ -166,6 +166,7 @@ export default {
 		NcLoadingIcon,
 		Refresh,
 	},
+
 	data() {
 		return {
 			logItem: null,
@@ -173,6 +174,7 @@ export default {
 			retrying: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * Navigation store computed property for template access.
@@ -184,6 +186,7 @@ export default {
 			return navigationStore
 		},
 	},
+
 	/**
 	 * @spec exclude Vue mounted() hook loading log + webhook data on open; modal init plumbing.
 	 */
@@ -191,6 +194,7 @@ export default {
 		this.loadLogData()
 		this.loadWebhooks()
 	},
+
 	methods: {
 		/**
 		 * Load log data from navigation store transferData.

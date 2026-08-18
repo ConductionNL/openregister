@@ -1447,8 +1447,8 @@ class AggregationRunner {
 					continue;
 				}
 
-				foreach ($criterion as $op => $opValue) {
-					if ($this->checkOp(value: $value, op: (string)$op, opValue: $opValue) === false) {
+				foreach ($criterion as $op => $onValue) {
+					if ($this->checkOn(value: $value, op: (string)$op, onValue: $onValue) === false) {
 						$keep = false;
 						break 2;
 					}
@@ -1477,7 +1477,7 @@ class AggregationRunner {
 	 *
 	 * @param mixed $value The value extracted from the row.
 	 * @param string $op Operator name ('eq','ne','gt','gte','lt','lte','in','notIn').
-	 * @param mixed $opValue The operand value to compare against.
+	 * @param mixed $onValue The operand value to compare against.
 	 *
 	 * @return bool True when the value satisfies the operator.
 	 *
@@ -1485,27 +1485,27 @@ class AggregationRunner {
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function checkOp(mixed $value, string $op, mixed $opValue): bool {
+	private function checkOn(mixed $value, string $op, mixed $onValue): bool {
 		if ($op === 'eq') {
-			return $this->valueMatchesAnyOf(rowValue: $value, candidates: [$opValue]);
+			return $this->valueMatchesAnyOf(rowValue: $value, candidates: [$onValue]);
 		}
 
 		if ($op === 'ne') {
-			return ($this->valueMatchesAnyOf(rowValue: $value, candidates: [$opValue]) === false);
+			return ($this->valueMatchesAnyOf(rowValue: $value, candidates: [$onValue]) === false);
 		}
 
 		if ($op === 'in') {
-			return (is_array($opValue) === true
-				&& $this->valueMatchesAnyOf(rowValue: $value, candidates: $opValue) === true);
+			return (is_array($onValue) === true
+				&& $this->valueMatchesAnyOf(rowValue: $value, candidates: $onValue) === true);
 		}
 
 		if ($op === 'notIn') {
-			return (is_array($opValue) === false
-				|| $this->valueMatchesAnyOf(rowValue: $value, candidates: $opValue) === false);
+			return (is_array($onValue) === false
+				|| $this->valueMatchesAnyOf(rowValue: $value, candidates: $onValue) === false);
 		}
 
 		$cmp = $this->normaliseForCompare(v: $value);
-		$rhs = $this->normaliseForCompare(v: $opValue);
+		$rhs = $this->normaliseForCompare(v: $onValue);
 		return match ($op) {
 			'gt' => $cmp !== null && $rhs !== null && $cmp > $rhs,
 			'gte' => $cmp !== null && $rhs !== null && $cmp >= $rhs,
@@ -1822,11 +1822,11 @@ class AggregationRunner {
 				continue;
 			}
 
-			foreach ($v as $op => $opValue) {
+			foreach ($v as $op => $onValue) {
 				if ($op === 'in') {
 					$list = [];
-					if (is_array($opValue) === true) {
-						$list = $opValue;
+					if (is_array($onValue) === true) {
+						$list = $onValue;
 					}
 
 					if (count($list) === 0) {
@@ -1847,8 +1847,8 @@ class AggregationRunner {
 
 				if ($op === 'notIn') {
 					$list = [];
-					if (is_array($opValue) === true) {
-						$list = $opValue;
+					if (is_array($onValue) === true) {
+						$list = $onValue;
 					}
 
 					if (count($list) === 0) {
@@ -1868,7 +1868,7 @@ class AggregationRunner {
 					continue;
 				}//end if
 
-				$sqlOp = match ((string)$op) {
+				$sqlOn = match ((string)$op) {
 					'gt' => '>',
 					'gte' => '>=',
 					'lt' => '<',
@@ -1877,12 +1877,12 @@ class AggregationRunner {
 					default => null,
 				};
 
-				if ($sqlOp === null) {
+				if ($sqlOn === null) {
 					continue;
 				}
 
-				$whereParts[] = $quote . $col . $quote . ' ' . $sqlOp . ' ?';
-				$bindings[] = $this->bindValue(value: $opValue);
+				$whereParts[] = $quote . $col . $quote . ' ' . $sqlOn . ' ?';
+				$bindings[] = $this->bindValue(value: $onValue);
 			}//end foreach
 		}//end foreach
 

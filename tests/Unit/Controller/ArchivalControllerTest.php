@@ -90,7 +90,8 @@ class ArchivalControllerTest extends TestCase {
 		return $this->getMockBuilder(ObjectEntity::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['jsonSerialize', 'getObject'])
-			->addMethods(['getUuid', 'getRetention', 'setObject'])
+			->onlyMethods(['getUuid'])
+			->addMethods(['getRetention', 'setObject'])
 			->getMock();
 	}
 

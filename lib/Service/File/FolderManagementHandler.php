@@ -218,8 +218,7 @@ class FolderManagementHandler {
 
 		// Transfer ownership to OpenRegister and share with current user if needed.
 		if ($this->fileService !== null) {
-			// TODO: Call $this->fileService->transferFolderOwnershipIfNeeded($folderNode)
-			// once FileOwnershipHandler is extracted.
+			$this->fileService->transferFolderOwnershipIfNeeded(folder: $folderNode);
 		}
 
 		// Share the folder with the currently active user if there is one.
@@ -309,8 +308,7 @@ class FolderManagementHandler {
 
 		// Transfer ownership to OpenRegister and share with current user if needed.
 		if ($this->fileService !== null) {
-			// TODO: Call $this->fileService->transferFolderOwnershipIfNeeded($objectFolder)
-			// once FileOwnershipHandler is extracted.
+			$this->fileService->transferFolderOwnershipIfNeeded(folder: $objectFolder);
 		}
 
 		// Share the folder with the currently active user if there is one.
@@ -487,8 +485,7 @@ class FolderManagementHandler {
 
 		// Transfer ownership to OpenRegister and share with current user if needed.
 		if ($this->fileService !== null) {
-			// TODO: Call $this->fileService->transferFolderOwnershipIfNeeded($objectFolder)
-			// once FileOwnershipHandler is extracted.
+			$this->fileService->transferFolderOwnershipIfNeeded(folder: $objectFolder);
 		}
 
 		// Share the folder with the currently active user if there is one.
@@ -559,8 +556,7 @@ class FolderManagementHandler {
 
 				// Transfer ownership to OpenRegister and share with current user if needed.
 				if ($this->fileService !== null) {
-					// TODO: Call $this->fileService->transferFolderOwnershipIfNeeded($node)
-					// once FileOwnershipHandler is extracted.
+					$this->fileService->transferFolderOwnershipIfNeeded(folder: $node);
 				}
 
 				return $node;

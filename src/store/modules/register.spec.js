@@ -1,8 +1,6 @@
-/* eslint-disable no-console */
-import { setActivePinia, createPinia } from 'pinia'
-
+import { createPinia, setActivePinia } from 'pinia'
+import { mockRegister, Register } from '../../entities/index.js'
 import { useRegisterStore } from './register.js'
-import { Register, mockRegister } from '../../entities/index.js'
 
 describe('Register Store', () => {
 	beforeEach(() => {

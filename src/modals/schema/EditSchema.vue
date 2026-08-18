@@ -1,6 +1,6 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { schemaStore, navigationStore, registerStore } from '../../store/store.js'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
+import { navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -9,53 +9,53 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 		<CnSchemaFormDialog
 			ref="schemaFormDialog"
 			:item="schemaStore.schemaItem"
-			:dialog-title="
+			:dialogTitle="
 				schemaStore.schemaItem?.id
 					? t('openregister', 'Edit Schema')
 					: t('openregister', 'Add Schema')
 			"
-			:available-schemas="computedAvailableSchemas"
-			:available-registers="computedAvailableRegisters"
-			:inherited-properties="computedInheritedProperties"
-			:user-groups="userGroups"
-			:loading-groups="loadingGroups"
-			:available-tags="availableTags"
-			:object-count="schemaStore.schemaItem?.stats?.objects?.total || 0"
-			show-extend-schema
-			show-analyze-properties
-			show-validate-objects
-			show-delete-objects
-			show-delete
-			:cancel-label="t('openregister', 'Cancel')"
-			:close-label="t('openregister', 'Close')"
-			:confirm-label="
+			:availableSchemas="computedAvailableSchemas"
+			:availableRegisters="computedAvailableRegisters"
+			:inheritedProperties="computedInheritedProperties"
+			:userGroups="userGroups"
+			:loadingGroups="loadingGroups"
+			:availableTags="availableTags"
+			:objectCount="schemaStore.schemaItem?.stats?.objects?.total || 0"
+			showExtendSchema
+			showAnalyzeProperties
+			showValidateObjects
+			showDeleteObjects
+			showDelete
+			:cancelLabel="t('openregister', 'Cancel')"
+			:closeLabel="t('openregister', 'Close')"
+			:confirmLabel="
 				schemaStore.schemaItem?.id
 					? t('openregister', 'Save')
 					: t('openregister', 'Create')
 			"
-			:success-text="
+			:successText="
 				schemaStore.schemaItem?.id
 					? t('openregister', 'Schema successfully updated')
 					: t('openregister', 'Schema successfully created')
 			"
-			:extend-schema-label="t('openregister', 'Extend Schema')"
-			:analyze-properties-label="t('openregister', 'Analyze Properties')"
-			:validate-objects-label="t('openregister', 'Validate Objects')"
-			:delete-objects-label="t('openregister', 'Delete Objects')"
-			:delete-label="t('openregister', 'Delete')"
-			:delete-objects-tooltip="
+			:extendSchemaLabel="t('openregister', 'Extend Schema')"
+			:analyzePropertiesLabel="t('openregister', 'Analyze Properties')"
+			:validateObjectsLabel="t('openregister', 'Validate Objects')"
+			:deleteObjectsLabel="t('openregister', 'Delete Objects')"
+			:deleteLabel="t('openregister', 'Delete')"
+			:deleteObjectsTooltip="
 				t('openregister', 'Delete all objects in this schema')
 			"
-			:cannot-delete-tooltip="
+			:cannotDeleteTooltip="
 				t('openregister', 'Cannot delete: objects are still attached')
 			"
 			@confirm="onConfirm"
 			@close="closeModal"
-			@extend-schema="extendSchema"
-			@analyze-properties="analyzeProperties"
-			@validate-objects="validateObjects"
-			@delete-objects="deleteObjects"
-			@delete-schema="deleteSchema" />
+			@extendSchema="extendSchema"
+			@analyzeProperties="analyzeProperties"
+			@validateObjects="validateObjects"
+			@deleteObjects="deleteObjects"
+			@deleteSchema="deleteSchema" />
 
 		<!--
 			The server classified the edit as BREAKING and will not apply it until it is
@@ -108,12 +108,12 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 </template>
 
 <script>
-import { NcDialog, NcButton } from '@nextcloud/vue'
 import {
 	CnSchemaFormDialog,
 	describeSchemaChange,
 	SchemaBreakingChangeError,
 } from '@conduction/nextcloud-vue'
+import { NcButton, NcDialog } from '@nextcloud/vue'
 
 export default {
 	name: 'EditSchema',
@@ -122,6 +122,7 @@ export default {
 		NcDialog,
 		NcButton,
 	},
+
 	data() {
 		return {
 			userGroups: [],
@@ -133,6 +134,7 @@ export default {
 			savingBreaking: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude computed display helper listing other schemas for extension
@@ -159,6 +161,7 @@ export default {
 					reference: `#/components/schemas/${schema.slug || schema.title || schema.id}`,
 				}))
 		},
+
 		/**
 		 * @spec exclude computed display helper listing registers for select
 		 */
@@ -168,6 +171,7 @@ export default {
 				label: register.title || register.name || register.id,
 			}))
 		},
+
 		/**
 		 * @spec exclude computed display helper merging inherited schema properties
 		 */
@@ -191,6 +195,7 @@ export default {
 			return merged
 		},
 	},
+
 	/**
 	 * @spec exclude Vue lifecycle hook loading initial modal data
 	 */
@@ -199,6 +204,7 @@ export default {
 		this.loadUserGroups()
 		this.fetchAvailableTags()
 	},
+
 	methods: {
 		/**
 		 * @spec exclude form-state loader for registers and schemas
@@ -215,6 +221,7 @@ export default {
 				console.error('Error loading registers and schemas:', error)
 			}
 		},
+
 		/**
 		 * @spec exclude form-state loader for user groups via OCS API
 		 */
@@ -248,6 +255,7 @@ export default {
 				this.loadingGroups = false
 			}
 		},
+
 		/**
 		 * @spec exclude form-state fallback group defaults
 		 */
@@ -259,6 +267,7 @@ export default {
 				{ id: 'viewers', displayname: 'Viewers' },
 			]
 		},
+
 		/**
 		 * @spec exclude form-state loader for available tags
 		 */
@@ -276,6 +285,7 @@ export default {
 				this.availableTags = []
 			}
 		},
+
 		/**
 		 * Save the schema. A breaking change comes back as a question rather than a
 		 * failure — see the catch below.
@@ -317,6 +327,7 @@ export default {
 				})
 			}
 		},
+
 		/**
 		 * Re-save, this time accepting the breaking change.
 		 *
@@ -332,6 +343,7 @@ export default {
 				this.savingBreaking = false
 			}
 		},
+
 		/**
 		 * Abandon the acknowledgement; the editor stays open with the edits intact.
 		 *
@@ -340,6 +352,7 @@ export default {
 		cancelBreaking() {
 			this.pendingBreaking = null
 		},
+
 		/**
 		 * Render one flagged change. Shared with OpenBuild's editor so the two apps
 		 * describe the same refusal identically.
@@ -351,6 +364,7 @@ export default {
 		describeChange(change) {
 			return describeSchemaChange(change, t)
 		},
+
 		/**
 		 * @spec exclude modal close UI handler
 		 */
@@ -358,6 +372,7 @@ export default {
 			navigationStore.setModal(false)
 			navigationStore.setDialog(false)
 		},
+
 		/**
 		 * @spec exclude form-state helper seeding an extending schema
 		 */
@@ -372,24 +387,28 @@ export default {
 			}
 			schemaStore.setSchemaItem(newSchema)
 		},
+
 		/**
 		 * @spec exclude dialog-open UI handler for schema analysis
 		 */
 		analyzeProperties() {
 			navigationStore.setDialog('exploreSchema')
 		},
+
 		/**
 		 * @spec exclude dialog-open UI handler for object validation
 		 */
 		validateObjects() {
 			navigationStore.setDialog('validateSchema')
 		},
+
 		/**
 		 * @spec exclude dialog-open UI handler for object deletion
 		 */
 		deleteObjects() {
 			navigationStore.setDialog('deleteSchemaObjects')
 		},
+
 		/**
 		 * @spec exclude dialog-open UI handler for schema deletion
 		 */

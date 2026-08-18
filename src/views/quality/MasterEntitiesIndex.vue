@@ -21,7 +21,7 @@
 						v-model="sortModel"
 						class="sortSelect"
 						:options="sortOptions"
-						:input-label="t('openregister', 'Sort by')"
+						:inputLabel="t('openregister', 'Sort by')"
 						:clearable="false"
 						label="label"
 						@update:modelValue="handleSortChange" />
@@ -119,14 +119,14 @@
 import { translate as t } from '@nextcloud/l10n'
 import {
 	NcAppContent,
+	NcButton,
 	NcEmptyContent,
 	NcLoadingIcon,
-	NcButton,
 	NcSelect,
 } from '@nextcloud/vue'
 import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
-import RegisterSchemaSelector from './RegisterSchemaSelector.vue'
 import GoldenRecordDetail from './GoldenRecordDetail.vue'
+import RegisterSchemaSelector from './RegisterSchemaSelector.vue'
 import { qualityStore } from '../../store/store.js'
 
 export default {
@@ -150,6 +150,7 @@ export default {
 				id: 'qualityScore-asc',
 				label: t('openregister', 'Quality score (worst first)'),
 			},
+
 			sortOptions: [
 				{
 					id: 'qualityScore-asc',

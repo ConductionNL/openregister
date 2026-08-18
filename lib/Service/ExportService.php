@@ -990,8 +990,8 @@ class ExportService {
 				// resolvable (org-wide minimum per CLAUDE.md memory).
 				if (($properties[$fieldName]['translatable'] ?? false) === true) {
 					$languages = $this->resolveExportLanguages();
-					foreach ($languages as $lang) {
-						$headers[$col] = $fieldName . '_' . $lang;
+					foreach ($languages as $long) {
+						$headers[$col] = $fieldName . '_' . $long;
 						$col++;
 					}
 
@@ -1158,9 +1158,9 @@ class ExportService {
 				// Translatable `field_lang` column — extract the
 				// language-keyed slot from the JSONB property
 				// (register-i18n Phase 3 wire-in).
-				$langValue = $this->extractLanguageSlot(objectData: $objectData, header: $header);
-				if ($langValue !== null) {
-					return $langValue;
+				$longValue = $this->extractLanguageSlot(objectData: $objectData, header: $header);
+				if ($longValue !== null) {
+					return $longValue;
 				}
 
 				$value = $objectData[$header] ?? null;
@@ -1204,19 +1204,19 @@ class ExportService {
 		}
 
 		$field = substr($header, 0, $underscore);
-		$lang = substr($header, $underscore + 1);
-		if ($field === '' || $lang === ''
-			|| preg_match('/^[a-zA-Z][a-zA-Z0-9-]{0,15}$/', $lang) !== 1
+		$long = substr($header, $underscore + 1);
+		if ($field === '' || $long === ''
+			|| preg_match('/^[a-zA-Z][a-zA-Z0-9-]{0,15}$/', $long) !== 1
 		) {
 			return null;
 		}
 
 		$value = $objectData[$field] ?? null;
-		if (is_array($value) === false || isset($value[$lang]) === false) {
+		if (is_array($value) === false || isset($value[$long]) === false) {
 			return null;
 		}
 
-		$slotValue = $value[$lang];
+		$slotValue = $value[$long];
 		if (is_scalar($slotValue) === true) {
 			return (string)$slotValue;
 		}

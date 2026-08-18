@@ -105,14 +105,59 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 		$node = $this->registry->get(type: $type);
 		$config = (array)($step['config'] ?? []);
 
+		// Scope the run's resume state to THIS node before calling it, so a node
+		// reads and writes its own progress without having to know its own id —
+		// and cannot reach another node's slot even by accident.
+		$scoped = $this->scopeResumeState(step: $step, context: $context);
+
 		$startedAt = microtime(true);
 		$out = $node->execute(items: $items, config: $config, context: $context);
 		$tookMs = (int)round((microtime(true) - $startedAt) * 1000);
+
+		// Reached only when the node RETURNED. A node that suspends throws, so
+		// this line is skipped and its progress survives — which is the whole
+		// contract: a resume slot lives from a suspension to the resume that
+		// answers it, and not one step longer. Clearing here is what stops a
+		// second pass through the same node (inside a loop, or on a later
+		// scheduled tick) from being handed a finished node's stale cursor.
+		$scoped?->clear();
 
 		$this->assertWithinNodeBudget(type: $type, config: $config, tookMs: $tookMs);
 
 		return $out;
 	}//end dispatch()
+
+	/**
+	 * Put this node's resume slot into the context it is about to be called with.
+	 *
+	 * Returns the scoped handle so the caller can clear it on a normal return.
+	 * Null when there is nothing to scope: a dispatcher built by the container
+	 * (the flow tester, node unit tests) walks a context with no run behind it,
+	 * and a node with no id has no slot to key.
+	 *
+	 * @param array $step The step configuration, whose `id` keys the slot.
+	 * @param array $context The node context, modified in place.
+	 *
+	 * @return FlowNodeResumeState|null The scoped handle, or null when unavailable.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
+	 */
+	private function scopeResumeState(array $step, array &$context): ?FlowNodeResumeState {
+		$state = ($context[FlowResumeState::CONTEXT_KEY] ?? null);
+		if ($state instanceof FlowResumeState === false) {
+			return null;
+		}
+
+		$nodeId = trim((string)($step['id'] ?? ''));
+		if ($nodeId === '') {
+			return null;
+		}
+
+		$scoped = $state->forNode(nodeId: $nodeId);
+		$context[FlowNodeResumeState::CONTEXT_KEY] = $scoped;
+
+		return $scoped;
+	}//end scopeResumeState()
 
 	/**
 	 * Stop a step that took longer than its own `maxRuntimeSeconds`.

@@ -1,6 +1,6 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { registerStore, navigationStore } from '../../store/store.js'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
+import { navigationStore, registerStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -9,7 +9,7 @@ import { registerStore, navigationStore } from '../../store/store.js'
 		name="publishRegister"
 		:title="t('openregister', 'Publish Register OAS to GitHub')"
 		size="large"
-		:can-close="!loading"
+		:canClose="!loading"
 		@update:open="closeModal">
 		<NcNoteCard v-if="success" type="success">
 			<p v-for="(line, index) in successMessage.split('\n')" :key="index">
@@ -38,10 +38,10 @@ import { registerStore, navigationStore } from '../../store/store.js'
 						v-model="selectedRepository"
 						:options="repositoryOptions"
 						label="label"
-						track-by="value"
+						trackBy="value"
 						:placeholder="t('openregister', 'Select a repository')"
 						:disabled="loading"
-						:label-outside="true"
+						:labelOutside="true"
 						aria-label-combobox="Repository selection" />
 					<p class="formHint">
 						{{
@@ -63,10 +63,10 @@ import { registerStore, navigationStore } from '../../store/store.js'
 						v-model="selectedBranch"
 						:options="branchOptions"
 						label="label"
-						track-by="value"
+						trackBy="value"
 						:placeholder="t('openregister', 'Select a branch')"
 						:disabled="loading"
-						:label-outside="true"
+						:labelOutside="true"
 						aria-label-combobox="Branch selection" />
 					<p class="formHint">
 						{{ t('openregister', 'Select the branch to publish to') }}
@@ -126,14 +126,13 @@ import { registerStore, navigationStore } from '../../store/store.js'
 
 <script>
 import {
-	NcDialog,
 	NcButton,
-	NcTextField,
-	NcSelect,
-	NcNoteCard,
+	NcDialog,
 	NcLoadingIcon,
+	NcNoteCard,
+	NcSelect,
+	NcTextField,
 } from '@nextcloud/vue'
-
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
 
 export default {
@@ -147,6 +146,7 @@ export default {
 		NcLoadingIcon,
 		CloudUploadOutline,
 	},
+
 	data() {
 		return {
 			loading: false,
@@ -167,6 +167,7 @@ export default {
 			loadingBranches: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude UI accessor — exposes the store's registerItem to the template.
@@ -174,6 +175,7 @@ export default {
 		register() {
 			return registerStore.registerItem
 		},
+
 		/**
 		 * @spec exclude UI state helper — enables the publish button when repo/branch/path are set.
 		 */
@@ -184,6 +186,7 @@ export default {
 				&& this.filePath.trim() !== ''
 			)
 		},
+
 		/**
 		 * @spec exclude UI display helper — maps repositories to NcSelect option objects.
 		 */
@@ -194,6 +197,7 @@ export default {
 				...repo,
 			}))
 		},
+
 		/**
 		 * @spec exclude UI display helper — maps branches to NcSelect option objects.
 		 */
@@ -205,6 +209,7 @@ export default {
 			}))
 		},
 	},
+
 	watch: {
 		/**
 		 * @param newValue
@@ -225,6 +230,7 @@ export default {
 			}
 		},
 	},
+
 	/**
 	 * @spec exclude Vue lifecycle hook — loads repositories and sets default commit message/path.
 	 */
@@ -240,6 +246,7 @@ export default {
 			}
 		}
 	},
+
 	methods: {
 		/**
 		 * @spec exclude Modal close plumbing — clears the active modal in navigationStore.
@@ -251,6 +258,7 @@ export default {
 				// so we don't need to clear data here - it will be reset on next mount
 			}
 		},
+
 		/**
 		 * @spec exclude Modal data-load plumbing — fetches GitHub repositories for the picker.
 		 */
@@ -283,6 +291,7 @@ export default {
 				this.loadingRepositories = false
 			}
 		},
+
 		/**
 		 * @param owner
 		 * @param repo
@@ -330,6 +339,7 @@ export default {
 				this.loadingBranches = false
 			}
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude UI event handler — reloads branches when repository selection changes.
@@ -354,6 +364,7 @@ export default {
 				}
 			}
 		},
+
 		/**
 		 * @spec exclude Modal action plumbing — pushes the register OAS to the selected GitHub repo/branch.
 		 */

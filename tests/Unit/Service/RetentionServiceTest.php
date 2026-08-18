@@ -235,7 +235,7 @@ class RetentionServiceTest extends TestCase {
 			'defaultExtensionPeriod' => 'P1Y',
 		]);
 
-		$result = $this->service->extendArchiefactiedatum($object);
+		$result = $this->service->extendArchiveActionDate($object);
 		$retention = $result->getRetention();
 
 		$this->assertEquals('2027-01-01', $retention['archiefactiedatum']);
@@ -247,9 +247,9 @@ class RetentionServiceTest extends TestCase {
 	public function testGenerateDestructionCertificate(): void {
 		$listData = [
 			'objects' => [
-				['schema' => '1', 'classificatie' => 'B1'],
-				['schema' => '1', 'classificatie' => 'B1'],
-				['schema' => '2', 'classificatie' => 'A1'],
+				['schema' => '1', 'classification' => 'B1'],
+				['schema' => '1', 'classification' => 'B1'],
+				['schema' => '2', 'classification' => 'A1'],
 			],
 			'approvals' => [
 				['userId' => 'archivist-1'],

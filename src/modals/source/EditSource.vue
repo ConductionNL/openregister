@@ -1,6 +1,6 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { sourceStore, navigationStore } from '../../store/store.js'
+import { navigationStore, sourceStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -12,7 +12,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 				: t('openregister', 'Add Source')
 		"
 		size="normal"
-		:can-close="false">
+		:canClose="false">
 		<NcNoteCard v-if="success" type="success">
 			<p>{{ t('openregister', 'Source successfully updated') }}</p>
 		</NcNoteCard>
@@ -25,64 +25,64 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 
 		<div v-if="!success" class="formContainer">
 			<NcTextField
+				v-model="sourceItem.title"
 				:disabled="loading"
-				:label="t('openregister', 'Title *')"
-				v-model="sourceItem.title" />
+				:label="t('openregister', 'Title *')" />
 			<NcTextArea
+				v-model="sourceItem.description"
 				:disabled="loading"
-				:label="t('openregister', 'Description')"
-				v-model="sourceItem.description" />
+				:label="t('openregister', 'Description')" />
 			<NcSelect
 				v-bind="typeOptions"
 				v-model="typeOptions.value"
-				:input-label="t('openregister', 'Type')"
+				:inputLabel="t('openregister', 'Type')"
 				:disabled="loading" />
 
 			<template v-if="!isDatabaseType">
 				<NcTextField
+					v-model="sourceItem.databaseUrl"
 					:disabled="loading"
-					:label="t('openregister', 'Database URL')"
-					v-model="sourceItem.databaseUrl" />
+					:label="t('openregister', 'Database URL')" />
 			</template>
 
 			<template v-if="isDatabaseType">
 				<NcSelect
 					v-bind="driverOptions"
 					v-model="driverOptions.value"
-					:input-label="t('openregister', 'Driver')"
+					:inputLabel="t('openregister', 'Driver')"
 					:disabled="loading" />
 				<template v-if="driverOptions.value?.id === 'pdo_sqlite'">
 					<NcTextField
+						v-model="connection.path"
 						:disabled="loading"
-						:label="t('openregister', 'Database file path *')"
-						v-model="connection.path" />
+						:label="t('openregister', 'Database file path *')" />
 				</template>
 				<template v-else>
 					<NcTextField
+						v-model="connection.host"
 						:disabled="loading"
-						:label="t('openregister', 'Host *')"
-						v-model="connection.host" />
+						:label="t('openregister', 'Host *')" />
 					<NcTextField
+						v-model="connection.port"
 						:disabled="loading"
-						:label="t('openregister', 'Port')"
-						v-model="connection.port" />
+						:label="t('openregister', 'Port')" />
 					<NcTextField
+						v-model="connection.dbname"
 						:disabled="loading"
-						:label="t('openregister', 'Database name *')"
-						v-model="connection.dbname" />
+						:label="t('openregister', 'Database name *')" />
 					<NcTextField
+						v-model="connection.user"
 						:disabled="loading"
-						:label="t('openregister', 'User')"
-						v-model="connection.user" />
+						:label="t('openregister', 'User')" />
 					<NcTextField
+						v-model="connection.credential"
 						:disabled="loading"
 						:label="
 							t(
 								'openregister',
 								'Credential (UUID from the credential store)',
 							)
-						"
-						v-model="connection.credential" />
+						" />
 				</template>
 				<NcCheckboxRadioSwitch v-model="connection.writable" type="switch">
 					{{
@@ -172,18 +172,17 @@ import {
 	NcButton,
 	NcCheckboxRadioSwitch,
 	NcDialog,
-	NcTextField,
-	NcTextArea,
-	NcSelect,
 	NcLoadingIcon,
 	NcNoteCard,
+	NcSelect,
+	NcTextArea,
+	NcTextField,
 } from '@nextcloud/vue'
-
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
+import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import DatabaseCheckOutline from 'vue-material-design-icons/DatabaseCheckOutline.vue'
 import DatabaseImportOutline from 'vue-material-design-icons/DatabaseImportOutline.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
 
 export default {
 	name: 'EditSource',
@@ -203,6 +202,7 @@ export default {
 		DatabaseCheckOutline,
 		DatabaseImportOutline,
 	},
+
 	data() {
 		return {
 			sourceItem: {
@@ -210,6 +210,7 @@ export default {
 				description: '',
 				databaseUrl: '',
 			},
+
 			connection: {
 				host: '',
 				port: '',
@@ -219,6 +220,7 @@ export default {
 				path: '',
 				writable: false,
 			},
+
 			typeOptions: {
 				clearable: false,
 				options: [
@@ -226,8 +228,10 @@ export default {
 					{ label: 'MongoDB', id: 'mongodb' },
 					{ label: 'Database (virtual register)', id: 'database' },
 				],
+
 				value: { label: 'Internal', id: 'internal' },
 			},
+
 			driverOptions: {
 				clearable: false,
 				options: [
@@ -235,8 +239,10 @@ export default {
 					{ label: 'PostgreSQL', id: 'pdo_pgsql' },
 					{ label: 'SQLite', id: 'pdo_sqlite' },
 				],
+
 				value: { label: 'MySQL / MariaDB', id: 'pdo_mysql' },
 			},
+
 			success: false,
 			loading: false,
 			actionLoading: false,
@@ -247,6 +253,7 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * Whether the selected source type is a DBAL virtual-register database.
@@ -258,9 +265,11 @@ export default {
 			return this.typeOptions.value?.id === 'database'
 		},
 	},
+
 	mounted() {
 		this.initializeSourceItem()
 	},
+
 	/**
 	 * @spec exclude Vue lifecycle hook — initializes the source form once when the modal opens.
 	 */
@@ -270,6 +279,7 @@ export default {
 			this.hasUpdated = true
 		}
 	},
+
 	methods: {
 		/**
 		 * @spec openspec/specs/entity-management-modals/spec.md
@@ -309,6 +319,7 @@ export default {
 				}
 			}
 		},
+
 		/**
 		 * @spec exclude Modal close plumbing — resets the source form and closes the modal.
 		 */
@@ -341,6 +352,7 @@ export default {
 				(option) => option.id === 'internal',
 			)
 		},
+
 		/**
 		 * @spec exclude Modal save plumbing — delegates source persistence to sourceStore.saveSource.
 		 */
@@ -388,6 +400,7 @@ export default {
 					this.loading = false
 				})
 		},
+
 		/**
 		 * Test the saved database source's connection (never exposes the password).
 		 *
@@ -400,6 +413,7 @@ export default {
 				t('openregister', 'Connection successful'),
 			)
 		},
+
 		/**
 		 * Introspect the database source into a virtual register + schemas.
 		 *
@@ -409,6 +423,7 @@ export default {
 		async introspect() {
 			await this.runSourceAction('introspect', null)
 		},
+
 		/**
 		 * POST a source action endpoint and surface the outcome in the modal.
 		 *

@@ -1,5 +1,5 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { configurationStore, navigationStore } from '../../store/store.js'
 </script>
 
@@ -8,7 +8,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 		v-if="navigationStore.modal === 'viewConfiguration'"
 		:name="`View Configuration: ${configurationStore.configurationItem?.title || 'Unknown'}`"
 		size="large"
-		:can-close="false">
+		:canClose="false">
 		<div class="formContainer viewConfigurationDialog">
 			<!-- Configuration Details -->
 			<div class="configurationDetailsGrid">
@@ -128,19 +128,19 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 		</div>
 
 		<template #actions>
-			<NcActionButton close-after-click @click="editConfiguration">
+			<NcActionButton closeAfterClick @click="editConfiguration">
 				<template #icon>
 					<Pencil :size="20" />
 				</template>
 				Edit Configuration
 			</NcActionButton>
-			<NcActionButton close-after-click @click="exportConfiguration">
+			<NcActionButton closeAfterClick @click="exportConfiguration">
 				<template #icon>
 					<Download :size="20" />
 				</template>
 				Export Configuration
 			</NcActionButton>
-			<NcActionButton close-after-click @click="deleteConfiguration">
+			<NcActionButton closeAfterClick @click="deleteConfiguration">
 				<template #icon>
 					<TrashCanOutline :size="20" />
 				</template>
@@ -157,14 +157,13 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import { NcDialog, NcButton, NcActionButton, NcEmptyContent } from '@nextcloud/vue'
-
+import { NcActionButton, NcButton, NcDialog, NcEmptyContent } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import Download from 'vue-material-design-icons/Download.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
 import PostOutline from 'vue-material-design-icons/PostOutline.vue'
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
 export default {
 	name: 'ViewConfiguration',
@@ -180,6 +179,7 @@ export default {
 		CogOutline,
 		PostOutline,
 	},
+
 	data() {
 		return {
 			activeTab: 0,
@@ -189,6 +189,7 @@ export default {
 			],
 		}
 	},
+
 	methods: {
 		/**
 		 * @spec openspec/specs/entity-management-modals/spec.md
@@ -196,18 +197,21 @@ export default {
 		closeModal() {
 			navigationStore.setModal(false)
 		},
+
 		/**
 		 * @spec exclude Modal navigation plumbing — opens the edit-configuration modal.
 		 */
 		editConfiguration() {
 			navigationStore.setModal('editConfiguration')
 		},
+
 		/**
 		 * @spec exclude Modal navigation plumbing — opens the export-configuration modal.
 		 */
 		exportConfiguration() {
 			navigationStore.setModal('exportConfiguration')
 		},
+
 		/**
 		 * @spec exclude Modal navigation plumbing — opens the delete-configuration dialog.
 		 */

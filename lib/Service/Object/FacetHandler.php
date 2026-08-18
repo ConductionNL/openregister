@@ -386,18 +386,18 @@ class FacetHandler {
 		// magic table, but fields that are exclusively non-aggregated should not appear as aggregated facets.
 		$nonAggregatedFields = $facetableConfig['non_aggregated_fields'] ?? [];
 		$aggregatedFieldKeys = array_keys($facetableConfig['object_fields'] ?? []);
-		foreach ($nonAggregatedFields as $naField) {
-			$fieldName = $naField['field'];
+		foreach ($nonAggregatedFields as $afterField) {
+			$fieldName = $afterField['field'];
 			if (in_array($fieldName, $aggregatedFieldKeys, true) === false && isset($facets[$fieldName]) === true) {
 				unset($facets[$fieldName]);
 			}
 		}
 
 		// **NON-AGGREGATED FACETS**: Make separate schema-scoped queries for non-aggregated fields.
-		foreach ($nonAggregatedFields as $naField) {
-			$fieldName = $naField['field'];
-			$schemaId = $naField['schemaId'];
-			$config = $naField['facetConfig'];
+		foreach ($nonAggregatedFields as $afterField) {
+			$fieldName = $afterField['field'];
+			$schemaId = $afterField['schemaId'];
+			$config = $afterField['facetConfig'];
 
 			// Build a schema-scoped query to get facets for this field only.
 			// IMPORTANT: Remove plural schema/register keys so getSimpleFacets() routes
@@ -688,9 +688,9 @@ class FacetHandler {
 	): int {
 		$order = $currentOrder;
 
-		$naConfig = $facetData['_facetConfig'] ?? [];
-		$naSchemaId = $facetData['_schemaId'] ?? null;
-		$naFieldName = $facetData['_fieldName'] ?? $field;
+		$afterConfig = $facetData['_facetConfig'] ?? [];
+		$afterSchemaId = $facetData['_schemaId'] ?? null;
+		$afterFieldName = $facetData['_fieldName'] ?? $field;
 
 		// Clean internal metadata from facet data before processing.
 		unset(
@@ -700,7 +700,7 @@ class FacetHandler {
 			$facetData['_fieldName']
 		);
 
-		$configOrder = $naConfig['order'] ?? null;
+		$configOrder = $afterConfig['order'] ?? null;
 		$facetOrder = ++$order;
 		if ($configOrder !== null) {
 			$facetOrder = (int)$configOrder;
@@ -710,26 +710,26 @@ class FacetHandler {
 			$order = $facetOrder;
 		}
 
-		$title = $naConfig['title'] ?? $facetData['title'] ?? $this->formatFieldTitle(field: $naFieldName);
-		$description = $naConfig['description'] ?? 'object field: ' . $naFieldName;
+		$title = $afterConfig['title'] ?? $facetData['title'] ?? $this->formatFieldTitle(field: $afterFieldName);
+		$description = $afterConfig['description'] ?? 'object field: ' . $afterFieldName;
 
 		$definition = [
 			'title' => $title,
 			'description' => $description,
 			'data_type' => $this->inferDataType(facetData: $facetData),
-			'index_field' => $this->sanitizeFieldName(field: $naFieldName),
+			'index_field' => $this->sanitizeFieldName(field: $afterFieldName),
 			'index_type' => 'string',
 			'enabled' => true,
 		];
 
 		$transformed[$field] = $this->buildFacetEntry(
-			name: $naFieldName,
+			name: $afterFieldName,
 			facetData: $facetData,
 			definition: $definition,
 			source: 'object',
-			queryParameter: $naFieldName,
+			queryParameter: $afterFieldName,
 			order: $facetOrder,
-			schemaId: $naSchemaId
+			schemaId: $afterSchemaId
 		);
 
 		return $order;

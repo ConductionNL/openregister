@@ -617,6 +617,44 @@ class SchemaMapper extends QBMapper {
 	}//end findBySlugInIds()
 
 	/**
+	 * Count how many schemas on the instance carry a slug.
+	 *
+	 * Used only to build the message of {@see SchemaNotInRegisterException}. A
+	 * register-scoped miss reads as "your slug is wrong" unless the caller is told
+	 * how many same-slug schemas exist — and when that number is nine, as measured
+	 * for `anonymizationLink` on 2026-08-16, "your slug is wrong" is the one
+	 * conclusion that is certainly false.
+	 *
+	 * Deliberately unscoped by organisation and application: the point is to report
+	 * the size of the ambiguity the caller just escaped, not to resolve anything.
+	 *
+	 * @param string $slug The schema slug (matched case-insensitively).
+	 *
+	 * @return int The number of schemas carrying this slug.
+	 *
+	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
+	 */
+	public function countBySlug(string $slug): int {
+		$this->traceRead(method: 'countBySlug');
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('*', 'slug_count'))
+			->from('openregister_schemas')
+			->where(
+				$qb->expr()->eq(
+					$qb->func()->lower('slug'),
+					$qb->createNamedParameter(value: strtolower($slug), type: IQueryBuilder::PARAM_STR)
+				)
+			);
+
+		$result = $qb->executeQuery();
+		$row    = $result->fetch();
+		$result->closeCursor();
+
+		return (int)($row['slug_count'] ?? 0);
+	}//end countBySlug()
+
+	/**
 	 * Clear the request-scoped find cache for a specific schema
 	 *
 	 * Used by the runtime-schema-api CRUD path to drop the in-memory
@@ -3583,10 +3621,33 @@ class SchemaMapper extends QBMapper {
 	 * Merges all parent schemas and extracts only the differences
 	 * in the child schema.
 	 *
-	 * @param Schema $schema The child schema
-	 * @param array $allOf Array of parent schema identifiers
+	 * ## `allOf` is not only a parent list (openregister#2534)
 	 *
-	 * @throws \Exception If parent schema not found
+	 * This method used to treat EVERY `allOf` entry as a schema identifier and
+	 * hand it straight to `loadSchema(string|int)`. In JSON Schema an `allOf`
+	 * entry is a SUBSCHEMA, and only some of them name another schema. The
+	 * common non-naming case is a conditional:
+	 *
+	 *     "allOf": [ { "if": {...}, "then": {}, "else": { "required": [...] } } ]
+	 *
+	 * which is an array, so the call raised a TypeError. The `catch (Exception)`
+	 * below did not stop it — a TypeError is an `Error`, not an `Exception` —
+	 * so it escaped as HTTP 500 from `POST /api/schemas`, and any schema
+	 * carrying a conditional was simply unimportable. Measured on scholiq
+	 * 2026-08-16: the CI seed had grown a documented workaround for it
+	 * ("created schema \"lesson\" WITHOUT its top-level allOf — OpenRegister
+	 * 500s on composed schemas; conditional validation dropped for this
+	 * fixture") — a fixture comment describing a bug nobody had filed.
+	 *
+	 * `parentIdentifierFromAllOfEntry()` now decides what an entry IS, and a
+	 * subschema that names no parent contributes nothing to a PARENT delta and
+	 * is skipped rather than crashed on. The catch is widened to `\Throwable`
+	 * so the next unexpected shape degrades to "no delta extraction" — which is
+	 * what the comment there already promised.
+	 *
+	 * @param Schema $schema The child schema
+	 * @param array $allOf Array of `allOf` subschemas; the ones that name a
+	 *                     parent schema are merged, the rest are skipped.
 	 *
 	 * @return Schema Schema with only delta properties
 	 */
@@ -3597,9 +3658,12 @@ class SchemaMapper extends QBMapper {
 			$mergedParentRequired = [];
 
 			// Load and merge all parent schemas.
-			foreach ($allOf as $parentRef) {
-				// Skip empty or null references.
-				if (empty($parentRef) === true) {
+			foreach ($allOf as $entry) {
+				$parentRef = $this->parentIdentifierFromAllOfEntry(entry: $entry);
+
+				// Not a parent reference (an inline conditional or subschema),
+				// or an empty one — nothing to merge from it.
+				if ($parentRef === null) {
 					continue;
 				}
 
@@ -3639,14 +3703,73 @@ class SchemaMapper extends QBMapper {
 			$schema->setRequired(array_values($deltaRequired));
 			// Re-index array.
 			return $schema;
-		} catch (Exception $e) {
+		} catch (\Throwable $e) {
 			// If a parent schema doesn't exist yet (e.g. during import Pass 1),
 			// return the schema without delta extraction. The full properties are
 			// preserved and delta will be correctly extracted during Pass 2 (update)
 			// when all schemas exist in the database.
+			//
+			// `\Throwable`, not `Exception`: this net was written to keep an
+			// unresolvable parent from failing an import, and a TypeError from a
+			// composition shape it did not expect is the same situation — but it
+			// is an `Error`, so it used to sail straight through and 500 the
+			// request (openregister#2534). Delta extraction is an OPTIMISATION;
+			// nothing it can fail at justifies refusing to store the schema.
 			return $schema;
 		}//end try
 	}//end extractAllOfDelta()
+
+	/**
+	 * The parent schema identifier an `allOf` entry names, or null if it names none.
+	 *
+	 * Three shapes are accepted, and the third is the one that matters:
+	 *
+	 *   1. a scalar — `"person"`, `42`, a uuid — OpenRegister's own shorthand
+	 *      for "extend this schema", which is what the whole allOf-delta
+	 *      mechanism was built around;
+	 *   2. `{"$ref": "..."}` — standard JSON Schema. The last path segment is
+	 *      taken, so `#/components/schemas/Person` resolves to `Person`, which
+	 *      is what `loadSchema` matches against id / uuid / slug;
+	 *   3. anything else — `{"if": …, "then": …, "else": …}`, an inline
+	 *      `{"properties": …}`, a `$ref` that is not a string. These are valid
+	 *      JSON Schema and name NO parent, so they contribute nothing to a
+	 *      parent delta. Returning null skips them; before, they reached
+	 *      `loadSchema(string|int)` as an array and 500'd the request.
+	 *
+	 * @param mixed $entry One element of a schema's `allOf` array.
+	 *
+	 * @return string|int|null The parent identifier, or null when the entry
+	 *                         names no parent schema.
+	 */
+	private function parentIdentifierFromAllOfEntry(mixed $entry): string|int|null {
+		if (is_string($entry) === true || is_int($entry) === true) {
+			if ($entry === '' || $entry === 0) {
+				return null;
+			}
+
+			return $entry;
+		}
+
+		if (is_array($entry) === true && isset($entry['$ref']) === true
+			&& is_string($entry['$ref']) === true && $entry['$ref'] !== ''
+		) {
+			$ref = $entry['$ref'];
+			$offset = 0;
+			$lastSlash = strrpos($ref, '/');
+			if ($lastSlash !== false) {
+				$offset = ($lastSlash + 1);
+			}
+
+			$segment = substr($ref, $offset);
+			if ($segment === '') {
+				return null;
+			}
+
+			return $segment;
+		}
+
+		return null;
+	}//end parentIdentifierFromAllOfEntry()
 
 	/**
 	 * Extract properties that differ from parent
@@ -4015,4 +4138,42 @@ class SchemaMapper extends QBMapper {
 
 		return $ids;
 	}//end findSearchableIds()
+
+	/**
+	 * Return the IDs of all schemas whose `smartPickerEnabled` flag is true.
+	 *
+	 * Consulted by a schema-scoped `AbstractSchemaReferenceProvider`/
+	 * `AbstractSchemaSearchProvider` instance to gate its own functionality
+	 * per-instance (a schema-scoped provider only ever concerns one schema),
+	 * mirroring `findSearchableIds()`'s pattern for the unified search
+	 * provider's opt-out. Unlike `searchable`, no consumer currently needs
+	 * the inverse "disabled ids" list.
+	 *
+	 * @return int[] List of schema IDs with `smartPickerEnabled = true`.
+	 *
+	 * @psalm-return   list<int>
+	 * @phpstan-return array<int, int>
+	 *
+	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d2a
+	 */
+	public function findSmartPickerEnabledIds(): array {
+		$this->traceRead(method: 'findSmartPickerEnabledIds');
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('id')
+			->from('openregister_schemas')
+			->where($qb->expr()->eq('smart_picker_enabled', $qb->createNamedParameter(value: true, type: IQueryBuilder::PARAM_BOOL)));
+
+		$ids = [];
+		$result = $qb->executeQuery();
+		while (($row = $result->fetch()) !== false) {
+			if (isset($row['id']) === true) {
+				$ids[] = (int)$row['id'];
+			}
+		}
+
+		$result->closeCursor();
+
+		return $ids;
+	}//end findSmartPickerEnabledIds()
 }//end class

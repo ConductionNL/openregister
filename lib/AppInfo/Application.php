@@ -1938,6 +1938,8 @@ class Application extends App implements IBootstrap {
 					appName: 'openregister',
 					request: $container->get('OCP\IRequest'),
 					tokenService: $container->get(\OCA\OpenRegister\Service\CaseTokenService::class),
+					throttler: $container->get('OCP\Security\Bruteforce\IThrottler'),
+					logger: $container->get('Psr\Log\LoggerInterface'),
 				);
 			}
 		);

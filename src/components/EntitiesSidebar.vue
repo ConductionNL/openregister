@@ -18,35 +18,35 @@
 			<h4>{{ t('openregister', 'Type') }}</h4>
 			<div class="filter-options">
 				<NcCheckboxRadioSwitch
-					:model-value="selectedType === null"
+					:modelValue="selectedType === null"
 					type="radio"
 					value="all"
 					@update:modelValue="updateType(null)">
 					{{ t('openregister', 'All Types') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:model-value="selectedType === 'PERSON'"
+					:modelValue="selectedType === 'PERSON'"
 					type="radio"
 					value="PERSON"
 					@update:modelValue="updateType('PERSON')">
 					{{ t('openregister', 'Person') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:model-value="selectedType === 'ORGANIZATION'"
+					:modelValue="selectedType === 'ORGANIZATION'"
 					type="radio"
 					value="ORGANIZATION"
 					@update:modelValue="updateType('ORGANIZATION')">
 					{{ t('openregister', 'Organization') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:model-value="selectedType === 'EMAIL'"
+					:modelValue="selectedType === 'EMAIL'"
 					type="radio"
 					value="EMAIL"
 					@update:modelValue="updateType('EMAIL')">
 					{{ t('openregister', 'Email') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:model-value="selectedType === 'PHONE'"
+					:modelValue="selectedType === 'PHONE'"
 					type="radio"
 					value="PHONE"
 					@update:modelValue="updateType('PHONE')">
@@ -59,28 +59,28 @@
 			<h4>{{ t('openregister', 'Category') }}</h4>
 			<div class="filter-options">
 				<NcCheckboxRadioSwitch
-					:model-value="selectedCategory === null"
+					:modelValue="selectedCategory === null"
 					type="radio"
 					value="all"
 					@update:modelValue="updateCategory(null)">
 					{{ t('openregister', 'All Categories') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:model-value="selectedCategory === 'personal_data'"
+					:modelValue="selectedCategory === 'personal_data'"
 					type="radio"
 					value="personal_data"
 					@update:modelValue="updateCategory('personal_data')">
 					{{ t('openregister', 'Personal Data') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:model-value="selectedCategory === 'sensitive_pii'"
+					:modelValue="selectedCategory === 'sensitive_pii'"
 					type="radio"
 					value="sensitive_pii"
 					@update:modelValue="updateCategory('sensitive_pii')">
 					{{ t('openregister', 'Sensitive PII') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:model-value="selectedCategory === 'business_data'"
+					:modelValue="selectedCategory === 'business_data'"
 					type="radio"
 					value="business_data"
 					@update:modelValue="updateCategory('business_data')">
@@ -98,9 +98,9 @@
 </template>
 
 <script>
-import { NcTextField, NcCheckboxRadioSwitch, NcButton } from '@nextcloud/vue'
-import Magnify from 'vue-material-design-icons/Magnify.vue'
 import { t } from '@nextcloud/l10n'
+import { NcButton, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
 
 export default {
 	name: 'EntitiesSidebar',
@@ -110,6 +110,7 @@ export default {
 		NcButton,
 		Magnify,
 	},
+
 	props: {
 		/**
 		 * @spec exclude two-way-bound search prop, UI plumbing
@@ -118,6 +119,7 @@ export default {
 			type: String,
 			default: '',
 		},
+
 		/**
 		 * @spec exclude two-way-bound entity-type filter prop, UI plumbing
 		 */
@@ -125,6 +127,7 @@ export default {
 			type: String,
 			default: null,
 		},
+
 		/**
 		 * @spec exclude two-way-bound category filter prop, UI plumbing
 		 */
@@ -133,6 +136,7 @@ export default {
 			default: null,
 		},
 	},
+
 	data() {
 		return {
 			localSearch: this.search,
@@ -141,6 +145,7 @@ export default {
 			searchTimeout: null,
 		}
 	},
+
 	computed: {
 		hasActiveFilters() {
 			return (
@@ -150,6 +155,7 @@ export default {
 			)
 		},
 	},
+
 	watch: {
 		/**
 		 * @param newVal
@@ -158,6 +164,7 @@ export default {
 		search(newVal) {
 			this.localSearch = newVal
 		},
+
 		/**
 		 * @param newVal
 		 * @spec exclude computed filter-state binding
@@ -165,6 +172,7 @@ export default {
 		type(newVal) {
 			this.selectedType = newVal
 		},
+
 		/**
 		 * @param newVal
 		 * @spec exclude computed filter-state binding
@@ -173,6 +181,7 @@ export default {
 			this.selectedCategory = newVal
 		},
 	},
+
 	methods: {
 		t,
 		/**
@@ -188,6 +197,7 @@ export default {
 				this.$emit('update:search', value)
 			}, 500)
 		},
+
 		/**
 		 * @param type
 		 * @spec exclude filter-state writer emitting update:type to parent, UI plumbing
@@ -196,6 +206,7 @@ export default {
 			this.selectedType = type
 			this.$emit('update:type', type)
 		},
+
 		/**
 		 * @param category
 		 * @spec exclude filter-state writer emitting update:category to parent, UI plumbing
@@ -204,6 +215,7 @@ export default {
 			this.selectedCategory = category
 			this.$emit('update:category', category)
 		},
+
 		/**
 		 * @spec exclude filter-reset emitting cleared values to parent, UI plumbing
 		 */

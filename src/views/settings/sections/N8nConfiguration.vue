@@ -4,7 +4,7 @@
 		name="Workflow Configuration"
 		description="Configure n8n workflow automation integration"
 		:loading="loading"
-		:loading-message="t('openregister', 'Loading n8n configuration...')">
+		:loadingMessage="t('openregister', 'Loading n8n configuration...')">
 		<!-- Section Description -->
 		<div class="section-description-full">
 			<p class="main-description">
@@ -249,7 +249,7 @@
 			:title="t('openregister', 'Workflow Management')"
 			icon="⚙️"
 			:collapsible="true"
-			:default-collapsed="false">
+			:defaultCollapsed="false">
 			<template #icon>
 				<Cog :size="20" />
 			</template>
@@ -330,33 +330,33 @@
 </template>
 
 <script>
-import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import SettingsCard from '../../../components/shared/SettingsCard.vue'
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
 import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcLoadingIcon,
 	NcPasswordField,
 	NcTextField,
-	NcButton,
-	NcLoadingIcon,
-	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
-import Connection from 'vue-material-design-icons/Connection.vue'
-import Web from 'vue-material-design-icons/Web.vue'
-import Key from 'vue-material-design-icons/Key.vue'
-import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
-import ContentSave from 'vue-material-design-icons/ContentSave.vue'
-import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
-import LockOutline from 'vue-material-design-icons/LockOutline.vue'
-import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
-import TestTube from 'vue-material-design-icons/TestTube.vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
-import RocketLaunch from 'vue-material-design-icons/RocketLaunch.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
+import Connection from 'vue-material-design-icons/Connection.vue'
+import ContentSave from 'vue-material-design-icons/ContentSave.vue'
+import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
+import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import Key from 'vue-material-design-icons/Key.vue'
+import LockOutline from 'vue-material-design-icons/LockOutline.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import RocketLaunch from 'vue-material-design-icons/RocketLaunch.vue'
 import Tag from 'vue-material-design-icons/Tag.vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { showSuccess, showError } from '@nextcloud/dialogs'
+import TestTube from 'vue-material-design-icons/TestTube.vue'
+import Web from 'vue-material-design-icons/Web.vue'
+import SettingsCard from '../../../components/shared/SettingsCard.vue'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
 
 /**
  * n8n Workflow Configuration Component
@@ -591,6 +591,7 @@ export default {
 					message:
 						response.data.message
 						|| this.t('openregister', 'Connection successful'),
+
 					details: response.data.details || {},
 				}
 
@@ -642,6 +643,7 @@ export default {
 							'openregister',
 							'Project initialized successfully',
 						),
+
 					details: response.data.details || {},
 				}
 

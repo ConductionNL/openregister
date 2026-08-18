@@ -159,8 +159,8 @@ class FlowLinkService {
 			throw new Exception('Operation already linked to this object', 409);
 		}
 
-		$opRow = $this->fetchOperationRow(operationId: $operationId);
-		if ($opRow === null) {
+		$onRow = $this->fetchOperationRow(operationId: $operationId);
+		if ($onRow === null) {
 			throw new Exception('Flow operation not found', 404);
 		}
 
@@ -169,9 +169,9 @@ class FlowLinkService {
 		$link->setRegisterId($registerId);
 		$link->setSchemaId($schemaId);
 		$link->setOperationId($operationId);
-		$link->setOperationClass((string)($opRow['class'] ?? ''));
-		$link->setOperationName((string)($opRow['name'] ?? ''));
-		$link->setEntityType((string)($opRow['entity'] ?? ''));
+		$link->setOperationClass((string)($onRow['class'] ?? ''));
+		$link->setOperationName((string)($onRow['name'] ?? ''));
+		$link->setEntityType((string)($onRow['entity'] ?? ''));
 		$link->setEnabled(true);
 		$link->setLinkedBy($user->getUID());
 		$link->setLinkedAt(new DateTime());
@@ -229,24 +229,24 @@ class FlowLinkService {
 			$row = $link->jsonSerialize();
 
 			if ($available === true) {
-				$opRow = $this->fetchOperationRow(operationId: (int)$link->getOperationId());
-				if ($opRow === null) {
+				$onRow = $this->fetchOperationRow(operationId: (int)$link->getOperationId());
+				if ($onRow === null) {
 					// Operation deleted in NC Flow — flag the link as
 					// stale by setting enabled=false.
 					$row['enabled'] = false;
 				}
 
-				if ($opRow !== null) {
-					$row['operationName'] = (string)($opRow['name'] ?? $row['operationName']);
-					$row['operationClass'] = (string)($opRow['class'] ?? $row['operationClass']);
-					$row['entityType'] = (string)($opRow['entity'] ?? $row['entityType']);
+				if ($onRow !== null) {
+					$row['operationName'] = (string)($onRow['name'] ?? $row['operationName']);
+					$row['operationClass'] = (string)($onRow['class'] ?? $row['operationClass']);
+					$row['entityType'] = (string)($onRow['entity'] ?? $row['entityType']);
 					// The flow_operations row doesn't carry an `enabled`
 					// flag (operations are always "live" once configured);
 					// we just surface that the row still exists.
 					$row['enabled'] = true;
-					$row['events'] = $this->decodeJsonField(value: ($opRow['events'] ?? null));
-					$row['checks'] = $this->decodeJsonField(value: ($opRow['checks'] ?? null));
-					$row['operation'] = (string)($opRow['operation'] ?? '');
+					$row['events'] = $this->decodeJsonField(value: ($onRow['events'] ?? null));
+					$row['checks'] = $this->decodeJsonField(value: ($onRow['checks'] ?? null));
+					$row['operation'] = (string)($onRow['operation'] ?? '');
 				}
 			}//end if
 

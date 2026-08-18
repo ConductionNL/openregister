@@ -10,11 +10,11 @@
  * - System statistics
  */
 
-import { defineStore } from 'pinia'
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
+import { defineStore } from 'pinia'
 
 export const useSettingsStore = defineStore('settings', {
 	state: () => ({
@@ -215,6 +215,7 @@ export const useSettingsStore = defineStore('settings', {
 	getters: {
 		/**
 		 * Check if there are any warning items requiring attention
+		 *
 		 * @param {object} state - The state of the stats
 		 */
 		hasWarnings: (state) => {
@@ -224,6 +225,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Get retention status information
+		 *
 		 * @param {object} state - The state of the retention settings
 		 */
 		retentionStatusClass: (state) => {
@@ -288,6 +290,7 @@ export const useSettingsStore = defineStore('settings', {
 	actions: {
 		/**
 		 * Load all settings data
+		 *
 		 * @spec exclude parallel fan-out wrapper over settings-load passthroughs
 		 */
 		async loadSettings() {
@@ -323,6 +326,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Mass validate objects with advanced configuration
+		 *
 		 * @param {object} options - The options for the mass validate operation
 		 * @spec exclude API passthrough to POST /api/settings/mass-validate
 		 */
@@ -387,6 +391,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Load memory prediction for mass validation
+		 *
 		 * @param {number} maxObjects - The maximum number of objects to validate
 		 * @spec exclude API passthrough to POST /api/settings/mass-validate/memory-prediction
 		 */
@@ -415,6 +420,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Show mass validate confirmation dialog
+		 *
 		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		showMassValidateDialog() {
@@ -423,6 +429,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Hide mass validate confirmation dialog
+		 *
 		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		hideMassValidateDialog() {
@@ -432,6 +439,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Confirm mass validate operation
+		 *
 		 * @param {object} options - The options for the mass validate operation
 		 * @spec exclude dialog-confirm wrapper over massValidate (API passthrough)
 		 */
@@ -442,6 +450,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Load RBAC settings
+		 *
 		 * @spec exclude API passthrough to GET /api/settings/rbac
 		 */
 		async loadRbacSettings() {
@@ -469,6 +478,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Update RBAC settings
+		 *
 		 * @param {object} rbacData - The RBAC settings to save
 		 * @spec exclude API passthrough to PUT /api/settings/rbac
 		 */
@@ -501,6 +511,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Load Multitenancy settings
+		 *
 		 * @spec exclude API passthrough to GET /api/settings/multitenancy
 		 */
 		async loadMultitenancySettings() {
@@ -526,6 +537,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Update Multitenancy settings
+		 *
 		 * @param {object} multitenancyData - The multitenancy settings to save
 		 * @spec exclude API passthrough to PUT /api/settings/multitenancy
 		 */
@@ -565,6 +577,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Load Retention settings
+		 *
 		 * @spec exclude API passthrough to GET /api/settings/retention
 		 */
 		async loadRetentionSettings() {
@@ -585,6 +598,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Update Retention settings
+		 *
 		 * @param {object} retentionData - The retention settings to save
 		 * @spec exclude API passthrough to PUT /api/settings/retention
 		 */
@@ -683,6 +697,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Get LLM settings
+		 *
 		 * @spec exclude API passthrough to GET /api/settings/llm
 		 */
 		async getLlmSettings() {
@@ -705,6 +720,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Save LLM settings (full update - use patchLlmSettings for partial updates)
+		 *
 		 * @param {object} llmData - The LLM settings to save
 		 * @spec exclude API passthrough to PATCH /api/settings/llm
 		 */
@@ -735,6 +751,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Patch LLM settings (partial update)
+		 *
 		 * @param {object} partialData - Partial LLM data to update
 		 * @spec exclude API passthrough to PATCH /api/settings/llm (partial)
 		 */
@@ -752,7 +769,7 @@ export const useSettingsStore = defineStore('settings', {
 				// Show success message only if not just toggling enabled
 				if (
 					Object.keys(partialData).length > 1
-					|| !Object.prototype.hasOwnProperty.call(partialData, 'enabled')
+					|| !Object.hasOwn(partialData, 'enabled')
 				) {
 					showSuccess(
 						t('openregister', 'LLM settings updated successfully'),
@@ -773,6 +790,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Get vector statistics
+		 *
 		 * @return {Promise<object>} Vector statistics including counts by type
 		 * @spec exclude API passthrough to GET /api/vectors/stats (stat loader)
 		 */
@@ -799,6 +817,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Test LLM connection
+		 *
 		 * @param {object} connectionData - The connection data to test
 		 * @spec exclude API passthrough to POST /api/settings/llm/test
 		 */
@@ -817,6 +836,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Get LLM usage statistics
+		 *
 		 * @spec exclude API passthrough to GET /api/settings/llm/usage
 		 */
 		async getLlmUsageStats() {
@@ -833,6 +853,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Get file settings
+		 *
 		 * @spec exclude API passthrough to GET /api/settings/files
 		 */
 		async getFileSettings() {
@@ -855,6 +876,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Save file settings
+		 *
 		 * @param {object} fileData - The file settings to save
 		 * @spec exclude API passthrough to PUT /api/settings/files
 		 */
@@ -884,6 +906,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Get file extraction statistics
+		 *
 		 * @spec exclude API passthrough to GET /api/files/stats (stat loader)
 		 */
 		async getExtractionStats() {
@@ -902,6 +925,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Discover files in Nextcloud that aren't tracked yet
+		 *
 		 * @spec exclude API passthrough to POST /api/files/discover
 		 */
 		async discoverFiles() {
@@ -924,6 +948,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Trigger file extraction for pending or failed files
+		 *
 		 * @param {string} type - 'pending' or 'failed'
 		 * @spec exclude API passthrough to POST /api/files/extract|retry-failed
 		 */
@@ -954,6 +979,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Test Dolphin API connection
+		 *
 		 * @param {object} connectionData - API endpoint and key
 		 * @spec exclude API passthrough to POST /api/settings/files/test-dolphin
 		 */
@@ -977,6 +1003,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Test Presidio API connection
+		 *
 		 * @param {object} connectionData - API endpoint
 		 * @spec exclude API passthrough to POST /api/settings/files/test-presidio
 		 */
@@ -1000,6 +1027,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Test OpenAnonymiser API connection
+		 *
 		 * @param {object} connectionData - API endpoint
 		 * @spec exclude API passthrough to POST /api/settings/files/test-openanonymiser
 		 */
@@ -1023,6 +1051,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Get the resolved anonymisation backend state (single source of truth).
+		 *
 		 * @spec exclude API passthrough to GET /api/admin/anonymisation/backend-state
 		 */
 		async getAnonymisationBackendState() {
@@ -1041,6 +1070,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Probe a single anonymisation backend, bypassing the cache.
+		 *
 		 * @param {string} method - One of regex/presidio/openanonymiser/llm/hybrid
 		 * @spec exclude API passthrough to POST /api/admin/anonymisation/test-connection
 		 */
@@ -1066,6 +1096,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Load version information
+		 *
 		 * @spec exclude API passthrough to GET /api/settings/version
 		 */
 		async loadVersionInfo() {
@@ -1086,6 +1117,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Load available options (groups, users, tenants)
+		 *
 		 * @spec exclude no-op placeholder (options loaded by sibling settings actions)
 		 */
 		async loadAvailableOptions() {
@@ -1099,6 +1131,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Load system statistics
+		 *
 		 * @spec exclude API passthrough to GET /api/settings/statistics (stat loader)
 		 */
 		async loadStats() {
@@ -1125,6 +1158,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Load cache statistics
+		 *
 		 * @spec exclude API passthrough to GET /api/settings/cache (stat loader)
 		 */
 		async loadCacheStats() {
@@ -1151,6 +1185,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Get chat and agent statistics
+		 *
 		 * @return {Promise<object>} Chat statistics including agents, conversations, and messages
 		 * @spec exclude API passthrough to GET /api/chat/stats
 		 */
@@ -1173,6 +1208,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Clear specific cache type
+		 *
 		 * @param {string} type - The type of cache to clear
 		 * @spec exclude API passthrough to DELETE /api/settings/cache
 		 */
@@ -1220,6 +1256,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Clear all caches
+		 *
 		 * @spec exclude convenience wrapper over clearSpecificCache (API passthrough)
 		 */
 		async clearAllCaches() {
@@ -1228,6 +1265,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Warmup names cache
+		 *
 		 * @spec exclude API passthrough to POST /api/settings/cache/warmup-names
 		 */
 		async warmupNamesCache() {
@@ -1306,6 +1344,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Load cache warmup interval setting
+		 *
 		 * @spec exclude API passthrough to GET /api/settings/cache/warmup-interval
 		 */
 		async loadWarmupInterval() {
@@ -1330,6 +1369,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Save cache warmup interval setting
+		 *
 		 * @param {number} interval - The interval in seconds (0 = disabled)
 		 * @spec exclude API passthrough to PUT /api/settings/cache/warmup-interval
 		 */
@@ -1372,6 +1412,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Rebase all objects and logs
+		 *
 		 * @spec exclude API passthrough to POST /api/settings/rebase
 		 */
 		async rebase() {
@@ -1411,6 +1452,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Save general settings (legacy method for backwards compatibility)
+		 *
 		 * @param {object} data - The data to save
 		 * @spec exclude dispatcher over update*Settings passthroughs + legacy PUT /api/settings
 		 */
@@ -1448,6 +1490,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Show rebase confirmation dialog
+		 *
 		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		showRebaseDialog() {
@@ -1456,6 +1499,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Hide rebase confirmation dialog
+		 *
 		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		hideRebaseDialog() {
@@ -1464,6 +1508,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Confirm and execute rebase
+		 *
 		 * @spec exclude dialog-confirm wrapper over rebase (API passthrough)
 		 */
 		async confirmRebase() {
@@ -1473,6 +1518,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Clear cache of specified type
+		 *
 		 * @param {string} type - The type of cache to clear
 		 * @spec exclude API passthrough to DELETE /api/settings/cache
 		 */
@@ -1505,6 +1551,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Show clear audit trails confirmation dialog
+		 *
 		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		showClearAuditTrailsDialog() {
@@ -1513,6 +1560,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Hide clear audit trails confirmation dialog
+		 *
 		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		hideClearAuditTrailsDialog() {
@@ -1521,6 +1569,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Clear all audit trails
+		 *
 		 * @spec exclude API passthrough to DELETE /api/audit-trails/clear-all
 		 */
 		async clearAllAuditTrails() {
@@ -1561,6 +1610,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Show clear search trails confirmation dialog
+		 *
 		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		showClearSearchTrailsDialog() {
@@ -1569,6 +1619,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Hide clear search trails confirmation dialog
+		 *
 		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		hideClearSearchTrailsDialog() {
@@ -1577,6 +1628,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Clear all search trails
+		 *
 		 * @spec exclude API passthrough to DELETE /api/search-trails/clear-all
 		 */
 		async clearAllSearchTrails() {
@@ -1617,6 +1669,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Show clear blob objects confirmation dialog
+		 *
 		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		showClearBlobObjectsDialog() {
@@ -1625,6 +1678,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Hide clear blob objects confirmation dialog
+		 *
 		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		hideClearBlobObjectsDialog() {
@@ -1633,6 +1687,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Clear all blob storage objects
+		 *
 		 * @spec exclude API passthrough to DELETE /api/objects/clear-blob
 		 */
 		async clearAllBlobObjects() {
@@ -1673,6 +1728,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Show clear cache confirmation dialog
+		 *
 		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		showClearCacheDialog() {
@@ -1681,6 +1737,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Hide clear cache confirmation dialog
+		 *
 		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		hideClearCacheDialog() {
@@ -1689,6 +1746,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Perform cache clearing with current type selection
+		 *
 		 * @spec exclude dialog-confirm wrapper over clearCache (API passthrough)
 		 */
 		async performClearCache() {
@@ -1704,6 +1762,7 @@ export const useSettingsStore = defineStore('settings', {
 		 * Invalidate Nextcloud app store cache
 		 * Forces Nextcloud to fetch fresh app data from apps.nextcloud.com
 		 * by setting the cache timestamp to 0 (expired)
+		 *
 		 * @param {string} type - Type of cache to invalidate: 'apps', 'categories', 'discover', or 'all'
 		 * @return {Promise<object>} The API response
 		 * @spec exclude API passthrough to DELETE /api/settings/cache/appstore

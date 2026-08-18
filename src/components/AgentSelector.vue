@@ -172,13 +172,13 @@
 
 <script>
 import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
-import Robot from 'vue-material-design-icons/Robot.vue'
-import RobotOff from 'vue-material-design-icons/RobotOff.vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import Chip from 'vue-material-design-icons/Chip.vue'
+import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import Lock from 'vue-material-design-icons/Lock.vue'
 import MessagePlus from 'vue-material-design-icons/MessagePlus.vue'
-import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
+import Robot from 'vue-material-design-icons/Robot.vue'
+import RobotOff from 'vue-material-design-icons/RobotOff.vue'
 import Tools from 'vue-material-design-icons/Tools.vue'
 
 export default {
@@ -202,22 +202,27 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+
 		selectedAgent: {
 			type: Object,
 			default: null,
 		},
+
 		loading: {
 			type: Boolean,
 			default: false,
 		},
+
 		error: {
 			type: String,
 			default: null,
 		},
+
 		inline: {
 			type: Boolean,
 			default: false,
 		},
+
 		starting: {
 			type: Boolean,
 			default: false,

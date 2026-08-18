@@ -1,8 +1,8 @@
-import { createApp, h } from 'vue'
-import { createPinia } from 'pinia'
-import Settings from './views/settings/Settings.vue'
-import { translate, translatePlural } from '@nextcloud/l10n'
 import { loadState } from '@nextcloud/initial-state'
+import { translate, translatePlural } from '@nextcloud/l10n'
+import { createPinia } from 'pinia'
+import { createApp, h } from 'vue'
+import Settings from './views/settings/Settings.vue'
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
 
 // Bootstrap the integration registry on the admin-settings bundle too —

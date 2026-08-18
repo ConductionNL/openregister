@@ -43,6 +43,7 @@ export default {
 		clearing: { type: Boolean, default: false },
 		totalAuditTrails: { type: Number, default: 0 },
 	},
+
 	emits: ['closing', 'confirm'],
 }
 </script>

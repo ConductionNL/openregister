@@ -1689,7 +1689,7 @@ class RenderObjectTest extends TestCase {
 	}
 
 	public function testResolveSchemaReferenceBySlugPath(): void {
-		$schema = $this->createSchema(7, 'organisatie');
+		$schema = $this->createSchema(7, 'organisation');
 
 		$this->schemaMapper->method('find')
 			->willThrowException(new Exception('Not found'));
@@ -5968,7 +5968,7 @@ class RenderObjectTest extends TestCase {
 	 * @return void
 	 */
 	public function testResolveSchemaReferencePathRefFindsSchemaBySlug(): void {
-		$schema = $this->createSchema(55, 'organisatie');
+		$schema = $this->createSchema(55, 'organisation');
 
 		$this->schemaMapper->method('find')
 			->willThrowException(new Exception('Not found'));

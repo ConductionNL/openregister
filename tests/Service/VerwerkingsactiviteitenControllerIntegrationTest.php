@@ -147,8 +147,8 @@ class VerwerkingsactiviteitenControllerIntegrationTest extends TestCase {
 
 	public function testListReturnsAllActivitiesAsAdmin(): void {
 		$this->loginAsAdmin();
-		$a = $this->insertActivity(naam: 'phpunit-list-a');
-		$b = $this->insertActivity(naam: 'phpunit-list-b');
+		$a = $this->insertActivity(name: 'phpunit-list-a');
+		$b = $this->insertActivity(name: 'phpunit-list-b');
 
 		$controller = $this->makeController();
 		$response = $controller->index();
@@ -166,7 +166,7 @@ class VerwerkingsactiviteitenControllerIntegrationTest extends TestCase {
 	public function testShowFindsByIdUuidAndCode(): void {
 		$this->loginAsAdmin();
 		$code = 'phpunit-show-' . uniqid();
-		$activity = $this->insertActivity(naam: 'phpunit-show', code: $code);
+		$activity = $this->insertActivity(name: 'phpunit-show', code: $code);
 
 		$controller = $this->makeController();
 
@@ -253,7 +253,7 @@ class VerwerkingsactiviteitenControllerIntegrationTest extends TestCase {
 
 	public function testDestroySoftArchivesInsteadOfHardDelete(): void {
 		$this->loginAsAdmin();
-		$activity = $this->insertActivity(naam: 'phpunit-destroy');
+		$activity = $this->insertActivity(name: 'phpunit-destroy');
 
 		$controller = $this->makeController();
 		$response = $controller->destroy(id: (string)$activity->getId());
@@ -269,7 +269,7 @@ class VerwerkingsactiviteitenControllerIntegrationTest extends TestCase {
 
 	public function testVerantwoordingAggregatesAuditCounts(): void {
 		$this->loginAsAdmin();
-		$activity = $this->insertActivity(naam: 'phpunit-verantwoording', code: 'phpunit-vw-' . uniqid());
+		$activity = $this->insertActivity(name: 'phpunit-verantwoording', code: 'phpunit-vw-' . uniqid());
 
 		// Wire the activity into a schema so audit rows are tagged.
 		$register = $this->insertRegister();
@@ -289,7 +289,7 @@ class VerwerkingsactiviteitenControllerIntegrationTest extends TestCase {
 		$this->auditMapper->createAuditTrail(old: $existing, new: $modified, action: 'update');
 
 		$controller = $this->makeController();
-		$response = $controller->verantwoording();
+		$response = $controller->accountability();
 		$body = $response->getData();
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
@@ -330,9 +330,9 @@ class VerwerkingsactiviteitenControllerIntegrationTest extends TestCase {
 
 	}//end loginAsNonAdmin()
 
-	private function insertActivity(string $naam, ?string $code = null): Verwerkingsactiviteit {
+	private function insertActivity(string $name, ?string $code = null): Verwerkingsactiviteit {
 		$entity = new Verwerkingsactiviteit();
-		$entity->setNaam($naam . '-' . uniqid());
+		$entity->setNaam($name . '-' . uniqid());
 		if ($code !== null) {
 			$entity->setCode($code);
 		}

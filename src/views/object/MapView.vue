@@ -4,7 +4,7 @@
 			<NcSelect
 				v-if="hasBaseLayers"
 				v-model="activeLayer"
-				:input-label="baseLayerLabel"
+				:inputLabel="baseLayerLabel"
 				:options="baseLayers"
 				:reduce="reduceLayer"
 				label="label"
@@ -44,6 +44,7 @@
 </template>
 
 <script>
+import { translate as t } from '@nextcloud/l10n'
 /**
  * MapView — thin Leaflet host for OpenRegister geo objects.
  *
@@ -56,15 +57,27 @@
  *
  * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-003
  * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-014
+ *
+ * @visual exclude Not reachable in a browser, so there is no screen to
+ *   baseline. Verified 2026-08-16 across the whole tree: this component has NO
+ *   `src/manifest.json` page entry, NO `src/registry.js` entry, and NO import
+ *   from any other component — the only other occurrence of the string
+ *   "MapView" in the repository is a prose reference in
+ *   `src/services/geo/mapData.js`. Nothing imports it, so webpack never emits
+ *   it and no route mounts it; a Playwright spec has no URL to navigate to.
+ *   Its `objects` prop contract IS covered — the data shaping it consumes
+ *   lives in `src/services/geo/mapData.js` and is unit-tested there. The
+ *   waiver must be REMOVED, and a real spec written, on the change that gives
+ *   this component a route (see the geo work behind REQ-GEO-003/014); it is a
+ *   statement that the screen does not exist yet, not that it needs no proof.
  */
 import { NcSelect } from '@nextcloud/vue'
-import { translate as t } from '@nextcloud/l10n'
 import {
 	BASE_LAYERS,
-	defaultBaseLayer,
 	buildMarkers,
-	markerBounds,
+	defaultBaseLayer,
 	formatWgs84,
+	markerBounds,
 } from '../../services/geo/mapData.js'
 
 export default {
@@ -72,18 +85,21 @@ export default {
 	components: {
 		NcSelect,
 	},
+
 	props: {
 		/** Object rows to plot. */
 		objects: {
 			type: Array,
 			default: () => [],
 		},
+
 		/** Geo property name, or null to auto-detect. */
 		geoProperty: {
 			type: String,
 			default: null,
 		},
 	},
+
 	data() {
 		return {
 			baseLayers: BASE_LAYERS,
@@ -91,49 +107,61 @@ export default {
 			map: null,
 		}
 	},
+
 	computed: {
 		hasBaseLayers() {
 			return this.baseLayers.length !== 0
 		},
+
 		baseLayerLabel() {
 			return t('openregister', 'Base map layer')
 		},
+
 		markers() {
 			return buildMarkers(this.objects, this.geoProperty)
 		},
+
 		bounds() {
 			return markerBounds(this.markers)
 		},
+
 		countLabel() {
 			return t('openregister', '{count} locations', {
 				count: this.markers.length,
 			})
 		},
+
 		mapAriaLabel() {
 			return t('openregister', 'Map with {count} object locations', {
 				count: this.markers.length,
 			})
 		},
 	},
+
 	watch: {
 		markers() {
 			this.renderMap()
 		},
+
 		activeLayer() {
 			this.renderMap()
 		},
 	},
+
 	mounted() {
 		this.renderMap()
 	},
+
 	methods: {
 		t,
 		reduceLayer(layer) {
 			return layer.id
 		},
+
 		coordsLabel(marker) {
 			return formatWgs84(marker.lon, marker.lat)
 		},
+
 		/**
 		 * Render markers into Leaflet when the library is available.
 		 *

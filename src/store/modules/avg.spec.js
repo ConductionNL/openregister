@@ -1,14 +1,12 @@
-/* eslint-disable no-console */
-import { setActivePinia, createPinia } from 'pinia'
-
 import axios from '@nextcloud/axios'
+import { createPinia, setActivePinia } from 'pinia'
 import {
-	useAvgStore,
 	CASE_LIFECYCLE_TRANSITIONS,
-	resolveStatusLabel,
-	resolveTierLabel,
 	resolveGroundOptions,
+	resolveStatusLabel,
 	resolveTemplateRef,
+	resolveTierLabel,
+	useAvgStore,
 } from './avg.js'
 
 jest.mock('@nextcloud/axios', () => ({

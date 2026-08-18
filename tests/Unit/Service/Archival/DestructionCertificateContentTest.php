@@ -120,19 +120,19 @@ class DestructionCertificateContentTest extends TestCase {
 				[
 					'uuid' => 'obj-1',
 					'schema' => 5,
-					'classificatie' => 'B1',
+					'classification' => 'B1',
 					'selectielijstBron' => 'Selectielijst gemeenten 2020',
 				],
 				[
 					'uuid' => 'obj-2',
 					'schema' => 5,
-					'classificatie' => 'B1',
+					'classification' => 'B1',
 					'selectielijstBron' => 'Selectielijst gemeenten 2020',
 				],
 				[
 					'uuid' => 'obj-3',
 					'schema' => 8,
-					'classificatie' => 'A1',
+					'classification' => 'A1',
 					'selectielijstBron' => 'Selectielijst gemeenten 2020',
 				],
 			],
@@ -177,8 +177,8 @@ class DestructionCertificateContentTest extends TestCase {
 		$this->assertNotEmpty($certificate['groupedBySchema']);
 		$this->assertEqualsCanonicalizing(
 			[
-				['schema' => 5, 'classificatie' => 'B1', 'count' => 2],
-				['schema' => 8, 'classificatie' => 'A1', 'count' => 1],
+				['schema' => 5, 'classification' => 'B1', 'count' => 2],
+				['schema' => 8, 'classification' => 'A1', 'count' => 1],
 			],
 			$certificate['groupedBySchema']
 		);
@@ -197,7 +197,7 @@ class DestructionCertificateContentTest extends TestCase {
 				'uuid' => 'list-uuid-7',
 				'status' => DestructionService::STATUS_IN_REVIEW,
 				'approvals' => [],
-				'objects' => [['uuid' => 'obj-1', 'schema' => 1, 'classificatie' => 'V1']],
+				'objects' => [['uuid' => 'obj-1', 'schema' => 1, 'classification' => 'V1']],
 			],
 			'approve_all',
 			[],

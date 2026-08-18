@@ -148,41 +148,41 @@ class RetentionService {
 		}
 
 		// Try selectielijst lookup first.
-		$classificatie = $archiveConfig['classificatie'] ?? null;
+		$classification = $archiveConfig['classification'] ?? null;
 		$selectielijstEntry = null;
 
-		if ($classificatie !== null) {
-			$selectielijstEntry = $this->lookupSelectielijstEntry(categorie: $classificatie);
+		if ($classification !== null) {
+			$selectielijstEntry = $this->lookupSelectielijstEntry(category: $classification);
 		}
 
 		// Determine nominatie and bewaartermijn (default to schema config).
 		$nominatie = $archiveConfig['defaultNominatie'] ?? 'nog_niet_bepaald';
-		$bewaartermijn = $archiveConfig['defaultBewaartermijn'] ?? null;
-		$bron = null;
+		$retentionPeriod = $archiveConfig['defaultBewaartermijn'] ?? null;
+		$source = null;
 		if ($selectielijstEntry !== null) {
 			$nominatie = $selectielijstEntry['archiefnominatie'] ?? 'nog_niet_bepaald';
-			$bewaartermijn = $selectielijstEntry['bewaartermijn'] ?? null;
-			$bron = $selectielijstEntry['bron'] ?? null;
+			$retentionPeriod = $selectielijstEntry['bewaartermijn'] ?? null;
+			$source = $selectielijstEntry['bron'] ?? null;
 		}
 
 		// Apply schema-level override if configured.
 		if (empty($archiveConfig['bewaartermijnOverride']) === false) {
-			$bewaartermijn = $archiveConfig['bewaartermijnOverride'];
+			$retentionPeriod = $archiveConfig['bewaartermijnOverride'];
 		}
 
 		// Build archival metadata.
 		$retention['archiefnominatie'] = $nominatie;
 		$retention['archiefstatus'] = 'nog_te_archiveren';
-		$retention['classificatie'] = $classificatie;
-		$retention['bewaartermijn'] = $bewaartermijn;
-		$retention['selectielijstBron'] = $bron;
+		$retention['classification'] = $classification;
+		$retention['bewaartermijn'] = $retentionPeriod;
+		$retention['selectielijstBron'] = $source;
 
 		// Calculate archiefactiedatum if bewaartermijn is set.
-		if ($bewaartermijn !== null) {
-			$retention['archiefactiedatum'] = $this->calculateArchiefactiedatum(
+		if ($retentionPeriod !== null) {
+			$retention['archiefactiedatum'] = $this->calculateArchiveActionDate(
 				object: $object,
 				schema: $schema,
-				bewaartermijn: $bewaartermijn
+				retentionPeriod: $retentionPeriod
 			);
 		}
 
@@ -196,26 +196,26 @@ class RetentionService {
 	 *
 	 * @param ObjectEntity $object The object to calculate for
 	 * @param Schema $schema The schema with afleidingswijze config
-	 * @param string $bewaartermijn ISO 8601 duration (e.g., P5Y, P20Y)
+	 * @param string $retentionPeriod ISO 8601 duration (e.g., P5Y, P20Y)
 	 *
 	 * @return string|null ISO 8601 date string or null if calculation not possible
 	 *
 	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-calculate-archiefactiedatum-using-configurable-afleidingswijzen
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
-	public function calculateArchiefactiedatum(
+	public function calculateArchiveActionDate(
 		ObjectEntity $object,
 		Schema $schema,
-		string $bewaartermijn,
+		string $retentionPeriod,
 	): ?string {
 		$archiveConfig = $schema->getArchive();
 		$afleidingswijze = $archiveConfig['afleidingswijze'] ?? 'afgehandeld';
 
 		try {
-			$interval = new DateInterval($bewaartermijn);
+			$interval = new DateInterval($retentionPeriod);
 		} catch (Exception $e) {
 			$this->logger->warning(
-				'[RetentionService] Invalid bewaartermijn format: ' . $bewaartermijn,
+				'[RetentionService] Invalid bewaartermijn format: ' . $retentionPeriod,
 				['exception' => $e]
 			);
 			return null;
@@ -246,7 +246,7 @@ class RetentionService {
 		$brondatum->add($interval);
 
 		return $brondatum->format('Y-m-d');
-	}//end calculateArchiefactiedatum()
+	}//end calculateArchiveActionDate()
 
 	/**
 	 * Determine the brondatum (source date) based on afleidingswijze.
@@ -269,13 +269,13 @@ class RetentionService {
 
 		switch ($afleidingswijze) {
 			case 'eigenschap':
-				$bronEigenschap = $archiveConfig['bronEigenschap'] ?? null;
-				if ($bronEigenschap !== null && isset($objectData[$bronEigenschap]) === true) {
+				$sourceAttribute = $archiveConfig['bronEigenschap'] ?? null;
+				if ($sourceAttribute !== null && isset($objectData[$sourceAttribute]) === true) {
 					try {
-						return new DateTime($objectData[$bronEigenschap]);
+						return new DateTime($objectData[$sourceAttribute]);
 					} catch (Exception $e) {
 						$this->logger->warning(
-							'[RetentionService] Cannot parse bronEigenschap date: ' . $objectData[$bronEigenschap]
+							'[RetentionService] Cannot parse bronEigenschap date: ' . $objectData[$sourceAttribute]
 						);
 					}
 				}
@@ -315,7 +315,7 @@ class RetentionService {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
-	public function recalculateArchiefactiedatum(
+	public function recalculateArchiveActionDate(
 		ObjectEntity $object,
 		Schema $schema,
 		array $oldObject,
@@ -338,8 +338,8 @@ class RetentionService {
 			return $object;
 		}
 
-		$bewaartermijn = $retention['bewaartermijn'] ?? null;
-		if ($bewaartermijn === null) {
+		$retentionPeriod = $retention['bewaartermijn'] ?? null;
+		if ($retentionPeriod === null) {
 			return $object;
 		}
 
@@ -348,11 +348,11 @@ class RetentionService {
 		$propertyChanged = false;
 
 		if ($afleidingswijze === 'eigenschap') {
-			$bronEigenschap = $archiveConfig['bronEigenschap'] ?? null;
-			if ($bronEigenschap !== null) {
+			$sourceAttribute = $archiveConfig['bronEigenschap'] ?? null;
+			if ($sourceAttribute !== null) {
 				$newData = $object->getObject();
-				$oldVal = $oldObject[$bronEigenschap] ?? null;
-				$newVal = $newData[$bronEigenschap] ?? null;
+				$oldVal = $oldObject[$sourceAttribute] ?? null;
+				$newVal = $newData[$sourceAttribute] ?? null;
 				$propertyChanged = ($oldVal !== $newVal);
 			}
 		} elseif (in_array($afleidingswijze, ['afgehandeld', 'termijn'], true) === true) {
@@ -370,7 +370,7 @@ class RetentionService {
 		}
 
 		$oldDate = $retention['archiefactiedatum'] ?? null;
-		$newDate = $this->calculateArchiefactiedatum(object: $object, schema: $schema, bewaartermijn: $bewaartermijn);
+		$newDate = $this->calculateArchiveActionDate(object: $object, schema: $schema, retentionPeriod: $retentionPeriod);
 
 		if ($newDate !== null && $newDate !== $oldDate) {
 			$retention['archiefactiedatum'] = $newDate;
@@ -386,18 +386,18 @@ class RetentionService {
 		}
 
 		return $object;
-	}//end recalculateArchiefactiedatum()
+	}//end recalculateArchiveActionDate()
 
 	/**
 	 * Look up a selectielijst entry by categorie code.
 	 *
-	 * @param string $categorie The selectielijst category code (e.g., B1, A1)
+	 * @param string $category The selectielijst category code (e.g., B1, A1)
 	 *
 	 * @return array|null The selectielijst entry data or null if not found
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function lookupSelectielijstEntry(string $categorie): ?array {
+	public function lookupSelectielijstEntry(string $category): ?array {
 		$settings = $this->settingsHandler->getArchivalSettingsOnly();
 
 		$registerId = $settings['selectielijstRegister'] ?? null;
@@ -413,7 +413,7 @@ class RetentionService {
 
 			$results = $this->objectMapper->findAll(
 				limit: 1,
-				filters: ['object->categorie' => $categorie],
+				filters: ['object->categorie' => $category],
 				register: $register,
 				schema: $schema
 			);
@@ -426,7 +426,7 @@ class RetentionService {
 			return $entry->getObject();
 		} catch (Exception $e) {
 			$this->logger->warning(
-				'[RetentionService] Failed to lookup selectielijst entry for ' . $categorie,
+				'[RetentionService] Failed to lookup selectielijst entry for ' . $category,
 				['exception' => $e]
 			);
 			return null;
@@ -560,7 +560,7 @@ class RetentionService {
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function extendArchiefactiedatum(ObjectEntity $object, ?string $extensionPeriod = null): ObjectEntity {
+	public function extendArchiveActionDate(ObjectEntity $object, ?string $extensionPeriod = null): ObjectEntity {
 		$retention = $object->getRetention() ?? [];
 
 		if (empty($retention['archiefactiedatum']) === true) {
@@ -590,7 +590,7 @@ class RetentionService {
 		}
 
 		return $object;
-	}//end extendArchiefactiedatum()
+	}//end extendArchiveActionDate()
 
 	/**
 	 * Find objects eligible for destruction.
@@ -770,7 +770,7 @@ class RetentionService {
 				'schema' => $object->getSchema(),
 				'register' => $object->getRegister(),
 				'archiefactiedatum' => $retention['archiefactiedatum'] ?? null,
-				'classificatie' => $retention['classificatie'] ?? null,
+				'classification' => $retention['classification'] ?? null,
 				'softDeleted' => $object->getDeleted() !== null,
 				'wooGepubliceerd' => $isWooPublished,
 			];
@@ -807,11 +807,11 @@ class RetentionService {
 		// Group destroyed objects by schema and classificatie.
 		$grouped = [];
 		foreach ($destructionList['objects'] ?? [] as $obj) {
-			$key = ($obj['schema'] ?? 'unknown') . '/' . ($obj['classificatie'] ?? 'unknown');
+			$key = ($obj['schema'] ?? 'unknown') . '/' . ($obj['classification'] ?? 'unknown');
 			if (isset($grouped[$key]) === false) {
 				$grouped[$key] = [
 					'schema' => $obj['schema'] ?? 'unknown',
-					'classificatie' => $obj['classificatie'] ?? 'unknown',
+					'classification' => $obj['classification'] ?? 'unknown',
 					'count' => 0,
 				];
 			}
@@ -826,7 +826,7 @@ class RetentionService {
 			'destructionListUuid' => $destructionList['uuid'] ?? null,
 			'totalDestroyed' => $destroyedCount,
 			'groupedBySchema' => array_values($grouped),
-			'selectielijstBron' => $this->extractSelectielijstBron(destructionList: $destructionList),
+			'selectielijstBron' => $this->extractSelectionListSource(destructionList: $destructionList),
 			'complianceStatement' => 'Vernietiging conform Archiefwet 1995 en Archiefbesluit 1995',
 			'immutable' => true,
 		];
@@ -839,15 +839,15 @@ class RetentionService {
 	 *
 	 * @return string[] Unique selectielijst bron references
 	 */
-	private function extractSelectielijstBron(array $destructionList): array {
+	private function extractSelectionListSource(array $destructionList): array {
 		$bronnen = [];
 		foreach ($destructionList['objects'] ?? [] as $obj) {
-			$bron = $obj['selectielijstBron'] ?? null;
-			if ($bron !== null) {
-				$bronnen[] = $bron;
+			$source = $obj['selectielijstBron'] ?? null;
+			if ($source !== null) {
+				$bronnen[] = $source;
 			}
 		}
 
 		return array_values(array_unique($bronnen));
-	}//end extractSelectielijstBron()
+	}//end extractSelectionListSource()
 }//end class

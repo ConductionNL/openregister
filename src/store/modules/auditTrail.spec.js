@@ -1,8 +1,7 @@
-/* eslint-disable no-console */
+import { createPinia, setActivePinia } from 'pinia'
 import { toRaw } from 'vue'
-import { setActivePinia, createPinia } from 'pinia'
-import { useAuditTrailStore } from './auditTrail.js'
 import { mockAuditTrailData } from '../../entities/index.js'
+import { useAuditTrailStore } from './auditTrail.js'
 
 describe('AuditTrail Store', () => {
 	let store

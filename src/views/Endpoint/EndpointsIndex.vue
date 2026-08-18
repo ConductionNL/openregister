@@ -42,10 +42,10 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcButton } from '@nextcloud/vue'
-import EndpointsList from './EndpointsList.vue'
-import EndpointDetails from './EndpointDetails.vue'
+import { NcAppContent, NcButton, NcEmptyContent } from '@nextcloud/vue'
 import Api from 'vue-material-design-icons/Api.vue'
+import EndpointDetails from './EndpointDetails.vue'
+import EndpointsList from './EndpointsList.vue'
 
 export default {
 	name: 'EndpointsIndex',

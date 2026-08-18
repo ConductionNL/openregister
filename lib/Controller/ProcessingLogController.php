@@ -167,7 +167,7 @@ class ProcessingLogController extends Controller {
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
-	public function betrokkene(): JSONResponse {
+	public function involvedParty(): JSONResponse {
 		$access = $this->resolveAccess();
 		if ($access instanceof JSONResponse) {
 			return $access;
@@ -210,7 +210,7 @@ class ProcessingLogController extends Controller {
 			]
 		);
 
-	}//end betrokkene()
+	}//end involvedParty()
 
 	/**
 	 * Resolve the caller's access posture, or a denial response.

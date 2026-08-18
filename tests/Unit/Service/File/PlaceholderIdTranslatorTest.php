@@ -173,15 +173,15 @@ class PlaceholderIdTranslatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testDifferentDossierRestartsAtOne(): void {
-		$dossierA = PlaceholderIdTranslator::forDossier(
+		$fileA = PlaceholderIdTranslator::forDossier(
 			rows: [['entity_id' => 11, 'file_id' => 100, 'position_start' => 4]]
 		);
-		$dossierB = PlaceholderIdTranslator::forDossier(
+		$fileB = PlaceholderIdTranslator::forDossier(
 			rows: [['entity_id' => 999, 'file_id' => 200, 'position_start' => 4]]
 		);
 
-		$this->assertSame(expected: 1, actual: $dossierA->translate(entityId: 11));
-		$this->assertSame(expected: 1, actual: $dossierB->translate(entityId: 999));
+		$this->assertSame(expected: 1, actual: $fileA->translate(entityId: 11));
+		$this->assertSame(expected: 1, actual: $fileB->translate(entityId: 999));
 
 	}//end testDifferentDossierRestartsAtOne()
 

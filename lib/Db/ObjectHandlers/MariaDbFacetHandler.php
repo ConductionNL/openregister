@@ -839,22 +839,22 @@ class MariaDbFacetHandler {
 
 			// Handle operator-based filters.
 			foreach ($value as $operator => $operatorValue) {
-				$opParam = $queryBuilder->createNamedParameter($operatorValue);
+				$onParam = $queryBuilder->createNamedParameter($operatorValue);
 				switch ($operator) {
 					case 'gt':
-						$queryBuilder->andWhere($queryBuilder->expr()->gt($field, $opParam));
+						$queryBuilder->andWhere($queryBuilder->expr()->gt($field, $onParam));
 						break;
 					case 'lt':
-						$queryBuilder->andWhere($queryBuilder->expr()->lt($field, $opParam));
+						$queryBuilder->andWhere($queryBuilder->expr()->lt($field, $onParam));
 						break;
 					case 'gte':
-						$queryBuilder->andWhere($queryBuilder->expr()->gte($field, $opParam));
+						$queryBuilder->andWhere($queryBuilder->expr()->gte($field, $onParam));
 						break;
 					case 'lte':
-						$queryBuilder->andWhere($queryBuilder->expr()->lte($field, $opParam));
+						$queryBuilder->andWhere($queryBuilder->expr()->lte($field, $onParam));
 						break;
 					case 'ne':
-						$queryBuilder->andWhere($queryBuilder->expr()->neq($field, $opParam));
+						$queryBuilder->andWhere($queryBuilder->expr()->neq($field, $onParam));
 						break;
 					case '~':
 						// Contains (case insensitive).
@@ -873,7 +873,7 @@ class MariaDbFacetHandler {
 						break;
 					case '===':
 						// Exact match (case sensitive).
-						$queryBuilder->andWhere($queryBuilder->expr()->eq($field, $opParam));
+						$queryBuilder->andWhere($queryBuilder->expr()->eq($field, $onParam));
 						break;
 					case 'exists':
 						if ($operatorValue !== true && $operatorValue !== 'true') {
@@ -1108,23 +1108,23 @@ class MariaDbFacetHandler {
 		$extractSql = 'JSON_EXTRACT(object, ' . $jsonPathParam . ')';
 		$unquoteSql = 'JSON_UNQUOTE(' . $extractSql . ')';
 		$jsonExtract = $queryBuilder->createFunction($unquoteSql);
-		$opParam = $queryBuilder->createNamedParameter($operatorValue);
+		$onParam = $queryBuilder->createNamedParameter($operatorValue);
 
 		switch ($operator) {
 			case 'gt':
-				$queryBuilder->andWhere($queryBuilder->expr()->gt($jsonExtract, $opParam));
+				$queryBuilder->andWhere($queryBuilder->expr()->gt($jsonExtract, $onParam));
 				break;
 			case 'lt':
-				$queryBuilder->andWhere($queryBuilder->expr()->lt($jsonExtract, $opParam));
+				$queryBuilder->andWhere($queryBuilder->expr()->lt($jsonExtract, $onParam));
 				break;
 			case 'gte':
-				$queryBuilder->andWhere($queryBuilder->expr()->gte($jsonExtract, $opParam));
+				$queryBuilder->andWhere($queryBuilder->expr()->gte($jsonExtract, $onParam));
 				break;
 			case 'lte':
-				$queryBuilder->andWhere($queryBuilder->expr()->lte($jsonExtract, $opParam));
+				$queryBuilder->andWhere($queryBuilder->expr()->lte($jsonExtract, $onParam));
 				break;
 			case 'ne':
-				$queryBuilder->andWhere($queryBuilder->expr()->neq($jsonExtract, $opParam));
+				$queryBuilder->andWhere($queryBuilder->expr()->neq($jsonExtract, $onParam));
 				break;
 			case '~':
 				// Contains (case insensitive).
@@ -1143,7 +1143,7 @@ class MariaDbFacetHandler {
 				break;
 			case '===':
 				// Exact match (case sensitive).
-				$queryBuilder->andWhere($queryBuilder->expr()->eq($jsonExtract, $opParam));
+				$queryBuilder->andWhere($queryBuilder->expr()->eq($jsonExtract, $onParam));
 				break;
 			case 'exists':
 				$extractFunc = $queryBuilder->createFunction($extractSql);

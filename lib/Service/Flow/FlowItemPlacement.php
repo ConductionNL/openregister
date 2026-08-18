@@ -116,6 +116,11 @@ class FlowItemPlacement {
 	 * Clearing the consumed inputs matters for a loop that re-enters the
 	 * transition — it must read fresh items, not a stale copy left behind.
 	 *
+	 * A firing that produced NO items only clears its inputs. Writing empty
+	 * lists to its outputs would erase items another branch has already placed
+	 * on a place they share, which is openregister#2488 and is invisible in a
+	 * run log — see the comment in the body.
+	 *
 	 * @param object $transition The fired transition.
 	 * @param array<string, array> $placeItems The current per-place buffers.
 	 * @param array $items What the step produced.
@@ -126,6 +131,42 @@ class FlowItemPlacement {
 	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
 	 */
 	public function advanceItems(object $transition, array $placeItems, array $items, array $taken): array {
+		// A FIRING THAT PRODUCED NOTHING PLACES NOTHING AND DESTROYS NOTHING.
+		//
+		// Every node in a flow fires on every pass, and most of them fire with
+		// no items — the familiar `in 0 out 0` heartbeat in a run log. Without
+		// this guard each of those heartbeats still ran the loop below and
+		// ASSIGNED an empty list to every one of its output places. A node that
+		// shares an output place with a branch scheduled later in the same pass
+		// therefore had its items erased before the consumer ever ran.
+		//
+		// Measured in hydra's sequencer (openregister#2488), twice:
+		//
+		//     built-gate     in 1 out 1   item tagged output: "build-blocked"
+		//     verdict-gate   in 0 out 0   heartbeat, in ANOTHER branch
+		//     build-blocked  in 0 out 0   nothing arrived
+		//
+		// The routing was correct in both cases — the emitted item carried the
+		// right output tag, visible in the run log's own output envelope. The
+		// loss was entirely here. And nothing reported it: the run said
+		// `completed`, the routing node said `in 1 out 1`, and the starved
+		// consumer said `completed` too, because a node with no items still
+		// fires. The only trace anywhere was an `in 0` on a node nobody was
+		// watching.
+		//
+		// The comment below justifies the unconditional write as keeping stale
+		// items off a branch the token never reached. That reasoning is about
+		// PLACING items, and there are none to place here — so returning early
+		// cannot seed anything. The input places are still cleared, because
+		// consuming them is what the firing did do.
+		if ($items === []) {
+			foreach ($transition->getFroms() as $from) {
+				unset($placeItems[(string)$from]);
+			}
+
+			return $placeItems;
+		}
+
 		foreach ($transition->getTos() as $to) {
 			// Only the taken exit receives items. Seeding a branch the token
 			// never reaches would leave stale items for a later firing to pick

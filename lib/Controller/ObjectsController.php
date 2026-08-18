@@ -1087,6 +1087,8 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
+	#[UserRateLimit(limit: 600, period: 60)]
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function index(string $register, string $schema, ObjectService $objectService): JSONResponse {
 		// Read paths were unmeasured: WritePhaseProbe::flush() is only reached
 		// from the write path, so search and single-read reported no
@@ -1760,6 +1762,8 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
+	#[UserRateLimit(limit: 300, period: 60)]
+	#[AnonRateLimit(limit: 60, period: 60)]
 	public function geoSearch(string $register, string $schema, ObjectService $objectService): JSONResponse {
 		if ($this->geoFilterParser === null || $this->geoFilterApplier === null) {
 			return new JSONResponse(
@@ -2142,6 +2146,8 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
+	#[UserRateLimit(limit: 600, period: 60)]
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function objects(ObjectService $objectService): JSONResponse {
 		// Check for register/schema in query parameters for magic mapper routing.
 		$params = $this->request->getParams();
@@ -2361,6 +2367,8 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
+	#[UserRateLimit(limit: 600, period: 60)]
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function show(
 		string $id,
 		string $register,
@@ -2767,6 +2775,8 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
+	#[UserRateLimit(limit: 300, period: 60)]
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function update(
 		string $register,
 		string $schema,
@@ -2988,6 +2998,8 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
+	#[UserRateLimit(limit: 300, period: 60)]
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function patch(
 		string $register,
 		string $schema,
@@ -3222,6 +3234,8 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
+	#[UserRateLimit(limit: 300, period: 60)]
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function postPatch(
 		string $register,
 		string $schema,
@@ -3363,6 +3377,8 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
+	#[UserRateLimit(limit: 300, period: 60)]
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function destroy(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.destroy.in');
 
