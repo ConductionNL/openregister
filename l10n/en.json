@@ -2689,7 +2689,13 @@
             "%n entries have no hash yet"
         ],
         "KvK Company Register": "KvK Company Register",
-        "OpenCorporates": "OpenCorporates"
+        "OpenCorporates": "OpenCorporates",
+        "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.": "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.",
+        "App": "App",
+        "Enabled, but has no owner — it will not start": "Enabled, but has no owner — it will not start",
+        "New flow": "New flow",
+        "Schedule": "Schedule",
+        "Trigger": "Trigger"
     },
     "plurals": {
         "{count} email": [
