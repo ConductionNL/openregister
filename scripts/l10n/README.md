@@ -25,6 +25,7 @@ the conventions already established per locale.
 | `selfcheck.js` | Full pre-commit verification for one locale. |
 | `runtime-check.mjs` | Drives the real `@nextcloud/l10n` against a real bundle. |
 | `gate-negative-test.js` | Proves `test:l10n:parity` really fails when one locale loses a key. Snapshots, breaks, asserts, restores. |
+| `script-coverage.js` | Script sweep for a non-Latin locale (`bg sr mk be`). Reading aid, never a gate. |
 | `detectors/<loc>.js` | Per-locale register detector: closed word lists + must-fire / must-not-fire controls. |
 | `locales/<loc>.json` | Per-locale record: measured register, justified cognates, audited corrections. |
 
@@ -51,6 +52,7 @@ node scripts/l10n/apply.js      lv patch-1.json --apply
 
 node scripts/l10n/selfcheck.js     lv          # 16 assertions, must be all-pass
 node scripts/l10n/runtime-check.mjs lv         # what actually renders
+node scripts/l10n/script-coverage.js bg        # non-Latin locales only; read the two lists
 npm run check:l10n && npm run test:l10n:parity
 
 # add lv to FINISHED_DEFAULT, then prove the gate now holds it
@@ -86,8 +88,8 @@ Sixteen locales were finished before the cognate rule existed and carry ~400
 identical values nobody has reviewed. Failing CI on those would report history as a
 regression, and some are legitimate — `nl` renders `Bewaartermijn` and
 `AVG / Verwerkingsregister` unchanged because those are Dutch words in a Dutch
-bundle. So enforcement keys on the existence of `locales/<loc>.json`: the nine
-recorded locales (`tr ca et hr lt lv ro sk sl`) are held to it, the rest are
+bundle. So enforcement keys on the existence of `locales/<loc>.json`: the ten
+recorded locales (`tr ca et hr lt lv ro sk sl bg`) are held to it, the rest are
 **reported** as unreviewed by both
 `test:l10n:parity` and `runtime-check.mjs`. Add a `locales/<loc>.json` as each old
 locale gets reviewed and it becomes enforced from that moment.

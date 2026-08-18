@@ -30,7 +30,7 @@ belongs in `en.js`, never in `en.json`.** There is no scanner for the backend se
 
 Re-measure before trusting any number here — `npm run check:l10n` prints it all.
 **As of 2026-08-18**: `en.js` holds 2052 keys, `src/` uses all of them, 0 unused,
-100 unwrapped literals outstanding. 25 locales at full parity, 11 in progress.
+100 unwrapped literals outstanding. 26 locales at full parity, 10 in progress.
 
 ## Commands
 
@@ -70,6 +70,8 @@ Everything lives in **`scripts/l10n/`**. Read three documents, in this order:
 | Write a patch (6 gates, dry-run by default) | `npm run l10n:apply -- <loc> patch.json [--apply]` |
 | Verify a locale before committing | `npm run l10n:selfcheck -- <loc>` |
 | See what actually renders | `npm run l10n:runtime -- <loc>` |
+| Sweep a non-Latin locale for script coverage | `npm run l10n:script -- <loc>` |
+| Prove the parity gate holds a locale | `npm run l10n:gatetest -- <loc>` |
 
 `apply.js` is the **only** writer, and refuses a whole patch rather than landing
 half of it. Two per-locale files back the workflow, and the gates read both:
@@ -115,7 +117,7 @@ indistinguishable from finished work, so nobody revisits it. Audit with
 `npm run test:l10n:parity -- --strict-identical`.
 
 **Cognate enforcement is opt-in per locale**, keyed on `locales/<loc>.json`
-existing. Only `tr ca et hr lt lv ro sk sl` are held to it; the other 16 predate the rule and
+existing. Only `tr ca et hr lt lv ro sk sl bg` are held to it; the other 16 predate the rule and
 carry ~400 unreviewed identical values, some legitimate. The gate prints which
 locales are enforced and which are merely unreviewed, so a green run cannot be read
 as verified. **Reviewing those 16 is open work.**
@@ -128,12 +130,13 @@ shipped in all 37 bundles until 2026-08-14 while passing every gate.
 
 **Plural arrays must match that locale's own `nplurals`, and never be copied between
 languages.** An array shorter than the index the runtime asks for renders **blank**, and
-it is the only l10n defect you cannot see by reading the file. Four separate ways this
+it is the only l10n defect you cannot see by reading the file. Five separate ways this
 goes wrong — equal form counts with different boundaries, modular vs absolute
-arithmetic, the header and the library disagreeing on ORDER, and Slovenian's dual — are
+arithmetic, the header and the library disagreeing on ORDER, Slovenian's dual, and a
+counting form chosen by the sentence rather than the form index (Bulgarian) — are
 worked through with the per-locale table in **`docs/l10n-workflow.md` §7.1**. Read it
 before writing an array. `npm run l10n:runtime -- <loc>` is the only check that catches
-a wrong boundary.
+a wrong boundary, and **nothing** catches the wrong noun form.
 
 At runtime the form index comes from the library's own per-language `getPlural`,
 **not** the file's `plural=` expression: `register(app, bundle)` ignores a plural

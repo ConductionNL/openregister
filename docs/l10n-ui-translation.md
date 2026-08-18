@@ -96,7 +96,7 @@ paturēt?`) rather than only in notification email. The three formal hits are tw
 imperatives: `Skatiet dokumentāciju` twice, plus the tagline `Turiet savus kolēģus
 un draugus vienuviet`.
 
-**Button labels follow their own convention, and there are three patterns.**
+**Button labels follow their own convention, and there are four patterns.**
 Measure the *prose* register, then establish the button style separately from
 core's own short labels — a single verdict for the locale is usually meaningless:
 
@@ -105,7 +105,17 @@ core's own short labels — a single verdict for the locale is usually meaningle
 | same register throughout | `tr`, `ru` | formal imperative |
 | bare 2sg imperative, whatever the prose | `ca`, `et`, `hr`, `sl` | `Desa`, `Salvesta`, `Spremi`, `Shrani` |
 | **infinitive — register-neutral** | `cs`, `lt`, `lv`, `sk` | `Zobrazit`/`Smazat`, `Įrašyti`/`Ištrinti`/`Atsisakyti`, `Saglabāt`/`Dzēst`/`Atcelt`, `Uložiť`/`Odstrániť`/`Zrušiť` |
-| **verbal noun — register-neutral** | `ro` | `Salvare`/`Ștergere`/`Anulare`/`Adăugare endpoint` |
+| **verbal noun — register-neutral** | `ro`, `bg` | `Salvare`/`Ștergere`/`Anulare`/`Adăugare endpoint`; `Запазване`/`Изтриване`/`Отказ`/`Добавяне на крайна точка` |
+
+`bg` reaches the same form as `ro` by the ordinary route rather than by divergence, and
+for a reason no Latin-script locale here has: **Bulgarian has no infinitive at all.** It
+lost the form, so the verbal noun (отглаголно съществително, `-не`) is the only
+register-neutral option available — it does the job the infinitive does in
+`cs`/`lt`/`lv`/`sk`, and the "infinitive" row is simply not reachable for this language.
+Core `bg` is genuinely mixed (44 catalogue-weighted verbal nouns, 23 bare 2sg
+imperatives, 4 formal 2pl `Потвърдете`, 4 plain nouns), so the measurement alone does not
+decide it; the file does, with 1053 pre-existing values that are verbal nouns or plain
+nouns and not one imperative label.
 
 `ro` is the one locale where the button convention is a **project decision that
 knowingly diverges from core**, rather than a measurement. Core ro uses the bare 2sg
@@ -311,8 +321,21 @@ locale's expression**. Equal counts do not mean equal boundaries:
   `_%n entry has no hash yet_` array already had the dual verb right (`nimata` vs
   `nimajo`) and is the model to copy
 
+- `bg` — `nplurals=2; plural=(n != 1)`, the simplest header in the set, and the one
+  locale where the **arity is not the problem**. Bulgarian masculine non-person nouns
+  have a separate counting form (числителна форма, `-а`/`-я`) used after a numeral,
+  distinct from the ordinary plural: `обект` → `обекти` bare but `обекта` after a
+  number, likewise `запис`/`записа`, `файл`/`файла`, `регистър`/`регистъра`. So the
+  noun form is chosen by **the sentence, not the form index** —
+  `_Delete {count} object_` takes `Изтриване на {count} обекта` because a numeral
+  precedes, while `_Object successfully deleted_` takes `Обектите са изтрити успешно`
+  because none does. Two keys, one form index, two different words. Masculine person
+  nouns keep the plural (`{count} членове`); feminine and neuter have no count form
+  (`схема` → `схеми` either way)
+
 All are mutually incompatible. `npm run test:l10n:parity` catches
-wrong *length*; nothing can catch a Polish array pasted into Czech. Verify the
+wrong *length*; nothing can catch a Polish array pasted into Czech, and nothing at all
+catches the Bulgarian count form. Verify the
 forms are reachable by driving the real `@nextcloud/l10n`: call `unregister()` and
 `setLanguage(loc)` first, because `register(app, bundle)` **ignores** a plural
 function passed to it and installs the library's own `getPlural`. For `hr`,
@@ -639,14 +662,119 @@ catalogue under `sl.json`, a Croatian word turning up in a Slovenian bundle is n
 coincidence to shrug at. A cheap check that caught nothing else: scan the finished
 bundle for `ć đ ě ř ů ą ę ł ń ś ź ż`, none of which exist in Slovenian orthography.
 
-Twenty-five locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
+### `bg` is the first locale where the imperative is detectable in *part* of the verb system
+
+Every locale before this one was all-or-nothing about the bare 2sg imperative: `sk`
+counts it, `ca`/`et`/`hr`/`sl` exclude it. Bulgarian splits by conjugation class, and
+`detectors/bg.js` is the first detector to enumerate half a paradigm:
+
+- **и-conjugation (`-я`/`-иш`) imperatives are unusable, for two reasons rather than
+  one.** `запази` is simultaneously the 2sg imperative, the 3sg present (`може да
+  запази`) and the 3sg **aorist** (`той запази`). The aorist collision is the novel
+  part — no other locale's imperative homograph reaches into the *past* tense — and it
+  is live in this bundle's own prose: `Анализът завърши:` and `Изтриването завърши` are
+  aorists spelled exactly like the imperatives of `завърша`. Same for `провери`,
+  `добави`, `отвори`, `потвърди`.
+- **а-conjugation (`-ай`/`-вай`/`-й`) imperatives are unambiguous**, because the 3sg
+  present of that class ends in `-а`/`-ва`: `опитай` vs `опитва`, `изпълнявай` vs
+  `изпълнява`, `записвай` vs `записва`, `копирай` vs `копира`.
+
+That split earned its keep immediately. The two informal values this bundle already
+shipped — `Изпълнявай надзорни проверки преди всяка стъпка` and `Записвай одитен запис
+за всяка стъпка`, both settings-toggle labels the English source phrases imperatively —
+are **both** а-conjugation, so excluding the whole paradigm would have found neither.
+Corrected to the verbal nouns `Изпълняване на…` and `Вписване на…`; `вписване` also
+removes the `Записвай … запис` repetition that the direct fix would have kept.
+
+One thing to say out loud about counting any imperative: the detector measures against
+**this bundle's** label convention, not core's. Core `bg` uses `-й` imperatives as
+labels in 29 places, so pointed at core it would report noise — which is also why the
+core register scan's raw informal figure needs splitting before it is read at all (see
+below).
+
+### `bg` traps
+
+1. **`-те` is the definite plural article** as well as the 2pl verb ending, and the
+   article is the single commonest morpheme in the language. `файловете`, `обектите`,
+   `потребителите`, `Членовете`, `настройките` are all nouns. A `-те` suffix rule scores
+   essentially every plural noun phrase in the app as formal prose and the measurement
+   becomes noise — a *louder* version of the same failure `hr`, `sk` and `sl` have.
+2. **Bare `те` is the 3pl pronoun *they*,** not just the 2sg accusative clitic. This
+   bundle says `Те могат да бъдат възстановени по-късно` — *of objects*. Left unmatched.
+3. **Bare `си` is the reflexive possessive clitic**, commonest in formal prose
+   (`за да прецизирате търсенето си`), as in `hr`/`sk`/`sl`.
+4. **`-ш` inverts polarity**, the third locale in a row: `ваш` (your-FORMAL) and `наш`
+   both end in it.
+5. **`трябва` is not a person marker.** It is impersonal 3sg; in `Трябва да сте влезли`
+   the register is carried by `сте`. Matching `трябва` would score impersonal
+   requirement text as formal address.
+6. **The useful negative: bare `ти` IS usable here.** Bulgarian lost its case system and
+   its plural demonstrative is `тези`/`тия`, so `ти` has none of the demonstrative
+   reading that makes it unusable in `cs`, `hr` and `sl`. Do not port that exclusion
+   across the family by analogy — it costs real recall for nothing.
+7. **`брой` is the noun *count* as well as an imperative**, and it is a noun in every
+   place this bundle uses it (`Брой обекти за обработка`, `Максимален брой резултати`).
+
+**Split the core informal count by what each hit is.** `bg` measured 699 formal markers
+against 43 informal over 3451 values in 27 catalogues — but 29 of the 43 are core using a
+2sg imperative as a *button label* (`Копирай`, `Актуализирай`, `Преименувай`, `Запиши`),
+which is a label-style choice, not prose address. Only 11 values carry informal **prose**,
+and they cluster in `core/bg.json` and `encryption/bg.json` (`Можеш да затвориш този
+прозорец`, `старата ти парола`). So the prose ratio is 699:11. Unsplit, 43 reads like a
+minority position worth weighing; split, it is a style choice plus eleven legacy strings.
+Worth doing wherever the scan comes out close — `ro`'s MIXED 124 vs 66 is exactly that
+shape.
+
+**The count form is a plural hazard no gate can see.** `bg` has the simplest header in the
+project (`nplurals=2; plural=(n != 1)`) and still needs care, because Bulgarian masculine
+non-person nouns take a separate counting form (числителна форма, `-а`/`-я`) after a
+numeral: `обект` → `обекти` as a bare plural but `обекта` after a number, likewise
+`запис`/`записа`, `файл`/`файла`, `регистър`/`регистъра`, `имейл`/`имейла`. Which form a
+plural array needs therefore depends on **whether the string contains a numeral**, not on
+the form index — `_Delete {count} object_` needs `Изтриване на {count} обекта` while
+`_Object successfully deleted_` needs `Обектите са изтрити успешно`. Masculine *person*
+nouns keep the plural (`{count} членове`); feminine and neuter have no count form at all
+(`схема` → `схеми` either way). The pre-existing `_%n entry has no hash yet_` array already
+had `%n записа` and was the model to follow.
+
+Terminology: `bg` translates domain prose fully but keeps Latin-script initialisms
+unchanged rather than transliterating them into Cyrillic — `CSV`, `PDF`, `RBAC`, `URL`,
+`ID`, `DSAR`, `JSON`, `OAS`, `Slug`, and `push` in `Push известия` (all pre-existing
+practice). Coinages: `уебхук` for webhook, `полезен товар` for payload, `фрагмент` for
+chunk, `вграждане` for embedding, `одитна следа` for audit trail, `изглед` for view,
+`табло` for dashboard, `запечатване` for seal, `достоверност` for confidence, `меко
+изтрит` for soft-deleted, `Срок на съхранение` for `Bewaartermijn`, `дейност по
+обработване` for `verwerkingsactiviteit`, `Отчетност` for `Verantwoording`.
+
+Three collisions the language forced, all resolved in favour of the pre-existing value:
+**Connections** → `Свързвания`, because `Връзки` was already **Relations** (and the
+`Links` entity type); **Subject** (the GDPR data subject) → `Субект на данните` spelled
+out, because bare `субект` was already **entity** in twenty-odd keys — the `lt` fix of
+coining a different word for *entity* was not available, since that value had shipped;
+and **Bucket** → `Сегмент`, never "интервал", because `Interval` is its own key. One
+collision was left standing deliberately: **Cancel** and **Denial** are both `Отказ`,
+which is the right Bulgarian word for each (the dialog button, and the GDPR refusal of a
+request — and what core `bg` uses for Cancel in ten catalogues). They never share a
+screen, and forcing a distinction would have made one of them wrong.
+
+Orthography: ellipsis follows the **key's own** punctuation (`...` where the source has
+`...`, ` …` where it has ` …`), ranges take a plain hyphen matching the source, long prose
+takes an em dash with spaces, and the dative clitic is written `ѝ` with the grave accent —
+never `и`. That last one is a marker of careful Bulgarian and the pre-existing bundle
+already got it right (`може вече да не ѝ съответстват`).
+
+Twenty-six locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
 `nb`, `pl`, `cs`, `ru`, `uk`, `el`, `fi`, `hu`, `tr`, `ca`, `et`, `hr`, `lt`, `lv`,
-`ro`, `sk`, `sl`. Remaining high-confidence order: `bg`, `sr`. The nine
+`ro`, `sk`, `sl`, `bg`. Remaining high-confidence: `sr`. The nine
 low-resource locales (`ga`, `mt`, `rm`, `is`, `lb`, `sq`, `mk`, `be`, `bs`) are
 deliberately last — **ask before starting them.**
 
 For non-Latin locales (`ru`, `uk`, `bg`, `be`, `mk`, `sr`, `el`) a script-coverage
-check replaces the English-leftover check. Note it cannot distinguish an
+check replaces the English-leftover check, and it is now a committed script:
+`npm run l10n:script -- <loc>`. Note it cannot distinguish an
 untranslated string from a correct one built around a literal identifier — `ru`
 legitimately retains 11 such values (`conversationId`, `fileCollection`,
-`Zookeeper`, file paths), where every word of prose *is* translated.
+`Zookeeper`, file paths), where every word of prose *is* translated. `bg` retains
+16, and all 16 are recorded: the 14 cognates plus the two case normalisations
+(`Id` → `ID`, `Url` → `URL`). The script prints Latin runs found *inside* otherwise
+translated values too, which is the half the older ad-hoc checks missed.

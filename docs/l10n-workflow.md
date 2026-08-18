@@ -52,7 +52,7 @@ N locale(s) declared finished and held at key-for-key parity:  <the finished set
 M of those also hold every English-identical value to a recorded justification: <enforced>
 K finished locale(s) predate the cognate rule and are NOT yet held to it: <unreviewed>
 L locale(s) still in progress (not gated):
-  · frontend (.js) bg: 999 of 2052 key(s) to go        <- the backlog, with counts
+  · frontend (.js) <loc>: 999 of 2052 key(s) to go     <- the backlog, with counts
 OK — every finished locale is at full parity
 ```
 
@@ -109,17 +109,17 @@ is how you tell "in progress" from "broken".
 
 ### 2.3 Order of work
 
-Two locales remain in the high-confidence group: **`bg`, then `sr`.** After those, nine
-low-resource locales: `ga mt rm is lb sq mk be bs`. The owner does not want the
-low-resource group prioritised — take them last, and **ask before starting them.**
+One locale remains in the high-confidence group: **`sr`.** After it, nine low-resource
+locales: `ga mt rm is lb sq mk be bs`. The owner does not want the low-resource group
+prioritised — take them last, and **ask before starting them.**
 
 Durable per-locale notes for the ones not yet done (facts about the language or the
 sources, not counts — these will not go stale):
 
 | Locale | Note |
 | --- | --- |
-| `bg` `sr` `mk` `be` | Non-Latin. A **script-coverage** check replaces the English-leftover sweep in §5 step 8 |
-| `sr` | Same plural expression as `hr`/`ru`; also written in both scripts in the wild — check which this bundle uses |
+| `sr` `mk` `be` | Non-Latin. `npm run l10n:script` replaces the English-leftover sweep in §5 step 8 |
+| `sr` | Same plural expression as `hr`/`ru`; also written in both scripts in the wild — check which this bundle uses, and record it in `SCRIPTS` in `script-coverage.js` |
 | `ga` | Header declares 5 forms, the library selects only 3. Harmless dead forms (§6.7) |
 | `mt` | Already ships a **suspect array** — forms 2 and 3 fall back to the singular. Verify before trusting it |
 | `rm` | Library selects **1** form, so a plural key can never render its plural. Library constraint, not a data defect |
@@ -305,6 +305,7 @@ Three gotchas, all load-bearing:
 | `npm run l10n:selfcheck -- <loc>` | 16 assertions, incl. a diff against `HEAD` and a serializer round-trip | must be all-pass before committing |
 | `npm run l10n:runtime -- <loc>` | drives the real `@nextcloud/l10n` against the real bundle | the only thing that catches a wrong plural boundary |
 | `npm run l10n:gatetest -- <loc>` | proves the parity gate really fails when this locale loses a key | last step of a pass; restores the bundle itself |
+| `npm run l10n:script -- <loc>` | script coverage for a **non-Latin** locale: values carrying no target-script character, plus every Latin run | §5 step 8, in place of the English-leftover scan. A reading aid — never fails |
 | `npm run check:l10n` | developer audit: missing / unused / unwrapped | **`0 missing, 0 unused`** is the invariant; the unwrapped count is a known backlog (§10) |
 | `npm run test:l10n` | CI gate: `en.js` covers every `t()`/`n()` call | the coverage gate. `check:l10n` is the richer audit of the same extraction — it adds unused + unwrapped and has no write mode |
 | `npm run test:l10n:parity` | CI gate: parity, empty, arity, cognates | |
@@ -374,7 +375,8 @@ node scripts/l10n/detectors/<loc>.js
 
 Templates: `hr.js` and `sl.js` for formal-prose/imperative-buttons, `et.js` if the locale
 turns out informal (its polarity is inverted), `sk.js` if the 2sg imperative is detectable
-(§6.5), `ro.js` if you need a label-position bound.
+(§6.5), `bg.js` if it is detectable for only **part** of the verb system, `ro.js` if you need
+a label-position bound.
 
 ---
 
@@ -384,7 +386,7 @@ Twelve steps. Skipping step 2, 5 or 8 is what produces a locale that passes ever
 is wrong.
 
 ```bash
-LOC=bg
+LOC=sr
 SCRATCH=/tmp/…/scratchpad        # anywhere outside the repo
 ```
 
@@ -455,9 +457,22 @@ the bundle, so records and values must land together.
   Slovenian that is `ć đ ě ř ů ą ę ł ń ś ź ż`; it is how the Croatian `trag` was found.
   For Slovak, `ě ř ů ą ę ć ś ź ż`.
 - **Non-Latin locales** (`bg sr mk be`): a **script-coverage** check replaces the
-  English-leftover check — assert values are in the expected script. It cannot distinguish
-  an untranslated string from a correct one built around a literal identifier, so read the
-  hits.
+  English-leftover check, because for a Cyrillic target the signal is the script rather than
+  the vocabulary — an untranslated English value and a correct Bulgarian one are both just
+  words.
+
+  ```bash
+  npm run l10n:script -- $LOC        # never fails a build; it is a reading aid
+  ```
+
+  It prints two lists. **Values with no target-script character at all** should each be a
+  recorded cognate or a normalisation (`Url` → `URL`) — for `bg` the list came to exactly the
+  14 cognates plus those two. **Latin runs inside translated values** should all be
+  placeholders, product names, acronyms or literal example values; read them once and
+  confirm. The `bg` sweep turned up 148 distinct runs and every one was `{count}`,
+  `Nextcloud`, `HTTP`, `localhost`, `config.json` or similar. The script requires the locale
+  as an argument and refuses a locale whose expected alphabet is not recorded in it, since
+  `sr` also ships in Latin in the wild.
 - **Your own typos.** Grep for the near-miss spellings of the words you used most. The `sl`
   pass shipped `namesčen` for `nameščen` in 8 values this way.
 
@@ -500,7 +515,7 @@ nineteen.
 **12. Regression-check every recorded locale, then commit.**
 
 ```bash
-for l in tr ca et hr lt lv ro sk sl $LOC; do
+for l in tr ca et hr lt lv ro sk sl bg $LOC; do
   node scripts/l10n/selfcheck.js $l | tail -1
   node scripts/l10n/detectors/$l.js | grep controls
   node scripts/l10n/runtime-check.mjs $l | tail -1
@@ -576,6 +591,30 @@ data, not the language family.**
 
 If the imperative is a 3sg homograph but you still need to catch it in *labels*, use a
 position bound: string-initial plus a length cap (`ro.js` uses 40 characters).
+
+**There is a third outcome: PARTIALLY detectable, split by conjugation class.** `bg` is the
+first, and the split is worth looking for elsewhere because it is free precision:
+
+- Bulgarian **и-conjugation** imperatives are unusable, and doubly so. `запази` is at once
+  the 2sg imperative, the 3sg present (`може да запази`) *and* the 3sg **aorist**
+  (`той запази`) — and the aorist reading is live in ordinary UI prose, which no other
+  locale's homograph is. `Анализът завърши:` and `Изтриването завърши` are real values in
+  this bundle spelled exactly like imperatives.
+- Bulgarian **а-conjugation** imperatives are unambiguous, because the 3sg present of that
+  class ends in `-а`/`-ва`: `опитай` vs `опитва`, `изпълнявай` vs `изпълнява`, `записвай` vs
+  `записва`. Nothing else in the language is spelled that way.
+
+So `detectors/bg.js` enumerates the `-й` class and records the `-и` class in `UNDETECTABLE`.
+That is not a tidiness exercise: the two informal slips already shipped in the `bg` bundle
+were *both* а-conjugation, so a whole-class exclusion would have found neither. When a
+locale fails test 2, check whether it fails it for **all** of its verb classes before
+excluding the whole paradigm.
+
+One caveat that comes with counting any imperative: it measures against **this bundle's**
+label convention, not core's. Core `bg` uses `-й` imperatives as labels in 29 places while
+this bundle uses verbal nouns throughout — so the detector is right for `patchcheck` on new
+values and would report noise if pointed at core's labels. Say which one it is measuring in
+`locales/<loc>.json`.
 
 ### 6.6 `harvest.js` prints "DROPPED … identical to another locale"
 
@@ -739,8 +778,9 @@ this goes wrong:
 | `is` `mk` | 2 | modular, not `n!=1` |
 | `ga` | 5 | header 5, library selects 3 |
 | `mt` | 4 | |
+| `bg` | 2 | plain `n != 1` — but see the **count form** hazard below |
 
-Three distinct hazards:
+Four distinct hazards:
 
 - **Wrong boundary.** A Croatian array pasted into Lithuanian is wrong for 5–9.
 - **Absolute vs modular.** `sk`/`cs` bound absolutely, so **22 selects form 2** ("22
@@ -749,6 +789,26 @@ Three distinct hazards:
 - **The dual.** Slovenian's form 1 is a real dual: it governs noun case, adjective agreement
   **and verb number** together, so 2 needs `Objekta sta bila izbrisana` where the plural
   needs `Objekti so bili izbrisani`.
+- **A separate counting form, chosen by the SENTENCE and not by the form index.** This one is
+  lexical rather than structural, so `nplurals` gives no warning at all — `bg` has the
+  simplest header in the set and still needs it. Bulgarian masculine nouns that do not denote
+  persons take a **count form** (числителна форма, `-а`/`-я`) after a numeral, distinct from
+  the ordinary plural: `обект` → `обекти` as a bare plural but `обекта` after a number, and
+  likewise `запис`/`записа`, `файл`/`файла`, `регистър`/`регистъра`. So which noun form form 1
+  needs depends on **whether the string contains a numeral**:
+
+  ```js
+  "_Delete {count} object_::_Delete {count} objects_":            // numeral present
+      ["Изтриване на {count} обект", "Изтриване на {count} обекта"]
+  "_Object successfully deleted_::_Objects successfully deleted_": // no numeral
+      ["Обектът е изтрит успешно", "Обектите са изтрити успешно"]
+  ```
+
+  Two keys, one locale, one form index, two different noun forms. Masculine **person** nouns
+  keep the plural (`{count} членове`), and feminine/neuter have no count form at all
+  (`схема` → `схеми` either way). The pre-existing `_%n entry has no hash yet_` array already
+  had `%n записа` and is the model. Look for this in any locale whose grammar has a
+  paucal/counting form — it is invisible to every gate in the project.
 
 `test:l10n:parity` catches wrong **length** only. Nothing catches a wrong boundary except
 `l10n:runtime` on this locale's own counts.
@@ -778,12 +838,22 @@ Formal: `fr cs ru uk tr el sr bg ca hr lt ro sk sl`.
 | `ca` | formal | 491 vs 32 |
 | `et` | **informal** | 415 vs 3 — core overruled the file |
 | `sl` | formal | 304 vs 0 |
+| `bg` | formal | 699 vs 43 — but the 43 needs splitting; **prose is 699 vs 11** |
 | `ro` | formal | core **MIXED** 124 vs 66 → decided by the bundle (84 vs 0) + owner |
 | `lv` | **informal** | 44 vs 3 — core overruled the file; 78 values corrected |
 
 Latvian's low counts are structural, not weak evidence: most correct informal Latvian is
 undetectable by design, so **zero formal markers is the assertion that matters**, not a high
 informal count.
+
+**Split the informal count by what the hit IS before reading a verdict.** For `bg`, 29 of the
+43 informal hits are core using a 2sg imperative as a *button label* (`Копирай`,
+`Актуализирай`, `Преименувай`); only 11 are informal **prose** (a `ти`/`теб`/`твой` pronoun or
+a 2sg present), and those cluster in two old catalogues. Unsplit, 43 looks like a real
+minority position worth weighing; split, it is a label-style choice plus eleven legacy
+strings. This matters most where the scan comes out closer than `bg` did — `ro`'s MIXED 124
+vs 66 (§6.4) is exactly the shape that deserves the same treatment before anyone is asked to
+decide.
 
 ### 7.3 Button conventions — four patterns
 
@@ -792,9 +862,19 @@ informal count.
 | same register as prose | `tr` `ru` | formal imperative |
 | bare 2sg imperative, whatever the prose | `ca` `et` `hr` `sl` | `Desa`, `Salvesta`, `Spremi`, `Shrani` |
 | **infinitive — register-neutral** | `cs` `lt` `lv` `sk` | `Zobrazit`, `Įrašyti`, `Saglabāt`, `Uložiť` |
-| **verbal noun — register-neutral** | `ro` | `Salvare`, `Adăugare endpoint` |
+| **verbal noun — register-neutral** | `ro` `bg` | `Salvare`, `Adăugare endpoint`; `Запазване`, `Добавяне на крайна точка` |
 
 Infinitive buttons must **not** be "corrected" to imperatives.
+
+`bg` reaches the verbal noun for a different reason than `ro`, and the difference is worth
+keeping straight. Bulgarian **has no infinitive**, so the verbal noun (отглаголно
+съществително, `-не`) is the only register-neutral form available — it does the job the
+infinitive does in `cs`/`lt`/`lv`/`sk`. Core `bg` is genuinely mixed about it (44
+catalogue-weighted verbal nouns against 23 imperatives, 4 formal 2pl and 4 plain nouns), so
+the measurement alone does not settle it; the tie is broken by the file, whose 1053
+pre-existing values are verbal nouns and plain nouns without a single imperative label. That
+is the ordinary §3.5 rule, not a divergence — unlike `ro`, where the convention **knowingly
+contradicts** core because the dual-role `Create`/`Read`/`Update`/`Delete` keys force it.
 
 `ro` is the only locale where the convention is a **project decision that knowingly diverges
 from core**, and it was forced: `Create`/`Read`/`Update`/`Delete` are single keys rendered
@@ -867,6 +947,16 @@ Use closed word lists. Always.
 | `lv` | feminine `-e` nouns have accusative `-i`, colliding with the imperative (`pārbaudi`) | same |
 | `ro` | `vă` (formal) vs `va` (3sg future auxiliary), one diacritic apart | match only `vă` |
 | `ro` | `ai` = 2sg of *avea*, the possessive article, **and** the acronym **AI** under folding | exclude |
+| `bg` | `те` = 2sg accusative clitic **and** the 3pl pronoun *they* | leave unmatched — the bundle says "Те могат да бъдат възстановени" *of objects* |
+| `bg` | `-те` is the 2pl verb ending **and** the **definite plural article**, the commonest morpheme in the language | never a suffix rule; `файловете`, `Членовете`, `настройките` are all nouns |
+| `bg` | `си` = 2sg of *to be* **and** the reflexive possessive clitic, commonest in **formal** prose | leave unmatched, as in `hr`/`sk`/`sl` |
+| `bg` | `трябва` looks like address but is **impersonal 3sg** | do not match; in `Трябва да сте влезли` the register is carried by `сте` |
+
+The useful **negative** result: bare `ти` **is** usable in Bulgarian, unlike `cs` `ty`, `hr`
+`ti` and `sl` `ti`. Bulgarian lost its case system and its plural demonstrative is
+`тези`/`тия`, so there is no demonstrative reading to collide with. Do not port the
+"leave the bare pronoun unmatched" rule across the family without checking — it costs real
+recall where it is not needed.
 
 ### 8.3 JavaScript and Unicode traps
 
@@ -923,6 +1013,22 @@ Check that a coinage does not collide with a term the bundle already uses:
   **Cancel** on the same screen.
 - `lt` **Reports** → `Ataskaitos`, to stay distinct from `Pranešimai` (*Notifications*);
   **Approve** `Pritarti` distinct from **Confirm** `Patvirtinti`.
+- `bg` **Connections** → `Свързвания`, because `Връзки` is already this bundle's word for
+  **Relations** (and for the `Links` entity type), and the Relations tab and the Connections
+  sidebar are both object-sidebar surfaces.
+- `bg` **Subject** (the GDPR data subject) → `Субект на данните` spelled out, because the
+  pre-existing bundle uses bare `субект` for **entity** in 20-odd keys. The `lt` fix — coining
+  a different word for *entity* — was not available here: `субект` for entity was already
+  shipped, so the qualifier goes on the GDPR sense instead.
+- `bg` **Golden record / Winning source / Winning value / survivorship** all take `водещ`
+  (`Водещ запис`, `Водещ източник`, `Водеща стойност`) so the MDM vocabulary reads as one
+  family, with **Survivor** as `Оцелял запис` where the source distinguishes it.
+
+Some collisions are **unavoidable and should be recorded rather than worked around**: `bg`
+renders both **Cancel** and **Denial** `Отказ`, which is the right Bulgarian word in each
+case (the dialog button, and the GDPR refusal of a request) and is what core `bg` uses for
+Cancel in ten catalogues. They never share a screen. Forcing an artificial distinction would
+have made one of the two wrong.
 
 Also watch for locale-specific renderings of acronyms that the bundle has already fixed:
 **AI** is `MI` in Latvian and `UI` in Slovenian (*umetna inteligenca*) — but product names
