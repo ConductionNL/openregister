@@ -211,14 +211,16 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 			"the step palette did not render, so the empty state's own instruction cannot be followed",
 		).toBeVisible()
 
-		const actions = page.locator('.cn-flow-sidebar__actions')
-		await expect(actions).toBeVisible()
+		// Save and Run moved onto the canvas toolbar (flow-editor
+		// consolidation): the actions that concern the graph live on the graph.
+		const toolbar = page.getByRole('toolbar', { name: 'Flow editor' })
+		await expect(toolbar).toBeVisible()
 
-		const saveButton = actions.getByRole('button', { name: 'Save', exact: true })
-		const runButton = actions.getByRole('button', {
-			name: 'Run now',
+		const saveButton = toolbar.getByRole('button', {
+			name: 'Save',
 			exact: true,
 		})
+		const runButton = toolbar.getByRole('button', { name: 'Run', exact: true })
 		await expect(saveButton).toBeVisible()
 		await expect(runButton).toBeVisible()
 
@@ -251,15 +253,16 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// nothing is shown client-side. The only symptom was this spec's
 		// `waitForURL` sitting out its full 20s.
 		//
-		// So wait for the state the save actually requires, and say so. Asserted
-		// as "not blank" rather than against the literal default name, which
-		// belongs to @conduction/nextcloud-vue and is not this repo's contract.
+		// So wait for the state the save actually requires, and say so. The
+		// name field now lives behind the sidebar's Flow tab, but the toolbar's
+		// Save button is disabled exactly while the flow has no name — so its
+		// enablement IS the "editor initialised" signal, with no tab click.
 		await expect(
-			sidebar.getByLabel('Name', { exact: true }),
+			saveButton,
 			'the editor never initialised — the flow store is still holding its '
 				+ 'blank initial state, whose name is empty, and a flow with no name '
 				+ 'is rejected by the server',
-		).not.toHaveValue('')
+		).toBeEnabled()
 
 		// 2. A STEP CAN BE ADDED.
 		//
@@ -288,9 +291,27 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// reason the job went red: `EndNode::getLabel()` returns `t('End')`, and
 		// the palette has carried no entry called "Stop" since that commit.
 		await clickThemed(palette.getByText('End', { exact: true }).first())
+		const endCard = page.locator('.cn-flow-detail__node', { hasText: 'End' })
+		await expect(endCard, 'the step did not reach the canvas').toBeVisible()
+
+		// Connect the seeded start node to the End step, or the saved flow has
+		// a dead end and `FlowRunService::queue()` refuses to run it. A new
+		// flow now opens with the manual-trigger start node already on the
+		// canvas (flow-editor consolidation), and the canvas's KEYBOARD
+		// connection path (`c` on the source, `c` on the target) is used
+		// because drag-to-connect is exactly the interaction this file already
+		// documents as unreliable.
+		const startCard = page.locator('.cn-flow-detail__node', {
+			hasText: 'When someone runs it',
+		})
+		await expect(startCard, 'the seeded start node is missing').toBeVisible()
+		await startCard.click()
+		await page.keyboard.press('c')
+		await endCard.click()
+		await page.keyboard.press('c')
 		await expect(
-			page.locator('main').getByText('End', { exact: false }).first(),
-			'the step did not reach the canvas',
+			page.locator('.cn-flow-detail__edge').first(),
+			'the connection did not reach the canvas',
 		).toBeVisible()
 
 		// 3. SAVE PERSISTS.

@@ -18,6 +18,12 @@ export default {
 	name: 'FlowDetailPage',
 	components: { CnFlowDetail },
 
+	/**
+	 * Share the one flow store with the toolbar's save/run handlers.
+	 *
+	 * @return {object} The setup bindings.
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
 	setup() {
 		return { store: useFlowStore() }
 	},

@@ -246,7 +246,15 @@ test.describe('the Flows page', () => {
 	test.use({ storageState: STORAGE_STATE, extraHTTPHeaders: { ...API_HEADERS } })
 
 	test('lists flows and opens one', async ({ page, request }) => {
-		const flow = await createFlow(request, { name: `${RUN_ID} visible` })
+		// A flow WITH a step, so the detail page has something only this flow
+		// shows. The list is where the name is visible text; on the detail
+		// page the name lives in a form field, which `getByText` cannot see —
+		// the original text assertion there had never actually run (the
+		// describe is env-gated) and could not have passed.
+		const flow = await createFlow(request, {
+			name: `${RUN_ID} visible`,
+			nodes: [{ id: 'end1', type: 'openregister.end', config: {} }],
+		})
 
 		// `networkidle` never settles on Nextcloud (ADR-074 rule 4) — the
 		// readiness signal is the row/name assertion that follows each goto.
@@ -262,17 +270,94 @@ test.describe('the Flows page', () => {
 			waitUntil: 'domcontentloaded',
 		})
 
-		// Assert the FLOW, not just its frame: `.cn-flow-detail` is the
-		// nc-vue detail shell and renders for any flow, including one that
-		// failed to load. The name is the thing that proves this page is
-		// showing the flow we just created.
-		await expect(page.getByText(`${RUN_ID} visible`)).toBeVisible({
+		// Assert the FLOW, not just its frame: `.cn-flow-detail` renders for
+		// any flow, including one that failed to load. The card for the step
+		// we stored is what proves this page shows the flow we just created —
+		// scoped to the canvas, because the sidebar palette also says "End".
+		await expect(page.locator('.cn-flow-detail')).toBeVisible({ timeout: 15000 })
+		await expect(
+			page.locator('.cn-flow-detail__node', { hasText: 'End' }),
+		).toBeVisible({ timeout: 15000 })
+	})
+
+	test('the list is an ordinary index page with a New flow action (ADR-096)', async ({
+		page,
+	}) => {
+		await page.goto(`/apps/openregister/#${FlowsIndex}`, {
+			waitUntil: 'domcontentloaded',
+		})
+
+		// CnIndexPage chrome, not the deprecated bespoke table.
+		await expect(page.locator('.cn-index-page')).toBeVisible({ timeout: 15000 })
+
+		// The header-actions slot renders. It was documented from the start and
+		// wired to nothing — this button shipped into the void on hermiq.
+		await expect(page.getByRole('button', { name: 'New flow' })).toBeVisible({
+			timeout: 15000,
+		})
+	})
+
+	test('a new flow is the SAME editor holding only a starting point', async ({
+		page,
+	}) => {
+		await page.goto(`/apps/openregister/#${FlowDetailPage('new')}`, {
+			waitUntil: 'domcontentloaded',
+		})
+
+		// The toolbar is the editor's identity — the actions that concern the
+		// graph, on the graph.
+		const toolbar = page.getByRole('toolbar', { name: 'Flow editor' })
+		await expect(toolbar).toBeVisible({ timeout: 15000 })
+		await expect(toolbar.getByRole('button', { name: 'Save' })).toBeVisible()
+		// The engine runs the STORED flow, so an unsaved one cannot run.
+		await expect(toolbar.getByRole('button', { name: 'Run' })).toBeDisabled()
+
+		// The seeded start node: an empty render of the same builder, never a
+		// blank page wearing the "No steps yet" empty state.
+		await expect(
+			page.locator('.cn-flow-detail__node', {
+				hasText: 'When someone runs it',
+			}),
+		).toBeVisible({ timeout: 15000 })
+		await expect(page.getByText('No steps yet')).toHaveCount(0)
+
+		// The palette offers the catalogue, and an in-flight catalogue is not
+		// reported as an unreadable one (the failure text used to show on
+		// every first paint of this route).
+		await expect(
+			page.locator('.cn-flow-sidebar__palette-item').first(),
+		).toBeVisible({ timeout: 15000 })
+		await expect(page.getByText('could not be read')).toHaveCount(0)
+	})
+
+	test('saving a new flow swaps the route to the minted id', async ({
+		page,
+		request,
+	}) => {
+		await page.goto(`/apps/openregister/#${FlowDetailPage('new')}`, {
+			waitUntil: 'domcontentloaded',
+		})
+
+		const toolbar = page.getByRole('toolbar', { name: 'Flow editor' })
+		await expect(toolbar.getByRole('button', { name: 'Save' })).toBeEnabled({
+			timeout: 15000,
+		})
+		await toolbar.getByRole('button', { name: 'Save' }).click()
+
+		// `replace`, not `push`: Back must still mean "the page before the
+		// editor", and a reload must not land on `new` again.
+		await expect(page).not.toHaveURL(/\/flows\/new$/, { timeout: 15000 })
+		const minted = page.url().match(/\/flows\/([0-9a-f-]{36})/)?.[1]
+		expect(minted, `minted id in ${page.url()}`).toBeTruthy()
+
+		// Run is the observable difference between stored and unsaved.
+		await expect(toolbar.getByRole('button', { name: 'Run' })).toBeEnabled({
 			timeout: 15000,
 		})
 
-		// The canvas renders its empty state for a flow with no steps, which is
-		// the honest answer rather than a blank page.
-		await expect(page.locator('.cn-flow-detail')).toBeVisible({ timeout: 15000 })
+		// This suite cleans up what it mints.
+		const del = await request.delete(`/apps/openregister/api/flows/${minted}`)
+		expect(del.status()).toBe(200)
 	})
 
 	/**

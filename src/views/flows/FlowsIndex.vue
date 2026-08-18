@@ -19,7 +19,12 @@
 <template>
 	<CnIndexPage
 		:title="t('openregister', 'Flows')"
-		:description="t('openregister', 'A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app\'s flows.')"
+		:description="
+			t(
+				'openregister',
+				'A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app\'s flows.',
+			)
+		"
 		:columns="columns"
 		:objects="rows"
 		:loading="store.loading"
@@ -58,6 +63,12 @@ export default {
 		Plus,
 	},
 
+	/**
+	 * Share the one flow store with the editor pages.
+	 *
+	 * @return {object} The setup bindings.
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
 	setup() {
 		return { store: useFlowStore() }
 	},
@@ -125,7 +136,10 @@ export default {
 				return this.t('openregister', 'Disabled')
 			}
 			if (!flow.owner) {
-				return this.t('openregister', 'Enabled, but has no owner — it will not start')
+				return this.t(
+					'openregister',
+					'Enabled, but has no owner — it will not start',
+				)
 			}
 
 			return this.t('openregister', 'Enabled')
