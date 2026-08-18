@@ -44,7 +44,7 @@ by counting formal vs informal markers across core (`server/core`, `lib`,
 
 Measured results: informal for `nl`, `de`, `sv`, `da`, `nb`, `pl`, `fi`, `hu`,
 `et`, `lv`; formal for `fr`, `cs`, `ru`, `uk`, `tr`, `el`, `sr`, `bg`, `ca`, `hr`,
-`lt`, `sk`. **`sk` is the least ambiguous of any locale measured for this app**:
+`lt`, `sk`, `sl`. **`sk` is the least ambiguous of any locale measured for this app**:
 1001 formal markers against 1 informal over 4991 values in 31 catalogues, beating
 `lt`'s 689 vs 0 on volume. Russian is next: 328 formal pronouns and 164 formal
 imperatives against zero informal.
@@ -100,7 +100,7 @@ core's own short labels — a single verdict for the locale is usually meaningle
 | Pattern | Locales | Buttons |
 | --- | --- | --- |
 | same register throughout | `tr`, `ru` | formal imperative |
-| bare 2sg imperative, whatever the prose | `ca`, `et`, `hr` | `Desa`, `Salvesta`, `Spremi` |
+| bare 2sg imperative, whatever the prose | `ca`, `et`, `hr`, `sl` | `Desa`, `Salvesta`, `Spremi`, `Shrani` |
 | **infinitive — register-neutral** | `cs`, `lt`, `lv`, `sk` | `Zobrazit`/`Smazat`, `Įrašyti`/`Ištrinti`/`Atsisakyti`, `Saglabāt`/`Dzēst`/`Atcelt`, `Uložiť`/`Odstrániť`/`Zrušiť` |
 | **verbal noun — register-neutral** | `ro` | `Salvare`/`Ștergere`/`Anulare`/`Adăugare endpoint` |
 
@@ -144,6 +144,12 @@ that to any new locale, check both halves: the imperative must be distinguishabl
 from the third person *and* must not be the locale's own label convention. See the
 `sk` section below.
 
+**`sl` is the control that proves the rule is not about language family.** Slovenian
+is Slovak's neighbour and fails *both* halves of that test — its imperative is the
+label convention AND a 3sg homograph across the whole `-iti` class — so its detector
+excludes what `sk`'s counts. Two adjacent Slavic locales, opposite answers, from the
+same test applied honestly.
+
 Three consecutive locales came out three different ways (`tr` formal 841:0, `ca`
 formal 491:32, `et` **informal** 415:3). Carrying an answer over from the previous
 locale would pass every automated check while being wrong in every string that
@@ -168,6 +174,8 @@ register-neutral button labels and must not be "corrected" to imperatives.
 | `ru` | `вы`/`ваш` are the ordinary polite address, not a plural-only form | not evidence of anything — don't match them at all |
 | `hr` | `ti` = informal *you* **and** the masculine nominative plural of `taj` (`ti objekti` = *those objects*) — the same collision as `cs` `ty` | leave bare `ti` unmatched; the oblique forms (`tebe`/`tebi`/`tobom`) and the `tvoj-` possessive are unambiguous |
 | `hr` | `si` = 2sg of *biti* **and** the reflexive dative clitic, which occurs in formal sentences (`možete si odabrati`) | leave bare `si` unmatched; use `nisi`/`jesi` |
+| `sl` | `te` = accusative of informal `ti`, **and** the accusative plural of `ta` (`te datoteke` = *these files*), **and** the 2pl verb ending — three readings for two letters | leave bare `te` unmatched, like `ti`. The `tvoj-` possessive and `tebe`/`tebi`/`tabo` are unambiguous |
+| `sl` | `vas` = formal *you* (acc/gen) **and** the noun *village* | kept anyway: a village is implausible in this app's domain. Recorded in `UNDETECTABLE` rather than silently accepted |
 | `et` | `teist` = elative of `teie` (*of you*) **and** partitive of `teine` (*another*) — `Proovi teist otsingut` is *informal* 2sg | exclude `teist` entirely. Half of core's apparent formal signal was this one word: removing it took the count 6 → 3 |
 | `tr` | 2sg possessive is spelled identically to the plural genitive (`dosyaların` = *your files* / *of the files*), and 3sg-possessive+accusative collides too (`hesabını`) | all 35 first-pass "informal" hits in core were this. Only `şifre`/`parola` are safe anchors |
 | `lt` | **`gali`, `turi`, `nori` are 2sg *and* 3sg/3pl** — Lithuanian third person makes no number distinction, so these mean *you can/have/want* and *he/they can/have/want* alike. They are the three commonest modals in UI prose (`Registras gali turėti kelias schemas`) | exclude all three. Use only 2sg forms whose 3sg differs: `žinai` (3sg `žino`), `matai`, `gauni`, `esi` |
@@ -289,7 +297,18 @@ locale's expression**. Equal counts do not mean equal boundaries:
   because Romanian inserts `de` before the noun from 20 up, which the runtime
   confirms: `1 email` / `2 emailuri` / `20 de emailuri`
 
-All are 3-form and mutually incompatible. `npm run test:l10n:parity` catches
+- `sl` — `nplurals=4`, the **only** four-form locale in the finished set and the only
+  one with a **dual**. Modular on `n%100`: form 0 is `n%100==1`, form 1 is `n%100==2`
+  (the dual), form 2 is `n%100==3||4`, form 3 is everything else including **zero**.
+  The dual is not a spelling variant of the plural — it governs noun case, adjective
+  agreement **and verb number** at once, so a count of 2 needs `Objekta sta bila
+  uspešno izbrisana` where the plural needs `Objekti so bili uspešno izbrisani`. In an
+  accusative context the four forms are `objekt` / `objekta` / `objekte` / `objektov`;
+  in the nominative, `objekt` / `objekta` / `objekti` / `objektov`. The pre-existing
+  `_%n entry has no hash yet_` array already had the dual verb right (`nimata` vs
+  `nimajo`) and is the model to copy
+
+All are mutually incompatible. `npm run test:l10n:parity` catches
 wrong *length*; nothing can catch a Polish array pasted into Czech. Verify the
 forms are reachable by driving the real `@nextcloud/l10n`: call `unregister()` and
 `setLanguage(loc)` first, because `register(app, bundle)` **ignores** a plural
@@ -550,9 +569,76 @@ would collide), and `Osoby` for `People` — core sk says `Ľudia`, but the bund
 pre-existing parenthesised style: `register(s)` was already `register(-tre)` and
 `schema(s)` already `schéma(-y)`, so those two keys are literally the existing values.
 
-Twenty-four locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
+### `sl` looks like `sk` on the map and behaves like `hr` in the data
+
+The two are neighbours, both West-adjacent South Slavic, both formal in core. They
+agree on nothing else that matters here, and taking `sk`'s answers across would have
+been wrong on every count:
+
+| | `sk` | `sl` |
+| --- | --- | --- |
+| Button labels | infinitive (`Uložiť`) | bare 2sg imperative (`Shrani`) |
+| 2sg imperative in the detector | counted as informal | **excluded** |
+| Plural forms | 3, absolute boundaries | **4**, modular, with a dual |
+| Borrowing | keeps `Webhook`, `Slug`, `Port`, `Audit` | translates all four |
+
+Core sl uses the bare 2sg imperative for 23 of its 26 short labels, with **zero** 2pl
+and zero infinitive; the remaining three are nouns (`Souporaba`, `Izbor`) or the
+adverb `Nazaj`. So `sl` joins `ca`/`et`/`hr` in the imperative-buttons row, and its
+imperative must be **excluded** from the detector for the ca/et/hr reason *plus* one
+of its own: across the whole `-iti` verb class the 2sg imperative is spelled exactly
+like the 3sg present indicative — `uredi`, `shrani`, `osveži`, `obnovi`, `posodobi`,
+`preveri` are each both "do X!" and "he does X", and all six are button labels in
+this bundle. (`-ati` and `-irati` verbs do differ — `dodaj` vs `doda` — but the
+collision class is far too large to carve out.)
+
+### `sl` traps
+
+1. **`ti` and `te` both point in two directions.** `ti` is informal *you* **and** the
+   masculine nominative plural of `ta` (`ti objekti` = *those objects*) — the `cs`/`hr`
+   collision again. `te` is worse: the accusative of informal `ti`, **and** the
+   accusative plural of `ta` (`te datoteke` = *these files*), **and** the 2pl verb
+   ending. Both are left unmatched; the oblique forms (`tebe`/`tebi`/`tabo`) and the
+   `tvoj-` possessive carry the signal instead.
+2. **Bare `si` is the reflexive dative clitic**, commonest in *formal* prose
+   (`lahko si izberete`), as in `hr` and `sk`.
+3. **`-š` inverts polarity**, exactly as in `hr` and `sk`: `vaš` (your-FORMAL) and
+   `naš` both end in it. Note the asymmetry the closed lists exploit — the 2sg
+   *present* (`spremeniš`, `shraniš`) is safe to enumerate because the 3sg drops the
+   `-š`, while the 2sg *imperative* is not, because it collides with the 3sg.
+4. **`vas` is also the noun "village".** Kept as a formal marker anyway, since a
+   village is implausible in this app's domain, but it is a real false-positive path
+   and is recorded in `UNDETECTABLE`.
+5. **The dual is a third address form** (`vidva želita`) that no other locale here
+   has. It addresses exactly two people, never appears in UI prose, and is not
+   matched — but it is the reason `nplurals=4`.
+
+Terminology: `sl` translates where `ro` and `sk` borrow — `spletni kljuk` for webhook,
+`koristni tovor` for payload, `Vrata` for Port, `Oznaka` for Slug, `žeton` for token,
+`del` for chunk, `vložitev` for embedding, `zgoščena vrednost` for hash, `nadzorna
+plošča` for dashboard, `revizijska sled` for audit trail against `revizijski vnos` for
+an audit entry, `potek dela` for workflow but `tok` for flow. **AI is rendered `UI`**
+(*umetna inteligenca*) — so generic AI strings take `UI` while product names keep the
+English (`Fireworks AI`, `OpenAI`, `Dolphin AI`), following the pre-existing values.
+Two deliberate divergences from the harvest: `Revoke` is `Odvzemi`, not core's
+`Prekliči`, because this bundle already uses `Prekliči` for **Cancel** and the two
+share the account screen; and `Right` is `Pravica`, not core's `Desno`. `Quota` takes
+core's `Količinska omejitev` even though it is long, because settings *is* the quota
+domain. Ellipses take a **space before** in both spellings (`Poteka nalaganje ...`,
+`Preverjanje …`), and progressive states use the impersonal `Poteka X ...`.
+
+Two pre-existing values were corrected, both single occurrences against a large
+consistent majority, and both worth noting as a *class*: `Audit trail #{id}` read
+`Revizijski trag` — **`trag` is Croatian**, Slovenian is `sled`, which the bundle's
+own 14 other audit-trail keys already used — and one confirm dialog opened with
+`Predmeti` against 74 values using `objekt`. Given that openbuild ships a Croatian
+catalogue under `sl.json`, a Croatian word turning up in a Slovenian bundle is not a
+coincidence to shrug at. A cheap check that caught nothing else: scan the finished
+bundle for `ć đ ě ř ů ą ę ł ń ś ź ż`, none of which exist in Slovenian orthography.
+
+Twenty-five locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
 `nb`, `pl`, `cs`, `ru`, `uk`, `el`, `fi`, `hu`, `tr`, `ca`, `et`, `hr`, `lt`, `lv`,
-`ro`, `sk`. Remaining high-confidence order: `sl`, `bg`, `sr`. The nine
+`ro`, `sk`, `sl`. Remaining high-confidence order: `bg`, `sr`. The nine
 low-resource locales (`ga`, `mt`, `rm`, `is`, `lb`, `sq`, `mk`, `be`, `bs`) are
 deliberately last — **ask before starting them.**
 
