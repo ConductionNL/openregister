@@ -81,7 +81,12 @@ class FlowMapper extends QBMapper {
 	 * which is what OpenRegister's own index wants; passing an app id is what
 	 * every leaf app's index wants.
 	 *
+	 * `$applicationSlug` is narrower still and independent of `$app`: one
+	 * Nextcloud app can host several OpenBuild virtual apps, each with its own
+	 * flows. Passing both composes as an AND, not an OR.
+	 *
 	 * @param string|null $app Restrict to one owning app id.
+	 * @param string|null $applicationSlug Restrict to one OpenBuild virtual-app slug.
 	 * @param string|null $organisation Restrict to one organisation uuid.
 	 * @param boolean|null $enabled Restrict to enabled or disabled flows.
 	 * @param integer $limit Page size.
@@ -89,10 +94,11 @@ class FlowMapper extends QBMapper {
 	 *
 	 * @return array<int, Flow> The flows.
 	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
 	 */
 	public function findAllFlows(
 		?string $app = null,
+		?string $applicationSlug = null,
 		?string $organisation = null,
 		?bool $enabled = null,
 		int $limit = 100,
@@ -107,6 +113,10 @@ class FlowMapper extends QBMapper {
 
 		if ($app !== null && $app !== '') {
 			$qb->andWhere($qb->expr()->eq('app', $qb->createNamedParameter($app)));
+		}
+
+		if ($applicationSlug !== null && $applicationSlug !== '') {
+			$qb->andWhere($qb->expr()->eq('applicationSlug', $qb->createNamedParameter($applicationSlug)));
 		}
 
 		if ($organisation !== null && $organisation !== '') {
@@ -129,19 +139,28 @@ class FlowMapper extends QBMapper {
 	 * Count flows matching the same scoping as `findAllFlows()`.
 	 *
 	 * @param string|null $app Restrict to one owning app id.
+	 * @param string|null $applicationSlug Restrict to one OpenBuild virtual-app slug.
 	 * @param string|null $organisation Restrict to one organisation uuid.
 	 *
 	 * @return integer The number of matching flows.
 	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
 	 */
-	public function countFlows(?string $app = null, ?string $organisation = null): int {
+	public function countFlows(
+		?string $app = null,
+		?string $applicationSlug = null,
+		?string $organisation = null,
+	): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('*', 'total'))
 			->from($this->getTableName());
 
 		if ($app !== null && $app !== '') {
 			$qb->andWhere($qb->expr()->eq('app', $qb->createNamedParameter($app)));
+		}
+
+		if ($applicationSlug !== null && $applicationSlug !== '') {
+			$qb->andWhere($qb->expr()->eq('applicationSlug', $qb->createNamedParameter($applicationSlug)));
 		}
 
 		if ($organisation !== null && $organisation !== '') {
