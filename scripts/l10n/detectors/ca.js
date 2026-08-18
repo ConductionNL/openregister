@@ -106,35 +106,6 @@ if (require.main === module) {
 	console.log(`controls: ${total - fail}/${total} pass`)
 	if (fail) process.exitCode = 1
 
-	const fs = require('fs')
-	const path = require('path')
-	const S = '/home/thijn/nextcloud-docker-dev/workspace/server'
-	const files = ['core/l10n/ca.json', 'lib/l10n/ca.json'].map(p => path.join(S, p)).filter(fs.existsSync)
-	for (const a of fs.readdirSync(path.join(S, 'apps'))) {
-		const f = path.join(S, 'apps', a, 'l10n', 'ca.json')
-		if (fs.existsSync(f)) files.push(f)
-	}
-	let F = 0
-	let I = 0
-	let n = 0
-	const hits = []
-	for (const f of files) {
-		let j
-		try { j = JSON.parse(fs.readFileSync(f, 'utf8')) } catch { continue }
-		for (const v of Object.values(j.translations || {})) {
-			for (const x of Array.isArray(v) ? v : [v]) {
-				if (typeof x !== 'string') continue
-				n++
-				const s = score(x)
-				F += s.f
-				I += s.i
-				if (s.i > 0) hits.push([x.slice(0, 100), path.relative(S, f)])
-			}
-		}
-	}
-	console.log(`\nscanned ${files.length} ca.json, ${n} values`)
-	console.log(`formal (vós) markers:  ${F}`)
-	console.log(`informal (tu) markers: ${I}`)
-	console.log(`verdict: ${F > I * 3 ? 'FORMAL prose (vós)' : I > F * 3 ? 'INFORMAL prose (tu)' : 'MIXED — inspect'}`)
-	for (const [v, f] of hits.slice(0, 15)) console.log(`  informal? ${f}: ${v}`)
+	const { scanCoreRegister, reportCoreRegister } = require('../lib.js')
+	reportCoreRegister('ca', scanCoreRegister('ca', score), { formal: 'vós', informal: 'tu' }, 15)
 }

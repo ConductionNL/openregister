@@ -601,6 +601,115 @@ function loadDetector(loc) {
 }
 
 /**
+ * Nextcloud core's own catalogues for one locale — the evidence a register is
+ * measured from.
+ *
+ * Resolved the same way harvest.js resolves it: relative to this app, with an
+ * env override. The five detectors written before this helper each hardcoded
+ * one developer's absolute path, so on any other checkout they scanned ZERO
+ * files and printed `verdict: MIXED` — a real-looking answer computed from no
+ * data, which is precisely the failure mode this tooling exists to prevent.
+ * Hence the throw below: no sources is an error, never a verdict.
+ *
+ * Region variants are found by MATCHING the directory, not by guessing the
+ * region code. Guessing was `${loc}_${loc.toUpperCase()}`, which yields `et_ET`
+ * — and Estonian ships as `et_EE`, so every Estonian catalogue in core was
+ * invisible to a scan whose own comment said it handled Estonian. `@`-suffixed
+ * variants (`sr@latin`) are excluded: same language, different script.
+ *
+ * @param {string} loc Locale code.
+ * @return {string[]} Absolute paths to every core/lib/app catalogue found.
+ */
+/**
+ * Matches `<loc>.json` and any region variant of it, e.g. `et_EE.json`.
+ *
+ * @param {string} loc Locale code.
+ * @return {RegExp} Test against a bare filename.
+ */
+function localeFileRe(loc) {
+	return new RegExp(`^${loc}(_[A-Za-z]{2,3})?\\.json$`)
+}
+
+function coreCatalogues(loc) {
+	const workspace = process.env.L10N_WORKSPACE || path.resolve(APP_ROOT, '..', '..')
+	const server = process.env.L10N_SERVER_DIR || path.join(workspace, 'server')
+	const re = localeFileRe(loc)
+	const files = []
+	const collect = (dir) => {
+		if (!fs.existsSync(dir)) return
+		for (const f of fs.readdirSync(dir).sort()) {
+			if (re.test(f)) files.push(path.join(dir, f))
+		}
+	}
+	for (const p of ['core/l10n', 'lib/l10n']) collect(path.join(server, p))
+	const appsDir = path.join(server, 'apps')
+	if (fs.existsSync(appsDir)) {
+		for (const a of fs.readdirSync(appsDir).sort()) collect(path.join(appsDir, a, 'l10n'))
+	}
+	if (!files.length) {
+		throw new Error(
+			`no ${loc} catalogues found under ${server}. `
+			+ 'Set L10N_SERVER_DIR if your checkout differs — scanning nothing would '
+			+ 'otherwise report a register verdict computed from zero values.',
+		)
+	}
+	return files
+}
+
+/**
+ * Run a detector's `score` over every core value for its locale and report the
+ * marker totals, so a register verdict rests on counted evidence.
+ *
+ * @param {string} loc Locale code.
+ * @param {Function} score The detector's score(s) -> {f, i}.
+ * @return {object} { files, values, formal, informal, verdict, hits }
+ */
+function scanCoreRegister(loc, score) {
+	const files = coreCatalogues(loc)
+	let formal = 0
+	let informal = 0
+	let values = 0
+	const hits = []
+	for (const f of files) {
+		let j
+		try { j = JSON.parse(fs.readFileSync(f, 'utf8')) } catch { continue }
+		for (const v of Object.values(j.translations || {})) {
+			for (const x of Array.isArray(v) ? v : [v]) {
+				if (typeof x !== 'string') continue
+				values++
+				const s = score(x)
+				formal += s.f
+				informal += s.i
+				if (s.i > 0) hits.push([x.slice(0, 100), f])
+			}
+		}
+	}
+	const verdict = formal > informal * 3
+		? 'FORMAL'
+		: informal > formal * 3 ? 'INFORMAL' : 'MIXED — inspect'
+	return { files, values, formal, informal, verdict, hits }
+}
+
+/**
+ * Print what `scanCoreRegister` measured. Shared so each detector's `node
+ * detectors/<loc>.js` output stays comparable across locales.
+ *
+ * @param {string} loc Locale code.
+ * @param {object} r Result from scanCoreRegister.
+ * @param {object} labels { formal, informal } pronoun names for this language.
+ * @param {number} show How many suspected-informal values to list.
+ */
+function reportCoreRegister(loc, r, labels, show = 20) {
+	console.log(`\nscanned ${r.files.length} ${loc} catalogue(s), ${r.values} values`)
+	console.log(`formal (${labels.formal}) markers:   ${r.formal}`)
+	console.log(`informal (${labels.informal}) markers: ${r.informal}`)
+	console.log(`verdict: ${r.verdict}`)
+	for (const [v, f] of r.hits.slice(0, show)) {
+		console.log(`  informal? ${path.basename(path.dirname(path.dirname(f)))}/${path.basename(f)}: ${v}`)
+	}
+}
+
+/**
  * The locale bundle as of HEAD, for "did this pass lose or silently alter an
  * existing translation?". Read through git rather than a copied file, so it
  * cannot drift out of date the way a stashed `<loc>-HEAD.js` does.
@@ -648,5 +757,9 @@ module.exports = {
 	configuredLocales,
 	loadLocaleConfig,
 	loadDetector,
+	localeFileRe,
+	coreCatalogues,
+	scanCoreRegister,
+	reportCoreRegister,
 	bundleAtHead,
 }

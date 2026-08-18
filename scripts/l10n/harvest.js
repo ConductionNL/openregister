@@ -35,7 +35,9 @@
 
 const fs = require('fs')
 const path = require('path')
-const { APP_ROOT, loadJsTranslations, isIdentical, loadLocaleConfig } = require('./lib.js')
+const {
+	APP_ROOT, loadJsTranslations, isIdentical, loadLocaleConfig, coreCatalogues,
+} = require('./lib.js')
 
 const loc = process.argv[2]
 if (!loc) {
@@ -50,8 +52,10 @@ const WORKSPACE = process.env.L10N_WORKSPACE || path.resolve(APP_ROOT, '..', '..
 const SERVER = process.env.L10N_SERVER_DIR || path.join(WORKSPACE, 'server')
 const CUSTOM = process.env.L10N_APPS_DIR || path.join(WORKSPACE, 'apps-custom')
 
-// Some languages ship as xx_XX (Estonian is et_EE), so glob both spellings.
-const VARIANTS = [loc, `${loc}_${loc.toUpperCase()}`]
+// Region variants (Estonian ships as et_EE) come from lib's coreCatalogues, which
+// matches the directory instead of guessing the region code. Guessing it here as
+// `${loc}_${loc.toUpperCase()}` produced "et_ET" and silently skipped every
+// Estonian catalogue in core.
 
 /** The keys this locale still needs: absent ∪ unjustified-identical. */
 function worklist() {
@@ -71,22 +75,12 @@ function worklist() {
 const need = worklist()
 
 const sources = []
-if (fs.existsSync(SERVER)) {
-	for (const p of ['core/l10n', 'lib/l10n']) {
-		for (const c of VARIANTS) {
-			const f = path.join(SERVER, p, `${c}.json`)
-			if (fs.existsSync(f)) sources.push(f)
-		}
-	}
-	const appsDir = path.join(SERVER, 'apps')
-	if (fs.existsSync(appsDir)) {
-		for (const a of fs.readdirSync(appsDir)) {
-			for (const c of VARIANTS) {
-				const f = path.join(appsDir, a, 'l10n', `${c}.json`)
-				if (fs.existsSync(f)) sources.push(f)
-			}
-		}
-	}
+try {
+	sources.push(...coreCatalogues(loc))
+} catch {
+	// Core absent, or this locale not shipped there. The sibling apps below may
+	// still supply candidates, and the no-sources check after this block covers
+	// the case where nothing at all was found.
 }
 if (fs.existsSync(CUSTOM)) {
 	for (const a of fs.readdirSync(CUSTOM)) {
