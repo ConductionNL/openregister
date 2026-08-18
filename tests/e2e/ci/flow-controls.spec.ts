@@ -101,6 +101,27 @@ const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 
 const FLOWS_ROUTE = '/index.php/apps/openregister/#/flows'
 
+// Whether the INSTALLED library carries the consolidated editor (toolbar +
+// seeded start node). Feature-detected on the source the bundle was built
+// from, not on a version number: the transition window installs 2.3.x from
+// npm while dev instances may run a synced pre-release tree, and a version
+// string cannot tell those apart. Self-clears on the lockfile bump.
+const NEW_EDITOR = (() => {
+	try {
+		return fs
+			.readFileSync(
+				path.resolve(
+					__dirname,
+					'../../../node_modules/@conduction/nextcloud-vue/src/components/CnFlowDetail/CnFlowDetail.vue',
+				),
+				'utf8',
+			)
+			.includes('cn-flow-detail__toolbar')
+	} catch {
+		return false
+	}
+})()
+
 test.use(fs.existsSync(STORAGE_STATE) ? { storageState: STORAGE_STATE } : {})
 
 /**
@@ -211,16 +232,23 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 			"the step palette did not render, so the empty state's own instruction cannot be followed",
 		).toBeVisible()
 
-		// Save and Run moved onto the canvas toolbar (flow-editor
-		// consolidation): the actions that concern the graph live on the graph.
+		// Save and Run moved onto the canvas toolbar in the flow-editor
+		// consolidation (@conduction/nextcloud-vue 2.4). During the transition
+		// window the installed library may still be 2.3.x, whose Save/"Run now"
+		// live in the sidebar's actions block — so the spec drives whichever
+		// editor is actually installed, feature-detected at load. Both paths
+		// assert the same loop; neither is a reduced version of the other.
 		const toolbar = page.getByRole('toolbar', { name: 'Flow editor' })
-		await expect(toolbar).toBeVisible()
+		const actions = page.locator('.cn-flow-sidebar__actions')
 
-		const saveButton = toolbar.getByRole('button', {
-			name: 'Save',
-			exact: true,
-		})
-		const runButton = toolbar.getByRole('button', { name: 'Run', exact: true })
+		const saveButton = NEW_EDITOR
+			? toolbar.getByRole('button', { name: 'Save', exact: true })
+			: actions.getByRole('button', { name: 'Save', exact: true })
+		const runButton = NEW_EDITOR
+			? toolbar.getByRole('button', { name: 'Run', exact: true })
+			: actions.getByRole('button', { name: 'Run now', exact: true })
+
+		await expect(NEW_EDITOR ? toolbar : actions).toBeVisible()
 		await expect(saveButton).toBeVisible()
 		await expect(runButton).toBeVisible()
 
@@ -294,25 +322,29 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		const endCard = page.locator('.cn-flow-detail__node', { hasText: 'End' })
 		await expect(endCard, 'the step did not reach the canvas').toBeVisible()
 
-		// Connect the seeded start node to the End step, or the saved flow has
-		// a dead end and `FlowRunService::queue()` refuses to run it. A new
-		// flow now opens with the manual-trigger start node already on the
-		// canvas (flow-editor consolidation), and the canvas's KEYBOARD
-		// connection path (`c` on the source, `c` on the target) is used
-		// because drag-to-connect is exactly the interaction this file already
-		// documents as unreliable.
-		const startCard = page.locator('.cn-flow-detail__node', {
-			hasText: 'When someone runs it',
-		})
-		await expect(startCard, 'the seeded start node is missing').toBeVisible()
-		await startCard.click()
-		await page.keyboard.press('c')
-		await endCard.click()
-		await page.keyboard.press('c')
-		await expect(
-			page.locator('.cn-flow-detail__edge').first(),
-			'the connection did not reach the canvas',
-		).toBeVisible()
+		if (NEW_EDITOR) {
+			// Connect the seeded start node to the End step, or the saved flow
+			// has a dead end and `FlowRunService::queue()` refuses to run it. A
+			// new flow opens with the manual-trigger start node already on the
+			// canvas (flow-editor consolidation), and the canvas's KEYBOARD
+			// connection path (`c` on the source, `c` on the target) is used
+			// because drag-to-connect is exactly the interaction this file
+			// already documents as unreliable. On 2.3.x there is no seeded node:
+			// the flow is the single terminal step above, which is the smallest
+			// flow the app calls valid, so there is nothing to connect.
+			const startCard = page.locator('.cn-flow-detail__node', {
+				hasText: 'When someone runs it',
+			})
+			await expect(startCard, 'the seeded start node is missing').toBeVisible()
+			await startCard.click()
+			await page.keyboard.press('c')
+			await endCard.click()
+			await page.keyboard.press('c')
+			await expect(
+				page.locator('.cn-flow-detail__edge').first(),
+				'the connection did not reach the canvas',
+			).toBeVisible()
+		}
 
 		// 3. SAVE PERSISTS.
 		//

@@ -20,6 +20,7 @@
  * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
  */
 import { test, expect, type APIRequestContext } from '@playwright/test'
+import * as fs from 'fs'
 import * as path from 'path'
 // Routes are imported by COMPONENT NAME (see tests/e2e/_page-routes.ts): the
 // binding records which page host each route mounts, which a bare path string
@@ -29,6 +30,27 @@ import { FlowsIndex, FlowDetailPage } from './_page-routes'
 const STORAGE_STATE = path.resolve(__dirname, '.auth/admin.json')
 
 const RUN_ID = `e2e-flow-${Date.now().toString(36)}`
+
+// Whether the INSTALLED library carries the consolidated editor (toolbar +
+// seeded start node). Feature-detected on the source the bundle was built
+// from, not on a version number: the transition window installs 2.3.x from
+// npm while dev instances may run a synced pre-release tree, and a version
+// string cannot tell those apart. Self-clears on the lockfile bump.
+const NEW_EDITOR = (() => {
+	try {
+		return fs
+			.readFileSync(
+				path.resolve(
+					__dirname,
+					'../../node_modules/@conduction/nextcloud-vue/src/components/CnFlowDetail/CnFlowDetail.vue',
+				),
+				'utf8',
+			)
+			.includes('cn-flow-detail__toolbar')
+	} catch {
+		return false
+	}
+})()
 
 // The API describes run with NO session, deliberately.
 //
@@ -300,6 +322,10 @@ test.describe('the Flows page', () => {
 	test('a new flow is the SAME editor holding only a starting point', async ({
 		page,
 	}) => {
+		test.skip(
+			!NEW_EDITOR,
+			'requires the flow-editor consolidation (@conduction/nextcloud-vue ≥ 2.4) — self-clears on the lockfile bump',
+		)
 		await page.goto(`/apps/openregister/#${FlowDetailPage('new')}`, {
 			waitUntil: 'domcontentloaded',
 		})
@@ -334,6 +360,10 @@ test.describe('the Flows page', () => {
 		page,
 		request,
 	}) => {
+		test.skip(
+			!NEW_EDITOR,
+			'requires the flow-editor consolidation (@conduction/nextcloud-vue ≥ 2.4) — self-clears on the lockfile bump',
+		)
 		await page.goto(`/apps/openregister/#${FlowDetailPage('new')}`, {
 			waitUntil: 'domcontentloaded',
 		})
