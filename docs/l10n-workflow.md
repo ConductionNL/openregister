@@ -109,9 +109,20 @@ is how you tell "in progress" from "broken".
 
 ### 2.3 Order of work
 
-The high-confidence group is **done**. Nine low-resource locales remain:
-`ga mt rm is lb sq mk be bs`. The owner does not want them prioritised — they are last, and
-**ask before starting them.**
+The high-confidence group is **done**, and so is `rm`, the first of the low-resource
+ones. Eight remain: `ga mt is lb sq mk be bs`. The owner does not want them
+prioritised — they are last, and **ask before starting them.**
+
+**Check whether core can decide the register at all before planning a pass.** Four of
+the nine low-resource locales cannot be measured from core, which §5 step 2 assumes:
+
+| Locale | Core coverage | Consequence |
+| --- | --- | --- |
+| `rm` | **zero catalogues** | `coreCatalogues` throws; done via the §6.4 fallback |
+| `mt` | **zero catalogues** | same — plan for the fallback from the start |
+| `bs` | 1 catalogue, 55 values | not evidence of anything; use the fallback |
+| `lb` | 1 catalogue, 72 values | same, and openbuild's `lb` is German (§6.6) |
+| `ga` `is` `mk` `be` | 33 / 28 / 24 / 14 catalogues | core is usable |
 
 Durable per-locale notes for the ones not yet done (facts about the language or the
 sources, not counts — these will not go stale):
@@ -120,8 +131,7 @@ sources, not counts — these will not go stale):
 | --- | --- |
 | `mk` `be` | Non-Latin. `npm run l10n:script` replaces the English-leftover sweep in §5 step 8 |
 | `ga` | Header declares 5 forms, the library selects only 3. Harmless dead forms (§6.7) |
-| `mt` | Already ships a **suspect array** — forms 2 and 3 fall back to the singular. Verify before trusting it |
-| `rm` | Library selects **1** form, so a plural key can never render its plural. Library constraint, not a data defect |
+| `mt` | Already ships a **suspect array** — forms 2 and 3 fall back to the singular. Verify before trusting it. Also has **no core catalogues** |
 | `is` `mk` | Header and library may disagree on the *boundary* — run `l10n:runtime` early (§6.7) |
 | `lb` | openbuild ships **German** under `lb.json`; harvest drops it automatically (§6.6) |
 | `bs` `sq` | Very few harvest sources (7 and 12) — expect to translate almost everything by hand |
@@ -376,7 +386,9 @@ node scripts/l10n/detectors/<loc>.js
 Templates: `hr.js` and `sl.js` for formal-prose/imperative-buttons, `et.js` if the locale
 turns out informal (its polarity is inverted), `sk.js` if the 2sg imperative is detectable
 (§6.5), `bg.js` if it is detectable for only **part** of the verb system, `ro.js` if you need
-a label-position bound.
+a label-position bound, and **`rm.js` if core ships nothing for this locale** — it is the
+only detector whose `main` block cannot call `scanCoreRegister`, so it re-checks that core
+is still empty and scans the bundle instead.
 
 ---
 
@@ -531,7 +543,7 @@ nineteen.
 **12. Regression-check every recorded locale, then commit.**
 
 ```bash
-for l in tr ca et hr lt lv ro sk sl bg $LOC; do
+for l in tr ca et hr lt lv ro sk sl bg sr $LOC; do
   node scripts/l10n/selfcheck.js $l | tail -1
   node scripts/l10n/detectors/$l.js | grep controls
   node scripts/l10n/runtime-check.mjs $l | tail -1
@@ -586,9 +598,20 @@ Core is genuinely inconclusive; that is a finding, not a failure. This happened 
    the file; for `ro` core was inconclusive and the **file won**. Same rule, opposite
    outcomes.
 
-If the scan **throws** "no `<loc>` catalogues found", the checkout layout differs — set
-`L10N_SERVER_DIR`. It throws on purpose: it used to scan zero files and print
-`verdict: MIXED` computed from nothing.
+If the scan **throws** "no `<loc>` catalogues found", check whether the layout is wrong
+before assuming it is: for some locales there is genuinely nothing to scan. It throws on
+purpose either way — it used to scan zero files and print `verdict: MIXED` computed from
+nothing.
+
+- **Layout differs** → set `L10N_SERVER_DIR`.
+- **Core really ships nothing for this locale** → this is the case for `rm` and `mt`, and
+  effectively for `bs` and `lb` (§2.3). Fall back to the bundle's own values, which is
+  §6.4 step 1, and say so explicitly in `registerEvidence` — a verdict from the app's own
+  file is weaker evidence than core and the record has to show which one it rests on.
+  `rm` came out 81 formal against 0 informal over its 995 translated values, which is
+  one-sided enough to settle without core. Note the detector's `main` block then cannot
+  call `scanCoreRegister`; `detectors/rm.js` re-checks that core is still empty (rather
+  than asserting it from a comment) and scans the bundle instead.
 
 ### 6.5 Deciding whether the 2sg imperative is detectable
 
@@ -604,6 +627,24 @@ that counts it. Two independent tests, and it takes **both**:
 `sk` fails both tests, so it counts them: labels are infinitives, and `ulož` ≠ `uloží`.
 `sl` — Slovak's immediate neighbour — passes both, so it excludes them. **This is about the
 data, not the language family.**
+
+**`rm` is the exact mirror of `sk`, and shows the two tests are genuinely independent.**
+Romansh also labels buttons with the infinitive, so test 1 comes out the same for both —
+but test 2 goes the other way: for every `-ar` verb the 2sg imperative is spelled
+identically to the 3sg present *and* to the feminine singular past participle. `stizza`
+is "delete!", "it deletes" and "deleted-f.sg" at once, and the 3sg reading is live in
+ordinary prose (`Quai stizza las endataziuns`, `Ferma mintga flux`, `Elavurescha ils
+chunks` are all real values). Same button convention, opposite verdict. So do not infer
+test 2 from test 1, and do not carry either answer across from a neighbour.
+
+`rm` also loses a second paradigm, which is worth checking for elsewhere: **the 2sg
+present of its regular verbs ends in `-as`, which is also the feminine plural of every
+noun and adjective.** `controllas` is "you check" and the noun "checks"; `empruvas` is
+"you try" and "attempts"; `tschernas` is "you choose" and the plural of the noun
+`tscherna` — and in each pair the noun reading is the one that occurs in this bundle.
+Detection there rests on the ten irregular verbs, whose 2sg ends in a bare `-s`. When a
+locale's informal count comes out suspiciously low, check whether an inflectional
+homograph has eaten the paradigm before concluding the prose is formal.
 
 If the imperative is a 3sg homograph but you still need to catch it in *labels*, use a
 position bound: string-initial plus a length cap (`ro.js` uses 40 characters).
@@ -658,8 +699,29 @@ Only `lv` is affected so far: its header carries the legacy gettext order
 categories, rotated, so a file matching its own header was wrong at **every** count while
 passing every other gate. `is` and `mk` are flagged to check for the same thing.
 
-A **NOTE** that the library uses *fewer* forms than declared (`tr`, `rm`, `ga`) is harmless
-— the extra forms are dead and never selected. Do not "fix" it.
+A **NOTE** that the library uses *fewer* forms than declared (`tr`, `rm`, `ga`) is
+harmless **only when a single form is correct in that language anyway**. Check which
+case you are in, because the two look identical in the tool output:
+
+- `tr` — genuinely harmless. Turkish does not pluralise after a numeral, so `5 dosya` is
+  correct Turkish and the dead form was never needed.
+- `rm` — **not harmless.** `@nextcloud/l10n` has no Romansh entry, so `getPlural`
+  returns 0 at every count and form 1 is unreachable — but Romansh pluralises regularly
+  with `+s`, so a bare singular in form 0 renders `5 datoteca`, wrong at every count but
+  1. Nothing flags it: the arity is right, no value is empty, and the file reads fine.
+
+Where the collapsed form is not correct on its own, form 0 has to be written to work at
+**every** count. `rm` uses the `(s)` parenthetical that its bundle already applied to the
+sibling `(s)` keys (`Stizzar {count} object(s)`), and a number-neutral phrasing for the
+one plural key with no numeral, since a parenthetical cannot span three agreeing words.
+Write form 1 as the true plural anyway, so the array becomes correct if the library ever
+gains an entry. Do not add `pluralOrder` — there is no ordering disagreement here, only a
+smaller form count.
+
+This also applies to a plural array that was already in the bundle: `rm`'s pre-existing
+`_%n entry has no hash yet_` carried a singular noun **and** a singular verb in form 0,
+so it rendered `5 endataziun n'ha` — wrong twice at every count but 1, and it had passed
+every gate for the life of the file.
 
 ### 6.8 `selfcheck` reports a stale cognate, or a NOTE
 
@@ -808,8 +870,9 @@ this goes wrong:
 | `ga` | 5 | header 5, library selects 3 |
 | `mt` | 4 | |
 | `bg` | 2 | plain `n != 1` — but see the **count form** hazard below |
+| `rm` | 2 declared | the library knows no Romansh and returns **form 0 at every count**, so form 1 is unreachable — see the collapsed-form hazard below |
 
-Four distinct hazards:
+Five distinct hazards:
 
 - **Wrong boundary.** A Croatian array pasted into Lithuanian is wrong for 5–9.
 - **Absolute vs modular.** `sk`/`cs` bound absolutely, so **22 selects form 2** ("22
@@ -839,8 +902,21 @@ Four distinct hazards:
   had `%n записа` and is the model. Look for this in any locale whose grammar has a
   paucal/counting form — it is invisible to every gate in the project.
 
+- **The library collapses every count onto form 0, in a language that pluralises.**
+  `@nextcloud/l10n` has no entry for Romansh, so `getPlural` returns 0 at every count and
+  form 1 is dead. That is the same *symptom* as `tr`, where it is harmless because Turkish
+  does not pluralise after a numeral — but Romansh pluralises regularly with `+s`, so a
+  bare singular in form 0 renders `5 datoteca`. **The fix is in form 0, not in the
+  arity**: it has to be a shape that is correct at every count. `rm` uses the `(s)`
+  parenthetical its bundle already applied to the sibling `(s)` keys
+  (`Stizzar {count} object(s)`), and a number-neutral phrasing (`Stizzà cun success`) for
+  the one plural key with no numeral, because a parenthetical cannot span three agreeing
+  words. Form 1 is still written as the true plural so the array becomes correct if the
+  library ever gains an entry. See §6.7 for how to tell the harmless case from this one.
+
 `test:l10n:parity` catches wrong **length** only. Nothing catches a wrong boundary except
-`l10n:runtime` on this locale's own counts.
+`l10n:runtime` on this locale's own counts, and **nothing at all** catches a form 0 that
+is only correct at count 1.
 
 **The `n()` catalogue key is NEITHER source string.** It is the identifier
 `"_<singular>_::_<plural>_"` — see `pluralIdentifier` in `lib.js`. Storing forms under the
@@ -871,6 +947,7 @@ Formal: `fr cs ru uk tr el sr bg ca hr lt ro sk sl`.
 | `bg` | formal | 699 vs 43 — but the 43 needs splitting; **prose is 699 vs 11** |
 | `ro` | formal | core **MIXED** 124 vs 66 → decided by the bundle (84 vs 0) + owner |
 | `lv` | **informal** | 44 vs 3 — core overruled the file; 78 values corrected |
+| `rm` | formal | **81 vs 0** over the bundle's own 995 translated values — core ships **no `rm` catalogues at all**, so this is the §6.4 fallback rather than a core measurement |
 
 Latvian's low counts are structural, not weak evidence: most correct informal Latvian is
 undetectable by design, so **zero formal markers is the assertion that matters**, not a high
@@ -891,7 +968,7 @@ decide.
 | --- | --- | --- |
 | same register as prose | `tr` `ru` | formal imperative |
 | bare 2sg imperative, whatever the prose | `ca` `et` `hr` `sl` `sr` | `Desa`, `Salvesta`, `Spremi`, `Shrani`, `Сачувај` |
-| **infinitive — register-neutral** | `cs` `lt` `lv` `sk` | `Zobrazit`, `Įrašyti`, `Saglabāt`, `Uložiť` |
+| **infinitive — register-neutral** | `cs` `lt` `lv` `sk` `rm` | `Zobrazit`, `Įrašyti`, `Saglabāt`, `Uložiť`, `Memorisar` |
 | **verbal noun — register-neutral** | `ro` `bg` | `Salvare`, `Adăugare endpoint`; `Запазване`, `Добавяне на крайна точка` |
 
 Infinitive buttons must **not** be "corrected" to imperatives.
@@ -956,6 +1033,10 @@ Every one of these produced a wrong measurement:
 | `et` | `-ge`/`-ke` (2pl) | ordinary words (`selge`, `märge`) |
 | `ro` | `-ați`/`-eți` (2pl) | masculine plural of many adjectives/nouns (`curați`, `pereți`) |
 | `sk` | `vy` unguarded | **the most productive verbal prefix in the language** (`vybrať`, `vymazať`, `vytvoriť`) |
+| `rm` | `-ai` (2pl polite imperative) | `quai` = *this/that*, **23 occurrences** and the most common word such a rule would hit; plus `perquai` (*therefore*), `mai` (*never*), bare `ai` (a + ils), `hai`/`sai` (1sg) |
+| `rm` | `-ais` (2pl present) | `mais` = *months* (`Mintga mais`), and the nationality adjectives `ollandais`, `englais`, `franzais` |
+| `rm` | `-as` (2sg present) | **the feminine plural of every noun and adjective** — `controllas` = *checks*, `empruvas` = *attempts*, `tschernas` = plural of the noun `tscherna`. Costs the whole regular paradigm (§6.5) |
+| `rm` | `-a` (2sg imperative) | the **3sg present** and the feminine singular past participle, both live in this bundle's prose (`Quai stizza…`, `Ferma mintga flux`) |
 
 Use closed word lists. Always.
 
@@ -1024,7 +1105,8 @@ Every one of these passes all automated checks. Read the call site.
 | `Documentation` | fine | core `et` has "…and guides" | |
 | `Avatar` | fine | core `et` has a two-word gloss unfit for a label | |
 | `Refresh` | fine | core `tr` has **`Yenlle`**, a typo. Do not take typos | |
-| `Mappings` | fine | openconnector `hr` has `Mappingi`, a non-standard transliteration | |
+| `Mappings` | fine | openconnector `hr` has `Mappingi`, a non-standard transliteration |
+| `Handler` | an event/callback handler, so a technical term to borrow | **a person** — the DSAR case handler. It is a `<th>` in the cases table beside `Type`, `Status`, `Deadline`, and `handlerFilterOptions` maps people's names into the filter. Every locale renders it as a person: `Responsable`, `Gestor`, `Bearbeiter`, `Gestionar`. `AvgIndex.vue` | |
 
 **Sibling apps are not automatically right**, and a whole catalogue can be the wrong
 language (§6.6).
@@ -1125,6 +1207,21 @@ Register, buttons and plurals all have a step in §5. **Orthographic and typogra
 conventions do not, and they touch more values than register does.** Measure them from the
 pre-existing half of the bundle before the first batch, and record the counts in
 `locales/<loc>.json` — the same standard of evidence.
+
+**The practice is per-locale and so is the term list — measure both.** `sr` and `rm` both
+capitalise domain terms mid-sentence, and they disagree about which:
+
+| Locale | Capitalised | Notably NOT |
+| --- | --- | --- |
+| `sr` | six terms, including `Објекат` 62:0 | `приказ`, `ентитет`, `ток` |
+| `rm` | **three** — `Schema` 34:1, `Register` 30:0, `Datoteca` 43:0 | `object` at **0:63**, plus `vista`, `webhook`, `colliaziun`, `endataziun`, `caracteristica` |
+
+So carrying `sr`'s list to `rm` would have capitalised `Object` in 63 places against the
+bundle's own unanimous practice. Both rules can apply inside one value — `rm` writes
+`naginas relaziuns cun objects u Datotecas`. `rm` also capitalises the **polite pronoun
+and possessive** mid-sentence without exception (`Vus` 13:0, `Voss*` 21:0), the German
+`Sie`/`Ihr` model; a sibling app in the same repo lowercases them, so that is a real
+choice rather than an accident.
 
 The sharpest case is `sr`, which capitalises the six first-class register concepts
 mid-sentence, like proper nouns, and lowercases everything else:

@@ -30,7 +30,7 @@ belongs in `en.js`, never in `en.json`.** There is no scanner for the backend se
 
 Re-measure before trusting any number here — `npm run check:l10n` prints it all.
 **As of 2026-08-18**: `en.js` holds 2052 keys, `src/` uses all of them, 0 unused,
-100 unwrapped literals outstanding. 27 locales at full parity, 9 in progress — and all nine
+100 unwrapped literals outstanding. 28 locales at full parity, 8 in progress — and all eight
 remaining are the low-resource group, so **ask before starting one**.
 
 ## Commands
@@ -118,7 +118,7 @@ indistinguishable from finished work, so nobody revisits it. Audit with
 `npm run test:l10n:parity -- --strict-identical`.
 
 **Cognate enforcement is opt-in per locale**, keyed on `locales/<loc>.json`
-existing. Only `tr ca et hr lt lv ro sk sl bg sr` are held to it; the other 16 predate the rule and
+existing. Only `tr ca et hr lt lv ro sk sl bg sr rm` are held to it; the other 16 predate the rule and
 carry ~400 unreviewed identical values, some legitimate. The gate prints which
 locales are enforced and which are merely unreviewed, so a green run cannot be read
 as verified. **Reviewing those 16 is open work.**
@@ -131,10 +131,12 @@ shipped in all 37 bundles until 2026-08-14 while passing every gate.
 
 **Plural arrays must match that locale's own `nplurals`, and never be copied between
 languages.** An array shorter than the index the runtime asks for renders **blank**, and
-it is the only l10n defect you cannot see by reading the file. Five separate ways this
+it is the only l10n defect you cannot see by reading the file. Six separate ways this
 goes wrong — equal form counts with different boundaries, modular vs absolute
-arithmetic, the header and the library disagreeing on ORDER, Slovenian's dual, and a
-counting form chosen by the sentence rather than the form index (Bulgarian) — are
+arithmetic, the header and the library disagreeing on ORDER, Slovenian's dual, a
+counting form chosen by the sentence rather than the form index (Bulgarian), and a
+library that collapses every count onto form 0 in a language that *does* pluralise
+(Romansh, where that makes form 0 wrong at every count but 1) — are
 worked through with the per-locale table in **`docs/l10n-workflow.md` §7.1**. Read it
 before writing an array. `npm run l10n:runtime -- <loc>` is the only check that catches
 a wrong boundary, and **nothing** catches the wrong noun form.

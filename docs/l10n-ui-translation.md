@@ -47,7 +47,7 @@ by counting formal vs informal markers across core (`server/core`, `lib`,
 
 Measured results: informal for `nl`, `de`, `sv`, `da`, `nb`, `pl`, `fi`, `hu`,
 `et`, `lv`; formal for `fr`, `cs`, `ru`, `uk`, `tr`, `el`, `sr`, `bg`, `ca`, `hr`,
-`lt`, `sk`, `sl`. **`sk` is the least ambiguous of any locale measured for this app**:
+`lt`, `sk`, `sl`, `rm`. **`sk` is the least ambiguous of any locale measured for this app**:
 1001 formal markers against 1 informal over 4991 values in 31 catalogues, beating
 `lt`'s 689 vs 0 on volume. Russian is next: 328 formal pronouns and 164 formal
 imperatives against zero informal.
@@ -104,7 +104,7 @@ core's own short labels — a single verdict for the locale is usually meaningle
 | --- | --- | --- |
 | same register throughout | `tr`, `ru` | formal imperative |
 | bare 2sg imperative, whatever the prose | `ca`, `et`, `hr`, `sl`, `sr` | `Desa`, `Salvesta`, `Spremi`, `Shrani`, `Сачувај` |
-| **infinitive — register-neutral** | `cs`, `lt`, `lv`, `sk` | `Zobrazit`/`Smazat`, `Įrašyti`/`Ištrinti`/`Atsisakyti`, `Saglabāt`/`Dzēst`/`Atcelt`, `Uložiť`/`Odstrániť`/`Zrušiť` |
+| **infinitive — register-neutral** | `cs`, `lt`, `lv`, `sk`, `rm` | `Zobrazit`/`Smazat`, `Įrašyti`/`Ištrinti`/`Atsisakyti`, `Saglabāt`/`Dzēst`/`Atcelt`, `Uložiť`/`Odstrániť`/`Zrušiť`, `Memorisar`/`Stizzar`/`Annullar` |
 | **verbal noun — register-neutral** | `ro`, `bg` | `Salvare`/`Ștergere`/`Anulare`/`Adăugare endpoint`; `Запазване`/`Изтриване`/`Отказ`/`Добавяне на крайна точка` |
 
 `bg` reaches the same form as `ro` by the ordinary route rather than by divergence, and
@@ -333,9 +333,24 @@ locale's expression**. Equal counts do not mean equal boundaries:
   nouns keep the plural (`{count} членове`); feminine and neuter have no count form
   (`схема` → `схеми` either way)
 
+- `rm` — `nplurals=2; plural=(n != 1)` in the header, but `@nextcloud/l10n` has **no
+  entry for Romansh at all**, so its `getPlural` returns index 0 at *every* count
+  (verified over 0, 1, 2, 3, 5, 11, 21, 100, 101). Form 1 is unreachable. The runbook
+  files this with `tr` and `ga` as a harmless NOTE, and **for `rm` it is not harmless**:
+  the reason one form is fine for Turkish is that Turkish does not pluralise after a
+  numeral, whereas Romansh pluralises regularly with `+s`, so a bare singular in form 0
+  renders `5 datoteca`. Form 0 therefore has to be acceptable at every count. The answer
+  is the `(s)` parenthetical the bundle already used for its own `(s)` sibling keys —
+  `Stizzar {count} object(s)` — which is never wrong at any count. The one plural key
+  with no numeral takes a **number-neutral** phrasing instead (`Stizzà cun success`),
+  because a parenthetical cannot be spread across three agreeing words. Form 1 is still
+  written as the true plural so the array becomes correct if the library ever gains an
+  `rm` entry. This is the mirror of the `lv` problem in §"The header and the library can
+  disagree on ORDER": there the library reorders the forms, here it collapses them
+
 All are mutually incompatible. `npm run test:l10n:parity` catches
 wrong *length*; nothing can catch a Polish array pasted into Czech, and nothing at all
-catches the Bulgarian count form. Verify the
+catches the Bulgarian count form or a Romansh form 0 that only reads correctly at 1. Verify the
 forms are reachable by driving the real `@nextcloud/l10n`: call `unregister()` and
 `setLanguage(loc)` first, because `register(app, bundle)` **ignores** a plural
 function passed to it and installs the library's own `getPlural`. For `hr`,
@@ -814,11 +829,125 @@ takes an em dash with spaces, and the dative clitic is written `ѝ` with the gra
 never `и`. That last one is a marker of careful Bulgarian and the pre-existing bundle
 already got it right (`може вече да не ѝ съответстват`).
 
-Twenty-seven locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
+### `rm` is the first locale with no core evidence at all
+
+Romansh is where the standard procedure runs out of inputs. Nextcloud ships **zero `rm`
+catalogues** — none in `core/l10n`, none in `lib/l10n`, none in any bundled app — so
+`coreCatalogues('rm')` throws by design and §5 step 2 cannot be run as written. The
+§6.4 fallback applies and the verdict comes from the bundle's own pre-existing half:
+**81 formal markers against 0 informal across 995 translated values.** That is
+one-sided enough to settle it without core.
+
+Check this before assuming a locale is measurable. Four of the nine low-resource
+locales cannot be decided from core: `rm` and `mt` have **no catalogues**, and `bs` and
+`lb` have one each carrying 55 and 72 values, which is not evidence of anything.
+
+Romansh has a real T–V distinction, so unlike Russian the polite pronoun **is** a
+register marker: `Vus` / `voss` (the German `Sie` model) against `ti` / `tiu`. Buttons
+are **infinitives** — `Memorisar`, `Stizzar`, `Annullar`, `Modifitgar`, `Crear`,
+`Tscherner` — the register-neutral `cs`/`lt`/`lv`/`sk` pattern, which also defuses the
+dual-role `Create`/`Read`/`Update`/`Delete` keys that forced `ro` onto verbal nouns.
+Progressive states are the bare infinitive plus an ellipsis (`Analyzing...` →
+`Analisar...`).
+
+**Two whole paradigms are undetectable, and `rm` is the exact mirror of `sk`.** Both
+languages label buttons with the infinitive, so §6.5 test 1 comes out the same for
+both; they diverge on test 2:
+
+- the **2sg imperative** of every `-ar` verb is spelled identically to the 3sg present
+  *and* the feminine singular past participle. `stizza` is "delete!", "it deletes" and
+  "deleted-f.sg" at once, and the 3sg reading is live in this bundle's own prose
+  (`Quai stizza las endataziuns`, `Ferma mintga flux`, `Elavurescha ils chunks`). Where
+  Slovak has `ulož` ≠ `uloží`, Romansh has `stizza` = `stizza`. Same button convention,
+  opposite detector decision — which is why §6.5 insists both tests be run per locale.
+  Unlike `bg` there is no conjugation class to carve out: every `-ar` and `-escha` verb
+  collides.
+- the **2sg present of regular verbs** ends in `-as`, which is also the feminine plural
+  of every noun and adjective — the commonest inflection in the language. `controllas`
+  is "you check" *and* the noun "checks" (`Controllas da surveglianza` is a real value);
+  `empruvas` is "you try" *and* "attempts" (`Max empruvas`); `tschernas` is "you choose"
+  *and* the plural of the noun `tscherna`. Detection therefore rests on the ten
+  irregular verbs, whose 2sg ends in a bare `-s`: `has`, `es`, `pos`, `stos`, `vuls`,
+  `sas`, `vas`, `fas`, `das`, `vegns`.
+
+The useful **negative**: bare `ti` **is** usable, unlike `cs` `ty`, `hr`/`sl` `ti` and
+`sr` `ти`, because Romansh demonstratives are `quel`/`quest`, so there is no
+demonstrative reading to collide with. Same result as `bg`, and again reached from the
+data rather than from the family.
+
+### `rm` traps
+
+Suffix rules fail in both directions here, which is why the lists are closed:
+
+- **`-ai`** looks like the polite 2pl imperative, and mostly is — but `quai`
+  ("this/that") ends in it and occurs **23 times**, the single most common word such a
+  rule would hit, along with `perquai` ("therefore"), `mai` ("never"), bare `ai`
+  (a + ils) and `hai`/`sai` (1sg "I have"/"I know").
+- **`-ais`** looks like the 2pl present, and mostly is — but `mais` is "months"
+  (`Mintga mais`) and the nationality adjectives `ollandais`/`englais`/`franzais` end
+  in it.
+- **`-as`**: see above. Fatal in the other direction.
+
+**Diacritics must not be folded.** `tscherni` is the 2pl imperative ("choose!", a
+formal marker) while `tschernì` is the past participle "selected" — this bundle's value
+for both `Selected` and `register(s) selected`. They differ by the grave accent and
+nothing else, so folding would score every `Tschernì` label as polite address. Same for
+`e` ("and") against `è` ("is"). `fold()` only lowercases.
+
+Capitalisation is the `sr`-shaped convention with a **different set**, which is the
+point: the practice is per-locale and so is the list. `rm` capitalises exactly three
+domain terms mid-sentence — `Schema` 34:1, `Register` 30:0, `Datoteca` 43:0 — and
+lowercases every other one, including `object` at 0:63, plus `vista`, `webhook`,
+`colliaziun`, `tschertga`, `endataziun`, `caracteristica`, `utilisader`, `chunk`,
+`flux`, `entitad`, `gruppa`, `funtauna`, `roll`, `token`. Both rules apply inside one
+value: `naginas relaziuns cun objects u Datotecas`. The polite pronoun and possessive
+are **always** capitalised mid-sentence (`Vus` 13:0, `Voss*` 21:0), on the German
+`Sie`/`Ihr` model.
+
+Terms, all taken from the bundle rather than coined: audit trail → `colliaziun
+d'audit` (literally "audit link", a loose rendering of *trail* but the file's own
+consistent term in 25 values — three `tratga da revisiun` outliers were normalised to
+it), view → `vista`, property → `caracteristica`, source → `funtauna`, file →
+`Datoteca`, field → `chomp`, workflow → `process da lavur`, flow → `flux`, log →
+`protocol`, clipboard → `archivet provisoric`, dashboard → `panel`, owner →
+`possessur`, password → `pled-clav`, lock → `serradira`, `Bewaartermijn` → `Temp da
+conservaziun`, `Rechtsgrond` → `Basa giuridica`, `Verantwoording` → `Rendaquint`,
+`AVG / Verwerkingsregister` → `RGPD / Register da las activitads da tractament`,
+**Subject** (the GDPR data subject) → `Persuna pertutgada`, **Golden record** →
+`Endataziun da referenza`, **Bucket** → `Segment` (never "interval", because
+`Interval` is its own key). Technical terms are borrowed throughout — webhook, chunk,
+embedding, payload, token, hash, batch, trigger, backend, endpoint, `Slug`, `Branch` —
+which is why `Slug` is a recorded cognate rather than a coinage even though core `lt`
+and `sl` translate it.
+
+Three near-synonyms are kept deliberately apart, the §8.5 pattern: the pre-existing
+`revocar` is **undo** (`na po betg vegnir revocada`, 5 values), `Inversar` is
+**reversing a merge** (`ro` uses `Inversare` likewise; `Annullar` was unavailable
+because it is already **Cancel**), and `Revocar` is **revoking a token**, which is what
+`ca`, `es`, `fr`, `it` and `ro` all use. The last two share a stem — an unavoidable
+overlap recorded rather than worked around, since a token row action and a
+delete-confirmation dialog never share a screen.
+
+One trap worth stating because it would have been silent: **`Handler` is a person.**
+Every locale renders it `Responsable`/`Gestor`/`Bearbeiter`, and the call site confirms
+it — a `<th>` in the DSAR cases table beside `Type`, `Status`, `Deadline`, with
+`handlerFilterOptions` mapping people's names. It is not an event handler. `rm` →
+`Respunsabel`.
+
+Twelve pre-existing defects were corrected, spanning six classes: three
+`tratga da revisiun` terminology outliers and three `endataziun da revisiun` ones;
+`siwa` for *follows* (**the only non-loanword `w` in the bundle**, and `w` is not a
+letter of Romansh — corrected to `suonda`); `d'spetga`, the only `d'` elided before a
+consonant; `lescha` where the 3sg of *leger* is `leja` (`lescha` is the noun "law");
+`endataziuns sigillads` with a masculine participle on a feminine noun; one lowercase
+`quest schema`; and a `…` ellipsis with a missing article against 20 consistent
+siblings. A thirteenth was the plural array above.
+
+Twenty-eight locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
 `nb`, `pl`, `cs`, `ru`, `uk`, `el`, `fi`, `hu`, `tr`, `ca`, `et`, `hr`, `lt`, `lv`,
-`ro`, `sk`, `sl`, `bg`, `sr` — the whole high-confidence group. Only the nine
-low-resource locales (`ga`, `mt`, `rm`, `is`, `lb`, `sq`, `mk`, `be`, `bs`) remain, and
-they are deliberately last — **ask before starting them.**
+`ro`, `sk`, `sl`, `bg`, `sr`, `rm` — the whole high-confidence group plus the first of
+the low-resource ones. Eight remain (`ga`, `mt`, `is`, `lb`, `sq`, `mk`, `be`, `bs`),
+and they are deliberately last — **ask before starting them.**
 
 For non-Latin locales (`ru`, `uk`, `bg`, `be`, `mk`, `sr`, `el`) a script-coverage
 check replaces the English-leftover check, and it is now a committed script:
