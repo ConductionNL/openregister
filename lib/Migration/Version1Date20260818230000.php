@@ -167,11 +167,21 @@ class Version1Date20260818230000 extends SimpleMigrationStep {
 			);
 		}//end foreach
 
+		// Drop via raw SQL, not $table->dropColumn(): mutating the Doctrine Table object
+		// fetched here is never applied by the migration framework — postSchemaChange has no
+		// return value for it to diff against, unlike changeSchema's returned ISchemaWrapper.
+		// Confirmed live: a dropColumn() call here silently no-ops (columns survived a
+		// successful, error-free migration run) until switched to executeStatement().
 		$schema = $schemaClosure();
 		$table = $schema->getTable('openregister_verwerkingsactiviteiten');
 		foreach (array_keys(self::COLUMN_MAP) as $oldColumn) {
 			if ($table->hasColumn($oldColumn) === true) {
-				$table->dropColumn($oldColumn);
+				$this->connection->executeStatement(
+					sprintf(
+						'ALTER TABLE `*PREFIX*openregister_verwerkingsactiviteiten` DROP COLUMN `%s`',
+						$oldColumn
+					)
+				);
 			}
 		}
 	}//end postSchemaChange()
