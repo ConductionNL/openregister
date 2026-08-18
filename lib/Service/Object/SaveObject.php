@@ -3404,7 +3404,13 @@ class SaveObject {
 		$savedName = $savedEntity->getName();
 		$savedUuid = $savedEntity->getUuid();
 		if ($savedUuid !== null && $savedName !== null && trim($savedName) !== '') {
-			$this->cacheHandler->setObjectName(identifier: $savedUuid, name: $savedName);
+			// SEC-CTRL-2 step 2: the cached name carries the entity's tenancy, so it
+			// is only ever handed back to a caller in that organisation.
+			$this->cacheHandler->setObjectName(
+				identifier: $savedUuid,
+				name: $savedName,
+				organisation: $savedEntity->getOrganisation()
+			);
 		}
 
 		// Process file properties with rollback on failure.
@@ -5233,9 +5239,17 @@ class SaveObject {
 			return;
 		}
 
+		// SEC-CTRL-2 step 2: pre-cached parent names carry their owning organisation
+		// so the shared name cache can never disclose them across tenants.
+		$parentOrganisation = $objectEntity->getOrganisation();
+
 		$name = $objectEntity->getName();
 		if ($name !== null && trim($name) !== '') {
-			$this->cacheHandler->setObjectName(identifier: $uuid, name: $name);
+			$this->cacheHandler->setObjectName(
+				identifier: $uuid,
+				name: $name,
+				organisation: $parentOrganisation
+			);
 		}
 
 		// Also try the 'naam' field as a fallback (common in Dutch schemas).
@@ -5243,7 +5257,11 @@ class SaveObject {
 		if (($name === null || trim($name) === '') && isset($data['naam']) === true) {
 			$name = trim((string)$data['naam']);
 			if ($name !== '') {
-				$this->cacheHandler->setObjectName(identifier: $uuid, name: $name);
+				$this->cacheHandler->setObjectName(
+					identifier: $uuid,
+					name: $name,
+					organisation: $parentOrganisation
+				);
 			}
 		}
 	}//end preCacheParentName()

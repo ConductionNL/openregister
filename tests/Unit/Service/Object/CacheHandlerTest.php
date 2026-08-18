@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\IResult;
+use OCP\IAppConfig;
 use OCP\ICacheFactory;
 use OCP\IDBConnection;
 use OCP\IMemcache;
@@ -71,6 +72,19 @@ class CacheHandlerTest extends TestCase {
 	private IUserSession $userSession;
 
 	/**
+	 * App config pinned to multitenancy-OFF for this class.
+	 *
+	 * Every test below predates SEC-CTRL-2 step 2 and asserts the resolver's
+	 * behaviour with no tenant boundary in force, which is a real supported
+	 * configuration (`multitenancy.enabled = false`). Declaring it explicitly is
+	 * the honest way to keep them meaningful: the tenant-scoped behaviour has its
+	 * own controls in CacheHandlerTenantScopeTest, so nothing is left unmeasured.
+	 *
+	 * @var IAppConfig&MockObject
+	 */
+	private IAppConfig $appConfig;
+
+	/**
 	 * Set up test fixtures.
 	 *
 	 * @return void
@@ -85,6 +99,15 @@ class CacheHandlerTest extends TestCase {
 		$this->queryCache = $this->createMock(IMemcache::class);
 		$this->nameDistributedCache = $this->createMock(IMemcache::class);
 		$this->userSession = $this->createMock(IUserSession::class);
+		$this->appConfig = $this->createMock(IAppConfig::class);
+		$this->appConfig->method('getValueString')
+			->willReturnCallback(function (string $app, string $key, string $default = '') {
+				if ($app === 'openregister' && $key === 'multitenancy') {
+					return '{"enabled":false}';
+				}
+
+				return $default;
+			});
 
 		$this->cacheFactory->method('createDistributed')
 			->willReturnCallback(function (string $prefix) {
@@ -111,7 +134,12 @@ class CacheHandlerTest extends TestCase {
 			$this->logger,
 			$this->cacheFactory,
 			$this->userSession,
-			$container
+			$container,
+			null,
+			null,
+			null,
+			null,
+			$this->appConfig
 		);
 	}
 
@@ -224,7 +252,9 @@ class CacheHandlerTest extends TestCase {
 			$container,
 			$registerMapper,
 			$schemaMapper,
-			$db
+			$db,
+			null,
+			$this->appConfig
 		);
 	}
 
@@ -1039,11 +1069,12 @@ class CacheHandlerTest extends TestCase {
 	 * @return void
 	 */
 	public function testGetSingleObjectNameFromDistributedCache(): void {
-		// Not in in-memory cache, but in distributed cache.
+		// Not in in-memory cache, but in distributed cache. SEC-CTRL-2 step 2: the
+		// stored value is a tenancy-bearing envelope, not a bare string.
 		$this->nameDistributedCache->method('get')
 			->willReturnCallback(function (string $key) {
 				if ($key === 'name_uuid-dist') {
-					return 'Distributed Name';
+					return ['n' => 'Distributed Name', 'o' => null];
 				}
 				return null;
 			});
@@ -1156,9 +1187,11 @@ class CacheHandlerTest extends TestCase {
 	 */
 	public function testSetObjectNameEnforcesMaxTtl(): void {
 		// TTL greater than MAX_CACHE_TTL should be clamped.
+		// SEC-CTRL-2 step 2: the KEY is unchanged; the VALUE is a tenancy-bearing
+		// envelope so a shared distributed cache cannot disclose across tenants.
 		$this->nameDistributedCache->expects($this->once())
 			->method('set')
-			->with('name_uuid-1', 'Name', 86400);  // MAX_CACHE_TTL = 86400
+			->with('name_uuid-1', ['n' => 'Name', 'o' => null], 86400);  // MAX_CACHE_TTL = 86400
 
 		$this->handler->setObjectName('uuid-1', 'Name', 999999);
 	}
@@ -1190,7 +1223,7 @@ class CacheHandlerTest extends TestCase {
 	public function testSetObjectNameWithTtlWithinLimit(): void {
 		$this->nameDistributedCache->expects($this->once())
 			->method('set')
-			->with('name_uuid-1', 'Name', 3600);
+			->with('name_uuid-1', ['n' => 'Name', 'o' => null], 3600);
 
 		$this->handler->setObjectName('uuid-1', 'Name', 3600);
 	}
@@ -1277,7 +1310,8 @@ class CacheHandlerTest extends TestCase {
 		$this->nameDistributedCache->method('get')
 			->willReturnCallback(function (string $key) {
 				if ($key === 'name_uuid-2') {
-					return 'Distributed Name';
+					// SEC-CTRL-2 step 2: tenancy-bearing envelope.
+					return ['n' => 'Distributed Name', 'o' => null];
 				}
 				return null;
 			});
@@ -2708,8 +2742,11 @@ class CacheHandlerTest extends TestCase {
 		$this->assertIsArray($result);
 		// At minimum, the method executed without error.
 		// If DB mocking worked correctly, the name is in the result.
+		// SEC-CTRL-2 step 2: each entry is name + owning organisation, because the
+		// _organisation column is the tenancy oracle for object-backed names.
 		if (isset($result['batch-uuid-1'])) {
-			$this->assertSame('Batch Name 1', $result['batch-uuid-1']);
+			$this->assertSame('Batch Name 1', $result['batch-uuid-1']['name']);
+			$this->assertArrayHasKey('organisation', $result['batch-uuid-1']);
 		}
 	}
 
@@ -2824,7 +2861,7 @@ class CacheHandlerTest extends TestCase {
 		// After 2 failures + 1 success, should have found the name.
 		$this->assertIsArray($result);
 		if (isset($result['fallback-uuid-1'])) {
-			$this->assertSame('Fallback Name', $result['fallback-uuid-1']);
+			$this->assertSame('Fallback Name', $result['fallback-uuid-1']['name']);
 		}
 	}
 
@@ -2869,7 +2906,7 @@ class CacheHandlerTest extends TestCase {
 		$this->assertIsArray($result);
 		// If mock worked correctly, name should be resolved.
 		if (isset($result['direct-uuid-1'])) {
-			$this->assertSame('Direct Name', $result['direct-uuid-1']);
+			$this->assertSame('Direct Name', $result['direct-uuid-1']['name']);
 		}
 	}
 

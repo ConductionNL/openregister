@@ -84,7 +84,15 @@ Performance work is dominated by N+1 query patterns in the render path and per-r
   (If non-admins are meant to read configs they own, use an owner check instead of leaving it open.)
 - **Verify:** As a non-admin, `curl '.../api/configurations/1/export?includeObjects=true'` → 403. Add an integration test.
 
-## SEC-CTRL-2 — Public `names` endpoint leaks object/organisation names _(high, partially verified)_
+## SEC-CTRL-2 — Public `names` endpoint leaks object/organisation names _(high — **CLOSED**)_
+- **Status:** step 1 landed in #2523 (`show`/`stats`/`warmup` removed, `@PublicPage` dropped from `index`/`create`). **Step 2 is done**: name resolution is tenant-scoped inside `CacheHandler`.
+  - `hasOrganisationAccess()` mirrors `Db\MultiTenancyTrait::applyOrganisationFilter()` — multitenancy-off or an admin under an enabled override is unrestricted; otherwise the active organisation plus its parents; no active organisation means no names. An entity whose owning organisation cannot be established is refused rather than guessed.
+  - The magic-table queries select `_organisation` alongside `_name`; that column is the tenancy oracle, because an `ObjectEntity` produced by `MagicMapper::rowToObjectEntity()` never carries an organisation at all (measured — a separate, still-open defect, deliberately not fixed here because populating it changes `PermissionHandler::filterUuidsForPermissions()` behaviour).
+  - The **cache key is unchanged**; the tenancy rides in the value (a parallel in-memory map, a `{n,o}` envelope in the distributed cache), so all existing invalidation sites keep matching and a moved object cannot orphan an entry under a stale prefix. A pre-upgrade bare-string entry reads as a MISS, not as an unscoped hit.
+- **Controls:** `tests/Unit/Service/Object/CacheHandlerTenantScopeTest.php` — nine tests, six of which were RED against the pre-fix implementation (object path, organisation path, warm-cache path, `getAllObjectNames()`, magic-table warmup, unknown tenancy) plus the partial-map contract the six internal callers consume.
+- **Still open (separate change):** RBAC (register/schema `authorization` blocks) is not evaluated by the name resolver — only the organisation dimension is. `getSingleObjectName()`'s database lookup is still `_rbac: false, _multitenancy: false`; it is the ANSWER that is now gated, not the query.
+
+### Original finding (kept for the record)
 - **File:** `lib/Controller/NamesController.php` — `index()` `:114-117` (`#[NoAdminRequired]`/`#[PublicPage]`, no auth check, calls `getAllObjectNames()` at `:173`). Backing: `lib/Service/Object/CacheHandler.php` `warmupNameCache()` — `findAllWithUserCount()` `:1460` (all orgs) + `getObjectMapper()->findAll()` `:1472` (no RBAC).
 - **Verification nuance:** `index()` + `warmupNameCache` confirmed unauthenticated and RBAC-blind. **But** `create()` requires an `ids[]` body (resolves via `getMultipleObjectNames`, not the full dump), and `MagicMapper::findAll()` returns `[]` when no register/schema is supplied (`MagicMapper.php:7032-7038`), so the *full* unbounded object-name dump may not materialise via that exact path — the **organisation** name leak and the per-`ids` resolution leak are the concrete risks.
 - **Fix:**

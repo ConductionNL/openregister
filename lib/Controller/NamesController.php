@@ -119,11 +119,13 @@ class NamesController extends Controller {
 			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
 		}
 
-		// TODO(SEC-CTRL-2): make name resolution RBAC/tenant-aware. getMultipleObjectNames()
-		// and getAllObjectNames() in lib/Service/Object/CacheHandler.php
-		// (warmupNameCache / findAllWithUserCount / getObjectMapper()->findAll()) currently
-		// return names across ALL organisations with no RBAC filtering. Filter by the
-		// caller's read permissions + active organisation there before widening exposure.
+		// SEC-CTRL-2 step 2 (closed): name resolution is tenant-scoped in
+		// CacheHandler itself. getMultipleObjectNames() and getAllObjectNames()
+		// resolve the caller's active organisation (plus its parents, mirroring
+		// Db\MultiTenancyTrait) and refuse any name whose owning organisation is
+		// outside it — including names already sitting in the shared cache, whose
+		// tenancy is stored alongside the value. A name with no resolvable owning
+		// organisation is refused rather than guessed.
 		$startTime = microtime(true);
 
 		try {
@@ -268,8 +270,9 @@ class NamesController extends Controller {
 			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
 		}
 
-		// TODO(SEC-CTRL-2): getMultipleObjectNames() in CacheHandler resolves names with
-		// no RBAC/tenant filtering; restrict resolved ids to those the caller may read.
+		// SEC-CTRL-2 step 2 (closed): getMultipleObjectNames() only resolves ids
+		// whose owning organisation is inside the caller's active-organisation
+		// scope, so a caller-supplied UUID from another tenant resolves to nothing.
 		$startTime = microtime(true);
 
 		try {
