@@ -106,14 +106,14 @@
 						</thead>
 						<tbody>
 							<tr v-for="a in activities" :key="a.uuid">
-								<td>{{ a.naam }}</td>
+								<td>{{ a.name }}</td>
 								<td>
 									<code v-if="a.code">{{ a.code }}</code>
 								</td>
 								<td>
-									<span class="badge">{{ a.rechtsgrond }}</span>
+									<span class="badge">{{ a.legalBasis }}</span>
 								</td>
-								<td>{{ a.bewaartermijn || '—' }}</td>
+								<td>{{ a.retentionPeriod || '—' }}</td>
 								<td>
 									<span
 										:class="'badge badge-status-' + a.status"
@@ -149,7 +149,7 @@
 						<span v-if="accountability" class="viewTotalCount">
 							{{
 								t('openregister', 'Generated: {time}', {
-									time: formatTime(verantwoording.generated),
+									time: formatTime(accountability.generated),
 								})
 							}}
 						</span>
@@ -170,9 +170,9 @@
 
 				<div class="tableContainer">
 					<NcEmptyContent
-						v-if="!verantwoording"
+						v-if="!accountability"
 						:name="
-							t('openregister', 'Generate the verantwoordingsdocument')
+							t('openregister', 'Generate the accountability document')
 						"
 						:description="
 							t(
@@ -216,13 +216,13 @@
 						</thead>
 						<tbody>
 							<tr
-								v-for="row in verantwoording.activities"
+								v-for="row in accountability.activities"
 								:key="row.uuid">
-								<td>{{ row.naam }}</td>
+								<td>{{ row.name }}</td>
 								<td>
-									<span class="badge">{{ row.rechtsgrond }}</span>
+									<span class="badge">{{ row.legalBasis }}</span>
 								</td>
-								<td>{{ row.bewaartermijn || '—' }}</td>
+								<td>{{ row.retentionPeriod || '—' }}</td>
 								<td>
 									<strong>{{ row.activity.totalEvents }}</strong>
 								</td>
@@ -244,7 +244,7 @@
 						{{
 							t(
 								'openregister',
-								'Locate every object referencing a data subject (Art 15 inzage), preview an erasure (Art 17 vergetelheid), or export their data (Art 20 portabiliteit).',
+								'Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).',
 							)
 						}}
 					</p>
@@ -271,16 +271,16 @@
 							<NcButton
 								variant="primary"
 								:disabled="!dsar.subject || loading"
-								@click="runInzage">
+								@click="runAccess">
 								<template #icon>
 									<Magnify :size="20" />
 								</template>
-								{{ t('openregister', 'Inzage (Art 15)') }}
+								{{ t('openregister', 'Access (Art 15)') }}
 							</NcButton>
 							<NcButton
 								variant="secondary"
 								:disabled="!dsar.subject || loading"
-								@click="runVergetelheidDryRun">
+								@click="runErasureDryRun">
 								<template #icon>
 									<EyeOutline :size="20" />
 								</template>
@@ -294,7 +294,7 @@
 									|| !dsarSummary.matchedCount
 									|| loading
 								"
-								@click="confirmVergetelheid">
+								@click="confirmErasure">
 								<template #icon>
 									<TrashCanOutline :size="20" />
 								</template>
@@ -303,7 +303,7 @@
 							<NcButton
 								variant="tertiary"
 								:disabled="!dsar.subject || loading"
-								@click="downloadPortabiliteit">
+								@click="downloadPortability">
 								<template #icon>
 									<Download :size="20" />
 								</template>
@@ -1231,8 +1231,8 @@ export default {
 		 * @spec exclude UI plumbing — derived view state from the store
 		 * @return {object}
 		 */
-		verantwoording() {
-			return avgStore.getVerantwoording
+		accountability() {
+			return avgStore.getAccountability
 		},
 
 		/**
@@ -1564,28 +1564,28 @@ export default {
 		},
 
 		/**
-		 * Load the verantwoording report from the store.
+		 * Load the accountability report from the store.
 		 *
 		 * @spec exclude UI plumbing — delegates to the AVG store fetch
 		 * @return {Promise<void>}
 		 */
 		async loadVerantwoording() {
 			try {
-				await avgStore.fetchVerantwoording()
+				await avgStore.fetchAccountability()
 			} catch (e) {
 				// surfaced via store error
 			}
 		},
 
 		/**
-		 * Run a DSAR inzage (subject-access) request via the store.
+		 * Run a DSAR access (subject-access) request via the store.
 		 *
 		 * @spec exclude UI plumbing — delegates to the AVG store action
 		 * @return {Promise<void>}
 		 */
-		async runInzage() {
+		async runAccess() {
 			try {
-				await avgStore.runInzage({
+				await avgStore.runAccess({
 					subject: this.dsar.subject,
 					type: this.dsar.type || undefined,
 				})
@@ -1595,14 +1595,14 @@ export default {
 		},
 
 		/**
-		 * Run a vergetelheid (erasure) dry-run via the store.
+		 * Run an erasure dry-run via the store.
 		 *
 		 * @spec exclude UI plumbing — delegates to the AVG store action
 		 * @return {Promise<void>}
 		 */
-		async runVergetelheidDryRun() {
+		async runErasureDryRun() {
 			try {
-				await avgStore.runVergetelheid({
+				await avgStore.runErasure({
 					subject: this.dsar.subject,
 					type: this.dsar.type || undefined,
 					dryRun: true,
@@ -1613,12 +1613,12 @@ export default {
 		},
 
 		/**
-		 * Confirm and run a vergetelheid (erasure) after user confirmation.
+		 * Confirm and run an erasure after user confirmation.
 		 *
 		 * @spec exclude UI plumbing — confirm dialog plus store delegation
 		 * @return {Promise<void>}
 		 */
-		async confirmVergetelheid() {
+		async confirmErasure() {
 			if (
 				!confirm(
 					t(
@@ -1633,7 +1633,7 @@ export default {
 				return
 			}
 			try {
-				await avgStore.runVergetelheid({
+				await avgStore.runErasure({
 					subject: this.dsar.subject,
 					type: this.dsar.type || undefined,
 					dryRun: false,
@@ -1644,14 +1644,14 @@ export default {
 		},
 
 		/**
-		 * Run a portabiliteit export and download the result as JSON.
+		 * Run a portability export and download the result as JSON.
 		 *
 		 * @spec exclude UI plumbing — store delegation plus browser download
 		 * @return {Promise<void>}
 		 */
-		async downloadPortabiliteit() {
+		async downloadPortability() {
 			try {
-				const data = await avgStore.runPortabiliteit({
+				const data = await avgStore.runPortability({
 					subject: this.dsar.subject,
 					type: this.dsar.type || undefined,
 				})
@@ -1662,7 +1662,7 @@ export default {
 				const url = URL.createObjectURL(blob)
 				const a = document.createElement('a')
 				a.href = url
-				a.download = `avg-portabiliteit-${this.dsar.subject.replace(/[^a-z0-9]/gi, '-')}.json`
+				a.download = `avg-portability-${this.dsar.subject.replace(/[^a-z0-9]/gi, '-')}.json`
 				a.click()
 				URL.revokeObjectURL(url)
 			} catch (e) {

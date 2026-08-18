@@ -727,10 +727,12 @@ class AuditTrailController extends Controller {
 	}//end verify()
 
 	/**
-	 * Get verwerkingsregister (processing register) overview.
+	 * Get the processing-activities (Dutch: verwerkingsregister) overview.
 	 *
 	 * Returns distinct processing activities from the audit trail with counts
 	 * and date ranges, for GDPR Art 30 compliance.
+	 *
+	 * Renamed from `verwerkingsregister()` by the `verwerkingsregister-i18n` change.
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
@@ -744,7 +746,7 @@ class AuditTrailController extends Controller {
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
-	public function verwerkingsregister(): JSONResponse {
+	public function processingActivities(): JSONResponse {
 		$organisationId = $this->request->getParam('organisationId');
 
 		try {
@@ -752,17 +754,20 @@ class AuditTrailController extends Controller {
 			return new JSONResponse(data: $results);
 		} catch (\Exception $e) {
 			return new JSONResponse(
-				data: ['error' => 'Failed to retrieve verwerkingsregister: ' . $e->getMessage()],
+				data: ['error' => 'Failed to retrieve processing activities: ' . $e->getMessage()],
 				statusCode: 500
 			);
 		}
-	}//end verwerkingsregister()
+	}//end processingActivities()
 
 	/**
-	 * Handle a data subject access request (inzageverzoek).
+	 * Handle a data subject access request (Dutch: inzageverzoek, Art 15 AVG).
 	 *
 	 * Searches audit trail entries by identifier in the changed JSON field,
-	 * grouped by schema.
+	 * grouped by schema. Distinct from `DsarController::access()`, which
+	 * searches the PII entity index rather than audit-trail entries.
+	 *
+	 * Renamed from `inzageverzoek()` by the `verwerkingsregister-i18n` change.
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
@@ -772,7 +777,7 @@ class AuditTrailController extends Controller {
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
-	public function inzageverzoek(): JSONResponse {
+	public function subjectAuditTrail(): JSONResponse {
 		$identifier = $this->request->getParam('identifier');
 
 		if ($identifier === null || $identifier === '') {
@@ -787,9 +792,9 @@ class AuditTrailController extends Controller {
 			return new JSONResponse(data: $results);
 		} catch (\Exception $e) {
 			return new JSONResponse(
-				data: ['error' => 'Inzageverzoek failed: ' . $e->getMessage()],
+				data: ['error' => 'Subject audit-trail lookup failed: ' . $e->getMessage()],
 				statusCode: 500
 			);
 		}
-	}//end inzageverzoek()
+	}//end subjectAuditTrail()
 }//end class
