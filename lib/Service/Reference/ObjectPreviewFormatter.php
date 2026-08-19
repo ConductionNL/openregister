@@ -341,7 +341,10 @@ final class ObjectPreviewFormatter {
 			}
 
 			$objectData = $object->jsonSerialize();
-			$selfData = $objectData['@self'] ?? [];
+
+			// No `?? []`: `jsonSerialize()` always emits `@self`, so the
+			// fallback was unreachable and phpstan says so.
+			$selfData = $objectData['@self'];
 
 			// Extract title.
 			$title = $this->extractTitle(objectData: $objectData, selfData: $selfData);
@@ -385,8 +388,10 @@ final class ObjectPreviewFormatter {
 			// Extract preview properties.
 			$properties = $this->extractPreviewProperties(objectData: $objectData);
 
-			// Get updated timestamp.
-			$updated = $selfData['updated'] ?? $objectData['updated'] ?? '';
+			// Get updated timestamp. The metadata lives in `@self` and nowhere
+			// else — the old top-level fallback read a key the serialised shape
+			// does not have, so it could only ever yield ''.
+			$updated = $selfData['updated'] ?? '';
 
 			// Build rich data.
 			$richData = [
