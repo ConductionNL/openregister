@@ -1,0 +1,96 @@
+{
+	"$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json",
+	"version": "1.0.0",
+	"pages": [
+		{
+			"id": "items-index",
+			"route": "/items",
+			"type": "index",
+			"title": "Items",
+			"config": {
+				"register": "items",
+				"schema": "item"
+			},
+			"actions": [
+				{
+					"id": "open-item-detail",
+					"label": "Open",
+					"type": "open-page",
+					"target": "items-detail"
+				}
+			]
+		},
+		{
+			"id": "items-detail",
+			"route": "/items/:id",
+			"type": "detail",
+			"title": "Item",
+			"actions": [
+				{
+					"id": "edit-item",
+					"label": "Edit",
+					"type": "open-modal",
+					"target": "EditItemModal"
+				}
+			]
+		},
+		{
+			"id": "reports-page",
+			"route": "/reports",
+			"type": "dashboard",
+			"title": "Reports",
+			"widgets": [
+				{
+					"id": "items-by-status",
+					"widgetKey": "chart",
+					"slot": "body",
+					"gridX": 0,
+					"gridY": 0,
+					"gridWidth": 6,
+					"gridHeight": 4,
+					"dataSource": {
+						"register": "items",
+						"schema": "item"
+					}
+				}
+			]
+		}
+	],
+	"menu": [
+		{
+			"id": "items-group",
+			"label": "Items",
+			"children": [
+				{
+					"id": "items-index-entry",
+					"label": "All items",
+					"route": "items-index"
+				},
+				{
+					"id": "items-index-duplicate",
+					"label": "Items",
+					"route": "items-index"
+				}
+			]
+		},
+		{
+			"id": "reports-entry",
+			"label": "Reports",
+			"route": "reports-page",
+			"order": 20
+		},
+		{
+			"id": "app-settings-entry",
+			"label": "Settings",
+			"route": "settings-page"
+		}
+	],
+	"deepLinks": [
+		{
+			"registerSlug": "items",
+			"schemaSlug": "item",
+			"urlTemplate": "/items/{id}",
+			"displayName": "Item"
+		}
+	]
+}

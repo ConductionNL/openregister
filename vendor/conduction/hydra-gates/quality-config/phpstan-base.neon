@@ -1,0 +1,122 @@
+# The Conduction PHPStan base. ONE copy, here.
+#
+# An app's phpstan.neon is a stub that `includes:` this file, then adds ONLY what
+# is genuinely local to that app: its own baseline, its own excludePaths, and
+# ignores naming symbols that exist nowhere else in the fleet.
+#
+# Everything below was fleet-wide duplicated debt before centralisation: measured
+# 2026-08-12, all 18 core apps shipped a byte-DIFFERENT phpstan.neon (18 distinct
+# SHAs) whose divergence was almost entirely re-typed copies of these same
+# ignoreErrors blocks.
+#
+# ── WHY `scanDirectories: vendor/nextcloud/ocp` IS NOT ENOUGH ────────────────
+# Nextcloud's own psalm/phpstan workflows do NOT pin nextcloud/ocp. They read
+# appinfo/info.xml with icewind1991/nextcloud-version-matrix and then
+#   composer require --dev nextcloud/ocp:dev-<branches-max>
+# so the analysed API surface always matches the app's DECLARED support range.
+#
+# This fleet pins it statically, and as of 2026-08-12 that pin is one major
+# BELOW the declared minimum in 15 of 18 apps: info.xml says
+# min-version="32" max-version="34" while composer says nextcloud/ocp:^31.0.
+# The consequence is not noise, it is blindness — a symbol removed in NC 32/33/34
+# cannot be reported, because the analyser is looking at NC 31. That is why
+# `\OC::$server`, removed in NC 34, needed a hand-written PHPCS sniff to catch:
+# the type checker could not see the removal at all.
+#
+# Do not "fix" the resulting unknown-class noise by adding more ignores here.
+# The fix is to align the pin with info.xml, per
+# https://docs.conduction.nl/WayOfWork/ci-cd/.
+
+parameters:
+    level: 5
+
+    paths:
+        - lib
+
+    bootstrapFiles:
+        - phpstan-bootstrap.php
+
+    excludePaths:
+        - vendor
+        - vendor-bin
+        # Apps that ship a verbatim template snapshot under lib/Resources/template/
+        # (openbuild). A no-op everywhere else.
+        - lib/Resources/template
+
+    scanDirectories:
+        - vendor/nextcloud/ocp
+
+    reportUnmatchedIgnoredErrors: false
+
+    ignoreErrors:
+        # ── Nextcloud server internals (\OC, OC_App, OC\) ────────────────────
+        # Not stubbed in nextcloud/ocp. Present at runtime, absent to the analyser.
+        - '#Call to an undefined method OC::#'
+        - '#Class OC not found#'
+        - '#Access to static property \$server on an unknown class OC#'
+        - '#unknown class OC\\#'
+        - '#Caught class OC\\#'
+        - '#unknown class OC_App#'
+        - '#Class OC_App not found#'
+
+        # OCA\DAV is server-internal and not in nextcloud/ocp stubs.
+        - '#unknown class OCA\\DAV\\#'
+        - '#Class OCA\\DAV\\#'
+
+        # ── Optional Nextcloud components, lazy-resolved behind class_exists ──
+        # Ignored rather than baselined on purpose: a baseline entry for one of
+        # these is only correct in the environment that generated it, and goes
+        # stale the moment the component IS present. An absent optional
+        # dependency is a property of the analysis host, not app debt.
+        - '#unknown class OCP\\ContextChat\\#'
+        - '#OCP\\ContextChat\\[a-zA-Z\\]+.*not found#'
+        - '#on an unknown class OCP\\ContextChat\\#'
+        - '#has invalid type OCP\\ContextChat\\#'
+        # The RETURN-type variant, which the line above does not cover: phpstan
+        # words a parameter/property as "has invalid type" and a return as
+        # "has invalid return type".
+        - '#has invalid return type OCP\\ContextChat\\#'
+        - '#implements unknown interface OCP\\ContextChat\\#'
+        - '#unknown class OCP\\SystemTag\\Tag(Assigned|Unassigned)Event#'
+        - '#OCP\\SystemTag\\Tag(Assigned|Unassigned)Event not found#'
+        - '#has invalid type OCP\\SystemTag\\Tag(Assigned|Unassigned)Event#'
+
+        # OCA\Bookmarks — optional peer app resolved via \OCP\Server::get()
+        # behind a class_exists guard; not a composer dependency.
+        - '#unknown class OCA\\Bookmarks\\#'
+        - '#OCA\\Bookmarks\\[a-zA-Z\\]+.*not found#'
+        - '#on an unknown class OCA\\Bookmarks\\#'
+        - '#has invalid return type OCA\\Bookmarks\\#'
+        - '#Instantiated class OCA\\Bookmarks\\#'
+
+        # ── Cross-app OpenRegister types ─────────────────────────────────────
+        # Every leaf app consumes OpenRegister's ObjectService/ObjectEntity and
+        # resolves them lazily (ADR-022); openregister itself keeps these too,
+        # because its own listeners resolve peers the same way.
+        - '#unknown class OCA\\OpenRegister\\#'
+        - '#OCA\\OpenRegister\\[a-zA-Z\\]+.*not found#'
+        - '#on an unknown class OCA\\OpenRegister\\#'
+        - '#has invalid return type OCA\\OpenRegister\\#'
+        - '#has invalid type OCA\\OpenRegister\\#'
+        - '#implements unknown interface OCA\\OpenRegister\\#'
+
+        # ── Libraries the server ships but the app does not require ──────────
+        - '#unknown class GuzzleHttp\\#'
+        - '#GuzzleHttp\\[a-zA-Z\\]+.*not found#'
+        - '#on an unknown class GuzzleHttp\\#'
+        - '#invalid type GuzzleHttp\\#'
+        - '#Caught class GuzzleHttp\\#'
+        - '#unknown class Doctrine\\DBAL\\#'
+        - '#Doctrine\\DBAL\\[a-zA-Z\\]+.*not found#'
+        - '#on an unknown class Doctrine\\DBAL\\#'
+
+        # ── Known nextcloud/ocp stub gaps (methods that exist at runtime) ────
+        - '#Call to an undefined method OCP\\AppFramework\\Bootstrap\\IRegistrationContext::registerRepairStep#'
+        - '#Call to an undefined method OCP\\IRequest::getContent\(\)#'
+        - '#Call to an undefined method OCP\\IRequest::setParameter\(\)#'
+        - '#Call to an undefined method OCP\\Mail\\IMessage::attachFile\(\)#'
+        - '#Call to an undefined method OCP\\AppFramework\\Db\\Entity::jsonSerialize#'
+
+        # Dynamic HTTP status codes from business-rule validation results.
+        # Matches both `Parameter $statusCode` and `Parameter #N $statusCode`.
+        - '#Parameter (\#\d+ )?\$statusCode of class OCP\\AppFramework\\Http\\JSONResponse constructor expects#'

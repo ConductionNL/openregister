@@ -1,0 +1,136 @@
+# Reusable Documentation workflow for Forgejo Actions on Codeberg.
+#
+# Builds a Docusaurus site and deploys it to Cloudflare Workers
+# Static Assets (the strategic successor to Cloudflare Pages, which
+# has a 20-project-per-account cap that the Conduction fleet hit).
+#
+# Why Workers (Static Assets) over Pages:
+#   * No per-account project cap
+#   * Cloudflare's stated strategic direction (Pages is in maintenance)
+#   * Identical static-asset hosting model, same deploy tooling (wrangler)
+#
+# wrangler.toml is generated inline in the deploy job, so individual
+# repos do NOT need to commit one. cf-project-name controls the
+# Worker's name, source-folder controls where the build lives.
+#
+# Custom domains (e.g. openregister.conduction.nl) are managed
+# OUTSIDE this workflow via the Workers Custom Domains API, so the
+# CI token only needs Workers Scripts: Edit (not DNS).
+
+name: Documentation
+
+on:
+  workflow_call:
+    inputs:
+      cf-project-name:
+        description: >-
+          Cloudflare Worker name (e.g. 'openregister-docs').
+          Site lives at {project}.{account}.workers.dev plus any
+          custom domain bound separately.
+        required: true
+        type: string
+      source-folder:
+        description: "Folder containing the Docusaurus project"
+        required: false
+        type: string
+        default: "docs"
+      node-version:
+        description: "Node.js version for building"
+        required: false
+        type: string
+        default: "20"
+      event-name:
+        description: >-
+          Caller's github.event_name. Forgejo does NOT propagate the original
+          trigger event into workflow_call reusables, so the caller must pass it
+          for the deploy gate to work.
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  build:
+    name: Build and validate
+    runs-on: codeberg-medium
+    container:
+      image: node:24-bookworm
+    timeout-minutes: 10
+    outputs:
+      built: ${{ steps.flag.outputs.built }}
+    steps:
+      - name: Checkout code
+        uses: https://github.com/actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: https://github.com/actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Install dependencies and build
+        timeout-minutes: 9
+        env:
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+        run: |
+          cd "${{ inputs.source-folder }}"
+          rm -rf node_modules/.cache .docusaurus build
+          npm run ci
+
+      - name: Verify build output
+        run: |
+          if [ ! -f "${{ inputs.source-folder }}/build/index.html" ]; then
+            echo "ERROR: index.html not found in build directory!"
+            exit 1
+          fi
+
+      - name: Upload build artifact for deploy job
+        if: inputs.event-name == 'push' || inputs.event-name == 'schedule' || inputs.event-name == 'workflow_dispatch'
+        uses: https://github.com/actions/upload-artifact@v4
+        with:
+          name: docusaurus-build
+          path: ${{ inputs.source-folder }}/build
+          retention-days: 1
+
+      - id: flag
+        run: echo "built=true" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: Deploy to Cloudflare Workers (Static Assets)
+    needs: build
+    runs-on: codeberg-small
+    container:
+      image: node:24-bookworm
+    timeout-minutes: 10
+    if: inputs.event-name == 'push' || inputs.event-name == 'schedule' || inputs.event-name == 'workflow_dispatch'
+    steps:
+      - name: Download build artifact from build job
+        uses: https://github.com/actions/download-artifact@v4
+        with:
+          name: docusaurus-build
+          path: ./build
+
+      - name: Generate wrangler.toml
+        run: |
+          cat > wrangler.toml <<EOF
+          name = "${{ inputs.cf-project-name }}"
+          compatibility_date = "2026-05-30"
+
+          [assets]
+          directory = "./build"
+          EOF
+          echo "--- generated wrangler.toml ---"
+          cat wrangler.toml
+
+      - name: Deploy to Cloudflare Workers (Static Assets)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          npx -y wrangler@latest deploy
+
+      - name: Print deployment summary
+        run: |
+          echo "Deployed ${{ inputs.cf-project-name }} from ${{ github.ref_name }} (${GITHUB_SHA:0:7})"
+          echo "Worker URL: https://${{ inputs.cf-project-name }}.<account-subdomain>.workers.dev"
+          echo "Custom domain (if bound): see Cloudflare dashboard"

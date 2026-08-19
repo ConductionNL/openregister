@@ -1,0 +1,84 @@
+contact:
+  email: info@conduction.nl
+  phone: +31 (0)85 3036840
+description: At Conduction, we are driven by a vision that sees the digitization of
+  the world as an extraordinary opportunity. It's a chance to transform our world
+  into something more democratic, inclusive, and transparent. We understand that digitalization
+  is not just inevitable but comes with immense potential and challenges.
+logo: https://avatars.githubusercontent.com/u/46676163
+name: Conduction
+publiccodeYmlVersion: '0.2'
+softwareOwned:
+- https://github.com/ConductionNL/conduction-components
+- https://github.com/ConductionNL/woo-website-template
+- https://github.com/ConductionNL/commonground-gateway
+softwareSupported:
+- contact:
+    email: info@conduction.nl
+    phone: +31 (0)85 3036840
+  software: https://github.com/OpenCatalogi/web-app
+  type: maintenance
+- contact:
+    email: info@conduction.nl
+    phone: +31 (0)85 3036840
+  software: https://github.com/OpenCatalogi/publiccode-action
+  type: maintenance
+- contact:
+    email: info@conduction.nl
+    phone: +31 (0)85 3036840
+  software: https://github.com/OpenCatalogi/opencatalogi-action
+  type: maintenance
+- contact:
+    email: info@conduction.nl
+    phone: +31 (0)85 3036840
+  software: https://github.com/OpenCatalogi/OpenCatalogiBundle
+  type: maintenance
+- contact:
+    email: info@conduction.nl
+    phone: +31 (0)85 3036840
+  software: https://github.com/OpenCatalogi/productpage-action
+  type: maintenance
+- contact:
+    email: info@conduction.nl
+    phone: +31 (0)85 3036840
+  software: https://github.com/ConductionNL/conduction-components
+  type: maintenance
+- contact:
+    email: info@conduction.nl
+    phone: +31 (0)85 3036840
+  software: https://github.com/ConductionNL/woo-website-template
+  type: maintenance
+- contact:
+    email: info@conduction.nl
+    phone: +31 (0)85 3036840
+  software: https://github.com/ConductionNL/commonground-gateway
+  type: maintenance
+- contact:
+    email: info@conduction.nl
+    phone: +31 (0)85 3036840
+  software: https://github.com/OpenWebconcept/openpdd
+  type: maintenance
+- contact:
+    email: info@conduction.nl
+    phone: +31 (0)85 3036840
+  software: https://github.com/OpenWebconcept/plugin-pdc-base
+  type: maintenance
+- contact:
+    email: info@conduction.nl
+    phone: +31 (0)85 3036840
+  software: https://github.com/OpenWebconcept/plugin-owc-gravityforms-zaaksysteem
+  type: maintenance
+- contact:
+    email: info@conduction.nl
+    phone: +31 (0)85 3036840
+  software: https://github.com/OpenWebconcept/plugin-openpub-base
+  type: maintenance
+softwareUsed:
+- https://github.com/ConductionNL/conduction-components
+- https://github.com/ConductionNL/commonground-gateway
+- https://github.com/OpenCatalogi/OpenCatalogiBundle
+- https://github.com/OpenCatalogi/web-app
+- https://github.com/OpenCatalogi/opencatalogi-action
+- https://github.com/OpenCatalogi/productpage-action
+- https://github.com/OpenCatalogi/publiccode-action
+website: https://conduction.nl/

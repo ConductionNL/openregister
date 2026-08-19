@@ -1,0 +1,52 @@
+{
+    "name": "phpmetrics/phpmetrics",
+    "replace": {
+        "halleck45/phpmetrics": "*",
+        "halleck45/php-metrics": "*"
+    },
+    "description": "Static analyzer tool for PHP : Coupling, Cyclomatic complexity, Maintainability Index, Halstead's metrics... and more !",
+    "license": "MIT",
+    "keywords": [
+        "quality",
+        "analysis",
+        "testing",
+        "qa"
+    ],
+    "authors": [
+        {
+            "name": "Jean-François Lépine",
+            "email": "lepinejeanfrancois@yahoo.fr",
+            "homepage": "http://www.lepine.pro",
+            "role": "Copyright Holder"
+        }
+    ],
+    "homepage": "http://www.phpmetrics.org",
+    "support": {
+        "issues": "https://github.com/PhpMetrics/PhpMetrics/issues"
+    },
+    "autoload": {
+        "psr-0": {
+            "Hal\\": "./src/"
+        },
+        "files": ["./src/functions.php"]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Test\\Hal\\": "tests/"
+        }
+    },
+    "require": {
+        "ext-dom": "*",
+        "ext-tokenizer": "*",
+        "nikic/php-parser": "^3|^4|^5"
+    },
+    "bin": [
+        "bin/phpmetrics"
+    ],
+    "config": {
+        "sort-packages": true
+    },
+    "require-dev": {
+        "phpunit/phpunit": "*"
+    }
+}

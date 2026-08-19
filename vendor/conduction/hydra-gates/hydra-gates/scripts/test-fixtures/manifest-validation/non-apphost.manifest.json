@@ -1,0 +1,35 @@
+{
+	"$schema": "https://conduction.nl/schemas/app-manifest-v2.schema.json",
+	"version": "1.0.0",
+	"menu": [
+		{
+			"id": "Widgets",
+			"label": "Widgets",
+			"icon": "ViewDashboardOutline",
+			"route": "Widgets",
+			"order": 10
+		}
+	],
+	"pages": [
+		{
+			"id": "Widgets",
+			"route": "/widgets",
+			"type": "index",
+			"title": "Widgets",
+			"config": {
+				"register": "fixture",
+				"schema": "widget"
+			}
+		},
+		{
+			"id": "WidgetDetail",
+			"route": "/widgets/:id",
+			"type": "detail",
+			"title": "Widget",
+			"config": {
+				"register": "fixture",
+				"schema": "widget"
+			}
+		}
+	]
+}

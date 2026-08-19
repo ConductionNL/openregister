@@ -1,0 +1,6 @@
+{
+	"_note": "ADR-044 violation, deliberately. Unlike the good fixture's removal, 'cases-index' is the ONLY menu entry reaching route 'cases-index-page'. Removing it leaves the page routable but unreachable from the navigation — no-functionality-loss breach -> removals-invariant error. The removal id DOES match a merged entry, so this is a real orphaning, not the 'stale removal' WARN.",
+	"removals": [
+		"cases-index"
+	]
+}

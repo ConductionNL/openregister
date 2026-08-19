@@ -1,0 +1,135 @@
+name: Fixture — security-gated test tier (#194)
+
+# THIS WORKFLOW EXISTS TO BE FAILED. It is the executable evidence for #194.
+#
+# #194 claims that gating the test tier on the security tier does not merely
+# *skip* tests — it DELETES THE EVIDENCE, and the deletion does not render as a
+# failure. That claim is easy to assert and easy to get wrong, so it is measured
+# here on real GitHub Actions rather than argued from the expression grammar.
+#
+# The three jobs below differ in ONE line each. Everything else — the runner,
+# the steps, the "test" that fails — is identical, so any difference in outcome
+# is attributable to the `if:` and to nothing else.
+#
+#   security         always fails, standing in for `composer audit` picking up
+#                    a fresh advisory against a dev-only dependency.
+#
+#   test-gated       the shape that SHIPPED until this PR:
+#                        if: !cancelled() && needs.security.result != 'failure'
+#                    Contains a test that FAILS. Expected outcome: `skipped`.
+#                    Its failure is never reported, because it never runs.
+#
+#   test-decoupled   the shape this PR ships:
+#                        if: !cancelled()
+#                    Byte-for-byte the same failing test. Expected outcome:
+#                    `failure`. The verdict exists.
+#
+#   aggregate-old    the tally quality.yml used: `contains(needs.*.result,
+#                    'failure')` over the test tier. Expected: GREEN, over a
+#                    test tier that produced nothing.
+#
+#   aggregate-new    the invariant this PR adds to the Quality Report: an
+#                    ENABLED test job in state `skipped` is the absence of a
+#                    verdict. Expected: RED, naming the missing job.
+#
+# Runs only on `fixture/**` branches, so it costs the fleet nothing and can be
+# re-run whenever someone wants to see the mechanism rather than read about it.
+
+on:
+  push:
+    branches:
+      - 'fixture/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  security:
+    name: "fixture: security (always FAILS)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stand in for a fresh advisory against a dev-only dependency
+        run: |
+          echo "Simulating: composer audit picks up CVE-2026-67434 against"
+          echo "squizlabs/php_codesniffer — a code FORMATTER that never runs in"
+          echo "production. No commit was made; the live advisory feed changed."
+          echo "::error::Security (composer): 1 advisory found"
+          exit 1
+
+  # ── BEFORE: the shape that shipped ──────────────────────────────────────────
+  test-gated:
+    name: "fixture: BEFORE — test tier gated on security"
+    needs: [security]
+    if: ${{ !cancelled() && needs.security.result != 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: A test suite that FAILS
+        run: |
+          echo "TEST EVIDENCE PRODUCED: 3 passed, 1 FAILED"
+          echo "::error::PHPUnit: 1 test failed"
+          exit 1
+
+  # ── AFTER: the shape this PR ships ──────────────────────────────────────────
+  test-decoupled:
+    name: "fixture: AFTER — test tier decoupled"
+    needs: [security]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: A test suite that FAILS
+        run: |
+          echo "TEST EVIDENCE PRODUCED: 3 passed, 1 FAILED"
+          echo "::error::PHPUnit: 1 test failed"
+          exit 1
+
+  # ── The tally that could not see the deletion ───────────────────────────────
+  aggregate-old:
+    name: "fixture: OLD tally over the test tier"
+    needs: [test-gated]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report what the old tally saw
+        run: |
+          echo "test-gated result: ${{ needs.test-gated.result }}"
+          echo ""
+          echo "The old gate is: contains(needs.*.result, 'failure')"
+          echo "'skipped' is not 'failure', so this reads ZERO failures."
+      - name: Old gate — fail when any upstream job failed
+        if: ${{ always() && contains(needs.*.result, 'failure') }}
+        run: |
+          echo "::error::a failure was seen"
+          exit 1
+      - name: What this job concluded
+        run: |
+          echo "CONCLUSION: green. A test suite that would have FAILED was"
+          echo "deleted, and the tally reports nothing wrong. This is the"
+          echo "silent-green #194 describes."
+
+  # ── The invariant this PR adds ──────────────────────────────────────────────
+  aggregate-new:
+    name: "fixture: NEW invariant over the test tier"
+    needs: [test-gated]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      # Same logic as the Quality Report's "Gate — a test job that was ENABLED
+      # but never ran has no verdict" step, reduced to the one job under test.
+      - name: New gate — an ENABLED test job that never ran has no verdict
+        env:
+          PHPUNIT_ENABLED: 'true'
+          PHPUNIT_RESULT: ${{ needs.test-gated.result }}
+        run: |
+          set -uo pipefail
+          MISSING=""
+          if [ "$PHPUNIT_ENABLED" = "true" ] && [ "$PHPUNIT_RESULT" = "skipped" ]; then
+            MISSING="PHPUnit"
+          fi
+          if [ -z "$MISSING" ]; then
+            echo "Every enabled test job produced a verdict."
+            exit 0
+          fi
+          echo "::error::TEST TIER NOT EXECUTED — NO VERDICT EXISTS for one or more enabled test jobs. A skipped test job is not a pass; it is the absence of a result. This gate cannot pass."
+          echo "Missing: $MISSING (result=$PHPUNIT_RESULT)"
+          exit 1

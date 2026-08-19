@@ -1,8 +1,0 @@
-{
-  "spec_slug": "virtual-schema-semantic-providers",
-  "title": "Nextcloud entities as virtual schemas + inheritance-aware semantic providers",
-  "app": "openregister",
-  "repo": "https://codeberg.org/Conduction/openregister",
-  "depends_on": ["cross-app-semantic-references", "object-source-providers"],
-  "issue": null
-}

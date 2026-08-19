@@ -1,0 +1,20 @@
+{
+	"_note": "Declares register 'zaken' and schema 'zaak' — but NOT 'besluit'. That asymmetry is load-bearing: gate-30 only FAILS a slug reference when a register JSON exists AND the referenced register is declared. Delete this file and the besluit reference degrades to a WARN (runtime-bound registers) instead, and the broken fixture stops producing the error it exists to produce.",
+	"components": {
+		"registers": {
+			"zaken": {
+				"slug": "zaken",
+				"title": "Zaken",
+				"schemas": [
+					"zaak"
+				]
+			}
+		},
+		"schemas": {
+			"zaak": {
+				"slug": "zaak",
+				"title": "Zaak"
+			}
+		}
+	}
+}

@@ -1,0 +1,199 @@
+# Reusable Stable Release via semantic-release (commit-driven semver) for Codeberg.
+# semantic-release/commit-analyzer computes the next version from Conventional
+# Commits off the latest vX.Y.Z tag, creates+pushes the tag, and @semantic-release/exec
+# runs the Nextcloud build/sign/Codeberg-release/App-Store steps in prepare+publish.
+# No release happens unless there are releasable commits (feat/fix/BREAKING).
+name: Stable Release (semantic-release)
+
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        description: "Nextcloud app ID (must match appinfo/info.xml)"
+        required: true
+        type: string
+      node-version:
+        required: false
+        type: string
+        default: "24"
+      extra-rsync-excludes:
+        required: false
+        type: string
+        default: ""
+      release-branch:
+        description: "Branch semantic-release treats as the stable release branch (default main; nldesign uses master)"
+        required: false
+        type: string
+        default: "main"
+
+jobs:
+  release:
+    runs-on: codeberg-medium
+    container:
+      image: php:8.3-cli
+    timeout-minutes: 15
+    steps:
+      - name: Install base tooling
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            git curl ca-certificates gnupg jq rsync unzip zip \
+            openssl libzip-dev libpng-dev
+          docker-php-ext-install -j"$(nproc)" zip gd
+          curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+          curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
+          apt-get install -y nodejs
+
+      - name: Checkout code
+        uses: https://github.com/actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install semantic-release
+        run: npm install -g semantic-release@24 @semantic-release/commit-analyzer @semantic-release/release-notes-generator @semantic-release/exec
+
+      - name: Write release scripts + config
+        env:
+          EXTRA_EXCLUDES: ${{ inputs.extra-rsync-excludes }}
+        run: |
+          mkdir -p .forgejo-release
+          cat > .forgejo-release/prepare.sh <<'PREP'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          VERSION="$1"
+          echo "prepare: building ${APP_NAME} ${VERSION}"
+          if [ -f package.json ]; then npm ci || npm install; npm run build; fi
+          # composer dist downloads intermittently 400 from codeload.github.com (per-package
+          # GitHub throttling of the shared runner IP). COMPOSER_AUTH (step env) + serial
+          # downloads + retry make the install reliable instead of failing a good build.
+          if [ -f composer.json ]; then n=0; until COMPOSER_MAX_PARALLEL_HTTP=1 composer install --no-dev --optimize-autoloader --classmap-authoritative --ignore-platform-reqs; do n=$((n+1)); [ $n -ge 5 ] && { echo "composer install failed after 5 attempts"; exit 1; }; echo "transient composer download failure, retry $n/5"; sleep 15; done; fi
+          mkdir -p "package/${APP_NAME}"
+          rsync -a \
+            --exclude='/package' --exclude='/.git' --exclude='/.github' --exclude='/.forgejo' \
+            --exclude='/.forgejo-release' --exclude='/.claude' --exclude='/.cursor' --exclude='/.vscode' \
+            --exclude='/.nextcloud' --exclude='/docker' --exclude='/docker-compose.yml' \
+            --exclude='/docs' --exclude='/website' --exclude='/node_modules' --exclude='/src' \
+            --exclude='/phpcs-custom-sniffs' --exclude='/resources' --exclude='/tests' --exclude='/data' \
+            --exclude='/package.json' --exclude='/package-lock.json' --exclude='/composer.json' \
+            --exclude='/composer.lock' --exclude='/composer-setup.php' --exclude='/phpcs.xml' \
+            --exclude='/phpmd.xml' --exclude='/psalm.xml' --exclude='/phpunit.xml' --exclude='/phpunit-unit.xml' \
+            --exclude='/.phpunit.cache' --exclude='.phpunit.result.cache' --exclude='/jest.config.js' \
+            --exclude='/webpack.config.js' --exclude='/tsconfig.json' --exclude='/.babelrc' \
+            --exclude='/.eslintrc.js' --exclude='/.prettierrc' --exclude='/stylelint.config.js' \
+            --exclude='/.spectral.yml' --exclude='/.gitignore' --exclude='/.gitattributes' \
+            --exclude='/.php-cs-fixer.dist.php' --exclude='/.nvmrc' --exclude='/changelog-ci-config.json' \
+            --exclude='/coverage.txt' --exclude='/signing-key.key' --exclude='/signing-cert.crt' \
+            --exclude='/openapi.json' --exclude='/CHANGELOG.md' --exclude='/CONTRIBUTING.md' \
+            ${EXTRA_EXCLUDES:-} \
+            ./ "package/${APP_NAME}/"
+          # The App Store blacklists ANY .git directory in the archive. composer installs
+          # source/dev-branch deps (e.g. ddn/sapp pinned to a dev- branch) via git clone,
+          # leaving a nested vendor/**/.git that the root-anchored rsync excludes miss.
+          # Strip every nested .git (dir or gitlink file) before packaging.
+          find "package/${APP_NAME}" -name '.git' -exec rm -rf {} + 2>/dev/null || true
+          sed -i "s|<version>.*</version>|<version>${VERSION}</version>|" "package/${APP_NAME}/appinfo/info.xml"
+          printf '%s' "${NEXTCLOUD_SIGNING_KEY}" > signing-key.key
+          printf '%s' "${NEXTCLOUD_SIGNING_CERT}" > signing-cert.crt
+          (cd package && tar -czf ../nextcloud-release.tar.gz "${APP_NAME}")
+          echo "prepared tarball:"; du -h nextcloud-release.tar.gz
+          PREP
+          cat > .forgejo-release/publish.sh <<'PUB'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          VERSION="$1"
+          REPO="${GITHUB_REPOSITORY}"
+          TAG="v${VERSION}"
+          ASSET="${APP_NAME}-${VERSION}.tar.gz"
+          # semantic-release already created+pushed tag ${TAG}; create the Codeberg release object for it.
+          # Retry transient Codeberg API errors (empty body / 5xx during instability) up to 5x.
+          REL_ID=""
+          for attempt in 1 2 3 4 5; do
+            REL=$(curl -s -X POST "https://codeberg.org/api/v1/repos/${REPO}/releases" \
+              -H "Authorization: token ${CODEBERG_TOKEN}" -H "Content-Type: application/json" \
+              -d "{\"tag_name\":\"${TAG}\",\"target_commitish\":\"${GITHUB_SHA}\",\"name\":\"Release ${VERSION}\",\"draft\":false,\"prerelease\":false}")
+            echo "Codeberg release POST attempt ${attempt}: $(printf '%s' "${REL}" | head -c 200)"
+            REL_ID=$(echo "${REL}" | jq -r '.id // empty')
+            [ -n "${REL_ID}" ] && break
+            REL_ID=$(curl -s -H "Authorization: token ${CODEBERG_TOKEN}" \
+              "https://codeberg.org/api/v1/repos/${REPO}/releases/tags/${TAG}" | jq -r '.id // empty')
+            [ -n "${REL_ID}" ] && break
+            sleep 6
+          done
+          [ -n "${REL_ID}" ] || { echo "ERROR: no release id after 5 attempts"; exit 1; }
+          curl -s -X POST "https://codeberg.org/api/v1/repos/${REPO}/releases/${REL_ID}/assets?name=${ASSET}" \
+            -H "Authorization: token ${CODEBERG_TOKEN}" -F "attachment=@nextcloud-release.tar.gz" >/dev/null
+          echo "Codeberg release ${TAG} asset uploaded (id ${REL_ID})"
+          # ---- Nextcloud App Store (UPLOAD-FIRST: only register NEW apps, so UPDATES never hit the new-app rate limiter) ----
+          SIGNATURE=$(openssl dgst -sha512 -sign signing-key.key nextcloud-release.tar.gz | openssl base64 -A)
+          DOWNLOAD_URL="https://codeberg.org/${REPO}/releases/download/${TAG}/${ASSET}"
+          post_release() {
+            curl -s -o /tmp/up.json -w "%{http_code}" -X POST "https://apps.nextcloud.com/api/v1/apps/releases" \
+              -H "Authorization: Token ${NEXTCLOUD_APPSTORE_TOKEN}" -H "Content-Type: application/json" \
+              -d "{\"download\": \"${DOWNLOAD_URL}\", \"signature\": \"${SIGNATURE}\", \"nightly\": false}"
+          }
+          # The App Store fetches DOWNLOAD_URL the instant we POST, but the just-created Codeberg release
+          # asset is often not yet servable (replica lag) → transient non-200. Retry with backoff so a
+          # successful build+tag is not thrown away by a momentary download race. New-app registration
+          # (rate-limited) is attempted at most once. Keep the hard gate: still fail if all attempts fail.
+          REGISTERED=0
+          UP=""
+          for attempt in 1 2 3 4 5 6; do
+            UP=$(post_release)
+            echo "=== App Store upload attempt ${attempt}: HTTP ${UP} ==="; cat /tmp/up.json; echo
+            if [ "${UP}" = "200" ] || [ "${UP}" = "201" ]; then break; fi
+            if [ "${REGISTERED}" = "0" ] && grep -qi "does not exist" /tmp/up.json; then
+              echo "App ${APP_NAME} not registered yet — registering (NEW-app endpoint is rate-limited)..."
+              REG_SIG=$(printf '%s' "${APP_NAME}" | openssl dgst -sha512 -sign signing-key.key | openssl base64 -A)
+              REG=$(curl -s -w $'\n[http %{http_code}]' -X POST "https://apps.nextcloud.com/api/v1/apps" \
+                -H "Authorization: Token ${NEXTCLOUD_APPSTORE_TOKEN}" -H "Content-Type: application/json" \
+                -d "{\"certificate\": $(jq -Rs . < signing-cert.crt), \"signature\": \"${REG_SIG}\"}" || true)
+              echo "App Store register (${APP_NAME}) response: ${REG}"
+              REGISTERED=1
+              continue
+            fi
+            echo "App Store upload non-success (HTTP ${UP}); backing off before retry..."
+            sleep $((attempt * 10))
+          done
+          [ "${UP}" = "200" ] || [ "${UP}" = "201" ] || { echo "ERROR: App Store upload failed after retries (HTTP ${UP})"; exit 1; }
+          echo "Published ${APP_NAME} ${VERSION} to the App Store"
+          PUB
+          cat > .releaserc.json <<RC
+          {
+            "repositoryUrl": "https://codeberg.org/${{ github.repository }}.git",
+            "branches": ["${{ inputs.release-branch }}"],
+            "tagFormat": "v\${version}",
+            "plugins": [
+              "@semantic-release/commit-analyzer",
+              "@semantic-release/release-notes-generator",
+              ["@semantic-release/exec", {
+                "prepareCmd": "bash .forgejo-release/prepare.sh \${nextRelease.version}",
+                "publishCmd": "bash .forgejo-release/publish.sh \${nextRelease.version}"
+              }]
+            ]
+          }
+          RC
+          echo "--- .releaserc.json ---"; cat .releaserc.json
+
+      - name: Run semantic-release
+        env:
+          CI: "true"
+          APP_NAME: ${{ inputs.app-name }}
+          EXTRA_EXCLUDES: ${{ inputs.extra-rsync-excludes }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+          CODEBERG_USERNAME: ${{ secrets.CODEBERG_USERNAME }}
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+          NEXTCLOUD_SIGNING_KEY: ${{ secrets.NEXTCLOUD_SIGNING_KEY }}
+          NEXTCLOUD_SIGNING_CERT: ${{ secrets.NEXTCLOUD_SIGNING_CERT }}
+          NEXTCLOUD_APPSTORE_TOKEN: ${{ secrets.NEXTCLOUD_APPSTORE_TOKEN }}
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GH_COMPOSER_TOKEN }}"}}'
+          GIT_CREDENTIALS: "https://x-access-token:${{ secrets.CODEBERG_TOKEN }}@codeberg.org"
+        run: |
+          git config --global --add safe.directory "$(pwd)"
+          git config --global credential.helper store
+          printf '%s\n' "${GIT_CREDENTIALS}" > ~/.git-credentials
+          git config --global user.email "release-bot@conduction.nl"
+          git config --global user.name "Conduction Release Bot"
+          npx semantic-release
+
+

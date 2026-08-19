@@ -1,0 +1,12 @@
+{
+	"_note": "ADR-044 canonical navigation layout. Exercises all three stages in pipeline order (relocations -> removals -> settingsSection). The removal is ADR-044-clean: items-index-duplicate retires a DUPLICATE entry whose route 'items-index' is still reached by items-index-entry, so nothing becomes unreachable and the removals-invariant produces no finding.",
+	"relocations": {
+		"reports-entry": "items-group"
+	},
+	"removals": [
+		"items-index-duplicate"
+	],
+	"settingsSection": [
+		"app-settings-entry"
+	]
+}

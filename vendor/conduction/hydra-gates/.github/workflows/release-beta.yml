@@ -1,0 +1,431 @@
+# Packages a Nextcloud app and publishes it as a GitHub prerelease.
+#
+# Two channels share this one packaging path, because the packaging is the
+# part that must not drift:
+#
+#   beta (default) - cut from the beta branch, uploaded to the Nextcloud
+#                    app store, which is how most people install it.
+#   dev            - cut from development, published as a GitHub prerelease
+#                    only. Deliberately never reaches the app store.
+#
+# The dev channel exists so work on development can be installed before it
+# is promoted. The App Versions app reads a repository's releases straight
+# from the forge API and installs from the .tar.gz asset, so a prerelease
+# here is enough to make a development build installable without shipping
+# it to everyone.
+name: Beta Release
+
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        description: "Nextcloud app ID (must match appinfo/info.xml)"
+        required: true
+        type: string
+      channel:
+        description: "Release channel: 'beta' (app store) or 'dev' (GitHub prerelease only)"
+        required: false
+        type: string
+        default: "beta"
+      php-version:
+        description: "PHP version for building"
+        required: false
+        type: string
+        default: "8.3"
+      node-version:
+        description: "Node.js version for building"
+        required: false
+        type: string
+        # 22, not 18. Node 18 left support in April 2025 and now fails on
+        # packages the fleet already depends on. Two apps could not release
+        # because of it: nldesign's icon build loads an ES module from
+        # @conduction/nextcloud-vue and dies with "Unexpected token 'export'",
+        # since Node 18 treats it as CommonJS, and app_versions builds with
+        # Vite 7, which requires 20.19+. Both build fine locally on 22, which
+        # is the sort of gap that never gets diagnosed because the failure
+        # only exists on the runner.
+        default: "22"
+      verify-vendor-deps:
+        description: "Enable vendor dependency verification after composer install"
+        required: false
+        type: boolean
+        default: false
+      vendor-check-paths:
+        description: "Comma-separated vendor paths to verify exist (e.g. 'openai-php/client/src,theodo-group/llphant/src')"
+        required: false
+        type: string
+        default: ""
+      extra-rsync-excludes:
+        description: "Additional rsync --exclude flags (one per line, e.g. '/data')"
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # Observed across 73 executions of the shared release jobs: median 1.3 min,
+    # p95 3.0 min, max 4.0 min (nextcloud-vue). A release is expensive to fail
+    # spuriously — it builds the frontend (measured at 211 s under load),
+    # installs composer deps, packages and signs a tarball and uploads it — so
+    # this is bounded at 45 min, ~11x the worst run, purely as a hang stop.
+    timeout-minutes: 45
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ── Version calculation: next patch above stable + beta timestamp ──
+
+      - name: Get latest stable version
+        id: stable_version
+        run: |
+          # Find latest stable version tag (vX.Y.Z without prerelease suffix)
+          LATEST_TAG=$(git tag -l 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+
+          if [ -z "$LATEST_TAG" ]; then
+            # Fallback: read from info.xml on main
+            git fetch origin main 2>/dev/null || true
+            VERSION=$(git show origin/main:appinfo/info.xml 2>/dev/null | grep -oP '(?<=<version>)[^<]+' | sed 's/-.*//' || echo "")
+
+            if [ -z "$VERSION" ]; then
+              # Last resort: current info.xml
+              VERSION=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml | sed 's/-.*//')
+            fi
+
+            echo "No git tags found, using info.xml baseline: $VERSION"
+          else
+            VERSION="${LATEST_TAG#v}"
+            echo "Latest stable tag: $LATEST_TAG ($VERSION)"
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Calculate release version
+        id: beta_version
+        run: |
+          CHANNEL="${{ inputs.channel }}"
+          if [ "$CHANNEL" != "beta" ] && [ "$CHANNEL" != "dev" ]; then
+            echo "::error::channel must be 'beta' or 'dev', got '$CHANNEL'"
+            exit 1
+          fi
+
+          TIMESTAMP=$(date -u +"%Y%m%d%H%M%S")
+
+          if [ "$CHANNEL" = "dev" ]; then
+            # A dev build takes its number from the branch's own info.xml and
+            # does not bump the patch. 0.6.0-dev.<ts> is a build *of* 0.6.0
+            # and sorts just below it, which is what a semver prerelease
+            # identifier means.
+            #
+            # Deriving it from tags instead produces a number lower than the
+            # branch declares: Pipelinq's newest stable tag was v0.3.1 while
+            # development said 0.6.0, so the first dev build called itself
+            # 0.3.2-dev and looked like a downgrade from the branch it was
+            # built from.
+            BASE=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml | head -1 | sed 's/-.*//')
+            if [ -z "$BASE" ]; then
+              echo "::error::could not read <version> from appinfo/info.xml"
+              exit 1
+            fi
+            NEW_VERSION="${BASE}-dev.${TIMESTAMP}"
+            echo "dev version: $NEW_VERSION (info.xml baseline: $BASE)"
+          else
+            # Beta stays one patch ahead of the last stable release.
+            STABLE="${{ steps.stable_version.outputs.version }}"
+            IFS='.' read -ra PARTS <<< "$STABLE"
+            NEXT_PATCH=$(( ${PARTS[2]} + 1 ))
+            NEW_VERSION="${PARTS[0]}.${PARTS[1]}.${NEXT_PATCH}-beta.${TIMESTAMP}"
+            echo "beta version: $NEW_VERSION (stable baseline: $STABLE)"
+          fi
+
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          echo "APP_NAME=${{ inputs.app-name }}" >> $GITHUB_ENV
+          echo "RELEASE_CHANNEL=$CHANNEL" >> $GITHUB_ENV
+
+      # ── Build ──
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ inputs.php-version }}
+          extensions: zip, gd
+
+      - name: Install and build frontend
+        run: |
+          if [ -f "package.json" ]; then
+            npm ci
+            npm run build
+          else
+            echo "No package.json found, skipping frontend build"
+          fi
+
+      - name: Install composer dependencies
+        run: |
+          if [ -f "composer.json" ]; then
+            composer install --no-dev --optimize-autoloader --classmap-authoritative
+          else
+            echo "No composer.json found, skipping composer install"
+          fi
+
+      # - name: Verify vendor dependencies
+      #   if: inputs.verify-vendor-deps
+      #   run: |
+      #     echo "Checking critical vendor dependencies..."
+
+      #     if [ ! -d "vendor" ] || [ -z "$(ls -A vendor 2>/dev/null)" ]; then
+      #       echo "ERROR: vendor directory is missing or empty"
+      #       exit 1
+      #     fi
+
+      #     IFS=',' read -ra PATHS <<< "${{ inputs.vendor-check-paths }}"
+      #     missing=0
+      #     for check_path in "${PATHS[@]}"; do
+      #       check_path=$(echo "$check_path" | xargs)
+      #       if [ -n "$check_path" ] && [ ! -d "vendor/$check_path" ]; then
+      #         echo "ERROR: vendor/$check_path not found"
+      #         missing=1
+      #       fi
+      #     done
+
+      #     if [ $missing -eq 1 ]; then
+      #       echo "HINT: Check composer.json dependencies and composer install output"
+      #       exit 1
+      #     fi
+
+      #     echo "✓ All critical dependencies verified"
+
+      # ── Package ──
+
+      - name: Copy files into package directory
+        run: |
+          mkdir -p package/${{ inputs.app-name }}
+          rsync -a --progress \
+            --exclude='/package' \
+            --exclude='/.git' \
+            --exclude='/.github' \
+            --exclude='/.claude' \
+            --exclude='/.hydra' \
+            --exclude='/.cursor' \
+            --exclude='/.vscode' \
+            --exclude='/.nextcloud' \
+            --exclude='/docker' \
+            --exclude='/docker-compose.yml' \
+            --exclude='/docs' \
+            --exclude='/website' \
+            --exclude='/node_modules' \
+            --exclude='/src' \
+            --exclude='/phpcs-custom-sniffs' \
+            --exclude='/resources' \
+            --exclude='/tests' \
+            --exclude='/data' \
+            --exclude='/package.json' \
+            --exclude='/package-lock.json' \
+            --exclude='/composer.json' \
+            --exclude='/composer.lock' \
+            --exclude='/composer-setup.php' \
+            --exclude='/phpcs.xml' \
+            --exclude='/phpmd.xml' \
+            --exclude='/psalm.xml' \
+            --exclude='/phpunit.xml' \
+            --exclude='/phpunit-unit.xml' \
+            --exclude='/.phpunit.cache' \
+            --exclude='.phpunit.result.cache' \
+            --exclude='/jest.config.js' \
+            --exclude='/webpack.config.js' \
+            --exclude='/tsconfig.json' \
+            --exclude='/.babelrc' \
+            --exclude='/.eslintrc.js' \
+            --exclude='/.prettierrc' \
+            --exclude='/stylelint.config.js' \
+            --exclude='/.spectral.yml' \
+            --exclude='/.gitignore' \
+            --exclude='/.gitattributes' \
+            --exclude='/.php-cs-fixer.dist.php' \
+            --exclude='/.nvmrc' \
+            --exclude='/changelog-ci-config.json' \
+            --exclude='/coverage.txt' \
+            --exclude='/signing-key.key' \
+            --exclude='/signing-cert.crt' \
+            --exclude='/openapi.json' \
+            --exclude='/*_ANALYSIS.md' \
+            --exclude='/*_FIX.md' \
+            --exclude='/*_SUMMARY.md' \
+            --exclude='/*_GUIDE.md' \
+            --exclude='/CHANGELOG.md' \
+            --exclude='/CONTRIBUTING.md' \
+            ${{ inputs.extra-rsync-excludes }} \
+            ./ package/${{ inputs.app-name }}/
+
+      - name: Inject version into package info.xml
+        run: |
+          sed -i "s|<version>.*</version>|<version>${{ env.NEW_VERSION }}</version>|" \
+            package/${{ inputs.app-name }}/appinfo/info.xml
+          echo "Injected version ${{ env.NEW_VERSION }} into package info.xml"
+          grep '<version>' package/${{ inputs.app-name }}/appinfo/info.xml
+
+      - name: Verify package contents
+        if: inputs.verify-vendor-deps
+        run: |
+          if [ ! -d "package/${{ inputs.app-name }}/vendor" ]; then
+            echo "ERROR: vendor directory not found in package"
+            exit 1
+          fi
+
+          IFS=',' read -ra PATHS <<< "${{ inputs.vendor-check-paths }}"
+          for check_path in "${PATHS[@]}"; do
+            check_path=$(echo "$check_path" | xargs)
+            if [ -n "$check_path" ] && [ ! -d "package/${{ inputs.app-name }}/vendor/$check_path" ]; then
+              echo "ERROR: vendor/$check_path not found in package"
+              exit 1
+            fi
+          done
+
+          echo "✓ Package vendor directory verified"
+
+      # ── Sign & Release ──
+
+      - name: Prepare signing credentials
+        run: |
+          echo "${{ secrets.NEXTCLOUD_SIGNING_KEY }}" > signing-key.key
+          echo "${{ secrets.NEXTCLOUD_SIGNING_CERT }}" > signing-cert.crt
+
+      - name: Create tarball
+        run: |
+          cd package && tar -czf ../nextcloud-release.tar.gz ${{ inputs.app-name }}
+
+      - name: Sign tarball
+        run: |
+          openssl dgst -sha512 -sign signing-key.key nextcloud-release.tar.gz | openssl base64 -out nextcloud-release.signature
+
+      # Sibling digest for installers that fetch the archive over plain HTTPS
+      # rather than through the app store. The App Versions app looks for a
+      # .sha256 next to the .tar.gz and verifies against it; without one it
+      # falls back to trusting whatever it downloaded the first time. The
+      # file holds the bare digest, since the archive is renamed on upload
+      # and a "digest  filename" line would name the wrong file.
+      - name: Compute SHA-256 of tarball
+        run: |
+          sha256sum nextcloud-release.tar.gz | cut -d' ' -f1 > nextcloud-release.tar.gz.sha256
+          echo "SHA-256: $(cat nextcloud-release.tar.gz.sha256)"
+
+      - name: Upload tarball as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.RELEASE_CHANNEL }}-${{ inputs.app-name }}-${{ env.NEW_VERSION }}
+          path: |
+            nextcloud-release.tar.gz
+            nextcloud-release.tar.gz.sha256
+            nextcloud-release.signature
+          retention-days: 30
+
+      - name: Create GitHub prerelease
+        uses: ncipollo/release-action@v1
+        with:
+          tag: v${{ env.NEW_VERSION }}
+          name: ${{ env.RELEASE_CHANNEL == 'dev' && 'Development' || 'Beta' }} ${{ env.NEW_VERSION }}
+          body: ${{ env.RELEASE_CHANNEL == 'dev' && 'Unreleased build from the development branch. Not on the Nextcloud app store; install it with the App Versions app. Expect breakage.' || '' }}
+          draft: false
+          prerelease: true
+          generateReleaseNotes: ${{ env.RELEASE_CHANNEL != 'dev' }}
+
+      - name: Attach tarball to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ github.token }}
+          file: nextcloud-release.tar.gz
+          asset_name: ${{ inputs.app-name }}-${{ env.NEW_VERSION }}.tar.gz
+          tag: v${{ env.NEW_VERSION }}
+          overwrite: true
+
+      # Named to sit beside the tarball: <app>-<version>.tar.gz.sha256. The
+      # installer derives this name from the archive's own URL, so the
+      # suffix has to follow the renamed asset rather than the build file.
+      - name: Attach SHA-256 to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ github.token }}
+          file: nextcloud-release.tar.gz.sha256
+          asset_name: ${{ inputs.app-name }}-${{ env.NEW_VERSION }}.tar.gz.sha256
+          tag: v${{ env.NEW_VERSION }}
+          overwrite: true
+
+      # Beta only. A dev build must not reach the app store: that is the
+      # whole distinction between the two channels, and the app store is
+      # where everyone else installs from.
+      - name: Register and upload to Nextcloud App Store
+        if: env.RELEASE_CHANNEL == 'beta'
+        run: |
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/v${{ env.NEW_VERSION }}/${{ inputs.app-name }}-${{ env.NEW_VERSION }}.tar.gz"
+
+          # Always attempt registration (idempotent — already-registered apps return 200/4xx harmlessly)
+          # The /api/v1/apps/{id} lookup endpoint is unreliable (returns 500), so we skip the check.
+          echo "Ensuring ${{ inputs.app-name }} is registered on App Store..."
+
+          REG_SIGNATURE=$(echo -n "${{ inputs.app-name }}" | openssl dgst -sha512 -sign signing-key.key | openssl base64 -A)
+          CERT_CONTENT=$(cat signing-cert.crt)
+
+          REG_CODE=$(curl -s -o /tmp/register-response.json -w "%{http_code}" \
+            -X POST "https://apps.nextcloud.com/api/v1/apps" \
+            -H "Authorization: Token ${{ secrets.NEXTCLOUD_APPSTORE_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"certificate\": $(echo "$CERT_CONTENT" | jq -Rs .), \"signature\": \"$REG_SIGNATURE\"}")
+
+          case "$REG_CODE" in
+            200|201) echo "✓ App registered successfully (first time)" ;;
+            *)
+              REG_BODY=$(cat /tmp/register-response.json 2>/dev/null || echo "")
+              if echo "$REG_BODY" | grep -qi "already"; then
+                echo "✓ App already registered"
+              else
+                echo "Registration returned HTTP $REG_CODE: $REG_BODY"
+                echo "Continuing with release upload..."
+              fi
+              ;;
+          esac
+
+          # Sign the release tarball
+          SIGNATURE=$(openssl dgst -sha512 -sign signing-key.key nextcloud-release.tar.gz | openssl base64 -A)
+
+          # Upload the release
+          echo "Uploading release to App Store (nightly: true)..."
+          UPLOAD_CODE=$(curl -s -o /tmp/upload-response.json -w "%{http_code}" \
+            -X POST "https://apps.nextcloud.com/api/v1/apps/releases" \
+            -H "Authorization: Token ${{ secrets.NEXTCLOUD_APPSTORE_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"download\": \"$DOWNLOAD_URL\", \"signature\": \"$SIGNATURE\", \"nightly\": true}")
+
+          if [ "$UPLOAD_CODE" = "200" ] || [ "$UPLOAD_CODE" = "201" ]; then
+            echo "✓ Release uploaded to App Store successfully"
+          else
+            echo "::warning::App Store upload returned HTTP $UPLOAD_CODE"
+            cat /tmp/upload-response.json 2>/dev/null || true
+            echo ""
+            echo "The GitHub release was created successfully. The App Store upload can be retried manually."
+          fi
+
+      - name: Verify release
+        run: |
+          echo "=== Beta Release Summary ==="
+          echo "App: ${{ inputs.app-name }}"
+          echo "Version: ${{ env.NEW_VERSION }}"
+          echo "Tag: v${{ env.NEW_VERSION }}"
+          echo "Nightly: true"
+          echo ""
+          echo "info.xml in tarball:"
+          tar -xOf nextcloud-release.tar.gz ${{ inputs.app-name }}/appinfo/info.xml | grep '<version>'
+          echo ""
+          echo "Tarball size: $(du -h nextcloud-release.tar.gz | cut -f1)"
+
+      - name: Clean up signing credentials
+        if: always()
+        run: rm -f signing-key.key signing-cert.crt

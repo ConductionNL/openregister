@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<ruleset name="CustomSniffs">
+    <description>Conduction custom PHPCS sniffs, shared by every fleet app.</description>
+
+    <rule ref="CustomSniffs.Functions.NamedParameters"/>
+    <rule ref="CustomSniffs.Commenting.SpecTag"/>
+    <rule ref="CustomSniffs.Nextcloud.NoLegacyServerAccessors"/>
+</ruleset>

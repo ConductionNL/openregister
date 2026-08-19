@@ -1,0 +1,46 @@
+name: Branch Protection
+
+on:
+  workflow_call:
+
+jobs:
+  check-branch:
+    runs-on: ubuntu-latest
+    # Observed across 123 executions: median and max both 0.1 min. A single
+    # bash branch-name comparison with no checkout and no network.
+    timeout-minutes: 10
+    steps:
+      - name: Validate source branch
+        run: |
+          TARGET="${{ github.base_ref }}"
+          SOURCE="${{ github.head_ref }}"
+
+          echo "PR: $SOURCE → $TARGET"
+
+          if [[ "$TARGET" == "main" || "$TARGET" == "master" ]]; then
+            if [[ "$SOURCE" != "beta" ]] && ! [[ "$SOURCE" =~ ^hotfix ]]; then
+              echo "::error::Pull requests to main must come from 'beta' or a 'hotfix/*' branch."
+              echo ""
+              echo "Allowed patterns:"
+              echo "  beta → main"
+              echo "  hotfix/* → main"
+              echo ""
+              echo "Your branch '$SOURCE' does not match any allowed pattern."
+              exit 1
+            fi
+
+          elif [[ "$TARGET" == "beta" ]]; then
+            if [[ "$SOURCE" != "development" ]] && ! [[ "$SOURCE" =~ ^hotfix ]] && [[ "$SOURCE" != "main" ]] && [[ "$SOURCE" != "master" ]]; then
+              echo "::error::Pull requests to beta must come from 'development', 'main', or a 'hotfix/*' branch."
+              echo ""
+              echo "Allowed patterns:"
+              echo "  development → beta"
+              echo "  hotfix/* → beta"
+              echo "  main → beta (backport)"
+              echo ""
+              echo "Your branch '$SOURCE' does not match any allowed pattern."
+              exit 1
+            fi
+          fi
+
+          echo "✓ Branch check passed: $SOURCE → $TARGET"

@@ -1,0 +1,58 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  invariants:
+    name: "Invariants (PHP ${{ matrix.php }})"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ["8.1", "8.2", "8.3", "8.4"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      # Deliberately NOT --prefer-lock. This package's whole job is to track
+      # nextcloud/coding-standard, so the suite must run against whatever the
+      # constraint currently resolves to. A locked run would keep passing for
+      # months after upstream changed a rule we mirror.
+      - name: Install dependencies (highest)
+        run: composer update --no-interaction --no-progress --prefer-stable
+
+      - name: Invariants
+        run: composer test
+
+  self-format:
+    name: "This package obeys its own standard"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          coverage: none
+      - run: composer install --no-interaction --no-progress
+      - run: composer cs:check

@@ -1,0 +1,124 @@
+<?xml version="1.0"?>
+<ruleset name="Conduction Nextcloud Rules"
+    xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0
+                        http://pmd.sourceforge.net/ruleset_xml_schema.xsd">
+
+    <description>
+        The Conduction PHPMD ruleset. ONE copy, here; apps reference it from a stub.
+    </description>
+
+    <!-- NOTE: this ruleset deliberately carries NO top-level <exclude-pattern>.
+
+         It used to carry <exclude-pattern>*/Migration/*</exclude-pattern> here as a
+         runtime optimisation. A top-level exclude-pattern is applied by PDepend at
+         FILE-COLLECTION time, so it does not drop the directory from one rule - it
+         drops it from EVERY rule in this ruleset. Measured on phpmd 2.15.0 /
+         PHP 8.4.22, that single line was silently swallowing 11 real non-
+         UnusedFormalParameter findings in lib/Migration (3 NPathComplexity,
+         3 ElseExpression, 2 StaticAccess, 2 ExcessiveMethodLength,
+         1 CyclomaticComplexity). See ConductionNL/.github#155 and
+         ConductionNL/openregister#2338.
+
+         UnusedFormalParameter - the one rule that genuinely cannot apply to
+         migrations, because OCP\Migration\IMigrationStep mandates the signature -
+         now lives alone in phpmd-unusedparams.xml with its own top-level
+         exclude-pattern, so the exclusion is scoped to that rule and nothing else.
+         Both rulesets are run as separate legs by `composer phpmd`; adding a rule
+         here is enough, but a rule that must skip a path needs its own leg. -->
+
+    <!-- Clean Code Rules -->
+    <rule ref="rulesets/cleancode.xml/BooleanArgumentFlag"/>
+    <rule ref="rulesets/cleancode.xml/ElseExpression"/>
+    <rule ref="rulesets/cleancode.xml/StaticAccess"/>
+    <rule ref="rulesets/cleancode.xml/IfStatementAssignment"/>
+    <rule ref="rulesets/cleancode.xml/DuplicatedArrayKey"/>
+    <rule ref="rulesets/cleancode.xml/MissingImport"/>
+    <rule ref="rulesets/cleancode.xml/UndefinedVariable"/>
+    <rule ref="rulesets/cleancode.xml/ErrorControlOperator"/>
+
+    <!-- Code Size Rules -->
+    <rule ref="rulesets/codesize.xml/CyclomaticComplexity"/>
+    <rule ref="rulesets/codesize.xml/NPathComplexity"/>
+    <rule ref="rulesets/codesize.xml/ExcessiveMethodLength"/>
+    <rule ref="rulesets/codesize.xml/ExcessiveClassLength"/>
+    <rule ref="rulesets/codesize.xml/ExcessiveParameterList"/>
+    <rule ref="rulesets/codesize.xml/ExcessivePublicCount"/>
+    <rule ref="rulesets/codesize.xml/TooManyFields"/>
+    <rule ref="rulesets/codesize.xml/TooManyMethods"/>
+    <rule ref="rulesets/codesize.xml/TooManyPublicMethods"/>
+    <rule ref="rulesets/codesize.xml/ExcessiveClassComplexity"/>
+
+    <!-- Controversial Rules -->
+    <rule ref="rulesets/controversial.xml/Superglobals"/>
+    <rule ref="rulesets/controversial.xml/CamelCaseClassName"/>
+    <rule ref="rulesets/controversial.xml/CamelCasePropertyName"/>
+    <rule ref="rulesets/controversial.xml/CamelCaseMethodName"/>
+    <!-- CamelCaseParameterName removed - we allow leading underscores on parameters (convention for unused/config params) -->
+    <!-- <rule ref="rulesets/controversial.xml/CamelCaseParameterName"/> -->
+    <!-- CamelCaseVariableName removed - we allow leading underscores on variables (convention for unused loop vars) -->
+    <!-- <rule ref="rulesets/controversial.xml/CamelCaseVariableName"/> -->
+
+    <!-- Design Rules -->
+    <rule ref="rulesets/design.xml/ExitExpression"/>
+    <rule ref="rulesets/design.xml/EvalExpression"/>
+    <rule ref="rulesets/design.xml/GotoStatement"/>
+    <rule ref="rulesets/design.xml/NumberOfChildren"/>
+    <rule ref="rulesets/design.xml/DepthOfInheritance"/>
+    <rule ref="rulesets/design.xml/CouplingBetweenObjects"/>
+    <!-- DevelopmentCodeFragment MUST carry ignore-namespaces=true, or it is dead
+         code in this ruleset. See ConductionNL/openregister#2286.
+
+         PDepend resolves an unqualified call inside a namespaced file to the
+         CURRENT-NAMESPACE-qualified image, so `var_dump($x)` in
+         `namespace OCA\OpenRegister\Service;` reaches the rule as
+         `OCA\OpenRegister\Service\var_dump`, which never matches the
+         `unwanted-functions` list. All of our production PHP is namespaced, so
+         with the default (false) the rule catches nothing anywhere. Measured on
+         phpmd 2.15.0 / PHP 8.3.32: byte-identical probe class, namespaced ->
+         exit 0, non-namespaced -> exit 2. With ignore-namespaces=true the rule
+         strips the enclosing namespace before matching and the namespaced probe
+         is reported (exit 2), while a clean namespaced file stays exit 0.
+
+         Note: hydra gate 2 (forbidden-patterns) independently greps lib/ for
+         var_dump / die / error_log / print_r / dd / dump and is the broader
+         control — it also catches calls outside methods, which this rule (a
+         MethodAware/FunctionAware rule) cannot see. This rule is the
+         `composer check:strict` half of the same guard; keep both. -->
+    <rule ref="rulesets/design.xml/DevelopmentCodeFragment">
+        <properties>
+            <property name="ignore-namespaces" value="true"/>
+        </properties>
+    </rule>
+    <rule ref="rulesets/design.xml/EmptyCatchBlock"/>
+    <rule ref="rulesets/design.xml/CountInLoopExpression"/>
+
+    <!-- Naming Rules -->
+    <rule ref="rulesets/naming.xml/LongClassName"/>
+    <rule ref="rulesets/naming.xml/ShortClassName"/>
+    <!-- ShortVariable configured with allowlist of idiomatic short names -->
+    <rule ref="rulesets/naming.xml/ShortVariable">
+        <properties>
+            <property name="minimum" value="3" />
+            <property name="exceptions" value="id,db,qb,op,ui,io,gc,tz,pk,fk,to,ch,a,b,l,v,c,t,r,f,n,k,e" />
+        </properties>
+    </rule>
+    <rule ref="rulesets/naming.xml/LongVariable"/>
+    <rule ref="rulesets/naming.xml/ShortMethodName"/>
+    <rule ref="rulesets/naming.xml/ConstructorWithNameAsEnclosingClass"/>
+    <rule ref="rulesets/naming.xml/ConstantNamingConventions"/>
+    <rule ref="rulesets/naming.xml/BooleanGetMethodName"/>
+
+    <!-- Unused Code Rules -->
+    <rule ref="rulesets/unusedcode.xml/UnusedPrivateField"/>
+    <rule ref="rulesets/unusedcode.xml/UnusedLocalVariable"/>
+    <rule ref="rulesets/unusedcode.xml/UnusedPrivateMethod"/>
+    <!-- UnusedFormalParameter is NOT declared here. It lives alone in
+         phpmd-unusedparams.xml, which carries a top-level (therefore effective)
+         <exclude-pattern>*/Migration/*</exclude-pattern>. The nested
+         <exclude-pattern> that used to sit inside this rule was INERT: PHPMD 2.15
+         parses exclude-patterns only as direct children of <ruleset> and silently
+         discards nested ones. `composer phpmd` runs both rulesets as separate legs
+         and returns the worst exit code. -->
+</ruleset>

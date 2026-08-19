@@ -1,0 +1,62 @@
+# Reusable: build + validate a Docusaurus site and upload it as an artifact for the
+# deploy reusable. Split out from documentation.yml: Forgejo workflow_call reusables
+# cannot see the trigger event, so the deploy gate must live in the CALLER. Build runs
+# on every event (incl. pull_request) so the docusaurus-preset validator gates PRs.
+name: Documentation Build
+
+on:
+  workflow_call:
+    inputs:
+      source-folder:
+        description: "Folder containing the Docusaurus project"
+        required: false
+        type: string
+        default: "docs"
+      runner-label:
+        description: "Runner label to schedule the build on (e.g. 'codeberg-medium', 'con-ci-oci')"
+        required: false
+        type: string
+        default: "codeberg-medium"
+
+jobs:
+  build:
+    name: Build and validate
+    runs-on: ${{ inputs.runner-label }}
+    container:
+      image: node:24-bookworm
+    timeout-minutes: 25
+    steps:
+      - name: Checkout code
+        uses: https://github.com/actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Node is provided by the job container (node:24-bookworm). We used
+      # to run actions/setup-node@v4 here, but on egress-restricted self-
+      # hosted runners (Conduction/con-ci-oci) it 403s trying to reach
+      # api.github.com / nodejs.org, and on the Codeberg runners it was
+      # redundant (the container already ships a working Node toolchain).
+      # Removed 2026-07-11 after Mark's handoff on opencatalogi run 993.
+      - name: Install dependencies and build
+        timeout-minutes: 20
+        env:
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+        run: |
+          # Container checkout is often owned by a different uid than the build user; trust it so
+          # Docusaurus' sitemap lastmod 'git log' lookups don't abort with "detected dubious ownership".
+          git config --global --add safe.directory '*' || true
+          cd "${{ inputs.source-folder }}"
+          rm -rf node_modules/.cache .docusaurus build
+          npm run ci
+      - name: Verify build output
+        run: |
+          if [ ! -f "${{ inputs.source-folder }}/build/index.html" ]; then
+            echo "ERROR: index.html not found in build directory!"
+            exit 1
+          fi
+      - name: Upload build artifact for deploy job
+        uses: https://github.com/actions/upload-artifact@v3
+        with:
+          name: docusaurus-build
+          path: ${{ inputs.source-folder }}/build
+          retention-days: 1
+

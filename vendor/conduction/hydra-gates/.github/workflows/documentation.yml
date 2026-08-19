@@ -1,0 +1,226 @@
+name: Documentation
+
+on:
+  workflow_call:
+    inputs:
+      cname:
+        description: "Custom domain for GitHub Pages (e.g. 'pipelinq.app')"
+        required: true
+        type: string
+      source-folder:
+        description: "Folder containing the Docusaurus project"
+        required: false
+        type: string
+        default: "docs"
+      node-version:
+        description: "Node.js version for building"
+        required: false
+        type: string
+        default: "20"
+      build-image:
+        description: >-
+          Build and push a self-contained Apache image of the built site to
+          GHCR (ghcr.io/<owner>/<repo>). Lets the site be spun up anywhere
+          (docker run -p 80:80 ...) as a fallback when GitHub Pages is down.
+          Set to false to opt a consumer out.
+        required: false
+        type: boolean
+        default: true
+
+# Two jobs so the AI-baseline validation gate runs on every event,
+# including pull_request, while the actual gh-pages deploy stays
+# gated to push / schedule / workflow_dispatch. Sites that ship the
+# postbuild validator from @conduction/docusaurus-preset (robots.txt,
+# llms.txt, sitemaps, JSON-LD, FAQPage, og:image, etc.) get PR-time
+# enforcement of the contract automatically.
+
+jobs:
+  build:
+    name: Build and validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      built: ${{ steps.flag.outputs.built }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Install dependencies and build
+        timeout-minutes: 10
+        env:
+          # Pass the run-scoped token through so npm prebuild scripts
+          # that hit the GitHub API (e.g. conduction-website's nightly
+          # app-downloads fetch) authenticate and avoid 60-req/hr rate
+          # limits. Token is auto-scoped to the run, expires when the
+          # job ends.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd ${{ inputs.source-folder }}
+          rm -rf node_modules/.cache .docusaurus build
+          npm run ci
+
+      - name: Verify build output
+        run: |
+          if [ ! -f "${{ inputs.source-folder }}/build/index.html" ]; then
+            echo "ERROR: index.html not found in build directory!"
+            exit 1
+          fi
+
+      - name: Upload build artifact for deploy job
+        if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: docusaurus-build
+          path: ${{ inputs.source-folder }}/build
+          retention-days: 1
+
+      - id: flag
+        run: echo "built=true" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: Deploy Documentation
+    needs: build
+    runs-on: ubuntu-latest
+    # Observed across 9 executions: median 0.2 min, max 1.8 min (.github,
+    # docs.conduction.nl). Downloads the built artifact and pushes gh-pages.
+    timeout-minutes: 20
+    # Deploy only on direct pushes, scheduled rebuilds, and manual
+    # workflow_dispatch. PR runs stop after the build job, so the
+    # AI-baseline gate runs but no gh-pages push happens.
+    if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download build artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: docusaurus-build
+          path: ${{ inputs.source-folder }}/build
+
+      - name: Create .nojekyll and CNAME files
+        run: |
+          cd ${{ inputs.source-folder }}/build
+          touch .nojekyll
+          echo "${{ inputs.cname }}" > CNAME
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./${{ inputs.source-folder }}/build
+          publish_branch: gh-pages
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          force_orphan: false
+          allow_empty_commit: true
+          keep_files: false
+
+      - name: Verify deployment
+        run: |
+          git fetch origin gh-pages
+          echo "Deployment completed. Latest commit: $(git rev-parse origin/gh-pages)"
+
+  image:
+    name: Build fallback site image
+    needs: build
+    # UNMEASURED: no executed run of this job appears in the fleet history
+    # sampled (0 executions). It is a docker buildx build-and-push to GHCR of a
+    # static Apache site, so 30 min is a wide bound for an image build plus a
+    # registry push. Revisit once it has run a few times.
+    timeout-minutes: 30
+    # Build the portable Apache image on the same events that deploy to
+    # gh-pages, so the GHCR :latest tag always matches what is live. The
+    # build job only uploads the artifact on these events, so the
+    # download below would otherwise fail.
+    if: >-
+      inputs.build-image &&
+      (github.event_name == 'push' ||
+       github.event_name == 'schedule' ||
+       github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    # Best-effort by design: the fallback image is a nice-to-have on top of
+    # an already-completed gh-pages deploy. The known failure mode is
+    # org-side, not repo-side — GHCR's per-package "Manage Actions access"
+    # not granting the repository write access yields
+    # `denied: permission_denied: write_package`, and only an org/package
+    # admin can fix that (observed on conduction-website since 2026-07-26).
+    # A red job for an unfixable-from-here cause hides real failures, so the
+    # push is continue-on-error and the warn step below keeps the
+    # degradation loud instead of silent.
+    continue-on-error: true
+    steps:
+      - name: Download build artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: docusaurus-build
+          path: site
+
+      - name: Generate Apache Dockerfile
+        run: |
+          cat > Dockerfile.site <<'DOCKER'
+          # Self-contained fallback image: the fully built static site
+          # served by Apache httpd. Generated by the centralized
+          # Documentation workflow so any Conduction docs/product site
+          # can be spun up off GitHub Pages during an outage:
+          #   docker run --rm -p 8080:80 ghcr.io/<owner>/<repo>:latest
+          FROM httpd:2.4-alpine
+
+          # Docusaurus emits <route>/index.html, which Apache's default
+          # DirectoryIndex serves directly. Point ErrorDocument at the
+          # site's own 404 page so unknown routes match the live site.
+          RUN printf '\nErrorDocument 404 /404.html\n' >> /usr/local/apache2/conf/httpd.conf
+
+          COPY site/ /usr/local/apache2/htdocs/
+
+          EXPOSE 80
+          HEALTHCHECK --interval=30s --timeout=3s \
+            CMD wget -qO- http://localhost/ >/dev/null 2>&1 || exit 1
+          DOCKER
+          echo "----- Dockerfile.site -----"
+          cat Dockerfile.site
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute lowercase image name
+        id: img
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push fallback image
+        id: push_image
+        continue-on-error: true
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.site
+          push: true
+          tags: |
+            ${{ steps.img.outputs.name }}:latest
+            ${{ steps.img.outputs.name }}:${{ github.sha }}
+
+      - name: Warn loudly when the fallback image could not be pushed
+        if: steps.push_image.outcome == 'failure'
+        run: |
+          echo "::warning title=Fallback site image DEGRADED::GHCR push of ${{ steps.img.outputs.name }} failed. Known cause: the package's 'Manage Actions access' does not grant this repository write access (denied: permission_denied: write_package) — an org/package admin must add the repo with write role under the package's settings; repo-side tokens cannot do this. The gh-pages deploy itself is unaffected. This job is best-effort until the grant lands."
+          echo "Fallback image push FAILED — degraded pending the org-side GHCR package grant (see warning annotation)."

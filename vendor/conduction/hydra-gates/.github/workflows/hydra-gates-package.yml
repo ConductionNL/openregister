@@ -1,0 +1,388 @@
+name: hydra-gates package
+
+# CI for the conduction/hydra-gates composer package that this repository hosts
+# (see hydra-gates/README.md).
+#
+# Two jobs, and the second is the one that matters:
+#
+#   invariants      — the package's own 13 assertions, run from the checkout.
+#   install-from-published-location
+#                   — installs the package THROUGH COMPOSER, from this
+#                     repository's public VCS URL, into a scratch project in a
+#                     clean php:8.3-cli container, and then runs the positive
+#                     control in BOTH directions against a fixture repo.
+#
+# The second job exists because "it works from a local path" is the claim that
+# was already true and still left the pilot's CI broken with
+# `Source path "../hydra" is not found`. Only an install from the published
+# location, with no local checkout of the package on the box and no
+# credentials, tests the thing that was actually wrong.
+
+# NO `paths:` FILTER, DELIBERATELY.
+#
+# This used to run only when hydra-gates/**, composer.json or .gitattributes
+# changed. That was defensible while every caller PINNED the package: a repo on
+# v1.3.0 was unaffected by anything landing here, so gating unrelated PRs on a
+# 25-minute container job bought nothing.
+#
+# It stopped being defensible when the fleet unpinned. As of
+# `chore/track-latest-gates` all 23 callers take the package from @main, so the
+# blast radius of a merge here is the whole fleet and the question "did this PR
+# touch the gates?" is the wrong one — the runner resolves at RUN time, not at
+# merge time, so a PR that changes nothing under hydra-gates/ can still be the
+# commit a caller picks up.
+#
+# A required check with a `paths:` filter is also a trap in its own right: on
+# every PR the filter excludes, the check never reports, and the PR sits
+# pending forever unless the ruleset is taught the exception. The two ways out
+# are a hand-maintained filter that decays exactly like the hand-maintained
+# test list this same workflow already learned not to keep (see "discovered,
+# not listed" below), or no filter at all. No filter at all.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hydra-gates-package-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  invariants:
+    name: "Package invariants"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run the invariant suite
+        run: bash hydra-gates/tests/test-hydra-gates-bin.sh
+
+      # FIRST, with no node_modules at all — this is the only state in which the
+      # DEGRADED contract can be exercised. Gate 22's whole point is that a
+      # validator which could not resolve Ajv must exit 3 and say so, never 0;
+      # once ajv is installed below, `NODE_PATH=/nonexistent` no longer hides it
+      # (node still resolves from ./node_modules) and that assertion self-skips.
+      - name: "Manifest validator: the no-Ajv degraded contract"
+        run: bash hydra-gates/scripts/lib/test_check_manifest.sh
+
+      # Ajv is what gates 22 and 53 validate manifests WITH. Without it the
+      # vendored validator can only run its structural lint, and the suite below
+      # would skip exactly the paths worth testing. It is a devDependency of
+      # every fleet app already; installing it here means CI exercises the same
+      # code path a real `npm ci` repo does.
+      - name: Install ajv for the manifest-validation helpers
+        run: npm install --no-save --no-audit --no-fund ajv ajv-formats
+
+      # EVERY scripts/lib/test_* suite, discovered rather than listed.
+      #
+      # This step used to name three files by hand. The package ships 19, so 15
+      # of them were executed by nothing at all — they existed, they looked like
+      # coverage, and no job ever ran them. Two were pointing at fixture
+      # directories that had never existed:
+      #
+      #   test_check_manifest.sh          green its whole life (a missing
+      #                                   manifest path makes the validator
+      #                                   print "Tier 0, skipping" and exit 0,
+      #                                   which is what 2 of its 3 assertions
+      #                                   expected) — fixed 2026-08-03
+      #   test_check_manifest_crossref.js red its whole life, unseen, because
+      #                                   nothing ran it — fixed 2026-08-04
+      #
+      # A hand-written list of test names decays exactly like a hand-written
+      # paths filter: adding a file does not add it to the list and the omission
+      # is invisible. The runner discovers instead, so a new scripts/lib/test_*
+      # is enforced the moment it lands, with no workflow edit to forget. Suites
+      # may be quarantined only with a stated reason, and the quarantine cannot
+      # rot — an entry that no longer exists, or that starts passing, fails the
+      # step.
+      - name: All helper suites (discovered, not listed)
+        run: bash hydra-gates/tests/run-helper-suites.sh
+
+  install-from-published-location:
+    name: "Install from published location (php:8.3-cli)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    container:
+      image: php:8.3-cli
+    steps:
+      - name: Install prerequisites
+        run: |
+          set -eu
+          apt-get update -qq
+          # git   — the gates are diff-scoped and cannot resolve a base without it
+          # python3 — ~20 gates are scripts/lib/*.py helpers
+          # unzip/curl — composer
+          #
+          # node is deliberately NOT installed. Gates 22 and 53 need it, so this
+          # job also proves the coverage block names what it left uncovered
+          # instead of counting gates that never ran toward a green.
+          apt-get install -y -qq --no-install-recommends git python3 unzip curl > /dev/null
+          curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+          composer --version
+          git --version
+          python3 --version
+
+      - name: Resolve the ref under test
+        id: ref
+        # `github.head_ref` is attacker-controlled on a fork PR — a branch named
+        # with shell metacharacters is interpolated verbatim into this script by
+        # the expression expander, before bash ever sees it. Passed through the
+        # environment instead, where it is data rather than source text.
+        # Pre-existing; flagged by actionlint and fixed here rather than left.
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -eu
+          REF="${HEAD_REF:-${REF_NAME}}"
+          echo "ref=${REF}" >> "$GITHUB_OUTPUT"
+          echo "Installing conduction/hydra-gates from branch: ${REF}"
+
+      - name: Install the package from this repository's VCS URL
+        run: |
+          set -eu
+          mkdir -p /work/consumer
+          cd /work/consumer
+          git config --global --add safe.directory '*'
+
+          # NOTE: no local checkout of the package exists on this box, and no
+          # credentials are configured. If this resolves, it resolves because
+          # ConductionNL/.github is public.
+          cat > composer.json <<JSON
+          {
+              "name": "conduction/gates-install-probe",
+              "description": "Scratch consumer used to prove the published location installs.",
+              "license": "EUPL-1.2",
+              "repositories": [
+                  {
+                      "type": "vcs",
+                      "url": "https://github.com/ConductionNL/.github.git",
+                      "no-api": true
+                  }
+              ],
+              "require-dev": {
+                  "conduction/hydra-gates": "dev-${{ steps.ref.outputs.ref }}"
+              },
+              "config": { "allow-plugins": {} }
+          }
+          JSON
+
+          composer install --no-interaction --no-progress
+          test -x vendor/bin/hydra-gates
+          echo "vendor/bin/hydra-gates is installed and executable."
+          # Prove composer's bin SYMLINK resolves back to the real package root.
+          # This is failure mode #1 the wrapper exists for: resolved from
+          # vendor/bin, scripts/lib/ does not exist and a third of the gates
+          # would look for helpers that are not there.
+          test -f vendor/conduction/hydra-gates/hydra-gates/scripts/run-hydra-gates.sh
+          echo "Runner present at the resolved package root."
+
+      - name: Build the fixture app repo
+        run: |
+          set -eu
+          mkdir -p /work/fixture/lib /work/fixture/appinfo /work/fixture/src
+          cd /work/fixture
+          git init -q .
+          git symbolic-ref HEAD refs/heads/development
+          git config user.email "ci@example.invalid"
+          git config user.name "hydra-gates ci"
+          cat > appinfo/info.xml <<'XML'
+          <?xml version="1.0"?>
+          <info><id>fixture</id><name>Fixture</name><version>1.0.0</version></info>
+          XML
+          cat > lib/Clean.php <<'PHP'
+          <?php
+          /**
+           * Clean fixture class.
+           *
+           * @copyright Copyright (c) 2026 Conduction
+           * @license   EUPL-1.2
+           */
+
+          namespace OCA\Fixture;
+
+          class Clean
+          {
+              public function value(): int
+              {
+                  return 1;
+              }
+          }
+          PHP
+          git add -A
+          git commit -qm "base: a clean tree"
+          git rev-parse HEAD > /work/base_sha
+
+      - name: "Positive control — violations only the gates catch"
+        run: |
+          set -eu
+          BASE="$(cat /work/base_sha)"
+          cd /work/fixture
+          git checkout -q -b feature/control
+
+          # error_log() (gate-2) and window.confirm() (gate-34) are violations
+          # that NO other tool in the fleet's check:strict reports, so a signal
+          # here cannot have come from phpcs, psalm, phpstan or eslint.
+          cat > lib/GateControl.php <<'PHP'
+          <?php
+          /**
+           * @copyright Copyright (c) 2026 Conduction
+           * @license   EUPL-1.2
+           */
+
+          namespace OCA\Fixture;
+
+          class GateControl
+          {
+              public function debug(): void
+              {
+                  error_log('this must not ship');
+              }
+          }
+          PHP
+          cat > src/gateControl.js <<'JS'
+          export function ask() {
+              return window.confirm('this must not ship')
+          }
+          JS
+          git add -A
+          git commit -qm "inject two gate violations"
+
+          set +e
+          OUT="$(/work/consumer/vendor/bin/hydra-gates --app-dir /work/fixture --base "${BASE}" 2>&1)"
+          RC=$?
+          set -e
+          printf '%s\n' "${OUT}"
+
+          echo "--- assertions ---"
+          # The offending FILES must be named, so we know the gates fired on
+          # what we injected and not on something else that happened to be
+          # there. stdout carries only the COUNT per gate by design; the file
+          # list goes to the gate's own log, so that is where the attribution
+          # has to be checked. A gate that reported FAIL while writing no
+          # evidence at all would itself be a defect, so a missing log is a
+          # failure here too.
+          #
+          # The log DIRECTORY is read from the run's own first line rather than
+          # hardcoded. It used to be the shared /tmp/hydra-gate-<name>.log, and
+          # that was the same defect this assertion exists to catch, one level
+          # up: two runs on one host overwrote each other's evidence, so this
+          # check could read a DIFFERENT run's log and pass, or read a truncated
+          # one and fail, without either outcome saying anything about the
+          # fixture. Each invocation now mints its own directory and announces
+          # it; asking the run where it wrote is the only way to be sure the
+          # evidence belongs to it.
+          LOGDIR="$(printf '%s\n' "${OUT}" | sed -n 's/^\[hydra-gates\] findings logs: //p' | head -1)"
+          if [ -z "${LOGDIR}" ] || [ ! -d "${LOGDIR}" ]; then
+            echo "::error::the run did not announce a findings-log directory (expected a '[hydra-gates] findings logs: <dir>' line). Without it there is no way to attribute a verdict to its evidence."
+            exit 1
+          fi
+          for probe in "forbidden-patterns:lib/GateControl.php" "window-confirm:src/gateControl.js"; do
+            gate="${probe%%:*}"; want="${probe##*:}"
+            # shellcheck disable=SC2012
+            log="$(ls -t "${LOGDIR}/hydra-gate-${gate}.log" "${LOGDIR}"/hydra-gate-"${gate}".*.log 2>/dev/null | head -1)"
+            if [ -z "${log}" ]; then
+              echo "::error::gate ${gate} reported a result but wrote no ${LOGDIR}/hydra-gate-${gate}*.log — no evidence for its verdict"
+              exit 1
+            fi
+            echo "--- ${log}"; cat "${log}"
+            grep -q "${want}" "${log}" \
+              || { echo "::error::${gate} did not name the injected file ${want} — it fired on something else"; exit 1; }
+          done
+          # The gates that catch them must be NAMED on stdout.
+          printf '%s' "${OUT}" | grep -qE '^\[gate-2\] .*: FAIL' \
+            || { echo "::error::gate-2 forbidden-patterns did not fire"; exit 1; }
+          printf '%s' "${OUT}" | grep -qE '^\[gate-34\] .*: FAIL' \
+            || { echo "::error::gate-34 window-confirm did not fire"; exit 1; }
+          # And the exit code must be the COUNT.
+          [ "${RC}" -eq 2 ] \
+            || { echo "::error::expected exit 2 (the failure COUNT), got ${RC}"; exit 1; }
+          echo "OK — 2 gates named, both injected files named, exit code 2 = the count."
+
+      - name: "Positive control — reverse direction"
+        run: |
+          set -eu
+          BASE="$(cat /work/base_sha)"
+          cd /work/fixture
+
+          # Remove the violations by DELETING the files and COMMITTING, then
+          # verify against git that the tree really changed. A previous run of
+          # this exercise used `git revert -q`, which git 2.25 rejected; the
+          # rejection was not checked and the identical violating tree was
+          # silently re-measured as if it were the reverted one.
+          git rm -q lib/GateControl.php src/gateControl.js
+          git commit -qm "remove both violations"
+
+          git ls-files --error-unmatch lib/GateControl.php > /dev/null 2>&1 \
+            && { echo "::error::the revert did NOT apply — lib/GateControl.php is still tracked"; exit 1; }
+          git ls-files --error-unmatch src/gateControl.js > /dev/null 2>&1 \
+            && { echo "::error::the revert did NOT apply — src/gateControl.js is still tracked"; exit 1; }
+          echo "Revert confirmed applied: neither control file is tracked any more."
+
+          set +e
+          OUT="$(/work/consumer/vendor/bin/hydra-gates --app-dir /work/fixture --base "${BASE}" 2>&1)"
+          RC=$?
+          set -e
+          printf '%s\n' "${OUT}"
+
+          echo "--- assertions ---"
+          [ "${RC}" -eq 0 ] \
+            || { echo "::error::expected exit 0 after removing the violations, got ${RC}"; exit 1; }
+          printf '%s' "${OUT}" | grep -q "COVERAGE: .* of .* declared gates reported a result" \
+            || { echo "::error::the green did not state its own coverage"; exit 1; }
+          printf '%s' "${OUT}" | grep -q "WAIVERS:" \
+            || { echo "::error::no waiver accounting — a passed green cannot be told from a waived one"; exit 1; }
+          # This assertion used to be `grep -q "GATES THAT DID NOT RUN:"`, on the
+          # reasoning that node is deliberately absent here so something must be
+          # reported unrun. That reasoning was wrong, and it was a PROXY: the two
+          # gates that need node (22, 53) are guarded by `[ -f src/manifest.json ]`
+          # and this fixture has no manifest, so node's absence never reached
+          # them. What actually produced the line was the `git rm` above emptying
+          # src/ — the a11y gates went silent for a reason that had nothing to do
+          # with node, and the control passed on a coincidence.
+          #
+          # It stopped passing the moment those gates began declaring themselves
+          # NOT APPLICABLE by name, which is the correct verdict for a repo with
+          # no frontend. Rather than relax it, assert the thing it was reaching
+          # for — that the accounting ACCOUNTS FOR EVERY GATE. Nothing may fall
+          # out of the tally silently, whatever the reason it did not run.
+          _decl="$(printf '%s' "${OUT}" | grep -m1 -oE 'COVERAGE: [0-9]+ of [0-9]+' | awk '{print $4}')"
+          _ran="$(printf '%s' "${OUT}" | grep -m1 -oE 'COVERAGE: [0-9]+ of [0-9]+' | awk '{print $2}')"
+          _na="$(printf '%s' "${OUT}" | grep -m1 -oE '\(([0-9]+) not applicable' | grep -oE '[0-9]+' || echo 0)"
+          _unrun="$(printf '%s' "${OUT}" | grep -m1 -oE 'GATES THAT DID NOT RUN: .*' | sed 's/.*RUN: //' | wc -w || echo 0)"
+          [ -n "${_decl:-}" ] && [ -n "${_ran:-}" ] \
+            || { echo "::error::could not parse the COVERAGE line — the coverage check is not measuring"; exit 1; }
+          [ "$(( _ran + _na + _unrun ))" -eq "${_decl}" ] \
+            || { echo "::error::coverage does not account for every gate: ran=${_ran} + notApplicable=${_na} + didNotRun=${_unrun} != declared=${_decl}. A gate has fallen out of the tally silently, which is the exact defect this accounting exists to prevent."; exit 1; }
+          # And every gate that did not run must have SAID so on its own line —
+          # a number in a summary is not a trace.
+          _named="$(printf '%s\n' "${OUT}" | grep -cE '^\[gate-[0-9]+\] [a-z0-9-]+: (SKIPPED|NOT APPLICABLE)' || true)"
+          [ "${_named}" -ge "$(( _na + _unrun ))" ] \
+            || { echo "::error::${_na} not-applicable + ${_unrun} unrun gates are counted, but only ${_named} said so on their own line. A gate is disappearing from the per-gate output while still being tallied."; exit 1; }
+          echo "OK — exit 0, coverage stated, waivers stated, and ran=${_ran} + na=${_na} + unrun=${_unrun} = declared=${_decl}, each named."
+
+      - name: "Unresolvable base ref must exit 99 with no green"
+        run: |
+          set -eu
+          cd /work/fixture
+          set +e
+          OUT="$(HYDRA_GATE_BASE_REF=origin/definitely-not-a-branch /work/consumer/vendor/bin/hydra-gates --app-dir /work/fixture 2>&1)"
+          RC=$?
+          set -e
+          printf '%s\n' "${OUT}"
+
+          echo "--- assertions ---"
+          [ "${RC}" -eq 99 ] \
+            || { echo "::error::expected exit 99 for an unresolvable base, got ${RC}"; exit 1; }
+          printf '%s' "${OUT}" | grep -q "NOTHING WAS CHECKED" \
+            || { echo "::error::did not state that nothing was checked"; exit 1; }
+          printf '%s' "${OUT}" | grep -qiE "ALL .* (GATES )?(PASSED|GREEN)" \
+            && { echo "::error::an unresolvable base printed a green — this is the exact bug"; exit 1; }
+          printf '%s' "${OUT}" | grep -qE '^\[gate-[0-9]+\]' \
+            && { echo "::error::gate lines were emitted for a run that could not be scoped"; exit 1; }
+          echo "OK — exit 99, no green, no gate lines."

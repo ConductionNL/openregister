@@ -1,0 +1,71 @@
+name: Quality selftest (resolve subject)
+
+# This workflow exists to BE RESOLVED, not to pass.
+#
+# It is the in-repo caller of ./.github/workflows/quality.yml. Its only purpose
+# is to make GitHub attempt the same resolution every fleet caller attempts, on
+# the PR's own version of quality.yml, so that an unresolvable shared workflow
+# is discovered HERE instead of by 23 repositories at once.
+#
+# ITS CONCLUSION IS NOT A VERDICT. Read `quality-resolve-probe.yml` instead:
+# that workflow counts the JOBS this run materialised. An unresolvable reusable
+# workflow does not fail — it produces a run with no jobs, or no run at all, and
+# a green dashboard. `jobs == 0` is the outage signature, so the count is the
+# measurement and this file is only the thing being measured. Do not make this
+# workflow a required check; make the probe one.
+#
+# Everything the shared workflow can switch off is switched off. The .github
+# repository is not a Nextcloud app: it has no composer.json app, no frontend
+# and no PHPUnit suite, so running those legs here would measure nothing and
+# cost ~30 minutes per PR. Resolution happens at run-creation time and is
+# entirely independent of what the jobs then decide to do, so a call with every
+# leg disabled resolves exactly as a full one does.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# These must be at least as wide as the widest `permissions:` any job in
+# quality.yml declares — currently journeydoc-capture, which asks for
+# `contents: write` and `actions: write`.
+#
+# MEASURED, not copied: this file first shipped with `contents: read`, and run
+# 31073908079 came back `startup_failure` with ZERO jobs. Permissions are
+# validated when the run is CREATED, so `enable-journeydoc-capture: false` does
+# not help — the job's `if:` is never reached.
+#
+# That is worth stating plainly, because it is a second way into the same
+# outage and it applies to every caller in the fleet, not just this one: a
+# caller whose permission grant is narrower than the shared workflow requests
+# produces NO JOBS AND NO RED, exactly like an oversized `run:` step does. The
+# probe caught it on its first execution, which is the only reason it is
+# documented here rather than discovered in production.
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: quality-selftest-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  resolve:
+    name: "Resolve quality.yml"
+    uses: ./.github/workflows/quality.yml
+    with:
+      app-name: github-selftest
+      enable-php: false
+      enable-npm: false
+      enable-frontend: false
+      enable-phpunit: false
+      enable-newman: false
+      enable-playwright: false
+      enable-hydra-gates: false
+      enable-license-check: false
+      enable-journeydoc-capture: false
+      enable-coverage-guard: false
+      enable-sbom: false
+      enable-features-extract: false

@@ -1,0 +1,342 @@
+# Reusable Development Release workflow for Forgejo Actions on Codeberg.
+#
+# Purpose: produce a signed, installable OpenCatalogi tarball on every push
+# to a `development` branch WITHOUT pushing it to the Nextcloud App Store.
+# The tarball is attached as an asset to a Codeberg pre-release under the
+# tag `vX.Y.Z-dev.<timestamp>`, and can be installed on a Nextcloud
+# instance via the `app_versions` app (https://apps.nextcloud.com/apps/app_versions)
+# pointing at the release-download URL.
+#
+# This workflow is identical to release-beta.yml except:
+#   - version suffix is `-dev.<timestamp>` instead of `-beta.<timestamp>`
+#   - the "Register and upload to Nextcloud App Store" step is omitted
+#   - NEXTCLOUD_APPSTORE_TOKEN is not consumed
+#
+# Keeping the App Store upload out of this workflow is the whole point:
+# development builds are not ready for public consumption yet.
+
+name: Development Release
+
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        description: "Nextcloud app ID (must match appinfo/info.xml)"
+        required: true
+        type: string
+      php-version:
+        description: "PHP version for building"
+        required: false
+        type: string
+        default: "8.3"
+      node-version:
+        description: "Node.js version for building"
+        required: false
+        type: string
+        default: "24"
+      verify-vendor-deps:
+        description: "Enable vendor dependency verification after composer install"
+        required: false
+        type: boolean
+        default: false
+      vendor-check-paths:
+        description: "Comma-separated vendor paths to verify exist (e.g. 'openai-php/client/src,theodo-group/llphant/src')"
+        required: false
+        type: string
+        default: ""
+      extra-rsync-excludes:
+        description: "Additional rsync --exclude flags (one per line, e.g. '/data')"
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  release:
+    runs-on: codeberg-medium
+    container:
+      image: php:8.3-cli
+    timeout-minutes: 10
+    steps:
+
+      - name: Install base tooling
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            git curl ca-certificates gnupg jq rsync unzip zip \
+            openssl libzip-dev libpng-dev
+          docker-php-ext-install -j"$(nproc)" zip gd
+          curl -sS https://getcomposer.org/installer | php -- \
+            --install-dir=/usr/local/bin --filename=composer
+          curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
+          apt-get install -y nodejs
+
+      - name: Checkout code
+        uses: https://github.com/actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ── Version calculation: next patch above stable + dev timestamp ──
+
+      - name: Get latest stable version
+        id: stable_version
+        run: |
+          git config --global --add safe.directory "$(pwd)"
+
+          LATEST_TAG=$(git tag -l 'v*' --sort=-v:refname \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            | head -1 || true)
+
+          if [ -z "${LATEST_TAG}" ]; then
+            git fetch origin main 2>/dev/null || true
+            VERSION=$(git show origin/main:appinfo/info.xml 2>/dev/null \
+              | grep -oP '(?<=<version>)[^<]+' | sed 's/-.*//' || echo "")
+
+            if [ -z "${VERSION}" ]; then
+              VERSION=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml | sed 's/-.*//')
+            fi
+
+            echo "No git tags found, using info.xml baseline: ${VERSION}"
+          else
+            VERSION="${LATEST_TAG#v}"
+            echo "Latest stable tag: ${LATEST_TAG} (${VERSION})"
+          fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Calculate dev version
+        id: dev_version
+        run: |
+          STABLE="${{ steps.stable_version.outputs.version }}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "${STABLE}"
+          MAJOR=${MAJOR:-0}; MINOR=${MINOR:-0}; PATCH=${PATCH:-0}
+
+          NEXT_PATCH=$((PATCH + 1))
+          TIMESTAMP=$(date -u +"%Y%m%d%H%M%S")
+
+          DEV_VERSION="${MAJOR}.${MINOR}.${NEXT_PATCH}-dev.${TIMESTAMP}"
+
+          echo "NEW_VERSION=${DEV_VERSION}" >> "$GITHUB_ENV"
+          echo "APP_NAME=${{ inputs.app-name }}" >> "$GITHUB_ENV"
+          echo "Dev version: ${DEV_VERSION} (stable baseline: ${STABLE})"
+
+      # ── Build ──
+
+      - name: Set up Node.js
+        uses: https://github.com/actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Install and build frontend
+        run: |
+          if [ -f "package.json" ]; then
+            npm ci || npm install
+            npm run build
+          else
+            echo "No package.json found, skipping frontend build"
+          fi
+
+      - name: Install composer dependencies
+        run: |
+          if [ -f "composer.json" ]; then
+            composer install --no-dev --optimize-autoloader --classmap-authoritative
+          else
+            echo "No composer.json found, skipping composer install"
+          fi
+
+      # ── Package ──
+
+      - name: Copy files into package directory
+        run: |
+          mkdir -p "package/${{ inputs.app-name }}"
+          rsync -a \
+            --exclude='/package' \
+            --exclude='/.git' \
+            --exclude='/.github' \
+            --exclude='/.forgejo' \
+            --exclude='/.claude' \
+            --exclude='/.cursor' \
+            --exclude='/.vscode' \
+            --exclude='/.nextcloud' \
+            --exclude='/docker' \
+            --exclude='/docker-compose.yml' \
+            --exclude='/docs' \
+            --exclude='/website' \
+            --exclude='/node_modules' \
+            --exclude='/src' \
+            --exclude='/phpcs-custom-sniffs' \
+            --exclude='/resources' \
+            --exclude='/tests' \
+            --exclude='/data' \
+            --exclude='/package.json' \
+            --exclude='/package-lock.json' \
+            --exclude='/composer.json' \
+            --exclude='/composer.lock' \
+            --exclude='/composer-setup.php' \
+            --exclude='/phpcs.xml' \
+            --exclude='/phpmd.xml' \
+            --exclude='/psalm.xml' \
+            --exclude='/phpunit.xml' \
+            --exclude='/phpunit-unit.xml' \
+            --exclude='/.phpunit.cache' \
+            --exclude='.phpunit.result.cache' \
+            --exclude='/jest.config.js' \
+            --exclude='/webpack.config.js' \
+            --exclude='/tsconfig.json' \
+            --exclude='/.babelrc' \
+            --exclude='/.eslintrc.js' \
+            --exclude='/.prettierrc' \
+            --exclude='/stylelint.config.js' \
+            --exclude='/.spectral.yml' \
+            --exclude='/.gitignore' \
+            --exclude='/.gitattributes' \
+            --exclude='/.php-cs-fixer.dist.php' \
+            --exclude='/.nvmrc' \
+            --exclude='/changelog-ci-config.json' \
+            --exclude='/coverage.txt' \
+            --exclude='/signing-key.key' \
+            --exclude='/signing-cert.crt' \
+            --exclude='/openapi.json' \
+            --exclude='/*_ANALYSIS.md' \
+            --exclude='/*_FIX.md' \
+            --exclude='/*_SUMMARY.md' \
+            --exclude='/*_GUIDE.md' \
+            --exclude='/CHANGELOG.md' \
+            --exclude='/CONTRIBUTING.md' \
+            ${{ inputs.extra-rsync-excludes }} \
+            ./ "package/${{ inputs.app-name }}/"
+
+      - name: Inject version into package info.xml
+        run: |
+          sed -i "s|<version>.*</version>|<version>${NEW_VERSION}</version>|" \
+            "package/${{ inputs.app-name }}/appinfo/info.xml"
+          echo "Injected version ${NEW_VERSION} into package info.xml"
+          grep '<version>' "package/${{ inputs.app-name }}/appinfo/info.xml"
+
+      - name: Verify package contents
+        if: inputs.verify-vendor-deps
+        run: |
+          if [ ! -d "package/${{ inputs.app-name }}/vendor" ]; then
+            echo "ERROR: vendor directory not found in package"
+            exit 1
+          fi
+
+          IFS=',' read -ra PATHS <<< "${{ inputs.vendor-check-paths }}"
+          for check_path in "${PATHS[@]}"; do
+            check_path=$(echo "${check_path}" | xargs)
+            if [ -n "${check_path}" ] && [ ! -d "package/${{ inputs.app-name }}/vendor/${check_path}" ]; then
+              echo "ERROR: vendor/${check_path} not found in package"
+              exit 1
+            fi
+          done
+
+          echo "Package vendor directory verified"
+
+      # ── Sign & Release ──
+
+      - name: Prepare signing credentials
+        run: |
+          printf '%s' "${{ secrets.NEXTCLOUD_SIGNING_KEY }}" > signing-key.key
+          printf '%s' "${{ secrets.NEXTCLOUD_SIGNING_CERT }}" > signing-cert.crt
+
+      - name: Create tarball
+        run: |
+          cd package && tar -czf ../nextcloud-release.tar.gz "${{ inputs.app-name }}"
+
+      - name: Sign tarball
+        run: |
+          openssl dgst -sha512 -sign signing-key.key nextcloud-release.tar.gz \
+            | openssl base64 -out nextcloud-release.signature
+
+      - name: Upload tarball as artifact
+        uses: https://github.com/actions/upload-artifact@v3
+        with:
+          name: dev-${{ inputs.app-name }}-${{ env.NEW_VERSION }}
+          path: |
+            nextcloud-release.tar.gz
+            nextcloud-release.signature
+          retention-days: 30
+
+      - name: Create Codeberg prerelease
+        id: cb_release
+        env:
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          TAG="v${NEW_VERSION}"
+          ASSET_NAME="${{ inputs.app-name }}-${NEW_VERSION}.tar.gz"
+
+          BODY_JSON=$(jq -nc \
+            --arg tag "${TAG}" \
+            --arg name "Development ${NEW_VERSION}" \
+            --arg target "${{ github.sha }}" \
+            '{tag_name:$tag, target_commitish:$target, name:$name, draft:false, prerelease:true}')
+
+          REL_RESP=$(curl -s -w "\n%{http_code}" \
+            -X POST "https://codeberg.org/api/v1/repos/${REPO}/releases" \
+            -H "Authorization: token ${CODEBERG_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "${BODY_JSON}")
+
+          REL_CODE=$(echo "${REL_RESP}" | tail -n1)
+          REL_BODY=$(echo "${REL_RESP}" | sed '$d')
+
+          if [ "${REL_CODE}" = "201" ]; then
+            REL_ID=$(echo "${REL_BODY}" | jq -r '.id')
+            echo "Created prerelease id ${REL_ID} for tag ${TAG}"
+          else
+            echo "POST prerelease returned HTTP ${REL_CODE}; checking if tag already exists..."
+            EXIST_RESP=$(curl -s \
+              -H "Authorization: token ${CODEBERG_TOKEN}" \
+              "https://codeberg.org/api/v1/repos/${REPO}/releases/tags/${TAG}")
+            REL_ID=$(echo "${EXIST_RESP}" | jq -r '.id // empty')
+            if [ -z "${REL_ID}" ]; then
+              echo "ERROR: failed to create prerelease and tag does not exist"
+              echo "${REL_BODY}"
+              exit 1
+            fi
+            echo "Reusing existing prerelease id ${REL_ID}"
+          fi
+
+          echo "release_id=${REL_ID}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "asset_name=${ASSET_NAME}" >> "$GITHUB_OUTPUT"
+
+          UP_CODE=$(curl -s -o /tmp/asset-resp.json -w "%{http_code}" \
+            -X POST "https://codeberg.org/api/v1/repos/${REPO}/releases/${REL_ID}/assets?name=${ASSET_NAME}" \
+            -H "Authorization: token ${CODEBERG_TOKEN}" \
+            -F "attachment=@nextcloud-release.tar.gz")
+
+          if [ "${UP_CODE}" = "201" ]; then
+            ASSET_URL=$(jq -r '.browser_download_url' /tmp/asset-resp.json)
+            echo "Uploaded asset: ${ASSET_URL}"
+            echo "asset_url=${ASSET_URL}" >> "$GITHUB_OUTPUT"
+          else
+            echo "ERROR: asset upload returned HTTP ${UP_CODE}"
+            cat /tmp/asset-resp.json || true
+            exit 1
+          fi
+
+      # NOTE: no App Store upload here — the whole point of the dev variant.
+      # Install the resulting tarball onto a Nextcloud instance via the
+      # `app_versions` app, pointing at the release-download URL:
+      #   https://codeberg.org/<repo>/releases/download/v<NEW_VERSION>/<APP_NAME>-<NEW_VERSION>.tar.gz
+
+      - name: Verify release
+        run: |
+          echo "=== Development Release Summary ==="
+          echo "App: ${{ inputs.app-name }}"
+          echo "Version: ${NEW_VERSION}"
+          echo "Tag: v${NEW_VERSION}"
+          echo "App Store: SKIPPED (development build)"
+          echo ""
+          echo "info.xml in tarball:"
+          tar -xOf nextcloud-release.tar.gz "${{ inputs.app-name }}/appinfo/info.xml" | grep '<version>'
+          echo ""
+          echo "Tarball size: $(du -h nextcloud-release.tar.gz | cut -f1)"
+          echo ""
+          echo "Install URL for app_versions:"
+          echo "  https://codeberg.org/${{ github.repository }}/releases/download/v${NEW_VERSION}/${{ inputs.app-name }}-${NEW_VERSION}.tar.gz"
+
+      - name: Clean up signing credentials
+        if: always()
+        run: rm -f signing-key.key signing-cert.crt

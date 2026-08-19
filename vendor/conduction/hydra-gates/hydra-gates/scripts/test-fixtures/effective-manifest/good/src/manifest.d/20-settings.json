@@ -1,0 +1,12 @@
+{
+	"_note": "Sorts after 10-archive.json, so mergePages REPLACES that fragment's settings-page wholesale. component becomes SettingsPage — the observable proof that fragment order is ascending-by-filename and that a later page declaration wins outright rather than deep-merging.",
+	"pages": [
+		{
+			"id": "settings-page",
+			"route": "/settings",
+			"type": "settings",
+			"title": "Settings",
+			"component": "SettingsPage"
+		}
+	]
+}

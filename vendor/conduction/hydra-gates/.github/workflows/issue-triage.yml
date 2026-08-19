@@ -1,0 +1,533 @@
+name: Issue Triage
+
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        description: "Nextcloud app ID (e.g. openregister, pipelinq)"
+        required: true
+        type: string
+      project-number:
+        description: "GitHub project number for the board"
+        required: false
+        type: number
+        default: 1
+      project-owner:
+        description: "GitHub org that owns the project"
+        required: false
+        type: string
+        default: "ConductionNL"
+      triage-assignee:
+        description: "GitHub username to auto-assign triage issues to"
+        required: false
+        type: string
+        default: "rubenvdlinde"
+      backlog-existing:
+        description: "Set to true to triage all existing untriaged open issues"
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      PROJECT_TOKEN:
+        description: "GitHub token with project and issues scope"
+        required: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # PREFLIGHT — fail in ten seconds naming the real cause.
+  #
+  # `required: true` on a secret means "the caller passed the KEY", not "the
+  # value is non-empty" and not "the value works". When PROJECT_TOKEN is
+  # unavailable it interpolates to the empty string, every job below still
+  # starts, and actions/github-script dies about a minute later naming
+  # `github-token` — the action's INPUT, not the missing secret. That reads as
+  # an action bug and sends you looking in the wrong place.
+  #
+  # Measured on openbuild 2026-08-09: `Issue Triage` had **34 runs and 0
+  # successes since its first run on 2026-07-23** and nobody noticed, because
+  # the error never named PROJECT_TOKEN. It is not the shared workflow at
+  # fault — docudesk (1/12) and pipelinq (3/15) have succeeded on this same
+  # file, which is exactly why the diagnosis has to be in the error message.
+  #
+  # Same defect and same remedy as the openspec-sync preflight (#284).
+  # ---------------------------------------------------------------------------
+  preflight:
+    name: Preflight (PROJECT_TOKEN)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: PROJECT_TOKEN must be present and valid
+        env:
+          PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+        run: |
+          set -uo pipefail
+          if [ -z "${PROJECT_TOKEN//[[:space:]]/}" ]; then
+            echo "::error title=PROJECT_TOKEN is empty or was never passed::Issue Triage cannot run. The caller declares the secret, but the value that arrived is empty — so every downstream actions/github-script step would fail about a minute from now complaining about 'github-token', which is the action's input, not the missing thing. Add PROJECT_TOKEN to this repository's (or organisation's) secrets and make sure the caller forwards it, e.g. 'secrets: {PROJECT_TOKEN: \${{ secrets.PROJECT_TOKEN }}}' or 'secrets: inherit'."
+            exit 1
+          fi
+          code=$(curl -sS -o /dev/null -w '%{http_code}' \
+                   -H "Authorization: token ${PROJECT_TOKEN}" \
+                   -H "Accept: application/vnd.github+json" \
+                   https://api.github.com/user || echo "000")
+          if [ "${code}" = "200" ]; then
+            echo "PROJECT_TOKEN present and accepted by the API."
+            exit 0
+          fi
+          echo "::error title=PROJECT_TOKEN was rejected (HTTP ${code})::The secret is set but the API refused it. 401 means expired or revoked; 403 means it lacks the required scopes (issues + project). Rotate or re-scope the token — do not paste its value anywhere."
+          exit 1
+
+  triage-single:
+    name: Triage New Issue
+    needs: preflight
+    runs-on: ubuntu-latest
+    # Observed across 8 executions: 0.1 min. A single actions/github-script
+    # step labelling one issue; 15 min covers a slow GitHub API.
+    timeout-minutes: 15
+    permissions:
+      issues: write
+      contents: read
+    if: >-
+      inputs.backlog-existing == false &&
+      github.event_name == 'issues' &&
+      github.event.action == 'opened' &&
+      !contains(github.event.issue.labels.*.name, 'openspec')
+
+    steps:
+      - name: Triage new issue
+        uses: actions/github-script@v7
+        env:
+          PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          PROJECT_NUMBER: ${{ inputs.project-number }}
+          PROJECT_OWNER: ${{ inputs.project-owner }}
+          APP_NAME: ${{ inputs.app-name }}
+          TRIAGE_ASSIGNEE: ${{ inputs.triage-assignee }}
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const projectNumber = parseInt(process.env.PROJECT_NUMBER);
+            const projectOwner = process.env.PROJECT_OWNER;
+            const appName = process.env.APP_NAME;
+            const triageAssignee = process.env.TRIAGE_ASSIGNEE;
+            const issue = context.payload.issue;
+
+            console.log(`Triaging issue #${issue.number}: ${issue.title}`);
+
+            // --- Helper: add issue to project (no status — triage view is separate) ---
+            async function addToProject(issueNumber) {
+              const projectQuery = await github.graphql(`
+                query($owner: String!, $number: Int!) {
+                  organization(login: $owner) {
+                    projectV2(number: $number) {
+                      id
+                      fields(first: 30) {
+                        nodes {
+                          ... on ProjectV2SingleSelectField { id name options { id name } }
+                          ... on ProjectV2Field { id name dataType }
+                        }
+                      }
+                    }
+                  }
+                }
+              `, { owner: projectOwner, number: projectNumber });
+
+              const project = projectQuery.organization.projectV2;
+              const projectId = project.id;
+              const appField = project.fields.nodes.find(f => f.name === 'App' && f.options);
+              const sourceField = project.fields.nodes.find(f => f.name === 'Source' && f.options);
+
+              // Determine source
+              let source = 'community';
+              try {
+                await github.rest.orgs.checkMembershipForUser({
+                  org: projectOwner,
+                  username: issue.user.login,
+                });
+                source = 'internal';
+              } catch {}
+
+              const issueQuery = await github.graphql(`
+                query($owner: String!, $repo: String!, $number: Int!) {
+                  repository(owner: $owner, name: $repo) {
+                    issue(number: $number) { id }
+                  }
+                }
+              `, { owner: context.repo.owner, repo: context.repo.repo, number: issueNumber });
+
+              const issueNodeId = issueQuery.repository.issue.id;
+
+              const addResult = await github.graphql(`
+                mutation($projectId: ID!, $contentId: ID!) {
+                  addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
+                    item { id }
+                  }
+                }
+              `, { projectId, contentId: issueNodeId });
+
+              const itemId = addResult.addProjectV2ItemById.item.id;
+
+              // Set App field
+              if (appField) {
+                const appOption = appField.options.find(o => o.name === appName);
+                if (appOption) {
+                  await github.graphql(`
+                    mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                      updateProjectV2ItemFieldValue(input: {
+                        projectId: $projectId, itemId: $itemId, fieldId: $fieldId,
+                        value: { singleSelectOptionId: $optionId }
+                      }) { projectV2Item { id } }
+                    }
+                  `, { projectId, itemId, fieldId: appField.id, optionId: appOption.id });
+                }
+              }
+
+              // Set Source field
+              if (sourceField) {
+                const sourceOption = sourceField.options.find(o => o.name === source);
+                if (sourceOption) {
+                  await github.graphql(`
+                    mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                      updateProjectV2ItemFieldValue(input: {
+                        projectId: $projectId, itemId: $itemId, fieldId: $fieldId,
+                        value: { singleSelectOptionId: $optionId }
+                      }) { projectV2Item { id } }
+                    }
+                  `, { projectId, itemId, fieldId: sourceField.id, optionId: sourceOption.id });
+                }
+              }
+
+              return source;
+            }
+
+            // --- Ensure triage label exists ---
+            try {
+              await github.rest.issues.getLabel({ owner: context.repo.owner, repo: context.repo.repo, name: 'triage' });
+            } catch {
+              await github.rest.issues.createLabel({ owner: context.repo.owner, repo: context.repo.repo, name: 'triage', color: 'fbca04', description: 'Awaiting triage' });
+            }
+
+            // Add label
+            await github.rest.issues.addLabels({ owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number, labels: ['triage'] });
+
+            // Auto-assign
+            if (triageAssignee) {
+              await github.rest.issues.addAssignees({ owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number, assignees: [triageAssignee] });
+            }
+
+            // Add to project board
+            const source = await addToProject(issue.number);
+            console.log(`Added #${issue.number} to project (source: ${source})`);
+
+            // Welcome comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body: [
+                `Thank you for opening this issue! It has been added to our [triage board](https://github.com/orgs/${projectOwner}/projects/${projectNumber}/views/2) and assigned to @${triageAssignee} for review.`,
+                '',
+                '**What happens next:**',
+                '1. A maintainer will review this issue and determine the appropriate action',
+                '2. If accepted, it may be converted into an OpenSpec change for structured development',
+                '3. You will be notified of any status changes',
+                '',
+                '**Triage labels:**',
+                '- `triage:accept-feature` — accepted as a new feature',
+                '- `triage:accept-bugfix` — accepted as a bug fix',
+                '- `triage:needs-info` — more information needed',
+                '- `triage:wontfix` — will not be addressed',
+                '- `triage:duplicate` — duplicate of another issue',
+              ].join('\n'),
+            });
+
+  triage-decision:
+    name: Handle Triage Decision
+    needs: preflight
+    runs-on: ubuntu-latest
+    # Same shape as triage-single: one actions/github-script step acting on a
+    # single issue. No executed run was sampled, so this mirrors that bound.
+    timeout-minutes: 15
+    permissions:
+      issues: write
+      contents: read
+    if: >-
+      inputs.backlog-existing == false &&
+      github.event_name == 'issues' &&
+      github.event.action == 'labeled'
+
+    steps:
+      - name: Handle triage label
+        uses: actions/github-script@v7
+        env:
+          PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          PROJECT_NUMBER: ${{ inputs.project-number }}
+          PROJECT_OWNER: ${{ inputs.project-owner }}
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const label = context.payload.label.name;
+            const issue = context.payload.issue;
+            const projectNumber = parseInt(process.env.PROJECT_NUMBER);
+            const projectOwner = process.env.PROJECT_OWNER;
+
+            if (!label.startsWith('triage:')) return;
+
+            console.log(`Triage decision for #${issue.number}: ${label}`);
+
+            // Remove the generic 'triage' label
+            try {
+              await github.rest.issues.removeLabel({ owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number, name: 'triage' });
+            } catch {}
+
+            switch (label) {
+              case 'triage:accept-feature':
+              case 'triage:accept-bugfix': {
+                const specType = label === 'triage:accept-feature' ? 'feature' : 'bugfix';
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  body: [
+                    `:white_check_mark: **Accepted as ${specType}**`,
+                    '',
+                    'This issue has been accepted and will be developed using the OpenSpec workflow.',
+                    `To start the spec process, run: \`/opsx:new ${issue.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}\``,
+                    '',
+                    'Once the OpenSpec change is created, a linked `[OpenSpec]` issue will track the specification and implementation progress.',
+                  ].join('\n'),
+                });
+
+                // Move to Proposal on the project board
+                const projectQuery = await github.graphql(`
+                  query($owner: String!, $number: Int!) {
+                    organization(login: $owner) {
+                      projectV2(number: $number) {
+                        id
+                        fields(first: 30) {
+                          nodes {
+                            ... on ProjectV2SingleSelectField { id name options { id name } }
+                          }
+                        }
+                        items(first: 100) {
+                          nodes {
+                            id
+                            content {
+                              ... on Issue { number repository { name } }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                `, { owner: projectOwner, number: projectNumber });
+
+                const project = projectQuery.organization.projectV2;
+                const statusField = project.fields.nodes.find(f => f.name === 'Status' && f.options);
+                const proposalStatus = statusField?.options.find(o => o.name === 'Proposal');
+                const item = project.items.nodes.find(i =>
+                  i.content?.number === issue.number &&
+                  i.content?.repository?.name === context.repo.repo
+                );
+
+                if (item && proposalStatus) {
+                  await github.graphql(`
+                    mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                      updateProjectV2ItemFieldValue(input: {
+                        projectId: $projectId, itemId: $itemId, fieldId: $fieldId,
+                        value: { singleSelectOptionId: $optionId }
+                      }) { projectV2Item { id } }
+                    }
+                  `, { projectId: project.id, itemId: item.id, fieldId: statusField.id, optionId: proposalStatus.id });
+                }
+                break;
+              }
+
+              case 'triage:wontfix':
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number,
+                  body: ':no_entry_sign: This issue has been reviewed and will not be addressed at this time. Feel free to reopen with additional context if you believe this should be reconsidered.',
+                });
+                await github.rest.issues.update({
+                  owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number,
+                  state: 'closed', state_reason: 'not_planned',
+                });
+                break;
+
+              case 'triage:duplicate':
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number,
+                  body: ':link: This issue has been identified as a duplicate. Please check the linked issue for updates.',
+                });
+                await github.rest.issues.update({
+                  owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number,
+                  state: 'closed', state_reason: 'not_planned',
+                });
+                break;
+
+              case 'triage:needs-info':
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number,
+                  body: [
+                    ':question: **More information needed**',
+                    '',
+                    'We need additional details to properly evaluate this issue. Please provide:',
+                    '- Steps to reproduce (for bugs)',
+                    '- Use case / user story (for features)',
+                    '- Expected vs actual behavior',
+                    '- Screenshots or logs if applicable',
+                  ].join('\n'),
+                });
+                break;
+            }
+
+  backlog-triage:
+    name: Backlog Triage Existing Issues
+    needs: preflight
+    runs-on: ubuntu-latest
+    # UNMEASURED: 6 skipped records, 0 executions in the fleet history sampled.
+    # Unlike the two single-issue jobs it walks EVERY untriaged open issue and
+    # writes labels, so its runtime scales with backlog size and with GitHub
+    # API rate limiting. Bounded well above the single-issue jobs at 30 min.
+    timeout-minutes: 30
+    permissions:
+      issues: write
+      contents: read
+    if: inputs.backlog-existing == true
+
+    steps:
+      - name: Triage all untriaged open issues
+        uses: actions/github-script@v7
+        env:
+          PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          PROJECT_NUMBER: ${{ inputs.project-number }}
+          PROJECT_OWNER: ${{ inputs.project-owner }}
+          APP_NAME: ${{ inputs.app-name }}
+          TRIAGE_ASSIGNEE: ${{ inputs.triage-assignee }}
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const projectNumber = parseInt(process.env.PROJECT_NUMBER);
+            const projectOwner = process.env.PROJECT_OWNER;
+            const appName = process.env.APP_NAME;
+            const triageAssignee = process.env.TRIAGE_ASSIGNEE;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // --- Get project info once ---
+            const projectQuery = await github.graphql(`
+              query($owner: String!, $number: Int!) {
+                organization(login: $owner) {
+                  projectV2(number: $number) {
+                    id
+                    fields(first: 30) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField { id name options { id name } }
+                        ... on ProjectV2Field { id name dataType }
+                      }
+                    }
+                  }
+                }
+              }
+            `, { owner: projectOwner, number: projectNumber });
+
+            const project = projectQuery.organization.projectV2;
+            const projectId = project.id;
+            const appField = project.fields.nodes.find(f => f.name === 'App' && f.options);
+            const appOption = appField?.options.find(o => o.name === appName);
+            const sourceField = project.fields.nodes.find(f => f.name === 'Source' && f.options);
+            const internalOption = sourceField?.options.find(o => o.name === 'internal');
+
+            // --- Ensure triage label exists ---
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name: 'triage' });
+            } catch {
+              await github.rest.issues.createLabel({ owner, repo, name: 'triage', color: 'fbca04', description: 'Awaiting triage' });
+            }
+
+            // --- Get all open issues, paginating ---
+            let allIssues = [];
+            let page = 1;
+            while (true) {
+              const { data } = await github.rest.issues.listForRepo({
+                owner, repo, state: 'open', per_page: 100, page,
+              });
+              allIssues.push(...data.filter(i => !i.pull_request));
+              if (data.length < 100) break;
+              page++;
+            }
+
+            // Filter: skip openspec-managed and already-triaged issues
+            const untriaged = allIssues.filter(i => {
+              const labels = i.labels.map(l => l.name);
+              return !labels.includes('openspec') && !labels.includes('triage') && !labels.some(l => l.startsWith('triage:'));
+            });
+
+            console.log(`Found ${untriaged.length} untriaged issues out of ${allIssues.length} total open issues`);
+
+            let processed = 0;
+            for (const issue of untriaged) {
+              console.log(`[${++processed}/${untriaged.length}] #${issue.number}: ${issue.title}`);
+
+              // Add triage label
+              await github.rest.issues.addLabels({ owner, repo, issue_number: issue.number, labels: ['triage'] });
+
+              // Auto-assign if unassigned
+              if (!issue.assignees || issue.assignees.length === 0) {
+                await github.rest.issues.addAssignees({ owner, repo, issue_number: issue.number, assignees: [triageAssignee] });
+              }
+
+              // Get issue node ID
+              const issueQuery = await github.graphql(`
+                query($owner: String!, $repo: String!, $number: Int!) {
+                  repository(owner: $owner, name: $repo) {
+                    issue(number: $number) { id }
+                  }
+                }
+              `, { owner, repo, number: issue.number });
+
+              const issueNodeId = issueQuery.repository.issue.id;
+
+              // Add to project
+              let itemId;
+              try {
+                const addResult = await github.graphql(`
+                  mutation($projectId: ID!, $contentId: ID!) {
+                    addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
+                      item { id }
+                    }
+                  }
+                `, { projectId, contentId: issueNodeId });
+                itemId = addResult.addProjectV2ItemById.item.id;
+              } catch (e) {
+                console.log(`  Skipped (already on project or error): ${e.message}`);
+                continue;
+              }
+
+              // Set App
+              if (appOption) {
+                await github.graphql(`
+                  mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                    updateProjectV2ItemFieldValue(input: {
+                      projectId: $projectId, itemId: $itemId, fieldId: $fieldId,
+                      value: { singleSelectOptionId: $optionId }
+                    }) { projectV2Item { id } }
+                  }
+                `, { projectId, itemId, fieldId: appField.id, optionId: appOption.id });
+              }
+
+              // Set Source = internal (existing issues are from the team)
+              if (internalOption) {
+                await github.graphql(`
+                  mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                    updateProjectV2ItemFieldValue(input: {
+                      projectId: $projectId, itemId: $itemId, fieldId: $fieldId,
+                      value: { singleSelectOptionId: $optionId }
+                    }) { projectV2Item { id } }
+                  }
+                `, { projectId, itemId, fieldId: sourceField.id, optionId: internalOption.id });
+              }
+
+              // Small delay to avoid rate limits
+              await new Promise(r => setTimeout(r, 300));
+            }
+
+            console.log(`\nDone! Triaged ${processed} issues.`);

@@ -1,0 +1,234 @@
+<?xml version="1.0"?>
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Conduction" xsi:noNamespaceSchemaLocation="phpcs.xsd">
+    <description>
+        The Conduction PHP_CodeSniffer ruleset — SEMANTICS ONLY.
+
+        FORMATTING IS NOT THIS FILE'S JOB. php-cs-fixer owns it, via
+        conduction/coding-standard, which extends nextcloud/coding-standard and
+        may only ADD to it. Conduction code must pass Nextcloud's own standard
+        unchanged; we may be stricter, never different.
+
+        Every whitespace, brace, indentation and alignment sniff has been
+        removed from this ruleset, and that is load-bearing rather than tidy.
+        Measured 2026-08-12: php-cs-fixer was run over openregister's 1,427
+        files and the previous PEAR-derived version of this ruleset was then
+        run over the RESULT. It produced 111,932 findings — 111,747 of them
+        auto-fixable formatting, i.e. this file arguing with the formatter:
+
+          Generic.WhiteSpace.DisallowTabIndent            62,123
+          Generic.WhiteSpace.ScopeIndent                  35,030
+          Generic.Arrays.ArrayIndent                       3,726
+          Squiz.Arrays.ArrayDeclaration.DoubleArrowNotAligned 2,259
+          PEAR.Commenting.FunctionComment (param spacing)  2,797
+          PEAR.Functions.FunctionDeclaration (indent+brace) 2,576
+          Generic.Formatting.MultipleStatementAlignment    1,132
+          Generic.Formatting.SpaceAfterCast                  909
+          Squiz.Strings.ConcatenationSpacing                  534
+          PEAR.Classes.ClassDeclaration.OpenBraceNewLine      200
+          Squiz.ControlStructures.ElseIfDeclaration            31
+
+        That last one is the shape of the whole problem: Squiz's sniff FORBIDS
+        the `elseif` keyword that Nextcloud's `elseif` fixer REQUIRES. Two tools
+        cannot both be right about the same token, so only one of them gets an
+        opinion about tokens.
+
+        What survived that run is exactly what stays here: 185 findings, all
+        semantic — the @spec sniff, the 150-character line limit, and the SPDX
+        end-char exception. The named-parameters and legacy-accessor sniffs fired
+        zero times, which is what "stricter but compatible" looks like when it is
+        true.
+
+        See https://docs.conduction.nl/WayOfWork/ci-cd/
+    </description>
+
+    <!-- NO <file> ELEMENT HERE, AND THAT IS LOAD-BEARING.
+         PHPCS resolves <file> relative to the directory of the ruleset that
+         DECLARES it, not to the working directory, and it DOES propagate
+         through `<rule ref>`. A `<file>lib</file>` here resolves to
+         <package>/quality-config/lib in every consuming app and phpcs exits 3
+         with `The file "lib" does not exist` — measured, phpcs 3.13.6 and 4.0.4.
+         The scanned tree is an app-level fact; the app stub declares it. -->
+
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/vendor-bin/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+    <exclude-pattern>composer-setup.php</exclude-pattern>
+    <!-- Apps that ship a verbatim template snapshot under lib/Resources/template/
+         (openbuild) keep it out of lint scope; a no-op everywhere else. -->
+    <exclude-pattern>lib/Resources/template/*</exclude-pattern>
+
+    <!-- Surface warnings (e.g. SpecTagSniff) in the log without failing the
+         build. The shared quality workflow ALSO maps phpcs exit 1 to success,
+         so this is belt and braces; do not add a `warning-severity=0` flag to
+         the composer script, which suppresses the REPORTING as well and makes
+         the warnings invisible. -->
+    <config name="ignore_warnings_on_exit" value="1"/>
+
+    <arg name="basepath" value="."/>
+    <arg name="colors"/>
+    <arg name="parallel" value="75"/>
+    <arg name="extensions" value="php"/>
+    <arg value="p"/>
+
+    <!-- Don't hide tokenizer exceptions: a file phpcs cannot parse is a finding,
+         not a skip. -->
+    <rule ref="Internal.Tokenizer.Exception">
+        <type>error</type>
+    </rule>
+
+    <!-- ── Correctness and safety ──────────────────────────────────────────
+         Nextcloud has no opinion on any of these, so they are additive. -->
+
+    <rule ref="Generic.PHP.DeprecatedFunctions"/>
+
+    <rule ref="Generic.PHP.ForbiddenFunctions">
+        <properties>
+            <property name="forbiddenFunctions" type="array">
+                <element key="sizeof" value="count"/>
+                <element key="delete" value="unset"/>
+                <element key="print" value="echo"/>
+                <element key="is_null" value="null"/>
+                <element key="create_function" value="null"/>
+                <element key="var_dump" value="null"/>
+                <element key="die" value="null"/>
+                <element key="error_log" value="null"/>
+            </property>
+        </properties>
+    </rule>
+
+    <!-- `$a == $b` where `$a === $b` was meant is a bug generator. -->
+    <rule ref="Squiz.Operators.ComparisonOperatorUsage"/>
+
+    <!-- Nested ternaries hide control flow. Nextcloud does not police this. -->
+    <rule ref="Squiz.PHP.DisallowInlineIf"/>
+
+    <!-- Every method declares its visibility explicitly. -->
+    <rule ref="Squiz.Scope.MethodScope"/>
+
+    <!-- ── Style that Nextcloud AGREES with, kept as a second line of defence
+         ──────────────────────────────────────────────────────────────────
+         Both of these point the same way as a php-cs-fixer rule
+         (`yoda_style` all-false, `array_syntax` short), so they cannot
+         conflict; they fail faster and with a clearer message. -->
+    <rule ref="Generic.ControlStructures.DisallowYodaConditions"/>
+    <rule ref="Generic.Arrays.DisallowLongArraySyntax"/>
+
+    <!-- ── Naming ──────────────────────────────────────────────────────────
+         Nextcloud's standard is silent on naming; ours is not. -->
+    <rule ref="Generic.NamingConventions.ConstructorName"/>
+    <rule ref="Squiz.NamingConventions.ValidVariableName"/>
+    <rule ref="Squiz.NamingConventions.ValidVariableName.PrivateNoUnderscore">
+        <severity>0</severity>
+    </rule>
+    <rule ref="PSR2.Methods.MethodDeclaration.Underscore">
+        <type>error</type>
+    </rule>
+    <rule ref="PSR2.Classes.PropertyDeclaration.Underscore">
+        <type>error</type>
+    </rule>
+
+    <!-- ── Documentation must EXIST ────────────────────────────────────────
+         Presence is semantic and stays. LAYOUT of a docblock is php-cs-fixer's
+         (`phpdoc_align => left`), so every alignment and spacing code inside
+         these sniffs is switched off individually rather than by dropping the
+         sniff — losing the presence requirement would be a real regression.
+
+         The excluded codes are not guesses; each one was observed firing on
+         php-cs-fixer-formatted code in the 2026-08-12 measurement. -->
+    <rule ref="PEAR.Commenting.FunctionComment">
+        <exclude name="PEAR.Commenting.FunctionComment.SpacingAfterParamName"/>
+        <exclude name="PEAR.Commenting.FunctionComment.SpacingAfterParamType"/>
+        <exclude name="PEAR.Commenting.FunctionComment.SpacingBeforeTags"/>
+        <exclude name="PEAR.Commenting.FunctionComment.ParamCommentAlignment"/>
+        <exclude name="PEAR.Commenting.FunctionComment.ParamNameAlignment"/>
+        <exclude name="PEAR.Commenting.FunctionComment.ParamTypeAlignment"/>
+        <exclude name="PEAR.Commenting.FunctionComment.SpacingAfter"/>
+        <exclude name="PEAR.Commenting.FunctionComment.SpacingBefore"/>
+    </rule>
+    <rule ref="Generic.Commenting.DocComment">
+        <exclude name="Generic.Commenting.DocComment.TagValueIndent"/>
+        <exclude name="Generic.Commenting.DocComment.NonParamGroup"/>
+        <exclude name="Generic.Commenting.DocComment.SpacingBeforeTags"/>
+        <exclude name="Generic.Commenting.DocComment.ShortNotCapital"/>
+        <exclude name="Generic.Commenting.DocComment.MissingShort"/>
+        <exclude name="Generic.Commenting.DocComment.SpacingAfter"/>
+        <exclude name="Generic.Commenting.DocComment.ContentAfterOpen"/>
+        <exclude name="Generic.Commenting.DocComment.ContentBeforeClose"/>
+    </rule>
+    <rule ref="Squiz.Commenting.VariableComment">
+        <exclude name="Squiz.Commenting.VariableComment.IncorrectVarType"/>
+    </rule>
+    <rule ref="Squiz.Commenting.EmptyCatchComment"/>
+
+    <!--
+        InvalidEndChar demands that every inline comment end in `.`, `!` or `?`.
+        Every occurrence in a fleet lib/ tree is the REUSE-mandated SPDX header
+
+            // SPDX-License-Identifier: EUPL-1.2
+
+        whose value is a machine-parsed SPDX expression: a trailing full stop
+        makes it a DIFFERENT, invalid identifier and breaks REUSE compliance.
+        The two requirements are in direct conflict and REUSE wins.
+
+        Recorded as a WARNING rather than left to be inherited, because the state
+        it preserves used to be accidental. Under php_codesniffer 3.13.5 these
+        findings were warnings, so `composer phpcs` exited 1 and the gate passed.
+        3.13.6 — adopted to clear CVE-2026-67434 — reclassifies them as errors,
+        so the same unchanged code exits 2 and the gate fails. Nothing about the
+        code changed; only the tool's severity mapping did.
+
+        Scope is deliberately narrow: only InvalidEndChar. Every other
+        Squiz.Commenting.InlineComment code still fails the build.
+
+        First found in decidesk; hoisted here so the other 17 apps do not each
+        rediscover it on their next php_codesniffer bump.
+    -->
+    <rule ref="Squiz.Commenting.InlineComment">
+        <exclude name="Squiz.Commenting.InlineComment.SpacingBefore"/>
+        <exclude name="Squiz.Commenting.InlineComment.SpacingAfter"/>
+    </rule>
+    <rule ref="Squiz.Commenting.InlineComment.InvalidEndChar">
+        <type>warning</type>
+    </rule>
+
+    <!-- ── Budget ──────────────────────────────────────────────────────────
+         Nextcloud enforces no line length at all, so 150 is purely additive.
+         Measured on the php-cs-fixer-formatted openregister tree: 2 violations
+         in 200 files. We are already inside this limit. -->
+    <rule ref="Generic.Files.LineLength">
+        <properties>
+            <property name="lineLimit" value="150"/>
+            <property name="absoluteLineLimit" value="150"/>
+        </properties>
+    </rule>
+
+    <!-- ── Conduction custom sniffs ────────────────────────────────────────
+         Paths are relative to THIS file, so they resolve wherever the package
+         is checked out or vendored. An app stub must not repeat them.
+
+         These three are the entire reason PHPCS is still in the toolchain:
+         php-cs-fixer cannot express any of them. All three reported ZERO
+         findings against php-cs-fixer-formatted code, which is the evidence
+         that they are stricter-but-compatible rather than merely untested. -->
+
+    <!-- Enforce named parameters on internal calls. -->
+    <rule ref="./phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php">
+        <type>error</type>
+    </rule>
+
+    <!-- Block calls to \OC::$server->getX() / \OC::$server->query(), removed in
+         Nextcloud 34. This sniff exists because static analysis CANNOT see the
+         removal when nextcloud/ocp is pinned below the declared min-version —
+         the condition this fleet was in until 2026-08. -->
+    <rule ref="./phpcs-custom-sniffs/CustomSniffs/Sniffs/Nextcloud/NoLegacyServerAccessorsSniff.php">
+        <type>error</type>
+    </rule>
+
+    <!-- Warn when a class or public method is missing the @spec PHPDoc tag
+         (hydra ADR-003). Warnings, not errors, so CI surfaces the gap without
+         blocking merges. -->
+    <rule ref="./phpcs-custom-sniffs/CustomSniffs/Sniffs/Commenting/SpecTagSniff.php">
+        <type>warning</type>
+    </rule>
+
+</ruleset>

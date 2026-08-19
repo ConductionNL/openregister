@@ -1,0 +1,495 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: EUPL-1.2
+#
+# hydra-gates — distributable entry point for the Hydra mechanical quality
+# gates. This is the file composer installs as `vendor/bin/hydra-gates`; it
+# exists so any repo can run the gates from its own tree without hydra's
+# container, its shell scripts, or a Skill tool.
+#
+# It is a WRAPPER, not a second implementation. The gates themselves remain
+# the single source of truth in scripts/run-hydra-gates.sh; this file adds
+# exactly four things that a raw `bash run-hydra-gates.sh` cannot provide to a
+# consuming repo:
+#
+#   1. PATH RESOLUTION THROUGH COMPOSER'S BIN SYMLINK.
+#      composer links vendor/bin/hydra-gates -> vendor/conduction/hydra-gates/
+#      bin/hydra-gates. The runner locates its Python/JS helpers relative to
+#      ${BASH_SOURCE}; invoked through the symlink that resolves to vendor/bin,
+#      where scripts/lib/ does not exist, and roughly half the gates would look
+#      for helpers that are not there. We resolve the link chain to the real
+#      package root first.
+#
+#   2. AN EXPLICIT, STATED BASE REF (ADR-020).
+#      The gates are diff-scoped. A base ref that silently scopes to nothing
+#      reports zero failures, which is indistinguishable from clean. We resolve
+#      the base from an explicit precedence chain, PRINT which base won, and
+#      refuse to run when none resolves. We never fall back to HEAD~1: on a
+#      squash-merged mainline HEAD~1 is the previous release, and on a fresh
+#      shallow clone it may not exist at all.
+#
+#   3. A COVERAGE ASSERTION ON THE GREEN.
+#      The runner used to end with "ALL 63 GATES GREEN" whether or not 63 gates
+#      ran. Measured on openbuild, only 59 of 61 emitted a line — gates 24 and
+#      33 skipped silently when their prerequisites were absent; measured
+#      2026-08-03 across 13 repos, gate-33 (axe-core) has never run in ANY of
+#      them. A green that counts gates it never executed is the same defect as
+#      `|| echo 'skipping'`, one layer up. We diff the gate numbers that
+#      actually reported against the inventory declared by the runner itself,
+#      and say plainly which gates did not run and what the green therefore
+#      does not cover.
+#
+#      As of 2026-08-03 the runner performs the same accounting in its own
+#      summary, so a direct `run-hydra-gates.sh` invocation (which most of the
+#      fleet uses) is no longer blind to it. Gates that state their own absence
+#      now print `[gate-N] <name>: SKIPPED — <reason>`; that line is NOT counted
+#      as "reported" below — a gate that says it did nothing did nothing.
+#
+#   4. A LOUD, STATED SKIP FOR MISSING PREREQUISITES.
+#      Never `|| echo '...skipping'`. A prerequisite that is genuinely absent is
+#      reported by name, together with what it left uncovered.
+#
+# EXIT CODE IS THE FAILURE COUNT. Flows route on it; it is never collapsed to
+# 0/1. 99 is reserved for "the gates could not be run at all" (unresolvable
+# base ref, missing runner) and is deliberately outside the gate-count range so
+# a configuration error can never be misread as 99 failing gates.
+#
+# Usage:
+#   hydra-gates [--app-dir DIR] [--base REF] [--full] [--require-full-coverage]
+#
+#   --app-dir DIR             repo to scan (default: current directory)
+#   --base REF                diff base (default: see resolution order below)
+#   --full                    scan the whole repo instead of the diff. Reports
+#                             inherited debt; use for audits, not for gating.
+#   --require-full-coverage   treat "an APPLICABLE gate did not run" as a
+#                             failure. Gates that reported NOT APPLICABLE — their
+#                             subject matter is absent from this repo or this
+#                             diff — are excluded, so a Tier-0 app is not blocked
+#                             by gates it has no surface for. A control that
+#                             blocks legitimate work gets switched off, and a
+#                             switched-off control is worth less than a loud one.
+#   --axe-enabled             tell the runner the caller undertook to produce
+#                             tests/axe/report.json (i.e. `enable-axe: true`).
+#                             Without it, a missing report means "this repo has
+#                             not opted into runtime a11y enforcement" (NOT
+#                             APPLICABLE); with it, a missing report means the
+#                             producer broke (a real gap, and it fails).
+#
+# Base ref resolution order (first that resolves wins, and it is printed):
+#   1. --base REF
+#   2. $HYDRA_GATE_BASE_REF
+#   3. the remote's own default branch (refs/remotes/origin/HEAD)
+#   4. origin/development, then origin/main, then origin/master
+#   ... and if none of those resolve, we stop with exit 99 rather than scope to
+#   an empty set.
+#
+#   5. AND THEN, only if whatever won resolves to the SAME COMMIT as HEAD:
+#      github.event.before, the previous tip of the branch this push moved.
+#      That case is not an exotic misconfiguration — it is what EVERY push to
+#      `development` or `main` looks like, because origin/development IS HEAD
+#      there. Passing over the resulting empty diff (<= v1.4.0) made the gates
+#      permanently green on mainline; refusing (v1.5.0) made them permanently
+#      red. Neither says anything about the code. `before...HEAD` is what the
+#      push actually changed, and it is the only scope that answers the
+#      question being asked. If it cannot be resolved either — branch created
+#      by this push, force-pushed tip now unreachable, unrelated history — we
+#      still exit 99, with the reason named. See
+#      scripts/lib/resolve-push-base.sh.
+#
+# @{upstream} is NOT in that chain, and must never be added to it. The tracking
+# branch of a feature branch is that same branch on the remote, so the diff is
+# empty exactly when CI runs. See the long note at step 4.
+
+set -u
+
+# ---------------------------------------------------------------------------
+# 1. Resolve the real package root, following composer's bin symlink.
+# ---------------------------------------------------------------------------
+_self="${BASH_SOURCE[0]:-$0}"
+while [ -L "${_self}" ]; do
+    _link_dir="$(cd -P "$(dirname "${_self}")" 2>/dev/null && pwd)"
+    _self="$(readlink "${_self}")"
+    case "${_self}" in
+        /*) ;;
+        *) _self="${_link_dir}/${_self}" ;;
+    esac
+done
+PKG_ROOT="$(cd -P "$(dirname "${_self}")/.." 2>/dev/null && pwd)"
+RUNNER="${PKG_ROOT}/scripts/run-hydra-gates.sh"
+
+if [ ! -f "${RUNNER}" ]; then
+    echo "[hydra-gates] FATAL: gate runner not found at ${RUNNER}" >&2
+    echo "[hydra-gates] Resolved package root: ${PKG_ROOT}" >&2
+    echo "[hydra-gates] The package is installed but incomplete — no gate ran." >&2
+    echo "[hydra-gates] This is NOT a green. Reinstall conduction/hydra-gates." >&2
+    exit 99
+fi
+
+# ---------------------------------------------------------------------------
+# 2. Arguments
+# ---------------------------------------------------------------------------
+APP_DIR=""
+BASE_REF_ARG=""
+SCOPE_DIFF=1
+REQUIRE_FULL_COVERAGE=0
+AXE_ENABLED="${HYDRA_GATE_AXE_ENABLED:-0}"
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --app-dir) APP_DIR="${2:-}"; shift 2 ;;
+        --app-dir=*) APP_DIR="${1#--app-dir=}"; shift ;;
+        --base) BASE_REF_ARG="${2:-}"; shift 2 ;;
+        --base=*) BASE_REF_ARG="${1#--base=}"; shift ;;
+        --full) SCOPE_DIFF=0; shift ;;
+        --require-full-coverage) REQUIRE_FULL_COVERAGE=1; shift ;;
+        --axe-enabled) AXE_ENABLED=1; shift ;;
+        -h|--help) sed -n '3,70p' "${_self}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *) APP_DIR="$1"; shift ;;
+    esac
+done
+APP_DIR="${APP_DIR:-$(pwd)}"
+
+if [ ! -d "${APP_DIR}" ]; then
+    echo "[hydra-gates] FATAL: --app-dir '${APP_DIR}' is not a directory. No gate ran." >&2
+    exit 99
+fi
+APP_DIR="$(cd "${APP_DIR}" && pwd)"
+
+echo "[hydra-gates] Package:  ${PKG_ROOT}"
+echo "[hydra-gates] App dir:  ${APP_DIR}"
+
+# ---------------------------------------------------------------------------
+# 3. Prerequisite preflight — stated, never silent.
+#
+# We name what is missing and what that leaves uncovered. We do NOT abort:
+# a missing node still leaves ~55 gates able to run, and refusing to run them
+# would trade a partial signal for none. The coverage assertion in step 6 is
+# what turns "a gate did not run" into something a reader cannot miss.
+# ---------------------------------------------------------------------------
+MISSING_TOOLS=""
+_need() {
+    command -v "$1" > /dev/null 2>&1 && return 0
+    MISSING_TOOLS="${MISSING_TOOLS} $1"
+    echo "[hydra-gates] PREREQUISITE MISSING: '$1' is not on PATH — $2" >&2
+    return 1
+}
+_need git    "every diff-scoped gate needs it; the run cannot be scoped without it."
+_need python3 "the ~20 gates implemented as scripts/lib/*.py helpers cannot run."
+_need node   "the manifest gates (22, 53) cannot run."
+
+# ---------------------------------------------------------------------------
+# 4. Resolve the base ref EXPLICITLY, and say which one won.
+# ---------------------------------------------------------------------------
+_git() { git -C "${APP_DIR}" -c safe.directory='*' "$@"; }
+_resolves() { _git rev-parse --verify --quiet "$1^{commit}" > /dev/null 2>&1; }
+
+BASE_REF=""
+BASE_SOURCE=""
+if [ "${SCOPE_DIFF}" = "1" ]; then
+    if ! command -v git > /dev/null 2>&1; then
+        echo "[hydra-gates] FATAL: git is required to scope the gates to a diff." >&2
+        echo "[hydra-gates] Re-run with --full to scan the whole tree, or install git." >&2
+        echo "[hydra-gates] NOTHING WAS CHECKED. This is not a green." >&2
+        exit 99
+    fi
+    if ! _git rev-parse --git-dir > /dev/null 2>&1; then
+        echo "[hydra-gates] FATAL: ${APP_DIR} is not a git repository." >&2
+        echo "[hydra-gates] The gates are diff-scoped (ADR-020) and cannot resolve a base here." >&2
+        echo "[hydra-gates] Re-run with --full to scan the whole tree." >&2
+        echo "[hydra-gates] NOTHING WAS CHECKED. This is not a green." >&2
+        exit 99
+    fi
+
+    if [ -n "${BASE_REF_ARG}" ]; then
+        # An EXPLICIT base is never silently replaced. If the caller named a
+        # base that does not exist, that is a configuration error worth
+        # stopping for — substituting a different one would scope the run to
+        # something the caller did not ask for and did not read about.
+        if _resolves "${BASE_REF_ARG}"; then
+            BASE_REF="${BASE_REF_ARG}"; BASE_SOURCE="--base"
+        else
+            echo "" >&2
+            echo "[hydra-gates] FATAL: the base ref you named does not resolve: '${BASE_REF_ARG}'" >&2
+            echo "[hydra-gates] Scoping to an unresolvable base yields an EMPTY changed-file set," >&2
+            echo "[hydra-gates] and every gate would then pass having inspected nothing." >&2
+            echo "[hydra-gates] That green would be indistinguishable from a real one, so we stop." >&2
+            echo "[hydra-gates] NOTHING WAS CHECKED. This is not a green." >&2
+            exit 99
+        fi
+    elif [ -n "${HYDRA_GATE_BASE_REF:-}" ]; then
+        if _resolves "${HYDRA_GATE_BASE_REF}"; then
+            BASE_REF="${HYDRA_GATE_BASE_REF}"; BASE_SOURCE="\$HYDRA_GATE_BASE_REF"
+        else
+            echo "" >&2
+            echo "[hydra-gates] FATAL: \$HYDRA_GATE_BASE_REF='${HYDRA_GATE_BASE_REF}' does not resolve." >&2
+            echo "[hydra-gates] Refusing to scope to an empty set. NOTHING WAS CHECKED." >&2
+            exit 99
+        fi
+    else
+        # NOTE: @{upstream} is deliberately NOT in this list.
+        #
+        # The tracking branch of a feature branch is that same branch on the
+        # remote, so `git diff @{upstream}...HEAD` compares the branch to
+        # ITSELF and returns an empty set the moment the branch has been
+        # pushed. Every gate then passes having read nothing. Caught on the
+        # first end-to-end run of this package against openbuild: the base
+        # auto-resolved to origin/feat/wire-hydra-gates-check-strict and the
+        # suite reported 58 green over 0 changed files. It was only visible
+        # because the empty-scope warning below says so out loud — the gate
+        # lines themselves were identical to a real green.
+        #
+        # The base for a diff-scoped gate run is the MAINLINE the work will
+        # merge into, never the branch's own remote copy.
+        _origin_head="$(_git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || true)"
+        for _cand in "${_origin_head}" origin/development origin/main origin/master; do
+            [ -n "${_cand}" ] || continue
+            if _resolves "${_cand}"; then
+                BASE_REF="${_cand}"; BASE_SOURCE="auto-detected"
+                break
+            fi
+        done
+        if [ -z "${BASE_REF}" ]; then
+            echo "" >&2
+            echo "[hydra-gates] FATAL: could not auto-detect a diff base in ${APP_DIR}." >&2
+            echo "[hydra-gates] Tried: origin/HEAD, origin/development, origin/main, origin/master." >&2
+            echo "[hydra-gates] (@{upstream} is deliberately NOT tried — see the note in this file.)" >&2
+            echo "[hydra-gates] The gates are diff-scoped (ADR-020) and a base that does not resolve" >&2
+            echo "[hydra-gates] scopes them to nothing — reporting zero failures having read no files." >&2
+            echo "[hydra-gates] Set --base <ref> or \$HYDRA_GATE_BASE_REF. We do NOT fall back to HEAD~1:" >&2
+            echo "[hydra-gates] on a squash-merged mainline that is the previous release, not the PR base." >&2
+            echo "[hydra-gates] NOTHING WAS CHECKED. This is not a green." >&2
+            exit 99
+        fi
+    fi
+    echo "[hydra-gates] Base ref: ${BASE_REF} (${BASE_SOURCE}) = $(_git rev-parse --short "${BASE_REF}" 2>/dev/null)"
+
+    # ── Self-comparison: the base IS HEAD ───────────────────────────────────
+    #
+    # A base that resolves to HEAD is a resolvable ref and a valid commit, so
+    # nothing upstream of here rejects it — but it makes the diff empty by
+    # construction and every gate green by construction. It is the empty-scope
+    # bug wearing a valid ref as a disguise.
+    #
+    # It is ALSO not an accident, and not rare: it is what EVERY push to a
+    # mainline looks like. On a push to `development`, `origin/development` is
+    # HEAD. That single shape accounts for every mainline run in the fleet.
+    #
+    # Warning about it (<= v1.4.0) let the vacuous green through. Refusing
+    # (v1.5.0) turns every mainline push permanently red, which is exactly as
+    # uninformative and gets the gate ignored just as fast. Neither reading is
+    # the answer, because the base is not missing on a push — it is simply not
+    # the branch's own name. GitHub hands the previous tip over as
+    # `github.event.before`, and "what this push changed" is `before...HEAD`.
+    #
+    # So: try that, and ONLY here, where the alternative is already a refusal.
+    # If it resolves we gate the push's real diff; if it cannot (branch just
+    # created, force-pushed away, no shared history) we fail closed, and the
+    # reason is named. See scripts/lib/resolve-push-base.sh for each case.
+    if [ "$(_git rev-parse "${BASE_REF}" 2>/dev/null)" = "$(_git rev-parse HEAD 2>/dev/null)" ]; then
+        echo "[hydra-gates] Base ref '${BASE_REF}' resolves to the SAME COMMIT as HEAD."
+        echo "[hydra-gates] That is what a push to a mainline branch looks like. Re-scoping to the"
+        echo "[hydra-gates] push's own previous tip (github.event.before) instead of to HEAD."
+        # shellcheck source=scripts/lib/resolve-push-base.sh
+        # shellcheck disable=SC1091  # resolved at runtime from the package root
+        . "${PKG_ROOT}/scripts/lib/resolve-push-base.sh"
+        _head_sha="$(_git rev-parse HEAD 2>/dev/null)"
+        if _push_base="$(hydra_resolve_push_base "${APP_DIR}" "${_head_sha}")"; then
+            BASE_REF="${_push_base}"
+            BASE_SOURCE="github.event.before (push)"
+            echo "[hydra-gates] Base ref: ${BASE_REF} (${BASE_SOURCE}) = $(_git rev-parse --short "${BASE_REF}" 2>/dev/null)"
+        else
+            echo "" >&2
+            echo "[hydra-gates] FATAL: the diff base is HEAD and the push's previous tip could not be" >&2
+            echo "[hydra-gates] used either (reason above). There is no scope, so there is nothing to" >&2
+            echo "[hydra-gates] gate — and a run that inspected no files must never wear the same green" >&2
+            echo "[hydra-gates] as one that inspected the change. NOTHING WAS CHECKED." >&2
+            echo "[hydra-gates] Fix: run this on a pull_request (which has a real target branch), or" >&2
+            echo "[hydra-gates] pass --base <the commit this push started from>." >&2
+            exit 99
+        fi
+    fi
+else
+    echo "[hydra-gates] Base ref: n/a — --full requested, scanning the entire tree."
+    echo "[hydra-gates] NOTE: a --full run reports inherited debt and is NOT the gating mode (ADR-020)."
+fi
+
+# ---------------------------------------------------------------------------
+# 5. Run the gates. The runner owns the gate logic; we only capture.
+# ---------------------------------------------------------------------------
+set -- "${APP_DIR}"
+if [ "${SCOPE_DIFF}" = "1" ]; then
+    set -- --scope-to-diff --base "${BASE_REF}" "$@"
+fi
+# Forwarded, not re-derived. The runner is the only thing that reads gate-33's
+# report; this wrapper just has to stop swallowing the caller's declaration.
+if [ "${AXE_ENABLED}" = "1" ]; then
+    set -- --axe-enabled "$@"
+fi
+
+_out="$(mktemp -t hydra-gates-out.XXXXXX)"
+trap 'rm -f "${_out}"' EXIT
+
+echo ""
+bash "${RUNNER}" "$@" 2>&1 | tee "${_out}"
+RC="${PIPESTATUS[0]}"
+
+# ---------------------------------------------------------------------------
+# 6. Coverage assertion.
+#
+# The inventory is read out of the runner itself rather than hardcoded here: a
+# hardcoded 61 in a wrapper is a number that goes stale the first time someone
+# adds gate 62, and a coverage check that silently measures against a stale
+# inventory is the very defect this step exists to catch.
+# ---------------------------------------------------------------------------
+DECLARED="$(grep -oE '_(pass|fail|skip) [0-9]+' "${RUNNER}" | awk '{print $2}' | sort -un)"
+# A `[gate-N] name: SKIPPED (…) — reason` line is the gate REPORTING THAT IT DID
+# NOT RUN. Counting it as coverage would turn the fix into the bug: the whole
+# point of making the skip visible is that it stays outside the "reported a
+# result" tally. Excluded here by verdict, not by gate number.
+#
+# `NOT APPLICABLE` is a THIRD verdict and must be excluded from BOTH tallies —
+# it is neither a result nor a gap. Note it is excluded here explicitly rather
+# than left to fall through: a `NOT APPLICABLE` line contains no ': SKIPPED', so
+# the old filter would have counted every not-applicable gate as having REPORTED
+# A RESULT. This wrapper recomputes coverage independently of the runner, so a
+# verdict it does not know about is silently miscounted in the direction that
+# always reads better than the truth.
+EMITTED="$(grep -E '^\[gate-[0-9]+\]' "${_out}" | grep -v ': SKIPPED' | grep -v ': NOT APPLICABLE' \
+    | grep -oE '^\[gate-[0-9]+\]' | grep -oE '[0-9]+' | sort -un)"
+NOT_APPLICABLE="$(grep -E '^\[gate-[0-9]+\].*: NOT APPLICABLE' "${_out}" \
+    | grep -oE '^\[gate-[0-9]+\]' | grep -oE '[0-9]+' | sort -un)"
+DECLARED_N="$(printf '%s\n' "${DECLARED}" | grep -c . || true)"
+EMITTED_N="$(printf '%s\n' "${EMITTED}" | grep -c . || true)"
+NA_N="$(printf '%s\n' "${NOT_APPLICABLE}" | grep -c . || true)"
+APPLICABLE_N=$((DECLARED_N - NA_N))
+NOT_APPLICABLE_INLINE="$(printf '%s' "${NOT_APPLICABLE}" | tr '\n' ' ' | sed 's/ *$//')"
+
+# Set difference by membership test, NOT by comm(1). comm requires its inputs
+# to be sorted in the COLLATING order it compares with; these lists are sorted
+# NUMERICALLY (sort -un), so comm both warns and — more dangerously — can drop
+# entries, under-reporting the gates that did not run. An under-reported
+# coverage gap is the exact failure this block exists to prevent.
+NOT_RUN=""
+for _d in ${DECLARED}; do
+    printf '%s\n' "${EMITTED}" | grep -qx "${_d}" && continue
+    printf '%s\n' "${NOT_APPLICABLE}" | grep -qx "${_d}" && continue
+    NOT_RUN="${NOT_RUN}${_d} "
+done
+NOT_RUN="${NOT_RUN% }"
+
+echo ""
+echo "=============================================================="
+echo "[hydra-gates] COVERAGE: ${EMITTED_N} of ${DECLARED_N} declared gates reported a result (${NA_N} not applicable; ${EMITTED_N} of ${APPLICABLE_N} applicable gates ran)."
+if [ -n "${NOT_APPLICABLE}" ]; then
+    echo "[hydra-gates] NOT APPLICABLE: ${NOT_APPLICABLE_INLINE}"
+    echo "[hydra-gates] Their subject matter does not exist in this repo or this diff — each said"
+    echo "[hydra-gates] so by name above. They do NOT count against coverage."
+fi
+
+# The single most dangerous shape: a scoped run over an empty diff. Every gate
+# passes having read nothing, and the output is otherwise identical to a real
+# green. The runner states it; we restate it where the verdict is read.
+#
+# READ THE COUNT, DO NOT PATTERN-MATCH THE PROSE.
+#
+# This was `grep -q "0 changed file(s)"`, which is a SUBSTRING match: it is
+# satisfied by `10 changed file(s)`, and by 20, 30, 100. Runs whose header
+# said ten files changed and whose every gate ran still printed the
+# "SCOPE WAS EMPTY" epilogue below — and that epilogue had been adopted
+# fleet-wide as the tell for a vacuous run, so the bug manufactured doubt
+# about runs that were fine while saying nothing new about runs that were
+# not. A report that can contradict its own header is not a report.
+#
+# `SCOPE-FILE-COUNT:` is emitted by the runner exactly once, as a bare
+# integer, for this. Note the epilogue's own prose ("SCOPE WAS EMPTY") also
+# appears in COMMENTS in this file and in run-hydra-gates.sh, so grepping the
+# SOURCE for it finds explanations rather than emissions; grep the OUTPUT, or
+# better, grep `SCOPE-FILE-COUNT: 0`.
+_scope_count="$(sed -n 's/^\[hydra-gates\] SCOPE-FILE-COUNT: //p' "${_out}" 2>/dev/null | head -1)"
+if [ "${SCOPE_DIFF}" = "1" ] && [ "${_scope_count:-}" = "0" ]; then
+    echo "[hydra-gates] SCOPE WAS EMPTY: 0 files differ from ${BASE_REF}."
+    echo "[hydra-gates] Every gate below passed by inspecting NOTHING. This green describes"
+    echo "[hydra-gates] the empty diff, not the repository. The base resolved, the histories"
+    echo "[hydra-gates] join and git succeeded, so this is a real answer to a real question —"
+    echo "[hydra-gates] it is just a question about nothing. Two ways to get here honestly:"
+    echo "[hydra-gates] a change that only DELETES files (the scope is --diff-filter=ACMR),"
+    echo "[hydra-gates] and a base pointed at the wrong branch. If you expected changes,"
+    echo "[hydra-gates] it is the second one."
+fi
+
+if [ -n "${NOT_RUN}" ]; then
+    echo "[hydra-gates] GATES THAT DID NOT RUN: ${NOT_RUN}"
+    echo "[hydra-gates] These gates skipped because a prerequisite was absent in this repo"
+    echo "[hydra-gates] (no manifest, no node_modules, no e2e suite, ...). They checked NOTHING."
+fi
+if [ -n "${MISSING_TOOLS}" ]; then
+    echo "[hydra-gates] MISSING TOOLS:${MISSING_TOOLS}"
+fi
+
+# Waiver accounting.
+#
+# The traceability gates (16 spec-coverage, 19 e2e-coverage, 26 visual-coverage)
+# can be waived per-site with a reason-bearing `@... exclude <reason>` tag. That
+# is a deliberately better mechanism than a baseline file, because each waiver
+# carries its justification at the point of use. But a waiver mechanism still
+# has the failure mode of decidesk/phpmd.baseline.xml — a suppression list that
+# suppresses nothing reads as protection while providing none, and one that
+# suppresses everything reads as a green while covering nothing. Neither is
+# visible unless the count is stated, so we state it. A reader can then tell a
+# green earned by passing from a green earned by waiving.
+if command -v grep > /dev/null 2>&1 && [ -d "${APP_DIR}" ]; then
+    _excl_total=0
+    for _tag in spec e2e visual; do
+        _n="$(grep -rIloE "@${_tag} +exclude" "${APP_DIR}" \
+                --exclude-dir=vendor --exclude-dir=node_modules \
+                --exclude-dir=.git --exclude-dir=dist --exclude-dir=build \
+                2>/dev/null | grep -c . || true)"
+        _n="${_n:-0}"
+        _excl_total=$(( _excl_total + _n ))
+        [ "${_n}" -gt 0 ] && echo "[hydra-gates] WAIVERS: ${_n} file(s) carry an '@${_tag} exclude <reason>' tag."
+    done
+    if [ "${_excl_total}" -eq 0 ]; then
+        echo "[hydra-gates] WAIVERS: none — no gate finding in this repo is suppressed by an exclude tag."
+    else
+        echo "[hydra-gates] Those waivers are honoured by gates 16/19/26. Each must carry a reason;"
+        echo "[hydra-gates] a green above is partly a statement that someone justified them, not that"
+        echo "[hydra-gates] the underlying coverage exists. Review them if the green matters."
+    fi
+fi
+
+if [ "${RC}" -eq 99 ]; then
+    echo "[hydra-gates] RESULT: COULD NOT RUN (exit 99). This is a configuration error, not a green."
+    echo "=============================================================="
+    exit 99
+fi
+
+if [ "${RC}" -eq 0 ]; then
+    if [ -z "${NOT_RUN}" ]; then
+        if [ "${NA_N}" -eq 0 ]; then
+            echo "[hydra-gates] RESULT: ALL ${DECLARED_N} GATES PASSED — and all ${DECLARED_N} of them ran."
+        else
+            # NEVER "all ${DECLARED_N} ran" here. ${NA_N} of them did not run —
+            # they had nothing to run against. Saying otherwise would print the
+            # exact banner this whole accounting exists to make impossible, and
+            # it would print it precisely when the run is MOST incomplete.
+            echo "[hydra-gates] RESULT: ALL ${APPLICABLE_N} APPLICABLE GATES PASSED — and all ${APPLICABLE_N} of them ran."
+            echo "[hydra-gates] ${NA_N} gate(s) were NOT APPLICABLE to this repo/diff and did not run: ${NOT_APPLICABLE_INLINE}"
+            echo "[hydra-gates] This green covers ${EMITTED_N} of ${DECLARED_N} declared gates. It says nothing"
+            echo "[hydra-gates] about the ${NA_N} above — only that they had no subject matter here."
+        fi
+    else
+        echo "[hydra-gates] RESULT: ALL GATES PASSED — EXCEPT GATES ${NOT_RUN}, WHICH DID NOT RUN."
+        echo "[hydra-gates] This green covers ${EMITTED_N} gates. It says NOTHING about gates ${NOT_RUN}."
+        echo "[hydra-gates] Do not read it as 'the repo passes all ${DECLARED_N} gates'."
+        if [ "${REQUIRE_FULL_COVERAGE}" = "1" ]; then
+            echo "[hydra-gates] --require-full-coverage was set: treating incomplete coverage as failure."
+            echo "=============================================================="
+            exit 98
+        fi
+    fi
+else
+    echo "[hydra-gates] RESULT: ${RC} GATE(S) FAILED. Exit code is the failure COUNT, not a boolean."
+    grep -E '^\[gate-[0-9]+\].*: FAIL' "${_out}" | sed 's/^/[hydra-gates]   /' || true
+fi
+echo "=============================================================="
+
+exit "${RC}"

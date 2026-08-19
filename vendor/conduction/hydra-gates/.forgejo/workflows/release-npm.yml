@@ -1,0 +1,109 @@
+# Reusable npm publish workflow for Forgejo Actions on Codeberg.
+#
+# Translated from the GitHub Actions pattern in
+# ConductionNL/nextcloud-vue/.github/workflows/release.yml.
+#
+# Compared with the GH original:
+#   * GH original uses npm Trusted Publisher (OIDC). Codeberg is not on
+#     npm's accepted OIDC issuer list (only github.com / gitlab.com).
+#     Reverted to NPM_TOKEN secret-based auth. Provenance attestations
+#     are disabled with OIDC.
+#   * @semantic-release/github plugin is removed at the .releaserc
+#     level by each repo before merging the migration commit.
+#   * Container: node:24-bookworm on codeberg-medium runner.
+#
+# Required secrets (the consumer wrapper inherits via `secrets: inherit`):
+#   NPM_TOKEN       — npm Automation token, scoped to the @conduction npm scope
+#   CODEBERG_TOKEN  — write:repository PAT for the chore(release) push back
+
+name: npm Release
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: "Node.js version for building + publishing"
+        required: false
+        type: string
+        default: "24"
+      install-command:
+        description: "npm install subcommand: 'ci' (needs a committed lockfile) or 'install' (for repos without a root package-lock.json, e.g. monorepos)."
+        required: false
+        type: string
+        default: "ci"
+      install-flags:
+        description: "Extra flags for the install. Default empty. Do NOT pass --legacy-peer-deps: it masks peer-dependency conflicts and broke CI fleet-wide; fix peer deps by aligning versions in package.json instead."
+        required: false
+        type: string
+        default: ""
+      working-directory:
+        description: "Subdir to run lint/build/semantic-release in (monorepo package dir). Install always runs at repo root so npm workspaces resolve."
+        required: false
+        type: string
+        default: "."
+      dry-run:
+        description: "Pass --dry-run to semantic-release (no publish, no tag, no commit)"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  # Single job on purpose: install -> lint -> build -> semantic-release as
+  # sequential steps. Codeberg's Forgejo scheduler reliably dispatches the
+  # first/independent job of a run but frequently never allocates a runner to
+  # a second `needs:`-dependent job (observed 2026-06-05: Quality always ran,
+  # the dependent Release job sat at 0s forever across many runs). Collapsing
+  # to one job keeps the same gate (lint/build fail -> the release step is
+  # never reached) without relying on cross-job scheduling.
+  release:
+    name: Release
+    runs-on: codeberg-medium
+    container:
+      image: node:24-bookworm
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: https://github.com/actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Check out the BRANCH at its current tip (on-branch, not the detached
+          # triggering SHA). On an actively-pushed branch the run often starts
+          # after new commits have landed; a detached checkout at the old SHA
+          # makes semantic-release abort with "branch <x> is behind the remote"
+          # and silently skip the publish. Tracking the branch head keeps
+          # local == remote so the release proceeds.
+          ref: ${{ github.ref_name }}
+
+      - name: Configure npm registry
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm config set "//registry.npmjs.org/:_authToken=${NPM_TOKEN}"
+          npm config set registry https://registry.npmjs.org/
+
+      - name: Install deps
+        run: npm ${{ inputs.install-command }} ${{ inputs.install-flags }}
+
+      - name: Lint
+        working-directory: ${{ inputs.working-directory }}
+        run: npm run lint || echo "no lint script — skipping"
+
+      - name: Build
+        working-directory: ${{ inputs.working-directory }}
+        run: npm run build || echo "no build script — skipping"
+
+      - name: Release
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GIT_CREDENTIALS: "https://x-access-token:${{ secrets.CODEBERG_TOKEN }}@codeberg.org"
+        run: |
+          git config --global credential.helper store
+          echo "${GIT_CREDENTIALS}" > ~/.git-credentials
+          git config --global user.email "release-bot@conduction.nl"
+          git config --global user.name "Conduction Release Bot"
+          if [ "${{ inputs.dry-run }}" = "true" ]; then
+            npx semantic-release --dry-run
+          else
+            npx semantic-release
+          fi

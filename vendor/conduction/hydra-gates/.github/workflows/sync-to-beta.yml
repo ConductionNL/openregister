@@ -1,0 +1,47 @@
+name: Sync Development to Beta
+
+on:
+  workflow_call:
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    # Observed across 152 executions: median 0.1 min, p95 1.1 min, max 5.6 min
+    # (openregister — a full-depth checkout of a large repo). 20 min covers a
+    # slow `fetch-depth: 0` clone with a wide margin.
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create or update PR to beta
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Ensure beta branch exists
+          if ! git ls-remote --heads origin beta | grep -q beta; then
+            echo "Beta branch does not exist yet. Creating from development..."
+            git push origin origin/development:refs/heads/beta
+          fi
+
+          # Check if a PR already exists
+          EXISTING_PR=$(gh pr list --base beta --head development --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+
+          if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then
+            echo "PR #$EXISTING_PR already exists — it will auto-update with new commits"
+          else
+            gh pr create \
+              --base beta \
+              --head development \
+              --title "Release: merge development into beta" \
+              --body "Automated PR to sync development changes to beta for beta release.
+
+          Merging this PR will trigger the beta release workflow.
+
+          > **Reminder:** Add a \`major\`, \`minor\`, or \`patch\` label to this PR to control the version bump. Default is \`patch\`."
+          fi

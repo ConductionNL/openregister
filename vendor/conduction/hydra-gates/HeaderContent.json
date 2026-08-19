@@ -1,0 +1,74 @@
+[
+  {
+    "label": "Home",
+    "type": "readme",
+    "current": {
+      "pathname": "/",
+      "operator": "equals"
+    },
+    "handleClick": { "link": "https://github.com/ConductionNL/.github/blob/main/docs/Catalogi.md" }
+  },
+  {
+    "label": "Onze Componenten",
+    "type": "internal",
+    "current": {
+      "pathname": "/components",
+      "operator": "includes"
+    },
+    "handleClick": { "link": "/components" }
+  },
+  {
+    "label": "Diensten",
+    "type": "internal",
+    "current": {
+      "pathname": "/components",
+      "operator": "includes"
+    },
+    "handleClick": { "link": "/components" }
+  },
+  {
+    "label": "Over Conduction",
+    "current": {
+      "pathname": "/over",
+      "operator": "includes"
+    },
+    "subItems": [
+      {
+        "label": "About us",
+        "type": "readme",
+        "current": {
+          "pathname": "/over/us",
+          "operator": "equals"
+        },
+        "handleClick": { "link": "https://github.com/ConductionNL/.github/blob/main/profile/README.md" }
+      },
+      {
+        "label": "Producten",
+        "type": "readme",
+        "current": {
+          "pathname": "/over/products",
+          "operator": "equals"
+        },
+        "handleClick": { "link": "https://github.com/ConductionNL/.github/blob/main/docs/Products.md" }
+      },
+      {
+        "label": "Tarieven",
+        "type": "readme",
+        "current": {
+          "pathname": "/over/pricing",
+          "operator": "equals"
+        },
+        "handleClick": { "link": "https://github.com/ConductionNL/.github/blob/main/docs/Pricing.md" }
+      },
+      {
+        "label": "Vacatures",
+        "type": "readme",
+        "current": {
+          "pathname": "/about/vacancies",
+          "operator": "equals"
+        },
+        "handleClick": { "link": "https://github.com/ConductionNL/.github/blob/main/docs/Vacancies.md" }
+      }
+    ]
+  }
+]

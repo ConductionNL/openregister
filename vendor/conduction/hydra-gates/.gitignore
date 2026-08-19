@@ -1,0 +1,16 @@
+
+.idea/
+.claude/settings.json
+.claude/settings.local.json
+# Usage tracker session data (generated at runtime)
+usage-tracker/logs/*
+!usage-tracker/logs/.gitkeep
+
+# Usage tracker personal limits (copy from limits.example.json and edit)
+usage-tracker/limits.json
+
+# Python bytecode cache (auto-generated, never commit)
+__pycache__/
+*.pyc
+
+**/node_modules/

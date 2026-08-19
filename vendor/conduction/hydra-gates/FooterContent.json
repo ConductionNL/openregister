@@ -1,0 +1,99 @@
+[
+  {
+    "title": "Menu",
+    "items": [
+      {
+        "value": "Componenten",
+        "ariaLabel": "Componenten",
+        "icon": { "prefix": "fas", "icon": "arrow-right", "placement": "left" }
+      },
+      {
+        "value": "About us",
+        "ariaLabel": "About us",
+        "icon": { "prefix": "fas", "icon": "arrow-right", "placement": "left" }
+      },
+      {
+        "value": "Products",
+        "ariaLabel": "Products",
+        "icon": { "prefix": "fas", "icon": "arrow-right", "placement": "left" }
+      },
+      {
+        "value": "Pricing",
+        "ariaLabel": "Pricing",
+        "icon": { "prefix": "fas", "icon": "arrow-right", "placement": "left" }
+      },
+      {
+        "value": "Vacancies",
+        "ariaLabel": "Vacancies",
+        "icon": { "prefix": "fas", "icon": "arrow-right", "placement": "left" }
+      }
+    ]
+  },
+  {
+    "title": "Social",
+    "items": [
+      {
+        "value": "Twitter",
+        "ariaLabel": "Twitter",
+        "link": "https://twitter.com/conduction_nl",
+        "icon": { "prefix": "fas", "icon": "external-link", "placement": "left" }
+      },
+      {
+        "value": "LinkedIn",
+        "ariaLabel": "LinkedIn",
+        "link": "https://www.linkedin.com/company/conduction/about/",
+        "icon": { "prefix": "fas", "icon": "external-link", "placement": "left" }
+      },
+      {
+        "value": "Github",
+        "ariaLabel": "Github",
+        "link": "https://github.com/ConductionNL",
+        "icon": { "prefix": "fas", "icon": "external-link", "placement": "left" }
+      }
+    ]
+  },
+  {
+    "title": "Contact",
+    "items": [
+      {
+        "label": "Digitaal contact",
+        "value": "conduction.nl",
+        "ariaLabel": "Website",
+        "link": "https://conduction.nl/",
+        "icon": { "prefix": "fas", "icon": "globe", "placement": "left" }
+      },
+      {
+        "value": "info@conduction.nl",
+        "ariaLabel": "Email",
+        "link": "mail:info@conduction.nl",
+        "icon": { "prefix": "fas", "icon": "envelope", "placement": "left" }
+      },
+      {
+        "value": "+31 (0)85 3036840",
+        "ariaLabel": "Phone number",
+        "link": "tel:+31 (0)85 3036840",
+        "icon": { "prefix": "fas", "icon": "phone", "placement": "left" }
+      },
+      {
+        "label": "Bezoek adres",
+        "value": "Lauriergracht 14h",
+        "ariaLabel": "Phone number"
+      },
+      {
+        "value": "1016 RL Amsterdam",
+        "ariaLabel": "Phone number"
+      },
+      {
+        "label": "Overige",
+        "value": "KVK: 76741850",
+        "ariaLabel": "KVK",
+        "icon": { "prefix": "fas", "icon": "email", "placement": "left" }
+      },
+      {
+        "value": "BTW: NL860784241B01",
+        "ariaLabel": "BTW",
+        "icon": { "prefix": "fas", "icon": "email", "placement": "left" }
+      }
+    ]
+  }
+]

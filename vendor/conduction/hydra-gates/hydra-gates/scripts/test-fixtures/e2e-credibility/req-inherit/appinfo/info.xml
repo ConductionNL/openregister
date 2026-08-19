@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<id>scopefixture</id>
+	<name>Scope Matrix Fixture</name>
+	<summary>Fixture app for the gate scope matrix. Not a real app.</summary>
+	<description>Exists so the gate suite can express push / full / diff scopes against a real git history.</description>
+	<version>1.0.0</version>
+	<licence>agpl</licence>
+	<author>Conduction</author>
+	<namespace>ScopeFixture</namespace>
+	<category>tools</category>
+	<dependencies><nextcloud min-version="30" max-version="32"/></dependencies>
+</info>

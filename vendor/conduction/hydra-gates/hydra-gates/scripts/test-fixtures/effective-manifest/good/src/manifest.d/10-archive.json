@@ -1,0 +1,41 @@
+{
+	"_note": "ADR-037 fragment. Adds the archive surface and a FIRST cut of the settings page — 20-settings.json replaces it, which is what pins 'later fragment wins' in mergePages. Also re-declares reports-entry with order 25; the base already sets order 20, and mergeMenuItems only fills UNDEFINED keys, so the base value must survive.",
+	"pages": [
+		{
+			"id": "archive-index",
+			"route": "/archive",
+			"type": "index",
+			"title": "Archive",
+			"config": {
+				"register": "items",
+				"schema": "item"
+			}
+		},
+		{
+			"id": "settings-page",
+			"route": "/settings",
+			"type": "settings",
+			"title": "Settings",
+			"component": "ArchiveSettingsPage"
+		}
+	],
+	"menu": [
+		{
+			"id": "items-group",
+			"label": "Items",
+			"children": [
+				{
+					"id": "archive-entry",
+					"label": "Archive",
+					"route": "archive-index"
+				}
+			]
+		},
+		{
+			"id": "reports-entry",
+			"label": "Reports",
+			"route": "reports-page",
+			"order": 25
+		}
+	]
+}

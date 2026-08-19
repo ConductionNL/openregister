@@ -1,0 +1,31 @@
+{
+    "name": "nextcloud/ocp",
+    "description": "Composer package containing Nextcloud's public OCP API and the unstable NCU API",
+    "type": "library",
+    "license": "AGPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "Christoph Wurst",
+            "email": "christoph@winzerhof-wurst.at"
+        },
+        {
+            "name": "Joas Schilling",
+            "email": "coding@schilljs.com"
+        }
+    ],
+    "require": {
+        "php": "~8.1 || ~8.2 || ~8.3 || ~8.4",
+        "psr/clock": "^1.0",
+        "psr/container": "^2.0.2",
+        "psr/event-dispatcher": "^1.0",
+        "psr/log": "^3.0.2"
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-stable31": "31.0.0-dev"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

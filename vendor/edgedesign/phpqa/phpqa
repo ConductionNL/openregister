@@ -1,0 +1,59 @@
+#!/usr/bin/env php
+<?php
+
+define('PHPQA_VERSION', '1.27.2');
+define('PHPQA_USED_COMMAND', implode(' ', $argv));
+
+if (getenv('COMPOSER_BIN_DIR') && getenv('COMPOSER_VENDOR_DIR')) {
+    define('COMPOSER_VENDOR_DIR', getenv('COMPOSER_VENDOR_DIR'));
+    define('COMPOSER_BINARY_DIR', getenv('COMPOSER_BIN_DIR'));
+} elseif (file_exists(__DIR__ . '/vendor/autoload.php')) {
+    define('COMPOSER_VENDOR_DIR', __DIR__ . "/vendor/");
+    define('COMPOSER_BINARY_DIR', __DIR__ . "/vendor/bin/");
+} elseif (file_exists(__DIR__ . '/../../autoload.php')) {
+    define('COMPOSER_VENDOR_DIR', __DIR__ . "/../../");
+    $projectRoot = __DIR__ . '/../../..';
+    $binPaths = [
+        "{$projectRoot}/vendor/bin",
+        "{$projectRoot}/bin",
+        $projectRoot,
+        "{$projectRoot}/" . getenv('COMPOSER_BIN_DIR'),
+    ];
+    foreach ($binPaths as $bin) {
+        if (is_file("{$bin}/phpqa")) {
+            define('COMPOSER_BINARY_DIR', "{$bin}/");
+            break;
+        }
+    }
+}
+
+if (!defined('COMPOSER_BINARY_DIR') || !is_dir(COMPOSER_BINARY_DIR)) {
+    die("Composer binary directory was not found (define path in environment variable 'COMPOSER_BIN_DIR')\n");
+}
+
+require_once COMPOSER_VENDOR_DIR . '/autoload.php';
+
+/**
+ * RoboFile is in phpqa repository, but analysis is runned in cwd.
+ * Robo\Runner:loadRoboFile calls chdir when option --load-from=__DIR__
+ */
+class QARunner extends \Robo\Runner
+{
+    protected function loadRoboFile($output = null)
+    {
+        require_once __DIR__ . "/RoboFile.php";
+        return true;
+    }
+}
+
+// IO
+$isNotToolsCommand = !(count($argv) >= 2 && $argv[1] == 'tools');
+if ($isNotToolsCommand) {
+    // add robo command between the application name and the arguments
+    array_splice($argv, 1, 0, 'ci');
+}
+
+// run robo
+$robo = new QARunner('Edge\QA\RoboFile');
+$result = $robo->execute($argv);
+exit($result);

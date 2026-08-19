@@ -1,0 +1,14 @@
+# APP_NAME — Conduction PHPStan config.
+#
+# The shared base is the single source of truth. Everything here is either the
+# app's own tracked debt or an ignore naming a symbol that exists in no other
+# fleet app. Anything you are tempted to add that another app would also need
+# belongs in the base, not here.
+includes:
+    - vendor/conduction/hydra-gates/quality-config/phpstan-base.neon
+    - phpstan-baseline.neon
+
+parameters:
+    # App-specific only. The base already sets level, paths, bootstrapFiles,
+    # scanDirectories and every fleet-wide ignore.
+    ignoreErrors: []

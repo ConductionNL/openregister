@@ -1,0 +1,29 @@
+# shellcheck.yml — Lint all shell scripts with ShellCheck.
+#
+# Runs on PRs that touch .sh files or this workflow.
+
+name: ShellCheck
+
+on:
+  pull_request:
+    paths:
+      - '**/*.sh'
+      - '.shellcheckrc'
+      - '.github/workflows/shellcheck.yml'
+  workflow_dispatch:
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    # Observed: 0.5 min (hydra, the only executed run found). Checkout plus a
+    # containerised ShellCheck action.
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@2.0.0

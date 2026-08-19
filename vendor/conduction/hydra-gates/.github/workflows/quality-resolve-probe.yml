@@ -1,0 +1,296 @@
+name: Quality resolve probe
+
+# THE GUARD ON THE SHARED WORKFLOW.
+#
+# Every caller in the fleet consumes .github/workflows/quality.yml at @main and,
+# as of `chore/track-latest-gates`, takes the gates package from @main too. That
+# is what the product owner asked for — nobody should have to bump a pin in 23
+# repositories to receive a fix. The cost of it is that a broken main now
+# reaches all 23 at once, so main has to be gated on the one failure mode that
+# does not announce itself.
+#
+# THE FAILURE MODE
+# ----------------
+# An unresolvable reusable workflow is not a red check. GitHub creates a run
+# with no jobs in it, or creates no run at all. There is nothing to fail, so
+# nothing fails: every caller quietly stops being checked and every dashboard
+# stays green. On 2026-08-04 a single ~22 KB `run:` step did exactly this
+# (#161); it was reverted (#166) and re-landed with the script in a file (#168).
+#
+# The signature is `jobs == 0`. So this probe COUNTS JOBS. It never looks at
+# whether they passed — a conclusion is a different measurement and reading it
+# here would reintroduce the same blind spot one level up.
+#
+# WHY TWO WORKFLOWS
+# -----------------
+# The thing being resolved is `quality-selftest.yml`. It lives in its own file
+# rather than as a job here, and that separation is load-bearing: if the call
+# sat in THIS workflow and quality.yml were unresolvable, this whole workflow
+# would fail to materialise, the required check would never report, and the PR
+# would sit PENDING FOREVER. A permanently-pending gate is one of the three
+# shapes a dead gate takes, and the hardest to notice. Split in two, the probe
+# always runs and always reports, so the outage surfaces as an explicit RED.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: quality-resolve-probe-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-limits:
+    name: "No `run:` step big enough to break resolution"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      # Deterministic, and it names the offending step — which a job count
+      # cannot do. This is the #161 class caught before merge rather than
+      # after.
+      - name: Assert every `run:` block is under the limit
+        run: python3 scripts/assert-run-steps-resolvable.py .github/workflows/*.yml
+
+      # POSITIVE CONTROL for the lint. A limit low enough that today's largest
+      # step must trip it proves the check has a reachable failure branch and
+      # is reading real sizes. Without this, a lint that silently stopped
+      # parsing `run:` blocks would report the same clean pass forever.
+      - name: "Positive control — the lint must fail on a limit it cannot meet"
+        run: |
+          set -eu
+          if python3 scripts/assert-run-steps-resolvable.py --limit 1 \
+               .github/workflows/quality.yml > /dev/null 2>&1; then
+            echo "::error::the run-step lint reported OK at a 1-byte limit. It is \
+          not measuring anything — every workflow in this repo has `run:` blocks \
+          larger than one byte."
+            exit 1
+          fi
+          echo "OK — the lint fails when it should. Its clean pass above is a verdict."
+
+  gate-completeness:
+    name: "Every leg is inside the required check"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      # POSITIVE CONTROL FIRST. Drop a job from the report's `needs:` in
+      # memory and require the lint to notice. A lint that had stopped reading
+      # the list would pass the real check forever.
+      - name: "Positive control — removing a leg must be detected"
+        run: python3 scripts/assert-quality-report-gates-every-leg.py --positive-control .github/workflows/quality.yml
+
+      # THE MEASUREMENT. `quality / Quality Report` is the only meaningful
+      # required check on main and beta in all 25 fleet repos, and its gating
+      # steps read `needs.*.result`. A job outside that list cannot block a
+      # merge however red it goes — which is what `frontend-tests` was (#190).
+      - name: "Assert every verdict-producing job is in Quality Report's needs"
+        run: python3 scripts/assert-quality-report-gates-every-leg.py .github/workflows/quality.yml
+
+      # ── THE OTHER DIRECTION (#194) ────────────────────────────────────────
+      #
+      # The two checks above close direction 1: a job's failure must be able to
+      # reach the required check. They say nothing about direction 2: whether
+      # the job RUNS AT ALL. A job deleted by an upstream result is `skipped`,
+      # `skipped` is not `failure`, and `contains(needs.*.result, 'failure')`
+      # reads straight past it — so a job can be perfectly wired into the gate
+      # and still contribute nothing, silently. That is #194: four test jobs
+      # carried `needs.security.result != 'failure'`, and one advisory against
+      # a dev-only formatter deleted PHPUnit, Newman and E2E in sixteen repos
+      # at once without turning anything red.
+      #
+      # Positive control first, same discipline as above.
+      - name: "Positive control — a producer that deletes a verdict must be detected"
+        run: python3 scripts/assert-no-producer-deletes-a-verdict.py --positive-control .github/workflows/quality.yml
+
+      - name: "Assert no job can be DELETED by a producer's result"
+        run: python3 scripts/assert-no-producer-deletes-a-verdict.py .github/workflows/quality.yml
+
+  coverage-gate-can-fail:
+    name: "The spec-coverage threshold can fail a run"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # #189: `playwright-coverage-threshold` had NEVER gated. Below-threshold
+      # emitted `::warning::` and returned zero, so the knob was decorative —
+      # pipelinq declared 75, its run printed 28%, and the run passed.
+      #
+      # POSITIVE CONTROL FIRST, and it is the whole point here: the suite is
+      # re-run with the gate neutered back to warning-only, and MUST go red. A
+      # suite that stays green against the known-bad program is not measuring
+      # enforcement, which is exactly how the defect survived this long.
+      - name: "Positive control — a warning-only gate must fail this suite"
+        run: python3 scripts/test-spec-coverage-gate.py --positive-control .github/workflows/quality.yml
+
+      # THE MEASUREMENT. The Node program is EXTRACTED from quality.yml's
+      # heredoc and executed against fixtures — below-threshold (must exit
+      # non-zero), at-threshold (must exit zero), zero-scenarios (must be NOT
+      # MEASURABLE rather than the old 100%), and a fixture proving ten
+      # unrelated `test()` calls no longer move the number.
+      #
+      # Running the shipped text rather than a transcription is deliberate: a
+      # test against a copy passes happily while the workflow does something
+      # else.
+      - name: "Exercise the shipped spec-coverage program against fixtures"
+        run: python3 scripts/test-spec-coverage-gate.py .github/workflows/quality.yml
+
+      # MUTATION BATTERY. A green suite proves nothing on its own — the question
+      # is whether it would have NOTICED. Each mutant reintroduces one specific
+      # defect (enforcement removed, threshold that never fires, zero scenarios
+      # scoring 100, exclusions folded back into the denominator, …) and the
+      # suite must go red for every one. A mutant that SURVIVES means the
+      # fixture cannot reach that branch, and the fix is a better fixture.
+      #
+      # This is not decorative: it caught a real hole on its first run. The
+      # obvious fixture for `@e2e exclude` in a test file could not tell the
+      # guarded regex from the unguarded one — both capture `exclude`, which
+      # resolves to no slug — so that assertion passed while proving nothing.
+      # The separator forms (`exclude::<slug>`, `exclude#<slug>`) are where the
+      # guard is load-bearing, and the fixture now uses them.
+      #
+      # The last mutant is an ANTI-WIDENING control: it reworks a log string
+      # nothing asserts on, and the suite must STAY GREEN. Without it, a suite
+      # that failed on any edit at all would score a perfect kill rate while
+      # being worthless.
+      - name: "Mutation battery — every known defect must be caught"
+        run: python3 scripts/test-spec-coverage-gate.py --mutation-battery .github/workflows/quality.yml
+
+  seed-semantics:
+    name: "A failing seed fails the job"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # POSITIVE CONTROL, FIRST — same discipline as the probe below. The
+      # battery is run against the PRE-#192 step, reconstructed verbatim, and
+      # must reject it. A battery that passed the known-bad body would pass
+      # the fixed one for reasons unrelated to the fix, and its verdict on the
+      # real workflow would mean nothing.
+      - name: "Positive control — the known-bad seed step must be rejected"
+        run: python3 scripts/assert-seed-step-fails-loudly.py --positive-control
+
+      # THE MEASUREMENT. Every step named "Seed test data" is EXTRACTED from
+      # the workflow — env block and run body both — and EXECUTED under the
+      # same shell GitHub uses, against seeds that include a failing `&&`
+      # chain, a legitimate multi-stage chain, and the assignment-prefix +
+      # `|| true` shape launchpad actually ships.
+      #
+      # Running the shipped text rather than grepping it is what found the
+      # THIRD instance of the defect: the Newman job has its own "Seed test
+      # data" step reading `newman-seed-command`, and openbuild passes it
+      # `php occ app:disable openbuild && php occ app:enable openbuild`.
+      - name: "Exercise every 'Seed test data' step in quality.yml"
+        run: python3 scripts/assert-seed-step-fails-loudly.py .github/workflows/quality.yml
+
+  probe:
+    name: "quality.yml resolves (job count > 0)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # POSITIVE CONTROL, FIRST. Run the counter against a workflow that
+      # cannot possibly have a run at this SHA and require the answer to be 0.
+      #
+      # This is the assertion the whole probe rests on: that a count of zero is
+      # something this instrument can actually produce and report. If the
+      # counter were broken — wrong repo, missing token scope, a jq path that
+      # silently yields nothing — it would return 0 here AND 0 for the real
+      # subject, and the probe would be a gate that only ever fails. Equally, a
+      # counter that had started returning a constant would pass the real check
+      # forever. Measuring the known-zero case first distinguishes the two.
+      - name: "Positive control — a workflow that does not exist must count 0"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -eu
+          # Short timeout: this one is EXPECTED to find nothing, so there is no
+          # race to wait out.
+          n="$(bash scripts/count-workflow-jobs.sh '__no-such-workflow.yml' "${HEAD_SHA}" 5)"
+          echo "control count = ${n}"
+          [ "${n}" = "0" ] || {
+            echo "::error::the counter returned ${n} jobs for a workflow that does not \
+          exist. It is not counting what it claims to count, so its verdict on \
+          quality.yml means nothing."
+            exit 1
+          }
+          echo "OK — the counter can return 0, and reports it."
+
+      # THE MEASUREMENT. quality-selftest.yml calls ./.github/workflows/quality.yml
+      # on this same commit. If quality.yml resolves, that run materialises its
+      # jobs (18 top-level jobs as of this change, some of which skip — a
+      # skipped job is still a job and still counts, which is the point: the
+      # probe measures RESOLUTION, not execution).
+      - name: "Count the jobs quality-selftest.yml materialised"
+        id: count
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -eu
+          n="$(bash scripts/count-workflow-jobs.sh 'quality-selftest.yml' "${HEAD_SHA}" 420)"
+          echo "count=${n}" >> "$GITHUB_OUTPUT"
+          echo "quality-selftest.yml materialised ${n} jobs at ${HEAD_SHA}"
+
+      - name: "Assert the shared workflow resolved"
+        env:
+          COUNT: ${{ steps.count.outputs.count }}
+        run: |
+          set -eu
+          if [ "${COUNT}" -eq 0 ]; then
+            echo "::error::quality.yml produced ZERO jobs. This is the #161 outage \
+          signature, not a slow run: an unresolvable reusable workflow yields a run \
+          with no jobs (or no run) and NEVER goes red on its own. Do not merge — \
+          every caller in the fleet consumes this file at @main and would silently \
+          stop being checked. Check for an oversized \`run:\` step, a malformed \
+          \`on: workflow_call\` block, or a YAML error."
+            exit 1
+          fi
+          echo "OK — ${COUNT} jobs. quality.yml is resolvable at this commit."
+
+  # A single check to require in the ruleset, so adding a job above does not
+  # need a branch-protection edit to be enforced. `needs:` implies success(),
+  # which is what we want here — but it also DELETES this job if a dependency
+  # is skipped, so `!cancelled()` is used and each result is asserted by name
+  # rather than inferred from this job having run at all.
+  guard:
+    name: "Shared-workflow guard"
+    runs-on: ubuntu-latest
+    needs: [static-limits, seed-semantics, gate-completeness, probe]
+    if: ${{ !cancelled() }}
+    steps:
+      - name: Assert both guards reached a verdict
+        env:
+          STATIC: ${{ needs.static-limits.result }}
+          SEED: ${{ needs.seed-semantics.result }}
+          LEGS: ${{ needs.gate-completeness.result }}
+          PROBE: ${{ needs.probe.result }}
+        run: |
+          set -eu
+          echo "static-limits=${STATIC} seed-semantics=${SEED} gate-completeness=${LEGS} probe=${PROBE}"
+          # `skipped` is failed here on purpose. A guard that did not run is
+          # not a guard that passed.
+          for pair in "static-limits:${STATIC}" "seed-semantics:${SEED}" "gate-completeness:${LEGS}" "probe:${PROBE}"; do
+            name="${pair%%:*}"; result="${pair##*:}"
+            [ "${result}" = "success" ] || {
+              echo "::error::${name} did not succeed (result=${result}). A guard that \
+          was skipped or cancelled has returned no verdict at all."
+              exit 1
+            }
+          done
+          echo "OK — both guards ran and passed."

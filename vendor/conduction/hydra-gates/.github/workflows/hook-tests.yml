@@ -1,0 +1,31 @@
+name: Hook tests
+
+on:
+  push:
+    paths:
+      - 'global-settings/**'
+  pull_request:
+    paths:
+      - 'global-settings/**'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    # A checkout plus a single bash test script over global-settings/. Runs
+    # only when global-settings/** changes; sub-minute in every run observed.
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up settings-repo-path
+        run: |
+          mkdir -p "$HOME/.claude"
+          echo "$GITHUB_WORKSPACE" > "$HOME/.claude/settings-repo-path"
+
+      - name: Run hook tests
+        env:
+          TEST_REPO_DIR: ${{ github.workspace }}
+        run: bash global-settings/tests/test-block-write-commands.sh

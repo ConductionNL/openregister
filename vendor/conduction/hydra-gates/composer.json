@@ -1,0 +1,38 @@
+{
+    "name": "conduction/hydra-gates",
+    "description": "Hydra's mechanical quality gates, packaged so any repo can run them against its own diff. The exit code is the failure COUNT.",
+    "type": "library",
+    "license": "EUPL-1.2",
+    "keywords": ["quality", "gates", "nextcloud", "static-analysis", "conduction"],
+    "homepage": "https://github.com/ConductionNL/.github/tree/main/hydra-gates",
+    "authors": [
+        {
+            "name": "Conduction",
+            "homepage": "https://conduction.nl"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/ConductionNL/.github/issues",
+        "docs": "https://github.com/ConductionNL/.github/blob/main/hydra-gates/README.md"
+    },
+    "bin": [
+        "hydra-gates/bin/hydra-gates"
+    ],
+    "require": {
+        "php": ">=8.1"
+    },
+    "scripts": {
+        "gates": "hydra-gates/bin/hydra-gates",
+        "test:package": "bash hydra-gates/tests/test-hydra-gates-bin.sh"
+    },
+    "extra": {
+        "hydra-gates": {
+            "runner": "hydra-gates/scripts/run-hydra-gates.sh",
+            "helpers": "hydra-gates/scripts/lib",
+            "schemas": "hydra-gates/scripts/schemas"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

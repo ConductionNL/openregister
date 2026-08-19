@@ -1,0 +1,33 @@
+# ShellCheck configuration for ConductionNL/.github
+#
+# external-sources: follow `. "${SOME_ROOT}/path/helper.sh"` when the script
+# carries a `# shellcheck source=./helper.sh` directive above it.
+#
+# Without this, ShellCheck emits SC1091 ("Not following: ... was not specified
+# as input") for every sourced helper. The workflow's wrapper step exits 1 on
+# ANY finding — including `note:` severity — so three of those notes were enough
+# to fail the build even though the ShellCheck action itself reported success.
+#
+# The `# shellcheck source=` directives were already present and correct; they
+# simply had no effect because external sourcing was not enabled. This turns
+# them on rather than suppressing the diagnostic, so a genuinely missing or
+# misspelled helper path is still reported.
+#
+# Note: .github/workflows/shellcheck.yml already lists `.shellcheckrc` in its
+# `paths:` trigger, so this file was expected to exist and did not.
+external-sources=true
+
+# source-path: resolve a `# shellcheck source=./helper.sh` directive relative to
+# the directory of the script that carries it, not to the process working
+# directory.
+#
+# Needed because the CI action invokes shellcheck from the repository root, so
+# `./gate_fixture_support.sh` resolved to <repo-root>/gate_fixture_support.sh and
+# reported `openBinaryFile: does not exist`. With external-sources alone the
+# diagnostic simply changed from "was not specified as input" to "does not
+# exist" — it was following the directive, just from the wrong base.
+#
+# SCRIPTDIR keeps the existing `source=./gate_fixture_support.sh` directives
+# correct whether a script is run from the repo root, from its own directory, or
+# by the suite runner.
+source-path=SCRIPTDIR

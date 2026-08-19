@@ -1,0 +1,43 @@
+{
+	"schemaVersion": "2.0",
+	"app": { "id": "regfix", "name": "Registry Fixture" },
+	"menu": [
+		{ "id": "events", "label": "Events", "icon": "Calendar", "route": "EventDetail" },
+		{ "id": "skills", "label": "Skill tree", "icon": "Toolbox", "route": "SkillTree" }
+	],
+	"pages": [
+		{
+			"id": "EventDetail",
+			"route": "EventDetail",
+			"type": "detail",
+			"title": "Event",
+			"config": {
+				"register": "larping",
+				"schema": "event",
+				"sidebar": {
+					"show": true,
+					"tabs": [
+						{ "id": "checkin", "label": "Check-in", "icon": "AccountCheck", "component": "EventRoster" }
+					]
+				}
+			}
+		},
+		{
+			"id": "SkillTree",
+			"route": "SkillTree",
+			"type": "custom",
+			"title": "Skill tree",
+			"component": "SkillTree",
+			"_note": "Read-only skill-tree visualisation; no standard page type renders a DAG.",
+			"config": {}
+		},
+		{
+			"id": "LibPage",
+			"route": "LibPage",
+			"type": "custom",
+			"title": "Lib page",
+			"component": "CnSearchPage",
+			"config": {}
+		}
+	]
+}

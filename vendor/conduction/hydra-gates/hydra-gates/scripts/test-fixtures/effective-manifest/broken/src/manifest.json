@@ -1,0 +1,73 @@
+{
+	"$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json",
+	"version": "1.0.0",
+	"pages": [
+		{
+			"id": "zaken-index",
+			"route": "/zaken",
+			"type": "index",
+			"title": "Zaken",
+			"config": {
+				"register": "zaken",
+				"schema": "zaak"
+			},
+			"actions": [
+				{
+					"id": "open-missing",
+					"label": "Open case",
+					"type": "open-page",
+					"target": "missing-page"
+				},
+				{
+					"id": "quick-edit",
+					"label": "Quick edit",
+					"type": "open-modal",
+					"target": "EditZaakModal"
+				}
+			]
+		},
+		{
+			"id": "zaken-detail",
+			"route": "/zaken/:id",
+			"type": "detail",
+			"title": "Zaak"
+		},
+		{
+			"id": "cases-index-page",
+			"route": "/cases",
+			"type": "index",
+			"title": "Cases (legacy)"
+		}
+	],
+	"menu": [
+		{
+			"id": "zaken-group",
+			"label": "Zaken",
+			"children": [
+				{
+					"id": "zaken-index-entry",
+					"label": "Alle zaken",
+					"route": "zaken-index"
+				},
+				{
+					"id": "cases-index",
+					"label": "Cases (legacy)",
+					"route": "cases-index-page"
+				}
+			]
+		},
+		{
+			"id": "cases-overview-entry",
+			"label": "Cases overview",
+			"route": "cases-overview"
+		}
+	],
+	"deepLinks": [
+		{
+			"registerSlug": "zaken",
+			"schemaSlug": "zaak",
+			"urlTemplate": "/besluiten/{id}",
+			"displayName": "Besluit"
+		}
+	]
+}

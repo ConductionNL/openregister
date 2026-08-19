@@ -1,0 +1,54 @@
+{
+	"schemaVersion": "2.0",
+	"app": { "id": "dialects", "name": "Registry Dialects" },
+	"menu": [
+		{ "id": "af", "label": "Agent form", "icon": "Robot", "route": "AgentForm" },
+		{ "id": "lop", "label": "Legacy", "icon": "History", "route": "LegacyPage" },
+		{ "id": "nap", "label": "Broken", "icon": "Alert", "route": "BrokenPage" }
+	],
+	"pages": [
+		{
+			"id": "AgentForm",
+			"route": "AgentForm",
+			"type": "custom",
+			"title": "Agent form",
+			"component": "agent-form",
+			"_note": "Hyphenated registry key — hermiq's dialect.",
+			"config": {}
+		},
+		{
+			"id": "AgentDetail",
+			"route": "AgentDetail",
+			"type": "detail",
+			"title": "Agent",
+			"config": {
+				"register": "hermiq",
+				"schema": "agent",
+				"sidebar": {
+					"show": true,
+					"tabs": [
+						{ "id": "skills", "label": "Skills", "icon": "Star", "component": "agent-skills" }
+					]
+				}
+			}
+		},
+		{
+			"id": "LegacyPage",
+			"route": "LegacyPage",
+			"type": "custom",
+			"title": "Legacy",
+			"component": "LegacyOnlyPanel",
+			"_note": "Registered only in customComponents.js — the second source.",
+			"config": {}
+		},
+		{
+			"id": "BrokenPage",
+			"route": "BrokenPage",
+			"type": "custom",
+			"title": "Broken",
+			"component": "NotAnywherePanel",
+			"_note": "Registered in NEITHER file — must still FAIL.",
+			"config": {}
+		}
+	]
+}

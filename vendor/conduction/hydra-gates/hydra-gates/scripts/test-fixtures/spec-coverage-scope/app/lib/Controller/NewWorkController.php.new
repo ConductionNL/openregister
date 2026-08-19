@@ -1,0 +1,28 @@
+<?php
+/**
+ * SPDX-FileCopyrightText: 2026 Conduction
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * NEW, UNTAGGED WORK — the positive control for gate-16.
+ *
+ * This file is NOT part of the base commit. A suite copies it in as
+ * `NewWorkController.php` and commits it, so a diff-scoped run has a genuinely
+ * changed, in-scope, untagged method to find. If gate-16 does not FAIL on that
+ * arm the gate is dead at every scope and no other arm proves anything.
+ *
+ * The `.new` suffix keeps it out of the base tree that `gf_build_repo` copies
+ * wholesale, without needing a second fixture directory.
+ */
+
+namespace OCA\SpecCoverageFixture\Controller;
+
+class NewWorkController
+{
+    /**
+     * Brand-new endpoint added by this PR, deliberately carrying no @spec tag.
+     */
+    public function renderBrandNewReport(string $id): string
+    {
+        return 'new:' . $id;
+    }
+}

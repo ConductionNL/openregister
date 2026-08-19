@@ -1,0 +1,49 @@
+schema: spec-driven
+
+context: |
+  Project: SAPP (Simple and Agnostic PDF Parser)
+  Repo: ConductionNL/sapp
+  Upstream: dealfonso/sapp
+  Type: PHP library (NOT a Nextcloud app)
+  Long-standing integration branch: work/text-replacement
+  License: LGPL-3.0-or-later
+
+  This fork exists to add text-replacement primitives that upstream
+  doesn't currently expose. Each change in this folder corresponds to
+  one PR that we intend to contribute back to dealfonso/sapp once the
+  text-replacement feature is stable in our consumer (OpenRegister's
+  PDF anonymisation pipeline). The upstream-PR drafts staged under
+  `docs/upstream-prs/01-asciihex-decode/` ... `08-text-replacement-api/`
+  are the eventual-upstream-submission artefacts; the OpenSpec changes
+  in this folder are the implementation contracts that drive the work
+  on the fork first.
+
+  Time-pressure decision: we ship in this fork first (consumed by
+  OpenRegister via a composer VCS repository pointing at the
+  `work/text-replacement` branch), then create issues + PRs to
+  dealfonso/sapp after the feature stabilises. The fork-and-give-back
+  ordering matters because the OpenRegister anonymisation feature has
+  external deadlines that upstream review cycles cannot meet.
+
+rules:
+  proposal:
+    - State the PDF 1.7 specification section the change implements (e.g. §7.4.2 for ASCIIHexDecode)
+    - Document deviations from the spec explicitly with rationale (none expected — this is a spec-faithful library)
+    - Flag any cross-PR dependencies in the upstream-PR series ordering (e.g. #01 depends on #05 filter-chain dispatch)
+    - Note the matching upstream-PR-draft folder under `docs/upstream-prs/`
+  specs:
+    - Frame requirements with the upstream-acceptance lens — anything a SAPP maintainer would reject blocks the proposal
+    - Include normative roundtrip scenarios (encode→decode→encode must be lossless within the spec's defined tolerance)
+    - Cover predictor / EOD / variable-width / chained-filter edge cases explicitly when the filter supports them
+  design:
+    - PSR-12 coding style — matches upstream sapp's existing conventions
+    - PHP >= 7.4 compatible — matches upstream's `composer.json` constraint (do NOT raise the minimum)
+    - No external composer dependencies — the library is intentionally dependency-free; any new dep would block the upstream PR
+    - Method signatures follow upstream's snake_case convention (e.g. `to_pdf_file_b`, `get_stream`) — do not introduce camelCase
+    - PDFObject / PDFDoc / PDFValue* class boundaries from upstream are load-bearing — do not refactor across them in any single PR
+    - Each change SHOULD correspond to exactly one upstream PR — keeps the eventual contribution series clean
+  tasks:
+    - Include round-trip fixture tests where applicable (encode→decode against a hand-crafted reference output)
+    - Verify changes don't break existing test fixtures in `examples/` (testdoc.pdf, poc-fixture.pdf)
+    - Update the matching `docs/upstream-prs/NN-*/` draft folder with implementation notes worth surfacing in the eventual upstream PR
+    - Run `php examples/poc-replace-text.php` (when applicable) — must exit 0 with `residual_needles=0`

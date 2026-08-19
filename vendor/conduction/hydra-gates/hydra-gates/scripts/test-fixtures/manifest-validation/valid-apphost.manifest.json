@@ -1,0 +1,50 @@
+{
+	"$schema": "https://conduction.nl/schemas/app-manifest-v2.schema.json",
+	"version": "1.0.0",
+	"menu": [
+		{
+			"id": "Widgets",
+			"label": "Widgets",
+			"icon": "ViewDashboardOutline",
+			"route": "Widgets",
+			"order": 10
+		}
+	],
+	"pages": [
+		{
+			"id": "Widgets",
+			"route": "/widgets",
+			"type": "index",
+			"title": "Widgets",
+			"config": {
+				"register": "fixture",
+				"schema": "widget"
+			}
+		}
+	],
+	"observability": {
+		"health": {
+			"statusCodePolicy": "adr006",
+			"cors": false,
+			"checks": [
+				{ "id": "db", "type": "database", "severity": "critical" },
+				{ "id": "or", "type": "orAvailable", "severity": "degraded" }
+			]
+		},
+		"metrics": [
+			{
+				"name": "fixture_widgets_total",
+				"type": "gauge",
+				"source": { "kind": "objectCount", "register": "fixture", "schema": "widget" }
+			}
+		]
+	},
+	"deepLinks": [
+		{
+			"registerSlug": "fixture",
+			"schemaSlug": "widget",
+			"urlTemplate": "/index.php/apps/fixture/#/widgets/{id}",
+			"displayName": "Widget"
+		}
+	]
+}

@@ -1,0 +1,96 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Source code - always use LF
+*.py text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+
+# Configuration files - always use LF
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.xml text eol=lf
+
+# Styles - always use LF
+*.css text eol=lf
+*.scss text eol=lf
+*.sass text eol=lf
+*.less text eol=lf
+
+# HTML and templates - always use LF
+*.html text eol=lf
+*.htm text eol=lf
+*.svg text eol=lf
+
+# Documentation - always use LF
+*.md text eol=lf
+*.txt text eol=lf
+*.rtf text eol=lf
+
+# Docker and shell scripts - always use LF
+Dockerfile text eol=lf
+Dockerfile.* text eol=lf
+*.dockerfile text eol=lf
+*.sh text eol=lf
+
+# Git files - always use LF
+.gitattributes text eol=lf
+.gitignore text eol=lf
+.gitmodules text eol=lf
+
+# Windows script files - use CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# ---------------------------------------------------------------------------
+# composer dist archives — conduction/hydra-gates
+#
+# This repository doubles as the conduction/hydra-gates composer package (see
+# hydra-gates/README.md). A consumer requires it as require-dev and only ever
+# needs hydra-gates/ — it has no use for the org profile, the shared workflows,
+# the website or the docs tree. Without these export-ignore rules a
+# `composer require` would drop all of that into every consuming repo's vendor/.
+#
+# export-ignore affects DIST archives only. A `--prefer-source` install, an
+# `actions/checkout` of this repo, and reusable-workflow resolution by GitHub
+# all still see the complete tree — which is what the CI wiring in
+# .github/workflows/quality.yml relies on.
+#
+# NOTE: /.github is deliberately NOT export-ignored. It is only ~292 KB and
+# stripping it would remove the shared workflows from `git archive` output,
+# which is what GitHub's "Download ZIP" serves.
+# ---------------------------------------------------------------------------
+/docker           export-ignore
+/docs             export-ignore
+/global-settings  export-ignore
+/openspec         export-ignore
+/profile          export-ignore
+/usage-tracker    export-ignore
+/website          export-ignore
+/docker-compose.yml export-ignore
+/dev-up.sh        export-ignore
+/logo.png         export-ignore
+/logo.svg         export-ignore
+
+# Binary files - do not modify
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.zip binary
+*.gz binary
+*.tar binary

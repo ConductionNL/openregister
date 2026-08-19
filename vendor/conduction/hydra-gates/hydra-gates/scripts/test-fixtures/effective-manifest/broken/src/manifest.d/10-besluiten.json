@@ -1,0 +1,27 @@
+{
+	"_note": "Seeds two defects that are INVISIBLE outside the effective manifest — the whole reason gate-30 assembles before checking. (1) It REPLACES zaken-detail (mergePages is replace-by-id) with a copy carrying a zaak-besluiten widget whose dataSource names schema 'besluit', which lib/Settings/*register*.json does not declare -> slug-resolution error, the zaakafhandelapp failure class. (2) The replacement page also carries a top-level `layout` key. pages[] has additionalProperties:false, so the ASSEMBLED manifest fails canonical validation — while the base manifest on its own is perfectly valid, so gate-22 alone never sees it.",
+	"pages": [
+		{
+			"id": "zaken-detail",
+			"route": "/zaken/:id",
+			"type": "detail",
+			"title": "Zaak",
+			"layout": [],
+			"widgets": [
+				{
+					"id": "zaak-besluiten",
+					"widgetKey": "objectTable",
+					"slot": "body",
+					"gridX": 0,
+					"gridY": 0,
+					"gridWidth": 12,
+					"gridHeight": 6,
+					"dataSource": {
+						"register": "zaken",
+						"schema": "besluit"
+					}
+				}
+			]
+		}
+	]
+}

@@ -1,0 +1,47 @@
+{
+	"$schema": "https://conduction.nl/schemas/app-manifest-v2.schema.json",
+	"version": "1.0.0",
+	"menu": [
+		{
+			"id": "Widgets",
+			"label": "Widgets",
+			"icon": "ViewDashboardOutline",
+			"route": "Widgets",
+			"order": 10
+		}
+	],
+	"pages": [
+		{
+			"id": "Widgets",
+			"route": "/widgets",
+			"type": "index",
+			"title": "Widgets",
+			"config": {
+				"register": "fixture",
+				"schema": "widget"
+			}
+		}
+	],
+	"observability": {
+		"health": {
+			"statusCodePolicy": "adr006",
+			"checks": [
+				{ "id": "db", "type": "postgres", "severity": "critical" },
+				{ "id": "or", "type": "orAvailable", "severity": "catastrophic" }
+			]
+		},
+		"metrics": [
+			{
+				"name": "fixture_widgets_total",
+				"type": "histogram",
+				"source": { "kind": "psychicIntuition" }
+			}
+		]
+	},
+	"deepLinks": [
+		{
+			"registerSlug": "fixture",
+			"displayName": "Widget"
+		}
+	]
+}

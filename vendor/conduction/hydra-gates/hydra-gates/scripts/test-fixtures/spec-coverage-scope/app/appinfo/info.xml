@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<id>speccoveragefixture</id>
+	<name>Spec Coverage Scope Fixture</name>
+	<summary>Fixture app for the gate-16 scope matrix. Not a real app.</summary>
+	<description>Exists so the gate suite can express diff / full scopes for gate-16 against a real git history.</description>
+	<version>1.0.0</version>
+	<licence>agpl</licence>
+	<author>Conduction</author>
+	<namespace>SpecCoverageFixture</namespace>
+	<category>tools</category>
+	<dependencies><nextcloud min-version="30" max-version="32"/></dependencies>
+</info>

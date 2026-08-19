@@ -1,0 +1,20 @@
+{
+	"_note": "Register/schema declarations gate-30 resolves manifest slug references against (check (c), slug-resolution). Every (register, schema) pair the good manifest references — pages[].config, widget dataSource, deepLinks[].registerSlug/schemaSlug — resolves here, so the good fixture emits ZERO slug-resolution findings. Without this file the checker would fall back to the 'no register JSON in repo' WARN and the good fixture would report more than the single expected warning.",
+	"components": {
+		"registers": {
+			"items": {
+				"slug": "items",
+				"title": "Items",
+				"schemas": [
+					"item"
+				]
+			}
+		},
+		"schemas": {
+			"item": {
+				"slug": "item",
+				"title": "Item"
+			}
+		}
+	}
+}
