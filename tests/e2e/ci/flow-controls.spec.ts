@@ -301,14 +301,35 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// path (`c` on the source, `c` on the target) is used because
 		// drag-to-connect is exactly the interaction this file already
 		// documents as unreliable.
-		const startCard = page.locator('.cn-flow-detail__node', {
+		// DRIVE THE ELEMENT THAT OWNS THE HANDLER, NOT THE CARD INSIDE IT.
+		//
+		// `onNodeKeydown` is bound to CnGraphCanvas's `.cn-graph-canvas__node`
+		// wrapper — the element carrying `tabindex="0"`. `.cn-flow-detail__node`
+		// is the card CnFlowDetail renders into that wrapper's slot, and it is
+		// not focusable. Clicking the card and then pressing a key globally
+		// relies on the browser walking up to focus the ancestor, which is
+		// exactly the ambiguity that made this fail: the click landed, the
+		// keydown went to the body, and no edge appeared.
+		//
+		// `locator.press()` focuses its element and dispatches the key there,
+		// so the interaction under test is the one the component implements.
+		// Verified at the unit level in @conduction/nextcloud-vue
+		// (tests/components/CnFlowKeyboardConnect.spec.js): keydown `c` on each
+		// wrapper produces the edge.
+		//
+		// NB this assertion is NEW IN PRACTICE. It has always been written, but
+		// it sat behind a `NEW_EDITOR` feature-detect that read the INSTALLED
+		// library for a 2.4+ marker — false on every 2.3.x — so it never ran
+		// and reported green by not executing.
+		const startNode = page.locator('.cn-graph-canvas__node', {
 			hasText: 'When someone runs it',
 		})
-		await expect(startCard, 'the seeded start node is missing').toBeVisible()
-		await startCard.click()
-		await page.keyboard.press('c')
-		await endCard.click()
-		await page.keyboard.press('c')
+		await expect(startNode, 'the seeded start node is missing').toBeVisible()
+		const endNode = page.locator('.cn-graph-canvas__node', { hasText: 'End' })
+		await expect(endNode, 'the End step is missing').toBeVisible()
+
+		await startNode.press('c')
+		await endNode.press('c')
 		await expect(
 			page.locator('.cn-flow-detail__edge').first(),
 			'the connection did not reach the canvas',
