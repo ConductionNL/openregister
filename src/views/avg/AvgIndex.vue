@@ -172,7 +172,7 @@
 					<NcEmptyContent
 						v-if="!accountability"
 						:name="
-							t('openregister', 'Generate the verantwoordingsdocument')
+							t('openregister', 'Generate the accountability document')
 						"
 						:description="
 							t(
@@ -244,7 +244,7 @@
 						{{
 							t(
 								'openregister',
-								'Locate every object referencing a data subject (Art 15 inzage), preview an erasure (Art 17 vergetelheid), or export their data (Art 20 portabiliteit).',
+								'Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).',
 							)
 						}}
 					</p>
@@ -275,7 +275,7 @@
 								<template #icon>
 									<Magnify :size="20" />
 								</template>
-								{{ t('openregister', 'Inzage (Art 15)') }}
+								{{ t('openregister', 'Access (Art 15)') }}
 							</NcButton>
 							<NcButton
 								variant="secondary"
