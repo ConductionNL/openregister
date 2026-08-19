@@ -943,6 +943,41 @@ one locale and a defect in the next.** Two cases from `sr`, both worth internali
   was left alone. Same English source, same apparent shape, opposite verdicts — decided by
   each locale's measured button convention (§7.3) and nothing else.
 
+**CHECK CORE AND THE CALL SITE BEFORE CALLING A VALUE WRONG — on `sk` this overturned ten
+candidate corrections, more than the pass ultimately made in every class except one.** Core
+`cs` overturned four; core and the call sites together overturned **ten** on `sk`, so treat
+this as the highest-yield step in the method rather than a formality. The five core saved:
+
+- `Refresh` and `Restore` both render `Obnoviť` — and **core `sk` collapses them the same
+  way**, so the collision belongs to core, not the bundle. A collision core also has is not
+  a defect.
+- `First` / `Last` / `Previous` → `Prvé` / `Posledné` / `Predchádzajúce` is **core `sk`
+  verbatim**. They look like neuter forms failing to agree with the feminine `Stránka` of the
+  bundle's own `Page {current} of {total}`, and they are simply the language's convention.
+- bare `Search` → `Hľadať` is **core `sk` verbatim in 3 catalogues**, even though every
+  compound key in the bundle uses `Vyhľadať`. A minority-of-one that matches core stays.
+
+And the five the call site saved, each of which looked like a textbook defect:
+
+- `Handler` → `Riešiteľ` reads as *solver* and is right: `c.handler` is a **person**, an AVG
+  case worker, not a code handler.
+- `Fair` / `Good` / `Poor` → neuter `Uspokojivé` / `Dobré` / `Slabé` need **not** match the
+  feminine `Vysoká` / `Stredná` / `Nízka` confidence family — they are KPI labels over
+  `skóre` (neuter) and the two families qualify different nouns.
+- `Filter Statistics` → `Filtrovať štatistiky` is an infinitive where its `Filtre X` siblings
+  are nouns, and is right: it is an `<h3>` **over filter controls**, so the action-label rule
+  (§7.3) applies rather than the noun rule.
+- `Requested at` → `Požiadané` and `Expires` → `Vyprší` are **not** dangling: the template
+  writes `{{ t(...) }}:` and a date follows.
+
+**A converse key pair can carry each other's meaning, and only the call sites show it.** On
+`sk`, `Uses` → `Používa sa` ("it is used") and `Used by` → `Používa` ("it uses") were
+**swapped**: both are `AppTab` titles, one over outgoing relations and one over incoming.
+Neither value is ill-formed, empty, identical or wrong-arity, so no gate and no term count
+reaches it — the term count says both keys use the right stem, which is true and useless.
+Read converse pairs **against each other**: Uses/Used by, Parent/Child, Source/Target,
+Merged from/Merged into. Sibling locales settle the direction fast, since they all mark it.
+
 Two judgement calls:
 
 - **Register deviations are not optional cleanup.** Leaving them makes the bundle mix
@@ -950,6 +985,12 @@ Two judgement calls:
 - **A mild inconsistency is not automatically a defect.** Only replace a real value when it
   is genuinely wrong, and say why. `hr` kept `lozinka` over core's preferred `zaporka`
   because the file already shipped it and it is valid Croatian.
+- **An escalated decision can come back "change nothing", and that outcome must still be
+  recorded.** `sk`'s `Delete`/`Remove` collision (122 values, core splits them, the bundle
+  does not) was put to the owner and deliberately left as `Odstrániť`. `locales/sk.json`
+  records it as a **deliberate** divergence from core with the counts, because an unrecorded
+  "left alone" is indistinguishable from "never looked" — which is the whole reason a
+  `corrections` count of 0 cannot be trusted in the first place.
 
 ### 6.10 You destroyed the working bundle
 
@@ -1682,18 +1723,35 @@ audited, `locales/cs.json` written), so the remaining set is
 are *doubly* un-audited, so the re-audit handoff reasonably predicted they would be as bad as
 `is` or worse. On this evidence the opposite is true for the mature ones:
 
-| | `is` (Transifex half) | `cs` (whole bundle) |
-| --- | --- | --- |
-| values audited | 1052 | 2052 |
-| defects | 235 (**22%**) | 113 (**5.5%**) |
-| garbled words / foreign stems | 14 | **0** |
-| agreement failures | 11 | **0** |
-| wrong plural arrays | — | **0** |
-| dominant class | malformed compounds, wrong senses | **terminology drift and internal inconsistency** |
+| | `is` (Transifex half) | `cs` (whole bundle) | `sk` (whole bundle) |
+| --- | --- | --- | --- |
+| values audited | 1052 | 2052 | 2052 |
+| defects | 235 (**22%**) | 113 (**5.5%**) | 57 (**2.8%**) |
+| garbled words / foreign stems | 14 | **0** | 1 (one typo) |
+| agreement failures | 11 | **0** | **0** |
+| wrong case | 19 | 6 | **0** |
+| wrong plural arrays | — | **0** | **0** |
+| dominant class | malformed compounds, wrong senses | **terminology drift and internal inconsistency** | **one term (37 of 57), plus stray one-offs** |
 
 Czech is an actively maintained locale with a real translator community and the bundle reads
 like it. So **budget these passes for terminology counting, not grammar repair** — and expect
 that split to track how healthy the locale is upstream, not how long it has gone un-audited.
+
+**`sk` confirms this from the other direction, and is worth reading before starting Tier 2.**
+It is not one of these sixteen — it is a Tier 2 locale that already had a register
+measurement, a detector, a reviewed cognate set and a terminology record, and only an empty
+`corrections`. It was audited next on purpose, because it is the **closest sibling to `cs`**
+in the whole set and so isolates upstream maintenance from language family. Two results:
+
+- **A `corrections` count of 0 means "unverified", not "clean".** There were 57 real defects
+  that no one had gone looking for, including two semantic reversals and a typo.
+- **But it does not mean a quarter of the file is waiting.** At 2.8% `sk` came in *below*
+  `cs`, with zero agreement failures, zero case errors and zero bad plural arrays. Both
+  West Slavic locales are healthy and for the same reason. Tier 2 is **cheaper** than the
+  `is` numbers suggested.
+- **The defects concentrate.** 37 of `sk`'s 57 were a single term (*audit trail*) and its
+  misspelled adjective. Once the term count finds the one term that drifted, most of the
+  pass is a single mechanical sweep — which is another reason to do the counting first.
 
 Two method notes the `cs` pass paid for:
 

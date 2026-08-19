@@ -173,9 +173,22 @@ values rather than a pre-existing half — came in at **113 defects (5.5%)** aga
 with zero garbled words, zero foreign stems, zero agreement failures and zero wrong plural
 arrays. Its defects were almost entirely terminology drift and internal inconsistency, and
 **counting competing renderings per English term found about 70 of the 113** with no knowledge
-of Czech required. Do that count first on any pass. And check core before "fixing" an outlier:
-core `cs` overturned four candidate corrections, one of which was the only value in its family
-that actually matched core.
+of Czech required. Do that count first on any pass. `sk`, audited next because it is `cs`'s
+closest sibling, came in lower still at **57 (2.8%)** with zero agreement failures, zero case
+errors and zero bad plural arrays — and **37 of its 57 were a single term**, so once the count
+finds the one term that drifted, most of the pass is one sweep.
+
+**A `corrections` count of 0 means "unverified", not "clean".** `sk` had a measured register, a
+detector, a reviewed cognate set and an empty `corrections`, and the audit still found 57 real
+defects — including two semantic reversals invisible to every gate. But a 0 does not imply a
+quarter of the file is waiting either; read it as "nobody looked".
+
+**Check core AND the call site before "fixing" an outlier.** Core `cs` overturned four
+candidate corrections, one of which was the only value in its family that actually matched
+core. On `sk` the two together overturned **ten** — more than any single class the pass
+corrected. Core `sk` itself collapses `Refresh`/`Restore` onto `Obnoviť` and ships
+`Prvé`/`Posledné`/`Predchádzajúce` and bare `Hľadať` verbatim; and `Riešiteľ` for *Handler* is
+right because the field holds a **person**. See `docs/l10n-workflow.md` §6.9 for the full list.
 
 **When adding a string, `en` is required; other locales are optional.** Add `en`
 (identical to the key is correct — `en` *is* the source), plus any locale you can

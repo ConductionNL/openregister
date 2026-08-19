@@ -688,14 +688,60 @@ Terminology: `sk` sits between `ro` (borrow) and `lv`/`lt` (translate). It keeps
 the Slovak word — `ID registra`, `Všetky registre`), but translates `Driver` →
 `Ovládač`, `Mappings` → `Mapovania` (**not** openconnector's `Mappingy`), `Right` →
 `Právo`, and `Bucket` → `Pásmo`, since `Interval` was already taken by its own key —
-the same collision `ro` resolved with `Segment`. `audítny záznam` for *audit trail*,
-`záznam auditu` for an *audit entry*, `úsek` for *chunk*, `vloženie` for *embedding*,
+the same collision `ro` resolved with `Segment`. **`auditná stopa` for *audit trail*
+(the re-audit re-coined this from `audítny záznam` — see below)**, `záznam auditu` for
+an *audit entry*, `úsek` for *chunk*, `vloženie` for *embedding*,
 `nástenka` for *dashboard*, `tok` for *flow* but `pracovný postup` for *workflow*,
 `riešiteľ` for a DSAR *handler* (not `spracovateľ`, which is the GDPR *processor* and
 would collide), and `Osoby` for `People` — core sk says `Ľudia`, but the bundle's own
 `Person` → `Osoba` wins on lexicon. The `{plural}` hack reuses the bundle's own
 pre-existing parenthesised style: `register(s)` was already `register(-tre)` and
 `schema(s)` already `schéma(-y)`, so those two keys are literally the existing values.
+
+### `sk` is the first Tier 2 locale re-audited, and a `0` count meant unverified, not clean
+
+`sk` had a measured register, a detector, a reviewed cognate set and a terminology
+record, but `corrections` was **empty**. The audit of all 2052 values found **57**
+defects — so a zero means nobody looked, exactly as the re-audit handoff assumed. But
+it does **not** mean a quarter of the file is waiting: 2.8% sits below `cs`'s 5.5% and
+far below `is`'s 22%, with **zero** agreement failures, **zero** case errors and
+**zero** wrong plural arrays. `sk` is the closest sibling to `cs` in the set, which was
+why it was picked, and the two agree: the defect rate tracks upstream health, not the
+length of time un-audited. **Tier 2 is cheaper than the `is` numbers made it look.**
+
+**37 of the 57 were one term.** *Audit trail* was `audítny záznam` — "audit record" —
+which forced *audit trail entry* to render `záznam audítneho záznamu`, "record of the
+audit record", in 8 keys. Escalated (first-class entity noun, 30+ keys, no core
+authority) and re-coined by the owner to **`auditná stopa`**, so *trail* is `stopa`,
+*entry* is `záznam`, and the stutter dissolves by construction. The adjective was also
+misspelled in all 35 keys carrying it: Slovak adds `-ný` to the stem with no vowel
+change (`kredit → kreditný`, `limit → limitný`), and the long `í` of `audítny` belongs
+to the separate lexeme `audítor` (Latin *audītor*, adjective `audítorský`). The bundle
+already had the distinction — it writes `audit`, `auditu`, `auditovanie`, `auditujte`
+short, matching core's `Auditovanie`, and `Audítori` long — and applied it correctly to
+the noun and the verb while getting the adjective wrong. `Audítori` is preserved.
+
+**A NEW DEFECT CLASS: an opposite-direction key pair carrying each other's meaning.**
+`Uses` → `Používa sa` ("it is used") and `Used by` → `Používa` ("it uses") were
+**inverted**. Both are `AppTab` titles, one over outgoing relations and one over
+incoming. Neither value is ill-formed Slovak and neither is empty, identical or
+wrong-arity, so nothing but reading the pair against its call sites finds it. Every
+other locale marks the direction (`cs` `Použití` / `Používáno v`, `de` `Verwendungen` /
+`Verwendet von`, `pl` `Używa` / `Używane przez`), which is what made `sk` visibly the
+outlier. **Look for this wherever the English ships a converse pair** — Uses/Used by,
+Parent/Child, Source/Target, Merged from/Merged into. Fixing `Uses` also resolved its
+byte-identical collision with `In use`, whose `Používa sa` is correct as a card badge.
+
+**`Delete`/`Remove` was escalated and deliberately LEFT.** Both render `Odstrániť`
+across 122 values (88 Delete, 41 Remove). Core `sk` splits them — Delete → `Zmazať`(6)
+or `Vymazať`(3), **never** `Odstrániť`; Remove → `Odstrániť`/`Odobrať` — and `Zmazať`
+was the only free slot, because the bundle has already spent `Vymazať` on *Clear* and
+on the GDPR *Erase*/`vymazanie` family, where it is the standard term for the Art 17
+right and cannot move. The owner chose to leave it: both are valid Slovak, the
+collision is soft, and §3.8 protects taste. `locales/sk.json` records it as a
+**deliberate** divergence with the counts, so it is not re-litigated or mistaken for an
+oversight. This is the second worked example of the escalation shape after `cs`'s
+`Configuration`, and the first where the answer was "change nothing".
 
 ### `sl` looks like `sk` on the map and behaves like `hr` in the data
 
