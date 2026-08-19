@@ -117,6 +117,8 @@ class AgentTool extends AbstractTool implements ToolInterface {
 		return [
 			[
 				'name' => 'list_agents',
+				'subject' => 'agent',
+				'action' => 'list',
 				'description' => $listDesc,
 				'parameters' => [
 					'type' => 'object',
@@ -135,6 +137,8 @@ class AgentTool extends AbstractTool implements ToolInterface {
 			],
 			[
 				'name' => 'get_agent',
+				'subject' => 'agent',
+				'action' => 'get',
 				'description' => $getDesc,
 				'parameters' => [
 					'type' => 'object',
@@ -149,6 +153,8 @@ class AgentTool extends AbstractTool implements ToolInterface {
 			],
 			[
 				'name' => 'create_agent',
+				'subject' => 'agent',
+				'action' => 'create',
 				'description' => $createDesc,
 				'parameters' => [
 					'type' => 'object',
@@ -175,6 +181,8 @@ class AgentTool extends AbstractTool implements ToolInterface {
 			],
 			[
 				'name' => 'update_agent',
+				'subject' => 'agent',
+				'action' => 'update',
 				'description' => $updateDesc,
 				'parameters' => [
 					'type' => 'object',
@@ -201,6 +209,8 @@ class AgentTool extends AbstractTool implements ToolInterface {
 			],
 			[
 				'name' => 'delete_agent',
+				'subject' => 'agent',
+				'action' => 'delete',
 				'description' => $deleteDesc,
 				'parameters' => [
 					'type' => 'object',
