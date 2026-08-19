@@ -157,6 +157,40 @@ class CredentialBrokerMintTest extends TestCase {
 		$this->assertSame('metadata-only', $entity->getUuid());
 	}
 
+	/**
+	 * A copy-pasted secret with a trailing newline is stored TRIMMED — garbage-in
+	 * prevention for the header-injection failure this reproduces
+	 * (credential-broker-upstream-diagnostics D3).
+	 */
+	public function testMintTrimsTrailingWhitespaceFromTheSecret(): void {
+		$this->stubSaveObject(uuid: 'minted-uuid');
+		$this->store->expects($this->once())->method('put')
+			->with('minted-uuid', 'gho_hunter2', 'personal');
+
+		$this->makeBroker()->mint(
+			name: 'My GitHub',
+			provider: 'github',
+			owner: 'alice',
+			secret: "gho_hunter2\n"
+		);
+	}
+
+	/**
+	 * A secret that is ENTIRELY whitespace trims to '' and is treated as no
+	 * secret supplied — metadata-only mint, vault untouched.
+	 */
+	public function testMintWithWhitespaceOnlySecretNeverTouchesTheVault(): void {
+		$this->stubSaveObject(uuid: 'metadata-only');
+		$this->store->expects($this->never())->method('put');
+
+		$this->makeBroker()->mint(
+			name: 'Metadata only',
+			provider: 'github',
+			owner: 'alice',
+			secret: "  \n\t "
+		);
+	}
+
 	public function testMintWithEmptySecretNeverTouchesTheVault(): void {
 		$this->stubSaveObject(uuid: 'metadata-only');
 		$this->store->expects($this->never())->method('put');
