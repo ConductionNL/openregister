@@ -46,7 +46,7 @@ by counting formal vs informal markers across core (`server/core`, `lib`,
 `apps/files`, `apps/settings`, `apps/dav`, …) for that locale.
 
 Measured results: informal for `nl`, `de`, `sv`, `da`, `nb`, `pl`, `fi`, `hu`,
-`et`, `lv`, `ga`; formal for `fr`, `cs`, `ru`, `uk`, `tr`, `el`, `sr`, `bg`, `ca`, `hr`,
+`et`, `lv`, `ga`, `mt`; formal for `fr`, `cs`, `ru`, `uk`, `tr`, `el`, `sr`, `bg`, `ca`, `hr`,
 `lt`, `sk`, `sl`, `rm`. **`sk` is the least ambiguous of any locale measured for this app**:
 1001 formal markers against 1 informal over 4991 values in 31 catalogues, beating
 `lt`'s 689 vs 0 on volume. Russian is next: 328 formal pronouns and 164 formal
@@ -103,7 +103,7 @@ core's own short labels — a single verdict for the locale is usually meaningle
 | Pattern | Locales | Buttons |
 | --- | --- | --- |
 | same register throughout | `tr`, `ru` | formal imperative |
-| bare 2sg imperative, whatever the prose | `ca`, `et`, `hr`, `sl`, `sr`, `ga` | `Desa`, `Salvesta`, `Spremi`, `Shrani`, `Сачувај`, `Sábháil` |
+| bare 2sg imperative, whatever the prose | `ca`, `et`, `hr`, `sl`, `sr`, `ga`, `mt` | `Desa`, `Salvesta`, `Spremi`, `Shrani`, `Сачувај`, `Sábháil`, `Issejvja` |
 | **infinitive — register-neutral** | `cs`, `lt`, `lv`, `sk`, `rm` | `Zobrazit`/`Smazat`, `Įrašyti`/`Ištrinti`/`Atsisakyti`, `Saglabāt`/`Dzēst`/`Atcelt`, `Uložiť`/`Odstrániť`/`Zrušiť`, `Memorisar`/`Stizzar`/`Annullar` |
 | **verbal noun — register-neutral** | `ro`, `bg` | `Salvare`/`Ștergere`/`Anulare`/`Adăugare endpoint`; `Запазване`/`Изтриване`/`Отказ`/`Добавяне на крайна точка` |
 
@@ -371,6 +371,21 @@ locale's expression**. Equal counts do not mean equal boundaries:
   numeral phrase. A **fixed** numeral in a label is different and does take the mutation
   (`Last 3 months` → `3 mhí anuas`, from `trí mhí`); it is only the `{count}` placeholder,
   whose value is unknown, that stays unmutated
+
+- `mt` — `nplurals=4`, and **the header and the library agree exactly**, verified
+  index-by-index over counts 0–130 with all four forms reachable. That makes it the first
+  low-resource locale here with no plural surprise at all: no rotation as in `lv`, no
+  collapsed form count as in `rm`/`ga`/`tr`. The arrays are still the hardest in the set,
+  because Maltese counting is **Semitic rather than European**: the noun is PLURAL only
+  after 2–10 (and 0), and SINGULAR after 1, after 11–19 (`ħdax-il ktieb`) and after 20+
+  (`għoxrin ktieb`). So forms 0, 2 and 3 normally carry the same string and only form 1
+  differs — which reads as three duplicated forms and is correct. §2.3 had flagged this
+  bundle's one pre-existing array as *suspect, forms 2 and 3 fall back to the singular*;
+  verification cleared it and it was left untouched. The harvest corroborated the rule
+  independently: `Last 7 days` → `L-aħħar 7 ijiem` (plural) against `Last 30 days` →
+  `L-aħħar 30 jum` (singular). One further trap: **the whole predicate agrees, not just the
+  noun** — `%n entrata għadha m'għandhiex hash` against `%n entrati għadhom m'għandhomx
+  hash` — so an array cannot be built by swapping the noun alone
 
 All are mutually incompatible. `npm run test:l10n:parity` catches
 wrong *length*; nothing can catch a Polish array pasted into Czech, and nothing at all
@@ -1066,10 +1081,121 @@ One pre-existing defect was corrected: `Loading organisations...` →
 built as `Ag <verbal noun> <object>...` (the other 34 are), and it also carried `…`
 against the source's `...`. Normalised to `Ag luchtú eagraíochtaí...`.
 
-Twenty-nine locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
+### `mt` has a politeness system and simply does not use it
+
+`ga` came out 2sg-only because Irish has no T-V distinction at all. `mt` came out 2sg-only
+for a completely different reason, and the two sitting next to each other is exactly the
+trap: **Maltese does have the politeness options.** `intom` serves as a polite singular the
+way French `vous` does, and `Is-Sinjur` / `Is-Sinjura` with third-person agreement is the
+deferential register. Both are available; both are measured absent. So `mt`'s `informal` is
+an ordinary measured choice like `nl`'s, and its gate catches genuine deference rather than
+an impossible form. Two consecutive locales measuring the same way is not evidence they are
+the same case.
+
+Core ships **zero** `mt` catalogues, so this is the §6.4 fallback — the second locale after
+`rm` with no core evidence at all. The fallback was widened to the sibling apps' **frontend**
+`mt.js` files, which tripled the corpus from 1015 values to 3422 and turned a thin 26-vs-0
+into **128 vs 0**. Two constraints made that sound: only `.js` bundles, because the backend
+`.json` is a separate catalogue with a separate consumer — openregister's own `mt.json`
+contains an `int` that would otherwise have been miscredited to the frontend — and the
+sibling scan excludes byte-identical mislabelled catalogues the way `harvest.js` does.
+
+The markers split as 75 `tiegħek`, **35 `jekk jogħġbok`**, 15 `int`/`inti` and 4
+prepositional pronouns. That middle figure is the transferable finding: Maltese's politeness
+formula carries a 2sg **object suffix**, which makes it a real address marker rather than a
+courtesy word, and at 35 uses it was the second commonest marker in the bundle. The first
+draft of the detector omitted it and a must-fire control caught the omission. Any locale
+whose "please" inflects for the addressee has the same free signal — `ga`'s `le do thoil`
+does not, so check rather than assume.
+
+One method note worth keeping: the first probe run scored **zero** for the pronoun and would
+have gone into the record that way. It omitted the `/i` flag, and all three of the bundle's
+`Inti ċert li trid…` values are sentence-initial. A measurement that comes out at exactly
+zero deserves a second look before it is written down.
+
+### `mt` traps
+
+**Two whole paradigms are undetectable**, both ordinary Maltese morphology, and between them
+they cost most of the theoretical recall:
+
+- **The `t-` prefix.** The 2sg imperfect and the 3sg **feminine** imperfect are spelled
+  identically across the entire verb system, so `tista'` is at once "you can" and "she/it
+  can" — and both readings are live here: `Hawn tista' tara jekk dik il-katina hijiex sħiħa`
+  (2sg) against `Il-Proprjetà tista' tittejjeb`, `Din l-analiżi tista' tieħu ftit ħin` and
+  `Qabel ma tista' taħdem il-vettorizzazzjoni` (3sg f). 23 occurrences of `tista'` split both
+  ways, plus 24 of `trid` that are mostly genuine 2sg and still cannot be counted. This is
+  the Latvian shape — systematic, not exceptional.
+- **The `-u` ending.** The 2pl imperative and 2pl present both end in `-u`, and so does the
+  3pl of everything. `nstabu` ("they were found") occurs 24 times in `Ma nstabu l-ebda X`,
+  `għandhom` 19 times, plus `jistgħu` and `jappartjenu`. A `-u` rule would score the
+  commonest sentence shape in the file as deference, so 2pl imperatives are excluded and the
+  formal side rests entirely on the pronoun, the possessive, the `-kom` prepositional
+  pronouns and `Sinjur` — narrow, but unambiguous.
+
+Note the polarity of both losses: they fall on the **correct**-register side, so they thin
+the evidence without ever producing a false formal hit. And because most of this bundle is
+written with impersonal or passive verbs (`It-traċċa tal-awditjar tħassret`, `Ma nstabu
+l-ebda Reġistri`), which address nobody, a low informal count is not evidence of a problem
+here. The load-bearing figure is that the formal count is zero.
+
+Also: `tagħhom` (3pl "their") is one paradigm slot from `tagħkom` (2pl "your"), and it is
+the 3pl that occurs — `mar-ringieli tagħhom`, `il-konfigurazzjonijiet tagħhom`. Match only
+`tagħkom`. And `à è ì ò ù` **are** Maltese, marking stress on Romance-derived nouns
+(`attività`, `kwalità`, `entità`, `Proprjetà`) — 92 legitimate uses, so a foreign-diacritic
+sweep that flags them is measuring its own list, not the data.
+
+**This bundle keeps English IT loans**, consistently, and that is the house style rather
+than laziness: Logs, Repository, Path, Branch, Email, Format, Headers, Password, Username,
+Timestamp, Status, Settings, Total, Serial, Parallel, Port, Slug, Webhook, Dashboard,
+Endpoint, token, triggers, payload, timeout, clipboard, hash, embedding, soft delete. The
+siblings disagree on two and **the file wins** (§3.5): they render Repository as
+`Repożitorju` and Logs as `Reġistri`, but this bundle writes `Repository` and `Path
+fir-repository`, and keeps `Logs` in four independent places. `Reġistri` is unavailable for
+Logs in any case — it is already this bundle's plural of Register, which is the §8.5
+collision pattern showing up in a loan decision.
+
+Terminology: Register `Reġistru`/`Reġistri`, Schema `Skema`/`Skemi`, Object
+`Oġġett`/`Oġġetti`, Property `Proprjetà`/`Proprjetajiet`, File `Fajl`/`Fajls`, View
+`Veduta`/`Vedute`, Source `Sors`/`Sorsi`, Flow `Fluss`/`Flussi`, Entity
+`Entità`/`Entitajiet`, Chunk `Biċċa`/`Biċċiet`, Audit trail `Traċċa/Traċċi tal-Awditjar`,
+Chain `Katina`, Seal `Siġill`, Count `Għadd`, Field `Kamp`, Error `Żball`, Owner `Sid`.
+Phrase patterns: `No X found` → `Ma nstabu l-ebda X`, `Failed to X` → `Naqas milli X`,
+progressives → `Qed jitilgħu l-X...`, `Please X` → `Jekk jogħġbok X`.
+
+Domain-term capitalisation is a **partial, per-term list** — the `sr`/`rm` shape, not `ga`'s
+mirror-the-source. Four families are capitalised mid-sentence (`Oġġett` 56:2, `Reġistru`
+55:0, `Proprjetà` 21:0, `Fajl`/`Fajls` 71:0) and the rest are lowercase (`skema` 4:17,
+`iskema` 6:49, `veduta` 3:26, `entità` 2:7, `biċċiet` 3:14, `utent` 4:14). The asymmetry to
+notice is that `Reġistru` is capitalised while `skema` is not, though they are the app's two
+paired core concepts — so the list cannot be inferred from what a term means, even within
+one locale. **This pass broke that convention and the check caught it:** measuring the
+pre-existing half separately from the newly written half showed HEAD capitalising
+`Fajl`/`Fajls` 43:0 while the new values had lowercased it 24:4, and 21 values were
+normalised. Whole-bundle counts read "CAPITALISED" either way, because the pre-existing
+majority outvoted the drift — split the corpus at `HEAD` and compare the two columns.
+
+**Nine pre-existing defects were corrected, in three classes.** Six were the same one:
+values whose English key says AUDIT but whose Maltese said `verifika` (verification) — a
+different concept in this app that appears on the same screen (`Verifika tal-katina`,
+`Ivverifika l-katina`). 24 values use `awditjar` for audit against those 6, so the 6 were
+normalised. A seventh, `Audit trail #{id}`, had been left as untranslated English (`Audit
+Trail #{id}`, merely re-cased) — the same key that was the outlier in `sr`, where it was
+wrong Croatian in the wrong alphabet. An eighth, `Log integrity`, read `Integrità
+tar-reġistru`, i.e. "integrity of the REGISTER", on a screen that lists Reġistri. And
+`Loading organisations...` was the 1-of-19 outlier on both its verb and its ellipsis glyph —
+the same key that was the 1-of-35 outlier in `ga`, on the same two counts.
+
+One further inconsistency was **recorded rather than changed**: the bundle renders
+`entry/entries` as `entrata/entrati` 19 times and `annotazzjoni/annotazzjonijiet` 18 times
+for the same rows. It splits by screen rather than randomly, `entrata` is the accurate word
+but `annotazzjoni` may well be idiomatic for a log row in Maltese IT, and normalising 18
+values is a larger intervention than the pass warranted (§6.9). New keys follow the adjacent
+existing value on their own screen, so no screen was made self-inconsistent.
+
+Thirty locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
 `nb`, `pl`, `cs`, `ru`, `uk`, `el`, `fi`, `hu`, `tr`, `ca`, `et`, `hr`, `lt`, `lv`,
-`ro`, `sk`, `sl`, `bg`, `sr`, `rm`, `ga` — the whole high-confidence group plus the first
-two of the low-resource ones. Seven remain (`mt`, `is`, `lb`, `sq`, `mk`, `be`, `bs`),
+`ro`, `sk`, `sl`, `bg`, `sr`, `rm`, `ga`, `mt` — the whole high-confidence group plus the
+first three of the low-resource ones. Six remain (`is`, `lb`, `sq`, `mk`, `be`, `bs`),
 in that order, which the owner has confirmed — no need to re-ask per locale as long as
 the order is kept.
 
