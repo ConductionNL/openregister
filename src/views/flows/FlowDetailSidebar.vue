@@ -17,10 +17,21 @@ export default {
 
 	components: { CnFlowSidebar },
 
+	/**
+	 * Share the one flow store with the save/run handlers.
+	 *
+	 * @return {object} The setup bindings.
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
 	setup() {
 		return { store: useFlowStore() }
 	},
 
+	// Transition wiring: on @conduction/nextcloud-vue 2.4+ Save/Run live on
+	// CnFlowDetail's toolbar and CnFlowSidebar never emits these, so the
+	// handlers are inert; on 2.3.x the sidebar's buttons are the only Save/Run
+	// there is, and dropping the handlers would leave them dead. Remove once
+	// the fleet's lockfiles are past 2.4.
 	methods: {
 		/**
 		 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md

@@ -1,120 +1,120 @@
 {
   "$schema": "https://docs.conduction.nl/openregister/configuration/schema.json",
-  "title": "AVG Bundle (Verwerker / Consent / DPIA)",
-  "description": "Operator-importable bundle of the three AVG-related object types that intentionally live as schemas (configurable from the operator UI) rather than hardcoded tables. Verwerker captures third-party processor agreements (Art 28 verwerkersovereenkomst). Consent is the granular per-subject opt-in/opt-out ledger (Art 6(1)(a) + Art 7). DPIA is the Data Protection Impact Assessment shape (Art 35). Each schema carries x-openregister-processing-activity so writes are correctly tagged on the audit trail.",
+  "title": "AVG Bundle (Processor / Consent / DPIA)",
+  "description": "Operator-importable bundle of the three AVG-related object types that intentionally live as schemas (configurable from the operator UI) rather than hardcoded tables. Processor captures third-party processor agreements (Art 28 processor agreement). Consent is the granular per-subject opt-in/opt-out ledger (Art 6(1)(a) + Art 7). DPIA is the Data Protection Impact Assessment shape (Art 35). Each schema carries x-openregister-processing-activity so writes are correctly tagged on the audit trail.",
   "version": "1.0.0",
   "components": {
     "registers": [
       {
-        "title": "AVG (Verwerker / Consent / DPIA)",
+        "title": "AVG (Processor / Consent / DPIA)",
         "slug": "avg",
         "description": "Bundle register holding AVG-related object types that operators manage through the standard schema/object UI. Pairs with the dedicated `oc_openregister_verwerkingsactiviteiten` catalog table — schemas here describe operational records (signed processor agreements, consent grants, DPIA assessments) rather than the static processing-activity catalog itself.",
         "version": "1.0.0",
-        "schemas": ["verwerker", "consent", "dpia"],
+        "schemas": ["processor", "consent", "dpia"],
         "configuration": {
           "x-openregister-processing-activity": "avg-administratie"
         }
       }
     ],
     "schemas": {
-      "verwerker": {
-        "title": "Verwerker",
-        "slug": "verwerker",
-        "description": "Third-party data processor (verwerker per AVG Art 28). One row captures a single processor + the operator's signed verwerkersovereenkomst with them. Sub-processors (sub-verwerkers) are referenced via the subVerwerkers property.",
+      "processor": {
+        "title": "Processor",
+        "slug": "processor",
+        "description": "Third-party data processor (AVG Art 28). One row captures a single processor + the operator's signed processor agreement with them. Sub-processors are referenced via the subProcessors property. Renamed from `verwerker` by the verwerkingsregister-i18n change.",
         "version": "1.0.0",
         "type": "object",
         "configuration": {
           "x-openregister-processing-activity": "avg-administratie"
         },
         "properties": {
-          "naam": {
+          "name": {
             "type": "string",
-            "title": "Naam",
-            "description": "Bedrijfsnaam van de verwerker"
+            "title": "Name",
+            "description": "Company name of the processor"
           },
           "type": {
             "type": "string",
             "title": "Type",
-            "enum": ["saas", "infra", "support", "consultancy", "anders"],
-            "description": "Type dienstverlening"
+            "enum": ["saas", "infra", "support", "consultancy", "other"],
+            "description": "Type of service provided"
           },
-          "kvk": {
+          "chamberOfCommerceNumber": {
             "type": "string",
-            "title": "KVK-nummer",
+            "title": "Chamber of Commerce number",
             "pattern": "^[0-9]{8}$",
-            "description": "KVK-nummer (8 cijfers) als de verwerker een NL-rechtspersoon is"
+            "description": "8-digit KVK number, if the processor is an NL legal entity"
           },
-          "vestiging": {
+          "establishment": {
             "type": "object",
-            "title": "Vestigingsadres",
+            "title": "Establishment address",
             "properties": {
-              "land": { "type": "string", "title": "Land" },
-              "stad": { "type": "string", "title": "Stad" },
-              "adres": { "type": "string", "title": "Straat + huisnummer" },
-              "postcode": { "type": "string", "title": "Postcode" }
+              "country": { "type": "string", "title": "Country" },
+              "city": { "type": "string", "title": "City" },
+              "address": { "type": "string", "title": "Street + house number" },
+              "postalCode": { "type": "string", "title": "Postal code" }
             }
           },
-          "contactpersoon": {
+          "contactPerson": {
             "type": "string",
-            "title": "Contactpersoon"
+            "title": "Contact person"
           },
           "email": {
             "type": "string",
             "format": "email",
-            "title": "E-mail"
+            "title": "Email"
           },
-          "telefoon": {
+          "phone": {
             "type": "string",
-            "title": "Telefoon"
+            "title": "Phone"
           },
-          "verwerkersovereenkomstUrl": {
+          "agreementUrl": {
             "type": "string",
             "format": "uri",
-            "title": "Verwerkersovereenkomst",
-            "description": "URL naar de getekende verwerkersovereenkomst (DocuDesk / contract management)"
+            "title": "Processor agreement",
+            "description": "URL to the signed processor agreement (DocuDesk / contract management)"
           },
-          "verwerkersovereenkomstDatum": {
+          "agreementDate": {
             "type": "string",
             "format": "date",
-            "title": "Datum overeenkomst"
+            "title": "Agreement date"
           },
-          "subVerwerkers": {
+          "subProcessors": {
             "type": "array",
-            "title": "Sub-verwerkers",
+            "title": "Sub-processors",
             "items": {
               "type": "object",
               "properties": {
-                "naam": { "type": "string", "title": "Naam" },
-                "land": { "type": "string", "title": "Land" },
-                "doel": { "type": "string", "title": "Doel verwerking" }
+                "name": { "type": "string", "title": "Name" },
+                "country": { "type": "string", "title": "Country" },
+                "purpose": { "type": "string", "title": "Processing purpose" }
               }
             }
           },
-          "doorgifteBuitenEu": {
+          "internationalTransfers": {
             "type": "object",
-            "title": "Doorgifte buiten EU",
+            "title": "International transfers",
             "properties": {
-              "ja": { "type": "boolean", "title": "Doorgifte naar derde land?" },
-              "landen": {
+              "transferred": { "type": "boolean", "title": "Transferred to a third country?" },
+              "countries": {
                 "type": "array",
-                "title": "Landen",
+                "title": "Countries",
                 "items": { "type": "string" }
               },
-              "waarborgen": {
+              "safeguards": {
                 "type": "string",
-                "title": "Waarborgen",
-                "description": "Bijv. SCC, BCR, adequaatheidsbesluit"
+                "title": "Safeguards",
+                "description": "E.g. SCC, BCR, adequacy decision"
               }
             }
           },
           "status": {
             "type": "string",
             "title": "Status",
-            "enum": ["concept", "actief", "beeindigd"],
-            "default": "concept"
+            "enum": ["draft", "active", "terminated"],
+            "default": "draft"
           }
         },
-        "required": ["naam", "type", "contactpersoon", "email", "verwerkersovereenkomstUrl", "verwerkersovereenkomstDatum"]
+        "required": ["name", "type", "contactPerson", "email", "agreementUrl", "agreementDate"]
       },
       "consent": {
         "title": "Consent",

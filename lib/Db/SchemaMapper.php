@@ -4138,4 +4138,42 @@ class SchemaMapper extends QBMapper {
 
 		return $ids;
 	}//end findSearchableIds()
+
+	/**
+	 * Return the IDs of all schemas whose `smartPickerEnabled` flag is true.
+	 *
+	 * Consulted by a schema-scoped `AbstractSchemaReferenceProvider`/
+	 * `AbstractSchemaSearchProvider` instance to gate its own functionality
+	 * per-instance (a schema-scoped provider only ever concerns one schema),
+	 * mirroring `findSearchableIds()`'s pattern for the unified search
+	 * provider's opt-out. Unlike `searchable`, no consumer currently needs
+	 * the inverse "disabled ids" list.
+	 *
+	 * @return int[] List of schema IDs with `smartPickerEnabled = true`.
+	 *
+	 * @psalm-return   list<int>
+	 * @phpstan-return array<int, int>
+	 *
+	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d2a
+	 */
+	public function findSmartPickerEnabledIds(): array {
+		$this->traceRead(method: 'findSmartPickerEnabledIds');
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('id')
+			->from('openregister_schemas')
+			->where($qb->expr()->eq('smart_picker_enabled', $qb->createNamedParameter(value: true, type: IQueryBuilder::PARAM_BOOL)));
+
+		$ids = [];
+		$result = $qb->executeQuery();
+		while (($row = $result->fetch()) !== false) {
+			if (isset($row['id']) === true) {
+				$ids[] = (int)$row['id'];
+			}
+		}
+
+		$result->closeCursor();
+
+		return $ids;
+	}//end findSmartPickerEnabledIds()
 }//end class

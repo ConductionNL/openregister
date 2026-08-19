@@ -3,12 +3,14 @@
 /**
  * AVG / GDPR data-subject rights controller.
  *
- * Exposes the four DSAR endpoints as a thin wrapper around `DsarService`:
+ * Exposes the four DSAR endpoints as a thin wrapper around `DsarService`.
+ * Method/route names were renamed from Dutch (inzage/rectificatie/vergetelheid/portabiliteit)
+ * by the `verwerkingsregister-i18n` change:
  *
- *   GET  /api/avg/inzage          — Art 15 right of access.
- *   POST /api/avg/rectificatie    — Art 16 right of rectification.
- *   POST /api/avg/vergetelheid    — Art 17 right to erasure.
- *   GET  /api/avg/portabiliteit   — Art 20 right to data portability.
+ *   GET  /api/avg/access          — Art 15 right of access.
+ *   POST /api/avg/rectification   — Art 16 right of rectification.
+ *   POST /api/avg/erasure         — Art 17 right to erasure.
+ *   GET  /api/avg/portability     — Art 20 right to data portability.
  *
  * Authorization gate: every endpoint requires admin. DSAR operations
  * span the entire register surface and bypass per-schema RBAC; only
@@ -70,7 +72,7 @@ class DsarController extends Controller {
 	}//end __construct()
 
 	/**
-	 * GET /api/avg/inzage — Art 15 right of access.
+	 * GET /api/avg/access — Art 15 right of access.
 	 *
 	 * Query parameters:
 	 *   - `subject` (required) — value to look up (email, BSN, name, …).
@@ -88,7 +90,7 @@ class DsarController extends Controller {
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
-	public function inzage(): JSONResponse {
+	public function access(): JSONResponse {
 		if ($this->isAdmin() === false) {
 			return $this->forbidden();
 		}
@@ -121,12 +123,12 @@ class DsarController extends Controller {
 			]
 		);
 
-	}//end inzage()
+	}//end access()
 
 	/**
-	 * GET /api/avg/portabiliteit — Art 20 right to data portability.
+	 * GET /api/avg/portability — Art 20 right to data portability.
 	 *
-	 * Same surface as `inzage` but the envelope is reduced to the
+	 * Same surface as `access` but the envelope is reduced to the
 	 * machine-readable export shape: only the object payloads + minimal
 	 * provenance, no GdprEntity match annotations.
 	 *
@@ -136,7 +138,7 @@ class DsarController extends Controller {
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
-	public function portabiliteit(): JSONResponse {
+	public function portability(): JSONResponse {
 		if ($this->isAdmin() === false) {
 			return $this->forbidden();
 		}
@@ -171,10 +173,10 @@ class DsarController extends Controller {
 			]
 		);
 
-	}//end portabiliteit()
+	}//end portability()
 
 	/**
-	 * POST /api/avg/vergetelheid — Art 17 right to erasure.
+	 * POST /api/avg/erasure — Art 17 right to erasure.
 	 *
 	 * Body parameters:
 	 *   - `subject` (required)
@@ -193,7 +195,7 @@ class DsarController extends Controller {
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
-	public function vergetelheid(): JSONResponse {
+	public function erasure(): JSONResponse {
 		if ($this->isAdmin() === false) {
 			return $this->forbidden();
 		}
@@ -221,10 +223,10 @@ class DsarController extends Controller {
 		);
 
 		return new JSONResponse(data: $summary);
-	}//end vergetelheid()
+	}//end erasure()
 
 	/**
-	 * POST /api/avg/rectificatie — Art 16 right to rectification.
+	 * POST /api/avg/rectification — Art 16 right to rectification.
 	 *
 	 * Body parameters:
 	 *   - `objectId` (required, int) — internal id of the object to update.
@@ -239,7 +241,7 @@ class DsarController extends Controller {
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
-	public function rectificatie(): JSONResponse {
+	public function rectification(): JSONResponse {
 		if ($this->isAdmin() === false) {
 			return $this->forbidden();
 		}
@@ -273,7 +275,7 @@ class DsarController extends Controller {
 		}
 
 		return new JSONResponse(data: $updated);
-	}//end rectificatie()
+	}//end rectification()
 
 	/**
 	 * GET /api/avg/compliance — run compliance checks.

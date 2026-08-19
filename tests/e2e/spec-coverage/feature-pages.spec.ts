@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * GENUINE behavioural UI e2e for OpenRegister's FEATURE pages that aren't
- * plain entity lists: Files, AVG / Verwerkingsregister, Reports,
+ * plain entity lists: Files, GDPR / AVG processing register, Reports,
  * My account, and Features & roadmap. Each asserts the real heading, the
  * primary action(s), tab/section switching where present, and that content
  * renders — data-independent.
@@ -152,10 +152,10 @@ test.describe('feature-pages — real UI render + actions', () => {
 	test('AVG: heading + New activity + section tabs switch', async ({ page }) => {
 		const e = trackErrors(page)
 		await gotoPage(page, AvgIndex)
-		await expectHeading(page, /AVG \/ Verwerkingsregister/i)
+		await expectHeading(page, /GDPR \/ AVG processing register/i)
 		await expectButton(page, /New activity/i)
 		// The four AVG section buttons act as a tab strip.
-		for (const sec of ['Verantwoording', 'DSAR', 'Compliance', 'Activities']) {
+		for (const sec of ['Accountability', 'DSAR', 'Compliance', 'Activities']) {
 			await page
 				.getByRole('button', { name: new RegExp(`^${sec}$`) })
 				.first()
