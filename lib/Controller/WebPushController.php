@@ -170,6 +170,9 @@ class WebPushController extends Controller {
 	 * surface which has no Nextcloud session; it leaks no user data (just an
 	 * app glyph on a hexagon).
 	 *
+	 * Notification icons are fetched per-notification by the browser, so the
+	 * rate-limit ceiling below is deliberately high.
+	 *
 	 * @param string $app The originApp id.
 	 *
 	 * @return DataDisplayResponse The image bytes.
@@ -186,7 +189,6 @@ class WebPushController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
-	// Notification icons — fetched per-notification by the browser.
 	#[AnonRateLimit(limit: 240, period: 60)]
 	public function hexIcon(string $app): DataDisplayResponse {
 		$icon = $this->hexIconService->getIcon($app);

@@ -535,4 +535,134 @@ class SchemaDerivedToolProviderTest extends TestCase {
 		$this->assertSame(['deleted' => true, 'id' => 'uuid-3'], $result);
 
 	}//end testAuditFailureDoesNotMaskSuccessfulResult()
+
+	// ── outputSchema payload budget ──────────────────────────────────
+
+	/**
+	 * REQ: a search tool's outputSchema carries the ENVELOPE and no item properties.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/mcp-output-schema-payload/specs/mcp-tool-derivation/spec.md
+	 */
+	public function testSearchOutputSchemaCarriesTheEnvelopeOnly(): void {
+		$props = [];
+		for ($i = 0; $i < 25; $i++) {
+			$props['veryDescriptivePropertyName' . $i] = [
+				'type' => 'string',
+				'description' => str_repeat('a wordy property description ', 8),
+			];
+		}
+
+		$schema = $this->mockSchema(
+			id: 1,
+			slug: 'invoice',
+			mcpBlock: ['enabled' => true, 'tools' => ['search' => ['filters' => ['veryDescriptivePropertyName0']]]],
+			properties: $props
+		);
+
+		$tools = $this->provider([['schema' => $schema, 'register' => null]])->getTools();
+		$search = null;
+		foreach ($tools as $t) {
+			if (str_ends_with(($t['id'] ?? ''), '.search') === true) {
+				$search = $t;
+			}
+		}
+
+		$this->assertNotNull($search, 'a search tool must be derived');
+		$this->assertSame(
+			['type' => 'object'],
+			$search['outputSchema']['properties']['results']['items'],
+			'results.items must be a bare object — inlining the item properties is the 80% regression'
+		);
+		$this->assertSame(
+			['results', 'total', 'hasMore'],
+			array_keys($search['outputSchema']['properties']),
+			'the envelope keys are what the model actually needs'
+		);
+		$this->assertStringNotContainsString(
+			'veryDescriptivePropertyName',
+			json_encode($search['outputSchema']),
+			'no property name from the schema may appear in outputSchema'
+		);
+	}//end testSearchOutputSchemaCarriesTheEnvelopeOnly()
+
+	/**
+	 * REQ: a get tool's outputSchema is a bare object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/mcp-output-schema-payload/specs/mcp-tool-derivation/spec.md
+	 */
+	public function testGetOutputSchemaIsABareObject(): void {
+		$schema = $this->mockSchema(
+			id: 1,
+			slug: 'invoice',
+			mcpBlock: ['enabled' => true, 'tools' => ['get' => []]]
+		);
+
+		foreach ($this->provider([['schema' => $schema, 'register' => null]])->getTools() as $t) {
+			if (str_ends_with(($t['id'] ?? ''), '.get') === true) {
+				$this->assertSame(['type' => 'object'], $t['outputSchema']);
+				return;
+			}
+		}
+
+		$this->fail('a get tool must be derived');
+	}//end testGetOutputSchemaIsABareObject()
+
+	/**
+	 * REQ: the derived payload stays within a declared byte budget.
+	 *
+	 * A payload regression is invisible from every other angle — no test fails, no
+	 * gate fires, nothing errors. It shows up as agents becoming slower and
+	 * dumber, which gets attributed to the model. Measured 2026-08-16, inlining
+	 * the item properties made outputSchema 79.7% of a 433,198-byte tools/list
+	 * payload: 54% of a 200K context window, re-sent every turn.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/mcp-output-schema-payload/specs/mcp-tool-derivation/spec.md
+	 */
+	public function testDerivedToolPayloadStaysWithinBudget(): void {
+		$props = [];
+		for ($i = 0; $i < 25; $i++) {
+			$props['veryDescriptivePropertyName' . $i] = [
+				'type' => 'string',
+				'description' => str_repeat('a wordy property description ', 8),
+			];
+		}
+
+		$schema = $this->mockSchema(
+			id: 1,
+			slug: 'invoice',
+			mcpBlock: [
+				'enabled' => true,
+				// SEARCH + GET ONLY, deliberately. `create`/`update` inline the
+				// property set into their INPUT schema, and that is legitimate --
+				// you cannot create an object without being told its properties.
+				// Measured on this fixture they are ~7.5 kB each, which would
+				// swamp the signal this test exists to carry. In the live fleet
+				// payload inputSchema was 14% of the total; outputSchema was 80%.
+				'tools' => ['search' => ['filters' => ['veryDescriptivePropertyName0']], 'get' => []],
+			],
+			properties: $props
+		);
+
+		$bytes = strlen(json_encode($this->provider([['schema' => $schema, 'register' => null]])->getTools()));
+
+		// The fixture's 25 wordy properties serialise to ~15 kB. Inlining them
+		// into either read verb's outputSchema lands well over this ceiling; the
+		// envelope form measures ~900 B.
+		$this->assertLessThan(
+			2000,
+			$bytes,
+			sprintf(
+				'search+get payload is %d bytes against a ceiling of 2000. '
+				. 'The usual cause is outputSchema inlining the schema properties again.',
+				$bytes
+			)
+		);
+	}//end testDerivedToolPayloadStaysWithinBudget()
+
 }//end class
