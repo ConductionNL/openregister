@@ -221,6 +221,13 @@ class UserController extends Controller {
 	 * - Security event logging
 	 * - Security headers in response
 	 *
+	 * The AnonRateLimit attribute below is a framework ceiling ALONGSIDE the
+	 * app-level limiter, not instead of it. SecurityService::checkLoginRateLimit()
+	 * already keys on username + IP with a progressive delay, which is
+	 * finer-grained than anything the framework can do from an attribute. It
+	 * bounds the volume that reaches that logic at all; it is not a claim that
+	 * the login was unprotected.
+	 *
 	 * @NoAdminRequired
 	 *
 	 * @NoCSRFRequired

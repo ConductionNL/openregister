@@ -110,6 +110,9 @@ class VocabularyController extends Controller {
 	 *
 	 * Resolve a single concept by its exact durable source uri.
 	 *
+	 * Published vocabulary — resolution is the point of it, so the rate limits
+	 * on this method are runaway ceilings rather than gates.
+	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 * @PublicPage

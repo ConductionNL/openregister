@@ -97,6 +97,10 @@ class ChatHealthController extends Controller {
 	 * Returns 200 when a chat provider is configured, 503 otherwise.
 	 * Annotated as PublicPage so the widget can probe without authentication.
 	 *
+	 * A health probe is polled by monitoring on a schedule, so the rate-limit
+	 * ceiling is generous — it exists to stop an unauthenticated caller turning a
+	 * liveness endpoint into a load generator, not to police the monitor.
+	 *
 	 * @PublicPage
 	 *
 	 * @NoCSRFRequired

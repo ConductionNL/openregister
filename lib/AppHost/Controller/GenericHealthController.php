@@ -70,6 +70,11 @@ class GenericHealthController extends Controller {
 	/**
 	 * GET /api/health — declarative health check (ADR-006).
 	 *
+	 * The rate-limit ceiling below is generous on purpose: a health endpoint is
+	 * polled by monitoring on a short interval, and a ceiling that trips on a
+	 * normal probe cadence turns the check itself into the outage it was meant
+	 * to detect.
+	 *
 	 * @return JSONResponse `{status, app, version, checks}` with HTTP code per statusCodePolicy.
 	 *
 	 * The rate-limit ceiling is generous on purpose: a health endpoint is polled
