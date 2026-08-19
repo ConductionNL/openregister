@@ -110,14 +110,14 @@ class VocabularyController extends Controller {
 	 *
 	 * Resolve a single concept by its exact durable source uri.
 	 *
+	 * Published vocabulary — resolution is the point of it, so the rate limits
+	 * on this method are runaway ceilings rather than gates.
+	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 * @PublicPage
 	 *
 	 * @return JSONResponse The concept object, or a 404 standard error shape.
-	 *
-	 * The rate limit is a runaway ceiling rather than a gate: this is published
-	 * vocabulary, and resolution is the point of it.
 	 *
 	 * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-004
 	 */

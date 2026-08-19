@@ -170,6 +170,9 @@ class WebPushController extends Controller {
 	 * surface which has no Nextcloud session; it leaks no user data (just an
 	 * app glyph on a hexagon).
 	 *
+	 * Notification icons are fetched per-notification by the browser, so the
+	 * rate-limit ceiling below is deliberately high.
+	 *
 	 * @param string $app The originApp id.
 	 *
 	 * @return DataDisplayResponse The image bytes.
@@ -183,8 +186,6 @@ class WebPushController extends Controller {
 	 *   #[AnonRateLimit] above bounds the anonymous render cost.
 	 *
 	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
-	 * The rate-limit ceiling is high because notification icons are fetched
-	 * per-notification by the browser.
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
