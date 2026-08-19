@@ -46,8 +46,21 @@ by counting formal vs informal markers across core (`server/core`, `lib`,
 `apps/files`, `apps/settings`, `apps/dav`, …) for that locale.
 
 Measured results: informal for `nl`, `de`, `sv`, `da`, `nb`, `pl`, `fi`, `hu`,
-`et`, `lv`, `ga`, `mt`; formal for `fr`, `cs`, `ru`, `uk`, `tr`, `el`, `sr`, `bg`, `ca`, `hr`,
-`lt`, `sk`, `sl`, `rm`. **`sk` is the least ambiguous of any locale measured for this app**:
+`et`, `lv`, `ga`, `mt`, `is`; formal for `fr`, `cs`, `ru`, `uk`, `tr`, `el`, `sr`, `bg`, `ca`, `hr`,
+`lt`, `sk`, `sl`, `rm`.
+
+**"Informal" does not mean the same thing in every row of that list**, and the three
+low-resource locales done in sequence make the point better than any argument: they
+measured identically and are three different situations. `ga` — Irish never had a T-V
+distinction, so the label names the only address form that exists. `mt` — Maltese has one
+and it is current (`intom` as a polite singular, `Is-Sinjur` with third-person agreement);
+it is simply unused, so the verdict is an ordinary choice. `is` — Icelandic *had* one
+(`þér` plus a 2pl verb, possessive `yðar`) and abandoned it during the 20th century, so its
+V-forms are archaic rather than absent or merely unfashionable. That third state changes
+what a slip looks like: for `is` the realistic error is not `yðar` at all but the plain
+modern plural `þið`/`ykkar`, because a translator importing a politeness plural from
+de/fr/nl reaches for the form that is actually current. Never copy a verdict without its
+reason. **`sk` is the least ambiguous of any locale measured for this app**:
 1001 formal markers against 1 informal over 4991 values in 31 catalogues, beating
 `lt`'s 689 vs 0 on volume. Russian is next: 328 formal pronouns and 164 formal
 imperatives against zero informal.
@@ -416,11 +429,37 @@ only by asking which array *index* the library picks per count, which
 So `lv` arrays are ordered **by the library**, and `locales/lv.json` records
 `"pluralOrder": "library"` to say so. Without that record the runtime check fails,
 which is deliberate: the next reader's instinct will be to "fix" the order back to
-the header. Among the 22 finished locales only `lv` is affected — `hr`, `lt`, `ru`,
-`cs`, `pl`, `uk` and the rest agree with their headers exactly, and `tr`/`rm`/`ga`
-disagree only on form *count*, where the unreachable extra forms cannot be
-mis-ordered. Of the locales still to do, `is` and `mk` also disagree (at 21/101 and
-at 11 respectively) — check before writing their arrays.
+the header. `hr`, `lt`, `ru`, `cs`, `pl`, `uk` and the rest agree with their headers
+exactly, and `tr`/`rm`/`ga` disagree only on form *count*, where the unreachable extra
+forms cannot be mis-ordered.
+
+**But `lv` is only one of two kinds of disagreement, and the other one takes the opposite
+remedy.** `lv`'s is a **permutation**: the header and the library carve the counts into the
+same three groups and merely label them differently, so reordering the arrays makes the
+locale completely correct. A **boundary** disagreement puts the lines in different *places*,
+and then no reordering exists that helps — you choose which counts to be correct for and
+record the residue. `runtime-check.mjs` now classifies which one you have and names the
+right field: `pluralOrder: "library"` for a permutation, `pluralBoundary: "library"` for a
+boundary.
+
+Both remaining flagged locales turned out to be boundary cases, **in opposite directions**:
+
+- `is` — the library files Icelandic under its coarse `number === 1 ? 0 : 1` group, so form 0
+  is reachable only at exactly 1. The header is correct CLDR Icelandic
+  (`n%10!=1 || n%100==11`), under which 21, 31 … 191 also take the *singular* (`21 hlutur`).
+  So 17 counts in 0–200 render a plural where the language wants a singular. Accepted rather
+  than worked around, and the reasoning is the mirror of `rm`'s: form 1 is correct for 0 and
+  2–20, the overwhelming majority of real counts, so contorting it into a number-neutral
+  shape would trade 17 wrong counts for roughly 180 unidiomatic ones. `rm` needed the
+  contortion because its collapsed form was wrong at *every* count but 1.
+- `mk` — same modular header, but the library implements the modular rule and merely **drops
+  the `n%100 != 11` guard** (`number % 10 === 1 ? 0 : 1`), so only 11 and 111 disagree, and
+  they go the other way: the library picks the *singular* where Macedonian takes the plural.
+
+The general signal: **a two-form header whose expression is modular rather than `n != 1`**
+is the shape to check, because the library's coarse groups are mostly written `n === 1`.
+`lb` and `sq` carry plain `n != 1` and agree exactly; `bs` and `be` are three-form Slavic
+and also agree.
 
 ## Known source-side defect: `object{plural}`
 
@@ -1192,10 +1231,97 @@ but `annotazzjoni` may well be idiomatic for a log row in Maltese IT, and normal
 values is a larger intervention than the pass warranted (§6.9). New keys follow the adjacent
 existing value on their own screen, so no screen was made self-inconsistent.
 
-Thirty locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
+### `is` had a T-V distinction and abandoned it
+
+Icelandic is the third state of the three (see "Register is measured, never inherited"
+above): it once had `þérun` — nominative `þér` with a 2pl verb, possessive `yðar` — and
+dropped it during the 20th century. The forms survive in legal, liturgical and deliberately
+archaic register, so unlike Irish 2pl-as-polite they are not *impossible*; they are merely
+obsolete. `Hafið þér aðgang?` in a 2026 admin UI reads as parody.
+
+Measured: **626 informal (2sg) markers against zero formal**, over core's 28 `is` catalogues
+(3610 values), with the bundle's own 1054 pre-existing values adding zero formal. Because
+that is a zero, it was re-checked by raw grep over the 28 catalogues rather than trusted from
+the detector alone — `yður`, `yðar`, `yðvar`, `yðr`, `þið`, `ykkur`, `ykkar`, `þéra` and
+`þérun` are all literally absent, nine tokens at zero occurrences.
+
+`detectors/is.js` therefore gates on **two different defects** under one polarity, and they
+are worth keeping apart when you read a hit:
+
+1. **archaic deference** — `yður`/`yðar`, or nominative `þér` with a 2pl verb;
+2. **plain wrong number** — `þið`/`ykkur`/`ykkar`, the ordinary modern 2nd person plural,
+   entirely correct Icelandic for several addressees and simply wrong for one user.
+
+The second is the likelier slip, because it is the plural that is actually current in the
+language; reaching for `yðar` would take a knowledge of Icelandic philology.
+
+**Buttons are infinitives** — `Vista`, `Eyða`, `Breyta`, `Afrita`, `Staðfesta`, `Virkja`,
+`Endurstilla`, `Endurheimta`, `Skoða`, `Loka`, `Búa til`, `Bæta við`, `Hætta við` — 29 of 35
+distinct core values, zero verbal nouns, and exactly one enclitic imperative (`Choose` =
+`Veldu`, against `Select` = `Velja`, so an outlier not a pattern). The bundle's own 21 action
+keys agree unanimously. `is` therefore joins `cs`/`lt`/`lv`/`sk`/`rm` on the register-neutral
+infinitive, and that is what makes the imperative countable as a marker here (§6.5 test 1 is
+the only NO in the set so far).
+
+### `is` traps
+
+- **`þér` is both the 2sg dative and the archaic polite nominative**, and the dative is what
+  actually occurs — all 54 core hits (`þér er ekki heimilt`, `gefur þér`, `Beini þér til`).
+  Calling it formal would misclassify ordinary informal prose. The polite reading is
+  recovered by a **bigram**: `þér` plus a finite 2pl verb, matched in both orders since a
+  question inverts it. Neither token is decidable alone; the pair is. This is the reusable
+  idea from the pass.
+- **`-ið` is the neuter definite article** as well as the 2pl verb ending, so there is no
+  suffix rule at all — `lykilorðið`, `tölvupóstfangið`, `skjalið`, `safnið`, `nafnið` are
+  nouns. Worse, five individual 2pl forms are themselves homographs of common words: `hafið`
+  is "the ocean" *and* the past participle of `hefja` ("hefur hafið ferli" — "has begun a
+  process"), `getið` is "mentioned", `verðið` is "the price", `vitið` is "the wit", `eigið`
+  is the neuter adjective "own" ("þitt eigið Nextcloud"). Two of the five occur in core in
+  the non-verb reading; none occurs as a 2pl verb.
+- **The enclitic imperative splits by conjugation class.** Class 1 is safe (`notaðu` vs 3pl
+  past `notuðu`), class 2 is not (`settu` is both "enter!" and "they put"). The collision is
+  attested, not hypothetical: `komu` occurs 4× as a 3pl past and `völdu` twice as the weak
+  adjective *selected*, never as imperatives.
+- **`vinsamlegast` ("please") carries no address marker** — it is an adverb and inflects for
+  nothing, so unlike Maltese `jekk jogħġbok` there is no free signal here.
+- **`skrá` means both *file* and *register*.** The single biggest issue in the bundle, and
+  the reason for its large correction set. Four pairs of distinct keys rendered identically
+  and one value was unreadable (`No register objects reference this file` → `Engin
+  skrárhlutar vísa í þessa skrá`). Core locks `skrá` = file, so *register* moved — to
+  `gagnaskrá`, which the bundle already used in one place. The owner decided this, since it
+  is the app's primary noun and touched ~76 keys.
+- **`sía` ("filter") is feminine, and the bundle had it masculine** in 21 values: `Virkir
+  síar`, `Ítarlegir síar`, `Engir virkir síar`, `Hreinsa alla síar`. Correct is `Virkar
+  síur`, and core `is` contains that exact phrase, plus `Filters` → `Síur`; core's only
+  `sí-` forms anywhere are `síur` and `síu`, never `síar`. Both the noun and every adjective
+  were corrected. The 5 pre-existing dative-plural `síum` values were already right.
+- **`Slug` collided with `ID`** (both `Auðkenni`, both field labels on the same
+  `EditSchemaProperty` screen) → `Stuttheiti`. **`Refresh` collided with `Update`** (both
+  `Uppfæra`) → `Endurnýja`, core's own word. **`Configurations` and `Settings` both stay
+  `Stillingar`** — correct for each, and the unavoidable-collision case.
+- **No domain-term capitalisation whatsoever**, and unlike `ga` this is *not* mirroring: it
+  holds regardless of the English key's casing (`skema` 0:9 under title-cased keys, 0:14
+  under prose). A flat lowercase rule.
+- **`skema` is treated as indeclinable** — 25 bare forms at HEAD against one `skemanu`. This
+  pass initially introduced `skemað`/`skemans` and they were normalised back; see the
+  declension note in the runbook's §8.10.
+- Typography: `...` over `…` (41:4 at HEAD) and **matching the English source's glyph per
+  key** is the rule — 44 of 45 already did, and the one exception was `Loading
+  organisations...`, which was *also* the only `Loading` value not using the `Hleð
+  <accusative>...` pattern. That same key was the outlier in `ga` and `mt` too, on the same
+  two counts. Em dash `—`, never en dash. No percentage values and no quote glyphs exist in
+  the bundle, so source quotes are mirrored rather than converted to `„ “`.
+- Terms: object `hlutur`, schema `skema` (pl `skemu`), property `eiginleiki`, view
+  `yfirlit`, entity `eining`, source `uppspretta`, chunk `bútur`, audit trail
+  `endurskoðunarferlatal`, webhook `vefkrókur`, dashboard `mælaborð`, organisation
+  `skipulagsheild`, token `teikn`, flow `flæði` but workflow `vinnuflæði`. Note `Overview`
+  had to become `Yfirsýn` rather than core's `Yfirlit`, because `yfirlit` is this app's word
+  for **View**.
+
+Thirty-one locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
 `nb`, `pl`, `cs`, `ru`, `uk`, `el`, `fi`, `hu`, `tr`, `ca`, `et`, `hr`, `lt`, `lv`,
-`ro`, `sk`, `sl`, `bg`, `sr`, `rm`, `ga`, `mt` — the whole high-confidence group plus the
-first three of the low-resource ones. Six remain (`is`, `lb`, `sq`, `mk`, `be`, `bs`),
+`ro`, `sk`, `sl`, `bg`, `sr`, `rm`, `ga`, `mt`, `is` — the whole high-confidence group plus the
+first four of the low-resource ones. Five remain (`lb`, `sq`, `mk`, `be`, `bs`),
 in that order, which the owner has confirmed — no need to re-ask per locale as long as
 the order is kept.
 

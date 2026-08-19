@@ -109,18 +109,18 @@ is how you tell "in progress" from "broken".
 
 ### 2.3 Order of work
 
-The high-confidence group is **done**, and so are `rm`, `ga` and `mt`, the first three of
-the low-resource ones. Six remain: `is lb sq mk be bs`, **in that order** — the owner
+The high-confidence group is **done**, and so are `rm`, `ga`, `mt` and `is`, the first four
+of the low-resource ones. Five remain: `lb sq mk be bs`, **in that order** — the owner
 has confirmed the order, so there is no need to re-ask per locale as long as it is kept.
 
 **Check whether core can decide the register at all before planning a pass.** Two of
-the six remaining locales cannot be measured from core, which §5 step 2 assumes:
+the five remaining locales cannot be measured from core, which §5 step 2 assumes:
 
 | Locale | Core coverage | Consequence |
 | --- | --- | --- |
 | `bs` | 1 catalogue, 55 values | not evidence of anything; use the §6.4 fallback |
 | `lb` | 1 catalogue, 72 values | same, and openbuild's `lb` is German (§6.6) |
-| `is` `mk` `be` | 28 / 24 / 14 catalogues | core is usable |
+| `mk` `be` | 24 / 14 catalogues | core is usable |
 | `sq` | 12 harvest sources, core usable | measure it |
 
 (`rm` and `mt` both had **zero** catalogues. `rm` is the worked example of the fallback,
@@ -135,7 +135,7 @@ sources, not counts — these will not go stale):
 | Locale | Note |
 | --- | --- |
 | `mk` `be` | Non-Latin. `npm run l10n:script` replaces the English-leftover sweep in §5 step 8 |
-| `is` `mk` | **Both confirmed** to disagree with the library on the plural *boundary*, and in opposite directions — measured, not just flagged. Neither is fixable by reordering; both need `pluralBoundary: "library"` and an explicit note of which counts stay wrong (§6.7) |
+| `mk` | Confirmed to disagree with the library on the plural *boundary* (at 11 and 111 only, the library selecting the SINGULAR where Macedonian takes the plural). Not fixable by reordering; needs `pluralBoundary: "library"` and an explicit note of which counts stay wrong (§6.7). `is` had the same class of problem in the opposite direction and is now done |
 | `lb` | openbuild ships **German** under `lb.json`; harvest drops it automatically (§6.6) |
 | `bs` `sq` | Very few harvest sources (7 and 12) — expect to translate almost everything by hand. Even `ga`, with 40 sources, only got a 7% hit rate, and `mt` 5.2% from 7 |
 | `bs` | openbuild's Croatian catalogue also ships under `bs.json`; dropped automatically |
@@ -211,6 +211,22 @@ distinction, `sibh` being strictly plural rather than a polite singular. Its rec
 preference — and its function is to set the gate's polarity so `patchcheck` refuses 2pl
 address, which in a single-user UI is always a defect. Read a verdict for what it is
 before repeating it: "informal" means something different for `ga` than for `nl`.
+
+**Three consecutive locales then came out "informal" for three genuinely different
+reasons, and that is the point.** The label is the same and the situation is not:
+
+| Locale | Why it reads "informal" | What the gate is catching |
+| --- | --- | --- |
+| `ga` | Irish never had a T-V distinction. No choice exists | 2pl address, which is only ever a defect here |
+| `mt` | Maltese **has** one and it is current (`intom`, `Is-Sinjur`); it is simply unused | genuine deference — a live option the project declines |
+| `is` | Icelandic **had** one (`þér` + 2pl verb, possessive `yðar`) and **abandoned** it in the 20th century | archaic deference *and* plain wrong number (`þið`, `ykkar`), which are different mistakes |
+
+So there are three distinct states — never had one, has one unused, had one and dropped
+it — and they differ in what a slip would look like. `is` is the interesting case: because
+its V-forms are obsolete rather than absent, the *likelier* error is not `yðar` at all but
+the plain modern plural `þið`/`ykkar`, since a translator importing a politeness plural
+from de/fr/nl reaches for the form that is actually current. Its detector gates on both
+and says so. **Do not copy a verdict without its reason.**
 
 ### 3.5 Read the locale's own existing values before coining any term
 
@@ -698,6 +714,43 @@ were *both* а-conjugation, so a whole-class exclusion would have found neither.
 locale fails test 2, check whether it fails it for **all** of its verb classes before
 excluding the whole paradigm.
 
+**`is` is the second PARTIALLY-detectable locale, and there the split falls out of the
+conjugation classes as a rule rather than a word list** — which is what makes it worth
+copying. Icelandic forms a 2sg imperative by fusing the pronoun onto the verb (`nota` →
+`notaðu`, "use!"), so the imperative *is* an address marker. Whether it is usable depends
+entirely on how that verb builds its past:
+
+- **Class 1** (`-a` verbs) take `-uðu` in the 3rd person plural past while the imperative
+  is `-aðu`. `notaðu`/`notuðu`, `skoðaðu`/`skoðuðu`, `afritaðu`/`afrituðu`. **Distinct, so
+  usable.** So are the strong verbs whose past differs by ablaut — `veldu`/`völdu`,
+  `farðu`/`fóru`, `taktu`/`tóku`, `hafðu`/`höfðu`.
+- **Class 2** (`-ja`/`-ta`/`-la` verbs, past in `-ti`/`-di`/`-ði`) build the 3pl past
+  **identically** to the imperative: `settu` is both "enter!" and "they put", and likewise
+  `sendu`, `smelltu`, `reyndu`, `breyttu`, `ýttu`, `skráðu`, `endurstilltu`. **Unusable.**
+
+And unlike `ga`'s `-igí` — where the trap was real but happened not to occur — here the
+collision is **attested in the corpus**, which is what settles it rather than merely
+suggesting it: `komu` appears 4 times as a 3pl past ("Það komu of margar beiðnir" — "too
+many requests came") and `völdu` twice as the weak adjective *selected* ("úr völdu
+sniðmáti"), never as imperatives. `staðfestu` is trebly ambiguous, being also the oblique
+of the noun `staðfesta` ("confirmation").
+
+Note also that `is` is the **first locale where §6.5 test 1 comes out NO** — its labels are
+infinitives (§7.3), so counting the imperative does *not* flag every button. That is why
+the class-1 forms can be counted at all; in `ga`/`mt`/`sr` the label convention forbade it
+regardless of homography. Run both tests; the answers are independent.
+
+**One further trick worth reusing: a BIGRAM can rescue two individually-ambiguous tokens
+at once.** Icelandic `þér` is both the 2sg dative ("þér er ekki heimilt" — perfectly
+ordinary informal prose, 54 occurrences in core, all of them this) and the archaic polite
+nominative. Neither reading is decidable from the word alone, and neither is `hafið`
+("the ocean" / past participle of `hefja` / 2pl verb). But `þér hafið` can only be the
+V-form, because a dative `þér` takes no finite 2pl verb and "the ocean" does not follow a
+pronoun. `detectors/is.js` therefore counts bare `þér` as *informal* and matches the pair
+as *formal*, in both orders since a question inverts it. Look for this wherever a locale
+has a pronoun and a verb form that are each ambiguous but not jointly so — it recovers
+recall that a per-token closed list has to throw away.
+
 One caveat that comes with counting any imperative: it measures against **this bundle's**
 label convention, not core's. Core `bg` uses `-й` imperatives as labels in 29 places while
 this bundle uses verbal nouns throughout — so the detector is right for `patchcheck` on new
@@ -1063,7 +1116,7 @@ the library governs which element renders. `runtime-check.mjs` calls `unregister
 
 ### 7.2 Register verdicts, all measured
 
-Informal: `nl de sv da nb pl fi hu et lv ga mt`.
+Informal: `nl de sv da nb pl fi hu et lv ga mt is`.
 Formal: `fr cs ru uk tr el sr bg ca hr lt ro sk sl`.
 
 **`ga` is in the informal column for a different reason from every other entry in it**, and
@@ -1091,6 +1144,7 @@ mean they measured the same thing.
 | `bg` | formal | 699 vs 43 — but the 43 needs splitting; **prose is 699 vs 11** |
 | `ro` | formal | core **MIXED** 124 vs 66 → decided by the bundle (84 vs 0) + owner |
 | `lv` | **informal** | 44 vs 3 — core overruled the file; 78 values corrected |
+| `is` | informal | **626 vs 0** over core's 28 catalogues / 3610 values, plus 0 formal in the bundle's own 1054. The zero was re-checked by raw grep across nine V-form and 2pl tokens (`yður yðar yðvar yðr þið ykkur ykkar þéra þérun`), all literally absent. A THIRD kind of "informal": Icelandic *had* a T-V distinction and abandoned it in the 20th century, so `yðar` is archaic rather than absent (`ga`) or merely unused (`mt`) |
 | `rm` | formal | **81 vs 0** over the bundle's own 995 translated values — core ships **no `rm` catalogues at all**, so this is the §6.4 fallback rather than a core measurement |
 | `ga` | **no T-V distinction** | **440 vs 0** over 5395 values / 33 catalogues — the most one-sided of any locale, and structurally so: `sibh` is strictly plural in modern Irish, so 2pl address does not occur at all. Recorded as `informal` to set the gate's polarity against 2pl address, which for a single-user UI is always a defect |
 | `mt` | informal | **128 vs 0** over 3422 values — core ships **no `mt` catalogues at all**, so this is the §6.4 fallback widened to the sibling apps' frontend bundles. Unlike `ga`, Maltese HAS `intom` and `Is-Sinjur` available; they are measured absent, so this is a real choice. Markers: 75 `tiegħek`, 35 `jekk jogħġbok`, 15 `int`/`inti`, 4 prepositional |
@@ -1114,7 +1168,7 @@ decide.
 | --- | --- | --- |
 | same register as prose | `tr` `ru` | formal imperative |
 | bare 2sg imperative, whatever the prose | `ca` `et` `hr` `sl` `sr` `ga` `mt` | `Desa`, `Salvesta`, `Spremi`, `Shrani`, `Сачувај`, `Sábháil`, `Issejvja` |
-| **infinitive — register-neutral** | `cs` `lt` `lv` `sk` `rm` | `Zobrazit`, `Įrašyti`, `Saglabāt`, `Uložiť`, `Memorisar` |
+| **infinitive — register-neutral** | `cs` `lt` `lv` `sk` `rm` `is` | `Zobrazit`, `Įrašyti`, `Saglabāt`, `Uložiť`, `Memorisar`, `Vista` |
 | **verbal noun — register-neutral** | `ro` `bg` | `Salvare`, `Adăugare endpoint`; `Запазване`, `Добавяне на крайна точка` |
 
 Infinitive buttons must **not** be "corrected" to imperatives.
@@ -1146,6 +1200,7 @@ for five keys. What each finished locale does:
 | parenthetical | `nl de fi ru pl cs et sk sl` | `bestand(en)`, `súbor(y)`, `datoteka(-e)` |
 | slash, where the stem changes | `fr`, `ca`, `et` | `journal/journaux` |
 | bare noun — no plural after a numeral | `hu` `tr` `ga` | `fájl`, `dosya`, `comhad` |
+| **parenthetical AND slash, mixed per noun** | `is` | `skrá(r)` where the plural is stem+`r`, but `hlutur/hlutir` and `skema/skemu` where the stem changes |
 | the form correct for the most counts | `hr` `lv` `ro` | gender-dependent |
 | genitive plural, conventional invariant counter | `lt` | `failų` |
 
@@ -1162,6 +1217,15 @@ would be *wrong* rather than merely unidiomatic. Check what precedes the placeho
 call site before reaching for the sibling keys' shape. The pre-existing `(s)` values are
 left alone under §3.8; the consistency that matters is with the `{count}` arrays, which
 apply the same counted-noun rule.
+
+**A locale can legitimately need MORE THAN ONE of these shapes, chosen per noun.** `is` is
+the case: its bundle's house style is the parenthetical (`stilling(ar)`, `skrá(r)`), and
+that works wherever the plural is the stem plus `-r` — so `file{plural}` → `skrá(r)` and
+`register{plural}` → `gagnaskrá(r)`. But where the stem changes it produces a non-word, so
+`object{plural}` → `hlutur/hlutir`, `log{plural}` → `annáll/annálar` and `schema{plural}` →
+`skema/skemu` take the slash instead. The pre-existing `schema(s)` → `skema(r)` in that
+bundle is exactly the error this avoids: the plural of `skema` is `skemu` and `skemar` is
+not a word. Pick the shape per noun, not per locale.
 
 Always runtime-assert no `{plural}` residue and no stray trailing `-s` survives. And note
 that a locale which **keeps** `{plural}` is not broken — `es` keeps it in all five, `ca` in
@@ -1200,6 +1264,9 @@ Every one of these produced a wrong measurement:
 | `mt` | `-u` (2pl imperative / 2pl present) | the **3pl of everything**. `nstabu` ("they were found") occurs 24 times in "Ma nstabu l-ebda X", `għandhom` 19 times, plus `jistgħu`, `jappartjenu`. A `-u` rule scores the commonest sentence shape in the file as deference |
 | `mt` | `-kom` / `-ek` (2pl / 2sg object) | ordinary word endings. Both paradigms are small and closed, so both are enumerated instead — thirteen prepositional pronouns each side |
 | `mt` | `-t` (2sg perfect) | also the **1sg perfect**; the two differ only by an internal vowel (`ħlaqt` "I created" vs `ħloqt` "you created"), far too fine for a word list |
+| `is` | `-ið` (2pl verb ending) | the **neuter DEFINITE ARTICLE**, one of the commonest morphemes in the language — `lykilorðið`, `tölvupóstfangið`, `skjalið`, `safnið`, `yfirlitið`, `nafnið` are all nouns. The bg `-те` situation and slightly worse, because five individual 2pl verb forms are *themselves* homographs of ordinary words: `hafið` is "the ocean" **and** the past participle of `hefja`, `getið` is the participle "mentioned", `verðið` is "the price", `vitið` is "the wit", `eigið` is the neuter adjective "own". Two of those five occur in core in the non-verb reading (`hefur hafið ferli`, `þitt eigið Nextcloud`) and **none** occurs as a 2pl verb |
+| `is` | `-ur` (2sg present) | the **masculine nominative singular** of thousands of nouns, *and* Icelandic syncretises 2sg with 3sg for most verbs anyway (`þú getur` / `hann getur`), so the ending carries no address information even when it is verbal |
+| `is` | `-ðu`/`-tu` (2sg imperative + enclitic pronoun) | the **3rd person plural past** for the whole class-2 conjugation. Usable for class 1 and the ablauting strong verbs, unusable otherwise — the split is by conjugation class and is worked through in §6.5 |
 
 Use closed word lists. Always.
 
@@ -1210,7 +1277,10 @@ commonest marker in the bundle, behind only the possessive. Its 2pl counterpart
 `jogħġobkom` is the unambiguous deferential form and belongs in the formal list. The first
 draft of `detectors/mt.js` omitted both and a control caught it. Any locale whose "please"
 inflects for the addressee has the same free signal: `ga`'s `le do thoil` does **not**
-(it inflects nothing detectable — see the `do` row above), so check rather than assume.
+(it inflects nothing detectable — see the `do` row above), and neither does `is` — Icelandic
+`vinsamlegast` is an adverb (a superlative of `vinsamlegur`, "kindly") and inflects for
+nothing at all. Two of the three checked so far came out empty, so **check rather than
+assume in either direction**; the check is cheap and the payoff when it lands is large.
 
 ### 8.2 Pronoun homographs, per language
 
@@ -1240,6 +1310,9 @@ inflects for the addressee has the same free signal: `ga`'s `le do thoil` does *
 | `mt` | `int` / `inti` — **no collision** | nothing; the bare pronoun is fully usable. But it is only 15 of 128 hits, so do not build the detector on it |
 | `mt` | `tagħhom` (3pl "their") vs `tagħkom` (2pl "your") | one paradigm slot apart, and the 3pl is the one that occurs — `mar-ringieli tagħhom`, `il-konfigurazzjonijiet tagħhom`. Match only `tagħkom` |
 | `mt` | `verifika` | "verification" AND, in six pre-existing values, a mistranslation of *audit*. Not a register trap but a lexical one; note `ivverifika` (the verb, legitimate) contains it, so any check must anchor on a word boundary |
+| `is` | `þér` = 2sg **DATIVE** *and* the archaic polite **NOMINATIVE** | do **not** exclude it and do not call it formal: all 54 core occurrences are the dative (`þér er ekki heimilt`, `gefur þér`), so it counts as informal. The polite reading is recovered by the BIGRAM `þér` + a finite 2pl verb, matched in both orders — see §6.5. Two ambiguous tokens, jointly unambiguous |
+| `is` | `þú`/`þig`/`þinn` — **no collision at all** | nothing; the bare pronoun is fully usable, the same useful negative as `bg`, `rm`, `ga` and `mt`. Do not port the "leave the bare pronoun unmatched" rule from `cs`/`hr`/`sl`. One caveat: core's example address `notandi@þitt-nextcloud.org` matches the possessive, the same shape as the single `hr` informal hit |
+| `is` | `þið`/`ykkur`/`ykkar` are the **plain modern 2pl**, not a politeness form | still gated as a defect, because addressing one user as plural is wrong — but it is a *different* mistake from archaic `yðar` deference, and it is the likelier one. Keep the two distinct when reading a detector hit |
 
 The useful **negative** result: bare `ти` **is** usable in Bulgarian, unlike `cs` `ty`, `hr`
 `ti` and `sl` `ti`. Bulgarian lost its case system and its plural demonstrative is
@@ -1327,11 +1400,37 @@ Check that a coinage does not collide with a term the bundle already uses:
   (`Водещ запис`, `Водещ източник`, `Водеща стойност`) so the MDM vocabulary reads as one
   family, with **Survivor** as `Оцелял запис` where the source distinguishes it.
 
+**The worst version of this is a collision on the app's OWN primary noun, and `is` had it.**
+Icelandic `skrá` means both *a file* and *a register/list*, and the pre-existing bundle used
+it for both — so four pairs of distinct English keys rendered byte-identically (`All
+registers` / `All Files` → `Allar skrár`; `Register` / `File`; `Registers` / `Files`; `No
+registers found` / `No files found`), and one value came out unreadable: `No register
+objects reference this file` → `Engin skrárhlutar vísa í þessa skrá`, both senses in one
+sentence as the same word. Three things made this tractable, and they are the general
+recipe:
+
+1. **Core decides which sense cannot move.** Core `is` locks `skrá` = file (`Skrá`, `Skrár`,
+   `Skráaforrit`) and ships no `Register`/`Record`/`List` key at all. So *register* was the
+   side that had to change.
+2. **The bundle usually already contains the answer.** `gagnaskrá` was already in it, in
+   exactly this sense (`Manage your data registers` → `Stjórna gagnaskránum þínum`). That is
+   §3.5, and it beats coining a word.
+3. **Ask the owner when it is the app's primary noun.** This propagated through ~76 keys and
+   changed 34 shipped values, which is a terminology decision rather than a translation one —
+   the §6.4-step-2 case. The answer and the fact that it was theirs are recorded in
+   `lexiconNote`.
+
+Two smaller `is` collisions were settled by core alone with no ask needed: `Slug` shared
+`Auðkenni` with `ID` while both are field labels on the *same* `EditSchemaProperty` screen
+(→ `Stuttheiti`, the shape core `lt` takes with `Trumpinys`), and `Refresh` shared `Uppfæra`
+with `Update` (→ `Endurnýja`, which is core's own word for it).
+
 Some collisions are **unavoidable and should be recorded rather than worked around**: `bg`
 renders both **Cancel** and **Denial** `Отказ`, which is the right Bulgarian word in each
 case (the dialog button, and the GDPR refusal of a request) and is what core `bg` uses for
 Cancel in ten catalogues. They never share a screen. Forcing an artificial distinction would
-have made one of the two wrong.
+have made one of the two wrong. `is` has one of these too — `Configurations` and `Settings`
+both render `Stillingar`, which is correct for each and is core's word for Settings.
 
 Also watch for locale-specific renderings of acronyms that the bundle has already fixed:
 **AI** is `MI` in Latvian and `UI` in Slovenian (*umetna inteligenca*) — but product names
@@ -1408,6 +1507,7 @@ capitalise domain terms mid-sentence, and they disagree about which:
 | `rm` | **three** — `Schema` 34:1, `Register` 30:0, `Datoteca` 43:0 | `object` at **0:63**, plus `vista`, `webhook`, `colliaziun`, `endataziun`, `caracteristica` |
 | `ga` | **none of its own** — casing mirrors the English source | every term reads MIXED per-term; the convention is conditioned on the key, not the word |
 | `mt` | **four** — `Oġġett` 56:2, `Reġistru` 55:0, `Proprjetà` 21:0, `Fajl`/`Fajls` 71:0 | `skema` 4:17, `iskema` 6:49, `veduta` 3:26, `entità` 2:7, `biċċiet` 3:14, `utent` 4:14 |
+| `is` | **none, unconditionally** — a flat lowercase rule | *every* term: `skema` 0:23, `gagnaskrá` 0:10, `hlutir` 1:16, `yfirlit` 0:18, `eiginleika` 0:10, `síur` 0:18 |
 
 **`ga` is a third outcome, and the one most easily misread as "no convention".** A naive
 per-term count comes out mixed for every term (`clár` 3:5, `scéimre` 9:21, `réad` 11:19,
@@ -1419,6 +1519,16 @@ OAS: ...` has lowercase `register` in the English too, so the `ga` lowercase mir
 So before concluding a locale has no capitalisation convention, re-measure with the source's
 own casing as the condition — a mixed per-term split is what a mirroring convention looks
 like from the wrong angle.
+
+**`is` is the fourth outcome, and it is the one that genuinely has no list: a flat
+lowercase rule.** Every term comes out one-sided lowercase, and — this is what distinguishes
+it from `ga` rather than merely resembling it — conditioning on the English key's casing
+changes *nothing*. `skema` is 0:9 under title-cased keys and 0:14 under prose keys; `skrá`
+0:5 and 0:9. So the four outcomes now seen are: a list of capitalised terms (`sr`, `rm`,
+`mt`), mirror the source (`ga`), flat lowercase (`is`), and — still unobserved — flat
+uppercase. **Run the conditioned measurement even when the unconditioned one already looks
+one-sided**, because it is the only thing that tells `is` apart from `ga`, and they need
+opposite handling for every title-cased key in the file.
 
 So carrying `sr`'s list to `rm` would have capitalised `Object` in 63 places against the
 bundle's own unanimous practice, and carrying either to `ga` would have overridden the
@@ -1432,7 +1542,20 @@ mid-sentence 43 times against 0, while the newly written values had lowercased i
 against 4 — a convention broken in 24 places, invisible to every gate, and silently
 self-confirmed if you measure the finished bundle as a whole. Whole-bundle counts came out
 "CAPITALISED" for `Fajl` either way because the pre-existing majority outvoted the new
-values. Split the corpus at `HEAD` and compare the two columns. Both rules can apply inside one value — `rm` writes
+values. Split the corpus at `HEAD` and compare the two columns.
+
+**Apply the same split to DECLENSION, not only to casing** — this is what it caught on `is`,
+and it is a distinct failure mode. A borrowed noun may be treated as indeclinable by the
+bundle while the language would ordinarily inflect it: `skema` appears 25 times in bare form
+at HEAD against a single declined `skemanu`, i.e. effectively indeclinable. The values
+written in this pass introduced `skemað` 5 times and `skemans` once — grammatically
+defensible Icelandic, and inconsistent with the file, which is what §3.5 settles against.
+Nothing else catches this: the values are not empty, not identical, not wrong-arity, and
+each reads correctly on its own. Two practical notes: tally the forms **per surface form**
+rather than per lemma so the split is visible at all, and use `\p{L}` not `\w` when doing
+it — `\w` is ASCII-only, so `skema\w*` silently truncates `skemað` to `skema` and hides
+exactly the drift you are looking for. That mistake concealed the finding on the first run
+here. Both rules can apply inside one value — `rm` writes
 `naginas relaziuns cun objects u Datotecas`. `rm` also capitalises the **polite pronoun
 and possessive** mid-sentence without exception (`Vus` 13:0, `Voss*` 21:0), the German
 `Sie`/`Ihr` model; a sibling app in the same repo lowercases them, so that is a real
