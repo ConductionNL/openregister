@@ -1,7 +1,0 @@
-{
-    "standard": "ggm",
-    "version": "ggm-2.2.0",
-    "release": "2.2.0",
-    "source": "https://www.gemmaonline.nl/index.php/Gegevensmodellen / VNG Gemeentelijk Gegevensmodel (GGM)",
-    "note": "Normalised intermediate generated from the published GGM release by tools/generate-ggm-snapshot. Dutch names/definitions preserved verbatim. Refresh by re-running the generation script against a newer GGM export."
-}
