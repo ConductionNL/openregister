@@ -188,25 +188,68 @@ how `Breaking change` (17 of 20 locales say "incompatible") and the swapped
 
 ## 4. Process changes, not tooling
 
-**Parallelise the read-through.** The residual reading is embarrassingly
-parallel: split the bundle into ~4 chunks and read them concurrently, each reader
-given the `core-diff` AGREE list, the `termdrift` output and the collision list as
-shared context, and each reporting *candidates with call-site evidence* rather than
-verdicts. One reviewer then adjudicates centrally. The shared context matters — a
-reader without the AGREE list will re-invent the false candidates core already
-killed.
+### 4.1 Run the read-through as a SUBAGENT FAN-OUT
 
-**Use a cheap model for candidate generation, a strong one for verdicts.** Spotting
-an odd word in a list is recall, not reasoning. Adjudication is the opposite: on
-`sk`, **ten of about thirty candidates were wrong**, and each needed a core lookup
-or a call-site read to kill. That ratio is the reason not to lower effort across the
-board — a fast audit that ships regressions into a bundle no gate can check is worse
-than a slow one.
+Not "read faster" — **use the Agent tool**. Concretely:
 
-**Do not skip these, however tempting:**
+1. Slice the EN→target listing into ~4 chunks of ~500 keys, into the scratchpad.
+2. Spawn **one subagent per chunk, in a single message** so they run concurrently.
+3. Hand each one the same **shared context**: the `core-diff` **AGREE** list, the
+   `termdrift` output, the collision list, and the locale's measured register and
+   button convention (§7.2/§7.3). Skipping this is the main way a fan-out wastes
+   money — a reader without the AGREE list re-derives the false candidates core has
+   already killed, and one without the button convention reports every infinitive
+   button as a register slip.
+4. Require **candidates with call-site evidence, never verdicts**, as structured
+   output: key, current value, what is wrong, suggested fix, confidence.
+5. **Adjudicate centrally**, applying the core check and the call-site check to every
+   candidate before it enters a patch.
 
-- the call-site check and the core check — they overturned ten between them;
-- the 16-locale regression loop at the end — it is cheap and it is the safety net;
+**This raises recall, not just speed — which is the part I did not expect.** The `sk`
+audit was committed as complete at 57 corrections. A second pass over the *same*
+bundle in a fresh subagent context found **five more**, four of them substantive: a
+nominative plural where the genitive singular belonged (`Konfigurácia objektu
+polia`), a noun where the button convention takes an infinitive (`Draft denial`), one
+formal-2pl item in a six-item list of infinitives, and the bundle's word for
+*session* used to mean *relation*. The first pass had also claimed "zero wrong case in
+`sk`", which was false. **`sk` is 62, not 57.** A single sequential reader has a
+recall ceiling that care does not remove: what survives a first read is exactly what a
+tired eye normalises.
+
+Corollary: **do not read a completed audit as proof a locale is clean.** Record the
+count, never a verdict.
+
+### 4.2 Cheap models generate candidates; they do not decide
+
+Spotting an odd word in a list is recall. Adjudication is the opposite, and it is
+where the errors are: on `sk`, **eleven of about thirty candidates were wrong**, each
+killed only by a core lookup or a call-site read.
+
+**Measured, on the pre-audit `sk` bundle.** A Haiku-class reader returned three
+findings: one real (`Loading organisations...`, at *medium* confidence) and **two at
+*high* confidence that were both wrong** — it wanted `nemajú` where Slovak requires
+the 3sg `nemá` after a genitive-plural numeral, and the masculine-*animate* `obnovení`
+where the inanimate `obnovené` is correct. Applying either would have written a **new**
+error into correct Slovak, and nothing in this repo could have caught it. Note the
+inversion: its only correct finding was its least confident one, so its own confidence
+field could not have been used as a filter.
+
+So: cheap models are usable for the fan-out, where recall is the job and every output
+is reviewed. **Never let a subagent's suggestion reach a patch unreviewed.**
+
+### 4.3 Give subagents a read boundary
+
+A subagent that touches the repo gets `CLAUDE.md` and `docs/l10n-workflow.md`
+auto-attached, and §6.9 names the actual `sk` findings and trap list. That is harmless
+in a real pass but **fatal to any attempt to measure a reader's quality** against a
+locale that has already been audited: point such a run at a self-contained scratchpad
+copy and forbid the checkout explicitly. One model disclosed the injection unprompted,
+which is the only reason a flattering, meaningless score was not recorded here as fact.
+
+### 4.4 Do not skip these, however tempting
+
+- the call-site check and the core check — they overturned eleven between them;
+- the 16-locale regression loop at the end — cheap, and it is the safety net;
 - recording an escalated decision that came back "change nothing" — an unrecorded
   "left alone" is indistinguishable from "never looked", which is the whole reason
   a `corrections` count of 0 cannot be trusted.

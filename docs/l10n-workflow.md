@@ -925,6 +925,46 @@ is not empty, not identical to English, not wrong-arity, and reads as finished w
 **§3.8 guards against changes of taste, not against fixing grammar.** Do not cite it to skip
 the audit.
 
+#### Read the bundle as a SUBAGENT FAN-OUT, not sequentially
+
+**One reader has a recall ceiling that care does not remove.** The `sk` pass was committed as
+complete at 57 corrections; a second pass over the same bundle, run in a **fresh subagent
+context**, found five more, four of which are not marginal — a nominative plural where the
+genitive singular belonged (`Konfigurácia objektu polia`), a noun where the button convention
+takes an infinitive (`Draft denial`), one formal-2pl item in a six-item list of infinitives, and
+the bundle's word for *session* used to mean *relation*. The first pass had also claimed "zero
+wrong case in `sk`", which was wrong. `sk` is **62**, not 57. What survives a first read is
+precisely what a tired eye normalises: a plausible case ending, one list item out of six, a noun
+that could pass for a heading.
+
+So run step 4 of this section with the **Agent tool**:
+
+1. Slice the EN→target listing into ~4 chunks of roughly 500 keys and write them to the
+   scratchpad.
+2. Spawn **one subagent per chunk**, in a single message so they run concurrently.
+3. Give every subagent the same **shared context**, or it will waste its budget re-deriving
+   things you already know: the `core-diff` **AGREE** list (without it, a reader re-invents the
+   false candidates core has already killed), the `termdrift` output, and the collision list.
+   Tell it the locale's measured register and button convention (§7.2/§7.3) — otherwise it
+   reports every infinitive button as a register slip.
+4. Require **candidates with call-site evidence, never verdicts**, as structured output: key,
+   current value, what is wrong, suggested fix, confidence.
+5. **Adjudicate centrally.** Every candidate gets the core check and the call-site check before
+   it enters a patch. This is not a formality — it is where the errors are: core overturned six
+   `sk` candidates and the call site five more, eleven of roughly thirty.
+
+**Never let a subagent's suggestion land in a patch unreviewed.** Measured on the pre-audit `sk`
+bundle, a Haiku-class reader returned three findings: one real, and **two confident
+"high"-confidence claims that were both wrong** — it wanted `nemajú` for the correct 3sg
+`nemá` after a genitive-plural numeral, and the masculine-animate `obnovení` for the correct
+inanimate `obnovené`. Applying either would have written a NEW error into correct Slovak, and no
+gate in this repo could have caught it. Cheap models are usable for *generating* candidates,
+where recall is the job; they are not usable for deciding.
+
+Also give subagents an explicit read boundary. A reader that touches the repo gets `CLAUDE.md`
+and this file auto-attached, and this section names the actual answers for `sk` — which
+invalidates any attempt to measure a reader's quality against a locale already audited.
+
 **Mechanical checks are necessary but nowhere near sufficient.** On `is` they found 4 of the
 239. Build them anyway — they catch the class a reader's eye slides over — but then *read
 every pre-existing value*. What the checker cannot see is exactly what dominated: a bad
