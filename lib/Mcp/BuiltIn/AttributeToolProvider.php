@@ -150,6 +150,18 @@ class AttributeToolProvider implements IMcpToolProvider {
 				$descriptor['scope'] = $entry['scope'];
 			}
 
+			// 🔴 This method REBUILDS the descriptor from a fixed key list
+			// rather than forwarding the entry, so any key not named here is
+			// silently dropped. That is why `subject`/`action` declared on
+			// `#[McpTool]` reached the scanner and then vanished before the
+			// grant matrix: the attribute, the scanner and the bridge all
+			// carried them, and this one copy step did not.
+			foreach (['subject', 'action'] as $taxonomyKey) {
+				if (array_key_exists($taxonomyKey, $entry) === true) {
+					$descriptor[$taxonomyKey] = $entry[$taxonomyKey];
+				}
+			}
+
 			$tools[] = $descriptor;
 		}//end foreach
 
