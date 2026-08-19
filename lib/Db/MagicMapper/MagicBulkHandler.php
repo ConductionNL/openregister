@@ -611,17 +611,17 @@ class MagicBulkHandler {
 			// test against a real table — its own change, not a docblock sweep.
 			$existsColumns = '*';
 			if ($needsPreUpdateState === false) {
-				// `match`, and not any of the obvious alternatives: phpcs
-				// forbids the inline IF this replaces, phpmd forbids an else
-				// clause, and an if-then-override would add STATEMENTS — which
-				// the coverage ratchet correctly reads as new uncovered code
-				// (measured: 9/344 -> 9/346, a 0.02% drop on a formatting-only
-				// change). A match arm is one statement, exactly like the
-				// ternary it replaces, so the statement count does not move.
-				$existsColumns = match ($isPostgres) {
-					true => '"_uuid"',
-					default => '`_uuid`',
-				};
+				// Four rules meet on this one line, and three of the obvious
+				// forms break one of them — each measured, not guessed:
+				//   ternary          -> phpcs "Inline IF statements are not allowed"
+				//   if/else          -> phpmd "ElseExpression"
+				//   if-then-override -> +2 statements (344 -> 346), ratchet fails
+				//   match (2 arms)   -> +3 statements (344 -> 347), ratchet fails
+				// Clover counts each executable LINE, so any multi-line form
+				// adds uncovered statements to a formatting-only change. A
+				// single-expression lookup keyed on the boolean is one
+				// statement, exactly like the ternary it replaces.
+				$existsColumns = ['`_uuid`', '"_uuid"'][(int)$isPostgres];
 			}
 
 			$existsSql = "SELECT {$existsColumns} FROM `{$fullTableName}` WHERE `_uuid` IN ({$placeholders})";
