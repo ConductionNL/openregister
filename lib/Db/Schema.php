@@ -978,6 +978,21 @@ class Schema extends Entity implements JsonSerializable {
 		return $names;
 	}//end declaredActionNames()
 
+	/**
+	 * Reject an authorization block that names an action the vocabulary does not know.
+	 *
+	 * The vocabulary is CLOSED by default and EXTENSIBLE by declaration — see the
+	 * body for how a schema adds one. The gate is the feature rather than a rail
+	 * bolted onto it: an open vocabulary lets a typo save cleanly as a permission
+	 * that is never granted and never errors.
+	 *
+	 * @param array|null $authorization The authorization block to check, or null.
+	 * @param string $context Human-readable location, used in the refusal message.
+	 *
+	 * @return void
+	 *
+	 * @throws \InvalidArgumentException When an action is not in the vocabulary.
+	 */
 	private function validateAuthorizationRules(?array $authorization, string $context): void {
 		if (empty($authorization) === true) {
 			return;
