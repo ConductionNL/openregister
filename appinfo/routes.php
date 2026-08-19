@@ -282,18 +282,18 @@ return [
         // schema, action) scopes for the authenticated user without probing
         // every endpoint individually.
         ['name' => 'scopes#index', 'url' => '/api/scopes', 'verb' => 'GET'],
-        // AVG / GDPR Art 30 verwerkingsregister CRUD + verantwoordingsdocument.
-        ['name' => 'verwerkingsactiviteiten#index',          'url' => '/api/avg/verwerkingsactiviteiten',        'verb' => 'GET'],
-        ['name' => 'verwerkingsactiviteiten#show',           'url' => '/api/avg/verwerkingsactiviteiten/{id}',   'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
-        ['name' => 'verwerkingsactiviteiten#create',         'url' => '/api/avg/verwerkingsactiviteiten',        'verb' => 'POST'],
-        ['name' => 'verwerkingsactiviteiten#update',         'url' => '/api/avg/verwerkingsactiviteiten/{id}',   'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
-        ['name' => 'verwerkingsactiviteiten#destroy',        'url' => '/api/avg/verwerkingsactiviteiten/{id}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
-        ['name' => 'verwerkingsactiviteiten#accountability', 'url' => '/api/avg/verantwoording',                 'verb' => 'GET'],
+        // AVG / GDPR Art 30 verwerkingsregister CRUD + accountability document.
+        ['name' => 'verwerkingsactiviteiten#index',          'url' => '/api/avg/processing-activities',        'verb' => 'GET'],
+        ['name' => 'verwerkingsactiviteiten#show',           'url' => '/api/avg/processing-activities/{id}',   'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'verwerkingsactiviteiten#create',         'url' => '/api/avg/processing-activities',        'verb' => 'POST'],
+        ['name' => 'verwerkingsactiviteiten#update',         'url' => '/api/avg/processing-activities/{id}',   'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'verwerkingsactiviteiten#destroy',        'url' => '/api/avg/processing-activities/{id}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'verwerkingsactiviteiten#accountability', 'url' => '/api/avg/accountability',               'verb' => 'GET'],
         // AVG / GDPR data-subject rights endpoints (Phase 2b).
-        ['name' => 'dsar#inzage',         'url' => '/api/avg/inzage',         'verb' => 'GET'],
-        ['name' => 'dsar#portabiliteit',  'url' => '/api/avg/portabiliteit',  'verb' => 'GET'],
-        ['name' => 'dsar#vergetelheid',   'url' => '/api/avg/vergetelheid',   'verb' => 'POST'],
-        ['name' => 'dsar#rectificatie',   'url' => '/api/avg/rectificatie',   'verb' => 'POST'],
+        ['name' => 'dsar#access',         'url' => '/api/avg/access',         'verb' => 'GET'],
+        ['name' => 'dsar#portability',    'url' => '/api/avg/portability',    'verb' => 'GET'],
+        ['name' => 'dsar#erasure',        'url' => '/api/avg/erasure',        'verb' => 'POST'],
+        ['name' => 'dsar#rectification',  'url' => '/api/avg/rectification',  'verb' => 'POST'],
         ['name' => 'dsar#compliance',     'url' => '/api/avg/compliance',     'verb' => 'GET'],
         // Generic, RBAC + tenant scoped GDPR data-subject-rights endpoints
         // (consumable by leaf apps; NOT admin-only, distinct from dsar#*).
@@ -822,8 +822,8 @@ return [
         ['name' => 'auditTrail#export', 'url' => '/api/audit-trails/export', 'verb' => 'GET'],
         ['name' => 'auditTrail#verify', 'url' => '/api/audit-trails/verify', 'verb' => 'GET'],
         ['name' => 'auditTrail#integrity', 'url' => '/api/audit-trails/integrity', 'verb' => 'GET'],
-        ['name' => 'auditTrail#verwerkingsregister', 'url' => '/api/audit-trails/verwerkingsregister', 'verb' => 'GET'],
-        ['name' => 'auditTrail#inzageverzoek', 'url' => '/api/audit-trails/inzageverzoek', 'verb' => 'GET'],
+        ['name' => 'auditTrail#processingActivities', 'url' => '/api/audit-trails/processing-activities', 'verb' => 'GET'],
+        ['name' => 'auditTrail#subjectAuditTrail', 'url' => '/api/audit-trails/subject-lookup', 'verb' => 'GET'],
         ['name' => 'auditTrail#clearAll', 'url' => '/api/audit-trails/clear-all', 'verb' => 'DELETE'],
         ['name' => 'auditTrail#show', 'url' => '/api/audit-trails/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'auditTrail#update', 'url' => '/api/audit-trails/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
@@ -1242,6 +1242,9 @@ return [
 		// MCP Discovery - Tiered API discovery for AI agents.
 		// CORS preflight (OPTIONS) is handled automatically by the @CORS annotation.
 		['name' => 'mcp#discover', 'url' => '/api/mcp/v1/discover', 'verb' => 'GET'],
+		// The menu of rights that may be OFFERED to an agent. Reading it confers
+		// nothing — whether a given agent HOLDS a right is resolved by Hermiq.
+		['name' => 'mcp#grantableRights', 'url' => '/api/mcp/v1/grantable-rights', 'verb' => 'GET'],
 		['name' => 'mcp#discoverCapability', 'url' => '/api/mcp/v1/discover/{capability}', 'verb' => 'GET', 'requirements' => ['capability' => '[a-z-]+']],
 
 		// MCP Standard Protocol — JSON-RPC 2.0 Streamable HTTP endpoint.

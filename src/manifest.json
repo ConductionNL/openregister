@@ -218,9 +218,9 @@
       "id": "avg",
       "route": "/avg",
       "type": "custom",
-      "title": "AVG / Verwerkingsregister",
+      "title": "GDPR / AVG processing register",
       "component": "AvgIndex",
-      "_note": "Bespoke GDPR verwerkingsregister UI aggregating across registers."
+      "_note": "Bespoke GDPR processing-register UI aggregating across registers."
     },
     {
       "id": "reports",
@@ -415,7 +415,7 @@
         },
         {
           "id": "Avg",
-          "label": "AVG / Verwerkingsregister",
+          "label": "GDPR / AVG processing register",
           "icon": "DatabaseOutline",
           "route": "avg",
           "order": 100

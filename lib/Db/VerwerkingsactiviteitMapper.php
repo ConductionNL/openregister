@@ -178,7 +178,7 @@ class VerwerkingsactiviteitMapper extends QBMapper {
 			);
 		}
 
-		$qb->orderBy('naam', 'ASC');
+		$qb->orderBy('name', 'ASC');
 
 		return $this->findEntities(query: $qb);
 	}//end findAll()
@@ -192,8 +192,8 @@ class VerwerkingsactiviteitMapper extends QBMapper {
 	 *
 	 * @return Verwerkingsactiviteit Persisted entity with id populated.
 	 *
-	 * @throws InvalidArgumentException When `rechtsgrond` is unset/invalid
-	 *                                  or `naam`/`doelbinding` are blank.
+	 * @throws InvalidArgumentException When `legalBasis` is unset/invalid
+	 *                                  or `name`/`purpose` are blank.
 	 */
 	public function insert($entity): Verwerkingsactiviteit {
 		$this->validate(entity: $entity);
@@ -241,24 +241,24 @@ class VerwerkingsactiviteitMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 */
 	private function validate(Verwerkingsactiviteit $entity): void {
-		if ($entity->getNaam() === null || trim((string)$entity->getNaam()) === '') {
+		if ($entity->getName() === null || trim((string)$entity->getName()) === '') {
 			throw new InvalidArgumentException(
-				'Verwerkingsactiviteit MUST have a naam (AVG Art 30 §1(a))'
+				'Verwerkingsactiviteit MUST have a name (AVG Art 30 §1(a))'
 			);
 		}
 
-		if ($entity->getDoelbinding() === null || trim((string)$entity->getDoelbinding()) === '') {
+		if ($entity->getPurpose() === null || trim((string)$entity->getPurpose()) === '') {
 			throw new InvalidArgumentException(
-				'Verwerkingsactiviteit MUST have a doelbinding (AVG Art 30 §1(b))'
+				'Verwerkingsactiviteit MUST have a purpose (AVG Art 30 §1(b))'
 			);
 		}
 
-		if (Verwerkingsactiviteit::isValidRechtsgrond($entity->getRechtsgrond()) === false) {
+		if (Verwerkingsactiviteit::isValidLegalBasis($entity->getLegalBasis()) === false) {
 			throw new InvalidArgumentException(
 				sprintf(
-					'Invalid rechtsgrond "%s"; expected one of: %s (AVG Art 6)',
-					(string)$entity->getRechtsgrond(),
-					implode(', ', Verwerkingsactiviteit::RECHTSGROND_VOCABULARY)
+					'Invalid legalBasis "%s"; expected one of: %s (AVG Art 6)',
+					(string)$entity->getLegalBasis(),
+					implode(', ', Verwerkingsactiviteit::LEGAL_BASIS_VOCABULARY)
 				)
 			);
 		}
