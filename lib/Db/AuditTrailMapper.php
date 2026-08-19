@@ -1797,6 +1797,16 @@ class AuditTrailMapper extends QBMapper {
 		return $changed;
 	}//end capChangedPayload()
 
+	/**
+	 * Tombstone every audit-trail entry.
+	 *
+	 * ⚠️ Tombstones rather than deletes: the payload is destroyed but the row and
+	 * its chain links survive, because the hash chain is what makes the trail
+	 * evidence. Deleting rows would break the chain and leave nothing to show
+	 * that anything was ever there.
+	 *
+	 * @return bool True when the tombstone write succeeded.
+	 */
 	public function clearLogs(): bool {
 		try {
 			// Get the query builder for database operations.
