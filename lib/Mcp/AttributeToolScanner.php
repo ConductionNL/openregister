@@ -252,25 +252,46 @@ final class AttributeToolScanner {
 			$descriptor['scope'] = $attribute->scope;
 		}
 
-		// The grant-matrix taxonomy, forwarded on the same additive terms as
-		// the hints above: present ONLY when the author declared it, never
-		// inferred from the method name. `describeTools()` makes the same
-		// choice downstream, and for the same reason — an inferred subject is
-		// indistinguishable from a declared one, so a consumer given one
-		// cannot know whether to trust it.
-		//
-		// ⚠️ The consequence is that an OMISSION HAS NO SYMPTOM: the tool
-		// simply arrives at the matrix ungroupable. Apps are expected to pin
-		// this with a test, the way hermiq's provider does.
-		foreach (['subject', 'action'] as $taxonomyKey) {
-			$declared = $attribute->{$taxonomyKey};
-			if ($declared !== null && trim($declared) !== '') {
-				$descriptor[$taxonomyKey] = $declared;
-			}
+		return ($descriptor + $this->taxonomyOf(attribute: $attribute));
+	}//end buildDescriptor()
+
+	/**
+	 * The grant-matrix taxonomy an attribute declared, or an empty array.
+	 *
+	 * Forwarded on the same additive terms as the annotation hints: a key is
+	 * present ONLY when the author declared it, never inferred from the method
+	 * name. `ToolRegistryFacade::describeTools()` makes the same choice
+	 * downstream, and for the same reason — an inferred subject is
+	 * indistinguishable from a declared one, so a consumer handed one cannot
+	 * know whether to trust it.
+	 *
+	 * ⚠️ The consequence is that an OMISSION HAS NO SYMPTOM: the tool simply
+	 * arrives at the grant matrix ungroupable, with nothing failing anywhere.
+	 * Apps are expected to pin this with a test, the way hermiq's provider
+	 * does.
+	 *
+	 * Its own method rather than a loop inside `buildDescriptor()`, which was
+	 * already at the cyclomatic-complexity ceiling — two more branches there
+	 * tipped it over.
+	 *
+	 * @param McpTool $attribute The resolved attribute instance.
+	 *
+	 * @return array<string, string> The declared taxonomy keys only.
+	 */
+	private function taxonomyOf(McpTool $attribute): array {
+		$taxonomy = [];
+
+		if ($attribute->subject !== null && trim($attribute->subject) !== '') {
+			$taxonomy['subject'] = $attribute->subject;
 		}
 
-		return $descriptor;
-	}//end buildDescriptor()
+		if ($attribute->action !== null && trim($attribute->action) !== '') {
+			$taxonomy['action'] = $attribute->action;
+		}
+
+		return $taxonomy;
+
+	}//end taxonomyOf()
 
 	/**
 	 * Read one boolean hint property off the attribute by its
