@@ -2696,7 +2696,18 @@
         "🔍 SOLR is a powerful enterprise search platform built on Apache Lucene...": "🔍 SOLR ir jaudīga uzņēmuma meklēšanas platforma, kas veidota uz Apache Lucene...",
         "🔢 Vectorization Settings": "🔢 Vektorizācijas iestatījumi",
         "🚀 Auto-scaling can dynamically add or remove nodes based on load...": "🚀 Automātiskā mērogošana var dinamiski pievienot vai noņemt mezglus atkarībā no slodzes...",
-        "🛡️ Security features include authentication, authorization, and SSL encryption...": "🛡️ Drošības funkcijas ietver autentifikāciju, autorizāciju un SSL šifrēšanu..."
+        "🛡️ Security features include authentication, authorization, and SSL encryption...": "🛡️ Drošības funkcijas ietver autentifikāciju, autorizāciju un SSL šifrēšanu...",
+        "Access (Art 15)": "Access (Art 15)",
+        "Access results": "Access results",
+        "Accountability": "Accountability",
+        "Archive this processing activity? Audit-trail rows will keep referring to it.": "Archive this processing activity? Audit-trail rows will keep referring to it.",
+        "Create the first processing activity to start tagging audit-trail rows with their AVG Art 30 attribution.": "Create the first processing activity to start tagging audit-trail rows with their AVG Art 30 attribution.",
+        "GDPR / AVG processing register": "GDPR / AVG processing register",
+        "Generate the accountability document": "Generate the accountability document",
+        "Legal basis": "Legal basis",
+        "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
+        "Portability (Art 20)": "Portability (Art 20)",
+        "Retention period": "Retention period"
     },
     "plurals": {
         "{count} email": [

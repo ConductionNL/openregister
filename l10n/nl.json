@@ -2707,7 +2707,18 @@
         "🔍 SOLR is a powerful enterprise search platform built on Apache Lucene...": "🔍 SOLR is a powerful enterprise search platform built on Apache Lucene...",
         "🔢 Vectorization Settings": "🔢 Vectorisatie-instellingen",
         "🚀 Auto-scaling can dynamically add or remove nodes based on load...": "🚀 Auto-scaling can dynamically add or remove nodes based on load...",
-        "🛡️ Security features include authentication, authorization, and SSL encryption...": "🛡️ Security features include authentication, authorization, and SSL encryption..."
+        "🛡️ Security features include authentication, authorization, and SSL encryption...": "🛡️ Security features include authentication, authorization, and SSL encryption...",
+        "Access (Art 15)": "Inzage (Art 15)",
+        "Access results": "Inzageresultaten",
+        "Accountability": "Verantwoording",
+        "Archive this processing activity? Audit-trail rows will keep referring to it.": "Deze verwerkingsactiviteit archiveren? Audit-trail-rijen blijven ernaar verwijzen.",
+        "Create the first processing activity to start tagging audit-trail rows with their AVG Art 30 attribution.": "Maak de eerste verwerkingsactiviteit aan om audit-trail-rijen te voorzien van hun AVG art. 30-toewijzing.",
+        "GDPR / AVG processing register": "AVG / Verwerkingsregister",
+        "Generate the accountability document": "Genereer het verantwoordingsdocument",
+        "Legal basis": "Rechtsgrond",
+        "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Vind elk object dat verwijst naar een betrokkene (art. 15), bekijk een voorbeeld van verwijdering (art. 17), of exporteer hun gegevens (art. 20).",
+        "Portability (Art 20)": "Overdraagbaarheid (Art 20)",
+        "Retention period": "Bewaartermijn"
     },
     "plurals": {
         "{count} email": [
