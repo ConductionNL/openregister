@@ -104,6 +104,16 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function getFunctions(): array {
+		return array_merge(self::readFunctions(), self::writeFunctions());
+
+	}//end getFunctions()
+
+	/**
+	 * The application descriptors that change nothing.
+	 *
+	 * @return array<int, array<string, mixed>> The read descriptors.
+	 */
+	private static function readFunctions(): array {
 		return [
 			[
 				'name' => 'list_applications',
@@ -141,6 +151,23 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 					'required' => ['uuid'],
 				],
 			],
+		];
+
+	}//end readFunctions()
+
+	/**
+	 * The application descriptors that change state.
+	 *
+	 * Split from the reading half only to keep each method inside the
+	 * ExcessiveMethodLength budget — declaring `subject`/`action` on every
+	 * descriptor pushed the single combined table past it. The read/write line
+	 * is the honest place to cut, since it is the same boundary the grant
+	 * matrix groups on.
+	 *
+	 * @return array<int, array<string, mixed>> The write descriptors.
+	 */
+	private static function writeFunctions(): array {
+		return [
 			[
 				'name' => 'create_application',
 				'subject' => 'application',
@@ -210,7 +237,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 				],
 			],
 		];
-	}//end getFunctions()
+	}//end writeFunctions()
 
 	/**
 	 * List applications
