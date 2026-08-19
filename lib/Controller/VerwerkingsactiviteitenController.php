@@ -5,14 +5,14 @@
  *
  * CRUD over the dedicated `oc_openregister_verwerkingsactiviteiten`
  * catalog plus the Art 30 §4 supervisory-review report endpoint
- * (`GET /api/avg/verantwoording`) that aggregates audit-trail rows
+ * (`GET /api/avg/accountability`) that aggregates audit-trail rows
  * per processing activity.
  *
  * Authorization rules:
  *
- *   - List + show + verantwoording: any authenticated user. AVG Art 30 §4
+ *   - List + show + accountability: any authenticated user. AVG Art 30 §4
  *     requires the verwerkingsregister to be available to supervisory
- *     authorities and indirectly to data subjects via inzage requests,
+ *     authorities and indirectly to data subjects via access requests,
  *     so read paths intentionally don't gate on admin.
  *   - Create / update / delete: admin-only. Operators maintain the
  *     catalog; misconfigurations directly affect compliance.
@@ -80,7 +80,7 @@ class VerwerkingsactiviteitenController extends Controller {
 	}//end __construct()
 
 	/**
-	 * GET /api/avg/verwerkingsactiviteiten — list all activities.
+	 * GET /api/avg/processing-activities — list all activities.
 	 *
 	 * Optional query parameters: `status`, `organisation`.
 	 *
@@ -134,7 +134,7 @@ class VerwerkingsactiviteitenController extends Controller {
 	}//end index()
 
 	/**
-	 * GET /api/avg/verwerkingsactiviteiten/{id} — fetch one.
+	 * GET /api/avg/processing-activities/{id} — fetch one.
 	 *
 	 * Accepts numeric id, uuid, or short readable code. Returns 404
 	 * when nothing matches.
@@ -184,9 +184,9 @@ class VerwerkingsactiviteitenController extends Controller {
 	}//end show()
 
 	/**
-	 * POST /api/avg/verwerkingsactiviteiten — create one.
+	 * POST /api/avg/processing-activities — create one.
 	 *
-	 * Admin-only. Required fields: `naam`, `doelbinding`, `rechtsgrond`.
+	 * Admin-only. Required fields: `name`, `purpose`, `legalBasis`.
 	 *
 	 * @return JSONResponse The persisted activity (201) or a 422 envelope.
 	 *
@@ -219,7 +219,7 @@ class VerwerkingsactiviteitenController extends Controller {
 	}//end create()
 
 	/**
-	 * PUT /api/avg/verwerkingsactiviteiten/{id} — update one.
+	 * PUT /api/avg/processing-activities/{id} — update one.
 	 *
 	 * Admin-only.
 	 *
@@ -260,7 +260,7 @@ class VerwerkingsactiviteitenController extends Controller {
 	}//end update()
 
 	/**
-	 * DELETE /api/avg/verwerkingsactiviteiten/{id} — soft-archive.
+	 * DELETE /api/avg/processing-activities/{id} — soft-archive.
 	 *
 	 * Admin-only. We never hard-delete: audit-trail rows reference
 	 * activities by uuid as a soft FK and forensic legibility requires
@@ -295,11 +295,12 @@ class VerwerkingsactiviteitenController extends Controller {
 	}//end destroy()
 
 	/**
-	 * GET /api/avg/verantwoording — Art 30 §4 supervisory-review report.
+	 * GET /api/avg/accountability — Art 30 §4 supervisory-review report.
 	 *
 	 * Joins each verwerkingsactiviteit with the audit-trail row counts
 	 * (per action) attributed to it. Suitable for AP supervisory
-	 * review and the operator's annual `verantwoordingsdocument`.
+	 * review and the operator's annual accountability document
+	 * (Dutch: verantwoordingsdocument).
 	 *
 	 * Response shape:
 	 *
@@ -317,7 +318,7 @@ class VerwerkingsactiviteitenController extends Controller {
 	 *     ]
 	 *   }
 	 *
-	 * @return JSONResponse The verantwoordingsdocument envelope.
+	 * @return JSONResponse The accountability document envelope.
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
@@ -382,13 +383,13 @@ class VerwerkingsactiviteitenController extends Controller {
 	private function hydrateFromPayload(Verwerkingsactiviteit $entity, array $payload): Verwerkingsactiviteit {
 		$stringFields = [
 			'code' => 'setCode',
-			'naam' => 'setNaam',
-			'beschrijving' => 'setBeschrijving',
-			'doelbinding' => 'setDoelbinding',
-			'rechtsgrond' => 'setRechtsgrond',
-			'bewaartermijn' => 'setBewaartermijn',
-			'technischeMaatregelen' => 'setTechnischeMaatregelen',
-			'organisatorischeMaatregelen' => 'setOrganisatorischeMaatregelen',
+			'name' => 'setName',
+			'description' => 'setDescription',
+			'purpose' => 'setPurpose',
+			'legalBasis' => 'setLegalBasis',
+			'retentionPeriod' => 'setRetentionPeriod',
+			'technicalMeasures' => 'setTechnicalMeasures',
+			'organisationalMeasures' => 'setOrganisationalMeasures',
 			'organisationId' => 'setOrganisationId',
 			'status' => 'setStatus',
 		];
@@ -404,12 +405,12 @@ class VerwerkingsactiviteitenController extends Controller {
 		}
 
 		$arrayFields = [
-			'categorieenBetrokkenen' => 'setCategorieenBetrokkenen',
-			'categorieenPersoonsgegevens' => 'setCategorieenPersoonsgegevens',
-			'ontvangers' => 'setOntvangers',
-			'doorgifteBuitenEu' => 'setDoorgifteBuitenEu',
-			'verwerkingsverantwoordelijke' => 'setVerwerkingsverantwoordelijke',
-			'contactgegevensFg' => 'setContactgegevensFg',
+			'dataSubjectCategories' => 'setDataSubjectCategories',
+			'personalDataCategories' => 'setPersonalDataCategories',
+			'recipients' => 'setRecipients',
+			'internationalTransfers' => 'setInternationalTransfers',
+			'controller' => 'setController',
+			'dpoContactDetails' => 'setDpoContactDetails',
 		];
 		foreach ($arrayFields as $field => $setter) {
 			if (array_key_exists($field, $payload) === true) {

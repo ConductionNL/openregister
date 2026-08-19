@@ -11,6 +11,10 @@
  * pre-existing `processing_activity_id` column on
  * `oc_openregister_audit_trails`.
  *
+ * Field names were renamed from Dutch to English by the
+ * `verwerkingsregister-i18n` change; the class name and table name
+ * are unchanged (only the entity's fields moved).
+ *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -45,32 +49,32 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUuid(?string $uuid)
  * @method string|null getCode()
  * @method void setCode(?string $code)
- * @method string|null getNaam()
- * @method void setNaam(?string $naam)
- * @method string|null getBeschrijving()
- * @method void setBeschrijving(?string $beschrijving)
- * @method string|null getDoelbinding()
- * @method void setDoelbinding(?string $doelbinding)
- * @method string|null getRechtsgrond()
- * @method void setRechtsgrond(?string $rechtsgrond)
- * @method array|null getCategorieenBetrokkenen()
- * @method void setCategorieenBetrokkenen(?array $categorieenBetrokkenen)
- * @method array|null getCategorieenPersoonsgegevens()
- * @method void setCategorieenPersoonsgegevens(?array $categorieenPersoonsgegevens)
- * @method string|null getBewaartermijn()
- * @method void setBewaartermijn(?string $bewaartermijn)
- * @method array|null getOntvangers()
- * @method void setOntvangers(?array $ontvangers)
- * @method array|null getDoorgifteBuitenEu()
- * @method void setDoorgifteBuitenEu(?array $doorgifteBuitenEu)
- * @method string|null getTechnischeMaatregelen()
- * @method void setTechnischeMaatregelen(?string $technischeMaatregelen)
- * @method string|null getOrganisatorischeMaatregelen()
- * @method void setOrganisatorischeMaatregelen(?string $organisatorischeMaatregelen)
- * @method array|null getVerwerkingsverantwoordelijke()
- * @method void setVerwerkingsverantwoordelijke(?array $verwerkingsverantwoordelijke)
- * @method array|null getContactgegevensFg()
- * @method void setContactgegevensFg(?array $contactgegevensFg)
+ * @method string|null getName()
+ * @method void setName(?string $name)
+ * @method string|null getDescription()
+ * @method void setDescription(?string $description)
+ * @method string|null getPurpose()
+ * @method void setPurpose(?string $purpose)
+ * @method string|null getLegalBasis()
+ * @method void setLegalBasis(?string $legalBasis)
+ * @method array|null getDataSubjectCategories()
+ * @method void setDataSubjectCategories(?array $dataSubjectCategories)
+ * @method array|null getPersonalDataCategories()
+ * @method void setPersonalDataCategories(?array $personalDataCategories)
+ * @method string|null getRetentionPeriod()
+ * @method void setRetentionPeriod(?string $retentionPeriod)
+ * @method array|null getRecipients()
+ * @method void setRecipients(?array $recipients)
+ * @method array|null getInternationalTransfers()
+ * @method void setInternationalTransfers(?array $internationalTransfers)
+ * @method string|null getTechnicalMeasures()
+ * @method void setTechnicalMeasures(?string $technicalMeasures)
+ * @method string|null getOrganisationalMeasures()
+ * @method void setOrganisationalMeasures(?string $organisationalMeasures)
+ * @method array|null getController()
+ * @method void setController(?array $controller)
+ * @method array|null getDpoContactDetails()
+ * @method void setDpoContactDetails(?array $dpoContactDetails)
  * @method string|null getOrganisationId()
  * @method void setOrganisationId(?string $organisationId)
  * @method string|null getStatus()
@@ -90,13 +94,13 @@ class Verwerkingsactiviteit extends Entity implements JsonSerializable {
 	 *
 	 * @var array<int, string>
 	 */
-	public const RECHTSGROND_VOCABULARY = [
-		'toestemming',
-		'overeenkomst',
-		'wettelijke_verplichting',
-		'vitaal_belang',
-		'publieke_taak',
-		'gerechtvaardigd_belang',
+	public const LEGAL_BASIS_VOCABULARY = [
+		'consent',
+		'contract',
+		'legal_obligation',
+		'vital_interests',
+		'public_task',
+		'legitimate_interest',
 	];
 
 	/**
@@ -125,91 +129,91 @@ class Verwerkingsactiviteit extends Entity implements JsonSerializable {
 	 *
 	 * @var string|null
 	 */
-	protected ?string $naam = null;
+	protected ?string $name = null;
 
 	/**
 	 * Free-form description of the processing activity.
 	 *
 	 * @var string|null
 	 */
-	protected ?string $beschrijving = null;
+	protected ?string $description = null;
 
 	/**
 	 * Purpose-limitation statement (Art 5(1)(b)).
 	 *
 	 * @var string|null
 	 */
-	protected ?string $doelbinding = null;
+	protected ?string $purpose = null;
 
 	/**
 	 * Article 6 GDPR legal basis identifier (vocabulary above).
 	 *
 	 * @var string|null
 	 */
-	protected ?string $rechtsgrond = null;
+	protected ?string $legalBasis = null;
 
 	/**
 	 * Categories of data subjects (Art 30 §1(c)).
 	 *
 	 * @var array<int, mixed>|null
 	 */
-	protected ?array $categorieenBetrokkenen = null;
+	protected ?array $dataSubjectCategories = null;
 
 	/**
 	 * Categories of personal data (Art 30 §1(c)).
 	 *
 	 * @var array<int, mixed>|null
 	 */
-	protected ?array $categorieenPersoonsgegevens = null;
+	protected ?array $personalDataCategories = null;
 
 	/**
 	 * Retention rule expressed as an ISO-8601 duration (e.g. `P10Y`).
 	 *
 	 * @var string|null
 	 */
-	protected ?string $bewaartermijn = null;
+	protected ?string $retentionPeriod = null;
 
 	/**
 	 * Recipients (Art 30 §1(d)).
 	 *
 	 * @var array<int, mixed>|null
 	 */
-	protected ?array $ontvangers = null;
+	protected ?array $recipients = null;
 
 	/**
 	 * Third-country transfer details (Art 30 §1(e), Art 44).
 	 *
 	 * @var array<string, mixed>|null
 	 */
-	protected ?array $doorgifteBuitenEu = null;
+	protected ?array $internationalTransfers = null;
 
 	/**
 	 * Technical security measures (Art 30 §1(g), Art 32).
 	 *
 	 * @var string|null
 	 */
-	protected ?string $technischeMaatregelen = null;
+	protected ?string $technicalMeasures = null;
 
 	/**
 	 * Organisational security measures (Art 30 §1(g), Art 32).
 	 *
 	 * @var string|null
 	 */
-	protected ?string $organisatorischeMaatregelen = null;
+	protected ?string $organisationalMeasures = null;
 
 	/**
 	 * Controller details (Art 30 §1(a)).
 	 *
 	 * @var array<string, mixed>|null
 	 */
-	protected ?array $verwerkingsverantwoordelijke = null;
+	protected ?array $controller = null;
 
 	/**
 	 * Data Protection Officer contact details.
 	 *
 	 * @var array<string, mixed>|null
 	 */
-	protected ?array $contactgegevensFg = null;
+	protected ?array $dpoContactDetails = null;
 
 	/**
 	 * Tenant identifier for multi-tenant isolation.
@@ -245,19 +249,19 @@ class Verwerkingsactiviteit extends Entity implements JsonSerializable {
 	public function __construct() {
 		$this->addType(fieldName: 'uuid', type: 'string');
 		$this->addType(fieldName: 'code', type: 'string');
-		$this->addType(fieldName: 'naam', type: 'string');
-		$this->addType(fieldName: 'beschrijving', type: 'string');
-		$this->addType(fieldName: 'doelbinding', type: 'string');
-		$this->addType(fieldName: 'rechtsgrond', type: 'string');
-		$this->addType(fieldName: 'categorieenBetrokkenen', type: 'json');
-		$this->addType(fieldName: 'categorieenPersoonsgegevens', type: 'json');
-		$this->addType(fieldName: 'bewaartermijn', type: 'string');
-		$this->addType(fieldName: 'ontvangers', type: 'json');
-		$this->addType(fieldName: 'doorgifteBuitenEu', type: 'json');
-		$this->addType(fieldName: 'technischeMaatregelen', type: 'string');
-		$this->addType(fieldName: 'organisatorischeMaatregelen', type: 'string');
-		$this->addType(fieldName: 'verwerkingsverantwoordelijke', type: 'json');
-		$this->addType(fieldName: 'contactgegevensFg', type: 'json');
+		$this->addType(fieldName: 'name', type: 'string');
+		$this->addType(fieldName: 'description', type: 'string');
+		$this->addType(fieldName: 'purpose', type: 'string');
+		$this->addType(fieldName: 'legalBasis', type: 'string');
+		$this->addType(fieldName: 'dataSubjectCategories', type: 'json');
+		$this->addType(fieldName: 'personalDataCategories', type: 'json');
+		$this->addType(fieldName: 'retentionPeriod', type: 'string');
+		$this->addType(fieldName: 'recipients', type: 'json');
+		$this->addType(fieldName: 'internationalTransfers', type: 'json');
+		$this->addType(fieldName: 'technicalMeasures', type: 'string');
+		$this->addType(fieldName: 'organisationalMeasures', type: 'string');
+		$this->addType(fieldName: 'controller', type: 'json');
+		$this->addType(fieldName: 'dpoContactDetails', type: 'json');
 		$this->addType(fieldName: 'organisationId', type: 'string');
 		$this->addType(fieldName: 'status', type: 'string');
 		$this->addType(fieldName: 'created', type: 'datetime');
@@ -268,17 +272,17 @@ class Verwerkingsactiviteit extends Entity implements JsonSerializable {
 	/**
 	 * Whether the supplied legal-basis string is in the Art 6 vocabulary.
 	 *
-	 * @param string|null $rechtsgrond Candidate legal-basis string.
+	 * @param string|null $legalBasis Candidate legal-basis string.
 	 *
 	 * @return bool
 	 */
-	public static function isValidRechtsgrond(?string $rechtsgrond): bool {
-		if ($rechtsgrond === null || $rechtsgrond === '') {
+	public static function isValidLegalBasis(?string $legalBasis): bool {
+		if ($legalBasis === null || $legalBasis === '') {
 			return false;
 		}
 
-		return in_array(needle: $rechtsgrond, haystack: self::RECHTSGROND_VOCABULARY, strict: true);
-	}//end isValidRechtsgrond()
+		return in_array(needle: $legalBasis, haystack: self::LEGAL_BASIS_VOCABULARY, strict: true);
+	}//end isValidLegalBasis()
 
 	/**
 	 * Whether the supplied status string is in the lifecycle vocabulary.
@@ -305,19 +309,19 @@ class Verwerkingsactiviteit extends Entity implements JsonSerializable {
 			'id' => $this->id,
 			'uuid' => $this->uuid,
 			'code' => $this->code,
-			'naam' => $this->naam,
-			'beschrijving' => $this->beschrijving,
-			'doelbinding' => $this->doelbinding,
-			'rechtsgrond' => $this->rechtsgrond,
-			'categorieenBetrokkenen' => $this->categorieenBetrokkenen,
-			'categorieenPersoonsgegevens' => $this->categorieenPersoonsgegevens,
-			'bewaartermijn' => $this->bewaartermijn,
-			'ontvangers' => $this->ontvangers,
-			'doorgifteBuitenEu' => $this->doorgifteBuitenEu,
-			'technischeMaatregelen' => $this->technischeMaatregelen,
-			'organisatorischeMaatregelen' => $this->organisatorischeMaatregelen,
-			'verwerkingsverantwoordelijke' => $this->verwerkingsverantwoordelijke,
-			'contactgegevensFg' => $this->contactgegevensFg,
+			'name' => $this->name,
+			'description' => $this->description,
+			'purpose' => $this->purpose,
+			'legalBasis' => $this->legalBasis,
+			'dataSubjectCategories' => $this->dataSubjectCategories,
+			'personalDataCategories' => $this->personalDataCategories,
+			'retentionPeriod' => $this->retentionPeriod,
+			'recipients' => $this->recipients,
+			'internationalTransfers' => $this->internationalTransfers,
+			'technicalMeasures' => $this->technicalMeasures,
+			'organisationalMeasures' => $this->organisationalMeasures,
+			'controller' => $this->controller,
+			'dpoContactDetails' => $this->dpoContactDetails,
 			'organisationId' => $this->organisationId,
 			'status' => $this->status,
 			'created' => $this->created?->format('c'),
