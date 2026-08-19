@@ -110,6 +110,8 @@ class ObjectsTool extends AbstractTool {
 		return [
 			[
 				'name' => 'search_objects',
+				'subject' => 'object',
+				'action' => 'search',
 				'description' => 'Search for objects with optional filters',
 				'parameters' => [
 					'type' => 'object',
@@ -140,6 +142,8 @@ class ObjectsTool extends AbstractTool {
 			],
 			[
 				'name' => 'get_object',
+				'subject' => 'object',
+				'action' => 'get',
 				'description' => 'Get details about a specific object by ID or UUID',
 				'parameters' => [
 					'type' => 'object',
@@ -154,6 +158,8 @@ class ObjectsTool extends AbstractTool {
 			],
 			[
 				'name' => 'create_object',
+				'subject' => 'object',
+				'action' => 'create',
 				'description' => 'Create a new object with data',
 				'parameters' => [
 					'type' => 'object',
@@ -176,6 +182,8 @@ class ObjectsTool extends AbstractTool {
 			],
 			[
 				'name' => 'update_object',
+				'subject' => 'object',
+				'action' => 'update',
 				'description' => 'Update an existing object',
 				'parameters' => [
 					'type' => 'object',
@@ -194,6 +202,8 @@ class ObjectsTool extends AbstractTool {
 			],
 			[
 				'name' => 'delete_object',
+				'subject' => 'object',
+				'action' => 'delete',
 				'description' => 'Delete an object by ID',
 				'parameters' => [
 					'type' => 'object',
