@@ -963,6 +963,15 @@ Two things to get right when writing the checks, both learned the hard way on `i
   attempt were false. Restrict such a check to masculine singulars (`-ur`/`-ll`/`-nn`) and to
   plurals (dative `-um`), where the surface forms actually discriminate. Watch for phrasal
   verbs too: `búa til` is "create", and the `til` in it governs nothing.
+- **An elision/contraction check must encode the exceptions, or it is all noise.** Catalan
+  contracts `la` → `l'` before a vowel — but **not** before an unstressed initial `i-` or `u-`, so
+  `la informació`, `la identitat`, `la integració`, `la inicialització`, `la incrustació`,
+  `la interfície` and `la UE` are all correct. A naive `(el|la|de)\s+[aeiou…]` sweep over `ca`
+  returned 12 hits of which **exactly one** was real (`la alternativa`, where the `a` is stressed);
+  ten were the i-/u- exception and one was the verb `instal·la` mis-parsed as the article. The same
+  shape recurs wherever a language's sandhi has lexical exceptions — Italian's `lo`/`il`, French's
+  `le`/`la` before aspirated `h`, Irish's `an t-`. Yield here was 1 of 12, which is in line with
+  the rest of §6.9: **build it if it is three lines, but read the file regardless.**
 
 Record every correction in `corrections` (§6.3). At this volume, per-key prose stops being
 readable — use **short class codes** (`AGREEMENT`, `CASE`, `NUMBER`, `COMPOUND`, `HYPHEN`,
@@ -1474,6 +1483,16 @@ recall where it is not needed.
   mixes them. `sk`'s and `sl`'s `fold()` must **not** strip diacritics, because three of
   their distinctions ride on the acute alone (`ti`/`tí`, `vyber`/`výber`, `uprav`/`úprav`).
 - **Danish opens quotes with `”`**, the glyph English uses to close one.
+- **A word-token regex must know the target language's word-INTERNAL punctuation.** Catalan writes
+  its geminate l with an interpunct, U+00B7 MIDDLE DOT — `col·lecció`, `paral·lel`, `Cancel·la`,
+  `instal·lada`, `sol·licitud` — and `spell.js` had it outside the token class, so every such word
+  split into two junk halves and seven of them were reported as misspellings (`lecció`, `lel`,
+  `paral`, `laboratives`, `lelisme`, `lada`, `leccions`). It also produced two false hits in an
+  elision sweep, because `instal·la` ends in `·la` and so looked like the article `la`. Fixed in
+  `spell.js`; the general rule is that **an orthography can defeat a checker silently**, and the
+  tell is a cluster of implausible short "words" that all share a stem with a real one. Check the
+  target's own conventions — the apostrophe is already handled, but the interpunct, the Catalan/
+  Occitan `ç`, and any language writing a digraph with an internal mark need the same treatment.
 - **A probe without the `i` flag will under-count and look like a real finding.** The first
   `mt` register probe scored **zero** for the pronoun and would have been recorded that way;
   the bundle's three `Inti ċert li trid…` values are sentence-initial and so capitalised.
@@ -1752,19 +1771,30 @@ audited, `locales/cs.json` written), so the remaining set is
 are *doubly* un-audited, so the re-audit handoff reasonably predicted they would be as bad as
 `is` or worse. On this evidence the opposite is true for the mature ones:
 
-| | `is` (Transifex half) | `cs` (whole bundle) | `sk` (whole bundle) |
-| --- | --- | --- | --- |
-| values audited | 1052 | 2052 | 2052 |
-| defects | 235 (**22%**) | 113 (**5.5%**) | 57 (**2.8%**) |
-| garbled words / foreign stems | 14 | **0** | 1 (one typo) |
-| agreement failures | 11 | **0** | **0** |
-| wrong case | 19 | 6 | **0** |
-| wrong plural arrays | — | **0** | **0** |
-| dominant class | malformed compounds, wrong senses | **terminology drift and internal inconsistency** | **one term (37 of 57), plus stray one-offs** |
+| | `is` (Transifex half) | `cs` (whole bundle) | `sk` (whole bundle) | `ca` (whole bundle) |
+| --- | --- | --- | --- | --- |
+| values audited | 1052 | 2052 | 2052 | 2052 |
+| defects | 235 (**22%**) | 113 (**5.5%**) | 57 (**2.8%**) | 128 (**6.2%**) |
+| garbled words / foreign stems | 14 | **0** | 1 (one typo) | 2 (Spanish calques) |
+| agreement failures | 11 | **0** | **0** | 1 |
+| wrong case | 19 | 6 | **0** | — (no case system) |
+| wrong plural arrays | — | **0** | **0** | **0** |
+| dominant class | malformed compounds, wrong senses | **terminology drift and internal inconsistency** | **one term (37 of 57), plus stray one-offs** | **on-screen collisions plus a long tail** |
 
 Czech is an actively maintained locale with a real translator community and the bundle reads
 like it. So **budget these passes for terminology counting, not grammar repair** — and expect
 that split to track how healthy the locale is upstream, not how long it has gone un-audited.
+
+**`ca` breaks the "defects concentrate" pattern, and that is the thing to plan for.** `sk` was
+37-of-57 in a single term, so the pass was one sweep. `ca`'s biggest class was 35 keys and *eleven
+further classes* carried 2–11 each, which is slower per defect and means **you cannot stop when
+the term count goes quiet.** Its two worst defects were also of a kind neither `cs` nor `sk` had:
+**byte-identical collisions between two labels the user sees side by side** — `Settings`/`Configuration`
+as sibling tabs in three dialogs, and `Logs`/`Registers` as the two tabs of one tab bar. Grep the
+`tabs:` arrays and the paired empty states early; a collision the user can see is a defect however
+defensible each word is on its own. Conversely `ca` is where **core killed the most candidates**:
+`Refresh`/`Update` → `Actualitza` and `Remove`/`Delete` → the `suprimir` family are both core `ca`
+verbatim, so two collisions that looked identical to the two real ones were correctly left alone.
 
 **`sk` confirms this from the other direction, and is worth reading before starting Tier 2.**
 It is not one of these sixteen — it is a Tier 2 locale that already had a register

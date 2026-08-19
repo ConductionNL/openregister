@@ -183,6 +183,17 @@ detector, a reviewed cognate set and an empty `corrections`, and the audit still
 defects — including two semantic reversals invisible to every gate. But a 0 does not imply a
 quarter of the file is waiting either; read it as "nobody looked".
 
+**`ca` is the highest of the three healthy locales at 128 defects (6.2%)**, and it is where the
+defects stopped being one dominant term: the biggest class was 35 keys, and eleven other classes
+carried between two and eleven each. Two of those were **collisions visible on a single screen** —
+`Settings`/`Configuration` both rendering `Configuració` next to each other as sibling tab labels in
+three dialogs, and `Logs`/`Registers` both rendering `Registres` as the two tabs of one tab bar. That
+is the class to hunt first in any locale whose language collapses two of the app's nouns: grep the
+`tabs:` arrays and the paired empty states, because a byte-identical collision the *user* can see is
+a defect no amount of "both words are correct Catalan" excuses. **The reports also found their own
+blind spot** — `l10n:spell` was splitting every Catalan `l·l` word in half and reporting the halves
+as misspellings, so a locale's orthography can defeat the tooling silently.
+
 **Check core AND the call site before "fixing" an outlier.** Core `cs` overturned four
 candidate corrections, one of which was the only value in its family that actually matched
 core. On `sk` the two together overturned **ten** — more than any single class the pass

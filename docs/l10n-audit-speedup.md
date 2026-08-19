@@ -57,6 +57,18 @@ npm run l10n:fetchdicts        # LibreOffice dictionaries, no root, 30 of 36 loc
 
 11. **A finished audit is not proof a locale is clean.** Record the count, not a verdict.
 
+12. **Read the spell report for tooling failure before reading it for defects.** A cluster of
+    implausible short words sharing a stem with a real one means the tokeniser split something,
+    not that the locale is garbled. `ca` produced `lecció`, `lel`, `paral`, `lada`,
+    `laboratives` — all halves of `col·lecció`/`paral·lel`/`instal·lada`, because U+00B7 was
+    missing from the token class. Fixed, but the class generalises to any orthography with
+    word-internal punctuation.
+
+13. **Grep the `tabs:` arrays for byte-identical collisions.** The two worst `ca` defects were
+    two pairs of sibling tab labels rendering the same string — visible to any user, invisible
+    to every gate, and not findable by reading values one at a time. Cheap:
+    `grep -rn "tabs:" src/ -A4` and check each pair against the bundle.
+
 ## Don't rebuild this
 
 A cross-locale outlier scanner (cluster all 36 locales per key, flag the odd one out) scored

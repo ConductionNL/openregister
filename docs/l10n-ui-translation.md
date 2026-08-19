@@ -1491,3 +1491,45 @@ the life of the file: `NO ACTION` → `NEMA RADNJE`, which is correct Serbian in
 alphabet *and* Croatian *and* inconsistent with the bundle's 24 other audit-trail values.
 Neither is empty, identical to English, or a bad plural, so nothing else could see them.
 Run the sweep before assuming a non-Latin bundle's pre-existing half is sound.
+
+### `ca` traps
+
+Register is **formal** (491 vs 32 against core) with **bare 2sg imperative buttons**, so a single
+value legitimately mixes `Desa` on the button with `Deseu`-style 2pl in the prose beside it. An
+imperative on an action label is the convention, not a slip.
+
+- **The interpunct `·` (U+00B7) is word-internal.** `col·lecció`, `paral·lel`, `Cancel·la`,
+  `instal·lada`, `sol·licitud`, `excel·lent`. Any tokeniser, spell check or regex sweep that
+  treats it as a separator will split these in half and report the halves — this actually
+  happened to `spell.js` and is written up in runbook §8.3. It also makes the verb `instal·la`
+  look like the article `la` to an elision check.
+- **`la` does NOT contract before an unstressed initial `i-` or `u-`.** `la informació`,
+  `la identitat`, `la integració`, `la interfície`, `la UE` are all correct; `l'` is required
+  only before a stressed vowel (`l'alternativa`, `l'API`, `l'objecte`, `l'esquema`). This makes
+  a naive elision sweep about 1-in-12 accurate here (runbook §6.9).
+- **`registre` collapses three English words** — `Register` (the app's primary entity), `log`,
+  and `record`. That is not avoidable at the stem, but it *is* avoidable per key, and two of the
+  collisions were on-screen: `Logs`/`Registers` were the two tabs of one tab bar in
+  `ViewSource.vue`. `Logs` took the qualifier the bundle's other 16 log keys already use
+  (`Registres d'activitat`), and *record* in the MDM screens moved to the app's own `objecte`.
+  Spanish and Portuguese have the identical three-way collapse and have not been audited, so
+  expect this to recur in both — and do **not** read their agreement with `ca` as evidence.
+- **`Configuració` covers both `Settings` and the app's `Configuration` entity.** Core `ca` splits
+  them (`Paràmetres`/`Configuració`) and so did the bundle's own one key containing both words.
+  35 keys; the owner chose to normalise them all. Compare `cs`, where the same shape came out the
+  other way round because core pointed at the losing option.
+- **False friends that pass every gate**: `inconsistent` means *flimsy* in Catalan, not
+  *contradictory* (use `incoherent`); `citació` is a judicial summons, not a citation;
+  `desplaçament` is scrolling, not moving an item; `serial` is a broadcast serial, not
+  *sequential* (`en sèrie`); `amigable` describes a person's manner, not a UI. And `autoritzat`
+  is *authorised*, which is not *authoritative*.
+- **`Fins a la data` is an idiom meaning "up to now"**, so it is wrong as the label of a `To Date`
+  field — a sense error that reads perfectly well in isolation.
+- **`(s)` parentheticals only work where the plural is a bare suffix.** `dia(es)` and
+  `problema(es)` expand to the non-words *diaes* and *problemaes* because both stems change, so
+  those took the slash (`dia/dies`). `cas(os)`, `tauler(s)`, `giny(s)` are fine. Same rule `is`
+  arrived at, for the same reason.
+- **Two useful negatives, both checked rather than assumed.** `Refresh` and `Update` both render
+  `Actualitza` and that is **core `ca` verbatim for both**, so the collision is not a defect.
+  `Remove` and `Delete` both land in the `suprimir` family, and core collapses them too — the
+  same answer `sk` reached. Neither was "fixed".
