@@ -601,12 +601,13 @@ function configuredLocales() {
  * yet, so callers can treat "not started" and "in progress" uniformly.
  *
  * @param {string} loc Locale code.
- * @return {{register: string|null, cognates: object, corrections: object}} Config.
+ * @return {{register: string|null, pluralOrder: string|null, pluralBoundary: string|null,
+ *   cognates: object, corrections: object}} Config.
  */
 function loadLocaleConfig(loc) {
 	const f = path.join(LOCALES_DIR, `${loc}.json`)
 	if (!fs.existsSync(f)) {
-		return { register: null, pluralOrder: null, cognates: {}, corrections: {} }
+		return { register: null, pluralOrder: null, pluralBoundary: null, cognates: {}, corrections: {} }
 	}
 	const raw = JSON.parse(fs.readFileSync(f, 'utf8'))
 	return {
@@ -615,7 +616,19 @@ function loadLocaleConfig(loc) {
 		// library disagree on which index each count selects, and that the arrays are
 		// deliberately ordered by the library. Read by runtime-check.mjs; without it a
 		// mismatch is a hard failure, so the ordering cannot be silently reverted.
+		//
+		// pluralOrder is for a PERMUTATION disagreement, where the two partition the
+		// counts identically and only label the parts differently, so reordering the
+		// arrays makes the locale fully correct (lv). pluralBoundary is for a
+		// disagreement no reordering can fix, because the two draw the boundaries in
+		// different PLACES: `is` routes 21/31/41… to the plural where Icelandic takes
+		// the singular, and `mk` routes 11/111 to the singular where Macedonian takes
+		// the plural. There the acknowledgement is that some counts are knowingly
+		// wrong and pluralNote says which — a different claim from "the arrays are
+		// reordered", which is why it is a separate field rather than a second
+		// meaning for the same one.
 		pluralOrder: raw.pluralOrder || null,
+		pluralBoundary: raw.pluralBoundary || null,
 		cognates: raw.cognates || {},
 		corrections: raw.corrections || {},
 	}

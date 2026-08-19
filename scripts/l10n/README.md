@@ -130,3 +130,13 @@ the file's `plural=` expression governs the arity gate, while the **library** go
 which element renders. A harness that assumes otherwise silently reads the wrong
 form — which happened, and briefly made three correct Slavic arrays look wrong.
 `runtime-check.mjs` calls `unregister()` and `setLanguage(loc)` first for this reason.
+
+When the two **disagree**, `runtime-check.mjs` classifies the disagreement rather than
+assuming one shape, because the remedies are opposite. A *permutation* disagreement
+partitions the counts identically and only labels the parts differently, so reordering the
+arrays fixes it completely — that is `lv`, acknowledged with `pluralOrder: "library"`. A
+*boundary* disagreement puts the lines in different places, so **no reordering can help**;
+you choose which counts to be correct for and record the residue with
+`pluralBoundary: "library"` — that is `is` and `mk`, in opposite directions. Telling someone
+to reorder the arrays in the second case is wrong advice, which is why the two are separate
+fields. See `docs/l10n-workflow.md` §6.7.

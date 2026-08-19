@@ -135,7 +135,7 @@ sources, not counts — these will not go stale):
 | Locale | Note |
 | --- | --- |
 | `mk` `be` | Non-Latin. `npm run l10n:script` replaces the English-leftover sweep in §5 step 8 |
-| `is` `mk` | Header and library may disagree on the *boundary* — run `l10n:runtime` early (§6.7). `ga` turned out to disagree on the *reachable form count* instead, harmlessly; do not assume which shape you have |
+| `is` `mk` | **Both confirmed** to disagree with the library on the plural *boundary*, and in opposite directions — measured, not just flagged. Neither is fixable by reordering; both need `pluralBoundary: "library"` and an explicit note of which counts stay wrong (§6.7) |
 | `lb` | openbuild ships **German** under `lb.json`; harvest drops it automatically (§6.6) |
 | `bs` `sq` | Very few harvest sources (7 and 12) — expect to translate almost everything by hand. Even `ga`, with 40 sources, only got a 7% hit rate, and `mt` 5.2% from 7 |
 | `bs` | openbuild's Croatian catalogue also ships under `bs.json`; dropped automatically |
@@ -373,12 +373,14 @@ Neither of these is documentation. The gates read both.
 }
 ```
 
-`register` and `cognates` are consumed by the gates. `pluralOrder: "library"` is a
-recognised acknowledgement (§6.7). Any other field is free-form documentation and is
+`register` and `cognates` are consumed by the gates. `pluralOrder: "library"` and
+`pluralBoundary: "library"` are the two recognised plural acknowledgements, and they are
+**not** interchangeable — §6.7. Any other field is free-form documentation and is
 ignored — `registerEvidence`, `buttons`, `orthographyNote`, `lexiconNote`, `pluralHackNote`
 are all in use. Note `loadLocaleConfig` whitelists the keys it reads, so a **new**
 functional field must be added there or it is silently dropped (this bit once, with
-`pluralOrder`).
+`pluralOrder`, which is why `pluralBoundary` was added to the whitelist in the same
+commit that started reading it).
 
 **`scripts/l10n/detectors/<loc>.js`** — the register detector. The gates call exactly two
 things, so those are the required exports: **`score(s) -> {f, i}`** and
@@ -715,18 +717,57 @@ If it drops something you believe is legitimate, check the **base language** com
 the first version of this guard compared locale *names* and reported core's
 `et_EE.js == et_EE.json` as a mislabel, killing 33 of 40 sources for `et` and `lt`.
 
-### 6.7 `runtime-check` FAILS "library and header agree on which index each count selects"
+### 6.7 `runtime-check` FAILS on which index each count selects
 
 The file's `plural=` expression and `@nextcloud/l10n`'s own `getPlural` disagree about
-**which form index** a count selects. The library is what renders. So:
+**which form index** a count selects. The library is what renders, always. But there are
+**two kinds** of disagreement and they take opposite remedies, so the check names which one
+you have rather than assuming Latvian's shape. Do not reach for the `lv` fix by reflex.
+
+**A PERMUTATION disagreement** — the two partition the counts into the same groups and only
+label them differently. Reordering the arrays makes the locale fully correct:
 
 1. Order the **arrays** by the library, not the header.
-2. Record `"pluralOrder": "library"` in `locales/$LOC.json` to acknowledge it.
+2. Record `"pluralOrder": "library"` in `locales/$LOC.json`.
 
-Only `lv` is affected so far: its header carries the legacy gettext order
-`[one, other, zero]` while the library partitions `[zero, one, other]` — same three
-categories, rotated, so a file matching its own header was wrong at **every** count while
-passing every other gate. `is` and `mk` are flagged to check for the same thing.
+Only `lv` is this: its header carries the legacy gettext order `[one, other, zero]` while the
+library partitions `[zero, one, other]` — same three categories, rotated, so a file matching
+its own header was wrong at **every** count while passing every other gate.
+
+**A BOUNDARY disagreement** — the two draw the lines in different *places*, so **no
+permutation of the arrays can agree with the header everywhere**. There is nothing to
+reorder, and "order the arrays by the library" is meaningless advice here. What you actually
+choose is *which counts to be correct for*:
+
+1. Write each form to read correctly across the counts the library **actually routes to it**,
+   weighting by which counts a user plausibly hits.
+2. Say in `pluralNote` **which counts stay wrong**, explicitly.
+3. Record `"pluralBoundary": "library"` in `locales/$LOC.json`.
+
+Both locales §2.3 had flagged turned out to be this, and **in opposite directions** — which
+is the reason to classify rather than pattern-match:
+
+- `is` — the library places `is` in its coarse `number === 1 ? 0 : 1` group, so form 0 is
+  reachable **only at exactly 1**. The header is correct CLDR Icelandic
+  (`n%10!=1 || n%100==11`), under which 21, 31, 41 … 191 also take the singular
+  (`21 hlutur`, not `21 hlutir`). So 17 counts in 0–200 render the plural where Icelandic
+  wants the singular. Form 1 is still written as the true plural: it is correct for 0 and
+  2–20, which is the overwhelming majority of real counts, and contorting it into a
+  number-neutral shape would trade 17 wrong counts for ~180 unidiomatic ones. This is *not*
+  the `rm` case — there the collapsed form was wrong at **every** count but 1, so the
+  contortion paid.
+- `mk` — the mirror image, and much narrower. The library implements the modular rule
+  (`number % 10 === 1 ? 0 : 1`) but **drops the `n%100 !== 11` guard**, so only `11` and
+  `111` disagree, and they go the other way: the library selects the **singular** where
+  Macedonian takes the plural.
+
+The general lesson: a two-form header whose expression is **modular rather than `n != 1`** is
+the shape to check, because the library's coarse groups are mostly written as `n === 1`.
+`lb` and `sq` carry plain `n != 1` headers and agree exactly; `bs` and `be` are three-form
+Slavic and also agree.
+
+A **NOTE** that the library uses *fewer* forms than declared is a third, separate situation —
+see below.
 
 **A locale can also come out with no plural surprise at all, and `mt` is the first.**
 Header and library were compared index-by-index over counts 0–130 and agreed everywhere,
@@ -915,15 +956,23 @@ this goes wrong:
 | `lv` | 3 | `1,21` / nonzero / **dedicated zero form** — and the ORDER disagrees (§6.7) |
 | `ro` | 3 | `1` only / **0 and 2–19** / 20+ |
 | `sl` | **4** | modular on `n%100`: `1` / **2 = DUAL** / `3,4` / else incl. 0 |
-| `is` `mk` | 2 | modular, not `n!=1` |
+| `is` | 2 | header is modular (`n%10!=1 \|\| n%100==11`), so 1, 21, 31 … take the singular — but the library reaches form 0 **only at n=1**, a BOUNDARY disagreement no reordering fixes (§6.7). 17 counts in 0–200 render the plural where Icelandic wants the singular |
+| `mk` | 2 | same modular header as `is`, but the library **drops the `n%100!=11` guard**, so only 11 and 111 disagree — and in the opposite direction, selecting the singular where Macedonian takes the plural (§6.7) |
 | `ga` | 5 | header 5, library reaches **3**: `1` / `2` / `0` and all `n>=3`. Forms 3–4 dead, harmlessly (§6.7). What decides the arrays is the **counted-noun rule**, not the index — see below |
 | `mt` | 4 | **Semitic, not European**: `1` / `0 and n%100 2–10` / `n%100 11–19` / `20+`. The noun is PLURAL only in form 1 — forms 0, 2 and 3 all take the SINGULAR (`ħdax-il ktieb`, `għoxrin ktieb`), so three near-identical forms are correct, not a defect. Header and library agree exactly |
 | `bg` | 2 | plain `n != 1` — but see the **count form** hazard below |
 | `rm` | 2 declared | the library knows no Romansh and returns **form 0 at every count**, so form 1 is unreachable — see the collapsed-form hazard below |
 
-Five distinct hazards:
+The distinct hazards, every one of which has actually bitten (deliberately not numbered —
+the list has grown three times):
 
 - **Wrong boundary.** A Croatian array pasted into Lithuanian is wrong for 5–9.
+- **The library's boundaries not matching the header's**, with no reordering available to
+  reconcile them. Distinct from the `lv` permutation and from the `rm` collapse, and the
+  remedy is to pick which counts to be correct for and record the residue — §6.7. `is` and
+  `mk` are both this, in opposite directions. **The shape to check for is a two-form header
+  whose expression is modular rather than `n != 1`**, since the library's coarse groups are
+  mostly written `n === 1`.
 - **Absolute vs modular.** `sk`/`cs` bound absolutely, so **22 selects form 2** ("22
   objektov", correct Slovak); `hr` bounds modularly, so 22 selects form 1. An array copied
   between two `nplurals=3` Slavic locales is wrong at every compound number.

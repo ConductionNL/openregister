@@ -129,6 +129,23 @@ console.log(`      declared nplurals=${declared}, library uses ${libForms}`
 // A mismatch is only tolerated where the library uses FEWER forms than declared
 // (tr and rm select 1, ga selects 3 of 5): those extra forms are unreachable, so
 // no ordering of them is wrong.
+//
+// There are TWO kinds of mismatch and they need opposite remedies, so the check
+// classifies rather than assuming Latvian's shape:
+//
+//   • PERMUTATION — the two partition the counts into the same groups and merely
+//     label them differently. Reordering the arrays makes the locale fully
+//     correct, and `pluralOrder: "library"` records that it was done. This is lv.
+//
+//   • BOUNDARY — the two draw the lines in different PLACES, so no permutation
+//     of the arrays can agree with the header everywhere. `is` and `mk` are both
+//     this, in opposite directions: the library sends 21/31/41… to Icelandic's
+//     plural where the language takes the singular, and sends 11/111 to
+//     Macedonian's singular where the language takes the plural. Telling someone
+//     to "reorder the arrays" here is wrong advice — the only real choice is
+//     which counts to be correct for, and the acknowledgement (`pluralBoundary`)
+//     asserts that the residue is known and written down rather than reordered
+//     away.
 const headerExpr = /plural\s*=\s*([^;]+)/.exec(String(pluralForm))
 if (!headerExpr) {
 	ok(false, 'the bundle header declares a plural= expression', String(pluralForm).slice(0, 60))
@@ -144,26 +161,56 @@ if (!headerExpr) {
 		for (let i = 0; i <= 200; i++) {
 			if (getPlural(i, loc) !== headerIdx(i)) disagree.push(i)
 		}
-		const acknowledged = loadLocaleConfig(loc).pluralOrder === 'library'
+		// Is the disagreement a pure relabelling? It is exactly when each library
+		// index maps to one and only one header index across every count, and the
+		// mapping is injective — that is precisely the condition under which
+		// permuting the arrays can satisfy the header everywhere.
+		const idxMap = new Map()
+		let isPermutation = true
+		for (let i = 0; i <= 200 && isPermutation; i++) {
+			const l = getPlural(i, loc)
+			const h = headerIdx(i)
+			if (!idxMap.has(l)) idxMap.set(l, h)
+			else if (idxMap.get(l) !== h) isPermutation = false
+		}
+		if (isPermutation && new Set(idxMap.values()).size !== idxMap.size) isPermutation = false
+
+		const cfg = loadLocaleConfig(loc)
+		const detail = disagree.slice(0, 6)
+			.map(i => `n=${i}: lib ${getPlural(i, loc)} vs header ${headerIdx(i)}`)
+
 		if (libForms < declared) {
 			console.log(`NOTE  library selects only ${libForms} of the ${declared} declared form(s) for ${loc},`
 				+ ' so the unreachable ones cannot be mis-ordered'
 				+ (disagree.length ? ` (${disagree.length} count(s) map differently)` : ''))
-		} else if (disagree.length && acknowledged) {
+		} else if (disagree.length === 0) {
+			ok(true, 'library and header agree on which index each count selects')
+		} else if (isPermutation) {
 			// The mismatch is a property of the locale, not a defect to fix here: the
 			// header comes from Transifex. Acknowledging it in locales/<loc>.json is
 			// what keeps it from being silently "corrected" back to the header order.
-			console.log(`NOTE  ${loc} header and library disagree on form ORDER at ${disagree.length} count(s), and`
-				+ ' locales/' + loc + '.json records pluralOrder="library" — arrays are ordered by the library,'
-				+ ' which is what renders. See its pluralNote.')
+			ok(cfg.pluralOrder === 'library',
+				`${loc} header and library disagree on form ORDER at ${disagree.length} count(s) — a pure `
+				+ 'relabelling, so order the ARRAYS by the library (it renders) and record '
+				+ 'pluralOrder:"library" in locales/' + loc + '.json',
+				cfg.pluralOrder === 'library' ? undefined : detail)
+			if (cfg.pluralOrder === 'library') {
+				console.log(`      ${disagree.length} count(s) relabelled; arrays are ordered by the library. See its pluralNote.`)
+			}
 		} else {
-			ok(disagree.length === 0,
-				'library and header agree on which index each count selects '
-				+ '(if they disagree, order the ARRAYS by the library — it renders — and record '
-				+ 'pluralOrder:"library" in locales/<loc>.json)',
-				disagree.length
-					? disagree.slice(0, 6).map(i => `n=${i}: lib ${getPlural(i, loc)} vs header ${headerIdx(i)}`)
-					: undefined)
+			// No permutation can fix this one, so the acknowledgement is a different
+			// claim: that the residual wrong counts are known and recorded.
+			ok(cfg.pluralBoundary === 'library',
+				`${loc} header and library disagree on where the plural BOUNDARIES fall, at `
+				+ `${disagree.length} count(s) — NOT a relabelling, so reordering the arrays cannot fix it. `
+				+ 'Write each form to be correct across the counts the library actually routes to it, say '
+				+ 'which counts stay wrong in pluralNote, and record pluralBoundary:"library" in '
+				+ 'locales/' + loc + '.json',
+				cfg.pluralBoundary === 'library' ? undefined : detail)
+			if (cfg.pluralBoundary === 'library') {
+				console.log(`      ${disagree.length} count(s) render a form the header would not choose: `
+					+ `${detail.join(', ')}${disagree.length > 6 ? ', …' : ''}. Acknowledged; see its pluralNote.`)
+			}
 		}
 	}
 }

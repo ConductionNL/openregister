@@ -137,9 +137,11 @@ shipped in all 37 bundles until 2026-08-14 while passing every gate.
 
 **Plural arrays must match that locale's own `nplurals`, and never be copied between
 languages.** An array shorter than the index the runtime asks for renders **blank**, and
-it is the only l10n defect you cannot see by reading the file. Six separate ways this
+it is the only l10n defect you cannot see by reading the file. The separate ways this
 goes wrong — equal form counts with different boundaries, modular vs absolute
-arithmetic, the header and the library disagreeing on ORDER, Slovenian's dual, a
+arithmetic, the header and the library disagreeing on ORDER, the header and the library
+putting the BOUNDARIES in different places so that no reordering reconciles them
+(Icelandic and Macedonian, in opposite directions), Slovenian's dual, a
 counting form chosen by the sentence rather than the form index (Bulgarian), and a
 library that collapses every count onto form 0 in a language that *does* pluralise
 (Romansh, where that makes form 0 wrong at every count but 1) — are
