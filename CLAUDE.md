@@ -29,9 +29,12 @@ belongs in `en.js`, never in `en.json`.** There is no scanner for the backend se
 (it would have to walk `lib/` for PHP `$l->t()`), so `en.json` is maintained by hand.
 
 Re-measure before trusting any number here — `npm run check:l10n` prints it all.
-**As of 2026-08-18**: `en.js` holds 2052 keys, `src/` uses all of them, 0 unused,
-100 unwrapped literals outstanding. 28 locales at full parity, 8 in progress — and all eight
-remaining are the low-resource group, so **ask before starting one**.
+**As of 2026-08-19**: `en.js` holds 2052 keys, 29 locales at full parity, 7 in progress
+(`mt is lb sq mk be bs`, in that order — the owner has confirmed the order, so no need to
+re-ask per locale). **`test:l10n` is currently RED at HEAD and not because of l10n work**:
+a `development` merge replaced the Dutch GDPR source terms with English ones and added
+flow strings, leaving 17 keys used in `src/` but missing from `en.js`. That is the
+`docs/l10n-workflow.md` §6.15 procedure and its own commit — see §10.
 
 ## Commands
 
@@ -58,9 +61,11 @@ Everything lives in **`scripts/l10n/`**. Read three documents, in this order:
    catalogue, and the state of the remaining locales. Start here every time.
 2. **`scripts/l10n/README.md`** — the tooling layout and what each script refuses.
 3. **`docs/l10n-ui-translation.md`** — what is *not* mechanical: measuring register
-   against core rather than assuming it (nine consecutive locales measured
-   differently, and there are four separate *button* conventions), the plural
-   boundaries per language, and the conventions already established.
+   against core rather than assuming it (ten consecutive locales measured
+   differently, one of them — Irish — having **no T-V distinction at all**, so
+   "informal" there names the only address form rather than a choice; and there are four
+   separate *button* conventions), the plural boundaries per language, and the
+   conventions already established.
 
 | You want to… | Run |
 | --- | --- |
@@ -118,7 +123,7 @@ indistinguishable from finished work, so nobody revisits it. Audit with
 `npm run test:l10n:parity -- --strict-identical`.
 
 **Cognate enforcement is opt-in per locale**, keyed on `locales/<loc>.json`
-existing. Only `tr ca et hr lt lv ro sk sl bg sr rm` are held to it; the other 16 predate the rule and
+existing. Only `tr ca et hr lt lv ro sk sl bg sr rm ga` are held to it; the other 16 predate the rule and
 carry ~400 unreviewed identical values, some legitimate. The gate prints which
 locales are enforced and which are merely unreviewed, so a green run cannot be read
 as verified. **Reviewing those 16 is open work.**

@@ -46,7 +46,7 @@ by counting formal vs informal markers across core (`server/core`, `lib`,
 `apps/files`, `apps/settings`, `apps/dav`, …) for that locale.
 
 Measured results: informal for `nl`, `de`, `sv`, `da`, `nb`, `pl`, `fi`, `hu`,
-`et`, `lv`; formal for `fr`, `cs`, `ru`, `uk`, `tr`, `el`, `sr`, `bg`, `ca`, `hr`,
+`et`, `lv`, `ga`; formal for `fr`, `cs`, `ru`, `uk`, `tr`, `el`, `sr`, `bg`, `ca`, `hr`,
 `lt`, `sk`, `sl`, `rm`. **`sk` is the least ambiguous of any locale measured for this app**:
 1001 formal markers against 1 informal over 4991 values in 31 catalogues, beating
 `lt`'s 689 vs 0 on volume. Russian is next: 328 formal pronouns and 164 formal
@@ -103,7 +103,7 @@ core's own short labels — a single verdict for the locale is usually meaningle
 | Pattern | Locales | Buttons |
 | --- | --- | --- |
 | same register throughout | `tr`, `ru` | formal imperative |
-| bare 2sg imperative, whatever the prose | `ca`, `et`, `hr`, `sl`, `sr` | `Desa`, `Salvesta`, `Spremi`, `Shrani`, `Сачувај` |
+| bare 2sg imperative, whatever the prose | `ca`, `et`, `hr`, `sl`, `sr`, `ga` | `Desa`, `Salvesta`, `Spremi`, `Shrani`, `Сачувај`, `Sábháil` |
 | **infinitive — register-neutral** | `cs`, `lt`, `lv`, `sk`, `rm` | `Zobrazit`/`Smazat`, `Įrašyti`/`Ištrinti`/`Atsisakyti`, `Saglabāt`/`Dzēst`/`Atcelt`, `Uložiť`/`Odstrániť`/`Zrušiť`, `Memorisar`/`Stizzar`/`Annullar` |
 | **verbal noun — register-neutral** | `ro`, `bg` | `Salvare`/`Ștergere`/`Anulare`/`Adăugare endpoint`; `Запазване`/`Изтриване`/`Отказ`/`Добавяне на крайна точка` |
 
@@ -347,6 +347,30 @@ locale's expression**. Equal counts do not mean equal boundaries:
   written as the true plural so the array becomes correct if the library ever gains an
   `rm` entry. This is the mirror of the `lv` problem in §"The header and the library can
   disagree on ORDER": there the library reorders the forms, here it collapses them
+
+- `ga` — `nplurals=5`, **the largest declared form count in the set**, and the library
+  uses only **three** of them: measured over counts 0–120, index 0 takes `n==1`, index 1
+  takes `n==2`, and index 2 takes `0` and every `n>=3`. Forms 3 and 4 are unreachable, so
+  the header and the library disagree at every `n>=7`. Unlike `rm`, that collapse **is**
+  harmless, and it is measured rather than assumed: across core `ga`'s 101 fully-translated
+  five-form arrays, form 2 differs from form 3 in **zero** cases and form 3 from form 4 in
+  **zero** cases — core writes the last three identically without exception. What actually
+  decides these arrays is not the form index but the **counted-noun rule**: Irish takes the
+  *singular* after a numeral (An Caighdeán Oifigiúil — numerals 1–19 govern the singular),
+  so a value containing `{count}`/`%n` needs the same counted singular in all five forms
+  while a value with **no** numeral needs a real singular/plural split. Core's own data
+  separates on exactly that axis — of 73 numeral-bearing arrays, 53 keep the singular
+  throughout against 20 that pluralise (the calqued minority), while **28 of 28** arrays
+  without a numeral pluralise. Hence five of this bundle's seven arrays are all-forms-
+  identical (`Scrios {count} réad`, the `hu`/`tr` shape) and only
+  `_Object successfully deleted_::_Objects successfully deleted_`, which carries no
+  numeral, splits (`Scriosadh an réad` / `Scriosadh na réada`). **Initial mutation is not
+  applied after a digit**, which is also core's measured practice and not a guess: core
+  writes form 0 as `%n comhad`, `%n beart`, `%n carachtar`, `%n fógra`, `%n soicind` —
+  never `chomhad`/`bheart`/`charachtar` — even though `aon` lenites in a spelled-out
+  numeral phrase. A **fixed** numeral in a label is different and does take the mutation
+  (`Last 3 months` → `3 mhí anuas`, from `trí mhí`); it is only the `{count}` placeholder,
+  whose value is unknown, that stays unmutated
 
 All are mutually incompatible. `npm run test:l10n:parity` catches
 wrong *length*; nothing can catch a Polish array pasted into Czech, and nothing at all
@@ -943,11 +967,111 @@ consonant; `lescha` where the 3sg of *leger* is `leja` (`lescha` is the noun "la
 `quest schema`; and a `…` ellipsis with a missing article against 20 consistent
 siblings. A thirteenth was the plural array above.
 
-Twenty-eight locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
+### `ga` is the first locale with no T-V distinction at all
+
+Every locale before this one had a register *choice* to measure. Irish does not.
+`sibh` is strictly the second-person **plural** in modern standard Irish — it is not a
+polite singular the way German `Sie`, Romansh `Vus` or Croatian `Vi` are — so there is
+exactly one way to address a user, and it is `tú`.
+
+The measurement is more one-sided than any other locale in the set, and in a different
+way: **434 second-person singular markers against 0 plural** across core's 33 `ga`
+catalogues (5395 values). Not one occurrence of `sibh`, `sibhse`, `bhur`, `agaibh`,
+`daoibh`, `libh`, `oraibh`, `uaibh`, `chugaibh`, `díbh`, or an `-aigí`/`-igí` 2pl
+imperative — confirmed by raw grep as well as by the detector, and the bundle's own
+1036 pre-existing values agree (15 singular, 0 plural).
+
+`locales/ga.json` records `"register": "informal"`, and that needs reading correctly:
+it does **not** mean Irish core preferred the familiar register over a polite one. It
+sets the gate's polarity so `patchcheck` refuses second-person *plural* address. That
+is the one register defect this locale can have, and it is a live risk rather than a
+theoretical one — a translator working down a list of European locales imports the
+politeness plural by analogy from de/fr/nl and writes `An bhfuil sibh cinnte…` for a
+single-user dialog. Nothing else in the project can see that.
+
+The corollary is that **a low informal count is not evidence of a problem here.** Most
+of this bundle is written with the autonomous/impersonal verb (`Scriosadh an rian
+iniúchta`, `Níor aimsíodh aon chláir`), which addresses nobody and scores zero in both
+directions. The load-bearing figure is that the *formal* count is zero.
+
+### `ga` traps
+
+**The 2sg imperative fails both §6.5 tests at once**, so it is excluded — the first
+locale where the two tests agree rather than pulling apart. It is the label convention
+(core: `Sábháil`, `Scrios`, `Cealaigh`, `Cruthaigh`, `Deimhnigh`, `Cóipeáil`,
+`Roghnaigh`, `Bain`, `Dún`, `Bog`, `Athnuaigh`, `Athchóirigh`), **and** for the whole
+`-áil` class it is spelled identically to the verbal noun, which is live in this
+bundle's prose as the progressive: `Ag sábháil...`, `Ag cóipeáil sonraí...`,
+`Ag tástáil...`, `Ag próiseáil...` are all real values whose second word is the
+imperative form. Several stems are ordinary nouns besides — `Scrios` is also
+"destruction", `Dún` also "a fort".
+
+**`do` is the single largest recall loss in any detector here, and it is unavoidable.**
+It is at once the 2sg possessive "your", the preposition "to/for", the past-tense verbal
+particle, and half of `le do thoil` ("please"). It occurs in **527 of 6431** corpus
+values, overwhelmingly not as a possessive, so it is excluded wholesale — which means
+`D'eochair API OpenAI` ("your OpenAI API key") and `do chuardach` ("your search") carry
+no detectable marker. Note the polarity: the loss is on the *correct*-register side, so
+it thins the evidence without ever producing a false formal hit.
+
+**`-ibh` must never be a suffix rule.** `díbh` is "off you (pl)" and `díobh` is "off
+them" — one letter apart, and it is the **third**-person one that occurs in this corpus,
+twice, both times genuinely "of them" (`gach ball díobh seo`, `gach ceann díobh a
+shárú`). Same for `-igí`: it is the 2pl imperative ending and also the plural of every
+noun in `-ig` (`oifig` → `oifigí`). No such noun happens to occur in the 6431-value
+corpus, which is precisely why a suffix rule would have looked safe and shipped.
+
+**Casing has no independent convention here — it mirrors the English source.** This is a
+third outcome for the §8.10 trap, distinct from `sr` (six terms capitalised
+mid-sentence) and `rm` (three). Measured over 14 domain terms: where the English key is
+title-cased the `ga` value capitalises **76 times against 1**; where the English key is
+prose it capitalises **0 times against 193**. The lone apparent exception is not one —
+`Update register OAS: ...` → `Nuashonraigh OAS cláir: ...` has lowercase `register` in
+the English too. So follow the source per key. This also explains why a naive per-term
+count reads MIXED for every single term (`clár` 3:5, `scéimre` 9:21, `réad` 11:19,
+`comhad` 6:11, `amharc` 3:22) and would have looked like "no convention" — the
+convention is real, it is just conditioned on the source rather than on the term.
+
+Ellipsis mirrors the source glyph too: 41 of 42 keys carrying `...` keep `...`, and 2 of
+2 carrying `…` keep `…`. The bundle has 8 em dashes, **no** en dash, no non-breaking
+space, no guillemets or curly quotes, and `%` never appears outside a placeholder.
+
+Terminology, fixed by the pre-existing half and kept: Register `clár`/`cláir`, Schema
+`scéimre`/`scéimrí`, Object `réad`/`réada` (gen sg `réid`), Property `airí` (gen pl
+`airíonna`), File `comhad`/`comhaid`, View `amharc`/`amhairc`, Audit trail
+`rian iniúchta`, Flow `sruth`, Workflow `sreabhadh oibre`, Entity `aonán`, Chunk
+`smután`, Embedding `leabú`/`leabuithe`, Endpoint `críochphointe`, Token `comhartha`,
+Hash `hais`, Chain `slabhra`, Seal `séala`, Dashboard `deais`, Repository `stórlann`,
+soft delete `boigscriosadh`. Four deliberate divergences from core: **Webhook** stays the
+English loan (28 pre-existing uses) where core's `webhook_listeners` has
+`Crúcaí gréasáin` — the file wins on lexicon, as `hr` kept `lozinka`; **Flow** is `sruth`
+and Workflow `sreabhadh oibre`, where core's `Sreabhadh` for Flow would collapse two
+concepts the app distinguishes; **Update** is the imperative `Nuashonraigh`, not core's
+verbal noun `Nuashonrú`; and **Revoke** is `Cúlghair`, not core's `Chúlghairm`, which
+carries a stray lenition on a citation form and is a typo of the kind to leave alone
+(cf. core `tr`'s `Yenlle`).
+
+Two §8.4 wrong-sense traps resolved at the call site rather than from the harvest:
+**Bucket** is a histogram bin in `QualityIndex.vue` (a `<th>` beside `Count`), so
+`Banda` — never core's `Buicéad`, a literal pail — kept distinct from `Interval`
+`Eatramh` and `Range` `Raon`; and **Labels** is the file-tag column in
+`UploadFiles.vue`, so `Clibeanna`, while the singular **Label** is a facet range caption
+in `EditSchemaProperty.vue` and takes `Lipéad`. That is the split §8.4 predicts for that
+pair, and here it is real. `Right` is the RBAC `<th>` in `EditOrganisation.vue`'s
+`special-rights-table`, so `Ceart`, not `Deas` (right-hand side). `Apply` is
+`Cuir i bhFeidhm`, not core's `Cuir iarratas isteach`, which is a *job* application.
+
+One pre-existing defect was corrected: `Loading organisations...` →
+`Eagraíochtaí á luchtú…` was the only one of the bundle's 35 `Loading X...` values not
+built as `Ag <verbal noun> <object>...` (the other 34 are), and it also carried `…`
+against the source's `...`. Normalised to `Ag luchtú eagraíochtaí...`.
+
+Twenty-nine locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
 `nb`, `pl`, `cs`, `ru`, `uk`, `el`, `fi`, `hu`, `tr`, `ca`, `et`, `hr`, `lt`, `lv`,
-`ro`, `sk`, `sl`, `bg`, `sr`, `rm` — the whole high-confidence group plus the first of
-the low-resource ones. Eight remain (`ga`, `mt`, `is`, `lb`, `sq`, `mk`, `be`, `bs`),
-and they are deliberately last — **ask before starting them.**
+`ro`, `sk`, `sl`, `bg`, `sr`, `rm`, `ga` — the whole high-confidence group plus the first
+two of the low-resource ones. Seven remain (`mt`, `is`, `lb`, `sq`, `mk`, `be`, `bs`),
+in that order, which the owner has confirmed — no need to re-ask per locale as long as
+the order is kept.
 
 For non-Latin locales (`ru`, `uk`, `bg`, `be`, `mk`, `sr`, `el`) a script-coverage
 check replaces the English-leftover check, and it is now a committed script:

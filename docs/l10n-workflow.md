@@ -109,20 +109,22 @@ is how you tell "in progress" from "broken".
 
 ### 2.3 Order of work
 
-The high-confidence group is **done**, and so is `rm`, the first of the low-resource
-ones. Eight remain: `ga mt is lb sq mk be bs`. The owner does not want them
-prioritised — they are last, and **ask before starting them.**
+The high-confidence group is **done**, and so are `rm` and `ga`, the first two of the
+low-resource ones. Seven remain: `mt is lb sq mk be bs`, **in that order** — the owner
+has confirmed the order, so there is no need to re-ask per locale as long as it is kept.
 
-**Check whether core can decide the register at all before planning a pass.** Four of
-the nine low-resource locales cannot be measured from core, which §5 step 2 assumes:
+**Check whether core can decide the register at all before planning a pass.** Three of
+the seven remaining locales cannot be measured from core, which §5 step 2 assumes:
 
 | Locale | Core coverage | Consequence |
 | --- | --- | --- |
-| `rm` | **zero catalogues** | `coreCatalogues` throws; done via the §6.4 fallback |
-| `mt` | **zero catalogues** | same — plan for the fallback from the start |
+| `mt` | **zero catalogues** | `coreCatalogues` throws; plan for the §6.4 fallback from the start |
 | `bs` | 1 catalogue, 55 values | not evidence of anything; use the fallback |
 | `lb` | 1 catalogue, 72 values | same, and openbuild's `lb` is German (§6.6) |
-| `ga` `is` `mk` `be` | 33 / 28 / 24 / 14 catalogues | core is usable |
+| `is` `mk` `be` | 28 / 24 / 14 catalogues | core is usable |
+
+(`rm` had zero catalogues and is the worked example of the fallback, §6.4. `ga` had 33
+and was measurable — and produced the most one-sided verdict in the set, §7.2.)
 
 Durable per-locale notes for the ones not yet done (facts about the language or the
 sources, not counts — these will not go stale):
@@ -130,11 +132,10 @@ sources, not counts — these will not go stale):
 | Locale | Note |
 | --- | --- |
 | `mk` `be` | Non-Latin. `npm run l10n:script` replaces the English-leftover sweep in §5 step 8 |
-| `ga` | Header declares 5 forms, the library selects only 3. Harmless dead forms (§6.7) |
 | `mt` | Already ships a **suspect array** — forms 2 and 3 fall back to the singular. Verify before trusting it. Also has **no core catalogues** |
-| `is` `mk` | Header and library may disagree on the *boundary* — run `l10n:runtime` early (§6.7) |
+| `is` `mk` | Header and library may disagree on the *boundary* — run `l10n:runtime` early (§6.7). `ga` turned out to disagree on the *reachable form count* instead, harmlessly; do not assume which shape you have |
 | `lb` | openbuild ships **German** under `lb.json`; harvest drops it automatically (§6.6) |
-| `bs` `sq` | Very few harvest sources (7 and 12) — expect to translate almost everything by hand |
+| `bs` `sq` | Very few harvest sources (7 and 12) — expect to translate almost everything by hand. Even `ga`, with 40 sources, only got a 7% hit rate |
 | `bs` | openbuild's Croatian catalogue also ships under `bs.json`; dropped automatically |
 | `bs` `mk` | Same openbuild Croatian catalogue again. It has now been observed under **seven** names (`bs cs hr mk sk sl sr`), and in `sr` the contamination had already reached the *committed* bundle as `Revizijski trag #{id}` — so for these two, expect the defect **inside** the file and not only in the harvest sources (§8.4) |
 
@@ -198,9 +199,16 @@ never translatable prose to begin with (§6.15).
 
 ### 3.4 Follow Nextcloud core per language for register — measure it, never assume
 
-Nine consecutive locales came out differently. Carrying an answer over from the previous
+Ten consecutive locales came out differently. Carrying an answer over from the previous
 locale passes every automated check while being wrong in every string that addresses the
 user. §5 step 2 is how you measure it; §7.2 records the verdicts.
+
+**And a locale may have no register choice at all.** `ga` is the first: Irish has no T-V
+distinction, `sibh` being strictly plural rather than a polite singular. Its recorded
+`"register": "informal"` therefore names the *only* address form available, not a
+preference — and its function is to set the gate's polarity so `patchcheck` refuses 2pl
+address, which in a single-user UI is always a defect. Read a verdict for what it is
+before repeating it: "informal" means something different for `ga` than for `nl`.
 
 ### 3.5 Read the locale's own existing values before coining any term
 
@@ -543,7 +551,7 @@ nineteen.
 **12. Regression-check every recorded locale, then commit.**
 
 ```bash
-for l in tr ca et hr lt lv ro sk sl bg sr $LOC; do
+for l in tr ca et hr lt lv ro sk sl bg sr rm ga $LOC; do
   node scripts/l10n/selfcheck.js $l | tail -1
   node scripts/l10n/detectors/$l.js | grep controls
   node scripts/l10n/runtime-check.mjs $l | tail -1
@@ -628,6 +636,15 @@ that counts it. Two independent tests, and it takes **both**:
 `sl` — Slovak's immediate neighbour — passes both, so it excludes them. **This is about the
 data, not the language family.**
 
+**`ga` is the first locale where both tests come out the same way**, which is worth
+naming so the two are not assumed to be in tension. Irish labels buttons with the bare
+imperative (test 1: yes), *and* for the whole `-áil` class the imperative is spelled
+identically to the verbal noun (test 2: yes) — and the verbal noun is live in this
+bundle's prose as the progressive, so `Ag sábháil...`, `Ag cóipeáil sonraí...`,
+`Ag tástáil...` all carry the imperative form as their second word. Several stems are
+ordinary nouns besides (`Scrios` = "destruction", `Dún` = "a fort"). The exclusion is
+doubly forced, and it takes both tests to see that rather than one.
+
 **`rm` is the exact mirror of `sk`, and shows the two tests are genuinely independent.**
 Romansh also labels buttons with the infinitive, so test 1 comes out the same for both —
 but test 2 goes the other way: for every `-ar` verb the 2sg imperative is spelled
@@ -701,10 +718,22 @@ passing every other gate. `is` and `mk` are flagged to check for the same thing.
 
 A **NOTE** that the library uses *fewer* forms than declared (`tr`, `rm`, `ga`) is
 harmless **only when a single form is correct in that language anyway**. Check which
-case you are in, because the two look identical in the tool output:
+case you are in, because the two look identical in the tool output — and **check it by
+measuring core, not by reasoning about the grammar**:
 
 - `tr` — genuinely harmless. Turkish does not pluralise after a numeral, so `5 dosya` is
   correct Turkish and the dead form was never needed.
+- `ga` — harmless, but only demonstrably so. The header declares **five** forms and the
+  library reaches **three** (index 0 ← `n==1`, index 1 ← `n==2`, index 2 ← `0` and every
+  `n>=3`), so forms 3 and 4 are dead and index 2 must serve 0, 3–6, 7–10 and 11+ alike.
+  Irish morphology genuinely distinguishes all five after a *spelled-out* numeral —
+  `trí` lenites, `seacht` eclipses — which makes this look like the `rm` case. It is not,
+  and the way to establish that is to count: across core `ga`'s 101 fully-translated
+  five-form arrays, form 2 differs from form 3 in **zero** cases and form 3 from form 4 in
+  **zero**. Core never applies the mutation after a digit (form 0 is `%n comhad`,
+  `%n carachtar`, `%n beart`, never `chomhad`), so the three reachable forms are all core
+  ever writes. Had that count come out differently, `ga` would have needed the `rm`
+  treatment.
 - `rm` — **not harmless.** `@nextcloud/l10n` has no Romansh entry, so `getPlural`
   returns 0 at every count and form 1 is unreachable — but Romansh pluralises regularly
   with `+s`, so a bare singular in form 0 renders `5 datoteca`, wrong at every count but
@@ -867,7 +896,7 @@ this goes wrong:
 | `ro` | 3 | `1` only / **0 and 2–19** / 20+ |
 | `sl` | **4** | modular on `n%100`: `1` / **2 = DUAL** / `3,4` / else incl. 0 |
 | `is` `mk` | 2 | modular, not `n!=1` |
-| `ga` | 5 | header 5, library selects 3 |
+| `ga` | 5 | header 5, library reaches **3**: `1` / `2` / `0` and all `n>=3`. Forms 3–4 dead, harmlessly (§6.7). What decides the arrays is the **counted-noun rule**, not the index — see below |
 | `mt` | 4 | |
 | `bg` | 2 | plain `n != 1` — but see the **count form** hazard below |
 | `rm` | 2 declared | the library knows no Romansh and returns **form 0 at every count**, so form 1 is unreachable — see the collapsed-form hazard below |
@@ -902,6 +931,28 @@ Five distinct hazards:
   had `%n записа` and is the model. Look for this in any locale whose grammar has a
   paucal/counting form — it is invisible to every gate in the project.
 
+- **The numeral forcing the SINGULAR, which is the mirror image of the above.** Irish takes
+  the *singular* noun after a numeral (An Caighdeán Oifigiúil: numerals 1–19 govern the
+  singular), so for `ga` the split is again decided by whether the value contains a numeral,
+  but in the opposite direction from `bg`: **numeral present → the same counted singular in
+  every form; no numeral → a genuine singular/plural split.**
+
+  ```js
+  "_Delete {count} object_::_Delete {count} objects_":              // numeral present
+      ["Scrios {count} réad", …]                                    // identical ×5
+  "_Object successfully deleted_::_Objects successfully deleted_":   // no numeral
+      ["Scriosadh an réad go rathúil", "Scriosadh na réada go rathúil", …]
+  ```
+
+  Core's own data separates cleanly on exactly that axis, which is how the rule was settled
+  rather than assumed: of 73 numeral-bearing arrays **53 keep the singular** in every form
+  against 20 that pluralise (the calqued minority), while **28 of 28** arrays with no numeral
+  pluralise. So five of this bundle's seven arrays are legitimately all-forms-identical — the
+  `hu`/`tr` shape, and the reason `selfcheck` NOTEs 5 of 7 here. Initial mutation is **not**
+  applied after a digit (core writes `%n comhad`, never `chomhad`), but a *fixed* numeral in
+  a label does take it (`Last 3 months` → `3 mhí anuas`, from `trí mhí`) — the difference
+  being whether the number is known at authoring time.
+
 - **The library collapses every count onto form 0, in a language that pluralises.**
   `@nextcloud/l10n` has no entry for Romansh, so `getPlural` returns 0 at every count and
   form 1 is dead. That is the same *symptom* as `tr`, where it is harmless because Turkish
@@ -931,8 +982,12 @@ the library governs which element renders. `runtime-check.mjs` calls `unregister
 
 ### 7.2 Register verdicts, all measured
 
-Informal: `nl de sv da nb pl fi hu et lv`.
+Informal: `nl de sv da nb pl fi hu et lv ga`.
 Formal: `fr cs ru uk tr el sr bg ca hr lt ro sk sl`.
+
+**`ga` is in the informal column for a different reason from every other entry in it**, and
+copying the label without the reason would be a real error: Irish has **no T-V distinction**,
+so there is no choice being recorded. See the note under §3.4 and the `ga` row below.
 
 | Locale | Prose | Evidence |
 | --- | --- | --- |
@@ -948,6 +1003,7 @@ Formal: `fr cs ru uk tr el sr bg ca hr lt ro sk sl`.
 | `ro` | formal | core **MIXED** 124 vs 66 → decided by the bundle (84 vs 0) + owner |
 | `lv` | **informal** | 44 vs 3 — core overruled the file; 78 values corrected |
 | `rm` | formal | **81 vs 0** over the bundle's own 995 translated values — core ships **no `rm` catalogues at all**, so this is the §6.4 fallback rather than a core measurement |
+| `ga` | **no T-V distinction** | **440 vs 0** over 5395 values / 33 catalogues — the most one-sided of any locale, and structurally so: `sibh` is strictly plural in modern Irish, so 2pl address does not occur at all. Recorded as `informal` to set the gate's polarity against 2pl address, which for a single-user UI is always a defect |
 
 Latvian's low counts are structural, not weak evidence: most correct informal Latvian is
 undetectable by design, so **zero formal markers is the assertion that matters**, not a high
@@ -967,7 +1023,7 @@ decide.
 | Pattern | Locales | Example |
 | --- | --- | --- |
 | same register as prose | `tr` `ru` | formal imperative |
-| bare 2sg imperative, whatever the prose | `ca` `et` `hr` `sl` `sr` | `Desa`, `Salvesta`, `Spremi`, `Shrani`, `Сачувај` |
+| bare 2sg imperative, whatever the prose | `ca` `et` `hr` `sl` `sr` `ga` | `Desa`, `Salvesta`, `Spremi`, `Shrani`, `Сачувај`, `Sábháil` |
 | **infinitive — register-neutral** | `cs` `lt` `lv` `sk` `rm` | `Zobrazit`, `Įrašyti`, `Saglabāt`, `Uložiť`, `Memorisar` |
 | **verbal noun — register-neutral** | `ro` `bg` | `Salvare`, `Adăugare endpoint`; `Запазване`, `Добавяне на крайна точка` |
 
@@ -999,13 +1055,23 @@ for five keys. What each finished locale does:
 | keep the placeholder — plural really is `+s` | `es`, `ca` (4 of 5) | `fitxer{plural}` |
 | parenthetical | `nl de fi ru pl cs et sk sl` | `bestand(en)`, `súbor(y)`, `datoteka(-e)` |
 | slash, where the stem changes | `fr`, `ca`, `et` | `journal/journaux` |
-| bare noun — no plural after a numeral | `hu` `tr` | `fájl`, `dosya` |
+| bare noun — no plural after a numeral | `hu` `tr` `ga` | `fájl`, `dosya`, `comhad` |
 | the form correct for the most counts | `hr` `lv` `ro` | gender-dependent |
 | genitive plural, conventional invariant counter | `lt` | `failų` |
 
 **Reuse the bundle's own house style if it has one.** `sk` and `sl` both already had
 `register(s)` → `register(-tre)` / `register(-i)` for the sibling `(s)` keys, so those two
 keys are literally the pre-existing values.
+
+**But grammar outranks the house style when the two conflict.** `ga`'s bundle already had
+the sibling `(s)` keys as parentheticals (`register(s)` → `clár(acha)`, `schema(s)` →
+`scéimre(í)`), and the `{plural}` keys still took the **bare counted singular** instead —
+because every call site renders the label beside a numeral (`CnStatsBlock`'s `:count` and
+`:countLabel`), and Irish takes the singular after a numeral, so a parenthetical there
+would be *wrong* rather than merely unidiomatic. Check what precedes the placeholder at the
+call site before reaching for the sibling keys' shape. The pre-existing `(s)` values are
+left alone under §3.8; the consistency that matters is with the `{count}` arrays, which
+apply the same counted-noun rule.
 
 Always runtime-assert no `{plural}` residue and no stray trailing `-s` survives. And note
 that a locale which **keeps** `{plural}` is not broken — `es` keeps it in all five, `ca` in
@@ -1037,6 +1103,9 @@ Every one of these produced a wrong measurement:
 | `rm` | `-ais` (2pl present) | `mais` = *months* (`Mintga mais`), and the nationality adjectives `ollandais`, `englais`, `franzais` |
 | `rm` | `-as` (2sg present) | **the feminine plural of every noun and adjective** — `controllas` = *checks*, `empruvas` = *attempts*, `tschernas` = plural of the noun `tscherna`. Costs the whole regular paradigm (§6.5) |
 | `rm` | `-a` (2sg imperative) | the **3sg present** and the feminine singular past participle, both live in this bundle's prose (`Quai stizza…`, `Ferma mintga flux`) |
+| `ga` | `-igí`/`-aigí` (2pl imperative) | the plural of every noun in `-ig` — `oifig` → `oifigí` ("offices"). **No such word occurs in the 6431-value corpus**, which is exactly why a suffix rule here would have looked safe and shipped |
+| `ga` | `-ibh` (2pl prepositional pronoun) | third-person plurals one letter away: `díbh` is "off you (pl)" but `díobh` is "off **them**", and it is the third-person one that occurs here, twice, both genuinely "of them" (`gach ball díobh seo`) |
+| `ga` | `do` (2sg possessive "your") | the preposition *to/for*, the past-tense verbal particle, and half of `le do thoil` ("please") — **527 of 6431 values**, overwhelmingly not possessive. Excluded wholesale; the biggest single recall loss in any detector here |
 
 Use closed word lists. Always.
 
@@ -1062,6 +1131,9 @@ Use closed word lists. Always.
 | `bg` | `-те` is the 2pl verb ending **and** the **definite plural article**, the commonest morpheme in the language | never a suffix rule; `файловете`, `Членовете`, `настройките` are all nouns |
 | `bg` | `си` = 2sg of *to be* **and** the reflexive possessive clitic, commonest in **formal** prose | leave unmatched, as in `hr`/`sk`/`sl` |
 | `bg` | `трябва` looks like address but is **impersonal 3sg** | do not match; in `Трябва да сте влезли` the register is carried by `сте` |
+
+| `ga` | `tú`/`thú` — **no collision at all** | nothing; Irish has no demonstrative or copular reading of these, so the bare pronoun is fully usable. Same useful negative as `bg` and `rm` |
+| `ga` | `Dia duit` ("hello"), `Fáilte romhat` ("welcome") | fixed greetings, but genuinely 2sg address, so counting them is correct rather than a false positive |
 
 The useful **negative** result: bare `ти` **is** usable in Bulgarian, unlike `cs` `ty`, `hr`
 `ti` and `sl` `ti`. Bulgarian lost its case system and its plural demonstrative is
@@ -1107,6 +1179,8 @@ Every one of these passes all automated checks. Read the call site.
 | `Refresh` | fine | core `tr` has **`Yenlle`**, a typo. Do not take typos | |
 | `Mappings` | fine | openconnector `hr` has `Mappingi`, a non-standard transliteration |
 | `Handler` | an event/callback handler, so a technical term to borrow | **a person** — the DSAR case handler. It is a `<th>` in the cases table beside `Type`, `Status`, `Deadline`, and `handlerFilterOptions` maps people's names into the filter. Every locale renders it as a person: `Responsable`, `Gestor`, `Bearbeiter`, `Gestionar`. `AvgIndex.vue` | |
+| `Apply` | fine | core `ga` has **`Cuir iarratas isteach`** = *submit a job application*. The key is a button in `PermissionMatrix.vue`; the right value is `Cuir i bhFeidhm` | |
+| `Labels` | the same word as `Label` | the **file-tag column** `<th>` in `UploadFiles.vue`, beside `File name` and `Size` — so the locale's word for *tags* (`ga` `Clibeanna`), while singular `Label` is a facet range caption in `EditSchemaProperty.vue` (`ga` `Lipéad`). The `Label`/`Labels` split this table predicts is real, and `ga` is where it was first acted on | |
 
 **Sibling apps are not automatically right**, and a whole catalogue can be the wrong
 language (§6.6).
@@ -1215,9 +1289,22 @@ capitalise domain terms mid-sentence, and they disagree about which:
 | --- | --- | --- |
 | `sr` | six terms, including `Објекат` 62:0 | `приказ`, `ентитет`, `ток` |
 | `rm` | **three** — `Schema` 34:1, `Register` 30:0, `Datoteca` 43:0 | `object` at **0:63**, plus `vista`, `webhook`, `colliaziun`, `endataziun`, `caracteristica` |
+| `ga` | **none of its own** — casing mirrors the English source | every term reads MIXED per-term; the convention is conditioned on the key, not the word |
+
+**`ga` is a third outcome, and the one most easily misread as "no convention".** A naive
+per-term count comes out mixed for every term (`clár` 3:5, `scéimre` 9:21, `réad` 11:19,
+`comhad` 6:11, `amharc` 3:22) — which looks like carelessness and is not. Condition the
+count on whether the **English key** is title-cased and it resolves completely: where the
+source is title-cased the `ga` value capitalises **76 against 1**; where the source is prose
+it capitalises **0 against 193**. The single apparent exception is not one (`Update register
+OAS: ...` has lowercase `register` in the English too, so the `ga` lowercase mirrors it).
+So before concluding a locale has no capitalisation convention, re-measure with the source's
+own casing as the condition — a mixed per-term split is what a mirroring convention looks
+like from the wrong angle.
 
 So carrying `sr`'s list to `rm` would have capitalised `Object` in 63 places against the
-bundle's own unanimous practice. Both rules can apply inside one value — `rm` writes
+bundle's own unanimous practice, and carrying either to `ga` would have overridden the
+source's casing in both directions. Both rules can apply inside one value — `rm` writes
 `naginas relaziuns cun objects u Datotecas`. `rm` also capitalises the **polite pronoun
 and possessive** mid-sentence without exception (`Vus` 13:0, `Voss*` 21:0), the German
 `Sie`/`Ihr` model; a sibling app in the same repo lowercases them, so that is a real
@@ -1287,6 +1374,27 @@ these 16 are already recorded, so step 2 is done for them; a detector is still n
 
 These are **source** fixes, not translation work. Each one costs 37 bundle entries or
 renders wrongly in every locale.
+
+- **`test:l10n` IS CURRENTLY RED, AND NOT BECAUSE OF l10n WORK.** This is the §6.15
+  situation, already live: a `development` merge (`28d24aa08`) de-Dutchified the AVG source
+  strings and added flow strings, leaving **17 keys used in `src/` but missing from
+  `en.js`**. Verified pre-existing — the same failure reproduces in a clean worktree at
+  HEAD with no l10n changes present, and neither `en.js` nor `src/` has been touched since.
+  Eleven of the 17 are English replacements for Dutch-keyed strings that are still in
+  `en.js` and now unused: `Inzage (Art 15)` → `Access (Art 15)`, `Inzage results` →
+  `Access results`, `Verantwoording` → `Accountability`, `AVG / Verwerkingsregister` →
+  `GDPR / AVG processing register`, `Generate the verantwoordingsdocument` → `Generate the
+  accountability document`, `Bewaartermijn`/`Rechtsgrond` → `Retention period`/`Legal
+  basis`, plus the two `verwerkingsactiviteit` sentences and the `Locate every object…`
+  blurb. The other six are new: `App`, `New flow`, `Schedule`, `Trigger`, `Enabled, but has
+  no owner — it will not start`, and the flows-list description.
+
+  The fix is a **rename**, not an add, for those eleven — `l10n-ai.js rename` carries all
+  37 bundles at once, so every finished locale's existing translation survives and parity
+  never breaks. Do the renames first, then `test:l10n:write` for the six genuinely new
+  keys, then translate those six across the finished set (§6.15). Note `rename` does not
+  rewrite call sites, but here the call sites are already the *new* strings — it is `en.js`
+  that is behind — so no `src/` edit is needed for the renames. Its own commit, per §3.10.
 
 - **`{plural}` hardcodes English morphology** — 13 call sites in
   `src/sidebars/register/RegisterSideBar.vue`, `RegistersSideBar.vue`,
