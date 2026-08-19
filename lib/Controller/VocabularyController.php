@@ -116,12 +116,13 @@ class VocabularyController extends Controller {
 	 *
 	 * @return JSONResponse The concept object, or a 404 standard error shape.
 	 *
+	 * The rate limit is a runaway ceiling rather than a gate: this is published
+	 * vocabulary, and resolution is the point of it.
+	 *
 	 * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-004
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
-	// Published vocabulary — resolution is the point of it, so these are
-	// runaway ceilings rather than gates.
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function resolveByUri(): JSONResponse {
 		$uri = trim((string)$this->request->getParam('uri', ''));

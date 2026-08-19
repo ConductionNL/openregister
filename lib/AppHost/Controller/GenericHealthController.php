@@ -72,13 +72,15 @@ class GenericHealthController extends Controller {
 	 *
 	 * @return JSONResponse `{status, app, version, checks}` with HTTP code per statusCodePolicy.
 	 *
+	 * The rate-limit ceiling is generous on purpose: a health endpoint is polled
+	 * by monitoring on a short interval, and a ceiling that trips on a normal
+	 * probe cadence turns the check itself into the outage it was meant to
+	 * detect.
+	 *
 	 * @spec openspec/specs/apphost-observability/spec.md — Requirement: Declarative Health Execution
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
-	// Generous: a health endpoint is polled by monitoring on a short interval,
-	// and a ceiling that trips on a normal probe cadence turns the check itself
-	// into the outage it was meant to detect.
 	#[AnonRateLimit(limit: 240, period: 60)]
 	public function index(): JSONResponse {
 		$appId = $this->appName;

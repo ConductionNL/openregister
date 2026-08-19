@@ -189,8 +189,49 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		}
 	})
 
+	// THE SUPPORT DIALOG COVERS THE CANVAS, AND CI ALWAYS GETS IT.
+	//
+	// `CnSupportDialog` is a first-open note from the founder. It records its
+	// dismissal in `localStorage` under `cn-support-dialog-shown:<appSlug>`, so
+	// a human sees it once — but every Playwright context starts with empty
+	// storage, so CI sees it EVERY run, centred over the editor.
+	//
+	// It was never noticed because the sidebar and palette sit outside its
+	// backdrop: adding a step kept working, and the canvas assertions that
+	// would have caught it were gated behind a `NEW_EDITOR` feature-detect that
+	// was false on every installed 2.3.x. The first canvas interaction to
+	// actually run met a modal that traps focus — the click timed out and the
+	// keypress went to the dialog, so no edge was ever drawn.
+	//
+	// Suppressed by the flag the dialog itself reads, matched on the PREFIX so
+	// this does not silently miss if the app's slug differs from its id. This
+	// hides nothing under test: the dialog is not this spec's subject, and a
+	// spec whose subject is the canvas must be able to reach the canvas.
+	await page.addInitScript(() => {
+		const read = Storage.prototype.getItem
+		Storage.prototype.getItem = function (key: string) {
+			if (
+				typeof key === 'string'
+				&& key.startsWith('cn-support-dialog-shown:')
+			) {
+				return '1'
+			}
+
+			return read.call(this, key)
+		}
+	})
+
 	try {
 		await page.goto(FLOWS_ROUTE, { waitUntil: 'domcontentloaded' })
+
+		// Belt and braces: if the dialog still made it through (a server-backed
+		// dismissal mode would not read localStorage), close it rather than
+		// letting it swallow every canvas interaction that follows.
+		const supportDialog = page.getByRole('dialog').filter({ hasText: 'Support' })
+		if (await supportDialog.isVisible({ timeout: 2_000 }).catch(() => false)) {
+			await page.keyboard.press('Escape')
+			await expect(supportDialog).toBeHidden({ timeout: 10_000 })
+		}
 
 		// Reach the editor the way a user does. Direct navigation to
 		// `#/flows/new` does not always hydrate the canvas.
@@ -211,14 +252,19 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 			"the step palette did not render, so the empty state's own instruction cannot be followed",
 		).toBeVisible()
 
-		const actions = page.locator('.cn-flow-sidebar__actions')
-		await expect(actions).toBeVisible()
-
-		const saveButton = actions.getByRole('button', { name: 'Save', exact: true })
-		const runButton = actions.getByRole('button', {
-			name: 'Run now',
+		// Save and Run live on the canvas toolbar (flow-editor consolidation):
+		// the actions that concern the graph, on the graph.
+		const toolbar = page.getByRole('toolbar', { name: 'Flow editor' })
+		const saveButton = toolbar.getByRole('button', {
+			name: 'Save',
 			exact: true,
 		})
+		const runButton = toolbar.getByRole('button', {
+			name: 'Run',
+			exact: true,
+		})
+
+		await expect(toolbar).toBeVisible()
 		await expect(saveButton).toBeVisible()
 		await expect(runButton).toBeVisible()
 
@@ -251,15 +297,16 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// nothing is shown client-side. The only symptom was this spec's
 		// `waitForURL` sitting out its full 20s.
 		//
-		// So wait for the state the save actually requires, and say so. Asserted
-		// as "not blank" rather than against the literal default name, which
-		// belongs to @conduction/nextcloud-vue and is not this repo's contract.
+		// So wait for the state the save actually requires, and say so. The
+		// name field now lives behind the sidebar's Flow tab, but the toolbar's
+		// Save button is disabled exactly while the flow has no name — so its
+		// enablement IS the "editor initialised" signal, with no tab click.
 		await expect(
-			sidebar.getByLabel('Name', { exact: true }),
+			saveButton,
 			'the editor never initialised — the flow store is still holding its '
 				+ 'blank initial state, whose name is empty, and a flow with no name '
 				+ 'is rejected by the server',
-		).not.toHaveValue('')
+		).toBeEnabled()
 
 		// 2. A STEP CAN BE ADDED.
 		//
@@ -288,10 +335,63 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// reason the job went red: `EndNode::getLabel()` returns `t('End')`, and
 		// the palette has carried no entry called "Stop" since that commit.
 		await clickThemed(palette.getByText('End', { exact: true }).first())
+		const endCard = page.locator('.cn-flow-detail__node', {
+			hasText: 'End',
+		})
+		await expect(endCard, 'the step did not reach the canvas').toBeVisible()
+
+		// Connect the seeded start node to the End step, or the saved flow has
+		// a dead end and `FlowRunService::queue()` refuses to run it. A new
+		// flow opens with the manual-trigger start node already on the canvas
+		// (flow-editor consolidation), and the canvas's KEYBOARD connection
+		// path (`c` on the source, `c` on the target) is used because
+		// drag-to-connect is exactly the interaction this file already
+		// documents as unreliable.
+		// DRIVE THE ELEMENT THAT OWNS THE HANDLER, NOT THE CARD INSIDE IT.
+		//
+		// `onNodeKeydown` is bound to CnGraphCanvas's `.cn-graph-canvas__node`
+		// wrapper — the element carrying `tabindex="0"`. `.cn-flow-detail__node`
+		// is the card CnFlowDetail renders into that wrapper's slot, and it is
+		// not focusable. Clicking the card and then pressing a key globally
+		// relies on the browser walking up to focus the ancestor, which is
+		// exactly the ambiguity that made this fail: the click landed, the
+		// keydown went to the body, and no edge appeared.
+		//
+		// `locator.press()` focuses its element and dispatches the key there,
+		// so the interaction under test is the one the component implements.
+		// Verified at the unit level in @conduction/nextcloud-vue
+		// (tests/components/CnFlowKeyboardConnect.spec.js): keydown `c` on each
+		// wrapper produces the edge.
+		//
+		// NB this assertion is NEW IN PRACTICE. It has always been written, but
+		// it sat behind a `NEW_EDITOR` feature-detect that read the INSTALLED
+		// library for a 2.4+ marker — false on every 2.3.x — so it never ran
+		// and reported green by not executing.
+		const startNode = page.locator('.cn-graph-canvas__node', {
+			hasText: 'When someone runs it',
+		})
+		await expect(startNode, 'the seeded start node is missing').toBeVisible()
+		const endNode = page.locator('.cn-graph-canvas__node', {
+			hasText: 'End',
+		})
+		await expect(endNode, 'the End step is missing').toBeVisible()
+
+		await startNode.press('c')
+		await endNode.press('c')
+
+		// COUNT THE EDGE, DO NOT ASK WHETHER IT IS "VISIBLE".
+		//
+		// The edge is an SVG <path>. Auto-layout stacks these two steps in one
+		// column, so the orthogonal route between them is a STRAIGHT VERTICAL
+		// LINE — a bounding box of zero width. Playwright treats a zero-area
+		// element as not visible, so `toBeVisible()` fails on an edge that is
+		// on screen and plainly drawn (the failure screenshot shows the arrow).
+		// Presence is the honest assertion here, and it is the one that fails
+		// if the connection genuinely never happened.
 		await expect(
-			page.locator('main').getByText('End', { exact: false }).first(),
-			'the step did not reach the canvas',
-		).toBeVisible()
+			page.locator('.cn-flow-detail__edge'),
+			'the connection did not reach the canvas',
+		).toHaveCount(1)
 
 		// 3. SAVE PERSISTS.
 		//
@@ -328,7 +428,9 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// The route still has to catch up, or a reload lands back on `new`. With
 		// the create already asserted above this is a pure router assertion with
 		// no round-trip left in it, so it needs a fraction of the old budget.
-		await page.waitForURL(new RegExp(`#/flows/${uuid}$`), { timeout: 5_000 })
+		await page.waitForURL(new RegExp(`#/flows/${uuid}$`), {
+			timeout: 5_000,
+		})
 
 		// 4. RUN NOW CREATES A RUN. Asserted against the API rather than the
 		//    rendered status, because the status a run is DISPLAYED with

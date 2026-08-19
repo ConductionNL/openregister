@@ -101,9 +101,21 @@ class RegisterTool extends AbstractTool {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function getFunctions(): array {
+		return array_merge(self::readFunctions(), self::writeFunctions());
+
+	}//end getFunctions()
+
+	/**
+	 * The register descriptors that change nothing.
+	 *
+	 * @return array<int, array<string, mixed>> The read descriptors.
+	 */
+	private static function readFunctions(): array {
 		return [
 			[
 				'name' => 'list_registers',
+				'subject' => 'register',
+				'action' => 'list',
 				'description' => 'Get a list of all accessible registers',
 				'parameters' => [
 					'type' => 'object',
@@ -122,6 +134,8 @@ class RegisterTool extends AbstractTool {
 			],
 			[
 				'name' => 'get_register',
+				'subject' => 'register',
+				'action' => 'get',
 				'description' => 'Get details about a specific register by ID or slug',
 				'parameters' => [
 					'type' => 'object',
@@ -134,8 +148,27 @@ class RegisterTool extends AbstractTool {
 					'required' => ['id'],
 				],
 			],
+		];
+
+	}//end readFunctions()
+
+	/**
+	 * The register descriptors that change state.
+	 *
+	 * Split from the reading half only to keep each method inside the
+	 * ExcessiveMethodLength budget — declaring `subject`/`action` on every
+	 * descriptor pushed the single combined table past it. The read/write line
+	 * is the honest place to cut, since it is the same boundary the grant
+	 * matrix groups on.
+	 *
+	 * @return array<int, array<string, mixed>> The write descriptors.
+	 */
+	private static function writeFunctions(): array {
+		return [
 			[
 				'name' => 'create_register',
+				'subject' => 'register',
+				'action' => 'create',
 				'description' => 'Create a new register',
 				'parameters' => [
 					'type' => 'object',
@@ -158,6 +191,8 @@ class RegisterTool extends AbstractTool {
 			],
 			[
 				'name' => 'update_register',
+				'subject' => 'register',
+				'action' => 'update',
 				'description' => 'Update an existing register',
 				'parameters' => [
 					'type' => 'object',
@@ -180,6 +215,8 @@ class RegisterTool extends AbstractTool {
 			],
 			[
 				'name' => 'delete_register',
+				'subject' => 'register',
+				'action' => 'delete',
 				'description' => 'Delete a register (only if it has no objects)',
 				'parameters' => [
 					'type' => 'object',
@@ -193,7 +230,7 @@ class RegisterTool extends AbstractTool {
 				],
 			],
 		];
-	}//end getFunctions()
+	}//end writeFunctions()
 
 	/**
 	 * Execute a function

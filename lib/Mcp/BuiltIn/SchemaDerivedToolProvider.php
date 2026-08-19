@@ -68,6 +68,10 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass - Instantiated by Application::registerMcpToolProviders()
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) One IMcpToolProvider implementation: the ABI's id/verb contract, the
+ *      two collision rules (hand-written > derived, first-definition > duplicate) and the JSON-Schema sanitiser are one
+ *      story about what this app publishes. Splitting them would scatter the derived-tool contract across files.
+ *
  * @spec openspec/specs/ai-mcp/spec.md
  *   (Requirement: REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools)
  */
@@ -149,6 +153,23 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	public function getTools(): array {
 		$descriptors = [];
 
+		// Ids already emitted by THIS provider.
+		//
+		// ⚠️ A tool id is `{app}.{slug}.{verb}`, which carries no register — so
+		// every duplicate definition of one schema slug collides on a single
+		// id. Measured on the dev instance: 16 schema rows share the slug
+		// `generatedDocument` and 11 share `correspondence`, 13 of each
+		// MCP-enabled, so the catalogue served 207 rows for 159 distinct tools
+		// and an agent saw the same tool thirteen times.
+		//
+		// The existing REQ-DERIVED-003 suppression only covers derived-vs-
+		// HAND-WRITTEN collisions; this is derived-vs-derived and went
+		// unguarded. First definition wins, matching that rule's precedence
+		// direction, and the rest are logged rather than dropped silently —
+		// duplicate schema rows are a data problem this provider can only
+		// report, not fix.
+		$emittedIds = [];
+
 		foreach ($this->schemaEntries as $entry) {
 			$schema = $entry['schema'];
 			$annotation = $this->mcpAnnotation(schema: $schema);
@@ -172,6 +193,23 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 				if (in_array($id, $this->suppressedIds, true) === true) {
 					continue;
 				}
+
+				// A second schema row claiming the same id — see $emittedIds.
+				if (array_key_exists($id, $emittedIds) === true) {
+					$this->logger->warning(
+						message: '[SchemaDerivedToolProvider] duplicate tool id suppressed — two schema rows share one slug',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'toolId' => $id,
+							'keptSchemaId' => $emittedIds[$id],
+							'droppedSchemaId' => $schema->getId(),
+						]
+					);
+					continue;
+				}
+
+				$emittedIds[$id] = $schema->getId();
 
 				$verbConfig = [];
 				if (is_array($toolsConfig) === true && is_array($toolsConfig[$verb] ?? null) === true) {
@@ -470,6 +508,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * @param string $id The fully-namespaced tool id.
 	 *
 	 * @return array{id: string, name: string, description: string, inputSchema: array,
+	 *         app: string, subject: string, action: string,
 	 *         outputSchema?: array, readOnlyHint?: bool, destructiveHint?: bool,
 	 *         idempotentHint?: bool, scope?: string}
 	 */
@@ -479,6 +518,21 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 			'name' => $slug . '_' . $verb,
 			'description' => $this->description(slug: $slug, verb: $verbConfig['description'] ?? null, verbName: $verb),
 			'inputSchema' => $this->buildInputSchema(schema: $schema, verb: $verb, verbConfig: $verbConfig),
+
+			// The id's three parts, carried as FIELDS rather than only joined
+			// into a string.
+			//
+			// ⚠️ This provider composes `{app}.{slug}.{verb}` from values it
+			// already holds, and previously published only the joined result —
+			// so every consumer had to take the structure apart again. A grant
+			// UI doing that ended up splitting camelCase and singularising
+			// English ("courses" → "cours", `webFetch` → subject "fetch"),
+			// which is guesswork standing in for data that was never lost, only
+			// discarded. A consumer must never have to parse an identifier to
+			// recover something the producer knew.
+			'app' => $this->appId,
+			'subject' => $slug,
+			'action' => $verb,
 		];
 
 		$outputSchema = $this->buildOutputSchema(verb: $verb);
@@ -580,12 +634,15 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 			],
 			'create' => [
 				'type' => 'object',
-				'properties' => $properties,
+				'properties' => $this->jsonSchemaSafeMap(properties: $properties),
 				'required' => $required,
 			],
 			'update' => [
 				'type' => 'object',
-				'properties' => array_merge(['id' => $idProperty], $properties),
+				'properties' => array_merge(
+					['id' => $idProperty],
+					$this->jsonSchemaSafeMap(properties: $properties)
+				),
 				'required' => ['id'],
 			],
 			'delete' => [
@@ -608,6 +665,9 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * @param string $verb One of {@see McpAnnotationValidator::VERBS}.
 	 *
 	 * @return array<string, mixed>|null The output schema, or null when not applicable.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 *   (Requirement: REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools)
 	 */
 	private function buildOutputSchema(string $verb): ?array {
 		// THE ENVELOPE, NOT THE ITEM.
@@ -667,12 +727,144 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 		$result = [];
 		foreach ($declared as $name) {
 			if (is_string($name) === true && array_key_exists($name, $properties) === true) {
-				$result[$name] = $properties[$name];
+				$result[$name] = $this->jsonSchemaSafe(property: $properties[$name]);
 			}
 		}
 
 		return $result;
 	}//end filterProperties()
+
+	/**
+	 * Reduce a schema property to keywords that are valid JSON Schema.
+	 *
+	 * 🔴 A tool's `inputSchema` leaves this instance and is validated by the
+	 * vendor as strict JSON Schema draft 2020-12. OpenRegister's property
+	 * definitions are NOT that: they carry dialect of our own, and one of those
+	 * keywords is fatal.
+	 *
+	 * `$ref` is the one that bites. It is OpenRegister's RELATION marker —
+	 * `{"type":"string","format":"uuid","$ref":"client"}` means "this uuid
+	 * points at the client schema" — but to a JSON Schema validator `$ref` is a
+	 * URI reference, and `"client"` resolves to nothing. Measured 2026-08-17
+	 * against Anthropic:
+	 *
+	 *   400 tools.2.custom.input_schema: JSON schema is invalid.
+	 *       It must match JSON Schema draft 2020-12
+	 *
+	 * `pipelinq.lead.search` declares `client` as a filter and was therefore
+	 * UNCALLABLE BY ANY AGENT, no matter who granted it — while its sibling
+	 * `pipelinq.client.search`, whose filters carry no `$ref`, worked. Twenty
+	 * properties across that one app use the relation dialect, so this is a
+	 * whole class of tools rather than one bad line.
+	 *
+	 * Fixed HERE rather than in the app registers: the dialect is correct where
+	 * it is written and OpenRegister depends on it. What was wrong is emitting
+	 * it into a document that promises to be JSON Schema.
+	 *
+	 * An allow-list, not a deny-list of `$ref`: the next dialect keyword added
+	 * to a register would otherwise silently break every derived tool that used
+	 * it, which is exactly how this arrived.
+	 *
+	 * @param mixed $property The declared property.
+	 *
+	 * @return array<string, mixed> The property, safe to publish.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 *   (Requirement: REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools)
+	 */
+	private function jsonSchemaSafe(mixed $property): array {
+		if (is_array($property) === false) {
+			return ['type' => 'string'];
+		}
+
+		$allowed = [
+			'type',
+			'title',
+			'description',
+			'enum',
+			'const',
+			'default',
+			'format',
+			'pattern',
+			'minimum',
+			'maximum',
+			'exclusiveMinimum',
+			'exclusiveMaximum',
+			'minLength',
+			'maxLength',
+			'minItems',
+			'maxItems',
+			'uniqueItems',
+		];
+
+		$safe = [];
+		foreach ($allowed as $keyword) {
+			if (array_key_exists($keyword, $property) === true) {
+				$safe[$keyword] = $property[$keyword];
+			}
+		}
+
+		$safe = $this->jsonSchemaSafeNested(property: $property, safe: $safe);
+
+		// A property with no usable type still has to be describable.
+		if (isset($safe['type']) === false && isset($safe['enum']) === false) {
+			$safe['type'] = 'string';
+		}
+
+		return $safe;
+	}//end jsonSchemaSafe()
+
+	/**
+	 * Sanitise the nested shapes of a property.
+	 *
+	 * Split out of {@see jsonSchemaSafe()} to keep that method under the
+	 * complexity threshold. The recursion is the point: without it the dialect
+	 * simply reappears one level down, inside `items` or `properties`, and the
+	 * published document is still not JSON Schema.
+	 *
+	 * @param array<string, mixed> $property The declared property.
+	 * @param array<string, mixed> $safe     The keywords accepted so far.
+	 *
+	 * @return array<string, mixed> The accepted keywords plus sanitised nested shapes.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 *   (Requirement: REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools)
+	 */
+	private function jsonSchemaSafeNested(array $property, array $safe): array {
+		if (isset($property['items']) === true) {
+			$safe['items'] = $this->jsonSchemaSafe(property: $property['items']);
+		}
+
+		if (isset($property['properties']) === true && is_array($property['properties']) === true) {
+			$nested = [];
+			foreach ($property['properties'] as $key => $value) {
+				$nested[$key] = $this->jsonSchemaSafe(property: $value);
+			}
+
+			$safe['properties'] = $nested;
+		}
+
+		return $safe;
+	}//end jsonSchemaSafeNested()
+
+	/**
+	 * Sanitise a whole property map for publication in a tool schema.
+	 *
+	 * @param array<string, mixed> $properties The declared properties.
+	 *
+	 * @return array<string, mixed> The sanitised map.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 *   (Requirement: REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools)
+	 */
+	private function jsonSchemaSafeMap(array $properties): array {
+		$safe = [];
+		foreach ($properties as $name => $property) {
+			$safe[$name] = $this->jsonSchemaSafe(property: $property);
+		}
+
+		return $safe;
+	}//end jsonSchemaSafeMap()
 
 	/**
 	 * Resolve the validated `x-openregister-mcp` block, or an empty array

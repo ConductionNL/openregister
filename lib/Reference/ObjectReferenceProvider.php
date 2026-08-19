@@ -26,17 +26,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Reference;
 
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
 use OCP\Collaboration\Reference\ADiscoverableReferenceProvider;
+use OCP\Collaboration\Reference\IPublicReferenceProvider;
 use OCP\Collaboration\Reference\IReference;
 use OCP\Collaboration\Reference\ISearchableReferenceProvider;
-use OCP\Collaboration\Reference\Reference;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use Psr\Log\LoggerInterface;
 
 /**
  * Reference provider for OpenRegister objects.
@@ -44,44 +40,17 @@ use Psr\Log\LoggerInterface;
  * Resolves OpenRegister object URLs into rich preview cards for the Smart Picker.
  * Supports hash-routed UI URLs, API object URLs, and direct object routes.
  *
+ * URL parsing and rich-preview formatting are delegated to
+ * {@see ObjectPreviewFormatter} (shared with the schema-scoped
+ * `AbstractSchemaReferenceProvider`); this class only owns the parts that
+ * are specific to the generic, fleet-wide `openregister-ref-objects`
+ * provider identity (id, title, order, icon, cache key).
+ *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements ISearchableReferenceProvider {
-
-	/**
-	 * Internal fields to exclude from preview properties.
-	 *
-	 * @var string[]
-	 */
-	private const INTERNAL_FIELDS = [
-		'@self',
-		'_translationMeta',
-		'_schema',
-		'_register',
-		'_id',
-		'_uuid',
-		'_created',
-		'_updated',
-		'_owner',
-		'_organisation',
-		'id',
-		'uuid',
-	];
-
-	/**
-	 * Maximum number of preview properties to display.
-	 *
-	 * @var int
-	 */
-	private const MAX_PREVIEW_PROPERTIES = 4;
-
-	/**
-	 * Maximum length for description text.
-	 *
-	 * @var int
-	 */
-	private const MAX_DESCRIPTION_LENGTH = 200;
+class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements
+	ISearchableReferenceProvider,
+	IPublicReferenceProvider {
 
 	/**
 	 * The URL generator service
@@ -98,39 +67,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
 	private readonly IL10N $l10n;
 
 	/**
-	 * The object service for fetching objects
+	 * Shared preview-formatting/URL-parsing service.
 	 *
-	 * @var ObjectService
+	 * @var ObjectPreviewFormatter
 	 */
-	private readonly ObjectService $objectService;
-
-	/**
-	 * Deep link registry for consuming-app URL resolution
-	 *
-	 * @var DeepLinkRegistryService
-	 */
-	private readonly DeepLinkRegistryService $deepLinkRegistry;
-
-	/**
-	 * Schema mapper for resolving schema names
-	 *
-	 * @var SchemaMapper
-	 */
-	private readonly SchemaMapper $schemaMapper;
-
-	/**
-	 * Register mapper for resolving register names
-	 *
-	 * @var RegisterMapper
-	 */
-	private readonly RegisterMapper $registerMapper;
-
-	/**
-	 * Logger for debugging
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
+	private readonly ObjectPreviewFormatter $formatter;
 
 	/**
 	 * The current user ID (nullable for public/anonymous access)
@@ -144,11 +85,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
 	 *
 	 * @param IURLGenerator $urlGenerator The URL generator
 	 * @param IL10N $l10n The localization service
-	 * @param ObjectService $objectService The object service
-	 * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry
-	 * @param SchemaMapper $schemaMapper Schema mapper
-	 * @param RegisterMapper $registerMapper Register mapper
-	 * @param LoggerInterface $logger Logger
+	 * @param ObjectPreviewFormatter $formatter Shared preview-formatting service
 	 * @param string|null $userId Current user ID
 	 *
 	 * @return void
@@ -158,20 +95,12 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
 	public function __construct(
 		IURLGenerator $urlGenerator,
 		IL10N $l10n,
-		ObjectService $objectService,
-		DeepLinkRegistryService $deepLinkRegistry,
-		SchemaMapper $schemaMapper,
-		RegisterMapper $registerMapper,
-		LoggerInterface $logger,
+		ObjectPreviewFormatter $formatter,
 		?string $userId,
 	) {
 		$this->urlGenerator = $urlGenerator;
 		$this->l10n = $l10n;
-		$this->objectService = $objectService;
-		$this->deepLinkRegistry = $deepLinkRegistry;
-		$this->schemaMapper = $schemaMapper;
-		$this->registerMapper = $registerMapper;
-		$this->logger = $logger;
+		$this->formatter = $formatter;
 		$this->userId = $userId;
 	}//end __construct()
 
@@ -247,7 +176,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
 	 * @spec openspec/specs/deep-link-registry/spec.md
 	 */
 	public function matchReference(string $referenceText): bool {
-		return $this->parseReference(referenceText: $referenceText) !== null;
+		return $this->formatter->parseReference(referenceText: $referenceText) !== null;
 	}//end matchReference()
 
 	/**
@@ -260,123 +189,10 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
 	 *
 	 * @return IReference|null The reference object or null on failure
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 *
 	 * @spec openspec/specs/deep-link-registry/spec.md
 	 */
 	public function resolveReference(string $referenceText): ?IReference {
-		$parsed = $this->parseReference(referenceText: $referenceText);
-		if ($parsed === null) {
-			return null;
-		}
-
-		$registerId = $parsed['registerId'];
-		$schemaId = $parsed['schemaId'];
-		$uuid = $parsed['uuid'];
-
-		try {
-			// Fetch the object using ObjectService.
-			$object = $this->objectService->find(
-				id: $uuid,
-				register: $registerId,
-				schema: $schemaId
-			);
-
-			if ($object === null) {
-				return null;
-			}
-
-			$objectData = $object->jsonSerialize();
-			$selfData = $objectData['@self'] ?? [];
-
-			// Extract title.
-			$title = $this->extractTitle(objectData: $objectData, selfData: $selfData);
-
-			// Extract description.
-			$description = $this->extractDescription(objectData: $objectData);
-
-			// Resolve schema and register names.
-			$schemaTitle = $this->resolveSchemaName(schemaId: $schemaId);
-			$registerTitle = $this->resolveRegisterName(registerId: $registerId);
-
-			// Resolve deep link URL.
-			$selfArray = [];
-			if (is_array($selfData) === true) {
-				$selfArray = $selfData;
-			}
-
-			$flatData = array_merge(
-				$selfArray,
-				['uuid' => $uuid, 'register' => $registerId, 'schema' => $schemaId]
-			);
-
-			$objectUrl = $this->deepLinkRegistry->resolveUrl(
-				registerId: $registerId,
-				schemaId: $schemaId,
-				objectData: $flatData
-			);
-
-			if ($objectUrl === null) {
-				$objectUrl = $this->urlGenerator->linkToRoute(
-					'openregister.objects.show',
-					['register' => $registerId, 'schema' => $schemaId, 'id' => $uuid]
-				);
-			}
-
-			$objectUrl = $this->urlGenerator->getAbsoluteURL($objectUrl);
-
-			// Resolve icon.
-			$iconUrl = $this->deepLinkRegistry->resolveIcon(
-				registerId: $registerId,
-				schemaId: $schemaId
-			);
-
-			if ($iconUrl === null) {
-				$iconUrl = $this->urlGenerator->imagePath('openregister', 'app-dark.svg');
-			}
-
-			// Extract preview properties.
-			$properties = $this->extractPreviewProperties(objectData: $objectData);
-
-			// Get updated timestamp.
-			$updated = $selfData['updated'] ?? $objectData['updated'] ?? '';
-
-			// Build rich data.
-			$richData = [
-				'id' => $uuid,
-				'title' => $title,
-				'description' => $description,
-				'schema' => ['id' => $schemaId, 'title' => $schemaTitle],
-				'register' => ['id' => $registerId, 'title' => $registerTitle],
-				'url' => $objectUrl,
-				'icon_url' => $iconUrl,
-				'updated' => $updated,
-				'properties' => $properties,
-			];
-
-			// Build the reference.
-			$reference = new Reference($referenceText);
-			$reference->setTitle($title);
-			$reference->setDescription($description);
-			$reference->setImageUrl($iconUrl);
-			$reference->setUrl($objectUrl);
-			$reference->setRichObject('openregister-object', $richData);
-
-			return $reference;
-		} catch (\Exception $exception) {
-			// Catch all exceptions including authorization errors.
-			// Return null to prevent metadata leakage on RBAC failures.
-			$this->logger->debug(
-				'[ObjectReferenceProvider] Failed to resolve reference: {error}',
-				[
-					'error' => $exception->getMessage(),
-					'reference' => $referenceText,
-				]
-			);
-			return null;
-		}//end try
+		return $this->formatter->buildReference(referenceText: $referenceText);
 	}//end resolveReference()
 
 	/**
@@ -389,12 +205,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
 	 * @spec openspec/specs/deep-link-registry/spec.md
 	 */
 	public function getCachePrefix(string $referenceId): string {
-		$parsed = $this->parseReference(referenceText: $referenceId);
-		if ($parsed === null) {
-			return $referenceId;
-		}
-
-		return $parsed['registerId'] . '/' . $parsed['schemaId'] . '/' . $parsed['uuid'];
+		return $this->formatter->resolveCachePrefix(referenceText: $referenceId);
 	}//end getCachePrefix()
 
 	/**
@@ -415,232 +226,47 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
 	}//end getCacheKey()
 
 	/**
-	 * Parse a reference URL into its component parts.
+	 * Resolve a reference for an anonymous/public-share viewer.
 	 *
-	 * @param string $referenceText The URL to parse
+	 * Delegates to the same {@see self::resolveReference()} logic: the
+	 * class is already constructed with a nullable `$userId` (`null` for an
+	 * anonymous request), so `ObjectPreviewFormatter::buildReference()`'s
+	 * call into `ObjectService::find()` already runs the same RBAC decision
+	 * an authenticated anonymous read would. `$sharingToken` identifies the
+	 * public share context, not an object-level permission — no additional
+	 * check is performed beyond what `resolveReference()` already performs.
 	 *
-	 * @return array{registerId: int, schemaId: int, uuid: string}|null Parsed parts or null
+	 * @param string $referenceText The matched URL
+	 * @param string $sharingToken The public share token
 	 *
-	 * @spec openspec/specs/deep-link-registry/spec.md
+	 * @return IReference|null The reference object or null on failure
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d5
 	 */
-	public function parseReference(string $referenceText): ?array {
-		$baseUrl = $this->urlGenerator->getAbsoluteURL('/');
-		$baseUrl = rtrim($baseUrl, '/');
-
-		// Escape the base URL for use in regex.
-		$escapedBase = preg_quote($baseUrl, '/');
-
-		// UUID pattern (standard v4 format).
-		$uuidPattern = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
-
-		// Pattern 1: Hash-routed UI URL.
-		// /apps/openregister/#/registers/{id}/schemas/{id}/objects/{uuid}.
-		$hashPattern = sprintf(
-			'/^%s(?:\/index\.php)?\/apps\/openregister\/#\/registers\/(\d+)\/schemas\/(\d+)\/objects\/(%s)$/i',
-			$escapedBase,
-			$uuidPattern
-		);
-
-		if (preg_match($hashPattern, $referenceText, $matches) === 1) {
-			return [
-				'registerId' => (int)$matches[1],
-				'schemaId' => (int)$matches[2],
-				'uuid' => $matches[3],
-			];
-		}
-
-		// Pattern 2: API object URL.
-		// /apps/openregister/api/objects/{registerId}/{schemaId}/{uuid}.
-		$apiPattern = sprintf(
-			'/^%s(?:\/index\.php)?\/apps\/openregister\/api\/objects\/(\d+)\/(\d+)\/(%s)$/i',
-			$escapedBase,
-			$uuidPattern
-		);
-
-		if (preg_match($apiPattern, $referenceText, $matches) === 1) {
-			return [
-				'registerId' => (int)$matches[1],
-				'schemaId' => (int)$matches[2],
-				'uuid' => $matches[3],
-			];
-		}
-
-		// Pattern 3: Direct object show route.
-		// /apps/openregister/objects/{registerId}/{schemaId}/{uuid}.
-		$directPattern = sprintf(
-			'/^%s(?:\/index\.php)?\/apps\/openregister\/objects\/(\d+)\/(\d+)\/(%s)$/i',
-			$escapedBase,
-			$uuidPattern
-		);
-
-		if (preg_match($directPattern, $referenceText, $matches) === 1) {
-			return [
-				'registerId' => (int)$matches[1],
-				'schemaId' => (int)$matches[2],
-				'uuid' => $matches[3],
-			];
-		}
-
-		return null;
-	}//end parseReference()
+	public function resolveReferencePublic(string $referenceText, string $sharingToken): ?IReference {
+		return $this->resolveReference(referenceText: $referenceText);
+	}//end resolveReferencePublic()
 
 	/**
-	 * Extract the display title from object data.
+	 * Returns the cache key for a publicly-resolved reference.
 	 *
-	 * @param array $objectData The full object data
-	 * @param array $selfData The @self metadata
+	 * Different public shares can expose different objects/permissions for
+	 * the same underlying reference text, so the cache MUST vary by token —
+	 * never collapse to a single anonymous-wide cache entry the way
+	 * {@see self::getCacheKey()} collapses to `''`.
 	 *
-	 * @return string The object title
+	 * @param string $referenceId The reference URL
+	 * @param string $sharingToken The public share token
 	 *
-	 * @spec openspec/specs/deep-link-registry/spec.md
+	 * @return string|null The sharing token, used as the cache key
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d5
 	 */
-	private function extractTitle(array $objectData, array $selfData): string {
-		// Try @self.name first.
-		if (empty($selfData['name']) === false && is_string($selfData['name']) === true) {
-			return $selfData['name'];
-		}
-
-		// Try title property.
-		if (empty($objectData['title']) === false && is_string($objectData['title']) === true) {
-			return $objectData['title'];
-		}
-
-		// Try name property.
-		if (empty($objectData['name']) === false && is_string($objectData['name']) === true) {
-			return $objectData['name'];
-		}
-
-		// Fall back to UUID.
-		$uuid = $selfData['id'] ?? $objectData['id'] ?? '';
-		if (is_string($uuid) === true && $uuid !== '') {
-			return $uuid;
-		}
-
-		return $this->l10n->t('Unknown Object');
-	}//end extractTitle()
-
-	/**
-	 * Extract a description from object data.
-	 *
-	 * @param array $objectData The full object data
-	 *
-	 * @return string Truncated description (max 200 chars)
-	 *
-	 * @spec openspec/specs/deep-link-registry/spec.md
-	 */
-	private function extractDescription(array $objectData): string {
-		// Try summary first.
-		if (empty($objectData['summary']) === false && is_string($objectData['summary']) === true) {
-			return mb_substr($objectData['summary'], 0, self::MAX_DESCRIPTION_LENGTH);
-		}
-
-		// Try description.
-		if (empty($objectData['description']) === false && is_string($objectData['description']) === true) {
-			$desc = mb_substr($objectData['description'], 0, self::MAX_DESCRIPTION_LENGTH);
-			if (mb_strlen($objectData['description']) > self::MAX_DESCRIPTION_LENGTH) {
-				$desc .= '...';
-			}
-
-			return $desc;
-		}
-
-		return '';
-	}//end extractDescription()
-
-	/**
-	 * Extract up to 4 preview properties from object data.
-	 *
-	 * Skips internal fields and non-scalar values.
-	 *
-	 * @param array $objectData The full object data
-	 *
-	 * @return array<int, array{label: string, value: string}> Preview properties
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
-	 * @spec openspec/specs/deep-link-registry/spec.md
-	 */
-	private function extractPreviewProperties(array $objectData): array {
-		$properties = [];
-		$count = 0;
-
-		foreach ($objectData as $key => $value) {
-			if ($count >= self::MAX_PREVIEW_PROPERTIES) {
-				break;
-			}
-
-			// Skip internal fields.
-			if (in_array($key, self::INTERNAL_FIELDS, true) === true) {
-				continue;
-			}
-
-			// Skip fields starting with underscore or @.
-			if (strpos($key, '_') === 0 || strpos($key, '@') === 0) {
-				continue;
-			}
-
-			// Only include scalar string/number values.
-			if (is_string($value) === true && $value !== '') {
-				$properties[] = [
-					'label' => ucfirst($key),
-					'value' => mb_substr($value, 0, 100),
-				];
-				$count++;
-			} elseif (is_int($value) === true || is_float($value) === true) {
-				$properties[] = [
-					'label' => ucfirst($key),
-					'value' => (string)$value,
-				];
-				$count++;
-			}
-		}//end foreach
-
-		return $properties;
-	}//end extractPreviewProperties()
-
-	/**
-	 * Resolve a schema ID to its display title.
-	 *
-	 * @param int $schemaId The schema ID
-	 *
-	 * @return string The schema title or fallback
-	 *
-	 * @spec openspec/specs/deep-link-registry/spec.md
-	 */
-	private function resolveSchemaName(int $schemaId): string {
-		try {
-			$schema = $this->schemaMapper->find($schemaId);
-			$title = $schema->getTitle();
-			if ($title !== null && $title !== '') {
-				return $title;
-			}
-		} catch (\Exception $e) {
-			// Fall through to default.
-		}
-
-		return $this->l10n->t('Unknown Schema');
-	}//end resolveSchemaName()
-
-	/**
-	 * Resolve a register ID to its display title.
-	 *
-	 * @param int $registerId The register ID
-	 *
-	 * @return string The register title or fallback
-	 *
-	 * @spec openspec/specs/deep-link-registry/spec.md
-	 */
-	private function resolveRegisterName(int $registerId): string {
-		try {
-			$register = $this->registerMapper->find($registerId);
-			$title = $register->getTitle();
-			if ($title !== null && $title !== '') {
-				return $title;
-			}
-		} catch (\Exception $e) {
-			// Fall through to default.
-		}
-
-		return $this->l10n->t('Unknown Register');
-	}//end resolveRegisterName()
+	public function getCacheKeyPublic(string $referenceId, string $sharingToken): ?string {
+		return $sharingToken;
+	}//end getCacheKeyPublic()
 }//end class

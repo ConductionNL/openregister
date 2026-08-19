@@ -331,6 +331,27 @@ class Schema extends Entity implements JsonSerializable {
 	protected bool $searchable = true;
 
 	/**
+	 * Whether this schema opts in to its own Smart Picker entry
+	 *
+	 * Gates functionality only for a schema-scoped Smart Picker provider
+	 * (`AbstractSchemaReferenceProvider`/`AbstractSchemaSearchProvider`
+	 * subclass registered by a consuming app): when `false`, that provider's
+	 * `matchReference()`/`resolveReference()`/`search()` are all functionally
+	 * inert for this schema. It does NOT remove the provider's entry from
+	 * the Smart Picker's "Select provider" list — that list is populated
+	 * once at app boot from static class registration, which never consults
+	 * this runtime flag. Default `false`: opt-in, unlike `searchable`'s
+	 * opt-out default, because exposing a schema as its own picker entry is
+	 * a more visible, deliberate choice than being included in generic
+	 * search.
+	 *
+	 * @var boolean Whether this schema opts in to its own Smart Picker entry (default: false)
+	 *
+	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d2a
+	 */
+	protected bool $smartPickerEnabled = false;
+
+	/**
 	 * An array defining group-based permissions for CRUD actions.
 	 * The keys are the CRUD actions ('create', 'read', 'update', 'delete'),
 	 * and the values are arrays of group IDs that are permitted to perform that action.
@@ -460,6 +481,7 @@ class Schema extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'immutable', type: Types::BOOLEAN);
 		$this->addType(fieldName: 'appendOnly', type: Types::BOOLEAN);
 		$this->addType(fieldName: 'searchable', type: Types::BOOLEAN);
+		$this->addType(fieldName: 'smartPickerEnabled', type: Types::BOOLEAN);
 		$this->addType(fieldName: 'updated', type: 'datetime');
 		$this->addType(fieldName: 'created', type: 'datetime');
 		$this->addType(fieldName: 'maxDepth', type: Types::INTEGER);
@@ -910,12 +932,95 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @return void
 	 */
+	/**
+	 * The extra action names this schema declares.
+	 *
+	 * Read from `configuration['x-openregister-action']`, a map of action key →
+	 * `{name, description}`. A malformed or absent block contributes nothing, so
+	 * the vocabulary falls back to CRUD rather than opening up — failing closed
+	 * is the only safe direction for a permission vocabulary.
+	 *
+	 * @return array<int, string> Declared action keys.
+	 *
+	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 */
+	private function declaredActionNames(): array {
+		$configuration = ($this->configuration ?? []);
+		if (is_array($configuration) === false) {
+			return [];
+		}
+
+		$declared = ($configuration['x-openregister-action'] ?? null);
+		if (is_array($declared) === false) {
+			return [];
+		}
+
+		$names = [];
+		foreach ($declared as $key => $definition) {
+			// A declaration must NAME and DESCRIBE itself. An entry with no
+			// description is how an action ends up in a permission matrix with
+			// nothing telling the person granting it what they are agreeing to.
+			if (is_string($key) === false || $key === '') {
+				continue;
+			}
+
+			if (is_array($definition) === false) {
+				continue;
+			}
+
+			if (isset($definition['name']) === false || isset($definition['description']) === false) {
+				continue;
+			}
+
+			$names[] = $key;
+		}
+
+		return $names;
+	}//end declaredActionNames()
+
+	/**
+	 * Reject an authorization block that names an action the vocabulary does not know.
+	 *
+	 * The vocabulary is CLOSED by default and EXTENSIBLE by declaration — see the
+	 * body for how a schema adds one. The gate is the feature rather than a rail
+	 * bolted onto it: an open vocabulary lets a typo save cleanly as a permission
+	 * that is never granted and never errors.
+	 *
+	 * @param array|null $authorization The authorization block to check, or null.
+	 * @param string $context Human-readable location, used in the refusal message.
+	 *
+	 * @return void
+	 *
+	 * @throws \InvalidArgumentException When an action is not in the vocabulary.
+	 */
 	private function validateAuthorizationRules(?array $authorization, string $context): void {
 		if (empty($authorization) === true) {
 			return;
 		}
 
-		$validActions = ['create', 'read', 'update', 'delete'];
+		// The vocabulary is CLOSED by default and EXTENSIBLE by declaration. A
+		// schema adds actions under `configuration['x-openregister-action']`:
+		//
+		//   "x-openregister-action": {
+		//     "sendMail": { "name": "Send mail", "description": "Send a message as the acting user." }
+		//   }
+		//
+		// ⚠️ The gate is the feature, not a rail bolted onto it. An open
+		// vocabulary lets a typo (`raed`) save cleanly as a permission that is
+		// never granted and never errors — a rule that silently protects
+		// nothing, which is worse than one that refuses the schema. This
+		// refusal already existed: declaring `write` failed an import and cost
+		// docudesk six schemas. What is new is a legitimate way to say what you
+		// meant.
+		//
+		// Declaring an action grants and enforces NOTHING. It defines a NAME
+		// that an authorization block, an event listener and the
+		// grantable-rights index can all refer to; the app still enforces its
+		// own operation.
+		$validActions = array_merge(
+			['create', 'read', 'update', 'delete'],
+			$this->declaredActionNames()
+		);
 
 		// Reserved non-action authorization flags. These are cascade/behaviour
 		// toggles read at runtime by PermissionHandler, not CRUD rule sets.
@@ -1517,7 +1622,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *     version: null|string, summary: null|string, icon: null|string,
 	 *     required: array, properties: array, archive: array|null,
 	 *     source: null|string, hardValidation: bool, immutable: bool, appendOnly: bool,
-	 *     searchable: bool, updated: null|string, created: null|string,
+	 *     searchable: bool, smartPickerEnabled: bool, updated: null|string, created: null|string,
 	 *     maxDepth: int, owner: null|string, application: null|string,
 	 *     organisation: null|string,
 	 *     groups: array<string, list<string>>|null, authorization: array|null,
@@ -1576,6 +1681,7 @@ class Schema extends Entity implements JsonSerializable {
 			'immutable' => $this->immutable,
 			'appendOnly' => $this->appendOnly,
 			'searchable' => $this->searchable,
+			'smartPickerEnabled' => $this->smartPickerEnabled,
 			// @todo: should be refactored to strict.
 			'updated' => $updated,
 			'created' => $created,
@@ -2323,6 +2429,17 @@ class Schema extends Entity implements JsonSerializable {
 		'x-openregister-merge',
 		'x-openregister-handoff',
 		'x-openregister-mcp',
+		// The extensible action vocabulary: a map of action key →
+		// {name, description} that `validateAuthorizationRules()` reads to
+		// decide which non-CRUD actions an authorization block may name.
+		//
+		// ⚠️ Absent from this list it would be DROPPED by setConfiguration(),
+		// and the failure would be the worst shape available: every declared
+		// action would vanish, so every authorization naming one would fail the
+		// import with "Invalid authorization action" — pointing the author at
+		// their authorization block when the real loss happened silently one
+		// key earlier. The two comments above record the same bug twice.
+		'x-openregister-action',
 		'x-openregister-approval-chains',
 		// Per-schema opt-in for OCP\ContextChat content submission (default
 		// OFF — see ContentProvider / ContextChatSubmissionListener). Absent
@@ -2549,6 +2666,41 @@ class Schema extends Entity implements JsonSerializable {
 		$this->searchable = $searchable;
 		$this->markFieldUpdated(attribute: 'searchable');
 	}//end setSearchable()
+
+	/**
+	 * Check whether this schema opts in to its own Smart Picker entry
+	 *
+	 * Named `is...()` rather than `get...()` (unlike this column's own
+	 * `@spec` prose in the schema-scoped-smart-picker change, which used
+	 * `getSmartPickerEnabled()`) to match this class's REAL existing
+	 * boolean-getter convention (`isSearchable()`, not `getSearchable()`)
+	 * and PHPMD's `BooleanGetMethodName` rule, which a real declared
+	 * `get...()` boolean getter — unlike a magic `@method` one — triggers.
+	 *
+	 * @return bool True if a schema-scoped Smart Picker provider for this
+	 *              schema should be functionally active
+	 *
+	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d2a
+	 */
+	public function isSmartPickerEnabled(): bool {
+		return $this->smartPickerEnabled;
+	}//end isSmartPickerEnabled()
+
+	/**
+	 * Set whether this schema opts in to its own Smart Picker entry
+	 *
+	 * @param bool $smartPickerEnabled Whether a schema-scoped Smart Picker
+	 *                                 provider for this schema should be
+	 *                                 functionally active
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d2a
+	 */
+	public function setSmartPickerEnabled(bool $smartPickerEnabled): void {
+		$this->smartPickerEnabled = $smartPickerEnabled;
+		$this->markFieldUpdated(attribute: 'smartPickerEnabled');
+	}//end setSmartPickerEnabled()
 
 	/**
 	 * Check whether objects of this schema are append-only.

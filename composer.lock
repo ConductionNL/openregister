@@ -1916,16 +1916,16 @@
         },
         {
             "name": "paragonie/sodium_compat",
-            "version": "v2.5.0",
+            "version": "v2.5.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/paragonie/sodium_compat.git",
-                "reference": "4714da6efdc782c06690bc72ce34fae7941c2d9f"
+                "reference": "e4d4933af9463a96a1a3cbaeb94327b90e3350ca"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/paragonie/sodium_compat/zipball/4714da6efdc782c06690bc72ce34fae7941c2d9f",
-                "reference": "4714da6efdc782c06690bc72ce34fae7941c2d9f",
+                "url": "https://api.github.com/repos/paragonie/sodium_compat/zipball/e4d4933af9463a96a1a3cbaeb94327b90e3350ca",
+                "reference": "e4d4933af9463a96a1a3cbaeb94327b90e3350ca",
                 "shasum": ""
             },
             "require": {
@@ -2006,9 +2006,9 @@
             ],
             "support": {
                 "issues": "https://github.com/paragonie/sodium_compat/issues",
-                "source": "https://github.com/paragonie/sodium_compat/tree/v2.5.0"
+                "source": "https://github.com/paragonie/sodium_compat/tree/v2.5.1"
             },
-            "time": "2025-12-30T16:12:18+00:00"
+            "time": "2026-08-18T15:39:41+00:00"
         },
         {
             "name": "php-di/invoker",
@@ -13361,9 +13361,9 @@
     "platform": {
         "php": "^8.3"
     },
-    "platform-dev": [],
+    "platform-dev": {},
     "platform-overrides": {
         "php": "8.3"
     },
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }

@@ -62,12 +62,14 @@ class IconController extends Controller {
 	 *
 	 * @return DataDisplayResponse The SVG image, or a 404 for an unknown icon.
 	 *
+	 * The rate-limit ceiling is deliberately high: icons are fetched
+	 * many-per-page, and set near the data endpoints a single dense screen
+	 * trips it.
+	 *
 	 * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
-	// Icons are fetched many-per-page, so this ceiling is deliberately high —
-	// set it near the data endpoints and a single dense screen trips it.
 	#[AnonRateLimit(limit: 240, period: 60)]
 	public function mdi(string $name): DataDisplayResponse {
 		$svg = MdiIconRenderer::svg(icon: $name);
