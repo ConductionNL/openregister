@@ -2750,6 +2750,7 @@ class SaveObject {
 	 * @param array|null $uploadedFiles Uploaded files array (optional).
 	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks; falls back to the session user when null.
 	 * @param bool $failIfExists Insert-only: throw ObjectExistsException rather than update when taken (default: false).
+	 * @param bool $_unowned Stamp the system identity even when a session exists.
 	 *
 	 * @return ObjectEntity The saved object entity.
 	 *
@@ -3310,6 +3311,7 @@ class SaveObject {
 	 * @param bool $_multitenancy Whether to apply multitenancy
 	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata)
 	 * @param bool $failIfExists Insert-only: refuse instead of updating when the identifier is taken.
+	 * @param bool $_unowned Stamp the system identity even when a session exists.
 	 *
 	 * @return ObjectEntity Created object
 	 *
@@ -3648,6 +3650,7 @@ class SaveObject {
 	 * @param array $selfData The @self metadata.
 	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
 	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata).
+	 * @param bool $_unowned Stamp the system identity even when a session exists.
 	 *
 	 * @return ObjectEntity The prepared object entity.
 	 *
