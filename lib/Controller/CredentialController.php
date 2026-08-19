@@ -348,6 +348,16 @@ class CredentialController extends Controller {
 		}
 
 		$secret = $this->request->getParam('secret');
+		if (is_string($secret) === true) {
+			// Garbage-in prevention: this rotation path writes straight to the
+			// vault and does NOT go through CredentialBrokerService::mint(), so
+			// it needs its own trim (credential-broker-upstream-diagnostics D3)
+			// — a copy-pasted secret with a trailing newline previously reached
+			// the vault byte-for-byte and later failed header injection at call
+			// time with no usable diagnostic.
+			$secret = trim($secret);
+		}
+
 		if (is_string($secret) === true && $secret !== '') {
 			$this->credentialStore->put($id, $secret, $scope);
 		}
