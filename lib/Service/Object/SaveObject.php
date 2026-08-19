@@ -2775,6 +2775,7 @@ class SaveObject {
 		?array $uploadedFiles = null,
 		?IUser $currentUser = null,
 		bool $failIfExists = false,
+		bool $_unowned = false,
 	): ObjectEntity {
 		// Extract UUID and @self metadata from data.
 		[$uuid, $selfData, $data] = $this->extractUuidAndSelfData(
@@ -3014,7 +3015,8 @@ class SaveObject {
 				silent: $silent,
 				_multitenancy: $_multitenancy,
 				currentUser: $currentUser,
-				failIfExists: $failIfExists
+				failIfExists: $failIfExists,
+				_unowned: $_unowned
 			);
 		} finally {
 			$this->popSaveCallFrame(key: $frameKey);
@@ -3331,6 +3333,7 @@ class SaveObject {
 		bool $_multitenancy,
 		?IUser $currentUser = null,
 		bool $failIfExists = false,
+		bool $_unowned = false,
 	): ObjectEntity {
 		// Create a new object entity.
 		$objectEntity = new ObjectEntity();
@@ -3355,7 +3358,8 @@ class SaveObject {
 			data: $data,
 			selfData: $selfData,
 			_multitenancy: $_multitenancy,
-			currentUser: $currentUser
+			currentUser: $currentUser,
+			_unowned: $_unowned
 		);
 
 		// Apply archival metadata from schema archive configuration.
@@ -3662,6 +3666,7 @@ class SaveObject {
 		array $selfData,
 		bool $_multitenancy,
 		?IUser $currentUser = null,
+		bool $_unowned = false,
 	): ObjectEntity {
 		// Set @self metadata properties.
 		$this->setSelfMetadata(objectEntity: $objectEntity, selfData: $selfData, data: $data, currentUser: $currentUser);
@@ -3711,7 +3716,7 @@ class SaveObject {
 		// Set owner from the active user session, or fall back to the system
 		// identifier when no session is active. See applyOwnerAttribution()
 		// for the system-context contract (openregister#1617).
-		$this->applyOwnerAttribution(objectEntity: $objectEntity);
+		$this->applyOwnerAttribution(objectEntity: $objectEntity, _unowned: $_unowned);
 
 		// Set organisation from active organisation if not already set.
 		// setSelfMetadata() (called above) only accepted a client-supplied @self.organisation
@@ -3755,11 +3760,36 @@ class SaveObject {
 	 * caller via @self metadata) is honoured and not overwritten by the
 	 * system-context fallback.
 	 *
+	 * `$_unowned` is the ONE way to opt out, and it is a service-level argument
+	 * that no REST caller can reach — the controllers never forward it, so a
+	 * request cannot ask to be anonymised.
+	 *
+	 * WHY IT EXISTS. An application can accept a genuinely anonymous submission
+	 * — a citizen reporting a pothole on a public portal, with no account and
+	 * no ownership — and until now the row was still stamped with whatever
+	 * Nextcloud user happened to hold a session in that browser. Measured on a
+	 * portaliq portal: the same anonymous form stored `_owner = __system__` when
+	 * posted by `curl` and `_owner = admin` when posted from a browser holding
+	 * an admin cookie, while the page it was submitted from told the visitor the
+	 * submission was "niet aan een account gekoppeld". A caller could not fix it
+	 * from its side, because this method overrides a caller-set owner whenever
+	 * there is a session.
+	 *
 	 * @param ObjectEntity $objectEntity Entity being prepared for creation.
+	 * @param bool         $_unowned     Stamp the system identity even when a session exists.
 	 *
 	 * @return void
 	 */
-	private function applyOwnerAttribution(ObjectEntity $objectEntity): void {
+	private function applyOwnerAttribution(ObjectEntity $objectEntity, bool $_unowned = false): void {
+		// DELIBERATELY UNOWNED. The system identifier rather than an empty
+		// string: rows persisted with an empty `_owner` are invisible to the
+		// REST list path's RBAC filter even for admins (openregister#1617), so
+		// "no owner" has to mean the system, not nobody.
+		if ($_unowned === true) {
+			$objectEntity->setOwner($this->organisationService->getSystemUserId());
+			return;
+		}
+
 		$user = $this->userSession->getUser();
 		if ($user !== null) {
 			$objectEntity->setOwner($user->getUID());
