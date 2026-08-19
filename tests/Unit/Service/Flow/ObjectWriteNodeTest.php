@@ -1211,6 +1211,7 @@ class ObjectWriteNodeTest extends TestCase {
 				'match',
 				'replace',
 				'bulk',
+				'skipWhen',
 				'output',
 				'confirmDelete',
 				'permanent',
@@ -1506,6 +1507,156 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$this->assertSame('slug-a', $out[0]['json']['serverComputed']);
 		$this->assertArrayNotHasKey('@self', $out[0]['json']);
+	}
+
+	// ── skipWhen (or-flow-object-write-skip-when) ───────────────────────
+
+	/**
+	 * An item the flow marked `skip` passes through and is never written.
+	 *
+	 * @return void
+	 */
+	public function testASkippedItemIsEmittedButNotWritten(): void {
+		$this->objects->expects($this->never())->method('saveObject');
+
+		$out = $this->node->execute(
+			$this->items([['title' => 'a', 'contract' => ['outcome' => 'skip']]]),
+			$this->config(['skipWhen' => 'contract.outcome']),
+			$this->registerContext
+		);
+
+		$this->assertCount(1, $out, 'a skipped item must still be emitted, never dropped');
+		$this->assertSame('a', $out[0]['json']['title']);
+		$this->assertSame('skip', $out[0]['json']['contract']['outcome']);
+	}
+
+	/**
+	 * Mixed pages keep every item, in order, and write only the unskipped.
+	 *
+	 * @return void
+	 */
+	public function testOnlyUnskippedItemsAreWrittenAndOrderIsKept(): void {
+		$written = [];
+		$this->objects->method('saveObject')->willReturnCallback(
+			function (mixed $object, ?array $extend = [], mixed $register = null, mixed $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, bool $_validation = true, ?array $uploadedFiles = null, ?IUser $currentUser = null) use (&$written): ObjectEntity {
+				$written[] = $object['title'] ?? null;
+
+				return $this->entity('u', $object);
+			}
+		);
+
+		$out = $this->node->execute(
+			$this->items([
+				['title' => 'keep-1', 'contract' => ['outcome' => 'create']],
+				['title' => 'skip-me', 'contract' => ['outcome' => 'skip']],
+				['title' => 'keep-2', 'contract' => ['outcome' => 'update']],
+			]),
+			$this->config(['skipWhen' => 'contract.outcome', 'fields' => ['title' => '{{title}}']]),
+			$this->registerContext
+		);
+
+		$this->assertCount(3, $out, 'every input item must be emitted');
+		$this->assertSame(['keep-1', 'keep-2'], $written, 'only unskipped items are written');
+		$this->assertSame('skip-me', $out[1]['json']['title'], 'the skipped item keeps its place');
+	}
+
+	/**
+	 * A skipped item costs no write, so it cannot exhaust the cap.
+	 *
+	 * @return void
+	 */
+	public function testSkippedItemsDoNotConsumeTheWriteCap(): void {
+		$this->objects->expects($this->never())->method('saveObject');
+
+		$out = $this->node->execute(
+			$this->items([
+				['title' => 'a', 'contract' => ['outcome' => 'skip']],
+				['title' => 'b', 'contract' => ['outcome' => 'skip']],
+				['title' => 'c', 'contract' => ['outcome' => 'skip']],
+			]),
+			$this->config(['skipWhen' => 'contract.outcome', 'maxWrites' => 1]),
+			$this->registerContext
+		);
+
+		$this->assertCount(3, $out);
+	}
+
+	/**
+	 * Only `true` and the word `skip` skip. "false" and "0" are truthy in PHP
+	 * and must NOT silence a write.
+	 *
+	 * @return void
+	 */
+	public function testOnlyADeliberateSkipValueSkips(): void {
+		$this->objects->expects($this->exactly(2))->method('saveObject')->willReturn($this->entity('u', []));
+
+		$out = $this->node->execute(
+			$this->items([
+				['title' => 'a', 'flag' => 'false'],
+				['title' => 'b', 'flag' => '0'],
+				['title' => 'c', 'flag' => true],
+			]),
+			$this->config(['skipWhen' => 'flag', 'fields' => ['title' => '{{title}}']]),
+			$this->registerContext
+		);
+
+		$this->assertCount(3, $out);
+	}
+
+	/**
+	 * With `skipWhen` absent, nothing changes — the guard is opt-in.
+	 *
+	 * @return void
+	 */
+	public function testWithoutSkipWhenEveryItemIsStillWritten(): void {
+		$this->objects->expects($this->exactly(2))->method('saveObject')->willReturn($this->entity('u', []));
+
+		$this->node->execute(
+			$this->items([
+				['title' => 'a', 'contract' => ['outcome' => 'skip']],
+				['title' => 'b', 'contract' => ['outcome' => 'skip']],
+			]),
+			$this->config(['fields' => ['title' => '{{title}}']]),
+			$this->registerContext
+		);
+	}
+
+	/**
+	 * In BULK, a skipped row is not sent, and an all-skipped page never calls
+	 * saveObjects() at all.
+	 *
+	 * @return void
+	 */
+	public function testBulkExcludesSkippedRowsAndSkipsTheCallEntirely(): void {
+		$sent = null;
+		$this->objects->method('saveObjects')->willReturnCallback(
+			function (array $objects) use (&$sent): array {
+				$sent = $objects;
+
+				return ['saved' => [], 'updated' => [], 'unchanged' => [], 'invalid' => [], 'errors' => [], 'statistics' => []];
+			}
+		);
+
+		$out = $this->node->execute(
+			$this->items([
+				['title' => 'a', 'contract' => ['outcome' => 'skip']],
+				['title' => 'b', 'contract' => ['outcome' => 'create']],
+			]),
+			$this->config(['bulk' => true, 'skipWhen' => 'contract.outcome', 'fields' => ['title' => '{{title}}']]),
+			$this->registerContext
+		);
+
+		$this->assertCount(1, $sent, 'only the unskipped row is sent');
+		$this->assertCount(2, $out, 'both items are emitted');
+
+		// An all-skipped page must not reach the service at all.
+		$this->objects->expects($this->never())->method('saveObjects');
+		$allSkipped = $this->node->execute(
+			$this->items([['title' => 'x', 'contract' => ['outcome' => 'skip']]]),
+			$this->config(['bulk' => true, 'skipWhen' => 'contract.outcome', 'fields' => ['title' => '{{title}}']]),
+			$this->registerContext
+		);
+		$this->assertCount(1, $allSkipped);
 	}
 
 }//end class

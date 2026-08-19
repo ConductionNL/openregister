@@ -1013,41 +1013,22 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			);
 		}
 
-		// A skipped item contributes NO row, so it is not written — but it is
-		// still emitted below, with its own json untouched. See the note in
-		// writeItems(): dropping it is what makes a later sweep delete it.
-		$skipWhen = trim((string)($config['skipWhen'] ?? ''));
-
-		$rows = [];
-		$ids = [];
-		$skipped = [];
-		foreach ($items as $index => $item) {
-			$json = (array)($item[FlowItems::JSON] ?? []);
-			if ($skipWhen !== '' && $this->isSkipped(path: $skipWhen, json: $json) === true) {
-				$skipped[$index] = true;
-				continue;
-			}
-
-			$payload = $this->buildPayload(fields: $fields, json: $json, onMissing: $onMissing);
-			$id = $this->bulkRowId(operation: $operation, pairs: $pairs, json: $json);
-			$payload['id'] = $id;
-			$rows[] = $payload;
-			$ids[$index] = $id;
-		}
+		$plan = $this->planBulkRows(
+			items: $items,
+			config: $config,
+			operation: $operation,
+			pairs: $pairs,
+			fields: $fields,
+			onMissing: $onMissing
+		);
+		$rows = $plan['rows'];
+		$ids = $plan['ids'];
+		$skipped = $plan['skipped'];
 
 		// Nothing to write once the skips are removed: return the items as
 		// they arrived rather than calling saveObjects() with an empty payload.
 		if ($rows === []) {
-			$passthrough = [];
-			foreach ($items as $index => $item) {
-				$passthrough[] = FlowItems::item(
-					json: (array)($item[FlowItems::JSON] ?? []),
-					binary: (array)($item[FlowItems::BINARY] ?? []),
-					fromItemIndex: (int)$index
-				);
-			}
-
-			return $passthrough;
+			return $this->passThrough(items: $items);
 		}
 
 		// Validation stays ON to keep parity with the single-object path;
@@ -1911,6 +1892,81 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 
 		return ['resolved' => true, 'value' => $out];
 	}//end resolveTemplate()
+
+	/**
+	 * Decide, for a bulk page, which items are written and under which ids.
+	 *
+	 * Split out of {@see writeBulk()} to keep that method inside phpmd's
+	 * length and complexity thresholds once `skipWhen` added a branch to it.
+	 *
+	 * @param array $items The input items.
+	 * @param array $config The step configuration.
+	 * @param string $operation The resolved operation.
+	 * @param array $pairs The match pairs.
+	 * @param array $fields The configured fields.
+	 * @param string $onMissing The missing-field policy.
+	 *
+	 * @return array{rows: array, ids: array, skipped: array} The plan.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The parameters writeBulk() already resolved.
+	 *
+	 * @spec openspec/changes/or-flow-object-write-skip-when/specs/flow-object-write-skip-when/spec.md
+	 */
+	private function planBulkRows(
+		array $items,
+		array $config,
+		string $operation,
+		array $pairs,
+		array $fields,
+		string $onMissing,
+	): array {
+		// A skipped item contributes NO row, so it is not written — but it is
+		// still emitted by the caller, with its own json untouched. See the
+		// note in writeItems(): dropping it is what makes a later sweep
+		// delete it.
+		$skipWhen = trim((string)($config['skipWhen'] ?? ''));
+
+		$rows = [];
+		$ids = [];
+		$skipped = [];
+		foreach ($items as $index => $item) {
+			$json = (array)($item[FlowItems::JSON] ?? []);
+			if ($skipWhen !== '' && $this->isSkipped(path: $skipWhen, json: $json) === true) {
+				$skipped[$index] = true;
+				continue;
+			}
+
+			$payload = $this->buildPayload(fields: $fields, json: $json, onMissing: $onMissing);
+			$id = $this->bulkRowId(operation: $operation, pairs: $pairs, json: $json);
+			$payload['id'] = $id;
+			$rows[] = $payload;
+			$ids[$index] = $id;
+		}
+
+		return ['rows' => $rows, 'ids' => $ids, 'skipped' => $skipped];
+	}//end planBulkRows()
+
+	/**
+	 * Emit every item exactly as it arrived.
+	 *
+	 * @param array $items The input items.
+	 *
+	 * @return array One output item per input item.
+	 *
+	 * @spec openspec/changes/or-flow-object-write-skip-when/specs/flow-object-write-skip-when/spec.md
+	 */
+	private function passThrough(array $items): array {
+		$out = [];
+		foreach ($items as $index => $item) {
+			$out[] = FlowItems::item(
+				json: (array)($item[FlowItems::JSON] ?? []),
+				binary: (array)($item[FlowItems::BINARY] ?? []),
+				fromItemIndex: (int)$index
+			);
+		}
+
+		return $out;
+	}//end passThrough()
 
 	/**
 	 * Whether this item says it is already current, so no write is needed.
