@@ -101,27 +101,6 @@ const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 
 const FLOWS_ROUTE = '/index.php/apps/openregister/#/flows'
 
-// Whether the INSTALLED library carries the consolidated editor (toolbar +
-// seeded start node). Feature-detected on the source the bundle was built
-// from, not on a version number: the transition window installs 2.3.x from
-// npm while dev instances may run a synced pre-release tree, and a version
-// string cannot tell those apart. Self-clears on the lockfile bump.
-const NEW_EDITOR = (() => {
-	try {
-		return fs
-			.readFileSync(
-				path.resolve(
-					__dirname,
-					'../../../node_modules/@conduction/nextcloud-vue/src/components/CnFlowDetail/CnFlowDetail.vue',
-				),
-				'utf8',
-			)
-			.includes('cn-flow-detail__toolbar')
-	} catch {
-		return false
-	}
-})()
-
 test.use(fs.existsSync(STORAGE_STATE) ? { storageState: STORAGE_STATE } : {})
 
 /**
