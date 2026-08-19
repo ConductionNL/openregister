@@ -252,6 +252,23 @@ final class AttributeToolScanner {
 			$descriptor['scope'] = $attribute->scope;
 		}
 
+		// The grant-matrix taxonomy, forwarded on the same additive terms as
+		// the hints above: present ONLY when the author declared it, never
+		// inferred from the method name. `describeTools()` makes the same
+		// choice downstream, and for the same reason — an inferred subject is
+		// indistinguishable from a declared one, so a consumer given one
+		// cannot know whether to trust it.
+		//
+		// ⚠️ The consequence is that an OMISSION HAS NO SYMPTOM: the tool
+		// simply arrives at the matrix ungroupable. Apps are expected to pin
+		// this with a test, the way hermiq's provider does.
+		foreach (['subject', 'action'] as $taxonomyKey) {
+			$declared = $attribute->{$taxonomyKey};
+			if ($declared !== null && trim($declared) !== '') {
+				$descriptor[$taxonomyKey] = $declared;
+			}
+		}
+
 		return $descriptor;
 	}//end buildDescriptor()
 
