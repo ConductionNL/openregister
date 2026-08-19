@@ -105,11 +105,6 @@ class ChatHealthController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * The rate-limit ceiling is generous on purpose: a health probe is polled by
-	 * monitoring on a schedule, so the limit exists to stop an unauthenticated
-	 * caller turning a liveness endpoint into a load generator, not to police
-	 * the monitor.
-	 *
 	 * @return JSONResponse 200 or 503 JSON response
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
