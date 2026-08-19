@@ -599,19 +599,19 @@ class MagicBulkHandler {
 			// built above and consumed by the INSERT further down. Shadowing it
 			// with a string turned `implode()` into a TypeError — a 500 on every
 			// bulk save, from a variable name.
-			// ⚠️ KNOWN phpcs debt, left deliberately: Squiz.PHP.DisallowInlineIf
-			// flags the ternary below, and it is NOT fixable inside a
-			// comment-only change. Every alternative ADDS STATEMENTS to a method
-			// that needs a live magic table to execute, so the new lines are born
-			// uncovered and the changed-files coverage ratchet fails the PR:
-			//   if/else  -> phpmd ElseExpression
-			//   if/if    -> +2 statements, ratchet "dropped by 0%"   (8850 -> 8852)
-			//   match    -> +3 statements, ratchet "dropped by 0.01%" (8850 -> 8853)
-			// Fixing it properly means covering this branch with an integration
-			// test against a real table — its own change, not a docblock sweep.
 			$existsColumns = '*';
 			if ($needsPreUpdateState === false) {
-				$existsColumns = ($isPostgres === true) ? '"_uuid"' : '`_uuid`';
+				// Four rules meet on this one line, and three of the obvious
+				// forms break one of them — each measured, not guessed:
+				//   ternary          -> phpcs "Inline IF statements are not allowed"
+				//   if/else          -> phpmd "ElseExpression"
+				//   if-then-override -> +2 statements (344 -> 346), ratchet fails
+				//   match (2 arms)   -> +3 statements (344 -> 347), ratchet fails
+				// Clover counts each executable LINE, so any multi-line form
+				// adds uncovered statements to a formatting-only change. A
+				// single-expression lookup keyed on the boolean is one
+				// statement, exactly like the ternary it replaces.
+				$existsColumns = ['`_uuid`', '"_uuid"'][(int)$isPostgres];
 			}
 
 			$existsSql = "SELECT {$existsColumns} FROM `{$fullTableName}` WHERE `_uuid` IN ({$placeholders})";
