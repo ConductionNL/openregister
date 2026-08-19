@@ -10,7 +10,7 @@
  *   3. Validation errors land as 422 envelopes (not 500s).
  *   4. Soft-archive on DELETE — row stays in DB with `status='archived'`
  *      so audit-trail FKs remain resolvable.
- *   5. The `verantwoording` aggregation joins audit-trail counts onto
+ *   5. The `accountability` aggregation joins audit-trail counts onto
  *      each activity per AVG Art 30 §4 supervisory-review needs.
  *
  * SPDX-License-Identifier: EUPL-1.2
@@ -195,9 +195,9 @@ class VerwerkingsactiviteitenControllerIntegrationTest extends TestCase {
 		$this->loginAsNonAdmin();
 		$controller = $this->makeControllerWithBody(
 			payload: [
-				'naam' => 'phpunit-non-admin-create',
-				'doelbinding' => 'p',
-				'rechtsgrond' => 'publieke_taak',
+				'name' => 'phpunit-non-admin-create',
+				'purpose' => 'p',
+				'legalBasis' => 'public_task',
 			]
 		);
 
@@ -212,16 +212,16 @@ class VerwerkingsactiviteitenControllerIntegrationTest extends TestCase {
 		$this->loginAsAdmin();
 		$controller = $this->makeControllerWithBody(
 			payload: [
-				'naam' => 'phpunit-bad-rechtsgrond',
-				'doelbinding' => 'p',
-				'rechtsgrond' => 'bogus_basis',
+				'name' => 'phpunit-bad-legal-basis',
+				'purpose' => 'p',
+				'legalBasis' => 'bogus_basis',
 			]
 		);
 
 		$response = $controller->create();
 
 		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
-		$this->assertStringContainsString('rechtsgrond', $response->getData()['error']);
+		$this->assertStringContainsString('legalBasis', $response->getData()['error']);
 
 	}//end testCreateValidationReturns422()
 
@@ -230,12 +230,12 @@ class VerwerkingsactiviteitenControllerIntegrationTest extends TestCase {
 		$code = 'phpunit-create-' . uniqid();
 		$controller = $this->makeControllerWithBody(
 			payload: [
-				'naam' => 'phpunit-create-' . uniqid(),
+				'name' => 'phpunit-create-' . uniqid(),
 				'code' => $code,
-				'doelbinding' => 'phpunit purpose binding',
-				'rechtsgrond' => 'overeenkomst',
-				'bewaartermijn' => 'P5Y',
-				'categorieenBetrokkenen' => ['burgers', 'medewerkers'],
+				'purpose' => 'phpunit purpose binding',
+				'legalBasis' => 'contract',
+				'retentionPeriod' => 'P5Y',
+				'dataSubjectCategories' => ['burgers', 'medewerkers'],
 			]
 		);
 
@@ -244,8 +244,8 @@ class VerwerkingsactiviteitenControllerIntegrationTest extends TestCase {
 		$this->assertSame(Http::STATUS_CREATED, $response->getStatus());
 		$body = $response->getData();
 		$this->assertNotEmpty($body['uuid']);
-		$this->assertSame('overeenkomst', $body['rechtsgrond']);
-		$this->assertSame(['burgers', 'medewerkers'], $body['categorieenBetrokkenen']);
+		$this->assertSame('contract', $body['legalBasis']);
+		$this->assertSame(['burgers', 'medewerkers'], $body['dataSubjectCategories']);
 
 		$this->insertedActivityUuids[] = $body['uuid'];
 
@@ -267,9 +267,9 @@ class VerwerkingsactiviteitenControllerIntegrationTest extends TestCase {
 
 	}//end testDestroySoftArchivesInsteadOfHardDelete()
 
-	public function testVerantwoordingAggregatesAuditCounts(): void {
+	public function testAccountabilityAggregatesAuditCounts(): void {
 		$this->loginAsAdmin();
-		$activity = $this->insertActivity(name: 'phpunit-verantwoording', code: 'phpunit-vw-' . uniqid());
+		$activity = $this->insertActivity(name: 'phpunit-accountability', code: 'phpunit-vw-' . uniqid());
 
 		// Wire the activity into a schema so audit rows are tagged.
 		$register = $this->insertRegister();
@@ -302,12 +302,12 @@ class VerwerkingsactiviteitenControllerIntegrationTest extends TestCase {
 			}
 		}
 
-		$this->assertNotNull($row, 'verantwoording MUST list the test activity');
+		$this->assertNotNull($row, 'accountability MUST list the test activity');
 		$this->assertGreaterThanOrEqual(4, $row['activity']['totalEvents']);
 		$this->assertGreaterThanOrEqual(3, $row['activity']['byAction']['create'] ?? 0);
 		$this->assertGreaterThanOrEqual(1, $row['activity']['byAction']['update'] ?? 0);
 
-	}//end testVerantwoordingAggregatesAuditCounts()
+	}//end testAccountabilityAggregatesAuditCounts()
 
 	private function loginAsAdmin(): void {
 		$admin = $this->userManager->get('admin');
@@ -332,13 +332,13 @@ class VerwerkingsactiviteitenControllerIntegrationTest extends TestCase {
 
 	private function insertActivity(string $name, ?string $code = null): Verwerkingsactiviteit {
 		$entity = new Verwerkingsactiviteit();
-		$entity->setNaam($name . '-' . uniqid());
+		$entity->setName($name . '-' . uniqid());
 		if ($code !== null) {
 			$entity->setCode($code);
 		}
 
-		$entity->setDoelbinding('phpunit purpose');
-		$entity->setRechtsgrond('publieke_taak');
+		$entity->setPurpose('phpunit purpose');
+		$entity->setLegalBasis('public_task');
 		$entity->setStatus('published');
 
 		$persisted = $this->vrwMapper->insert($entity);

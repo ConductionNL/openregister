@@ -271,12 +271,12 @@ class AvgRetentionServiceIntegrationTest extends TestCase {
 
 	private function makeActivity(string $name, ?string $retentionPeriod): Verwerkingsactiviteit {
 		$entity = new Verwerkingsactiviteit();
-		$entity->setNaam($name . '-' . uniqid());
-		$entity->setDoelbinding('phpunit retention purpose');
-		$entity->setRechtsgrond('publieke_taak');
+		$entity->setName($name . '-' . uniqid());
+		$entity->setPurpose('phpunit retention purpose');
+		$entity->setLegalBasis('public_task');
 		$entity->setStatus('published');
 		if ($retentionPeriod !== null) {
-			$entity->setBewaartermijn($retentionPeriod);
+			$entity->setRetentionPeriod($retentionPeriod);
 		}
 
 		$persisted = $this->vrwMapper->insert($entity);

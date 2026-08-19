@@ -7613,6 +7613,9 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param Register $register Register context
 	 * @param Schema $schema Schema context
 	 * @param string $tableName Target table name
+	 * @param bool $needsPreUpdateState Whether anything downstream will read the
+	 *                                  pre-update rows (audit changeset or update
+	 *                                  event). False narrows the fetch to the uuid.
 	 *
 	 * @return array[] Array of complete objects with object_status field
 	 *
@@ -9203,6 +9206,9 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param array $updateObjects Objects to update (legacy parameter)
 	 * @param Register|null $register Optional register context
 	 * @param Schema|null $schema Optional schema context
+	 * @param bool $needsPreUpdateState Whether anything downstream will read the
+	 *                                  pre-update rows (audit changeset or update
+	 *                                  event). False narrows the fetch to the uuid.
 	 *
 	 * @return array Array of complete objects with object_status field
 	 *
@@ -9305,6 +9311,9 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param array $updateObjects Objects to update
 	 * @param Register|null $register Register context
 	 * @param Schema|null $schema Schema context
+	 * @param bool $needsPreUpdateState Whether anything downstream will read the
+	 *                                  pre-update rows (audit changeset or update
+	 *                                  event). False narrows the fetch to the uuid.
 	 *
 	 * @return array Array of complete objects with object_status field
 	 *

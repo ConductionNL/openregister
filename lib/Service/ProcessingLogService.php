@@ -410,9 +410,13 @@ class ProcessingLogService {
 
 		$activity = new Verwerkingsactiviteit();
 		$activity->setCode(self::FALLBACK_CODE);
-		$activity->setNaam('Niet-geclassificeerde verwerking');
-		$activity->setDoelbinding('Catch-all for processing whose activity attribution did not resolve (AVG accountability gap marker).');
-		$activity->setRechtsgrond('public-task');
+		$activity->setName('Niet-geclassificeerde verwerking');
+		$activity->setPurpose('Catch-all for processing whose activity attribution did not resolve (AVG accountability gap marker).');
+		// Bugfix (verwerkingsregister-i18n): the old call, setRechtsgrond('public-task'), used a
+		// hyphenated value that was never a member of RECHTSGROND_VOCABULARY (which required the
+		// underscored 'publieke_taak') — the seeded fallback activity's legal basis has been
+		// silently invalid since this was written. Corrected to the valid renamed value.
+		$activity->setLegalBasis('public_task');
 		if ($organisationId !== '') {
 			$activity->setOrganisationId($organisationId);
 		}
