@@ -342,6 +342,10 @@ Three gotchas, all load-bearing:
 | `npm run l10n:runtime -- <loc>` | drives the real `@nextcloud/l10n` against the real bundle | the only thing that catches a wrong plural boundary |
 | `npm run l10n:gatetest -- <loc>` | proves the parity gate really fails when this locale loses a key | last step of a pass; restores the bundle itself |
 | `npm run l10n:script -- <loc>` | script coverage for a **non-Latin** locale: values carrying no target-script character, plus every Latin run | §5 step 8, in place of the English-leftover scan. A reading aid — never fails |
+| `npm run l10n:corediff -- <loc>` | every key the bundle shares with core, split AGREE / DISAGREE | **first thing in an audit.** The AGREE list is what you must not "fix" |
+| `npm run l10n:termdrift -- <loc>` | English words the bundle renders two ways | the §6.9 term count, over *all* words instead of a guessed list |
+| `npm run l10n:spell -- <loc> --suggest` | words absent from a hunspell dictionary | wrong-language stems and typos. Needs `l10n:fetchdicts` |
+| `npm run l10n:fetchdicts` | hunspell dictionaries into `scripts/l10n/dicts/` (gitignored) | one-time per machine; 30 of 36 locales exist |
 | `npm run check:l10n` | developer audit: missing / unused / unwrapped | **`0 missing, 0 unused`** is the invariant; the unwrapped count is a known backlog (§10) |
 | `npm run test:l10n` | CI gate: `en.js` covers every `t()`/`n()` call | the coverage gate. `check:l10n` is the richer audit of the same extraction — it adds unused + unwrapped and has no write mode |
 | `npm run test:l10n:parity` | CI gate: parity, empty, arity, cognates | |
@@ -885,6 +889,26 @@ every gate for the life of the file.
   of a perfectly legitimate cognate. The justification record is what separates them.
 
 ### 6.9 The pre-existing values — AUDIT THEM ALL, then fix what is wrong
+
+> **RUN THE THREE AUDIT REPORTS BEFORE READING ANYTHING.** Measured against `sk`'s 57
+> corrections, they reach ~48 of them before you read a value:
+>
+> 1. `npm run l10n:corediff -- <loc>` — **first.** Its AGREE list is the set of values you
+>    must never question; it contained **all six** candidates core overturned on `sk`, so
+>    the false-candidate round disappears. Its DISAGREE list is where the real terminology
+>    decisions are (`Delete → Zmazať` sat at the top of `sk`'s).
+> 2. `npm run l10n:termdrift -- <loc>` — the term count this section demands, over *every*
+>    English word instead of a guessed list. On `sk` it surfaced the term behind 37 of the
+>    57 in one line. It reports the MINORITY side of a split; the minority is not
+>    automatically the defect (on `sk` it was the reading the owner chose).
+> 3. `npm run l10n:spell -- <loc> --suggest` — wrong-language stems and typos. Catches
+>    **5 of 5** of `is`'s garbled words (`Stav`, `skrivaðgang`) and `sk`'s `strategie`.
+>    Needs `npm run l10n:fetchdicts` once per machine; `fi ga lb mk mt rm` have no
+>    dictionary, which is a known gap and not evidence those locales are clean.
+>
+> Then the collision scan and the dangling-preposition sweep, then read what is left.
+> **Do not build mechanical morphology checks** — 4 of 239 on `is`, ~0 of 113 on `cs`,
+> not written for `sk` and nothing lost.
 
 **This is a required step of every pass, not something you do when you happen to notice
 something.** The `is` pass first scope-limited itself to "a systematic error with a

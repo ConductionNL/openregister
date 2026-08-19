@@ -26,6 +26,10 @@ the conventions already established per locale.
 | `runtime-check.mjs` | Drives the real `@nextcloud/l10n` against a real bundle. |
 | `gate-negative-test.js` | Proves `test:l10n:parity` really fails when one locale loses a key. Snapshots, breaks, asserts, restores. |
 | `script-coverage.js` | Script sweep for a non-Latin locale (`bg sr mk be`). Reading aid, never a gate. |
+| `core-diff.js` | Bundle vs Nextcloud core, split AGREE / DISAGREE. **First thing in an audit** — its AGREE list is what you must not "fix". Reading aid, never a gate. |
+| `termdrift.js` | English words this bundle renders two ways. The §6.9 term count over *every* word rather than a guessed list. Reading aid, never a gate. |
+| `spell.js` | Words absent from a hunspell dictionary — wrong-language stems and typos. Needs `fetch-dicts.js`. Reading aid, never a gate. |
+| `fetch-dicts.js` | Pulls hunspell dictionaries into `dicts/` (gitignored). One-time per machine; 30 of 36 locales have one. |
 | `detectors/<loc>.js` | Per-locale register detector: closed word lists + must-fire / must-not-fire controls. |
 | `locales/<loc>.json` | Per-locale record: measured register, justified cognates, audited corrections. |
 

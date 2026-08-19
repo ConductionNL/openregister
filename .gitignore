@@ -13,6 +13,10 @@
 
 /node_modules/
 /docs/node_modules/
+
+# Third-party hunspell dictionaries for the l10n audit spell pass. Fetched by
+# `npm run l10n:fetchdicts`; tens of MB and licensed variously, so not vendored.
+/scripts/l10n/dicts/
 /website/.docusaurus/
 /docs/build/
 /docs/.docusaurus/
