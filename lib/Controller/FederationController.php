@@ -118,6 +118,7 @@ class FederationController extends Controller {
 	 * @param FederatedShareMapper $shareMapper Federated-share persistence.
 	 * @param ObjectService $objectService Object read service.
 	 * @param FederationShareService $shareService Share management (list/create/revoke).
+	 * @param IThrottler $throttler Brute-force throttler for rejected tokens.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
