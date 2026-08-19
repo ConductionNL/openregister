@@ -611,7 +611,11 @@ class MagicBulkHandler {
 			// test against a real table — its own change, not a docblock sweep.
 			$existsColumns = '*';
 			if ($needsPreUpdateState === false) {
-				$existsColumns = ($isPostgres === true) ? '"_uuid"' : '`_uuid`';
+				if ($isPostgres === true) {
+					$existsColumns = '"_uuid"';
+				} else {
+					$existsColumns = '`_uuid`';
+				}
 			}
 
 			$existsSql = "SELECT {$existsColumns} FROM `{$fullTableName}` WHERE `_uuid` IN ({$placeholders})";
