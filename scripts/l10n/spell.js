@@ -83,10 +83,16 @@ function prose(s) {
 		.replace(/(?<!\p{L})\p{Lu}{2,}(?!\p{Ll})/gu, ' ') // ALLCAPS initialisms
 }
 
+// U+00B7 MIDDLE DOT is word-INTERNAL in Catalan (`col·lecció`, `paral·lel`,
+// `Cancel·la`), so it belongs in the token class rather than acting as a
+// separator. Leaving it out split every geminate-l word in the `ca` bundle into
+// two junk halves — `col`+`lecció`, `paral`+`lel`, `col`+`laboratives` — and put
+// seven of them in the report as if they were misspellings. Catalan is the only
+// locale here that uses it, which is exactly why it went unnoticed until `ca`.
 const words = new Map() // word -> first key it appears in
 for (const [key, value] of Object.entries(translations)) {
 	for (const v of Array.isArray(value) ? value : [value]) {
-		for (const w of prose(v).match(/\p{L}[\p{L}'’-]*/gu) || []) {
+		for (const w of prose(v).match(/\p{L}[\p{L}'’·-]*/gu) || []) {
 			if (w.length < 3) continue
 			if (allow.has(w.toLowerCase())) continue
 			if (!words.has(w)) words.set(w, key)

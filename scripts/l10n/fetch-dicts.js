@@ -36,10 +36,10 @@ const { APP_ROOT } = require('./lib.js')
 
 // locale -> LibreOffice dictionaries directory / basename.
 const MAP = {
-	be: 'be_BY/be_BY',
+	be: 'be_BY/be-official',
 	bg: 'bg_BG/bg_BG',
 	bs: 'bs_BA/bs_BA',
-	ca: 'ca/ca',
+	ca: 'ca/dictionaries/ca',
 	cs: 'cs_CZ/cs_CZ',
 	da: 'da_DK/da_DK',
 	de: 'de/de_DE_frami',
@@ -47,12 +47,12 @@ const MAP = {
 	en: 'en/en_GB',
 	es: 'es/es_ES',
 	et: 'et_EE/et_EE',
-	fr: 'fr_FR/fr',
+	fr: 'fr_FR/dictionaries/fr',
 	hr: 'hr_HR/hr_HR',
 	hu: 'hu_HU/hu_HU',
 	is: 'is/is',
 	it: 'it_IT/it_IT',
-	lt: 'lt_LT/lt_LT',
+	lt: 'lt_LT/lt',
 	lv: 'lv_LV/lv_LV',
 	nb: 'no/nb_NO',
 	nl: 'nl_NL/nl_NL',
@@ -64,7 +64,7 @@ const MAP = {
 	sl: 'sl_SI/sl_SI',
 	sq: 'sq_AL/sq_AL',
 	sr: 'sr/sr',
-	sv: 'sv_SE/sv_SE',
+	sv: 'sv_SE/dictionaries/sv_SE',
 	tr: 'tr_TR/tr_TR',
 	uk: 'uk_UA/uk_UA',
 }
