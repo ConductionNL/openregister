@@ -198,10 +198,40 @@ class ToolRegistryFacade {
 					continue;
 				}
 
+				// Prefer the STRUCTURE the producer declared over anything
+				// re-derived from the id. A tool that states its own app,
+				// subject and action needs no parsing; only tools that declare
+				// nothing fall back to the id split and the name heuristic
+				// below, and those are exactly the ones a consumer cannot
+				// reliably guess about either.
+				$declaredApp = (string)($function['app'] ?? '');
+				$declaredSubject = (string)($function['subject'] ?? '');
+				$declaredAction = (string)($function['action'] ?? '');
+
+				$resolvedApp = $app;
+				if ($declaredApp !== '') {
+					$resolvedApp = $declaredApp;
+				}
+
+				// Null rather than a guess when the producer said nothing: a
+				// consumer can render "no declared subject" honestly, but it
+				// cannot tell an inferred subject from a real one.
+				$resolvedSubject = null;
+				if ($declaredSubject !== '') {
+					$resolvedSubject = $declaredSubject;
+				}
+
+				$resolvedAction = null;
+				if ($declaredAction !== '') {
+					$resolvedAction = $declaredAction;
+				}
+
 				$described[] = [
 					'name' => $name,
 					'description' => (string)($function['description'] ?? ''),
-					'app' => $app,
+					'app' => $resolvedApp,
+					'subject' => $resolvedSubject,
+					'action' => $resolvedAction,
 					// The FUNCTION, not its group. Grouping collapsed
 					// `cms_create_page` and `cms_create_publication` into one
 					// label — "opencatalogi | cms | create" twice over — and a

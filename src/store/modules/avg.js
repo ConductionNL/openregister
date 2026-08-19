@@ -537,9 +537,7 @@ export const useAvgStore = defineStore('avg', {
 				return this.dsarSummary
 			} catch (e) {
 				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to run erasure'
+					e.response?.data?.error ?? e.message ?? 'Failed to run erasure'
 				console.error('[avg.runErasure]', e)
 				throw e
 			} finally {

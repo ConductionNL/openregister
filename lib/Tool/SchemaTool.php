@@ -107,6 +107,8 @@ class SchemaTool extends AbstractTool {
 		return [
 			[
 				'name' => 'list_schemas',
+				'subject' => 'schema',
+				'action' => 'list',
 				'description' => 'Get a list of all accessible schemas',
 				'parameters' => [
 					'type' => 'object',
@@ -129,6 +131,8 @@ class SchemaTool extends AbstractTool {
 			],
 			[
 				'name' => 'get_schema',
+				'subject' => 'schema',
+				'action' => 'get',
 				'description' => 'Get details about a specific schema by ID',
 				'parameters' => [
 					'type' => 'object',
@@ -143,6 +147,8 @@ class SchemaTool extends AbstractTool {
 			],
 			[
 				'name' => 'create_schema',
+				'subject' => 'schema',
+				'action' => 'create',
 				'description' => 'Create a new schema with properties definition',
 				'parameters' => [
 					'type' => 'object',
@@ -169,6 +175,8 @@ class SchemaTool extends AbstractTool {
 			],
 			[
 				'name' => 'update_schema',
+				'subject' => 'schema',
+				'action' => 'update',
 				'description' => 'Update an existing schema',
 				'parameters' => [
 					'type' => 'object',
@@ -195,6 +203,8 @@ class SchemaTool extends AbstractTool {
 			],
 			[
 				'name' => 'delete_schema',
+				'subject' => 'schema',
+				'action' => 'delete',
 				'description' => 'Delete a schema (only if it has no objects)',
 				'parameters' => [
 					'type' => 'object',

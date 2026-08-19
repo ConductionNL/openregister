@@ -137,7 +137,8 @@ class PermissionHandlerCustomScopeTest extends TestCase {
 		);
 
 		$this->assertTrue($verdict, 'listener allow MUST grant the custom action');
-		$this->assertCount(2, $dispatched, 'evaluating + evaluated events MUST both fire');
+		$this->assertCount(1, self::eventsOfType($dispatched, CustomScopeEvaluatingEvent::class), 'the evaluating event MUST fire');
+		$this->assertCount(1, self::eventsOfType($dispatched, CustomScopeEvaluatedEvent::class), 'the paired telemetry event MUST fire');
 		$this->assertInstanceOf(CustomScopeEvaluatingEvent::class, $dispatched[0]);
 		$this->assertInstanceOf(CustomScopeEvaluatedEvent::class, $dispatched[1]);
 		$this->assertSame('besluit_nemen', $dispatched[0]->getAction());
@@ -167,7 +168,11 @@ class PermissionHandlerCustomScopeTest extends TestCase {
 		);
 
 		$this->assertFalse($verdict, 'listener deny MUST reject the custom action');
-		$this->assertCount(2, $dispatched, 'paired telemetry event MUST fire on deny too');
+		$this->assertCount(
+			1,
+			self::eventsOfType($dispatched, CustomScopeEvaluatedEvent::class),
+			'paired telemetry event MUST fire on deny too'
+		);
 		$this->assertFalse($dispatched[1]->getVerdict());
 		$this->assertTrue($dispatched[1]->isFromListener());
 	}//end testListenerVotingDenyRejectsCustomAction()
@@ -228,7 +233,12 @@ class PermissionHandlerCustomScopeTest extends TestCase {
 		);
 
 		$this->assertFalse($verdict, 'standard chain MUST decide when no listener votes');
-		$this->assertCount(1, $dispatched, 'only the evaluating event fires when no listener votes');
+		$this->assertCount(1, self::eventsOfType($dispatched, CustomScopeEvaluatingEvent::class));
+		$this->assertCount(
+			0,
+			self::eventsOfType($dispatched, CustomScopeEvaluatedEvent::class),
+			'the paired telemetry event MUST NOT fire when no listener votes'
+		);
 		$this->assertInstanceOf(CustomScopeEvaluatingEvent::class, $dispatched[0]);
 	}//end testNoListenerVoteFallsThroughToStandardChain()
 
@@ -253,8 +263,33 @@ class PermissionHandlerCustomScopeTest extends TestCase {
 			);
 		}
 
-		$this->assertCount(0, $dispatched, 'canonical actions MUST NOT dispatch CustomScopeEvaluatingEvent');
+		$this->assertCount(
+			0,
+			self::eventsOfType($dispatched, CustomScopeEvaluatingEvent::class),
+			'canonical actions MUST NOT dispatch CustomScopeEvaluatingEvent'
+		);
 	}//end testCanonicalActionsSkipEventDispatch()
+
+	/**
+	 * Filter captured events by type.
+	 *
+	 * These assertions used to count EVERY dispatch as a proxy for "which
+	 * events fired". That reads as a stricter test than it is: it passes only
+	 * while this handler dispatches nothing else, so adding an unrelated event
+	 * breaks four tests that have no opinion about it — and, worse, a genuinely
+	 * missing event could be masked by an unrelated extra one. Asserting the
+	 * type says what each test actually means.
+	 *
+	 * @param array<int, object> $dispatched The captured events.
+	 * @param class-string       $type       The event class to keep.
+	 *
+	 * @return array<int, object> The events of that type.
+	 */
+	private static function eventsOfType(array $dispatched, string $type): array {
+		return array_values(
+			array_filter($dispatched, static fn ($event): bool => $event instanceof $type)
+		);
+	}//end eventsOfType()
 
 	private function createSchema(int $id, ?array $authorization): Schema {
 		$schema = new Schema();
