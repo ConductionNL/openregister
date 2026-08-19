@@ -1311,6 +1311,22 @@ the only NO in the set so far).
   <accusative>...` pattern. That same key was the outlier in `ga` and `mt` too, on the same
   two counts. Em dash `—`, never en dash. No percentage values and no quote glyphs exist in
   the bundle, so source quotes are mirrored rather than converted to `„ “`.
+- **The pre-existing half was badly defective, and the audit is the story of this pass.**
+  235 of 1052 values were corrected (298 in total including the first round). The largest
+  classes: 41 acronym/product-name compounds missing the hyphen Icelandic requires
+  (`API lykill` → `API-lykill`), 33 malformed compounds (`Hámarks framkvæmdatími` →
+  `Hámarksframkvæmdartími`, `Gagnagrunnupplýsingar` → `Gagnagrunnsupplýsingar`,
+  `Yfirlitvilla` → `Yfirlitsvilla`), 23 wrong senses, 20 keys using `stofnun` (institution)
+  where the bundle's word for *organisation* is `skipulagsheild`, 19 wrong cases, 13
+  singular-for-plural, 11 keys using `skráning` where the bundle's word for *log* is
+  `annáll`, and 11 agreement errors. Notable individual finds: **`Stav`** — Slavic for
+  "status", a straight wrong-language contamination of the kind §6.6 warns about but *inside*
+  the committed bundle; **`skrivaðgang`** with a Danish/Norwegian stem for `skrifaðgang`;
+  **`fersla`** ×5, which is not an Icelandic word at all (it is `færsla`) and which I
+  propagated into my own values before catching it; **`Búningaaðgerðir`** for *Create
+  Operations*, where `búningur` means a costume; and `levranir`, `búsum`, `tökmörkun`,
+  `kerfisssstillingum`, `Misheppnaðst`, `Endurtaki`, `Grunvefslóð`, `Mynsturnvandamál`, all
+  simply not words.
 - Terms: object `hlutur`, schema `skema` (pl `skemu`), property `eiginleiki`, view
   `yfirlit`, entity `eining`, source `uppspretta`, chunk `bútur`, audit trail
   `endurskoðunarferlatal`, webhook `vefkrókur`, dashboard `mælaborð`, organisation

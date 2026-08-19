@@ -456,8 +456,11 @@ must-fire / must-not-fire controls that include that language's homograph traps 
 Every control should be a real value from this bundle or from core where possible. Aim for
 40+ controls; the recent passes run 46–63.
 
-**5. Read the locale's own existing values.** All of them — an unfinished bundle carries
-roughly half the key set already. You are looking for the
+**5. Read the locale's own existing values, and GRAMMATICALLY AUDIT THEM.** All of them — an
+unfinished bundle carries roughly half the key set already, and on `is` **235 of those 1052
+values were defective**. This is the single most under-budgeted step: plan for it to take as
+long as a translation batch, and see §6.9 for the method and for the two ways the mechanical
+checks mislead you. You are also looking for the
 domain terms — audit trail, view, chunk, embedding, webhook, flow vs workflow, payload,
 token, dashboard, hash, soft delete, `Delete` vs `Remove`, `Type`, `Filters` — and for the
 locale's **typographic and orthographic conventions**: ellipsis spacing, dash choice, whether
@@ -881,9 +884,48 @@ every gate for the life of the file.
   the English source" are the symptoms of the two worst defects this tooling catches *and*
   of a perfectly legitimate cognate. The justification record is what separates them.
 
-### 6.9 You notice something wrong in the pre-existing values
+### 6.9 The pre-existing values — AUDIT THEM ALL, then fix what is wrong
 
-Fix it, through the audited path (§6.3), with the reason in `corrections`. Recent examples:
+**This is a required step of every pass, not something you do when you happen to notice
+something.** The `is` pass first scope-limited itself to "a systematic error with a
+core-confirmed model, or a collision, and otherwise leave a real translation alone", and the
+owner rejected that line. Reading the whole pre-existing half then turned up **235 further
+defects in 1052 values** — wrong noun gender, wrong case after a governing verb, malformed
+compounds, garbled words, two stems from other languages, and a dozen terms that contradicted
+the bundle's own vocabulary. None of them is visible to any gate: a wrongly-inflected value
+is not empty, not identical to English, not wrong-arity, and reads as finished work.
+
+**§3.8 guards against changes of taste, not against fixing grammar.** Do not cite it to skip
+the audit.
+
+**Mechanical checks are necessary but nowhere near sufficient.** On `is` they found 4 of the
+239. Build them anyway — they catch the class a reader's eye slides over — but then *read
+every pre-existing value*. What the checker cannot see is exactly what dominated: a bad
+compound, a nonsense word, a foreign stem, a right word in the wrong sense.
+
+Two things to get right when writing the checks, both learned the hard way on `is`:
+
+- **Know which forms are homographous in the target language before flagging disagreement.**
+  In the Icelandic strong declension the **neuter plural nominative is identical to the
+  feminine singular**, so `Öll skemu`, `Engin mál` and `Möguleg tvítök` are all correct. The
+  first version of the check treated each adjective form as licensing one gender/number pair
+  and produced 30-odd false positives that buried the four real findings. Map each form to a
+  **set** of permitted pairs. Also: never look across punctuation (a comma or colon ends the
+  phrase), and skip a participle used as a supine after a modal, where it does not agree with
+  the following noun at all.
+- **Case-governance checks only work where the cases differ.** Feminine and neuter singulars
+  are syncretic for nominative/accusative/dative in most Icelandic declensions, so
+  `bæta við skrá` *is* the dative and flagging it is pure noise — all 24 hits from the first
+  attempt were false. Restrict such a check to masculine singulars (`-ur`/`-ll`/`-nn`) and to
+  plurals (dative `-um`), where the surface forms actually discriminate. Watch for phrasal
+  verbs too: `búa til` is "create", and the `til` in it governs nothing.
+
+Record every correction in `corrections` (§6.3). At this volume, per-key prose stops being
+readable — use **short class codes** (`AGREEMENT`, `CASE`, `NUMBER`, `COMPOUND`, `HYPHEN`,
+`TYPO`, `GARBLED-OR-FOREIGN`, `SENSE`, `TERM-*`, `CONSISTENCY`) and document the codes once in
+a free-form field, as `locales/is.json` does.
+
+Fix each one through the audited path (§6.3), with the reason in `corrections`. Recent examples:
 `sl` carried `Revizijski trag` for *audit trail* where `trag` is **Croatian** (Slovenian is
 `sled`) and one dialog used `Predmeti` against 74 uses of `objekt`; `lv` had 78 register
 deviations; `et` had 24; `sr` had nine, spanning four different defect classes at once
@@ -1189,7 +1231,18 @@ both as `<th>` column headers *and* as buttons, so a header reading `Ștergeți`
 above a count column would be wrong. Those four force the verbal noun and the rest follow.
 Same open defect class as `Url` vs `URL` (§10).
 
-### 7.4 The `{plural}` source hack
+### 7.4 The `{plural}` source hack — KNOWN DEFECT, note it and move on
+
+**The owner is aware of this and will fix it once all translations are finished** (decided
+2026-08-19). So: pick a reasonable shape for the locale, record it in `pluralHackNote`, and
+**do not spend pass effort on it**. Do not weigh parenthetical against slash against bare
+plural noun-by-noun, do not treat an awkward rendering here as a defect worth escalating, and
+do not flag it in the commit message. The same applies to the sibling `(s)` keys
+(`register(s)`, `schema(s)`, `configuration(s)`) and to plain `{count} X` phrases, which have
+the identical problem for the identical reason.
+
+The rest of this section is the record of what the finished locales already did, kept because
+it is useful when picking a shape quickly — not an invitation to optimise.
 
 The source hardcodes English morphology: 13 call sites pass `plural: count !== 1 ? 's' : ''`
 for five keys. What each finished locale does:
@@ -1651,7 +1704,10 @@ renders wrongly in every locale.
   `src/sidebars/register/RegisterSideBar.vue`, `RegistersSideBar.vue`,
   `src/views/register/RegistersIndex.vue`. Should be `n()` with real plural keys. **Highest
   value fix left:** 5 keys × 36 locales of deliberate approximation, and `hr`/`lt`/`sl`
-  showed it cannot be done correctly at all in a three- or four-form language.
+  showed it cannot be done correctly at all in a three- or four-form language. **The owner
+  has taken this one: it will be fixed after all 36 locales are done** (2026-08-19), so a
+  locale pass should note its chosen shape in `pluralHackNote` and otherwise ignore the
+  issue entirely — §7.4.
 - **Dual-role keys.** `Create`/`Read`/`Update`/`Delete` render as both `<th>` headers and
   buttons, which is what forced `ro` onto verbal nouns (§7.3). Splitting them would let the
   pure-button keys take imperatives.

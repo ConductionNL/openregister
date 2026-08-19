@@ -160,6 +160,13 @@ element renders.
 `--force` and `apply.js` without `--allow-replace`; trust the refusal. Only replace a
 real value when it is genuinely wrong, and say why in the commit.
 
+**But a locale pass MUST grammatically audit the whole pre-existing half and fix what is
+bad.** That rule guards against changes of *taste*, not against fixing grammar — do not cite
+it to skip the audit. On `is`, 235 of 1052 pre-existing values were defective (wrong gender,
+wrong case, malformed compounds, garbled words, foreign stems, wrong senses) and **no gate can
+see any of it**. Mechanical checks found 4 of them; the rest needed reading every value. See
+`docs/l10n-workflow.md` §6.9 for the method and for the two ways such checks mislead you.
+
 **When adding a string, `en` is required; other locales are optional.** Add `en`
 (identical to the key is correct — `en` *is* the source), plus any locale you can
 genuinely do well; `--locales=` narrows. But note a new English string puts every
