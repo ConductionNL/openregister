@@ -81,6 +81,15 @@ buried inside a mechanical rename diff.
   `AvgRetentionServiceIntegrationTest`, `DsarServiceIntegrationTest`). The
   `oc_openregister_processing_log` table and the `openregister_verwerkingsactiviteiten` TABLE name
   (only its columns change) are unaffected.
+- **Scope correction, added after initial drafting**: `DsarController`'s public methods `inzage()`,
+  `portabiliteit()`, `vergetelheid()`, `rectificatie()` and their `appinfo/routes.php` route names/URL
+  segments (`/api/avg/inzage` etc.) are real, shipped Dutch-named PHP identifiers — not aspirational
+  spec prose as first assessed — and are renamed in this same change (`access`/`portability`/
+  `erasure`/`rectification`; see design.md for exact naming and the URL segments). `AuditTrailController::inzageverzoek()`
+  (route `/api/audit-trails/inzageverzoek`) is renamed too. Frontend callers of these routes
+  (`AvgIndex.vue`, `src/store/modules/avg.js` — already in scope above) are updated in lockstep. No
+  DB migration is needed for this part (pure method/route rename, no column involved); confirmed no
+  external consumer.
 
 ## Capabilities
 
@@ -100,16 +109,22 @@ None.
   Dutch human-readable column labels (VNG-model-mandated display text for an as-yet-unbuilt export,
   not a code identifier), and (2) the not-yet-implemented VNG "Verwerkingenlogging" export endpoint,
   whose literal Dutch field names (`actie_id`, `vertrouwelijkheid`, `verwerkende_organisatie`, ...)
-  are mandated by that external VNG API standard by name. Dutch field names local to the DPIA and
-  consent schemas (not touched by this code change — only the `verwerker`/`processor` schema in
-  `avg-bundle.json` is renamed) and general GDPR-process prose (inzageverzoek, rectificatie,
-  vergetelheid, dataportabiliteit, doelbinding-as-a-legal-concept) are untouched — they are domain
-  vocabulary describing legal processes, not this entity's field identifiers.
+  are mandated by that external VNG API standard by name. **Correction**: the DSAR HTTP-surface
+  requirement (`DsarController`'s `inzage`/`portabiliteit`/`vergetelheid`/`rectificatie` methods) DOES
+  describe real shipped code and is renamed to match the code change above — it was wrongly assessed
+  as untouched aspirational prose in the first draft of this proposal. Dutch field names local to the
+  still-unbuilt DPIA and consent schemas remain untouched (no corresponding code exists — confirmed:
+  only `DpiaPatternDetectionService`, already English, exists for DPIA; nothing exists for consent
+  tracking), as do the "Standards & References" section's bilingual legal-citation glosses (reference
+  material aiding Dutch-market cross-lookup, not identifiers) and the pre-existing, independently
+  stale "Current Implementation Status" narrative (reconciling its accuracy is out of scope for this
+  rename).
 
 ## Impact
 
 - **Code**: `lib/Db/Verwerkingsactiviteit.php`, `lib/Db/VerwerkingsactiviteitMapper.php`,
-  `lib/Controller/VerwerkingsactiviteitenController.php`, `lib/Service/AvgRetentionService.php`,
+  `lib/Controller/VerwerkingsactiviteitenController.php`, `lib/Controller/DsarController.php`,
+  `lib/Controller/AuditTrailController.php`, `lib/Service/AvgRetentionService.php`,
   `lib/Service/ProcessingLogService.php`, `lib/Resources/AvgSchemas/avg-bundle.json`,
   `appinfo/routes.php`.
 - **Frontend**: `src/dialogs/avg/EditActivityDialog.vue`, `src/views/avg/AvgIndex.vue`,

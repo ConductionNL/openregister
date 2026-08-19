@@ -60,7 +60,18 @@ class McpProviderBridge implements ToolInterface {
 	 *
 	 * @var array<int, string>
 	 */
-	private const PASSTHROUGH_KEYS = ['scope', 'reach'];
+	/**
+	 * Descriptor keys carried through to the LLphant descriptor untouched.
+	 *
+	 * `app`/`subject`/`action` are the id's three parts as FIELDS. A provider
+	 * that composes `{app}.{subject}.{action}` knows all three; dropping them
+	 * here forced every consumer to take the string apart again, and a grant UI
+	 * doing that resorted to splitting camelCase and singularising English.
+	 * Carrying them costs three keys and removes the guessing entirely.
+	 *
+	 * @var array<int, string>
+	 */
+	private const PASSTHROUGH_KEYS = ['scope', 'reach', 'app', 'subject', 'action'];
 
 	/**
 	 * Optional agent context attached by the registry.

@@ -116,6 +116,27 @@ Unchanged (already English): `code`, `organisationId`, `status`, `uuid`, `create
 `email` is unchanged (already English). The `consent` and `dpia` schemas in the same bundle are
 **not** touched — out of scope, no Dutch identifiers of theirs were named in the proposal.
 
+**`DsarController` methods + routes** — added to scope after the first draft of this design (see
+proposal.md's "Scope correction" note): these are real, shipped PHP methods and routes, not
+aspirational spec prose:
+
+| Old (method / route name) | Old URL | New (method / route name) | New URL |
+|---|---|---|---|
+| `inzage` | `/api/avg/inzage` | `access` | `/api/avg/access` |
+| `portabiliteit` | `/api/avg/portabiliteit` | `portability` | `/api/avg/portability` |
+| `vergetelheid` | `/api/avg/vergetelheid` | `erasure` | `/api/avg/erasure` |
+| `rectificatie` | `/api/avg/rectificatie` | `rectification` | `/api/avg/rectification` |
+
+`compliance()` is already English, unchanged. **Naming note**: `AuditTrailController::inzageverzoek()`
+(route `auditTrail#inzageverzoek` → `/api/audit-trails/inzageverzoek`) is a *different* method on a
+*different* controller — it looks up audit-trail entries by identifier, not DSAR object data — so it
+is renamed to `subjectAuditTrail()` (`/api/audit-trails/subject-lookup`) rather than reusing `access`,
+to avoid implying it's the same operation as `DsarController::access()`.
+
+No DB migration is needed for any of this — pure method-name and route-name renames, no column or
+table involved. Frontend callers (`AvgIndex.vue`, `src/store/modules/avg.js`) are already in this
+change's scope and are updated to call the new URLs in the same edit.
+
 ### DB migration strategy: expand/contract, not destructive recreate
 
 Two migration files, both guarded by `hasColumn()`/idempotent, run in the same `occ upgrade` pass
@@ -198,13 +219,15 @@ is nothing here for a declarative-vs-imperative choice to apply to.
 
 ## Risks / Trade-offs
 
-- **[Risk]** A missed call site among the many Dutch getter/setter/array-key references (controller
-  hydration maps, service call sites, 4 PHPUnit test files, 3 Vue files) leaves a stale reference
-  that only surfaces at runtime (PHP has no compile-time check on dynamic `$entity->{$setter}()`
-  dispatch). → **Mitigation**: `hydrateFromPayload()`'s `stringFields`/`arrayFields` maps and the
-  entity's own `@method` docblock annotations are renamed together in one PR/commit per file
-  (see tasks.md), and the full PHPUnit suite (the 4 listed integration tests) plus a manual
-  smoke-test of `EditActivityDialog.vue` create/edit/save is run before merge.
+- **[Risk]** A missed call site among the many Dutch getter/setter/array-key/method-name references
+  (controller hydration maps, service call sites, `DsarController`/`AuditTrailController` method
+  names, 4 PHPUnit test files, 3 Vue files) leaves a stale reference that only surfaces at runtime
+  (PHP has no compile-time check on dynamic `$entity->{$setter}()` dispatch, and a renamed route with
+  a stale frontend caller 404s silently until exercised). → **Mitigation**: `hydrateFromPayload()`'s
+  `stringFields`/`arrayFields` maps and the entity's own `@method` docblock annotations are renamed
+  together in one PR/commit per file (see tasks.md), and the full PHPUnit suite (the 4 listed
+  integration tests) plus a manual smoke-test of `EditActivityDialog.vue` create/edit/save and
+  `AvgIndex.vue`'s DSAR actions is run before merge.
 - **[Risk]** The two-migration expand/contract split still assumes both migrations land in the same
   release (per Non-Goals, this app does not support running old code against contracted-but-not-yet-
   copied schema). → **Mitigation**: both migration files ship in this same change/PR, and
@@ -225,8 +248,9 @@ is nothing here for a declarative-vs-imperative choice to apply to.
 
 1. Land the DB migration pair (expand, then contract) alongside the entity/mapper/controller/service
    renames in one PR, so schema and code are never out of sync at boot.
-2. Update `appinfo/routes.php` and the three Vue files in the same PR (no external consumer of the
-   old routes was found, so there is no deprecation-window requirement).
+2. Update `appinfo/routes.php` (including the `DsarController`/`AuditTrailController` route renames)
+   and the three Vue files in the same PR (no external consumer of any of the old routes was found,
+   so there is no deprecation-window requirement).
 3. Update the 4 PHPUnit integration test files' call sites in the same PR; run the full suite before
    merge.
 4. Update `avg-bundle.json` in the same PR (no live-imported instance to migrate).

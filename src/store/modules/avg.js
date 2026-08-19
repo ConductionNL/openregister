@@ -2,15 +2,15 @@
  * AVG (GDPR) Store Module
  *
  * Wraps the OpenRegister AVG admin surface:
- *   - CRUD over verwerkingsactiviteiten:
- *     GET/POST/PUT/DELETE /api/avg/verwerkingsactiviteiten[/{id}]
- *   - Art 30 §4 verantwoordingsdocument:
- *     GET /api/avg/verantwoording
+ *   - CRUD over processing activities (Dutch: verwerkingsactiviteiten):
+ *     GET/POST/PUT/DELETE /api/avg/processing-activities[/{id}]
+ *   - Art 30 §4 accountability document:
+ *     GET /api/avg/accountability
  *   - Data-subject rights (Art 15/16/17/20):
- *     GET  /api/avg/inzage
- *     GET  /api/avg/portabiliteit
- *     POST /api/avg/vergetelheid
- *     POST /api/avg/rectificatie
+ *     GET  /api/avg/access
+ *     GET  /api/avg/portability
+ *     POST /api/avg/erasure
+ *     POST /api/avg/rectification
  *   - Compliance audit:
  *     GET /api/avg/compliance
  *
@@ -63,7 +63,7 @@ export const DEFAULT_JURISDICTION = 'default'
  * only the transitions declared FROM the case's current state; it embeds
  * no state machine of its own — the declared graph and its guards remain
  * authoritative server-side (the `transition` endpoint accepts or refuses).
- * Kept here (like `RECHTSGROND_VOCABULARY` mirrors its backend vocab) so a
+ * Kept here (like `LEGAL_BASIS_VOCABULARY` mirrors its backend vocab) so a
  * single source drives the buttons.
  */
 export const CASE_LIFECYCLE_TRANSITIONS = Object.freeze([
@@ -245,15 +245,15 @@ export function resolveTemplateRef(pack, key) {
 
 /**
  * Article 6 GDPR legal-basis vocabulary. Mirrors
- * `Verwerkingsactiviteit::RECHTSGROND_VOCABULARY` on the backend.
+ * `Verwerkingsactiviteit::LEGAL_BASIS_VOCABULARY` on the backend.
  */
-export const RECHTSGROND_VOCABULARY = Object.freeze([
-	'toestemming',
-	'overeenkomst',
-	'wettelijke_verplichting',
-	'vitaal_belang',
-	'publieke_taak',
-	'gerechtvaardigd_belang',
+export const LEGAL_BASIS_VOCABULARY = Object.freeze([
+	'consent',
+	'contract',
+	'legal_obligation',
+	'vital_interests',
+	'public_task',
+	'legitimate_interest',
 ])
 
 /**
@@ -266,7 +266,7 @@ export const useAvgStore = defineStore('avg', {
 	state: () => ({
 		activities: [],
 		activeActivity: null,
-		verantwoording: null,
+		accountability: null,
 		dsarResults: null,
 		dsarSummary: null,
 		complianceReport: null,
@@ -282,7 +282,7 @@ export const useAvgStore = defineStore('avg', {
 		getError: (state) => state.error,
 		getActivities: (state) => state.activities,
 		getActiveActivity: (state) => state.activeActivity,
-		getVerantwoording: (state) => state.verantwoording,
+		getAccountability: (state) => state.accountability,
 		getDsarResults: (state) => state.dsarResults,
 		getDsarSummary: (state) => state.dsarSummary,
 		getComplianceReport: (state) => state.complianceReport,
@@ -304,24 +304,24 @@ export const useAvgStore = defineStore('avg', {
 		},
 
 		/**
-		 * Fetch all verwerkingsactiviteiten.
+		 * Fetch all processing activities.
 		 *
 		 * @param {object} params Optional `?status=` and `?organisation=` query filters.
 		 *
-		 * @spec exclude Thin API passthrough — GET /api/avg/verwerkingsactiviteiten; observable contract owned by avg-verwerkingsregister.
+		 * @spec exclude Thin API passthrough — GET /api/avg/processing-activities; observable contract owned by avg-verwerkingsregister.
 		 */
 		async fetchActivities(params = {}) {
 			this.loading = true
 			this.error = null
 			try {
 				const response = await axios.get(
-					`${API_BASE}/verwerkingsactiviteiten`,
+					`${API_BASE}/processing-activities`,
 					{ params },
 				)
 				this.activities = response.data?.results ?? []
 				return this.activities
 			} catch (e) {
-				this.error = e.message ?? 'Failed to fetch verwerkingsactiviteiten'
+				this.error = e.message ?? 'Failed to fetch processing activities'
 				console.error('[avg.fetchActivities]', e)
 				throw e
 			} finally {
@@ -334,7 +334,7 @@ export const useAvgStore = defineStore('avg', {
 		 *
 		 * @param {string|number} identifier
 		 *
-		 * @spec exclude Thin API passthrough — GET /api/avg/verwerkingsactiviteiten/{id}; observable contract owned by avg-verwerkingsregister.
+		 * @spec exclude Thin API passthrough — GET /api/avg/processing-activities/{id}; observable contract owned by avg-verwerkingsregister.
 		 */
 		async fetchActivity(identifier) {
 			if (!identifier) return null
@@ -342,12 +342,12 @@ export const useAvgStore = defineStore('avg', {
 			this.error = null
 			try {
 				const response = await axios.get(
-					`${API_BASE}/verwerkingsactiviteiten/${encodeURIComponent(identifier)}`,
+					`${API_BASE}/processing-activities/${encodeURIComponent(identifier)}`,
 				)
 				this.activeActivity = response.data ?? null
 				return this.activeActivity
 			} catch (e) {
-				this.error = e.message ?? 'Failed to fetch verwerkingsactiviteit'
+				this.error = e.message ?? 'Failed to fetch processing activity'
 				console.error('[avg.fetchActivity]', e)
 				throw e
 			} finally {
@@ -356,18 +356,18 @@ export const useAvgStore = defineStore('avg', {
 		},
 
 		/**
-		 * Create a new verwerkingsactiviteit. Admin-only on the backend.
+		 * Create a new processing activity. Admin-only on the backend.
 		 *
 		 * @param {object} payload Mirrors the entity's `set*` accepting fields.
 		 *
-		 * @spec exclude Thin API passthrough — POST /api/avg/verwerkingsactiviteiten; observable contract owned by avg-verwerkingsregister.
+		 * @spec exclude Thin API passthrough — POST /api/avg/processing-activities; observable contract owned by avg-verwerkingsregister.
 		 */
 		async createActivity(payload) {
 			this.loading = true
 			this.error = null
 			try {
 				const response = await axios.post(
-					`${API_BASE}/verwerkingsactiviteiten`,
+					`${API_BASE}/processing-activities`,
 					payload,
 				)
 				const created = response.data
@@ -378,7 +378,7 @@ export const useAvgStore = defineStore('avg', {
 				this.error =
 					e.response?.data?.error
 					?? e.message
-					?? 'Failed to create verwerkingsactiviteit'
+					?? 'Failed to create processing activity'
 				console.error('[avg.createActivity]', e)
 				throw e
 			} finally {
@@ -387,19 +387,19 @@ export const useAvgStore = defineStore('avg', {
 		},
 
 		/**
-		 * Update an existing verwerkingsactiviteit. Admin-only.
+		 * Update an existing processing activity. Admin-only.
 		 *
 		 * @param {string|number} identifier id|uuid|code
 		 * @param {object}        payload    Fields to overwrite.
 		 *
-		 * @spec exclude Thin API passthrough — PUT /api/avg/verwerkingsactiviteiten/{id}; observable contract owned by avg-verwerkingsregister.
+		 * @spec exclude Thin API passthrough — PUT /api/avg/processing-activities/{id}; observable contract owned by avg-verwerkingsregister.
 		 */
 		async updateActivity(identifier, payload) {
 			this.loading = true
 			this.error = null
 			try {
 				const response = await axios.put(
-					`${API_BASE}/verwerkingsactiviteiten/${encodeURIComponent(identifier)}`,
+					`${API_BASE}/processing-activities/${encodeURIComponent(identifier)}`,
 					payload,
 				)
 				const updated = response.data
@@ -414,7 +414,7 @@ export const useAvgStore = defineStore('avg', {
 				this.error =
 					e.response?.data?.error
 					?? e.message
-					?? 'Failed to update verwerkingsactiviteit'
+					?? 'Failed to update processing activity'
 				console.error('[avg.updateActivity]', e)
 				throw e
 			} finally {
@@ -428,14 +428,14 @@ export const useAvgStore = defineStore('avg', {
 		 *
 		 * @param {string|number} identifier id|uuid|code
 		 *
-		 * @spec exclude Thin API passthrough — DELETE /api/avg/verwerkingsactiviteiten/{id} (soft-archive); observable contract owned by avg-verwerkingsregister.
+		 * @spec exclude Thin API passthrough — DELETE /api/avg/processing-activities/{id} (soft-archive); observable contract owned by avg-verwerkingsregister.
 		 */
 		async archiveActivity(identifier) {
 			this.loading = true
 			this.error = null
 			try {
 				await axios.delete(
-					`${API_BASE}/verwerkingsactiviteiten/${encodeURIComponent(identifier)}`,
+					`${API_BASE}/processing-activities/${encodeURIComponent(identifier)}`,
 				)
 				// Reflect locally — flip status to archived.
 				this.activities = this.activities.map((a) =>
@@ -450,7 +450,7 @@ export const useAvgStore = defineStore('avg', {
 				this.error =
 					e.response?.data?.error
 					?? e.message
-					?? 'Failed to archive verwerkingsactiviteit'
+					?? 'Failed to archive processing activity'
 				console.error('[avg.archiveActivity]', e)
 				throw e
 			} finally {
@@ -459,21 +459,21 @@ export const useAvgStore = defineStore('avg', {
 		},
 
 		/**
-		 * Fetch the Art 30 §4 verantwoordingsdocument — joins activities
+		 * Fetch the Art 30 §4 accountability document — joins activities
 		 * with audit-trail row counts per processing activity.
 		 *
-		 * @spec exclude Thin API passthrough — GET /api/avg/verantwoording (Art 30 §4); observable contract owned by avg-verwerkingsregister.
+		 * @spec exclude Thin API passthrough — GET /api/avg/accountability (Art 30 §4); observable contract owned by avg-verwerkingsregister.
 		 */
-		async fetchVerantwoording() {
+		async fetchAccountability() {
 			this.loading = true
 			this.error = null
 			try {
-				const response = await axios.get(`${API_BASE}/verantwoording`)
-				this.verantwoording = response.data
-				return this.verantwoording
+				const response = await axios.get(`${API_BASE}/accountability`)
+				this.accountability = response.data
+				return this.accountability
 			} catch (e) {
-				this.error = e.message ?? 'Failed to fetch verantwoordingsdocument'
-				console.error('[avg.fetchVerantwoording]', e)
+				this.error = e.message ?? 'Failed to fetch accountability document'
+				console.error('[avg.fetchAccountability]', e)
 				throw e
 			} finally {
 				this.loading = false
@@ -481,16 +481,16 @@ export const useAvgStore = defineStore('avg', {
 		},
 
 		/**
-		 * Run a DSAR inzageverzoek (Art 15) for the given subject.
+		 * Run a DSAR access request (Art 15) for the given subject.
 		 *
 		 * @param {object} params {subject, type?, mode?}
 		 *
 		 * @param params.subject
 		 * @param params.type
 		 * @param params.mode
-		 * @spec exclude Thin API passthrough — GET /api/avg/inzage (Art 15 DSAR); observable contract owned by avg-verwerkingsregister.
+		 * @spec exclude Thin API passthrough — GET /api/avg/access (Art 15 DSAR); observable contract owned by avg-verwerkingsregister.
 		 */
-		async runInzage({ subject, type, mode }) {
+		async runAccess({ subject, type, mode }) {
 			if (!subject) return null
 			this.loading = true
 			this.error = null
@@ -498,13 +498,13 @@ export const useAvgStore = defineStore('avg', {
 				const params = { subject }
 				if (type) params.type = type
 				if (mode) params.mode = mode
-				const response = await axios.get(`${API_BASE}/inzage`, { params })
+				const response = await axios.get(`${API_BASE}/access`, { params })
 				this.dsarResults = response.data
 				return this.dsarResults
 			} catch (e) {
 				this.error =
-					e.response?.data?.error ?? e.message ?? 'Failed to run inzage'
-				console.error('[avg.runInzage]', e)
+					e.response?.data?.error ?? e.message ?? 'Failed to run access'
+				console.error('[avg.runAccess]', e)
 				throw e
 			} finally {
 				this.loading = false
@@ -512,7 +512,7 @@ export const useAvgStore = defineStore('avg', {
 		},
 
 		/**
-		 * Run a vergetelheid request (Art 17). Pass `dryRun: true` to
+		 * Run an erasure request (Art 17). Pass `dryRun: true` to
 		 * preview the matched set before committing.
 		 *
 		 * @param {object} params {subject, type?, dryRun?}
@@ -520,9 +520,9 @@ export const useAvgStore = defineStore('avg', {
 		 * @param params.subject
 		 * @param params.type
 		 * @param params.dryRun
-		 * @spec exclude Thin API passthrough — POST /api/avg/vergetelheid (Art 17 erasure); observable contract owned by avg-verwerkingsregister.
+		 * @spec exclude Thin API passthrough — POST /api/avg/erasure (Art 17 erasure); observable contract owned by avg-verwerkingsregister.
 		 */
-		async runVergetelheid({ subject, type, dryRun = false }) {
+		async runErasure({ subject, type, dryRun = false }) {
 			if (!subject) return null
 			this.loading = true
 			this.error = null
@@ -530,17 +530,15 @@ export const useAvgStore = defineStore('avg', {
 				const params = { subject }
 				if (type) params.type = type
 				if (dryRun) params.dryRun = 'true'
-				const response = await axios.post(`${API_BASE}/vergetelheid`, null, {
+				const response = await axios.post(`${API_BASE}/erasure`, null, {
 					params,
 				})
 				this.dsarSummary = response.data
 				return this.dsarSummary
 			} catch (e) {
 				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to run vergetelheid'
-				console.error('[avg.runVergetelheid]', e)
+					e.response?.data?.error ?? e.message ?? 'Failed to run erasure'
+				console.error('[avg.runErasure]', e)
 				throw e
 			} finally {
 				this.loading = false
@@ -548,22 +546,22 @@ export const useAvgStore = defineStore('avg', {
 		},
 
 		/**
-		 * Fetch the Art 20 portabiliteit envelope for the given subject.
+		 * Fetch the Art 20 portability envelope for the given subject.
 		 *
 		 * @param {object} params {subject, type?}
 		 *
 		 * @param params.subject
 		 * @param params.type
-		 * @spec exclude Thin API passthrough — GET /api/avg/portabiliteit (Art 20 portability); observable contract owned by avg-verwerkingsregister.
+		 * @spec exclude Thin API passthrough — GET /api/avg/portability (Art 20 portability); observable contract owned by avg-verwerkingsregister.
 		 */
-		async runPortabiliteit({ subject, type }) {
+		async runPortability({ subject, type }) {
 			if (!subject) return null
 			this.loading = true
 			this.error = null
 			try {
 				const params = { subject }
 				if (type) params.type = type
-				const response = await axios.get(`${API_BASE}/portabiliteit`, {
+				const response = await axios.get(`${API_BASE}/portability`, {
 					params,
 				})
 				return response.data
@@ -571,8 +569,8 @@ export const useAvgStore = defineStore('avg', {
 				this.error =
 					e.response?.data?.error
 					?? e.message
-					?? 'Failed to run portabiliteit'
-				console.error('[avg.runPortabiliteit]', e)
+					?? 'Failed to run portability'
+				console.error('[avg.runPortability]', e)
 				throw e
 			} finally {
 				this.loading = false
@@ -580,18 +578,18 @@ export const useAvgStore = defineStore('avg', {
 		},
 
 		/**
-		 * Apply a rectificatie change set to a single object.
+		 * Apply a rectification change set to a single object.
 		 *
 		 * @param {object} payload {objectId, changes}
 		 *
-		 * @spec exclude Thin API passthrough — POST /api/avg/rectificatie (Art 16 rectification); observable contract owned by avg-verwerkingsregister.
+		 * @spec exclude Thin API passthrough — POST /api/avg/rectification (Art 16 rectification); observable contract owned by avg-verwerkingsregister.
 		 */
-		async runRectificatie(payload) {
+		async runRectification(payload) {
 			this.loading = true
 			this.error = null
 			try {
 				const response = await axios.post(
-					`${API_BASE}/rectificatie`,
+					`${API_BASE}/rectification`,
 					payload,
 				)
 				return response.data
@@ -599,8 +597,8 @@ export const useAvgStore = defineStore('avg', {
 				this.error =
 					e.response?.data?.error
 					?? e.message
-					?? 'Failed to run rectificatie'
-				console.error('[avg.runRectificatie]', e)
+					?? 'Failed to run rectification'
+				console.error('[avg.runRectification]', e)
 				throw e
 			} finally {
 				this.loading = false
@@ -635,7 +633,7 @@ export const useAvgStore = defineStore('avg', {
 		// -------------------------------------------------------------
 		// DSAR case management (Phase-2). Thin passthroughs over the
 		// Phase-1 `/api/gdpr/cases/...` API + the generic objects API,
-		// mirroring the runInzage/runVergetelheid style above. No
+		// mirroring the runAccess/runErasure style above. No
 		// business logic lives here — the lifecycle, guards, deadlines,
 		// and seams stay declarative + server-side.
 		// -------------------------------------------------------------

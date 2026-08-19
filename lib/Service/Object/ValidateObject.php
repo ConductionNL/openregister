@@ -2093,7 +2093,35 @@ class ValidateObject {
 				return $msg . "but is {$value}. Please provide a smaller number.";
 			case 'enum':
 				$allowedValues = $args['values'] ?? [];
-				if (is_array($allowedValues) === true) {
+
+				// ⚠️ OPIS PASSES NO ARGS FOR `enum`, so `$args['values']` is ALWAYS
+				// empty and this message rendered as:
+				//
+				//   Property 'ticketType' should be one of: , but is 'contactmoment'.
+				//   Please choose one of the allowed values.
+				//
+				// — an empty allowed-list, i.e. the one fact the reader needs is the
+				// one it omits. `EnumKeyword::validate()` calls
+				// `$this->error($schema, $context, 'enum', 'The data should match one
+				// item from enum')` with no fourth argument, so there is nothing to
+				// read; the values have to come from the SCHEMA instead.
+				//
+				// Measured 2026-08-17: an agent told "should be one of: , but is
+				// 'sent'" concluded the enum was empty and that NO value could be
+				// valid — a reasonable reading of that sentence, and wrong. It then
+				// worked around a constraint that was correctly rejecting its input.
+				// A self-correcting caller needs the list; so does a human.
+				if ($allowedValues === []) {
+					$schemaData = $error->schema()->info()->data();
+					if (is_object($schemaData) === true
+						&& isset($schemaData->enum) === true
+						&& is_array($schemaData->enum) === true
+					) {
+						$allowedValues = $schemaData->enum;
+					}
+				}
+
+				if (is_array($allowedValues) === true && $allowedValues !== []) {
 					$valuesList = implode(
 						', ',
 						array_map(

@@ -136,9 +136,9 @@ class AvgVerwerkingsregisterIntegrationTest extends TestCase {
 		// Insert with the bare minimum so we can verify the mapper's
 		// auto-fill behaviour for uuid + status + timestamps.
 		$entity = new Verwerkingsactiviteit();
-		$entity->setNaam('phpunit-roundtrip-' . uniqid());
-		$entity->setDoelbinding('phpunit purpose binding');
-		$entity->setRechtsgrond('publieke_taak');
+		$entity->setName('phpunit-roundtrip-' . uniqid());
+		$entity->setPurpose('phpunit purpose binding');
+		$entity->setLegalBasis('public_task');
 		$activity = $this->vrwMapper->insert($entity);
 		$this->insertedActivityUuids[] = $activity->getUuid();
 
@@ -150,11 +150,11 @@ class AvgVerwerkingsregisterIntegrationTest extends TestCase {
 
 		// Update + status transition.
 		$activity->setStatus('published');
-		$activity->setBeschrijving('updated description');
+		$activity->setDescription('updated description');
 		$updated = $this->vrwMapper->update($activity);
 
 		$this->assertSame('published', $updated->getStatus());
-		$this->assertSame('updated description', $updated->getBeschrijving());
+		$this->assertSame('updated description', $updated->getDescription());
 
 		// findByUuid round-trip.
 		$found = $this->vrwMapper->findByUuid(uuid: $activity->getUuid());
@@ -163,42 +163,42 @@ class AvgVerwerkingsregisterIntegrationTest extends TestCase {
 
 	}//end testMapperRoundTrip()
 
-	public function testValidationRejectsInvalidRechtsgrond(): void {
+	public function testValidationRejectsInvalidLegalBasis(): void {
 		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage('rechtsgrond');
+		$this->expectExceptionMessage('legalBasis');
 
 		$entity = new Verwerkingsactiviteit();
-		$entity->setNaam('phpunit-bad-rechtsgrond');
-		$entity->setDoelbinding('test purpose');
-		$entity->setRechtsgrond('bogus_basis');
+		$entity->setName('phpunit-bad-legal-basis');
+		$entity->setPurpose('test purpose');
+		$entity->setLegalBasis('bogus_basis');
 
 		$this->vrwMapper->insert($entity);
 
-	}//end testValidationRejectsInvalidRechtsgrond()
+	}//end testValidationRejectsInvalidLegalBasis()
 
-	public function testValidationRejectsMissingNaam(): void {
+	public function testValidationRejectsMissingName(): void {
 		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage('naam');
+		$this->expectExceptionMessage('name');
 
 		$entity = new Verwerkingsactiviteit();
-		$entity->setDoelbinding('test purpose');
-		$entity->setRechtsgrond('publieke_taak');
+		$entity->setPurpose('test purpose');
+		$entity->setLegalBasis('public_task');
 
 		$this->vrwMapper->insert($entity);
 
-	}//end testValidationRejectsMissingNaam()
+	}//end testValidationRejectsMissingName()
 
-	public function testValidationRejectsMissingDoelbinding(): void {
+	public function testValidationRejectsMissingPurpose(): void {
 		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage('doelbinding');
+		$this->expectExceptionMessage('purpose');
 
 		$entity = new Verwerkingsactiviteit();
-		$entity->setNaam('phpunit-no-doelbinding');
-		$entity->setRechtsgrond('publieke_taak');
+		$entity->setName('phpunit-no-purpose');
+		$entity->setLegalBasis('public_task');
 
 		$this->vrwMapper->insert($entity);
 
-	}//end testValidationRejectsMissingDoelbinding()
+	}//end testValidationRejectsMissingPurpose()
 
 	public function testResolveReferenceFindsByCodeAndUuid(): void {
 		$code = 'phpunit-resolve-' . uniqid();
@@ -317,12 +317,12 @@ class AvgVerwerkingsregisterIntegrationTest extends TestCase {
 
 	private function makeActivity(string $name, string $code): Verwerkingsactiviteit {
 		$entity = new Verwerkingsactiviteit();
-		$entity->setNaam($name . '-' . uniqid());
+		$entity->setName($name . '-' . uniqid());
 		$entity->setCode($code);
-		$entity->setDoelbinding('phpunit purpose binding');
-		$entity->setRechtsgrond('publieke_taak');
-		$entity->setBewaartermijn('P10Y');
-		$entity->setCategorieenBetrokkenen(['burgers']);
+		$entity->setPurpose('phpunit purpose binding');
+		$entity->setLegalBasis('public_task');
+		$entity->setRetentionPeriod('P10Y');
+		$entity->setDataSubjectCategories(['burgers']);
 		$entity->setStatus('published');
 
 		$persisted = $this->vrwMapper->insert($entity);
