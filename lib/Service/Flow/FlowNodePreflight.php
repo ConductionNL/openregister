@@ -89,6 +89,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use InvalidArgumentException;
 use UnexpectedValueException;
 
 /**
@@ -677,8 +678,29 @@ class FlowNodePreflight {
 	 *
 	 * A node that throws for a reason of its own (a broken translation, a
 	 * missing collaborator) must not block the save — that would turn one bad
-	 * node into an unsavable instance. Only the node's own refusal counts, and
-	 * `UnexpectedValueException` is what every implementation in-tree raises.
+	 * node into an unsavable instance. Only the node's own refusal counts.
+	 *
+	 * BOTH SPL "bad argument" exceptions count as a refusal. This used to catch
+	 * `UnexpectedValueException` alone, on the stated grounds that it "is what
+	 * every implementation in-tree raises". That was untrue:
+	 * `TriggerScheduleNode`, `TriggerObjectNode` and `FlowStateNode` all raise
+	 * `InvalidArgumentException`, so their refusals were swallowed into the
+	 * warning below and the flow saved clean.
+	 *
+	 * The consequence was the worst shape a validator can have — silent
+	 * acceptance of exactly the configs it exists to catch. Measured against a
+	 * live instance: a `trigger-schedule` carrying `cron: "@hourly"` (not a
+	 * five-field expression) and a `trigger-object` naming a register that does
+	 * not exist BOTH returned `{"valid":true,"blocking":[],"warnings":[]}`. The
+	 * first flow would never fire; the second would subscribe to nothing.
+	 * Neither failure is visible anywhere until someone wonders why a flow has
+	 * not run.
+	 *
+	 * Discriminating on the SPL subclass was always fragile: both mean "this
+	 * argument is wrong", the choice between them is a matter of taste, and
+	 * third-party nodes (openconnector, hermiq) pick whichever they like. The
+	 * distinction that actually matters — the node REFUSED the config, versus
+	 * the node BROKE — is preserved by keeping the `Throwable` arm below.
 	 *
 	 * @param IFlowNode $node The resolved node.
 	 * @param array $edge The edge declaring the step.
@@ -695,7 +717,7 @@ class FlowNodePreflight {
 
 		try {
 			$node->validateConfig($config);
-		} catch (UnexpectedValueException $e) {
+		} catch (UnexpectedValueException | InvalidArgumentException $e) {
 			return $e->getMessage();
 		} catch (Throwable $e) {
 			$this->logger->warning(
