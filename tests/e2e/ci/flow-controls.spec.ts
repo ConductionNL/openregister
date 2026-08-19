@@ -161,9 +161,9 @@ async function deleteFlow(
 			headers: {
 				requesttoken:
 					// eslint-disable-next-line @typescript-eslint/no-explicit-any
-					((window as any).OC && (window as any).OC.requestToken)
-					|| (meta && meta.content)
-					|| '',
+					((window as any).OC && (window as any).OC.requestToken) ||
+					(meta && meta.content) ||
+					'',
 				Accept: 'application/json',
 			},
 		})
@@ -210,7 +210,10 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 	await page.addInitScript(() => {
 		const read = Storage.prototype.getItem
 		Storage.prototype.getItem = function (key: string) {
-			if (typeof key === 'string' && key.startsWith('cn-support-dialog-shown:')) {
+			if (
+				typeof key === 'string' &&
+				key.startsWith('cn-support-dialog-shown:')
+			) {
 				return '1'
 			}
 
@@ -224,8 +227,12 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// Belt and braces: if the dialog still made it through (a server-backed
 		// dismissal mode would not read localStorage), close it rather than
 		// letting it swallow every canvas interaction that follows.
-		const supportDialog = page.getByRole('dialog').filter({ hasText: 'Support' })
-		if (await supportDialog.isVisible({ timeout: 2_000 }).catch(() => false)) {
+		const supportDialog = page
+			.getByRole('dialog')
+			.filter({ hasText: 'Support' })
+		if (
+			await supportDialog.isVisible({ timeout: 2_000 }).catch(() => false)
+		) {
 			await page.keyboard.press('Escape')
 			await expect(supportDialog).toBeHidden({ timeout: 10_000 })
 		}
@@ -256,7 +263,10 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 			name: 'Save',
 			exact: true,
 		})
-		const runButton = toolbar.getByRole('button', { name: 'Run', exact: true })
+		const runButton = toolbar.getByRole('button', {
+			name: 'Run',
+			exact: true,
+		})
 
 		await expect(toolbar).toBeVisible()
 		await expect(saveButton).toBeVisible()
@@ -297,9 +307,9 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// enablement IS the "editor initialised" signal, with no tab click.
 		await expect(
 			saveButton,
-			'the editor never initialised — the flow store is still holding its '
-				+ 'blank initial state, whose name is empty, and a flow with no name '
-				+ 'is rejected by the server',
+			'the editor never initialised — the flow store is still holding its ' +
+				'blank initial state, whose name is empty, and a flow with no name ' +
+				'is rejected by the server',
 		).toBeEnabled()
 
 		// 2. A STEP CAN BE ADDED.
@@ -329,7 +339,9 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// reason the job went red: `EndNode::getLabel()` returns `t('End')`, and
 		// the palette has carried no entry called "Stop" since that commit.
 		await clickThemed(palette.getByText('End', { exact: true }).first())
-		const endCard = page.locator('.cn-flow-detail__node', { hasText: 'End' })
+		const endCard = page.locator('.cn-flow-detail__node', {
+			hasText: 'End',
+		})
 		await expect(endCard, 'the step did not reach the canvas').toBeVisible()
 
 		// Connect the seeded start node to the End step, or the saved flow has
@@ -362,16 +374,31 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		const startNode = page.locator('.cn-graph-canvas__node', {
 			hasText: 'When someone runs it',
 		})
-		await expect(startNode, 'the seeded start node is missing').toBeVisible()
-		const endNode = page.locator('.cn-graph-canvas__node', { hasText: 'End' })
+		await expect(
+			startNode,
+			'the seeded start node is missing',
+		).toBeVisible()
+		const endNode = page.locator('.cn-graph-canvas__node', {
+			hasText: 'End',
+		})
 		await expect(endNode, 'the End step is missing').toBeVisible()
 
 		await startNode.press('c')
 		await endNode.press('c')
+
+		// COUNT THE EDGE, DO NOT ASK WHETHER IT IS "VISIBLE".
+		//
+		// The edge is an SVG <path>. Auto-layout stacks these two steps in one
+		// column, so the orthogonal route between them is a STRAIGHT VERTICAL
+		// LINE — a bounding box of zero width. Playwright treats a zero-area
+		// element as not visible, so `toBeVisible()` fails on an edge that is
+		// on screen and plainly drawn (the failure screenshot shows the arrow).
+		// Presence is the honest assertion here, and it is the one that fails
+		// if the connection genuinely never happened.
 		await expect(
-			page.locator('.cn-flow-detail__edge').first(),
+			page.locator('.cn-flow-detail__edge'),
 			'the connection did not reach the canvas',
-		).toBeVisible()
+		).toHaveCount(1)
 
 		// 3. SAVE PERSISTS.
 		//
@@ -383,8 +410,8 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// immediately, quoting the server.
 		const created = page.waitForResponse(
 			(response) =>
-				response.request().method() === 'POST'
-				&& new URL(response.url()).pathname.endsWith(
+				response.request().method() === 'POST' &&
+				new URL(response.url()).pathname.endsWith(
 					'/apps/openregister/api/flows',
 				),
 			{ timeout: 10_000 },
@@ -395,8 +422,8 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		const createResponse = await created
 		expect(
 			createResponse.status(),
-			`the flow was not created — the server answered ${createResponse.status()}: `
-				+ `${(await createResponse.text()).slice(0, 200)}`,
+			`the flow was not created — the server answered ${createResponse.status()}: ` +
+				`${(await createResponse.text()).slice(0, 200)}`,
 		).toBe(201)
 
 		const uuid = String((await createResponse.json())?.id ?? '')
@@ -408,15 +435,17 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// The route still has to catch up, or a reload lands back on `new`. With
 		// the create already asserted above this is a pure router assertion with
 		// no round-trip left in it, so it needs a fraction of the old budget.
-		await page.waitForURL(new RegExp(`#/flows/${uuid}$`), { timeout: 5_000 })
+		await page.waitForURL(new RegExp(`#/flows/${uuid}$`), {
+			timeout: 5_000,
+		})
 
 		// 4. RUN NOW CREATES A RUN. Asserted against the API rather than the
 		//    rendered status, because the status a run is DISPLAYED with
 		//    depends on whether the worker has reached it yet.
 		const queued = page.waitForResponse(
 			(response) =>
-				response.request().method() === 'POST'
-				&& response.url().includes(`/api/flows/${uuid}/run`),
+				response.request().method() === 'POST' &&
+				response.url().includes(`/api/flows/${uuid}/run`),
 			{ timeout: 10_000 },
 		)
 
@@ -425,8 +454,8 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		const runResponse = await queued
 		expect(
 			runResponse.status(),
-			`Run now was refused — the server answered ${runResponse.status()}: `
-				+ `${(await runResponse.text()).slice(0, 200)}`,
+			`Run now was refused — the server answered ${runResponse.status()}: ` +
+				`${(await runResponse.text()).slice(0, 200)}`,
 		).toBe(201)
 
 		// And the run is ATTRIBUTED to this flow — a separate claim from "a run
