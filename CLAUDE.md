@@ -126,8 +126,8 @@ indistinguishable from finished work, so nobody revisits it. Audit with
 `npm run test:l10n:parity -- --strict-identical`.
 
 **Cognate enforcement is opt-in per locale**, keyed on `locales/<loc>.json`
-existing. Only `tr ca et hr lt lv ro sk sl bg sr rm ga mt is` are held to it; the other 16 predate the rule and
-carry ~400 unreviewed identical values, some legitimate. The gate prints which
+existing. Only `tr ca et hr lt lv ro sk sl bg sr rm ga mt is cs` are held to it; the other 15 predate the rule and
+carry ~375 unreviewed identical values, some legitimate. The gate prints which
 locales are enforced and which are merely unreviewed, so a green run cannot be read
 as verified. **Reviewing those 16 is open work.**
 
@@ -166,6 +166,16 @@ it to skip the audit. On `is`, 235 of 1052 pre-existing values were defective (w
 wrong case, malformed compounds, garbled words, foreign stems, wrong senses) and **no gate can
 see any of it**. Mechanical checks found 4 of them; the rest needed reading every value. See
 `docs/l10n-workflow.md` §6.9 for the method and for the two ways such checks mislead you.
+
+**The defect rate tracks how healthy the locale is upstream, not how long it went un-audited.**
+`cs` — one of the sixteen locales that predate all of this tooling, so audited across all 2052
+values rather than a pre-existing half — came in at **113 defects (5.5%)** against `is`'s 22%,
+with zero garbled words, zero foreign stems, zero agreement failures and zero wrong plural
+arrays. Its defects were almost entirely terminology drift and internal inconsistency, and
+**counting competing renderings per English term found about 70 of the 113** with no knowledge
+of Czech required. Do that count first on any pass. And check core before "fixing" an outlier:
+core `cs` overturned four candidate corrections, one of which was the only value in its family
+that actually matched core.
 
 **When adding a string, `en` is required; other locales are optional.** Add `en`
 (identical to the key is correct — `en` *is* the source), plus any locale you can

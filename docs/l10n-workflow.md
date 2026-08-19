@@ -1190,6 +1190,7 @@ mean they measured the same thing.
 | `rm` | formal | **81 vs 0** over the bundle's own 995 translated values — core ships **no `rm` catalogues at all**, so this is the §6.4 fallback rather than a core measurement |
 | `ga` | **no T-V distinction** | **440 vs 0** over 5395 values / 33 catalogues — the most one-sided of any locale, and structurally so: `sibh` is strictly plural in modern Irish, so 2pl address does not occur at all. Recorded as `informal` to set the gate's polarity against 2pl address, which for a single-user UI is always a defect |
 | `mt` | informal | **128 vs 0** over 3422 values — core ships **no `mt` catalogues at all**, so this is the §6.4 fallback widened to the sibling apps' frontend bundles. Unlike `ga`, Maltese HAS `intom` and `Is-Sinjur` available; they are measured absent, so this is a real choice. Markers: 75 `tiegħek`, 35 `jekk jogħġbok`, 15 `int`/`inti`, 4 prepositional |
+| `cs` | formal | **828 vs 0** over core's 32 catalogues / 5005 values, plus 243 vs 0 in the bundle's own 2052. The zero was re-checked by raw unguarded scan over 25 informal tokens across the combined 6685 values, all absent. The **ordinary Slavic T-V case** and worth saying so plainly: Czech has a live `vy`/`ty` distinction in current use and core uses `vy` throughout, so this is a plain measured choice with **no structural story** — unlike the three locales done immediately before it (`ga` no distinction, `mt` unused, `is` abandoned). Four locales in a row needing four different explanations is what made those three notable; `cs` is the baseline they were exceptions to |
 
 Latvian's low counts are structural, not weak evidence: most correct informal Latvian is
 undetectable by design, so **zero formal markers is the assertion that matters**, not a high
@@ -1214,6 +1215,13 @@ decide.
 | **verbal noun — register-neutral** | `ro` `bg` | `Salvare`, `Adăugare endpoint`; `Запазване`, `Добавяне на крайна точка` |
 
 Infinitive buttons must **not** be "corrected" to imperatives.
+
+`cs` was the one entry in the infinitive row that had been **assumed rather than measured**
+(it predates the tooling, §9.2). It is now measured and it holds decisively: 48 bare action
+keys resolved against core `cs` give **27 infinitives, zero imperatives and zero verbal
+nouns**, with the remainder legitimately not verbs (`Settings`, `Back` = `Zpět`, `Cancel` =
+`Storno`, `Reset` = `Vrátit na výchozí hodnoty`) plus one reflexive (`Log out` = `Odhlásit
+se`). The bundle's own action keys agree unanimously.
 
 `bg` reaches the verbal noun for a different reason than `ro`, and the difference is worth
 keeping straight. Bulgarian **has no infinitive**, so the verbal noun (отглаголно
@@ -1321,7 +1329,15 @@ Every one of these produced a wrong measurement:
 | `is` | `-ur` (2sg present) | the **masculine nominative singular** of thousands of nouns, *and* Icelandic syncretises 2sg with 3sg for most verbs anyway (`þú getur` / `hann getur`), so the ending carries no address information even when it is verbal |
 | `is` | `-ðu`/`-tu` (2sg imperative + enclitic pronoun) | the **3rd person plural past** for the whole class-2 conjugation. Usable for class 1 and the ablauting strong verbs, unusable otherwise — the split is by conjugation class and is worked through in §6.5 |
 
+| `cs` | any 2sg imperative used unguarded | **its own 2pl counterpart**, because Czech forms the 2pl by suffixing `-te`: `vyber`⊂`vyberte`, `zadej`⊂`zadejte`, `přidej`⊂`přidejte`, `nastav`⊂`nastavte`, `zvol`⊂`zvolte`, `smaž`⊂`smažte`. This bundle holds 64 `vyberte` and core 48 `zadejte`, so an unguarded 2sg list scores the commonest **formal** shape in the corpus as informal and **inverts the verdict outright**. Worse than the `sk` `vy-` prefix, because it hits the markers themselves rather than unrelated vocabulary. Several stems are also prefixes of the app's own nouns — `nastav`⊂`nastavení` (the commonest noun in the bundle), `zobraz`⊂`zobrazení`, `obnov`⊂`obnovení`, `ulož`⊂`uložené`, `smaž`⊂`smazané` |
+| `cs` | `tvá` (informal possessive) | a **substring of `vytvářet`/`vytváření`** ("to create"/"creating"), one of the commonest verbs in this app — a raw scan finds it 48 times, every one inside that verb and none a possessive. Same polarity-inverting shape; `vytvoř` sits inside `vytvoření` likewise |
+
 Use closed word lists. Always.
+
+**The lesson generalises past Czech**: in any language whose 2pl is the 2sg plus a suffix —
+which covers the whole West Slavic group — the trailing `(?!\p{L})` guard is not hygiene, it
+is the only thing separating the two polarities. Write that guard before the word list, not
+after a control fails.
 
 **Look for the locale's POLITENESS FORMULA, not just its pronouns.** `mt` is where this
 paid: `jekk jogħġbok` ("please") carries a 2sg **object suffix**, which makes it a genuine
@@ -1342,6 +1358,8 @@ assume in either direction**; the check is cheap and the payoff when it lands is
 | `cs` `hr` `sl` | `ty`/`ti` = informal *you* **and** the plural demonstrative *those* | leave the bare pronoun unmatched; use oblique forms and the possessive |
 | `sl` | `te` has **three** readings: acc. of `ti`, acc. plural of `ta`, and the 2pl ending | leave unmatched |
 | `hr` `sk` `sl` | `si` = 2sg of *to be* **and** the reflexive dative clitic, commonest in **formal** prose | leave bare `si` unmatched |
+| `cs` | `si` — **not the same case at all**, and worth keeping straight | Czech's 2sg of `být` is `jsi`, so `si` is **only** the reflexive clitic: it carries no address information in either direction and there is nothing to disambiguate. 49 occurrences in core, 8 here, all reflexive. So bare `si` is unmatched in `cs` too, but for the opposite reason — not because it is ambiguous, because it is *empty*. `jsi` itself is unambiguous and **is** matched. Do not port the `hr`/`sk`/`sl` "ambiguous `si`" reasoning to Czech |
+| `cs` | `ty`/`ti` measured, not just assumed | the §8.2 row above says leave them unmatched, and the measurement backs it: over the combined 6685-value corpus `ty` occurs **6 times, every one the demonstrative**, and `ti` occurs **0 times**. So the recall given up is very nearly nil, unlike `bg` where the equivalent exclusion would have been expensive |
 | `sl` | `vas` = formal *you* **and** the noun *village* | kept; implausible in this domain, recorded in `UNDETECTABLE` |
 | `da` `nb` | `De`/`Dem`/`Deres` = formal *you* **and** everyday *they/them/their* | require a **mid-sentence capital** |
 | `pl` | `Państwo` = formal plural *you* **and** the noun *state* | mid-sentence capital |
@@ -1654,12 +1672,46 @@ rest are in progress. The moment the last locale reaches parity:
 Rationale worth preserving: the env override and the per-locale set are exactly the knobs
 someone reaches for to turn a red build green. Once unnecessary they are a liability.
 
-### 9.2 Review the 16 pre-rule locales
+### 9.2 Review the 16 pre-rule locales — `cs` done, 15 to go
 
-`cs da de el es fi fr hu it nb nl pl pt ru sv uk` were finished before the cognate rule.
-Between them they carry several hundred `value === key` entries **nobody has checked** (count
-them with `npm run test:l10n:parity -- --strict-identical`), and the gate
-cannot judge them because there is no `locales/<loc>.json`.
+**`cs` is done** (register measured, detector written, cognates reviewed, whole bundle
+audited, `locales/cs.json` written), so the remaining set is
+`da de el es fi fr hu it nb nl pl pt ru sv uk`.
+
+**What the `cs` pass found, because it changes what to expect from the rest.** These sixteen
+are *doubly* un-audited, so the re-audit handoff reasonably predicted they would be as bad as
+`is` or worse. On this evidence the opposite is true for the mature ones:
+
+| | `is` (Transifex half) | `cs` (whole bundle) |
+| --- | --- | --- |
+| values audited | 1052 | 2052 |
+| defects | 235 (**22%**) | 113 (**5.5%**) |
+| garbled words / foreign stems | 14 | **0** |
+| agreement failures | 11 | **0** |
+| wrong plural arrays | — | **0** |
+| dominant class | malformed compounds, wrong senses | **terminology drift and internal inconsistency** |
+
+Czech is an actively maintained locale with a real translator community and the bundle reads
+like it. So **budget these passes for terminology counting, not grammar repair** — and expect
+that split to track how healthy the locale is upstream, not how long it has gone un-audited.
+
+Two method notes the `cs` pass paid for:
+
+- **Counting competing renderings per English term produced ~70 of the 113 corrections**, and
+  needs no knowledge of the language. Do it first, every time. The exact-value-collision scan
+  was second best (22 collisions, 4 real defects).
+- **Check core before "fixing" an outlier.** Core `cs` overturned four candidate corrections,
+  including one where the single value I was about to change was the *only* one that matched
+  core: `Loading…` → `Načítání…` looks like the outlier against 37 sibling `Načítá se` values,
+  and `Načítání` is core's own form. `Current password` → `Dosavadní heslo` looked like a
+  wrong sense and is core verbatim. A majority inside the bundle is not authority on its own.
+
+Between them the remaining fifteen carry several hundred `value === key` entries **nobody has
+checked** (count them with `npm run test:l10n:parity -- --strict-identical`), and the gate
+cannot judge them because there is no `locales/<loc>.json`. `cs` came in at 26 such values, of
+which **22 were genuine cognates, 2 were filler** (`Driver`, which almost every other locale
+translates and which core `cs` itself renders `ovladače databází`; and `N/A`, which sibling
+`sk` renders `Neuvedené`) **and 2 were casing defects** (`Id`, `Url` → `ID`, `URL`).
 
 Per locale: `npm run l10n:status -- <loc>` lists the unjustified ones; audit with
 `npm run test:l10n:parity -- --strict-identical`. For each, decide genuine cognate (record
@@ -1669,8 +1721,14 @@ enforced from that moment — no code change needed, the gate keys on the file e
 Expect a high legitimate rate in some (`nl` renders `Bewaartermijn` and
 `AVG / Verwerkingsregister` unchanged — Dutch words in a Dutch bundle) and the opposite in
 others; this is the audit that turned up 46 placeholders in `tr`. The register verdicts for
-these 16 are already recorded, so step 2 is done for them; a detector is still needed for
-`selfcheck` to check register.
+these 16 were already recorded, so step 2 is done for them; a detector is still needed for
+`selfcheck` to check register, and `cs` is the first of the sixteen to have one.
+
+**Measure the recorded verdict anyway rather than trusting it.** `cs` was already listed
+`formal` in §7.2 and its button convention already listed as the infinitive, both from before
+the tooling. Re-measuring cost one detector run and turned two assumptions into 828-vs-0 and
+27-vs-0 — and building the detector is required for `selfcheck` regardless, so the
+measurement is nearly free once you are there.
 
 ---
 

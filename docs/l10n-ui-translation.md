@@ -49,6 +49,14 @@ Measured results: informal for `nl`, `de`, `sv`, `da`, `nb`, `pl`, `fi`, `hu`,
 `et`, `lv`, `ga`, `mt`, `is`; formal for `fr`, `cs`, `ru`, `uk`, `tr`, `el`, `sr`, `bg`, `ca`, `hr`,
 `lt`, `sk`, `sl`, `rm`.
 
+**`cs` is measured as of this pass, not inherited.** It sat in the formal column from before
+any of the tooling existed (it is one of the sixteen pre-rule locales), and re-measuring it
+gave **828 formal markers against zero informal** over core's 32 catalogues / 5005 values,
+plus 243-vs-0 in the bundle itself. It is also the *plainest* entry in either column: Czech
+has a live `vy`/`ty` distinction in ordinary current use, so unlike `ga`, `mt` and `is` there
+is no structural story behind the verdict. Those three were the exceptions; `cs` is the
+baseline they were exceptions to.
+
 **"Informal" does not mean the same thing in every row of that list**, and the three
 low-resource locales done in sequence make the point better than any argument: they
 measured identically and are three different situations. `ga` — Irish never had a T-V
@@ -117,7 +125,7 @@ core's own short labels — a single verdict for the locale is usually meaningle
 | --- | --- | --- |
 | same register throughout | `tr`, `ru` | formal imperative |
 | bare 2sg imperative, whatever the prose | `ca`, `et`, `hr`, `sl`, `sr`, `ga`, `mt` | `Desa`, `Salvesta`, `Spremi`, `Shrani`, `Сачувај`, `Sábháil`, `Issejvja` |
-| **infinitive — register-neutral** | `cs`, `lt`, `lv`, `sk`, `rm` | `Zobrazit`/`Smazat`, `Įrašyti`/`Ištrinti`/`Atsisakyti`, `Saglabāt`/`Dzēst`/`Atcelt`, `Uložiť`/`Odstrániť`/`Zrušiť`, `Memorisar`/`Stizzar`/`Annullar` |
+| **infinitive — register-neutral** | `cs`, `lt`, `lv`, `sk`, `rm`, `is` | `Zobrazit`/`Smazat`, `Įrašyti`/`Ištrinti`/`Atsisakyti`, `Saglabāt`/`Dzēst`/`Atcelt`, `Uložiť`/`Odstrániť`/`Zrušiť`, `Memorisar`/`Stizzar`/`Annullar`, `Vista`/`Eyða`/`Hætta við` |
 | **verbal noun — register-neutral** | `ro`, `bg` | `Salvare`/`Ștergere`/`Anulare`/`Adăugare endpoint`; `Запазване`/`Изтриване`/`Отказ`/`Добавяне на крайна точка` |
 
 `bg` reaches the same form as `ro` by the ordinary route rather than by divergence, and
@@ -1334,6 +1342,84 @@ the only NO in the set so far).
   `skipulagsheild`, token `teikn`, flow `flæði` but workflow `vinnuflæði`. Note `Overview`
   had to become `Yfirsýn` rather than core's `Yfirlit`, because `yfirlit` is this app's word
   for **View**.
+
+### `cs` is the first of the sixteen pre-rule locales to be re-audited, and it came out healthy
+
+The sixteen locales finished before any of this tooling existed (`cs da de el es fi fr hu it
+nb nl pl pt ru sv uk`) are *doubly* un-audited: their identical values were never cognate-
+reviewed **and** their translations never had a register measurement, a detector, an
+orthography sweep or a grammar pass. The expectation going in — set by `is`, where 22% of the
+pre-existing half was defective — was that these would be as bad or worse. **They are not, at
+least not the mature ones.** `cs` came in at 113 defects across all 2052 values (5.5%), with
+**zero** garbled words, **zero** foreign stems, **zero** agreement failures and **zero** wrong
+plural arrays. Czech is an actively maintained locale with a real translator community.
+
+What that means for the remaining fifteen: budget the pass for **terminology counting**, not
+grammar repair. Counting competing renderings per English term produced about 70 of the 113
+`cs` corrections and needs no knowledge of the language at all.
+
+### `cs` traps
+
+- **Every Czech 2sg imperative is a proper prefix of its 2pl counterpart**, because the 2pl is
+  the 2sg plus `-te`: `vyber`/`vyberte`, `zadej`/`zadejte`, `nastav`/`nastavte`,
+  `zvol`/`zvolte`. This bundle holds 64 `vyberte`. Without the trailing `(?!\p{L})` guard the
+  detector scores the commonest **formal** shape in the corpus as informal and inverts the
+  verdict outright. Several stems are also prefixes of the app's own nouns —
+  `nastav`⊂`nastavení`, `zobraz`⊂`zobrazení`, `ulož`⊂`uložené`. The informal possessive `tvá`
+  is likewise a substring of `vytvářet`/`vytváření` ("to create"), which a raw scan finds 48
+  times, every one inside that verb.
+- **Bare `ty` and `ti` are unmatched** (§8.2) — both are the plural demonstrative as well as
+  the pronoun, and Czech has no diacritic to split them the way Slovak's `ti`/`tí` does.
+  Measured cost of the exclusion: `ty` occurs 6 times in the corpus, all demonstrative, and
+  `ti` zero times.
+- **Bare `si` carries no register information at all**, which is a *different* situation from
+  `hr`/`sk`/`sl`. There, `si` is the 2sg of "to be" as well as the reflexive clitic, so it is
+  ambiguous. Czech's 2sg of `být` is `jsi`, so `si` is only ever reflexive — empty rather than
+  ambiguous. `jsi` itself is unambiguous and is matched.
+- **`prosím` ("please") gives no free signal.** It is a 1sg present verb, so it inflects for
+  the speaker, not the addressee — unlike Maltese `jekk jogħġbok`. In `Počkejte prosím` the
+  register is carried by `počkejte` alone.
+- **Core overturned four candidate corrections**, and this is the trap worth internalising:
+  a majority inside the bundle is not authority on its own. `Loading…` → `Načítání…` looks
+  like the outlier against 37 sibling `Načítá se` values and is **core's own form**, so the
+  one value I was about to "fix" was the only one matching core. `Current password` →
+  `Dosavadní heslo` looked like a wrong sense and is core verbatim. `Bucket` is untranslated
+  in core and there means an S3 bucket, so core is no authority for this app's histogram-bin
+  sense and the value was left alone.
+- **Check the call site before calling a form wrong.** `folder` → `složky` looks like a
+  genitive where a nominative belongs, and is correct: the key is a button in the middle of a
+  split sentence whose preceding fragment ends `přejděte do`, which governs the genitive.
+- **The Configuration/Settings split was the owner's call** and is the largest correction set.
+  The bundle rendered the app's `Configuration` entity `nastavení` in 33 values and
+  `konfigurace` in 31, and the split ran *through* individual features: the Configurations
+  screen was titled `Konfigurace` with buttons reading `Nové nastavení`/`Upravit nastavení`,
+  and `Failed to save configuration` was byte-identical to `Failed to save settings`. Core
+  `cs` renders the generic heading `Configuration` → `Nastavení`, pointing the other way, so
+  the decision went to the owner: **`konfigurace` for the noun, `nastavení` for Settings**,
+  knowingly diverging from core because core has no Configuration *entity*. Verbs were not
+  touched — `Configure X` → `Nastavte X` cannot collide with either noun.
+- Genuine grammatical errors were few but real: `No register objects reference this file` had
+  lost the `na` that `odkazovat` governs; `Queue / sync health` → `Stav frontu` used the
+  genitive of the masculine `front` (a front line) where a queue is the feminine `fronta`,
+  genitive `fronty`; `událost, kterou naslouchat` put an accusative on `naslouchat`, which
+  governs the dative, with no modal verb; and `Search GitHub` → `Hledat na GitHub` dropped the
+  locative the bundle gets right elsewhere in `na GitHubu`.
+- Wrong senses: `Commit message` → `Zpráva potvrzení` read *commit* as *confirm* in a bundle
+  that is unambiguously about Git (`Branch` → `Větev`, `Repository` → `Repozitář`); `Complex`
+  → `Komplexní` is a false friend (Czech `komplexní` means comprehensive, not complicated —
+  the bundle's own `Complex queries` → `Složité dotazy` had it right); `Uses` → `Používá` used
+  a 3sg verb for an `AppTab` title.
+- Terms: object `objekt`, schema `schéma` (pl `schémata`), register `registr`, property
+  `vlastnost`, view `pohled`, log `protokol`, audit **trail** `auditní záznam` but audit
+  **entry** `záznam auditu` (a distinction the bundle already drew and worth keeping),
+  chunk `úsek`, embedding `vnoření`, facet `faseta`, flow `tok`, workflow `pracovní postup`,
+  dashboard `nástěnka`, payload `datová část`, handler `řešitel`, hash `otisk`. Refresh was
+  decided by core: `Refresh` and `Restore` both rendered `Obnovit`, and core distinguishes
+  them exactly — `Znovu načíst` vs `Obnovit`.
+- **`nplurals=3` with ABSOLUTE boundaries** (`1` / `2–4` / else incl. 0), agreeing with the
+  library, so no boundary or ordering note is needed. All 7 plural arrays were already
+  correct, including `_Successfully restored {count} object_`, which switches the participle's
+  agreement per form (`Obnoven`/`Obnoveny`/`Obnoveno`) exactly as Czech requires.
 
 Thirty-one locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
 `nb`, `pl`, `cs`, `ru`, `uk`, `el`, `fi`, `hu`, `tr`, `ca`, `et`, `hr`, `lt`, `lv`,

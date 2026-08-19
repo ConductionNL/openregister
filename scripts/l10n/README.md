@@ -85,11 +85,12 @@ switch, so an array copied between them is wrong for counts 5–9.
 ## Cognate enforcement is opt-in per locale, on purpose
 
 Sixteen locales were finished before the cognate rule existed and carry ~400
-identical values nobody has reviewed. Failing CI on those would report history as a
-regression, and some are legitimate — `nl` renders `Bewaartermijn` and
+identical values nobody has reviewed; `cs` is the first of them to be reviewed, so
+fifteen are left and ~375 identical values with them. Failing CI on those would report
+history as a regression, and some are legitimate — `nl` renders `Bewaartermijn` and
 `AVG / Verwerkingsregister` unchanged because those are Dutch words in a Dutch
-bundle. So enforcement keys on the existence of `locales/<loc>.json`: the fifteen
-recorded locales (`tr ca et hr lt lv ro sk sl bg sr rm ga mt is`) are held to it, the rest are
+bundle. So enforcement keys on the existence of `locales/<loc>.json`: the sixteen
+recorded locales (`tr ca et hr lt lv ro sk sl bg sr rm ga mt is cs`) are held to it, the rest are
 **reported** as unreviewed by both
 `test:l10n:parity` and `runtime-check.mjs`. Add a `locales/<loc>.json` as each old
 locale gets reviewed and it becomes enforced from that moment.
