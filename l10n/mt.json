@@ -2697,7 +2697,18 @@
         "🔍 SOLR is a powerful enterprise search platform built on Apache Lucene...": "🔍 SOLR huwa pjattaforma ta' tfittxija qawwija għall-intrapriżi mibnija fuq Apache Lucene...",
         "🔢 Vectorization Settings": "🔢 Settings tal-Vettorizzazzjoni",
         "🚀 Auto-scaling can dynamically add or remove nodes based on load...": "🚀 L-iskalar awtomatiku jista' jżid jew ineħħi nodi b'mod dinamiku skont it-tagħbija...",
-        "🛡️ Security features include authentication, authorization, and SSL encryption...": "🛡️ Il-funzjonijiet tas-sigurtà jinkludu awtentikazzjoni, awtorizzazzjoni, u kriptaġġ SSL..."
+        "🛡️ Security features include authentication, authorization, and SSL encryption...": "🛡️ Il-funzjonijiet tas-sigurtà jinkludu awtentikazzjoni, awtorizzazzjoni, u kriptaġġ SSL...",
+        "Access (Art 15)": "Access (Art 15)",
+        "Access results": "Access results",
+        "Accountability": "Accountability",
+        "Archive this processing activity? Audit-trail rows will keep referring to it.": "Archive this processing activity? Audit-trail rows will keep referring to it.",
+        "Create the first processing activity to start tagging audit-trail rows with their AVG Art 30 attribution.": "Create the first processing activity to start tagging audit-trail rows with their AVG Art 30 attribution.",
+        "GDPR / AVG processing register": "GDPR / AVG processing register",
+        "Generate the accountability document": "Generate the accountability document",
+        "Legal basis": "Legal basis",
+        "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
+        "Portability (Art 20)": "Portability (Art 20)",
+        "Retention period": "Retention period"
     },
     "plurals": {
         "{count} email": [

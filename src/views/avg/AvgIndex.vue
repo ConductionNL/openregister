@@ -5,7 +5,7 @@
 			<div class="viewHeader">
 				<div class="viewHeaderTitle">
 					<h1 class="viewHeaderTitleIndented">
-						{{ t('openregister', 'AVG / Verwerkingsregister') }}
+						{{ t('openregister', 'GDPR / AVG processing register') }}
 					</h1>
 				</div>
 				<p>
@@ -32,7 +32,7 @@
 				</NcButton>
 			</div>
 
-			<!-- Verwerkingsactiviteiten -->
+			<!-- Processing activities -->
 			<section v-if="activeTab === 'activities'">
 				<div class="viewActionsBar">
 					<div class="viewInfo">
@@ -73,7 +73,7 @@
 						:description="
 							t(
 								'openregister',
-								'Create the first verwerkingsactiviteit to start tagging audit-trail rows with their AVG Art 30 attribution.',
+								'Create the first processing activity to start tagging audit-trail rows with their AVG Art 30 attribution.',
 							)
 						">
 						<template #icon>
@@ -85,16 +85,16 @@
 						<thead>
 							<tr>
 								<th scope="col">
-									{{ t('openregister', 'Naam') }}
+									{{ t('openregister', 'Name') }}
 								</th>
 								<th scope="col">
 									{{ t('openregister', 'Code') }}
 								</th>
 								<th scope="col">
-									{{ t('openregister', 'Rechtsgrond') }}
+									{{ t('openregister', 'Legal basis') }}
 								</th>
 								<th scope="col">
-									{{ t('openregister', 'Bewaartermijn') }}
+									{{ t('openregister', 'Retention period') }}
 								</th>
 								<th scope="col">
 									{{ t('openregister', 'Status') }}
@@ -142,7 +142,7 @@
 				</div>
 			</section>
 
-			<!-- Verantwoording -->
+			<!-- Accountability -->
 			<section v-else-if="activeTab === 'accountability'">
 				<div class="viewActionsBar">
 					<div class="viewInfo">
@@ -158,7 +158,7 @@
 						<NcButton
 							variant="primary"
 							:disabled="loading"
-							@click="loadVerantwoording">
+							@click="loadAccountability">
 							<template #icon>
 								<NcLoadingIcon v-if="loading" :size="20" />
 								<FileDocumentOutline v-else :size="20" />
@@ -172,7 +172,7 @@
 					<NcEmptyContent
 						v-if="!accountability"
 						:name="
-							t('openregister', 'Generate the verantwoordingsdocument')
+							t('openregister', 'Generate the accountability document')
 						"
 						:description="
 							t(
@@ -192,10 +192,10 @@
 									{{ t('openregister', 'Activity') }}
 								</th>
 								<th scope="col">
-									{{ t('openregister', 'Rechtsgrond') }}
+									{{ t('openregister', 'Legal basis') }}
 								</th>
 								<th scope="col">
-									{{ t('openregister', 'Bewaartermijn') }}
+									{{ t('openregister', 'Retention period') }}
 								</th>
 								<th scope="col">
 									{{ t('openregister', 'Total events') }}
@@ -244,7 +244,7 @@
 						{{
 							t(
 								'openregister',
-								'Locate every object referencing a data subject (Art 15 inzage), preview an erasure (Art 17 vergetelheid), or export their data (Art 20 portabiliteit).',
+								'Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).',
 							)
 						}}
 					</p>
@@ -275,7 +275,7 @@
 								<template #icon>
 									<Magnify :size="20" />
 								</template>
-								{{ t('openregister', 'Inzage (Art 15)') }}
+								{{ t('openregister', 'Access (Art 15)') }}
 							</NcButton>
 							<NcButton
 								variant="secondary"
@@ -307,14 +307,14 @@
 								<template #icon>
 									<Download :size="20" />
 								</template>
-								{{ t('openregister', 'Portabiliteit (Art 20)') }}
+								{{ t('openregister', 'Portability (Art 20)') }}
 							</NcButton>
 						</div>
 					</div>
 
 					<div v-if="dsarResults" class="dsarResults">
 						<h3>
-							{{ t('openregister', 'Inzage results') }} ({{
+							{{ t('openregister', 'Access results') }} ({{
 								dsarResults.count
 							}})
 						</h3>
@@ -1194,7 +1194,7 @@ export default {
 				},
 				{
 					id: 'accountability',
-					label: t('openregister', 'Verantwoording'),
+					label: t('openregister', 'Accountability'),
 					icon: 'FileDocumentOutline',
 				},
 				{
@@ -1226,7 +1226,7 @@ export default {
 		},
 
 		/**
-		 * Verantwoording report from the AVG store, for display.
+		 * Accountability report from the AVG store, for display.
 		 *
 		 * @spec exclude UI plumbing — derived view state from the store
 		 * @return {object}
@@ -1549,7 +1549,7 @@ export default {
 				!confirm(
 					t(
 						'openregister',
-						'Archive this verwerkingsactiviteit? Audit-trail rows will keep referring to it.',
+						'Archive this processing activity? Audit-trail rows will keep referring to it.',
 					),
 				)
 			) {
@@ -1569,7 +1569,7 @@ export default {
 		 * @spec exclude UI plumbing — delegates to the AVG store fetch
 		 * @return {Promise<void>}
 		 */
-		async loadVerantwoording() {
+		async loadAccountability() {
 			try {
 				await avgStore.fetchAccountability()
 			} catch (e) {

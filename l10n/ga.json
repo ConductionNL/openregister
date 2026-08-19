@@ -2698,7 +2698,18 @@
         "🔍 SOLR is a powerful enterprise search platform built on Apache Lucene...": "🔍 Is ardán cuardaigh fiontair cumhachtach é SOLR atá tógtha ar Apache Lucene...",
         "🔢 Vectorization Settings": "🔢 Socruithe Veicteoirithe",
         "🚀 Auto-scaling can dynamically add or remove nodes based on load...": "🚀 Is féidir le huathscálú nóid a chur leis nó a bhaint go dinimiciúil bunaithe ar an ualach...",
-        "🛡️ Security features include authentication, authorization, and SSL encryption...": "🛡️ Áirítear le gnéithe slándála fíordheimhniú, údarú agus criptiú SSL..."
+        "🛡️ Security features include authentication, authorization, and SSL encryption...": "🛡️ Áirítear le gnéithe slándála fíordheimhniú, údarú agus criptiú SSL...",
+        "Access (Art 15)": "Access (Art 15)",
+        "Access results": "Access results",
+        "Accountability": "Accountability",
+        "Archive this processing activity? Audit-trail rows will keep referring to it.": "Archive this processing activity? Audit-trail rows will keep referring to it.",
+        "Create the first processing activity to start tagging audit-trail rows with their AVG Art 30 attribution.": "Create the first processing activity to start tagging audit-trail rows with their AVG Art 30 attribution.",
+        "GDPR / AVG processing register": "GDPR / AVG processing register",
+        "Generate the accountability document": "Generate the accountability document",
+        "Legal basis": "Legal basis",
+        "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
+        "Portability (Art 20)": "Portability (Art 20)",
+        "Retention period": "Retention period"
     },
     "plurals": {
         "{count} email": [

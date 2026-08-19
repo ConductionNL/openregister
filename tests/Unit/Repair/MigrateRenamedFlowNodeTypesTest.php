@@ -61,7 +61,7 @@ final class MigrateRenamedFlowNodeTypesTest extends TestCase {
 
 		$mapper = $this->createMock(FlowMapper::class);
 		$mapper->method('findAllFlows')->willReturnCallback(
-			static function (?string $app = null, ?string $org = null, ?bool $enabled = null, int $limit = 100, int $offset = 0) use ($flows): array {
+			static function (?string $app = null, ?string $applicationSlug = null, ?string $org = null, ?bool $enabled = null, int $limit = 100, int $offset = 0) use ($flows): array {
 				return array_slice($flows, $offset, $limit);
 			}
 		);

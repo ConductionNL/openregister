@@ -341,6 +341,9 @@ final class ObjectPreviewFormatter {
 			}
 
 			$objectData = $object->jsonSerialize();
+
+			// No `?? []`: `jsonSerialize()` always emits `@self`, so the
+			// fallback was unreachable and phpstan says so.
 			$selfData = $objectData['@self'];
 
 			// Extract title.
@@ -385,7 +388,9 @@ final class ObjectPreviewFormatter {
 			// Extract preview properties.
 			$properties = $this->extractPreviewProperties(objectData: $objectData);
 
-			// Get updated timestamp.
+			// Get updated timestamp. The metadata lives in `@self` and nowhere
+			// else — the old top-level fallback read a key the serialised shape
+			// does not have, so it could only ever yield ''.
 			$updated = $selfData['updated'] ?? '';
 
 			// Build rich data.
@@ -508,7 +513,9 @@ final class ObjectPreviewFormatter {
 	 *
 	 * @return string|null URL through the `openregister.icon.mdi` route, or null
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) MdiIconRenderer::has() is a stateless lookup over a curated const map, the same pattern ObjectsProvider used inline pre-refactor
+	 * @SuppressWarnings(PHPMD.StaticAccess) MdiIconRenderer::has() is a stateless
+	 *   lookup over a curated const map — the same pattern ObjectsProvider used
+	 *   inline before this was extracted.
 	 *
 	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d2
 	 */

@@ -81,6 +81,9 @@ use Throwable;
  * @SuppressWarnings(PHPMD.TooManyMethods)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.StaticAccess) PermissionHandler::stripMcpScope() is deliberately static and pure so BOTH rule
+ *      interpreters apply the byte-identical transform. Injecting it would let this one be constructed without it and
+ *      silently diverge from the PHP-layer evaluator on which entries are inert — the exact drift ADR-011 warns about.
  */
 class MagicRbacHandler {
 
@@ -1090,8 +1093,13 @@ class MagicRbacHandler {
 			}
 		}//end if
 
-		// Get schema authorization.
-		$authorization = $schema->getAuthorization();
+		// Get schema authorization. The `mcp` scope is stripped first: it
+		// DESCRIBES what may be offered to an agent and must not participate in
+		// a verdict — neither granting (a real group can be named `mcp`) nor
+		// revoking (a non-empty block is fail-closed, so an mcp-only annotation
+		// would deny every action it did not mention). Same transform as
+		// PermissionHandler so the two interpreters cannot disagree.
+		$authorization = PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization());
 
 		// If no authorization configured, everyone has access.
 		if (empty($authorization) === true) {
@@ -1845,8 +1853,9 @@ class MagicRbacHandler {
 			return true;
 		}
 
-		// Get schema authorization configuration.
-		$authorization = $schema->getAuthorization();
+		// Get schema authorization configuration, minus the descriptive `mcp`
+		// scope — see the note on the other read of this block above.
+		$authorization = PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization());
 		if (empty($authorization) === true) {
 			return false;
 		}
@@ -2021,7 +2030,7 @@ class MagicRbacHandler {
 				message: '[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
-			return $schema->getAuthorization();
+			return PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization());
 		}
 	}//end resolveSchemaAuthorization()
 

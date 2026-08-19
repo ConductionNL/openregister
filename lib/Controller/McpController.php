@@ -29,6 +29,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Service\Authorization\GrantableRightsIndex;
 use OCA\OpenRegister\Service\McpDiscoveryService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -57,12 +58,14 @@ class McpController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request Request object
-	 * @param McpDiscoveryService $mcpDiscoveryService MCP discovery service
+	 * @param McpDiscoveryService  $mcpDiscoveryService  MCP discovery service
+	 * @param GrantableRightsIndex $grantableRightsIndex The cached menu of rights that may be offered
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		McpDiscoveryService $mcpDiscoveryService,
+		private readonly GrantableRightsIndex $grantableRightsIndex,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->mcpDiscoveryService = $mcpDiscoveryService;
@@ -137,4 +140,45 @@ class McpController extends Controller {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
 		}
 	}//end discoverCapability()
+
+	/**
+	 * The menu of rights that exist to give.
+	 *
+	 * Every `(register, schema, action, source)` that MAY be offered to an
+	 * agent, across every register and schema. Hermiq reads this when a person
+	 * opens a permission screen, so the list is the set of rights they can pick
+	 * from.
+	 *
+	 * 🔴 It lists what may be OFFERED, never what is HELD. An entry is a right
+	 * that could be granted, not one anybody has — whether a specific agent
+	 * holds it is resolved by Hermiq against that agent's own grants. Reading
+	 * this endpoint therefore confers nothing.
+	 *
+	 * Authenticated, deliberately NOT public: it enumerates the agent-facing
+	 * surface of every schema on the instance, which is structural metadata
+	 * worth having before attacking one.
+	 *
+	 * @return JSONResponse The grantable rights.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 * @no-admin-idor-exempt No object lookup: returns instance-wide schema metadata, not per-object data.
+	 *
+	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 */
+	public function grantableRights(): JSONResponse {
+		try {
+			$rights = $this->grantableRightsIndex->getIndex();
+
+			return new JSONResponse(
+				data: [
+					'total' => count($rights),
+					'results' => $rights,
+				]
+			);
+		} catch (Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+		}
+	}//end grantableRights()
 }//end class
