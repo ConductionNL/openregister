@@ -1312,7 +1312,8 @@ the only NO in the set so far).
   two counts. Em dash `—`, never en dash. No percentage values and no quote glyphs exist in
   the bundle, so source quotes are mirrored rather than converted to `„ “`.
 - **The pre-existing half was badly defective, and the audit is the story of this pass.**
-  235 of 1052 values were corrected (298 in total including the first round). The largest
+  291 of the 1052 pre-existing values were corrected in total — 63 in the first round and
+  228 more in the audit. The largest
   classes: 41 acronym/product-name compounds missing the hyphen Icelandic requires
   (`API lykill` → `API-lykill`), 33 malformed compounds (`Hámarks framkvæmdatími` →
   `Hámarksframkvæmdartími`, `Gagnagrunnupplýsingar` → `Gagnagrunnsupplýsingar`,
