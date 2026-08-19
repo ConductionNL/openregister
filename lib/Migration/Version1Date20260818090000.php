@@ -41,7 +41,18 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * Adds `openregister_flows.applicationSlug` and its index.
+ * Adds `openregister_flows.application_slug` and its index.
+ *
+ * SNAKE_CASE ON PURPOSE, not `applicationSlug`. Every other multi-word
+ * column on this table already is (`trigger_register`, `execution_mode`,
+ * `retention_days`, `audit_enabled`, `oversight_enabled` — see
+ * `Version1Date20260803000000`): `Entity::propertyToColumn()` converts the
+ * PHP property `applicationSlug` to `application_slug` on write, and
+ * `columnToProperty()` converts it back on read. A camelCase column name
+ * would be a raw SQL identifier Postgres folds to `applicationslug`
+ * (unquoted mixed-case identifiers fold to lowercase, not preserve case) —
+ * a THIRD spelling matching neither the entity's write path nor its read
+ * path, silently breaking on whichever one it landed farthest from.
  *
  * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
  */
@@ -71,9 +82,9 @@ class Version1Date20260818090000 extends SimpleMigrationStep {
 		$table   = $schema->getTable('openregister_flows');
 		$changed = false;
 
-		if ($table->hasColumn('applicationSlug') === false) {
+		if ($table->hasColumn('application_slug') === false) {
 			$table->addColumn(
-				'applicationSlug',
+				'application_slug',
 				Types::STRING,
 				[
 					'notnull' => false,
@@ -85,7 +96,7 @@ class Version1Date20260818090000 extends SimpleMigrationStep {
 		}
 
 		if ($table->hasIndex('or_flow_app_slug_idx') === false) {
-			$table->addIndex(['applicationSlug', 'id'], 'or_flow_app_slug_idx');
+			$table->addIndex(['application_slug', 'id'], 'or_flow_app_slug_idx');
 			$changed = true;
 		}
 

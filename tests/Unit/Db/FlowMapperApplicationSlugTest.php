@@ -158,8 +158,16 @@ class FlowMapperApplicationSlugTest extends TestCase {
 	}//end queryBuilder()
 
 	/**
-	 * A non-empty `applicationSlug` becomes an `eq('applicationSlug', ...)`
-	 * predicate on `findAllFlows()`.
+	 * A non-empty `applicationSlug` becomes an `eq('application_slug', ...)`
+	 * predicate on `findAllFlows()` — the raw SQL column, snake_case, NOT the
+	 * PHP parameter's own camelCase spelling. This is the exact assertion
+	 * that would have caught the migration's original camelCase column name
+	 * (`applicationSlug`, folded by Postgres to `applicationslug` and
+	 * matching neither the entity's write path nor `application_slug`) before
+	 * it ever reached the "Run now" 500 that surfaced it — an earlier draft
+	 * of this test asserted the camelCase literal and passed anyway, because
+	 * it was checking the code against itself rather than against the
+	 * table's actual convention.
 	 *
 	 * @return void
 	 */
@@ -168,7 +176,7 @@ class FlowMapperApplicationSlugTest extends TestCase {
 
 		$mapper->findAllFlows(applicationSlug: 'hydra');
 
-		$this->assertContains(['applicationSlug', 'hydra'], $this->eqCalls);
+		$this->assertContains(['application_slug', 'hydra'], $this->eqCalls);
 
 	}//end testFindAllFlowsAppliesTheApplicationSlugPredicateWhenGiven()
 
@@ -184,7 +192,7 @@ class FlowMapperApplicationSlugTest extends TestCase {
 		$mapper->findAllFlows();
 
 		$columns = array_column($this->eqCalls, 0);
-		$this->assertNotContains('applicationSlug', $columns);
+		$this->assertNotContains('application_slug', $columns);
 
 	}//end testFindAllFlowsAppliesNoApplicationSlugPredicateWhenAbsent()
 
@@ -201,7 +209,7 @@ class FlowMapperApplicationSlugTest extends TestCase {
 		$mapper->findAllFlows(app: 'hermiq', applicationSlug: 'hydra');
 
 		$this->assertContains(['app', 'hermiq'], $this->eqCalls);
-		$this->assertContains(['applicationSlug', 'hydra'], $this->eqCalls);
+		$this->assertContains(['application_slug', 'hydra'], $this->eqCalls);
 
 	}//end testFindAllFlowsComposesTheAppAndApplicationSlugPredicates()
 
@@ -217,7 +225,7 @@ class FlowMapperApplicationSlugTest extends TestCase {
 		$total = $mapper->countFlows(applicationSlug: 'hydra');
 
 		$this->assertSame(2, $total);
-		$this->assertContains(['applicationSlug', 'hydra'], $this->eqCalls);
+		$this->assertContains(['application_slug', 'hydra'], $this->eqCalls);
 
 	}//end testCountFlowsAppliesTheApplicationSlugPredicateWhenGiven()
 
@@ -234,7 +242,7 @@ class FlowMapperApplicationSlugTest extends TestCase {
 
 		$this->assertSame(5, $total);
 		$columns = array_column($this->eqCalls, 0);
-		$this->assertNotContains('applicationSlug', $columns);
+		$this->assertNotContains('application_slug', $columns);
 
 	}//end testCountFlowsAppliesNoApplicationSlugPredicateWhenAbsent()
 

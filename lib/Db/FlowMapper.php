@@ -85,6 +85,12 @@ class FlowMapper extends QBMapper {
 	 * Nextcloud app can host several OpenBuild virtual apps, each with its own
 	 * flows. Passing both composes as an AND, not an OR.
 	 *
+	 * The predicate below reads the raw column `application_slug`, not the
+	 * parameter's own camelCase spelling — the migration follows this table's
+	 * existing snake_case convention (`trigger_register`, `execution_mode`),
+	 * and `Entity`'s camelCase<->snake_case conversion only applies to
+	 * property access, never to a query builder's raw column literal.
+	 *
 	 * @param string|null $app Restrict to one owning app id.
 	 * @param string|null $applicationSlug Restrict to one OpenBuild virtual-app slug.
 	 * @param string|null $organisation Restrict to one organisation uuid.
@@ -116,7 +122,7 @@ class FlowMapper extends QBMapper {
 		}
 
 		if ($applicationSlug !== null && $applicationSlug !== '') {
-			$qb->andWhere($qb->expr()->eq('applicationSlug', $qb->createNamedParameter($applicationSlug)));
+			$qb->andWhere($qb->expr()->eq('application_slug', $qb->createNamedParameter($applicationSlug)));
 		}
 
 		if ($organisation !== null && $organisation !== '') {
@@ -160,7 +166,7 @@ class FlowMapper extends QBMapper {
 		}
 
 		if ($applicationSlug !== null && $applicationSlug !== '') {
-			$qb->andWhere($qb->expr()->eq('applicationSlug', $qb->createNamedParameter($applicationSlug)));
+			$qb->andWhere($qb->expr()->eq('application_slug', $qb->createNamedParameter($applicationSlug)));
 		}
 
 		if ($organisation !== null && $organisation !== '') {
