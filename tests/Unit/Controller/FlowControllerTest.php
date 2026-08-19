@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\FlowController;
+use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
@@ -666,6 +667,128 @@ class FlowControllerTest extends TestCase {
 		}
 
 	}//end testAWriteIsRefusedWhenTheRightIsNotHeld()
+
+	/**
+	 * A helper that answers a fixed value for named `getParam()` keys and the
+	 * request-default for anything else, mirroring the `match` pattern already
+	 * used by `AuditQueryControllerTest`.
+	 *
+	 * @param array<string, mixed> $params The keys to answer, by name.
+	 *
+	 * @return void
+	 */
+	private function stubParams(array $params): void {
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, $default = null) use ($params) {
+				if (array_key_exists($key, $params) === true) {
+					return $params[$key];
+				}
+
+				return $default;
+			}
+		);
+	}//end stubParams()
+
+	/**
+	 * `?applicationSlug=` is forwarded to both `findAll()` and `count()` — the
+	 * same handling `?app=` already gets.
+	 *
+	 * @return void
+	 */
+	public function testIndexForwardsTheApplicationSlugFilter(): void {
+		$this->stubParams(['applicationSlug' => 'hydra']);
+
+		$this->flows->expects($this->once())
+			->method('findAll')
+			->with(null, 'hydra', null, 100, 0)
+			->willReturn([]);
+
+		$this->flows->expects($this->once())
+			->method('count')
+			->with(null, 'hydra')
+			->willReturn(0);
+
+		$response = $this->controller->index();
+
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(200, $response->getStatus());
+	}//end testIndexForwardsTheApplicationSlugFilter()
+
+	/**
+	 * A whitespace-only `applicationSlug` is treated as empty — `trim()` is
+	 * used to test for emptiness, the same way `?app=` already is — and
+	 * forwards `null` rather than the untrimmed string.
+	 *
+	 * @return void
+	 */
+	public function testIndexTreatsAWhitespaceOnlyApplicationSlugAsEmpty(): void {
+		$this->stubParams(['applicationSlug' => '   ']);
+
+		$this->flows->expects($this->once())
+			->method('findAll')
+			->with(null, null, null, 100, 0)
+			->willReturn([]);
+
+		$this->flows->expects($this->once())
+			->method('count')
+			->with(null, null)
+			->willReturn(0);
+
+		$response = $this->controller->index();
+
+		$this->assertSame(200, $response->getStatus());
+	}//end testIndexTreatsAWhitespaceOnlyApplicationSlugAsEmpty()
+
+	/**
+	 * An absent or empty `applicationSlug` forwards `null` — unfiltered,
+	 * matching current behaviour exactly as an absent `app` already does.
+	 *
+	 * @return void
+	 */
+	public function testIndexForwardsNullWhenApplicationSlugIsAbsentOrEmpty(): void {
+		$this->stubParams(['applicationSlug' => '']);
+
+		$this->flows->expects($this->once())
+			->method('findAll')
+			->with(null, null, null, 100, 0)
+			->willReturn([]);
+
+		$this->flows->expects($this->once())
+			->method('count')
+			->with(null, null)
+			->willReturn(0);
+
+		$response = $this->controller->index();
+
+		$this->assertSame(200, $response->getStatus());
+	}//end testIndexForwardsNullWhenApplicationSlugIsAbsentOrEmpty()
+
+	/**
+	 * `?app=` and `?applicationSlug=` compose — both are forwarded on the same
+	 * call, narrowing by both rather than either alone.
+	 *
+	 * @return void
+	 */
+	public function testIndexComposesTheAppAndApplicationSlugFilters(): void {
+		$this->stubParams(['app' => 'hermiq', 'applicationSlug' => 'hydra']);
+
+		$flow = new Flow();
+
+		$this->flows->expects($this->once())
+			->method('findAll')
+			->with('hermiq', 'hydra', null, 100, 0)
+			->willReturn([$flow]);
+
+		$this->flows->expects($this->once())
+			->method('count')
+			->with('hermiq', 'hydra')
+			->willReturn(1);
+
+		$response = $this->controller->index();
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(1, $response->getData()['total']);
+	}//end testIndexComposesTheAppAndApplicationSlugFilters()
 
 	/**
 	 * The trigger catalog is served in the documented `{results,total}`
