@@ -2066,7 +2066,10 @@ class SaveObjects {
 	 * @param array $transformedObjects Valid objects ready for database operations
 	 * @param Register|string|int|null $register Caller-supplied register context (forwarded to mapper)
 	 * @param Schema|string|int|null $schema Caller-supplied schema context (forwarded to mapper)
-	 * @param bool $needsPreUpdateState Whether anything reads the pre-update rows; false narrows the mapper's pre-fetch to the uuid
+	 * @param bool $needsPreUpdateState Whether the mapper must read each row's pre-update
+	 *                                  state. Only events and audit need it, so the caller
+	 *                                  passes false when neither is enabled — that skips a
+	 *                                  read per row, which is the point of the bulk path.
 	 *
 	 * @return mixed The bulk operation result from the mapper
 	 *

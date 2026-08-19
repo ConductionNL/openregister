@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\AppFramework\IAppContainer;
+use OCP\IAppConfig;
 use OCP\ICacheFactory;
 use OCP\IDBConnection;
 use OCP\IMemcache;
@@ -87,6 +88,9 @@ class CacheHandlerCoverageTest extends TestCase {
 	/** @var IDBConnection&MockObject */
 	private IDBConnection $db;
 
+	/** @var IAppConfig&MockObject */
+	private IAppConfig $appConfig;
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -112,6 +116,19 @@ class CacheHandlerCoverageTest extends TestCase {
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->db = $this->createMock(IDBConnection::class);
+
+		// These coverage tests predate SEC-CTRL-2 step 2 and assert the resolver
+		// with no tenant boundary in force — a real supported configuration.
+		// The tenant-scoped behaviour is covered by CacheHandlerTenantScopeTest.
+		$this->appConfig = $this->createMock(IAppConfig::class);
+		$this->appConfig->method('getValueString')
+			->willReturnCallback(function (string $app, string $key, string $default = '') {
+				if ($app === 'openregister' && $key === 'multitenancy') {
+					return '{"enabled":false}';
+				}
+
+				return $default;
+			});
 	}
 
 	/**
@@ -144,7 +161,9 @@ class CacheHandlerCoverageTest extends TestCase {
 			$effectiveContainer,
 			$this->registerMapper,
 			$this->schemaMapper,
-			$this->db
+			$this->db,
+			null,
+			$this->appConfig
 		);
 	}
 
@@ -474,7 +493,7 @@ class CacheHandlerCoverageTest extends TestCase {
 
 		$this->nameDistributedCache->expects($this->once())
 			->method('set')
-			->with('name_uuid-1', 'Test Object', $this->anything());
+			->with('name_uuid-1', ['n' => 'Test Object', 'o' => null], $this->anything());
 
 		$handler->setObjectName('uuid-1', 'Test Object');
 
@@ -507,7 +526,7 @@ class CacheHandlerCoverageTest extends TestCase {
 		// Very high TTL should be clamped to MAX_CACHE_TTL (86400)
 		$this->nameDistributedCache->expects($this->once())
 			->method('set')
-			->with('name_uuid-1', 'Test', 86400);
+			->with('name_uuid-1', ['n' => 'Test', 'o' => null], 86400);
 
 		$handler->setObjectName('uuid-1', 'Test', 999999);
 	}
@@ -527,9 +546,10 @@ class CacheHandlerCoverageTest extends TestCase {
 	public function testGetSingleObjectNameDistributedHit(): void {
 		$handler = $this->createHandler();
 
+		// SEC-CTRL-2 step 2: tenancy-bearing envelope, not a bare string.
 		$this->nameDistributedCache->method('get')
 			->with('name_uuid-1')
-			->willReturn('Distributed Name');
+			->willReturn(['n' => 'Distributed Name', 'o' => null]);
 
 		$result = $handler->getSingleObjectName('uuid-1');
 		$this->assertSame('Distributed Name', $result);

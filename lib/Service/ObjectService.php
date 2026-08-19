@@ -1419,6 +1419,83 @@ class ObjectService implements ObjectServiceInterface
             );
         }//end try
 
+        // Invalidate Smart Picker / reference-provider preview caches for the
+        // saved object, so an edit is reflected the next time the object is
+        // resolved as a reference (mail-smart-picker spec: "Cache invalidation
+        // on object update"). Every canonical URL shape OpenRegister itself
+        // recognises comes from ObjectPreviewFormatter::buildCanonicalUrls() —
+        // the SAME pattern list matchReference()/getCachePrefix() use — so
+        // this can never invalidate a different set of shapes than the ones
+        // the providers actually match against (design.md D4). Best-effort:
+        // never fails the save.
+        try {
+            $container = \OC::$server;
+            if ($container !== null) {
+                $referenceManager = $container->get(\OCP\Collaboration\Reference\IReferenceManager::class);
+                $formatter = $container->get(\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class);
+                $deepLinkRegistry = $container->get(\OCA\OpenRegister\Service\DeepLinkRegistryService::class);
+
+                $invalidationRegisterId = (int)$this->currentRegister?->getId();
+                $invalidationSchemaId = (int)$this->currentSchema?->getId();
+                $invalidationUuid = (string)$savedObject->getUuid();
+
+                $invalidatedPrefixes = [];
+                foreach (
+                    $formatter->buildCanonicalUrls(
+                        registerId: $invalidationRegisterId,
+                        schemaId: $invalidationSchemaId,
+                        uuid: $invalidationUuid
+                    ) as $canonicalUrl
+                ) {
+                    $prefix = $formatter->resolveCachePrefix(referenceText: $canonicalUrl);
+                    if (isset($invalidatedPrefixes[$prefix]) === false) {
+                        $referenceManager->invalidateCache(cachePrefix: $prefix);
+                        $invalidatedPrefixes[$prefix] = true;
+                    }
+                }
+
+                // Flat data shape deep link URL templates resolve placeholders
+                // against — same shape ObjectPreviewFormatter::buildReference()
+                // and ObjectSearchResultFormatter::format() build for the same
+                // purpose: the object's own fields plus the identity triple.
+                $deepLinkObjectData = array_merge(
+                    $savedObject->getObject(),
+                    [
+                        'uuid' => $invalidationUuid,
+                        'register' => $invalidationRegisterId,
+                        'schema' => $invalidationSchemaId,
+                    ]
+                );
+
+                $deepLinkUrl = $deepLinkRegistry->resolveUrl(
+                    registerId: $invalidationRegisterId,
+                    schemaId: $invalidationSchemaId,
+                    objectData: $deepLinkObjectData
+                );
+                if ($deepLinkUrl !== null) {
+                    $referenceManager->invalidateCache(cachePrefix: $deepLinkUrl);
+                }
+            }//end if
+        } catch (\Throwable $e) {
+            // Smart Picker cache invalidation is a non-essential post-save
+            // side-effect and must NEVER fail the save. Catch \Throwable (the
+            // reference manager or an unavailable formatter service can raise
+            // a runtime Error, not just a container exception) but log it with
+            // object context so the miss stays visible instead of being
+            // silently swallowed.
+            $this->logger->warning(
+                message: '[ObjectService] Skipped Smart Picker cache invalidation: invalidation failed',
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'exception' => $e->getMessage(),
+                    'uuid'      => $savedObject->getUuid(),
+                    'register'  => $this->currentRegister?->getId(),
+                    'schema'    => $this->currentSchema?->getId(),
+                ]
+            );
+        }//end try
+
         // Lazy folder creation: intentionally do NOT create a file-storage
         // folder here. An object only needs a folder once a file is attached;
         // the folder is created on demand on the first upload
@@ -4400,16 +4477,33 @@ class ObjectService implements ObjectServiceInterface
     }//end createObject()
 
     /**
-     * Update existing object (full update)
+     * REPLACE an existing object's data wholesale. This does NOT merge.
+     *
+     * PUT semantics, inherited from `saveObject()`: `$data` becomes the object's
+     * data in full, so a stored property absent from `$data` is written away
+     * rather than left alone. There is no read of the existing object here — the
+     * commented-out `find()` below is the whole history of that idea — so a
+     * one-key payload stores a one-key object and reports success.
+     *
+     * Callers holding a PARTIAL payload want `patchObject()`, which reads,
+     * merges and then saves. Both are published on `ObjectServiceInterface`;
+     * the contract's docblock for this method used to say "apply a partial
+     * update", which is the opposite of the behaviour and is what sent at least
+     * one consuming app down the erasing path.
+     *
+     * Replace semantics are deliberate and must not change: existing callers
+     * pass a complete object and rely on an omitted property being cleared.
      *
      * @param string $objectId      Object ID or UUID
-     * @param array  $data          New object data
+     * @param array  $data          The object's COMPLETE new data. Anything omitted is dropped.
      * @param bool   $_rbac         Apply RBAC checks
      * @param bool   $_multitenancy Apply multitenancy filtering
      *
-     * @return ObjectEntity Updated object entity
+     * @return ObjectEntity Replaced object entity
      *
      * @throws \Exception If update fails
+     *
+     * @see self::patchObject() for the merging counterpart.
      *
      * @spec exclude Facade delegating to saveObject() with id; update behavior owned by object-interactions / object-lifecycle.
      */

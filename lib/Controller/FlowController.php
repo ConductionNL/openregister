@@ -449,7 +449,9 @@ class FlowController extends Controller {
 	 *
 	 * `app` is the per-app scoping key: OpenConnector's index passes
 	 * `openconnector`, hermiq passes `hermiq`, and OpenRegister's own index
-	 * passes nothing and sees every app's flows. Organisation scoping is not a
+	 * passes nothing and sees every app's flows. `applicationSlug` is narrower
+	 * still — one Nextcloud app can host several OpenBuild virtual apps — and
+	 * composes with `app` as an AND. Organisation scoping is not a
 	 * parameter — `FlowService` applies it unconditionally.
 	 *
 	 * @return JSONResponse `{ results, total, limit, offset }`.
@@ -457,7 +459,7 @@ class FlowController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -465,11 +467,8 @@ class FlowController extends Controller {
 		$limit = min(200, max(1, (int)$this->request->getParam('limit', 100)));
 		$offset = max(0, (int)$this->request->getParam('offset', 0));
 
-		$app = $this->request->getParam('app');
-		$appFilter = null;
-		if ($app !== null && trim((string)$app) !== '') {
-			$appFilter = (string)$app;
-		}
+		$appFilter = $this->trimmedFilter(key: 'app');
+		$slugFilter = $this->trimmedFilter(key: 'applicationSlug');
 
 		$enabledFilter = null;
 		$enabled = $this->request->getParam('enabled');
@@ -479,6 +478,7 @@ class FlowController extends Controller {
 
 		$flows = $this->flows->findAll(
 			app: $appFilter,
+			applicationSlug: $slugFilter,
 			enabled: $enabledFilter,
 			limit: $limit,
 			offset: $offset
@@ -487,13 +487,36 @@ class FlowController extends Controller {
 		return new JSONResponse(
 			[
 				'results' => array_map(static fn (Flow $flow): array => $flow->jsonSerialize(), $flows),
-				'total' => $this->flows->count(app: $appFilter),
+				'total' => $this->flows->count(app: $appFilter, applicationSlug: $slugFilter),
 				'limit' => $limit,
 				'offset' => $offset,
 			]
 		);
 
 	}//end index()
+
+	/**
+	 * Read a request parameter, treating an absent or whitespace-only value
+	 * as unset.
+	 *
+	 * Shared by `app` and `applicationSlug`, which both filter `index()` the
+	 * same way: a caller-supplied value narrows the list, and anything empty
+	 * MUST behave exactly as if nothing were passed at all.
+	 *
+	 * @param string $key The request parameter name.
+	 *
+	 * @return string|null The trimmed-nonempty value, or null.
+	 *
+	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 */
+	private function trimmedFilter(string $key): ?string {
+		$value = $this->request->getParam($key);
+		if ($value !== null && trim((string)$value) !== '') {
+			return (string)$value;
+		}
+
+		return null;
+	}//end trimmedFilter()
 
 	/**
 	 * Read one flow.

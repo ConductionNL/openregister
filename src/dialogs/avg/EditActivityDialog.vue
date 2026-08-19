@@ -6,7 +6,7 @@
 		@closing="$emit('close')">
 		<form class="avgEditForm" @submit.prevent="onSave">
 			<NcTextField
-				v-model="form.naam"
+				v-model="form.name"
 				:label="t('openregister', 'Name *')"
 				required />
 
@@ -18,28 +18,28 @@
 
 			<label class="avgField">
 				<span>{{ t('openregister', 'Description') }}</span>
-				<textarea v-model="form.beschrijving" rows="3" class="avgTextarea" />
+				<textarea v-model="form.description" rows="3" class="avgTextarea" />
 			</label>
 
 			<label class="avgField">
 				<span>{{ t('openregister', 'Purpose limitation *') }}</span>
 				<textarea
-					v-model="form.doelbinding"
+					v-model="form.purpose"
 					rows="3"
 					class="avgTextarea"
 					required />
 			</label>
 
 			<NcSelect
-				v-model="form.rechtsgrond"
-				:options="rechtsgrondOptions"
+				v-model="form.legalBasis"
+				:options="legalBasisOptions"
 				:labelOutside="false"
 				:inputLabel="t('openregister', 'Legal basis *')"
 				:reduce="(o) => o.value"
 				required />
 
 			<NcTextField
-				v-model="form.bewaartermijn"
+				v-model="form.retentionPeriod"
 				:label="
 					t(
 						'openregister',
@@ -59,7 +59,7 @@
 					t('openregister', 'Categories of data subjects (one per line)')
 				}}</span>
 				<textarea
-					v-model="categorieenBetrokkenenText"
+					v-model="dataSubjectCategoriesText"
 					rows="3"
 					class="avgTextarea" />
 			</label>
@@ -69,7 +69,7 @@
 					t('openregister', 'Categories of personal data (one per line)')
 				}}</span>
 				<textarea
-					v-model="categorieenPersoonsgegevensText"
+					v-model="personalDataCategoriesText"
 					rows="3"
 					class="avgTextarea" />
 			</label>
@@ -77,7 +77,7 @@
 			<label class="avgField">
 				<span>{{ t('openregister', 'Technical measures') }}</span>
 				<textarea
-					v-model="form.technischeMaatregelen"
+					v-model="form.technicalMeasures"
 					rows="3"
 					class="avgTextarea" />
 			</label>
@@ -85,7 +85,7 @@
 			<label class="avgField">
 				<span>{{ t('openregister', 'Organisational measures') }}</span>
 				<textarea
-					v-model="form.organisatorischeMaatregelen"
+					v-model="form.organisationalMeasures"
 					rows="3"
 					class="avgTextarea" />
 			</label>
@@ -127,7 +127,7 @@ import {
 	NcTextField,
 } from '@nextcloud/vue'
 import {
-	RECHTSGROND_VOCABULARY,
+	LEGAL_BASIS_VOCABULARY,
 	STATUS_VOCABULARY,
 } from '../../store/modules/avg.js'
 import { avgStore } from '../../store/store.js'
@@ -172,10 +172,10 @@ export default {
 		},
 
 		/**
-		 * @spec exclude Presentation glue: maps the rechtsgrond vocabulary to select options; no standalone behavioural contract.
+		 * @spec exclude Presentation glue: maps the legalBasis vocabulary to select options; no standalone behavioural contract.
 		 */
-		rechtsgrondOptions() {
-			return RECHTSGROND_VOCABULARY.map((v) => ({
+		legalBasisOptions() {
+			return LEGAL_BASIS_VOCABULARY.map((v) => ({
 				value: v,
 				label: v.replace(/_/g, ' '),
 			}))
@@ -188,13 +188,13 @@ export default {
 			return STATUS_VOCABULARY.map((v) => ({ value: v, label: v }))
 		},
 
-		categorieenBetrokkenenText: {
+		dataSubjectCategoriesText: {
 			/**
 			 * @spec exclude Presentation glue: textarea getter joining a string array into newline-separated text; no standalone behavioural contract.
 			 */
 			get() {
-				return Array.isArray(this.form.categorieenBetrokkenen)
-					? this.form.categorieenBetrokkenen.join('\n')
+				return Array.isArray(this.form.dataSubjectCategories)
+					? this.form.dataSubjectCategories.join('\n')
 					: ''
 			},
 
@@ -203,20 +203,20 @@ export default {
 			 * @spec exclude Presentation glue: textarea setter splitting newline text into a trimmed string array; no standalone behavioural contract.
 			 */
 			set(value) {
-				this.form.categorieenBetrokkenen = (value ?? '')
+				this.form.dataSubjectCategories = (value ?? '')
 					.split('\n')
 					.map((s) => s.trim())
 					.filter((s) => s !== '')
 			},
 		},
 
-		categorieenPersoonsgegevensText: {
+		personalDataCategoriesText: {
 			/**
 			 * @spec exclude Presentation glue: textarea getter joining a string array into newline-separated text; no standalone behavioural contract.
 			 */
 			get() {
-				return Array.isArray(this.form.categorieenPersoonsgegevens)
-					? this.form.categorieenPersoonsgegevens.join('\n')
+				return Array.isArray(this.form.personalDataCategories)
+					? this.form.personalDataCategories.join('\n')
 					: ''
 			},
 
@@ -225,7 +225,7 @@ export default {
 			 * @spec exclude Presentation glue: textarea setter splitting newline text into a trimmed string array; no standalone behavioural contract.
 			 */
 			set(value) {
-				this.form.categorieenPersoonsgegevens = (value ?? '')
+				this.form.personalDataCategories = (value ?? '')
 					.split('\n')
 					.map((s) => s.trim())
 					.filter((s) => s !== '')
@@ -242,20 +242,18 @@ export default {
 		 */
 		makeForm(activity) {
 			return {
-				naam: activity?.naam ?? '',
+				name: activity?.name ?? '',
 				code: activity?.code ?? '',
-				beschrijving: activity?.beschrijving ?? '',
-				doelbinding: activity?.doelbinding ?? '',
-				rechtsgrond: activity?.rechtsgrond ?? 'publieke_taak',
-				bewaartermijn: activity?.bewaartermijn ?? '',
+				description: activity?.description ?? '',
+				purpose: activity?.purpose ?? '',
+				legalBasis: activity?.legalBasis ?? 'public_task',
+				retentionPeriod: activity?.retentionPeriod ?? '',
 				status: activity?.status ?? 'concept',
-				categorieenBetrokkenen: activity?.categorieenBetrokkenen ?? [],
-				categorieenPersoonsgegevens:
-					activity?.categorieenPersoonsgegevens ?? [],
+				dataSubjectCategories: activity?.dataSubjectCategories ?? [],
+				personalDataCategories: activity?.personalDataCategories ?? [],
 
-				technischeMaatregelen: activity?.technischeMaatregelen ?? '',
-				organisatorischeMaatregelen:
-					activity?.organisatorischeMaatregelen ?? '',
+				technicalMeasures: activity?.technicalMeasures ?? '',
+				organisationalMeasures: activity?.organisationalMeasures ?? '',
 			}
 		},
 

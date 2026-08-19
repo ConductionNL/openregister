@@ -73,8 +73,8 @@ class CaseTokenController extends Controller {
 	 * @param string $appName App name (injected by NC).
 	 * @param IRequest $request Current request.
 	 * @param CaseTokenService $tokenService Case-token mint/resolve/revoke service.
-	 * @param IThrottler $throttler Brute-force throttler for rejected case tokens.
-	 * @param LoggerInterface $logger Logger.
+	 * @param IThrottler $throttler Brute-force throttler for rejected tokens.
+	 * @param LoggerInterface $logger PSR logger.
 	 *
 	 * @return void
 	 */

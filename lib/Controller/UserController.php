@@ -236,6 +236,13 @@ class UserController extends Controller {
 	 *
 	 * @return JSONResponse A JSON response containing login result and user information
 	 *
+	 * The `#[AnonRateLimit]` below is a framework ceiling ALONGSIDE the
+	 * app-level limiter, not instead of it. `SecurityService::checkLoginRateLimit()`
+	 * already keys on username + IP with a progressive delay, which is
+	 * finer-grained than anything the framework can do from an attribute. The
+	 * attribute bounds the volume that reaches that logic at all; it is not a
+	 * claim that the login was unprotected.
+	 *
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
 	#[AnonRateLimit(limit: 20, period: 60)]

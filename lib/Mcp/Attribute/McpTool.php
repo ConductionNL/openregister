@@ -90,6 +90,16 @@ final class McpTool {
 	 *                           {@see \OCA\OpenRegister\Service\Mcp\McpAnnotationValidator::SCOPES}
 	 *                           (validated by {@see \OCA\OpenRegister\Mcp\AttributeToolScanner} at
 	 *                           scan time, not here). Omitted (null) when not declared.
+	 * @param string|null $subject The thing this tool acts on, e.g. `document`. Groups the tool in
+	 *                             the agent grant matrix. Omitted (null) when not declared — and an
+	 *                             omission is INVISIBLE, because
+	 *                             {@see \OCA\OpenRegister\Service\Mcp\ToolRegistryFacade::describeTools()}
+	 *                             deliberately returns null rather than inferring one from the id.
+	 *                             Declare it: a consumer cannot tell an inferred subject from a real one.
+	 * @param string|null $action The verb this tool performs on that subject, e.g. `get`. NOT closed
+	 *                            to CRUD — a tool that sends, converts or delegates should say so
+	 *                            rather than be filed under the nearest CRUD verb, since the matrix
+	 *                            grants on this value.
 	 *
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 *   (Requirement: REQ-ATTR-001 — The #[McpTool] service-method attribute)
@@ -103,6 +113,8 @@ final class McpTool {
 		public readonly ?bool $destructiveHint = null,
 		public readonly ?bool $idempotentHint = null,
 		public readonly ?string $scope = null,
+		public readonly ?string $subject = null,
+		public readonly ?string $action = null,
 	) {
 	}//end __construct()
 }//end class

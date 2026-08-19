@@ -186,6 +186,8 @@ class WebPushController extends Controller {
 	 *   #[AnonRateLimit] above bounds the anonymous render cost.
 	 *
 	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * The rate-limit ceiling is high because notification icons are fetched
+	 * per-notification by the browser.
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]

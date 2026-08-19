@@ -1798,15 +1798,14 @@ class AuditTrailMapper extends QBMapper {
 	}//end capChangedPayload()
 
 	/**
-	 * Purge expired audit trail logs by tombstoning their payload
+	 * Tombstone every audit-trail entry.
 	 *
-	 * Rows whose `expires` has passed and that have not been purged yet keep
-	 * their structural columns and their hash chain, while the payload and the
-	 * personal identifiers are destroyed and `purged_at` is stamped.
+	 * ⚠️ Tombstones rather than deletes: the payload is destroyed but the row and
+	 * its chain links survive, because the hash chain is what makes the trail
+	 * evidence. Deleting rows would break the chain and leave nothing to show
+	 * that anything was ever there.
 	 *
-	 * @return bool True if any expired logs were tombstoned, false otherwise
-	 *
-	 * @throws \Exception If the update fails
+	 * @return bool True when the tombstone write succeeded.
 	 */
 	public function clearLogs(): bool {
 		try {

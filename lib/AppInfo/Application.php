@@ -107,6 +107,7 @@ use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
 use OCA\OpenRegister\Listener\FlowNodePreflightListener;
 use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
+use OCA\OpenRegister\Listener\GrantableRightsInvalidationListener;
 use OCA\OpenRegister\Listener\HandoffLifecycleListener;
 use OCA\OpenRegister\Listener\HandoffQueueDrainListener;
 use OCA\OpenRegister\Listener\HookListener;
@@ -2550,6 +2551,14 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(SchemaCreatedEvent::class, SourceRecordChangeListener::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, SourceRecordChangeListener::class);
 		$context->registerEventListener(SchemaDeletedEvent::class, SourceRecordChangeListener::class);
+
+		// Grantable-rights index: drop the cached menu of rights on ANY schema
+		// write. Deliberately has no TTL to fall back on — a right removed from
+		// a schema must stop being offered at the moment of the write, and a
+		// stale permission menu is a bug that looks exactly like a correct one.
+		$context->registerEventListener(SchemaCreatedEvent::class, GrantableRightsInvalidationListener::class);
+		$context->registerEventListener(SchemaUpdatedEvent::class, GrantableRightsInvalidationListener::class);
+		$context->registerEventListener(SchemaDeletedEvent::class, GrantableRightsInvalidationListener::class);
 
 		// CRUD metric listener — persists an operational metric row per object
 		// create/update/delete into `openregister_metrics`, which the canonical

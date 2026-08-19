@@ -63,6 +63,7 @@ OpenRegister implements or supports the following GEMMA (Gemeentelijke Model Arc
 | Real-Time Updates | [realtime-updates.md](realtime-updates.md) | Integration | Implemented | SSE, WebSocket, notify_push |
 | Multi-Tenancy & SaaS | [multi-tenancy.md](multi-tenancy.md) | Platform | Implemented | Organisation scoping, quota management |
 | Deep Link Registry | [deep-link-registry.md](deep-link-registry.md) | Integration | Implemented | Nextcloud app interoperability |
+| Schema-Scoped Reference Providers | [schema-scoped-reference-providers.md](schema-scoped-reference-providers.md) | Platform | Implemented | Nextcloud Smart Picker, unified search |
 | Computed Fields | [computed-fields.md](computed-fields.md) | Core | Implemented | Twig expressions, server-side evaluation |
 | Geo Metadata & Map Visualization | [geo-metadata.md](geo-metadata.md) | Core | Planned | GeoJSON, PDOK, RD/WGS84 |
 
@@ -114,3 +115,4 @@ Infrastructure for multi-tenancy and app interoperability.
 
 - [Multi-Tenancy & SaaS](multi-tenancy.md) — Organisation isolation, quota enforcement, tenant lifecycle
 - [Deep Link Registry](deep-link-registry.md) — Boot-time URL routing from consuming Nextcloud apps
+- [Schema-Scoped Reference Providers](schema-scoped-reference-providers.md) — Reusable base classes letting a consuming app expose one schema as its own Smart Picker entry
