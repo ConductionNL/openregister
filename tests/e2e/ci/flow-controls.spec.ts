@@ -189,8 +189,46 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		}
 	})
 
+	// THE SUPPORT DIALOG COVERS THE CANVAS, AND CI ALWAYS GETS IT.
+	//
+	// `CnSupportDialog` is a first-open note from the founder. It records its
+	// dismissal in `localStorage` under `cn-support-dialog-shown:<appSlug>`, so
+	// a human sees it once — but every Playwright context starts with empty
+	// storage, so CI sees it EVERY run, centred over the editor.
+	//
+	// It was never noticed because the sidebar and palette sit outside its
+	// backdrop: adding a step kept working, and the canvas assertions that
+	// would have caught it were gated behind a `NEW_EDITOR` feature-detect that
+	// was false on every installed 2.3.x. The first canvas interaction to
+	// actually run met a modal that traps focus — the click timed out and the
+	// keypress went to the dialog, so no edge was ever drawn.
+	//
+	// Suppressed by the flag the dialog itself reads, matched on the PREFIX so
+	// this does not silently miss if the app's slug differs from its id. This
+	// hides nothing under test: the dialog is not this spec's subject, and a
+	// spec whose subject is the canvas must be able to reach the canvas.
+	await page.addInitScript(() => {
+		const read = Storage.prototype.getItem
+		Storage.prototype.getItem = function (key: string) {
+			if (typeof key === 'string' && key.startsWith('cn-support-dialog-shown:')) {
+				return '1'
+			}
+
+			return read.call(this, key)
+		}
+	})
+
 	try {
 		await page.goto(FLOWS_ROUTE, { waitUntil: 'domcontentloaded' })
+
+		// Belt and braces: if the dialog still made it through (a server-backed
+		// dismissal mode would not read localStorage), close it rather than
+		// letting it swallow every canvas interaction that follows.
+		const supportDialog = page.getByRole('dialog').filter({ hasText: 'Support' })
+		if (await supportDialog.isVisible({ timeout: 2_000 }).catch(() => false)) {
+			await page.keyboard.press('Escape')
+			await expect(supportDialog).toBeHidden({ timeout: 10_000 })
+		}
 
 		// Reach the editor the way a user does. Direct navigation to
 		// `#/flows/new` does not always hydrate the canvas.
