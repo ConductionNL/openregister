@@ -925,45 +925,22 @@ is not empty, not identical to English, not wrong-arity, and reads as finished w
 **§3.8 guards against changes of taste, not against fixing grammar.** Do not cite it to skip
 the audit.
 
-#### Read the bundle as a SUBAGENT FAN-OUT, not sequentially
+#### Read the bundle as a subagent fan-out, not sequentially
 
-**One reader has a recall ceiling that care does not remove.** The `sk` pass was committed as
-complete at 57 corrections; a second pass over the same bundle, run in a **fresh subagent
-context**, found five more, four of which are not marginal — a nominative plural where the
-genitive singular belonged (`Konfigurácia objektu polia`), a noun where the button convention
-takes an infinitive (`Draft denial`), one formal-2pl item in a six-item list of infinitives, and
-the bundle's word for *session* used to mean *relation*. The first pass had also claimed "zero
-wrong case in `sk`", which was wrong. `sk` is **62**, not 57. What survives a first read is
-precisely what a tired eye normalises: a plausible case ending, one list item out of six, a noun
-that could pass for a heading.
+Slice the listing into ~4 chunks, spawn one subagent per chunk in a single message, and give
+each the same shared context: the `core-diff` AGREE list, the `termdrift` output, the collision
+list, and the locale's register + button convention (§7.2/§7.3). Without that they re-derive
+candidates core already killed and flag every infinitive button as a register slip.
 
-So run step 4 of this section with the **Agent tool**:
+Subagents return **candidates with call-site evidence, never verdicts**. Adjudicate centrally
+against core and the call site — that is where the errors are (11 of ~30 on `sk`).
 
-1. Slice the EN→target listing into ~4 chunks of roughly 500 keys and write them to the
-   scratchpad.
-2. Spawn **one subagent per chunk**, in a single message so they run concurrently.
-3. Give every subagent the same **shared context**, or it will waste its budget re-deriving
-   things you already know: the `core-diff` **AGREE** list (without it, a reader re-invents the
-   false candidates core has already killed), the `termdrift` output, and the collision list.
-   Tell it the locale's measured register and button convention (§7.2/§7.3) — otherwise it
-   reports every infinitive button as a register slip.
-4. Require **candidates with call-site evidence, never verdicts**, as structured output: key,
-   current value, what is wrong, suggested fix, confidence.
-5. **Adjudicate centrally.** Every candidate gets the core check and the call-site check before
-   it enters a patch. This is not a formality — it is where the errors are: core overturned six
-   `sk` candidates and the call site five more, eleven of roughly thirty.
-
-**Never let a subagent's suggestion land in a patch unreviewed.** Measured on the pre-audit `sk`
-bundle, a Haiku-class reader returned three findings: one real, and **two confident
-"high"-confidence claims that were both wrong** — it wanted `nemajú` for the correct 3sg
-`nemá` after a genitive-plural numeral, and the masculine-animate `obnovení` for the correct
-inanimate `obnovené`. Applying either would have written a NEW error into correct Slovak, and no
-gate in this repo could have caught it. Cheap models are usable for *generating* candidates,
-where recall is the job; they are not usable for deciding.
-
-Also give subagents an explicit read boundary. A reader that touches the repo gets `CLAUDE.md`
-and this file auto-attached, and this section names the actual answers for `sk` — which
-invalidates any attempt to measure a reader's quality against a locale already audited.
+- A second pass on `sk` found **5 defects the first sequential pass missed**, so this raises
+  recall, not just speed. `sk` is 62, not the 57 first committed.
+- Cheap models may generate candidates but never decide: a Haiku-class reader gave 1 real
+  finding and 2 confidently wrong ones that would have written new errors into correct Slovak.
+- If you are *measuring* a reader's quality, give it a read boundary — touching the repo
+  auto-attaches `CLAUDE.md` and this file, and this section names `sk`'s answers.
 
 **Mechanical checks are necessary but nowhere near sufficient.** On `is` they found 4 of the
 239. Build them anyway — they catch the class a reader's eye slides over — but then *read
@@ -1010,40 +987,25 @@ one locale and a defect in the next.** Two cases from `sr`, both worth internali
   was left alone. Same English source, same apparent shape, opposite verdicts — decided by
   each locale's measured button convention (§7.3) and nothing else.
 
-**CHECK CORE AND THE CALL SITE BEFORE CALLING A VALUE WRONG — on `sk` this overturned ten
-candidate corrections, more than the pass ultimately made in every class except one.** Core
-`cs` overturned four; core and the call sites together overturned **ten** on `sk`, so treat
-this as the highest-yield step in the method rather than a formality. The five core saved:
+**CHECK CORE AND THE CALL SITE BEFORE CALLING A VALUE WRONG.** This overturned four candidates
+on `cs` and eleven on `sk` — more than any single class either pass corrected. Examples of what
+looked like textbook defects and were not:
 
-- `Refresh` and `Restore` both render `Obnoviť` — and **core `sk` collapses them the same
-  way**, so the collision belongs to core, not the bundle. A collision core also has is not
-  a defect.
-- `First` / `Last` / `Previous` → `Prvé` / `Posledné` / `Predchádzajúce` is **core `sk`
-  verbatim**. They look like neuter forms failing to agree with the feminine `Stránka` of the
-  bundle's own `Page {current} of {total}`, and they are simply the language's convention.
-- bare `Search` → `Hľadať` is **core `sk` verbatim in 3 catalogues**, even though every
-  compound key in the bundle uses `Vyhľadať`. A minority-of-one that matches core stays.
+- `Refresh`/`Restore` both → `Obnoviť` — core `sk` collapses them the same way. A collision
+  core also has is not a defect.
+- `First`/`Last`/`Previous` and bare `Search` — core `sk` **verbatim**, despite looking like
+  agreement errors or house-style outliers.
+- `Handler` → `Riešiteľ` (*solver*) — `c.handler` holds a **person**, not a code handler.
+- `Fair`/`Good`/`Poor` (neuter) need not match the feminine confidence family — they qualify
+  `skóre`, a different noun.
+- `Filter Statistics` → an infinitive among noun siblings, correct because it is an `<h3>`
+  **over filter controls**, so §7.3's action-label rule applies.
+- `Requested at`/`Expires` are not dangling — the template supplies the colon.
 
-And the five the call site saved, each of which looked like a textbook defect:
-
-- `Handler` → `Riešiteľ` reads as *solver* and is right: `c.handler` is a **person**, an AVG
-  case worker, not a code handler.
-- `Fair` / `Good` / `Poor` → neuter `Uspokojivé` / `Dobré` / `Slabé` need **not** match the
-  feminine `Vysoká` / `Stredná` / `Nízka` confidence family — they are KPI labels over
-  `skóre` (neuter) and the two families qualify different nouns.
-- `Filter Statistics` → `Filtrovať štatistiky` is an infinitive where its `Filtre X` siblings
-  are nouns, and is right: it is an `<h3>` **over filter controls**, so the action-label rule
-  (§7.3) applies rather than the noun rule.
-- `Requested at` → `Požiadané` and `Expires` → `Vyprší` are **not** dangling: the template
-  writes `{{ t(...) }}:` and a date follows.
-
-**A converse key pair can carry each other's meaning, and only the call sites show it.** On
-`sk`, `Uses` → `Používa sa` ("it is used") and `Used by` → `Používa` ("it uses") were
-**swapped**: both are `AppTab` titles, one over outgoing relations and one over incoming.
-Neither value is ill-formed, empty, identical or wrong-arity, so no gate and no term count
-reaches it — the term count says both keys use the right stem, which is true and useless.
-Read converse pairs **against each other**: Uses/Used by, Parent/Child, Source/Target,
-Merged from/Merged into. Sibling locales settle the direction fast, since they all mark it.
+**Read converse pairs against each other.** On `sk`, `Uses` → `Používa sa` and `Used by` →
+`Používa` were **swapped**. Nothing catches this — not a gate, not the term count, which
+correctly reports both using the right stem. Check Uses/Used by, Parent/Child, Source/Target,
+Merged from/into. Sibling locales settle the direction fast.
 
 Two judgement calls:
 
