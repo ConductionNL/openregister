@@ -426,6 +426,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			'match',
 			'replace',
 			'bulk',
+			'skipWhen',
 			'output',
 			'confirmDelete',
 			'permanent',
@@ -495,6 +496,17 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 				'help' => $this->l10n->t(
 					'Create and upsert only. One bulk save covers every item — much faster for large pages, '
 					.'but per-object lifecycle events are not dispatched, and a bulk upsert must match on "uuid" alone with "replace" on.'
+				),
+			],
+			[
+				'key' => 'skipWhen',
+				'label' => $this->l10n->t('Skip an item when this field says so'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'A field on the item. When it holds true, or the word "skip", that item passes through '
+					.'UNWRITTEN and still travels on to later steps. Use it to leave unchanged objects alone. '
+					.'Filtering those items out instead would remove them from what a synchronization sweep '
+					.'counts as reached, and the sweep would then delete them.'
 				),
 			],
 			[
@@ -876,9 +888,23 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		$writes = 0;
 		$out = [];
 
+		$skipWhen = trim((string)($config['skipWhen'] ?? ''));
+
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
 			$binary = (array)($item[FlowItems::BINARY] ?? []);
+
+			// PASS THROUGH, DO NOT DROP. An item the author marked as
+			// already-current is emitted unchanged and costs no write and no
+			// cap. It must still be EMITTED: `openregister.filter` would
+			// remove it, and a synchronisation's sweep decides what to delete
+			// from the target ids its items carry — so dropping an unchanged
+			// item is what makes the next sweep delete the very object that
+			// was fine.
+			if ($skipWhen !== '' && $this->isSkipped(path: $skipWhen, json: $json) === true) {
+				$out[] = FlowItems::item(json: $json, binary: $binary, fromItemIndex: (int)$index);
+				continue;
+			}
 
 			if ($operation === self::OP_DELETE) {
 				$out[] = $this->executeDelete(
@@ -987,15 +1013,41 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			);
 		}
 
+		// A skipped item contributes NO row, so it is not written — but it is
+		// still emitted below, with its own json untouched. See the note in
+		// writeItems(): dropping it is what makes a later sweep delete it.
+		$skipWhen = trim((string)($config['skipWhen'] ?? ''));
+
 		$rows = [];
 		$ids = [];
+		$skipped = [];
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
+			if ($skipWhen !== '' && $this->isSkipped(path: $skipWhen, json: $json) === true) {
+				$skipped[$index] = true;
+				continue;
+			}
+
 			$payload = $this->buildPayload(fields: $fields, json: $json, onMissing: $onMissing);
 			$id = $this->bulkRowId(operation: $operation, pairs: $pairs, json: $json);
 			$payload['id'] = $id;
 			$rows[] = $payload;
 			$ids[$index] = $id;
+		}
+
+		// Nothing to write once the skips are removed: return the items as
+		// they arrived rather than calling saveObjects() with an empty payload.
+		if ($rows === []) {
+			$passthrough = [];
+			foreach ($items as $index => $item) {
+				$passthrough[] = FlowItems::item(
+					json: (array)($item[FlowItems::JSON] ?? []),
+					binary: (array)($item[FlowItems::BINARY] ?? []),
+					fromItemIndex: (int)$index
+				);
+			}
+
+			return $passthrough;
 		}
 
 		// Validation stays ON to keep parity with the single-object path;
@@ -1016,6 +1068,17 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		$out = [];
 		$position = 0;
 		foreach ($items as $index => $item) {
+			// Skipped items were never sent, so they have no row and no id.
+			// Emit them exactly as they arrived, in place.
+			if (array_key_exists($index, $skipped) === true) {
+				$out[] = FlowItems::item(
+					json: (array)($item[FlowItems::JSON] ?? []),
+					binary: (array)($item[FlowItems::BINARY] ?? []),
+					fromItemIndex: (int)$index
+				);
+				continue;
+			}
+
 			$id = (string)$ids[$index];
 			$saved = ($written[$id] ?? null);
 
@@ -1848,6 +1911,42 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 
 		return ['resolved' => true, 'value' => $out];
 	}//end resolveTemplate()
+
+	/**
+	 * Whether this item says it is already current, so no write is needed.
+	 *
+	 * Truthiness is deliberately narrow. A dot-path landing on the STRING
+	 * "skip" counts, because that is the vocabulary the synchronisation
+	 * pipeline's contract step stamps (`contract.outcome`), and the natural
+	 * thing to configure is `skipWhen: "contract.outcome"`. Booleans count for
+	 * a flow that computes its own flag. Everything else — including the
+	 * strings "false" and "0", which are truthy in PHP — does NOT, because a
+	 * value nobody meant as a skip must not silence a write.
+	 *
+	 * @param string $path The configured dot-path.
+	 * @param array $json The item's record.
+	 *
+	 * @return bool Whether the item is already current.
+	 *
+	 * @spec openspec/changes/or-flow-object-write-skip-when/specs/flow-object-write-skip-when/spec.md
+	 */
+	private function isSkipped(string $path, array $json): bool {
+		$found = $this->lookupPath(path: $path, json: $json);
+		if ($found['found'] === false) {
+			return false;
+		}
+
+		$value = $found['value'];
+		if (is_bool($value) === true) {
+			return $value;
+		}
+
+		if (is_string($value) === true) {
+			return (strtolower(trim($value)) === 'skip');
+		}
+
+		return false;
+	}//end isSkipped()
 
 	/**
 	 * Walk a dotted path through the item's record.
