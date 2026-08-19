@@ -161,9 +161,9 @@ async function deleteFlow(
 			headers: {
 				requesttoken:
 					// eslint-disable-next-line @typescript-eslint/no-explicit-any
-					((window as any).OC && (window as any).OC.requestToken) ||
-					(meta && meta.content) ||
-					'',
+					((window as any).OC && (window as any).OC.requestToken)
+					|| (meta && meta.content)
+					|| '',
 				Accept: 'application/json',
 			},
 		})
@@ -211,8 +211,8 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		const read = Storage.prototype.getItem
 		Storage.prototype.getItem = function (key: string) {
 			if (
-				typeof key === 'string' &&
-				key.startsWith('cn-support-dialog-shown:')
+				typeof key === 'string'
+				&& key.startsWith('cn-support-dialog-shown:')
 			) {
 				return '1'
 			}
@@ -227,12 +227,8 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// Belt and braces: if the dialog still made it through (a server-backed
 		// dismissal mode would not read localStorage), close it rather than
 		// letting it swallow every canvas interaction that follows.
-		const supportDialog = page
-			.getByRole('dialog')
-			.filter({ hasText: 'Support' })
-		if (
-			await supportDialog.isVisible({ timeout: 2_000 }).catch(() => false)
-		) {
+		const supportDialog = page.getByRole('dialog').filter({ hasText: 'Support' })
+		if (await supportDialog.isVisible({ timeout: 2_000 }).catch(() => false)) {
 			await page.keyboard.press('Escape')
 			await expect(supportDialog).toBeHidden({ timeout: 10_000 })
 		}
@@ -307,9 +303,9 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// enablement IS the "editor initialised" signal, with no tab click.
 		await expect(
 			saveButton,
-			'the editor never initialised — the flow store is still holding its ' +
-				'blank initial state, whose name is empty, and a flow with no name ' +
-				'is rejected by the server',
+			'the editor never initialised — the flow store is still holding its '
+				+ 'blank initial state, whose name is empty, and a flow with no name '
+				+ 'is rejected by the server',
 		).toBeEnabled()
 
 		// 2. A STEP CAN BE ADDED.
@@ -374,10 +370,7 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		const startNode = page.locator('.cn-graph-canvas__node', {
 			hasText: 'When someone runs it',
 		})
-		await expect(
-			startNode,
-			'the seeded start node is missing',
-		).toBeVisible()
+		await expect(startNode, 'the seeded start node is missing').toBeVisible()
 		const endNode = page.locator('.cn-graph-canvas__node', {
 			hasText: 'End',
 		})
@@ -410,8 +403,8 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// immediately, quoting the server.
 		const created = page.waitForResponse(
 			(response) =>
-				response.request().method() === 'POST' &&
-				new URL(response.url()).pathname.endsWith(
+				response.request().method() === 'POST'
+				&& new URL(response.url()).pathname.endsWith(
 					'/apps/openregister/api/flows',
 				),
 			{ timeout: 10_000 },
@@ -422,8 +415,8 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		const createResponse = await created
 		expect(
 			createResponse.status(),
-			`the flow was not created — the server answered ${createResponse.status()}: ` +
-				`${(await createResponse.text()).slice(0, 200)}`,
+			`the flow was not created — the server answered ${createResponse.status()}: `
+				+ `${(await createResponse.text()).slice(0, 200)}`,
 		).toBe(201)
 
 		const uuid = String((await createResponse.json())?.id ?? '')
@@ -444,8 +437,8 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		//    depends on whether the worker has reached it yet.
 		const queued = page.waitForResponse(
 			(response) =>
-				response.request().method() === 'POST' &&
-				response.url().includes(`/api/flows/${uuid}/run`),
+				response.request().method() === 'POST'
+				&& response.url().includes(`/api/flows/${uuid}/run`),
 			{ timeout: 10_000 },
 		)
 
@@ -454,8 +447,8 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		const runResponse = await queued
 		expect(
 			runResponse.status(),
-			`Run now was refused — the server answered ${runResponse.status()}: ` +
-				`${(await runResponse.text()).slice(0, 200)}`,
+			`Run now was refused — the server answered ${runResponse.status()}: `
+				+ `${(await runResponse.text()).slice(0, 200)}`,
 		).toBe(201)
 
 		// And the run is ATTRIBUTED to this flow — a separate claim from "a run
