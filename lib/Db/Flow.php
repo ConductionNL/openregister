@@ -52,6 +52,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setDescription(?string $description)
  * @method string|null getApp()
  * @method void setApp(?string $app)
+ * @method string|null getApplicationSlug()
+ * @method void setApplicationSlug(?string $applicationSlug)
  * @method boolean|null getEnabled()
  * @method void setEnabled(?bool $enabled)
  * @method string|null getTrigger()
@@ -172,6 +174,19 @@ class Flow extends Entity implements JsonSerializable {
 	 * @var string|null
 	 */
 	protected ?string $app = null;
+
+	/**
+	 * The OpenBuild virtual-app this flow belongs to, when it belongs to one.
+	 *
+	 * Narrower than {@see $app}: one Nextcloud app (e.g. `hermiq`) can host
+	 * several independent OpenBuild virtual apps, each with its own flows, and
+	 * `app` alone cannot distinguish between them. Null means "no virtual-app
+	 * association" — most flows on the shared instance have none and must
+	 * remain fully valid without it.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $applicationSlug = null;
 
 	/**
 	 * Whether the flow is active. A trigger only fires an enabled flow.
@@ -398,6 +413,7 @@ class Flow extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'name', type: 'string');
 		$this->addType(fieldName: 'description', type: 'string');
 		$this->addType(fieldName: 'app', type: 'string');
+		$this->addType(fieldName: 'applicationSlug', type: 'string');
 		$this->addType(fieldName: 'enabled', type: 'boolean');
 		$this->addType(fieldName: 'trigger', type: 'string');
 		$this->addType(fieldName: 'triggerRegister', type: 'string');
@@ -578,6 +594,7 @@ class Flow extends Entity implements JsonSerializable {
 			'name' => $this->name,
 			'description' => $this->description,
 			'app' => $this->app,
+			'applicationSlug' => $this->applicationSlug,
 			'enabled' => (bool)$this->enabled,
 			'trigger' => $this->trigger,
 			'triggerRegister' => $this->triggerRegister,

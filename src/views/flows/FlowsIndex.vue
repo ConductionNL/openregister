@@ -35,11 +35,7 @@
 		:actions="rowActions"
 		rowClickToView
 		@rowClick="openFlow">
-		<!-- The `#actions` inline slot, deliberately: it renders on every
-		     shipped @conduction/nextcloud-vue, where `#header-actions` only
-		     renders from 2.4 on. Keeps "New flow" reachable across the
-		     transition window. -->
-		<template #actions>
+		<template #header-actions>
 			<NcButton variant="primary" @click="createFlow">
 				<template #icon>
 					<Plus :size="20" />
