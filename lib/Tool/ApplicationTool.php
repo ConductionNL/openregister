@@ -104,9 +104,21 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function getFunctions(): array {
+		return array_merge(self::readFunctions(), self::writeFunctions());
+
+	}//end getFunctions()
+
+	/**
+	 * The application descriptors that change nothing.
+	 *
+	 * @return array<int, array<string, mixed>> The read descriptors.
+	 */
+	private static function readFunctions(): array {
 		return [
 			[
 				'name' => 'list_applications',
+				'subject' => 'application',
+				'action' => 'list',
 				'description' => 'List all accessible applications with basic information.',
 				'parameters' => [
 					'type' => 'object',
@@ -125,6 +137,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 			],
 			[
 				'name' => 'get_application',
+				'subject' => 'application',
+				'action' => 'get',
 				'description' => 'Get detailed application information by UUID.',
 				'parameters' => [
 					'type' => 'object',
@@ -137,8 +151,27 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 					'required' => ['uuid'],
 				],
 			],
+		];
+
+	}//end readFunctions()
+
+	/**
+	 * The application descriptors that change state.
+	 *
+	 * Split from the reading half only to keep each method inside the
+	 * ExcessiveMethodLength budget — declaring `subject`/`action` on every
+	 * descriptor pushed the single combined table past it. The read/write line
+	 * is the honest place to cut, since it is the same boundary the grant
+	 * matrix groups on.
+	 *
+	 * @return array<int, array<string, mixed>> The write descriptors.
+	 */
+	private static function writeFunctions(): array {
+		return [
 			[
 				'name' => 'create_application',
+				'subject' => 'application',
+				'action' => 'create',
 				'description' => 'Create a new application with unique name.',
 				'parameters' => [
 					'type' => 'object',
@@ -161,6 +194,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 			],
 			[
 				'name' => 'update_application',
+				'subject' => 'application',
+				'action' => 'update',
 				'description' => 'Update application (owner/update permission required). Provide UUID and fields to update.',
 				'parameters' => [
 					'type' => 'object',
@@ -187,6 +222,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 			],
 			[
 				'name' => 'delete_application',
+				'subject' => 'application',
+				'action' => 'delete',
 				'description' => 'Permanently delete application (owner/delete permission required). Cannot be undone.',
 				'parameters' => [
 					'type' => 'object',
@@ -200,7 +237,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 				],
 			],
 		];
-	}//end getFunctions()
+	}//end writeFunctions()
 
 	/**
 	 * List applications

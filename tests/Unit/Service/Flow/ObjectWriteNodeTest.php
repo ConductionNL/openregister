@@ -1194,4 +1194,318 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->assertSame('uuid-1', $out[0]['json']['uuid']);
 	}
 
+	// ── Bulk mode (or-flow-bulk-object-write) ───────────────────────────
+
+	/**
+	 * The config vocabulary is pinned, `bulk` included.
+	 *
+	 * @return void
+	 */
+	public function testTheConfigVocabularyIsPinnedWithBulk(): void {
+		$this->assertSame(
+			[
+				'register',
+				'schema',
+				'operation',
+				'fields',
+				'match',
+				'replace',
+				'bulk',
+				'output',
+				'confirmDelete',
+				'permanent',
+				'maxWrites',
+				'onConflict',
+				'onMissing',
+				'onNoMatch',
+			],
+			$this->node->configKeys()
+		);
+	}
+
+	/**
+	 * Every form field edits a key the node actually reads, and the
+	 * register / schema fields are pickers fed by a declared URL — never
+	 * bare uuid boxes.
+	 *
+	 * @return void
+	 */
+	public function testTheConfigFormDescribesOnlyKeysTheNodeReads(): void {
+		$form = $this->node->configForm();
+		$keys = $this->node->configKeys();
+
+		$this->assertNotSame([], $form);
+		$byKey = [];
+		foreach ($form as $field) {
+			$this->assertContains($field['key'], $keys);
+			$byKey[$field['key']] = $field;
+		}
+
+		foreach (['register', 'schema'] as $picker) {
+			$this->assertSame('select', $byKey[$picker]['type']);
+			$this->assertNotSame('', (string)($byKey[$picker]['optionsFrom'] ?? ''));
+		}
+	}
+
+	/**
+	 * @return array<string, array{0: array<string, mixed>, 1: string}>
+	 */
+	public static function refusedBulkConfigurations(): array {
+		$upsert = [
+			'operation' => ObjectWriteNode::OP_UPSERT,
+			'match' => ['@self.uuid' => '{{uuid}}'],
+			'replace' => true,
+			'bulk' => true,
+		];
+
+		return [
+			'bulk update keeps its per-item guards' => [
+				['operation' => ObjectWriteNode::OP_UPDATE, 'match' => ['title' => 'x'], 'bulk' => true],
+				'supports create and upsert only',
+			],
+			'bulk delete keeps its per-item guards' => [
+				[
+					'operation' => ObjectWriteNode::OP_DELETE,
+					'match' => ['@self.uuid' => '{{uuid}}'],
+					'confirmDelete' => true,
+					'fields' => null,
+					'bulk' => true,
+				],
+				'supports create and upsert only',
+			],
+			'bulk upsert cannot patch' => [
+				array_merge($upsert, ['replace' => null]),
+				'cannot patch',
+			],
+			'bulk upsert matches on uuid alone' => [
+				array_merge($upsert, ['match' => ['title' => '{{title}}']]),
+				'exactly one property',
+			],
+			'bulk upsert refuses a composite match' => [
+				array_merge($upsert, ['match' => ['@self.uuid' => '{{uuid}}', 'title' => 'x']]),
+				'exactly one property',
+			],
+			'bulk cannot arbitrate per-row claims' => [
+				['operation' => ObjectWriteNode::OP_CREATE, 'onConflict' => 'fail', 'bulk' => true],
+				'cannot arbitrate',
+			],
+			'bulk must be a boolean' => [
+				['operation' => ObjectWriteNode::OP_CREATE, 'bulk' => 'true'],
+				'true or false, as a boolean',
+			],
+		];
+	}
+
+	/**
+	 * Bulk is refused at save time wherever the bulk path's semantics are
+	 * narrower than the per-item path's.
+	 *
+	 * @dataProvider refusedBulkConfigurations
+	 *
+	 * @param array<string, mixed> $overrides Config overrides.
+	 * @param string $because Expected message fragment.
+	 *
+	 * @return void
+	 */
+	public function testBulkIsRefusedWhereItsSemanticsAreNarrower(array $overrides, string $because): void {
+		$config = $this->config($overrides);
+		foreach ($config as $key => $value) {
+			if ($value === null) {
+				unset($config[$key]);
+			}
+		}
+
+		$this->expectException(UnexpectedValueException::class);
+		$this->expectExceptionMessageMatches('/' . preg_quote($because, '/') . '/');
+		$this->node->validateConfig($config);
+	}
+
+	/**
+	 * Build a well-formed empty bulk result the mock can build on.
+	 *
+	 * @param array<string, mixed> $overrides Bucket overrides.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function bulkResult(array $overrides = []): array {
+		return array_merge(
+			[
+				'saved' => [],
+				'updated' => [],
+				'unchanged' => [],
+				'invalid' => [],
+				'errors' => [],
+				'statistics' => [],
+			],
+			$overrides
+		);
+	}
+
+	/**
+	 * A bulk create is ONE `saveObjects()` call carrying one row per item,
+	 * each under its own generated uuid — and each output item names its row.
+	 *
+	 * @return void
+	 */
+	public function testABulkCreateIsOneCallWithOneOwnedRowPerItem(): void {
+		$sent = null;
+		$this->objects->expects($this->never())->method('saveObject');
+		$this->objects->expects($this->once())->method('saveObjects')->willReturnCallback(
+			function (array $objects) use (&$sent): array {
+				$sent = $objects;
+
+				return $this->bulkResult();
+			}
+		);
+
+		$out = $this->node->execute(
+			$this->items([['title' => 'a'], ['title' => 'b'], ['title' => 'c']]),
+			$this->config(['bulk' => true, 'fields' => ['title' => '{{title}}']]),
+			$this->registerContext
+		);
+
+		$this->assertCount(3, $sent);
+		$ids = array_column($sent, 'id');
+		$this->assertCount(3, array_unique($ids));
+		foreach ($ids as $id) {
+			$this->assertMatchesRegularExpression('/^[0-9a-f-]{36}$/', $id);
+		}
+
+		$this->assertCount(3, $out);
+		foreach ($out as $index => $item) {
+			$this->assertSame($ids[$index], $item['json']['uuid']);
+			$this->assertSame('example-hydra-cache', $item['json']['register']);
+		}
+	}
+
+	/**
+	 * A bulk upsert's row ids come from each item's uuid match value, so the
+	 * bulk save updates exactly the rows the page named.
+	 *
+	 * @return void
+	 */
+	public function testABulkUpsertTakesRowIdsFromTheMatchValue(): void {
+		$sent = null;
+		$this->objects->expects($this->once())->method('saveObjects')->willReturnCallback(
+			function (array $objects) use (&$sent): array {
+				$sent = $objects;
+
+				return $this->bulkResult();
+			}
+		);
+
+		$this->node->execute(
+			$this->items([['uuid' => 'row-1', 'title' => 'a'], ['uuid' => 'row-2', 'title' => 'b']]),
+			$this->config([
+				'operation' => ObjectWriteNode::OP_UPSERT,
+				'match' => ['@self.uuid' => '{{uuid}}'],
+				'replace' => true,
+				'bulk' => true,
+				'fields' => ['title' => '{{title}}'],
+			]),
+			$this->registerContext
+		);
+
+		$this->assertSame(['row-1', 'row-2'], array_column($sent, 'id'));
+	}
+
+	/**
+	 * An upsert item whose match value does not resolve fails rather than
+	 * widening into a create — a match key is never omitted.
+	 *
+	 * @return void
+	 */
+	public function testABulkUpsertWithAnUnresolvedMatchValueFailsTheItem(): void {
+		$this->objects->expects($this->never())->method('saveObjects');
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessageMatches('/never omitted/');
+		$this->node->execute(
+			$this->items([['title' => 'no-uuid-here']]),
+			$this->config([
+				'operation' => ObjectWriteNode::OP_UPSERT,
+				'match' => ['@self.uuid' => '{{uuid}}'],
+				'replace' => true,
+				'bulk' => true,
+				'fields' => ['title' => '{{title}}'],
+			]),
+			$this->registerContext
+		);
+	}
+
+	/**
+	 * A page larger than the cap is refused BEFORE the call — one bulk call
+	 * has no honest midpoint to stop at.
+	 *
+	 * @return void
+	 */
+	public function testABulkPageOverTheCapWritesNothing(): void {
+		$this->objects->expects($this->never())->method('saveObjects');
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessageMatches('/nothing was written/');
+		$this->node->execute(
+			$this->items([['title' => 'a'], ['title' => 'b'], ['title' => 'c']]),
+			$this->config(['bulk' => true, 'maxWrites' => 2, 'fields' => ['title' => '{{title}}']]),
+			$this->registerContext
+		);
+	}
+
+	/**
+	 * A bulk result carrying rejected rows fails the step loudly — refusals
+	 * land in the result's buckets, and folding them into per-item output
+	 * would be a hollow success.
+	 *
+	 * @return void
+	 */
+	public function testABulkResultWithRejectedRowsFailsLoudly(): void {
+		$this->objects->method('saveObjects')->willReturn(
+			$this->bulkResult([
+				'invalid' => [['object' => [], 'error' => 'Row 2 failed schema validation']],
+				'errors' => [['error' => 'Row 2 failed schema validation', 'type' => 'ValidationException']],
+			])
+		);
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessageMatches('/rejected 1 of its rows.*Row 2 failed schema validation.*not rolled back/');
+		$this->node->execute(
+			$this->items([['title' => 'a']]),
+			$this->config(['bulk' => true, 'fields' => ['title' => '{{title}}']]),
+			$this->registerContext
+		);
+	}
+
+	/**
+	 * When the bulk result carries the serialised row, the output item
+	 * prefers it over the sent payload — server-computed fields included.
+	 *
+	 * @return void
+	 */
+	public function testBulkOutputPrefersTheServersSerialisedRow(): void {
+		$this->objects->method('saveObjects')->willReturnCallback(
+			function (array $objects): array {
+				$row = $objects[0];
+
+				return $this->bulkResult([
+					'saved' => [
+						[
+							'@self' => ['uuid' => $row['id']],
+							'title' => $row['title'],
+							'serverComputed' => 'slug-a',
+						],
+					],
+				]);
+			}
+		);
+
+		$out = $this->node->execute(
+			$this->items([['title' => 'a']]),
+			$this->config(['bulk' => true, 'fields' => ['title' => '{{title}}']]),
+			$this->registerContext
+		);
+
+		$this->assertSame('slug-a', $out[0]['json']['serverComputed']);
+		$this->assertArrayNotHasKey('@self', $out[0]['json']);
+	}
+
 }//end class

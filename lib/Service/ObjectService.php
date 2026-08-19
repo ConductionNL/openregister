@@ -1199,6 +1199,13 @@ class ObjectService implements ObjectServiceInterface
      * @param array|null               $uploadedFiles Uploaded files from multipart/form-data (optional)
      * @param IUser|null               $currentUser   Explicit acting user for `@self.folder` access checks
      * @param bool                     $failIfExists  Insert-only: throw ObjectExistsException rather than update when taken (default: false = upsert)
+     * @param bool                     $_unowned      Stamp the SYSTEM identity as owner even when a user session
+     *                                                exists. For a genuinely anonymous write — a citizen submitting
+     *                                                a form on a public portal with no account — where the row must
+     *                                                not be attributed to whoever happens to be signed into the
+     *                                                instance in that browser. Defaults to false, so nothing changes
+     *                                                for any existing caller, and no controller forwards it, so no
+     *                                                REST request can ask to be anonymised.
      *                                                (forwarded to `ensureObjectFolder` → `assertObjectFolderAccessible`).
      *                                                Defaults to null → `IUserSession::getUser()` resolution.
      *                                                Non-HTTP callers (cron, import pipelines, event listeners)
@@ -1229,7 +1236,8 @@ class ObjectService implements ObjectServiceInterface
         bool $_validation=true,
         ?array $uploadedFiles=null,
         ?IUser $currentUser=null,
-        bool $failIfExists=false
+        bool $failIfExists=false,
+        bool $_unowned=false
     ): ObjectEntity {
         // Bound the folder-access revalidation cache to this single save call
         // (not the whole FileService/request lifetime), so a cascade save that
@@ -1384,7 +1392,8 @@ class ObjectService implements ObjectServiceInterface
             _validation: $_validation,
             uploadedFiles: $uploadedFiles,
             currentUser: $currentUser,
-            failIfExists: $failIfExists
+            failIfExists: $failIfExists,
+            _unowned: $_unowned
         );
 
         // Invalidate contact matching cache for objects with email properties.
