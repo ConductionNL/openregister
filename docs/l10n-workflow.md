@@ -909,6 +909,9 @@ every gate for the life of the file.
 > Then the collision scan and the dangling-preposition sweep, then read what is left.
 > **Do not build mechanical morphology checks** — 4 of 239 on `is`, ~0 of 113 on `cs`,
 > not written for `sk` and nothing lost.
+>
+> `docs/l10n-audit-speedup.md` carries the machine setup, each check's measured yield and
+> its blind spots, and the record of what was built and rejected.
 
 **This is a required step of every pass, not something you do when you happen to notice
 something.** The `is` pass first scope-limited itself to "a systematic error with a
