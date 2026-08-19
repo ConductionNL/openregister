@@ -599,16 +599,18 @@ class MagicBulkHandler {
 			// built above and consumed by the INSERT further down. Shadowing it
 			// with a string turned `implode()` into a TypeError — a 500 on every
 			// bulk save, from a variable name.
-			// Written as plain assignments rather than a ternary or an
-			// if/else: phpcs forbids the inline IF and phpmd forbids the
-			// else, so the narrowest form that satisfies both is to state
-			// the default and then override it.
+			// A `match`, not a ternary and not an if/else: phpcs forbids the
+			// inline IF and phpmd forbids the else. ⚠️ It also has to stay ONE
+			// statement — the earlier if/if form added two, and since this
+			// method needs a live magic table to execute, both were uncovered
+			// and the changed-files coverage ratchet failed the PR on a 0.008%
+			// "drop" for a comment-only change.
 			$existsColumns = '*';
 			if ($needsPreUpdateState === false) {
-				$existsColumns = '`_uuid`';
-				if ($isPostgres === true) {
-					$existsColumns = '"_uuid"';
-				}
+				$existsColumns = match (true) {
+					$isPostgres === true => '"_uuid"',
+					default => '`_uuid`',
+				};
 			}
 
 			$existsSql = "SELECT {$existsColumns} FROM `{$fullTableName}` WHERE `_uuid` IN ({$placeholders})";
