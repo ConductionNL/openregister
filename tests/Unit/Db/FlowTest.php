@@ -148,4 +148,28 @@ class FlowTest extends TestCase {
 
 		$this->assertFalse($flow->gatesEachHop(true));
 	}//end testAnExplicitOversightOptOutIsHonoured()
+
+	/**
+	 * A flow with no applicationSlug stays fully valid: it serialises the
+	 * field as null rather than omitting it or defaulting it to an empty
+	 * string, which the filter's non-empty check relies on being able to
+	 * skip.
+	 */
+	public function testAFlowWithNoApplicationSlugSerialisesItAsNull(): void {
+		$flow = $this->flow();
+
+		$this->assertNull($flow->getApplicationSlug());
+		$this->assertArrayHasKey('applicationSlug', $flow->jsonSerialize());
+		$this->assertNull($flow->jsonSerialize()['applicationSlug']);
+	}//end testAFlowWithNoApplicationSlugSerialisesItAsNull()
+
+	/**
+	 * A flow with an applicationSlug carries it through to serialisation.
+	 */
+	public function testAFlowWithAnApplicationSlugSerialisesIt(): void {
+		$flow = $this->flow();
+		$flow->setApplicationSlug('hydra');
+
+		$this->assertSame('hydra', $flow->jsonSerialize()['applicationSlug']);
+	}//end testAFlowWithAnApplicationSlugSerialisesIt()
 }//end class

@@ -50,7 +50,7 @@ use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
 /**
- * Bewaartermijn-driven object retention enforcement.
+ * Retention-period-driven object retention enforcement.
  */
 class AvgRetentionService {
 	/**
@@ -146,7 +146,7 @@ class AvgRetentionService {
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
 	private function processActivity(Verwerkingsactiviteit $activity, DateTime $now, bool $dryRun): ?array {
-		$retentionPeriod = (string)($activity->getBewaartermijn() ?? '');
+		$retentionPeriod = (string)($activity->getRetentionPeriod() ?? '');
 		if ($retentionPeriod === '') {
 			return null;
 		}
@@ -154,10 +154,10 @@ class AvgRetentionService {
 		$cutoff = $this->computeCutoff(now: $now, duration: $retentionPeriod);
 		if ($cutoff === null) {
 			$this->logger->warning(
-				message: '[AVG retention] Unparseable bewaartermijn — skipping activity',
+				message: '[AVG retention] Unparseable retentionPeriod — skipping activity',
 				context: [
 					'activity' => $activity->getUuid(),
-					'bewaartermijn' => $retentionPeriod,
+					'retentionPeriod' => $retentionPeriod,
 				]
 			);
 			return null;
@@ -178,8 +178,8 @@ class AvgRetentionService {
 
 		return [
 			'uuid' => $activity->getUuid(),
-			'naam' => $activity->getNaam(),
-			'bewaartermijn' => $retentionPeriod,
+			'name' => $activity->getName(),
+			'retentionPeriod' => $retentionPeriod,
 			'cutoff' => $cutoff->format('c'),
 			'matchedObjects' => count($candidates),
 			'erased' => $erased,
@@ -188,7 +188,7 @@ class AvgRetentionService {
 	}//end processActivity()
 
 	/**
-	 * Compute the cut-off timestamp for a bewaartermijn duration.
+	 * Compute the cut-off timestamp for a retentionPeriod duration.
 	 *
 	 * Accepts ISO-8601 duration syntax (`P10Y`, `P30D`, `P6M`) — the
 	 * canonical AVG / NEN-2082 representation. Returns null on parse
@@ -302,12 +302,17 @@ class AvgRetentionService {
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
 	private function erasePastRetention(array $candidates, Verwerkingsactiviteit $activity): int {
+		// New writes use the renamed `retentionPeriod` key (verwerkingsregister-i18n); already
+		// -persisted historical `deleted` blobs keep their old `bewaartermijn` key unrewritten —
+		// they are point-in-time compliance-evidence snapshots (see design.md). The `reason` tag
+		// itself is left as `avg-bewaartermijn` — a stable internal category value, not a field
+		// identifier, out of this rename's scope.
 		$deletionData = [
 			'deletedBy' => 'system',
 			'deletedAt' => (new DateTime())->format(DateTime::ATOM),
 			'reason' => 'avg-bewaartermijn',
 			'activityUuid' => $activity->getUuid(),
-			'bewaartermijn' => $activity->getBewaartermijn(),
+			'retentionPeriod' => $activity->getRetentionPeriod(),
 		];
 
 		$erased = 0;

@@ -445,10 +445,10 @@ class DsarServiceIntegrationTest extends TestCase {
 
 	private function makeDsarActivity(string $code): Verwerkingsactiviteit {
 		$entity = new Verwerkingsactiviteit();
-		$entity->setNaam('phpunit-dsar-activity-' . uniqid());
+		$entity->setName('phpunit-dsar-activity-' . uniqid());
 		$entity->setCode($code);
-		$entity->setDoelbinding('Process data-subject access requests under AVG art 12-22');
-		$entity->setRechtsgrond('wettelijke_verplichting');
+		$entity->setPurpose('Process data-subject access requests under AVG art 12-22');
+		$entity->setLegalBasis('legal_obligation');
 		$entity->setStatus('published');
 
 		$persisted = $this->vrwMapper->insert($entity);

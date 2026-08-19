@@ -101,15 +101,22 @@ class FlowService {
 	 * List the caller's flows, newest first.
 	 *
 	 * @param string|null $app Restrict to one owning app id.
+	 * @param string|null $applicationSlug Restrict to one OpenBuild virtual-app slug.
 	 * @param boolean|null $enabled Restrict to enabled or disabled flows.
 	 * @param integer $limit Page size.
 	 * @param integer $offset Page offset.
 	 *
 	 * @return array<int, Flow> The flows visible to the caller.
 	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
 	 */
-	public function findAll(?string $app = null, ?bool $enabled = null, int $limit = 100, int $offset = 0): array {
+	public function findAll(
+		?string $app = null,
+		?string $applicationSlug = null,
+		?bool $enabled = null,
+		int $limit = 100,
+		int $offset = 0,
+	): array {
 		$organisation = $this->activeOrganisation();
 		if ($organisation === null) {
 			// No resolvable tenant means no flows, never every tenant's flows.
@@ -118,6 +125,7 @@ class FlowService {
 
 		return $this->mapper->findAllFlows(
 			app: $app,
+			applicationSlug: $applicationSlug,
 			organisation: $organisation,
 			enabled: $enabled,
 			limit: $limit,
@@ -130,18 +138,19 @@ class FlowService {
 	 * Count the flows visible to the caller.
 	 *
 	 * @param string|null $app Restrict to one owning app id.
+	 * @param string|null $applicationSlug Restrict to one OpenBuild virtual-app slug.
 	 *
 	 * @return integer The number of matching flows.
 	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
 	 */
-	public function count(?string $app = null): int {
+	public function count(?string $app = null, ?string $applicationSlug = null): int {
 		$organisation = $this->activeOrganisation();
 		if ($organisation === null) {
 			return 0;
 		}
 
-		return $this->mapper->countFlows(app: $app, organisation: $organisation);
+		return $this->mapper->countFlows(app: $app, applicationSlug: $applicationSlug, organisation: $organisation);
 	}//end count()
 
 	/**
@@ -315,6 +324,7 @@ class FlowService {
 			'executionMode' => 'setExecutionMode',
 			'notes' => 'setNotes',
 			'comment' => 'setComment',
+			'applicationSlug' => 'setApplicationSlug',
 		];
 
 		// A flow authored as a definition file carries its rationale under the

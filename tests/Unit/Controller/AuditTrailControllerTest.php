@@ -265,9 +265,9 @@ class AuditTrailControllerTest extends TestCase {
 		$this->assertEquals(50, $data['brokenAt']);
 	}
 
-	// ── Verwerkingsregister tests ──
+	// ── ProcessingActivities tests ──
 
-	public function testVerwerkingsregisterSuccess(): void {
+	public function testProcessingActivitiesSuccess(): void {
 		$this->request->method('getParam')
 			->willReturnMap([
 				['organisationId', null, null],
@@ -284,7 +284,7 @@ class AuditTrailControllerTest extends TestCase {
 
 		$this->auditTrailMapper->method('getProcessingActivities')->willReturn($activities);
 
-		$result = $this->controller->verwerkingsregister();
+		$result = $this->controller->processingActivities();
 
 		$this->assertEquals(200, $result->getStatus());
 		$data = $result->getData();
@@ -292,7 +292,7 @@ class AuditTrailControllerTest extends TestCase {
 		$this->assertEquals('pa-001', $data[0]['processingActivityId']);
 	}
 
-	public function testVerwerkingsregisterEmpty(): void {
+	public function testProcessingActivitiesEmpty(): void {
 		$this->request->method('getParam')
 			->willReturnMap([
 				['organisationId', null, null],
@@ -300,15 +300,15 @@ class AuditTrailControllerTest extends TestCase {
 
 		$this->auditTrailMapper->method('getProcessingActivities')->willReturn([]);
 
-		$result = $this->controller->verwerkingsregister();
+		$result = $this->controller->processingActivities();
 
 		$this->assertEquals(200, $result->getStatus());
 		$this->assertSame([], $result->getData());
 	}
 
-	// ── Inzageverzoek tests ──
+	// ── SubjectAuditTrail tests ──
 
-	public function testInzageverzoekSuccess(): void {
+	public function testSubjectAuditTrailSuccess(): void {
 		$this->request->method('getParam')
 			->willReturnMap([
 				['identifier', null, '123456789'],
@@ -319,33 +319,33 @@ class AuditTrailControllerTest extends TestCase {
 			'totalEntries' => 5,
 		]);
 
-		$result = $this->controller->inzageverzoek();
+		$result = $this->controller->subjectAuditTrail();
 
 		$this->assertEquals(200, $result->getStatus());
 		$data = $result->getData();
 		$this->assertEquals(5, $data['totalEntries']);
 	}
 
-	public function testInzageverzoekMissingIdentifier(): void {
+	public function testSubjectAuditTrailMissingIdentifier(): void {
 		$this->request->method('getParam')
 			->willReturnMap([
 				['identifier', null, null],
 			]);
 
-		$result = $this->controller->inzageverzoek();
+		$result = $this->controller->subjectAuditTrail();
 
 		$this->assertEquals(400, $result->getStatus());
 		$data = $result->getData();
 		$this->assertEquals('identifier parameter is required', $data['error']);
 	}
 
-	public function testInzageverzoekEmptyIdentifier(): void {
+	public function testSubjectAuditTrailEmptyIdentifier(): void {
 		$this->request->method('getParam')
 			->willReturnMap([
 				['identifier', null, ''],
 			]);
 
-		$result = $this->controller->inzageverzoek();
+		$result = $this->controller->subjectAuditTrail();
 
 		$this->assertEquals(400, $result->getStatus());
 	}
