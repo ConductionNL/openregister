@@ -262,4 +262,46 @@ final class FlowApplicationSlugRoundTripTest extends TestCase {
 
 	}//end testAnExplicitNullClearsTheApplicationSlug()
 
+	/**
+	 * `FlowService::findAll()` forwards `applicationSlug` straight through to
+	 * the mapper, alongside the organisation it always applies.
+	 *
+	 * Every other test in this file drives `save()`; `findAll()`/`count()` are
+	 * only otherwise exercised with `FlowService` itself mocked away (in
+	 * `FlowControllerTest`), which would leave this pass-through unverified
+	 * against the real method body.
+	 *
+	 * @return void
+	 */
+	public function testFindAllForwardsTheApplicationSlugFilterToTheMapper(): void {
+		$mapper = $this->createMock(FlowMapper::class);
+		$mapper->expects($this->once())
+			->method('findAllFlows')
+			->with(null, 'hydra', self::ORGANISATION, null, 100, 0)
+			->willReturn([]);
+
+		$result = $this->serviceWith($mapper, $this->organisationContainer())->findAll(app: null, applicationSlug: 'hydra');
+
+		$this->assertSame([], $result);
+
+	}//end testFindAllForwardsTheApplicationSlugFilterToTheMapper()
+
+	/**
+	 * `FlowService::count()` forwards `applicationSlug` the same way.
+	 *
+	 * @return void
+	 */
+	public function testCountForwardsTheApplicationSlugFilterToTheMapper(): void {
+		$mapper = $this->createMock(FlowMapper::class);
+		$mapper->expects($this->once())
+			->method('countFlows')
+			->with(null, 'hydra', self::ORGANISATION)
+			->willReturn(3);
+
+		$result = $this->serviceWith($mapper, $this->organisationContainer())->count(app: null, applicationSlug: 'hydra');
+
+		$this->assertSame(3, $result);
+
+	}//end testCountForwardsTheApplicationSlugFilterToTheMapper()
+
 }//end class
