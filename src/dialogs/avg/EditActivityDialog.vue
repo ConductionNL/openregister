@@ -250,12 +250,10 @@ export default {
 				retentionPeriod: activity?.retentionPeriod ?? '',
 				status: activity?.status ?? 'concept',
 				dataSubjectCategories: activity?.dataSubjectCategories ?? [],
-				personalDataCategories:
-					activity?.personalDataCategories ?? [],
+				personalDataCategories: activity?.personalDataCategories ?? [],
 
 				technicalMeasures: activity?.technicalMeasures ?? '',
-				organisationalMeasures:
-					activity?.organisationalMeasures ?? '',
+				organisationalMeasures: activity?.organisationalMeasures ?? '',
 			}
 		},
 

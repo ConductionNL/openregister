@@ -76,7 +76,6 @@ class Version1Date20260818230000 extends SimpleMigrationStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param IOutput $output unused, kept for parity with sibling migrations.
 	 * @param IDBConnection $connection Database connection used for the data copy in postSchemaChange.
 	 */
 	public function __construct(
@@ -96,11 +95,11 @@ class Version1Date20260818230000 extends SimpleMigrationStep {
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 
-		if ($schema->hasTable(tableName: 'openregister_verwerkingsactiviteiten') === false) {
+		if ($schema->hasTable('openregister_verwerkingsactiviteiten') === false) {
 			return null;
 		}
 
-		$table = $schema->getTable(tableName: 'openregister_verwerkingsactiviteiten');
+		$table = $schema->getTable('openregister_verwerkingsactiviteiten');
 
 		// Type/length must mirror each old column's definition (Version1Date20260430160000).
 		$newColumnTypes = [
@@ -120,8 +119,8 @@ class Version1Date20260818230000 extends SimpleMigrationStep {
 		];
 
 		foreach ($newColumnTypes as $columnName => [$typeName, $columnOptions]) {
-			if ($table->hasColumn(columnName: $columnName) === false) {
-				$table->addColumn(name: $columnName, typeName: $typeName, options: $columnOptions);
+			if ($table->hasColumn($columnName) === false) {
+				$table->addColumn($columnName, $typeName, $columnOptions);
 			}
 		}
 
@@ -141,48 +140,23 @@ class Version1Date20260818230000 extends SimpleMigrationStep {
 	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
 		$schema = $schemaClosure();
 
-		if ($schema->hasTable(tableName: 'openregister_verwerkingsactiviteiten') === false) {
+		if ($schema->hasTable('openregister_verwerkingsactiviteiten') === false) {
 			return;
 		}
 
-		$table = $schema->getTable(tableName: 'openregister_verwerkingsactiviteiten');
+		$table = $schema->getTable('openregister_verwerkingsactiviteiten');
 
 		foreach (self::COLUMN_MAP as $oldColumn => $newColumn) {
-			if ($table->hasColumn(columnName: $oldColumn) === false
-				|| $table->hasColumn(columnName: $newColumn) === false
+			if ($table->hasColumn($oldColumn) === false
+				|| $table->hasColumn($newColumn) === false
 			) {
 				continue;
 			}
 
 			if ($oldColumn === 'rechtsgrond') {
-				// Value remap (Dutch legal-basis term -> GDPR Art. 6(1)(a)-(f) English term),
-				// defensive for all 6 possible values. A legacy value outside the known 6 is
-				// copied across UNCHANGED rather than dropped, and logged for operator follow-up.
-				foreach (self::LEGAL_BASIS_VALUE_MAP as $oldValue => $newValue) {
-					$this->connection->executeStatement(
-						'UPDATE `*PREFIX*openregister_verwerkingsactiviteiten` SET `legal_basis` = ? WHERE `rechtsgrond` = ?',
-						[$newValue, $oldValue]
-					);
-				}
-
-				$unmappedCount = $this->connection->executeQuery(
-					'SELECT COUNT(*) AS c FROM `*PREFIX*openregister_verwerkingsactiviteiten` WHERE `legal_basis` IS NULL AND `rechtsgrond` IS NOT NULL'
-				)->fetchOne();
-
-				if ((int)$unmappedCount > 0) {
-					$output->warning(
-						sprintf(
-							'%d row(s) in openregister_verwerkingsactiviteiten had a `rechtsgrond` value outside the known 6 (toestemming/overeenkomst/wettelijke_verplichting/vitaal_belang/publieke_taak/gerechtvaardigd_belang). Copying it across unchanged into `legal_basis` rather than dropping it.',
-							(int)$unmappedCount
-						)
-					);
-					$this->connection->executeStatement(
-						'UPDATE `*PREFIX*openregister_verwerkingsactiviteiten` SET `legal_basis` = `rechtsgrond` WHERE `legal_basis` IS NULL AND `rechtsgrond` IS NOT NULL'
-					);
-				}
-
+				$this->remapLegalBasis(output: $output);
 				continue;
-			}//end if
+			}
 
 			$this->connection->executeStatement(
 				sprintf(
@@ -193,12 +167,62 @@ class Version1Date20260818230000 extends SimpleMigrationStep {
 			);
 		}//end foreach
 
+		// Drop via raw SQL, not $table->dropColumn(): mutating the Doctrine Table object
+		// fetched here is never applied by the migration framework — postSchemaChange has no
+		// return value for it to diff against, unlike changeSchema's returned ISchemaWrapper.
+		// Confirmed live: a dropColumn() call here silently no-ops (columns survived a
+		// successful, error-free migration run) until switched to executeStatement().
 		$schema = $schemaClosure();
-		$table = $schema->getTable(tableName: 'openregister_verwerkingsactiviteiten');
+		$table = $schema->getTable('openregister_verwerkingsactiviteiten');
 		foreach (array_keys(self::COLUMN_MAP) as $oldColumn) {
-			if ($table->hasColumn(columnName: $oldColumn) === true) {
-				$table->dropColumn(name: $oldColumn);
+			if ($table->hasColumn($oldColumn) === true) {
+				$this->connection->executeStatement(
+					sprintf(
+						'ALTER TABLE `*PREFIX*openregister_verwerkingsactiviteiten` DROP COLUMN `%s`',
+						$oldColumn
+					)
+				);
 			}
 		}
 	}//end postSchemaChange()
+
+	/**
+	 * Remap `rechtsgrond` (Dutch legal-basis term) into `legal_basis` (GDPR Art. 6(1)(a)-(f)
+	 * English term), defensive for all 6 possible values. A legacy value outside the known 6 is
+	 * copied across UNCHANGED rather than dropped, and logged for operator follow-up.
+	 *
+	 * @param IOutput $output Migration output sink, used to warn on an unrecognized legacy value.
+	 *
+	 * @return void
+	 */
+	private function remapLegalBasis(IOutput $output): void {
+		foreach (self::LEGAL_BASIS_VALUE_MAP as $oldValue => $newValue) {
+			$this->connection->executeStatement(
+				'UPDATE `*PREFIX*openregister_verwerkingsactiviteiten` SET `legal_basis` = ? WHERE `rechtsgrond` = ?',
+				[$newValue, $oldValue]
+			);
+		}
+
+		$unmappedCount = $this->connection->executeQuery(
+			'SELECT COUNT(*) AS c FROM `*PREFIX*openregister_verwerkingsactiviteiten` '
+			. 'WHERE `legal_basis` IS NULL AND `rechtsgrond` IS NOT NULL'
+		)->fetchOne();
+
+		if ((int)$unmappedCount === 0) {
+			return;
+		}
+
+		$output->warning(
+			sprintf(
+				'%d row(s) had a rechtsgrond value outside the known 6 legal-basis values. '
+				. 'Copying it across unchanged into legal_basis rather than dropping it.',
+				(int)$unmappedCount
+			)
+		);
+		$this->connection->executeStatement(
+			'UPDATE `*PREFIX*openregister_verwerkingsactiviteiten` '
+			. 'SET `legal_basis` = `rechtsgrond` '
+			. 'WHERE `legal_basis` IS NULL AND `rechtsgrond` IS NOT NULL'
+		);
+	}//end remapLegalBasis()
 }//end class

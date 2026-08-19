@@ -110,6 +110,9 @@ class VocabularyController extends Controller {
 	 *
 	 * Resolve a single concept by its exact durable source uri.
 	 *
+	 * Published vocabulary — resolution is the point of it, so the rate limits
+	 * on this method are runaway ceilings rather than gates.
+	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 * @PublicPage
@@ -120,8 +123,6 @@ class VocabularyController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
-	// Published vocabulary — resolution is the point of it, so these are
-	// runaway ceilings rather than gates.
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function resolveByUri(): JSONResponse {
 		$uri = trim((string)$this->request->getParam('uri', ''));

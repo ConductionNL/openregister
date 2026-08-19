@@ -15,8 +15,11 @@
 - [x] 1.2 Add contract migration (later timestamp, same PR): drop the 13 old Dutch-named columns,
   each guarded by `hasColumn()`. **Implementation note**: folded into 1.1's single migration file —
   see note above.
-- [ ] 1.3 Run both migrations against the shared dev Postgres instance and verify all 7 existing
-  rows survive with correctly remapped `legal_basis` values.
+- [x] 1.3 Run both migrations against the shared dev Postgres instance and verify all 7 existing
+  rows survive with correctly remapped `legal_basis` values. **Verified**: queried the live table
+  directly via `psql` after the migration completed — all 7 rows present, `legal_basis` values
+  correctly remapped (e.g. `wettelijke_verplichting` → `legal_obligation`), and the 13 old Dutch
+  columns confirmed dropped.
 
 ## 2. Backend entity, mapper, and vocabulary rename
 
@@ -89,16 +92,22 @@
   untouched since only columns are renamed. Note: `DsarController` has no dedicated controller-level
   test today (only its underlying `DsarService` is covered) — a pre-existing coverage gap, not
   something this rename needs to fix.
-- [ ] 6.2 Run the full PHPUnit suite and confirm all 4 updated test files pass against the migrated
-  schema.
+- [x] 6.2 Run the full PHPUnit suite and confirm all 4 updated test files pass against the migrated
+  schema. **Verified**: CI's PHPUnit matrix (PHP 8.3/8.4 × NC stable32/33/34, pgsql) passed on
+  PR #2555, #2557, #2559 and #2562.
 
 ## 7. Verification
 
-- [ ] 7.1 Manually smoke-test `EditActivityDialog.vue` create/edit/save and `AvgIndex.vue`'s list
+- [x] 7.1 Manually smoke-test `EditActivityDialog.vue` create/edit/save and `AvgIndex.vue`'s list
   view against the shared dev instance to confirm the renamed fields round-trip correctly through
-  the renamed routes.
-- [ ] 7.2 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) and confirm no new findings
-  from the rename.
+  the renamed routes. **Verified live via Playwright**: created a processing activity through the
+  "New activity" dialog (`name`, `purpose`, `legalBasis: public_task` all round-tripped correctly
+  through `POST /api/avg/processing-activities`), then archived it via the list view's Actions
+  menu (`DELETE /api/avg/processing-activities/{uuid}` → 204, status flips to `archived`). Also
+  exercised the DSAR panel's `GET /api/avg/access` (renamed from `inzage`) end-to-end.
+- [x] 7.2 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) and confirm no new findings
+  from the rename. **Verified**: CI's PHP Quality jobs (phpcs, phpmd, psalm, phpstan) passed on
+  PR #2555, #2557, #2559 and #2562.
 
 ## Acceptance Criteria
 
