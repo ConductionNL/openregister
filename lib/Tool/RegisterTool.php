@@ -104,6 +104,8 @@ class RegisterTool extends AbstractTool {
 		return [
 			[
 				'name' => 'list_registers',
+				'subject' => 'register',
+				'action' => 'list',
 				'description' => 'Get a list of all accessible registers',
 				'parameters' => [
 					'type' => 'object',
@@ -122,6 +124,8 @@ class RegisterTool extends AbstractTool {
 			],
 			[
 				'name' => 'get_register',
+				'subject' => 'register',
+				'action' => 'get',
 				'description' => 'Get details about a specific register by ID or slug',
 				'parameters' => [
 					'type' => 'object',
@@ -136,6 +140,8 @@ class RegisterTool extends AbstractTool {
 			],
 			[
 				'name' => 'create_register',
+				'subject' => 'register',
+				'action' => 'create',
 				'description' => 'Create a new register',
 				'parameters' => [
 					'type' => 'object',
@@ -158,6 +164,8 @@ class RegisterTool extends AbstractTool {
 			],
 			[
 				'name' => 'update_register',
+				'subject' => 'register',
+				'action' => 'update',
 				'description' => 'Update an existing register',
 				'parameters' => [
 					'type' => 'object',
@@ -180,6 +188,8 @@ class RegisterTool extends AbstractTool {
 			],
 			[
 				'name' => 'delete_register',
+				'subject' => 'register',
+				'action' => 'delete',
 				'description' => 'Delete a register (only if it has no objects)',
 				'parameters' => [
 					'type' => 'object',

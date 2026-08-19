@@ -107,6 +107,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 		return [
 			[
 				'name' => 'list_applications',
+				'subject' => 'application',
+				'action' => 'list',
 				'description' => 'List all accessible applications with basic information.',
 				'parameters' => [
 					'type' => 'object',
@@ -125,6 +127,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 			],
 			[
 				'name' => 'get_application',
+				'subject' => 'application',
+				'action' => 'get',
 				'description' => 'Get detailed application information by UUID.',
 				'parameters' => [
 					'type' => 'object',
@@ -139,6 +143,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 			],
 			[
 				'name' => 'create_application',
+				'subject' => 'application',
+				'action' => 'create',
 				'description' => 'Create a new application with unique name.',
 				'parameters' => [
 					'type' => 'object',
@@ -161,6 +167,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 			],
 			[
 				'name' => 'update_application',
+				'subject' => 'application',
+				'action' => 'update',
 				'description' => 'Update application (owner/update permission required). Provide UUID and fields to update.',
 				'parameters' => [
 					'type' => 'object',
@@ -187,6 +195,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 			],
 			[
 				'name' => 'delete_application',
+				'subject' => 'application',
+				'action' => 'delete',
 				'description' => 'Permanently delete application (owner/delete permission required). Cannot be undone.',
 				'parameters' => [
 					'type' => 'object',
