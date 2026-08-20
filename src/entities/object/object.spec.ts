@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { TObject } from './object.types'
+
 import { ObjectEntity } from './object'
 import { mockObjectData } from './object.mock'
-import { TObject } from './object.types'
 
 describe('Object Entity', () => {
 	it('should create an Object entity with full data', () => {
@@ -60,7 +60,8 @@ describe('Object Entity', () => {
 		expect(object['@self'].created).toBe('2023-01-01T00:00:00Z')
 		expect(object['@self'].locked).toBe(null)
 		expect(object['@self'].owner).toBe(null)
-		expect(object.validate().success).toBe(true)
+		// id is min(1) — empty id must fail validation.
+		expect(object.validate().success).toBe(false)
 	})
 
 	it('should handle locked array and owner string', () => {
@@ -162,6 +163,7 @@ describe('Object Entity', () => {
 		expect(object['@self'].description).toBe(null)
 		expect(object['@self'].folder).toBe(null)
 		expect(object['@self'].validation).toBe(null)
-		expect(object.validate().success).toBe(true)
+		// id is min(1) — empty id must fail validation.
+		expect(object.validate().success).toBe(false)
 	})
 })

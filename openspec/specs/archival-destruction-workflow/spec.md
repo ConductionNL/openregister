@@ -1,18 +1,19 @@
 ---
-status: implemented
+status: done
 retrofit_extensions:
-  - "REQ-009"
+  - REQ-009
+  - REQ-010
+  - REQ-011
 ---
 
 # Archival Destruction Workflow
 
 ## Purpose
 
+@e2e exclude backend workflow/archival — covered by PHPUnit
+
 Implement a NEN 15489 compliant destruction workflow for register objects, providing automated destruction scheduling via background jobs, multi-step approval workflows with destruction lists, legal hold management, destruction certificate generation, and archiefactiedatum calculation using configurable afleidingswijzen. This capability builds on the archivering-vernietiging spec and integrates with the immutable audit trail and deletion audit trail for legally required evidence trails.
-
 ## Requirements
-
-
 
 ### REQ-001: DestructionCheckJob and Destruction List Generation
 
@@ -269,3 +270,99 @@ The `DestructionCheckJob` MUST scan for objects whose `archiefactiedatum` falls 
 - **GIVEN** object `zaak-333` has `archiefnominatie: bewaren` and `archiefactiedatum` within the lead window
 - **WHEN** the `DestructionCheckJob` runs
 - **THEN** the notification subject MUST be "Object requires e-Depot transfer" rather than "Object approaching destruction date"
+
+### REQ-010: (REMOVED 2026-07-14) ArchivalService::setRetentionMetadata
+
+**Removed** with the `ArchivalService` class in `revive-or-dead-capabilities` (openregister#393).
+
+This requirement was a *retrofit* — reverse-engineered from observed code — and it
+documented a method that **never ran**: `ArchivalService` had zero references anywhere
+in `lib/` (no DI registration, controller, route, or job), so no API or job ever invoked
+`setRetentionMetadata()`. The spec claimed a retention-metadata validation write-path that
+the product did not actually perform.
+
+Rather than keep a requirement whose implementation nothing calls, the class and the
+requirement are removed together. **No live equivalent exists**: OpenRegister currently
+does not validate `archiefnominatie` / `archiefstatus` / `archiefactiedatum` on the object
+write path. If that validation is wanted, it must be wired for real (e.g. a listener on
+`ObjectCreatingEvent` / `ObjectUpdatingEvent`) — tracked as a follow-up on openregister#393.
+
+### REQ-011: Rejected/excluded objects have their archiefactiedatum extended
+
+When a destruction-list rejection or partial-approval exclusion requires extending an
+object's retention, the system MUST recompute `retention.archiefactiedatum` and persist it,
+so an object removed from a destruction list is not immediately re-selected by the next
+`DestructionCheckJob` run. Failures MUST be caught and logged rather than propagating, so
+one bad object does not abort a batch rejection of N objects.
+
+**Implementation (updated 2026-07-14):** this capability is provided by the live retention
+path — `RetentionService::extendArchiefactiedatum()` (invoked by `RetentionController` on
+reject and on partial-approval exclusion) and `DestructionService::extendArchiefactiedatum()`
+(invoked by `rejectList()` / `handlePartialApproval()`). It was previously attributed to
+`ArchivalService::extendRetentionForObject()`, which was dead code in an orphaned class and
+was removed in `revive-or-dead-capabilities`; the behaviour itself is unchanged.
+
+#### Scenario: A rejected object's archiefactiedatum is extended
+- **GIVEN** a destruction list containing object `zaak-111`
+- **WHEN** an archivist rejects the list
+- **THEN** `zaak-111`'s `retention.archiefactiedatum` MUST be extended by the configured extension period
+- **AND** the object MUST NOT appear on the next destruction list generated for the same date
+
+#### Scenario: An object excluded during partial approval is extended
+- **GIVEN** a destruction list containing `zaak-111` and `zaak-222`
+- **WHEN** an archivist approves the list but excludes `zaak-222` with a reason
+- **THEN** `zaak-222`'s `retention.archiefactiedatum` MUST be extended
+- **AND** the recorded exclusion reason MUST be retained on the list
+
+#### Scenario: A failure to extend one object does not abort the batch
+- **GIVEN** a destruction list of N objects being rejected
+- **AND** extending one of them raises an exception
+- **THEN** the exception MUST be caught and logged as a warning
+- **AND** the remaining N-1 objects MUST still be processed
+
+### Requirement: Archival approve route executes destruction
+
+Approving a destruction list through `POST /api/archival/destruction-lists/{id}/approve`
+MUST persist the approval, MUST queue `DestructionExecutionJob` with the argument key that
+job actually reads (`destructionListUuid`), and MUST record the approving archivist under
+the canonical `userId` key so the resulting *verklaring van vernietiging* names them.
+
+Before `revive-or-dead-capabilities` (openregister#393) the route satisfied none of these:
+the approval was returned to the caller but never written back; the job was queued under a
+key it does not read, so it returned early on every run and destroyed nothing; and approvals
+were recorded as `approvedBy` while the certificate generator projects
+`array_column($approvals, 'userId')` — which would have produced a certificate with an empty
+approver list even once the job ran.
+
+#### Scenario: Approval queues an execution job the job can act on
+- **GIVEN** a destruction list with uuid `list-uuid-42` in status `in_review`
+- **WHEN** an archivist approves it
+- **THEN** `DestructionExecutionJob` MUST be queued with `['destructionListUuid' => 'list-uuid-42']`
+- **AND** the list MUST be persisted with status `approved`
+
+#### Scenario: The destruction certificate names the approving archivist
+- **GIVEN** archivist `archivaris-1` approved a list of 3 objects
+- **WHEN** the execution job destroys them and generates the certificate
+- **THEN** the certificate's `approvedBy` MUST be `['archivaris-1']` — never empty
+- **AND** `totalDestroyed` MUST be `3`
+- **AND** `groupedBySchema` MUST count the destroyed objects per schema + selectielijst classificatie
+- **AND** `selectielijstBron` MUST carry the selectielijst source references
+- **AND** `complianceStatement` MUST cite the Archiefwet 1995
+
+### Requirement: Archival and destruction-scheduling configuration API
+The system SHALL expose an admin-gated API for reading and writing archival settings —
+destruction scheduling, selectielijst configuration, and related dials.
+`ConfigurationSettingsController` provides `getArchivalSettings` (delegating to
+`SettingsService::getArchivalSettingsOnly()`) and `updateArchivalSettings` (delegating to
+`SettingsService::updateArchivalSettingsOnly()`). Both return HTTP 500 with an `error`
+field on service failure.
+
+#### Scenario: Read archival settings
+- **WHEN** `getArchivalSettings` is called
+- **THEN** it MUST return the archival/destruction configuration from `SettingsService::getArchivalSettingsOnly()`
+
+#### Scenario: Update archival settings
+- **GIVEN** an admin posts updated destruction-scheduling values
+- **WHEN** `updateArchivalSettings` runs
+- **THEN** it MUST persist them via `SettingsService::updateArchivalSettingsOnly()` and return the result
+

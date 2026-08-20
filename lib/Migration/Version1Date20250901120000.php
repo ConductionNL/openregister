@@ -36,44 +36,40 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @package OCA\OpenRegister\Migration
  */
-class Version1Date20250901120000 extends SimpleMigrationStep
-{
-    /**
-     * Add summary column to objects table
-     *
-     * @param IOutput                 $output        Migration output interface
-     * @param Closure                 $schemaClosure Schema closure that returns ISchemaWrapper
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return null|ISchemaWrapper Updated schema or null
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        $schema = $schemaClosure();
+class Version1Date20250901120000 extends SimpleMigrationStep {
+	/**
+	 * Add summary column to objects table
+	 *
+	 * @param IOutput $output Migration output interface
+	 * @param Closure $schemaClosure Schema closure that returns ISchemaWrapper
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return null|ISchemaWrapper Updated schema or null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		$schema = $schemaClosure();
 
-        // Check if the objects table exists.
-        if ($schema->hasTable('openregister_objects') === false) {
-            return null;
-        }
+		// Check if the objects table exists.
+		if ($schema->hasTable('openregister_objects') === false) {
+			return null;
+		}
 
-        $table = $schema->getTable('openregister_objects');
+		$table = $schema->getTable('openregister_objects');
 
-        // Add summary column if it doesn't exist.
-        if ($table->hasColumn('summary') === false) {
-            $table->addColumn(
-                'summary',
-                'text',
-                [
-                    'notnull' => false,
-                    'default' => null,
-                    'comment' => 'Summary of the object extracted from configured schema property',
-                ]
-            );
-            $output->info(message: 'Added summary column to openregister_objects table');
-        }
+		// Add summary column if it doesn't exist.
+		if ($table->hasColumn('summary') === false) {
+			$table->addColumn(
+				'summary',
+				'text',
+				[
+					'notnull' => false,
+					'default' => null,
+					'comment' => 'Summary of the object extracted from configured schema property',
+				]
+			);
+			$output->info(message: 'Added summary column to openregister_objects table');
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

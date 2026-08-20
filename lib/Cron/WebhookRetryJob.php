@@ -7,6 +7,9 @@
  * based on their next_retry_at timestamp. Uses exponential backoff
  * with increasing intervals between retries.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Cron
  * @package  OCA\OpenRegister\Cron
  *
@@ -24,7 +27,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Cron;
 
 use DateTime;
-use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\WebhookService;
@@ -41,210 +43,208 @@ use Psr\Log\LoggerInterface;
  * @category Cron
  * @package  OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  *
  * @psalm-suppress UnusedClass
  */
-class WebhookRetryJob extends TimedJob
-{
-    /**
-     * Default interval: 5 minutes
-     */
-    private const DEFAULT_INTERVAL = 300;
+class WebhookRetryJob extends TimedJob {
+	/**
+	 * Default interval: 5 minutes
+	 */
+	private const DEFAULT_INTERVAL = 300;
 
-    /**
-     * Webhook mapper
-     *
-     * @var WebhookMapper
-     */
-    private WebhookMapper $webhookMapper;
+	/**
+	 * Webhook mapper
+	 *
+	 * @var WebhookMapper
+	 */
+	private WebhookMapper $webhookMapper;
 
-    /**
-     * Webhook log mapper
-     *
-     * @var WebhookLogMapper
-     */
-    private WebhookLogMapper $webhookLogMapper;
+	/**
+	 * Webhook log mapper
+	 *
+	 * @var WebhookLogMapper
+	 */
+	private WebhookLogMapper $webhookLogMapper;
 
-    /**
-     * Webhook service
-     *
-     * @var WebhookService
-     */
-    private WebhookService $webhookService;
+	/**
+	 * Webhook service
+	 *
+	 * @var WebhookService
+	 */
+	private WebhookService $webhookService;
 
-    /**
-     * Logger
-     *
-     * @var LoggerInterface
-     */
-    private LoggerInterface $logger;
+	/**
+	 * Logger
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
 
-    /**
-     * Constructor
-     *
-     * @param ITimeFactory     $time             Time factory
-     * @param WebhookMapper    $webhookMapper    Webhook mapper
-     * @param WebhookLogMapper $webhookLogMapper Webhook log mapper
-     * @param WebhookService   $webhookService   Webhook service
-     * @param LoggerInterface  $logger           Logger
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-13
-     */
-    public function __construct(
-        ITimeFactory $time,
-        WebhookMapper $webhookMapper,
-        WebhookLogMapper $webhookLogMapper,
-        WebhookService $webhookService,
-        LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
+	/**
+	 * Constructor
+	 *
+	 * @param ITimeFactory $time Time factory
+	 * @param WebhookMapper $webhookMapper Webhook mapper
+	 * @param WebhookLogMapper $webhookLogMapper Webhook log mapper
+	 * @param WebhookService $webhookService Webhook service
+	 * @param LoggerInterface $logger Logger
+	 *
+	 * @spec openspec/specs/webhook-payload-mapping/spec.md
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		WebhookMapper $webhookMapper,
+		WebhookLogMapper $webhookLogMapper,
+		WebhookService $webhookService,
+		LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
 
-        $this->webhookMapper    = $webhookMapper;
-        $this->webhookLogMapper = $webhookLogMapper;
-        $this->webhookService   = $webhookService;
-        $this->logger           = $logger;
+		$this->webhookMapper = $webhookMapper;
+		$this->webhookLogMapper = $webhookLogMapper;
+		$this->webhookService = $webhookService;
+		$this->logger = $logger;
 
-        // Set interval to 5 minutes.
-        $this->setInterval(seconds: self::DEFAULT_INTERVAL);
-    }//end __construct()
+		// Set interval to 5 minutes.
+		$this->setInterval(seconds: self::DEFAULT_INTERVAL);
+	}//end __construct()
 
-    /**
-     * Run the retry job
-     *
-     * Finds failed webhook logs that are ready for retry and processes them.
-     *
-     * @param mixed $argument Job arguments (unused)
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-13
-     */
-    protected function run($argument): void
-    {
-        $now = new DateTime();
+	/**
+	 * Run the retry job
+	 *
+	 * Finds failed webhook logs that are ready for retry and processes them.
+	 *
+	 * @param mixed $argument Job arguments (unused)
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 *
+	 * @spec openspec/specs/webhook-payload-mapping/spec.md
+	 */
+	protected function run($argument): void {
+		$now = new DateTime();
 
-        $this->logger->debug(
-            message: '[WebhookRetryJob] Checking for webhook retries',
-            context: [
-                'file'      => __FILE__,
-                'line'      => __LINE__,
-                'timestamp' => $now->format('c'),
-            ]
-        );
+		$this->logger->debug(
+			message: '[WebhookRetryJob] Checking for webhook retries',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'timestamp' => $now->format('c'),
+			]
+		);
 
-        // Find failed logs ready for retry.
-        $failedLogs = $this->webhookLogMapper->findFailedForRetry($now);
+		// Find failed logs ready for retry.
+		$failedLogs = $this->webhookLogMapper->findFailedForRetry($now);
 
-        if (empty($failedLogs) === true) {
-            $this->logger->debug(
-                message: '[WebhookRetryJob] No webhook retries needed',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            return;
-        }
+		if (empty($failedLogs) === true) {
+			$this->logger->debug(
+				message: '[WebhookRetryJob] No webhook retries needed',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return;
+		}
 
-        $this->logger->info(
-            message: '[WebhookRetryJob] Processing webhook retries',
-            context: [
-                'file'  => __FILE__,
-                'line'  => __LINE__,
-                'count' => count($failedLogs),
-            ]
-        );
+		$this->logger->info(
+			message: '[WebhookRetryJob] Processing webhook retries',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'count' => count($failedLogs),
+			]
+		);
 
-        foreach ($failedLogs as $log) {
-            try {
-                // Get webhook.
-                $webhook = $this->webhookMapper->find($log->getWebhookId());
+		foreach ($failedLogs as $log) {
+			try {
+				// Get webhook.
+				$webhook = $this->webhookMapper->find($log->getWebhookId());
 
-                // Check if webhook is still enabled.
-                if ($webhook->getEnabled() === false) {
-                    $this->logger->debug(
-                        message: '[WebhookRetryJob] Skipping retry for disabled webhook',
-                        context: [
-                            'file'       => __FILE__,
-                            'line'       => __LINE__,
-                            'webhook_id' => $webhook->getId(),
-                            'log_id'     => $log->getId(),
-                        ]
-                    );
-                    continue;
-                }
+				// Check if webhook is still enabled.
+				if ($webhook->getEnabled() === false) {
+					$this->logger->debug(
+						message: '[WebhookRetryJob] Skipping retry for disabled webhook',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'webhook_id' => $webhook->getId(),
+							'log_id' => $log->getId(),
+						]
+					);
+					continue;
+				}
 
-                // Check if we've exceeded max retries.
-                if ($log->getAttempt() >= $webhook->getMaxRetries()) {
-                    $this->logger->warning(
-                        message: '[WebhookRetryJob] Webhook retry limit exceeded',
-                        context: [
-                            'file'        => __FILE__,
-                            'line'        => __LINE__,
-                            'webhook_id'  => $webhook->getId(),
-                            'log_id'      => $log->getId(),
-                            'attempt'     => $log->getAttempt(),
-                            'max_retries' => $webhook->getMaxRetries(),
-                        ]
-                    );
-                    continue;
-                }
+				// Check if we've exceeded max retries.
+				if ($log->getAttempt() >= $webhook->getMaxRetries()) {
+					$this->logger->warning(
+						message: '[WebhookRetryJob] Webhook retry limit exceeded',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'webhook_id' => $webhook->getId(),
+							'log_id' => $log->getId(),
+							'attempt' => $log->getAttempt(),
+							'max_retries' => $webhook->getMaxRetries(),
+						]
+					);
+					continue;
+				}
 
-                // Retry webhook delivery.
-                $this->logger->info(
-                    message: '[WebhookRetryJob] Retrying webhook delivery',
-                    context: [
-                        'file'       => __FILE__,
-                        'line'       => __LINE__,
-                        'webhook_id' => $webhook->getId(),
-                        'log_id'     => $log->getId(),
-                        'attempt'    => $log->getAttempt() + 1,
-                    ]
-                );
+				// Retry webhook delivery.
+				$this->logger->info(
+					message: '[WebhookRetryJob] Retrying webhook delivery',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'webhook_id' => $webhook->getId(),
+						'log_id' => $log->getId(),
+						'attempt' => $log->getAttempt() + 1,
+					]
+				);
 
-                $success = $this->webhookService->deliverWebhook(
-                    webhook: $webhook,
-                    eventName: $log->getEventClass(),
-                    payload: $log->getPayloadArray(),
-                    attempt: $log->getAttempt() + 1
-                );
+				$success = $this->webhookService->deliverWebhook(
+					webhook: $webhook,
+					eventName: $log->getEventClass(),
+					payload: $log->getPayloadArray(),
+					attempt: $log->getAttempt() + 1
+				);
 
-                if ($success === true) {
-                    $this->logger->info(
-                        message: '[WebhookRetryJob] Webhook retry succeeded',
-                        context: [
-                            'file'       => __FILE__,
-                            'line'       => __LINE__,
-                            'webhook_id' => $webhook->getId(),
-                            'log_id'     => $log->getId(),
-                        ]
-                    );
-                    continue;
-                }
+				if ($success === true) {
+					$this->logger->info(
+						message: '[WebhookRetryJob] Webhook retry succeeded',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'webhook_id' => $webhook->getId(),
+							'log_id' => $log->getId(),
+						]
+					);
+					continue;
+				}
 
-                $this->logger->warning(
-                    message: '[WebhookRetryJob] Webhook retry failed',
-                    context: [
-                        'file'       => __FILE__,
-                        'line'       => __LINE__,
-                        'webhook_id' => $webhook->getId(),
-                        'log_id'     => $log->getId(),
-                        'attempt'    => $log->getAttempt() + 1,
-                    ]
-                );
-            } catch (\Exception $e) {
-                $this->logger->error(
-                    message: '[WebhookRetryJob] Error processing webhook retry',
-                    context: [
-                        'file'   => __FILE__,
-                        'line'   => __LINE__,
-                        'log_id' => $log->getId(),
-                        'error'  => $e->getMessage(),
-                    ]
-                );
-            }//end try
-        }//end foreach
-    }//end run()
+				$this->logger->warning(
+					message: '[WebhookRetryJob] Webhook retry failed',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'webhook_id' => $webhook->getId(),
+						'log_id' => $log->getId(),
+						'attempt' => $log->getAttempt() + 1,
+					]
+				);
+			} catch (\Exception $e) {
+				$this->logger->error(
+					message: '[WebhookRetryJob] Error processing webhook retry',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'log_id' => $log->getId(),
+						'error' => $e->getMessage(),
+					]
+				);
+			}//end try
+		}//end foreach
+	}//end run()
 }//end class

@@ -5,10 +5,13 @@
  *
  * Listens to OpenRegister entity events and publishes corresponding activity events.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -16,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
+ * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
  */
 
 declare(strict_types=1);
@@ -41,74 +44,75 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @implements IEventListener<Event>
  */
-class ActivityEventListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param ActivityService $activityService The activity publishing service.
-     */
-    public function __construct(
-        private ActivityService $activityService,
-    ) {
-    }//end __construct()
+class ActivityEventListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param ActivityService $activityService The activity publishing service.
+	 */
+	public function __construct(
+		private ActivityService $activityService,
+	) {
+	}//end __construct()
 
-    /**
-     * Handle an incoming event and delegate to the appropriate ActivityService method.
-     *
-     * @param Event $event The dispatched event.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
-     */
-    public function handle(Event $event): void
-    {
-        if ($event instanceof ObjectCreatedEvent) {
-            $this->activityService->publishObjectCreated($event->getObject());
-            return;
-        }
+	/**
+	 * Handle an incoming event and delegate to the appropriate ActivityService method.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
+	 */
+	public function handle(Event $event): void {
+		if ($event instanceof ObjectCreatedEvent) {
+			$this->activityService->publishObjectCreated($event->getObject());
+			return;
+		}
 
-        if ($event instanceof ObjectUpdatedEvent) {
-            $this->activityService->publishObjectUpdated(
-                $event->getNewObject(),
-                $event->getOldObject()
-            );
-            return;
-        }
+		if ($event instanceof ObjectUpdatedEvent) {
+			$this->activityService->publishObjectUpdated(
+				$event->getNewObject(),
+				$event->getOldObject()
+			);
+			return;
+		}
 
-        if ($event instanceof ObjectDeletedEvent) {
-            $this->activityService->publishObjectDeleted($event->getObject());
-            return;
-        }
+		if ($event instanceof ObjectDeletedEvent) {
+			$this->activityService->publishObjectDeleted($event->getObject());
+			return;
+		}
 
-        if ($event instanceof RegisterCreatedEvent) {
-            $this->activityService->publishRegisterCreated($event->getRegister());
-            return;
-        }
+		if ($event instanceof RegisterCreatedEvent) {
+			$this->activityService->publishRegisterCreated($event->getRegister());
+			return;
+		}
 
-        if ($event instanceof RegisterUpdatedEvent) {
-            $this->activityService->publishRegisterUpdated($event->getNewRegister());
-            return;
-        }
+		if ($event instanceof RegisterUpdatedEvent) {
+			$this->activityService->publishRegisterUpdated($event->getNewRegister());
+			return;
+		}
 
-        if ($event instanceof RegisterDeletedEvent) {
-            $this->activityService->publishRegisterDeleted($event->getRegister());
-            return;
-        }
+		if ($event instanceof RegisterDeletedEvent) {
+			$this->activityService->publishRegisterDeleted($event->getRegister());
+			return;
+		}
 
-        if ($event instanceof SchemaCreatedEvent) {
-            $this->activityService->publishSchemaCreated($event->getSchema());
-            return;
-        }
+		if ($event instanceof SchemaCreatedEvent) {
+			$this->activityService->publishSchemaCreated($event->getSchema());
+			return;
+		}
 
-        if ($event instanceof SchemaUpdatedEvent) {
-            $this->activityService->publishSchemaUpdated($event->getNewSchema());
-            return;
-        }
+		if ($event instanceof SchemaUpdatedEvent) {
+			$this->activityService->publishSchemaUpdated($event->getNewSchema());
+			return;
+		}
 
-        if ($event instanceof SchemaDeletedEvent) {
-            $this->activityService->publishSchemaDeleted($event->getSchema());
-        }
-    }//end handle()
+		if ($event instanceof SchemaDeletedEvent) {
+			$this->activityService->publishSchemaDeleted($event->getSchema());
+		}
+	}//end handle()
 }//end class

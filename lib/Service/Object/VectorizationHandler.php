@@ -6,6 +6,9 @@
  * Handles vectorization operations for objects.
  * Acts as a bridge between ObjectsController and VectorizationService.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Objects\Handlers
  *
@@ -43,197 +46,193 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister\Service\Objects\Handlers
  */
-class VectorizationHandler
-{
-    /**
-     * Constructor
-     *
-     * @param VectorizationService $vectorizationService Vectorization service
-     * @param MagicMapper          $objectEntityMapper   Object entity mapper
-     * @param LoggerInterface      $logger               PSR-3 logger
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
-     */
-    public function __construct(
-        private readonly VectorizationService $vectorizationService,
-        private readonly MagicMapper $objectEntityMapper,
-        private readonly LoggerInterface $logger
-    ) {
-    }//end __construct()
+class VectorizationHandler {
+	/**
+	 * Constructor
+	 *
+	 * @param VectorizationService $vectorizationService Vectorization service
+	 * @param MagicMapper $objectEntityMapper Object entity mapper
+	 * @param LoggerInterface $logger PSR-3 logger
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function __construct(
+		private readonly VectorizationService $vectorizationService,
+		private readonly MagicMapper $objectEntityMapper,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Vectorize objects in batch
-     *
-     * Delegates to VectorizationService with 'object' entity type.
-     *
-     * @param array|null $views     Optional view filters
-     * @param int        $batchSize Number of objects to process per batch
-     *
-     * @return array Vectorization result with success, stats, and optional errors.
-     *
-     * @throws \Exception If vectorization fails.
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
-     */
-    public function vectorizeBatch(?array $views=null, int $batchSize=25): array
-    {
-        $this->logger->info(
-            message: '[VectorizationHandler] Starting batch vectorization',
-            context: [
-                'file'       => __FILE__,
-                'line'       => __LINE__,
-                'batch_size' => $batchSize,
-                'views'      => $views,
-            ]
-        );
+	/**
+	 * Vectorize objects in batch
+	 *
+	 * Delegates to VectorizationService with 'object' entity type.
+	 *
+	 * @param array|null $views Optional view filters
+	 * @param int $batchSize Number of objects to process per batch
+	 *
+	 * @return array Vectorization result with success, stats, and optional errors.
+	 *
+	 * @throws \Exception If vectorization fails.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function vectorizeBatch(?array $views = null, int $batchSize = 25): array {
+		$this->logger->info(
+			message: '[VectorizationHandler] Starting batch vectorization',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'batch_size' => $batchSize,
+				'views' => $views,
+			]
+		);
 
-        try {
-            // Delegate to unified VectorizationService.
-            $result = $this->vectorizationService->vectorizeBatch(
-                entityType: 'object',
-                options: [
-                    'views'      => $views,
-                    'batch_size' => $batchSize,
-                    'mode'       => 'serial',
-                    // Objects use serial mode by default.
-                ]
-            );
+		try {
+			// Delegate to unified VectorizationService.
+			$result = $this->vectorizationService->vectorizeBatch(
+				entityType: 'object',
+				options: [
+					'views' => $views,
+					'batch_size' => $batchSize,
+					'mode' => 'serial',
+					// Objects use serial mode by default.
+				]
+			);
 
-            $this->logger->info(
-                message: '[VectorizationHandler] Batch vectorization completed',
-                context: [
-                    'file'       => __FILE__,
-                    'line'       => __LINE__,
-                    'vectorized' => $result['vectorized'] ?? 0,
-                    'success'    => $result['success'] ?? false,
-                    'failed'     => $result['failed'] ?? 0,
-                ]
-            );
+			$this->logger->info(
+				message: '[VectorizationHandler] Batch vectorization completed',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'vectorized' => $result['vectorized'] ?? 0,
+					'success' => $result['success'] ?? false,
+					'failed' => $result['failed'] ?? 0,
+				]
+			);
 
-            return $result;
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[VectorizationHandler] Batch vectorization failed',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                    'views' => $views,
-                ]
-            );
-            throw $e;
-        }//end try
-    }//end vectorizeBatch()
+			return $result;
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[VectorizationHandler] Batch vectorization failed',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'error' => $e->getMessage(),
+					'views' => $views,
+				]
+			);
+			throw $e;
+		}//end try
+	}//end vectorizeBatch()
 
-    /**
-     * Get vectorization statistics
-     *
-     * Returns statistics about vectorized objects with optional view filters.
-     *
-     * @param array|null $views Optional view filters
-     *
-     * @return (array|int|null)[] Statistics data
-     *
-     * @throws \Exception If stats retrieval fails
-     *
-     * @psalm-return array{total_objects: int<0, max>, views: array|null}
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
-     */
-    public function getStatistics(?array $views=null): array
-    {
-        $this->logger->debug(
-            message: '[VectorizationHandler] Getting vectorization statistics',
-            context: [
-                'file'  => __FILE__,
-                'line'  => __LINE__,
-                'views' => $views,
-            ]
-        );
+	/**
+	 * Get vectorization statistics
+	 *
+	 * Returns statistics about vectorized objects with optional view filters.
+	 *
+	 * @param array|null $views Optional view filters
+	 *
+	 * @return (array|int|null)[] Statistics data
+	 *
+	 * @throws \Exception If stats retrieval fails
+	 *
+	 * @psalm-return array{total_objects: int<0, max>, views: array|null}
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getStatistics(?array $views = null): array {
+		$this->logger->debug(
+			message: '[VectorizationHandler] Getting vectorization statistics',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'views' => $views,
+			]
+		);
 
-        try {
-            // Count total objects with view filter support.
-            $result       = $this->objectEntityMapper->findAll(
-                limit: null,
-                offset: null
-            );
-            $totalObjects = count($result);
+		try {
+			// Count total objects with view filter support.
+			$result = $this->objectEntityMapper->findAll(
+				limit: null,
+				offset: null
+			);
+			$totalObjects = count($result);
 
-            $stats = [
-                'total_objects' => $totalObjects,
-                'views'         => $views,
-            ];
+			$stats = [
+				'total_objects' => $totalObjects,
+				'views' => $views,
+			];
 
-            $this->logger->debug(
-                message: '[VectorizationHandler] Statistics retrieved',
-                context: array_merge(['file' => __FILE__, 'line' => __LINE__], $stats)
-            );
+			$this->logger->debug(
+				message: '[VectorizationHandler] Statistics retrieved',
+				context: array_merge(['file' => __FILE__, 'line' => __LINE__], $stats)
+			);
 
-            return $stats;
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[VectorizationHandler] Failed to get statistics',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                    'views' => $views,
-                ]
-            );
-            throw $e;
-        }//end try
-    }//end getStatistics()
+			return $stats;
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[VectorizationHandler] Failed to get statistics',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'error' => $e->getMessage(),
+					'views' => $views,
+				]
+			);
+			throw $e;
+		}//end try
+	}//end getStatistics()
 
-    /**
-     * Get count of objects available for vectorization
-     *
-     * Returns count of objects that can be vectorized.
-     *
-     * @param array|null $schemas Optional schema filters
-     *
-     * @return int Object count
-     *
-     * @throws \Exception If count fails
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
-     */
-    public function getCount(?array $schemas=null): int
-    {
-        $this->logger->debug(
-            message: '[VectorizationHandler] Getting object count',
-            context: [
-                'file'    => __FILE__,
-                'line'    => __LINE__,
-                'schemas' => $schemas,
-            ]
-        );
+	/**
+	 * Get count of objects available for vectorization
+	 *
+	 * Returns count of objects that can be vectorized.
+	 *
+	 * @param array|null $schemas Optional schema filters
+	 *
+	 * @return int Object count
+	 *
+	 * @throws \Exception If count fails
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getCount(?array $schemas = null): int {
+		$this->logger->debug(
+			message: '[VectorizationHandler] Getting object count',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schemas' => $schemas,
+			]
+		);
 
-        try {
-            // TODO: Implement proper counting logic with schemas parameter.
-            // For now, return 0 as per original implementation.
-            $count = 0;
+		try {
+			// TODO: Implement proper counting logic with schemas parameter.
+			// For now, return 0 as per original implementation.
+			$count = 0;
 
-            $this->logger->debug(
-                message: '[VectorizationHandler] Count retrieved',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'count' => $count,
-                ]
-            );
+			$this->logger->debug(
+				message: '[VectorizationHandler] Count retrieved',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'count' => $count,
+				]
+			);
 
-            return $count;
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[VectorizationHandler] Failed to get count',
-                context: [
-                    'file'    => __FILE__,
-                    'line'    => __LINE__,
-                    'error'   => $e->getMessage(),
-                    'schemas' => $schemas,
-                ]
-            );
-            throw $e;
-        }//end try
-    }//end getCount()
+			return $count;
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[VectorizationHandler] Failed to get count',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'error' => $e->getMessage(),
+					'schemas' => $schemas,
+				]
+			);
+			throw $e;
+		}//end try
+	}//end getCount()
 }//end class

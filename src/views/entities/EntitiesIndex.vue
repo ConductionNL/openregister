@@ -1,5 +1,5 @@
 <template>
-	<NcAppContent :show-details="sidebarOpen" @update:showDetails="toggleSidebar">
+	<NcAppContent>
 		<div class="viewContainer">
 			<!-- Header -->
 			<div class="viewHeader">
@@ -8,17 +8,26 @@
 						{{ t('openregister', 'Entities') }}
 					</h1>
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:aria-label="t('openregister', 'Toggle search sidebar')"
 						@click="toggleSidebar">
 						<template #icon>
 							<FilterVariant :size="20" />
 						</template>
-						{{ sidebarOpen ? t('openregister', 'Hide Filters') : t('openregister', 'Show Filters') }}
+						{{
+							sidebarOpen
+								? t('openregister', 'Hide Filters')
+								: t('openregister', 'Show Filters')
+						}}
 					</NcButton>
 				</div>
 				<p>
-					{{ t('openregister', 'Manage and view detected entities from files and objects') }}
+					{{
+						t(
+							'openregister',
+							'Manage and view detected entities from files and objects',
+						)
+					}}
 				</p>
 			</div>
 
@@ -26,46 +35,51 @@
 			<div class="viewActionsBar">
 				<div class="viewInfo">
 					<span v-if="entitiesList.length" class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} entities', {
-							showing: paginatedEntities.length,
-							total: totalEntities
-						}) }}
+						{{
+							t(
+								'openregister',
+								'Showing {showing} of {total} entities',
+								{
+									showing: paginatedEntities.length,
+									total: totalEntities,
+								},
+							)
+						}}
 					</span>
 					<span v-if="selectedEntities.length > 0" class="viewIndicator">
-						({{ t('openregister', '{count} selected', { count: selectedEntities.length }) }})
+						({{
+							t('openregister', '{count} selected', {
+								count: selectedEntities.length,
+							})
+						}})
 					</span>
 				</div>
 				<div class="viewActions">
 					<div class="viewModeSwitchContainer">
 						<NcCheckboxRadioSwitch
 							v-model="viewMode"
-							v-tooltip="'See entities as cards'"
-							:button-variant="true"
+							title="See entities as cards"
+							:buttonVariant="true"
 							value="cards"
 							name="view_mode_radio"
 							type="radio"
-							button-variant-grouped="horizontal">
+							buttonVariantGrouped="horizontal">
 							Cards
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
 							v-model="viewMode"
-							v-tooltip="'See entities as a table'"
-							:button-variant="true"
+							title="See entities as a table"
+							:buttonVariant="true"
 							value="table"
 							name="view_mode_radio"
 							type="radio"
-							button-variant-grouped="horizontal">
+							buttonVariantGrouped="horizontal">
 							Table
 						</NcCheckboxRadioSwitch>
 					</div>
 
-					<NcActions
-						:force-name="true"
-						:inline="1"
-						menu-name="Actions">
-						<NcActionButton
-							close-after-click
-							@click="refreshEntities">
+					<NcActions :forceName="true" :inline="1" menuName="Actions">
+						<NcActionButton closeAfterClick @click="refreshEntities">
 							<template #icon>
 								<Refresh :size="20" />
 							</template>
@@ -82,7 +96,9 @@
 			<NcEmptyContent
 				v-else-if="!entitiesList.length"
 				:name="t('openregister', 'No entities found')"
-				:description="t('openregister', 'No entities have been detected yet')">
+				:description="
+					t('openregister', 'No entities have been detected yet')
+				">
 				<template #icon>
 					<AccountOutline :size="64" />
 				</template>
@@ -93,22 +109,36 @@
 				<!-- Cards View -->
 				<template v-if="viewMode === 'cards'">
 					<div class="cardGrid">
-						<div v-for="entity in paginatedEntities"
+						<div
+							v-for="entity in paginatedEntities"
 							:key="entity.id"
-							class="card"
-							@click="viewEntity(entity)">
+							class="card">
 							<div class="cardHeader">
 								<h2>
 									<AccountOutline :size="20" />
-									{{ entity.value }}
-									<span class="badge badge-type">{{ entity.type }}</span>
+									<!-- The activator is a real <button>; its ::after overlay makes the
+										whole card clickable with the mouse without turning the card into
+										a role="button" (which would hide the heading, the stats table and
+										the actions menu from assistive technology). -->
+									<button
+										type="button"
+										class="cardActivator"
+										@click="viewEntity(entity)">
+										{{ entity.value }}
+									</button>
+									<span class="badge badge-type">{{
+										entity.type
+									}}</span>
 								</h2>
-								<NcActions :primary="true" menu-name="Actions">
+								<NcActions
+									class="cardActions"
+									:primary="true"
+									menuName="Actions">
 									<template #icon>
 										<DotsHorizontal :size="20" />
 									</template>
 									<NcActionButton
-										close-after-click
+										closeAfterClick
 										@click.stop="viewEntity(entity)">
 										<template #icon>
 											<EyeOutline :size="20" />
@@ -122,15 +152,31 @@
 							<table class="statisticsTable entityStats">
 								<tbody>
 									<tr>
-										<td><strong>{{ t('openregister', 'Category') }}</strong></td>
-										<td><span class="badge badge-category">{{ entity.category }}</span></td>
+										<th scope="row">
+											<strong>{{
+												t('openregister', 'Category')
+											}}</strong>
+										</th>
+										<td>
+											<span class="badge badge-category">{{
+												entity.category
+											}}</span>
+										</td>
 									</tr>
 									<tr>
-										<td><strong>{{ t('openregister', 'Detected At') }}</strong></td>
+										<th scope="row">
+											<strong>{{
+												t('openregister', 'Detected At')
+											}}</strong>
+										</th>
 										<td>{{ formatDate(entity.detectedAt) }}</td>
 									</tr>
 									<tr>
-										<td><strong>{{ t('openregister', 'Relations') }}</strong></td>
+										<th scope="row">
+											<strong>{{
+												t('openregister', 'Relations')
+											}}</strong>
+										</th>
 										<td>{{ entity.relationCount || 0 }}</td>
 									</tr>
 								</tbody>
@@ -147,41 +193,82 @@
 								<tr>
 									<th class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:checked="allSelected"
+											:modelValue="allSelected"
 											:indeterminate="someSelected"
-											@update:checked="toggleSelectAll" />
+											:aria-label="
+												t(
+													'openregister',
+													'Select all entities',
+												)
+											"
+											@update:modelValue="toggleSelectAll" />
 									</th>
-									<th>{{ t('openregister', 'Value') }}</th>
-									<th>{{ t('openregister', 'Type') }}</th>
-									<th>{{ t('openregister', 'Category') }}</th>
-									<th>{{ t('openregister', 'Detected At') }}</th>
-									<th>{{ t('openregister', 'Relations') }}</th>
-									<th class="tableColumnActions">
+									<th scope="col">
+										{{ t('openregister', 'Value') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Type') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Category') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Detected At') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Relations') }}
+									</th>
+									<th scope="col" class="tableColumnActions">
 										{{ t('openregister', 'Actions') }}
 									</th>
 								</tr>
 							</thead>
 							<tbody>
-								<tr v-for="entity in paginatedEntities"
+								<tr
+									v-for="entity in paginatedEntities"
 									:key="entity.id"
 									class="viewTableRow"
-									:class="{ viewTableRowSelected: selectedEntities.includes(entity.id) }">
+									:class="{
+										viewTableRowSelected:
+											selectedEntities.includes(entity.id),
+									}">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:checked="selectedEntities.includes(entity.id)"
-											@update:checked="(checked) => toggleEntitySelection(entity.id, checked)" />
+											:modelValue="
+												selectedEntities.includes(entity.id)
+											"
+											:aria-label="
+												t(
+													'openregister',
+													'Select entity {value}',
+													{ value: entity.value },
+												)
+											"
+											@update:modelValue="
+												(checked) =>
+													toggleEntitySelection(
+														entity.id,
+														checked,
+													)
+											" />
 									</td>
 									<td class="tableColumnTitle">
 										<div class="entity-value-cell">
-											<AccountOutline :size="20" class="entity-icon" />
+											<AccountOutline
+												:size="20"
+												class="entity-icon" />
 											<strong>{{ entity.value }}</strong>
 										</div>
 									</td>
 									<td>
-										<span class="badge badge-type">{{ entity.type }}</span>
+										<span class="badge badge-type">{{
+											entity.type
+										}}</span>
 									</td>
 									<td>
-										<span class="badge badge-category">{{ entity.category }}</span>
+										<span class="badge badge-category">{{
+											entity.category
+										}}</span>
 									</td>
 									<td>{{ formatDate(entity.detectedAt) }}</td>
 									<td>{{ entity.relationCount || 0 }}</td>
@@ -191,7 +278,7 @@
 												<DotsHorizontal :size="20" />
 											</template>
 											<NcActionButton
-												close-after-click
+												closeAfterClick
 												@click="viewEntity(entity)">
 												<template #icon>
 													<EyeOutline :size="20" />
@@ -210,52 +297,39 @@
 			<!-- Pagination -->
 			<PaginationComponent
 				v-if="entitiesList.length > 0"
-				:current-page="currentPage"
-				:total-pages="totalPages"
-				:total-items="totalEntities"
-				:current-page-size="limit"
-				:min-items-to-show="10"
-				@page-changed="onPageChanged"
-				@page-size-changed="onPageSizeChanged" />
+				:currentPage="currentPage"
+				:totalPages="totalPages"
+				:totalItems="totalEntities"
+				:currentPageSize="limit"
+				:minItemsToShow="10"
+				@pageChanged="onPageChanged"
+				@pageSizeChanged="onPageSizeChanged" />
 		</div>
-
-		<!-- Search Sidebar -->
-		<template #details>
-			<EntitiesSidebar
-				:search.sync="searchQuery"
-				:type.sync="typeFilter"
-				:category.sync="categoryFilter"
-				@update:search="handleSearchUpdate"
-				@update:type="handleTypeUpdate"
-				@update:category="handleCategoryUpdate" />
-		</template>
 	</NcAppContent>
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showError } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { showError } from '@nextcloud/dialogs'
-import axios from '@nextcloud/axios'
-
 import {
-	NcAppContent,
-	NcActions,
 	NcActionButton,
+	NcActions,
+	NcAppContent,
 	NcButton,
-	NcLoadingIcon,
-	NcEmptyContent,
 	NcCheckboxRadioSwitch,
+	NcEmptyContent,
+	NcLoadingIcon,
 } from '@nextcloud/vue'
-
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
-import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
-
-import EntitiesSidebar from '../../components/EntitiesSidebar.vue'
+import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
+import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import eventBus from '../../eventBus.js'
+import { navigationStore } from '../../store/store.js'
 
 /**
  * Main view for managing entities
@@ -283,9 +357,9 @@ export default {
 		FilterVariant,
 		EyeOutline,
 		DotsHorizontal,
-		EntitiesSidebar,
 		PaginationComponent,
 	},
+
 	data() {
 		return {
 			entitiesList: [],
@@ -293,7 +367,6 @@ export default {
 			totalEntities: 0,
 			limit: 20,
 			currentPage: 1,
-			sidebarOpen: false,
 			searchQuery: '',
 			typeFilter: null,
 			categoryFilter: null,
@@ -301,10 +374,22 @@ export default {
 			selectedEntities: [],
 		}
 	},
+
 	computed: {
+		/**
+		 * Whether the entities filter sidebar is currently open (driven by navigationStore).
+		 *
+		 * @spec exclude UI sidebar open-state proxy, driven by navigationStore
+		 * @return {boolean}
+		 */
+		sidebarOpen() {
+			return navigationStore.sidebarState.entities
+		},
+
 		/**
 		 * Get total number of pages
 		 *
+		 * @spec exclude list-view pagination total-pages helper (computed)
 		 * @return {number} Total pages
 		 */
 		totalPages() {
@@ -314,6 +399,7 @@ export default {
 		/**
 		 * Get paginated entities for current page
 		 *
+		 * @spec exclude list-view client-side pagination slice (computed)
 		 * @return {Array} Paginated entities
 		 */
 		paginatedEntities() {
@@ -325,39 +411,69 @@ export default {
 		/**
 		 * Check if all entities are selected
 		 *
+		 * @spec exclude list-view select-all checkbox state (computed)
 		 * @return {boolean} True if all selected
 		 */
 		allSelected() {
-			return this.entitiesList.length > 0 && this.entitiesList.every(entity => this.selectedEntities.includes(entity.id))
+			return (
+				this.entitiesList.length > 0
+				&& this.entitiesList.every((entity) =>
+					this.selectedEntities.includes(entity.id),
+				)
+			)
 		},
 
 		/**
 		 * Check if some entities are selected
 		 *
+		 * @spec exclude list-view indeterminate-selection checkbox state (computed)
 		 * @return {boolean} True if some selected
 		 */
 		someSelected() {
 			return this.selectedEntities.length > 0 && !this.allSelected
 		},
 	},
+
+	/**
+	 * @spec exclude Lifecycle plumbing; loads entity list and wires root event bus listeners from EntitiesSideBar.
+	 */
 	mounted() {
 		this.loadEntities()
+		// Listen for filter changes emitted by EntitiesSideBar via the root event bus.
+		eventBus.on('entities-search-changed', this.handleSearchUpdate)
+		eventBus.on('entities-type-changed', this.handleTypeUpdate)
+		eventBus.on('entities-category-changed', this.handleCategoryUpdate)
 	},
+
+	/**
+	 * @spec exclude Lifecycle teardown; removes root event bus listeners to prevent memory leaks.
+	 */
+	beforeUnmount() {
+		eventBus.off('entities-search-changed', this.handleSearchUpdate)
+		eventBus.off('entities-type-changed', this.handleTypeUpdate)
+		eventBus.off('entities-category-changed', this.handleCategoryUpdate)
+	},
+
 	methods: {
 		t,
 
 		/**
-		 * Toggle sidebar visibility
+		 * Toggle the entities filter sidebar via navigationStore.
 		 *
+		 * @spec openspec/specs/admin-list-views/spec.md
 		 * @return {void}
 		 */
 		toggleSidebar() {
-			this.sidebarOpen = !this.sidebarOpen
+			navigationStore.setSidebarState(
+				'entities',
+				!navigationStore.sidebarState.entities,
+			)
 		},
 
 		/**
-		 * Handle search query update
+		 * Handle search query update from EntitiesSideBar event bus emission.
 		 *
+		 * @spec exclude list-view search-input handler; resets page and reloads (linked-entity-types contract)
 		 * @param {string} query - Search query
 		 * @return {void}
 		 */
@@ -368,8 +484,9 @@ export default {
 		},
 
 		/**
-		 * Handle type filter update
+		 * Handle type filter update from EntitiesSideBar event bus emission.
 		 *
+		 * @spec exclude list-view filter-input handler; resets page and reloads
 		 * @param {string|null} type - Type filter
 		 * @return {void}
 		 */
@@ -380,8 +497,9 @@ export default {
 		},
 
 		/**
-		 * Handle category filter update
+		 * Handle category filter update from EntitiesSideBar event bus emission.
 		 *
+		 * @spec exclude list-view filter-input handler; resets page and reloads
 		 * @param {string|null} category - Category filter
 		 * @return {void}
 		 */
@@ -394,6 +512,7 @@ export default {
 		/**
 		 * Load entities from the API
 		 *
+		 * @spec exclude list-view API fetch plumbing (linked-entity-types contract)
 		 * @return {Promise<void>}
 		 */
 		async loadEntities() {
@@ -423,7 +542,8 @@ export default {
 
 				if (response.data.success) {
 					this.entitiesList = response.data.data
-					this.totalEntities = response.data.count || this.entitiesList.length
+					this.totalEntities =
+						response.data.count || this.entitiesList.length
 				}
 			} catch (error) {
 				console.error('Failed to load entities:', error)
@@ -436,6 +556,7 @@ export default {
 		/**
 		 * Refresh the entities list
 		 *
+		 * @spec exclude list-view manual refresh plumbing
 		 * @return {void}
 		 */
 		refreshEntities() {
@@ -445,6 +566,7 @@ export default {
 		/**
 		 * Handle page change event
 		 *
+		 * @spec exclude list-view pagination page-change handler
 		 * @param {number} page - New page number
 		 * @return {void}
 		 */
@@ -456,6 +578,7 @@ export default {
 		/**
 		 * Handle page size change event
 		 *
+		 * @spec exclude list-view pagination page-size-change handler
 		 * @param {number} pageSize - New page size
 		 * @return {void}
 		 */
@@ -468,12 +591,13 @@ export default {
 		/**
 		 * Toggle select all entities
 		 *
+		 * @spec exclude list-view select-all checkbox plumbing
 		 * @param {boolean} checked - Whether to select all
 		 * @return {void}
 		 */
 		toggleSelectAll(checked) {
 			if (checked) {
-				this.selectedEntities = this.entitiesList.map(entity => entity.id)
+				this.selectedEntities = this.entitiesList.map((entity) => entity.id)
 			} else {
 				this.selectedEntities = []
 			}
@@ -482,6 +606,7 @@ export default {
 		/**
 		 * Toggle entity selection
 		 *
+		 * @spec exclude list-view single-row selection toggle plumbing
 		 * @param {number} entityId - Entity ID
 		 * @param {boolean} checked - Whether entity is selected
 		 * @return {void}
@@ -490,13 +615,16 @@ export default {
 			if (checked) {
 				this.selectedEntities.push(entityId)
 			} else {
-				this.selectedEntities = this.selectedEntities.filter(id => id !== entityId)
+				this.selectedEntities = this.selectedEntities.filter(
+					(id) => id !== entityId,
+				)
 			}
 		},
 
 		/**
 		 * View entity details
 		 *
+		 * @spec exclude list-view router-navigation plumbing to the entity detail page
 		 * @param {object} entity - Entity object
 		 * @return {void}
 		 */
@@ -507,6 +635,7 @@ export default {
 		/**
 		 * Format date for display
 		 *
+		 * @spec exclude list-view date-formatting display helper
 		 * @param {string} date - Date string
 		 * @return {string} Formatted date
 		 */
@@ -584,6 +713,7 @@ export default {
 }
 
 .card {
+	position: relative;
 	background: var(--color-main-background);
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius-large);
@@ -594,6 +724,38 @@ export default {
 
 .card:hover {
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Real button that carries the card's action. The ::after overlay restores
+   whole-card mouse clickability while keyboard users get a genuine button. */
+.cardActivator {
+	appearance: none;
+	background: none;
+	border: none;
+	padding: 0;
+	margin: 0;
+	font: inherit;
+	color: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+.cardActivator::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+}
+
+.cardActivator:focus-visible::after {
+	outline: 2px solid var(--color-primary-element);
+	outline-offset: -2px;
+	border-radius: var(--border-radius-large);
+}
+
+/* Keep the actions menu above the activator overlay so it stays clickable. */
+.cardActions {
+	position: relative;
+	z-index: 1;
 }
 
 .cardHeader {
@@ -628,11 +790,15 @@ export default {
 	border-bottom: none;
 }
 
-.entityStats td {
+.entityStats td,
+.entityStats th {
 	padding: 12px 16px;
+	text-align: left;
+	font-weight: normal;
 }
 
-.entityStats td:first-child {
+.entityStats td:first-child,
+.entityStats th:first-child {
 	width: 40%;
 	color: var(--color-text-maxcontrast);
 }
@@ -687,5 +853,11 @@ export default {
 
 .tableColumnActions {
 	width: 50px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.card {
+		transition: none;
+	}
 }
 </style>

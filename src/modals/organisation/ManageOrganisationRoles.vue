@@ -1,7 +1,12 @@
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+</script>
+
 <template>
-	<NcDialog :name="t('openregister', 'Manage Organisation Roles')"
+	<NcDialog
+		:name="t('openregister', 'Manage Organisation Roles')"
 		size="normal"
-		:can-close="true"
+		:canClose="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="success" type="success">
 			<p>{{ t('openregister', 'Roles updated successfully') }}</p>
@@ -15,18 +20,31 @@
 			<div class="organisation-info">
 				<h3>{{ organisationItem.name }}</h3>
 				<p class="info-text">
-					{{ t('openregister', 'Select which Nextcloud groups are available for this organisation. Users in these groups will have access to organisation resources.') }}
+					{{
+						t(
+							'openregister',
+							'Select which Nextcloud groups are available for this organisation. Users in these groups will have access to organisation resources.',
+						)
+					}}
 				</p>
 			</div>
 
 			<!-- Selected Roles -->
 			<div v-if="selectedRoles.length > 0" class="selected-roles-section">
-				<h4>{{ t('openregister', 'Selected Groups') }} ({{ selectedRoles.length }})</h4>
+				<h4>
+					{{ t('openregister', 'Selected Groups') }} ({{
+						selectedRoles.length
+					}})
+				</h4>
 				<div class="roles-list">
-					<div v-for="role in selectedRoles" :key="role.id" class="role-chip">
+					<div
+						v-for="role in selectedRoles"
+						:key="role.id"
+						class="role-chip">
 						<AccountGroup :size="16" />
 						<span class="role-name">{{ role.name }}</span>
-						<NcButton type="tertiary"
+						<NcButton
+							variant="tertiary"
 							:aria-label="t('openregister', 'Remove group')"
 							@click="removeRole(role)">
 							<template #icon>
@@ -43,18 +61,23 @@
 				<NcSelect
 					v-model="roleToAdd"
 					:options="availableGroupOptions"
-					:placeholder="t('openregister', 'Select a Nextcloud group to add')"
+					:placeholder="
+						t('openregister', 'Select a Nextcloud group to add')
+					"
 					:loading="loadingGroups"
 					:filterable="true"
-					label-outside
-					input-label="Nextcloud Groups"
-					@input="addRole">
+					labelOutside
+					:inputLabel="t('openregister', 'Nextcloud Groups')"
+					@update:modelValue="addRole">
 					<template #option="{ name, userCount }">
 						<div class="group-option">
 							<AccountGroup :size="20" />
 							<div class="group-info">
 								<span class="group-name">{{ name }}</span>
-								<span class="group-meta">{{ userCount }} {{ t('openregister', 'members') }}</span>
+								<span class="group-meta"
+									>{{ userCount }}
+									{{ t('openregister', 'members') }}</span
+								>
 							</div>
 						</div>
 					</template>
@@ -67,11 +90,16 @@
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success ? t('openregister', 'Close') : t('openregister', 'Cancel') }}
+				{{
+					success
+						? t('openregister', 'Close')
+						: t('openregister', 'Cancel')
+				}}
 			</NcButton>
-			<NcButton v-if="!success"
+			<NcButton
+				v-if="!success"
 				:disabled="loading || !hasChanges"
-				type="primary"
+				variant="primary"
 				@click="saveRoles()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -84,6 +112,8 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcDialog,
@@ -91,15 +121,11 @@ import {
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
-
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
+import AccountGroup from 'vue-material-design-icons/AccountGroup.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Close from 'vue-material-design-icons/Close.vue'
-import AccountGroup from 'vue-material-design-icons/AccountGroup.vue'
-
-import { organisationStore, navigationStore } from '../../store/store.js'
-import { generateUrl } from '@nextcloud/router'
-import axios from '@nextcloud/axios'
+import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
+import { navigationStore, organisationStore } from '../../store/store.js'
 
 /**
  * ManageOrganisationRoles
@@ -127,12 +153,14 @@ export default {
 		Close,
 		AccountGroup,
 	},
+
 	data() {
 		return {
 			organisationItem: {
 				name: '',
 				roles: [],
 			},
+
 			selectedRoles: [],
 			originalRoles: [],
 			availableGroups: [],
@@ -144,17 +172,19 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * Get available groups that haven't been selected yet
 		 *
 		 * @return {Array} Available groups
+		 * @spec exclude computed display helper filtering available groups
 		 */
 		availableGroupOptions() {
-			const selectedIds = this.selectedRoles.map(r => r.id)
+			const selectedIds = this.selectedRoles.map((r) => r.id)
 			return this.availableGroups
-				.filter(group => !selectedIds.includes(group.id))
-				.map(group => ({
+				.filter((group) => !selectedIds.includes(group.id))
+				.map((group) => ({
 					...group,
 					label: group.name,
 				}))
@@ -164,22 +194,29 @@ export default {
 		 * Check if there are unsaved changes
 		 *
 		 * @return {boolean} True if there are changes
+		 * @spec exclude computed dirty-state flag for unsaved changes
 		 */
 		hasChanges() {
-			const originalIds = this.originalRoles.map(r => r.id).sort()
-			const currentIds = this.selectedRoles.map(r => r.id).sort()
+			const originalIds = this.originalRoles.map((r) => r.id).sort()
+			const currentIds = this.selectedRoles.map((r) => r.id).sort()
 			return JSON.stringify(originalIds) !== JSON.stringify(currentIds)
 		},
 	},
+
+	/**
+	 * @spec exclude Vue lifecycle hook loading initial modal data
+	 */
 	mounted() {
 		this.initializeOrganisationItem()
 		this.loadNextcloudGroups()
 	},
+
 	methods: {
 		/**
 		 * Initialize organisation data
 		 *
 		 * @return {void}
+		 * @spec exclude form-state initializer from organisationStore
 		 */
 		initializeOrganisationItem() {
 			if (organisationStore.organisationItem?.uuid) {
@@ -200,6 +237,7 @@ export default {
 		 * Load available Nextcloud groups
 		 *
 		 * @return {Promise<void>}
+		 * @spec exclude form-state loader for Nextcloud groups via OCS API
 		 */
 		async loadNextcloudGroups() {
 			this.loadingGroups = true
@@ -217,15 +255,20 @@ export default {
 
 				// v1 API returns groups as a simple array of group IDs
 				if (response.data?.ocs?.data?.groups) {
-					this.availableGroups = response.data.ocs.data.groups.map(groupId => ({
-						id: groupId,
-						name: groupId,
-						userCount: 0, // v1 API doesn't provide user count in list
-					}))
+					this.availableGroups = response.data.ocs.data.groups.map(
+						(groupId) => ({
+							id: groupId,
+							name: groupId,
+							userCount: 0, // v1 API doesn't provide user count in list
+						}),
+					)
 				}
 			} catch (error) {
 				console.error('Error loading Nextcloud groups:', error)
-				this.error = this.t('openregister', 'Failed to load Nextcloud groups')
+				this.error = this.t(
+					'openregister',
+					'Failed to load Nextcloud groups',
+				)
 			} finally {
 				this.loadingGroups = false
 			}
@@ -236,9 +279,10 @@ export default {
 		 *
 		 * @param {object} group - The group to add
 		 * @return {void}
+		 * @spec exclude form-state helper adding a role to selection
 		 */
 		addRole(group) {
-			if (group && !this.selectedRoles.find(r => r.id === group.id)) {
+			if (group && !this.selectedRoles.find((r) => r.id === group.id)) {
 				this.selectedRoles.push({
 					id: group.id,
 					name: group.name,
@@ -253,15 +297,17 @@ export default {
 		 *
 		 * @param {object} role - The role to remove
 		 * @return {void}
+		 * @spec exclude form-state helper removing a role from selection
 		 */
 		removeRole(role) {
-			this.selectedRoles = this.selectedRoles.filter(r => r.id !== role.id)
+			this.selectedRoles = this.selectedRoles.filter((r) => r.id !== role.id)
 		},
 
 		/**
 		 * Save the roles to the organisation
 		 *
 		 * @return {Promise<void>}
+		 * @spec exclude modal submit handler delegating to organisationStore.saveOrganisation
 		 */
 		async saveRoles() {
 			this.loading = true
@@ -278,10 +324,10 @@ export default {
 
 				// Auto-close after 2 seconds
 				this.closeModalTimeout = setTimeout(this.closeModal, 2000)
-
 			} catch (error) {
 				console.error('Error saving roles:', error)
-				this.error = error.message || this.t('openregister', 'Failed to save roles')
+				this.error =
+					error.message || this.t('openregister', 'Failed to save roles')
 			} finally {
 				this.loading = false
 			}
@@ -291,6 +337,7 @@ export default {
 		 * Close the modal
 		 *
 		 * @return {void}
+		 * @spec exclude modal close + form-state reset handler
 		 */
 		closeModal() {
 			this.success = false
@@ -304,6 +351,7 @@ export default {
 		 * Handle dialog close
 		 *
 		 * @return {void}
+		 * @spec exclude modal open/close UI handler
 		 */
 		handleDialogClose() {
 			this.closeModal()

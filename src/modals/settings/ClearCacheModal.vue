@@ -2,26 +2,27 @@
 	<NcDialog
 		v-if="show"
 		name="Clear Cache"
-		:can-close="!clearing"
+		:canClose="!clearing"
 		@closing="$emit('close')">
 		<div class="dialog-content">
 			<h3>🗑️ Clear Cache</h3>
 			<p class="warning-text">
-				Select the type of cache to clear. This action cannot be undone and may temporarily impact performance.
+				Select the type of cache to clear. This action cannot be undone and
+				may temporarily impact performance.
 			</p>
 
 			<div class="cache-type-selection">
 				<h4>Cache Type:</h4>
 				<div class="radio-group">
 					<NcCheckboxRadioSwitch
-						:checked.sync="localCacheType"
+						v-model="localCacheType"
 						name="cache_type"
 						value="all"
 						type="radio">
 						Clear All Cache (Recommended)
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
-						:checked.sync="localCacheType"
+						v-model="localCacheType"
 						name="cache_type"
 						value="object"
 						type="radio">
@@ -30,14 +31,14 @@
 				</div>
 				<div class="radio-group">
 					<NcCheckboxRadioSwitch
-						:checked.sync="localCacheType"
+						v-model="localCacheType"
 						name="cache_type"
 						value="schema"
 						type="radio">
 						Schema Cache Only
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
-						:checked.sync="localCacheType"
+						v-model="localCacheType"
 						name="cache_type"
 						value="facet"
 						type="radio">
@@ -46,7 +47,7 @@
 				</div>
 				<div class="radio-group">
 					<NcCheckboxRadioSwitch
-						:checked.sync="localCacheType"
+						v-model="localCacheType"
 						name="cache_type"
 						value="distributed"
 						type="radio">
@@ -57,18 +58,13 @@
 		</div>
 
 		<template #actions>
-			<NcButton
-				:disabled="clearing"
-				@click="$emit('close')">
+			<NcButton :disabled="clearing" @click="$emit('close')">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
 				Cancel
 			</NcButton>
-			<NcButton
-				type="error"
-				:disabled="clearing"
-				@click="confirmClear">
+			<NcButton variant="error" :disabled="clearing" @click="confirmClear">
 				<template #icon>
 					<NcLoadingIcon v-if="clearing" :size="20" />
 					<Delete v-else :size="20" />
@@ -80,7 +76,12 @@
 </template>
 
 <script>
-import { NcDialog, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcDialog,
+	NcLoadingIcon,
+} from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 
@@ -101,10 +102,12 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+
 		clearing: {
 			type: Boolean,
 			default: false,
 		},
+
 		cacheType: {
 			type: String,
 			default: 'all',
@@ -120,15 +123,27 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * @param newValue
+		 * @spec exclude watcher syncing local cache-type from prop
+		 */
 		cacheType(newValue) {
 			this.localCacheType = newValue
 		},
+
+		/**
+		 * @param newValue
+		 * @spec exclude watcher emitting cache-type change
+		 */
 		localCacheType(newValue) {
 			this.$emit('cache-type-changed', newValue)
 		},
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/specs/platform-administration-modals/spec.md
+		 */
 		confirmClear() {
 			this.$emit('confirm', this.localCacheType)
 		},

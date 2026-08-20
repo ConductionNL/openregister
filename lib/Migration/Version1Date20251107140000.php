@@ -9,7 +9,7 @@
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -36,82 +36,78 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @package OCA\OpenRegister\Migration
  */
-class Version1Date20251107140000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema
-     *
-     * @param IOutput $output        The output interface
-     * @param Closure $schemaClosure The schema closure
-     * @param array   $options       The options
-     *
-     * @return null|ISchemaWrapper The schema wrapper
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20251107140000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema
+	 *
+	 * @param IOutput $output The output interface
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array $options The options
+	 *
+	 * @return null|ISchemaWrapper The schema wrapper
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        // Check if the configurations table exists.
-        if ($schema->hasTable('openregister_configurations') === true) {
-            $table = $schema->getTable('openregister_configurations');
+		// Check if the configurations table exists.
+		if ($schema->hasTable('openregister_configurations') === true) {
+			$table = $schema->getTable('openregister_configurations');
 
-            // Add views column if it doesn't exist.
-            if ($table->hasColumn('views') === false) {
-                $table->addColumn(
-                    'views',
-                    Types::JSON,
-                    [
-                        'notnull' => false,
-                        'default' => null,
-                    ]
-                );
-            }
+			// Add views column if it doesn't exist.
+			if ($table->hasColumn('views') === false) {
+				$table->addColumn(
+					'views',
+					Types::JSON,
+					[
+						'notnull' => false,
+						'default' => null,
+					]
+				);
+			}
 
-            // Add agents column if it doesn't exist.
-            if ($table->hasColumn('agents') === false) {
-                $table->addColumn(
-                    'agents',
-                    Types::JSON,
-                    [
-                        'notnull' => false,
-                        'default' => null,
-                    ]
-                );
-            }
+			// Add agents column if it doesn't exist.
+			if ($table->hasColumn('agents') === false) {
+				$table->addColumn(
+					'agents',
+					Types::JSON,
+					[
+						'notnull' => false,
+						'default' => null,
+					]
+				);
+			}
 
-            // Add sources column if it doesn't exist.
-            if ($table->hasColumn('sources') === false) {
-                $table->addColumn(
-                    'sources',
-                    Types::JSON,
-                    [
-                        'notnull' => false,
-                        'default' => null,
-                    ]
-                );
-            }
+			// Add sources column if it doesn't exist.
+			if ($table->hasColumn('sources') === false) {
+				$table->addColumn(
+					'sources',
+					Types::JSON,
+					[
+						'notnull' => false,
+						'default' => null,
+					]
+				);
+			}
 
-            // Add applications column if it doesn't exist.
-            if ($table->hasColumn('applications') === false) {
-                $table->addColumn(
-                    'applications',
-                    Types::JSON,
-                    [
-                        'notnull' => false,
-                        'default' => null,
-                    ]
-                );
-            }
+			// Add applications column if it doesn't exist.
+			if ($table->hasColumn('applications') === false) {
+				$table->addColumn(
+					'applications',
+					Types::JSON,
+					[
+						'notnull' => false,
+						'default' => null,
+					]
+				);
+			}
 
-            return $schema;
-        }//end if
+			return $schema;
+		}//end if
 
-        return null;
-    }//end changeSchema()
+		return null;
+	}//end changeSchema()
 }//end class

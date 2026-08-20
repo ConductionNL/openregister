@@ -1,0 +1,71 @@
+{
+  "change": "mail-smart-picker",
+  "repo": "ConductionNL/openregister",
+  "tracking_issue": 1002,
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Create ObjectReferenceProvider PHP class",
+      "github_issue": 1122,
+      "spec_ref": "mail-smart-picker/spec.md#requirement-openregister-must-register-a-discoverable-searchable-reference-provider",
+      "acceptance_criteria": [
+        "GIVEN the provider class exists WHEN getId() is called THEN it returns 'openregister-ref-objects'",
+        "GIVEN the provider WHEN getTitle() is called THEN it returns translated 'Register Objects'",
+        "GIVEN the provider WHEN getSupportedSearchProviderIds() is called THEN it returns ['openregister_objects']",
+        "GIVEN the provider WHEN matchReference() receives a valid hash-routed URL THEN it returns true",
+        "GIVEN the provider WHEN matchReference() receives a non-matching URL THEN it returns false"
+      ],
+      "files_likely_affected": ["lib/Reference/ObjectReferenceProvider.php"],
+      "status": "done"
+    },
+    {
+      "id": 2,
+      "title": "Register provider in Application and add cache invalidation",
+      "github_issue": 1123,
+      "spec_ref": "mail-smart-picker/spec.md#requirement-the-reference-provider-must-use-caching-for-performance",
+      "acceptance_criteria": [
+        "GIVEN Application::register() WHEN the app boots THEN registerReferenceProvider is called with ObjectReferenceProvider::class",
+        "GIVEN ObjectService::saveObject() WHEN an object is saved THEN IReferenceManager::invalidateCache() is called"
+      ],
+      "files_likely_affected": ["lib/AppInfo/Application.php", "lib/Service/ObjectService.php"],
+      "status": "todo"
+    },
+    {
+      "id": 3,
+      "title": "Create frontend reference widget and webpack entry",
+      "github_issue": 1124,
+      "spec_ref": "mail-smart-picker/spec.md#requirement-a-custom-vue-widget-must-render-the-rich-object-preview-inline",
+      "acceptance_criteria": [
+        "GIVEN the widget is registered WHEN an openregister-object rich reference is rendered THEN a card with icon, title, schema, register, properties, and link is shown",
+        "GIVEN webpack.config.js WHEN built THEN a reference entry point exists"
+      ],
+      "files_likely_affected": ["src/reference/ObjectReferenceWidget.vue", "src/reference/init.ts", "webpack.config.js"],
+      "status": "todo"
+    },
+    {
+      "id": 4,
+      "title": "Add translation strings for en and nl",
+      "github_issue": 1125,
+      "spec_ref": "mail-smart-picker/spec.md#requirement-i18n-must-be-applied-to-all-user-visible-strings",
+      "acceptance_criteria": [
+        "GIVEN l10n/en.json WHEN checked THEN it contains Register Objects, Schema, Register, Updated, View object, Unknown Schema, Unknown Register",
+        "GIVEN l10n/nl.json WHEN checked THEN it contains Dutch equivalents"
+      ],
+      "files_likely_affected": ["l10n/en.json", "l10n/nl.json"],
+      "status": "todo"
+    },
+    {
+      "id": 5,
+      "title": "Write unit tests for ObjectReferenceProvider",
+      "github_issue": 1126,
+      "spec_ref": "mail-smart-picker/spec.md#requirement-the-reference-provider-must-match-openregister-object-urls",
+      "acceptance_criteria": [
+        "GIVEN ObjectReferenceProviderTest WHEN run THEN matchReference tests pass for all URL patterns",
+        "GIVEN ObjectReferenceProviderTest WHEN run THEN resolveReference tests pass for success, not-found, and auth-error cases",
+        "GIVEN ObjectReferenceProviderTest WHEN run THEN getCachePrefix and getCacheKey tests pass"
+      ],
+      "files_likely_affected": ["tests/Unit/Reference/ObjectReferenceProviderTest.php"],
+      "status": "todo"
+    }
+  ]
+}

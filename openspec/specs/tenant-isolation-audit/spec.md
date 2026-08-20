@@ -1,6 +1,12 @@
+---
+status: done
+---
+
 # Tenant Isolation Audit
 
 ## Purpose
+
+@e2e exclude backend audit/isolation verification — covered by PHPUnit
 Define cross-tenant access audit logging, isolation verification, and automated isolation testing to ensure that tenant boundaries are never breached in a SaaS deployment. This provides the evidence trail required for BIO/ISO 27001 compliance and builds confidence that the shared-database multi-tenancy model provides adequate isolation.
 
 **Source**: BIO/ISO 27001 audit requirements; government procurement requirement for demonstrable tenant isolation; ISAE 3402 evidence trail.

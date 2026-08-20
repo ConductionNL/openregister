@@ -1,6 +1,3 @@
-/* eslint-disable no-trailing-spaces */
-/* eslint-disable jsdoc/check-tag-names */
-
 /**
  * ## AppInstallService Developer Documentation
  *
@@ -36,7 +33,7 @@
  * ```js
  * // Check if an app is installed:
  * const isInstalled = await service.isAppInstalled('files')
- * console.log(`"files" is installed:`, isInstalled)
+ * // isInstalled now holds whether "files" is installed
  *
  * // Install an app if it's not already installed:
  * try {
@@ -113,7 +110,7 @@
  * - **Error Handling**: A custom `RequestError` class is provided for handling HTTP and JSON errors.
  *   If a request fails (e.g., non-`200` status or JSON parse error), a `RequestError` will be thrown
  *   containing the `response`, `status`, and `data`. The `data` field may contain a message indicating
- *   that password confirmation is required (status 403). Always wrap calls in `try/catch` if you need 
+ *   that password confirmation is required (status 403). Always wrap calls in `try/catch` if you need
  *   to handle errors gracefully.
  *
  * ### Prerequisites
@@ -136,13 +133,13 @@
  * try {
  *   const installResponse = await appInstallService.installApp(appsToInstall)
  *   if (installResponse) {
- *     console.log('Apps installed:', installResponse)
+ *     // Apps installed: installResponse holds the result
  *   } else {
- *     console.log('All requested apps were already installed.')
+ *     // All requested apps were already installed.
  *   }
  * } catch (err) {
  *   if (err.status === 403 && err.data?.message === 'Password confirmation is required') {
- *     console.log('Password confirmation needed before installing apps')
+ *     // Password confirmation needed before installing apps
  *   } else {
  *     console.error('Failed to install apps:', err)
  *   }
@@ -153,12 +150,12 @@
  */
 
 class AppInstallService {
-
 	/** @type {string} */
 	#token
 
 	/**
 	 * Caches the array of apps once fetched.
+	 *
 	 * @type {Promise<object[]>|null}
 	 */
 	#appList = null
@@ -168,12 +165,19 @@ class AppInstallService {
 	 */
 	hasInit = false
 
+	/**
+	 * Capture the Nextcloud request token at construction.
+	 *
+	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
+	 */
 	constructor() {
 		this.#token = this.#getToken()
 	}
 
 	/**
 	 * Async initializer for the service, ensuring the app list is loaded.
+	 *
+	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
 	 */
 	async init() {
 		await this.#ensureAppListLoaded()
@@ -183,6 +187,7 @@ class AppInstallService {
 	/**
 	 * Fetches and stores the app list if not already loaded.
 	 * Ensures you only fetch once and cache the results in memory.
+	 *
 	 * @private
 	 */
 	async #ensureAppListLoaded() {
@@ -193,6 +198,7 @@ class AppInstallService {
 
 	/**
 	 * Retrieves the request token from the Nextcloud global object.
+	 *
 	 * @private
 	 * @return {string}
 	 */
@@ -202,6 +208,7 @@ class AppInstallService {
 
 	/**
 	 * Helper function for making fetch calls with uniform error handling.
+	 *
 	 * @private
 	 * @param {string} url - The URL to fetch
 	 * @param {object} [fetchOptions] - The fetch options
@@ -247,6 +254,7 @@ class AppInstallService {
 
 	/**
 	 * Fetch the full list of apps from the server.
+	 *
 	 * @private
 	 * @return {Promise<object[]>} - Resolves to an array of apps
 	 */
@@ -256,13 +264,16 @@ class AppInstallService {
 		})
 		if (!data || !data.apps) {
 			// In case the response structure doesn't match expectations:
-			throw new Error('[AppInstallService] Unexpected response format from /apps/list')
+			throw new Error(
+				'[AppInstallService] Unexpected response format from /apps/list',
+			)
 		}
 		return data.apps
 	}
 
 	/**
 	 * Retrieves the local cached list of apps (ensuring it's loaded first).
+	 *
 	 * @private
 	 * @return {Promise<object[]>}
 	 */
@@ -273,6 +284,7 @@ class AppInstallService {
 
 	/**
 	 * Finds an app in the cached list by ID.
+	 *
 	 * @private
 	 * @param {string} appId - The app ID
 	 * @return {Promise<object|null>}
@@ -284,6 +296,8 @@ class AppInstallService {
 
 	/**
 	 * Invalidates the cached app list.
+	 *
+	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
 	 */
 	async invalidateCache() {
 		this.#appList = null
@@ -291,6 +305,8 @@ class AppInstallService {
 
 	/**
 	 * Invalidates the apps list cache and then re-fetches the list and caches it.
+	 *
+	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
 	 */
 	async reloadCacheList() {
 		this.invalidateCache()
@@ -299,8 +315,10 @@ class AppInstallService {
 
 	/**
 	 * Check if an app is installed by passing it an app ID.
+	 *
 	 * @param { string } appId - The app ID
 	 * @return { Promise<boolean> } - True if the app is installed, false otherwise
+	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
 	 */
 	async isAppInstalled(appId) {
 		const appData = await this.#findAppInCachedList(appId)
@@ -312,8 +330,10 @@ class AppInstallService {
 
 	/**
 	 * Get app data by passing it an app ID
+	 *
 	 * @param { string } appId - The app ID
 	 * @return { Promise<object> } - The app data
+	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
 	 */
 	async getAppData(appId) {
 		const appData = await this.#findAppInCachedList(appId)
@@ -327,9 +347,11 @@ class AppInstallService {
 	 * Install an app or multiple apps.
 	 * Skips any apps already installed.
 	 * Invalidates the cached app list after installation.
+	 *
 	 * @param {string | string[]} appIds - The app ID or an array of app IDs
 	 * @return {Promise<object|null>} The JSON response or null if no installation was necessary
 	 * @throws {RequestError} - If the network request fails or password confirmation is required (status 403)
+	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
 	 */
 	async installApp(appIds) {
 		if (!appIds) {
@@ -342,7 +364,9 @@ class AppInstallService {
 
 		const appsToInstall = []
 		for (const appId of appIds) {
-			const alreadyInstalled = await this.isAppInstalled(appId).catch(() => false)
+			const alreadyInstalled = await this.isAppInstalled(appId).catch(
+				() => false,
+			)
 			if (!alreadyInstalled) {
 				appsToInstall.push(appId)
 			}
@@ -367,9 +391,11 @@ class AppInstallService {
 	/**
 	 * Force-install an app or multiple apps.
 	 * Invalidates the cached app list after installation.
+	 *
 	 * @param {string | string[]} appIds - The app ID or an array of app IDs
 	 * @return {Promise<object>} The response from the final install call
 	 * @throws {RequestError} - If the force calls or install fails, or password confirmation is required (status 403)
+	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
 	 */
 	async forceInstallApp(appIds) {
 		if (!Array.isArray(appIds)) {
@@ -394,9 +420,11 @@ class AppInstallService {
 	/**
 	 * Uninstall an app or multiple apps.
 	 * Invalidates the cached app list after uninstallation.
+	 *
 	 * @param {string | string[]} appIds - The app ID or an array of app IDs
 	 * @return {Promise<object>} The response from the final uninstall call
 	 * @throws {RequestError} - If the network request fails or password confirmation is required (status 403)
+	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
 	 */
 	async uninstallApp(appIds) {
 		if (!appIds) {
@@ -430,18 +458,17 @@ class AppInstallService {
 			body: JSON.stringify({ appIds }),
 		}).finally(() => this.reloadCacheList())
 	}
-
 }
 
 /**
  * Custom error class for HTTP request failures.
  */
 class RequestError extends Error {
-
 	/**
 	 * @param {string} message - Error message
 	 * @param {Response} response - The fetch Response object
 	 * @param {any} [data] - The parsed response body (if available)
+	 * @spec exclude DI constructor
 	 */
 	constructor(message, response, data) {
 		super(message)
@@ -450,8 +477,7 @@ class RequestError extends Error {
 		this.status = response.status
 		this.data = data
 	}
-
 }
 
-export { RequestError, AppInstallService }
+export { AppInstallService, RequestError }
 export default AppInstallService

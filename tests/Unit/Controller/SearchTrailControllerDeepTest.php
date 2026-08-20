@@ -7,177 +7,177 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use OCA\OpenRegister\Controller\SearchTrailController;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
-class SearchTrailControllerDeepTest extends TestCase
-{
-    private SearchTrailController $controller;
-    private IRequest|MockObject $request;
-    private SearchTrailService|MockObject $searchTrailService;
+class SearchTrailControllerDeepTest extends TestCase {
+	private SearchTrailController $controller;
+	private IRequest|MockObject $request;
+	private SearchTrailService|MockObject $searchTrailService;
+	private IUserSession|MockObject $userSession;
+	private IGroupManager|MockObject $groupManager;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->request = $this->createMock(IRequest::class);
-        $this->searchTrailService = $this->createMock(SearchTrailService::class);
+		$this->request = $this->createMock(IRequest::class);
+		$this->searchTrailService = $this->createMock(SearchTrailService::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
 
-        $this->controller = new SearchTrailController(
-            'openregister',
-            $this->request,
-            $this->searchTrailService
-        );
-    }
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('admin');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
 
-    public function testShowNotFound(): void
-    {
-        $this->searchTrailService->method('getSearchTrail')
-            ->willThrowException(new DoesNotExistException('not found'));
+		$this->controller = new SearchTrailController(
+			'openregister',
+			$this->request,
+			$this->searchTrailService,
+			$this->userSession,
+			$this->groupManager
+		);
+	}
 
-        $response = $this->controller->show(999);
+	public function testShowNotFound(): void {
+		$this->searchTrailService->method('getSearchTrail')
+			->willThrowException(new DoesNotExistException('not found'));
 
-        $this->assertEquals(404, $response->getStatus());
-    }
+		$response = $this->controller->show(999);
 
-    public function testShowException(): void
-    {
-        $this->searchTrailService->method('getSearchTrail')
-            ->willThrowException(new \Exception('db error'));
+		$this->assertEquals(404, $response->getStatus());
+	}
 
-        $response = $this->controller->show(1);
+	public function testShowException(): void {
+		$this->searchTrailService->method('getSearchTrail')
+			->willThrowException(new \Exception('db error'));
 
-        $this->assertEquals(500, $response->getStatus());
-    }
+		$response = $this->controller->show(1);
 
-    public function testDestroyNotFound(): void
-    {
-        $this->searchTrailService->method('getSearchTrail')
-            ->willThrowException(new DoesNotExistException('not found'));
+		$this->assertEquals(500, $response->getStatus());
+	}
 
-        $response = $this->controller->destroy(999);
+	public function testDestroyNotFound(): void {
+		$this->searchTrailService->method('getSearchTrail')
+			->willThrowException(new DoesNotExistException('not found'));
 
-        $this->assertEquals(404, $response->getStatus());
-    }
+		$response = $this->controller->destroy(999);
 
-    public function testDestroyException(): void
-    {
-        $this->searchTrailService->method('getSearchTrail')
-            ->willThrowException(new \Exception('delete error'));
+		$this->assertEquals(404, $response->getStatus());
+	}
 
-        $response = $this->controller->destroy(1);
+	public function testDestroyException(): void {
+		$this->searchTrailService->method('getSearchTrail')
+			->willThrowException(new \Exception('delete error'));
 
-        $this->assertEquals(500, $response->getStatus());
-    }
+		$response = $this->controller->destroy(1);
 
-    public function testDestroyMultiple(): void
-    {
-        $response = $this->controller->destroyMultiple();
+		$this->assertEquals(500, $response->getStatus());
+	}
 
-        $this->assertEquals(200, $response->getStatus());
-        $data = $response->getData();
-        $this->assertTrue($data['success']);
-    }
+	public function testDestroyMultiple(): void {
+		$response = $this->controller->destroyMultiple();
 
-    public function testStatisticsException(): void
-    {
-        $this->request->method('getParams')->willReturn([]);
-        $this->searchTrailService->method('getSearchStatistics')
-            ->willThrowException(new \Exception('stats error'));
+		$this->assertEquals(200, $response->getStatus());
+		$data = $response->getData();
+		$this->assertTrue($data['success']);
+	}
 
-        $response = $this->controller->statistics();
+	public function testStatisticsException(): void {
+		$this->request->method('getParams')->willReturn([]);
+		$this->searchTrailService->method('getSearchStatistics')
+			->willThrowException(new \Exception('stats error'));
 
-        $this->assertEquals(500, $response->getStatus());
-    }
+		$response = $this->controller->statistics();
 
-    public function testCleanupInvalidDate(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['before', null, 'not-a-date'],
-            ]);
+		$this->assertEquals(500, $response->getStatus());
+	}
 
-        $response = $this->controller->cleanup();
+	public function testCleanupInvalidDate(): void {
+		$this->request->method('getParam')
+			->willReturnMap([
+				['before', null, 'not-a-date'],
+			]);
 
-        $this->assertEquals(400, $response->getStatus());
-    }
+		$response = $this->controller->cleanup();
 
-    public function testCleanupException(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['before', null, null],
-            ]);
-        $this->searchTrailService->method('cleanupSearchTrails')
-            ->willThrowException(new \Exception('cleanup error'));
+		$this->assertEquals(400, $response->getStatus());
+	}
 
-        $response = $this->controller->cleanup();
+	public function testCleanupException(): void {
+		$this->request->method('getParam')
+			->willReturnMap([
+				['before', null, null],
+			]);
+		$this->searchTrailService->method('cleanupSearchTrails')
+			->willThrowException(new \Exception('cleanup error'));
 
-        $this->assertEquals(500, $response->getStatus());
-    }
+		$response = $this->controller->cleanup();
 
-    public function testArrayToCsvEmpty(): void
-    {
-        $ref = new ReflectionClass(SearchTrailController::class);
-        $method = $ref->getMethod('arrayToCsv');
-        $method->setAccessible(true);
+		$this->assertEquals(500, $response->getStatus());
+	}
 
-        $result = $method->invoke($this->controller, []);
+	public function testArrayToCsvEmpty(): void {
+		$ref = new ReflectionClass(SearchTrailController::class);
+		$method = $ref->getMethod('arrayToCsv');
+		$method->setAccessible(true);
 
-        $this->assertEquals('', $result);
-    }
+		$result = $method->invoke($this->controller, []);
 
-    public function testArrayToCsvWithData(): void
-    {
-        $ref = new ReflectionClass(SearchTrailController::class);
-        $method = $ref->getMethod('arrayToCsv');
-        $method->setAccessible(true);
+		$this->assertEquals('', $result);
+	}
 
-        $data = [
-            ['name' => 'foo', 'value' => 'bar'],
-            ['name' => 'baz', 'value' => 'qux'],
-        ];
-        $result = $method->invoke($this->controller, $data);
+	public function testArrayToCsvWithData(): void {
+		$ref = new ReflectionClass(SearchTrailController::class);
+		$method = $ref->getMethod('arrayToCsv');
+		$method->setAccessible(true);
 
-        $this->assertStringContainsString('name,value', $result);
-        $this->assertStringContainsString('foo,bar', $result);
-    }
+		$data = [
+			['name' => 'foo', 'value' => 'bar'],
+			['name' => 'baz', 'value' => 'qux'],
+		];
+		$result = $method->invoke($this->controller, $data);
 
-    public function testPaginateWithOffsetAndPage(): void
-    {
-        $ref = new ReflectionClass(SearchTrailController::class);
-        $method = $ref->getMethod('paginate');
-        $method->setAccessible(true);
+		$this->assertStringContainsString('name,value', $result);
+		$this->assertStringContainsString('foo,bar', $result);
+	}
 
-        $results = range(1, 5);
-        $result = $method->invoke($this->controller, $results, 100, 10, 0, 3);
+	public function testPaginateWithOffsetAndPage(): void {
+		$ref = new ReflectionClass(SearchTrailController::class);
+		$method = $ref->getMethod('paginate');
+		$method->setAccessible(true);
 
-        $this->assertEquals(3, $result['page']);
-        $this->assertEquals(10, $result['pages']);
-    }
+		$results = range(1, 5);
+		$result = $method->invoke($this->controller, $results, 100, 10, 0, 3);
 
-    public function testExtractRequestParametersWithDates(): void
-    {
-        $this->request->method('getParams')->willReturn([
-            '_limit' => '5',
-            '_page' => '2',
-            'from' => '2024-01-01',
-            'to' => '2024-12-31',
-            '_sort' => 'created',
-            '_order' => 'ASC',
-        ]);
+		$this->assertEquals(3, $result['page']);
+		$this->assertEquals(10, $result['pages']);
+	}
 
-        $ref = new ReflectionClass(SearchTrailController::class);
-        $method = $ref->getMethod('extractRequestParameters');
-        $method->setAccessible(true);
+	public function testExtractRequestParametersWithDates(): void {
+		$this->request->method('getParams')->willReturn([
+			'_limit' => '5',
+			'_page' => '2',
+			'from' => '2024-01-01',
+			'to' => '2024-12-31',
+			'_sort' => 'created',
+			'_order' => 'ASC',
+		]);
 
-        $params = $method->invoke($this->controller);
+		$ref = new ReflectionClass(SearchTrailController::class);
+		$method = $ref->getMethod('extractRequestParameters');
+		$method->setAccessible(true);
 
-        $this->assertEquals(5, $params['limit']);
-        $this->assertEquals(2, $params['page']);
-        $this->assertInstanceOf(\DateTime::class, $params['from']);
-        $this->assertInstanceOf(\DateTime::class, $params['to']);
-    }
+		$params = $method->invoke($this->controller);
+
+		$this->assertEquals(5, $params['limit']);
+		$this->assertEquals(2, $params['page']);
+		$this->assertInstanceOf(\DateTime::class, $params['from']);
+		$this->assertInstanceOf(\DateTime::class, $params['to']);
+	}
 }

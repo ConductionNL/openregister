@@ -25,7 +25,8 @@ The access control system integrates with:
 Access can be controlled at multiple levels:
 - Register level - Control access to entire registers
 - Schema level - Manage permissions for specific register/schema combinations
-- Object level - Set permissions on individual objects
+- Object level - Set permissions on individual objects, make one object `private`,
+  and invite a principal to it (see [Object Sharing](./object-sharing.md))
 - Property level - Fine-grained, conditional control over specific object properties (see [Property Authorization](./property-authorization.md))
 
 ## Permission Types
@@ -223,6 +224,73 @@ graph TB
     style EXCEPTION fill:#F5A623
     style ADMIN fill:#E74C3C
 ```
+
+### The action vocabulary: closed by default, extensible by declaration
+
+An `authorization` block may name `create`, `read`, `update` or `delete`, plus
+any action the schema **declares** for itself:
+
+```json
+"x-openregister-action": {
+  "sendMail": {
+    "name": "Send mail",
+    "description": "Send a message as the acting user."
+  }
+}
+```
+
+With that declaration in the schema's `configuration`, `"sendMail": ["staff"]`
+is a legal authorization rule. Without it, the import **fails**, naming the
+offending action and listing what is allowed.
+
+That refusal is the point, not a safety rail bolted onto it. An open vocabulary
+would let a typo — `raed` for `read` — save cleanly as a permission that is
+never granted and never errors: a rule that appears to protect something and
+protects nothing. A schema that declares a permission nobody can satisfy is the
+bug being prevented.
+
+Declaring an action **grants and enforces nothing**. It defines a *name* that an
+authorization block, an event listener and the grantable-rights index can all
+refer to; the app still enforces its own operation. A declaration with no
+`description` is ignored, because an action that reaches a permission matrix
+without telling the person granting it what they are agreeing to is worse than
+no entry at all.
+
+### The `mcp` scope: what may be OFFERED, never what is HELD
+
+`mcp` sits beside `public`, `authenticated` and `admin`, and means: *this action,
+on this schema, may be offered to an agent.*
+
+It does **not** mean an agent has it. RBAC resolves through Nextcloud groups,
+which are per **user** — two agents owned by one person are indistinguishable to
+it. Whether a specific agent holds a right stays resolved in Hermiq against that
+agent's own grants, where the request-and-approve flow already lives. The
+relationship is: **`mcp` bounds the menu, Hermiq picks from it.**
+
+**It never grants.** An administrator can create a real Nextcloud group called
+`mcp`; without a guard, its members would inherit every action any schema ever
+documented as an agent surface. The evaluator refuses the match outright, in both
+the bare-string and `{"group": "mcp"}` rule forms, in both rule interpreters.
+
+⚠️ **Writing `mcp` into `authorization` DOES opt the schema into authorization.**
+A block is fail-closed once non-empty, so `{"read": ["mcp"]}` denies every action
+it does not list — including `read` itself, since the scope satisfies nobody. If
+you want to record an agent surface *without* changing enforcement, use the
+`x-openregister-mcp` dialect instead. That is where the surface belongs, and
+where every live declaration on this instance already is.
+
+That rule was chosen after the alternative was measured and rejected. Treating an
+offers-only block as *absent* — so the annotation changed nothing — sounds like
+the right reading of a descriptive token, but "absent" means **default-open**: the
+schema became readable by every authenticated user and by anonymous callers. An
+author documenting an agent surface would have published the schema instead of
+restricting it. Between a fail-safe and a fail-open reading of an ambiguous block,
+the block gets the fail-safe one: a denial is loud and quickly fixed, a silent
+grant to anonymous is a breach.
+
+An **explicitly empty** rule list (`"read": []"`) means *grant this action to
+nobody* and is preserved for the same reason — it is the strictest rule the
+grammar can express, and reading it as "no rule" would flip it to default-open.
 
 ### Authorization Exception System
 
@@ -849,6 +917,21 @@ ORDER BY priority DESC;
 5. **Unauthenticated Access**
    - Unauthenticated users only see objects with 'public' in read permissions
    - Fallback to published object filtering can be enabled (currently disabled)
+
+## Restricting OpenRegister to a user group
+
+Nextcloud administrators can limit OpenRegister to specific groups via **Apps → OpenRegister → Limit to groups** (or `occ app:enable openregister --groups <group>`). Because Nextcloud gates app routes by `IAppManager::isEnabledForUser()`, this blocks **every non-public route** for any user outside those groups — including admins who are not members, and other apps calling OpenRegister on a user's behalf. Only routes marked `#[PublicPage]` bypass the restriction.
+
+OpenRegister is a data platform whose register, schema, and object **read** endpoints are consumed by other apps for all users. To keep those reachable while limiting **management** to the restriction group, the read surface is public-by-route and write/management endpoints are not:
+
+| Operation | Route visibility | Behaviour under app-group restriction |
+|-----------|------------------|----------------------------------------|
+| Read registers / schemas / objects (`index`, `show`) | `#[PublicPage]` | Reachable by all users (and consuming apps), in or out of the group |
+| Create / update / delete registers & schemas | not public | Blocked for users outside the group (and additionally gated to admin / manage-permission) |
+
+**Anonymous access to the public read endpoints is limited to *published* resources.** A register or schema is only returned to an unauthenticated caller when its `published` field is set and it has not been depublished; an anonymous request for an unpublished register/schema returns `401`. Authenticated users are unaffected and continue to receive results scoped by the RBAC rules described above. Object reads remain governed by `ObjectService` / `PermissionHandler` regardless of the resolved identity.
+
+Net effect: group-restricting OpenRegister hides the management UI and write operations from non-group users while leaving the consumed read APIs (and published catalogue data) available. See also the register/schema write-authorization rules below and in `RegistersController` / `SchemasController`.
 
 ## Authorization Exceptions
 

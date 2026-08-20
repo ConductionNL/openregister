@@ -3,10 +3,13 @@
 /**
  * OpenRegister ScheduledWorkflow Entity
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -53,177 +56,178 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor
  */
-class ScheduledWorkflow extends Entity implements JsonSerializable
-{
+class ScheduledWorkflow extends Entity implements JsonSerializable {
 
-    /**
-     * The uuid.
-     *
-     * @var string|null
-     */
-    protected ?string $uuid = null;
+	/**
+	 * The uuid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $uuid = null;
 
-    /**
-     * The name.
-     *
-     * @var string|null
-     */
-    protected ?string $name = null;
+	/**
+	 * The name.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $name = null;
 
-    /**
-     * The engine.
-     *
-     * @var string|null
-     */
-    protected ?string $engine = null;
+	/**
+	 * The engine.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $engine = null;
 
-    /**
-     * The workflow id.
-     *
-     * @var string|null
-     */
-    protected ?string $workflowId = null;
+	/**
+	 * The workflow id.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $workflowId = null;
 
-    /**
-     * The register id.
-     *
-     * @var integer|null
-     */
-    protected ?int $registerId = null;
+	/**
+	 * The register id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $registerId = null;
 
-    /**
-     * The schema id.
-     *
-     * @var integer|null
-     */
-    protected ?int $schemaId = null;
+	/**
+	 * The schema id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $schemaId = null;
 
-    /**
-     * The interval sec.
-     *
-     * @var integer
-     */
-    protected int $intervalSec = 86400;
+	/**
+	 * The interval sec.
+	 *
+	 * @var integer
+	 */
+	protected int $intervalSec = 86400;
 
-    /**
-     * The enabled.
-     *
-     * @var boolean
-     */
-    protected bool $enabled = true;
+	/**
+	 * The enabled.
+	 *
+	 * @var boolean
+	 */
+	protected bool $enabled = true;
 
-    /**
-     * The payload.
-     *
-     * @var string|null
-     */
-    protected ?string $payload = null;
+	/**
+	 * The payload.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $payload = null;
 
-    /**
-     * The last run.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $lastRun = null;
+	/**
+	 * The last run.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $lastRun = null;
 
-    /**
-     * The last status.
-     *
-     * @var string|null
-     */
-    protected ?string $lastStatus = null;
+	/**
+	 * The last status.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $lastStatus = null;
 
-    /**
-     * The created.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $created = null;
+	/**
+	 * The created.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $created = null;
 
-    /**
-     * The updated.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $updated = null;
+	/**
+	 * The updated.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $updated = null;
 
-    /**
-     * Constructor for ScheduledWorkflow entity.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'uuid', type: 'string');
-        $this->addType(fieldName: 'name', type: 'string');
-        $this->addType(fieldName: 'engine', type: 'string');
-        $this->addType(fieldName: 'workflowId', type: 'string');
-        $this->addType(fieldName: 'registerId', type: 'integer');
-        $this->addType(fieldName: 'schemaId', type: 'integer');
-        $this->addType(fieldName: 'intervalSec', type: 'integer');
-        $this->addType(fieldName: 'enabled', type: 'boolean');
-        $this->addType(fieldName: 'payload', type: 'string');
-        $this->addType(fieldName: 'lastRun', type: 'datetime');
-        $this->addType(fieldName: 'lastStatus', type: 'string');
-        $this->addType(fieldName: 'created', type: 'datetime');
-        $this->addType(fieldName: 'updated', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Constructor for ScheduledWorkflow entity.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'uuid', type: 'string');
+		$this->addType(fieldName: 'name', type: 'string');
+		$this->addType(fieldName: 'engine', type: 'string');
+		$this->addType(fieldName: 'workflowId', type: 'string');
+		$this->addType(fieldName: 'registerId', type: 'integer');
+		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addType(fieldName: 'intervalSec', type: 'integer');
+		$this->addType(fieldName: 'enabled', type: 'boolean');
+		$this->addType(fieldName: 'payload', type: 'string');
+		$this->addType(fieldName: 'lastRun', type: 'datetime');
+		$this->addType(fieldName: 'lastStatus', type: 'string');
+		$this->addType(fieldName: 'created', type: 'datetime');
+		$this->addType(fieldName: 'updated', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * Hydrate entity from array.
-     *
-     * @param array<string, mixed> $object Data to hydrate from
-     *
-     * @return self
-     */
-    public function hydrate(array $object): self
-    {
-        $fields = [
-            'uuid',
-            'name',
-            'engine',
-            'workflowId',
-            'registerId',
-            'schemaId',
-            'intervalSec',
-            'enabled',
-            'payload',
-            'lastRun',
-            'lastStatus',
-            'created',
-            'updated',
-        ];
+	/**
+	 * Hydrate entity from array.
+	 *
+	 * @param array<string, mixed> $object Data to hydrate from
+	 *
+	 * @return self
+	 */
+	public function hydrate(array $object): self {
+		$fields = [
+			'uuid',
+			'name',
+			'engine',
+			'workflowId',
+			'registerId',
+			'schemaId',
+			'intervalSec',
+			'enabled',
+			'payload',
+			'lastRun',
+			'lastStatus',
+			'created',
+			'updated',
+		];
 
-        foreach ($object as $key => $value) {
-            if (in_array($key, $fields, true) === true) {
-                $setter = 'set'.ucfirst($key);
-                $this->$setter($value);
-            }
-        }
+		foreach ($object as $key => $value) {
+			if (in_array($key, $fields, true) === true) {
+				$setter = 'set' . ucfirst($key);
+				$this->$setter($value);
+			}
+		}
 
-        return $this;
-    }//end hydrate()
+		return $this;
+	}//end hydrate()
 
-    /**
-     * Serialize to JSON.
-     *
-     * @return array<string, mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'          => $this->id,
-            'uuid'        => $this->uuid,
-            'name'        => $this->name,
-            'engine'      => $this->engine,
-            'workflowId'  => $this->workflowId,
-            'registerId'  => $this->registerId,
-            'schemaId'    => $this->schemaId,
-            'intervalSec' => $this->intervalSec,
-            'enabled'     => $this->enabled,
-            'payload'     => $this->payload !== null ? json_decode($this->payload, true) : null,
-            'lastRun'     => $this->lastRun?->format('c'),
-            'lastStatus'  => $this->lastStatus,
-            'created'     => $this->created?->format('c'),
-            'updated'     => $this->updated?->format('c'),
-        ];
-    }//end jsonSerialize()
+	/**
+	 * Serialize to JSON.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function jsonSerialize(): array {
+		$payload = null;
+		if ($this->payload !== null) {
+			$payload = json_decode($this->payload, true);
+		}
+
+		return [
+			'id' => $this->id,
+			'uuid' => $this->uuid,
+			'name' => $this->name,
+			'engine' => $this->engine,
+			'workflowId' => $this->workflowId,
+			'registerId' => $this->registerId,
+			'schemaId' => $this->schemaId,
+			'intervalSec' => $this->intervalSec,
+			'enabled' => $this->enabled,
+			'payload' => $payload,
+			'lastRun' => $this->lastRun?->format('c'),
+			'lastStatus' => $this->lastStatus,
+			'created' => $this->created?->format('c'),
+			'updated' => $this->updated?->format('c'),
+		];
+	}//end jsonSerialize()
 }//end class

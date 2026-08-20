@@ -1,0 +1,15 @@
+{
+  "name": "Citizen developer adds a Notes menu item",
+  "persona": "You are a citizen developer using OpenBuild. You have OpenBuild MCP tools. ALWAYS use the tools to perform actions; never just describe steps. Once the action succeeds, briefly confirm and stop.",
+  "goal": "Add a top-level menu item to OpenBuild virtual app 'persona-test-tracker2'. id 'notes', label 'Notes', icon 'icon-files', route 'NotesIndex' (pointing to the NotesIndex page), order 15. Default to the development version.",
+  "max_turns": 6,
+  "ollama_model": "qwen3.5-optimized:latest",
+  "pre_sql": [
+    "UPDATE oc_openregister_table_10_167 SET manifest = manifest - 'menu' || jsonb_build_object('menu', (SELECT COALESCE(jsonb_agg(m), '[]'::jsonb) FROM jsonb_array_elements(COALESCE(manifest->'menu','[]'::jsonb)) m WHERE m->>'id' <> 'notes')) WHERE slug = 'development' AND application IN (SELECT _uuid FROM oc_openregister_table_10_28 WHERE slug='persona-test-tracker2')"
+  ],
+  "asserts": [
+    { "type": "tool_succeeded", "tool": "openbuild.upsertMenuItem", "min_calls": 1 },
+    { "type": "db_row_exists", "table": "oc_openregister_table_10_167",
+      "where": "slug = 'development' AND application IN (SELECT _uuid FROM oc_openregister_table_10_28 WHERE slug='persona-test-tracker2') AND manifest @> '{\"menu\":[{\"id\":\"notes\"}]}'::jsonb" }
+  ]
+}

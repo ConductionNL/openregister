@@ -1,34 +1,46 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { organisationStore, navigationStore } from '../../store/store.js'
+import { navigationStore, organisationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog
-		name="Delete Organisation"
-		size="normal"
-		:can-close="false">
+	<NcDialog name="Delete Organisation" size="normal" :canClose="false">
 		<p v-if="!success && canDelete">
-			Are you sure you want to permanently delete <b>{{ organisationStore.organisationItem?.name }}</b>? This action cannot be undone.
+			Are you sure you want to permanently delete
+			<b>{{ organisationStore.organisationItem?.name }}</b
+			>? This action cannot be undone.
 		</p>
-		<p v-if="!success && !canDelete && organisationStore.organisationItem?.isDefault">
-			Cannot delete the default organisation. The default organisation is required for the system to function properly.
+		<p
+			v-if="
+				!success
+				&& !canDelete
+				&& organisationStore.organisationItem?.isDefault
+			">
+			Cannot delete the default organisation. The default organisation is
+			required for the system to function properly.
 		</p>
 		<p v-if="!success && !canDelete && !isOwner">
-			You can only delete organisations that you own. You are not the owner of <b>{{ organisationStore.organisationItem?.name }}</b>.
+			You can only delete organisations that you own. You are not the owner of
+			<b>{{ organisationStore.organisationItem?.name }}</b
+			>.
 		</p>
 		<p v-if="!success && !canDelete && hasMembers">
-			This organisation has {{ memberCount }} members. Please remove all members before deleting the organisation.
+			This organisation has {{ memberCount }} members. Please remove all
+			members before deleting the organisation.
 		</p>
 		<p v-if="!success && !canDelete && isActiveOrganisation">
-			Cannot delete your currently active organisation. Please switch to another organisation first.
+			Cannot delete your currently active organisation. Please switch to
+			another organisation first.
 		</p>
 
 		<NcNoteCard v-if="!success && canDelete" type="warning">
 			<p><strong>Warning:</strong> This will permanently delete:</p>
 			<ul>
 				<li>The organisation and all its metadata</li>
-				<li>All registers, schemas, and objects belonging to this organisation</li>
+				<li>
+					All registers, schemas, and objects belonging to this
+					organisation
+				</li>
 				<li>All audit trails and search history for this organisation</li>
 			</ul>
 		</NcNoteCard>
@@ -51,7 +63,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 			<NcButton
 				v-if="!success"
 				:disabled="loading || !canDelete"
-				type="error"
+				variant="error"
 				@click="deleteOrganisation()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -64,13 +76,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import {
-	NcButton,
-	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
-
+import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
@@ -85,6 +91,7 @@ export default {
 		TrashCanOutline,
 		Cancel,
 	},
+
 	data() {
 		return {
 			success: false,
@@ -93,41 +100,74 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	computed: {
+		/**
+		 * @spec exclude Computed ownership check gating the delete UI; UI state helper.
+		 */
 		isOwner() {
 			// Check if current user is the owner of the organisation
 			const currentUser = this.getCurrentUser()
 			return organisationStore.organisationItem?.owner === currentUser
 		},
+
+		/**
+		 * @spec exclude Computed member-presence check for the delete warning; UI state helper.
+		 */
 		hasMembers() {
-		// Check if organisation has members (excluding the owner)
+			// Check if organisation has members (excluding the owner)
 			return (organisationStore.organisationItem?.users?.length || 0) > 1
 		},
+
+		/**
+		 * @spec exclude Computed member count for display; UI presentation helper.
+		 */
 		memberCount() {
 			return organisationStore.organisationItem?.users?.length || 0
 		},
+
+		/**
+		 * @spec exclude Computed check whether this org is the active one; UI state helper.
+		 */
 		isActiveOrganisation() {
 			// Check if this is the currently active organisation
-			return organisationStore.userStats.active
-				   && organisationStore.userStats.active.uuid === organisationStore.organisationItem?.uuid
+			return (
+				organisationStore.userStats.active
+				&& organisationStore.userStats.active.uuid
+					=== organisationStore.organisationItem?.uuid
+			)
 		},
+
+		/**
+		 * @spec exclude Computed delete-enablement guard combining ownership/membership/active checks; UI validation helper.
+		 */
 		canDelete() {
 			// Can only delete if:
 			// 1. Not the default organisation
 			// 2. User is the owner
 			// 3. No other members (or only the owner)
 			// 4. Not the currently active organisation
-			return !organisationStore.organisationItem?.isDefault
-				   && this.isOwner
-				   && !this.hasMembers
-				   && !this.isActiveOrganisation
+			return (
+				!organisationStore.organisationItem?.isDefault
+				&& this.isOwner
+				&& !this.hasMembers
+				&& !this.isActiveOrganisation
+			)
 		},
 	},
+
 	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		getCurrentUser() {
 			// Implementation would depend on how you get current user
 			return 'current-user' // Placeholder
 		},
+
+		/**
+		 * @spec exclude Modal close handler resetting navigationStore.modal and local state; UI plumbing.
+		 */
 		closeDialog() {
 			navigationStore.setModal(false)
 			clearTimeout(this.closeModalTimeout)
@@ -135,6 +175,10 @@ export default {
 			this.loading = false
 			this.error = false
 		},
+
+		/**
+		 * @spec exclude Delete-confirm handler delegating to organisationStore.deleteOrganisation; entity mutation lives in the store, this is modal orchestration plumbing.
+		 */
 		async deleteOrganisation() {
 			this.loading = true
 			this.error = null
@@ -151,11 +195,12 @@ export default {
 					this.$router.push('/organisation')
 					this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
 				}
-
 			} catch (error) {
 				console.error('Error deleting organisation:', error)
 				this.success = false
-				this.error = error.message || 'An error occurred while deleting the organisation'
+				this.error =
+					error.message
+					|| 'An error occurred while deleting the organisation'
 			} finally {
 				this.loading = false
 			}

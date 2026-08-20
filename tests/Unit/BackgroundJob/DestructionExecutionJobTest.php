@@ -24,37 +24,33 @@ use ReflectionClass;
 /**
  * Test class for DestructionExecutionJob
  */
-class DestructionExecutionJobTest extends TestCase
-{
-    private ITimeFactory&MockObject $timeFactory;
+class DestructionExecutionJobTest extends TestCase {
+	private ITimeFactory&MockObject $timeFactory;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->timeFactory = $this->createMock(ITimeFactory::class);
-    }
+	protected function setUp(): void {
+		parent::setUp();
+		$this->timeFactory = $this->createMock(ITimeFactory::class);
+	}
 
-    /**
-     * Test that the job extends QueuedJob.
-     */
-    public function testIsQueuedJob(): void
-    {
-        $reflection = new ReflectionClass(DestructionExecutionJob::class);
+	/**
+	 * Test that the job extends QueuedJob.
+	 */
+	public function testIsQueuedJob(): void {
+		$reflection = new ReflectionClass(DestructionExecutionJob::class);
 
-        $this->assertTrue($reflection->isSubclassOf(\OCP\BackgroundJob\QueuedJob::class));
-        $this->assertTrue($reflection->hasMethod('run'));
-    }
+		$this->assertTrue($reflection->isSubclassOf(\OCP\BackgroundJob\QueuedJob::class));
+		$this->assertTrue($reflection->hasMethod('run'));
+	}
 
-    /**
-     * Test that DEFAULT_BATCH_SIZE is reasonable.
-     */
-    public function testDefaultBatchSize(): void
-    {
-        $reflection = new ReflectionClass(DestructionExecutionJob::class);
-        $constants  = $reflection->getConstants();
+	/**
+	 * Test that DEFAULT_BATCH_SIZE is reasonable.
+	 */
+	public function testDefaultBatchSize(): void {
+		$reflection = new ReflectionClass(DestructionExecutionJob::class);
+		$constants = $reflection->getConstants();
 
-        $this->assertArrayHasKey('DEFAULT_BATCH_SIZE', $constants);
-        $this->assertGreaterThan(0, $constants['DEFAULT_BATCH_SIZE']);
-        $this->assertLessThanOrEqual(100, $constants['DEFAULT_BATCH_SIZE']);
-    }
+		$this->assertArrayHasKey('DEFAULT_BATCH_SIZE', $constants);
+		$this->assertGreaterThan(0, $constants['DEFAULT_BATCH_SIZE']);
+		$this->assertLessThanOrEqual(100, $constants['DEFAULT_BATCH_SIZE']);
+	}
 }

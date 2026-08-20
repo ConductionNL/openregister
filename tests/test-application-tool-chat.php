@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Test ApplicationTool via chat
  */
@@ -12,8 +13,8 @@ echo "Test 1: Asking agent to list applications...\n";
 echo "────────────────────────────────────────────\n";
 
 $data = [
-    'agentUuid' => '9966ab0a-f168-41ce-be82-fd1111f107e0',  // Agent 4
-    'message' => 'Can you list all available applications in the system?'
+	'agentUuid' => '9966ab0a-f168-41ce-be82-fd1111f107e0',  // Agent 4
+	'message' => 'Can you list all available applications in the system?'
 ];
 
 $ch = curl_init($url);
@@ -30,28 +31,28 @@ curl_close($ch);
 echo "HTTP Code: $httpCode\n\n";
 
 if ($httpCode === 200) {
-    $result = json_decode($response, true);
-    
-    if (isset($result['message']['content'])) {
-        echo "AI Response:\n";
-        echo "────────────────────────────────────────────\n";
-        echo $result['message']['content'] . "\n";
-        echo "────────────────────────────────────────────\n\n";
-        
-        // Check if tool was used (look for function call indicators).
-        $content = strtolower($result['message']['content']);
-        if (strpos($content, 'application') !== false && strpos($content, 'found') !== false) {
-            echo "✓ Tool appears to have been called!\n";
-        } else {
-            echo "? Tool may not have been called (check response)\n";
-        }
-    } else {
-        echo "Response structure:\n";
-        echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
-    }
+	$result = json_decode($response, true);
+
+	if (isset($result['message']['content'])) {
+		echo "AI Response:\n";
+		echo "────────────────────────────────────────────\n";
+		echo $result['message']['content'] . "\n";
+		echo "────────────────────────────────────────────\n\n";
+
+		// Check if tool was used (look for function call indicators).
+		$content = strtolower($result['message']['content']);
+		if (strpos($content, 'application') !== false && strpos($content, 'found') !== false) {
+			echo "✓ Tool appears to have been called!\n";
+		} else {
+			echo "? Tool may not have been called (check response)\n";
+		}
+	} else {
+		echo "Response structure:\n";
+		echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
+	}
 } else {
-    echo "Error! HTTP $httpCode\n";
-    echo substr($response, 0, 500) . "\n";
+	echo "Error! HTTP $httpCode\n";
+	echo substr($response, 0, 500) . "\n";
 }
 
 echo "\n";
@@ -61,8 +62,8 @@ echo "Test 2: Asking agent to create a test application...\n";
 echo "────────────────────────────────────────────\n";
 
 $data2 = [
-    'agentUuid' => '9966ab0a-f168-41ce-be82-fd1111f107e0',
-    'message' => 'Can you create a new application called "Test App" with description "This is a test application"?'
+	'agentUuid' => '9966ab0a-f168-41ce-be82-fd1111f107e0',
+	'message' => 'Can you create a new application called "Test App" with description "This is a test application"?'
 ];
 
 $ch = curl_init($url);
@@ -79,26 +80,25 @@ curl_close($ch);
 echo "HTTP Code: $httpCode\n\n";
 
 if ($httpCode === 200) {
-    $result = json_decode($response, true);
-    
-    if (isset($result['message']['content'])) {
-        echo "AI Response:\n";
-        echo "────────────────────────────────────────────\n";
-        echo $result['message']['content'] . "\n";
-        echo "────────────────────────────────────────────\n\n";
-        
-        // Check if tool was used.
-        $content = strtolower($result['message']['content']);
-        if (strpos($content, 'created') !== false || strpos($content, 'uuid') !== false) {
-            echo "✓ Tool appears to have been called!\n";
-        } else {
-            echo "? Tool may not have been called (check response)\n";
-        }
-    }
+	$result = json_decode($response, true);
+
+	if (isset($result['message']['content'])) {
+		echo "AI Response:\n";
+		echo "────────────────────────────────────────────\n";
+		echo $result['message']['content'] . "\n";
+		echo "────────────────────────────────────────────\n\n";
+
+		// Check if tool was used.
+		$content = strtolower($result['message']['content']);
+		if (strpos($content, 'created') !== false || strpos($content, 'uuid') !== false) {
+			echo "✓ Tool appears to have been called!\n";
+		} else {
+			echo "? Tool may not have been called (check response)\n";
+		}
+	}
 } else {
-    echo "Error! HTTP $httpCode\n";
-    echo substr($response, 0, 500) . "\n";
+	echo "Error! HTTP $httpCode\n";
+	echo substr($response, 0, 500) . "\n";
 }
 
 echo "\n=== TEST COMPLETE ===\n";
-

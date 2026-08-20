@@ -1,0 +1,38 @@
+{
+  "@context": {
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "dct": "http://purl.org/dc/terms/",
+    "owl": "http://www.w3.org/2002/07/owl#"
+  },
+  "@graph": [
+    {
+      "@id": "https://example.org/vocab/sample-scheme",
+      "@type": "skos:ConceptScheme",
+      "dct:title": "Sample Test Scheme",
+      "dct:publisher": "OpenRegister Test Fixtures",
+      "owl:versionInfo": "1.0",
+      "dct:source": "https://example.org/vocab/sample-scheme/source"
+    },
+    {
+      "@id": "https://example.org/vocab/sample-scheme/a",
+      "@type": "skos:Concept",
+      "skos:inScheme": { "@id": "https://example.org/vocab/sample-scheme" },
+      "skos:notation": "A",
+      "skos:prefLabel": [
+        { "@value": "Concept A", "@language": "nl" },
+        { "@value": "Concept A (en)", "@language": "en" }
+      ],
+      "skos:definition": "The top-level concept in the sample hierarchy."
+    },
+    {
+      "@id": "https://example.org/vocab/sample-scheme/b",
+      "@type": "skos:Concept",
+      "skos:inScheme": { "@id": "https://example.org/vocab/sample-scheme" },
+      "skos:notation": "B",
+      "skos:prefLabel": [
+        { "@value": "Concept B", "@language": "nl" }
+      ],
+      "skos:broader": [ { "@id": "https://example.org/vocab/sample-scheme/a" } ]
+    }
+  ]
+}

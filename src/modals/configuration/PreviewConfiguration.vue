@@ -4,10 +4,11 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'previewConfiguration'"
+	<NcDialog
+		v-if="navigationStore.modal === 'previewConfiguration'"
 		name="Preview Configuration Changes"
 		size="large"
-		:can-close="true"
+		:canClose="true"
 		:open="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="error" type="error">
@@ -20,10 +21,14 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			<!-- Summary -->
 			<NcNoteCard type="info">
 				<p>
-					<strong>Configuration:</strong> {{ configurationStore.configurationItem?.title }}<br>
-					<strong>Remote Version:</strong> {{ preview.metadata?.remoteVersion || '-' }}<br>
-					<strong>Local Version:</strong> {{ preview.metadata?.localVersion || '-' }}<br>
-					<strong>Total Changes:</strong> {{ preview.metadata?.totalChanges || 0 }}
+					<strong>Configuration:</strong>
+					{{ configurationStore.configurationItem?.title }}<br />
+					<strong>Remote Version:</strong>
+					{{ preview.metadata?.remoteVersion || '-' }}<br />
+					<strong>Local Version:</strong>
+					{{ preview.metadata?.localVersion || '-' }}<br />
+					<strong>Total Changes:</strong>
+					{{ preview.metadata?.totalChanges || 0 }}
 				</p>
 			</NcNoteCard>
 
@@ -44,42 +49,73 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			</div>
 
 			<!-- Registers Section -->
-			<div v-if="preview.registers && preview.registers.length > 0" class="changeSection">
+			<div
+				v-if="preview.registers && preview.registers.length > 0"
+				class="changeSection">
 				<h3>
 					<Database :size="20" />
 					Registers ({{ preview.registers.length }})
 				</h3>
 				<div class="changeList">
-					<div v-for="(change, index) in preview.registers"
+					<div
+						v-for="(change, index) in preview.registers"
 						:key="'register-' + index"
 						class="changeItem"
-						:class="{ 'changeItem-selected': isRegisterSelected(change.slug) }">
+						:class="{
+							'changeItem-selected': isRegisterSelected(change.slug),
+						}">
 						<div class="changeHeader">
 							<NcCheckboxRadioSwitch
-								:checked="isRegisterSelected(change.slug)"
-								@update:checked="(checked) => toggleRegisterSelection(change.slug, checked)" />
-							<div class="changeTitle">
+								:modelValue="isRegisterSelected(change.slug)"
+								:aria-labelledby="`preview-register-title-${index}`"
+								@update:modelValue="
+									(checked) =>
+										toggleRegisterSelection(change.slug, checked)
+								" />
+							<div
+								:id="`preview-register-title-${index}`"
+								class="changeTitle">
 								<strong>{{ change.title || change.slug }}</strong>
-								<span class="changeBadge" :class="'changeBadge-' + change.action">
+								<span
+									class="changeBadge"
+									:class="'changeBadge-' + change.action">
 									{{ change.action }}
 								</span>
 							</div>
 						</div>
 						<div v-if="change.current" class="changeDetails">
 							<p class="changeDetailRow">
-								<strong>Current:</strong> v{{ change.current.version || '1.0.0' }}
+								<strong>Current:</strong> v{{
+									change.current.version || '1.0.0'
+								}}
 							</p>
 							<p class="changeDetailRow">
-								<strong>Proposed:</strong> v{{ change.proposed.version || '1.0.0' }}
+								<strong>Proposed:</strong> v{{
+									change.proposed.version || '1.0.0'
+								}}
 							</p>
-							<div v-if="change.changes && change.changes.length > 0" class="changesDiff">
-								<strong>Changes ({{ change.changes.length }}):</strong>
+							<div
+								v-if="change.changes && change.changes.length > 0"
+								class="changesDiff">
+								<strong
+									>Changes ({{ change.changes.length }}):</strong
+								>
 								<ul>
-									<li v-for="(diff, i) in change.changes.slice(0, 5)" :key="i">
-										<code>{{ diff.field }}</code>:
-										<span class="diffOld">{{ formatValue(diff.current) }}</span>
+									<li
+										v-for="(diff, i) in change.changes.slice(
+											0,
+											5,
+										)"
+										:key="i">
+										<code>{{ diff.field }}</code
+										>:
+										<span class="diffOld">{{
+											formatValue(diff.current)
+										}}</span>
 										→
-										<span class="diffNew">{{ formatValue(diff.proposed) }}</span>
+										<span class="diffNew">{{
+											formatValue(diff.proposed)
+										}}</span>
 									</li>
 									<li v-if="change.changes.length > 5">
 										... and {{ change.changes.length - 5 }} more
@@ -95,42 +131,73 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			</div>
 
 			<!-- Schemas Section -->
-			<div v-if="preview.schemas && preview.schemas.length > 0" class="changeSection">
+			<div
+				v-if="preview.schemas && preview.schemas.length > 0"
+				class="changeSection">
 				<h3>
 					<FileDocument :size="20" />
 					Schemas ({{ preview.schemas.length }})
 				</h3>
 				<div class="changeList">
-					<div v-for="(change, index) in preview.schemas"
+					<div
+						v-for="(change, index) in preview.schemas"
 						:key="'schema-' + index"
 						class="changeItem"
-						:class="{ 'changeItem-selected': isSchemaSelected(change.slug) }">
+						:class="{
+							'changeItem-selected': isSchemaSelected(change.slug),
+						}">
 						<div class="changeHeader">
 							<NcCheckboxRadioSwitch
-								:checked="isSchemaSelected(change.slug)"
-								@update:checked="(checked) => toggleSchemaSelection(change.slug, checked)" />
-							<div class="changeTitle">
+								:modelValue="isSchemaSelected(change.slug)"
+								:aria-labelledby="`preview-schema-title-${index}`"
+								@update:modelValue="
+									(checked) =>
+										toggleSchemaSelection(change.slug, checked)
+								" />
+							<div
+								:id="`preview-schema-title-${index}`"
+								class="changeTitle">
 								<strong>{{ change.title || change.slug }}</strong>
-								<span class="changeBadge" :class="'changeBadge-' + change.action">
+								<span
+									class="changeBadge"
+									:class="'changeBadge-' + change.action">
 									{{ change.action }}
 								</span>
 							</div>
 						</div>
 						<div v-if="change.current" class="changeDetails">
 							<p class="changeDetailRow">
-								<strong>Current:</strong> v{{ change.current.version || '1.0.0' }}
+								<strong>Current:</strong> v{{
+									change.current.version || '1.0.0'
+								}}
 							</p>
 							<p class="changeDetailRow">
-								<strong>Proposed:</strong> v{{ change.proposed.version || '1.0.0' }}
+								<strong>Proposed:</strong> v{{
+									change.proposed.version || '1.0.0'
+								}}
 							</p>
-							<div v-if="change.changes && change.changes.length > 0" class="changesDiff">
-								<strong>Changes ({{ change.changes.length }}):</strong>
+							<div
+								v-if="change.changes && change.changes.length > 0"
+								class="changesDiff">
+								<strong
+									>Changes ({{ change.changes.length }}):</strong
+								>
 								<ul>
-									<li v-for="(diff, i) in change.changes.slice(0, 5)" :key="i">
-										<code>{{ diff.field }}</code>:
-										<span class="diffOld">{{ formatValue(diff.current) }}</span>
+									<li
+										v-for="(diff, i) in change.changes.slice(
+											0,
+											5,
+										)"
+										:key="i">
+										<code>{{ diff.field }}</code
+										>:
+										<span class="diffOld">{{
+											formatValue(diff.current)
+										}}</span>
 										→
-										<span class="diffNew">{{ formatValue(diff.proposed) }}</span>
+										<span class="diffNew">{{
+											formatValue(diff.proposed)
+										}}</span>
 									</li>
 									<li v-if="change.changes.length > 5">
 										... and {{ change.changes.length - 5 }} more
@@ -146,23 +213,34 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			</div>
 
 			<!-- Objects Section -->
-			<div v-if="preview.objects && preview.objects.length > 0" class="changeSection">
+			<div
+				v-if="preview.objects && preview.objects.length > 0"
+				class="changeSection">
 				<h3>
 					<CubeOutline :size="20" />
 					Objects ({{ preview.objects.length }})
 				</h3>
 				<div class="changeList">
-					<div v-for="(change, index) in preview.objects"
+					<div
+						v-for="(change, index) in preview.objects"
 						:key="'object-' + index"
 						class="changeItem"
 						:class="{ 'changeItem-selected': isObjectSelected(change) }">
 						<div class="changeHeader">
 							<NcCheckboxRadioSwitch
-								:checked="isObjectSelected(change)"
-								@update:checked="(checked) => toggleObjectSelection(change, checked)" />
-							<div class="changeTitle">
+								:modelValue="isObjectSelected(change)"
+								:aria-labelledby="`preview-object-title-${index}`"
+								@update:modelValue="
+									(checked) =>
+										toggleObjectSelection(change, checked)
+								" />
+							<div
+								:id="`preview-object-title-${index}`"
+								class="changeTitle">
 								<strong>{{ change.title || change.slug }}</strong>
-								<span class="changeBadge" :class="'changeBadge-' + change.action">
+								<span
+									class="changeBadge"
+									:class="'changeBadge-' + change.action">
 									{{ change.action }}
 								</span>
 								<span class="changeContext">
@@ -172,19 +250,41 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						</div>
 						<div v-if="change.current" class="changeDetails">
 							<p class="changeDetailRow">
-								<strong>Current:</strong> v{{ change.current['@self']?.version || change.current.version || '1.0.0' }}
+								<strong>Current:</strong> v{{
+									change.current['@self']?.version
+									|| change.current.version
+									|| '1.0.0'
+								}}
 							</p>
 							<p class="changeDetailRow">
-								<strong>Proposed:</strong> v{{ change.proposed['@self']?.version || change.proposed.version || '1.0.0' }}
+								<strong>Proposed:</strong> v{{
+									change.proposed['@self']?.version
+									|| change.proposed.version
+									|| '1.0.0'
+								}}
 							</p>
-							<div v-if="change.changes && change.changes.length > 0" class="changesDiff">
-								<strong>Changes ({{ change.changes.length }}):</strong>
+							<div
+								v-if="change.changes && change.changes.length > 0"
+								class="changesDiff">
+								<strong
+									>Changes ({{ change.changes.length }}):</strong
+								>
 								<ul>
-									<li v-for="(diff, i) in change.changes.slice(0, 3)" :key="i">
-										<code>{{ diff.field }}</code>:
-										<span class="diffOld">{{ formatValue(diff.current) }}</span>
+									<li
+										v-for="(diff, i) in change.changes.slice(
+											0,
+											3,
+										)"
+										:key="i">
+										<code>{{ diff.field }}</code
+										>:
+										<span class="diffOld">{{
+											formatValue(diff.current)
+										}}</span>
 										→
-										<span class="diffNew">{{ formatValue(diff.proposed) }}</span>
+										<span class="diffNew">{{
+											formatValue(diff.proposed)
+										}}</span>
 									</li>
 									<li v-if="change.changes.length > 3">
 										... and {{ change.changes.length - 3 }} more
@@ -200,7 +300,12 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			</div>
 
 			<!-- No Changes -->
-			<NcEmptyContent v-if="!preview.registers?.length && !preview.schemas?.length && !preview.objects?.length"
+			<NcEmptyContent
+				v-if="
+					!preview.registers?.length
+					&& !preview.schemas?.length
+					&& !preview.objects?.length
+				"
 				name="No changes to preview"
 				description="The remote configuration doesn't have any updates.">
 				<template #icon>
@@ -219,7 +324,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			<NcButton
 				v-if="hasSelection"
 				:disabled="loading"
-				type="primary"
+				variant="primary"
 				@click="importSelected">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -232,26 +337,25 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
+	NcCheckboxRadioSwitch,
 	NcDialog,
+	NcEmptyContent,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcCheckboxRadioSwitch,
-	NcEmptyContent,
 } from '@nextcloud/vue'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Download from 'vue-material-design-icons/Download.vue'
-import Database from 'vue-material-design-icons/Database.vue'
-import FileDocument from 'vue-material-design-icons/FileDocument.vue'
-import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import CheckAll from 'vue-material-design-icons/CheckAll.vue'
-import CloseCircle from 'vue-material-design-icons/CloseCircle.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import CloseCircle from 'vue-material-design-icons/CloseCircle.vue'
+import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
+import Database from 'vue-material-design-icons/Database.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import FileDocument from 'vue-material-design-icons/FileDocument.vue'
 
 export default {
 	name: 'PreviewConfiguration',
@@ -272,6 +376,7 @@ export default {
 		CloseCircle,
 		CheckCircle,
 	},
+
 	data() {
 		return {
 			loading: false,
@@ -282,22 +387,39 @@ export default {
 			selectedObjects: [],
 		}
 	},
+
 	computed: {
+		/**
+		 * @spec exclude Computed boolean true when any preview item is selected; UI state helper.
+		 */
 		hasSelection() {
-			return this.selectedRegisters.length > 0
-				   || this.selectedSchemas.length > 0
-				   || this.selectedObjects.length > 0
+			return (
+				this.selectedRegisters.length > 0
+				|| this.selectedSchemas.length > 0
+				|| this.selectedObjects.length > 0
+			)
 		},
+
+		/**
+		 * @spec exclude Computed total count of selected preview items; UI state helper.
+		 */
 		selectionCount() {
-			return this.selectedRegisters.length
-				   + this.selectedSchemas.length
-				   + this.selectedObjects.length
+			return (
+				this.selectedRegisters.length
+				+ this.selectedSchemas.length
+				+ this.selectedObjects.length
+			)
 		},
 	},
+
 	async mounted() {
 		await this.loadPreview()
 	},
+
 	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		async loadPreview() {
 			const configuration = configurationStore.configurationItem
 			if (!configuration || !configuration.id) {
@@ -310,7 +432,9 @@ export default {
 
 			try {
 				const response = await axios.get(
-					generateUrl(`/apps/openregister/api/configurations/${configuration.id}/preview`),
+					generateUrl(
+						`/apps/openregister/api/configurations/${configuration.id}/preview`,
+					),
 				)
 
 				this.preview = response.data
@@ -319,39 +443,68 @@ export default {
 				this.selectAll()
 			} catch (error) {
 				console.error('Failed to load preview:', error)
-				this.error = error.response?.data?.error || 'Failed to load configuration preview'
+				this.error =
+					error.response?.data?.error
+					|| 'Failed to load configuration preview'
 			} finally {
 				this.loading = false
 			}
 		},
+
 		isRegisterSelected(slug) {
 			return this.selectedRegisters.includes(slug)
 		},
+
 		isSchemaSelected(slug) {
 			return this.selectedSchemas.includes(slug)
 		},
+
+		/**
+		 * @param change
+		 * @spec exclude Checkbox-state predicate for an object row in the preview list; UI state helper.
+		 */
 		isObjectSelected(change) {
 			const objectId = `${change.register}:${change.schema}:${change.slug}`
 			return this.selectedObjects.includes(objectId)
 		},
+
+		/**
+		 * @param slug
+		 * @param checked
+		 * @spec exclude Toggles a register slug in/out of the selection set; UI selection plumbing.
+		 */
 		toggleRegisterSelection(slug, checked) {
 			if (checked) {
 				if (!this.selectedRegisters.includes(slug)) {
 					this.selectedRegisters.push(slug)
 				}
 			} else {
-				this.selectedRegisters = this.selectedRegisters.filter(s => s !== slug)
+				this.selectedRegisters = this.selectedRegisters.filter(
+					(s) => s !== slug,
+				)
 			}
 		},
+
+		/**
+		 * @param slug
+		 * @param checked
+		 * @spec exclude Toggles a schema slug in/out of the selection set; UI selection plumbing.
+		 */
 		toggleSchemaSelection(slug, checked) {
 			if (checked) {
 				if (!this.selectedSchemas.includes(slug)) {
 					this.selectedSchemas.push(slug)
 				}
 			} else {
-				this.selectedSchemas = this.selectedSchemas.filter(s => s !== slug)
+				this.selectedSchemas = this.selectedSchemas.filter((s) => s !== slug)
 			}
 		},
+
+		/**
+		 * @param change
+		 * @param checked
+		 * @spec exclude Toggles an object id in/out of the selection set; UI selection plumbing.
+		 */
 		toggleObjectSelection(change, checked) {
 			const objectId = `${change.register}:${change.schema}:${change.slug}`
 			if (checked) {
@@ -359,48 +512,70 @@ export default {
 					this.selectedObjects.push(objectId)
 				}
 			} else {
-				this.selectedObjects = this.selectedObjects.filter(id => id !== objectId)
+				this.selectedObjects = this.selectedObjects.filter(
+					(id) => id !== objectId,
+				)
 			}
 		},
+
+		/**
+		 * @spec exclude Selects all non-skip preview items; UI bulk-selection plumbing.
+		 */
 		selectAll() {
 			// Select all registers
 			if (this.preview.registers) {
 				this.selectedRegisters = this.preview.registers
-					.filter(r => r.action !== 'skip')
-					.map(r => r.slug)
+					.filter((r) => r.action !== 'skip')
+					.map((r) => r.slug)
 			}
 			// Select all schemas
 			if (this.preview.schemas) {
 				this.selectedSchemas = this.preview.schemas
-					.filter(s => s.action !== 'skip')
-					.map(s => s.slug)
+					.filter((s) => s.action !== 'skip')
+					.map((s) => s.slug)
 			}
 			// Select all objects
 			if (this.preview.objects) {
 				this.selectedObjects = this.preview.objects
-					.filter(o => o.action !== 'skip')
-					.map(o => `${o.register}:${o.schema}:${o.slug}`)
+					.filter((o) => o.action !== 'skip')
+					.map((o) => `${o.register}:${o.schema}:${o.slug}`)
 			}
 		},
+
+		/**
+		 * @spec exclude Clears all preview selections; UI bulk-selection plumbing.
+		 */
 		deselectAll() {
 			this.selectedRegisters = []
 			this.selectedSchemas = []
 			this.selectedObjects = []
 		},
+
+		/**
+		 * @param value
+		 * @spec exclude Truncating/stringifying value formatter for the preview table; UI presentation helper.
+		 */
 		formatValue(value) {
 			if (value === null || value === undefined) return '-'
-			if (typeof value === 'object') return JSON.stringify(value).substring(0, 50) + '...'
+			if (typeof value === 'object')
+				return JSON.stringify(value).substring(0, 50) + '...'
 			return String(value).substring(0, 50)
 		},
+
+		/**
+		 * @spec exclude Posts the selected preview subset to the configurations/import endpoint and refreshes the list; UI orchestration plumbing.
+		 */
 		async importSelected() {
 			const configuration = configurationStore.configurationItem
 			if (!configuration || !configuration.id) {
-				showError('No configuration selected')
+				showError(t('openregister', 'No configuration selected'))
 				return
 			}
 
 			if (!this.hasSelection) {
-				showError('Please select at least one item to import')
+				showError(
+					t('openregister', 'Please select at least one item to import'),
+				)
 				return
 			}
 
@@ -409,7 +584,9 @@ export default {
 
 			try {
 				const response = await axios.post(
-					generateUrl(`/apps/openregister/api/configurations/${configuration.id}/import`),
+					generateUrl(
+						`/apps/openregister/api/configurations/${configuration.id}/import`,
+					),
 					{
 						selection: {
 							registers: this.selectedRegisters,
@@ -420,8 +597,15 @@ export default {
 				)
 
 				showSuccess(
-					`Successfully imported: ${response.data.registersCount} registers, `
-					+ `${response.data.schemasCount} schemas, ${response.data.objectsCount} objects`,
+					t(
+						'openregister',
+						'Successfully imported: {registers} registers, {schemas} schemas, {objects} objects',
+						{
+							registers: response.data.registersCount,
+							schemas: response.data.schemasCount,
+							objects: response.data.objectsCount,
+						},
+					),
 				)
 
 				// Refresh the configuration list
@@ -430,15 +614,24 @@ export default {
 				this.closeModal()
 			} catch (error) {
 				console.error('Failed to import configuration:', error)
-				this.error = error.response?.data?.error || 'Failed to import configuration'
+				this.error =
+					error.response?.data?.error || 'Failed to import configuration'
 				showError(this.error)
 			} finally {
 				this.loading = false
 			}
 		},
+
+		/**
+		 * @spec exclude Dialog close-event passthrough to closeModal; UI plumbing.
+		 */
 		handleDialogClose() {
 			this.closeModal()
 		},
+
+		/**
+		 * @spec exclude Modal close handler resetting navigationStore.modal and preview/selection state; UI plumbing.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.loading = false
@@ -593,5 +786,11 @@ export default {
 	font-size: 0.85em;
 	color: var(--color-text-lighter);
 	font-style: italic;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.changeItem {
+		transition: none;
+	}
 }
 </style>

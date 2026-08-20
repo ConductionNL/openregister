@@ -1,27 +1,46 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { auditTrailStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'deleteAuditTrail'"
+	<NcDialog
+		v-if="navigationStore.dialog === 'deleteAuditTrail'"
 		:name="t('openregister', 'Delete Audit Trail')"
 		size="normal"
-		:can-close="false">
+		:canClose="false">
 		<p v-if="success === null">
-			{{ t('openregister', 'Do you want to permanently delete this audit trail entry? This action cannot be undone.') }}
+			{{
+				t(
+					'openregister',
+					'Do you want to permanently delete this audit trail entry? This action cannot be undone.',
+				)
+			}}
 		</p>
 
-		<div v-if="success === null && auditTrailStore.auditTrailItem" class="audit-trail-info">
-			<p><strong>{{ t('openregister', 'ID:') }}</strong> {{ auditTrailStore.auditTrailItem.id }}</p>
+		<div
+			v-if="success === null && auditTrailStore.auditTrailItem"
+			class="audit-trail-info">
+			<p>
+				<strong>{{ t('openregister', 'ID:') }}</strong>
+				{{ auditTrailStore.auditTrailItem.id }}
+			</p>
 			<p>
 				<strong>{{ t('openregister', 'Action:') }}</strong>
-				<span class="action-badge" :class="`action-${auditTrailStore.auditTrailItem.action}`">
+				<span
+					class="action-badge"
+					:class="`action-${auditTrailStore.auditTrailItem.action}`">
 					{{ auditTrailStore.auditTrailItem.action?.toUpperCase() }}
 				</span>
 			</p>
-			<p><strong>{{ t('openregister', 'Object:') }}</strong> {{ auditTrailStore.auditTrailItem.object }}</p>
-			<p><strong>{{ t('openregister', 'Created:') }}</strong> {{ formatDate(auditTrailStore.auditTrailItem.created) }}</p>
+			<p>
+				<strong>{{ t('openregister', 'Object:') }}</strong>
+				{{ auditTrailStore.auditTrailItem.object }}
+			</p>
+			<p>
+				<strong>{{ t('openregister', 'Created:') }}</strong>
+				{{ formatDate(auditTrailStore.auditTrailItem.created) }}
+			</p>
 		</div>
 
 		<NcNoteCard v-if="success" type="success">
@@ -36,12 +55,16 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success === null ? t('openregister', 'Cancel') : t('openregister', 'Close') }}
+				{{
+					success === null
+						? t('openregister', 'Cancel')
+						: t('openregister', 'Close')
+				}}
 			</NcButton>
 			<NcButton
 				v-if="success === null"
 				:disabled="loading"
-				type="error"
+				variant="error"
 				@click="deleteAuditTrail()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -55,15 +78,9 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 
 <script>
 /**
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+ * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
-import {
-	NcButton,
-	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
-
+import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
@@ -78,6 +95,7 @@ export default {
 		TrashCanOutline,
 		Cancel,
 	},
+
 	data() {
 		return {
 			success: null,
@@ -86,12 +104,14 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	methods: {
 		/**
 		 * Close the dialog and reset state
+		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
@@ -103,17 +123,21 @@ export default {
 
 		/**
 		 * Delete the audit trail entry
+		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async deleteAuditTrail() {
 			this.loading = true
 
 			try {
-				const response = await fetch(`/index.php/apps/openregister/api/audit-trails/${auditTrailStore.auditTrailItem.id}`, {
-					method: 'DELETE',
-				})
+				const response = await fetch(
+					`/index.php/apps/openregister/api/audit-trails/${auditTrailStore.auditTrailItem.id}`,
+					{
+						method: 'DELETE',
+					},
+				)
 
 				const result = await response.json()
 
@@ -129,7 +153,12 @@ export default {
 				}
 			} catch (error) {
 				this.success = false
-				this.error = error.message || t('openregister', 'An error occurred while deleting the audit trail')
+				this.error =
+					error.message
+					|| t(
+						'openregister',
+						'An error occurred while deleting the audit trail',
+					)
 			} finally {
 				this.loading = false
 			}
@@ -137,10 +166,11 @@ export default {
 
 		/**
 		 * Format date for display
+		 *
 		 * @param {string} dateString - Date string to format
 		 * @return {string} Formatted date
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		formatDate(dateString) {
 			if (!dateString) return '-'

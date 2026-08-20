@@ -3,11 +3,15 @@
 /**
  * Authentication Service for generating outbound tokens.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author  Conduction Development Team <dev@conductio.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  */
@@ -29,7 +33,9 @@ use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Twig\Environment;
+use Twig\Extension\SandboxExtension;
 use Twig\Loader\ArrayLoader;
+use Twig\Sandbox\SecurityPolicy;
 
 /**
  * Service for handling authentication against external services.
@@ -41,407 +47,457 @@ use Twig\Loader\ArrayLoader;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
-class AuthenticationService
-{
+class AuthenticationService {
 
-    /**
-     * Required parameters for OAuth2 client credentials flow.
-     */
-    public const REQUIRED_PARAMETERS_CLIENT_CREDENTIALS = [
-        'grant_type',
-        'scope',
-        'authentication',
-        'client_id',
-        'client_secret',
-    ];
+	/**
+	 * Required parameters for OAuth2 client credentials flow.
+	 */
+	public const REQUIRED_PARAMETERS_CLIENT_CREDENTIALS = [
+		'grant_type',
+		'scope',
+		'authentication',
+		'client_id',
+		'client_secret',
+	];
 
-    /**
-     * Required parameters for OAuth2 password flow.
-     */
-    public const REQUIRED_PARAMETERS_PASSWORD = [
-        'grant_type',
-        'scope',
-        'authentication',
-        'username',
-        'password',
-    ];
+	/**
+	 * Required parameters for OAuth2 password flow.
+	 */
+	public const REQUIRED_PARAMETERS_PASSWORD = [
+		'grant_type',
+		'scope',
+		'authentication',
+		'username',
+		'password',
+	];
 
-    /**
-     * Required parameters for JWT generation.
-     */
-    public const REQUIRED_PARAMETERS_JWT = [
-        'payload',
-        'secret',
-        'algorithm',
-    ];
+	/**
+	 * Required parameters for JWT generation.
+	 */
+	public const REQUIRED_PARAMETERS_JWT = [
+		'payload',
+		'secret',
+		'algorithm',
+	];
 
-    /**
-     * Twig environment for payload rendering.
-     *
-     * @var Environment
-     */
-    private Environment $twig;
+	/**
+	 * Twig environment for payload rendering.
+	 *
+	 * @var Environment
+	 */
+	private Environment $twig;
 
-    /**
-     * Constructor.
-     *
-     * @param ArrayLoader $loader The Twig array loader
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
-     */
-    public function __construct(ArrayLoader $loader)
-    {
-        $this->twig = new Environment($loader);
+	/**
+	 * Constructor.
+	 *
+	 * @param ArrayLoader $loader The Twig array loader
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function __construct(ArrayLoader $loader) {
+		$this->twig = new Environment($loader);
 
-    }//end __construct()
+		// SSTI hardening (SEC-SVC-4): the JWT payload template is user-authored
+		// source configuration, so it MUST be compiled inside a Twig sandbox.
+		// Only the tags/filters/functions needed to build a JWT claim set are
+		// allowlisted; method/property access on objects is denied entirely.
+		$policy = new SecurityPolicy(
+			allowedTags: [
+				'if',
+				'for',
+				'set',
+				'apply',
+			],
+			allowedFilters: [
+				'date',
+				'date_modify',
+				'upper',
+				'lower',
+				'trim',
+				'length',
+				'default',
+				'number_format',
+				'round',
+				'abs',
+				'split',
+				'join',
+				'slice',
+				'first',
+				'last',
+				'replace',
+				'format',
+				'merge',
+				'keys',
+				'escape',
+				'raw',
+				'json_encode',
+			],
+			allowedMethods: [],
+			allowedProperties: [],
+			allowedFunctions: [
+				'max',
+				'min',
+				'range',
+				'date',
+			]
+		);
+		$this->twig->addExtension(new SandboxExtension($policy, sandboxed: true));
 
-    /**
-     * Create call options for OAuth with Client Credentials.
-     *
-     * @param array $configuration Configuration array for authentication.
-     *
-     * @return array The call options for the OAuth request.
-     *
-     * @throws BadRequestException If required parameters are missing.
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
-     */
-    private function createClientCredentialConfig(array $configuration): array
-    {
-        $missingParams = array_keys(array: $configuration);
-        $diff          = array_diff(self::REQUIRED_PARAMETERS_CLIENT_CREDENTIALS, $missingParams);
-        if ($diff !== []) {
-            throw new BadRequestException(
-                'Some required parameters are not set: ['.implode(separator: ',', array: $diff).']'
-            );
-        }
+	}//end __construct()
 
-        $callConfig = [
-            'form_params' => [
-                'grant_type' => $configuration['grant_type'],
-                'scope'      => $configuration['scope'],
-            ],
-        ];
+	/**
+	 * Create call options for OAuth with Client Credentials.
+	 *
+	 * @param array $configuration Configuration array for authentication.
+	 *
+	 * @return array The call options for the OAuth request.
+	 *
+	 * @throws BadRequestException If required parameters are missing.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function createClientCredentialConfig(array $configuration): array {
+		$missingParams = array_keys(array: $configuration);
+		$diff = array_diff(self::REQUIRED_PARAMETERS_CLIENT_CREDENTIALS, $missingParams);
+		if ($diff !== []) {
+			throw new BadRequestException(
+				'Some required parameters are not set: [' . implode(separator: ',', array: $diff) . ']'
+			);
+		}
 
-        if ($configuration['authentication'] === 'body') {
-            $callConfig['form_params']['client_id']     = $configuration['client_id'];
-            $callConfig['form_params']['client_secret'] = $configuration['client_secret'];
-        } else if ($configuration['authentication'] === 'basic_auth') {
-            $callConfig['auth'] = [
-                'username' => $configuration['client_id'],
-                'password' => $configuration['client_secret'],
-            ];
-        }
+		$callConfig = [
+			'form_params' => [
+				'grant_type' => $configuration['grant_type'],
+				'scope' => $configuration['scope'],
+			],
+		];
 
-        if (isset($configuration['client_assertion_type']) === true
-            && $configuration['client_assertion_type'] === 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
-        ) {
-            $callConfig['form_params']['client_assertion_type'] = $configuration['client_assertion_type'];
-            $callConfig['form_params']['client_assertion']      = $this->fetchJWTToken(
-                configuration: [
-                    'algorithm' => 'PS256',
-                    'secret'    => $configuration['private_key'],
-                    'x5t'       => $configuration['x5t'],
-                    'payload'   => $configuration['payload'],
-                ]
-            );
-        }
+		if ($configuration['authentication'] === 'body') {
+			$callConfig['form_params']['client_id'] = $configuration['client_id'];
+			$callConfig['form_params']['client_secret'] = $configuration['client_secret'];
+		} elseif ($configuration['authentication'] === 'basic_auth') {
+			$callConfig['auth'] = [
+				'username' => $configuration['client_id'],
+				'password' => $configuration['client_secret'],
+			];
+		}
 
-        return $callConfig;
+		if (isset($configuration['client_assertion_type']) === true
+			&& $configuration['client_assertion_type'] === 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
+		) {
+			$callConfig['form_params']['client_assertion_type'] = $configuration['client_assertion_type'];
+			$callConfig['form_params']['client_assertion'] = $this->fetchJWTToken(
+				configuration: [
+					'algorithm' => 'PS256',
+					'secret' => $configuration['private_key'],
+					'x5t' => $configuration['x5t'],
+					'payload' => $configuration['payload'],
+				]
+			);
+		}
 
-    }//end createClientCredentialConfig()
+		return $callConfig;
+	}//end createClientCredentialConfig()
 
-    /**
-     * Create call options for OAuth with Password Credentials.
-     *
-     * @param array $configuration Configuration array for authentication.
-     *
-     * @return array The call options for the OAuth request.
-     *
-     * @throws BadRequestException If required parameters are missing.
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
-     */
-    private function createPasswordConfig(array $configuration): array
-    {
-        $configKeys = array_keys(array: $configuration);
-        $diff       = array_diff(self::REQUIRED_PARAMETERS_PASSWORD, $configKeys);
-        if ($diff !== []) {
-            throw new BadRequestException(
-                'Some required parameters are not set: ['.implode(separator: ',', array: $diff).']'
-            );
-        }
+	/**
+	 * Create call options for OAuth with Password Credentials.
+	 *
+	 * @param array $configuration Configuration array for authentication.
+	 *
+	 * @return array The call options for the OAuth request.
+	 *
+	 * @throws BadRequestException If required parameters are missing.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function createPasswordConfig(array $configuration): array {
+		$configKeys = array_keys(array: $configuration);
+		$diff = array_diff(self::REQUIRED_PARAMETERS_PASSWORD, $configKeys);
+		if ($diff !== []) {
+			throw new BadRequestException(
+				'Some required parameters are not set: [' . implode(separator: ',', array: $diff) . ']'
+			);
+		}
 
-        $callConfig = [
-            'form_params' => [
-                'grant_type' => $configuration['grant_type'],
-                'scope'      => $configuration['scope'],
-            ],
-        ];
+		$callConfig = [
+			'form_params' => [
+				'grant_type' => $configuration['grant_type'],
+				'scope' => $configuration['scope'],
+			],
+		];
 
-        if ($configuration['authentication'] === 'body') {
-            $callConfig['form_params']['username'] = $configuration['username'];
-            $callConfig['form_params']['password'] = $configuration['password'];
-        } else if ($configuration['authentication'] === 'basic_auth') {
-            $callConfig['auth'] = [
-                'username' => $configuration['username'],
-                'password' => $configuration['password'],
-            ];
-        }
+		if ($configuration['authentication'] === 'body') {
+			$callConfig['form_params']['username'] = $configuration['username'];
+			$callConfig['form_params']['password'] = $configuration['password'];
+		} elseif ($configuration['authentication'] === 'basic_auth') {
+			$callConfig['auth'] = [
+				'username' => $configuration['username'],
+				'password' => $configuration['password'],
+			];
+		}
 
-        return $callConfig;
+		return $callConfig;
+	}//end createPasswordConfig()
 
-    }//end createPasswordConfig()
+	/**
+	 * Request an OAuth Access Token with the given configuration.
+	 *
+	 * @param array $configuration The OAuth configuration.
+	 *
+	 * @return string The resulting access token.
+	 *
+	 * @throws BadRequestException If configuration is incomplete.
+	 * @throws \GuzzleHttp\Exception\GuzzleException If the token endpoint fails.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function fetchOAuthTokens(array $configuration): string {
+		if (isset($configuration['grant_type']) === false) {
+			throw new BadRequestException('Grant type not set, cannot request token');
+		}
 
-    /**
-     * Request an OAuth Access Token with the given configuration.
-     *
-     * @param array $configuration The OAuth configuration.
-     *
-     * @return string The resulting access token.
-     *
-     * @throws BadRequestException If configuration is incomplete.
-     * @throws \GuzzleHttp\Exception\GuzzleException If the token endpoint fails.
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
-     */
-    public function fetchOAuthTokens(array $configuration): string
-    {
-        if (isset($configuration['grant_type']) === false) {
-            throw new BadRequestException('Grant type not set, cannot request token');
-        }
+		if (isset($configuration['tokenUrl']) === false) {
+			throw new BadRequestException('Token URL not set, cannot request token');
+		}
 
-        if (isset($configuration['tokenUrl']) === false) {
-            throw new BadRequestException('Token URL not set, cannot request token');
-        }
+		switch ($configuration['grant_type']) {
+			case 'client_credentials':
+				$callConfig = $this->createClientCredentialConfig(configuration: $configuration);
+				break;
+			case 'password':
+				$callConfig = $this->createPasswordConfig(configuration: $configuration);
+				break;
+			default:
+				throw new BadRequestException('Grant type not supported');
+		}
 
-        switch ($configuration['grant_type']) {
-            case 'client_credentials':
-                $callConfig = $this->createClientCredentialConfig(configuration: $configuration);
-                break;
-            case 'password':
-                $callConfig = $this->createPasswordConfig(configuration: $configuration);
-                break;
-            default:
-                throw new BadRequestException('Grant type not supported');
-        }
+		$client = new Client();
+		$response = $client->post($configuration['tokenUrl'], $callConfig);
+		$result = json_decode(json: $response->getBody()->getContents(), associative: true);
 
-        $client   = new Client();
-        $response = $client->post($configuration['tokenUrl'], $callConfig);
-        $result   = json_decode(json: $response->getBody()->getContents(), associative: true);
+		if (isset($configuration['tokenLocation']) === true) {
+			return $result[$configuration['tokenLocation']];
+		}
 
-        if (isset($configuration['tokenLocation']) === true) {
-            return $result[$configuration['tokenLocation']];
-        }
+		return $result['access_token'];
+	}//end fetchOAuthTokens()
 
-        return $result['access_token'];
+	/**
+	 * Fetch an access token from DeCOS (non-standard OAuth implementation).
+	 *
+	 * @param array $configuration The source configuration.
+	 *
+	 * @return string The access token.
+	 *
+	 * @throws \GuzzleHttp\Exception\GuzzleException If the request fails.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function fetchDecosToken(array $configuration): string {
+		$url = $configuration['tokenUrl'];
+		$tokenLocation = $configuration['tokenLocation'];
+		unset($configuration['tokenUrl']);
 
-    }//end fetchOAuthTokens()
+		$callConfig = [];
+		$callConfig['json'] = $configuration;
 
-    /**
-     * Fetch an access token from DeCOS (non-standard OAuth implementation).
-     *
-     * @param array $configuration The source configuration.
-     *
-     * @return string The access token.
-     *
-     * @throws \GuzzleHttp\Exception\GuzzleException If the request fails.
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
-     */
-    public function fetchDecosToken(array $configuration): string
-    {
-        $url           = $configuration['tokenUrl'];
-        $tokenLocation = $configuration['tokenLocation'];
-        unset($configuration['tokenUrl']);
+		$client = new Client();
+		$response = $client->post($url, $callConfig);
+		$result = json_decode(json: $response->getBody()->getContents(), associative: true);
 
-        $callConfig         = [];
-        $callConfig['json'] = $configuration;
+		if (isset($tokenLocation) === true) {
+			return $result[$tokenLocation];
+		}
 
-        $client   = new Client();
-        $response = $client->post($url, $callConfig);
-        $result   = json_decode(json: $response->getBody()->getContents(), associative: true);
+		return $result['token'];
+	}//end fetchDecosToken()
 
-        if (isset($tokenLocation) === true) {
-            return $result[$tokenLocation];
-        }
+	/**
+	 * Get RSA key for RS and PS (asymmetric) encryption.
+	 *
+	 * @param array $configuration The auth configuration with secret key.
+	 *
+	 * @return JWK The JWK key.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function getRSJWK(array $configuration): JWK {
+		$stamp = microtime() . getmypid();
+		$filename = "/var/tmp/privatekey-$stamp";
+		file_put_contents(filename: $filename, data: base64_decode(string: $configuration['secret']));
 
-        return $result['token'];
+		try {
+			$jwk = JWKFactory::createFromKeyFile($filename, null, ['use' => 'sig']);
+		} finally {
+			unlink(filename: $filename);
+		}
 
-    }//end fetchDecosToken()
+		return $jwk;
+	}//end getRSJWK()
 
-    /**
-     * Get RSA key for RS and PS (asymmetric) encryption.
-     *
-     * @param array $configuration The auth configuration with secret key.
-     *
-     * @return JWK The JWK key.
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
-     */
-    private function getRSJWK(array $configuration): JWK
-    {
-        $stamp    = microtime().getmypid();
-        $filename = "/var/tmp/privatekey-$stamp";
-        file_put_contents(filename: $filename, data: base64_decode(string: $configuration['secret']));
+	/**
+	 * Get OCT key for HS (symmetric) encryption.
+	 *
+	 * @param array $configuration The source configuration with secret.
+	 *
+	 * @return JWK The JWK key.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function getHSJWK(array $configuration): JWK {
+		return new JWK(
+			[
+				'kty' => 'oct',
+				'k' => rtrim(string: base64_encode(string: addslashes(string: $configuration['secret'])), characters: '='),
+			]
+		);
 
-        try {
-            $jwk = JWKFactory::createFromKeyFile($filename, null, ['use' => 'sig']);
-        } finally {
-            unlink(filename: $filename);
-        }
+	}//end getHSJWK()
 
-        return $jwk;
+	/**
+	 * Generate the JWT Payload by rendering the Twig template.
+	 *
+	 * @param array $configuration The source auth configuration.
+	 *
+	 * @return array The resulting JWT payload.
+	 *
+	 * @throws \Twig\Error\LoaderError If the template cannot be loaded.
+	 * @throws \Twig\Error\SyntaxError If the template has syntax errors.
+	 * @throws \Twig\Error\RuntimeError If the template rendering fails.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function getJWTPayload(array $configuration): array {
+		// SEC-SVC-4: never expose secret material to the payload template
+		// context. Strip credential-bearing keys so a crafted payload template
+		// cannot echo adjacent secrets into the rendered claim set.
+		$secretKeys = [
+			'secret',
+			'clientSecret',
+			'client_secret',
+			'password',
+			'privateKey',
+			'private_key',
+			'apiKey',
+			'api_key',
+			'token',
+			'accessToken',
+			'access_token',
+			'refreshToken',
+			'refresh_token',
+			'authorization',
+		];
 
-    }//end getRSJWK()
+		$context = $configuration;
+		foreach ($secretKeys as $secretKey) {
+			unset($context[$secretKey]);
+		}
 
-    /**
-     * Get OCT key for HS (symmetric) encryption.
-     *
-     * @param array $configuration The source configuration with secret.
-     *
-     * @return JWK The JWK key.
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
-     */
-    private function getHSJWK(array $configuration): JWK
-    {
-        return new JWK(
-            [
-                'kty' => 'oct',
-                'k'   => rtrim(string: base64_encode(string: addslashes(string: $configuration['secret'])), characters: '='),
-            ]
-        );
+		$renderedPayload = $this->twig->createTemplate($configuration['payload'])->render($context);
 
-    }//end getHSJWK()
+		return json_decode(json: $renderedPayload, associative: true);
+	}//end getJWTPayload()
 
-    /**
-     * Generate the JWT Payload by rendering the Twig template.
-     *
-     * @param array $configuration The source auth configuration.
-     *
-     * @return array The resulting JWT payload.
-     *
-     * @throws \Twig\Error\LoaderError  If the template cannot be loaded.
-     * @throws \Twig\Error\SyntaxError  If the template has syntax errors.
-     * @throws \Twig\Error\RuntimeError If the template rendering fails.
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
-     */
-    private function getJWTPayload(array $configuration): array
-    {
-        $renderedPayload = $this->twig->createTemplate($configuration['payload'])->render($configuration);
+	/**
+	 * Get the JWK key based on algorithm and secret.
+	 *
+	 * @param array $configuration The auth configuration with algorithm and secret.
+	 *
+	 * @return JWK The resulting JWK key.
+	 *
+	 * @throws BadRequestException If the algorithm is not supported.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function getJWK(array $configuration): JWK {
+		if (in_array(needle: $configuration['algorithm'], haystack: ['HS256', 'HS384', 'HS512']) === true) {
+			return $this->getHSJWK(configuration: $configuration);
+		}
 
-        return json_decode(json: $renderedPayload, associative: true);
+		if (in_array(needle: $configuration['algorithm'], haystack: ['RS256', 'RS384', 'RS512', 'PS256']) === true) {
+			return $this->getRSJWK(configuration: $configuration);
+		}
 
-    }//end getJWTPayload()
+		throw new BadRequestException('Algorithm not supported by key generator');
+	}//end getJWK()
 
-    /**
-     * Get the JWK key based on algorithm and secret.
-     *
-     * @param array $configuration The auth configuration with algorithm and secret.
-     *
-     * @return JWK The resulting JWK key.
-     *
-     * @throws BadRequestException If the algorithm is not supported.
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
-     */
-    private function getJWK(array $configuration): JWK
-    {
-        if (in_array(needle: $configuration['algorithm'], haystack: ['HS256', 'HS384', 'HS512']) === true) {
-            return $this->getHSJWK(configuration: $configuration);
-        }
+	/**
+	 * Generate a signed JWT token.
+	 *
+	 * @param array $payload The JWT payload
+	 * @param JWK $jwk The signing key
+	 * @param string $algorithm The signing algorithm
+	 * @param string|null $x5t Optional certificate thumbprint
+	 *
+	 * @return string The compact-serialized JWT string.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function generateJWT(array $payload, JWK $jwk, string $algorithm, ?string $x5t = null): string {
+		$algorithmManager = new AlgorithmManager(
+			[
+				new HS256(),
+				new HS384(),
+				new HS512(),
+				new RS256(),
+				new RS384(),
+				new RS512(),
+				new PS256(),
+			]
+		);
 
-        if (in_array(needle: $configuration['algorithm'], haystack: ['RS256', 'RS384', 'RS512', 'PS256']) === true) {
-            return $this->getRSJWK(configuration: $configuration);
-        }
+		$jwsBuilder = new JWSBuilder($algorithmManager);
+		$jwsSerializer = new CompactSerializer();
 
-        throw new BadRequestException('Algorithm not supported by key generator');
+		$header = [
+			'alg' => $algorithm,
+			'typ' => 'JWT',
+		];
+		if ($x5t !== null) {
+			$header['x5t'] = $x5t;
+		}
 
-    }//end getJWK()
+		$jws = $jwsBuilder
+			->create()
+			->withPayload(json_encode(value: $payload))
+			->addSignature($jwk, $header)
+			->build();
 
-    /**
-     * Generate a signed JWT token.
-     *
-     * @param array       $payload   The JWT payload
-     * @param JWK         $jwk       The signing key
-     * @param string      $algorithm The signing algorithm
-     * @param string|null $x5t       Optional certificate thumbprint
-     *
-     * @return string The compact-serialized JWT string.
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
-     */
-    private function generateJWT(array $payload, JWK $jwk, string $algorithm, ?string $x5t=null): string
-    {
-        $algorithmManager = new AlgorithmManager(
-            [
-                new HS256(),
-                new HS384(),
-                new HS512(),
-                new RS256(),
-                new RS384(),
-                new RS512(),
-                new PS256(),
-            ]
-        );
+		return $jwsSerializer->serialize($jws, 0);
+	}//end generateJWT()
 
-        $jwsBuilder    = new JWSBuilder($algorithmManager);
-        $jwsSerializer = new CompactSerializer();
+	/**
+	 * Generate a JWT token for authentication.
+	 *
+	 * @param array $configuration The auth configuration (must contain payload, algorithm, secret).
+	 *
+	 * @return string The generated JWT token.
+	 *
+	 * @throws BadRequestException If required parameters are missing.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function fetchJWTToken(array $configuration): string {
+		$configKeys = array_keys(array: $configuration);
+		$diff = array_diff(self::REQUIRED_PARAMETERS_JWT, $configKeys);
+		if ($diff !== []) {
+			throw new BadRequestException(
+				'Some required parameters are not set: [' . implode(separator: ',', array: $diff) . ']'
+			);
+		}
 
-        $header = [
-            'alg' => $algorithm,
-            'typ' => 'JWT',
-        ];
-        if ($x5t !== null) {
-            $header['x5t'] = $x5t;
-        }
+		$payload = $this->getJWTPayload(configuration: $configuration);
+		$jwk = $this->getJWK(configuration: $configuration);
 
-        $jws = $jwsBuilder
-            ->create()
-            ->withPayload(json_encode(value: $payload))
-            ->addSignature($jwk, $header)
-            ->build();
+		if (isset($configuration['x5t']) === true) {
+			return $this->generateJWT(
+				payload: $payload,
+				jwk: $jwk,
+				algorithm: $configuration['algorithm'],
+				x5t: $configuration['x5t']
+			);
+		}
 
-        return $jwsSerializer->serialize($jws, 0);
-
-    }//end generateJWT()
-
-    /**
-     * Generate a JWT token for authentication.
-     *
-     * @param array $configuration The auth configuration (must contain payload, algorithm, secret).
-     *
-     * @return string The generated JWT token.
-     *
-     * @throws BadRequestException If required parameters are missing.
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
-     */
-    public function fetchJWTToken(array $configuration): string
-    {
-        $configKeys = array_keys(array: $configuration);
-        $diff       = array_diff(self::REQUIRED_PARAMETERS_JWT, $configKeys);
-        if ($diff !== []) {
-            throw new BadRequestException(
-                'Some required parameters are not set: ['.implode(separator: ',', array: $diff).']'
-            );
-        }
-
-        $payload = $this->getJWTPayload(configuration: $configuration);
-        $jwk     = $this->getJWK(configuration: $configuration);
-
-        if (isset($configuration['x5t']) === true) {
-            return $this->generateJWT(
-                payload: $payload,
-                jwk: $jwk,
-                algorithm: $configuration['algorithm'],
-                x5t: $configuration['x5t']
-            );
-        }
-
-        return $this->generateJWT(payload: $payload, jwk: $jwk, algorithm: $configuration['algorithm']);
-
-    }//end fetchJWTToken()
+		return $this->generateJWT(payload: $payload, jwk: $jwk, algorithm: $configuration['algorithm']);
+	}//end fetchJWTToken()
 }//end class

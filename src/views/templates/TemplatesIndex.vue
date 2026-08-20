@@ -1,5 +1,5 @@
 <template>
-	<NcAppContent :show-details="sidebarOpen" @update:showDetails="toggleSidebar">
+	<NcAppContent :showDetails="sidebarOpen" @update:showDetails="toggleSidebar">
 		<div class="viewContainer">
 			<!-- Header -->
 			<div class="viewHeader">
@@ -8,13 +8,17 @@
 						{{ t('openregister', 'Templates') }}
 					</h1>
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:aria-label="t('openregister', 'Toggle search sidebar')"
 						@click="toggleSidebar">
 						<template #icon>
 							<FilterVariant :size="20" />
 						</template>
-						{{ sidebarOpen ? t('openregister', 'Hide Filters') : t('openregister', 'Show Filters') }}
+						{{
+							sidebarOpen
+								? t('openregister', 'Hide Filters')
+								: t('openregister', 'Show Filters')
+						}}
 					</NcButton>
 				</div>
 				<p>
@@ -26,20 +30,21 @@
 			<div class="viewActionsBar">
 				<div class="viewInfo">
 					<span v-if="templatesList.length" class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} templates', {
-							showing: templatesList.length,
-							total: totalTemplates
-						}) }}
+						{{
+							t(
+								'openregister',
+								'Showing {showing} of {total} templates',
+								{
+									showing: templatesList.length,
+									total: totalTemplates,
+								},
+							)
+						}}
 					</span>
 				</div>
 				<div class="viewActions">
-					<NcActions
-						:force-name="true"
-						:inline="1"
-						menu-name="Actions">
-						<NcActionButton
-							close-after-click
-							@click="refreshTemplates">
+					<NcActions :forceName="true" :inline="1" menuName="Actions">
+						<NcActionButton closeAfterClick @click="refreshTemplates">
 							<template #icon>
 								<Refresh :size="20" />
 							</template>
@@ -55,8 +60,13 @@
 
 				<NcEmptyContent
 					v-else-if="!templatesList.length"
-					:name="t('openregister', 'No templates found')"
-					:description="t('openregister', 'No templates have been created yet')">
+					:name="t('openregister', 'Templates are coming soon')"
+					:description="
+						t(
+							'openregister',
+							'The templates feature is not available yet. This page is a placeholder and will list templates once the feature ships.',
+						)
+					">
 					<template #icon>
 						<FileOutline :size="64" />
 					</template>
@@ -65,19 +75,19 @@
 				<table v-else class="templatesTable">
 					<thead>
 						<tr>
-							<th class="column-name">
+							<th scope="col" class="column-name">
 								{{ t('openregister', 'Name') }}
 							</th>
-							<th class="column-type">
+							<th scope="col" class="column-type">
 								{{ t('openregister', 'Type') }}
 							</th>
-							<th class="column-description">
+							<th scope="col" class="column-description">
 								{{ t('openregister', 'Description') }}
 							</th>
-							<th class="column-updated">
+							<th scope="col" class="column-updated">
 								{{ t('openregister', 'Updated At') }}
 							</th>
-							<th class="column-actions">
+							<th scope="col" class="column-actions">
 								{{ t('openregister', 'Actions') }}
 							</th>
 						</tr>
@@ -85,10 +95,14 @@
 					<tbody>
 						<tr v-for="template in templatesList" :key="template.id">
 							<td class="column-name">
-								<span class="template-name">{{ template.name }}</span>
+								<span class="template-name">{{
+									template.name
+								}}</span>
 							</td>
 							<td class="column-type">
-								<span class="badge badge-type">{{ template.type }}</span>
+								<span class="badge badge-type">{{
+									template.type
+								}}</span>
 							</td>
 							<td class="column-description">
 								{{ template.description || '-' }}
@@ -99,7 +113,7 @@
 							<td class="column-actions">
 								<NcActions>
 									<NcActionButton
-										close-after-click
+										closeAfterClick
 										@click="viewTemplate(template)">
 										<template #icon>
 											<EyeOutline :size="20" />
@@ -114,16 +128,16 @@
 
 				<!-- Pagination -->
 				<div v-if="totalTemplates > limit" class="pagination">
-					<NcButton
-						:disabled="offset === 0"
-						@click="previousPage">
+					<NcButton :disabled="offset === 0" @click="previousPage">
 						{{ t('openregister', 'Previous') }}
 					</NcButton>
 					<span class="pagination-info">
-						{{ t('openregister', 'Page {current} of {total}', {
-							current: currentPage,
-							total: totalPages
-						}) }}
+						{{
+							t('openregister', 'Page {current} of {total}', {
+								current: currentPage,
+								total: totalPages,
+							})
+						}}
 					</span>
 					<NcButton
 						:disabled="offset + limit >= totalTemplates"
@@ -138,20 +152,18 @@
 
 <script>
 import { t } from '@nextcloud/l10n'
-
 import {
-	NcAppContent,
-	NcActions,
 	NcActionButton,
+	NcActions,
+	NcAppContent,
 	NcButton,
-	NcLoadingIcon,
 	NcEmptyContent,
+	NcLoadingIcon,
 } from '@nextcloud/vue'
-
-import FileOutline from 'vue-material-design-icons/FileOutline.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
+import FileOutline from 'vue-material-design-icons/FileOutline.vue'
+import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 
 /**
  * Main view for managing templates
@@ -170,6 +182,7 @@ export default {
 		FilterVariant,
 		EyeOutline,
 	},
+
 	data() {
 		return {
 			templatesList: [],
@@ -180,10 +193,12 @@ export default {
 			sidebarOpen: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * Get current page number
 		 *
+		 * @spec exclude UI plumbing — pagination computed; admin list contract owned by admin-list-views.
 		 * @return {number} Current page
 		 */
 		currentPage() {
@@ -193,21 +208,25 @@ export default {
 		/**
 		 * Get total number of pages
 		 *
+		 * @spec exclude UI plumbing — pagination computed; admin list contract owned by admin-list-views.
 		 * @return {number} Total pages
 		 */
 		totalPages() {
 			return Math.ceil(this.totalTemplates / this.limit)
 		},
 	},
+
 	mounted() {
 		this.loadTemplates()
 	},
+
 	methods: {
 		t,
 
 		/**
 		 * Toggle sidebar visibility
 		 *
+		 * @spec openspec/specs/admin-list-views/spec.md
 		 * @return {void}
 		 */
 		toggleSidebar() {
@@ -217,6 +236,7 @@ export default {
 		/**
 		 * Load templates from the API
 		 *
+		 * @spec exclude UI plumbing — list load hydrating local state (stubbed pending API); list contract owned by admin-list-views.
 		 * @return {Promise<void>}
 		 */
 		async loadTemplates() {
@@ -254,6 +274,7 @@ export default {
 		/**
 		 * Refresh the templates list
 		 *
+		 * @spec exclude UI plumbing — delegates to loadTemplates.
 		 * @return {void}
 		 */
 		refreshTemplates() {
@@ -263,6 +284,7 @@ export default {
 		/**
 		 * Go to previous page
 		 *
+		 * @spec exclude UI plumbing — pagination offset mutation + reload; admin list contract owned by admin-list-views.
 		 * @return {void}
 		 */
 		previousPage() {
@@ -275,6 +297,7 @@ export default {
 		/**
 		 * Go to next page
 		 *
+		 * @spec exclude UI plumbing — pagination offset mutation + reload; admin list contract owned by admin-list-views.
 		 * @return {void}
 		 */
 		nextPage() {
@@ -287,17 +310,18 @@ export default {
 		/**
 		 * View template details
 		 *
+		 * @spec exclude UI plumbing — unimplemented navigation stub, no observable contract.
 		 * @param {object} _template - Template object
 		 * @return {void}
 		 */
 		viewTemplate(_template) {
 			// TODO: Navigate to template details page when available
-			// console.log('View template:', template)
 		},
 
 		/**
 		 * Format date for display
 		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
 		 * @param {string} date - Date string
 		 * @return {string} Formatted date
 		 */

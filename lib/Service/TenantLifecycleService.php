@@ -7,6 +7,9 @@
  * provisioning -> active -> suspended -> deprovisioning -> archived.
  * Also handles reactivation from suspended back to active.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -16,12 +19,12 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-73
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-74
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-77
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-74
+ * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-organisation-entities-must-have-a-lifecycle-status-field-with-defined-state-transitions
+ * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-tenant-provisioning-must-create-default-resources-automatically
+ * @spec openspec/specs/tenant-lifecycle/spec.md
+ * @spec openspec/specs/tenant-lifecycle/spec.md
+ * @spec openspec/specs/tenant-lifecycle/spec.md
+ * @spec openspec/specs/tenant-lifecycle/spec.md
  */
 
 declare(strict_types=1);
@@ -46,355 +49,375 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class TenantLifecycleService
-{
-    /**
-     * Valid lifecycle states
-     */
-    public const STATUS_PROVISIONING   = 'provisioning';
-    public const STATUS_ACTIVE         = 'active';
-    public const STATUS_SUSPENDED      = 'suspended';
-    public const STATUS_DEPROVISIONING = 'deprovisioning';
-    public const STATUS_ARCHIVED       = 'archived';
+class TenantLifecycleService {
+	/**
+	 * Valid lifecycle states
+	 */
+	public const STATUS_PROVISIONING = 'provisioning';
+	public const STATUS_ACTIVE = 'active';
+	public const STATUS_SUSPENDED = 'suspended';
+	public const STATUS_DEPROVISIONING = 'deprovisioning';
+	public const STATUS_ARCHIVED = 'archived';
 
-    /**
-     * Valid state transitions: current-state => [allowed-next-states]
-     */
-    private const STATE_TRANSITIONS = [
-        self::STATUS_PROVISIONING   => [self::STATUS_ACTIVE],
-        self::STATUS_ACTIVE         => [self::STATUS_SUSPENDED, self::STATUS_DEPROVISIONING],
-        self::STATUS_SUSPENDED      => [self::STATUS_ACTIVE, self::STATUS_DEPROVISIONING],
-        self::STATUS_DEPROVISIONING => [self::STATUS_ARCHIVED],
-        self::STATUS_ARCHIVED       => [],
-    ];
+	/**
+	 * Valid state transitions: current-state => [allowed-next-states]
+	 */
+	private const STATE_TRANSITIONS = [
+		self::STATUS_PROVISIONING => [self::STATUS_ACTIVE],
+		self::STATUS_ACTIVE => [self::STATUS_SUSPENDED, self::STATUS_DEPROVISIONING],
+		self::STATUS_SUSPENDED => [self::STATUS_ACTIVE, self::STATUS_DEPROVISIONING],
+		self::STATUS_DEPROVISIONING => [self::STATUS_ARCHIVED],
+		self::STATUS_ARCHIVED => [],
+	];
 
-    /**
-     * Valid OTAP environments
-     */
-    public const ENV_DEVELOPMENT = 'development';
-    public const ENV_TEST        = 'test';
-    public const ENV_ACCEPTANCE  = 'acceptance';
-    public const ENV_PRODUCTION  = 'production';
+	/**
+	 * Valid OTAP environments
+	 */
+	public const ENV_DEVELOPMENT = 'development';
+	public const ENV_TEST = 'test';
+	public const ENV_ACCEPTANCE = 'acceptance';
+	public const ENV_PRODUCTION = 'production';
 
-    /**
-     * OTAP order for promotion validation
-     */
-    public const OTAP_ORDER = [
-        self::ENV_DEVELOPMENT => 0,
-        self::ENV_TEST        => 1,
-        self::ENV_ACCEPTANCE  => 2,
-        self::ENV_PRODUCTION  => 3,
-    ];
+	/**
+	 * OTAP order for promotion validation
+	 */
+	public const OTAP_ORDER = [
+		self::ENV_DEVELOPMENT => 0,
+		self::ENV_TEST => 1,
+		self::ENV_ACCEPTANCE => 2,
+		self::ENV_PRODUCTION => 3,
+	];
 
-    /**
-     * Constructor
-     *
-     * @param OrganisationMapper $organisationMapper Organisation mapper
-     * @param IGroupManager      $groupManager       Nextcloud group manager
-     * @param IEventDispatcher   $eventDispatcher    Event dispatcher
-     * @param LoggerInterface    $logger             Logger
-     */
-    public function __construct(
-        private readonly OrganisationMapper $organisationMapper,
-        private readonly IGroupManager $groupManager,
-        private readonly IEventDispatcher $eventDispatcher,
-        private readonly LoggerInterface $logger
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor
+	 *
+	 * @param OrganisationMapper $organisationMapper Organisation mapper
+	 * @param IGroupManager $groupManager Nextcloud group manager
+	 * @param IEventDispatcher $eventDispatcher Event dispatcher
+	 * @param LoggerInterface $logger Logger
+	 */
+	public function __construct(
+		private readonly OrganisationMapper $organisationMapper,
+		private readonly IGroupManager $groupManager,
+		private readonly IEventDispatcher $eventDispatcher,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Validate that a state transition is allowed.
-     *
-     * @param string $currentStatus Current lifecycle status
-     * @param string $targetStatus  Desired lifecycle status
-     *
-     * @return void
-     *
-     * @throws Exception If the transition is invalid
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-73
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
-     */
-    public function validateTransition(string $currentStatus, string $targetStatus): void
-    {
-        $allowedTransitions = self::STATE_TRANSITIONS[$currentStatus] ?? [];
+	/**
+	 * Validate that a state transition is allowed.
+	 *
+	 * @param string $currentStatus Current lifecycle status
+	 * @param string $targetStatus Desired lifecycle status
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If the transition is invalid
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-organisation-entities-must-have-a-lifecycle-status-field-with-defined-state-transitions
+	 * @spec openspec/specs/tenant-lifecycle/spec.md
+	 */
+	public function validateTransition(string $currentStatus, string $targetStatus): void {
+		// Validate that both statuses are known before checking transition.
+		if ($this->isValidStatus(status: $currentStatus) === false || $this->isValidStatus(status: $targetStatus) === false) {
+			throw new Exception(
+				sprintf("Unknown status '%s' or '%s'.", $currentStatus, $targetStatus),
+				Response::HTTP_UNPROCESSABLE_ENTITY
+			);
+		}
 
-        if (in_array($targetStatus, $allowedTransitions, true) === false) {
-            throw new Exception(
-                "Invalid state transition from '{$currentStatus}' to '{$targetStatus}'. ".'Valid transitions: '.implode(', ', $allowedTransitions),
-                Response::HTTP_CONFLICT
-            );
-        }
-    }//end validateTransition()
+		$allowedTransitions = self::STATE_TRANSITIONS[$currentStatus] ?? [];
 
-    /**
-     * Get valid transitions for a status.
-     *
-     * @param string $status Current status
-     *
-     * @return string[] Valid next states
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-73
-     */
-    public function getValidTransitions(string $status): array
-    {
-        return self::STATE_TRANSITIONS[$status] ?? [];
-    }//end getValidTransitions()
+		if (in_array($targetStatus, $allowedTransitions, true) === false) {
+			$message = sprintf(
+				"Invalid state transition from '%s' to '%s'. Valid transitions: %s",
+				$currentStatus,
+				$targetStatus,
+				implode(', ', $allowedTransitions)
+			);
+			throw new Exception($message, Response::HTTP_CONFLICT);
+		}
+	}//end validateTransition()
 
-    /**
-     * Provision a new organisation: create default groups, set RBAC, activate.
-     *
-     * @param Organisation $organisation The organisation in provisioning state
-     * @param string       $adminUserId  The user who will be the org admin
-     *
-     * @return Organisation The activated organisation
-     *
-     * @throws Exception If provisioning fails
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-74
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-77
-     */
-    public function provision(Organisation $organisation, string $adminUserId): Organisation
-    {
-        if (($organisation->getStatus() ?? self::STATUS_PROVISIONING) !== self::STATUS_PROVISIONING) {
-            throw new Exception(
-                'Organisation must be in provisioning state to provision',
-                Response::HTTP_CONFLICT
-            );
-        }
+	/**
+	 * Get valid transitions for a status.
+	 *
+	 * @param string $status Current status
+	 *
+	 * @return string[] Valid next states
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-organisation-entities-must-have-a-lifecycle-status-field-with-defined-state-transitions
+	 */
+	public function getValidTransitions(string $status): array {
+		return self::STATE_TRANSITIONS[$status] ?? [];
+	}//end getValidTransitions()
 
-        $slug = $organisation->getSlug() ?? 'org';
+	/**
+	 * Provision a new organisation: create default groups, set RBAC, activate.
+	 *
+	 * @param Organisation $organisation The organisation in provisioning state
+	 * @param string $adminUserId The user who will be the org admin
+	 *
+	 * @return Organisation The activated organisation
+	 *
+	 * @throws Exception If provisioning fails
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-tenant-provisioning-must-create-default-resources-automatically
+	 * @spec openspec/specs/tenant-lifecycle/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 */
+	public function provision(Organisation $organisation, string $adminUserId): Organisation {
+		if (($organisation->getStatus() ?? self::STATUS_PROVISIONING) !== self::STATUS_PROVISIONING) {
+			throw new Exception(
+				'Organisation must be in provisioning state to provision',
+				Response::HTTP_CONFLICT
+			);
+		}
 
-        try {
-            // Create default groups prefixed with org slug.
-            $adminGroupId = $slug.'-admin';
-            $usersGroupId = $slug.'-users';
+		$slug = $organisation->getSlug() ?? 'org';
 
-            if ($this->groupManager->groupExists($adminGroupId) === false) {
-                $this->groupManager->createGroup($adminGroupId);
-            }
+		// Validate that the organisation's target environment is a known OTAP stage.
+		$env = $organisation->getEnvironment() ?? self::ENV_PRODUCTION;
+		if ($this->isValidEnvironment(environment: $env) === false) {
+			throw new Exception(
+				sprintf("Unknown target environment '%s'.", $env),
+				Response::HTTP_UNPROCESSABLE_ENTITY
+			);
+		}
 
-            if ($this->groupManager->groupExists($usersGroupId) === false) {
-                $this->groupManager->createGroup($usersGroupId);
-            }
+		// If a source environment is set, validate the promotion order.
+		$sourceEnv = $organisation->getEnvironment() ?? null;
+		if ($sourceEnv !== null && $sourceEnv !== $env && $this->isValidPromotionOrder(sourceEnv: $sourceEnv, targetEnv: $env) === false) {
+			throw new Exception(
+				sprintf("Invalid OTAP promotion order from '%s' to '%s'.", $sourceEnv, $env),
+				Response::HTTP_CONFLICT
+			);
+		}
 
-            // Add admin user to admin group.
-            $adminGroup = $this->groupManager->get($adminGroupId);
-            $usersGroup = $this->groupManager->get($usersGroupId);
+		try {
+			// Create default groups prefixed with org slug.
+			$adminGroupId = $slug . '-admin';
+			$usersGroupId = $slug . '-users';
 
-            if ($adminGroup !== null) {
-                $user = \OC::$server->get(\OCP\IUserManager::class)->get($adminUserId);
-                if ($user !== null) {
-                    $adminGroup->addUser($user);
-                    if ($usersGroup !== null) {
-                        $usersGroup->addUser($user);
-                    }
-                }
-            }
+			if ($this->groupManager->groupExists($adminGroupId) === false) {
+				$this->groupManager->createGroup($adminGroupId);
+			}
 
-            // Set organisation groups.
-            $organisation->setGroups([$adminGroupId, $usersGroupId]);
+			if ($this->groupManager->groupExists($usersGroupId) === false) {
+				$this->groupManager->createGroup($usersGroupId);
+			}
 
-            // Set default authorization RBAC rules.
-            $authorization = $organisation->getAuthorization();
-            foreach ($authorization as $entityType => &$permissions) {
-                if (is_array($permissions) === false) {
-                    continue;
-                }
+			// Add admin user to admin group.
+			$adminGroup = $this->groupManager->get($adminGroupId);
+			$usersGroup = $this->groupManager->get($usersGroupId);
 
-                if (isset($permissions['create']) === true) {
-                    $permissions['create'] = [$adminGroupId, $usersGroupId];
-                    $permissions['read']   = [$adminGroupId, $usersGroupId];
-                    $permissions['update'] = [$adminGroupId, $usersGroupId];
-                    $permissions['delete'] = [$adminGroupId];
-                }
-            }
+			if ($adminGroup !== null) {
+				$user = \OC::$server->get(\OCP\IUserManager::class)->get($adminUserId);
+				if ($user !== null) {
+					$adminGroup->addUser($user);
+					if ($usersGroup !== null) {
+						$usersGroup->addUser($user);
+					}
+				}
+			}
 
-            unset($permissions);
-            $organisation->setAuthorization($authorization);
+			// Set organisation groups.
+			$organisation->setGroups([$adminGroupId, $usersGroupId]);
 
-            // Add admin user to organisation.
-            $organisation->addUser($adminUserId);
+			// Set default authorization RBAC rules.
+			$authorization = $organisation->getAuthorization();
+			foreach ($authorization as &$permissions) {
+				if (is_array($permissions) === false) {
+					continue;
+				}
 
-            // Transition to active.
-            $organisation->setStatus(self::STATUS_ACTIVE);
-            $organisation->setProvisionedAt(new DateTime());
+				if (isset($permissions['create']) === true) {
+					$permissions['create'] = [$adminGroupId, $usersGroupId];
+					$permissions['read'] = [$adminGroupId, $usersGroupId];
+					$permissions['update'] = [$adminGroupId, $usersGroupId];
+					$permissions['delete'] = [$adminGroupId];
+				}
+			}
 
-            $result = $this->organisationMapper->update($organisation);
+			unset($permissions);
+			$organisation->setAuthorization($authorization);
 
-            $this->logger->info(
-                '[TenantLifecycleService] Organisation provisioned and activated',
-                ['uuid' => $organisation->getUuid(), 'slug' => $slug]
-            );
+			// Add admin user to organisation.
+			$organisation->addUser($adminUserId);
 
-            return $result;
-        } catch (Exception $e) {
-            $this->logger->error(
-                '[TenantLifecycleService] Provisioning failed',
-                ['uuid' => $organisation->getUuid(), 'error' => $e->getMessage()]
-            );
-            throw $e;
-        }//end try
-    }//end provision()
+			// Transition to active.
+			$organisation->setStatus(self::STATUS_ACTIVE);
+			$organisation->setProvisionedAt(new DateTime());
 
-    /**
-     * Suspend an active organisation.
-     *
-     * @param Organisation $organisation The organisation to suspend
-     *
-     * @return Organisation The suspended organisation
-     *
-     * @throws Exception If transition is invalid
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
-     */
-    public function suspend(Organisation $organisation): Organisation
-    {
-        $currentStatus = $organisation->getStatus() ?? self::STATUS_ACTIVE;
-        $this->validateTransition(currentStatus: $currentStatus, targetStatus: self::STATUS_SUSPENDED);
+			$result = $this->organisationMapper->update($organisation);
 
-        $organisation->setStatus(self::STATUS_SUSPENDED);
-        $organisation->setSuspendedAt(new DateTime());
+			$this->logger->info(
+				'[TenantLifecycleService] Organisation provisioned and activated',
+				['uuid' => $organisation->getUuid(), 'slug' => $slug]
+			);
 
-        $result = $this->organisationMapper->update($organisation);
+			return $result;
+		} catch (Exception $e) {
+			$this->logger->error(
+				'[TenantLifecycleService] Provisioning failed',
+				['uuid' => $organisation->getUuid(), 'error' => $e->getMessage()]
+			);
+			throw $e;
+		}//end try
+	}//end provision()
 
-        $this->logger->info(
-            '[TenantLifecycleService] Organisation suspended',
-            ['uuid' => $organisation->getUuid()]
-        );
+	/**
+	 * Suspend an active organisation.
+	 *
+	 * @param Organisation $organisation The organisation to suspend
+	 *
+	 * @return Organisation The suspended organisation
+	 *
+	 * @throws Exception If transition is invalid
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md
+	 */
+	public function suspend(Organisation $organisation): Organisation {
+		$currentStatus = $organisation->getStatus() ?? self::STATUS_ACTIVE;
+		$this->validateTransition(currentStatus: $currentStatus, targetStatus: self::STATUS_SUSPENDED);
 
-        return $result;
-    }//end suspend()
+		$organisation->setStatus(self::STATUS_SUSPENDED);
+		$organisation->setSuspendedAt(new DateTime());
 
-    /**
-     * Reactivate a suspended organisation.
-     *
-     * @param Organisation $organisation The organisation to reactivate
-     *
-     * @return Organisation The reactivated organisation
-     *
-     * @throws Exception If transition is invalid
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
-     */
-    public function reactivate(Organisation $organisation): Organisation
-    {
-        $currentStatus = $organisation->getStatus() ?? self::STATUS_ACTIVE;
-        $this->validateTransition(currentStatus: $currentStatus, targetStatus: self::STATUS_ACTIVE);
+		$result = $this->organisationMapper->update($organisation);
 
-        $organisation->setStatus(self::STATUS_ACTIVE);
-        $organisation->setSuspendedAt(null);
+		$this->logger->info(
+			'[TenantLifecycleService] Organisation suspended',
+			['uuid' => $organisation->getUuid()]
+		);
 
-        $result = $this->organisationMapper->update($organisation);
+		return $result;
+	}//end suspend()
 
-        $this->logger->info(
-            '[TenantLifecycleService] Organisation reactivated',
-            ['uuid' => $organisation->getUuid()]
-        );
+	/**
+	 * Reactivate a suspended organisation.
+	 *
+	 * @param Organisation $organisation The organisation to reactivate
+	 *
+	 * @return Organisation The reactivated organisation
+	 *
+	 * @throws Exception If transition is invalid
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md
+	 */
+	public function reactivate(Organisation $organisation): Organisation {
+		$currentStatus = $organisation->getStatus() ?? self::STATUS_ACTIVE;
+		$this->validateTransition(currentStatus: $currentStatus, targetStatus: self::STATUS_ACTIVE);
 
-        return $result;
-    }//end reactivate()
+		$organisation->setStatus(self::STATUS_ACTIVE);
+		$organisation->setSuspendedAt(null);
 
-    /**
-     * Start deprovisioning an organisation.
-     *
-     * @param Organisation $organisation The organisation to deprovision
-     *
-     * @return Organisation The organisation in deprovisioning state
-     *
-     * @throws Exception If transition is invalid
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
-     */
-    public function deprovision(Organisation $organisation): Organisation
-    {
-        $currentStatus = $organisation->getStatus() ?? self::STATUS_ACTIVE;
-        $this->validateTransition(currentStatus: $currentStatus, targetStatus: self::STATUS_DEPROVISIONING);
+		$result = $this->organisationMapper->update($organisation);
 
-        $organisation->setStatus(self::STATUS_DEPROVISIONING);
-        $organisation->setDeprovisionedAt(new DateTime());
+		$this->logger->info(
+			'[TenantLifecycleService] Organisation reactivated',
+			['uuid' => $organisation->getUuid()]
+		);
 
-        $result = $this->organisationMapper->update($organisation);
+		return $result;
+	}//end reactivate()
 
-        $this->logger->info(
-            '[TenantLifecycleService] Organisation deprovisioning started',
-            ['uuid' => $organisation->getUuid()]
-        );
+	/**
+	 * Start deprovisioning an organisation.
+	 *
+	 * @param Organisation $organisation The organisation to deprovision
+	 *
+	 * @return Organisation The organisation in deprovisioning state
+	 *
+	 * @throws Exception If transition is invalid
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md
+	 */
+	public function deprovision(Organisation $organisation): Organisation {
+		$currentStatus = $organisation->getStatus() ?? self::STATUS_ACTIVE;
+		$this->validateTransition(currentStatus: $currentStatus, targetStatus: self::STATUS_DEPROVISIONING);
 
-        return $result;
-    }//end deprovision()
+		$organisation->setStatus(self::STATUS_DEPROVISIONING);
+		$organisation->setDeprovisionedAt(new DateTime());
 
-    /**
-     * Archive a deprovisioning organisation (called by background job).
-     *
-     * @param Organisation $organisation The organisation to archive
-     *
-     * @return Organisation The archived organisation
-     *
-     * @throws Exception If transition is invalid
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
-     */
-    public function archive(Organisation $organisation): Organisation
-    {
-        $currentStatus = $organisation->getStatus() ?? self::STATUS_DEPROVISIONING;
-        $this->validateTransition(currentStatus: $currentStatus, targetStatus: self::STATUS_ARCHIVED);
+		$result = $this->organisationMapper->update($organisation);
 
-        $organisation->setStatus(self::STATUS_ARCHIVED);
+		$this->logger->info(
+			'[TenantLifecycleService] Organisation deprovisioning started',
+			['uuid' => $organisation->getUuid()]
+		);
 
-        $result = $this->organisationMapper->update($organisation);
+		return $result;
+	}//end deprovision()
 
-        $this->logger->info(
-            '[TenantLifecycleService] Organisation archived',
-            ['uuid' => $organisation->getUuid()]
-        );
+	/**
+	 * Archive a deprovisioning organisation (called by background job).
+	 *
+	 * @param Organisation $organisation The organisation to archive
+	 *
+	 * @return Organisation The archived organisation
+	 *
+	 * @throws Exception If transition is invalid
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md
+	 */
+	public function archive(Organisation $organisation): Organisation {
+		$currentStatus = $organisation->getStatus() ?? self::STATUS_DEPROVISIONING;
+		$this->validateTransition(currentStatus: $currentStatus, targetStatus: self::STATUS_ARCHIVED);
 
-        return $result;
-    }//end archive()
+		$organisation->setStatus(self::STATUS_ARCHIVED);
 
-    /**
-     * Validate an environment value.
-     *
-     * @param string $environment The environment to validate
-     *
-     * @return bool Whether the environment is valid
-     *
-     * @spec openspec/changes/retrofit-tenant-lifecycle-2026-04-28/tasks.md#task-2
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-74
-     */
-    public function isValidEnvironment(string $environment): bool
-    {
-        return isset(self::OTAP_ORDER[$environment]);
-    }//end isValidEnvironment()
+		$result = $this->organisationMapper->update($organisation);
 
-    /**
-     * Validate OTAP promotion order (source must be lower than target).
-     *
-     * @param string $sourceEnv Source environment
-     * @param string $targetEnv Target environment
-     *
-     * @return bool Whether the promotion order is valid
-     *
-     * @spec openspec/changes/retrofit-tenant-lifecycle-2026-04-28/tasks.md#task-2
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-74
-     */
-    public function isValidPromotionOrder(string $sourceEnv, string $targetEnv): bool
-    {
-        $sourceOrder = self::OTAP_ORDER[$sourceEnv] ?? -1;
-        $targetOrder = self::OTAP_ORDER[$targetEnv] ?? -1;
+		$this->logger->info(
+			'[TenantLifecycleService] Organisation archived',
+			['uuid' => $organisation->getUuid()]
+		);
 
-        return $sourceOrder < $targetOrder;
-    }//end isValidPromotionOrder()
+		return $result;
+	}//end archive()
 
-    /**
-     * Validate a status value.
-     *
-     * @param string $status The status to validate
-     *
-     * @return bool Whether the status is valid
-     */
-    public function isValidStatus(string $status): bool
-    {
-        return isset(self::STATE_TRANSITIONS[$status]);
-    }//end isValidStatus()
+	/**
+	 * Validate an environment value.
+	 *
+	 * @param string $environment The environment to validate
+	 *
+	 * @return bool Whether the environment is valid
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md
+	 * @spec openspec/specs/tenant-lifecycle/spec.md
+	 */
+	public function isValidEnvironment(string $environment): bool {
+		return isset(self::OTAP_ORDER[$environment]);
+	}//end isValidEnvironment()
+
+	/**
+	 * Validate OTAP promotion order (source must be lower than target).
+	 *
+	 * @param string $sourceEnv Source environment
+	 * @param string $targetEnv Target environment
+	 *
+	 * @return bool Whether the promotion order is valid
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md
+	 * @spec openspec/specs/tenant-lifecycle/spec.md
+	 */
+	public function isValidPromotionOrder(string $sourceEnv, string $targetEnv): bool {
+		$sourceOrder = self::OTAP_ORDER[$sourceEnv] ?? -1;
+		$targetOrder = self::OTAP_ORDER[$targetEnv] ?? -1;
+
+		return $sourceOrder < $targetOrder;
+	}//end isValidPromotionOrder()
+
+	/**
+	 * Validate a status value.
+	 *
+	 * @param string $status The status to validate
+	 *
+	 * @return bool Whether the status is valid
+	 */
+	public function isValidStatus(string $status): bool {
+		return isset(self::STATE_TRANSITIONS[$status]);
+	}//end isValidStatus()
 }//end class

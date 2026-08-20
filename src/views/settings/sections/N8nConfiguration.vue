@@ -4,27 +4,48 @@
 		name="Workflow Configuration"
 		description="Configure n8n workflow automation integration"
 		:loading="loading"
-		loading-message="Loading n8n configuration...">
+		:loadingMessage="t('openregister', 'Loading n8n configuration...')">
 		<!-- Section Description -->
 		<div class="section-description-full">
 			<p class="main-description">
-				n8n integration enables <strong>automated workflow management</strong> directly from OpenRegister.
-				Connect to your n8n instance to create, upload, and maintain workflows that automate data processing,
-				notifications, integrations, and more. Workflows can be triggered by object events, scheduled tasks,
-				or manual execution.
+				n8n integration enables
+				<strong>automated workflow management</strong> directly from
+				OpenRegister. Connect to your n8n instance to create, upload, and
+				maintain workflows that automate data processing, notifications,
+				integrations, and more. Workflows can be triggered by object events,
+				scheduled tasks, or manual execution.
 			</p>
 			<p class="toggle-status">
 				<strong>Current Status:</strong>
 				<span :class="n8nEnabled ? 'status-enabled' : 'status-disabled'">
-					{{ n8nEnabled ? 'n8n workflow integration enabled' : 'n8n workflow integration disabled' }}
+					{{
+						n8nEnabled
+							? 'n8n workflow integration enabled'
+							: 'n8n workflow integration disabled'
+					}}
 				</span>
 			</p>
-			<div v-if="connectionStatus && connectionStatus.message" class="connection-status" :class="connectionStatus.success ? 'status-success' : 'status-error'">
-				<p><strong>Connection Status:</strong> {{ connectionStatus.message }}</p>
-				<div v-if="connectionStatus.details && Object.keys(connectionStatus.details).length > 0" class="connection-details">
+			<div
+				v-if="connectionStatus && connectionStatus.message"
+				class="connection-status"
+				:class="
+					connectionStatus.success ? 'status-success' : 'status-error'
+				">
+				<p>
+					<strong>Connection Status:</strong>
+					{{ connectionStatus.message }}
+				</p>
+				<div
+					v-if="
+						connectionStatus.details
+						&& Object.keys(connectionStatus.details).length > 0
+					"
+					class="connection-details">
 					<details>
 						<summary>Connection Details</summary>
-						<pre>{{ JSON.stringify(connectionStatus.details, null, 2) }}</pre>
+						<pre>{{
+							JSON.stringify(connectionStatus.details, null, 2)
+						}}</pre>
 					</details>
 				</div>
 			</div>
@@ -36,11 +57,20 @@
 				v-model="n8nEnabled"
 				:disabled="saving"
 				type="switch"
-				@update:checked="onToggleN8n">
-				{{ n8nEnabled ? t('openregister', 'n8n integration enabled') : t('openregister', 'n8n integration disabled') }}
+				@update:modelValue="onToggleN8n">
+				{{
+					n8nEnabled
+						? t('openregister', 'n8n integration enabled')
+						: t('openregister', 'n8n integration disabled')
+				}}
 			</NcCheckboxRadioSwitch>
 			<p class="option-description">
-				{{ t('openregister', 'Enable or disable n8n workflow integration. Configure connection settings below.') }}
+				{{
+					t(
+						'openregister',
+						'Enable or disable n8n workflow integration. Configure connection settings below.',
+					)
+				}}
 				<span v-if="saving" class="saving-indicator">
 					<NcLoadingIcon :size="14" /> {{ t('openregister', 'Saving...') }}
 				</span>
@@ -65,13 +95,14 @@
 						id="n8n-url"
 						v-model="n8nUrl"
 						placeholder="http://master-n8n-1:5678"
-						@update:value="updateN8nUrl">
+						@update:modelValue="updateN8nUrl">
 						<template #trailing-button-icon>
 							<Web :size="20" />
 						</template>
 					</NcTextField>
 					<p class="field-hint">
-						<InformationOutline :size="16" /> The base URL of your n8n instance (e.g., http://master-n8n-1:5678)
+						<InformationOutline :size="16" /> The base URL of your n8n
+						instance (e.g., http://master-n8n-1:5678)
 					</p>
 				</div>
 
@@ -84,14 +115,15 @@
 							v-model="n8nApiKey"
 							placeholder="n8n_api_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 							autocomplete="off"
-							@update:value="updateN8nApiKey">
+							@update:modelValue="updateN8nApiKey">
 							<template #trailing-button-icon>
 								<Key :size="20" />
 							</template>
 						</NcPasswordField>
 					</div>
 					<p class="field-hint">
-						<LockOutline :size="16" /> Your n8n API key for authentication (found in n8n Settings → API)
+						<LockOutline :size="16" /> Your n8n API key for
+						authentication (found in n8n Settings → API)
 					</p>
 				</div>
 
@@ -102,20 +134,21 @@
 						id="n8n-project"
 						v-model="n8nProject"
 						placeholder="openregister"
-						@update:value="updateN8nProject">
+						@update:modelValue="updateN8nProject">
 						<template #trailing-button-icon>
 							<FolderOutline :size="20" />
 						</template>
 					</NcTextField>
 					<p class="field-hint">
-						<InformationOutline :size="16" /> Project name in n8n for organizing workflows (will be created if it does not exist)
+						<InformationOutline :size="16" /> Project name in n8n for
+						organizing workflows (will be created if it does not exist)
 					</p>
 				</div>
 
 				<!-- Action Buttons -->
 				<div class="action-buttons">
 					<NcButton
-						type="primary"
+						variant="primary"
 						:disabled="saving || !hasChanges"
 						@click="saveConfiguration">
 						<template #icon>
@@ -126,7 +159,7 @@
 					</NcButton>
 
 					<NcButton
-						type="secondary"
+						variant="secondary"
 						:disabled="testingConnection || !n8nUrl || !n8nApiKey"
 						@click="testConnection">
 						<template #icon>
@@ -138,7 +171,7 @@
 
 					<NcButton
 						v-if="connectionStatus && connectionStatus.success"
-						type="primary"
+						variant="primary"
 						:disabled="initializing"
 						@click="initializeN8n">
 						<template #icon>
@@ -149,12 +182,16 @@
 					</NcButton>
 
 					<span v-if="!hasChanges && !testResult" class="saved-indicator">
-						<CheckCircle :size="20" /> {{ t('openregister', 'Configuration saved') }}
+						<CheckCircle :size="20" />
+						{{ t('openregister', 'Configuration saved') }}
 					</span>
 				</div>
 
 				<!-- Test Result -->
-				<div v-if="testResult" class="test-result" :class="testResult.success ? 'test-success' : 'test-error'">
+				<div
+					v-if="testResult"
+					class="test-result"
+					:class="testResult.success ? 'test-success' : 'test-error'">
 					<div class="test-result-header">
 						<CheckCircle v-if="testResult.success" :size="20" />
 						<AlertCircle v-else :size="20" />
@@ -162,16 +199,21 @@
 					</div>
 					<div v-if="testResult.details" class="test-result-details">
 						<p v-if="testResult.details.version">
-							<strong>n8n Version:</strong> {{ testResult.details.version }}
+							<strong>n8n Version:</strong>
+							{{ testResult.details.version }}
 						</p>
 						<p v-if="testResult.details.user">
-							<strong>Connected as:</strong> {{ testResult.details.user }}
+							<strong>Connected as:</strong>
+							{{ testResult.details.user }}
 						</p>
 					</div>
 				</div>
 
 				<!-- Initialization Result -->
-				<div v-if="initResult" class="init-result" :class="initResult.success ? 'test-success' : 'test-error'">
+				<div
+					v-if="initResult"
+					class="init-result"
+					:class="initResult.success ? 'test-success' : 'test-error'">
 					<div class="test-result-header">
 						<CheckCircle v-if="initResult.success" :size="20" />
 						<AlertCircle v-else :size="20" />
@@ -179,13 +221,16 @@
 					</div>
 					<div v-if="initResult.details" class="test-result-details">
 						<p v-if="initResult.details.project">
-							<strong>Project:</strong> {{ initResult.details.project }}
+							<strong>Project:</strong>
+							{{ initResult.details.project }}
 						</p>
 						<p v-if="initResult.details.projectId">
-							<strong>Project ID:</strong> {{ initResult.details.projectId }}
+							<strong>Project ID:</strong>
+							{{ initResult.details.projectId }}
 						</p>
 						<p v-if="initResult.details.workflows !== undefined">
-							<strong>Workflows:</strong> {{ initResult.details.workflows }} workflow(s) ready
+							<strong>Workflows:</strong>
+							{{ initResult.details.workflows }} workflow(s) ready
 						</p>
 					</div>
 				</div>
@@ -194,23 +239,34 @@
 
 		<!-- Workflow Management -->
 		<SettingsCard
-			v-if="n8nEnabled && connectionStatus && connectionStatus.success && initResult && initResult.success"
-			title="Workflow Management"
+			v-if="
+				n8nEnabled
+				&& connectionStatus
+				&& connectionStatus.success
+				&& initResult
+				&& initResult.success
+			"
+			:title="t('openregister', 'Workflow Management')"
 			icon="⚙️"
 			:collapsible="true"
-			:default-collapsed="false">
+			:defaultCollapsed="false">
 			<template #icon>
 				<Cog :size="20" />
 			</template>
 
 			<div class="workflow-management">
 				<p class="section-intro">
-					{{ t('openregister', 'Manage n8n workflows for OpenRegister automation. Workflows will be stored in the configured project.') }}
+					{{
+						t(
+							'openregister',
+							'Manage n8n workflows for OpenRegister automation. Workflows will be stored in the configured project.',
+						)
+					}}
 				</p>
 
 				<div class="workflow-actions">
 					<NcButton
-						type="primary"
+						variant="primary"
 						:disabled="loadingWorkflows"
 						@click="loadWorkflows">
 						<template #icon>
@@ -220,9 +276,7 @@
 						{{ t('openregister', 'Refresh Workflows') }}
 					</NcButton>
 
-					<NcButton
-						type="secondary"
-						@click="openN8nEditor">
+					<NcButton variant="secondary" @click="openN8nEditor">
 						<template #icon>
 							<OpenInNew :size="20" />
 						</template>
@@ -233,21 +287,42 @@
 				<!-- Workflow List -->
 				<div v-if="workflows && workflows.length > 0" class="workflow-list">
 					<h5>{{ t('openregister', 'Available Workflows') }}</h5>
-					<div v-for="workflow in workflows" :key="workflow.id" class="workflow-item">
+					<div
+						v-for="workflow in workflows"
+						:key="workflow.id"
+						class="workflow-item">
 						<div class="workflow-info">
 							<strong>{{ workflow.name }}</strong>
-							<span :class="workflow.active ? 'workflow-active' : 'workflow-inactive'">
-								{{ workflow.active ? t('openregister', 'Active') : t('openregister', 'Inactive') }}
+							<span
+								:class="
+									workflow.active
+										? 'workflow-active'
+										: 'workflow-inactive'
+								">
+								{{
+									workflow.active
+										? t('openregister', 'Active')
+										: t('openregister', 'Inactive')
+								}}
 							</span>
 						</div>
-						<p v-if="workflow.tags && workflow.tags.length > 0" class="workflow-tags">
+						<p
+							v-if="workflow.tags && workflow.tags.length > 0"
+							class="workflow-tags">
 							<Tag :size="16" />
 							{{ workflow.tags.join(', ') }}
 						</p>
 					</div>
 				</div>
 				<div v-else-if="!loadingWorkflows" class="no-workflows">
-					<p>{{ t('openregister', 'No workflows found in this project. Create workflows in the n8n editor.') }}</p>
+					<p>
+						{{
+							t(
+								'openregister',
+								'No workflows found in this project. Create workflows in the n8n editor.',
+							)
+						}}
+					</p>
 				</div>
 			</div>
 		</SettingsCard>
@@ -255,27 +330,33 @@
 </template>
 
 <script>
-import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import SettingsCard from '../../../components/shared/SettingsCard.vue'
-import { NcPasswordField, NcTextField, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
-import Connection from 'vue-material-design-icons/Connection.vue'
-import Web from 'vue-material-design-icons/Web.vue'
-import Key from 'vue-material-design-icons/Key.vue'
-import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
-import ContentSave from 'vue-material-design-icons/ContentSave.vue'
-import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
-import LockOutline from 'vue-material-design-icons/LockOutline.vue'
-import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
-import TestTube from 'vue-material-design-icons/TestTube.vue'
-import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
-import RocketLaunch from 'vue-material-design-icons/RocketLaunch.vue'
-import Cog from 'vue-material-design-icons/Cog.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-import Tag from 'vue-material-design-icons/Tag.vue'
 import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
-import { showSuccess, showError } from '@nextcloud/dialogs'
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcLoadingIcon,
+	NcPasswordField,
+	NcTextField,
+} from '@nextcloud/vue'
+import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import Cog from 'vue-material-design-icons/Cog.vue'
+import Connection from 'vue-material-design-icons/Connection.vue'
+import ContentSave from 'vue-material-design-icons/ContentSave.vue'
+import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
+import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import Key from 'vue-material-design-icons/Key.vue'
+import LockOutline from 'vue-material-design-icons/LockOutline.vue'
+import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import RocketLaunch from 'vue-material-design-icons/RocketLaunch.vue'
+import Tag from 'vue-material-design-icons/Tag.vue'
+import TestTube from 'vue-material-design-icons/TestTube.vue'
+import Web from 'vue-material-design-icons/Web.vue'
+import SettingsCard from '../../../components/shared/SettingsCard.vue'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
 
 /**
  * n8n Workflow Configuration Component
@@ -342,6 +423,7 @@ export default {
 		/**
 		 * Check if configuration has unsaved changes.
 		 *
+		 * @spec exclude UI plumbing — dirty-state predicate comparing local fields to snapshot.
 		 * @return {boolean} True if there are unsaved changes.
 		 */
 		hasChanges() {
@@ -362,12 +444,15 @@ export default {
 		/**
 		 * Load n8n configuration from backend.
 		 *
+		 * @spec exclude UI plumbing — admin-settings load hydrating local fields.
 		 * @return {Promise<void>}
 		 */
 		async loadConfiguration() {
 			this.loading = true
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/n8n'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/settings/n8n'),
+				)
 				const config = response.data
 
 				this.n8nEnabled = config.enabled || false
@@ -398,6 +483,7 @@ export default {
 		/**
 		 * Update n8n URL value.
 		 *
+		 * @spec exclude UI plumbing — local field setter for two-way binding.
 		 * @param {string} value New URL value.
 		 * @return {void}
 		 */
@@ -408,6 +494,7 @@ export default {
 		/**
 		 * Update n8n API key value.
 		 *
+		 * @spec exclude UI plumbing — local field setter for two-way binding.
 		 * @param {string} value New API key value.
 		 * @return {void}
 		 */
@@ -418,6 +505,7 @@ export default {
 		/**
 		 * Update n8n project value.
 		 *
+		 * @spec exclude UI plumbing — local field setter for two-way binding.
 		 * @param {string} value New project value.
 		 * @return {void}
 		 */
@@ -428,6 +516,7 @@ export default {
 		/**
 		 * Handle toggle of n8n integration.
 		 *
+		 * @spec exclude UI plumbing — toggle handler delegating to saveConfiguration.
 		 * @param {boolean} checked New enabled state.
 		 * @return {Promise<void>}
 		 */
@@ -442,6 +531,7 @@ export default {
 		/**
 		 * Save n8n configuration to backend.
 		 *
+		 * @spec exclude UI plumbing — admin-settings save + toast.
 		 * @return {Promise<void>}
 		 */
 		async saveConfiguration() {
@@ -449,12 +539,15 @@ export default {
 			this.testResult = null
 			this.initResult = null
 			try {
-				await axios.post(generateUrl('/apps/openregister/api/settings/n8n'), {
-					enabled: this.n8nEnabled,
-					url: this.n8nUrl,
-					apiKey: this.n8nApiKey,
-					project: this.n8nProject,
-				})
+				await axios.post(
+					generateUrl('/apps/openregister/api/settings/n8n'),
+					{
+						enabled: this.n8nEnabled,
+						url: this.n8nUrl,
+						apiKey: this.n8nApiKey,
+						project: this.n8nProject,
+					},
+				)
 
 				// Update original config.
 				this.originalConfig = {
@@ -464,7 +557,9 @@ export default {
 					project: this.n8nProject,
 				}
 
-				showSuccess(this.t('openregister', 'n8n configuration saved successfully'))
+				showSuccess(
+					this.t('openregister', 'n8n configuration saved successfully'),
+				)
 			} catch (error) {
 				console.error('Failed to save n8n configuration:', error)
 				showError(this.t('openregister', 'Failed to save n8n configuration'))
@@ -476,6 +571,7 @@ export default {
 		/**
 		 * Test n8n connection.
 		 *
+		 * @spec exclude UI plumbing — thin POST + result display.
 		 * @return {Promise<void>}
 		 */
 		async testConnection() {
@@ -492,7 +588,10 @@ export default {
 
 				this.testResult = {
 					success: true,
-					message: response.data.message || this.t('openregister', 'Connection successful'),
+					message:
+						response.data.message
+						|| this.t('openregister', 'Connection successful'),
+
 					details: response.data.details || {},
 				}
 
@@ -500,13 +599,20 @@ export default {
 
 				showSuccess(this.t('openregister', 'n8n connection test successful'))
 			} catch (error) {
-				const message = error.response?.data?.message || error.message || this.t('openregister', 'Connection failed')
+				const message =
+					error.response?.data?.message
+					|| error.message
+					|| this.t('openregister', 'Connection failed')
 				this.testResult = {
 					success: false,
 					message,
 				}
 				this.connectionStatus = this.testResult
-				showError(this.t('openregister', 'n8n connection test failed: {message}', { message }))
+				showError(
+					this.t('openregister', 'n8n connection test failed: {message}', {
+						message,
+					}),
+				)
 			} finally {
 				this.testingConnection = false
 			}
@@ -515,6 +621,7 @@ export default {
 		/**
 		 * Initialize n8n project and user.
 		 *
+		 * @spec exclude UI plumbing — thin POST + result display + workflow refresh.
 		 * @return {Promise<void>}
 		 */
 		async initializeN8n() {
@@ -530,21 +637,36 @@ export default {
 
 				this.initResult = {
 					success: true,
-					message: response.data.message || this.t('openregister', 'Project initialized successfully'),
+					message:
+						response.data.message
+						|| this.t(
+							'openregister',
+							'Project initialized successfully',
+						),
+
 					details: response.data.details || {},
 				}
 
-				showSuccess(this.t('openregister', 'n8n project initialized successfully'))
+				showSuccess(
+					this.t('openregister', 'n8n project initialized successfully'),
+				)
 
 				// Load workflows after initialization.
 				await this.loadWorkflows()
 			} catch (error) {
-				const message = error.response?.data?.message || error.message || this.t('openregister', 'Initialization failed')
+				const message =
+					error.response?.data?.message
+					|| error.message
+					|| this.t('openregister', 'Initialization failed')
 				this.initResult = {
 					success: false,
 					message,
 				}
-				showError(this.t('openregister', 'n8n initialization failed: {message}', { message }))
+				showError(
+					this.t('openregister', 'n8n initialization failed: {message}', {
+						message,
+					}),
+				)
 			} finally {
 				this.initializing = false
 			}
@@ -553,12 +675,15 @@ export default {
 		/**
 		 * Load workflows from n8n.
 		 *
+		 * @spec exclude UI plumbing — admin-settings load hydrating local workflow list.
 		 * @return {Promise<void>}
 		 */
 		async loadWorkflows() {
 			this.loadingWorkflows = true
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/n8n/workflows'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/settings/n8n/workflows'),
+				)
 				this.workflows = response.data.workflows || []
 			} catch (error) {
 				console.error('Failed to load workflows:', error)
@@ -571,11 +696,13 @@ export default {
 		/**
 		 * Open n8n editor in new tab.
 		 *
+		 * @spec exclude UI plumbing — external window.open navigation, no observable contract.
 		 * @return {void}
 		 */
 		openN8nEditor() {
-			if (this.n8nUrl) {
-				window.open(this.n8nUrl, '_blank')
+			// Only open http(s) URLs to prevent javascript:/data: scheme injection
+			if (this.n8nUrl && /^https?:\/\//i.test(this.n8nUrl)) {
+				window.open(this.n8nUrl, '_blank', 'noopener')
 			}
 		},
 	},

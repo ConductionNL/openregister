@@ -1,5 +1,6 @@
 <template>
-	<NcDialog v-if="show"
+	<NcDialog
+		v-if="show"
 		:name="t('openregister', 'LLM Configuration')"
 		size="large"
 		@closing="$emit('closing')">
@@ -8,7 +9,12 @@
 			<div class="info-box">
 				<InformationOutline :size="20" />
 				<p>
-					{{ t('openregister', 'Configure Large Language Model (LLM) providers for AI-powered features including semantic search, embeddings, and chat.') }}
+					{{
+						t(
+							'openregister',
+							'Configure large language model (LLM) providers for ai-powered features including semantic search, embeddings, and chat.',
+						)
+					}}
 				</p>
 			</div>
 
@@ -18,16 +24,21 @@
 				<div class="provider-column">
 					<h3>{{ t('openregister', 'Embedding Provider') }}</h3>
 					<p class="section-description">
-						{{ t('openregister', 'For vector embeddings and semantic search') }}
+						{{
+							t(
+								'openregister',
+								'For vector embeddings and semantic search',
+							)
+						}}
 					</p>
 
 					<NcSelect
 						v-model="selectedEmbeddingProvider"
 						:options="embeddingProviderOptions"
 						label="name"
-						:input-label="t('openregister', 'Embedding Provider')"
+						:inputLabel="t('openregister', 'Embedding Provider')"
 						:placeholder="t('openregister', 'Select provider')"
-						@input="handleEmbeddingProviderChange">
+						@update:modelValue="handleEmbeddingProviderChange">
 						<template #option="{ name, description }">
 							<div class="provider-option">
 								<strong>{{ name }}</strong>
@@ -41,14 +52,19 @@
 				<div class="provider-column">
 					<h3>{{ t('openregister', 'Chat Provider (RAG)') }}</h3>
 					<p class="section-description">
-						{{ t('openregister', 'For chat and retrieval-augmented generation') }}
+						{{
+							t(
+								'openregister',
+								'For chat and retrieval-augmented generation',
+							)
+						}}
 					</p>
 
 					<NcSelect
 						v-model="selectedChatProvider"
 						:options="chatProviderOptions"
 						label="name"
-						:input-label="t('openregister', 'Chat Provider')"
+						:inputLabel="t('openregister', 'Chat Provider')"
 						:placeholder="t('openregister', 'Select provider')">
 						<template #option="{ name, description }">
 							<div class="provider-option">
@@ -61,74 +77,108 @@
 			</div>
 
 			<!-- Embedding Provider Configuration -->
-			<div v-if="selectedEmbeddingProvider && selectedEmbeddingProvider.id === 'openai'" class="config-section">
+			<div
+				v-if="
+					selectedEmbeddingProvider
+					&& selectedEmbeddingProvider.id === 'openai'
+				"
+				class="config-section">
 				<h3>{{ t('openregister', 'OpenAI Embedding Configuration') }}</h3>
 
 				<div class="form-group">
-					<label for="openai-api-key">{{ t('openregister', 'API Key') }}</label>
+					<label for="openai-api-key">{{
+						t('openregister', 'API Key')
+					}}</label>
 					<input
 						id="openai-api-key"
 						v-model="openaiConfig.apiKey"
 						type="password"
 						:placeholder="t('openregister', 'sk-...')"
-						class="input-field">
-					<small>{{ t('openregister', 'Your OpenAI API key. Get one at') }} <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
+						class="input-field" />
+					<small
+						>{{ t('openregister', 'Your OpenAI API key. Get one at') }}
+						<a
+							href="https://platform.openai.com/api-keys"
+							target="_blank"
+							>platform.openai.com</a
+						></small
+					>
 				</div>
 
 				<div class="form-group">
-					<label for="openai-model">{{ t('openregister', 'Embedding Model') }}</label>
+					<label for="openai-model">{{
+						t('openregister', 'Embedding Model')
+					}}</label>
 					<NcSelect
 						v-model="openaiConfig.model"
+						inputLabel="Openai Config Model"
 						:options="openaiModelOptions"
 						label="name"
 						:placeholder="t('openregister', 'Select model')"
-						:label-outside="true">
+						:labelOutside="true">
 						<template #option="{ name, dimensions, cost }">
 							<div class="model-option">
 								<strong>{{ name }}</strong>
-								<small>{{ dimensions }} dimensions • {{ cost }}</small>
+								<small
+									>{{ dimensions }} dimensions • {{ cost }}</small
+								>
 							</div>
 						</template>
 					</NcSelect>
 				</div>
 
 				<div class="form-group">
-					<label for="openai-org">{{ t('openregister', 'Organization ID (Optional)') }}</label>
+					<label for="openai-org">{{
+						t('openregister', 'Organization ID (Optional)')
+					}}</label>
 					<input
 						id="openai-org"
 						v-model="openaiConfig.organizationId"
 						type="text"
+						autocomplete="off"
 						:placeholder="t('openregister', 'org-...')"
-						class="input-field">
+						class="input-field" />
 				</div>
 			</div>
 
 			<!-- Ollama Embedding Configuration -->
-			<div v-if="selectedEmbeddingProvider && selectedEmbeddingProvider.id === 'ollama'" class="config-section">
+			<div
+				v-if="
+					selectedEmbeddingProvider
+					&& selectedEmbeddingProvider.id === 'ollama'
+				"
+				class="config-section">
 				<h3>{{ t('openregister', 'Ollama Embedding Configuration') }}</h3>
 
 				<div class="form-group">
-					<label for="ollama-url">{{ t('openregister', 'Ollama URL') }}</label>
+					<label for="ollama-url">{{
+						t('openregister', 'Ollama URL')
+					}}</label>
 					<input
 						id="ollama-url"
 						v-model="ollamaConfig.url"
 						type="text"
-						:placeholder="t('openregister', 'http://localhost:11434')"
-						class="input-field">
-					<small>{{ t('openregister', 'URL where Ollama is running') }}</small>
+						placeholder="http://localhost:11434"
+						class="input-field" />
+					<small>{{
+						t('openregister', 'URL where Ollama is running')
+					}}</small>
 				</div>
 
 				<div class="form-group">
-					<label for="ollama-model">{{ t('openregister', 'Model Name') }}</label>
+					<label for="ollama-model">{{
+						t('openregister', 'Model Name')
+					}}</label>
 					<NcSelect
 						id="ollama-model"
 						v-model="ollamaConfig.model"
+						inputLabel="Ollama Config Model"
 						:options="ollamaModelOptions"
 						label="name"
 						:placeholder="t('openregister', 'Select model')"
-						:label-outside="true"
+						:labelOutside="true"
 						:taggable="true"
-						:create-option="(option) => ({ id: option, name: option })">
+						:createOption="(option) => ({ id: option, name: option })">
 						<template #option="{ name, description }">
 							<div class="model-option">
 								<strong>{{ name }}</strong>
@@ -136,82 +186,137 @@
 							</div>
 						</template>
 					</NcSelect>
-					<small>{{ t('openregister', 'Select a model or type a custom model name') }}</small>
+					<small>{{
+						t(
+							'openregister',
+							'Select a model or type a custom model name',
+						)
+					}}</small>
 				</div>
 			</div>
 
 			<!-- Fireworks Embedding Configuration -->
-			<div v-if="selectedEmbeddingProvider && selectedEmbeddingProvider.id === 'fireworks'" class="config-section">
-				<h3>{{ t('openregister', 'Fireworks AI Embedding Configuration') }}</h3>
+			<div
+				v-if="
+					selectedEmbeddingProvider
+					&& selectedEmbeddingProvider.id === 'fireworks'
+				"
+				class="config-section">
+				<h3>
+					{{ t('openregister', 'Fireworks AI Embedding Configuration') }}
+				</h3>
 
 				<div class="form-group">
-					<label for="fireworks-api-key">{{ t('openregister', 'API Key') }}</label>
+					<label for="fireworks-api-key">{{
+						t('openregister', 'API Key')
+					}}</label>
 					<input
 						id="fireworks-api-key"
 						v-model="fireworksConfig.apiKey"
 						type="password"
 						:placeholder="t('openregister', 'fw_...')"
-						class="input-field">
-					<small>{{ t('openregister', 'Your Fireworks AI API key. Get one at') }} <a href="https://fireworks.ai" target="_blank">fireworks.ai</a></small>
+						class="input-field" />
+					<small
+						>{{
+							t(
+								'openregister',
+								'Your Fireworks AI API key. Get one at',
+							)
+						}}
+						<a href="https://fireworks.ai" target="_blank"
+							>fireworks.ai</a
+						></small
+					>
 				</div>
 
 				<div class="form-group">
-					<label for="fireworks-embedding-model">{{ t('openregister', 'Embedding Model') }}</label>
+					<label for="fireworks-embedding-model">{{
+						t('openregister', 'Embedding Model')
+					}}</label>
 					<NcSelect
 						v-model="fireworksConfig.embeddingModel"
+						inputLabel="Fireworks Config Embedding Model"
 						:options="fireworksEmbeddingModelOptions"
 						label="name"
 						:placeholder="t('openregister', 'Select model')"
-						:label-outside="true">
+						:labelOutside="true">
 						<template #option="{ name, dimensions, cost }">
 							<div class="model-option">
 								<strong>{{ name }}</strong>
-								<small>{{ dimensions }} dimensions • {{ cost }}</small>
+								<small
+									>{{ dimensions }} dimensions • {{ cost }}</small
+								>
 							</div>
 						</template>
 					</NcSelect>
 				</div>
 
 				<div class="form-group">
-					<label for="fireworks-base-url">{{ t('openregister', 'Base URL (Optional)') }}</label>
+					<label for="fireworks-base-url">{{
+						t('openregister', 'Base URL (Optional)')
+					}}</label>
 					<input
 						id="fireworks-base-url"
 						v-model="fireworksConfig.baseUrl"
 						type="text"
-						:placeholder="t('openregister', 'https://api.fireworks.ai/inference/v1')"
-						class="input-field">
-					<small>{{ t('openregister', 'Custom API endpoint if using a different region') }}</small>
+						placeholder="https://api.fireworks.ai/inference/v1"
+						class="input-field" />
+					<small>{{
+						t(
+							'openregister',
+							'Custom API endpoint if using a different region',
+						)
+					}}</small>
 				</div>
 			</div>
 
 			<!-- Chat Provider Configuration -->
 			<!-- OpenAI Chat Configuration -->
-			<div v-if="selectedChatProvider && selectedChatProvider.id === 'openai'" class="config-section">
+			<div
+				v-if="selectedChatProvider && selectedChatProvider.id === 'openai'"
+				class="config-section">
 				<h3>{{ t('openregister', 'OpenAI Chat Settings') }}</h3>
 
-				<div v-if="selectedEmbeddingProvider?.id !== 'openai'" class="form-group">
-					<label for="openai-chat-api-key">{{ t('openregister', 'API Key') }}</label>
+				<div
+					v-if="selectedEmbeddingProvider?.id !== 'openai'"
+					class="form-group">
+					<label for="openai-chat-api-key">{{
+						t('openregister', 'API Key')
+					}}</label>
 					<input
 						id="openai-chat-api-key"
 						v-model="openaiConfig.apiKey"
 						type="password"
 						:placeholder="t('openregister', 'sk-...')"
-						class="input-field">
-					<small>{{ t('openregister', 'Your OpenAI API key. Get one at') }} <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
+						class="input-field" />
+					<small
+						>{{ t('openregister', 'Your OpenAI API key. Get one at') }}
+						<a
+							href="https://platform.openai.com/api-keys"
+							target="_blank"
+							>platform.openai.com</a
+						></small
+					>
 				</div>
 
 				<div class="form-group">
-					<label for="openai-chat-model">{{ t('openregister', 'Chat Model') }}</label>
+					<label for="openai-chat-model">{{
+						t('openregister', 'Chat Model')
+					}}</label>
 					<NcSelect
 						v-model="openaiConfig.chatModel"
+						inputLabel="Openai Config Chat Model"
 						:options="openaiChatModelOptions"
 						label="name"
 						:placeholder="t('openregister', 'Select chat model')"
-						:label-outside="true">
+						:labelOutside="true">
 						<template #option="{ name, contextWindow, cost }">
 							<div class="model-option">
 								<strong>{{ name }}</strong>
-								<small>{{ contextWindow }} tokens • {{ cost }}/1M tokens</small>
+								<small
+									>{{ contextWindow }} tokens • {{ cost }}/1M
+									tokens</small
+								>
 							</div>
 						</template>
 					</NcSelect>
@@ -219,32 +324,55 @@
 			</div>
 
 			<!-- Fireworks Chat Configuration -->
-			<div v-if="selectedChatProvider && selectedChatProvider.id === 'fireworks'" class="config-section">
+			<div
+				v-if="
+					selectedChatProvider && selectedChatProvider.id === 'fireworks'
+				"
+				class="config-section">
 				<h3>{{ t('openregister', 'Fireworks AI Chat Settings') }}</h3>
 
-				<div v-if="selectedEmbeddingProvider?.id !== 'fireworks'" class="form-group">
-					<label for="fireworks-chat-api-key">{{ t('openregister', 'API Key') }}</label>
+				<div
+					v-if="selectedEmbeddingProvider?.id !== 'fireworks'"
+					class="form-group">
+					<label for="fireworks-chat-api-key">{{
+						t('openregister', 'API Key')
+					}}</label>
 					<input
 						id="fireworks-chat-api-key"
 						v-model="fireworksConfig.apiKey"
 						type="password"
 						:placeholder="t('openregister', 'fw_...')"
-						class="input-field">
-					<small>{{ t('openregister', 'Your Fireworks AI API key. Get one at') }} <a href="https://fireworks.ai" target="_blank">fireworks.ai</a></small>
+						class="input-field" />
+					<small
+						>{{
+							t(
+								'openregister',
+								'Your Fireworks AI API key. Get one at',
+							)
+						}}
+						<a href="https://fireworks.ai" target="_blank"
+							>fireworks.ai</a
+						></small
+					>
 				</div>
 
 				<div class="form-group">
-					<label for="fireworks-chat-model">{{ t('openregister', 'Chat Model') }}</label>
+					<label for="fireworks-chat-model">{{
+						t('openregister', 'Chat Model')
+					}}</label>
 					<NcSelect
 						v-model="fireworksConfig.chatModel"
+						inputLabel="Fireworks Config Chat Model"
 						:options="fireworksChatModelOptions"
 						label="name"
 						:placeholder="t('openregister', 'Select chat model')"
-						:label-outside="true">
+						:labelOutside="true">
 						<template #option="{ name, contextWindow, cost }">
 							<div class="model-option">
 								<strong>{{ name }}</strong>
-								<small>{{ contextWindow }} tokens • {{ cost }}</small>
+								<small
+									>{{ contextWindow }} tokens • {{ cost }}</small
+								>
 							</div>
 						</template>
 					</NcSelect>
@@ -252,31 +380,42 @@
 			</div>
 
 			<!-- Ollama Chat Configuration -->
-			<div v-if="selectedChatProvider && selectedChatProvider.id === 'ollama'" class="config-section">
+			<div
+				v-if="selectedChatProvider && selectedChatProvider.id === 'ollama'"
+				class="config-section">
 				<h3>{{ t('openregister', 'Ollama Chat Settings') }}</h3>
 
-				<div v-if="selectedEmbeddingProvider?.id !== 'ollama'" class="form-group">
-					<label for="ollama-chat-url">{{ t('openregister', 'Ollama URL') }}</label>
+				<div
+					v-if="selectedEmbeddingProvider?.id !== 'ollama'"
+					class="form-group">
+					<label for="ollama-chat-url">{{
+						t('openregister', 'Ollama URL')
+					}}</label>
 					<input
 						id="ollama-chat-url"
 						v-model="ollamaConfig.url"
 						type="text"
-						:placeholder="t('openregister', 'http://localhost:11434')"
-						class="input-field">
-					<small>{{ t('openregister', 'URL where Ollama is running') }}</small>
+						placeholder="http://localhost:11434"
+						class="input-field" />
+					<small>{{
+						t('openregister', 'URL where Ollama is running')
+					}}</small>
 				</div>
 
 				<div class="form-group">
-					<label for="ollama-chat-model">{{ t('openregister', 'Chat Model') }}</label>
+					<label for="ollama-chat-model">{{
+						t('openregister', 'Chat Model')
+					}}</label>
 					<NcSelect
 						id="ollama-chat-model"
 						v-model="ollamaConfig.chatModel"
+						inputLabel="Ollama Config Chat Model"
 						:options="ollamaModelOptions"
 						label="name"
 						:placeholder="t('openregister', 'Select model')"
-						:label-outside="true"
+						:labelOutside="true"
 						:taggable="true"
-						:create-option="(option) => ({ id: option, name: option })">
+						:createOption="(option) => ({ id: option, name: option })">
 						<template #option="{ name, description }">
 							<div class="model-option">
 								<strong>{{ name }}</strong>
@@ -284,7 +423,12 @@
 							</div>
 						</template>
 					</NcSelect>
-					<small>{{ t('openregister', 'Select a model or type a custom model name') }}</small>
+					<small>{{
+						t(
+							'openregister',
+							'Select a model or type a custom model name',
+						)
+					}}</small>
 				</div>
 			</div>
 
@@ -292,41 +436,89 @@
 			<div class="config-section">
 				<h3>{{ t('openregister', 'Vector Search Backend') }}</h3>
 				<p class="section-description">
-					{{ t('openregister', 'Choose how vector similarity calculations are performed for semantic search') }}
+					{{
+						t(
+							'openregister',
+							'Choose how vector similarity calculations are performed for semantic search',
+						)
+					}}
 				</p>
 
 				<div class="form-group">
-					<label for="vector-backend">{{ t('openregister', 'Search Method') }}</label>
+					<label for="vector-backend">{{
+						t('openregister', 'Search Method')
+					}}</label>
 					<NcSelect
 						v-model="selectedVectorBackend"
+						inputLabel="Selected Vector Backend"
 						:options="vectorBackendOptions"
 						label="name"
 						:placeholder="t('openregister', 'Select backend')"
 						:disabled="loadingBackends">
-						<template #option="{ name, description, performance, available }">
-							<div class="backend-option" :class="{'backend-disabled': !available}">
+						<template
+							#option="{ name, description, performance, available }">
+							<div
+								class="backend-option"
+								:class="{ 'backend-disabled': !available }">
 								<div class="backend-header">
 									<strong>{{ name }}</strong>
-									<span v-if="performance" :class="'badge badge-' + performance">
-										{{ performance === 'slow' ? '🐌 Slow' : performance === 'fast' ? '⚡ Fast' : '🚀 Very Fast' }}
+									<span
+										v-if="performance"
+										:class="'badge badge-' + performance">
+										{{
+											performance === 'slow'
+												? '🐌 Slow'
+												: performance === 'fast'
+													? '⚡ Fast'
+													: '🚀 Very Fast'
+										}}
 									</span>
 								</div>
 								<small>{{ description }}</small>
-								<small v-if="!available" class="warning-text">⚠️ Not available</small>
+								<small v-if="!available" class="warning-text"
+									>⚠️ Not available</small
+								>
 							</div>
 						</template>
 					</NcSelect>
-					<small v-if="selectedVectorBackend && selectedVectorBackend.performanceNote" class="help-text">
+					<small
+						v-if="
+							selectedVectorBackend
+							&& selectedVectorBackend.performanceNote
+						"
+						class="help-text">
 						{{ selectedVectorBackend.performanceNote }}
 					</small>
 				</div>
 
 				<!-- Solr Configuration (only if Solr backend selected) -->
-				<div v-if="selectedVectorBackend && selectedVectorBackend.id === 'solr'" class="solr-config">
+				<div
+					v-if="
+						selectedVectorBackend && selectedVectorBackend.id === 'solr'
+					"
+					class="solr-config">
 					<div class="info-box">
-						<p>{{ t('openregister', 'Vectors will be stored in your existing object and file collections') }}</p>
-						<p>{{ t('openregister', 'Files → fileCollection, Objects → objectCollection') }}</p>
-						<p><strong>{{ t('openregister', 'Vector field: _embedding_') }}</strong></p>
+						<p>
+							{{
+								t(
+									'openregister',
+									'Vectors will be stored in your existing object and file collections',
+								)
+							}}
+						</p>
+						<p>
+							{{
+								t(
+									'openregister',
+									'Files → filecollection, objects → objectcollection',
+								)
+							}}
+						</p>
+						<p>
+							<strong>{{
+								t('openregister', 'Vector field: _embedding_')
+							}}</strong>
+						</p>
 					</div>
 				</div>
 			</div>
@@ -353,48 +545,71 @@
 			<div class="actions-left">
 				<!-- Test Embedding Provider -->
 				<NcButton
-					v-if="selectedEmbeddingProvider && selectedEmbeddingProvider.id !== 'none'"
-					type="secondary"
+					v-if="
+						selectedEmbeddingProvider
+						&& selectedEmbeddingProvider.id !== 'none'
+					"
+					variant="secondary"
 					:disabled="testingEmbedding || !canTestEmbedding"
 					@click="testEmbeddingConnection">
 					<template #icon>
 						<NcLoadingIcon v-if="testingEmbedding" :size="20" />
 						<TestTube v-else :size="20" />
 					</template>
-					{{ testingEmbedding ? t('openregister', 'Testing...') : t('openregister', 'Test Embedding') }}
+					{{
+						testingEmbedding
+							? t('openregister', 'Testing...')
+							: t('openregister', 'Test Embedding')
+					}}
 				</NcButton>
 
 				<!-- Test Chat Provider -->
 				<NcButton
 					v-if="selectedChatProvider && selectedChatProvider.id !== 'none'"
-					type="secondary"
+					variant="secondary"
 					:disabled="testingChat || !canTestChat"
 					@click="testChatConnection">
 					<template #icon>
 						<NcLoadingIcon v-if="testingChat" :size="20" />
 						<TestTube v-else :size="20" />
 					</template>
-					{{ testingChat ? t('openregister', 'Testing...') : t('openregister', 'Test Chat') }}
+					{{
+						testingChat
+							? t('openregister', 'Testing...')
+							: t('openregister', 'Test Chat')
+					}}
 				</NcButton>
 
 				<!-- Clear All Embeddings -->
 				<NcButton
-					type="error"
+					variant="error"
 					:disabled="clearingEmbeddings"
 					@click="confirmClearEmbeddings">
 					<template #icon>
 						<NcLoadingIcon v-if="clearingEmbeddings" :size="20" />
 						<Delete v-else :size="20" />
 					</template>
-					{{ clearingEmbeddings ? t('openregister', 'Clearing...') : t('openregister', 'Clear All Embeddings') }}
+					{{
+						clearingEmbeddings
+							? t('openregister', 'Clearing...')
+							: t('openregister', 'Clear All Embeddings')
+					}}
 				</NcButton>
 
 				<!-- Test Results -->
-				<div v-if="embeddingTestResult" class="test-result-inline" :class="embeddingTestResult.success ? 'success' : 'error'">
-					{{ embeddingTestResult.success ? '✅' : '❌' }} Embedding: {{ embeddingTestResult.message }}
+				<div
+					v-if="embeddingTestResult"
+					class="test-result-inline"
+					:class="embeddingTestResult.success ? 'success' : 'error'">
+					{{ embeddingTestResult.success ? '✅' : '❌' }} Embedding:
+					{{ embeddingTestResult.message }}
 				</div>
-				<div v-if="chatTestResult" class="test-result-inline" :class="chatTestResult.success ? 'success' : 'error'">
-					{{ chatTestResult.success ? '✅' : '❌' }} Chat: {{ chatTestResult.message }}
+				<div
+					v-if="chatTestResult"
+					class="test-result-inline"
+					:class="chatTestResult.success ? 'success' : 'error'">
+					{{ chatTestResult.success ? '✅' : '❌' }} Chat:
+					{{ chatTestResult.message }}
 				</div>
 			</div>
 
@@ -403,14 +618,18 @@
 					{{ t('openregister', 'Cancel') }}
 				</NcButton>
 				<NcButton
-					type="primary"
+					variant="primary"
 					:disabled="saving"
 					@click="saveConfiguration">
 					<template #icon>
 						<NcLoadingIcon v-if="saving" :size="20" />
 						<ContentSave v-else :size="20" />
 					</template>
-					{{ saving ? t('openregister', 'Saving...') : t('openregister', 'Save Configuration') }}
+					{{
+						saving
+							? t('openregister', 'Saving...')
+							: t('openregister', 'Save Configuration')
+					}}
 				</NcButton>
 			</div>
 		</template>
@@ -418,14 +637,20 @@
 </template>
 
 <script>
-import { NcDialog, NcButton, NcLoadingIcon, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
-import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
-import TestTube from 'vue-material-design-icons/TestTube.vue'
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcDialog,
+	NcLoadingIcon,
+	NcSelect,
+} from '@nextcloud/vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { showSuccess, showError } from '@nextcloud/dialogs'
+import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import TestTube from 'vue-material-design-icons/TestTube.vue'
 
 export default {
 	name: 'LLMConfigModal',
@@ -483,58 +708,204 @@ export default {
 			},
 
 			embeddingProviderOptions: [
-				{ id: 'openai', name: 'OpenAI', description: 'State-of-the-art embeddings (paid)' },
-				{ id: 'fireworks', name: 'Fireworks AI', description: 'Fast, optimized inference (paid)' },
-				{ id: 'ollama', name: 'Ollama', description: 'Local models (free, requires Ollama)' },
+				{
+					id: 'openai',
+					name: 'OpenAI',
+					description: 'State-of-the-art embeddings (paid)',
+				},
+				{
+					id: 'fireworks',
+					name: 'Fireworks AI',
+					description: 'Fast, optimized inference (paid)',
+				},
+				{
+					id: 'ollama',
+					name: 'Ollama',
+					description: 'Local models (free, requires Ollama)',
+				},
 			],
 
 			ollamaModelOptions: [
-				{ id: 'llama3.2:latest', name: 'llama3.2:latest', description: 'Meta\'s Llama 3.2 (latest)' },
-				{ id: 'llama3.1:latest', name: 'llama3.1:latest', description: 'Meta\'s Llama 3.1' },
-				{ id: 'llama3:latest', name: 'llama3:latest', description: 'Meta\'s Llama 3' },
-				{ id: 'llama2:latest', name: 'llama2:latest', description: 'Meta\'s Llama 2' },
-				{ id: 'mistral:7b', name: 'mistral:7b', description: 'Mistral 7B model' },
-				{ id: 'mixtral:8x7b', name: 'mixtral:8x7b', description: 'Mistral\'s Mixtral 8x7B model' },
-				{ id: 'phi3:mini', name: 'phi3:mini', description: 'Microsoft\'s Phi-3 model' },
-				{ id: 'codellama:latest', name: 'codellama:latest', description: 'Code-specialized Llama' },
-				{ id: 'gemma2:latest', name: 'gemma2:latest', description: 'Google\'s Gemma 2' },
-				{ id: 'nomic-embed-text:latest', name: 'nomic-embed-text:latest', description: 'Nomic embeddings' },
+				{
+					id: 'llama3.2:latest',
+					name: 'llama3.2:latest',
+					description: "Meta's Llama 3.2 (latest)",
+				},
+				{
+					id: 'llama3.1:latest',
+					name: 'llama3.1:latest',
+					description: "Meta's Llama 3.1",
+				},
+				{
+					id: 'llama3:latest',
+					name: 'llama3:latest',
+					description: "Meta's Llama 3",
+				},
+				{
+					id: 'llama2:latest',
+					name: 'llama2:latest',
+					description: "Meta's Llama 2",
+				},
+				{
+					id: 'mistral:7b',
+					name: 'mistral:7b',
+					description: 'Mistral 7B model',
+				},
+				{
+					id: 'mixtral:8x7b',
+					name: 'mixtral:8x7b',
+					description: "Mistral's Mixtral 8x7B model",
+				},
+				{
+					id: 'phi3:mini',
+					name: 'phi3:mini',
+					description: "Microsoft's Phi-3 model",
+				},
+				{
+					id: 'codellama:latest',
+					name: 'codellama:latest',
+					description: 'Code-specialized Llama',
+				},
+				{
+					id: 'gemma2:latest',
+					name: 'gemma2:latest',
+					description: "Google's Gemma 2",
+				},
+				{
+					id: 'nomic-embed-text:latest',
+					name: 'nomic-embed-text:latest',
+					description: 'Nomic embeddings',
+				},
 			],
+
 			loadingOllamaModels: false,
 
 			chatProviderOptions: [
-				{ id: 'openai', name: 'OpenAI ChatGPT', description: 'GPT-4, GPT-3.5 models' },
-				{ id: 'fireworks', name: 'Fireworks AI', description: 'Fast OSS models' },
+				{
+					id: 'openai',
+					name: 'OpenAI ChatGPT',
+					description: 'GPT-4, GPT-3.5 models',
+				},
+				{
+					id: 'fireworks',
+					name: 'Fireworks AI',
+					description: 'Fast OSS models',
+				},
 				{ id: 'ollama', name: 'Ollama', description: 'Local LLMs' },
 			],
 
 			openaiModelOptions: [
-				{ id: 'text-embedding-ada-002', name: 'text-embedding-ada-002', dimensions: '1536', cost: '$0.10/1M tokens' },
-				{ id: 'text-embedding-3-small', name: 'text-embedding-3-small', dimensions: '1536', cost: '$0.02/1M tokens' },
-				{ id: 'text-embedding-3-large', name: 'text-embedding-3-large', dimensions: '3072', cost: '$0.13/1M tokens' },
+				{
+					id: 'text-embedding-ada-002',
+					name: 'text-embedding-ada-002',
+					dimensions: '1536',
+					cost: '$0.10/1M tokens',
+				},
+				{
+					id: 'text-embedding-3-small',
+					name: 'text-embedding-3-small',
+					dimensions: '1536',
+					cost: '$0.02/1M tokens',
+				},
+				{
+					id: 'text-embedding-3-large',
+					name: 'text-embedding-3-large',
+					dimensions: '3072',
+					cost: '$0.13/1M tokens',
+				},
 			],
 
 			openaiChatModelOptions: [
-				{ id: 'gpt-4-turbo', name: 'GPT-4 Turbo', contextWindow: '128K', cost: '$10.00/$30.00' },
-				{ id: 'gpt-4', name: 'GPT-4', contextWindow: '8K', cost: '$30.00/$60.00' },
-				{ id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', contextWindow: '16K', cost: '$0.50/$1.50' },
+				{
+					id: 'gpt-4-turbo',
+					name: 'GPT-4 Turbo',
+					contextWindow: '128K',
+					cost: '$10.00/$30.00',
+				},
+				{
+					id: 'gpt-4',
+					name: 'GPT-4',
+					contextWindow: '8K',
+					cost: '$30.00/$60.00',
+				},
+				{
+					id: 'gpt-3.5-turbo',
+					name: 'GPT-3.5 Turbo',
+					contextWindow: '16K',
+					cost: '$0.50/$1.50',
+				},
 			],
 
 			fireworksEmbeddingModelOptions: [
-				{ id: 'nomic-ai/nomic-embed-text-v1.5', name: 'Nomic Embed Text v1.5', dimensions: '768', cost: '$0.008/1M tokens' },
-				{ id: 'WhereIsAI/UAE-Large-V1', name: 'UAE Large V1', dimensions: '1024', cost: '$0.016/1M tokens' },
-				{ id: 'thenlper/gte-large', name: 'GTE Large', dimensions: '1024', cost: '$0.016/1M tokens' },
-				{ id: 'thenlper/gte-base', name: 'GTE Base', dimensions: '768', cost: '$0.008/1M tokens' },
+				{
+					id: 'nomic-ai/nomic-embed-text-v1.5',
+					name: 'Nomic Embed Text v1.5',
+					dimensions: '768',
+					cost: '$0.008/1M tokens',
+				},
+				{
+					id: 'WhereIsAI/UAE-Large-V1',
+					name: 'UAE Large V1',
+					dimensions: '1024',
+					cost: '$0.016/1M tokens',
+				},
+				{
+					id: 'thenlper/gte-large',
+					name: 'GTE Large',
+					dimensions: '1024',
+					cost: '$0.016/1M tokens',
+				},
+				{
+					id: 'thenlper/gte-base',
+					name: 'GTE Base',
+					dimensions: '768',
+					cost: '$0.008/1M tokens',
+				},
 			],
 
 			fireworksChatModelOptions: [
-				{ id: 'accounts/fireworks/models/llama-v3p3-70b-instruct', name: 'Llama 3.3 70B', contextWindow: '131K', cost: '$0.9/1M' },
-				{ id: 'accounts/fireworks/models/llama-v3p1-405b-instruct', name: 'Llama 3.1 405B', contextWindow: '131K', cost: '$3/1M' },
-				{ id: 'accounts/fireworks/models/llama-v3p1-70b-instruct', name: 'Llama 3.1 70B', contextWindow: '131K', cost: '$0.9/1M' },
-				{ id: 'accounts/fireworks/models/llama-v3p1-8b-instruct', name: 'Llama 3.1 8B', contextWindow: '131K', cost: '$0.2/1M' },
-				{ id: 'accounts/fireworks/models/qwen2p5-72b-instruct', name: 'Qwen 2.5 72B', contextWindow: '32K', cost: '$0.9/1M' },
-				{ id: 'accounts/fireworks/models/deepseek-r1', name: 'DeepSeek R1', contextWindow: '163K', cost: '$3/1M' },
-				{ id: 'accounts/fireworks/models/mixtral-8x22b-instruct', name: 'Mixtral 8x22B', contextWindow: '64K', cost: '$1.2/1M' },
+				{
+					id: 'accounts/fireworks/models/llama-v3p3-70b-instruct',
+					name: 'Llama 3.3 70B',
+					contextWindow: '131K',
+					cost: '$0.9/1M',
+				},
+				{
+					id: 'accounts/fireworks/models/llama-v3p1-405b-instruct',
+					name: 'Llama 3.1 405B',
+					contextWindow: '131K',
+					cost: '$3/1M',
+				},
+				{
+					id: 'accounts/fireworks/models/llama-v3p1-70b-instruct',
+					name: 'Llama 3.1 70B',
+					contextWindow: '131K',
+					cost: '$0.9/1M',
+				},
+				{
+					id: 'accounts/fireworks/models/llama-v3p1-8b-instruct',
+					name: 'Llama 3.1 8B',
+					contextWindow: '131K',
+					cost: '$0.2/1M',
+				},
+				{
+					id: 'accounts/fireworks/models/qwen2p5-72b-instruct',
+					name: 'Qwen 2.5 72B',
+					contextWindow: '32K',
+					cost: '$0.9/1M',
+				},
+				{
+					id: 'accounts/fireworks/models/deepseek-r1',
+					name: 'DeepSeek R1',
+					contextWindow: '163K',
+					cost: '$3/1M',
+				},
+				{
+					id: 'accounts/fireworks/models/mixtral-8x22b-instruct',
+					name: 'Mixtral 8x22B',
+					contextWindow: '64K',
+					cost: '$1.2/1M',
+				},
 			],
 
 			// Vector Search Backend
@@ -543,17 +914,50 @@ export default {
 			vectorBackendOptions: [],
 
 			aiFeatures: [
-				{ id: 'text_generation', label: 'Text Generation', icon: '✍️', enabled: true },
-				{ id: 'summarization', label: 'Document Summarization', icon: '📋', enabled: true },
-				{ id: 'semantic_search', label: 'Semantic Search', icon: '🔍', enabled: true },
-				{ id: 'embedding', label: 'Text Embeddings', icon: '🧮', enabled: true },
-				{ id: 'translation', label: 'Translation', icon: '🌍', enabled: false },
-				{ id: 'classification', label: 'Content Classification', icon: '🏷️', enabled: false },
+				{
+					id: 'text_generation',
+					label: 'Text Generation',
+					icon: '✍️',
+					enabled: true,
+				},
+				{
+					id: 'summarization',
+					label: 'Document Summarization',
+					icon: '📋',
+					enabled: true,
+				},
+				{
+					id: 'semantic_search',
+					label: 'Semantic Search',
+					icon: '🔍',
+					enabled: true,
+				},
+				{
+					id: 'embedding',
+					label: 'Text Embeddings',
+					icon: '🧮',
+					enabled: true,
+				},
+				{
+					id: 'translation',
+					label: 'Translation',
+					icon: '🌍',
+					enabled: false,
+				},
+				{
+					id: 'classification',
+					label: 'Content Classification',
+					icon: '🏷️',
+					enabled: false,
+				},
 			],
 		}
 	},
 
 	computed: {
+		/**
+		 * @spec exclude UI state helper — enables the embedding test when its provider is configured.
+		 */
 		canTestEmbedding() {
 			const provider = this.selectedEmbeddingProvider?.id
 			if (!provider) return false
@@ -561,13 +965,19 @@ export default {
 			if (provider === 'openai') {
 				return !!this.openaiConfig.apiKey && !!this.openaiConfig.model
 			} else if (provider === 'fireworks') {
-				return !!this.fireworksConfig.apiKey && !!this.fireworksConfig.embeddingModel
+				return (
+					!!this.fireworksConfig.apiKey
+					&& !!this.fireworksConfig.embeddingModel
+				)
 			} else if (provider === 'ollama') {
 				return !!this.ollamaConfig.url && !!this.ollamaConfig.model
 			}
 			return false
 		},
 
+		/**
+		 * @spec exclude UI state helper — enables the chat test when its provider is configured.
+		 */
 		canTestChat() {
 			const provider = this.selectedChatProvider?.id
 			if (!provider) return false
@@ -575,7 +985,9 @@ export default {
 			if (provider === 'openai') {
 				return !!this.openaiConfig.apiKey && !!this.openaiConfig.chatModel
 			} else if (provider === 'fireworks') {
-				return !!this.fireworksConfig.apiKey && !!this.fireworksConfig.chatModel
+				return (
+					!!this.fireworksConfig.apiKey && !!this.fireworksConfig.chatModel
+				)
 			} else if (provider === 'ollama') {
 				return !!this.ollamaConfig.url && !!this.ollamaConfig.chatModel
 			}
@@ -585,35 +997,57 @@ export default {
 
 	watch: {
 		// Fetch Ollama models when Ollama is selected
+		/**
+		 * @param newVal
+		 * @spec exclude UI watcher — fetches Ollama models when the embedding provider is Ollama.
+		 */
 		selectedEmbeddingProvider(newVal) {
 			if (newVal?.id === 'ollama' && this.ollamaConfig.url) {
 				this.fetchOllamaModels()
 			}
 		},
+
+		/**
+		 * @param newVal
+		 * @spec exclude UI watcher — fetches Ollama models when the chat provider is Ollama.
+		 */
 		selectedChatProvider(newVal) {
 			if (newVal?.id === 'ollama' && this.ollamaConfig.url) {
 				this.fetchOllamaModels()
 			}
 		},
+
 		// Refetch models when URL changes
-		'ollamaConfig.url'(newVal) {
-			if (newVal && (this.selectedEmbeddingProvider?.id === 'ollama' || this.selectedChatProvider?.id === 'ollama')) {
+		'ollamaConfig.url': function (newVal) {
+			if (
+				newVal
+				&& (this.selectedEmbeddingProvider?.id === 'ollama'
+					|| this.selectedChatProvider?.id === 'ollama')
+			) {
 				this.fetchOllamaModels()
 			}
 		},
 	},
 
+	/**
+	 * @spec exclude Vue lifecycle hook — loads LLM config and available backends on mount.
+	 */
 	mounted() {
 		this.loadConfiguration()
 		this.loadAvailableBackends()
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/specs/platform-administration-modals/spec.md
+		 */
 		async loadConfiguration() {
 			this.loading = true
 
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/settings/llm'),
+				)
 				const llmSettings = response.data
 
 				// Set enabled state
@@ -621,15 +1055,16 @@ export default {
 
 				// Set embedding provider
 				if (llmSettings.embeddingProvider) {
-					this.selectedEmbeddingProvider = this.embeddingProviderOptions.find(
-						p => p.id === llmSettings.embeddingProvider,
-					)
+					this.selectedEmbeddingProvider =
+						this.embeddingProviderOptions.find(
+							(p) => p.id === llmSettings.embeddingProvider,
+						)
 				}
 
 				// Set chat provider
 				if (llmSettings.chatProvider) {
 					this.selectedChatProvider = this.chatProviderOptions.find(
-						p => p.id === llmSettings.chatProvider,
+						(p) => p.id === llmSettings.chatProvider,
 					)
 				}
 
@@ -639,14 +1074,17 @@ export default {
 						apiKey: llmSettings.openaiConfig.apiKey || '',
 						model: llmSettings.openaiConfig.model || null,
 						chatModel: llmSettings.openaiConfig.chatModel || null,
-						organizationId: llmSettings.openaiConfig.organizationId || '',
+						organizationId:
+							llmSettings.openaiConfig.organizationId || '',
 					}
 				}
 
 				// Load Ollama config
 				if (llmSettings.ollamaConfig) {
 					this.ollamaConfig = {
-						url: llmSettings.ollamaConfig.url || 'http://localhost:11434',
+						url:
+							llmSettings.ollamaConfig.url || 'http://localhost:11434',
+
 						model: llmSettings.ollamaConfig.model || null,
 						chatModel: llmSettings.ollamaConfig.chatModel || null,
 					}
@@ -656,15 +1094,20 @@ export default {
 				if (llmSettings.fireworksConfig) {
 					this.fireworksConfig = {
 						apiKey: llmSettings.fireworksConfig.apiKey || '',
-						embeddingModel: llmSettings.fireworksConfig.embeddingModel || null,
+						embeddingModel:
+							llmSettings.fireworksConfig.embeddingModel || null,
+
 						chatModel: llmSettings.fireworksConfig.chatModel || null,
-						baseUrl: llmSettings.fireworksConfig.baseUrl || 'https://api.fireworks.ai/inference/v1',
+						baseUrl:
+							llmSettings.fireworksConfig.baseUrl
+							|| 'https://api.fireworks.ai/inference/v1',
 					}
 
 					// Map model strings to model objects from the dropdown options
 					if (llmSettings.fireworksConfig.embeddingModel) {
 						const modelObj = this.fireworksEmbeddingModelOptions.find(
-							m => m.id === llmSettings.fireworksConfig.embeddingModel,
+							(m) =>
+								m.id === llmSettings.fireworksConfig.embeddingModel,
 						)
 						if (modelObj) {
 							this.fireworksConfig.embeddingModel = modelObj
@@ -672,7 +1115,7 @@ export default {
 					}
 					if (llmSettings.fireworksConfig.chatModel) {
 						const modelObj = this.fireworksChatModelOptions.find(
-							m => m.id === llmSettings.fireworksConfig.chatModel,
+							(m) => m.id === llmSettings.fireworksConfig.chatModel,
 						)
 						if (modelObj) {
 							this.fireworksConfig.chatModel = modelObj
@@ -681,16 +1124,23 @@ export default {
 				}
 
 				// Load enabled features (if available)
-				if (llmSettings.enabledFeatures && Array.isArray(llmSettings.enabledFeatures)) {
-					this.aiFeatures.forEach(feature => {
-						feature.enabled = llmSettings.enabledFeatures.includes(feature.id)
+				if (
+					llmSettings.enabledFeatures
+					&& Array.isArray(llmSettings.enabledFeatures)
+				) {
+					this.aiFeatures.forEach((feature) => {
+						feature.enabled = llmSettings.enabledFeatures.includes(
+							feature.id,
+						)
 					})
 				}
 
-				console.info('LLM configuration loaded', llmSettings)
-
 				// Fetch Ollama models if Ollama is selected
-				if ((this.selectedEmbeddingProvider?.id === 'ollama' || this.selectedChatProvider?.id === 'ollama') && this.ollamaConfig.url) {
+				if (
+					(this.selectedEmbeddingProvider?.id === 'ollama'
+						|| this.selectedChatProvider?.id === 'ollama')
+					&& this.ollamaConfig.url
+				) {
 					this.fetchOllamaModels()
 				}
 			} catch (error) {
@@ -701,10 +1151,16 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude UI event handler — clears the embedding test result on provider change.
+		 */
 		handleEmbeddingProviderChange() {
 			this.embeddingTestResult = null
 		},
 
+		/**
+		 * @spec exclude Modal action plumbing — tests the embedding provider connection.
+		 */
 		async testEmbeddingConnection() {
 			this.testingEmbedding = true
 			this.embeddingTestResult = null
@@ -716,43 +1172,63 @@ export default {
 				if (provider === 'openai') {
 					config = {
 						apiKey: this.openaiConfig.apiKey,
-						model: this.openaiConfig.model?.id || this.openaiConfig.model,
+						model:
+							this.openaiConfig.model?.id || this.openaiConfig.model,
 					}
 				} else if (provider === 'fireworks') {
 					config = {
 						apiKey: this.fireworksConfig.apiKey,
-						model: this.fireworksConfig.embeddingModel?.id || this.fireworksConfig.embeddingModel,
+						model:
+							this.fireworksConfig.embeddingModel?.id
+							|| this.fireworksConfig.embeddingModel,
+
 						baseUrl: this.fireworksConfig.baseUrl,
 					}
 				} else if (provider === 'ollama') {
 					config = {
 						url: this.ollamaConfig.url,
-						model: this.ollamaConfig.model?.id || this.ollamaConfig.model,
+						model:
+							this.ollamaConfig.model?.id || this.ollamaConfig.model,
 					}
 				}
 
-				await axios.post(generateUrl('/apps/openregister/api/vectors/test-embedding'), {
-					provider,
-					config,
-					testText: 'This is a test embedding generation.',
-				})
+				await axios.post(
+					generateUrl('/apps/openregister/api/vectors/test-embedding'),
+					{
+						provider,
+						config,
+						testText: 'This is a test embedding generation.',
+					},
+				)
 
 				this.embeddingTestResult = {
 					success: true,
 					message: 'Connected',
 				}
-				showSuccess(this.t('openregister', 'Embedding provider connection successful!'))
+				showSuccess(
+					this.t(
+						'openregister',
+						'Embedding provider connection successful!',
+					),
+				)
 			} catch (error) {
 				this.embeddingTestResult = {
 					success: false,
 					message: 'Failed',
 				}
-				showError(this.t('openregister', 'Embedding test failed: {error}', { error: error.response?.data?.error || error.message }))
+				showError(
+					this.t('openregister', 'Embedding test failed: {error}', {
+						error: error.response?.data?.error || error.message,
+					}),
+				)
 			} finally {
 				this.testingEmbedding = false
 			}
 		},
 
+		/**
+		 * @spec exclude Modal action plumbing — tests the chat provider connection.
+		 */
 		async testChatConnection() {
 			this.testingChat = true
 			this.chatTestResult = null
@@ -764,43 +1240,62 @@ export default {
 				if (provider === 'openai') {
 					config = {
 						apiKey: this.openaiConfig.apiKey,
-						model: this.openaiConfig.chatModel?.id || this.openaiConfig.chatModel,
+						model:
+							this.openaiConfig.chatModel?.id
+							|| this.openaiConfig.chatModel,
 					}
 				} else if (provider === 'fireworks') {
 					config = {
 						apiKey: this.fireworksConfig.apiKey,
-						model: this.fireworksConfig.chatModel?.id || this.fireworksConfig.chatModel,
+						model:
+							this.fireworksConfig.chatModel?.id
+							|| this.fireworksConfig.chatModel,
+
 						baseUrl: this.fireworksConfig.baseUrl,
 					}
 				} else if (provider === 'ollama') {
 					config = {
 						url: this.ollamaConfig.url,
-						model: this.ollamaConfig.chatModel?.id || this.ollamaConfig.chatModel,
+						model:
+							this.ollamaConfig.chatModel?.id
+							|| this.ollamaConfig.chatModel,
 					}
 				}
 
-				await axios.post(generateUrl('/apps/openregister/api/llm/test-chat'), {
-					provider,
-					config,
-					testMessage: 'Hello! Please respond with a brief greeting.',
-				})
+				await axios.post(
+					generateUrl('/apps/openregister/api/llm/test-chat'),
+					{
+						provider,
+						config,
+						testMessage: 'Hello! Please respond with a brief greeting.',
+					},
+				)
 
 				this.chatTestResult = {
 					success: true,
 					message: 'Connected',
 				}
-				showSuccess(this.t('openregister', 'Chat provider connection successful!'))
+				showSuccess(
+					this.t('openregister', 'Chat provider connection successful!'),
+				)
 			} catch (error) {
 				this.chatTestResult = {
 					success: false,
 					message: 'Failed',
 				}
-				showError(this.t('openregister', 'Chat test failed: {error}', { error: error.response?.data?.error || error.message }))
+				showError(
+					this.t('openregister', 'Chat test failed: {error}', {
+						error: error.response?.data?.error || error.message,
+					}),
+				)
 			} finally {
 				this.testingChat = false
 			}
 		},
 
+		/**
+		 * @spec exclude Modal save plumbing — posts LLM configuration to the settings endpoint.
+		 */
 		async saveConfiguration() {
 			this.saving = true
 
@@ -811,42 +1306,73 @@ export default {
 					chatProvider: this.selectedChatProvider?.id,
 					openaiConfig: {
 						apiKey: this.openaiConfig.apiKey,
-						model: this.openaiConfig.model?.id || this.openaiConfig.model,
-						chatModel: this.openaiConfig.chatModel?.id || this.openaiConfig.chatModel,
+						model:
+							this.openaiConfig.model?.id || this.openaiConfig.model,
+
+						chatModel:
+							this.openaiConfig.chatModel?.id
+							|| this.openaiConfig.chatModel,
+
 						organizationId: this.openaiConfig.organizationId,
 					},
+
 					ollamaConfig: {
 						url: this.ollamaConfig.url,
-						model: this.ollamaConfig.model?.id || this.ollamaConfig.model,
-						chatModel: this.ollamaConfig.chatModel?.id || this.ollamaConfig.chatModel,
+						model:
+							this.ollamaConfig.model?.id || this.ollamaConfig.model,
+
+						chatModel:
+							this.ollamaConfig.chatModel?.id
+							|| this.ollamaConfig.chatModel,
 					},
+
 					fireworksConfig: {
 						apiKey: this.fireworksConfig.apiKey,
-						embeddingModel: this.fireworksConfig.embeddingModel?.id || this.fireworksConfig.embeddingModel,
-						chatModel: this.fireworksConfig.chatModel?.id || this.fireworksConfig.chatModel,
+						embeddingModel:
+							this.fireworksConfig.embeddingModel?.id
+							|| this.fireworksConfig.embeddingModel,
+
+						chatModel:
+							this.fireworksConfig.chatModel?.id
+							|| this.fireworksConfig.chatModel,
+
 						baseUrl: this.fireworksConfig.baseUrl,
 					},
+
 					vectorConfig: {
 						backend: this.selectedVectorBackend?.id || 'php',
 						solrField: '_embedding_', // Reserved field in Solr schema
 					},
+
 					enabledFeatures: this.aiFeatures
-						.filter(f => f.enabled)
-						.map(f => f.id),
+						.filter((f) => f.enabled)
+						.map((f) => f.id),
 				}
 
 				// Use PATCH for partial updates
-				await axios.patch(generateUrl('/apps/openregister/api/settings/llm'), payload)
+				await axios.patch(
+					generateUrl('/apps/openregister/api/settings/llm'),
+					payload,
+				)
 
-				showSuccess(this.t('openregister', 'LLM configuration saved successfully'))
+				showSuccess(
+					this.t('openregister', 'LLM configuration saved successfully'),
+				)
 				this.$emit('closing')
 			} catch (error) {
-				showError(this.t('openregister', 'Failed to save configuration: {error}', { error: error.response?.data?.error || error.message }))
+				showError(
+					this.t('openregister', 'Failed to save configuration: {error}', {
+						error: error.response?.data?.error || error.message,
+					}),
+				)
 			} finally {
 				this.saving = false
 			}
 		},
 
+		/**
+		 * @spec exclude Modal data-load plumbing — fetches available Ollama models for the picker.
+		 */
 		async fetchOllamaModels() {
 			if (!this.ollamaConfig.url || this.loadingOllamaModels) {
 				return
@@ -855,50 +1381,83 @@ export default {
 			this.loadingOllamaModels = true
 
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/llm/ollama-models'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/llm/ollama-models'),
+				)
 
-				if (response.data.success && response.data.models && response.data.models.length > 0) {
-				// Replace the hardcoded list with fetched models
+				if (
+					response.data.success
+					&& response.data.models
+					&& response.data.models.length > 0
+				) {
+					// Replace the hardcoded list with fetched models
 					this.ollamaModelOptions = response.data.models
 
-				// Loaded models from Ollama API successfully
+					// Loaded models from Ollama API successfully
 				} else {
-				// Keep fallback list if API returns empty or fails
-				// Using fallback model list
+					// Keep fallback list if API returns empty or fails
+					// Using fallback model list
 				}
 			} catch (error) {
-			// Silently fail and keep using the hardcoded fallback list
-			// Error fetching Ollama models, using fallback
+				// Silently fail and keep using the hardcoded fallback list
+				// Error fetching Ollama models, using fallback
 			} finally {
 				this.loadingOllamaModels = false
 			}
 		},
 
+		/**
+		 * @spec exclude UI event handler — prompts before clearing all embeddings.
+		 */
 		confirmClearEmbeddings() {
 			// Use native browser confirm to avoid focus-trap conflicts with nested modals
-			const message = this.t('openregister', 'This will permanently delete ALL embeddings (vectors) from the database. You will need to re-vectorize all objects and files. This action cannot be undone.\n\nAre you sure you want to continue?')
+			const message = this.t(
+				'openregister',
+				'This will permanently delete ALL embeddings (vectors) from the database. You will need to re-vectorize all objects and files. This action cannot be undone.\n\nAre you sure you want to continue?',
+			)
 
 			if (confirm(message)) {
 				this.clearAllEmbeddings()
 			}
 		},
 
+		/**
+		 * @spec exclude Modal action plumbing — clears all stored embeddings via the API.
+		 */
 		async clearAllEmbeddings() {
 			this.clearingEmbeddings = true
 
 			try {
-				const response = await axios.delete(generateUrl('/apps/openregister/api/vectors/clear-all'))
+				const response = await axios.delete(
+					generateUrl('/apps/openregister/api/vectors/clear-all'),
+				)
 
 				if (response.data.success) {
-					showSuccess(this.t('openregister', 'Successfully deleted {count} embeddings. Please re-vectorize your data.', { count: response.data.deleted }))
+					showSuccess(
+						this.t(
+							'openregister',
+							'Successfully deleted {count} embeddings. Please re-vectorize your data.',
+							{ count: response.data.deleted },
+						),
+					)
 
 					// Emit event to parent to refresh stats
 					this.$emit('embeddings-cleared')
 				} else {
-					showError(this.t('openregister', 'Failed to clear embeddings: {error}', { error: response.data.error || 'Unknown error' }))
+					showError(
+						this.t(
+							'openregister',
+							'Failed to clear embeddings: {error}',
+							{ error: response.data.error || 'Unknown error' },
+						),
+					)
 				}
 			} catch (error) {
-				showError(this.t('openregister', 'Failed to clear embeddings: {error}', { error: error.response?.data?.error || error.message }))
+				showError(
+					this.t('openregister', 'Failed to clear embeddings: {error}', {
+						error: error.response?.data?.error || error.message,
+					}),
+				)
 			} finally {
 				this.clearingEmbeddings = false
 			}
@@ -907,12 +1466,17 @@ export default {
 		/**
 		 * Load available vector search backends
 		 */
+		/**
+		 * @spec exclude Modal data-load plumbing — fetches available LLM backends for the pickers.
+		 */
 		async loadAvailableBackends() {
 			this.loadingBackends = true
 
 			try {
 				// Get database info
-				const dbResponse = await axios.get(generateUrl('/apps/openregister/api/settings/database'))
+				const dbResponse = await axios.get(
+					generateUrl('/apps/openregister/api/settings/database'),
+				)
 
 				// Build backend options
 				const backends = []
@@ -921,10 +1485,12 @@ export default {
 				backends.push({
 					id: 'php',
 					name: 'PHP Cosine Similarity',
-					description: 'Always available, but slow for large datasets (>500 vectors)',
+					description:
+						'Always available, but slow for large datasets (>500 vectors)',
 					performance: 'slow',
 					available: true,
-					performanceNote: 'Calculates similarity in PHP. Suitable for small datasets.',
+					performanceNote:
+						'Calculates similarity in PHP. Suitable for small datasets.',
 				})
 
 				// Database backend (PostgreSQL + pgvector)
@@ -933,7 +1499,9 @@ export default {
 					backends.push({
 						id: 'database',
 						name: db.type + ' + pgvector',
-						description: db.vectorSupport ? 'Fast database-level vector search (Recommended)' : 'PostgreSQL with pgvector extension required',
+						description: db.vectorSupport
+							? 'Fast database-level vector search (Recommended)'
+							: 'PostgreSQL with pgvector extension required',
 						performance: db.vectorSupport ? 'fast' : null,
 						available: db.vectorSupport,
 						performanceNote: db.performanceNote,
@@ -944,15 +1512,20 @@ export default {
 				let solrAvailable = false
 				let solrNote = 'Not connected'
 				try {
-					const solrResponse = await axios.get(generateUrl('/apps/openregister/api/settings/solr-info'))
+					const solrResponse = await axios.get(
+						generateUrl('/apps/openregister/api/settings/solr-info'),
+					)
 					if (solrResponse.data.success && solrResponse.data.solr) {
 						const solr = solrResponse.data.solr
 						solrAvailable = solr.available || false
 
 						if (solrAvailable) {
-							solrNote = 'Very fast distributed vector search using KNN/HNSW indexing. Vectors stored in existing file and object collections.'
+							solrNote =
+								'Very fast distributed vector search using KNN/HNSW indexing. Vectors stored in existing file and object collections.'
 						} else {
-							solrNote = solr.error || 'SOLR not connected. Enable in Search Configuration.'
+							solrNote =
+								solr.error
+								|| 'SOLR not connected. Enable in Search Configuration.'
 						}
 					}
 				} catch (error) {
@@ -974,20 +1547,24 @@ export default {
 				this.vectorBackendOptions = backends
 
 				// Load current backend setting from LLM settings
-				const llmResponse = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
+				const llmResponse = await axios.get(
+					generateUrl('/apps/openregister/api/settings/llm'),
+				)
 				const vectorBackend = llmResponse.data.vectorConfig?.backend || 'php'
-				this.selectedVectorBackend = backends.find(b => b.id === vectorBackend) || backends[0]
-
+				this.selectedVectorBackend =
+					backends.find((b) => b.id === vectorBackend) || backends[0]
 			} catch (error) {
 				console.error('Failed to load vector backends:', error)
 				// Fallback to PHP only
-				this.vectorBackendOptions = [{
-					id: 'php',
-					name: 'PHP Cosine Similarity',
-					description: 'Always available fallback',
-					performance: 'slow',
-					available: true,
-				}]
+				this.vectorBackendOptions = [
+					{
+						id: 'php',
+						name: 'PHP Cosine Similarity',
+						description: 'Always available fallback',
+						performance: 'slow',
+						available: true,
+					},
+				]
 				this.selectedVectorBackend = this.vectorBackendOptions[0]
 			} finally {
 				this.loadingBackends = false

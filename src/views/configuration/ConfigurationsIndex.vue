@@ -1,5 +1,5 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { configurationStore, navigationStore } from '../../store/store.js'
 </script>
 
@@ -11,58 +11,83 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 				<h1 class="viewHeaderTitleIndented">
 					{{ t('openregister', 'Configurations') }}
 				</h1>
-				<p>{{ t('openregister', 'Manage your system configurations and settings') }}</p>
+				<p>
+					{{
+						t(
+							'openregister',
+							'Manage your system configurations and settings',
+						)
+					}}
+				</p>
 			</div>
 
 			<!-- Actions Bar -->
 			<div class="viewActionsBar">
 				<div class="viewInfo">
 					<span class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} configurations', { showing: paginatedConfigurations.length, total: configurationStore.configurationList.length }) }}
+						{{
+							t(
+								'openregister',
+								'Showing {showing} of {total} configurations',
+								{
+									showing: paginatedConfigurations.length,
+									total: configurationStore.configurationList
+										.length,
+								},
+							)
+						}}
 					</span>
-					<span v-if="selectedConfigurations.length > 0" class="viewIndicator">
-						({{ t('openregister', '{count} selected', { count: selectedConfigurations.length }) }})
+					<span
+						v-if="selectedConfigurations.length > 0"
+						class="viewIndicator">
+						({{
+							t('openregister', '{count} selected', {
+								count: selectedConfigurations.length,
+							})
+						}})
 					</span>
 				</div>
 				<div class="viewActions">
 					<div class="viewModeSwitchContainer">
 						<NcCheckboxRadioSwitch
 							v-model="viewMode"
-							v-tooltip="'See configurations as cards'"
-							:button-variant="true"
+							title="See configurations as cards"
+							:buttonVariant="true"
 							value="cards"
 							name="view_mode_radio"
 							type="radio"
-							button-variant-grouped="horizontal">
+							buttonVariantGrouped="horizontal">
 							Cards
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
 							v-model="viewMode"
-							v-tooltip="'See configurations as a table'"
-							:button-variant="true"
+							title="See configurations as a table"
+							:buttonVariant="true"
 							value="table"
 							name="view_mode_radio"
 							type="radio"
-							button-variant-grouped="horizontal">
+							buttonVariantGrouped="horizontal">
 							Table
 						</NcCheckboxRadioSwitch>
 					</div>
 
-					<NcActions
-						:force-name="true"
-						:inline="3"
-						menu-name="Actions">
+					<NcActions :forceName="true" :inline="3" menuName="Actions">
 						<NcActionButton
 							:primary="true"
-							close-after-click
-							@click="configurationStore.setConfigurationItem(null); navigationStore.setModal('editConfiguration')">
+							closeAfterClick
+							@click="
+								() => {
+									configurationStore.setConfigurationItem(null)
+									navigationStore.setModal('editConfiguration')
+								}
+							">
 							<template #icon>
 								<Plus :size="20" />
 							</template>
 							Create Configuration
 						</NcActionButton>
 						<NcActionButton
-							close-after-click
+							closeAfterClick
 							@click="navigationStore.setModal('importConfiguration')">
 							<template #icon>
 								<CloudUpload :size="20" />
@@ -70,7 +95,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 							Import Configuration
 						</NcActionButton>
 						<NcActionButton
-							close-after-click
+							closeAfterClick
 							@click="configurationStore.refreshConfigurationList()">
 							<template #icon>
 								<Refresh :size="20" />
@@ -82,7 +107,12 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			</div>
 
 			<!-- Loading, Error, and Empty States -->
-			<NcEmptyContent v-if="configurationStore.loading || configurationStore.error || !configurationStore.configurationList.length"
+			<NcEmptyContent
+				v-if="
+					configurationStore.loading
+					|| configurationStore.error
+					|| !configurationStore.configurationList.length
+				"
 				:name="emptyContentName"
 				:description="emptyContentDescription">
 				<template #icon>
@@ -103,8 +133,8 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 							@edit="handleEdit(configuration)"
 							@export="handleExport(configuration)"
 							@delete="handleDelete(configuration)"
-							@check-version="checkVersion(configuration)"
-							@preview-update="previewUpdate(configuration)" />
+							@checkVersion="checkVersion(configuration)"
+							@previewUpdate="previewUpdate(configuration)" />
 					</div>
 				</template>
 				<template v-else>
@@ -114,105 +144,261 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 								<tr>
 									<th class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:checked="allSelected"
+											:modelValue="allSelected"
 											:indeterminate="someSelected"
-											@update:checked="toggleSelectAll" />
+											:aria-label="
+												t('openregister', 'Select All')
+											"
+											@update:modelValue="toggleSelectAll" />
 									</th>
-									<th>{{ t('openregister', 'Title') }}</th>
-									<th>{{ t('openregister', 'Source') }}</th>
-									<th>{{ t('openregister', 'Local Version') }}</th>
-									<th>{{ t('openregister', 'Remote Version') }}</th>
-									<th>{{ t('openregister', 'Status') }}</th>
-									<th>{{ t('openregister', 'Updated') }}</th>
-									<th class="tableColumnActions">
+									<th scope="col">
+										{{ t('openregister', 'Title') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Source') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Local Version') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Remote Version') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Status') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Updated') }}
+									</th>
+									<th scope="col" class="tableColumnActions">
 										{{ t('openregister', 'Actions') }}
 									</th>
 								</tr>
 							</thead>
 							<tbody>
-								<tr v-for="configuration in paginatedConfigurations"
+								<tr
+									v-for="configuration in paginatedConfigurations"
 									:key="configuration.id"
 									class="viewTableRow"
-									:class="{ viewTableRowSelected: selectedConfigurations.includes(configuration.id) }">
+									:class="{
+										viewTableRowSelected:
+											selectedConfigurations.includes(
+												configuration.id,
+											),
+									}">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:checked="selectedConfigurations.includes(configuration.id)"
-											@update:checked="(checked) => toggleConfigurationSelection(configuration.id, checked)" />
+											:modelValue="
+												selectedConfigurations.includes(
+													configuration.id,
+												)
+											"
+											:aria-labelledby="`configuration-row-title-${configuration.id}`"
+											@update:modelValue="
+												(checked) =>
+													toggleConfigurationSelection(
+														configuration.id,
+														checked,
+													)
+											" />
 									</td>
-									<td class="tableColumnTitle">
+									<td
+										:id="`configuration-row-title-${configuration.id}`"
+										class="tableColumnTitle">
 										<div class="titleContent">
-											<strong>{{ configuration.title }}</strong>
-											<span v-if="configuration.description" class="textDescription textEllipsis">{{ configuration.description }}</span>
+											<strong>{{
+												configuration.title
+											}}</strong>
+											<span
+												v-if="configuration.description"
+												class="textDescription textEllipsis"
+												>{{
+													configuration.description
+												}}</span
+											>
 										</div>
 									</td>
-									<td>{{ getSourceTypeLabel(configuration.sourceType) }}</td>
+									<td>
+										{{
+											getSourceTypeLabel(
+												configuration.sourceType,
+											)
+										}}
+									</td>
 									<td>{{ configuration.localVersion || '-' }}</td>
 									<td>{{ configuration.remoteVersion || '-' }}</td>
 									<td>
 										<div class="statusPillsContainer">
 											<template v-if="configuration.isLocal">
-												<span class="configBadge configBadge--local">
+												<span
+													class="configBadge configBadge--local">
 													<CheckCircle :size="16" />
 													Local
 												</span>
-												<span v-if="configuration.app" class="configBadge configBadge--app">
+												<span
+													v-if="configuration.app"
+													class="configBadge configBadge--app">
 													<ApplicationCog :size="16" />
 													{{ configuration.app }}
 												</span>
 											</template>
-											<span v-else class="configBadge configBadge--external">
+											<span
+												v-else
+												class="configBadge configBadge--external">
 												<Cloud :size="16" />
 												External
 											</span>
-											<span v-if="!configuration.isLocal && configuration.syncEnabled" class="configBadge" :class="'configBadge--sync-' + configuration.syncStatus">
-												<Sync v-if="configuration.syncStatus === 'success'" :size="16" />
-												<AlertCircle v-else-if="configuration.syncStatus === 'failed'" :size="16" />
+											<span
+												v-if="
+													!configuration.isLocal
+													&& configuration.syncEnabled
+												"
+												class="configBadge"
+												:class="
+													'configBadge--sync-'
+													+ configuration.syncStatus
+												">
+												<Sync
+													v-if="
+														configuration.syncStatus
+														=== 'success'
+													"
+													:size="16" />
+												<AlertCircle
+													v-else-if="
+														configuration.syncStatus
+														=== 'failed'
+													"
+													:size="16" />
 												<ClockOutline v-else :size="16" />
-												{{ getSyncStatusText(configuration) }}
+												{{
+													getSyncStatusText(configuration)
+												}}
 											</span>
-											<span v-if="hasUpdateAvailable(configuration)" class="configBadge configBadge--update">
+											<span
+												v-if="
+													hasUpdateAvailable(configuration)
+												"
+												class="configBadge configBadge--update">
 												<Update :size="16" />
 												Update Available
 											</span>
 										</div>
 									</td>
-									<td>{{ configuration.updated ? new Date(configuration.updated).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(configuration.updated).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
+									<td>
+										{{
+											configuration.updated
+												? new Date(
+														configuration.updated,
+													).toLocaleDateString({
+														day: '2-digit',
+														month: '2-digit',
+														year: 'numeric',
+													})
+													+ ', '
+													+ new Date(
+														configuration.updated,
+													).toLocaleTimeString({
+														hour: '2-digit',
+														minute: '2-digit',
+														second: '2-digit',
+													})
+												: '-'
+										}}
+									</td>
 									<td class="tableColumnActions">
 										<NcActions :primary="false">
 											<template #icon>
 												<DotsHorizontal :size="20" />
 											</template>
-											<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(configuration); navigationStore.setModal('viewConfiguration')">
+											<NcActionButton
+												closeAfterClick
+												@click="
+													() => {
+														configurationStore.setConfigurationItem(
+															configuration,
+														)
+														navigationStore.setModal(
+															'viewConfiguration',
+														)
+													}
+												">
 												<template #icon>
 													<Eye :size="20" />
 												</template>
 												View
 											</NcActionButton>
-											<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(configuration); navigationStore.setModal('editConfiguration')">
+											<NcActionButton
+												closeAfterClick
+												@click="
+													() => {
+														configurationStore.setConfigurationItem(
+															configuration,
+														)
+														navigationStore.setModal(
+															'editConfiguration',
+														)
+													}
+												">
 												<template #icon>
 													<Pencil :size="20" />
 												</template>
 												Edit
 											</NcActionButton>
-											<NcActionButton v-if="isRemoteConfiguration(configuration)" close-after-click @click="checkVersion(configuration)">
+											<NcActionButton
+												v-if="
+													isRemoteConfiguration(
+														configuration,
+													)
+												"
+												closeAfterClick
+												@click="checkVersion(configuration)">
 												<template #icon>
 													<Sync :size="20" />
 												</template>
 												Check Version
 											</NcActionButton>
-											<NcActionButton v-if="hasUpdateAvailable(configuration)" close-after-click @click="previewUpdate(configuration)">
+											<NcActionButton
+												v-if="
+													hasUpdateAvailable(configuration)
+												"
+												closeAfterClick
+												@click="
+													previewUpdate(configuration)
+												">
 												<template #icon>
 													<EyeOutline :size="20" />
 												</template>
 												Preview Update
 											</NcActionButton>
-											<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(configuration); navigationStore.setModal('exportConfiguration')">
+											<NcActionButton
+												closeAfterClick
+												@click="
+													() => {
+														configurationStore.setConfigurationItem(
+															configuration,
+														)
+														navigationStore.setModal(
+															'exportConfiguration',
+														)
+													}
+												">
 												<template #icon>
 													<Download :size="20" />
 												</template>
 												Export
 											</NcActionButton>
-											<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(configuration); navigationStore.setDialog('deleteConfiguration')">
+											<NcActionButton
+												closeAfterClick
+												@click="
+													() => {
+														configurationStore.setConfigurationItem(
+															configuration,
+														)
+														navigationStore.setDialog(
+															'deleteConfiguration',
+														)
+													}
+												">
 												<template #icon>
 													<TrashCanOutline :size="20" />
 												</template>
@@ -230,42 +416,53 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			<!-- Pagination -->
 			<PaginationComponent
 				v-if="configurationStore.configurationList.length > 0"
-				:current-page="pagination.page || 1"
-				:total-pages="Math.ceil(configurationStore.configurationList.length / (pagination.limit || 20))"
-				:total-items="configurationStore.configurationList.length"
-				:current-page-size="pagination.limit || 20"
-				:min-items-to-show="10"
-				@page-changed="onPageChanged"
-				@page-size-changed="onPageSizeChanged" />
+				:currentPage="pagination.page || 1"
+				:totalPages="
+					Math.ceil(
+						configurationStore.configurationList.length
+							/ (pagination.limit || 20),
+					)
+				"
+				:totalItems="configurationStore.configurationList.length"
+				:currentPageSize="pagination.limit || 20"
+				:minItemsToShow="10"
+				@pageChanged="onPageChanged"
+				@pageSizeChanged="onPageSizeChanged" />
 		</div>
 	</NcAppContent>
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
+import {
+	NcActionButton,
+	NcActions,
+	NcAppContent,
+	NcCheckboxRadioSwitch,
+	NcEmptyContent,
+	NcLoadingIcon,
+} from '@nextcloud/vue'
+import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
+import ApplicationCog from 'vue-material-design-icons/ApplicationCog.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
+import Cloud from 'vue-material-design-icons/Cloud.vue'
+import CloudUpload from 'vue-material-design-icons/CloudUpload.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
-import CloudUpload from 'vue-material-design-icons/CloudUpload.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
-import Update from 'vue-material-design-icons/Update.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Sync from 'vue-material-design-icons/Sync.vue'
-import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
-import Cloud from 'vue-material-design-icons/Cloud.vue'
-import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
-import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
-import ApplicationCog from 'vue-material-design-icons/ApplicationCog.vue'
-
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import Update from 'vue-material-design-icons/Update.vue'
 import ConfigurationCard from '../../components/cards/ConfigurationCard.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 
 export default {
 	name: 'ConfigurationsIndex',
@@ -296,6 +493,7 @@ export default {
 		ApplicationCog,
 		PaginationComponent,
 	},
+
 	data() {
 		return {
 			viewMode: 'cards',
@@ -306,18 +504,52 @@ export default {
 			},
 		}
 	},
+
 	computed: {
+		/**
+		 * Current page slice of the configuration list.
+		 *
+		 * @spec exclude UI plumbing — client-side pagination computed; admin list contract owned by admin-list-views.
+		 * @return {Array} configurations on the active page
+		 */
 		paginatedConfigurations() {
-			const start = ((this.pagination.page || 1) - 1) * (this.pagination.limit || 20)
+			const start =
+				((this.pagination.page || 1) - 1) * (this.pagination.limit || 20)
 			const end = start + (this.pagination.limit || 20)
 			return configurationStore.configurationList.slice(start, end)
 		},
+
+		/**
+		 * Whether every configuration is selected.
+		 *
+		 * @spec exclude UI plumbing — header-checkbox state derived from selection; admin list contract owned by admin-list-views.
+		 * @return {boolean}
+		 */
 		allSelected() {
-			return configurationStore.configurationList.length > 0 && configurationStore.configurationList.every(configuration => this.selectedConfigurations.includes(configuration.id))
+			return (
+				configurationStore.configurationList.length > 0
+				&& configurationStore.configurationList.every((configuration) =>
+					this.selectedConfigurations.includes(configuration.id),
+				)
+			)
 		},
+
+		/**
+		 * Whether a partial selection exists (indeterminate state).
+		 *
+		 * @spec exclude UI plumbing — header-checkbox indeterminate state; admin list contract owned by admin-list-views.
+		 * @return {boolean}
+		 */
 		someSelected() {
 			return this.selectedConfigurations.length > 0 && !this.allSelected
 		},
+
+		/**
+		 * Empty-state title reflecting loading/error/empty.
+		 *
+		 * @spec exclude UI plumbing — derived empty-state copy, no observable contract.
+		 * @return {string}
+		 */
 		emptyContentName() {
 			if (configurationStore.loading) {
 				return t('openregister', 'Loading configurations...')
@@ -328,9 +560,19 @@ export default {
 			}
 			return ''
 		},
+
+		/**
+		 * Empty-state description reflecting loading/error/empty.
+		 *
+		 * @spec exclude UI plumbing — derived empty-state copy, no observable contract.
+		 * @return {string}
+		 */
 		emptyContentDescription() {
 			if (configurationStore.loading) {
-				return t('openregister', 'Please wait while we fetch your configurations.')
+				return t(
+					'openregister',
+					'Please wait while we fetch your configurations.',
+				)
 			} else if (configurationStore.error) {
 				return t('openregister', 'Please try again later.')
 			} else if (!configurationStore.configurationList.length) {
@@ -339,32 +581,85 @@ export default {
 			return ''
 		},
 	},
+
+	/**
+	 * Soft-refresh the configuration list on mount.
+	 *
+	 * @spec exclude UI plumbing — lifecycle hook delegating to the store; list contract owned by admin-list-views.
+	 * @return {void}
+	 */
 	mounted() {
 		// Use soft reload (no loading spinner) since data is hot-loaded at app startup
 		configurationStore.refreshConfigurationList(null, true)
 	},
+
 	methods: {
+		/**
+		 * Toggle selection state for every configuration in the current list.
+		 *
+		 * @spec openspec/specs/admin-list-views/spec.md
+		 * @param {boolean} checked - true selects all, false clears the selection
+		 * @return {void}
+		 */
 		toggleSelectAll(checked) {
 			if (checked) {
-				this.selectedConfigurations = configurationStore.configurationList.map(configuration => configuration.id)
+				this.selectedConfigurations =
+					configurationStore.configurationList.map(
+						(configuration) => configuration.id,
+					)
 			} else {
 				this.selectedConfigurations = []
 			}
 		},
+
+		/**
+		 * Toggle selection for a single configuration row.
+		 *
+		 * @spec exclude UI plumbing — row-selection state mutation; admin list contract owned by admin-list-views.
+		 * @param {string|number} configurationId - row id
+		 * @param {boolean} checked - selected state
+		 * @return {void}
+		 */
 		toggleConfigurationSelection(configurationId, checked) {
 			if (checked) {
 				this.selectedConfigurations.push(configurationId)
 			} else {
-				this.selectedConfigurations = this.selectedConfigurations.filter(id => id !== configurationId)
+				this.selectedConfigurations = this.selectedConfigurations.filter(
+					(id) => id !== configurationId,
+				)
 			}
 		},
+
+		/**
+		 * Handle a page change from the paginator.
+		 *
+		 * @spec exclude UI plumbing — pagination state mutation; admin list contract owned by admin-list-views.
+		 * @param {number} page - new page number
+		 * @return {void}
+		 */
 		onPageChanged(page) {
 			this.pagination.page = page
 		},
+
+		/**
+		 * Handle a page-size change from the paginator.
+		 *
+		 * @spec exclude UI plumbing — pagination state mutation; admin list contract owned by admin-list-views.
+		 * @param {number} pageSize - new page size
+		 * @return {void}
+		 */
 		onPageSizeChanged(pageSize) {
 			this.pagination.page = 1
 			this.pagination.limit = pageSize
 		},
+
+		/**
+		 * Whether a configuration has a remote update available.
+		 *
+		 * @spec exclude UI plumbing — display badge predicate comparing local vs remote version.
+		 * @param {object} configuration - configuration row
+		 * @return {boolean}
+		 */
 		hasUpdateAvailable(configuration) {
 			if (!configuration.localVersion || !configuration.remoteVersion) {
 				return false
@@ -372,12 +667,22 @@ export default {
 			// Simple version comparison - remote version different from local
 			return configuration.remoteVersion !== configuration.localVersion
 		},
+
 		isRemoteConfiguration(configuration) {
 			return configuration.sourceType && configuration.sourceType !== 'local'
 		},
+
 		isManualConfiguration(configuration) {
 			return !configuration.sourceType || configuration.sourceType === 'local'
 		},
+
+		/**
+		 * Map a source-type id to a human label.
+		 *
+		 * @spec exclude UI plumbing — static label lookup for display.
+		 * @param {string} sourceType - source type id
+		 * @return {string} display label
+		 */
 		getSourceTypeLabel(sourceType) {
 			const labels = {
 				local: 'Local',
@@ -387,50 +692,118 @@ export default {
 			}
 			return labels[sourceType] || 'Unknown'
 		},
+
+		/**
+		 * Check a configuration's remote version and refresh the list.
+		 *
+		 * @spec exclude UI plumbing — thin POST + toast + list refresh; configuration sync contract owned elsewhere.
+		 * @param {object} configuration - configuration row
+		 * @return {Promise<void>}
+		 */
 		async checkVersion(configuration) {
 			try {
 				const response = await axios.post(
-					generateUrl(`/apps/openregister/api/configurations/${configuration.id}/check-version`),
+					generateUrl(
+						`/apps/openregister/api/configurations/${configuration.id}/check-version`,
+					),
 				)
 
 				if (response.data.hasUpdate) {
 					showSuccess(
-						`Update available: ${response.data.localVersion} → ${response.data.remoteVersion}`,
+						t('openregister', 'Update available: {local} → {remote}', {
+							local: response.data.localVersion,
+							remote: response.data.remoteVersion,
+						}),
 					)
 				} else {
-					showSuccess('Configuration is up to date')
+					showSuccess(t('openregister', 'Configuration is up to date'))
 				}
 
 				// Refresh the list to show updated version info
 				await configurationStore.refreshConfigurationList()
 			} catch (error) {
 				console.error('Failed to check version:', error)
-				showError('Failed to check version: ' + (error.response?.data?.error || error.message))
+				showError(
+					t('openregister', 'Failed to check version: {error}', {
+						error: error.response?.data?.error || error.message,
+					}),
+				)
 			}
 		},
+
+		/**
+		 * Open the view-configuration modal for a row.
+		 *
+		 * @spec exclude UI plumbing — store-set + modal dispatch.
+		 * @param {object} configuration - configuration row
+		 * @return {void}
+		 */
 		handleView(configuration) {
 			configurationStore.setConfigurationItem(configuration)
 			navigationStore.setModal('viewConfiguration')
 		},
+
+		/**
+		 * Open the edit-configuration modal for a row.
+		 *
+		 * @spec exclude UI plumbing — store-set + modal dispatch.
+		 * @param {object} configuration - configuration row
+		 * @return {void}
+		 */
 		handleEdit(configuration) {
 			configurationStore.setConfigurationItem(configuration)
 			navigationStore.setModal('editConfiguration')
 		},
+
+		/**
+		 * Open the export-configuration modal for a row.
+		 *
+		 * @spec exclude UI plumbing — store-set + modal dispatch.
+		 * @param {object} configuration - configuration row
+		 * @return {void}
+		 */
 		handleExport(configuration) {
 			configurationStore.setConfigurationItem(configuration)
 			navigationStore.setModal('exportConfiguration')
 		},
+
+		/**
+		 * Open the delete-configuration dialog for a row.
+		 *
+		 * @spec exclude UI plumbing — store-set + dialog dispatch.
+		 * @param {object} configuration - configuration row
+		 * @return {void}
+		 */
 		handleDelete(configuration) {
 			configurationStore.setConfigurationItem(configuration)
 			navigationStore.setDialog('deleteConfiguration')
 		},
+
+		/**
+		 * Open the preview-update modal for a row.
+		 *
+		 * @spec exclude UI plumbing — store-set + modal dispatch.
+		 * @param {object} configuration - configuration row
+		 * @return {void}
+		 */
 		previewUpdate(configuration) {
 			// Set the configuration and open preview modal
 			configurationStore.setConfigurationItem(configuration)
 			navigationStore.setModal('previewConfiguration')
 		},
+
+		/**
+		 * Build a relative sync-status label for a configuration.
+		 *
+		 * @spec exclude UI plumbing — display formatter computing relative time.
+		 * @param {object} configuration - configuration row
+		 * @return {string} display label
+		 */
 		getSyncStatusText(configuration) {
-			if (configuration.syncStatus === 'success' && configuration.lastSyncDate) {
+			if (
+				configuration.syncStatus === 'success'
+				&& configuration.lastSyncDate
+			) {
 				const now = new Date()
 				const lastSync = new Date(configuration.lastSyncDate)
 				const diffInHours = Math.floor((now - lastSync) / (1000 * 60 * 60))

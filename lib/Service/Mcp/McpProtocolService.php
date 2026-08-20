@@ -6,6 +6,9 @@
  * Handles Model Context Protocol (MCP) standard handshake, session management,
  * and protocol-level operations for the OpenRegister MCP server.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Mcp
  *
@@ -22,8 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Mcp;
 
-use OCP\ICacheFactory;
 use OCP\ICache;
+use OCP\ICacheFactory;
 use OCP\Security\ISecureRandom;
 use Psr\Log\LoggerInterface;
 
@@ -37,172 +40,176 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class McpProtocolService
-{
+class McpProtocolService {
 
-    /**
-     * MCP protocol version supported by this server
-     *
-     * @var string
-     */
-    private const PROTOCOL_VERSION = '2025-03-26';
+	/**
+	 * MCP protocol version supported by this server
+	 *
+	 * @var string
+	 */
+	private const PROTOCOL_VERSION = '2025-03-26';
 
-    /**
-     * Server name reported in MCP initialize response
-     *
-     * @var string
-     */
-    private const SERVER_NAME = 'OpenRegister';
+	/**
+	 * Server name reported in MCP initialize response
+	 *
+	 * @var string
+	 */
+	private const SERVER_NAME = 'OpenRegister';
 
-    /**
-     * Server version reported in MCP initialize response
-     *
-     * @var string
-     */
-    private const SERVER_VERSION = '1.0.0';
+	/**
+	 * Server version reported in MCP initialize response
+	 *
+	 * @var string
+	 */
+	private const SERVER_VERSION = '1.0.0';
 
-    /**
-     * Session TTL in seconds (1 hour)
-     *
-     * @var int
-     */
-    private const SESSION_TTL = 3600;
+	/**
+	 * Session TTL in seconds (1 hour)
+	 *
+	 * @var int
+	 */
+	private const SESSION_TTL = 3600;
 
-    /**
-     * Distributed cache for MCP sessions
-     *
-     * @var ICache
-     */
-    private ICache $sessionCache;
+	/**
+	 * Distributed cache for MCP sessions
+	 *
+	 * @var ICache
+	 */
+	private ICache $sessionCache;
 
-    /**
-     * McpProtocolService constructor
-     *
-     * @param ICacheFactory   $cacheFactory Nextcloud cache factory
-     * @param ISecureRandom   $secureRandom Secure random generator
-     * @param LoggerInterface $logger       Logger
-     */
-    public function __construct(
-        ICacheFactory $cacheFactory,
-        private readonly ISecureRandom $secureRandom,
-        private readonly LoggerInterface $logger
-    ) {
-        $this->sessionCache = $cacheFactory->createDistributed(
-            prefix: 'openregister_mcp_sessions'
-        );
-    }//end __construct()
+	/**
+	 * McpProtocolService constructor
+	 *
+	 * @param ICacheFactory $cacheFactory Nextcloud cache factory
+	 * @param ISecureRandom $secureRandom Secure random generator
+	 * @param LoggerInterface $logger Logger
+	 */
+	public function __construct(
+		ICacheFactory $cacheFactory,
+		private readonly ISecureRandom $secureRandom,
+		private readonly LoggerInterface $logger,
+	) {
+		$this->sessionCache = $cacheFactory->createDistributed(
+			prefix: 'openregister_mcp_sessions'
+		);
+	}//end __construct()
 
-    /**
-     * Handle MCP initialize request
-     *
-     * Creates a new MCP session and returns server capabilities.
-     *
-     * @param array  $params Initialize parameters from client
-     * @param string $userId Authenticated Nextcloud user ID
-     *
-     * @return array{result: array, sessionId: string} Result and session ID
-     */
-    public function initialize(array $params, string $userId): array
-    {
-        $sessionId = $this->createSession(userId: $userId);
+	/**
+	 * Handle MCP initialize request
+	 *
+	 * Creates a new MCP session and returns server capabilities.
+	 *
+	 * @param array $params Initialize parameters from client
+	 * @param string $userId Authenticated Nextcloud user ID
+	 *
+	 * @return array{result: array, sessionId: string} Result and session ID
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-4
+	 */
+	public function initialize(array $params, string $userId): array {
+		$sessionId = $this->createSession(userId: $userId);
 
-        $result = [
-            'protocolVersion' => self::PROTOCOL_VERSION,
-            'capabilities'    => [
-                'tools'     => ['listChanged' => false],
-                'resources' => [
-                    'subscribe'   => false,
-                    'listChanged' => false,
-                ],
-            ],
-            'serverInfo'      => [
-                'name'    => self::SERVER_NAME,
-                'version' => self::SERVER_VERSION,
-            ],
-            // phpcs:ignore Generic.Files.LineLength.MaxExceeded
-            'instructions'    => 'OpenRegister is a flexible data register platform for Nextcloud. Use tools to manage registers, schemas, and objects. Use resources to browse available data.',
-        ];
+		$result = [
+			'protocolVersion' => self::PROTOCOL_VERSION,
+			'capabilities' => [
+				'tools' => ['listChanged' => false],
+				'resources' => [
+					'subscribe' => false,
+					'listChanged' => false,
+				],
+			],
+			'serverInfo' => [
+				'name' => self::SERVER_NAME,
+				'version' => self::SERVER_VERSION,
+			],
+			// phpcs:ignore Generic.Files.LineLength.MaxExceeded
+			'instructions' => 'OpenRegister is a flexible data register platform for Nextcloud. Use tools to manage registers, schemas, and objects. Use resources to browse available data.',
+		];
 
-        return [
-            'result'    => $result,
-            'sessionId' => $sessionId,
-        ];
-    }//end initialize()
+		return [
+			'result' => $result,
+			'sessionId' => $sessionId,
+		];
+	}//end initialize()
 
-    /**
-     * Handle MCP ping request
-     *
-     * @return array Empty result per MCP spec
-     */
-    public function ping(): array
-    {
-        return [];
-    }//end ping()
+	/**
+	 * Handle MCP ping request
+	 *
+	 * @return array Empty result per MCP spec
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-4
+	 */
+	public function ping(): array {
+		return [];
+	}//end ping()
 
-    /**
-     * Create a new MCP session
-     *
-     * @param string $userId Nextcloud user ID to associate with session
-     *
-     * @return string Generated session ID (UUID v4 format)
-     */
-    public function createSession(string $userId): string
-    {
-        $sessionId = $this->secureRandom->generate(
-            length: 32,
-            characters: ISecureRandom::CHAR_ALPHANUMERIC
-        );
+	/**
+	 * Create a new MCP session
+	 *
+	 * @param string $userId Nextcloud user ID to associate with session
+	 *
+	 * @return string Generated session ID (UUID v4 format)
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-4
+	 */
+	public function createSession(string $userId): string {
+		$sessionId = $this->secureRandom->generate(
+			length: 32,
+			characters: ISecureRandom::CHAR_ALPHANUMERIC
+		);
 
-        $this->sessionCache->set(
-            key: $sessionId,
-            value: $userId,
-            ttl: self::SESSION_TTL
-        );
+		$this->sessionCache->set(
+			key: $sessionId,
+			value: $userId,
+			ttl: self::SESSION_TTL
+		);
 
-        $this->logger->debug(
-            message: '[MCP] Session created',
-            context: ['sessionId' => $sessionId, 'userId' => $userId]
-        );
+		$this->logger->debug(
+			message: '[MCP] Session created',
+			context: ['sessionId' => $sessionId, 'userId' => $userId]
+		);
 
-        return $sessionId;
-    }//end createSession()
+		return $sessionId;
+	}//end createSession()
 
-    /**
-     * Validate an MCP session ID
-     *
-     * @param string $sessionId Session ID from Mcp-Session-Id header
-     *
-     * @return string|null User ID if valid, null if expired/invalid
-     */
-    public function validateSession(string $sessionId): ?string
-    {
-        $userId = $this->sessionCache->get(key: $sessionId);
+	/**
+	 * Validate an MCP session ID
+	 *
+	 * @param string $sessionId Session ID from Mcp-Session-Id header
+	 *
+	 * @return string|null User ID if valid, null if expired/invalid
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-4
+	 */
+	public function validateSession(string $sessionId): ?string {
+		$userId = $this->sessionCache->get(key: $sessionId);
 
-        if ($userId === null) {
-            $this->logger->debug(
-                message: '[MCP] Invalid or expired session',
-                context: ['sessionId' => $sessionId]
-            );
-            return null;
-        }
+		if ($userId === null) {
+			$this->logger->debug(
+				message: '[MCP] Invalid or expired session',
+				context: ['sessionId' => $sessionId]
+			);
+			return null;
+		}
 
-        return (string) $userId;
-    }//end validateSession()
+		return (string)$userId;
+	}//end validateSession()
 
-    /**
-     * Destroy an MCP session
-     *
-     * @param string $sessionId Session ID to destroy
-     *
-     * @return void
-     */
-    public function destroySession(string $sessionId): void
-    {
-        $this->sessionCache->remove(key: $sessionId);
+	/**
+	 * Destroy an MCP session
+	 *
+	 * @param string $sessionId Session ID to destroy
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-4
+	 */
+	public function destroySession(string $sessionId): void {
+		$this->sessionCache->remove(key: $sessionId);
 
-        $this->logger->debug(
-            message: '[MCP] Session destroyed',
-            context: ['sessionId' => $sessionId]
-        );
-    }//end destroySession()
+		$this->logger->debug(
+			message: '[MCP] Session destroyed',
+			context: ['sessionId' => $sessionId]
+		);
+	}//end destroySession()
 }//end class

@@ -6,6 +6,9 @@
  * Handles audit trail and logging operations for objects.
  * Tracks all changes and access to objects for compliance and debugging.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Objects\Handlers
  *
@@ -17,8 +20,8 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-16
+ * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+ * @spec openspec/specs/audit-trail-immutable/spec.md
  */
 
 declare(strict_types=1);
@@ -41,219 +44,116 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister\Service\Objects\Handlers
  */
-class AuditHandler
-{
-    /**
-     * Constructor
-     *
-     * @param AuditTrailMapper $auditTrailMapper Audit trail mapper
-     * @param LoggerInterface  $logger           PSR-3 logger
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-8
-     */
-    public function __construct(
-        private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly LoggerInterface $logger
-    ) {
-    }//end __construct()
+class AuditHandler {
+	/**
+	 * Constructor
+	 *
+	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper
+	 * @param LoggerInterface $logger PSR-3 logger
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
+	 */
+	public function __construct(
+		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Get audit logs for an object
-     *
-     * Retrieves all audit trail entries for a specific object with optional filters.
-     *
-     * @param string $uuid    Object UUID
-     * @param array  $filters Optional filters for logs
-     *
-     * @return \OCA\OpenRegister\Db\AuditTrail[] Array of audit log entries
-     *
-     * @throws \Exception If retrieval fails
-     *
-     * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-8
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-16
-     */
-    public function getLogs(string $uuid, array $filters=[]): array
-    {
-        $this->logger->debug(
-            message: '[AuditHandler] Getting logs for object',
-            context: [
-                'file'    => __FILE__,
-                'line'    => __LINE__,
-                'uuid'    => $uuid,
-                'filters' => $filters,
-            ]
-        );
+	/**
+	 * Get audit logs for an object
+	 *
+	 * Retrieves all audit trail entries for a specific object with optional filters.
+	 *
+	 * @param string $uuid Object UUID
+	 * @param array $filters Optional filters for logs
+	 *
+	 * @return \OCA\OpenRegister\Db\AuditTrail[] Array of audit log entries
+	 *
+	 * @throws \Exception If retrieval fails
+	 *
+	 * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
+	 */
+	public function getLogs(string $uuid, array $filters = []): array {
+		$this->logger->debug(
+			message: '[AuditHandler] Getting logs for object',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $uuid,
+				'filters' => $filters,
+			]
+		);
 
-        try {
-            // Prepare filters for audit trail mapper.
-            $auditFilters = $this->prepareFilters(uuid: $uuid, filters: $filters);
+		try {
+			// Prepare filters for audit trail mapper.
+			$auditFilters = $this->prepareFilters(uuid: $uuid, filters: $filters);
 
-            // Fetch logs from mapper.
-            $logs = $this->auditTrailMapper->findAll(filters: $auditFilters);
+			// Fetch logs from mapper.
+			$logs = $this->auditTrailMapper->findAll(filters: $auditFilters);
 
-            $this->logger->info(
-                message: '[AuditHandler] Logs retrieved successfully',
-                context: [
-                    'file'      => __FILE__,
-                    'line'      => __LINE__,
-                    'uuid'      => $uuid,
-                    'log_count' => count($logs),
-                ]
-            );
+			$this->logger->info(
+				message: '[AuditHandler] Logs retrieved successfully',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'uuid' => $uuid,
+					'log_count' => count($logs),
+				]
+			);
 
-            return $logs;
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[AuditHandler] Failed to get logs',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'uuid'  => $uuid,
-                    'error' => $e->getMessage(),
-                ]
-            );
-            throw $e;
-        }//end try
-    }//end getLogs()
+			return $logs;
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[AuditHandler] Failed to get logs',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'uuid' => $uuid,
+					'error' => $e->getMessage(),
+				]
+			);
+			throw $e;
+		}//end try
+	}//end getLogs()
 
-    /**
-     * Validate object ownership
-     *
-     * Checks if object belongs to specified register and schema.
-     *
-     * @param object|array $object            Object to validate
-     * @param string       $requestedRegister Requested register ID or slug
-     * @param string       $requestedSchema   Requested schema ID or slug
-     *
-     * @return bool True if object belongs to register/schema
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-8
-     */
-    public function validateObjectOwnership(object|array $object, string $requestedRegister, string $requestedSchema): bool
-    {
-        try {
-            // Get object's register and schema.
-            $objectRegister = $object->getRegister();
-            $objectSchema   = $object->getSchema();
-            if (is_array($object) === true) {
-                $objectRegister = $object['register'] ?? null;
-                $objectSchema   = $object['schema'] ?? null;
-            }
+	/**
+	 * Prepare filters for audit trail query
+	 *
+	 * @param string $uuid Object UUID
+	 * @param array $filters Raw filters
+	 *
+	 * @return array Prepared filters for audit trail query.
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+	 */
+	private function prepareFilters(string $uuid, array $filters): array {
+		// Start with object UUID filter.
+		$auditFilters = ['object_uuid' => $uuid];
 
-            // Normalize and compare register.
-            $objectRegisterNorm = strtolower((string) $objectRegister);
-            $reqRegisterNorm    = strtolower($requestedRegister);
-            $registerMatch      = ($objectRegisterNorm === $reqRegisterNorm);
+		// Add additional filters if provided.
+		if (empty($filters['action']) === false) {
+			$auditFilters['action'] = $filters['action'];
+		}
 
-            // Normalize schema (handle array/object/string).
-            $objectSchemaId   = $this->extractSchemaId(schema: $objectSchema);
-            $objectSchemaSlug = $this->extractSchemaSlug(schema: $objectSchema);
+		if (empty($filters['user']) === false) {
+			$auditFilters['user'] = $filters['user'];
+		}
 
-            $requestedSchemaNorm  = strtolower($requestedSchema);
-            $objectSchemaIdNorm   = strtolower((string) $objectSchemaId);
-            $objectSchemaSlugNorm = null;
-            if ($objectSchemaSlug !== null) {
-                $objectSchemaSlugNorm = strtolower($objectSchemaSlug);
-            }
+		if (empty($filters['date_from']) === false) {
+			$auditFilters['date_from'] = $filters['date_from'];
+		}
 
-            // Check schema match (by ID or slug).
-            $schemaMatch = (
-                $requestedSchemaNorm === $objectSchemaIdNorm ||
-                ($objectSchemaSlugNorm && $requestedSchemaNorm === $objectSchemaSlugNorm)
-            );
+		if (empty($filters['date_to']) === false) {
+			$auditFilters['date_to'] = $filters['date_to'];
+		}
 
-            return $registerMatch && $schemaMatch;
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                message: '[AuditHandler] Failed to validate object ownership',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-            );
-            return false;
-        }//end try
-    }//end validateObjectOwnership()
+		// Add ordering.
+		$auditFilters['order_by'] = $filters['order_by'] ?? 'created_at';
+		$auditFilters['order'] = $filters['order'] ?? 'DESC';
 
-    /**
-     * Prepare filters for audit trail query
-     *
-     * @param string $uuid    Object UUID
-     * @param array  $filters Raw filters
-     *
-     * @return array Prepared filters for audit trail query.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-     */
-    private function prepareFilters(string $uuid, array $filters): array
-    {
-        // Start with object UUID filter.
-        $auditFilters = ['object_uuid' => $uuid];
-
-        // Add additional filters if provided.
-        if (empty($filters['action']) === false) {
-            $auditFilters['action'] = $filters['action'];
-        }
-
-        if (empty($filters['user']) === false) {
-            $auditFilters['user'] = $filters['user'];
-        }
-
-        if (empty($filters['date_from']) === false) {
-            $auditFilters['date_from'] = $filters['date_from'];
-        }
-
-        if (empty($filters['date_to']) === false) {
-            $auditFilters['date_to'] = $filters['date_to'];
-        }
-
-        // Add ordering.
-        $auditFilters['order_by'] = $filters['order_by'] ?? 'created_at';
-        $auditFilters['order']    = $filters['order'] ?? 'DESC';
-
-        return $auditFilters;
-    }//end prepareFilters()
-
-    /**
-     * Extract schema ID from schema data
-     *
-     * @param mixed $schema Schema data (array, object, or string)
-     *
-     * @return string Schema ID
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-8
-     */
-    private function extractSchemaId(mixed $schema): string
-    {
-        if (is_array($schema) === true && isset($schema['id']) === true) {
-            return (string) $schema['id'];
-        }
-
-        if (is_object($schema) === true && isset($schema->id) === true) {
-            return (string) $schema->id;
-        }
-
-        return (string) $schema;
-    }//end extractSchemaId()
-
-    /**
-     * Extract schema slug from schema data
-     *
-     * @param mixed $schema Schema data (array, object, or string)
-     *
-     * @return null|string Schema slug
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-8
-     */
-    private function extractSchemaSlug(mixed $schema): string|null
-    {
-        if (is_array($schema) === true && isset($schema['slug']) === true) {
-            return strtolower($schema['slug']);
-        }
-
-        if (is_object($schema) === true && isset($schema->slug) === true) {
-            return strtolower($schema->slug);
-        }
-
-        return null;
-    }//end extractSchemaSlug()
+		return $auditFilters;
+	}//end prepareFilters()
 }//end class

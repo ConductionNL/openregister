@@ -48,227 +48,217 @@ use OCP\Migration\SimpleMigrationStep;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Table creation requires detailed column definitions
  * Else clause used for table existence check
  */
-class Version1Date20260106000000 extends SimpleMigrationStep
-{
-    /**
-     * Execute actions before schema changes
-     *
-     * @param IOutput                   $output        Output interface for migration progress
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options       Migration options
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-    }//end preSchemaChange()
+class Version1Date20260106000000 extends SimpleMigrationStep {
+	/**
+	 * Execute actions before schema changes
+	 *
+	 * @param IOutput $output Output interface for migration progress
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+	 * @param array $options Migration options
+	 *
+	 * @return void
+	 */
+	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	}//end preSchemaChange()
 
-    /**
-     * Apply schema changes
-     *
-     * Creates the openregister_mappings table with all required columns
-     * for storing mapping configurations.
-     *
-     * @param IOutput                   $output        Output interface for migration progress
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options       Migration options
-     *
-     * @return ISchemaWrapper|null The modified schema wrapper
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+	/**
+	 * Apply schema changes
+	 *
+	 * Creates the openregister_mappings table with all required columns
+	 * for storing mapping configurations.
+	 *
+	 * @param IOutput $output Output interface for migration progress
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+	 * @param array $options Migration options
+	 *
+	 * @return ISchemaWrapper|null The modified schema wrapper
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_mappings') === false) {
-            $output->info(message: '📋 Creating openregister_mappings table...');
+		if ($schema->hasTable('openregister_mappings') === false) {
+			$output->info(message: '📋 Creating openregister_mappings table...');
 
-            $table = $schema->createTable('openregister_mappings');
+			$table = $schema->createTable('openregister_mappings');
 
-            // Primary key.
-            $table->addColumn(
-                'id',
-                Types::BIGINT,
-                [
-                    'autoincrement' => true,
-                    'notnull'       => true,
-                ]
-            );
+			// Primary key.
+			$table->addColumn(
+				'id',
+				Types::BIGINT,
+				[
+					'autoincrement' => true,
+					'notnull' => true,
+				]
+			);
 
-            // UUID for external references.
-            $table->addColumn(
-                'uuid',
-                Types::STRING,
-                [
-                    'notnull' => true,
-                    'length'  => 255,
-                ]
-            );
+			// UUID for external references.
+			$table->addColumn(
+				'uuid',
+				Types::STRING,
+				[
+					'notnull' => true,
+					'length' => 255,
+				]
+			);
 
-            // External reference identifier.
-            $table->addColumn(
-                'reference',
-                Types::STRING,
-                [
-                    'notnull' => false,
-                    'length'  => 255,
-                ]
-            );
+			// External reference identifier.
+			$table->addColumn(
+				'reference',
+				Types::STRING,
+				[
+					'notnull' => false,
+					'length' => 255,
+				]
+			);
 
-            // Semantic version.
-            $table->addColumn(
-                'version',
-                Types::STRING,
-                [
-                    'notnull' => true,
-                    'length'  => 255,
-                    'default' => '0.0.1',
-                ]
-            );
+			// Semantic version.
+			$table->addColumn(
+				'version',
+				Types::STRING,
+				[
+					'notnull' => true,
+					'length' => 255,
+					'default' => '0.0.1',
+				]
+			);
 
-            // Human-readable name.
-            $table->addColumn(
-                'name',
-                Types::STRING,
-                [
-                    'notnull' => true,
-                    'length'  => 255,
-                ]
-            );
+			// Human-readable name.
+			$table->addColumn(
+				'name',
+				Types::STRING,
+				[
+					'notnull' => true,
+					'length' => 255,
+				]
+			);
 
-            // Description of the mapping.
-            $table->addColumn(
-                'description',
-                Types::TEXT,
-                [
-                    'notnull' => false,
-                ]
-            );
+			// Description of the mapping.
+			$table->addColumn(
+				'description',
+				Types::TEXT,
+				[
+					'notnull' => false,
+				]
+			);
 
-            // JSON mapping configuration (Twig templates).
-            $table->addColumn(
-                'mapping',
-                Types::JSON,
-                [
-                    'notnull' => false,
-                ]
-            );
+			// JSON mapping configuration (Twig templates).
+			$table->addColumn(
+				'mapping',
+				Types::JSON,
+				[
+					'notnull' => false,
+				]
+			);
 
-            // JSON array of keys to unset from output.
-            $table->addColumn(
-                'unset',
-                Types::JSON,
-                [
-                    'notnull' => false,
-                ]
-            );
+			// JSON array of keys to unset from output.
+			$table->addColumn(
+				'unset',
+				Types::JSON,
+				[
+					'notnull' => false,
+				]
+			);
 
-            // JSON object of type casting rules.
-            $table->addColumn(
-                'cast',
-                Types::JSON,
-                [
-                    'notnull' => false,
-                ]
-            );
+			// JSON object of type casting rules.
+			$table->addColumn(
+				'cast',
+				Types::JSON,
+				[
+					'notnull' => false,
+				]
+			);
 
-            // Pass-through mode flag.
-            $table->addColumn(
-                'pass_through',
-                Types::BOOLEAN,
-                [
-                    'notnull' => true,
-                    'default' => false,
-                ]
-            );
+			// Pass-through mode flag.
+			$table->addColumn(
+				'pass_through',
+				Types::BOOLEAN,
+				[
+					'notnull' => true,
+					'default' => false,
+				]
+			);
 
-            // JSON array of configuration IDs.
-            $table->addColumn(
-                'configurations',
-                Types::JSON,
-                [
-                    'notnull' => false,
-                ]
-            );
+			// JSON array of configuration IDs.
+			$table->addColumn(
+				'configurations',
+				Types::JSON,
+				[
+					'notnull' => false,
+				]
+			);
 
-            // URL-friendly slug.
-            $table->addColumn(
-                'slug',
-                Types::STRING,
-                [
-                    'notnull' => false,
-                    'length'  => 255,
-                ]
-            );
+			// URL-friendly slug.
+			$table->addColumn(
+				'slug',
+				Types::STRING,
+				[
+					'notnull' => false,
+					'length' => 255,
+				]
+			);
 
-            // Organisation UUID for multi-tenancy.
-            $table->addColumn(
-                'organisation',
-                Types::STRING,
-                [
-                    'notnull' => false,
-                    'length'  => 255,
-                ]
-            );
+			// Organisation UUID for multi-tenancy.
+			$table->addColumn(
+				'organisation',
+				Types::STRING,
+				[
+					'notnull' => false,
+					'length' => 255,
+				]
+			);
 
-            // Timestamps.
-            $table->addColumn(
-                'created',
-                Types::DATETIME,
-                [
-                    'notnull' => true,
-                    'default' => 'CURRENT_TIMESTAMP',
-                ]
-            );
+			// Timestamps.
+			$table->addColumn(
+				'created',
+				Types::DATETIME,
+				[
+					'notnull' => true,
+					'default' => 'CURRENT_TIMESTAMP',
+				]
+			);
 
-            $table->addColumn(
-                'updated',
-                Types::DATETIME,
-                [
-                    'notnull' => true,
-                    'default' => 'CURRENT_TIMESTAMP',
-                ]
-            );
+			$table->addColumn(
+				'updated',
+				Types::DATETIME,
+				[
+					'notnull' => true,
+					'default' => 'CURRENT_TIMESTAMP',
+				]
+			);
 
-            // Set primary key.
-            $table->setPrimaryKey(['id']);
+			// Set primary key.
+			$table->setPrimaryKey(['id']);
 
-            // Add indexes for common queries.
-            $table->addIndex(['uuid'], 'openreg_mappings_uuid_idx');
-            $table->addIndex(['name'], 'openreg_mappings_name_idx');
-            $table->addIndex(['slug'], 'openreg_mappings_slug_idx');
-            $table->addIndex(['organisation'], 'openreg_mappings_org_idx');
+			// Add indexes for common queries.
+			$table->addIndex(['uuid'], 'openreg_mappings_uuid_idx');
+			$table->addIndex(['name'], 'openreg_mappings_name_idx');
+			$table->addIndex(['slug'], 'openreg_mappings_slug_idx');
+			$table->addIndex(['organisation'], 'openreg_mappings_org_idx');
 
-            $output->info(message: '   ✓ Table openregister_mappings created successfully');
-        }//end if
+			$output->info(message: '   ✓ Table openregister_mappings created successfully');
+		}//end if
 
-        if ($schema->hasTable('openregister_mappings') === true) {
-            $output->info(message: '   ℹ️  Table openregister_mappings already exists, skipping');
-        }
+		if ($schema->hasTable('openregister_mappings') === true) {
+			$output->info(message: '   ℹ️  Table openregister_mappings already exists, skipping');
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Performs actions after schema changes
-     *
-     * @param IOutput                   $output        Output interface for migration progress
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options       Migration options
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-        $output->info(message: '✅ Migration Version1Date20260106000000 completed - mappings table ready');
-    }//end postSchemaChange()
+	/**
+	 * Performs actions after schema changes
+	 *
+	 * @param IOutput $output Output interface for migration progress
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+	 * @param array $options Migration options
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+		$output->info(message: '✅ Migration Version1Date20260106000000 completed - mappings table ready');
+	}//end postSchemaChange()
 }//end class

@@ -2,17 +2,36 @@
 	<NcDialog
 		:name="t('openregister', 'Delete View')"
 		size="normal"
-		:can-close="false">
+		:canClose="false">
 		<p v-if="!success">
-			{{ t('openregister', 'Are you sure you want to permanently delete') }} <b>{{ view?.name || t('openregister', 'Untitled View') }}</b>?
+			{{ t('openregister', 'Are you sure you want to permanently delete') }}
+			<b>{{ view?.name || t('openregister', 'Untitled View') }}</b
+			>?
 			{{ t('openregister', 'This action cannot be undone.') }}
 		</p>
 
 		<NcNoteCard v-if="!success" type="warning">
-			<p><strong>{{ t('openregister', 'Warning:') }}</strong> {{ t('openregister', 'This will permanently delete:') }}</p>
+			<p>
+				<strong>{{ t('openregister', 'Warning:') }}</strong>
+				{{ t('openregister', 'This will permanently delete:') }}
+			</p>
 			<ul>
-				<li>{{ t('openregister', 'The saved view and all its search configuration') }}</li>
-				<li>{{ t('openregister', 'Any favorites and sharing settings for this view') }}</li>
+				<li>
+					{{
+						t(
+							'openregister',
+							'The saved view and all its search configuration',
+						)
+					}}
+				</li>
+				<li>
+					{{
+						t(
+							'openregister',
+							'Any favorites and sharing settings for this view',
+						)
+					}}
+				</li>
 			</ul>
 		</NcNoteCard>
 
@@ -29,12 +48,16 @@
 				<template #icon>
 					<Close :size="20" />
 				</template>
-				{{ success ? t('openregister', 'Close') : t('openregister', 'Cancel') }}
+				{{
+					success
+						? t('openregister', 'Close')
+						: t('openregister', 'Cancel')
+				}}
 			</NcButton>
 			<NcButton
 				v-if="!success"
 				:disabled="loading"
-				type="error"
+				variant="error"
 				@click="deleteView()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -47,16 +70,10 @@
 </template>
 
 <script>
-import {
-	NcButton,
-	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
-
+import { translate as t } from '@nextcloud/l10n'
+import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import Close from 'vue-material-design-icons/Close.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
-import { translate as t } from '@nextcloud/l10n'
 import { viewsStore } from '../../store/store.js'
 
 export default {
@@ -69,12 +86,14 @@ export default {
 		Close,
 		Delete,
 	},
+
 	props: {
 		view: {
 			type: Object,
 			default: null,
 		},
 	},
+
 	data() {
 		return {
 			success: false,
@@ -83,8 +102,12 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	methods: {
 		t,
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		closeDialog() {
 			clearTimeout(this.closeModalTimeout)
 			this.success = false
@@ -92,6 +115,10 @@ export default {
 			this.error = null
 			this.$emit('close')
 		},
+
+		/**
+		 * @spec exclude Modal action plumbing — delegates deletion to viewsStore.deleteView.
+		 */
 		async deleteView() {
 			if (!this.view) return
 
@@ -109,7 +136,13 @@ export default {
 			} catch (error) {
 				console.error('Error deleting view:', error)
 				this.success = false
-				this.error = error.response?.data?.error || error.message || this.t('openregister', 'An error occurred while deleting the view')
+				this.error =
+					error.response?.data?.error
+					|| error.message
+					|| this.t(
+						'openregister',
+						'An error occurred while deleting the view',
+					)
 			} finally {
 				this.loading = false
 			}

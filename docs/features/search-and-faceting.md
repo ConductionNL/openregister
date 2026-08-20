@@ -21,6 +21,19 @@ Triggered via the `_search` query parameter:
 GET /api/objects/meldingen-register/meldingen?_search=geluidsoverlast
 ```
 
+### Widening to attached-file body text (`_content_search`)
+
+`_search` alone only matches object metadata and string schema-properties. Adding the opt-in `_content_search=true` flag additionally matches on the extracted body text of an object's attached files (and object-level text chunks), via the chunk store already populated by the text-extraction pipeline:
+
+```
+GET /api/objects/meldingen-register/meldingen?_search=geluidsoverlast&_content_search=true
+```
+
+- Default `false` (or omitted) — byte-identical to plain `_search` behaviour; no extra query is issued.
+- An object matching on both metadata and attached-file text appears exactly once in the response.
+- The response envelope never leaks chunk-shaped fields (`chunk_id`, `text_content`, `score`, etc.) — every row is a normal object row.
+- On PostgreSQL, chunk matches are `ts_rank`-scored. On backends without a `tsvector` index (e.g. MariaDB), chunk matches are found via an unranked substring scan — the match set is the same, but ordering may differ.
+
 ## Field-Level Filtering
 
 Any schema property can be used as a filter parameter with comparison operators:
@@ -157,6 +170,75 @@ GET /api/views                          List saved views
 POST /api/views                         Create a saved view
 GET /api/views/{id}                     Execute a saved view
 ```
+
+## Nextcloud Unified Search
+
+OpenRegister exposes a single, fleet-wide Nextcloud **unified search** provider
+(the top-bar magnifier) over register objects, implemented by
+`OCA\OpenRegister\Search\ObjectsProvider` (id `openregister_objects`). This is
+the one place register objects surface in unified search for the entire fleet —
+consuming apps (Pipelinq, Procest, …) do **not** register their own search
+provider. They participate by claiming `(register, schema)` pairs through the
+deep-link registry, which supplies each result's URL, icon, and display label.
+
+Key behaviours:
+
+- **Central access control** — the provider delegates to
+  `ObjectService::searchObjectsPaginated(query, _rbac: true, _multitenancy: true)`
+  and applies no second access filter of its own. Results contain only objects
+  the searching user may read: RBAC-granted objects plus objects readable
+  through the published predicate. Soft-deleted objects never appear, and tenant
+  isolation is enforced. The provider can only narrow this set further (it never
+  widens it).
+- **`searchable` flag governs unified-search exposure** — the schema-level
+  `searchable` boolean (default `true`, editable via the schemas API and schema
+  edit modal) now controls whether a schema's objects appear in Nextcloud
+  unified search. Setting `searchable = false` removes a schema from the
+  magnifier; the exclusion is applied inside the search query (not by
+  post-filtering a page). An explicit `schema` filter that targets a
+  non-searchable schema returns an empty result set (opt-out wins).
+- **Per-app labeling** — each result entry is labeled
+  `{App} · {Register} · {Schema}` and carries the owning app's rounded icon for
+  claimed pairs; unclaimed pairs keep the `Open Register · …` label and the
+  OpenRegister icon.
+- **Excerpts** — the result subline ends with an excerpt around the first match
+  of the search term, falling back to the object's `summary`/`description`.
+  Excerpts come from the rendered object the user may read, so field-level
+  security applies to excerpt content.
+- **Pagination** — results paginate with a cursor (integer offset), 25 per page,
+  so "load more" works for registers with thousands of objects.
+
+Apps declare their result URLs, icons, and display names via the boot-time
+deep-link registry (`DeepLinkRegistrationEvent`); the registry's optional
+`displayName` is what labels an app's unified-search results.
+
+## Search Trail Recording
+
+OpenRegister records a **search trail** for paginated searches so the dashboard's
+"Popular Search Terms" widget and "Searches" KPI have data to display. Each trail
+entry captures the search term, the result count on the returned page, the total
+matching results, the response time, and the execution backend (database vs.
+SOLR/index). Recording happens in `ObjectService::searchObjectsPaginated()`, so it
+covers both backends transparently.
+
+What gets recorded is governed by two retention settings, combined into an
+**effective mode**:
+
+- **`searchTrailsEnabled`** (boolean master switch) — when `false`, nothing is
+  recorded regardless of the mode below. When the setting cannot be read,
+  recording fails safe to enabled.
+- **`searchTrailRecordingMode`** (`all` | `_search` | `none`, default `_search`) —
+  configurable from the **Retention** admin page without a code deploy:
+  - `_search` (default) — record only free-text searches (non-empty `_search`);
+    plain list and pagination calls record nothing.
+  - `all` — record every paginated search call.
+  - `none` — record nothing.
+
+Recording is best-effort: a write failure logs a warning and the search returns
+normally, so analytics recording never degrades search availability. The settings
+round-trip through `GET`/`PATCH /api/settings/retention`.
+
+**Standards**: BIO (audit logging), AVG/GDPR Article 30 (processing register context).
 
 ## Related Features
 

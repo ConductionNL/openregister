@@ -7,13 +7,13 @@
 		<table v-else class="hook-table">
 			<thead>
 				<tr>
-					<th>Event</th>
-					<th>Engine</th>
-					<th>Workflow</th>
-					<th>Mode</th>
-					<th>Order</th>
-					<th>Enabled</th>
-					<th>Actions</th>
+					<th scope="col">Event</th>
+					<th scope="col">Engine</th>
+					<th scope="col">Workflow</th>
+					<th scope="col">Mode</th>
+					<th scope="col">Order</th>
+					<th scope="col">Enabled</th>
+					<th scope="col">Actions</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -25,22 +25,20 @@
 					<td>{{ hook.order || 0 }}</td>
 					<td>{{ hook.enabled !== false ? 'Yes' : 'No' }}</td>
 					<td>
-						<NcButton type="tertiary" @click="$emit('edit', index)">
+						<NcButton variant="tertiary" @click="$emit('edit', index)">
 							Edit
 						</NcButton>
-						<NcButton type="tertiary" @click="$emit('test', hook)">
+						<NcButton variant="tertiary" @click="$emit('test', hook)">
 							Test
 						</NcButton>
-						<NcButton type="error" @click="$emit('delete', index)">
+						<NcButton variant="error" @click="$emit('delete', index)">
 							Delete
 						</NcButton>
 					</td>
 				</tr>
 			</tbody>
 		</table>
-		<NcButton v-if="hooks.length > 0" @click="$emit('add')">
-			Add Hook
-		</NcButton>
+		<NcButton v-if="hooks.length > 0" @click="$emit('add')"> Add Hook </NcButton>
 	</div>
 </template>
 
@@ -56,6 +54,7 @@ export default {
 			default: () => [],
 		},
 	},
+
 	emits: ['add', 'edit', 'delete', 'test'],
 }
 </script>
@@ -65,7 +64,9 @@ export default {
 	width: 100%;
 	border-collapse: collapse;
 }
-.hook-table th, .hook-table td {
+
+.hook-table th,
+.hook-table td {
 	padding: 8px;
 	text-align: left;
 	border-bottom: 1px solid var(--color-border);

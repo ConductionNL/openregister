@@ -5,10 +5,13 @@
  *
  * This file contains the provider class for the objects search.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Search
  * @package  OCA\OpenRegister\Search
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -16,530 +19,495 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search;
 
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter;
 use OCP\IL10N;
-use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\Search\FilterDefinition;
 use OCP\Search\IFilteringProvider;
 use OCP\Search\ISearchQuery;
 use OCP\Search\SearchResult;
-use OCP\Search\SearchResultEntry;
 use Psr\Log\LoggerInterface;
 
 /**
  * ObjectsProvider class for the objects search.
  *
- * This class implements the IFilteringProvider interface to provide
- * search functionality for objects in the OpenRegister app using the
- * advanced searchObjectsPaginated method for optimal performance.
+ * This class is the single, fleet-wide Nextcloud unified-search provider
+ * (id `openregister_objects`) over OpenRegister objects. Leaf apps do NOT
+ * register their own OCP\Search\IProvider; they participate by claiming
+ * (register, schema) pairs through the deep-link registry, which supplies
+ * result URLs, icons, and display names.
+ *
+ * SECURITY CONTRACT — the provider performs NO second access filter. All
+ * RBAC scoping, tenant isolation, the published predicate, and row/field
+ * level security are enforced inside the OR search pipeline, by always
+ * delegating to ObjectService::searchObjectsPaginated(query, _rbac: true,
+ * _multitenancy: true). The provider narrows the result set by schema
+ * (`searchable = true`), and widens the MATCH — never the entitlement — with
+ * `_content_search: true`, which brings in objects whose attached-file chunk
+ * text matches. That fan-out receives the same `_rbac`/`_multitenancy` flags,
+ * so a chunk hit is filtered exactly like a metadata hit.
+ *
+ * Excerpts are derived exclusively from the rendered object the user is
+ * allowed to read, so field-level redaction applies to excerpt content for
+ * free. THIS IS LOAD-BEARING NOW THAT FILE TEXT IS IN SCOPE: an excerpt built
+ * from chunk text could surface a value the reader is redacted out of, while
+ * the object itself stayed correctly filtered. See
+ * openspec/changes/unified-search-provider/specs/unified-search-provider/spec.md.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * @spec openspec/specs/unified-search-provider/spec.md
  */
-class ObjectsProvider implements IFilteringProvider
-{
+class ObjectsProvider implements IFilteringProvider {
 
-    /**
-     * The localization service
-     *
-     * @var IL10N
-     */
-    private readonly IL10N $l10n;
+	/**
+	 * Maximum number of results returned per unified-search page.
+	 *
+	 * @var int
+	 */
+	private const PAGE_LIMIT = 25;
 
-    /**
-     * The URL generator service
-     *
-     * @var IURLGenerator
-     */
-    private readonly IURLGenerator $urlGenerator;
+	/**
+	 * Request-scoped cache of schema IDs flagged `searchable = false`.
+	 *
+	 * Null means not yet resolved this request.
+	 *
+	 * @var int[]|null
+	 */
+	private ?array $nonSearchableIds = null;
 
-    /**
-     * The object service for advanced search operations
-     *
-     * @var ObjectService
-     */
-    private readonly ObjectService $objectService;
+	/**
+	 * The localization service
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
 
-    /**
-     * Logger for debugging search operations
-     *
-     * @var LoggerInterface
-     */
-    private readonly LoggerInterface $logger;
+	/**
+	 * The object service for advanced search operations
+	 *
+	 * @var ObjectService
+	 */
+	private readonly ObjectService $objectService;
 
-    /**
-     * Deep link registry for resolving URLs to consuming apps
-     *
-     * @var DeepLinkRegistryService
-     */
-    private readonly DeepLinkRegistryService $deepLinkRegistry;
+	/**
+	 * Logger for debugging search operations
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
 
-    /**
-     * Schema mapper for resolving schema names
-     *
-     * @var SchemaMapper
-     */
-    private readonly SchemaMapper $schemaMapper;
+	/**
+	 * Schema mapper for resolving the searchable-schema opt-out
+	 *
+	 * @var SchemaMapper
+	 */
+	private readonly SchemaMapper $schemaMapper;
 
-    /**
-     * Register mapper for resolving register names
-     *
-     * @var RegisterMapper
-     */
-    private readonly RegisterMapper $registerMapper;
+	/**
+	 * Shared result-formatting service (icon precedence, deep-link URL,
+	 * subline/excerpt building).
+	 *
+	 * @var ObjectSearchResultFormatter
+	 */
+	private readonly ObjectSearchResultFormatter $resultFormatter;
 
-    /**
-     * Cache for schema/register names to avoid repeated lookups
-     *
-     * @var array<string, string>
-     */
-    private array $nameCache = [];
+	/**
+	 * Constructor for the ObjectsProvider class
+	 *
+	 * @param IL10N $l10n The localization service
+	 * @param ObjectService $objectService The object service for search operations
+	 * @param LoggerInterface $logger Logger for debugging search operations
+	 * @param SchemaMapper $schemaMapper Schema mapper for the searchable-schema opt-out
+	 * @param ObjectSearchResultFormatter $resultFormatter Shared result-formatting service
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	public function __construct(
+		IL10N $l10n,
+		ObjectService $objectService,
+		LoggerInterface $logger,
+		SchemaMapper $schemaMapper,
+		ObjectSearchResultFormatter $resultFormatter,
+	) {
+		$this->l10n = $l10n;
+		$this->objectService = $objectService;
+		$this->logger = $logger;
+		$this->schemaMapper = $schemaMapper;
+		$this->resultFormatter = $resultFormatter;
+	}//end __construct()
 
-    /**
-     * Constructor for the ObjectsProvider class
-     *
-     * @param IL10N                   $l10n             The localization service
-     * @param IURLGenerator           $urlGenerator     The URL generator service
-     * @param ObjectService           $objectService    The object service for search operations
-     * @param LoggerInterface         $logger           Logger for debugging search operations
-     * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry for URL resolution
-     * @param SchemaMapper            $schemaMapper     Schema mapper for resolving schema names
-     * @param RegisterMapper          $registerMapper   Register mapper for resolving register names
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
-     */
-    public function __construct(
-        IL10N $l10n,
-        IURLGenerator $urlGenerator,
-        ObjectService $objectService,
-        LoggerInterface $logger,
-        DeepLinkRegistryService $deepLinkRegistry,
-        SchemaMapper $schemaMapper,
-        RegisterMapper $registerMapper
-    ) {
-        $this->l10n          = $l10n;
-        $this->urlGenerator  = $urlGenerator;
-        $this->objectService = $objectService;
-        $this->logger        = $logger;
-        $this->deepLinkRegistry = $deepLinkRegistry;
-        $this->schemaMapper     = $schemaMapper;
-        $this->registerMapper   = $registerMapper;
-    }//end __construct()
+	/**
+	 * Returns the unique identifier for this search provider
+	 *
+	 * @return string Unique identifier for the search provider
+	 *
+	 * @psalm-return 'openregister_objects'
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	public function getId(): string {
+		return 'openregister_objects';
+	}//end getId()
 
-    /**
-     * Returns the unique identifier for this search provider
-     *
-     * @return string Unique identifier for the search provider
-     *
-     * @psalm-return 'openregister_objects'
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
-     */
-    public function getId(): string
-    {
-        return 'openregister_objects';
-    }//end getId()
+	/**
+	 * Returns the human-readable name for this search provider
+	 *
+	 * @return string Display name for the search provider
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	public function getName(): string {
+		return $this->l10n->t('Open Register Objects');
+	}//end getName()
 
-    /**
-     * Returns the human-readable name for this search provider
-     *
-     * @return string Display name for the search provider
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
-     */
-    public function getName(): string
-    {
-        return $this->l10n->t('Open Register Objects');
-    }//end getName()
+	/**
+	 * Returns the order/priority of this search provider
+	 *
+	 * Lower values appear first in search results
+	 *
+	 * @param string $route The route/context for which to get the order
+	 * @param array $routeParameters Parameters for the route
+	 *
+	 * @return int
+	 *
+	 * @psalm-return     10
+	 * @psalm-suppress   UnusedParam Parameters required by interface but not used
+	 * @SuppressWarnings (PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	public function getOrder(string $route, array $routeParameters): ?int {
+		// Parameters $route and $routeParameters required by interface but not used.
+		unset($route, $routeParameters);
+		return 10;
+	}//end getOrder()
 
-    /**
-     * Returns the order/priority of this search provider
-     *
-     * Lower values appear first in search results
-     *
-     * @param string $route           The route/context for which to get the order
-     * @param array  $routeParameters Parameters for the route
-     *
-     * @return int
-     *
-     * @psalm-return     10
-     * @psalm-suppress   UnusedParam Parameters required by interface but not used
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
-     */
-    public function getOrder(string $route, array $routeParameters): ?int
-    {
-        // Parameters $route and $routeParameters required by interface but not used.
-        unset($route, $routeParameters);
-        return 10;
-    }//end getOrder()
+	/**
+	 * Returns the list of supported filters for the search provider
+	 *
+	 * @return string[]
+	 *
+	 * @psalm-return   list{'term', 'since', 'until', 'person', 'register', 'schema'}
+	 * @phpstan-return array<string>
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	public function getSupportedFilters(): array {
+		return [
+			// Generic.
+			'term',
+			'since',
+			'until',
+			'person',
+			// Open Register Specific.
+			'register',
+			'schema',
+		];
+	}//end getSupportedFilters()
 
-    /**
-     * Returns the list of supported filters for the search provider
-     *
-     * @return string[]
-     *
-     * @psalm-return   list{'term', 'since', 'until', 'person', 'register', 'schema'}
-     * @phpstan-return array<string>
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
-     */
-    public function getSupportedFilters(): array
-    {
-        return [
-            // Generic.
-            'term',
-            'since',
-            'until',
-            'person',
-            // Open Register Specific.
-            'register',
-            'schema',
-        ];
-    }//end getSupportedFilters()
+	/**
+	 * Returns the list of alternate IDs for the search provider
+	 *
+	 * @return array
+	 *
+	 * @psalm-return   array<never, never>
+	 * @phpstan-return array<string>
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	public function getAlternateIds(): array {
+		return [];
+	}//end getAlternateIds()
 
-    /**
-     * Returns the list of alternate IDs for the search provider
-     *
-     * @return array
-     *
-     * @psalm-return   array<never, never>
-     * @phpstan-return array<string>
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
-     */
-    public function getAlternateIds(): array
-    {
-        return [];
-    }//end getAlternateIds()
+	/**
+	 * Returns the list of custom filters for the search provider
+	 *
+	 * @return FilterDefinition[]
+	 *
+	 * @psalm-return   list{FilterDefinition, FilterDefinition}
+	 * @phpstan-return list<\OCP\Search\FilterDefinition>
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	public function getCustomFilters(): array {
+		return [
+			new FilterDefinition(name: 'register', type: FilterDefinition::TYPE_STRING),
+			new FilterDefinition(name: 'schema', type: FilterDefinition::TYPE_STRING),
+		];
+	}//end getCustomFilters()
 
-    /**
-     * Returns the list of custom filters for the search provider
-     *
-     * @return FilterDefinition[]
-     *
-     * @psalm-return   list{FilterDefinition, FilterDefinition}
-     * @phpstan-return list<\OCP\Search\FilterDefinition>
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
-     */
-    public function getCustomFilters(): array
-    {
-        return [
-            new FilterDefinition(name: 'register', type: FilterDefinition::TYPE_STRING),
-            new FilterDefinition(name: 'schema', type: FilterDefinition::TYPE_STRING),
-        ];
-    }//end getCustomFilters()
+	/**
+	 * Performs a search based on the provided query using searchObjectsPaginated
+	 *
+	 * This method integrates with Nextcloud's search interface by converting
+	 * search query filters to OpenRegister's advanced search parameters and
+	 * using the optimized searchObjectsPaginated method for best performance.
+	 *
+	 * @param IUser $user The user performing the search
+	 * @param ISearchQuery $query The search query from Nextcloud
+	 *
+	 * @return SearchResult The search results formatted for Nextcloud's search interface
+	 *
+	 * @throws \Exception If search operation fails
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 * @SuppressWarnings(PHPMD.StaticAccess)          SearchResult::complete is standard Nextcloud search pattern
+	 * @SuppressWarnings(PHPMD.NPathComplexity)       Search requires handling many filter and sort options
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Search filter building requires many conditional checks
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * Search requires handling many filters, building queries, and formatting results
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
+	 */
+	public function search(IUser $user, ISearchQuery $query): SearchResult {
+		// Initialize filters array.
+		$filters = [];
 
-    /**
-     * Performs a search based on the provided query using searchObjectsPaginated
-     *
-     * This method integrates with Nextcloud's search interface by converting
-     * search query filters to OpenRegister's advanced search parameters and
-     * using the optimized searchObjectsPaginated method for best performance.
-     *
-     * @param IUser        $user  The user performing the search
-     * @param ISearchQuery $query The search query from Nextcloud
-     *
-     * @return SearchResult The search results formatted for Nextcloud's search interface
-     *
-     * @throws \Exception If search operation fails
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.StaticAccess)          SearchResult::complete is standard Nextcloud search pattern
-     * @SuppressWarnings(PHPMD.NPathComplexity)       Search requires handling many filter and sort options
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Search filter building requires many conditional checks
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     * Search requires handling many filters, building queries, and formatting results
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
-     */
-    public function search(IUser $user, ISearchQuery $query): SearchResult
-    {
-        // Initialize filters array.
-        $filters = [];
+		/*
+		 * @var string|null $register
+		 */
 
-        /*
-         * @var string|null $register
-         */
+		$register = $query->getFilter('register')?->get();
+		if ($register !== null) {
+			$filters['register'] = $register;
+		}
 
-        $register = $query->getFilter('register')?->get();
-        if ($register !== null) {
-            $filters['register'] = $register;
-        }
+		/*
+		 * @var string|null $schema
+		 */
 
-        /*
-         * @var string|null $schema
-         */
+		$schema = $query->getFilter('schema')?->get();
+		if ($schema !== null) {
+			$filters['schema'] = $schema;
+		}
 
-        $schema = $query->getFilter('schema')?->get();
-        if ($schema !== null) {
-            $filters['schema'] = $schema;
-        }
+		/*
+		 * @var string|null $search
+		 */
 
-        /*
-         * @var string|null $search
-         */
+		$search = $query->getFilter('term')?->get();
 
-        $search = $query->getFilter('term')?->get();
+		/*
+		 * @var string|null $since
+		 */
 
-        /*
-         * @var string|null $since
-         */
+		$since = $query->getFilter('since')?->get();
 
-        $since = $query->getFilter('since')?->get();
+		/*
+		 * @var string|null $until
+		 */
 
-        /*
-         * @var string|null $until
-         */
+		$until = $query->getFilter('until')?->get();
 
-        $until = $query->getFilter('until')?->get();
+		// Build search query for searchObjectsPaginated.
+		$searchQuery = [];
 
-        // @todo: implement pagination.
-        // Note: order parameter not currently used in search
-        // Build search query for searchObjectsPaginated.
-        $searchQuery = [];
+		// Add search term if provided.
+		if (empty($search) === false) {
+			$searchQuery['_search'] = $search;
+		}
 
-        // Add search term if provided.
-        if (empty($search) === false) {
-            $searchQuery['_search'] = $search;
-        }
+		// Resolve the searchable-schema opt-out once per request.
+		$nonSearchableIds = $this->getNonSearchableIds();
 
-        // Add filters to @self metadata section.
-        if (empty($register) === false) {
-            $searchQuery['@self']['register'] = (int) $register;
-        }
+		// Add filters to @self metadata section. When an explicit schema
+		// filter targets a non-searchable schema, the opt-out wins: return
+		// an empty (complete) result set rather than leaking it.
+		if (empty($register) === false) {
+			$searchQuery['@self']['register'] = (int)$register;
+		}
 
-        if (empty($schema) === false) {
-            $searchQuery['@self']['schema'] = (int) $schema;
-        }
+		if (empty($schema) === false) {
+			$schemaId = (int)$schema;
+			if (in_array($schemaId, $nonSearchableIds, true) === true) {
+				return SearchResult::complete(
+					name: $this->getSectionName(),
+					entries: []
+				);
+			}
 
-        // Add date filters if provided.
-        if ($since !== null) {
-            $searchQuery['@self']['created'] = ['$gte' => $since];
-        }
+			$searchQuery['@self']['schema'] = $schemaId;
+		} elseif (empty($nonSearchableIds) === false) {
+			// No explicit schema filter: constrain the query to the
+			// searchable-schema allow-list so opted-out schemas never
+			// contribute results, applied inside the query (not by
+			// post-filtering a page).
+			$searchableIds = $this->schemaMapper->findSearchableIds();
+			if (empty($searchableIds) === true) {
+				return SearchResult::complete(
+					name: $this->getSectionName(),
+					entries: []
+				);
+			}
 
-        if ($until !== null) {
-            if (($searchQuery['@self']['created'] ?? null) !== null) {
-                $searchQuery['@self']['created']['$lte'] = $until;
-            }
+			$searchQuery['@self']['schema'] = $searchableIds;
+		}//end if
 
-            if (($searchQuery['@self']['created'] ?? null) === null) {
-                $searchQuery['@self']['created'] = ['$lte' => $until];
-            }
-        }
+		// Add date filters if provided.
+		if ($since !== null) {
+			$searchQuery['@self']['created'] = ['$gte' => $since];
+		}
 
-        // Set pagination limits for Nextcloud search (defaults).
-        $searchQuery['_limit']  = 25;
-        $searchQuery['_offset'] = 0;
+		if ($until !== null) {
+			if (($searchQuery['@self']['created'] ?? null) !== null) {
+				$searchQuery['@self']['created']['$lte'] = $until;
+			}
 
-        $this->logger->debug(
-            message: '[ObjectsProvider] OpenRegister search requested',
-            context: [
-                'file'         => __FILE__,
-                'line'         => __LINE__,
-                'search_query' => $searchQuery,
-                'has_search'   => empty($search) === false,
-            ]
-        );
+			if (($searchQuery['@self']['created'] ?? null) === null) {
+				$searchQuery['@self']['created'] = ['$lte' => $until];
+			}
+		}
 
-        // Use searchObjectsPaginated for optimal performance.
-        $searchResults = $this->objectService->searchObjectsPaginated(query: $searchQuery, _rbac: true, _multitenancy: true);
+		// Cursor pagination: cursor is an integer offset serialised as a
+		// string (matching the NC core files/contacts providers). Limit is
+		// capped at PAGE_LIMIT.
+		$limit = self::PAGE_LIMIT;
+		$queryLimit = $query->getLimit();
+		if ($queryLimit > 0 && $queryLimit < $limit) {
+			$limit = $queryLimit;
+		}
 
-        // Convert results to SearchResultEntry format.
-        $searchResultEntries = [];
-        if (empty($searchResults['results']) === false) {
-            foreach ($searchResults['results'] as $result) {
-                // Normalize ObjectEntity to array if needed.
-                if ($result instanceof \OCA\OpenRegister\Db\ObjectEntity) {
-                    $result = $result->jsonSerialize();
-                }
+		$offset = 0;
+		$cursor = $query->getCursor();
+		if (is_numeric($cursor) === true) {
+			$offset = max(0, (int)$cursor);
+		}
 
-                // Extract metadata from @self (jsonSerialize puts metadata there).
-                $selfData   = $result['@self'] ?? [];
-                $registerId = (int) ($selfData['register'] ?? $result['register'] ?? 0);
-                $schemaId   = (int) ($selfData['schema'] ?? $result['schema'] ?? 0);
-                $uuid       = $selfData['id'] ?? $result['id'] ?? '';
+		$searchQuery['_limit'] = $limit;
+		$searchQuery['_offset'] = $offset;
 
-                // Build a flat data array for deep link URL resolution.
-                // The resolveUrl method needs {uuid} and other top-level keys.
-                $selfArray = [];
-                if (is_array($selfData) === true) {
-                    $selfArray = $selfData;
-                }
+		$this->logger->debug(
+			message: '[ObjectsProvider] OpenRegister search requested',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'search_query' => $searchQuery,
+				'has_search' => empty($search) === false,
+			]
+		);
 
-                $flatData = array_merge(
-                    $selfArray,
-                    ['uuid' => $uuid, 'register' => $registerId, 'schema' => $schemaId]
-                );
+		// Widen the match to text OpenRegister has already extracted from
+		// attached files (ZKN-CONTENT-001). Without this the provider searches
+		// object METADATA only, so a term that appears solely inside an
+		// attached PDF finds nothing — while OR holds that text indexed in
+		// `openregister_chunks` and `ChunkMapper::searchByKeyword()` can find
+		// it. That gap was measured 2026-08-15: this file contained zero chunk
+		// references.
+		//
+		// It is safe to turn on HERE, and only because the fan-out is not a
+		// second query path around the guard rails: `QueryHandler` forwards
+		// `_rbac` and `_multitenancy` into `augmentWithChunkMatches()`, so a
+		// chunk hit on an object the caller may not read is filtered by the
+		// same pipeline that filters a metadata hit. The provider still
+		// applies no second access filter of its own.
+		//
+		// A chunk is a fragment of a file; the row appended is the OWNING
+		// OBJECT, which is the thing with a deep-link URL, an icon and a
+		// title. A bare chunk would not be navigable.
+		$searchQuery['_content_search'] = true;
 
-                // Try deep link registry first, fall back to OpenRegister's own route.
-                $objectUrl = $this->deepLinkRegistry->resolveUrl(
-                    registerId: $registerId,
-                    schemaId: $schemaId,
-                    objectData: $flatData
-                );
-                if ($objectUrl === null) {
-                    $objectUrl = $this->urlGenerator->linkToRoute(
-                        'openregister.objects.show',
-                        ['register' => $registerId, 'schema' => $schemaId, 'id' => $uuid]
-                    );
-                }
+		// Delegate to the OR search pipeline. RBAC, tenant isolation, the
+		// published predicate, and soft-delete exclusion are ALL enforced
+		// here — the provider applies no second access filter. Fail soft on
+		// a broken pipeline/register so the top-bar search never errors out.
+		try {
+			$searchResults = $this->objectService->searchObjectsPaginated(query: $searchQuery, _rbac: true, _multitenancy: true);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'[ObjectsProvider] OpenRegister search failed, returning empty result: {error}',
+				['error' => $e->getMessage()]
+			);
+			return SearchResult::complete(
+				name: $this->getSectionName(),
+				entries: []
+			);
+		}
 
-                // Use registered app icon or fall back to OpenRegister icon.
-                $icon = $this->deepLinkRegistry->resolveIcon(
-                    registerId: $registerId,
-                    schemaId: $schemaId
-                ) ?? 'icon-openregister';
+		// Convert results to SearchResultEntry format.
+		$searchResultEntries = [];
+		if (empty($searchResults['results']) === false) {
+			foreach ($searchResults['results'] as $result) {
+				$searchResultEntries[] = $this->resultFormatter->format(result: $result, term: $search);
+			}//end foreach
+		}//end if
 
-                // Create descriptive title and description.
-                $name = $selfData['name'] ?? '';
+		$this->logger->debug(
+			message: '[ObjectsProvider] OpenRegister search completed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'results_count' => count($searchResultEntries),
+				'total_results' => $searchResults['total'] ?? 0,
+			]
+		);
 
-                $title = 'Unknown Object';
-                if (isset($result['title']) === true) {
-                    $title = $result['title'];
-                } else if ($name !== '') {
-                    $title = $name;
-                } else if ($uuid !== '') {
-                    $title = $uuid;
-                }
+		// A full page implies there may be more; hand back a paginated
+		// result carrying the next offset as the cursor. A short or empty
+		// page completes the result.
+		if (count($searchResultEntries) >= $limit) {
+			return SearchResult::paginated(
+				$this->getSectionName(),
+				$searchResultEntries,
+				($offset + $limit)
+			);
+		}
 
-                $description = $this->buildDescription(object: array_merge($result, $selfData));
+		return SearchResult::complete(
+			name: $this->getSectionName(),
+			entries: $searchResultEntries
+		);
+	}//end search()
 
-                $searchResultEntries[] = new SearchResultEntry(
-                    $objectUrl,
-                    $title,
-                    $description,
-                    $objectUrl,
-                    $icon
-                );
-            }//end foreach
-        }//end if
+	/**
+	 * The localized provider section name shown in unified search.
+	 *
+	 * @return string The section title.
+	 *
+	 * @spec openspec/specs/unified-search-provider/spec.md
+	 */
+	private function getSectionName(): string {
+		return $this->l10n->t('Open Register Objects');
+	}//end getSectionName()
 
-        $this->logger->debug(
-            message: '[ObjectsProvider] OpenRegister search completed',
-            context: [
-                'file'          => __FILE__,
-                'line'          => __LINE__,
-                'results_count' => count($searchResultEntries),
-                'total_results' => $searchResults['total'] ?? 0,
-            ]
-        );
+	/**
+	 * Resolve the request-scoped set of non-searchable schema IDs.
+	 *
+	 * Cached for the lifetime of the request; fails soft (treats all
+	 * schemas as searchable) if the mapper lookup errors.
+	 *
+	 * @return int[] Schema IDs flagged `searchable = false`.
+	 *
+	 * @psalm-return list<int>
+	 *
+	 * @spec openspec/specs/unified-search-provider/spec.md
+	 */
+	private function getNonSearchableIds(): array {
+		if ($this->nonSearchableIds !== null) {
+			return $this->nonSearchableIds;
+		}
 
-        return SearchResult::complete(
-            name: $this->l10n->t(text: 'Open Register Objects'),
-            entries: $searchResultEntries
-        );
-    }//end search()
+		try {
+			$this->nonSearchableIds = $this->schemaMapper->findNonSearchableIds();
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'[ObjectsProvider] Failed to resolve non-searchable schemas, treating all as searchable: {error}',
+				['error' => $e->getMessage()]
+			);
+			$this->nonSearchableIds = [];
+		}
 
-    /**
-     * Resolve a schema ID to its human-readable title.
-     *
-     * @param int $schemaId The schema ID
-     *
-     * @return string The schema title or the ID as fallback
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
-     */
-    private function resolveSchemaName(int $schemaId): string
-    {
-        $key = 'schema_'.$schemaId;
-        if (isset($this->nameCache[$key]) === false) {
-            try {
-                $schema = $this->schemaMapper->find($schemaId);
-                $title  = $schema->getTitle();
-                $this->nameCache[$key] = ($title !== null && $title !== '' ? $title : (string) $schemaId);
-            } catch (\Exception $e) {
-                $this->nameCache[$key] = (string) $schemaId;
-            }
-        }
-
-        return $this->nameCache[$key];
-    }//end resolveSchemaName()
-
-    /**
-     * Resolve a register ID to its human-readable title.
-     *
-     * @param int $registerId The register ID
-     *
-     * @return string The register title or the ID as fallback
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
-     */
-    private function resolveRegisterName(int $registerId): string
-    {
-        $key = 'register_'.$registerId;
-        if (isset($this->nameCache[$key]) === false) {
-            try {
-                $register = $this->registerMapper->find($registerId);
-                $title    = $register->getTitle();
-                $this->nameCache[$key] = ($title !== null && $title !== '' ? $title : (string) $registerId);
-            } catch (\Exception $e) {
-                $this->nameCache[$key] = (string) $registerId;
-            }
-        }
-
-        return $this->nameCache[$key];
-    }//end resolveRegisterName()
-
-    /**
-     * Build a descriptive text for search results
-     *
-     * @param array $object Object data from searchObjectsPaginated
-     *
-     * @return string Formatted description for search result
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Description building requires multiple optional field checks
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Description building has multiple optional data paths
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
-     */
-    private function buildDescription(array $object): string
-    {
-        $parts = [];
-
-        // Add schema/register names (resolved from IDs) if available.
-        if (empty($object['schema']) === false) {
-            $parts[] = $this->resolveSchemaName(schemaId: (int) $object['schema']);
-        }
-
-        if (empty($object['register']) === false) {
-            $parts[] = $this->resolveRegisterName(registerId: (int) $object['register']);
-        }
-
-        // Add summary/description if available.
-        if (empty($object['summary']) === false) {
-            $parts[] = $object['summary'];
-        } else if (empty($object['description']) === false && is_string($object['description']) === true) {
-            $descriptionPart = substr($object['description'], 0, 100);
-            if (strlen($object['description']) > 100) {
-                $descriptionPart .= '...';
-            }
-
-            $parts[] = $descriptionPart;
-        }
-
-        // Add last updated info if available.
-        if (empty($object['updated']) === false) {
-            $parts[] = $this->l10n->t('Updated: %s', date('Y-m-d H:i', strtotime($object['updated'])));
-        }
-
-        $description = implode(' • ', $parts);
-        if ($description !== '') {
-            return $description;
-        }
-
-        return $this->l10n->t(text: 'Open Register Object');
-    }//end buildDescription()
+		return $this->nonSearchableIds;
+	}//end getNonSearchableIds()
 }//end class

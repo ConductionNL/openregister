@@ -5,6 +5,9 @@
  *
  * This file contains the handler class for Organisation entity import/export operations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Handler
  *
@@ -26,6 +29,5 @@ namespace OCA\OpenRegister\Service\Handler;
  *
  * @package OCA\OpenRegister\Service\Handler
  */
-class OrganisationHandler
-{
+class OrganisationHandler {
 }//end class

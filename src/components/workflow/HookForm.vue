@@ -3,50 +3,78 @@
 		<h3>{{ isEdit ? 'Edit Hook' : 'Add Hook' }}</h3>
 		<div class="form-group">
 			<label>Event Type</label>
-			<NcSelect v-model="form.event" :options="eventTypes" />
+			<NcSelect
+				v-model="form.event"
+				inputLabel="Form Event"
+				:options="eventTypes" />
 		</div>
 		<div class="form-group">
 			<label>Engine</label>
-			<NcSelect v-model="form.engine" :options="engineOptions" />
+			<NcSelect
+				v-model="form.engine"
+				inputLabel="Form Engine"
+				:options="engineOptions" />
 		</div>
 		<div class="form-group">
-			<label>Workflow ID</label>
-			<input v-model="form.workflowId" type="text" class="input-field">
+			<label for="hook-form-workflow-id">Workflow ID</label>
+			<input
+				id="hook-form-workflow-id"
+				v-model="form.workflowId"
+				type="text"
+				class="input-field" />
 		</div>
 		<div class="form-group">
 			<label>Mode</label>
-			<NcSelect v-model="form.mode" :options="['sync', 'async']" />
+			<NcSelect
+				v-model="form.mode"
+				inputLabel="Form Mode"
+				:options="['sync', 'async']" />
 		</div>
 		<div class="form-group">
-			<label>Order</label>
-			<input v-model.number="form.order" type="number" class="input-field">
+			<label for="hook-form-order">Order</label>
+			<input
+				id="hook-form-order"
+				v-model.number="form.order"
+				type="number"
+				class="input-field" />
 		</div>
 		<div class="form-group">
-			<label>Timeout (seconds)</label>
-			<input v-model.number="form.timeout" type="number" class="input-field">
+			<label for="hook-form-timeout">Timeout (seconds)</label>
+			<input
+				id="hook-form-timeout"
+				v-model.number="form.timeout"
+				type="number"
+				class="input-field" />
 		</div>
 		<div class="form-group">
 			<label>On Failure</label>
-			<NcSelect v-model="form.onFailure" :options="failureModes" />
+			<NcSelect
+				v-model="form.onFailure"
+				inputLabel="Form On Failure"
+				:options="failureModes" />
 		</div>
 		<div class="form-group">
 			<label>On Timeout</label>
-			<NcSelect v-model="form.onTimeout" :options="failureModes" />
+			<NcSelect
+				v-model="form.onTimeout"
+				inputLabel="Form On Timeout"
+				:options="failureModes" />
 		</div>
 		<div class="form-group">
 			<label>On Engine Down</label>
-			<NcSelect v-model="form.onEngineDown" :options="failureModes" />
+			<NcSelect
+				v-model="form.onEngineDown"
+				inputLabel="Form On Engine Down"
+				:options="failureModes" />
 		</div>
 		<div class="form-group">
-			<NcCheckboxRadioSwitch :checked.sync="form.enabled">
+			<NcCheckboxRadioSwitch v-model="form.enabled">
 				Enabled
 			</NcCheckboxRadioSwitch>
 		</div>
 		<div class="form-actions">
-			<NcButton @click="$emit('cancel')">
-				Cancel
-			</NcButton>
-			<NcButton type="primary" @click="save">
+			<NcButton @click="$emit('cancel')"> Cancel </NcButton>
+			<NcButton variant="primary" @click="save">
 				{{ isEdit ? 'Update' : 'Create' }}
 			</NcButton>
 		</div>
@@ -54,7 +82,7 @@
 </template>
 
 <script>
-import { NcButton, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { NcButton, NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
 
 export default {
 	name: 'HookForm',
@@ -63,6 +91,7 @@ export default {
 		hook: { type: Object, default: null },
 		engines: { type: Array, default: () => [] },
 	},
+
 	emits: ['save', 'cancel'],
 	data() {
 		return {
@@ -78,19 +107,37 @@ export default {
 				onEngineDown: this.hook?.onEngineDown || 'allow',
 				enabled: this.hook?.enabled !== false,
 			},
-			eventTypes: ['creating', 'updating', 'deleting', 'created', 'updated', 'deleted'],
+
+			eventTypes: [
+				'creating',
+				'updating',
+				'deleting',
+				'created',
+				'updated',
+				'deleted',
+			],
+
 			failureModes: ['reject', 'allow', 'flag', 'queue'],
 		}
 	},
+
 	computed: {
 		isEdit() {
 			return this.hook !== null
 		},
+
+		/**
+		 * @spec exclude computed select-option mapping from engines prop, UI plumbing
+		 */
 		engineOptions() {
-			return this.engines.map(e => e.engineType || e.name || e)
+			return this.engines.map((e) => e.engineType || e.name || e)
 		},
 	},
+
 	methods: {
+		/**
+		 * @spec exclude emit UI handler dispatching save event with form data, UI plumbing
+		 */
 		save() {
 			this.$emit('save', { ...this.form })
 		},
@@ -99,9 +146,28 @@ export default {
 </script>
 
 <style scoped>
-.hook-form { padding: 16px; }
-.form-group { margin-bottom: 12px; }
-.form-group label { display: block; margin-bottom: 4px; font-weight: bold; }
-.input-field { width: 100%; padding: 8px; }
-.form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.hook-form {
+	padding: 16px;
+}
+
+.form-group {
+	margin-bottom: 12px;
+}
+
+.form-group label {
+	display: block;
+	margin-bottom: 4px;
+	font-weight: bold;
+}
+
+.input-field {
+	width: 100%;
+	padding: 8px;
+}
+
+.form-actions {
+	display: flex;
+	gap: 8px;
+	justify-content: flex-end;
+}
 </style>

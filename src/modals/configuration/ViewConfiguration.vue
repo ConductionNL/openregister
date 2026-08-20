@@ -1,19 +1,22 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { configurationStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'viewConfiguration'"
+	<NcDialog
+		v-if="navigationStore.modal === 'viewConfiguration'"
 		:name="`View Configuration: ${configurationStore.configurationItem?.title || 'Unknown'}`"
 		size="large"
-		:can-close="false">
+		:canClose="false">
 		<div class="formContainer viewConfigurationDialog">
 			<!-- Configuration Details -->
 			<div class="configurationDetailsGrid">
 				<div class="configurationMainInfo">
 					<h2>{{ configurationStore.configurationItem?.title }}</h2>
-					<p v-if="configurationStore.configurationItem?.description" class="configurationDescription">
+					<p
+						v-if="configurationStore.configurationItem?.description"
+						class="configurationDescription">
 						{{ configurationStore.configurationItem.description }}
 					</p>
 				</div>
@@ -21,19 +24,35 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 				<div class="configurationProperties">
 					<div class="propertyItem">
 						<strong>{{ t('openregister', 'Type') }}:</strong>
-						<span>{{ configurationStore.configurationItem?.type || 'Unknown' }}</span>
+						<span>{{
+							configurationStore.configurationItem?.type || 'Unknown'
+						}}</span>
 					</div>
-					<div v-if="configurationStore.configurationItem?.owner" class="propertyItem">
+					<div
+						v-if="configurationStore.configurationItem?.owner"
+						class="propertyItem">
 						<strong>{{ t('openregister', 'Owner') }}:</strong>
 						<span>{{ configurationStore.configurationItem.owner }}</span>
 					</div>
-					<div v-if="configurationStore.configurationItem?.created" class="propertyItem">
+					<div
+						v-if="configurationStore.configurationItem?.created"
+						class="propertyItem">
 						<strong>{{ t('openregister', 'Created') }}:</strong>
-						<span>{{ new Date(configurationStore.configurationItem.created).toLocaleString() }}</span>
+						<span>{{
+							new Date(
+								configurationStore.configurationItem.created,
+							).toLocaleString()
+						}}</span>
 					</div>
-					<div v-if="configurationStore.configurationItem?.updated" class="propertyItem">
+					<div
+						v-if="configurationStore.configurationItem?.updated"
+						class="propertyItem">
 						<strong>{{ t('openregister', 'Updated') }}:</strong>
-						<span>{{ new Date(configurationStore.configurationItem.updated).toLocaleString() }}</span>
+						<span>{{
+							new Date(
+								configurationStore.configurationItem.updated,
+							).toLocaleString()
+						}}</span>
 					</div>
 				</div>
 			</div>
@@ -54,16 +73,32 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 				<div class="tabContent">
 					<!-- Configuration Tab -->
 					<div v-if="activeTab === 0" class="tabPanel">
-						<div v-if="configurationStore.configurationItem?.configuration" class="configurationJsonContainer">
+						<div
+							v-if="
+								configurationStore.configurationItem?.configuration
+							"
+							class="configurationJsonContainer">
 							<h3>{{ t('openregister', 'Configuration Data') }}</h3>
 							<div class="jsonViewer">
-								<pre>{{ JSON.stringify(configurationStore.configurationItem.configuration, null, 2) }}</pre>
+								<pre>{{
+									JSON.stringify(
+										configurationStore.configurationItem
+											.configuration,
+										null,
+										2,
+									)
+								}}</pre>
 							</div>
 						</div>
 						<div v-else class="emptyTabContent">
 							<NcEmptyContent
 								:name="t('openregister', 'No configuration data')"
-								:description="t('openregister', 'This configuration has no data defined.')">
+								:description="
+									t(
+										'openregister',
+										'This configuration has no data defined.',
+									)
+								">
 								<template #icon>
 									<CogOutline :size="64" />
 								</template>
@@ -76,7 +111,12 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						<div class="emptyTabContent">
 							<NcEmptyContent
 								:name="t('openregister', 'No logs found')"
-								:description="t('openregister', 'No logs are available for this configuration.')">
+								:description="
+									t(
+										'openregister',
+										'No logs are available for this configuration.',
+									)
+								">
 								<template #icon>
 									<PostOutline :size="64" />
 								</template>
@@ -88,25 +128,25 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 		</div>
 
 		<template #actions>
-			<NcActionButton close-after-click @click="editConfiguration">
+			<NcActionButton closeAfterClick @click="editConfiguration">
 				<template #icon>
 					<Pencil :size="20" />
 				</template>
 				Edit Configuration
 			</NcActionButton>
-			<NcActionButton close-after-click @click="exportConfiguration">
+			<NcActionButton closeAfterClick @click="exportConfiguration">
 				<template #icon>
 					<Download :size="20" />
 				</template>
 				Export Configuration
 			</NcActionButton>
-			<NcActionButton close-after-click @click="deleteConfiguration">
+			<NcActionButton closeAfterClick @click="deleteConfiguration">
 				<template #icon>
 					<TrashCanOutline :size="20" />
 				</template>
 				Delete Configuration
 			</NcActionButton>
-			<NcButton type="primary" @click="closeModal">
+			<NcButton variant="primary" @click="closeModal">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
@@ -117,19 +157,13 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import {
-	NcDialog,
-	NcButton,
-	NcActionButton,
-	NcEmptyContent,
-} from '@nextcloud/vue'
-
+import { NcActionButton, NcButton, NcDialog, NcEmptyContent } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import Download from 'vue-material-design-icons/Download.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
 import PostOutline from 'vue-material-design-icons/PostOutline.vue'
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
 export default {
 	name: 'ViewConfiguration',
@@ -145,6 +179,7 @@ export default {
 		CogOutline,
 		PostOutline,
 	},
+
 	data() {
 		return {
 			activeTab: 0,
@@ -154,16 +189,32 @@ export default {
 			],
 		}
 	},
+
 	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 		},
+
+		/**
+		 * @spec exclude Modal navigation plumbing — opens the edit-configuration modal.
+		 */
 		editConfiguration() {
 			navigationStore.setModal('editConfiguration')
 		},
+
+		/**
+		 * @spec exclude Modal navigation plumbing — opens the export-configuration modal.
+		 */
 		exportConfiguration() {
 			navigationStore.setModal('exportConfiguration')
 		},
+
+		/**
+		 * @spec exclude Modal navigation plumbing — opens the delete-configuration dialog.
+		 */
 		deleteConfiguration() {
 			navigationStore.setModal(false)
 			navigationStore.setDialog('deleteConfiguration')
@@ -287,5 +338,11 @@ export default {
 	justify-content: center;
 	align-items: center;
 	min-height: 200px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tabHeader {
+		transition: none;
+	}
 }
 </style>

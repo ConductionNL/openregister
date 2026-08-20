@@ -2,7 +2,7 @@
 	<NcSettingsSection
 		:name="name"
 		:description="description"
-		:doc-url="docUrl"
+		:docUrl="docUrl"
 		v-bind="$attrs">
 		<!-- Action buttons positioned top-right -->
 		<div v-if="$slots.actions" class="action-buttons">
@@ -10,10 +10,15 @@
 		</div>
 
 		<!-- Section Description (optional detailed description box) -->
-		<div v-if="$slots.description || detailedDescription" class="section-description-full">
+		<div
+			v-if="$slots.description || detailedDescription"
+			class="section-description-full">
 			<slot name="description">
 				<!-- eslint-disable-next-line vue/no-v-html -->
-				<p v-if="detailedDescription" class="main-description" v-html="sanitizeHtml(detailedDescription)" />
+				<p
+					v-if="detailedDescription"
+					class="main-description"
+					v-html="sanitizeHtml(detailedDescription)" />
 			</slot>
 		</div>
 
@@ -30,10 +35,8 @@
 
 		<!-- Error State -->
 		<div v-if="error && !loading" class="error-section">
-			<p class="error-message">
-				❌ {{ errorMessage }}
-			</p>
-			<NcButton v-if="onRetry" type="primary" @click="onRetry">
+			<p class="error-message">❌ {{ errorMessage }}</p>
+			<NcButton v-if="onRetry" variant="primary" @click="onRetry">
 				<template #icon>
 					<Refresh :size="20" />
 				</template>
@@ -59,9 +62,10 @@
 </template>
 
 <script>
-import { NcSettingsSection, NcLoadingIcon, NcButton } from '@nextcloud/vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
+import { NcButton, NcLoadingIcon, NcSettingsSection } from '@nextcloud/vue'
+import DOMPurify from 'dompurify'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 
 /**
  * Reusable settings section wrapper component that provides consistent layout and functionality
@@ -197,13 +201,21 @@ export default {
 	},
 
 	methods: {
-		// quick and dirty way to sanitize HTML.
-		// this guarantees that no dangerous HTML is rendered, though it'll make the output ugly.
-		// @TODO: Implement production ready sanitization.
+		/**
+		 * Sanitize HTML for the detailedDescription slot using an allowlist.
+		 *
+		 * Uses DOMPurify with a narrow allowlist so basic inline formatting is
+		 * preserved while all scripting/dangerous markup is stripped.
+		 *
+		 * @param {string} html Untrusted markup
+		 * @return {string} Sanitized HTML safe for v-html
+		 * @spec openspec/specs/shared-ui-components/spec.md
+		 */
 		sanitizeHtml(html) {
-			const div = document.createElement('div')
-			div.textContent = html
-			return div.innerHTML
+			return DOMPurify.sanitize(html, {
+				ALLOWED_TAGS: ['a', 'strong', 'em', 'code', 'br', 'p'],
+				ALLOWED_ATTR: ['href', 'target', 'rel'],
+			})
 		},
 	},
 }

@@ -5,6 +5,9 @@
  *
  * Mapper for Endpoint entities to handle database operations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -60,216 +63,210 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<Endpoint>
  */
-class EndpointMapper extends QBMapper
-{
-    use MultiTenancyTrait;
+class EndpointMapper extends QBMapper {
+	use MultiTenancyTrait;
 
-    /**
-     * User session for current user
-     *
-     * Used to determine current user context for RBAC filtering.
-     *
-     * @var IUserSession User session instance
-     */
-    private readonly IUserSession $userSession;
+	/**
+	 * User session for current user
+	 *
+	 * Used to determine current user context for RBAC filtering.
+	 *
+	 * @var IUserSession User session instance
+	 */
+	private readonly IUserSession $userSession;
 
-    /**
-     * Group manager for RBAC
-     *
-     * Used to check user group memberships for access control.
-     *
-     * @var IGroupManager Group manager instance
-     */
-    private readonly IGroupManager $groupManager;
+	/**
+	 * Group manager for RBAC
+	 *
+	 * Used to check user group memberships for access control.
+	 *
+	 * @var IGroupManager Group manager instance
+	 */
+	private readonly IGroupManager $groupManager;
 
-    /**
-     * EndpointMapper constructor
-     *
-     * Initializes mapper with database connection and multi-tenancy/RBAC dependencies.
-     * Calls parent constructor to set up base mapper functionality.
-     *
-     * @param IDBConnection $db           Database connection
-     * @param IUserSession  $userSession  User session
-     * @param IGroupManager $groupManager Group manager
-     *
-     * @return void
-     */
-    public function __construct(
-        IDBConnection $db,
-        // REMOVED: Services should not be in mappers.
-        // OrganisationMapper $organisationMapper.
-        IUserSession $userSession,
-        IGroupManager $groupManager
-    ) {
-        // Call parent constructor to initialize base mapper with table name and entity class.
-        parent::__construct(db: $db, tableName: 'openregister_endpoints', entityClass: Endpoint::class);
+	/**
+	 * EndpointMapper constructor
+	 *
+	 * Initializes mapper with database connection and multi-tenancy/RBAC dependencies.
+	 * Calls parent constructor to set up base mapper functionality.
+	 *
+	 * @param IDBConnection $db Database connection
+	 * @param IUserSession $userSession User session
+	 * @param IGroupManager $groupManager Group manager
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		IDBConnection $db,
+		// REMOVED: Services should not be in mappers.
+		// OrganisationMapper $organisationMapper.
+		IUserSession $userSession,
+		IGroupManager $groupManager,
+	) {
+		// Call parent constructor to initialize base mapper with table name and entity class.
+		parent::__construct(db: $db, tableName: 'openregister_endpoints', entityClass: Endpoint::class);
 
-        // Store dependencies for use in mapper methods.
-        // REMOVED: Services should not be in mappers.
-        // $this->organisationMapper = $organisationService.
-        $this->userSession  = $userSession;
-        $this->groupManager = $groupManager;
-    }//end __construct()
+		// Store dependencies for use in mapper methods.
+		// REMOVED: Services should not be in mappers.
+		// $this->organisationMapper = $organisationService.
+		$this->userSession = $userSession;
+		$this->groupManager = $groupManager;
+	}//end __construct()
 
-    /**
-     * Find all endpoints
-     *
-     * Retrieves all endpoints with optional pagination and organisation filtering.
-     * Applies multi-tenancy filter to return only endpoints for current organisation.
-     *
-     * @param int|null $limit  Maximum number of results to return (null = no limit)
-     * @param int|null $offset Starting offset for pagination (null = no offset)
-     *
-     * @return Endpoint[]
-     *
-     * @psalm-return list<OCA\OpenRegister\Db\Endpoint>
-     */
-    public function findAll(?int $limit=null, ?int $offset=null): array
-    {
-        // Step 1: Get query builder instance.
-        $qb = $this->db->getQueryBuilder();
+	/**
+	 * Find all endpoints
+	 *
+	 * Retrieves all endpoints with optional pagination and organisation filtering.
+	 * Applies multi-tenancy filter to return only endpoints for current organisation.
+	 *
+	 * @param int|null $limit Maximum number of results to return (null = no limit)
+	 * @param int|null $offset Starting offset for pagination (null = no offset)
+	 *
+	 * @return Endpoint[]
+	 *
+	 * @psalm-return list<OCA\OpenRegister\Db\Endpoint>
+	 */
+	public function findAll(?int $limit = null, ?int $offset = null): array {
+		// Step 1: Get query builder instance.
+		$qb = $this->db->getQueryBuilder();
 
-        // Step 2: Build SELECT query for all columns.
-        $qb->select('*')
-            ->from($this->getTableName());
+		// Step 2: Build SELECT query for all columns.
+		$qb->select('*')
+			->from($this->getTableName());
 
-        // Step 3: Apply organisation filter for multi-tenancy.
-        // This ensures users only see endpoints from their organisation.
-        $this->applyOrganisationFilter(qb: $qb);
+		// Step 3: Apply organisation filter for multi-tenancy.
+		// This ensures users only see endpoints from their organisation.
+		$this->applyOrganisationFilter(qb: $qb);
 
-        // Step 4: Apply pagination if limit specified.
-        if ($limit !== null) {
-            $qb->setMaxResults($limit);
-        }
+		// Step 4: Apply pagination if limit specified.
+		if ($limit !== null) {
+			$qb->setMaxResults($limit);
+		}
 
-        // Step 5: Apply offset if specified.
-        if ($offset !== null) {
-            $qb->setFirstResult($offset);
-        }
+		// Step 5: Apply offset if specified.
+		if ($offset !== null) {
+			$qb->setFirstResult($offset);
+		}
 
-        // Step 6: Execute query and return entities.
-        return $this->findEntities(query: $qb);
-    }//end findAll()
+		// Step 6: Execute query and return entities.
+		return $this->findEntities(query: $qb);
+	}//end findAll()
 
-    /**
-     * Find a single endpoint by ID
-     *
-     * Retrieves endpoint by ID with organisation filtering for multi-tenancy.
-     * Throws exception if endpoint not found or doesn't belong to current organisation.
-     *
-     * @param int $id Endpoint ID to find
-     *
-     * @return Endpoint The found endpoint entity
-     *
-     * @throws DoesNotExistException If endpoint not found or not accessible
-     * @throws MultipleObjectsReturnedException If multiple endpoints found (should not happen)
-     */
-    public function find($id): Endpoint
-    {
-        // Step 1: Get query builder instance.
-        $qb = $this->db->getQueryBuilder();
+	/**
+	 * Find a single endpoint by ID
+	 *
+	 * Retrieves endpoint by ID with organisation filtering for multi-tenancy.
+	 * Throws exception if endpoint not found or doesn't belong to current organisation.
+	 *
+	 * @param int $id Endpoint ID to find
+	 *
+	 * @return Endpoint The found endpoint entity
+	 *
+	 * @throws DoesNotExistException If endpoint not found or not accessible
+	 * @throws MultipleObjectsReturnedException If multiple endpoints found (should not happen)
+	 */
+	public function find($id): Endpoint {
+		// Step 1: Get query builder instance.
+		$qb = $this->db->getQueryBuilder();
 
-        // Step 2: Build SELECT query with ID filter.
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+		// Step 2: Build SELECT query with ID filter.
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        // Step 3: Apply organisation filter for multi-tenancy.
-        // This ensures users can only access endpoints from their organisation.
-        $this->applyOrganisationFilter(qb: $qb);
+		// Step 3: Apply organisation filter for multi-tenancy.
+		// This ensures users can only access endpoints from their organisation.
+		$this->applyOrganisationFilter(qb: $qb);
 
-        // Step 4: Execute query and return single entity.
-        return $this->findEntity(query: $qb);
-    }//end find()
+		// Step 4: Execute query and return single entity.
+		return $this->findEntity(query: $qb);
+	}//end find()
 
-    /**
-     * Create a new endpoint from array data
-     *
-     * @param array $data Endpoint data
-     *
-     * @return Endpoint
-     * @throws \Exception
-     */
-    public function createFromArray(array $data): Endpoint
-    {
-        // Check RBAC permissions.
-        $this->verifyRbacPermission(action: 'create', entityType: 'endpoint');
+	/**
+	 * Create a new endpoint from array data
+	 *
+	 * @param array $data Endpoint data
+	 *
+	 * @return Endpoint
+	 * @throws \Exception
+	 */
+	public function createFromArray(array $data): Endpoint {
+		// Check RBAC permissions.
+		$this->verifyRbacPermission(action: 'create', entityType: 'endpoint');
 
-        $endpoint = new Endpoint();
+		$endpoint = new Endpoint();
 
-        // Generate UUID if not provided.
-        if (isset($data['uuid']) === false || empty($data['uuid']) === true) {
-            $data['uuid'] = Uuid::v4()->toRfc4122();
-        }
+		// Generate UUID if not provided.
+		if (isset($data['uuid']) === false || empty($data['uuid']) === true) {
+			$data['uuid'] = Uuid::v4()->toRfc4122();
+		}
 
-        // Set timestamps.
-        $now = new DateTime();
-        $data['created'] = $now;
-        $data['updated'] = $now;
+		// Set timestamps.
+		$now = new DateTime();
+		$data['created'] = $now;
+		$data['updated'] = $now;
 
-        // Hydrate the entity with data.
-        $endpoint->hydrate($data);
+		// Hydrate the entity with data.
+		$endpoint->hydrate($data);
 
-        // Set organisation from session.
-        $this->setOrganisationOnCreate(entity: $endpoint);
+		// Set organisation from session.
+		$this->setOrganisationOnCreate(entity: $endpoint);
 
-        // Persist to database.
-        return $this->insert(entity: $endpoint);
-    }//end createFromArray()
+		// Persist to database.
+		return $this->insert(entity: $endpoint);
+	}//end createFromArray()
 
-    /**
-     * Update an endpoint from array data
-     *
-     * @param int   $id   Endpoint ID
-     * @param array $data Updated endpoint data
-     *
-     * @return Endpoint
-     * @throws DoesNotExistException
-     * @throws MultipleObjectsReturnedException
-     * @throws \Exception
-     */
-    public function updateFromArray(int $id, array $data): Endpoint
-    {
-        // Check RBAC permissions.
-        $this->verifyRbacPermission(action: 'update', entityType: 'endpoint');
+	/**
+	 * Update an endpoint from array data
+	 *
+	 * @param int $id Endpoint ID
+	 * @param array $data Updated endpoint data
+	 *
+	 * @return Endpoint
+	 * @throws DoesNotExistException
+	 * @throws MultipleObjectsReturnedException
+	 * @throws \Exception
+	 */
+	public function updateFromArray(int $id, array $data): Endpoint {
+		// Check RBAC permissions.
+		$this->verifyRbacPermission(action: 'update', entityType: 'endpoint');
 
-        // Find the existing endpoint.
-        $endpoint = $this->find(id: $id);
+		// Find the existing endpoint.
+		$endpoint = $this->find(id: $id);
 
-        // Verify organisation access.
-        $this->verifyOrganisationAccess(entity: $endpoint);
+		// Verify organisation access.
+		$this->verifyOrganisationAccess(entity: $endpoint);
 
-        // Update timestamp.
-        $data['updated'] = new DateTime();
+		// Update timestamp.
+		$data['updated'] = new DateTime();
 
-        // Don't allow changing UUID or organisation.
-        unset($data['uuid'], $data['organisation'], $data['created']);
+		// Don't allow changing UUID or organisation.
+		unset($data['uuid'], $data['organisation'], $data['created']);
 
-        // Hydrate the entity with updated data.
-        $endpoint->hydrate($data);
+		// Hydrate the entity with updated data.
+		$endpoint->hydrate($data);
 
-        // Persist to database.
-        return $this->update(entity: $endpoint);
-    }//end updateFromArray()
+		// Persist to database.
+		return $this->update(entity: $endpoint);
+	}//end updateFromArray()
 
-    /**
-     * Delete an endpoint
-     *
-     * @param Entity $entity Endpoint entity to delete
-     *
-     * @return Endpoint
-     * @throws \Exception
-     *
-     * @psalm-suppress PossiblyUnusedReturnValue
-     */
-    public function delete(Entity $entity): Endpoint
-    {
-        // Check RBAC permissions.
-        $this->verifyRbacPermission(action: 'delete', entityType: 'endpoint');
+	/**
+	 * Delete an endpoint
+	 *
+	 * @param Entity $entity Endpoint entity to delete
+	 *
+	 * @return Endpoint
+	 * @throws \Exception
+	 *
+	 * @psalm-suppress PossiblyUnusedReturnValue
+	 */
+	public function delete(Entity $entity): Endpoint {
+		// Check RBAC permissions.
+		$this->verifyRbacPermission(action: 'delete', entityType: 'endpoint');
 
-        // Verify organisation access.
-        $this->verifyOrganisationAccess(entity: $entity);
+		// Verify organisation access.
+		$this->verifyOrganisationAccess(entity: $entity);
 
-        return parent::delete(entity: $entity);
-    }//end delete()
+		return parent::delete(entity: $entity);
+	}//end delete()
 }//end class

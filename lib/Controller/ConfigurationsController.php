@@ -6,10 +6,13 @@
  * This file contains the controller class for handling configuration operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -28,9 +31,10 @@ use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataDownloadResponse;
-use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -44,396 +48,440 @@ use Symfony\Component\Uid\Uuid;
  *
  * @psalm-suppress UnusedClass
  */
-class ConfigurationsController extends Controller
-{
+class ConfigurationsController extends Controller {
 
-    /**
-     * User ID for ownership tracking.
-     *
-     * @var string|null User ID or null if not authenticated.
-     */
-    private readonly ?string $userId;
+	/**
+	 * User ID for ownership tracking.
+	 *
+	 * @var string|null User ID or null if not authenticated.
+	 */
+	private readonly ?string $userId;
 
-    /**
-     * Constructor for ConfigurationController.
-     *
-     * @param string               $appName              The name of the app
-     * @param IRequest             $request              The request object
-     * @param ConfigurationMapper  $configurationMapper  The configuration mapper instance
-     * @param ConfigurationService $configurationService The configuration service instance
-     * @param UploadService        $uploadService        The upload service instance
-     * @param string|null          $userId               The current user ID
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly ConfigurationMapper $configurationMapper,
-        private readonly ConfigurationService $configurationService,
-        private readonly UploadService $uploadService,
-        ?string $userId
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-        $this->userId = $userId;
-    }//end __construct()
+	/**
+	 * Constructor for ConfigurationController.
+	 *
+	 * @param string $appName The name of the app
+	 * @param IRequest $request The request object
+	 * @param ConfigurationMapper $configurationMapper The configuration mapper instance
+	 * @param ConfigurationService $configurationService The configuration service instance
+	 * @param UploadService $uploadService The upload service instance
+	 * @param string|null $userId The current user ID
+	 * @param IUserSession $userSession User session for admin checks
+	 * @param IGroupManager $groupManager Group manager for admin checks
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly ConfigurationMapper $configurationMapper,
+		private readonly ConfigurationService $configurationService,
+		private readonly UploadService $uploadService,
+		?string $userId,
+		private readonly IUserSession $userSession,
+		private readonly IGroupManager $groupManager,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+		$this->userId = $userId;
+	}//end __construct()
 
-    /**
-     * List all configurations
-     *
-     * @return JSONResponse List of configurations.
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200, array{results: array<\OCA\OpenRegister\Db\Configuration>}, array<never, never>>
-     */
-    public function index(): JSONResponse
-    {
-        // Get request parameters for filtering and searching.
-        $filters = $this->request->getParams();
+	/**
+	 * Check whether the currently authenticated user is a Nextcloud administrator.
+	 *
+	 * @return bool True if a user is signed in and belongs to the admin group.
+	 */
+	private function isCurrentUserAdmin(): bool {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return false;
+		}
 
-        unset($filters['_route']);
+		return $this->groupManager->isAdmin($user->getUID());
+	}//end isCurrentUserAdmin()
 
-        $searchParams     = [];
-        $searchConditions = [];
-        $filters          = $filters;
+	/**
+	 * List all configurations
+	 *
+	 * @return JSONResponse List of configurations.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @psalm-return JSONResponse<200, array{results: array<\OCA\OpenRegister\Db\Configuration>}, array<never, never>>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function index(): JSONResponse {
+		// Get request parameters for filtering and searching.
+		$filters = $this->request->getParams();
 
-        // Return all configurations that match the search conditions.
-        // Disable multitenancy filtering so admins can see all configurations.
-        return new JSONResponse(
-            data: [
-                'results' => $this->configurationMapper->findAll(
-                    limit: null,
-                    offset: null,
-                    filters: $filters,
-                    searchConditions: $searchConditions,
-                    searchParams: $searchParams,
-                    _multitenancy: false
-                ),
-            ]
-        );
-    }//end index()
+		unset($filters['_route']);
 
-    /**
-     * Show a specific configuration
-     *
-     * @param int $id Configuration ID
-     *
-     * @return JSONResponse Configuration details
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
-     *     array<never, never>>|JSONResponse<404,
-     *     array{error: 'Configuration not found'}, array<never, never>>
-     */
-    public function show(int $id): JSONResponse
-    {
-        try {
-            // Disable multitenancy filtering for show operations.
-            // When retrieving by ID, admins should be able to access configurations regardless of organisation.
-            return new JSONResponse(data: $this->configurationMapper->find($id, _multitenancy: false));
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
-        }
-    }//end show()
+		$searchParams = [];
+		$searchConditions = [];
+		$filters = $filters;
 
-    /**
-     * Create a new configuration
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @suppressWarnings(PHPMD.StaticAccess)         Uuid::v4() is a standard utility pattern
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
-     * @suppressWarnings(PHPMD.NPathComplexity)
-     *
-     * @return JSONResponse JSON response with created configuration or error
-     *
-     * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Configuration,
-     *     array<never, never>>|JSONResponse<400, array{error: string},
-     *     array<never, never>>
-     */
-    public function create(): JSONResponse
-    {
-        $data = $this->request->getParams();
+		// Admins bypass multitenancy so they can see all configurations.
+		// Non-admin authenticated users see only their tenant's configurations.
+		$multitenancy = ($this->isCurrentUserAdmin() === false);
 
-        // Remove internal parameters and data attribute.
-        foreach (array_keys($data) as $key) {
-            if (str_starts_with($key, '_') === true || $key === 'data') {
-                unset($data[$key]);
-            }
-        }
+		// Return all configurations that match the search conditions.
+		return new JSONResponse(
+			data: [
+				'results' => $this->configurationMapper->findAll(
+					limit: null,
+					offset: null,
+					filters: $filters,
+					searchConditions: $searchConditions,
+					searchParams: $searchParams,
+					_multitenancy: $multitenancy
+				),
+			]
+		);
+	}//end index()
 
-        // Ensure we have a UUID.
-        if (isset($data['uuid']) === false) {
-            $data['uuid'] = Uuid::v4();
-        }
+	/**
+	 * Show a specific configuration
+	 *
+	 * @param int $id Configuration ID
+	 *
+	 * @return JSONResponse Configuration details
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
+	 *     array<never, never>>|JSONResponse<404,
+	 *     array{error: 'Configuration not found'}, array<never, never>>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function show(int $id): JSONResponse {
+		try {
+			// Admins bypass multitenancy; non-admins see only their tenant's configurations.
+			$multitenancy = ($this->isCurrentUserAdmin() === false);
+			return new JSONResponse(data: $this->configurationMapper->find($id, _multitenancy: $multitenancy));
+		} catch (Exception $e) {
+			return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
+		}
+	}//end show()
 
-        // Set default values for new local configurations.
-        // If sourceType is not provided, assume it's a local configuration.
-        if (isset($data['sourceType']) === false || $data['sourceType'] === null || $data['sourceType'] === '') {
-            $data['sourceType'] = 'local';
-        }
+	/**
+	 * Create a new configuration
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @suppressWarnings(PHPMD.StaticAccess)         Uuid::v4() is a standard utility pattern
+	 * @suppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @suppressWarnings(PHPMD.NPathComplexity)
+	 *
+	 * @return JSONResponse JSON response with created configuration or error
+	 *
+	 * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Configuration,
+	 *     array<never, never>>|JSONResponse<400, array{error: string},
+	 *     array<never, never>>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function create(): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+		}
 
-        // Set isLocal based on sourceType (enforce consistency).
-        // Local configurations: sourceType === 'local' or 'manual' → isLocal = true.
-        // External configurations: sourceType === 'github', 'gitlab', or 'url' → isLocal = false.
-        if (in_array($data['sourceType'], ['local', 'manual'], true) === true) {
-            $data['isLocal'] = true;
-        } else if (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
-            $data['isLocal'] = false;
-        } else if (isset($data['isLocal']) === false) {
-            // Fallback: if sourceType is something else and isLocal not set, default to true.
-            $data['isLocal'] = true;
-        }
+		$data = $this->request->getParams();
 
-        try {
-            return new JSONResponse(
-                data: $this->configurationMapper->createFromArray($data),
-                statusCode: 201
-            );
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to create configuration: '.$e->getMessage()], statusCode: 400);
-        }
-    }//end create()
+		// Remove internal parameters and data attribute.
+		foreach (array_keys($data) as $key) {
+			if (str_starts_with($key, '_') === true || $key === 'data') {
+				unset($data[$key]);
+			}
+		}
 
-    /**
-     * Update an existing configuration
-     *
-     * @param int $id Configuration ID
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with updated configuration or error
-     *
-     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
-     *     array<never, never>>|JSONResponse<400, array{error: string},
-     *     array<never, never>>
-     */
-    public function update(int $id): JSONResponse
-    {
-        $data = $this->request->getParams();
+		// Ensure we have a UUID.
+		if (isset($data['uuid']) === false) {
+			$data['uuid'] = Uuid::v4();
+		}
 
-        // Remove internal parameters and data attribute.
-        foreach (array_keys($data) as $key) {
-            if (str_starts_with($key, '_') === true || $key === 'data') {
-                unset($data[$key]);
-            }
-        }
+		// Set default values for new local configurations.
+		// If sourceType is not provided, assume it's a local configuration.
+		if (isset($data['sourceType']) === false || $data['sourceType'] === null || $data['sourceType'] === '') {
+			$data['sourceType'] = 'local';
+		}
 
-        // Remove immutable fields to prevent tampering.
-        unset($data['id']);
-        unset($data['organisation']);
-        unset($data['owner']);
-        unset($data['created']);
+		// Set isLocal based on sourceType (enforce consistency).
+		// Local configurations: sourceType === 'local' or 'manual' → isLocal = true.
+		// External configurations: sourceType === 'github', 'gitlab', or 'url' → isLocal = false.
+		if (in_array($data['sourceType'], ['local', 'manual'], true) === true) {
+			$data['isLocal'] = true;
+		} elseif (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
+			$data['isLocal'] = false;
+		} elseif (isset($data['isLocal']) === false) {
+			// Fallback: if sourceType is something else and isLocal not set, default to true.
+			$data['isLocal'] = true;
+		}
 
-        // Enforce consistency between sourceType and isLocal.
-        if (($data['sourceType'] ?? null) !== null) {
-            if (in_array($data['sourceType'], ['local', 'manual'], true) === true) {
-                $data['isLocal'] = true;
-            } else if (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
-                $data['isLocal'] = false;
-            }
-        }
+		try {
+			return new JSONResponse(
+				data: $this->configurationMapper->createFromArray($data),
+				statusCode: 201
+			);
+		} catch (Exception $e) {
+			return new JSONResponse(data: ['error' => 'Failed to create configuration: ' . $e->getMessage()], statusCode: 400);
+		}
+	}//end create()
 
-        try {
-            return new JSONResponse(
-                data: $this->configurationMapper->updateFromArray(id: $id, data: $data)
-            );
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to update configuration: '.$e->getMessage()], statusCode: 400);
-        }
-    }//end update()
+	/**
+	 * Update an existing configuration
+	 *
+	 * @param int $id Configuration ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with updated configuration or error
+	 *
+	 * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
+	 *     array<never, never>>|JSONResponse<400, array{error: string},
+	 *     array<never, never>>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function update(int $id): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+		}
 
-    /**
-     * Patch (partially update) a configuration.
-     *
-     * @param int $id The ID of the configuration to patch
-     *
-     * @return JSONResponse The updated configuration data
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
-     *     array<never, never>>|JSONResponse<400, array{error: string},
-     *     array<never, never>>
-     */
-    public function patch(int $id): JSONResponse
-    {
-        return $this->update(id: $id);
-    }//end patch()
+		$data = $this->request->getParams();
 
-    /**
-     * Delete a configuration
-     *
-     * @param int $id Configuration ID
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response on success (204) or error
-     *
-     * @psalm-return JSONResponse<204, null,
-     *     array<never, never>>|JSONResponse<400, array{error: string},
-     *     array<never, never>>
-     */
-    public function destroy(int $id): JSONResponse
-    {
-        try {
-            // Disable multitenancy filtering for delete operations.
-            // When deleting by ID, admins should be able to delete configurations regardless of organisation.
-            $configuration = $this->configurationMapper->find($id, _multitenancy: false);
-            $this->configurationMapper->delete($configuration);
-            return new JSONResponse(data: null, statusCode: 204);
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to delete configuration: '.$e->getMessage()], statusCode: 400);
-        }
-    }//end destroy()
+		// Remove internal parameters and data attribute.
+		foreach (array_keys($data) as $key) {
+			if (str_starts_with($key, '_') === true || $key === 'data') {
+				unset($data[$key]);
+			}
+		}
 
-    /**
-     * Export a configuration
-     *
-     * @param int  $id             Configuration ID.
-     * @param bool $includeObjects Whether to include objects in the export.
-     *
-     * @return DataDownloadResponse|JSONResponse
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @psalm-return DataDownloadResponse<200, 'application/json',
-     *     array<never, never>>|JSONResponse<400, array{error: string},
-     *     array<never, never>>
-     *
-     * @suppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to include/exclude objects in export
-     */
-    public function export(int $id, bool $includeObjects=false): JSONResponse|DataDownloadResponse
-    {
-        try {
-            // Find the configuration.
-            $configuration = $this->configurationMapper->find($id);
+		// Remove immutable fields to prevent tampering.
+		unset($data['id']);
+		unset($data['organisation']);
+		unset($data['owner']);
+		unset($data['created']);
 
-            // Export the configuration and its related data.
-            $exportData = $this->configurationService->exportConfig(input: $configuration, includeObjects: $includeObjects);
+		// Enforce consistency between sourceType and isLocal.
+		if (($data['sourceType'] ?? null) !== null) {
+			if (in_array($data['sourceType'], ['local', 'manual'], true) === true) {
+				$data['isLocal'] = true;
+			} elseif (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
+				$data['isLocal'] = false;
+			}
+		}
 
-            // Convert to JSON.
-            $jsonContent = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-            if ($jsonContent === false) {
-                throw new Exception('Failed to encode configuration data to JSON');
-            }
+		try {
+			return new JSONResponse(
+				data: $this->configurationMapper->updateFromArray(id: $id, data: $data)
+			);
+		} catch (Exception $e) {
+			return new JSONResponse(data: ['error' => 'Failed to update configuration: ' . $e->getMessage()], statusCode: 400);
+		}
+	}//end update()
 
-            // Generate filename.
-            $filename = sprintf(
-                'configuration_%s_%s.json',
-                $configuration->getTitle() ?? 'unknown',
-                (new DateTime())->format('Y-m-d_His')
-            );
+	/**
+	 * Patch (partially update) a configuration.
+	 *
+	 * @param int $id The ID of the configuration to patch
+	 *
+	 * @return JSONResponse The updated configuration data
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
+	 *     array<never, never>>|JSONResponse<400, array{error: string},
+	 *     array<never, never>>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function patch(int $id): JSONResponse {
+		return $this->update(id: $id);
+	}//end patch()
 
-            // Return as downloadable file.
-            return new DataDownloadResponse(
-                $jsonContent,
-                $filename,
-                'application/json'
-            );
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to export configuration: '.$e->getMessage()], statusCode: 400);
-        }//end try
-    }//end export()
+	/**
+	 * Delete a configuration
+	 *
+	 * @param int $id Configuration ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response on success (204) or error
+	 *
+	 * @psalm-return JSONResponse<204, null,
+	 *     array<never, never>>|JSONResponse<400, array{error: string},
+	 *     array<never, never>>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function destroy(int $id): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+		}
 
-    /**
-     * Import a configuration from uploaded file or JSON data
-     *
-     * Accepts either:
-     * - A file upload via 'file' parameter
-     * - Raw JSON data in the request body
-     *
-     * Additional parameters:
-     * - appId: Application ID for the configuration
-     * - owner: Owner of the configuration (defaults to current user)
-     * - force: Force import even if version is older
-     *
-     * @return JSONResponse The import result.
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     */
-    public function import(): JSONResponse
-    {
-        try {
-            // Initialize uploadedFiles array.
-            $uploadedFiles = [];
+		try {
+			// Disable multitenancy filtering for delete operations.
+			// When deleting by ID, admins should be able to delete configurations regardless of organisation.
+			$configuration = $this->configurationMapper->find($id, _multitenancy: false);
+			$this->configurationMapper->delete($configuration);
+			return new JSONResponse(data: null, statusCode: 204);
+		} catch (Exception $e) {
+			return new JSONResponse(data: ['error' => 'Failed to delete configuration: ' . $e->getMessage()], statusCode: 400);
+		}
+	}//end destroy()
 
-            // Get the uploaded file from the request if a single file has been uploaded.
-            $uploadedFile = $this->request->getUploadedFile(key: 'file');
-            if (empty($uploadedFile) === false) {
-                $uploadedFiles[] = $uploadedFile;
-            }
+	/**
+	 * Export a configuration
+	 *
+	 * @param int $id Configuration ID.
+	 * @param bool $includeObjects Whether to include objects in the export.
+	 *
+	 * @return DataDownloadResponse|JSONResponse
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @psalm-return DataDownloadResponse<200, 'application/json',
+	 *     array<never, never>>|JSONResponse<400, array{error: string},
+	 *     array<never, never>>
+	 *
+	 * @suppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to include/exclude objects in export
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-14
+	 */
+	public function export(int $id, bool $includeObjects = false): JSONResponse|DataDownloadResponse {
+		try {
+			// Find the configuration.
+			$configuration = $this->configurationMapper->find($id);
 
-            // Get the uploaded JSON data.
-            $params   = $this->request->getParams();
-            $jsonData = $this->configurationService->getUploadedJson(data: $params, uploadedFiles: $uploadedFiles);
-            if ($jsonData instanceof JSONResponse) {
-                return $jsonData;
-            }
+			// Export the configuration and its related data.
+			$exportData = $this->configurationService->exportConfig(input: $configuration, includeObjects: $includeObjects);
 
-            // Create a Configuration entity from the JSON data.
-            // This is required for proper entity tracking in ImportHandler.
-            $configuration = new Configuration();
-            $configuration->setTitle($jsonData['info']['title'] ?? 'Imported Configuration');
-            $configuration->setDescription($jsonData['info']['description'] ?? '');
-            $configuration->setVersion($jsonData['info']['version'] ?? '1.0.0');
-            $configuration->setSourceType('upload');
-            $configuration->setApp($this->request->getParam('appId') ?? ($jsonData['x-openregister']['app'] ?? 'unknown'));
-            $configuration->setOwner($this->request->getParam('owner') ?? $this->userId);
-            $configuration->setCreated(new DateTime());
-            $configuration->setUpdated(new DateTime());
-            $configuration->setRegisters([]);
-            $configuration->setSchemas([]);
-            $configuration->setObjects([]);
+			// Convert to JSON.
+			$jsonContent = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+			if ($jsonContent === false) {
+				throw new Exception('Failed to encode configuration data to JSON');
+			}
 
-            // Persist the configuration entity so it appears in the configurations list.
-            $configuration = $this->configurationMapper->insert($configuration);
+			// Generate filename.
+			$filename = sprintf(
+				'configuration_%s_%s.json',
+				$configuration->getTitle() ?? 'unknown',
+				(new DateTime())->format('Y-m-d_His')
+			);
 
-            // Import the data.
-            $force  = $this->request->getParam('force') === 'true' || $this->request->getParam('force') === true;
-            $result = $this->configurationService->importFromJson(
-                data: $jsonData,
-                configuration: $configuration,
-                owner: $this->request->getParam('owner'),
-                appId: $this->request->getParam('appId'),
-                version: $this->request->getParam('version'),
-                force: $force
-            );
+			// Return as downloadable file.
+			return new DataDownloadResponse(
+				$jsonContent,
+				$filename,
+				'application/json'
+			);
+		} catch (Exception $e) {
+			return new JSONResponse(data: ['error' => 'Failed to export configuration: ' . $e->getMessage()], statusCode: 400);
+		}//end try
+	}//end export()
 
-            // Link the imported registers, schemas and objects to the configuration.
-            $registerIds = array_map(static fn($r) => $r->getId(), $result['registers']);
-            $schemaIds   = array_map(static fn($s) => $s->getId(), $result['schemas']);
-            $objectIds   = array_map(static fn($o) => $o->getId(), $result['objects']);
+	/**
+	 * Import a configuration from uploaded file or JSON data
+	 *
+	 * Accepts either:
+	 * - A file upload via 'file' parameter
+	 * - Raw JSON data in the request body
+	 *
+	 * Additional parameters:
+	 * - appId: Application ID for the configuration
+	 * - owner: Owner of the configuration (defaults to current user)
+	 * - force: Force import even if version is older
+	 *
+	 * @return JSONResponse The import result.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-14
+	 */
+	public function import(): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+		}
 
-            $configuration->setRegisters(array_values(array_unique($registerIds)));
-            $configuration->setSchemas(array_values(array_unique($schemaIds)));
-            $configuration->setObjects(array_values(array_unique($objectIds)));
-            $this->configurationMapper->update($configuration);
+		try {
+			// Initialize uploadedFiles array.
+			$uploadedFiles = [];
 
-            return new JSONResponse(
-                data: [
-                    'message'  => 'Import successful',
-                    'imported' => $result,
-                ]
-            );
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to import configuration: '.$e->getMessage()], statusCode: 400);
-        }//end try
-    }//end import()
+			// Get the uploaded file from the request if a single file has been uploaded.
+			$uploadedFile = $this->request->getUploadedFile(key: 'file');
+			if (empty($uploadedFile) === false) {
+				$uploadedFiles[] = $uploadedFile;
+			}
+
+			// Get the uploaded JSON data.
+			$params = $this->request->getParams();
+			$jsonData = $this->configurationService->getUploadedJson(data: $params, uploadedFiles: $uploadedFiles);
+			if ($jsonData instanceof JSONResponse) {
+				return $jsonData;
+			}
+
+			// Create a Configuration entity from the JSON data.
+			// This is required for proper entity tracking in ImportHandler.
+			$configuration = new Configuration();
+			$configuration->setTitle($jsonData['info']['title'] ?? 'Imported Configuration');
+			$configuration->setDescription($jsonData['info']['description'] ?? '');
+			$configuration->setVersion($jsonData['info']['version'] ?? '1.0.0');
+			$configuration->setSourceType('upload');
+			$configuration->setApp($this->request->getParam('appId') ?? ($jsonData['x-openregister']['app'] ?? 'unknown'));
+			$configuration->setOwner($this->request->getParam('owner') ?? $this->userId);
+			$configuration->setCreated(new DateTime());
+			$configuration->setUpdated(new DateTime());
+			$configuration->setRegisters([]);
+			$configuration->setSchemas([]);
+			$configuration->setObjects([]);
+
+			// Persist the configuration entity so it appears in the configurations list.
+			$configuration = $this->configurationMapper->insert($configuration);
+
+			// Import the data.
+			$force = $this->request->getParam('force') === 'true' || $this->request->getParam('force') === true;
+			$result = $this->configurationService->importFromJson(
+				data: $jsonData,
+				configuration: $configuration,
+				owner: $this->request->getParam('owner'),
+				appId: $this->request->getParam('appId'),
+				version: $this->request->getParam('version'),
+				force: $force
+			);
+
+			// Link the imported registers, schemas and objects to the configuration.
+			$registerIds = array_map(static fn ($r) => $r->getId(), $result['registers']);
+			$schemaIds = array_map(static fn ($schema) => $schema->getId(), $result['schemas']);
+			$objectIds = array_map(static fn ($obj) => $obj->getId(), $result['objects']);
+
+			$configuration->setRegisters(array_values(array_unique($registerIds)));
+			$configuration->setSchemas(array_values(array_unique($schemaIds)));
+			$configuration->setObjects(array_values(array_unique($objectIds)));
+			$this->configurationMapper->update($configuration);
+
+			return new JSONResponse(
+				data: [
+					'message' => 'Import successful',
+					'imported' => $result,
+				]
+			);
+		} catch (Exception $e) {
+			return new JSONResponse(data: ['error' => 'Failed to import configuration: ' . $e->getMessage()], statusCode: 400);
+		}//end try
+	}//end import()
 }//end class
