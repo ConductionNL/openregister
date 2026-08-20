@@ -8,11 +8,16 @@ operations, which command to run, and what to do when a gate refuses. Two compan
 | --- | --- | --- |
 | **this file** | the whole pass, in order; every refusal and what it means; the traps catalogue | start here, every time |
 | `scripts/l10n/README.md` | the tooling layout, and what each script refuses | when a script surprises you |
-| `docs/l10n-ui-translation.md` | the per-locale **linguistic** reference — register verdicts, button conventions, plural boundaries, homograph traps per language | before translating a specific locale |
+| `docs/l10n-ui-translation.md` | the per-locale **linguistic** reference — register verdicts with their evidence, button conventions, plural boundaries, homograph traps per language | before translating a specific locale |
 
-`CLAUDE.md` holds the short version of the hard rules. It also carries a snapshot of the
-counts for orientation, under an explicit "re-measure before trusting any number here" —
-treat it that way, and see §2 for how to measure.
+**Keep this file operational.** A pass's durable output is the *rule* it learned, not the
+retelling of how it learned it — the worked examples belong in the commit message, in
+`locales/<loc>.json`, or in the companion's per-locale section. This document was allowed to
+grow to 2284 lines by appending a case study per pass. **Ceiling: 1600 lines.** If a pass
+needs room here, it has to earn it by deleting something, not by appending.
+
+`CLAUDE.md` holds the short version of the hard rules, plus a counts snapshot under an
+explicit "re-measure before trusting any number here" — treat it that way, and see §2.
 
 ---
 
@@ -28,7 +33,7 @@ non-English locales. The repo is its own git checkout at
 **Out of scope:** `l10n/*.json` is the **backend** catalogue with a different consumer
 (PHP `IL10N`) and no scanner. A change to one implies nothing about the other. Never harvest
 `.json` into `.js` — 31% of shared keys disagree, and some `.json` files carry the wrong
-language outright (see §8.6).
+language outright (§8.6).
 
 Also out of scope: the translatable-object-property machinery in `docs/i18n.md`. Different
 system, same word.
@@ -71,7 +76,7 @@ checked.
 | which locales the gate treats as **finished** | `FINISHED_DEFAULT` in `tests/l10n/check-l10n-parity.js` |
 | every locale's size at a glance | `wc -l l10n/*.js` |
 
-The last one is the fastest smell test there is — see the invariant below.
+The last one is the fastest smell test there is — see invariant 2.
 
 ### 2.2 The invariants
 
@@ -84,10 +89,9 @@ is how you tell "in progress" from "broken".
 
 2. **Therefore every finished locale has the same *line* count as `en.js`, exactly.**
    `serializeJs` emits one line per key plus a fixed wrapper, so `wc -l l10n/*.js` is a
-   one-second check on the whole set: the finished locales are all identical, and anything
-   in progress is visibly shorter. Verified across all 25 finished locales. A finished
-   locale whose line count differs from `en.js` means something is wrong even if the key
-   count matches — a duplicated key, or a hand edit.
+   one-second check on the whole set: the finished locales are all identical, anything in
+   progress is visibly shorter, and a finished locale whose line count differs means a
+   duplicated key or a hand edit even when the key count matches.
 
 3. **`absent === 0` and `extra === 0`** for a finished locale. Extra keys matter as much as
    missing ones: a key no longer in `en.js` is dead weight that `check:l10n` reports as
@@ -109,43 +113,30 @@ is how you tell "in progress" from "broken".
 
 ### 2.3 Order of work
 
-The high-confidence group is **done**, and so are `rm`, `ga`, `mt`, `is`, `lb`, `sq` and `mk`,
-the first seven of the low-resource ones. Two remain: `be bs`, **in that order** — the
-owner has confirmed the order, so there is no need to re-ask per locale as long as it is
-kept.
+The high-confidence group is **done**, and so are the first seven low-resource ones. Two
+remain: `be bs`, **in that order** — the owner has confirmed the order, so there is no need
+to re-ask per locale as long as it is kept.
 
-**Check whether core can decide the register at all before planning a pass.** One of
-the two remaining locales cannot be measured from core, which §5 step 2 assumes:
+**Check whether core can decide the register at all before planning a pass**, because §5
+step 2 assumes it can. **Measure the marker COUNT, not the catalogue count.** Zero
+catalogues is the safe failure — `coreCatalogues()` throws, so step 2 cannot run by
+accident. A *thin* core is the dangerous one: `lb` had one catalogue with 72 values, so the
+scan **succeeded** and would have reported a verdict computed from 0 markers of either
+polarity. That is the shape that lets a pass record a measurement it never made.
 
 | Locale | Core coverage | Consequence |
 | --- | --- | --- |
-| `bs` | 1 catalogue, 55 values | not evidence of anything; use the §6.4 fallback |
 | `be` | 14 catalogues | core is usable |
+| `bs` | 1 catalogue, 55 values | not evidence of anything; use the §6.4 fallback, widened to the sibling apps' frontend bundles |
 
-(`rm` and `mt` both had **zero** catalogues. `rm` is the worked example of the fallback,
-§6.4; `mt` extended it by measuring the sibling apps' **frontend** `mt.js` alongside the
-app's own values, which tripled the corpus to 3422 values — worth copying for `bs`, whose
-single core catalogue is no better than nothing. `ga` had 33 and produced the
-most one-sided verdict in the set, §7.2.)
-
-**`lb` is the case to read before `bs`, because thin core coverage is more dangerous than
-none.** `rm` and `mt` had zero catalogues, so `coreCatalogues()` THREW and §5 step 2 could
-not be run by accident. `lb` had exactly one catalogue with 72 values, so the call
-**succeeded** — the scan ran, reported a verdict, and that verdict was computed from
-**0 formal and 0 informal markers**, because those 72 values contain no address form at
-all. A thin core is the shape that lets a pass record a measurement it never made. Measure
-the marker COUNT, not just the catalogue count, before trusting §5 step 2; `bs` at 55
-values is the same trap.
-
-Durable per-locale notes for the ones not yet done (facts about the language or the
-sources, not counts — these will not go stale):
+Durable per-locale notes for the two not yet done (facts about the language or the sources,
+not counts — these will not go stale):
 
 | Locale | Note |
 | --- | --- |
 | `be` | Non-Latin. `npm run l10n:script` replaces the English-leftover sweep in §5 step 8 |
-| `bs` | Very few harvest sources (7) — expect to translate almost everything by hand. Even `ga`, with 40 sources, only got a 7% hit rate, `mt` 5.2% from 7, `lb` 4.5% from 7, `sq` 6.2% from 12 and `mk` 5.9% from 30 |
-| `bs` | openbuild's Croatian catalogue also ships under `bs.json`; dropped automatically |
-| `bs` | Same openbuild Croatian catalogue again. It has now been observed under **seven** names (`bs cs hr mk sk sl sr`), and the contamination has reached a *committed* bundle **twice, in the same key** — `sr`'s `Revizijski trag #{id}` and `mk`'s Cyrillicised `Ревизорски траг #{id}`, where both halves are Serbo-Croatian against 20 of `mk`'s own values using `ревизиска трага`. So expect the defect **inside** the file and not only in the harvest sources (§8.4), and check that one key first |
+| `bs` | Very few harvest sources (7) — expect to translate almost everything by hand. Recent passes ran a 4.5–7% hit rate even with 12–40 sources |
+| `bs` | openbuild's Croatian catalogue ships under `bs.json` too; dropped automatically (§6.6). It has been observed under **seven** names (`bs cs hr mk sk sl sr`) and has twice reached a *committed* bundle in the same key — `Audit trail #{id}`. Expect the defect **inside** the file, not only in the harvest sources, and check that one key first |
 
 **The closing task**, once the last locale lands, is §9.1. It is not optional cleanup.
 
@@ -181,8 +172,7 @@ nobody ever revisits it.
 **`cognates` is a permission list for `value === key` and nothing else.** Do not park notes
 about *rejected* cognates there — a future reader will read the entry as permission to leave
 the key untranslated, and the gate fails a record whose value is not actually identical. Put
-those notes in a free-form field (`lexiconNote`) or the commit message. Attempted twice
-(`Test` in hr, `Interval` in lt); reverted both.
+those notes in a free-form field (`lexiconNote`) or the commit message.
 
 ### 3.3 Measure the untranslatable/cognate split — never eyeball it
 
@@ -198,41 +188,23 @@ node scripts/l10n-ai.js get "UUID:" | awk -F'\t' '{print $2}' | sort -u
 More than one distinct value means it is **translatable**, so it cannot be unwrapped — it
 is at most a cognate. Strings that look like pure punctuation or pure branding keep failing
 this test: `UUID:` (above), `{property} - {other}` (`ru` em dash, `hr` en dash), `Slug`
-(core `lt` translates it `Trumpinys`, `sl` renders it `Oznaka`), `Ollama URL` (29 locales
-translate it).
+(core `lt` translates it, `sl` renders it `Oznaka`), `Ollama URL` (29 locales translate it).
 
-The reverse also holds and is how the `OpenCorporates` label was unwrapped: a single
-distinct value across all 37, for a string that is a bare product name, is evidence it was
-never translatable prose to begin with (§6.15).
+The reverse also holds: a single distinct value across all 37, for a string that is a bare
+product name, is evidence it was never translatable prose to begin with (§6.15).
 
 ### 3.4 Follow Nextcloud core per language for register — measure it, never assume
 
-Ten consecutive locales came out differently. Carrying an answer over from the previous
+Every locale so far has come out differently. Carrying an answer over from the previous
 locale passes every automated check while being wrong in every string that addresses the
 user. §5 step 2 is how you measure it; §7.2 records the verdicts.
 
-**And a locale may have no register choice at all.** `ga` is the first: Irish has no T-V
-distinction, `sibh` being strictly plural rather than a polite singular. Its recorded
-`"register": "informal"` therefore names the *only* address form available, not a
-preference — and its function is to set the gate's polarity so `patchcheck` refuses 2pl
-address, which in a single-user UI is always a defect. Read a verdict for what it is
-before repeating it: "informal" means something different for `ga` than for `nl`.
-
-**Three consecutive locales then came out "informal" for three genuinely different
-reasons, and that is the point.** The label is the same and the situation is not:
-
-| Locale | Why it reads "informal" | What the gate is catching |
-| --- | --- | --- |
-| `ga` | Irish never had a T-V distinction. No choice exists | 2pl address, which is only ever a defect here |
-| `mt` | Maltese **has** one and it is current (`intom`, `Is-Sinjur`); it is simply unused | genuine deference — a live option the project declines |
-| `is` | Icelandic **had** one (`þér` + 2pl verb, possessive `yðar`) and **abandoned** it in the 20th century | archaic deference *and* plain wrong number (`þið`, `ykkar`), which are different mistakes |
-
-So there are three distinct states — never had one, has one unused, had one and dropped
-it — and they differ in what a slip would look like. `is` is the interesting case: because
-its V-forms are obsolete rather than absent, the *likelier* error is not `yðar` at all but
-the plain modern plural `þið`/`ykkar`, since a translator importing a politeness plural
-from de/fr/nl reaches for the form that is actually current. Its detector gates on both
-and says so. **Do not copy a verdict without its reason.**
+**A verdict is a label over a reason, and the reasons differ — never copy one without its
+reason.** `informal` has meant *the language has no T-V distinction at all* (`ga`), *it has
+one and does not use it* (`mt`), and *it had one and abandoned it* (`is`). Those differ in
+what a slip would look like, which is what the detector has to gate: where the V-forms are
+merely archaic, the likelier error is not the archaic form but the plain modern plural, and
+the detector must catch both. §7.2 has the taxonomy.
 
 ### 3.5 Read the locale's own existing values before coining any term
 
@@ -274,6 +246,9 @@ locale one key short**, which the parity gate treats as fatal. See §6.15 for th
 **Trust the refusal.** Only replace a real value when it is genuinely wrong, and say why —
 in `corrections` for a pre-existing value (§6.3), in the commit message otherwise. Someone
 translated that string; the burden of proof is on the replacement.
+
+**This guards against changes of taste, not against fixing grammar.** Do not cite it to skip
+the §6.9 audit.
 
 ### 3.9 A `t()` call belongs in `en.js`, never in `en.json`
 
@@ -401,28 +376,25 @@ Neither of these is documentation. The gates read both.
 
 `register` and `cognates` are consumed by the gates. `pluralOrder: "library"` and
 `pluralBoundary: "library"` are the two recognised plural acknowledgements, and they are
-**not** interchangeable — §6.7. Any other field is free-form documentation and is
-ignored — `registerEvidence`, `buttons`, `orthographyNote`, `lexiconNote`, `pluralHackNote`
-are all in use. Note `loadLocaleConfig` whitelists the keys it reads, so a **new**
-functional field must be added there or it is silently dropped (this bit once, with
-`pluralOrder`, which is why `pluralBoundary` was added to the whitelist in the same
-commit that started reading it).
+**not** interchangeable — §6.7. Any other field is free-form documentation and is ignored:
+`registerEvidence`, `buttons`, `orthographyNote`, `lexiconNote`, `pluralHackNote` are all in
+use.
 
-It has now happened twice — `spellAllow` was read by `spell.js` but absent from the
-whitelist, so `ca.json`'s 43 recorded words were dropped and every run printed
-`0 allowlisted` while re-reporting the same words. **What makes this class survive is that
-it fails in the safe direction**: a dropped allowlist makes a report noisier, never wrong, so
-nothing goes red and nobody looks. So verify a new field by making it do something
-observable, not by reading the code back.
+**A functional field must be added to `loadLocaleConfig`'s whitelist or it is silently
+dropped.** This has happened three times — `pluralOrder`, `spellAllow`, `pluralBoundary` —
+and it survives because it usually fails in the *safe* direction: a dropped `spellAllow`
+makes a report noisier, never wrong, so nothing goes red and nobody looks. **Writing the
+rationale in prose is not setting the field.** So verify a new field by making it do
+something observable, not by reading the code or the JSON back.
 
 **`scripts/l10n/detectors/<loc>.js`** — the register detector. The gates call exactly two
 things, so those are the required exports: **`score(s) -> {f, i}`** and
 **`runControls() -> {fail, total}`**. Also export `fold` and `CONTROLS` by convention, and
 **`UNDETECTABLE`** — a list of `[example, why]` pairs for informal styling the detector
-*cannot* see. That last one is documentation rather than interface (`ca.js` omits it), but
-write it: it is the honest record of the detector's blind spots, and without it the next
-reader assumes a clean scan means clean data. Running the file directly executes its own
-controls **and** scans core:
+*cannot* see. That last one is documentation rather than interface, but write it: it is the
+honest record of the detector's blind spots, and without it the next reader assumes a clean
+scan means clean data. Running the file directly executes its own controls **and** scans
+core:
 
 ```bash
 node scripts/l10n/detectors/<loc>.js
@@ -465,9 +437,8 @@ are picked up without guessing the region code. Record the verdict and the count
 
 **3. Establish the button convention separately.** Prose register does not predict it —
 there are **five** patterns, one of them graded by length rather than categorical (§7.3).
-Measure it from core's own short labels: resolve ~30
-bare action keys (`Save`, `Delete`, `Add`, `Cancel`, …) against core's catalogues and
-classify the results. Record the counts.
+Measure it from core's own short labels: resolve ~30 bare action keys (`Save`, `Delete`,
+`Add`, `Cancel`, …) against core's catalogues and classify the results. Record the counts.
 
 **4. Write `detectors/$LOC.js`** from **closed word lists, never suffix patterns**, with
 must-fire / must-not-fire controls that include that language's homograph traps (§8.1–8.3).
@@ -475,17 +446,15 @@ Every control should be a real value from this bundle or from core where possibl
 40+ controls; the recent passes run 46–63.
 
 **5. Read the locale's own existing values, and GRAMMATICALLY AUDIT THEM.** All of them — an
-unfinished bundle carries roughly half the key set already, and on `is` **235 of those 1052
-values were defective**. This is the single most under-budgeted step: plan for it to take as
-long as a translation batch, and see §6.9 for the method and for the two ways the mechanical
-checks mislead you. You are also looking for the
-domain terms — audit trail, view, chunk, embedding, webhook, flow vs workflow, payload,
-token, dashboard, hash, soft delete, `Delete` vs `Remove`, `Type`, `Filters` — and for the
-locale's **typographic and orthographic conventions**: ellipsis spacing, dash choice, whether
-`%` takes a space, how progressive states are phrased, and **whether domain terms are
-capitalised mid-sentence**. Measure that last one per term rather than eyeballing it (§8.10);
-in `sr` it decides a third of all values and no gate can check it. Also note anything that
-looks *wrong* (§6.9).
+unfinished bundle carries roughly half the key set already, and defect rates have run from
+2.8% to 22%. This is the single most under-budgeted step: plan for it to take as long as a
+translation batch, and see §6.9 for the method. You are also looking for the domain terms —
+audit trail, view, chunk, embedding, webhook, flow vs workflow, payload, token, dashboard,
+hash, soft delete, `Delete` vs `Remove`, `Type`, `Filters` — and for the locale's
+**typographic and orthographic conventions**: ellipsis spacing, dash choice, whether `%`
+takes a space, how progressive states are phrased, and **whether domain terms are
+capitalised mid-sentence**. Measure that last one per term rather than eyeballing it
+(§8.10); in `sr` it decides a third of all values and no gate can check it.
 
 **6. Worklist, then harvest.**
 
@@ -530,26 +499,15 @@ the bundle, so records and values must land together.
   ```
 
   It prints two lists. **Values with no target-script character at all** should each be a
-  recorded cognate or a normalisation (`Url` → `URL`) — for `bg` the list came to exactly the
-  14 cognates plus those two. **Latin runs inside translated values** should all be
-  placeholders, product names, acronyms or literal example values; read them once and
-  confirm. The `bg` sweep turned up 148 distinct runs and every one was `{count}`,
-  `Nextcloud`, `HTTP`, `localhost`, `config.json` or similar. The script requires the locale
-  as an argument and refuses a locale whose expected alphabet is not recorded in it, since
-  `sr` also ships in Latin in the wild.
+  recorded cognate or a normalisation (`Url` → `URL`). **Latin runs inside translated
+  values** should all be placeholders, product names, acronyms or literal example values;
+  read them once and confirm. The script requires the locale as an argument and refuses one
+  whose expected alphabet is not recorded in it, since `sr` also ships in Latin in the wild.
 
-  **This check finds a defect class the Latin-script locales cannot have**, which is why it is
-  a replacement rather than a nice-to-have. In `sr` it isolated the only two non-cognate
-  Latin-only values out of 2052, and both were real:
-
-  - `NO ACTION` → `NEMA RADNJE` — correct Serbian, written in the **wrong alphabet**. No
-    other gate can see this: it is not empty, not identical to English, not a wrong plural,
-    and it reads as a translation to anyone skimming the file.
-  - `Audit trail #{id}` → `Revizijski trag #{id}` — wrong alphabet **and** Croatian **and**
-    inconsistent with the bundle's own 24 other audit-trail values.
-
-  So on a non-Latin locale, run the sweep **before** concluding the bundle's pre-existing
-  half is sound. Both of those had survived every gate for the whole life of the file.
+  **This finds a defect class the Latin-script locales cannot have**, which is why it
+  replaces rather than supplements: a correct translation written in the *wrong alphabet* is
+  not empty, not identical to English, not wrong-arity, and reads as finished work to
+  anyone skimming. Run it **before** concluding the pre-existing half is sound.
 - **Your own typos.** Grep for the near-miss spellings of the words you used most. The `sl`
   pass shipped `namesčen` for `nameščen` in 8 values this way.
 
@@ -583,18 +541,20 @@ nineteen.
 - `CLAUDE.md` — the count snapshot, the enforced-locale list, and any new plural or
   register fact.
 - `docs/l10n-ui-translation.md` — the register list, the button table, the plural list, a
-  `### <loc> traps` section, and the "N locales are complete" line.
+  `### <loc> traps` section, and the "N locales are complete" line. **This is where a pass's
+  per-locale findings go.**
 - `scripts/l10n/README.md` — the enforced-locale count.
-- **this file** — remove the locale from §2.3, and add to §6/§7/§8 if the pass taught a new
-  refusal, boundary or trap. **Do not add counts here** (§2); the durable output of a pass
-  is what it *learned*, not how many keys it moved.
+- **this file** — remove the locale from §2.3, and add to §6/§7/§8 **only if the pass
+  taught a new rule**. Not the evidence for it, not the counts (§2), not a case study. If
+  what you have to say is "on `<loc>` this came out differently", it belongs in the
+  companion or the commit message. This file is capped at 800 lines.
 
 **12. Regression-check every recorded locale, then commit.**
 
 ```bash
-for l in tr ca et hr lt lv ro sk sl bg sr rm ga mt $LOC; do
+for f in scripts/l10n/detectors/*.js; do l=$(basename $f .js)
   node scripts/l10n/selfcheck.js $l | tail -1
-  node scripts/l10n/detectors/$l.js | grep controls
+  node $f | grep controls
   node scripts/l10n/runtime-check.mjs $l | tail -1
 done
 ```
@@ -636,8 +596,7 @@ It prints every `was:` → `now:` pair. Then:
 
 ### 6.4 The core register scan says MIXED
 
-Core is genuinely inconclusive; that is a finding, not a failure. This happened once, with
-`ro` (124 formal vs 66 informal). Procedure:
+Core is genuinely inconclusive; that is a finding, not a failure. Procedure:
 
 1. Fall back to the **bundle's own** pre-existing keys and count those.
 2. If that is also unclear, or the choice is a product decision rather than a linguistic
@@ -653,130 +612,59 @@ purpose either way — it used to scan zero files and print `verdict: MIXED` com
 nothing.
 
 - **Layout differs** → set `L10N_SERVER_DIR`.
-- **Core really ships nothing for this locale** → this was the case for `rm` and `mt`, and
-  effectively for `bs` and `lb` (§2.3). Fall back to the bundle's own values, which is
-  §6.4 step 1, and say so explicitly in `registerEvidence` — a verdict from the app's own
-  file is weaker evidence than core and the record has to show which one it rests on.
-  `rm` came out 81 formal against 0 informal over its 995 translated values, which is
-  one-sided enough to settle without core. Note the detector's `main` block then cannot
-  call `scanCoreRegister`; `detectors/rm.js` re-checks that core is still empty (rather
-  than asserting it from a comment) and scans the bundle instead.
+- **Core really ships nothing for this locale** → fall back to the bundle's own values, and
+  **say so explicitly in `registerEvidence`**; a verdict from the app's own file is weaker
+  evidence than core, and the record has to show which one it rests on. The detector's
+  `main` block then cannot call `scanCoreRegister` — copy `detectors/rm.js`, which
+  re-checks that core is still empty rather than asserting it from a comment.
 
-  **Widen the fallback corpus to the sibling apps' FRONTEND bundles.** `mt` did this and
-  it tripled the evidence: 1015 values of its own became 3422 by adding
-  `apps-custom/*/l10n/mt.js`, which is what turned a thin 26-vs-0 into a 128-vs-0. Do it
-  for `bs` and `lb`, whose one core catalogue is no better than nothing. Two constraints,
-  both load-bearing: include only the **`.js`** bundles, because the backend `.json` is a
-  separate catalogue with a separate consumer (§1) — openregister's own `mt.json` contains
-  an `int` that would otherwise leak into the measurement and be miscredited to the
-  frontend — and exclude byte-identical mislabelled catalogues the same way `harvest.js`
-  does (§6.6).
+  **Widen the fallback corpus to the sibling apps' FRONTEND bundles.** This tripled `mt`'s
+  evidence from 1015 values to 3422 and turned a thin 26-vs-0 into 128-vs-0. Two
+  constraints, both load-bearing: include only the **`.js`** bundles, because the backend
+  `.json` is a separate catalogue with a separate consumer (§1) and its markers would be
+  miscredited to the frontend; and exclude byte-identical mislabelled catalogues the same
+  way `harvest.js` does (§6.6).
 
 ### 6.5 Deciding whether the 2sg imperative is detectable
 
-Most locales must **exclude** the bare 2sg imperative from the detector. `sk` is the one
-that counts it. Two independent tests, and it takes **both**:
+Most locales must **exclude** the bare 2sg imperative from the detector. Two independent
+tests, and exclusion follows from **either**:
 
 1. Is the imperative the locale's own **label convention**? If yes, counting it flags every
-   button in the app. (`ca`, `et`, `hr`, `sl`: yes → exclude.)
-2. Is the imperative a **homograph of the 3sg present**? If yes, counting it flags ordinary
-   third-person prose like "automatically creates". (`hr` `uredi`, `ro` `Creează`, `lv`
-   `meklē`, `sl` across the whole `-iti` class: yes → exclude.)
+   button in the app. (`ca`, `et`, `hr`, `sl`, `sr`, `ga`, `mt`: yes.)
+2. Is the imperative a **homograph** of a form that is live in this bundle's prose — the 3sg
+   present, a past tense, a verbal noun, a participle, or an ordinary noun? If yes, counting
+   it flags ordinary third-person prose.
 
-`sk` fails both tests, so it counts them: labels are infinitives, and `ulož` ≠ `uloží`.
-`sl` — Slovak's immediate neighbour — passes both, so it excludes them. **This is about the
-data, not the language family.**
+**Run both; the answers are independent and neither predicts the other.** `sk` fails both,
+so it counts imperatives — labels are infinitives and `ulož` ≠ `uloží`. Its immediate
+neighbour `sl` passes both. `rm` shares `sk`'s infinitive labels (test 1 same) and fails
+test 2 outright. So do not infer one test from the other, and **do not carry either answer
+across from a neighbour** — this is about the data, not the language family.
 
-**`ga` is the first locale where both tests come out the same way**, which is worth
-naming so the two are not assumed to be in tension. Irish labels buttons with the bare
-imperative (test 1: yes), *and* for the whole `-áil` class the imperative is spelled
-identically to the verbal noun (test 2: yes) — and the verbal noun is live in this
-bundle's prose as the progressive, so `Ag sábháil...`, `Ag cóipeáil sonraí...`,
-`Ag tástáil...` all carry the imperative form as their second word. Several stems are
-ordinary nouns besides (`Scrios` = "destruction", `Dún` = "a fort"). The exclusion is
-doubly forced, and it takes both tests to see that rather than one.
+If the imperative is a homograph but you still need to catch it in *labels*, use a position
+bound: string-initial plus a length cap (`ro.js` uses 40 characters).
 
-**`rm` is the exact mirror of `sk`, and shows the two tests are genuinely independent.**
-Romansh also labels buttons with the infinitive, so test 1 comes out the same for both —
-but test 2 goes the other way: for every `-ar` verb the 2sg imperative is spelled
-identically to the 3sg present *and* to the feminine singular past participle. `stizza`
-is "delete!", "it deletes" and "deleted-f.sg" at once, and the 3sg reading is live in
-ordinary prose (`Quai stizza las endataziuns`, `Ferma mintga flux`, `Elavurescha ils
-chunks` are all real values). Same button convention, opposite verdict. So do not infer
-test 2 from test 1, and do not carry either answer across from a neighbour.
+**There is a third outcome: PARTIALLY detectable, and it is free precision — look for it.**
+The paradigm can fail for only *part* of the verb system, in which case enumerate the usable
+class and record the rest in `UNDETECTABLE`. Three splits seen so far, by **conjugation
+class** (`bg`: а-conjugation imperatives are unambiguous, и-conjugation ones collide with
+both the 3sg present and the aorist; `is`: class-1 and strong verbs are distinct, class-2
+verbs are identical to the 3pl past), and by **lexical class** (`lb`: the modals syncretise
+1sg/2sg/3sg and carry no address information, while regularly inflected 2sg forms of the
+same verbs are usable). **So when a locale fails test 2, check whether it fails for every
+class before excluding the whole paradigm** — the two informal slips already shipped in `bg`
+were both in the detectable class, so a wholesale exclusion would have found neither.
 
-`rm` also loses a second paradigm, which is worth checking for elsewhere: **the 2sg
-present of its regular verbs ends in `-as`, which is also the feminine plural of every
-noun and adjective.** `controllas` is "you check" and the noun "checks"; `empruvas` is
-"you try" and "attempts"; `tschernas` is "you choose" and the plural of the noun
-`tscherna` — and in each pair the noun reading is the one that occurs in this bundle.
-Detection there rests on the ten irregular verbs, whose 2sg ends in a bare `-s`. When a
-locale's informal count comes out suspiciously low, check whether an inflectional
-homograph has eaten the paradigm before concluding the prose is formal.
-
-If the imperative is a 3sg homograph but you still need to catch it in *labels*, use a
-position bound: string-initial plus a length cap (`ro.js` uses 40 characters).
-
-**There is a third outcome: PARTIALLY detectable, split by conjugation class.** `bg` is the
-first, and the split is worth looking for elsewhere because it is free precision:
-
-- Bulgarian **и-conjugation** imperatives are unusable, and doubly so. `запази` is at once
-  the 2sg imperative, the 3sg present (`може да запази`) *and* the 3sg **aorist**
-  (`той запази`) — and the aorist reading is live in ordinary UI prose, which no other
-  locale's homograph is. `Анализът завърши:` and `Изтриването завърши` are real values in
-  this bundle spelled exactly like imperatives.
-- Bulgarian **а-conjugation** imperatives are unambiguous, because the 3sg present of that
-  class ends in `-а`/`-ва`: `опитай` vs `опитва`, `изпълнявай` vs `изпълнява`, `записвай` vs
-  `записва`. Nothing else in the language is spelled that way.
-
-So `detectors/bg.js` enumerates the `-й` class and records the `-и` class in `UNDETECTABLE`.
-That is not a tidiness exercise: the two informal slips already shipped in the `bg` bundle
-were *both* а-conjugation, so a whole-class exclusion would have found neither. When a
-locale fails test 2, check whether it fails it for **all** of its verb classes before
-excluding the whole paradigm.
-
-**`is` is the second PARTIALLY-detectable locale, and there the split falls out of the
-conjugation classes as a rule rather than a word list** — which is what makes it worth
-copying. Icelandic forms a 2sg imperative by fusing the pronoun onto the verb (`nota` →
-`notaðu`, "use!"), so the imperative *is* an address marker. Whether it is usable depends
-entirely on how that verb builds its past:
-
-- **Class 1** (`-a` verbs) take `-uðu` in the 3rd person plural past while the imperative
-  is `-aðu`. `notaðu`/`notuðu`, `skoðaðu`/`skoðuðu`, `afritaðu`/`afrituðu`. **Distinct, so
-  usable.** So are the strong verbs whose past differs by ablaut — `veldu`/`völdu`,
-  `farðu`/`fóru`, `taktu`/`tóku`, `hafðu`/`höfðu`.
-- **Class 2** (`-ja`/`-ta`/`-la` verbs, past in `-ti`/`-di`/`-ði`) build the 3pl past
-  **identically** to the imperative: `settu` is both "enter!" and "they put", and likewise
-  `sendu`, `smelltu`, `reyndu`, `breyttu`, `ýttu`, `skráðu`, `endurstilltu`. **Unusable.**
-
-And unlike `ga`'s `-igí` — where the trap was real but happened not to occur — here the
-collision is **attested in the corpus**, which is what settles it rather than merely
-suggesting it: `komu` appears 4 times as a 3pl past ("Það komu of margar beiðnir" — "too
-many requests came") and `völdu` twice as the weak adjective *selected* ("úr völdu
-sniðmáti"), never as imperatives. `staðfestu` is trebly ambiguous, being also the oblique
-of the noun `staðfesta` ("confirmation").
-
-Note also that `is` is the **first locale where §6.5 test 1 comes out NO** — its labels are
-infinitives (§7.3), so counting the imperative does *not* flag every button. That is why
-the class-1 forms can be counted at all; in `ga`/`mt`/`sr` the label convention forbade it
-regardless of homography. Run both tests; the answers are independent.
-
-**One further trick worth reusing: a BIGRAM can rescue two individually-ambiguous tokens
-at once.** Icelandic `þér` is both the 2sg dative ("þér er ekki heimilt" — perfectly
-ordinary informal prose, 54 occurrences in core, all of them this) and the archaic polite
-nominative. Neither reading is decidable from the word alone, and neither is `hafið`
-("the ocean" / past participle of `hefja` / 2pl verb). But `þér hafið` can only be the
-V-form, because a dative `þér` takes no finite 2pl verb and "the ocean" does not follow a
-pronoun. `detectors/is.js` therefore counts bare `þér` as *informal* and matches the pair
-as *formal*, in both orders since a question inverts it. Look for this wherever a locale
-has a pronoun and a verb form that are each ambiguous but not jointly so — it recovers
-recall that a per-token closed list has to throw away.
+**A BIGRAM can rescue two individually-ambiguous tokens at once.** Where a locale has a
+pronoun and a verb form that are each ambiguous but not jointly so, match the pair: `is`
+counts bare `þér` as informal (it is overwhelmingly the 2sg dative) and the pair
+`þér` + finite 2pl verb as formal, in both orders since a question inverts it. This recovers
+recall a per-token closed list has to throw away.
 
 One caveat that comes with counting any imperative: it measures against **this bundle's**
-label convention, not core's. Core `bg` uses `-й` imperatives as labels in 29 places while
-this bundle uses verbal nouns throughout — so the detector is right for `patchcheck` on new
-values and would report noise if pointed at core's labels. Say which one it is measuring in
-`locales/<loc>.json`.
+label convention, not core's — core `bg` uses imperatives as labels in 29 places while the
+bundle uses verbal nouns throughout. Say which one it is measuring in `locales/<loc>.json`.
 
 ### 6.6 `harvest.js` prints "DROPPED … identical to another locale"
 
@@ -794,9 +682,9 @@ the first version of this guard compared locale *names* and reported core's
 ### 6.7 `runtime-check` FAILS on which index each count selects
 
 The file's `plural=` expression and `@nextcloud/l10n`'s own `getPlural` disagree about
-**which form index** a count selects. The library is what renders, always. But there are
-**two kinds** of disagreement and they take opposite remedies, so the check names which one
-you have rather than assuming Latvian's shape. Do not reach for the `lv` fix by reflex.
+**which form index** a count selects. The library is what renders, always. There are
+**three** kinds of disagreement and they take different remedies, so read which one the
+check names rather than reaching for a remedy by reflex.
 
 **A PERMUTATION disagreement** — the two partition the counts into the same groups and only
 label them differently. Reordering the arrays makes the locale fully correct:
@@ -809,93 +697,45 @@ library partitions `[zero, one, other]` — same three categories, rotated, so a
 its own header was wrong at **every** count while passing every other gate.
 
 **A BOUNDARY disagreement** — the two draw the lines in different *places*, so **no
-permutation of the arrays can agree with the header everywhere**. There is nothing to
-reorder, and "order the arrays by the library" is meaningless advice here. What you actually
+permutation can agree with the header everywhere**. There is nothing to reorder; what you
 choose is *which counts to be correct for*:
 
 1. Write each form to read correctly across the counts the library **actually routes to it**,
    weighting by which counts a user plausibly hits.
 2. Say in `pluralNote` **which counts stay wrong**, explicitly.
-3. Record `"pluralBoundary": "library"` in `locales/$LOC.json`.
+3. Record `"pluralBoundary": "library"` in `locales/$LOC.json`. Writing the rationale in
+   prose is not setting the field (§4.4).
 
-Both locales §2.3 had flagged turned out to be this, and **in opposite directions** — which
-is the reason to classify rather than pattern-match:
+`is` and `mk` are both this, in **opposite directions** — which is the reason to classify
+rather than pattern-match. On `is` the library reaches form 0 only at exactly 1, so 17 counts
+in 0–200 render the plural where Icelandic wants the singular; form 1 stays the true plural
+because contorting it would trade 17 wrong counts for ~180 unidiomatic ones. On `mk` only 11
+and 111 disagree and they go the other way, so the residue is two counts.
 
-- `is` — the library places `is` in its coarse `number === 1 ? 0 : 1` group, so form 0 is
-  reachable **only at exactly 1**. The header is correct CLDR Icelandic
-  (`n%10!=1 || n%100==11`), under which 21, 31, 41 … 191 also take the singular
-  (`21 hlutur`, not `21 hlutir`). So 17 counts in 0–200 render the plural where Icelandic
-  wants the singular. Form 1 is still written as the true plural: it is correct for 0 and
-  2–20, which is the overwhelming majority of real counts, and contorting it into a
-  number-neutral shape would trade 17 wrong counts for ~180 unidiomatic ones. This is *not*
-  the `rm` case — there the collapsed form was wrong at **every** count but 1, so the
-  contortion paid.
-- `mk` — the mirror image, and much narrower. The library implements the modular rule
-  (`number % 10 === 1 ? 0 : 1`) but **drops the `n%100 !== 11` guard**, so only `11` and
-  `111` disagree, and they go the other way: the library selects the **singular** where
-  Macedonian takes the plural. Because form 0 is still reached correctly at 1, 21, 31 …, the
-  call is the opposite of `is`'s: form 0 is written as the plain counted singular and form 1
-  as the true plural, and the residue is just those two counts. Done.
+**The shape to check for is a two-form header whose expression is modular rather than
+`n != 1`**, since the library's coarse groups are mostly written `n === 1`. Plain `n != 1`
+headers and three-form Slavic ones have all agreed exactly.
 
-**Setting `pluralBoundary` in prose is not setting it.** The `mk` pass wrote the whole
-rationale into `pluralNote` and never added the field, so the runtime check kept failing with
-its own remedy quoted back at it. That is the §4.4 field class for the third time after
-`pluralOrder` and `spellAllow` — but the **first that failed loudly**, because an
-unacknowledged boundary disagreement is fatal rather than merely quiet. The two earlier ones
-failed in the safe direction and survived for passes. Set the field, then re-run the check
-that reads it; do not verify it by reading the JSON back.
+**A NOTE that the library uses FEWER forms than declared** (`tr`, `rm`, `ga`) is the third
+situation, and it is harmless **only when a single form is correct in that language anyway**.
+The two cases look identical in the tool output, so **decide it by measuring core, not by
+reasoning about the grammar**: `tr` and `ga` are harmless, while `rm` is not — the library
+knows no Romansh and returns 0 at every count, but Romansh pluralises regularly with `+s`, so
+a bare singular in form 0 renders `5 datoteca`. Nothing flags it: the arity is right, no value
+is empty, and the file reads fine.
 
-The general lesson: a two-form header whose expression is **modular rather than `n != 1`** is
-the shape to check, because the library's coarse groups are mostly written as `n === 1`.
-`lb` and `sq` carry plain `n != 1` headers and agree exactly; `bs` and `be` are three-form
-Slavic and also agree.
+Where the collapsed form is not correct on its own, **the fix is in form 0, not in the
+arity** — a shape correct at every count, such as the `(s)` parenthetical, or a
+number-neutral phrasing where a parenthetical cannot span three agreeing words. Write form 1
+as the true plural anyway, so the array becomes correct if the library ever gains an entry.
+Do **not** add `pluralOrder`; there is no ordering disagreement here. This applies to
+pre-existing arrays too — `rm`'s carried a singular noun **and** verb in form 0, wrong twice
+at every count but 1, and had passed every gate for the life of the file.
 
-A **NOTE** that the library uses *fewer* forms than declared is a third, separate situation —
-see below.
-
-**A locale can also come out with no plural surprise at all, and `mt` is the first.**
-Header and library were compared index-by-index over counts 0–130 and agreed everywhere,
-with all four declared forms reachable — no reordering as in `lv`, no collapsed form count
-as in `rm`/`ga`/`tr`. Do not read that as "the arrays are easy": Maltese's four forms are
-Semitic rather than European (§7.1), and the flagged "suspect array" in that bundle turned
-out to be **correct** and was left alone. Run the check to find out which situation you are
-in; do not infer it from the header's shape.
-
-A **NOTE** that the library uses *fewer* forms than declared (`tr`, `rm`, `ga`) is
-harmless **only when a single form is correct in that language anyway**. Check which
-case you are in, because the two look identical in the tool output — and **check it by
-measuring core, not by reasoning about the grammar**:
-
-- `tr` — genuinely harmless. Turkish does not pluralise after a numeral, so `5 dosya` is
-  correct Turkish and the dead form was never needed.
-- `ga` — harmless, but only demonstrably so. The header declares **five** forms and the
-  library reaches **three** (index 0 ← `n==1`, index 1 ← `n==2`, index 2 ← `0` and every
-  `n>=3`), so forms 3 and 4 are dead and index 2 must serve 0, 3–6, 7–10 and 11+ alike.
-  Irish morphology genuinely distinguishes all five after a *spelled-out* numeral —
-  `trí` lenites, `seacht` eclipses — which makes this look like the `rm` case. It is not,
-  and the way to establish that is to count: across core `ga`'s 101 fully-translated
-  five-form arrays, form 2 differs from form 3 in **zero** cases and form 3 from form 4 in
-  **zero**. Core never applies the mutation after a digit (form 0 is `%n comhad`,
-  `%n carachtar`, `%n beart`, never `chomhad`), so the three reachable forms are all core
-  ever writes. Had that count come out differently, `ga` would have needed the `rm`
-  treatment.
-- `rm` — **not harmless.** `@nextcloud/l10n` has no Romansh entry, so `getPlural`
-  returns 0 at every count and form 1 is unreachable — but Romansh pluralises regularly
-  with `+s`, so a bare singular in form 0 renders `5 datoteca`, wrong at every count but
-  1. Nothing flags it: the arity is right, no value is empty, and the file reads fine.
-
-Where the collapsed form is not correct on its own, form 0 has to be written to work at
-**every** count. `rm` uses the `(s)` parenthetical that its bundle already applied to the
-sibling `(s)` keys (`Stizzar {count} object(s)`), and a number-neutral phrasing for the
-one plural key with no numeral, since a parenthetical cannot span three agreeing words.
-Write form 1 as the true plural anyway, so the array becomes correct if the library ever
-gains an entry. Do not add `pluralOrder` — there is no ordering disagreement here, only a
-smaller form count.
-
-This also applies to a plural array that was already in the bundle: `rm`'s pre-existing
-`_%n entry has no hash yet_` carried a singular noun **and** a singular verb in form 0,
-so it rendered `5 endataziun n'ha` — wrong twice at every count but 1, and it had passed
-every gate for the life of the file.
+**A locale can also come out with no plural surprise at all.** Do not read that as "the
+arrays are easy": `mt`'s four forms are Semitic rather than European (§7.1) and its one
+flagged "suspect array" turned out **correct**. Run the check to find out which situation you
+are in; do not infer it from the header's shape.
 
 ### 6.8 `selfcheck` reports a stale cognate, or a NOTE
 
@@ -914,159 +754,81 @@ every gate for the life of the file.
 
 ### 6.9 The pre-existing values — AUDIT THEM ALL, then fix what is wrong
 
-> **RUN THE THREE AUDIT REPORTS BEFORE READING ANYTHING.** Measured against `sk`'s 57
-> corrections, they reach ~48 of them before you read a value:
->
-> 1. `npm run l10n:corediff -- <loc>` — **first.** Its AGREE list is the set of values you
->    must never question; it contained **all six** candidates core overturned on `sk`, so
->    the false-candidate round disappears. Its DISAGREE list is where the real terminology
->    decisions are (`Delete → Zmazať` sat at the top of `sk`'s).
-> 2. `npm run l10n:termdrift -- <loc>` — the term count this section demands, over *every*
->    English word instead of a guessed list. On `sk` it surfaced the term behind 37 of the
->    57 in one line. It reports the MINORITY side of a split; the minority is not
->    automatically the defect (on `sk` it was the reading the owner chose).
-> 3. `npm run l10n:spell -- <loc> --suggest` — wrong-language stems and typos. Catches
->    **5 of 5** of `is`'s garbled words (`Stav`, `skrivaðgang`) and `sk`'s `strategie`.
->    Needs the `hunspell` binary plus `npm run l10n:fetchdicts`, once per machine; `fi ga lb
->    mk mt rm` have no dictionary, which is a known gap and not evidence those locales are
->    clean. **Read this report for tooling failure before you read it for defects**: a cluster
->    of implausible short words sharing a stem with a real one means the tokeniser split
->    something, not that the locale is garbled. `ca` reported `lecció`, `lel`, `paral`, `lada`,
->    `laboratives` — all halves of `col·lecció`/`paral·lel`/`instal·lada`, because U+00B7 was
->    outside the token class (§8.3). Fixed there, but the shape generalises to any orthography
->    with word-internal punctuation.
->
-> Then the collision scan — `grep -rn "tabs:" src/ -A4`, and check each sibling pair against
-> the bundle. The two worst `ca` defects were two pairs of sibling tab labels rendering the
-> same string: visible to any user, invisible to every gate, and not findable by reading values
-> one at a time (the class is §8.5, the `ca` cases §9.2). Check the paired empty states the same
-> way. Then the dangling-preposition sweep, then read what is left.
-> **Do not build mechanical morphology checks** — 4 of 239 on `is`, ~0 of 113 on `cs`,
-> not written for `sk` and nothing lost.
->
-> **Do not rebuild the cross-locale outlier scanner** either. Clustering all 36 locales per key
-> and flagging the odd one out scored recall **1 of 57**, precision **1 of 65**, and was
-> deleted; `node scripts/l10n-ai.js get <key>` answers the same question on demand.
->
-> **A finished audit is not proof the locale is clean.** Record the count in `corrections`,
-> never a verdict — a `0` there means "nobody looked" (§9.2).
+**This is a required step of every pass**, not something you do when you happen to notice
+something. None of what it finds is visible to any gate: a wrongly-inflected value is not
+empty, not identical to English, not wrong-arity, and reads as finished work. §3.8 guards
+against changes of taste, not against fixing grammar — do not cite it to skip the audit.
 
-**This is a required step of every pass, not something you do when you happen to notice
-something.** The `is` pass first scope-limited itself to "a systematic error with a
-core-confirmed model, or a collision, and otherwise leave a real translation alone", and the
-owner rejected that line. Reading the whole pre-existing half then turned up **235 further
-defects in 1052 values** — wrong noun gender, wrong case after a governing verb, malformed
-compounds, garbled words, two stems from other languages, and a dozen terms that contradicted
-the bundle's own vocabulary. None of them is visible to any gate: a wrongly-inflected value
-is not empty, not identical to English, not wrong-arity, and reads as finished work.
+**Run the three reports before reading anything.** Measured against `sk`'s corrections they
+reach ~48 of 57 before you read a value:
 
-**§3.8 guards against changes of taste, not against fixing grammar.** Do not cite it to skip
-the audit.
+1. `npm run l10n:corediff -- <loc>` — **first.** Its AGREE list is the set of values you
+   must never question; its DISAGREE list is where the real terminology decisions are.
+2. `npm run l10n:termdrift -- <loc>` — competing renderings per English term, over *every*
+   English word instead of a guessed list. This is the single highest-yield report: ~70 of
+   113 on `cs`, 37 of 57 on `sk`, and it needs no knowledge of the language. **It reports
+   the MINORITY side, and the minority is not automatically the defect** — on both `sk` and
+   `sq` the minority reading was the right one.
+3. `npm run l10n:spell -- <loc> --suggest` — wrong-language stems and typos. Needs the
+   `hunspell` binary plus `npm run l10n:fetchdicts`, once per machine; `fi ga lb mk mt rm`
+   have no dictionary, which is a known gap and not evidence those locales are clean.
+   **Read it for tooling failure before you read it for defects**: a cluster of implausible
+   short words sharing a stem with a real one means the tokeniser split something (§8.3).
 
-#### Read the bundle as a subagent fan-out, not sequentially
+Then the **collision scan** — `grep -rn "tabs:" src/ -A4`, checking each sibling pair
+against the bundle, and the paired empty states the same way. A byte-identical collision the
+user can see on one screen is a defect however defensible each word is on its own, and it is
+not findable by reading values one at a time (§8.5). Then the dangling-preposition sweep,
+then **read every remaining value**.
 
-Slice the listing into ~4 chunks, spawn one subagent per chunk in a single message, and give
-each the same shared context: the `core-diff` AGREE list, the `termdrift` output, the collision
-list, and the locale's register + button convention (§7.2/§7.3). Without that they re-derive
-candidates core already killed and flag every infinitive button as a register slip.
+**Do not build mechanical morphology checks.** Yield has been 4 of 239 on `is` and ~0 of 113
+on `cs`; `sk` skipped them entirely and lost nothing. The one exception is an *orthographic*
+rule with a deterministic trigger — §8.11. **Do not rebuild the cross-locale outlier
+scanner** either: clustering all 36 locales per key and flagging the odd one out scored
+recall 1 of 57 and precision 1 of 65, and was deleted. `node scripts/l10n-ai.js get <key>`
+answers the same question on demand.
 
-Subagents return **candidates with call-site evidence, never verdicts**. Adjudicate centrally
-against core and the call site — that is where the errors are (11 of ~30 on `sk`).
+**Read the bundle as a subagent fan-out, not sequentially.** Slice the listing into ~4
+chunks, spawn one subagent per chunk in a single message, and give each the same shared
+context: the `corediff` AGREE list, the `termdrift` output, the collision list, and the
+locale's register + button convention (§7.2/§7.3). Without that they re-derive candidates
+core already killed and flag every infinitive button as a register slip. Subagents return
+**candidates with call-site evidence, never verdicts** — adjudicate centrally, which is where
+the errors are (11 of ~30 on `sk`). A second fan-out on `sk` found 5 defects the first
+sequential read missed, so this raises recall and not just speed. **Cheap models may generate
+candidates but never decide**: a Haiku-class reader gave 1 real finding and 2 confidently
+wrong ones that would have written new errors into correct Slovak.
 
-- A second pass on `sk` found **5 defects the first sequential pass missed**, so this raises
-  recall, not just speed. `sk` is 62, not the 57 first committed.
-- Cheap models may generate candidates but never decide: a Haiku-class reader gave 1 real
-  finding and 2 confidently wrong ones that would have written new errors into correct Slovak.
-- If you are *measuring* a reader's quality, give it a read boundary — touching the repo
-  auto-attaches `CLAUDE.md` and this file, and this section names `sk`'s answers.
+**CHECK CORE AND THE CALL SITE BEFORE CALLING A VALUE WRONG.** This overturned four
+candidates on `cs` and eleven on `sk` — more than any single class either pass corrected —
+and on `ca` it killed two collisions that looked identical to the two real ones. A collision
+core also has is not a defect. A majority inside the bundle is not authority on its own; a
+lone outlier is sometimes the only value that matches core. And the call site decides the
+sense: `Handler` is a **person** in the DSAR cases table, and an infinitive among noun
+siblings is correct when the `<h3>` sits over filter *controls*.
 
-**Mechanical checks are necessary but nowhere near sufficient.** On `is` they found 4 of the
-1.   Build them anyway — they catch the class a reader's eye slides over — but then *read
-every pre-existing value*. What the checker cannot see is exactly what dominated: a bad
-compound, a nonsense word, a foreign stem, a right word in the wrong sense.
+**Read converse pairs against each other.** On `sk`, `Uses` and `Used by` were **swapped**.
+Nothing catches this — not a gate, not the term count, which correctly reports both using
+the right stem. Check Uses/Used by, Parent/Child, Source/Target, Merged from/into. Sibling
+locales settle the direction fast.
 
-Two things to get right when writing the checks, both learned the hard way on `is`:
-
-- **Know which forms are homographous in the target language before flagging disagreement.**
-  In the Icelandic strong declension the **neuter plural nominative is identical to the
-  feminine singular**, so `Öll skemu`, `Engin mál` and `Möguleg tvítök` are all correct. The
-  first version of the check treated each adjective form as licensing one gender/number pair
-  and produced 30-odd false positives that buried the four real findings. Map each form to a
-  **set** of permitted pairs. Also: never look across punctuation (a comma or colon ends the
-  phrase), and skip a participle used as a supine after a modal, where it does not agree with
-  the following noun at all.
-- **Case-governance checks only work where the cases differ.** Feminine and neuter singulars
-  are syncretic for nominative/accusative/dative in most Icelandic declensions, so
-  `bæta við skrá` *is* the dative and flagging it is pure noise — all 24 hits from the first
-  attempt were false. Restrict such a check to masculine singulars (`-ur`/`-ll`/`-nn`) and to
-  plurals (dative `-um`), where the surface forms actually discriminate. Watch for phrasal
-  verbs too: `búa til` is "create", and the `til` in it governs nothing.
-- **An elision/contraction check must encode the exceptions, or it is all noise.** Catalan
-  contracts `la` → `l'` before a vowel — but **not** before an unstressed initial `i-` or `u-`, so
-  `la informació`, `la identitat`, `la integració`, `la inicialització`, `la incrustació`,
-  `la interfície` and `la UE` are all correct. A naive `(el|la|de)\s+[aeiou…]` sweep over `ca`
-  returned 12 hits of which **exactly one** was real (`la alternativa`, where the `a` is stressed);
-  ten were the i-/u- exception and one was the verb `instal·la` mis-parsed as the article. The same
-  shape recurs wherever a language's sandhi has lexical exceptions — Italian's `lo`/`il`, French's
-  `le`/`la` before aspirated `h`, Irish's `an t-`. Yield here was 1 of 12, which is in line with
-  the rest of §6.9: **build it if it is three lines, but read the file regardless.**
-
-Record every correction in `corrections` (§6.3). At this volume, per-key prose stops being
+Record every correction in `corrections` (§6.3). At volume, per-key prose stops being
 readable — use **short class codes** (`AGREEMENT`, `CASE`, `NUMBER`, `COMPOUND`, `HYPHEN`,
-`TYPO`, `GARBLED-OR-FOREIGN`, `SENSE`, `TERM-*`, `CONSISTENCY`) and document the codes once in
-a free-form field, as `locales/is.json` does.
+`TYPO`, `GARBLED-OR-FOREIGN`, `SENSE`, `TERM-*`, `CONSISTENCY`) and document the codes once
+in a free-form field, as `locales/is.json` does.
 
-Fix each one through the audited path (§6.3), with the reason in `corrections`. Recent examples:
-`sl` carried `Revizijski trag` for *audit trail* where `trag` is **Croatian** (Slovenian is
-`sled`) and one dialog used `Predmeti` against 74 uses of `objekt`; `lv` had 78 register
-deviations; `et` had 24; `sr` had nine, spanning four different defect classes at once
-(wrong alphabet, Croatian, register, and capitalisation).
-
-**Check what makes a value wrong before calling it wrong — the same shape can be correct in
-one locale and a defect in the next.** Two cases from `sr`, both worth internalising:
-
-- `Изабери модел или унеси прилагођени назив модела` **looks** like the informal slip its two
-  siblings were, and is not: `унеси` is a 2sg *imperative*, which is Serbian's label
-  convention, where the siblings carried 2sg *presents* (`имаш`, `сачуваш`). One is style, the
-  other is address. Recorded in `UNDETECTABLE` rather than "fixed".
-- `Write an audit-trail entry for every step` opens with a bare 2sg imperative in **both**
-  `bg` and `sr`. In `bg` that had to be rewritten as a verbal noun; in `sr` it is correct and
-  was left alone. Same English source, same apparent shape, opposite verdicts — decided by
-  each locale's measured button convention (§7.3) and nothing else.
-
-**CHECK CORE AND THE CALL SITE BEFORE CALLING A VALUE WRONG.** This overturned four candidates
-on `cs` and eleven on `sk` — more than any single class either pass corrected. Examples of what
-looked like textbook defects and were not:
-
-- `Refresh`/`Restore` both → `Obnoviť` — core `sk` collapses them the same way. A collision
-  core also has is not a defect.
-- `First`/`Last`/`Previous` and bare `Search` — core `sk` **verbatim**, despite looking like
-  agreement errors or house-style outliers.
-- `Handler` → `Riešiteľ` (*solver*) — `c.handler` holds a **person**, not a code handler.
-- `Fair`/`Good`/`Poor` (neuter) need not match the feminine confidence family — they qualify
-  `skóre`, a different noun.
-- `Filter Statistics` → an infinitive among noun siblings, correct because it is an `<h3>`
-  **over filter controls**, so §7.3's action-label rule applies.
-- `Requested at`/`Expires` are not dangling — the template supplies the colon.
-
-**Read converse pairs against each other.** On `sk`, `Uses` → `Používa sa` and `Used by` →
-`Používa` were **swapped**. Nothing catches this — not a gate, not the term count, which
-correctly reports both using the right stem. Check Uses/Used by, Parent/Child, Source/Target,
-Merged from/into. Sibling locales settle the direction fast.
-
-Two judgement calls:
+Three judgement calls:
 
 - **Register deviations are not optional cleanup.** Leaving them makes the bundle mix
   registers inside a single dialog, which reads worse than either choice made consistently.
-- **A mild inconsistency is not automatically a defect.** Only replace a real value when it
-  is genuinely wrong, and say why. `hr` kept `lozinka` over core's preferred `zaporka`
-  because the file already shipped it and it is valid Croatian.
-- **An escalated decision can come back "change nothing", and that outcome must still be
-  recorded.** `sk`'s `Delete`/`Remove` collision (122 values, core splits them, the bundle
-  does not) was put to the owner and deliberately left as `Odstrániť`. `locales/sk.json`
-  records it as a **deliberate** divergence from core with the counts, because an unrecorded
-  "left alone" is indistinguishable from "never looked" — which is the whole reason a
-  `corrections` count of 0 cannot be trusted in the first place.
+- **A mild inconsistency is not automatically a defect.** `hr` kept `lozinka` over core's
+  preferred `zaporka` because the file already shipped it and it is valid Croatian.
+- **An escalated decision can come back "change nothing", and that must still be recorded**
+  as a *deliberate* divergence with its counts. An unrecorded "left alone" is
+  indistinguishable from "never looked".
+
+**A finished audit is not proof the locale is clean, and a `corrections` count of 0 means
+"unverified".** Record the count, never a verdict. §9.2 has what to budget per locale.
 
 ### 6.10 You destroyed the working bundle
 
@@ -1085,12 +847,11 @@ fs.writeFileSync(d+"/all.json",JSON.stringify(out,null,1)+"\n")'
 npm run l10n:apply -- $LOC $SCRATCH/all.json --apply
 ```
 
-Then confirm the totals match the sequential run (`999 new, 15 replaced` for `sk`).
+Then confirm the totals match the sequential run.
 
 Prevention: `cp` after every batch, and restore with `cp`, never with git. The one place
 this hazard used to be unavoidable — the gate negative test — is now designed out:
-`l10n:gatetest` snapshots and restores the bundle itself, so there is no hand-rolled
-break-and-undo cycle to get wrong.
+`l10n:gatetest` snapshots and restores the bundle itself.
 
 ### 6.11 A harvested value looks right but is the wrong sense
 
@@ -1119,7 +880,7 @@ check whether the leg actually covers it (§4.3) before touching it — reformat
 
 This is the most common way `test:l10n` or `test:l10n:parity` goes red **without anyone
 touching l10n**, because a development merge that adds one `t()` call puts every finished
-locale one key short. It has already happened once, from a merge adding two calls.
+locale one key short.
 
 ```bash
 npm run test:l10n            # names the keys en.js is missing
@@ -1130,76 +891,63 @@ Then, for each new key, make the §3.2 decision **before** translating anything:
 
 - **Non-prose** (a placeholder, an example value, a bare product name) → **unwrap it in
   `src/`** and do not add the key at all. If `test:l10n:write` already added it, remove it
-  from `en.js` too. This is the right answer more often than it looks: a label that is just
-  a product name is not a translatable string.
+  from `en.js` too. This is the right answer more often than it looks.
 - **Real prose** → it needs a value in **every finished locale**, or parity breaks. Use
   `l10n-ai.js add <key> --value en=… --value nl=… …`, or a small `apply.js` patch per
   locale. Check `l10n-ai.js get <similar-key>` first — a sibling key often already tells you
   each locale's term.
 
 For a **rename**, `l10n-ai.js rename` handles all 37 bundles but **not the call site** —
-grep `src/`. For a **removal**, `rm` the key everywhere in the same commit, or `check:l10n`
+grep `src/`. **Prefer a rename to an add whenever the English wording changed for a string
+that already exists**: every finished locale's translation survives it and parity never
+breaks. For a **removal**, `rm` the key everywhere in the same commit, or `check:l10n`
 reports it unused forever.
-
-Worked example: a merge added `OpenCorporates` and `KvK Company Register`. The first was
-unwrapped in `src/` — no locale had ever carried a value differing from the bare product
-name, which is the §3.3 test — and the second was translated into all finished locales,
-because it is real prose and twelve locales already translated its sibling keys.
 
 ---
 
 ## 7. Per-locale reference data
 
-`docs/l10n-ui-translation.md` is the full version. This is the part you need in front of you
-while writing arrays.
+`docs/l10n-ui-translation.md` is the full version, with the evidence and the per-locale
+trap sections. This is the part you need in front of you while writing arrays.
 
 ### 7.1 Plurals
 
 Take `nplurals` from the locale file's **own** header and build against **that locale's
-expression**. Equal counts do not mean equal boundaries, and there are three separate ways
-this goes wrong:
+expression**. Equal form counts do not mean equal boundaries.
 
 | Locale | Forms | Boundaries |
 | --- | --- | --- |
-| `hr` `ru` `sr` `be` `bs` | 3 | modular: `1,21` / **2–4** / `0,5–20`. `sr` verified over 1–1001: 22 → form 1, 111 → form 2 |
+| `hr` `ru` `sr` `be` `bs` | 3 | modular: `1,21` / **2–4** / `0,5–20` |
 | `lt` | 3 | modular, **wider form 1**: `1,21` / **2–9** / `0,10–20` |
 | `pl` | 3 | modular, `n==1` exact for form 0 |
 | `cs` `sk` | 3 | **absolute**: `1` / `2–4` / everything else incl. 0 |
 | `lv` | 3 | `1,21` / nonzero / **dedicated zero form** — and the ORDER disagrees (§6.7) |
 | `ro` | 3 | `1` only / **0 and 2–19** / 20+ |
 | `sl` | **4** | modular on `n%100`: `1` / **2 = DUAL** / `3,4` / else incl. 0 |
-| `is` | 2 | header is modular (`n%10!=1 \|\| n%100==11`), so 1, 21, 31 … take the singular — but the library reaches form 0 **only at n=1**, a BOUNDARY disagreement no reordering fixes (§6.7). 17 counts in 0–200 render the plural where Icelandic wants the singular |
-| `mk` | 2 | same modular header as `is`, but the library **drops the `n%100!=11` guard**, so only 11 and 111 disagree — and in the opposite direction, selecting the singular where Macedonian takes the plural (§6.7). **No counted form**, which is the trap for anyone arriving from the `bg` row below: Macedonian *has* an избројана форма in `-а` for masculine non-person nouns, so `5 објекта` looks right, and core does not write it — `%n бајти`, `{count} известувања`, `%n датотеки`, and the app family's `{count} објекти` / `{count} записи` are all the plain plural. The `-а` form survives in core only for a closed set of measure nouns (`%n дена`, `%n часа`, while `месец` takes plain `месеци`), so `bg`'s productive count-form hazard does **not** transfer |
-| `ga` | 5 | header 5, library reaches **3**: `1` / `2` / `0` and all `n>=3`. Forms 3–4 dead, harmlessly (§6.7). What decides the arrays is the **counted-noun rule**, not the index — see below |
-| `mt` | 4 | **Semitic, not European**: `1` / `0 and n%100 2–10` / `n%100 11–19` / `20+`. The noun is PLURAL only in form 1 — forms 0, 2 and 3 all take the SINGULAR (`ħdax-il ktieb`, `għoxrin ktieb`), so three near-identical forms are correct, not a defect. Header and library agree exactly |
+| `is` | 2 | modular header, but the library reaches form 0 **only at n=1** — a BOUNDARY disagreement no reordering fixes (§6.7) |
+| `mk` | 2 | same modular header as `is`, but the library **drops the `n%100!=11` guard**, so only 11 and 111 disagree, in the opposite direction (§6.7). **No counted form** — the `-а` form survives only in a closed set of measure nouns, so `bg`'s hazard below does *not* transfer |
+| `ga` | 5 | header 5, library reaches **3**: `1` / `2` / `0` and all `n>=3`. Forms 3–4 dead, harmlessly (§6.7). What decides the arrays is the **counted-noun rule** below |
+| `mt` | 4 | **Semitic, not European**: `1` / `0 and n%100 2–10` / `n%100 11–19` / `20+`. The noun is PLURAL only in form 1 — forms 0, 2 and 3 all take the SINGULAR, so three near-identical forms are correct, not a defect |
 | `bg` | 2 | plain `n != 1` — but see the **count form** hazard below |
-| `lb` | 2 | plain `n != 1`, and header and library **agree at every count** with both forms reachable. The safe shape §7.1 predicts. Its one pre-existing array is the model for a two-form Germanic locale: `%n Antrag huet` / `%n Anträg hunn` agrees in BOTH the umlaut plural of the noun AND the verb, so an array here cannot be built by swapping the noun alone |
-| `sq` | 2 | plain `n != 1`, header and library agree at every count. Its pre-existing array is the model for a locale with an irregular noun plural: `%n zë ende nuk ka hash` / `%n zëra ende nuk kanë hash` agrees in the noun (`zë`/`zëra`) **and** the verb (`ka`/`kanë`) |
+| `lb` `sq` | 2 | plain `n != 1`, header and library agree at every count |
 | `rm` | 2 declared | the library knows no Romansh and returns **form 0 at every count**, so form 1 is unreachable — see the collapsed-form hazard below |
 
-The distinct hazards, every one of which has actually bitten (deliberately not numbered —
-the list has grown three times):
+The distinct hazards, every one of which has actually bitten:
 
 - **Wrong boundary.** A Croatian array pasted into Lithuanian is wrong for 5–9.
 - **The library's boundaries not matching the header's**, with no reordering available to
-  reconcile them. Distinct from the `lv` permutation and from the `rm` collapse, and the
-  remedy is to pick which counts to be correct for and record the residue — §6.7. `is` and
-  `mk` are both this, in opposite directions. **The shape to check for is a two-form header
-  whose expression is modular rather than `n != 1`**, since the library's coarse groups are
-  mostly written `n === 1`.
-- **Absolute vs modular.** `sk`/`cs` bound absolutely, so **22 selects form 2** ("22
-  objektov", correct Slovak); `hr` bounds modularly, so 22 selects form 1. An array copied
-  between two `nplurals=3` Slavic locales is wrong at every compound number.
-- **The dual.** Slovenian's form 1 is a real dual: it governs noun case, adjective agreement
-  **and verb number** together, so 2 needs `Objekta sta bila izbrisana` where the plural
-  needs `Objekti so bili izbrisani`.
-- **A separate counting form, chosen by the SENTENCE and not by the form index.** This one is
-  lexical rather than structural, so `nplurals` gives no warning at all — `bg` has the
-  simplest header in the set and still needs it. Bulgarian masculine nouns that do not denote
-  persons take a **count form** (числителна форма, `-а`/`-я`) after a numeral, distinct from
-  the ordinary plural: `обект` → `обекти` as a bare plural but `обекта` after a number, and
-  likewise `запис`/`записа`, `файл`/`файла`, `регистър`/`регистъра`. So which noun form form 1
-  needs depends on **whether the string contains a numeral**:
+  reconcile them — §6.7.
+- **Absolute vs modular.** `sk`/`cs` bound absolutely, so **22 selects form 2**; `hr` bounds
+  modularly, so 22 selects form 1. An array copied between two `nplurals=3` Slavic locales
+  is wrong at every compound number.
+- **The dual.** Slovenian's form 1 governs noun case, adjective agreement **and verb
+  number** together: 2 needs `Objekta sta bila izbrisana` where the plural needs
+  `Objekti so bili izbrisani`.
+- **A separate counting form, chosen by the SENTENCE and not by the form index.** Lexical
+  rather than structural, so `nplurals` gives no warning — `bg` has the simplest header in
+  the set and still needs it. Bulgarian masculine non-person nouns take a count form
+  (`-а`/`-я`) after a numeral, distinct from the ordinary plural, so **which noun form form
+  1 needs depends on whether the string contains a numeral**:
 
   ```js
   "_Delete {count} object_::_Delete {count} objects_":            // numeral present
@@ -1208,57 +956,23 @@ the list has grown three times):
       ["Обектът е изтрит успешно", "Обектите са изтрити успешно"]
   ```
 
-  Two keys, one locale, one form index, two different noun forms. Masculine **person** nouns
-  keep the plural (`{count} членове`), and feminine/neuter have no count form at all
-  (`схема` → `схеми` either way). The pre-existing `_%n entry has no hash yet_` array already
-  had `%n записа` and is the model. Look for this in any locale whose grammar has a
-  paucal/counting form — it is invisible to every gate in the project.
+  Masculine **person** nouns keep the plural; feminine/neuter have no count form at all.
+  Look for this in any locale with a paucal/counting form — it is invisible to every gate.
 
-- **A SEMITIC four-form system, where three of the four take the singular.** Maltese
-  pluralises the noun **only** after 2–10 (and 0); after 1, after 11–19 (`ħdax-il ktieb`)
-  and after 20+ (`għoxrin ktieb`) it takes the SINGULAR. So `mt`'s forms 0, 2 and 3 are
-  normally the same string and only form 1 differs — which looks exactly like three
-  duplicated forms and is not. §2.3 had flagged this bundle's one pre-existing array as
-  "suspect, forms 2 and 3 fall back to the singular"; verifying it showed the suspicion was
-  unfounded and it was left untouched. The harvest independently corroborated the rule:
-  `Last 7 days` → `L-aħħar 7 ijiem` (plural) against `Last 30 days` → `L-aħħar 30 jum`
-  (singular). One further trap in that array: **the whole predicate agrees, not just the
-  noun** — `%n entrata għadha m'għandhiex hash` against `%n entrati għadhom m'għandhomx
-  hash` — so an array here cannot be built by swapping the noun alone.
-
-- **The numeral forcing the SINGULAR, which is the mirror image of the above.** Irish takes
-  the *singular* noun after a numeral (An Caighdeán Oifigiúil: numerals 1–19 govern the
-  singular), so for `ga` the split is again decided by whether the value contains a numeral,
-  but in the opposite direction from `bg`: **numeral present → the same counted singular in
-  every form; no numeral → a genuine singular/plural split.**
-
-  ```js
-  "_Delete {count} object_::_Delete {count} objects_":              // numeral present
-      ["Scrios {count} réad", …]                                    // identical ×5
-  "_Object successfully deleted_::_Objects successfully deleted_":   // no numeral
-      ["Scriosadh an réad go rathúil", "Scriosadh na réada go rathúil", …]
-  ```
-
-  Core's own data separates cleanly on exactly that axis, which is how the rule was settled
-  rather than assumed: of 73 numeral-bearing arrays **53 keep the singular** in every form
-  against 20 that pluralise (the calqued minority), while **28 of 28** arrays with no numeral
-  pluralise. So five of this bundle's seven arrays are legitimately all-forms-identical — the
-  `hu`/`tr` shape, and the reason `selfcheck` NOTEs 5 of 7 here. Initial mutation is **not**
-  applied after a digit (core writes `%n comhad`, never `chomhad`), but a *fixed* numeral in
-  a label does take it (`Last 3 months` → `3 mhí anuas`, from `trí mhí`) — the difference
-  being whether the number is known at authoring time.
-
-- **The library collapses every count onto form 0, in a language that pluralises.**
-  `@nextcloud/l10n` has no entry for Romansh, so `getPlural` returns 0 at every count and
-  form 1 is dead. That is the same *symptom* as `tr`, where it is harmless because Turkish
-  does not pluralise after a numeral — but Romansh pluralises regularly with `+s`, so a
-  bare singular in form 0 renders `5 datoteca`. **The fix is in form 0, not in the
-  arity**: it has to be a shape that is correct at every count. `rm` uses the `(s)`
-  parenthetical its bundle already applied to the sibling `(s)` keys
-  (`Stizzar {count} object(s)`), and a number-neutral phrasing (`Stizzà cun success`) for
-  the one plural key with no numeral, because a parenthetical cannot span three agreeing
-  words. Form 1 is still written as the true plural so the array becomes correct if the
-  library ever gains an entry. See §6.7 for how to tell the harmless case from this one.
+- **The numeral forcing the SINGULAR — the mirror image.** Irish takes the singular noun
+  after a numeral, so for `ga` the split is again decided by whether the value contains a
+  numeral, in the opposite direction: **numeral present → the same counted singular in every
+  form; no numeral → a genuine singular/plural split.** Core separates cleanly on exactly
+  that axis (53 of 73 numeral-bearing arrays keep the singular; 28 of 28 without a numeral
+  pluralise), which is how the rule was settled rather than assumed. Initial mutation is
+  **not** applied after a digit, but a *fixed* numeral in a label does take it — the
+  difference being whether the number is known at authoring time.
+- **The predicate agrees, not just the noun.** `mt`, `lb` and `sq` all have arrays where the
+  verb inflects with the count (`%n entrata għadha` / `%n entrati għadhom`; `%n Antrag huet`
+  / `%n Anträg hunn`). An array here cannot be built by swapping the noun alone.
+- **The library collapses every count onto form 0, in a language that pluralises** (`rm`).
+  Same *symptom* as `tr`, opposite consequence — §6.7 for how to tell them apart, and where
+  the fix goes.
 
 `test:l10n:parity` catches wrong **length** only. Nothing catches a wrong boundary except
 `l10n:runtime` on this locale's own counts, and **nothing at all** catches a form 0 that
@@ -1267,65 +981,41 @@ is only correct at count 1.
 **The `n()` catalogue key is NEITHER source string.** It is the identifier
 `"_<singular>_::_<plural>_"` — see `pluralIdentifier` in `lib.js`. Storing forms under the
 bare singular renders correctly for `count === 1` and falls back to English for every other
-count. That shape shipped in all 37 bundles until it was fixed, passing every gate the whole
-time.
+count. That shape shipped in all 37 bundles until it was fixed, passing every gate.
 
 **At runtime the index comes from the library, not the header.** `register(app, bundle)`
 **ignores** a plural function passed as a third argument. The header governs the arity gate;
 the library governs which element renders. `runtime-check.mjs` calls `unregister()` and
 `setLanguage(loc)` first for this reason.
 
-### 7.2 Register verdicts, all measured
+### 7.2 Register verdicts
 
 Informal: `nl de sv da nb pl fi hu et lv ga mt is`.
 Formal: `fr cs ru uk tr el sr bg ca hr lt ro sk sl lb sq mk`.
 
-**`ga` is in the informal column for a different reason from every other entry in it**, and
-copying the label without the reason would be a real error: Irish has **no T-V distinction**,
-so there is no choice being recorded. See the note under §3.4 and the `ga` row below.
+The counts and how each was measured are in `locales/<loc>.json` and in the companion doc.
+What belongs here is the taxonomy, because **the label is the same and the situation is
+not** — five states have turned up behind these two words, and they differ in what a slip
+looks like and therefore in what the detector must gate:
 
-**`mt` looks like `ga` and is not** — the two are worth contrasting, because it is exactly
-the inference to avoid. Maltese **does** have a politeness system: `intom` serves as a
-polite singular the way French `vous` does, and `Is-Sinjur`/`Is-Sinjura` with third-person
-agreement is the deferential register. Both exist and both are simply unused, so `mt`'s
-`informal` is an ordinary measured choice like `nl`'s, and its gate catches genuine
-deference rather than an impossible form. Two locales in a row measuring 2sg-only does not
-mean they measured the same thing.
-
-| Locale | Prose | Evidence |
+| State | Example | What the gate is catching |
 | --- | --- | --- |
-| `sk` | formal | **1001 vs 1** over 4991 values / 31 catalogues — the clearest of any |
-| `sq` | formal | core 218 vs 1, family 556 vs 2 — and `ti` occurs **zero** times in 3980 values. The three informal values in the whole corpus are all outside this bundle (one in core/encryption, two in openconnector) |
-| `tr` | formal | 841 vs 0 |
-| `hr` | formal | 744 vs 1 (and the 1 is an example email address) |
-| `lt` | formal | 689 vs 0 |
-| `ca` | formal | 491 vs 32 |
-| `et` | **informal** | 415 vs 3 — core overruled the file |
-| `sl` | formal | 304 vs 0 |
-| `sr` | formal | 911 vs 0 over 4631 values / 32 catalogues |
-| `bg` | formal | 699 vs 43 — but the 43 needs splitting; **prose is 699 vs 11** |
-| `ro` | formal | core **MIXED** 124 vs 66 → decided by the bundle (84 vs 0) + owner |
-| `lv` | **informal** | 44 vs 3 — core overruled the file; 78 values corrected |
-| `is` | informal | **626 vs 0** over core's 28 catalogues / 3610 values, plus 0 formal in the bundle's own 1054. The zero was re-checked by raw grep across nine V-form and 2pl tokens (`yður yðar yðvar yðr þið ykkur ykkar þéra þérun`), all literally absent. A THIRD kind of "informal": Icelandic *had* a T-V distinction and abandoned it in the 20th century, so `yðar` is archaic rather than absent (`ga`) or merely unused (`mt`) |
-| `rm` | formal | **81 vs 0** over the bundle's own 995 translated values — core ships **no `rm` catalogues at all**, so this is the §6.4 fallback rather than a core measurement |
-| `ga` | **no T-V distinction** | **440 vs 0** over 5395 values / 33 catalogues — the most one-sided of any locale, and structurally so: `sibh` is strictly plural in modern Irish, so 2pl address does not occur at all. Recorded as `informal` to set the gate's polarity against 2pl address, which for a single-user UI is always a defect |
-| `mt` | informal | **128 vs 0** over 3422 values — core ships **no `mt` catalogues at all**, so this is the §6.4 fallback widened to the sibling apps' frontend bundles. Unlike `ga`, Maltese HAS `intom` and `Is-Sinjur` available; they are measured absent, so this is a real choice. Markers: 75 `tiegħek`, 35 `jekk jogħġbok`, 15 `int`/`inti`, 4 prepositional |
-| `lb` | formal | **200 vs 9** over 3321 translated values — core is useless (one catalogue, 72 values, **0 markers of either polarity**), so this is the §6.4 fallback widened to the sibling apps' frontend bundles as `mt` did. openregister's own 1012 values carry **0** informal markers; all four informal values live in two OTHER apps (3 in launchpad, 1 in openconnector) and are real slips there. Luxembourgish builds its V-form from the 2pl on the German `Sie` model — `Dir` / `Iech` / `Ären` — and it is live, current, ordinary usage: a **fifth** situation behind the same "formal" label, and the plainest one since `cs`. Markers: 82 `Dir`, 50 `Är*`, 6 `Iech` |
-| `mk` | formal | **565 vs 59** over core's 24 catalogues / 3424 values, plus 31 vs 0 in the bundle's own 1053 — core and the file agree, so unlike `et`/`lv` there was nothing to overrule. Macedonian's T-V distinction is live and ordinary (вие/Ваш on the Slavic model), so this is the plain `cs`-style measured choice with no structural story. **Split the 59 before reading it** (§7.2 note below): 25 `твој*` possessives, 14 `ти`/`те`/`тебе` pronouns and ~20 2sg presents, concentrated in **one** catalogue — settings 34, then files_sharing 10, dav 7, files 7 — and reading as app-store blurbs and older notification text. A legacy minority in two or three catalogues, not a second register |
-| `cs` | formal | **828 vs 0** over core's 32 catalogues / 5005 values, plus 243 vs 0 in the bundle's own 2052. The zero was re-checked by raw unguarded scan over 25 informal tokens across the combined 6685 values, all absent. The **ordinary Slavic T-V case** and worth saying so plainly: Czech has a live `vy`/`ty` distinction in current use and core uses `vy` throughout, so this is a plain measured choice with **no structural story** — unlike the three locales done immediately before it (`ga` no distinction, `mt` unused, `is` abandoned). Four locales in a row needing four different explanations is what made those three notable; `cs` is the baseline they were exceptions to |
+| no T-V distinction exists | `ga` | 2pl address, which is only ever a defect here |
+| has one, measured unused | `mt` | genuine deference — a live option the project declines |
+| had one, abandoned it | `is` | archaic deference **and** the plain modern plural, which is the *likelier* slip |
+| live and ordinary | `cs` `lb` `mk` | the plain measured choice, no structural story |
+| core inconclusive, decided by the file or the owner | `ro` | whatever was decided, recorded in `registerEvidence` |
 
-Latvian's low counts are structural, not weak evidence: most correct informal Latvian is
-undetectable by design, so **zero formal markers is the assertion that matters**, not a high
-informal count.
+Two measurement rules that generalise:
 
-**Split the informal count by what the hit IS before reading a verdict.** For `bg`, 29 of the
-43 informal hits are core using a 2sg imperative as a *button label* (`Копирай`,
-`Актуализирай`, `Преименувай`); only 11 are informal **prose** (a `ти`/`теб`/`твой` pronoun or
-a 2sg present), and those cluster in two old catalogues. Unsplit, 43 looks like a real
-minority position worth weighing; split, it is a label-style choice plus eleven legacy
-strings. This matters most where the scan comes out closer than `bg` did — `ro`'s MIXED 124
-vs 66 (§6.4) is exactly the shape that deserves the same treatment before anyone is asked to
-decide.
+- **Split the informal count by what the hit IS before reading a verdict.** On `bg`, 29 of
+  43 informal hits were core using an imperative as a *button label*; only 11 were informal
+  prose, clustered in two old catalogues. Unsplit, 43 looks like a real minority position;
+  split, it is a label-style choice plus eleven legacy strings. This matters most where the
+  scan comes out close — exactly the shape that gets escalated to the owner.
+- **Low counts can be structural rather than weak.** Most correct informal Latvian is
+  undetectable by design, so for `lv` **zero formal markers is the assertion that matters**,
+  not a high informal count.
 
 ### 7.3 Button conventions — five patterns
 
@@ -1335,142 +1025,69 @@ decide.
 | bare 2sg imperative, whatever the prose | `ca` `et` `hr` `sl` `sr` `ga` `mt` | `Desa`, `Salvesta`, `Spremi`, `Shrani`, `Сачувај`, `Sábháil`, `Issejvja` |
 | **infinitive — register-neutral** | `cs` `lt` `lv` `sk` `rm` `is` `lb` | `Zobrazit`, `Įrašyti`, `Saglabāt`, `Uložiť`, `Memorisar`, `Vista`, `Späicheren` |
 | **verbal noun — register-neutral** | `ro` `bg` | `Salvare`, `Adăugare endpoint`; `Запазване`, `Добавяне на крайна точка` |
-| **2sg imperative for a label, 2pl once it is a sentence — GRADED BY LENGTH** | `sq` `mk` | `Ruaj` / `Fshi` / `Shto`, but `Menaxhoni regjistrat …`; `Зачувај` / `Избриши` / `Додај`, but `Управувајте со вашите апликации …` |
+| **2sg imperative for a label, 2pl once it is a sentence — GRADED BY LENGTH** | `sq` `mk` | `Ruaj` / `Fshi` / `Shto`, but `Menaxhoni regjistrat …`; `Зачувај` / `Избриши`, but `Управувајте со вашите апликации …` |
 
 Infinitive buttons must **not** be "corrected" to imperatives.
 
-**The fifth pattern is the only non-categorical one, and it has now been measured twice.**
-The other four pick one form and apply it to the whole label population; `sq` and `mk` both
-slide between two forms as the string gets longer, with no length at which they are
-interchangeable — and **the crossover lands in the same place, ~40 characters**, which is what
-turns this from one locale's quirk into a shape worth checking for. `mk`, value-initial
-imperatives by value length, 2sg against 2pl:
+**Check whether a locale's apparent convention is really two populations before recording
+one answer.** The fifth pattern is the only non-categorical one and it has now been measured
+twice, with the crossover landing in the same place both times, **~40 characters**. Above it
+the long strings are not "labels" at all — they are ordinary prose that happens to open with
+a verb, so the register (§7.2) governs them and the button convention governs only the short
+end. A single ratio over all action-verb keys would have reported `sq` as 476:145 "mostly
+2sg" and produced a 2sg rendering of a 40-character sentence that no sibling app writes.
+(`ro.js` already used a 40-character cap as a *detector* trick; the same boundary turning out
+to describe the convention itself is why the trick generalises.)
 
-| value length | core `mk` | siblings | this bundle |
-| --- | --- | --- | --- |
-| 1–14 | 128 : 1 | 139 : 3 | 41 : 2 |
-| 15–24 | 135 : 14 | 143 : 12 | 65 : 12 |
-| 25–39 | 101 : 21 | 62 : 25 | 28 : 14 |
-| 40–79 | 31 : 31 | 12 : 49 | 20 : 16 |
-| 80+ | 6 : 12 | 1 : 26 | 7 : 14 |
-
-Independently, resolving ~70 bare action keys against core `mk` gives thirty-odd bare 2sg
-imperatives and **not one** infinitive or verbal noun, so the short end is unambiguous.
-
-**`sq`'s `Select`/`Choose` lexical override also replicated — and measuring one more prompt
-family shows it is LEXICALLY BOUNDED rather than "any prompt".** In `mk`, Select/Choose takes
-the 2pl at any length (this bundle 31:1, siblings 34:24, core 13:27 — the app family is
-decisive where core is not, so §3.5 settles it) and Enter/Type goes the same way and harder
-(9:0, 16:0, 18:10). But **Search goes the other way and is not close** — core 61:1 for the 2sg,
-this bundle 11:0 — so `Барај` and `Пребарај` stay 2sg however prompt-shaped they look. The
-distinction that predicts it is neither length nor prompt-ness: a dropdown you pick from and a
-field you type into are addressed to the user, a toolbar search button is something you press.
-Do not generalise the override to every label that reads like an instruction.
-
-The `sq` measurements, for comparison:
-
-| value length | 2sg | 2pl |
-| --- | --- | --- |
-| 1–14 | 219 | 1 |
-| 15–24 | 149 | 30 |
-| 25–39 | 69 | 37 |
-| 40–79 | 32 | 42 |
-| 80+ | 7 | 35 |
-
-Measured over core plus all four sibling frontends. The crossover sits at **~40
-characters**, and the reading is that the long end is not a "label convention" at all — it
-is ordinary formal prose that happens to open with a verb, so the register (§7.2) governs
-it and the button convention governs only the short end. That reframing is the useful part:
-**check whether a locale's apparent button convention is really two populations before
-recording one answer.** A single ratio over all action-verb keys would have reported
-`sq` as 476:145 "mostly 2sg" and produced a 2sg `Menaxho regjistrat e të dhënave tuaja`,
-which no sibling app writes.
-
-`ro.js` already used a length cap (40 characters) as a *detector* trick, to catch
-imperatives in labels while ignoring prose. Here the same boundary turns out to describe
-the convention itself, which is why the trick generalises: when a locale distinguishes
-label from sentence, a length bound is measuring something real.
-
-One lexical override sits on top of the gradient: **`Select …` / `Choose …` placeholder
-prompts take the 2pl imperative at any length** (67 vs 26), so `Zgjidhni një regjistër`
-even though it is 22 characters. Look for this shape elsewhere — a dropdown prompt is
-addressed to the user in a way a toolbar button is not.
-
-`cs` was the one entry in the infinitive row that had been **assumed rather than measured**
-(it predates the tooling, §9.2). It is now measured and it holds decisively: 48 bare action
-keys resolved against core `cs` give **27 infinitives, zero imperatives and zero verbal
-nouns**, with the remainder legitimately not verbs (`Settings`, `Back` = `Zpět`, `Cancel` =
-`Storno`, `Reset` = `Vrátit na výchozí hodnoty`) plus one reflexive (`Log out` = `Odhlásit
-se`). The bundle's own action keys agree unanimously.
-
-`bg` reaches the verbal noun for a different reason than `ro`, and the difference is worth
-keeping straight. Bulgarian **has no infinitive**, so the verbal noun (отглаголно
-съществително, `-не`) is the only register-neutral form available — it does the job the
-infinitive does in `cs`/`lt`/`lv`/`sk`. Core `bg` is genuinely mixed about it (44
-catalogue-weighted verbal nouns against 23 imperatives, 4 formal 2pl and 4 plain nouns), so
-the measurement alone does not settle it; the tie is broken by the file, whose 1053
-pre-existing values are verbal nouns and plain nouns without a single imperative label. That
-is the ordinary §3.5 rule, not a divergence — unlike `ro`, where the convention **knowingly
-contradicts** core because the dual-role `Create`/`Read`/`Update`/`Delete` keys force it.
+**A lexical override can sit on top of the gradient, and it is lexically bounded rather than
+"any prompt".** In both `sq` and `mk`, `Select`/`Choose`/`Enter` placeholder prompts take the
+2pl at any length — but `Search` goes the other way and is not close (core `mk` 61:1 for the
+2sg). The distinction that predicts it is neither length nor prompt-ness: a dropdown you pick
+from and a field you type into address the user, a toolbar button is something you press.
 
 `ro` is the only locale where the convention is a **project decision that knowingly diverges
 from core**, and it was forced: `Create`/`Read`/`Update`/`Delete` are single keys rendered
-both as `<th>` column headers *and* as buttons, so a header reading `Ștergeți` ("delete!")
-above a count column would be wrong. Those four force the verbal noun and the rest follow.
-Same open defect class as `Url` vs `URL` (§10).
+both as `<th>` column headers *and* as buttons, so a header reading "delete!" above a count
+column would be wrong. `bg` reaches the same verbal noun for an ordinary §3.5 reason instead
+— Bulgarian has no infinitive, core is genuinely mixed, and the file's 1053 pre-existing
+values broke the tie. Keep the two straight: one contradicts core, the other follows the file.
 
 ### 7.4 The `{plural}` source hack — KNOWN DEFECT, note it and move on
 
 **The owner is aware of this and will fix it once all translations are finished** (decided
 2026-08-19). So: pick a reasonable shape for the locale, record it in `pluralHackNote`, and
 **do not spend pass effort on it**. Do not weigh parenthetical against slash against bare
-plural noun-by-noun, do not treat an awkward rendering here as a defect worth escalating, and
-do not flag it in the commit message. The same applies to the sibling `(s)` keys
-(`register(s)`, `schema(s)`, `configuration(s)`) and to plain `{count} X` phrases, which have
-the identical problem for the identical reason.
-
-The rest of this section is the record of what the finished locales already did, kept because
-it is useful when picking a shape quickly — not an invitation to optimise.
+plural noun-by-noun, do not treat an awkward rendering as a defect worth escalating, and do
+not flag it in the commit message. The same applies to the sibling `(s)` keys
+(`register(s)`, `schema(s)`, `configuration(s)`) and to plain `{count} X` phrases.
 
 The source hardcodes English morphology: 13 call sites pass `plural: count !== 1 ? 's' : ''`
-for five keys. What each finished locale does:
+for five keys. What the finished locales did, kept only so you can pick a shape quickly:
 
 | Shape | Locales | Example |
 | --- | --- | --- |
 | keep the placeholder — plural really is `+s` | `es`, `ca` (4 of 5) | `fitxer{plural}` |
-| parenthetical | `nl de fi ru pl cs et sk sl` | `bestand(en)`, `súbor(y)`, `datoteka(-e)` |
+| parenthetical | `nl de fi ru pl cs et sk sl` | `bestand(en)`, `súbor(y)` |
 | slash, where the stem changes | `fr`, `ca`, `et` | `journal/journaux` |
 | bare noun — no plural after a numeral | `hu` `tr` `ga` | `fájl`, `dosya`, `comhad` |
-| **parenthetical AND slash, mixed per noun** | `is` | `skrá(r)` where the plural is stem+`r`, but `hlutur/hlutir` and `skema/skemu` where the stem changes |
+| parenthetical AND slash, mixed **per noun** | `is` | `skrá(r)`, but `hlutur/hlutir` where the stem changes |
 | the form correct for the most counts | `hr` `lv` `ro` | gender-dependent |
 | genitive plural, conventional invariant counter | `lt` | `failų` |
 
-**Reuse the bundle's own house style if it has one.** `sk` and `sl` both already had
-`register(s)` → `register(-tre)` / `register(-i)` for the sibling `(s)` keys, so those two
-keys are literally the pre-existing values.
+Three rules that override a quick pick:
 
-**But grammar outranks the house style when the two conflict.** `ga`'s bundle already had
-the sibling `(s)` keys as parentheticals (`register(s)` → `clár(acha)`, `schema(s)` →
-`scéimre(í)`), and the `{plural}` keys still took the **bare counted singular** instead —
-because every call site renders the label beside a numeral (`CnStatsBlock`'s `:count` and
-`:countLabel`), and Irish takes the singular after a numeral, so a parenthetical there
-would be *wrong* rather than merely unidiomatic. Check what precedes the placeholder at the
-call site before reaching for the sibling keys' shape. The pre-existing `(s)` values are
-left alone under §3.8; the consistency that matters is with the `{count}` arrays, which
-apply the same counted-noun rule.
-
-**A locale can legitimately need MORE THAN ONE of these shapes, chosen per noun.** `is` is
-the case: its bundle's house style is the parenthetical (`stilling(ar)`, `skrá(r)`), and
-that works wherever the plural is the stem plus `-r` — so `file{plural}` → `skrá(r)` and
-`register{plural}` → `gagnaskrá(r)`. But where the stem changes it produces a non-word, so
-`object{plural}` → `hlutur/hlutir`, `log{plural}` → `annáll/annálar` and `schema{plural}` →
-`skema/skemu` take the slash instead. The pre-existing `schema(s)` → `skema(r)` in that
-bundle is exactly the error this avoids: the plural of `skema` is `skemu` and `skemar` is
-not a word. Pick the shape per noun, not per locale.
+- **Reuse the bundle's own house style if it has one** — `sk` and `sl` already had
+  `register(-tre)` / `register(-i)` for the sibling `(s)` keys.
+- **But grammar outranks the house style**, and the call site decides: every `{plural}` call
+  site renders the label beside a numeral, so in a language that takes the singular after a
+  numeral a parenthetical is *wrong* rather than merely unidiomatic (`ga`).
+- **A locale can legitimately need more than one shape, chosen per noun** (`is`): the
+  parenthetical works where the plural is stem + `-r`, and produces a non-word where the
+  stem changes.
 
 Always runtime-assert no `{plural}` residue and no stray trailing `-s` survives. And note
 that a locale which **keeps** `{plural}` is not broken — `es` keeps it in all five, `ca` in
-four. Any assertion about those keys must branch on whether the placeholder survived:
+four — so any assertion about those keys must branch on whether the placeholder survived:
 kept → the value **must** vary with count; dropped → it **cannot**.
 
 ---
@@ -1479,117 +1096,67 @@ kept → the value **must** vary with count; dropped → it **cannot**.
 
 ### 8.1 Never use suffix patterns for register detection
 
-Every one of these produced a wrong measurement:
+**Use closed word lists. Always.** Every suffix that has looked like a register marker has
+turned out to be something else as well, and the per-language table is in the companion doc.
+What generalises:
 
-| Language | Suffix that looks like a marker | What it actually also is |
-| --- | --- | --- |
-| `hr` `sk` `sl` | `-š` (2sg present) | **`vaš` = your-FORMAL**, and `naš` = our → polarity inverted outright |
-| `hr` | `-te` (2pl) | accusative plural of every masculine noun (`dokumente`) |
-| `sk` | `-te` (2pl) | locative singular of every hard masculine noun (`v dokumente`), and `ešte` = "still" |
-| `sl` | `-te` (2pl) | accusative plural of `ta` (`te datoteke` = these files) **and** accusative of informal `ti` |
-| `lt` | `-ai` (2sg present) | nominative plural of every masculine noun (`objektai`) and a large adverb class (`gerai`) |
-| `lv` | `-at`/`-āt` (2pl present) | the **infinitive** — all 12 distinct such words in core lv are infinitives or adverbs |
-| `lv` | `-i` | nominative plural of masculine nouns (`faili`) |
-| `lv` | `-iet` (2pl) | half false — `vienuviet` is an adverb, `nešķiet` third person |
-| `et` | `-ge`/`-ke` (2pl) | ordinary words (`selge`, `märge`) |
-| `ro` | `-ați`/`-eți` (2pl) | masculine plural of many adjectives/nouns (`curați`, `pereți`) |
-| `sk` | `vy` unguarded | **the most productive verbal prefix in the language** (`vybrať`, `vymazať`, `vytvoriť`) |
-| `rm` | `-ai` (2pl polite imperative) | `quai` = *this/that*, **23 occurrences** and the most common word such a rule would hit; plus `perquai` (*therefore*), `mai` (*never*), bare `ai` (a + ils), `hai`/`sai` (1sg) |
-| `rm` | `-ais` (2pl present) | `mais` = *months* (`Mintga mais`), and the nationality adjectives `ollandais`, `englais`, `franzais` |
-| `rm` | `-as` (2sg present) | **the feminine plural of every noun and adjective** — `controllas` = *checks*, `empruvas` = *attempts*, `tschernas` = plural of the noun `tscherna`. Costs the whole regular paradigm (§6.5) |
-| `rm` | `-a` (2sg imperative) | the **3sg present** and the feminine singular past participle, both live in this bundle's prose (`Quai stizza…`, `Ferma mintga flux`) |
-| `ga` | `-igí`/`-aigí` (2pl imperative) | the plural of every noun in `-ig` — `oifig` → `oifigí` ("offices"). **No such word occurs in the 6431-value corpus**, which is exactly why a suffix rule here would have looked safe and shipped |
-| `ga` | `-ibh` (2pl prepositional pronoun) | third-person plurals one letter away: `díbh` is "off you (pl)" but `díobh` is "off **them**", and it is the third-person one that occurs here, twice, both genuinely "of them" (`gach ball díobh seo`) |
-| `ga` | `do` (2sg possessive "your") | the preposition *to/for*, the past-tense verbal particle, and half of `le do thoil` ("please") — **527 of 6431 values**, overwhelmingly not possessive. Excluded wholesale; the biggest single recall loss in any detector here |
-| `mt` | `t-` prefix (2sg imperfect) | the **3sg FEMININE** imperfect, identically spelled across the whole verb system. `tista'` is "you can" AND "she/it can", and BOTH readings occur here — "Hawn tista' tara" against "Il-Proprjetà tista' tittejjeb". 23 occurrences split both ways, plus 24 of `trid` |
-| `mt` | `-u` (2pl imperative / 2pl present) | the **3pl of everything**. `nstabu` ("they were found") occurs 24 times in "Ma nstabu l-ebda X", `għandhom` 19 times, plus `jistgħu`, `jappartjenu`. A `-u` rule scores the commonest sentence shape in the file as deference |
-| `mt` | `-kom` / `-ek` (2pl / 2sg object) | ordinary word endings. Both paradigms are small and closed, so both are enumerated instead — thirteen prepositional pronouns each side |
-| `mt` | `-t` (2sg perfect) | also the **1sg perfect**; the two differ only by an internal vowel (`ħlaqt` "I created" vs `ħloqt` "you created"), far too fine for a word list |
-| `is` | `-ið` (2pl verb ending) | the **neuter DEFINITE ARTICLE**, one of the commonest morphemes in the language — `lykilorðið`, `tölvupóstfangið`, `skjalið`, `safnið`, `yfirlitið`, `nafnið` are all nouns. The bg `-те` situation and slightly worse, because five individual 2pl verb forms are *themselves* homographs of ordinary words: `hafið` is "the ocean" **and** the past participle of `hefja`, `getið` is the participle "mentioned", `verðið` is "the price", `vitið` is "the wit", `eigið` is the neuter adjective "own". Two of those five occur in core in the non-verb reading (`hefur hafið ferli`, `þitt eigið Nextcloud`) and **none** occurs as a 2pl verb |
-| `is` | `-ur` (2sg present) | the **masculine nominative singular** of thousands of nouns, *and* Icelandic syncretises 2sg with 3sg for most verbs anyway (`þú getur` / `hann getur`), so the ending carries no address information even when it is verbal |
-| `is` | `-ðu`/`-tu` (2sg imperative + enclitic pronoun) | the **3rd person plural past** for the whole class-2 conjugation. Usable for class 1 and the ablauting strong verbs, unusable otherwise — the split is by conjugation class and is worked through in §6.5 |
-
-| `lb` | `-s` (2sg present) | the genitive/plural marker, and the ending of ordinary vocabulary. Worse, **the MODALS syncretise 1sg/2sg/3sg**, so the individual forms `muss` and `weess` carry no address information at all — `du muss` and `hie muss` are spelled identically. Measured, not assumed: all 15 occurrences of bare `muss` in the 3440-value corpus are 3sg (`De Slug muss…`, `D'Tabell muss…`, `LLM muss…`), not one is 2sg. The regularly inflected 2sg of the same verbs (`kanns`, `wëlls`, `sollst`) IS usable, so this is a partial exclusion split by **lexical class** — a third way after `bg`'s and `is`'s conjugation-class splits |
-| `lb` | `-t` (2pl present, a FORMAL marker) | the **3sg present** ending. `kënnt` is "you (pl) can" AND "he comes" (3sg of `kommen`); `braucht` is "you (pl) need" AND "he needs". Both excluded; the 2pl forms kept are only those whose 3sg differs — `hutt`/`huet`, `sidd`/`ass`, `musst`/`muss`, `gitt`/`gëtt`, `maacht`/`mécht` |
-| `lb` | the bare-stem 2sg imperative | an ordinary NOUN for the productive verbs — `Späicher` is "storage/loft", `Filter` and `Test` are nouns this bundle uses as labels. Note this exclusion is forced by §6.5 **test 2 alone**: test 1 comes out NO because `lb` labels buttons with the infinitive, so counting the imperative would not have flagged every button the way it does in `ca`/`et`/`hr`/`sl`/`sr`/`ga`/`mt` |
-| `cs` | any 2sg imperative used unguarded | **its own 2pl counterpart**, because Czech forms the 2pl by suffixing `-te`: `vyber`⊂`vyberte`, `zadej`⊂`zadejte`, `přidej`⊂`přidejte`, `nastav`⊂`nastavte`, `zvol`⊂`zvolte`, `smaž`⊂`smažte`. This bundle holds 64 `vyberte` and core 48 `zadejte`, so an unguarded 2sg list scores the commonest **formal** shape in the corpus as informal and **inverts the verdict outright**. Worse than the `sk` `vy-` prefix, because it hits the markers themselves rather than unrelated vocabulary. Several stems are also prefixes of the app's own nouns — `nastav`⊂`nastavení` (the commonest noun in the bundle), `zobraz`⊂`zobrazení`, `obnov`⊂`obnovení`, `ulož`⊂`uložené`, `smaž`⊂`smazané` |
-| `cs` | `tvá` (informal possessive) | a **substring of `vytvářet`/`vytváření`** ("to create"/"creating"), one of the commonest verbs in this app — a raw scan finds it 48 times, every one inside that verb and none a possessive. Same polarity-inverting shape; `vytvoř` sits inside `vytvoření` likewise |
-
-| `sq` | `-ni`, the 2pl ending — present and imperative alike, so it looks like the single most productive formal marker | the **definite singular of every masculine noun whose stem ends in `-n`**. The corpus holds 220 distinct `-ni` tokens and the nouns among them are ordinary and frequent: `aplikacioni` 15, `pozicioni` 9, `versioni` 6, `tani` ("now") 6, `dokumentacioni` 4, `informacioni` 4, `shablloni` 3, `ekrani` 2, and `ini` 3 from `php.ini`. A `-ni` rule reports ~45 ordinary nouns as deferential address. The closed list runs to ~85 verb forms and is the only usable shape |
-| `sq` | `-sh`, the 2sg subjunctive ending | the **ablative plural of every noun**. `klasa objektesh`, `prej problemesh`, `kopjeruajtjesh`, `rimarrjesh`, `pultesh`, `veglash` are all real values. Closed list, and check that no member of it is also a noun form |
-| `sq` | bare `do`, the 2sg present of `dua` ("want") | **also the 3sg present, and also the FUTURE PARTICLE.** `do të` occurs **101 times** in the corpus in ordinary third-person prose (`Fjalëkalimi juaj do të skadojë nesër`). Counting bare `do` scores 108 values informal and inverts the verdict. Same shape as `lb` `muss` — a modal syncretising 2sg with 3sg — but an order of magnitude more frequent, because the syncretic form doubles as a tense marker |
-| `sq` | the whole `-oj` verb class, whose 2sg present looks like a marker | **spelled identically to the 3sg present**, for the largest verb class in the language: `krijon` is "you create" AND "it creates", likewise `ruan`, `fshin`, `filtron`, `dëshiron`. Unlike `bg` there is no conjugation split to rescue part of it — the syncretism *is* the paradigm, so the class is a total loss and informal recall rests on three irregulars (`ke`, `je`, `mundesh`), the possessives, the imperfect and a closed subjunctive list |
-
-| `mk` | `-те` (2pl present and imperative alike) | the **DEFINITE PLURAL ARTICLE**, one of the commonest morphemes in the language — `објектите`, `датотеките`, `филтрите`, `записите`, `промените` are all nouns, so the rule scores nearly every plural noun phrase in the app as formal prose. The `bg` situation exactly |
-| `mk` | `-ш` (2sg present) | **`ваш` = your-FORMAL**, so the rule inverts the polarity outright — the `hr`/`sk`/`sl`/`bg` trap. This bundle additionally carries the nouns `хеш` (hash, 7 values) and `кеш` (cache), so even off the possessive the ending is not verbal |
-| `mk` | bare `си` (2sg of `сум`) | the reflexive dative clitic — but the useful part is that it is **absent outright**, 0 of 6864 corpus values, so unlike the `hr`/`sk`/`sl`/`bg` equivalent the exclusion costs nothing. Check the count before mourning the recall |
-| `mk` | `треба` | impersonal 3sg, carrying no person at all. In `Ви треба ВИ-агент` the register is `Ви`; in `треба да се случува` there is no addressee. `молиме` is likewise 1pl — `Ве молиме` is formal because of `Ве` |
-
-Use closed word lists. Always.
-
-**The lesson generalises past Czech**: in any language whose 2pl is the 2sg plus a suffix —
-which covers the whole West Slavic group — the trailing `(?!\p{L})` guard is not hygiene, it
-is the only thing separating the two polarities. Write that guard before the word list, not
-after a control fails.
-
-**Look for the locale's POLITENESS FORMULA, not just its pronouns.** `mt` is where this
-paid: `jekk jogħġbok` ("please") carries a 2sg **object suffix**, which makes it a genuine
-address marker rather than a bare courtesy word — and at 35 uses it was the second
-commonest marker in the bundle, behind only the possessive. Its 2pl counterpart
-`jogħġobkom` is the unambiguous deferential form and belongs in the formal list. The first
-draft of `detectors/mt.js` omitted both and a control caught it. Any locale whose "please"
-inflects for the addressee has the same free signal: `ga`'s `le do thoil` does **not**
-(it inflects nothing detectable — see the `do` row above), and neither does `is` — Icelandic
-`vinsamlegast` is an adverb (a superlative of `vinsamlegur`, "kindly") and inflects for
-nothing at all. Two of the three checked so far came out empty, so **check rather than
-assume in either direction**; the check is cheap and the payoff when it lands is large.
+- **A suffix rule can invert the verdict outright, not merely add noise.** The 2sg `-š` of
+  `hr`/`sk`/`sl`/`mk` is also `vaš` = your-**formal**; `cs`'s 2sg imperatives are each a
+  prefix of their own 2pl (`vyber` ⊂ `vyberte`); `sq`'s bare `do` is also the future
+  particle, 101 occurrences of ordinary third-person prose. In each case the rule scores the
+  commonest *opposite-polarity* shape in the corpus as its own polarity.
+- **In any language whose 2pl is the 2sg plus a suffix** — the whole West Slavic group — the
+  trailing `(?!\p{L})` guard is not hygiene, it is the only thing separating the two
+  polarities. **Write the guard before the word list**, not after a control fails.
+- **Check whether a marker is a substring of the app's own commonest nouns.** `cs`'s
+  `nastav` sits inside `nastavení`, and `tvá` inside `vytvářet` — 48 occurrences, every one
+  inside that verb.
+- **The commonest homograph class is inflectional**: a verb ending that is also a plural,
+  a definite article, or a case ending. `-те` is the Bulgarian and Macedonian **definite
+  plural article**; `-ið` is the Icelandic neuter definite article; `-ni` is the Albanian
+  definite singular of every masculine `-n` stem. These are among the most frequent
+  morphemes in their languages, so the rule fires on nearly every noun phrase in the app.
+- **Exclusion can be partial** — by conjugation class or by lexical class (§6.5). Check
+  whether the paradigm fails for *every* class before excluding it wholesale.
+- **Look for the locale's politeness FORMULA, not just its pronouns.** A "please" that
+  inflects for the addressee is a free marker: `mt`'s `jekk jogħġbok` carries a 2sg object
+  suffix and at 35 uses was the second commonest marker in the bundle, with `jogħġobkom` the
+  unambiguous deferential counterpart. Two of the three locales checked so far came out
+  empty (`ga`'s `le do thoil` inflects nothing detectable; Icelandic `vinsamlegast` is an
+  adverb), so **check rather than assume in either direction** — it is cheap and the payoff
+  when it lands is large.
 
 ### 8.2 Pronoun homographs, per language
 
-| Language | Collision | Resolution |
-| --- | --- | --- |
-| `cs` `hr` `sl` | `ty`/`ti` = informal *you* **and** the plural demonstrative *those* | leave the bare pronoun unmatched; use oblique forms and the possessive |
-| `sl` | `te` has **three** readings: acc. of `ti`, acc. plural of `ta`, and the 2pl ending | leave unmatched |
-| `hr` `sk` `sl` | `si` = 2sg of *to be* **and** the reflexive dative clitic, commonest in **formal** prose | leave bare `si` unmatched |
-| `cs` | `si` — **not the same case at all**, and worth keeping straight | Czech's 2sg of `být` is `jsi`, so `si` is **only** the reflexive clitic: it carries no address information in either direction and there is nothing to disambiguate. 49 occurrences in core, 8 here, all reflexive. So bare `si` is unmatched in `cs` too, but for the opposite reason — not because it is ambiguous, because it is *empty*. `jsi` itself is unambiguous and **is** matched. Do not port the `hr`/`sk`/`sl` "ambiguous `si`" reasoning to Czech |
-| `cs` | `ty`/`ti` measured, not just assumed | the §8.2 row above says leave them unmatched, and the measurement backs it: over the combined 6685-value corpus `ty` occurs **6 times, every one the demonstrative**, and `ti` occurs **0 times**. So the recall given up is very nearly nil, unlike `bg` where the equivalent exclusion would have been expensive |
-| `sl` | `vas` = formal *you* **and** the noun *village* | kept; implausible in this domain, recorded in `UNDETECTABLE` |
-| `da` `nb` | `De`/`Dem`/`Deres` = formal *you* **and** everyday *they/them/their* | require a **mid-sentence capital** |
-| `pl` | `Państwo` = formal plural *you* **and** the noun *state* | mid-sentence capital |
-| `ru` | `вы`/`ваш` are ordinary polite address, not plural-only | do not match at all |
-| `et` | `teist` = elative of `teie` **and** partitive of `teine` ("another") | exclude entirely — it was **half** of core's apparent formal signal |
-| `tr` | 2sg possessive == plural genitive (`dosyaların`) | all 35 first-pass hits were this; only `şifre`/`parola` are safe |
-| `lt` | `gali`/`turi`/`nori` are 2sg **and** 3sg/3pl — no number distinction in the third person | exclude all three; use `žinai`, `matai`, `gauni`, `esi` |
-| `lv` | for `-ēt`/`-āt` verbs the 2sg **is** the third person (`meklē`) | systematic, not exceptional — see the docs |
-| `lv` | feminine `-e` nouns have accusative `-i`, colliding with the imperative (`pārbaudi`) | same |
-| `ro` | `vă` (formal) vs `va` (3sg future auxiliary), one diacritic apart | match only `vă` |
-| `ro` | `ai` = 2sg of *avea*, the possessive article, **and** the acronym **AI** under folding | exclude |
-| `bg` | `те` = 2sg accusative clitic **and** the 3pl pronoun *they* | leave unmatched — the bundle says "Те могат да бъдат възстановени" *of objects* |
-| `bg` | `-те` is the 2pl verb ending **and** the **definite plural article**, the commonest morpheme in the language | never a suffix rule; `файловете`, `Членовете`, `настройките` are all nouns |
-| `bg` | `си` = 2sg of *to be* **and** the reflexive possessive clitic, commonest in **formal** prose | leave unmatched, as in `hr`/`sk`/`sl` |
-| `bg` | `трябва` looks like address but is **impersonal 3sg** | do not match; in `Трябва да сте влезли` the register is carried by `сте` |
+The per-language table is in the companion doc. The rules:
 
-| `ga` | `tú`/`thú` — **no collision at all** | nothing; Irish has no demonstrative or copular reading of these, so the bare pronoun is fully usable. Same useful negative as `bg` and `rm` |
-| `ga` | `Dia duit` ("hello"), `Fáilte romhat` ("welcome") | fixed greetings, but genuinely 2sg address, so counting them is correct rather than a false positive |
-| `mt` | `int` / `inti` — **no collision** | nothing; the bare pronoun is fully usable. But it is only 15 of 128 hits, so do not build the detector on it |
-| `mt` | `tagħhom` (3pl "their") vs `tagħkom` (2pl "your") | one paradigm slot apart, and the 3pl is the one that occurs — `mar-ringieli tagħhom`, `il-konfigurazzjonijiet tagħhom`. Match only `tagħkom` |
-| `mt` | `verifika` | "verification" AND, in six pre-existing values, a mistranslation of *audit*. Not a register trap but a lexical one; note `ivverifika` (the verb, legitimate) contains it, so any check must anchor on a word boundary |
-| `is` | `þér` = 2sg **DATIVE** *and* the archaic polite **NOMINATIVE** | do **not** exclude it and do not call it formal: all 54 core occurrences are the dative (`þér er ekki heimilt`, `gefur þér`), so it counts as informal. The polite reading is recovered by the BIGRAM `þér` + a finite 2pl verb, matched in both orders — see §6.5. Two ambiguous tokens, jointly unambiguous |
-| `is` | `þú`/`þig`/`þinn` — **no collision at all** | nothing; the bare pronoun is fully usable, the same useful negative as `bg`, `rm`, `ga` and `mt`. Do not port the "leave the bare pronoun unmatched" rule from `cs`/`hr`/`sl`. One caveat: core's example address `notandi@þitt-nextcloud.org` matches the possessive, the same shape as the single `hr` informal hit |
-| `is` | `þið`/`ykkur`/`ykkar` are the **plain modern 2pl**, not a politeness form | still gated as a defect, because addressing one user as plural is wrong — but it is a *different* mistake from archaic `yðar` deference, and it is the likelier one. Keep the two distinct when reading a detector hit |
-
-| `lb` | `dir` = the informal 2sg **DATIVE** *and*, capitalised, the polite 2pl **NOMINATIVE** | **do not case-fold.** This is the one locale in the set where case is the ONLY thing separating the two polarities, so `detectors/lb.js` is the first whose `fold()` does not lowercase — it normalises whitespace and nothing else. Both readings are attested: lowercase `dir` once ("Dashboards ... déi dir gehéieren", alongside `Du kanns`), capitalised `Dir` 82 times ("Sidd Dir sécher…"). A `toLowerCase()` merges all 83 into one bucket and inverts the verdict. The da/nb `De`/`Dem`/`Deres` situation (§8.2) with a sharper edge, because there the collision is with a THIRD-person pronoun while here it is with the familiar form of the same paradigm |
-| `lb` | sentence-initial `Dir` | genuinely undecidable, and recorded in `UNDETECTABLE` rather than papered over: a value OPENING with the informal dative takes a sentence-initial capital and is then spelled exactly like the polite nominative. All 11 sentence-initial `Dir` in the 3440-value corpus are polite (each followed by a 2pl verb), so the cost is currently theoretical — but it is the residue of making case load-bearing, and it is real |
-| `lb` | `du`/`dech`/`däin` — **no collision at all** | nothing; the bare pronoun is fully usable, the same useful negative as `bg`, `rm`, `ga`, `mt` and `is`. Do not port the "leave the bare pronoun unmatched" rule from `cs`/`hr`/`sl`. Six locales have now come out this way against three that collide, so the collision is the exception rather than the rule — but it still has to be checked per locale |
-
-| `mk` | `ВИ` = the **ACRONYM FOR AI** (вештачка интелигенција) vs `ви` = the formal dative clitic | **the only thing separating them is case**, and this is the first acronym/marker collision in the set. The bundle uses `ВИ-агент` and `ВИ-функции`, so a folding detector scores the app's AI vocabulary as deference. `detectors/mk.js` **consumes the all-caps form in `fold()` before lowercasing** — the acronym is always all-caps, the pronoun is `ви` or sentence-initial `Ви`. That is the `lb` `dir`/`Dir` problem from the other end: `lb` had to preserve case throughout, `mk` needs it for one token and can spend it up front, which keeps the word lists readable. The hyphen goes in the **left** guard only, since Macedonian attaches acronyms to the following noun with one (`ВИ-агент`, `API-клуч`, `LLM-дејства`). Residue, recorded in `UNDETECTABLE`: an all-caps value using the pronoun would be stripped too — theoretical here, since no all-caps corpus value contains either token |
-| `mk` | `ти`/`те`/`тебе` — **no collision at all** | nothing. Macedonian's demonstratives are тој/таа/тоа/тие, so there is no demonstrative reading, and — the part worth carrying — bare `те` is usable here where **`bg`'s is not**: Bulgarian `те` is the 3pl pronoun *they*, Macedonian's is `тие`. All 6 corpus occurrences of each are 2sg address. Do not port `bg`'s `те` exclusion across; the two languages differ on exactly this word |
-
-The useful **negative** result: bare `ти` **is** usable in Bulgarian, unlike `cs` `ty`, `hr`
-`ti` and `sl` `ti`. Bulgarian lost its case system and its plural demonstrative is
-`тези`/`тия`, so there is no demonstrative reading to collide with. Do not port the
-"leave the bare pronoun unmatched" rule across the family without checking — it costs real
-recall where it is not needed.
+- **Do not port an exclusion across a family without measuring it.** Bare informal `ti`/`ty`
+  collides with a demonstrative in `cs`/`hr`/`sl` and must be left unmatched — but the bare
+  pronoun is **fully usable** in `bg`, `rm`, `ga`, `mt`, `is`, `lb` and `mk`. Six against
+  three, so the collision is the exception rather than the rule. The sharpest case is one
+  word: `bg`'s `те` is the 3pl pronoun *they* and must be excluded, while `mk`'s `те` is
+  2sg address and is safe, because Macedonian's *they* is `тие`. **Measure the recall you
+  would give up before mourning it** — sometimes the excluded token occurs zero times.
+- **`si` needs its reason, not just its verdict.** In `hr`/`sk`/`sl`/`bg` it is left
+  unmatched because it is *ambiguous* (2sg of *to be*, and a reflexive clitic commonest in
+  formal prose). In `cs` it is left unmatched because it is *empty* — Czech's 2sg is `jsi`,
+  so `si` is only ever reflexive and carries no address information at all. Same handling,
+  opposite reason; `jsi` itself is unambiguous and **is** matched.
+- **Case can be the only thing separating the two polarities.** Then `fold()` must not
+  lowercase: `lb`'s `dir` is the informal dative and `Dir` the polite nominative, both
+  attested, so `detectors/lb.js` normalises whitespace and nothing else. `da`/`nb` `De` and
+  `pl` `Państwo` require a mid-sentence capital for the same reason. The residue — a value
+  *opening* with the informal form takes a sentence-initial capital and becomes
+  indistinguishable — goes in `UNDETECTABLE` rather than being papered over.
+- **An ACRONYM can be a homograph of a marker.** `mk`'s `ВИ` is *AI* (вештачка
+  интелигенција) and the bundle uses `ВИ-агент`, while `ви` is the formal dative clitic — so
+  a folding detector scores the app's AI vocabulary as deference. `detectors/mk.js`
+  **consumes the all-caps form in `fold()` before lowercasing**, which is the `lb` problem
+  from the other end: `lb` must preserve case throughout, `mk` needs it for one token and
+  can spend it up front, keeping the word lists readable.
+- **An impersonal or 1pl form carries no address at all.** `bg` `трябва`, `mk` `треба` and
+  `молиме` are not markers; in `Ви треба` and `Ве молиме` the register is carried by the
+  clitic, and in `треба да се случува` there is no addressee.
 
 ### 8.3 JavaScript and Unicode traps
 
@@ -1603,46 +1170,34 @@ recall where it is not needed.
   **must** normalise the legacy Turkish cedilla `ş/ţ` to comma-below `ș/ț`, because core
   mixes them. `sk`'s and `sl`'s `fold()` must **not** strip diacritics, because three of
   their distinctions ride on the acute alone (`ti`/`tí`, `vyber`/`výber`, `uprav`/`úprav`).
-- **Danish opens quotes with `”`**, the glyph English uses to close one.
-- **A word-token regex must know the target language's word-INTERNAL punctuation.** Catalan writes
-  its geminate l with an interpunct, U+00B7 MIDDLE DOT — `col·lecció`, `paral·lel`, `Cancel·la`,
-  `instal·lada`, `sol·licitud` — and `spell.js` had it outside the token class, so every such word
-  split into two junk halves and seven of them were reported as misspellings (`lecció`, `lel`,
-  `paral`, `laboratives`, `lelisme`, `lada`, `leccions`). It also produced two false hits in an
-  elision sweep, because `instal·la` ends in `·la` and so looked like the article `la`. Fixed in
-  `spell.js`; the general rule is that **an orthography can defeat a checker silently**, and the
-  tell is a cluster of implausible short "words" that all share a stem with a real one. Check the
-  target's own conventions — the apostrophe is already handled, but the interpunct, the Catalan/
-  Occitan `ç`, and any language writing a digraph with an internal mark need the same treatment.
-- **THE LEFT GUARD MAY NEED A HYPHEN, AND `\p{L}` ALONE WILL NOT TELL YOU.** Every detector
-  in this directory guards its markers with `(?<!\p{L}) … (?!\p{L})`, which is correct for a
-  language that writes inflection inside the word. Albanian does not always: it attaches the
-  definite and case endings to acronyms and unassimilated loanwords **after a hyphen** —
-  `UUID-je`, `URL-je`, `Token-i`, `PHP-ja`, `DN-ja`, `email-it`, `webhook-it`. A hyphen is
-  not a letter, so `(?<!\p{L})je` matches the *inflectional ending* of `UUID-je` and scores
-  two real values (one core, one launchpad) as the 2sg copula "you are". `detectors/sq.js`
-  therefore guards every marker with `(?<![\p{L}-])`. Two further points that took measuring:
-  - **The right guard must stay `(?![\p{L}])`.** An ending attaches after the hyphen, never
-    before it, so barring a following hyphen only loses recall.
-  - **Do NOT extend the guard to the apostrophe.** Albanian contracts on both sides of the
-    register line — `t'ju` ("to you") is formal, `s'ke` ("you don't have") is informal — so an
-    apostrophe in the left guard would silence one real marker of each polarity.
-
-  The general rule: before writing the guard, ask **where the target language puts a
-  morpheme boundary**, not just what counts as a letter. Catalan needed the interpunct
-  *inside* the token class; Albanian needs the hyphen *outside* it. Both are the same
-  question answered in opposite directions.
-- **A probe without the `i` flag will under-count and look like a real finding.** The first
-  `mt` register probe scored **zero** for the pronoun and would have been recorded that way;
-  the bundle's three `Inti ċert li trid…` values are sentence-initial and so capitalised.
-  Detectors get this right because `fold()` lowercases, but a throwaway probe written
-  alongside one easily does not. Any measurement that comes out at exactly zero deserves a
-  second look before it goes into `registerEvidence`.
+- **A missing `i` flag under-counts and looks like a real finding.** Any measurement that
+  comes out at exactly zero deserves a second look before it goes into `registerEvidence`.
+  Detectors get this right because `fold()` lowercases; a throwaway probe written alongside
+  one easily does not. This also applies to a *casing* measurement, where it reads as a
+  contradiction and is not: match case-insensitively, then test the matched text's own case.
+- **A word-token regex must know the target's word-INTERNAL punctuation.** Catalan writes
+  its geminate l with U+00B7 MIDDLE DOT (`col·lecció`, `Cancel·la`), and `spell.js` had it
+  outside the token class, so every such word split into junk halves that were reported as
+  misspellings — and `instal·la` ended in `·la` and read as the article in an elision sweep.
+  **An orthography can defeat a checker silently**, and the tell is a cluster of implausible
+  short "words" that all share a stem with a real one.
+- **THE LEFT GUARD MAY NEED A HYPHEN, AND `\p{L}` ALONE WILL NOT TELL YOU.**
+  `(?<!\p{L})…(?!\p{L})` is correct for a language that writes inflection inside the word.
+  Albanian attaches definite and case endings to acronyms **after a hyphen** (`UUID-je`,
+  `Token-i`, `PHP-ja`), so `(?<!\p{L})je` matches an *inflectional ending* and scores it as
+  the 2sg copula; `detectors/sq.js` guards with `(?<![\p{L}-])`. Two refinements: the right
+  guard must stay `(?![\p{L}])`, since an ending attaches after the hyphen and never before
+  it; and do **not** extend the guard to the apostrophe, because Albanian contracts on both
+  sides of the register line (`t'ju` formal, `s'ke` informal). Where a language attaches
+  acronyms to a *following* noun with a hyphen (`mk` `ВИ-агент`), the hyphen goes in the
+  **left** guard only. The general rule: ask **where the target puts a morpheme boundary**,
+  not just what counts as a letter — Catalan needed the interpunct *inside* the token class,
+  Albanian needs the hyphen *outside* it, the same question answered opposite ways.
 - **Stripping placeholders inserts whitespace, so whitespace checks must run on the raw
-  value.** Replacing `{count}` with a space is the right move for an English-leftover scan
-  (otherwise `{schema}` fires on every value that carries it), and it makes a
-  doubled-space check report ~195 defects that are entirely its own artefact. Keep both
-  forms of the corpus and point each check at the right one.
+  value.** Replacing `{count}` with a space is right for an English-leftover scan (otherwise
+  `{schema}` fires on every value carrying it), and it makes a doubled-space check report
+  ~195 defects that are entirely its own artefact. Keep both forms of the corpus and point
+  each check at the right one.
 
 ### 8.4 Wrong-sense harvests — the confirmed offenders
 
@@ -1650,91 +1205,60 @@ Every one of these passes all automated checks. Read the call site.
 
 | Key | Looks like | Actually is | Where |
 | --- | --- | --- | --- |
-| `Right` | text alignment (`Desno`, `Rechts`, `По правому краю`) | an **RBAC permission** | `EditOrganisation.vue`, "Special Rights" table `<th>` |
-| `Bucket` | an S3 bucket, a basket (`Korv`), a bouquet (`Buket`) | a **histogram bin** | `QualityIndex.vue` fallback table |
+| `Right` | text alignment (`Desno`, `Rechts`) | an **RBAC permission** | `EditOrganisation.vue`, "Special Rights" table `<th>` |
+| `Bucket` | an S3 bucket, a basket, a bouquet | a **histogram bin** | `QualityIndex.vue` fallback table |
 | `View` | the noun (`Ogled`, `Visualització`) | an **action button** | `OrganisationsIndex.vue`, `SourcesIndex.vue` row actions |
 | `Search` | core's verb (`Poišči`, `Найти`) | a **field/tab label** | `ObjectsList.vue`, `SearchSideBar.vue` |
 | `Subject` | a mail subject, a school subject | the **GDPR data subject** | `AvgIndex.vue` column |
-| `People` | humans in the abstract (`Ljudje`, `Люди`) | the **`PERSON` entity type**, so *persons* | `EntitiesTab.vue` |
+| `People` | humans in the abstract | the **`PERSON` entity type**, so *persons* | `EntitiesTab.vue` |
 | `Label` vs `Labels` | the same word | a **facet range caption** vs **file tags** — often different words | `EditSchemaProperty.vue` vs `UploadFiles.vue` |
 | `Test` | a cognate noun | a **button**, so the verb | `WebhooksIndex.vue` |
 | `Revoke` | undo (`Cofnij`), reject (`Avslå`) | **revoking an API token** | `TokensSection.vue` |
-| `Quota` | fine | core's value may be storage-specific and far too long | |
 | `Interval` | fine | a **date-facet granularity** — collides with `Bucket` if you translate `Bucket` as "interval" | `EditSchemaProperty.vue` |
-| `Slug` | a cognate | core `lt` translates it `Trumpinys`; `sl` uses `Oznaka` | |
-| `Display Name` | fine | core `ca` has **`Nom d'usuari`** = *username* | |
-| `Documentation` | fine | core `et` has "…and guides" | |
-| `Avatar` | fine | core `et` has a two-word gloss unfit for a label | |
-| `Refresh` | fine | core `tr` has **`Yenlle`**, a typo. Do not take typos | |
-| `Mappings` | fine | openconnector `hr` has `Mappingi`, a non-standard transliteration |
-| `Handler` | an event/callback handler, so a technical term to borrow | **a person** — the DSAR case handler. It is a `<th>` in the cases table beside `Type`, `Status`, `Deadline`, and `handlerFilterOptions` maps people's names into the filter. Every locale renders it as a person: `Responsable`, `Gestor`, `Bearbeiter`, `Gestionar`. `AvgIndex.vue` | |
-| `Apply` | fine | core `ga` has **`Cuir iarratas isteach`** = *submit a job application*. The key is a button in `PermissionMatrix.vue`; the right value is `Cuir i bhFeidhm` | |
-| `Labels` | the same word as `Label` | the **file-tag column** `<th>` in `UploadFiles.vue`, beside `File name` and `Size` — so the locale's word for *tags* (`ga` `Clibeanna`), while singular `Label` is a facet range caption in `EditSchemaProperty.vue` (`ga` `Lipéad`). The `Label`/`Labels` split this table predicts is real, and `ga` is where it was first acted on | |
+| `Handler` | an event/callback handler | **a person** — the DSAR case handler, beside `Type`/`Status`/`Deadline` | `AvgIndex.vue` |
+| `Apply` | fine | core `ga` has *submit a job application*; the key is a button | `PermissionMatrix.vue` |
+| `Quota` | fine | core's value may be storage-specific and far too long | |
+| `Slug` | a cognate | core `lt` and `sl` both translate it | |
+| `Display Name` | fine | core `ca` has `Nom d'usuari` = *username* | |
+| `Documentation` / `Avatar` | fine | core `et` has a gloss unfit for a label | |
+| `Refresh` | fine | core `tr` has `Yenlle`, a typo. **Do not take typos** | |
+| `Mappings` | fine | openconnector `hr` has a non-standard transliteration | |
 
 **Sibling apps are not automatically right**, and a whole catalogue can be the wrong
 language (§6.6).
 
 ### 8.5 Collisions the target language creates
 
-Check that a coinage does not collide with a term the bundle already uses:
+Check that a coinage does not collide with a term the bundle already uses. Confirmed:
 
 - `lt` **entity** → `esybė`, not `subjektas`, because `duomenų subjektas` is the GDPR *data
-  subject*.
-- `lt` **redaction** → `užtemdymas`, not `redagavimas`, because that is this app's word for
-  **Edit**.
+  subject*; **redaction** → `užtemdymas`, not `redagavimas`, which is this app's *Edit*;
+  **Reports** → `Ataskaitos`, distinct from `Pranešimai` (*Notifications*).
 - `ro`/`sk`/`sl` **Bucket** → `Segment`/`Pásmo`/`Razred`, never "interval", because
   `Interval` is its own key.
 - `sl` **Revoke** → `Odvzemi`, not core's `Prekliči`, which this bundle already uses for
   **Cancel** on the same screen.
-- `lt` **Reports** → `Ataskaitos`, to stay distinct from `Pranešimai` (*Notifications*);
-  **Approve** `Pritarti` distinct from **Confirm** `Patvirtinti`.
-- `bg` **Connections** → `Свързвания`, because `Връзки` is already this bundle's word for
-  **Relations** (and for the `Links` entity type), and the Relations tab and the Connections
-  sidebar are both object-sidebar surfaces.
-- `bg` **Subject** (the GDPR data subject) → `Субект на данните` spelled out, because the
-  pre-existing bundle uses bare `субект` for **entity** in 20-odd keys. The `lt` fix — coining
-  a different word for *entity* — was not available here: `субект` for entity was already
-  shipped, so the qualifier goes on the GDPR sense instead.
-- `bg` **Golden record / Winning source / Winning value / survivorship** all take `водещ`
-  (`Водещ запис`, `Водещ източник`, `Водеща стойност`) so the MDM vocabulary reads as one
-  family, with **Survivor** as `Оцелял запис` where the source distinguishes it.
+- `bg` **Connections** → `Свързвания`, because `Връзки` is already **Relations**; and
+  **Subject** spelled out as `Субект на данните`, because bare `субект` was already shipped
+  for *entity* — the `lt` fix of coining a different word for *entity* was not available.
 
-**The worst version of this is a collision on the app's OWN primary noun, and `is` had it.**
-Icelandic `skrá` means both *a file* and *a register/list*, and the pre-existing bundle used
-it for both — so four pairs of distinct English keys rendered byte-identically (`All
-registers` / `All Files` → `Allar skrár`; `Register` / `File`; `Registers` / `Files`; `No
-registers found` / `No files found`), and one value came out unreadable: `No register
-objects reference this file` → `Engin skrárhlutar vísa í þessa skrá`, both senses in one
-sentence as the same word. Three things made this tractable, and they are the general
-recipe:
+Three rules:
 
-1. **Core decides which sense cannot move.** Core `is` locks `skrá` = file (`Skrá`, `Skrár`,
-   `Skráaforrit`) and ships no `Register`/`Record`/`List` key at all. So *register* was the
-   side that had to change.
-2. **The bundle usually already contains the answer.** `gagnaskrá` was already in it, in
-   exactly this sense (`Manage your data registers` → `Stjórna gagnaskránum þínum`). That is
-   §3.5, and it beats coining a word.
-3. **Ask the owner when it is the app's primary noun.** This propagated through ~76 keys and
-   changed 34 shipped values, which is a terminology decision rather than a translation one —
-   the §6.4-step-2 case. The answer and the fact that it was theirs are recorded in
-   `lexiconNote`.
-
-Two smaller `is` collisions were settled by core alone with no ask needed: `Slug` shared
-`Auðkenni` with `ID` while both are field labels on the *same* `EditSchemaProperty` screen
-(→ `Stuttheiti`, the shape core `lt` takes with `Trumpinys`), and `Refresh` shared `Uppfæra`
-with `Update` (→ `Endurnýja`, which is core's own word for it).
-
-Some collisions are **unavoidable and should be recorded rather than worked around**: `bg`
-renders both **Cancel** and **Denial** `Отказ`, which is the right Bulgarian word in each
-case (the dialog button, and the GDPR refusal of a request) and is what core `bg` uses for
-Cancel in ten catalogues. They never share a screen. Forcing an artificial distinction would
-have made one of the two wrong. `is` has one of these too — `Configurations` and `Settings`
-both render `Stillingar`, which is correct for each and is core's word for Settings.
-
-Also watch for locale-specific renderings of acronyms that the bundle has already fixed:
-**AI** is `MI` in Latvian and `UI` in Slovenian (*umetna inteligenca*) — but product names
-keep the English (`Fireworks AI`, `OpenAI`, `Dolphin AI`). **GDPR** is `BDAR` in Lithuanian,
-`VDAR` in Latvian, `RGPD` in Romanian and Catalan.
+- **A collision on the app's OWN primary noun is the worst case, and the recipe is fixed.**
+  Core decides which sense cannot move; the bundle usually already contains the answer for
+  the other sense (§3.5, and it beats coining a word); and because it propagates through
+  scores of keys it is a terminology decision, so **ask the owner** (§6.4 step 2) and record
+  the answer and whose it was in `lexiconNote`.
+- **Some collisions are unavoidable and should be recorded rather than worked around.** `bg`
+  renders both **Cancel** and **Denial** `Отказ`, correct in each case and core's own word
+  for Cancel in ten catalogues; they never share a screen. Forcing an artificial distinction
+  would make one of the two wrong. But **a collision the user can see on one screen is a
+  defect however defensible each word is** — grep the `tabs:` arrays and the paired empty
+  states (§6.9).
+- Watch for locale-specific renderings of acronyms the bundle has already fixed: **AI** is
+  `MI` in Latvian and `UI` in Slovenian, but product names keep the English (`Fireworks AI`,
+  `OpenAI`). **GDPR** is `BDAR` in Lithuanian, `VDAR` in Latvian, `RGPD` in Romanian and
+  Catalan.
 
 ### 8.6 Dutch source terms
 
@@ -1795,252 +1319,118 @@ capitalised `Read`/`Create`/… — the lowercase set are the matrix columns.
 Register, buttons and plurals all have a step in §5. **Orthographic and typographic house
 conventions do not, and they touch more values than register does.** Measure them from the
 pre-existing half of the bundle before the first batch, and record the counts in
-`locales/<loc>.json` — the same standard of evidence.
+`locales/<loc>.json` — the same standard of evidence. Mid-sentence capitalisation of domain
+terms is the big one: in `sr` it decides a third of all values, and no gate can see a
+wrongly-cased value because it is otherwise a perfectly good translation.
 
-**The practice is per-locale and so is the term list — measure both.** `sr` and `rm` both
-capitalise domain terms mid-sentence, and they disagree about which:
+**How to measure: per term, capitalised-mid-sentence against lowercase**, with a
+`(?<=.)(?<!\p{L})` guard to keep sentence-initial positions out. A one-sided split is a
+convention to follow; a 1-of-34 outlier is a slip worth normalising while you are there.
 
-| Locale | Capitalised | Notably NOT |
+**Five outcomes have turned up, and they need opposite handling** — so run the *conditioned*
+measurement even when the unconditioned one already looks one-sided, because that is the
+only thing that tells the second outcome from the third:
+
+| Outcome | Locales | Tell |
 | --- | --- | --- |
-| `sr` | six terms, including `Објекат` 62:0 | `приказ`, `ентитет`, `ток` |
-| `rm` | **three** — `Schema` 34:1, `Register` 30:0, `Datoteca` 43:0 | `object` at **0:63**, plus `vista`, `webhook`, `colliaziun`, `endataziun`, `caracteristica` |
-| `ga` | **none of its own** — casing mirrors the English source | every term reads MIXED per-term; the convention is conditioned on the key, not the word |
-| `mt` | **four** — `Oġġett` 56:2, `Reġistru` 55:0, `Proprjetà` 21:0, `Fajl`/`Fajls` 71:0 | `skema` 4:17, `iskema` 6:49, `veduta` 3:26, `entità` 2:7, `biċċiet` 3:14, `utent` 4:14 |
-| `is` | **none, unconditionally** — a flat lowercase rule | *every* term: `skema` 0:23, `gagnaskrá` 0:10, `hlutir` 1:16, `yfirlit` 0:18, `eiginleika` 0:10, `síur` 0:18 |
-| `lb` | **all of them, and there is no choice** — capitalisation is forced by orthography, not chosen | nothing. Luxembourgish capitalises ALL nouns, as German does: `Objet` 49:0, `Datei` 27:0, `Usiicht` 24:0, `Webhook` 23:0, `Schema` 25:1, `Register` 20:1, `Eegeschaft` 15:0, `Andréi` 14:0 |
-| `mk` | **none, and the bundle broke the rule 118 times** — flat lowercase like `is`, but reached in a bundle that does not follow it | *every* term. Family: siblings 1:273 and core 2:~480 in prose; the bundle's own half 41:146, all 41 inside four terms (`Датотека` 20:0, `Шема` 9:5, `Регистар` 7:6, `Извор` 3:0, `Својство` 2:5) while `објект` 0:26, `приказ` 0:17, `трага` 0:20, `тек` 0:24, `веб-кукичка` 0:13, `филтер` 0:17 are unanimous. **Extends to headings**, which no earlier locale needed: under Title-Cased keys core is 7:122 and the siblings 40:518 — Macedonian sentence-cases a heading — while the bundle ran 65:507 |
+| a **list** of capitalised terms | `sr` `rm` `mt` | one-sided per term, and the lists disagree between locales — `rm` capitalises `Schema` but lowercases `object` 0:63; `mt` capitalises `Reġistru` but lowercases `skema`, the app's two paired core concepts |
+| **mirror the source** | `ga` | every term reads MIXED per term, which looks like carelessness. Condition on whether the **English key** is Title Case and it resolves: 76:1 capitalised under title-cased keys, 0:193 under prose keys |
+| **flat lowercase** | `is` `mk` | one-sided lowercase per term, and conditioning on the key's casing changes *nothing* |
+| **forced by orthography** | `lb` | Luxembourgish capitalises every noun, so there is nothing to follow. Measure anyway — it costs one command and it is what proves it |
+| flat uppercase | — | unobserved |
 
-**`ga` is a third outcome, and the one most easily misread as "no convention".** A naive
-per-term count comes out mixed for every term (`clár` 3:5, `scéimre` 9:21, `réad` 11:19,
-`comhad` 6:11, `amharc` 3:22) — which looks like carelessness and is not. Condition the
-count on whether the **English key** is title-cased and it resolves completely: where the
-source is title-cased the `ga` value capitalises **76 against 1**; where the source is prose
-it capitalises **0 against 193**. The single apparent exception is not one (`Update register
-OAS: ...` has lowercase `register` in the English too, so the `ga` lowercase mirrors it).
-So before concluding a locale has no capitalisation convention, re-measure with the source's
-own casing as the condition — a mixed per-term split is what a mirroring convention looks
-like from the wrong angle.
+Three further rules, each of which caught something no gate can:
 
-**`lb` is a fifth outcome, and the one that ends the question rather than answering it:
-capitalisation is GRAMMATICALLY FORCED.** Luxembourgish capitalises every noun, so there is
-no house convention to measure and no list to carry — the two apparent exceptions in the
-per-term counts are both false positives worth knowing about, because the same two will
-recur in any locale: `{register}` and `{schema}` are **PLACEHOLDERS**, not words, and the
-14 lowercase `filteren` are the **VERB** (the noun `Filter` is 25:0 capitalised). Measure it
-anyway — it costs one command and it is what proves there is nothing to follow. The
-conditioned measurement was run too, per the rule below, and changes nothing: 39:1 under
-title-cased keys, 172:2 under prose keys. So the outcomes now seen are a list of
-capitalised terms (`sr`, `rm`, `mt`), mirror the source (`ga`), flat lowercase (`is`), and
-forced by orthography (`lb`). Flat uppercase remains unobserved.
+- **Condition on the English key's own casing, or the measurement will invent work.** On
+  `sq` the naive scan reported domain terms capitalised 25–35% against a family rate near
+  zero — a tidy ~110-value defect class that **does not exist**: restricted to prose keys
+  (English key ≥6 words, not Title Case) it is 0 against 177, every hit a Title-Cased
+  heading correctly mirroring its source. Note the direction of the error, because "my
+  locale capitalises where the family does not" is exactly the shape a pass will act on.
+  **The cheap tell: a defect class that is large, uniform and concentrated in short values
+  is measuring the source, not the translation.**
+- **But it can come back real** — `mk` still ran 41:146 under prose keys against a family
+  ~2:750. Three things separate that from `sq`'s phantom: it does not evaporate under the
+  restriction; the **family disagrees** rather than the bundle mirroring its source; and the
+  bundle is **internally inconsistent**, so there is no convention to follow. §8.11 decides
+  the uniform terms: a uniform lemma is one decision copied, not a rule.
+- **Measure the PRE-EXISTING half separately from the half you just wrote, per term.** This
+  catches your own drift, which whole-bundle counts hide because the pre-existing majority
+  outvotes the new values. On `mt`, HEAD capitalised `Fajl` 43:0 while the new values
+  lowercased it 24:4 — a convention broken in 24 places, invisible to every gate.
 
-**`is` is the fourth outcome, and it is the one that genuinely has no list: a flat
-lowercase rule.** Every term comes out one-sided lowercase, and — this is what distinguishes
-it from `ga` rather than merely resembling it — conditioning on the English key's casing
-changes *nothing*. `skema` is 0:9 under title-cased keys and 0:14 under prose keys; `skrá`
-0:5 and 0:9. So the four outcomes now seen are: a list of capitalised terms (`sr`, `rm`,
-`mt`), mirror the source (`ga`), flat lowercase (`is`), and — still unobserved — flat
-uppercase. **Run the conditioned measurement even when the unconditioned one already looks
-one-sided**, because it is the only thing that tells `is` apart from `ga`, and they need
-opposite handling for every title-cased key in the file.
+**Apply the same split to DECLENSION, not only to casing.** A borrowed noun may be treated
+as indeclinable by the bundle while the language would ordinarily inflect it — `is` had
+`skema` bare 25 times at HEAD against one declined form, and the new values introduced
+`skemað`: grammatically defensible and inconsistent with the file, which is what §3.5
+settles against. Two practical notes: tally **per surface form** rather than per lemma so
+the split is visible at all, and use `\p{L}` not `\w` — `\w` is ASCII-only, so `skema\w*`
+silently truncates `skemað` to `skema` and hides exactly the drift you are looking for.
 
-So carrying `sr`'s list to `rm` would have capitalised `Object` in 63 places against the
-bundle's own unanimous practice, and carrying either to `ga` would have overridden the
-source's casing in both directions. `mt` adds a further warning: it capitalises `Reġistru`
-but lowercases `skema`, the two paired core concepts of the app, so even *within* one
-locale the list cannot be inferred from what a term means.
+**Review the word list before applying any casing fix**, and generate the fix from the
+reviewed list rather than from an open-ended pattern. Three ways the measurement misleads,
+all met on `mk` in one session, splitting 132 raw hits into 118 real defects and 14 licensed
+capitals:
 
-**Measure the PRE-EXISTING half separately from the half you just wrote, per term.** This
-is the check that catches your own drift, and on `mt` it did: HEAD capitalised `Fajl`/`Fajls`
-mid-sentence 43 times against 0, while the newly written values had lowercased it 24 times
-against 4 — a convention broken in 24 places, invisible to every gate, and silently
-self-confirmed if you measure the finished bundle as a whole. Whole-bundle counts came out
-"CAPITALISED" for `Fajl` either way because the pre-existing majority outvoted the new
-values. Split the corpus at `HEAD` and compare the two columns.
+1. **Case-insensitivity** — a stem alternation written without the `i` flag matches only the
+   lowercase form, so every capitalised occurrence, *the entire thing being measured*, is
+   invisible and every term reports a clean 0-up. This gap hid the finding entirely.
+2. **`(?<=.)` does not exclude a LATER sentence's first word**, only the value's. Three
+   first-cut hits were a second sentence in a multi-sentence description, and each would have
+   been "corrected" into an error. Add a lookbehind for a sentence terminator plus space.
+3. **An opening parenthesis, a leading emoji and deliberate all-caps each license a capital**
+   the same way a sentence start does — `(Опционално)` mirroring `(Optional)`, emoji-initial
+   headings, `НЕМА ДЕЈСТВО` mirroring source caps.
 
-**Apply the same split to DECLENSION, not only to casing** — this is what it caught on `is`,
-and it is a distinct failure mode. A borrowed noun may be treated as indeclinable by the
-bundle while the language would ordinarily inflect it: `skema` appears 25 times in bare form
-at HEAD against a single declined `skemanu`, i.e. effectively indeclinable. The values
-written in this pass introduced `skemað` 5 times and `skemans` once — grammatically
-defensible Icelandic, and inconsistent with the file, which is what §3.5 settles against.
-Nothing else catches this: the values are not empty, not identical, not wrong-arity, and
-each reads correctly on its own. Two practical notes: tally the forms **per surface form**
-rather than per lemma so the split is visible at all, and use `\p{L}` not `\w` when doing
-it — `\w` is ASCII-only, so `skema\w*` silently truncates `skemað` to `skema` and hides
-exactly the drift you are looking for. That mistake concealed the finding on the first run
-here. Both rules can apply inside one value — `rm` writes
-`naginas relaziuns cun objects u Datotecas`. `rm` also capitalises the **polite pronoun
-and possessive** mid-sentence without exception (`Vus` 13:0, `Voss*` 21:0), the German
-`Sie`/`Ihr` model; a sibling app in the same repo lowercases them, so that is a real
-choice rather than an accident.
+The same applies to the conventions collected in `docs/l10n-ui-translation.md`: ellipsis
+spacing (`nb` and `sl` put a space before, `ru` and `bg` do not), dash choice, whether `%`
+takes a space, quote glyphs (`da` opens with `”`, `ru` uses guillemets), and weaker
+domain-term capitalisation in `da` `sv` `pl`.
 
-The sharpest case is `sr`, which capitalises the six first-class register concepts
-mid-sentence, like proper nouns, and lowercases everything else:
+### 8.11 OBLIGATORY SANDHI — the one mechanical check that pays
 
-| Capitalised | Lowercase |
-| --- | --- |
-| `Шема` 33:1 · `Регистар` 30:0 · `Објекат` 62:0 · `Својство` 25:0 · `Датотека` 43:0 · `Извор` 5:1 | `приказ` 0:41 · `ентитет` 0:13 · `ток` 0:25 |
-
-So `Обриши све Објекте у овој Шеми` but `Обриши приказ`. That affects roughly a third of all
-values, no other locale here does it, and **no gate can see it** — a wrongly-cased value is
-otherwise a perfectly good translation. Get it wrong and you have introduced 300 small
-inconsistencies that nothing will ever flag.
-
-How to measure: count capitalised-mid-sentence against lowercase **per term** (the
-`(?<=.)(?<!\p{L})` guard keeps sentence-initial positions out of the count). A one-sided
-split is a convention to follow; a 1-of-34 outlier is a slip worth normalising while you are
-there, since leaving it means explaining later why the rule has exceptions.
-
-**AND CONDITION ON THE ENGLISH KEY'S OWN CASING, OR THE MEASUREMENT WILL INVENT WORK.**
-This is the `sq` finding and it is the one to carry forward, because the confound points
-the wrong way — it manufactures a defect class that does not exist:
-
-- The naive scan (every value, guard as above) reported openregister's own `sq` half
-  capitalising domain terms **25–35% of the time** — `objekt` 13/56, `gjurm` 12/38, `audit`
-  10/31, `skedar` 13/42 — against a family rate near **zero** (`pult` 4/134, `sinkroniz`
-  0/38, `botim` 6/85). That reads as a clean ~110-value defect and it is entirely spurious.
-- Re-run over **prose only** — English keys of ≥6 words that are *not* Title Case — and the
-  number is **0 capitalised against 177 lowercase**, with core 0/17 and the siblings 3/304.
-  The bundle never capitalises a domain term inside a sentence.
-- Every one of those 110 "defects" was a **Title-Cased heading key** (`Add Endpoint`,
-  `Active Filters`, `Total Deleted Items`), where the value correctly mirrors the source.
-  Measured that way — conditioning on the key — the family **follows** the English casing:
-  openregister 270 vs 11, core 39 vs 1, opencatalogi 100 vs 0, launchpad 65 vs 5, with
-  openconnector the lone dissenter at 9 vs 96.
-
-So there are **two populations and one gate-invisible rule for each**: mirror the key's
-casing for a short label or heading, lowercase inside a sentence. A single ratio over both
-is not a weaker measurement, it is a wrong one — and note the direction of the error, since
-"my locale capitalises where the family does not" is exactly the shape a pass will believe
-and act on. Getting this wrong costs 110 unnecessary edits to already-correct values.
-
-The cheap tell: if a supposed defect class is large, uniform, and concentrated in short
-values, check whether you are measuring the source rather than the translation.
-
-**But the conditioned measurement can come back REAL, and `mk` is that case — so `sq` is not
-a licence to dismiss casing findings.** Restricted to prose keys the `mk` bundle still
-capitalised **41 against 146** where the family runs ~2:750, and the same rule was broken
-again in its headings. Three things separate a real finding from `sq`'s phantom: it **does not
-evaporate** under the restriction; the bundle is **internally inconsistent**, so there is no
-convention to follow (`објект`, the app's most central noun, is 0:26 lowercase while
-`Датотека` is 20:0 capitalised, and three of the four capitalised terms are themselves split);
-and the **family disagrees**, rather than the bundle merely mirroring its source. Compare `sr`,
-where the same shape *was* a convention because it was one-sided per term across the whole
-bundle. §8.11's `lb` rule decides the uniform terms: **a uniform lemma is one decision copied,
-not a rule** — by word class the same bundle does both, 41 to 146.
-
-**THREE WAYS THE MEASUREMENT ITSELF MISLEADS, all met on `mk` in one session.** Two are new:
-
-1. **Case-insensitivity.** A stem alternation written `шема|шеми` without the `i` flag matches
-   only the lowercase form, so every capitalised occurrence — *the entire thing being
-   measured* — is invisible and every term reports a clean `0` up. §8.3's case-folding rule
-   applies to a **casing** measurement too, where it reads as a contradiction and is not:
-   match case-insensitively, then test the matched text's own case.
-2. **`(?<=.)` does not exclude a LATER sentence's first word**, only the value's. So
-   `… за семантичко пребарување. Објектите се директно векторизирани` scored `Објектите` as a
-   mid-sentence capital. Three of the first-cut hits were exactly this, all in multi-sentence
-   description strings, and each would have been "corrected" into an error. Add a lookbehind
-   for a sentence terminator plus optional space.
-3. **An opening parenthesis, a leading emoji and deliberate all-caps each license a capital
-   the same way a sentence start does.** 14 of `mk`'s 132 raw hits were those — `(Опционално)`
-   and `(Побрз, поинтензивен за ресурси)` mirroring `(Optional)` / `(Faster, …)`, four
-   emoji-initial headings (`⚡ Сериска обработка`, `📄 Серијализација на објект`), and
-   `НЕМА ДЕЈСТВО` / `СИТЕ` mirroring source caps.
-
-So **review the word list before applying any casing fix**, and generate the fix from the
-reviewed list rather than from an open-ended pattern. On `mk` that split 132 raw hits into 118
-real defects and 14 licensed capitals, and only the second and third gaps were visible by
-reading the output — the first gap hid the finding entirely.
-
-The same applies to the conventions already collected in `docs/l10n-ui-translation.md`:
-ellipsis spacing (`nb` and `sl` put a space before, `ru` and `bg` do not), dash choice,
-whether `%` takes a space, quote glyphs (`da` opens with `”`, `ru` uses guillemets), and
-weaker domain-term capitalisation in `da` `sv` `pl`.
-
-### 8.11 OBLIGATORY SANDHI — the one mechanical check that pays, and it pays twice
-
-**§6.9 says not to build mechanical morphology checks. This is the exception, and `lb` is
-where it earned its place: it found 75 defects in the pre-existing half and 44 more in the
-half written during the pass.** The difference from the checks that failed on `is` and `cs`
-is that this is not agreement or case governance — it is an **orthographic rule with a
-deterministic trigger**, so precision is high enough to act on.
-
-Luxembourgish has the **Eifeler Regel**: a word-final `-n`/`-nn` is DELETED before a
-consonant other than `n d t z h`, and KEPT before those five and before any vowel. It is
-obligatory in standard orthography, it fires several times per sentence, and **no gate can
-see it** — a value with the wrong form is not empty, not identical to English, not
-wrong-arity, and reads as finished work.
+**§6.9 says not to build mechanical morphology checks. This is the exception**, and the
+difference is that this is not agreement or case governance but an **orthographic rule with
+a deterministic trigger**, so precision is high enough to act on. On `lb` the Eifeler Regel
+— word-final `-n` deletes before any consonant but `n d t z h` — accounted for 60 of 77
+corrections, and it is obligatory, fires several times per sentence, and no gate can see it.
 
 Four things made it tractable, and all four generalise to any language with obligatory
-sandhi — French elision and liaison, Irish initial mutation, Welsh, Italian `lo`/`il`:
+sandhi (French elision and liaison, Irish initial mutation, Welsh, Italian `lo`/`il`):
 
-1. **Measure the bundle's OWN practice — but aggregate by WORD CLASS, not only per lemma.**
-   A per-lemma check is the obvious move and it is **necessary but not sufficient**, which
-   cost this pass a whole extra round. A lemma that occurs in only one environment carries
-   no information, and a pile of such lemmas reads as a convention: on `lb`, `Lueden` only
-   ever appeared *with* the final `-n` and `Deele` only ever *without* it, so each looked
-   internally consistent and the per-lemma report excused both. 26 values were left alone on
-   the strength of a "16:0 with no counter-example" count that was really **one copy-pasted
-   phrase** repeated thirteen times. Aggregating by word class instead shows the family does
-   both — 118 kept against 108 deleted — with directly parallel pairs (`Lueden vum` /
-   `Deele vun`, `Späicheren feelgeschloen` / `bäisetze wëllt`). **So run both cuts: per lemma
-   to find the internally inconsistent ones, and per word class to find the ones that are
-   uniformly wrong.** A uniform lemma is not evidence of a rule; it is evidence of one
-   decision, possibly made once and copied.
-2. **Encode the exemption classes, or it is all noise.** Two were needed here and the
-   first version had neither: stem-final `-n` is not inflectional, so the `-ioun`/`-ion`
-   nouns keep it always (`Aktioun kann`, `Konfiguratioun gespäichert` are CORRECT, and they
-   were 25 of the first 95 raw hits), and so do non-integrated loans (`Token`, `JSON`,
-   `Login`) and the monosyllabic `-nn` stems (`wann`, `kann`, `sinn`, `hunn`). A later run
-   needed `-ern` too, after the auto-fixer turned `extern` into the non-word `exter`.
-3. **Check BOTH directions.** The rule was broken both ways here — 75 values failed to
-   delete and 8 wrongly deleted before a vowel (`Kee Ufro-Kierper` for `Keen Ufro-Kierper`,
-   `Verbonne Objet-` for `Verbonnen Objet-`). A check written for one direction reports a
-   clean bill of health on the other. The over-application pass also produced its own false
-   positive worth knowing — `Analyse ofgeschloss` is the *singular noun*, not a stripped
-   plural — so filter on "the `-n` form is attested elsewhere" and still read the list.
-4. **Split at HEAD and re-run it on your own half.** This is the check that catches your
-   drift, and here it caught the most of any pass so far: the newly written half had **44**
-   violations, more than half the count found in the pre-existing half. Whole-bundle counts
-   hide it because the pre-existing majority outvotes the new values.
+1. **Measure the bundle's own practice — but aggregate by WORD CLASS, not only per lemma.**
+   A per-lemma check is necessary and **not sufficient**, and believing otherwise cost `lb` a
+   whole round. A lemma occurring in only one environment carries no information, so a pile
+   of them reads as a convention: 26 values were excused on a "16:0, no counter-example"
+   count that was really one copy-pasted phrase repeated thirteen times. By word class the
+   family did both, 118 to 108. **Run both cuts** — per lemma to find the internally
+   inconsistent ones, per word class to find the ones that are uniformly wrong. **A uniform
+   lemma is evidence of one decision, possibly copied, not of a rule.** Be strict about what
+   counts as "no counter-example": search for the *construction*, not the word, and say which
+   environments you checked.
+2. **Encode the exemption classes, or it is all noise.** On `lb`, stem-final `-n` is not
+   inflectional, so `-ioun`/`-ion` nouns keep it always (25 of the first 95 raw hits), as do
+   non-integrated loans (`Token`, `JSON`) and monosyllabic `-nn` stems. A later run needed
+   `-ern` too, after the auto-fixer turned `extern` into the non-word `exter`.
+3. **Check BOTH directions.** The rule was broken both ways — 75 failures to delete and 8
+   wrong deletions before a vowel. A check written for one direction reports a clean bill of
+   health on the other.
+4. **Split at HEAD and re-run it on your own half.** The newly written half carried 44
+   further violations, more than half the count in the pre-existing half.
 
-Where the bundle and the strict rule genuinely disagree and **no** environment in the
-corpus breaks the tie, leave it and record it. On `lb` that turned out to be **2 values**,
-not the 26 first claimed: both are a bare `sinn`/`ginn` infinitive governed by a preceding
-modal (`muss aktivéiert sinn mat`, `kënne erëmgewonne ginn wann`), where reducing to
-`si`/`gi` collides with the pronouns and the family offers no directly parallel example in
-either direction. §3.8 governs those two.
+Where the bundle and the strict rule genuinely disagree and **no** environment in the corpus
+breaks the tie, leave it and record it — on `lb` that was 2 values, not the 26 first claimed.
 
-**ASK THE QUESTION EVERY TIME, BUT DO NOT EXPECT A SANDHI RULE TO BE WAITING — `mk` is where
-it came out no.** Macedonian obligatorily **doubles a definite direct object** with a
-resumptive accusative clitic before the verb (`Избриши ГО објектот`, never `Избриши објектот`).
-That is obligatory, it fires constantly, and no gate can see it — it looks exactly like the
-Eifeler Regel. It is **not the same shape**, and the two reasons generalise:
-
-- **The trigger is SEMANTIC, not orthographic.** The Eifeler Regel fires on the next
-  consonant, which a regex can see. Clitic doubling fires on *definiteness*, which it cannot:
-  `Анализирај својства` (indefinite, correct without a clitic) and `Анализирај ги својствата`
-  (definite, requiring one) differ in meaning, not in spelling.
-- **The clitic's POSITION depends on clause type** — after the verb in an imperative, before it
-  everywhere else. A check anchored on "the word after the verb" misses every non-imperative.
-
-Measured yield: **0 of 5.** All five candidates were false — `Својства`, `трајно` and
-`контролна` end in the letters that spell the definite articles `-та`/`-но`/`-на` without
-carrying them, and `Дали сте сигурни … да ги избришете избраните траги` already had its clitic
-in front of the verb where the check was not looking. That is in line with §6.9's general rule
-(4 of 239 on `is`, ~0 of 113 on `cs`), not with this section's exception.
-
-What paid on `mk` instead was **capitalisation** — 118 occurrences over 105 values, one
-mechanical rule, obligatory, broken repeatedly, invisible to every gate (§8.10). So `lb`
-generalises as *a question to ask*, and the answer is a **different rule each time**: ask what
-rule this language has that the three reports cannot check, and be willing for the answer to
-be orthography rather than morphology.
-
-**Be strict about what counts as "no counter-example", because that phrase did the work in
-the wrong direction here.** The first pass wrote it on the basis of a per-lemma report and
-was wrong: the counter-examples existed, in other lemmas of the same word class. Before
-leaving a class alone, search for the *construction*, not the word — and say which
-environments you checked.
+**ASK THE QUESTION EVERY TIME, BUT DO NOT EXPECT A SANDHI RULE TO BE WAITING.** On `mk` the
+answer was no, and the two reasons generalise. Macedonian obligatorily doubles a definite
+direct object with an accusative clitic, which is obligatory, fires constantly, invisible to
+every gate — and looks exactly like the Eifeler Regel while not being the same shape,
+because **the trigger is semantic (definiteness) rather than orthographic**, and because
+**the clitic's position depends on clause type** (after the verb in an imperative, before it
+elsewhere). Measured yield: **0 of 5**, in line with §6.9's general rule rather than this
+section's exception. What paid on `mk` instead was capitalisation (§8.10). So the durable
+form of this section is a *question*: ask what rule this language has that the three reports
+cannot check, and be willing for the answer to be a different rule each time — or none.
 
 ---
 
@@ -2062,137 +1452,53 @@ rest are in progress. The moment the last locale reaches parity:
 Rationale worth preserving: the env override and the per-locale set are exactly the knobs
 someone reaches for to turn a red build green. Once unnecessary they are a liability.
 
-### 9.2 Review the 16 pre-rule locales — `cs` done, 15 to go
+### 9.2 Review the pre-rule locales — `cs` done, 15 to go
 
-**`cs` is done** (register measured, detector written, cognates reviewed, whole bundle
-audited, `locales/cs.json` written), so the remaining set is
-`da de el es fi fr hu it nb nl pl pt ru sv uk`.
+The remaining set is `da de el es fi fr hu it nb nl pl pt ru sv uk`. Per locale:
+`npm run l10n:status -- <loc>` lists the unjustified identical values;
+`npm run test:l10n:parity -- --strict-identical` audits them. For each, decide genuine
+cognate (record the reason) or filler (translate it). Then write `locales/<loc>.json` and it
+becomes enforced from that moment — no code change needed, the gate keys on the file
+existing. Expect a high legitimate rate in some (`nl` renders `Bewaartermijn` unchanged —
+Dutch words in a Dutch bundle) and the opposite in others; this is the audit that turned up
+46 placeholders in `tr`.
 
-**What the `cs` pass found, because it changes what to expect from the rest.** These sixteen
-are *doubly* un-audited, so the re-audit handoff reasonably predicted they would be as bad as
-`is` or worse. On this evidence the opposite is true for the mature ones:
+The register verdicts for these 16 were already recorded, so step 2 is done — but
+**re-measure rather than trusting the record.** A detector is required for `selfcheck`
+anyway, so the measurement is nearly free once you are there, and on `cs` it turned two
+pre-tooling assumptions into 828-vs-0 and 27-vs-0.
 
-| | `is` (Transifex half) | `cs` (whole bundle) | `sk` (whole bundle) | `ca` (whole bundle) | `lb` (pre-existing half) | `sq` (pre-existing half) | `mk` (pre-existing half) |
+**What to budget for.** The re-audit handoff predicted these would be as bad as `is` or
+worse. They are not — the defect rate tracks **how healthy the locale is upstream, not how
+long it went un-audited**:
+
+| | `is` | `cs` | `sk` | `ca` | `lb` | `sq` | `mk` |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | values audited | 1052 | 2052 | 2052 | 2052 | 1011 | 1018 | 1053 |
 | defects | 235 (**22%**) | 113 (**5.5%**) | 57 (**2.8%**) | 128 (**6.2%**) | 77 (**7.6%**) | 160 (**15.7%**) | 114 (**10.8%**) |
-| garbled words / foreign stems | 14 | **0** | 1 (one typo) | 2 (Spanish calques) | 2 (a French and a German form) | 2 (both unparseable Albanian) | 1 (Serbo-Croatian) |
-| agreement failures | 11 | **0** | **0** | 1 | 2 (both gender) | 14 (8 adjective, 6 participle) | 4 (all one stat-label shape) |
-| wrong case | 19 | 6 | **0** | — (no case system) | **0** | **0** | — (no case system) |
+| garbled / foreign stems | 14 | **0** | 1 | 2 | 2 | 2 | 1 |
+| agreement failures | 11 | **0** | **0** | 1 | 2 | 14 | 4 |
+| wrong case | 19 | 6 | **0** | — | **0** | **0** | — |
 | wrong plural arrays | — | **0** | **0** | **0** | **0** | **0** | **0** |
-| dominant class | malformed compounds, wrong senses | **terminology drift and internal inconsistency** | **one term (37 of 57), plus stray one-offs** | **on-screen collisions plus a long tail** | **one obligatory ORTHOGRAPHIC rule, 60 of 77 (§8.11)** | **one ORTHOGRAPHIC stem (39) plus the button convention (36)** | **one ORTHOGRAPHIC rule, 105 of 114 (§8.10)** |
+| dominant class | compounds, wrong senses | terminology drift | **one term (37 of 57)** | on-screen collisions plus a long tail | **one orthographic rule (60 of 77)** | one stem (39) plus the button convention (36) | **one orthographic rule (105 of 114)** |
 
-**`mk` is the most concentrated distribution yet, and the cleanest bundle underneath it.**
-105 of its 114 corrections are the single capitalisation rule and the other 9 split four ways
-(4 agreement, 3 progressive-form, 2 terminology consistency, 1 foreign). Zero garbled words,
-zero wrong plural arrays, zero register deviations, and — worth stating because `sr` needed
-`script-coverage` to find two wrong-alphabet values — the whole bundle is in the right
-alphabet, that sweep returning exactly the 12 recorded cognates plus 4 normalisations. So this
-is the `sq` lesson a third time and the sharpest instance of it: **a locale can be healthy in
-grammar and healthy in vocabulary and still be a tenth wrong, if it is inconsistent about one
-mechanical rule.** Measure the rule, then count violations; do not read values hoping to
-notice.
+Four things that table is trying to say:
 
-Czech is an actively maintained locale with a real translator community and the bundle reads
-like it. So **budget these passes for terminology counting, not grammar repair** — and expect
-that split to track how healthy the locale is upstream, not how long it has gone un-audited.
-
-**`lb` is the counter-example to "budget for terminology, not grammar", and the reason to
-ask one question first: does this language have an obligatory sandhi rule?** Its terminology
-was in good shape — `termdrift` produced almost nothing actionable, because a heavily
-compounding language buries the shared stem inside `Lëschtenusiicht` and `Webhook-Liwwerung`
-where a stem-prefix heuristic cannot see it, and `corediff` had only 4 shared keys to work
-with. What it had instead was **one orthographic rule broken 75 times** (§8.11), which is 60
-of the 77 corrections. Neither of the two cheap reports would ever have found it, and the
-third was unavailable: `lb` is one of the six locales with **no hunspell dictionary**, so
-the spell report was a known gap rather than a clean result. Where all three reports come
-back thin, do not conclude the locale is healthy — ask what rule the language has that the
-reports are structurally unable to check.
-
-**`sq` is the highest defect rate outside `is` — 15.7% — and the two big classes were both
-things a reader's eye slides over.** 39 of the 160 were a single stem misspelled
-(`vectoriz-` for `vektoriz-`, in a bundle that already wrote `vektoriale` 15 times and once
-carried both spellings in the same value), and 36 were the button convention: a 2pl
-imperative on a short label, correct Albanian in isolation and wrong for a toolbar. Neither
-is a grammar failure and neither is terminology drift, so both fall outside the split the
-rows above describe. The generalisation: **a locale can be healthy in grammar and healthy in
-vocabulary and still be 15% wrong, if it is inconsistent about a mechanical rule.** `lb`'s
-sandhi and `sq`'s stem-and-register are the same shape — measure the *rule*, then count
-violations, rather than reading values and hoping to notice.
-
-Two further `sq` lessons about the reports themselves, both about false signals rather than
-missed ones:
-
-- **`termdrift` reported the minority side and the minority was right.** `hyrje` for *entry*
-  held 18 keys against `zë`'s 11, but core sq uses `hyrje` for **access** and renders
-  "directory entries" as `zëra`. Following the majority would have entrenched a collision
-  with the bundle's own need for "access". §6.9 says the majority is not automatically right;
-  this is the case that earns it.
-- **A capitalisation sweep manufactured a 110-value defect class that does not exist**, and
-  the confound pointed toward doing the work rather than away from it. See §8.10 — condition
-  on the English key's own casing before believing any casing measurement.
-
-**`ca` breaks the "defects concentrate" pattern, and that is the thing to plan for.** `sk` was
-37-of-57 in a single term, so the pass was one sweep. `ca`'s biggest class was 35 keys and *eleven
-further classes* carried 2–11 each, which is slower per defect and means **you cannot stop when
-the term count goes quiet.** Its two worst defects were also of a kind neither `cs` nor `sk` had:
-**byte-identical collisions between two labels the user sees side by side** — `Settings`/`Configuration`
-as sibling tabs in three dialogs, and `Logs`/`Registers` as the two tabs of one tab bar. Grep the
-`tabs:` arrays and the paired empty states early; a collision the user can see is a defect however
-defensible each word is on its own. Conversely `ca` is where **core killed the most candidates**:
-`Refresh`/`Update` → `Actualitza` and `Remove`/`Delete` → the `suprimir` family are both core `ca`
-verbatim, so two collisions that looked identical to the two real ones were correctly left alone.
-
-**`sk` confirms this from the other direction, and is worth reading before starting Tier 2.**
-It is not one of these sixteen — it is a Tier 2 locale that already had a register
-measurement, a detector, a reviewed cognate set and a terminology record, and only an empty
-`corrections`. It was audited next on purpose, because it is the **closest sibling to `cs`**
-in the whole set and so isolates upstream maintenance from language family. Two results:
-
-- **A `corrections` count of 0 means "unverified", not "clean".** There were 57 real defects
-  that no one had gone looking for, including two semantic reversals and a typo.
-- **But it does not mean a quarter of the file is waiting.** At 2.8% `sk` came in *below*
-  `cs`, with zero agreement failures, zero case errors and zero bad plural arrays. Both
-  West Slavic locales are healthy and for the same reason. Tier 2 is **cheaper** than the
-  `is` numbers suggested.
-- **The defects concentrate.** 37 of `sk`'s 57 were a single term (*audit trail*) and its
-  misspelled adjective. Once the term count finds the one term that drifted, most of the
-  pass is a single mechanical sweep — which is another reason to do the counting first.
-
-Two method notes the `cs` pass paid for:
-
-- **Counting competing renderings per English term produced ~70 of the 113 corrections**, and
-  needs no knowledge of the language. Do it first, every time. The exact-value-collision scan
-  was second best (22 collisions, 4 real defects).
-- **Check core before "fixing" an outlier.** Core `cs` overturned four candidate corrections,
-  including one where the single value I was about to change was the *only* one that matched
-  core: `Loading…` → `Načítání…` looks like the outlier against 37 sibling `Načítá se` values,
-  and `Načítání` is core's own form. `Current password` → `Dosavadní heslo` looked like a
-  wrong sense and is core verbatim. A majority inside the bundle is not authority on its own.
-
-Between them the remaining fifteen carry several hundred `value === key` entries **nobody has
-checked** (count them with `npm run test:l10n:parity -- --strict-identical`), and the gate
-cannot judge them because there is no `locales/<loc>.json`. `cs` came in at 26 such values, of
-which **22 were genuine cognates, 2 were filler** (`Driver`, which almost every other locale
-translates and which core `cs` itself renders `ovladače databází`; and `N/A`, which sibling
-`sk` renders `Neuvedené`) **and 2 were casing defects** (`Id`, `Url` → `ID`, `URL`).
-
-Per locale: `npm run l10n:status -- <loc>` lists the unjustified ones; audit with
-`npm run test:l10n:parity -- --strict-identical`. For each, decide genuine cognate (record
-the reason) or filler (translate it). Then write `locales/<loc>.json` and it becomes
-enforced from that moment — no code change needed, the gate keys on the file existing.
-
-Expect a high legitimate rate in some (`nl` renders `Bewaartermijn` and
-`AVG / Verwerkingsregister` unchanged — Dutch words in a Dutch bundle) and the opposite in
-others; this is the audit that turned up 46 placeholders in `tr`. The register verdicts for
-these 16 were already recorded, so step 2 is done for them; a detector is still needed for
-`selfcheck` to check register, and `cs` is the first of the sixteen to have one.
-
-**Measure the recorded verdict anyway rather than trusting it.** `cs` was already listed
-`formal` in §7.2 and its button convention already listed as the infinitive, both from before
-the tooling. Re-measuring cost one detector run and turned two assumptions into 828-vs-0 and
-27-vs-0 — and building the detector is required for `selfcheck` regardless, so the
-measurement is nearly free once you are there.
+- **Budget for terminology counting, not grammar repair**, on any actively maintained
+  locale. `cs` and `sk` are both healthy West Slavic bundles and for the same reason.
+- **A locale can be healthy in grammar and healthy in vocabulary and still be a tenth
+  wrong, if it is inconsistent about one mechanical rule.** `lb`, `sq` and `mk` are all this
+  shape. **Measure the rule, then count violations** — do not read values hoping to notice.
+  So where all three reports come back thin, do not conclude the locale is healthy: ask what
+  rule the language has that the reports are structurally unable to check (§8.11).
+- **The defects usually concentrate, but not always.** `sk` was 37-of-57 in a single term, so
+  the pass was one sweep. `ca`'s biggest class was 35 keys with eleven further classes
+  carrying 2–11 each, which is slower per defect and means **you cannot stop when the term
+  count goes quiet.**
+- **A `corrections` count of 0 means "unverified", not "clean" — and not "a quarter of the
+  file is waiting" either.** `sk` had a measured register, a detector, a reviewed cognate set
+  and an empty `corrections`, and the audit still found 57 real defects including two
+  semantic reversals invisible to every gate. Read a 0 as "nobody looked".
 
 ---
 
@@ -2201,27 +1507,14 @@ measurement is nearly free once you are there.
 These are **source** fixes, not translation work. Each one costs 37 bundle entries or
 renders wrongly in every locale.
 
-- **`test:l10n` IS CURRENTLY RED, AND NOT BECAUSE OF l10n WORK.** This is the §6.15
-  situation, already live: a `development` merge (`28d24aa08`) de-Dutchified the AVG source
-  strings and added flow strings, leaving **17 keys used in `src/` but missing from
-  `en.js`**. Verified pre-existing — the same failure reproduces in a clean worktree at
-  HEAD with no l10n changes present, and neither `en.js` nor `src/` has been touched since.
-  Eleven of the 17 are English replacements for Dutch-keyed strings that are still in
-  `en.js` and now unused: `Inzage (Art 15)` → `Access (Art 15)`, `Inzage results` →
-  `Access results`, `Verantwoording` → `Accountability`, `AVG / Verwerkingsregister` →
-  `GDPR / AVG processing register`, `Generate the verantwoordingsdocument` → `Generate the
-  accountability document`, `Bewaartermijn`/`Rechtsgrond` → `Retention period`/`Legal
-  basis`, plus the two `verwerkingsactiviteit` sentences and the `Locate every object…`
-  blurb. The other six are new: `App`, `New flow`, `Schedule`, `Trigger`, `Enabled, but has
-  no owner — it will not start`, and the flows-list description.
-
-  The fix is a **rename**, not an add, for those eleven — `l10n-ai.js rename` carries all
-  37 bundles at once, so every finished locale's existing translation survives and parity
-  never breaks. Do the renames first, then `test:l10n:write` for the six genuinely new
-  keys, then translate those six across the finished set (§6.15). Note `rename` does not
-  rewrite call sites, but here the call sites are already the *new* strings — it is `en.js`
-  that is behind — so no `src/` edit is needed for the renames. Its own commit, per §3.10.
-
+- **`test:l10n` may be RED without anyone touching l10n.** A `development` merge that
+  de-Dutchified the AVG source strings and added flow strings left 17 keys used in `src/`
+  but missing from `en.js`. Most were English replacements for still-present Dutch-keyed
+  strings, so **the fix is a rename, not an add** (§6.15) — that carries all 37 bundles at
+  once, so every finished locale's translation survives and parity never breaks. Do the
+  renames first, then `test:l10n:write` for the genuinely new keys, then translate those
+  across the finished set. Its own commit, per §3.10. Re-run `npm run test:l10n` to see
+  whether this is still open.
 - **`{plural}` hardcodes English morphology** — 13 call sites in
   `src/sidebars/register/RegisterSideBar.vue`, `RegistersSideBar.vue`,
   `src/views/register/RegistersIndex.vue`. Should be `n()` with real plural keys. **Highest
@@ -2263,22 +1556,13 @@ As of 2026-08-14 openconnector is behind on four counts:
 - it still stores plurals under the bare singular (§7.1);
 - its `CLAUDE.md` still states the incorrect "the singular is the catalogue key" rule;
 - its `check-l10n-parity.js` predates the arity, identical-value, finished-set and
-  cognate-justification gates.
+  cognate-justification gates, and its whitelist lacks `spellAllow` (§4.4) — port the
+  whitelist with the rest, or a vendored copy will keep silently dropping the field.
 
 The whole of `scripts/l10n/` is worth porting, not just the library — openconnector has the
 same 37-bundle problem and none of the tooling.
 
-**Two `sq` register slips found in openconnector's own bundle** by the `sq` detector's
-family scan, and they are the only informal values in the whole 3980-value corpus:
-
-- `Nuk ke ende kredenciale të ndërmjetësuara. Krijo një së pari në OpenRegister.` — 2sg
-  present `ke`
-- `Referoju një kredenciali që mbahet nga ndërmjetësi … në vend që të ruash …` — 2sg
-  subjunctive `ruash`
-
-Both should be 2pl (`Nuk keni ende …`, `… të ruani …`). Albanian is measured formal at 218:1
-in core and 556:2 across the family (§7.2), so these are defects rather than a house style.
-Run `node scripts/l10n/detectors/sq.js` from this repo to re-find them after any fix.
-
-**`lib.js` gained a `spellAllow` line in the whitelist** during the `sq` pass (§4.4) — port
-it with the rest, or a vendored copy will keep silently dropping the field.
+**A detector's family scan finds defects in the sibling apps' bundles, and they are worth
+reporting there.** The `sq` detector found the only two informal values in a 3980-value
+corpus, both in openconnector, against a measured 218:1 formal core. Re-run
+`node scripts/l10n/detectors/<loc>.js` from this repo after any fix.

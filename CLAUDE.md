@@ -1,6 +1,6 @@
 # openregister — l10n tooling
 
-When working on l10n, follow the @docs/l10n-workflow.md workflow.
+When working on l10n, read `docs/l10n-workflow.md` and follow it.
 
 ---
 
