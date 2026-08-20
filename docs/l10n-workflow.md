@@ -113,9 +113,8 @@ is how you tell "in progress" from "broken".
 
 ### 2.3 Order of work
 
-The high-confidence group is **done**, and so are the first seven low-resource ones. Two
-remain: `be bs`, **in that order** — the owner has confirmed the order, so there is no need
-to re-ask per locale as long as it is kept.
+The high-confidence group is **done**, and so are all the low-resource ones bar the last.
+One remains: **`bs`**.
 
 **Check whether core can decide the register at all before planning a pass**, because §5
 step 2 assumes it can. **Measure the marker COUNT, not the catalogue count.** Zero
@@ -126,17 +125,15 @@ polarity. That is the shape that lets a pass record a measurement it never made.
 
 | Locale | Core coverage | Consequence |
 | --- | --- | --- |
-| `be` | 14 catalogues | core is usable |
 | `bs` | 1 catalogue, 55 values | not evidence of anything; use the §6.4 fallback, widened to the sibling apps' frontend bundles |
 
-Durable per-locale notes for the two not yet done (facts about the language or the sources,
+Durable per-locale notes for the one not yet done (facts about the language or the sources,
 not counts — these will not go stale):
 
 | Locale | Note |
 | --- | --- |
-| `be` | Non-Latin. `npm run l10n:script` replaces the English-leftover sweep in §5 step 8 |
 | `bs` | Very few harvest sources (7) — expect to translate almost everything by hand. Recent passes ran a 4.5–7% hit rate even with 12–40 sources |
-| `bs` | openbuild's Croatian catalogue ships under `bs.json` too; dropped automatically (§6.6). It has been observed under **seven** names (`bs cs hr mk sk sl sr`) and has twice reached a *committed* bundle in the same key — `Audit trail #{id}`. Expect the defect **inside** the file, not only in the harvest sources, and check that one key first |
+| `bs` | openbuild's Croatian catalogue ships under `bs.json` too; dropped automatically (§6.6). It has been observed under **seven** names (`bs cs hr mk sk sl sr`) and has twice reached a *committed* bundle in the same key — `Audit trail #{id}`. Expect the defect **inside** the file, not only in the harvest sources, and check that one key first. A third language reached that same key in a committed bundle on `be` (Russian), so it is now three for three |
 
 **The closing task**, once the last locale lands, is §9.1. It is not optional cleanup.
 
@@ -940,6 +937,12 @@ The distinct hazards, every one of which has actually bitten:
 - **Absolute vs modular.** `sk`/`cs` bound absolutely, so **22 selects form 2**; `hr` bounds
   modularly, so 22 selects form 1. An array copied between two `nplurals=3` Slavic locales
   is wrong at every compound number.
+- **The same header AND the same boundaries can still need a different NOUN form.** `be`'s
+  expression is byte-identical to `ru`'s and partitions the counts identically, and Belarusian
+  still takes the **nominative plural** after 2–4 where Russian takes the genitive singular
+  (`2 запісы`, not `2 записа`) — with the adjective and verb going plural alongside it. So
+  matching headers is not even evidence for copying form 1, let alone the whole array. Core
+  decides it; core `be` is one-sided across all 30 of its arrays.
 - **The dual.** Slovenian's form 1 governs noun case, adjective agreement **and verb
   number** together: 2 needs `Objekta sta bila izbrisana` where the plural needs
   `Objekti so bili izbrisani`.
@@ -991,7 +994,7 @@ the library governs which element renders. `runtime-check.mjs` calls `unregister
 ### 7.2 Register verdicts
 
 Informal: `nl de sv da nb pl fi hu et lv ga mt is`.
-Formal: `fr cs ru uk tr el sr bg ca hr lt ro sk sl lb sq mk`.
+Formal: `fr cs ru uk tr el sr bg ca hr lt ro sk sl lb sq mk be`.
 
 The counts and how each was measured are in `locales/<loc>.json` and in the companion doc.
 What belongs here is the taxonomy, because **the label is the same and the situation is
@@ -1023,7 +1026,7 @@ Two measurement rules that generalise:
 | --- | --- | --- |
 | same register as prose | `tr` `ru` | formal imperative |
 | bare 2sg imperative, whatever the prose | `ca` `et` `hr` `sl` `sr` `ga` `mt` | `Desa`, `Salvesta`, `Spremi`, `Shrani`, `Сачувај`, `Sábháil`, `Issejvja` |
-| **infinitive — register-neutral** | `cs` `lt` `lv` `sk` `rm` `is` `lb` | `Zobrazit`, `Įrašyti`, `Saglabāt`, `Uložiť`, `Memorisar`, `Vista`, `Späicheren` |
+| **infinitive — register-neutral** | `cs` `lt` `lv` `sk` `rm` `is` `lb` `be` | `Zobrazit`, `Įrašyti`, `Saglabāt`, `Uložiť`, `Memorisar`, `Vista`, `Späicheren`, `Захаваць` |
 | **verbal noun — register-neutral** | `ro` `bg` | `Salvare`, `Adăugare endpoint`; `Запазване`, `Добавяне на крайна точка` |
 | **2sg imperative for a label, 2pl once it is a sentence — GRADED BY LENGTH** | `sq` `mk` | `Ruaj` / `Fshi` / `Shto`, but `Menaxhoni regjistrat …`; `Зачувај` / `Избриши`, but `Управувајте со вашите апликации …` |
 
@@ -1105,9 +1108,11 @@ What generalises:
   prefix of their own 2pl (`vyber` ⊂ `vyberte`); `sq`'s bare `do` is also the future
   particle, 101 occurrences of ordinary third-person prose. In each case the rule scores the
   commonest *opposite-polarity* shape in the corpus as its own polarity.
-- **In any language whose 2pl is the 2sg plus a suffix** — the whole West Slavic group — the
-  trailing `(?!\p{L})` guard is not hygiene, it is the only thing separating the two
-  polarities. **Write the guard before the word list**, not after a control fails.
+- **In any language whose 2pl is the 2sg plus a suffix** the trailing `(?!\p{L})` guard is
+  not hygiene, it is the only thing separating the two polarities. **Write the guard before
+  the word list**, not after a control fails. This looked like a West Slavic property and is
+  not one: Belarusian builds its 2pl imperative the same way (`выберы` → `выберыце`), so
+  check the morphology rather than the branch of the family tree.
 - **Check whether a marker is a substring of the app's own commonest nouns.** `cs`'s
   `nastav` sits inside `nastavení`, and `tvá` inside `vytvářet` — 48 occurrences, every one
   inside that verb.
@@ -1226,6 +1231,15 @@ Every one of these passes all automated checks. Read the call site.
 
 **Sibling apps are not automatically right**, and a whole catalogue can be the wrong
 language (§6.6).
+
+**ASK WHAT LETTERS THE TARGET DOES NOT HAVE.** Where the script omits a letter its likeliest
+contaminant uses, that gap is a free and exact wrong-language detector — and unlike §6.6's
+byte-identity guard it works on the **committed bundle**, which is where the guard cannot
+help. Belarusian has no `и`, `щ` or `ъ`: one grep found two committed Russian values in the
+pre-existing half *and* established that openbuild's whole `be.json` is a separate Russian
+translation, which the guard misses precisely because it is not byte-identical to their `ru`.
+`uk` (no `ы ъ э`), `sr` and `mk` (no `й ы щ ъ`) all have such a gap. Run it before reading
+values one at a time; where it exists it is the cheapest check in the pass.
 
 ### 8.5 Collisions the target language creates
 

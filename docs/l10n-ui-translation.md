@@ -47,7 +47,15 @@ by counting formal vs informal markers across core (`server/core`, `lib`,
 
 Measured results: informal for `nl`, `de`, `sv`, `da`, `nb`, `pl`, `fi`, `hu`,
 `et`, `lv`, `ga`, `mt`, `is`; formal for `fr`, `cs`, `ru`, `uk`, `tr`, `el`, `sr`, `bg`, `ca`, `hr`,
-`lt`, `sk`, `sl`, `rm`, `lb`, `sq`, `mk`.
+`lt`, `sk`, `sl`, `rm`, `lb`, `sq`, `mk`, `be`.
+
+**`be` is the first verdict resting on an asserted ABSENCE rather than a ratio.** Core's 14
+Belarusian catalogues carry 334 formal markers across 1873 values and **zero** informal; the
+bundle's own pre-existing half runs 156 to zero. Neither corpus contains a single `ты`,
+`цябе`, `табе` or `тво-` form anywhere. That is the `lv` shape reached from the opposite
+end — there the assertion that mattered was zero *formal* markers, because correct informal
+Latvian is mostly undetectable by design. Read a one-sided count for which side is the
+assertion.
 
 **`cs` is measured as of this pass, not inherited.** It sat in the formal column from before
 any of the tooling existed (it is one of the sixteen pre-rule locales), and re-measuring it
@@ -326,6 +334,15 @@ locale's expression**. Equal counts do not mean equal boundaries:
 - `hr` — `nplurals=3`, same expression as `ru`; the three forms are Croatian
   nominative singular / genitive singular / genitive plural
   (`1 objekt` / `3 objekta` / `7 objekata`)
+- `be` — `nplurals=3`, expression byte-identical to `ru`'s, boundaries identical to `ru`'s,
+  and **the noun form in form 1 is still different**. Belarusian takes the **nominative
+  plural** after 2–4 where Russian takes the genitive singular: `2 запісы`, `%n файлы`,
+  `тры дні` — never Russian's `2 записа`. Core `be` is one-sided on this across all 30 of
+  its plural arrays, and the agreeing adjective and verb go plural with it
+  (`{count} файлавыя канфлікты`, `%n запісы яшчэ не маюць хэша`). Form 2 is the genitive
+  plural and shifts the predicate with it (`Выбраны {count}` at forms 0–1 against
+  `Выбрана {count}` at form 2). Core's own catalogues ship **four**-element arrays; that is
+  a Transifex artefact, not a fourth Belarusian form
 - `lt` — `nplurals=3`, and **the boundaries are not Croatian's**: form 1 covers
   **2–9** (not 2–4) and 10–20 falls to form 2. Nominative singular / nominative
   plural / genitive plural (`1 objektas` / `5 objektai` / `10 objektų`). A Croatian
@@ -1486,12 +1503,10 @@ grammar repair. Counting competing renderings per English term produced about 70
   correct, including `_Successfully restored {count} object_`, which switches the participle's
   agreement per form (`Obnoven`/`Obnoveny`/`Obnoveno`) exactly as Czech requires.
 
-Thirty-four locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
+Thirty-five locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
 `nb`, `pl`, `cs`, `ru`, `uk`, `el`, `fi`, `hu`, `tr`, `ca`, `et`, `hr`, `lt`, `lv`,
-`ro`, `sk`, `sl`, `bg`, `sr`, `rm`, `ga`, `mt`, `is`, `lb`, `sq`, `mk` — the whole high-confidence group plus the
-first seven of the low-resource ones. Two remain (`be`, `bs`),
-in that order, which the owner has confirmed — no need to re-ask per locale as long as
-the order is kept.
+`ro`, `sk`, `sl`, `bg`, `sr`, `rm`, `ga`, `mt`, `is`, `lb`, `sq`, `mk`, `be` — the whole
+high-confidence group plus the low-resource ones bar the last. One remains (`bs`).
 
 For non-Latin locales (`ru`, `uk`, `bg`, `be`, `mk`, `sr`, `el`) a script-coverage
 check replaces the English-leftover check, and it is now a committed script:
@@ -1779,3 +1794,78 @@ and `hu` take rather than the `Слаг` transliteration `be`/`ru`/`sr`/`uk` use
 `Ознака` for `Label` and `Етикети` for `Labels` (§8.4), so a transliteration would have been
 the only way to avoid a collision and it reads as nothing to a Macedonian user. `ID` and `URL`
 stay Latin because the bundle already writes them that way in ten of its own values.
+
+### `be` is where an alphabet gap made wrong-language contamination deterministic
+
+Belarusian's alphabet has **no `и`, no `щ`, no `ъ`** — it writes `і` and `ў` instead — so a
+single grep separates Belarusian from Russian with no knowledge of either language:
+
+```bash
+node -e '…' # /[ищъЩИЪ]/u over every value
+```
+
+That found **two committed Russian values** in the pre-existing half (`Audit trail #{id}` →
+`Запись журнала аудита #{id}`, `NO ACTION` → `НЕТ ДЕЙСТВИЯ`) and it settled the harvest at a
+glance: **openbuild's entire `be.json` is Russian**, 426 of its lines carrying a letter
+Belarusian does not have. `harvest.js`'s byte-identity guard cannot see that, because the
+file is not byte-identical to openbuild's `ru` — it is a *separate* Russian translation. Every
+one of its eight candidates (`Документация`, `Уведомления`, `Открыть`, `Обязательно`,
+`Кратно`, `Жизненный цикл`, `объект`, `Открыть в OpenRegister`) had to be rejected by hand,
+while the other five sibling `be` catalogues came back clean at zero.
+
+**The generalisation is the useful part**: where the target's script omits a letter its
+likeliest contaminant has, that gap is a free, exact contamination detector — for the harvest
+*and* for the committed bundle, which is where the guard cannot help. `uk` (no `ы`, `ъ`, `э`),
+`sr` and `mk` (no `й`, `ы`, `щ`, `ъ`) all have one. Ask what letters the target does **not**
+have before reading values one at a time. Note the `Audit trail #{id}` key: it is the same key
+that has twice reached a committed bundle carrying Croatian under `bs`/`sr`. Check it first.
+
+**The obligatory sandhi question (§8.11) came back YES here, and the bundle already obeyed
+it.** Belarusian writes `у` after a consonant or a pause and `ў` after a vowel, both for the
+standalone preposition and word-initially inside a phrase — orthographic, deterministic, firing
+several times per sentence, invisible to every gate. The pre-existing half scored 98 correct
+word-initial `ў` and 47 correct `у` with **zero** violations in either direction, and the half
+written during the pass scored 169 and 58 with zero. So the answer to the `lb` question is
+sometimes "the rule exists and the locale is already right" — which is a measurement, not a
+skip, and is only worth anything because it was run against **both halves** separately.
+
+Watch it interact with morphology: the genitive plural of `дастаўка` is `даставак`, not
+`дастаўкаў`, and the `ў` becomes `в` because the epenthetic vowel puts it before a vowel.
+
+**Casing: flat lowercase, the `is`/`mk` outcome.** Domain terms mid-sentence run 0 capitalised
+against 458 lowercase, and conditioning on the English key's own casing changes *nothing*
+(0:117 even under Title-Case keys). A Title-Cased English heading takes sentence case here.
+
+**Ellipsis mirrors the source key** rather than following core: a key ending `...` takes
+`...` (39 of 40) and a key ending ` …` takes ` …`, where core `be` uses the `…` character
+exclusively and never the three dots. The one mismatch was a slip, not a second convention.
+
+### `be` traps
+
+- **The 2sg imperative IS counted** — §6.5 tests 1 and 2 both come out usable, which puts `be`
+  with `sk`/`rm` rather than with the larger exclusion group. Labels are **infinitives**
+  (`Захаваць`, `Выдаліць`, `Дадаць`, `Скасаваць` — 44 core action keys, not one imperative),
+  so counting imperatives flags no button. The catch is that Belarusian builds the 2pl
+  imperative as the 2sg **plus `-це`** (`выберы` → `выберыце`, `захавай` → `захавайце`), so
+  the trailing `(?!\p{L})` guard is the only thing separating the two polarities. That is the
+  West Slavic hazard of §8.1 turning up in a different branch — **it is not a family
+  property.** One form is given up: `май`, 2sg of `мець` and also the month name.
+- **`-це` is the locative singular of every hard-stem masculine noun**, not just the 2pl
+  ending: `фармаце`, `праекце`, `тэксце`, `запыце`, `пакеце`, `стандарце`, `пошце`, `даце`
+  all occur in the corpora, two of them live in this bundle. A `-це` rule scores ordinary
+  prepositional phrases as deferential address.
+- **`-ш` inverts the verdict**, as everywhere: `ваш` is the formal possessive, and the corpora
+  also carry `больш` (17), `менш`, `перш`, `найбольш`, `клавіш` and the app's own `хэш` and
+  `кэш`.
+- **`ты` is fully usable** — Belarusian's demonstrative is `гэты`, never bare `ты`, so unlike
+  `cs`/`hr`/`sl` there is no reading to give up.
+- **`ШІ` is the AI acronym** (штучны інтэлект), written hyphen-attached as `ШІ-агент`, and it
+  is **not** a homograph of any register marker — so the `mk` `ВИ`/`ви` problem does not
+  replicate and `fold()` can lowercase freely. Worth recording as the measured negative it is.
+- Terminology settled against core: `Cancel` → `Скасаваць` (core in six catalogues, against
+  the bundle's `Адмяніць`, which stays for *cannot be undone*); `Share` → `Абагуліць`, which
+  the bundle's own noun `Абагульванні` already implied while its verb said `Падзяліцца`;
+  *default* → `прадвызначан-`, not the Russian calque `па змаўчанні`. Collisions avoided:
+  `Bucket` → `Сегмент` (never *interval*, which is its own key), `redaction` → `зацямненне`
+  (never *рэдагаванне*, this app's *Edit* — the `lt` trap), `Totals` → `Разам` (it was
+  byte-identical to `Results` on the dashboard sidebar).
