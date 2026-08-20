@@ -29,8 +29,8 @@ belongs in `en.js`, never in `en.json`.** There is no scanner for the backend se
 (it would have to walk `lib/` for PHP `$l->t()`), so `en.json` is maintained by hand.
 
 Re-measure before trusting any number here — `npm run check:l10n` prints it all.
-**As of 2026-08-19**: `en.js` holds 2052 keys, 31 locales at full parity, 5 in progress
-(`lb sq mk be bs`, in that order — the owner has confirmed the order, so no need to
+**As of 2026-08-20**: `en.js` holds 2052 keys, 32 locales at full parity, 4 in progress
+(`sq mk be bs`, in that order — the owner has confirmed the order, so no need to
 re-ask per locale). **`test:l10n` is currently RED at HEAD and not because of l10n work**:
 a `development` merge replaced the Dutch GDPR source terms with English ones and added
 flow strings, leaving 17 keys used in `src/` but missing from `en.js`. That is the
@@ -126,7 +126,7 @@ indistinguishable from finished work, so nobody revisits it. Audit with
 `npm run test:l10n:parity -- --strict-identical`.
 
 **Cognate enforcement is opt-in per locale**, keyed on `locales/<loc>.json`
-existing. Only `tr ca et hr lt lv ro sk sl bg sr rm ga mt is cs` are held to it; the other 15 predate the rule and
+existing. Only `tr ca et hr lt lv ro sk sl bg sr rm ga mt is cs lb` are held to it; the other 15 predate the rule and
 carry ~375 unreviewed identical values, some legitimate. The gate prints which
 locales are enforced and which are merely unreviewed, so a green run cannot be read
 as verified. **Reviewing those 16 is open work.**
@@ -193,6 +193,31 @@ is the class to hunt first in any locale whose language collapses two of the app
 a defect no amount of "both words are correct Catalan" excuses. **The reports also found their own
 blind spot** — `l10n:spell` was splitting every Catalan `l·l` word in half and reporting the halves
 as misspellings, so a locale's orthography can defeat the tooling silently.
+
+**Ask whether the language has an OBLIGATORY SANDHI rule before budgeting the audit.** `lb`
+is the counter-example to "budget for terminology, not grammar": its terminology was healthy
+and **60 of its 77 corrections were one orthographic rule** — the Eifeler Regel, where
+word-final `-n` deletes before any consonant but `n d t z h`. Obligatory, fires several times
+per sentence, invisible to every gate, and broken in *both* directions. It is also the **one
+mechanical morphology check that has ever paid off here** (the general rule against them still
+holds — 4 of 239 on `is`, ~0 of 113 on `cs`), because the trigger is deterministic rather than
+agreement-based. It found 44 further violations in the half written during the pass, so split
+at HEAD and re-run it on your own work. Method: `docs/l10n-workflow.md` §8.11. The same shape
+applies to French elision/liaison, Irish initial mutation and Italian `lo`/`il`.
+
+**And when measuring a bundle's own practice, aggregate by WORD CLASS, not only per lemma.** A
+per-lemma consistency check is necessary but not sufficient, and on `lb` believing otherwise
+cost a whole round: a lemma occurring in only one environment carries no information, so
+`Lueden` (always with `-n`) and `Deele` (always without) both read as "consistent" and 26
+values were excused on a "16:0, no counter-example" count that was really one copy-pasted
+phrase. By word class the family does both, 118 to 108. **A uniform lemma is evidence of one
+decision, not of a rule.**
+
+**Thin core coverage is more dangerous than none.** `rm` and `mt` had zero catalogues, so the
+scan THREW and §5 step 2 could not run by accident. `lb` had one catalogue with 72 values, so
+it *succeeded* — and would have reported a register verdict computed from **0 markers**, since
+those 72 values contain no address form. Measure the marker count, not the catalogue count.
+`bs` (55 values) is the same trap.
 
 **Check core AND the call site before "fixing" an outlier.** Core `cs` overturned four
 candidate corrections, one of which was the only value in its family that actually matched

@@ -1467,10 +1467,10 @@ grammar repair. Counting competing renderings per English term produced about 70
   correct, including `_Successfully restored {count} object_`, which switches the participle's
   agreement per form (`Obnoven`/`Obnoveny`/`Obnoveno`) exactly as Czech requires.
 
-Thirty-one locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
+Thirty-two locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
 `nb`, `pl`, `cs`, `ru`, `uk`, `el`, `fi`, `hu`, `tr`, `ca`, `et`, `hr`, `lt`, `lv`,
-`ro`, `sk`, `sl`, `bg`, `sr`, `rm`, `ga`, `mt`, `is` — the whole high-confidence group plus the
-first four of the low-resource ones. Five remain (`lb`, `sq`, `mk`, `be`, `bs`),
+`ro`, `sk`, `sl`, `bg`, `sr`, `rm`, `ga`, `mt`, `is`, `lb` — the whole high-confidence group plus the
+first five of the low-resource ones. Four remain (`sq`, `mk`, `be`, `bs`),
 in that order, which the owner has confirmed — no need to re-ask per locale as long as
 the order is kept.
 
@@ -1533,3 +1533,81 @@ imperative on an action label is the convention, not a slip.
   `Actualitza` and that is **core `ca` verbatim for both**, so the collision is not a defect.
   `Remove` and `Delete` both land in the `suprimir` family, and core collapses them too — the
   same answer `sk` reached. Neither was "fixed".
+
+### `lb` is where thin core coverage proved more dangerous than none
+
+Register is **formal** (200 vs 9 over 3321 translated values) with **infinitive buttons**
+(64 vs 0), so `lb` sits beside `cs`, `lt`, `lv`, `sk`, `rm` and `is`. Luxembourgish builds
+its V-form from the 2pl on the German `Sie` model — `Dir` / `Iech` / `Ären` — and it is
+live, current, ordinary usage. That makes it a fifth situation behind the same "formal"
+label and the plainest one since `cs`: not archaic (`is`), not available-but-unused (`mt`),
+not absent (`ga`), not structurally undetectable (`lv`).
+
+**The thing to carry forward is how nearly the measurement went wrong.** `rm` and `mt` had
+**zero** core catalogues, so `coreCatalogues()` threw and §5 step 2 could not be run by
+accident. `lb` has exactly **one** catalogue with 72 values, so the call *succeeded* — and
+those 72 values contain no address form at all, so the scan would have reported a verdict
+computed from **0 formal and 0 informal markers**. A thin core is the shape that lets a pass
+record a measurement it never made. `detectors/lb.js` therefore counts core's markers and
+prints "too thin to decide anything" rather than trusting the catalogue count, and it falls
+back to the app family's own frontend bundles (1054 own + 2386 sibling values) the way `mt`
+did. **`bs`, at 55 values in one catalogue, is the same trap.**
+
+- **`fold()` MUST NOT lowercase, and this is the only locale so far where that is true.**
+  Lowercase `dir` is the informal 2sg **dative**; capitalised `Dir` is the polite 2pl
+  **nominative**. Both occur here — `dir` once, in "Dashboards ... déi dir gehéieren"
+  alongside `Du kanns`, and `Dir` 82 times in "Sidd Dir sécher…". A `toLowerCase()` merges
+  all 83 and inverts the verdict. This is the `da`/`nb` `De`/`Dem`/`Deres` problem with a
+  sharper edge: there the collision is with a third-person pronoun, here it is with the
+  familiar form of the same paradigm. The residue is honest and recorded in `UNDETECTABLE` —
+  a value *opening* with the informal dative takes a sentence-initial capital and cannot be
+  distinguished. All 11 sentence-initial `Dir` in the corpus are polite, so the cost is
+  currently theoretical.
+- **The modals syncretise 1sg/2sg/3sg**, so `muss` and `weess` carry no address information
+  whatever, while the regularly inflected 2sg of the same verbs (`kanns`, `wëlls`, `sollst`)
+  does. Measured, not reasoned: all 15 bare `muss` in the corpus are 3sg. That makes this a
+  third kind of partial detectability — split by **lexical class**, where `bg` and `is` split
+  by conjugation class.
+- **The 2sg imperative is excluded on §6.5 test 2 alone.** Test 1 comes out NO, because
+  labels are infinitives — so unlike `ca`/`et`/`hr`/`sl`/`sr`/`ga`/`mt`, counting it would
+  not have flagged every button. It is excluded because the bare stem is an ordinary noun for
+  the productive verbs: `Späicher` is "storage/loft", `Filter` and `Test` are nouns this
+  bundle uses as labels.
+- **Capitalisation is grammatically FORCED, not a house convention** — Luxembourgish
+  capitalises every noun. A fifth §8.10 outcome, and the one that ends the question instead of
+  answering it. Two false positives to expect anywhere: `{register}`/`{schema}` are
+  *placeholders*, and lowercase `filteren` is the *verb* (the noun `Filter` is 25:0).
+- **The Eifeler Regel is the whole story of this audit.** Word-final `-n` deletes before any
+  consonant but `n d t z h`, and is kept before those and before vowels. Obligatory, fires
+  several times per sentence, invisible to every gate, and broken in **both** directions here.
+  It is the one mechanical morphology check that has ever paid off in this project; the method
+  is §8.11. It also caught 44 violations in the half written during the pass — more own-drift
+  than any other locale has produced — and then 48 more in a follow-up round, for the reason
+  below.
+- **The per-lemma consistency check is necessary but NOT sufficient, and believing otherwise
+  cost a round.** Comparing each lemma only against itself excused every lemma that occurs in
+  a single environment: `Lueden` appears only *with* the `-n`, `Deele` only *without* it, so
+  both looked internally consistent. 26 values were then left uncorrected on a "16:0 with no
+  counter-example" count that was really **one copy-pasted phrase repeated thirteen times**.
+  Aggregating by **word class** shows the family does both — 118 kept against 108 deleted —
+  with directly parallel pairs: `Lueden vum` / `Deele vun`, `Späicheren feelgeschloen` /
+  `bäisetze wëllt`, `erstellen wann` / `zesummeféiere wann`. A uniform lemma is evidence of
+  one decision, not of a rule. Run both cuts.
+- **Terminology was healthy and both cheap reports were structurally blind to it.**
+  `corediff` had only 4 shared keys; `termdrift` produced almost nothing actionable, because
+  a heavily compounding language buries the shared stem inside `Lëschtenusiicht` and
+  `Webhook-Liwwerung` where a stem-prefix heuristic cannot see it; and the spell report does
+  not exist, `lb` being one of the six locales with no hunspell dictionary. **Where all three
+  reports come back thin, ask what rule the language has that they cannot check.**
+- **Lexicon settled against core, and recorded.** `Files` → `Datei`/`Dateien`, against core
+  `lb`'s French-derived `Fichieren`: the app family is 111:0 for `Datei*` and 0 for
+  `Fichier*`, so §3.5 settles it without an owner ask. `Email` → `E-Mail` likewise.
+- **Two filler traps caught by §3.3 rather than by eye.** `GitHub Personal Access Token` and
+  its GitLab sibling looked like product names to keep, and 32 of the 37 locales translate
+  them — the exact shape the `cs` pass classified as filler. Both were translated. Against
+  that, `Mappings` was *kept* on the app family's own evidence: openconnector, which owns the
+  concept, uses it unchanged across six keys and compounds it as `Mapping-Detailer`.
+- **`Driver` is the weakest cognate in the set and is flagged as such** in `locales/lb.json`.
+  Luxembourgish IT register borrows it and `Dreiwer` would be a coinage, but §3.3 finds 21
+  distinct values and the `cs` pass called its own identical `Driver` filler. Challenge it if
+  a native speaker disagrees.
