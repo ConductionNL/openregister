@@ -5,6 +5,9 @@
  *
  * Business logic for Action entity management.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -15,6 +18,8 @@
  * @version GIT: <git-id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/specs/actions/spec.md
  */
 
 declare(strict_types=1);
@@ -22,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\Action;
 use OCA\OpenRegister\Db\ActionMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -37,349 +43,368 @@ use Symfony\Component\Uid\Uuid;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class ActionService
-{
-    /**
-     * Hook event mapping for migration
-     *
-     * @var array<string, string>
-     */
-    private const HOOK_EVENT_MAP = [
-        'creating' => 'ObjectCreatingEvent',
-        'created'  => 'ObjectCreatedEvent',
-        'updating' => 'ObjectUpdatingEvent',
-        'updated'  => 'ObjectUpdatedEvent',
-        'deleting' => 'ObjectDeletingEvent',
-        'deleted'  => 'ObjectDeletedEvent',
-    ];
+class ActionService {
+	/**
+	 * Hook event mapping for migration
+	 *
+	 * @var array<string, string>
+	 */
+	private const HOOK_EVENT_MAP = [
+		'creating' => 'ObjectCreatingEvent',
+		'created' => 'ObjectCreatedEvent',
+		'updating' => 'ObjectUpdatingEvent',
+		'updated' => 'ObjectUpdatedEvent',
+		'deleting' => 'ObjectDeletingEvent',
+		'deleted' => 'ObjectDeletedEvent',
+	];
 
-    /**
-     * Constructor
-     *
-     * @param ActionMapper     $actionMapper    Action mapper
-     * @param SchemaMapper     $schemaMapper    Schema mapper
-     * @param IEventDispatcher $eventDispatcher Event dispatcher
-     * @param LoggerInterface  $logger          Logger
-     */
-    public function __construct(
-        private readonly ActionMapper $actionMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly IEventDispatcher $eventDispatcher,
-        private readonly LoggerInterface $logger
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor
+	 *
+	 * @param ActionMapper $actionMapper Action mapper
+	 * @param SchemaMapper $schemaMapper Schema mapper
+	 * @param IEventDispatcher $eventDispatcher Event dispatcher
+	 * @param LoggerInterface $logger Logger
+	 */
+	public function __construct(
+		private readonly ActionMapper $actionMapper,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly IEventDispatcher $eventDispatcher,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Create a new action
-     *
-     * Validates required fields, generates UUID, sets defaults, persists, and dispatches event.
-     *
-     * @param array $data Action data
-     *
-     * @return Action The created action
-     *
-     * @throws \InvalidArgumentException If required fields are missing
-     */
-    public function createAction(array $data): Action
-    {
-        // Validate required fields.
-        if (empty($data['name']) === true) {
-            throw new \InvalidArgumentException('Action name is required');
-        }
+	/**
+	 * Create a new action
+	 *
+	 * Validates required fields, generates UUID, sets defaults, persists, and dispatches event.
+	 *
+	 * @param array $data Action data
+	 *
+	 * @return Action The created action
+	 *
+	 * @throws InvalidArgumentException If required fields are missing
+	 *
+	 * @spec openspec/specs/actions/spec.md
+	 */
+	public function createAction(array $data): Action {
+		// Validate required fields.
+		if (empty($data['name']) === true) {
+			throw new InvalidArgumentException('Action name is required');
+		}
 
-        if (empty($data['eventType']) === true) {
-            throw new \InvalidArgumentException('Action eventType is required');
-        }
+		if (empty($data['eventType']) === true) {
+			throw new InvalidArgumentException('Action eventType is required');
+		}
 
-        if (empty($data['engine']) === true) {
-            throw new \InvalidArgumentException('Action engine is required');
-        }
+		if (empty($data['engine']) === true) {
+			throw new InvalidArgumentException('Action engine is required');
+		}
 
-        if (empty($data['workflowId']) === true) {
-            throw new \InvalidArgumentException('Action workflowId is required');
-        }
+		if (empty($data['workflowId']) === true) {
+			throw new InvalidArgumentException('Action workflowId is required');
+		}
 
-        // Remove ID to ensure new record.
-        unset($data['id']);
+		// Remove ID to ensure new record.
+		unset($data['id']);
 
-        // Generate UUID if not provided.
-        if (empty($data['uuid']) === true) {
-            $data['uuid'] = Uuid::v4()->toRfc4122();
-        }
+		// Generate UUID if not provided.
+		if (empty($data['uuid']) === true) {
+			$data['uuid'] = Uuid::v4()->toRfc4122();
+		}
 
-        // Set defaults for optional fields.
-        $data['status']         = $data['status'] ?? 'draft';
-        $data['mode']           = $data['mode'] ?? 'sync';
-        $data['executionOrder'] = $data['executionOrder'] ?? 0;
-        $data['timeout']        = $data['timeout'] ?? 30;
-        $data['onFailure']      = $data['onFailure'] ?? 'reject';
-        $data['onTimeout']      = $data['onTimeout'] ?? 'reject';
-        $data['onEngineDown']   = $data['onEngineDown'] ?? 'allow';
-        $data['maxRetries']     = $data['maxRetries'] ?? 3;
-        $data['retryPolicy']    = $data['retryPolicy'] ?? 'exponential';
-        $data['enabled']        = $data['enabled'] ?? true;
-        $data['version']        = $data['version'] ?? '1.0.0';
+		// Set defaults for optional fields.
+		$data['status'] = $data['status'] ?? 'draft';
+		$data['mode'] = $data['mode'] ?? 'sync';
+		$data['executionOrder'] = $data['executionOrder'] ?? 0;
+		$data['timeout'] = $data['timeout'] ?? 30;
+		$data['onFailure'] = $data['onFailure'] ?? 'reject';
+		$data['onTimeout'] = $data['onTimeout'] ?? 'reject';
+		$data['onEngineDown'] = $data['onEngineDown'] ?? 'allow';
+		$data['maxRetries'] = $data['maxRetries'] ?? 3;
+		$data['retryPolicy'] = $data['retryPolicy'] ?? 'exponential';
+		$data['enabled'] = $data['enabled'] ?? true;
+		$data['version'] = $data['version'] ?? '1.0.0';
 
-        $action = new Action();
-        $action->hydrate($data);
+		$action = new Action();
+		$action->hydrate($data);
 
-        $action = $this->actionMapper->insert(entity: $action);
+		$action = $this->actionMapper->insert(entity: $action);
 
-        $this->eventDispatcher->dispatchTyped(new ActionCreatedEvent(action: $action));
+		$this->eventDispatcher->dispatchTyped(new ActionCreatedEvent(action: $action));
 
-        $this->logger->info(
-            message: '[ActionService] Action created',
-            context: ['id' => $action->getId(), 'name' => $action->getName()]
-        );
+		$this->logger->info(
+			message: '[ActionService] Action created',
+			context: ['id' => $action->getId(), 'name' => $action->getName()]
+		);
 
-        return $action;
-    }//end createAction()
+		return $action;
+	}//end createAction()
 
-    /**
-     * Update an existing action
-     *
-     * @param int   $id   Action ID
-     * @param array $data Partial update data
-     *
-     * @return Action The updated action
-     */
-    public function updateAction(int $id, array $data): Action
-    {
-        $action = $this->actionMapper->find(id: $id);
+	/**
+	 * Update an existing action
+	 *
+	 * @param int $id Action ID
+	 * @param array $data Partial update data
+	 *
+	 * @return Action The updated action
+	 *
+	 * @spec openspec/specs/actions/spec.md
+	 */
+	public function updateAction(int $id, array $data): Action {
+		$action = $this->actionMapper->find(id: $id);
 
-        // Remove fields that should not be user-overridable.
-        unset($data['id'], $data['uuid'], $data['created']);
+		// Remove fields that should not be user-overridable.
+		unset($data['id'], $data['uuid'], $data['created']);
 
-        $action->hydrate($data);
-        $action->setUpdated(new DateTime());
+		$action->hydrate($data);
+		$action->setUpdated(new DateTime());
 
-        $action = $this->actionMapper->update(entity: $action);
+		$action = $this->actionMapper->update(entity: $action);
 
-        $this->eventDispatcher->dispatchTyped(new ActionUpdatedEvent(action: $action));
+		$this->eventDispatcher->dispatchTyped(new ActionUpdatedEvent(action: $action));
 
-        return $action;
-    }//end updateAction()
+		return $action;
+	}//end updateAction()
 
-    /**
-     * Soft-delete an action
-     *
-     * Sets deleted timestamp and changes status to archived.
-     *
-     * @param int $id Action ID
-     *
-     * @return Action The deleted action
-     */
-    public function deleteAction(int $id): Action
-    {
-        $action = $this->actionMapper->find(id: $id);
+	/**
+	 * Soft-delete an action
+	 *
+	 * Sets deleted timestamp and changes status to archived.
+	 *
+	 * @param int $id Action ID
+	 *
+	 * @return Action The deleted action
+	 *
+	 * @spec openspec/specs/actions/spec.md
+	 */
+	public function deleteAction(int $id): Action {
+		$action = $this->actionMapper->find(id: $id);
 
-        $action->setDeleted(new DateTime());
-        $action->setStatus('archived');
-        $action->setUpdated(new DateTime());
+		$action->setDeleted(new DateTime());
+		$action->setStatus('archived');
+		$action->setUpdated(new DateTime());
 
-        $action = $this->actionMapper->update(entity: $action);
+		$action = $this->actionMapper->update(entity: $action);
 
-        $this->eventDispatcher->dispatchTyped(new ActionDeletedEvent(action: $action));
+		$this->eventDispatcher->dispatchTyped(new ActionDeletedEvent(action: $action));
 
-        $this->logger->info(
-            message: '[ActionService] Action soft-deleted',
-            context: ['id' => $action->getId(), 'name' => $action->getName()]
-        );
+		$this->logger->info(
+			message: '[ActionService] Action soft-deleted',
+			context: ['id' => $action->getId(), 'name' => $action->getName()]
+		);
 
-        return $action;
-    }//end deleteAction()
+		return $action;
+	}//end deleteAction()
 
-    /**
-     * Test an action with a dry-run simulation
-     *
-     * Validates matching and builds the payload without executing side effects.
-     *
-     * @param int   $id            Action ID
-     * @param array $samplePayload Sample event payload
-     *
-     * @return array Test result with match info and payload
-     */
-    public function testAction(int $id, array $samplePayload): array
-    {
-        $action = $this->actionMapper->find(id: $id);
+	/**
+	 * Test an action with a dry-run simulation
+	 *
+	 * Validates matching and builds the payload without executing side effects.
+	 *
+	 * @param int $id Action ID
+	 * @param array $samplePayload Sample event payload
+	 *
+	 * @return array Test result with match info and payload
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 *
+	 * @spec openspec/specs/actions/spec.md
+	 */
+	public function testAction(int $id, array $samplePayload): array {
+		$action = $this->actionMapper->find(id: $id);
 
-        $eventType    = $samplePayload['eventType'] ?? '';
-        $schemaUuid   = $samplePayload['schemaUuid'] ?? null;
-        $registerUuid = $samplePayload['registerUuid'] ?? null;
+		$eventType = $samplePayload['eventType'] ?? '';
+		$schemaUuid = $samplePayload['schemaUuid'] ?? null;
+		$registerUuid = $samplePayload['registerUuid'] ?? null;
 
-        // Check event type match.
-        $eventMatch = $action->matchesEvent($eventType);
+		// Check event type match.
+		$eventMatch = $action->matchesEvent($eventType);
 
-        // Check schema match.
-        $schemaMatch = $action->matchesSchema($schemaUuid);
+		// Check schema match.
+		$schemaMatch = $action->matchesSchema($schemaUuid);
 
-        // Check register match.
-        $registerMatch = $action->matchesRegister($registerUuid);
+		// Check register match.
+		$registerMatch = $action->matchesRegister($registerUuid);
 
-        // Check filter condition match.
-        $filterMatch   = true;
-        $filterReasons = [];
-        $conditions    = $action->getFilterConditionArray();
-        if (empty($conditions) === false) {
-            foreach ($conditions as $key => $expected) {
-                $actual = $this->getNestedValue(data: $samplePayload, key: $key);
-                if (is_array($expected) === true) {
-                    if (in_array($actual, $expected) === false) {
-                        $filterMatch     = false;
-                        $filterReasons[] = "filter_condition mismatch: {$key} expected one of [".implode(', ', $expected)."], got '{$actual}'";
-                    }
-                } else if ($actual !== $expected) {
-                    $filterMatch     = false;
-                    $filterReasons[] = "filter_condition mismatch: {$key} expected '{$expected}', got '{$actual}'";
-                }
-            }
-        }
+		// Check filter condition match.
+		$filterMatch = true;
+		$filterReasons = [];
+		$conditions = $action->getFilterConditionArray();
+		if (empty($conditions) === false) {
+			foreach ($conditions as $key => $expected) {
+				$actual = $this->getNestedValue(data: $samplePayload, key: $key);
+				if (is_array($expected) === true) {
+					if (in_array($actual, $expected) === false) {
+						$filterMatch = false;
+						$expectedList = implode(', ', $expected);
+						$filterReasons[] = sprintf(
+							"filter_condition mismatch: %s expected one of [%s], got '%s'",
+							$key,
+							$expectedList,
+							(string)$actual
+						);
+					}
+				} elseif ($actual !== $expected) {
+					$filterMatch = false;
+					$filterReasons[] = "filter_condition mismatch: {$key} expected '{$expected}', got '{$actual}'";
+				}
+			}
+		}
 
-        $matched = $eventMatch && $schemaMatch && $registerMatch && $filterMatch;
+		$matched = $eventMatch && $schemaMatch && $registerMatch && $filterMatch;
 
-        return [
-            'matched'       => $matched,
-            'action'        => $action->jsonSerialize(),
-            'eventMatch'    => $eventMatch,
-            'schemaMatch'   => $schemaMatch,
-            'registerMatch' => $registerMatch,
-            'filterMatch'   => $filterMatch,
-            'filterReasons' => $filterReasons,
-            'builtPayload'  => $matched === true ? $samplePayload : null,
-        ];
-    }//end testAction()
+		$builtPayload = null;
+		if ($matched === true) {
+			$builtPayload = $samplePayload;
+		}
 
-    /**
-     * Migrate inline hooks from a schema to Action entities
-     *
-     * @param int $schemaId Schema ID
-     *
-     * @return array Migration report
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     */
-    public function migrateFromHooks(int $schemaId): array
-    {
-        $schema = $this->schemaMapper->find(id: $schemaId);
-        $hooks  = $schema->getHooks() ?? [];
+		return [
+			'matched' => $matched,
+			'action' => $action->jsonSerialize(),
+			'eventMatch' => $eventMatch,
+			'schemaMatch' => $schemaMatch,
+			'registerMatch' => $registerMatch,
+			'filterMatch' => $filterMatch,
+			'filterReasons' => $filterReasons,
+			'builtPayload' => $builtPayload,
+		];
+	}//end testAction()
 
-        $report = [
-            'created' => [],
-            'skipped' => [],
-            'errors'  => [],
-        ];
+	/**
+	 * Migrate inline hooks from a schema to Action entities
+	 *
+	 * @param int $schemaId Schema ID
+	 *
+	 * @return array Migration report
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 *
+	 * @spec openspec/specs/actions/spec.md
+	 */
+	public function migrateFromHooks(int $schemaId): array {
+		$schema = $this->schemaMapper->find(id: $schemaId);
+		$hooks = $schema->getHooks() ?? [];
 
-        if (empty($hooks) === true) {
-            return $report;
-        }
+		$report = [
+			'created' => [],
+			'skipped' => [],
+			'errors' => [],
+		];
 
-        $schemaUuid = $schema->getUuid() ?? (string) $schemaId;
+		if (empty($hooks) === true) {
+			return $report;
+		}
 
-        foreach ($hooks as $index => $hook) {
-            try {
-                $name      = $hook['id'] ?? "Hook {$index} for ".($schema->getName() ?? 'Unknown');
-                $eventKey  = $hook['event'] ?? 'creating';
-                $eventType = self::HOOK_EVENT_MAP[$eventKey] ?? $eventKey;
+		$schemaUuid = $schema->getUuid() ?? (string)$schemaId;
 
-                // Check for duplicates.
-                $existing = $this->actionMapper->findAll(
-                    filters: ['status' => 'active']
-                );
+		foreach ($hooks as $index => $hook) {
+			try {
+				$name = $hook['id'] ?? "Hook {$index} for " . ($schema->getName() ?? 'Unknown');
+				$eventKey = $hook['event'] ?? 'creating';
+				$eventType = self::HOOK_EVENT_MAP[$eventKey] ?? $eventKey;
 
-                $isDuplicate = false;
-                foreach ($existing as $existingAction) {
-                    if ($existingAction->getName() === $name
-                        && $existingAction->matchesEvent($eventType) === true
-                        && in_array($schemaUuid, $existingAction->getSchemasArray()) === true
-                    ) {
-                        $isDuplicate = true;
-                        break;
-                    }
-                }
+				// Check for duplicates.
+				$existing = $this->actionMapper->findAll(
+					filters: ['status' => 'active']
+				);
 
-                if ($isDuplicate === true) {
-                    $report['skipped'][] = ['name' => $name, 'reason' => 'duplicate'];
-                    continue;
-                }
+				$isDuplicate = false;
+				foreach ($existing as $existingAction) {
+					if ($existingAction->getName() === $name
+						&& $existingAction->matchesEvent($eventType) === true
+						&& in_array($schemaUuid, $existingAction->getSchemasArray()) === true
+					) {
+						$isDuplicate = true;
+						break;
+					}
+				}
 
-                $action = $this->createAction(
-                        data: [
-                            'name'           => $name,
-                            'eventType'      => $eventType,
-                            'engine'         => $hook['engine'] ?? 'n8n',
-                            'workflowId'     => $hook['workflowId'] ?? '',
-                            'mode'           => $hook['mode'] ?? 'sync',
-                            'executionOrder' => $hook['order'] ?? 0,
-                            'timeout'        => $hook['timeout'] ?? 30,
-                            'onFailure'      => $hook['onFailure'] ?? 'reject',
-                            'schemas'        => [$schemaUuid],
-                            'status'         => 'active',
-                        ]
-                        );
+				if ($isDuplicate === true) {
+					$report['skipped'][] = ['name' => $name, 'reason' => 'duplicate'];
+					continue;
+				}
 
-                $report['created'][] = $action->jsonSerialize();
-            } catch (\Exception $e) {
-                $report['errors'][] = [
-                    'hook'  => $hook,
-                    'error' => $e->getMessage(),
-                ];
-            }//end try
-        }//end foreach
+				$action = $this->createAction(
+					data: [
+						'name' => $name,
+						'eventType' => $eventType,
+						'engine' => $hook['engine'] ?? 'n8n',
+						'workflowId' => $hook['workflowId'] ?? '',
+						'mode' => $hook['mode'] ?? 'sync',
+						'executionOrder' => $hook['order'] ?? 0,
+						'timeout' => $hook['timeout'] ?? 30,
+						'onFailure' => $hook['onFailure'] ?? 'reject',
+						'schemas' => [$schemaUuid],
+						'status' => 'active',
+					]
+				);
 
-        return $report;
-    }//end migrateFromHooks()
+				$report['created'][] = $action->jsonSerialize();
+			} catch (\Exception $e) {
+				$report['errors'][] = [
+					'hook' => $hook,
+					'error' => $e->getMessage(),
+				];
+			}//end try
+		}//end foreach
 
-    /**
-     * Update statistics for an action after execution
-     *
-     * @param int    $actionId Action ID
-     * @param string $status   Execution status (success, failure, abandoned)
-     *
-     * @return void
-     */
-    public function updateStatistics(int $actionId, string $status): void
-    {
-        try {
-            $action = $this->actionMapper->find(id: $actionId);
+		return $report;
+	}//end migrateFromHooks()
 
-            $action->setExecutionCount($action->getExecutionCount() + 1);
-            $action->setLastExecutedAt(new DateTime());
+	/**
+	 * Update statistics for an action after execution
+	 *
+	 * @param int $actionId Action ID
+	 * @param string $status Execution status (success, failure, abandoned)
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/actions/spec.md
+	 */
+	public function updateStatistics(int $actionId, string $status): void {
+		try {
+			$action = $this->actionMapper->find(id: $actionId);
 
-            if ($status === 'success') {
-                $action->setSuccessCount($action->getSuccessCount() + 1);
-            } else {
-                $action->setFailureCount($action->getFailureCount() + 1);
-            }
+			$action->setExecutionCount($action->getExecutionCount() + 1);
+			$action->setLastExecutedAt(new DateTime());
 
-            $this->actionMapper->update(entity: $action);
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                message: '[ActionService] Failed to update action statistics',
-                context: ['actionId' => $actionId, 'error' => $e->getMessage()]
-            );
-        }
-    }//end updateStatistics()
+			if ($status === 'success') {
+				$action->setSuccessCount($action->getSuccessCount() + 1);
+			}
 
-    /**
-     * Get a nested value from an array using dot notation
-     *
-     * @param array  $data Array to search
-     * @param string $key  Dot-notation key
-     *
-     * @return mixed The value or null
-     */
-    private function getNestedValue(array $data, string $key): mixed
-    {
-        $keys = explode('.', $key);
+			if ($status !== 'success') {
+				$action->setFailureCount($action->getFailureCount() + 1);
+			}
 
-        foreach ($keys as $segment) {
-            if (is_array($data) === false || array_key_exists($segment, $data) === false) {
-                return null;
-            }
+			$this->actionMapper->update(entity: $action);
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[ActionService] Failed to update action statistics',
+				context: ['actionId' => $actionId, 'error' => $e->getMessage()]
+			);
+		}//end try
+	}//end updateStatistics()
 
-            $data = $data[$segment];
-        }
+	/**
+	 * Get a nested value from an array using dot notation
+	 *
+	 * @param array $data Array to search
+	 * @param string $key Dot-notation key
+	 *
+	 * @return mixed The value or null
+	 */
+	private function getNestedValue(array $data, string $key): mixed {
+		$keys = explode('.', $key);
 
-        return $data;
-    }//end getNestedValue()
+		foreach ($keys as $segment) {
+			if (is_array($data) === false || array_key_exists($segment, $data) === false) {
+				return null;
+			}
+
+			$data = $data[$segment];
+		}
+
+		return $data;
+	}//end getNestedValue()
 }//end class

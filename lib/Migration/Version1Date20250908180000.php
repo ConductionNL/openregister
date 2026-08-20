@@ -35,77 +35,71 @@ use OCP\Migration\SimpleMigrationStep;
  * - created: Set only on INSERT (never changes)
  * - updated: Set on INSERT and automatically updated on every UPDATE
  */
-class Version1Date20250908180000 extends SimpleMigrationStep
-{
-    /**
-     * Constructor.
-     *
-     * @param IDBConnection $connection Database connection
-     */
-    public function __construct(private readonly IDBConnection $connection)
-    {
-    }//end __construct()
+class Version1Date20250908180000 extends SimpleMigrationStep {
+	/**
+	 * Constructor.
+	 *
+	 * @param IDBConnection $connection Database connection
+	 */
+	public function __construct(
+		private readonly IDBConnection $connection,
+	) {
+	}//end __construct()
 
-    /**
-     * Enhance updated column with ON UPDATE CURRENT_TIMESTAMP
-     *
-     * @param IOutput                   $output        Migration output interface
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
-     * @param array                     $options       Migration options
-     *
-     * @return null Updated schema
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        // Get schema wrapper instance from closure (validation only).
-        $schemaClosure();
+	/**
+	 * Enhance updated column with ON UPDATE CURRENT_TIMESTAMP
+	 *
+	 * @param IOutput $output Migration output interface
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
+	 * @param array $options Migration options
+	 *
+	 * @return null Updated schema
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		// Get schema wrapper instance from closure (validation only).
+		$schemaClosure();
 
-        // This migration requires raw SQL as Nextcloud's schema wrapper doesn't.
-        // Support the ON UPDATE CURRENT_TIMESTAMP syntax directly.
-        $output->info(message: '🔧 This migration requires manual SQL execution for ON UPDATE functionality');
-        $output->info(message: 'ℹ️  Nextcloud schema wrapper has limited support for MySQL-specific timestamp features');
+		// This migration requires raw SQL as Nextcloud's schema wrapper doesn't.
+		// Support the ON UPDATE CURRENT_TIMESTAMP syntax directly.
+		$output->info(message: '🔧 This migration requires manual SQL execution for ON UPDATE functionality');
+		$output->info(message: 'ℹ️  Nextcloud schema wrapper has limited support for MySQL-specific timestamp features');
 
-        // No schema changes via wrapper - will use postSchemaChange.
-        return null;
-    }//end changeSchema()
+		// No schema changes via wrapper - will use postSchemaChange.
+		return null;
+	}//end changeSchema()
 
-    /**
-     * Execute raw SQL to modify updated column behavior
-     *
-     * @param IOutput                   $output        Migration output interface
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
-     * @param array                     $options       Migration options
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-        $output->info(message: '🔧 Modifying updated column to auto-update on row changes...');
+	/**
+	 * Execute raw SQL to modify updated column behavior
+	 *
+	 * @param IOutput $output Migration output interface
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
+	 * @param array $options Migration options
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+		$output->info(message: '🔧 Modifying updated column to auto-update on row changes...');
 
-        try {
-            // Modify the updated column to include ON UPDATE CURRENT_TIMESTAMP.
-            $sql = "ALTER TABLE `oc_openregister_objects`
+		try {
+			// Modify the updated column to include ON UPDATE CURRENT_TIMESTAMP.
+			$sql = 'ALTER TABLE `oc_openregister_objects`
                     MODIFY COLUMN `updated` datetime NOT NULL
-                    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP";
+                    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP';
 
-            $this->connection->executeStatement($sql);
+			$this->connection->executeStatement($sql);
 
-            $output->info(message: '✅ Updated column now auto-updates on row modifications');
-            $output->info(message: '🎯 This enables precise create vs update tracking:');
-            $output->info(message: '   • created = updated → Object was just created (INSERT)');
-            $output->info(message: '   • created ≠ updated → Object was updated (UPDATE)');
-            $output->info(message: '🚀 Bulk imports can now distinguish creates vs updates per-object!');
-        } catch (\Exception $e) {
-            $output->info(message: '❌ Failed to modify updated column: '.$e->getMessage());
-            $output->info(message: '⚠️  This may prevent precise create/update tracking');
-            $output->info(
-                message: '💡 Manual SQL fix: See migration docs for ALTER TABLE command'
-            );
-            // End try.
-        }//end try
-    }//end postSchemaChange()
+			$output->info(message: '✅ Updated column now auto-updates on row modifications');
+			$output->info(message: '🎯 This enables precise create vs update tracking:');
+			$output->info(message: '   • created = updated → Object was just created (INSERT)');
+			$output->info(message: '   • created ≠ updated → Object was updated (UPDATE)');
+			$output->info(message: '🚀 Bulk imports can now distinguish creates vs updates per-object!');
+		} catch (\Exception $e) {
+			$output->info(message: '❌ Failed to modify updated column: ' . $e->getMessage());
+			$output->info(message: '⚠️  This may prevent precise create/update tracking');
+			$output->info(
+				message: '💡 Manual SQL fix: See migration docs for ALTER TABLE command'
+			);
+			// End try.
+		}//end try
+	}//end postSchemaChange()
 }//end class

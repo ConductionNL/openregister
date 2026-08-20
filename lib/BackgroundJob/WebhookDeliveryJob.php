@@ -5,6 +5,9 @@
  *
  * Background job for webhook delivery with retries.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -16,8 +19,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-79
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-85
+ * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-webhook-delivery-must-support-async-processing-via-background-jobs
+ * @spec openspec/specs/webhook-payload-mapping/spec.md
  */
 
 declare(strict_types=1);
@@ -50,164 +53,162 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  */
-class WebhookDeliveryJob extends QueuedJob
-{
+class WebhookDeliveryJob extends QueuedJob {
 
-    /**
-     * Webhook mapper
-     *
-     * Handles database operations for webhook entities.
-     *
-     * @var WebhookMapper Webhook mapper instance
-     */
-    private readonly WebhookMapper $webhookMapper;
+	/**
+	 * Webhook mapper
+	 *
+	 * Handles database operations for webhook entities.
+	 *
+	 * @var WebhookMapper Webhook mapper instance
+	 */
+	private readonly WebhookMapper $webhookMapper;
 
-    /**
-     * Webhook service
-     *
-     * Handles webhook delivery logic and HTTP requests.
-     *
-     * @var WebhookService Webhook service instance
-     */
-    private readonly WebhookService $webhookService;
+	/**
+	 * Webhook service
+	 *
+	 * Handles webhook delivery logic and HTTP requests.
+	 *
+	 * @var WebhookService Webhook service instance
+	 */
+	private readonly WebhookService $webhookService;
 
-    /**
-     * Logger
-     *
-     * Used for logging delivery attempts, successes, and errors.
-     *
-     * @var LoggerInterface Logger instance
-     */
-    private readonly LoggerInterface $logger;
+	/**
+	 * Logger
+	 *
+	 * Used for logging delivery attempts, successes, and errors.
+	 *
+	 * @var LoggerInterface Logger instance
+	 */
+	private readonly LoggerInterface $logger;
 
-    /**
-     * Constructor
-     *
-     * Initializes background job with required dependencies for webhook delivery.
-     * Calls parent constructor to set up base job functionality with time factory.
-     *
-     * @param ITimeFactory    $time           Time factory for job scheduling
-     * @param WebhookMapper   $webhookMapper  Webhook mapper for database operations
-     * @param WebhookService  $webhookService Webhook service for delivery logic
-     * @param LoggerInterface $logger         Logger for error tracking
-     *
-     * @return void
-     */
-    public function __construct(
-        ITimeFactory $time,
-        WebhookMapper $webhookMapper,
-        WebhookService $webhookService,
-        LoggerInterface $logger
-    ) {
-        // Call parent constructor to initialize base job with time factory.
-        parent::__construct(time: $time);
+	/**
+	 * Constructor
+	 *
+	 * Initializes background job with required dependencies for webhook delivery.
+	 * Calls parent constructor to set up base job functionality with time factory.
+	 *
+	 * @param ITimeFactory $time Time factory for job scheduling
+	 * @param WebhookMapper $webhookMapper Webhook mapper for database operations
+	 * @param WebhookService $webhookService Webhook service for delivery logic
+	 * @param LoggerInterface $logger Logger for error tracking
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		WebhookMapper $webhookMapper,
+		WebhookService $webhookService,
+		LoggerInterface $logger,
+	) {
+		// Call parent constructor to initialize base job with time factory.
+		parent::__construct(time: $time);
 
-        // Store dependencies for use in job execution.
-        $this->webhookMapper  = $webhookMapper;
-        $this->webhookService = $webhookService;
-        $this->logger         = $logger;
-    }//end __construct()
+		// Store dependencies for use in job execution.
+		$this->webhookMapper = $webhookMapper;
+		$this->webhookService = $webhookService;
+		$this->logger = $logger;
+	}//end __construct()
 
-    /**
-     * Run the background job
-     *
-     * Executes webhook delivery with retry logic. Extracts webhook configuration,
-     * delivers payload to webhook URL, and handles retries on failure.
-     *
-     * @param array<string, mixed> $argument Job arguments containing:
-     *                                       - webhook_id: Webhook ID to deliver (required)
-     *                                       - event_name: Event class name (required)
-     *                                       - payload: Event payload data (required)
-     *                                       - attempt: Current attempt number (default: 1)
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-79
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-85
-     */
-    protected function run($argument): void
-    {
-        // Extract job arguments with defaults.
-        $webhookId = $argument['webhook_id'] ?? null;
-        $eventName = $argument['event_name'] ?? null;
-        $payload   = $argument['payload'] ?? [];
-        $attempt   = $argument['attempt'] ?? 1;
+	/**
+	 * Run the background job
+	 *
+	 * Executes webhook delivery with retry logic. Extracts webhook configuration,
+	 * delivers payload to webhook URL, and handles retries on failure.
+	 *
+	 * @param array<string, mixed> $argument Job arguments containing:
+	 *                                       - webhook_id: Webhook ID to deliver (required)
+	 *                                       - event_name: Event class name (required)
+	 *                                       - payload: Event payload data (required)
+	 *                                       - attempt: Current attempt number (default: 1)
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-webhook-delivery-must-support-async-processing-via-background-jobs
+	 * @spec openspec/specs/webhook-payload-mapping/spec.md
+	 */
+	protected function run($argument): void {
+		// Extract job arguments with defaults.
+		$webhookId = $argument['webhook_id'] ?? null;
+		$eventName = $argument['event_name'] ?? null;
+		$payload = $argument['payload'] ?? [];
+		$attempt = $argument['attempt'] ?? 1;
 
-        if ($webhookId === null || $eventName === null) {
-            $this->logger->error(
-                message: '[WebhookDeliveryJob] WebhookDeliveryJob called with invalid arguments',
-                context: [
-                    'file'     => __FILE__,
-                    'line'     => __LINE__,
-                    'argument' => $argument,
-                ]
-            );
-            return;
-        }
+		if ($webhookId === null || $eventName === null) {
+			$this->logger->error(
+				message: '[WebhookDeliveryJob] WebhookDeliveryJob called with invalid arguments',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'argument' => $argument,
+				]
+			);
+			return;
+		}
 
-        try {
-            $webhook = $this->webhookMapper->find($webhookId);
+		try {
+			$webhook = $this->webhookMapper->find($webhookId);
 
-            $this->logger->info(
-                message: '[WebhookDeliveryJob] Executing webhook delivery job',
-                context: [
-                    'file'         => __FILE__,
-                    'line'         => __LINE__,
-                    'webhook_id'   => $webhookId,
-                    'webhook_name' => $webhook->getName(),
-                    'event'        => $eventName,
-                    'attempt'      => $attempt,
-                ]
-            );
+			$this->logger->info(
+				message: '[WebhookDeliveryJob] Executing webhook delivery job',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'webhook_id' => $webhookId,
+					'webhook_name' => $webhook->getName(),
+					'event' => $eventName,
+					'attempt' => $attempt,
+				]
+			);
 
-            // Deliver webhook.
-            $success = $this->webhookService->deliverWebhook(
-                webhook: $webhook,
-                eventName: $eventName,
-                payload: $payload,
-                attempt: $attempt
-            );
+			// Deliver webhook.
+			$success = $this->webhookService->deliverWebhook(
+				webhook: $webhook,
+				eventName: $eventName,
+				payload: $payload,
+				attempt: $attempt
+			);
 
-            if ($success === true) {
-                $this->logger->info(
-                    message: '[WebhookDeliveryJob] Webhook delivery job completed successfully',
-                    context: [
-                        'file'         => __FILE__,
-                        'line'         => __LINE__,
-                        'webhook_id'   => $webhookId,
-                        'webhook_name' => $webhook->getName(),
-                        'event'        => $eventName,
-                        'attempt'      => $attempt,
-                    ]
-                );
-            }//end if
+			if ($success === true) {
+				$this->logger->info(
+					message: '[WebhookDeliveryJob] Webhook delivery job completed successfully',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'webhook_id' => $webhookId,
+						'webhook_name' => $webhook->getName(),
+						'event' => $eventName,
+						'attempt' => $attempt,
+					]
+				);
+			}//end if
 
-            if ($success === false) {
-                $this->logger->warning(
-                    message: '[WebhookDeliveryJob] Webhook delivery job failed',
-                    context: [
-                        'file'         => __FILE__,
-                        'line'         => __LINE__,
-                        'webhook_id'   => $webhookId,
-                        'webhook_name' => $webhook->getName(),
-                        'event'        => $eventName,
-                        'attempt'      => $attempt,
-                    ]
-                );
-            }//end if
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[WebhookDeliveryJob] Webhook delivery job encountered an exception',
-                context: [
-                    'file'       => __FILE__,
-                    'line'       => __LINE__,
-                    'webhook_id' => $webhookId,
-                    'event'      => $eventName,
-                    'attempt'    => $attempt,
-                    'error'      => $e->getMessage(),
-                    'trace'      => $e->getTraceAsString(),
-                ]
-            );
-        }//end try
-    }//end run()
+			if ($success === false) {
+				$this->logger->warning(
+					message: '[WebhookDeliveryJob] Webhook delivery job failed',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'webhook_id' => $webhookId,
+						'webhook_name' => $webhook->getName(),
+						'event' => $eventName,
+						'attempt' => $attempt,
+					]
+				);
+			}//end if
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[WebhookDeliveryJob] Webhook delivery job encountered an exception',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'webhook_id' => $webhookId,
+					'event' => $eventName,
+					'attempt' => $attempt,
+					'error' => $e->getMessage(),
+					'trace' => $e->getTraceAsString(),
+				]
+			);
+		}//end try
+	}//end run()
 }//end class

@@ -5,6 +5,9 @@
  *
  * Mapper for Feedback entities to handle database operations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -24,7 +27,6 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
-use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -47,97 +49,91 @@ use OCP\IDBConnection;
  *
  * @extends QBMapper<Feedback>
  */
-class FeedbackMapper extends QBMapper
-{
-    /**
-     * Constructor for FeedbackMapper
-     *
-     * @param IDBConnection $db Database connection
-     */
-    public function __construct(IDBConnection $db)
-    {
-        parent::__construct(db: $db, tableName: 'openregister_feedback', entityClass: Feedback::class);
-    }//end __construct()
+class FeedbackMapper extends QBMapper {
+	/**
+	 * Constructor for FeedbackMapper
+	 *
+	 * @param IDBConnection $db Database connection
+	 */
+	public function __construct(IDBConnection $db) {
+		parent::__construct(db: $db, tableName: 'openregister_feedback', entityClass: Feedback::class);
+	}//end __construct()
 
-    /**
-     * Override insert to generate UUID and timestamps
-     *
-     * @param Entity $entity Entity to insert
-     *
-     * @return       Feedback Inserted entity
-     * @psalm-return Feedback
-     */
-    public function insert(Entity $entity): Feedback
-    {
-        // Generate UUID if not set.
-        if (empty($entity->getUuid()) === true) {
-            $entity->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
-        }
+	/**
+	 * Override insert to generate UUID and timestamps
+	 *
+	 * @param Entity $entity Entity to insert
+	 *
+	 * @return Feedback Inserted entity
+	 * @psalm-return Feedback
+	 */
+	public function insert(Entity $entity): Feedback {
+		// Generate UUID if not set.
+		if (empty($entity->getUuid()) === true) {
+			$entity->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
+		}
 
-        // Set timestamps.
-        $now = new DateTime();
-        if ($entity->getCreated() === null) {
-            $entity->setCreated($now);
-        }
+		// Set timestamps.
+		$now = new DateTime();
+		if ($entity->getCreated() === null) {
+			$entity->setCreated($now);
+		}
 
-        $entity->setUpdated($now);
+		$entity->setUpdated($now);
 
-        return parent::insert(entity: $entity);
-    }//end insert()
+		return parent::insert(entity: $entity);
+	}//end insert()
 
-    /**
-     * Override update to set updated timestamp
-     *
-     * @param Entity $entity Entity to update
-     *
-     * @return       Feedback Updated entity
-     * @psalm-return Feedback
-     */
-    public function update(Entity $entity): Feedback
-    {
-        $entity->setUpdated(new DateTime());
-        return parent::update(entity: $entity);
-    }//end update()
+	/**
+	 * Override update to set updated timestamp
+	 *
+	 * @param Entity $entity Entity to update
+	 *
+	 * @return Feedback Updated entity
+	 * @psalm-return Feedback
+	 */
+	public function update(Entity $entity): Feedback {
+		$entity->setUpdated(new DateTime());
+		return parent::update(entity: $entity);
+	}//end update()
 
-    /**
-     * Find feedback for a specific message
-     *
-     * @param int    $messageId Message ID
-     * @param string $userId    User ID (to ensure user can only see their own feedback)
-     *
-     * @return Feedback|null
-     */
-    public function findByMessage(int $messageId, string $userId): ?Feedback
-    {
-        $qb = $this->db->getQueryBuilder();
+	/**
+	 * Find feedback for a specific message
+	 *
+	 * @param int $messageId Message ID
+	 * @param string $userId User ID (to ensure user can only see their own feedback)
+	 *
+	 * @return Feedback|null
+	 */
+	public function findByMessage(int $messageId, string $userId): ?Feedback {
+		$qb = $this->db->getQueryBuilder();
 
-        $qb->select('*')
-            ->from($this->tableName)
-            ->where($qb->expr()->eq('message_id', $qb->createNamedParameter($messageId, IQueryBuilder::PARAM_INT)))
-            ->andWhere($qb->expr()->eq('user_id', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR)));
+		$qb->select('*')
+			->from($this->tableName)
+			->where($qb->expr()->eq('message_id', $qb->createNamedParameter($messageId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('user_id', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR)));
 
-        try {
-            return $this->findEntity(query: $qb);
-        } catch (DoesNotExistException $e) {
-            return null;
-        }
-    }//end findByMessage()
+		try {
+			return $this->findEntity(query: $qb);
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+	}//end findByMessage()
 
-    /**
-     * Delete all feedback for a conversation
-     *
-     * @param int $conversationId Conversation ID
-     *
-     * @return void
-     */
-    public function deleteByConversation(int $conversationId): void
-    {
-        $qb = $this->db->getQueryBuilder();
+	/**
+	 * Delete all feedback for a conversation
+	 *
+	 * @param int $conversationId Conversation ID
+	 *
+	 * @return void
+	 */
+	public function deleteByConversation(int $conversationId): void {
+		$qb = $this->db->getQueryBuilder();
 
-        $conversationIdParam = $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT);
-        $qb->delete($this->tableName)
-            ->where($qb->expr()->eq('conversation_id', $conversationIdParam));
+		$conversationIdParam = $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT);
+		$qb->delete($this->tableName)
+			->where($qb->expr()->eq('conversation_id', $conversationIdParam));
 
-        $qb->executeStatement();
-    }//end deleteByConversation()
+		$qb->executeStatement();
+	}//end deleteByConversation()
 }//end class

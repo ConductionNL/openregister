@@ -1,28 +1,27 @@
 <script setup>
-import { translate as t } from '@nextcloud/l10n'
-import { configurationStore, navigationStore } from '../../store/store.js'
-import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
+import { configurationStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'exportConfiguration'"
+	<NcDialog
+		v-if="navigationStore.modal === 'exportConfiguration'"
 		name="export-configuration-dialog"
-		title="Export Configuration"
+		:title="t('openregister', 'Export Configuration')"
 		size="small"
-		:can-close="false">
+		:canClose="false">
 		<NcNoteCard v-if="errorMessage" type="error">
 			<p>{{ errorMessage }}</p>
 		</NcNoteCard>
 
 		<div class="formContainer">
-			<p v-if="configTitle">
-				Export configuration "{{ configTitle }}"?
-			</p>
+			<p v-if="configTitle">Export configuration "{{ configTitle }}"?</p>
 
 			<NcCheckboxRadioSwitch
-				:checked="includeObjects"
-				@update:checked="includeObjects = $event">
+				:modelValue="includeObjects"
+				@update:modelValue="includeObjects = $event">
 				Include related objects
 			</NcCheckboxRadioSwitch>
 		</div>
@@ -36,7 +35,7 @@ import axios from '@nextcloud/axios'
 			</NcButton>
 			<NcButton
 				:disabled="loading || !isValid"
-				type="primary"
+				variant="primary"
 				@click="exportConfiguration">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -51,12 +50,11 @@ import axios from '@nextcloud/axios'
 <script>
 import {
 	NcButton,
+	NcCheckboxRadioSwitch,
 	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Export from 'vue-material-design-icons/Export.vue'
 
@@ -72,6 +70,7 @@ export default {
 		Cancel,
 		Export,
 	},
+
 	data() {
 		return {
 			loading: false,
@@ -79,15 +78,27 @@ export default {
 			includeObjects: false,
 		}
 	},
+
 	computed: {
+		/**
+		 * @spec exclude UI display helper — returns the configuration title for the modal heading.
+		 */
 		configTitle() {
 			const item = configurationStore.configurationItem
 			return item?.title || ''
 		},
+
+		/**
+		 * @spec exclude UI state helper — enables the export button when a configuration is selected.
+		 */
 		isValid() {
 			const item = configurationStore.configurationItem
 			return Boolean(item?.id)
 		},
+
+		/**
+		 * @spec exclude UI display helper — derives the reactive error message for the modal.
+		 */
 		errorMessage() {
 			// Computed error message that updates reactively
 			if (!configurationStore.configurationItem?.id) {
@@ -96,13 +107,21 @@ export default {
 			return this.error
 		},
 	},
+
 	methods: {
+		/**
+		 * @spec exclude Modal close plumbing — clears modal state.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.loading = false
 			this.error = null
 			this.includeObjects = false
 		},
+
+		/**
+		 * @spec exclude Modal action plumbing — triggers configuration export download.
+		 */
 		async exportConfiguration() {
 			const item = configurationStore.configurationItem
 			if (!item?.id) {
@@ -115,7 +134,9 @@ export default {
 
 			try {
 				// Generate the export URL with query parameters
-				const url = generateUrl(`/apps/openregister/api/configurations/${item.id}/export`)
+				const url = generateUrl(
+					`/apps/openregister/api/configurations/${item.id}/export`,
+				)
 				const params = { includeObjects: this.includeObjects }
 
 				// Make the API call
@@ -146,7 +167,10 @@ export default {
 
 				this.closeModal()
 			} catch (error) {
-				this.error = error.response?.data?.error || error.message || 'Failed to export configuration'
+				this.error =
+					error.response?.data?.error
+					|| error.message
+					|| 'Failed to export configuration'
 			} finally {
 				this.loading = false
 			}

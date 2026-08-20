@@ -5,6 +5,11 @@
     "description": "Mock BRP (Basisregistratie Personen) register with RVIG test data for development and testing. Contains fictional person records aligned to the Haal Centraal BRP Personen Bevragen API v2 data model.",
     "version": "1.0.0"
   },
+  "x-wire-standard": {
+    "standard": "Haal Centraal BRP Personen Bevragen API v2 (RVIG test data)",
+    "vocabulary": "exempt-from-english-vocabulary",
+    "reason": "ingeschreven-persoon and its fields are the Haal Centraal resource and field names. Renaming them makes a connector built against this mock fail against the real BRP. See hydra/openspec/changes/fleet-english-vocabulary."
+  },
   "x-openregister": {
     "type": "mock",
     "app": "openregister",
@@ -32,6 +37,7 @@
         "published": "2026-03-16T00:00:00+00:00",
         "summary": "A person registered in the BRP (Basisregistratie Personen)",
         "description": "Represents an ingeschreven persoon as defined by the Haal Centraal BRP Personen Bevragen API v2 data model. Contains personal details, address information, family relationships, nationality, and life events.",
+        "x-schema-org": "schema:Person",
         "required": [
           "burgerservicenummer",
           "geslachtsnaam",
@@ -45,32 +51,37 @@
             "pattern": "^[0-9]{9}$",
             "minLength": 9,
             "maxLength": 9,
-            "facetable": true
+            "facetable": true,
+            "title": "Citizen Service Number (BSN)"
           },
           "voornamen": {
             "type": "string",
             "description": "First names (space-separated)",
             "maxLength": 200,
-            "facetable": false
+            "facetable": false,
+            "title": "First Names"
           },
           "voorletters": {
             "type": "string",
             "description": "Initials derived from voornamen",
             "maxLength": 20,
-            "facetable": false
+            "facetable": false,
+            "title": "Initials"
           },
           "voorvoegsel": {
             "type": "string",
             "description": "Name prefix (e.g. 'de', 'van der', 'van')",
             "maxLength": 10,
-            "facetable": true
+            "facetable": true,
+            "title": "Name Prefix"
           },
           "geslachtsnaam": {
             "type": "string",
             "description": "Family name / surname",
             "maxLength": 200,
             "minLength": 1,
-            "facetable": true
+            "facetable": true,
+            "title": "Family Name"
           },
           "aanduidingNaamgebruik": {
             "type": "string",
@@ -81,7 +92,8 @@
               "V",
               "N"
             ],
-            "facetable": true
+            "facetable": true,
+            "title": "Name Usage Indicator"
           },
           "geslachtsaanduiding": {
             "type": "string",
@@ -91,43 +103,50 @@
               "V",
               "O"
             ],
-            "facetable": true
+            "facetable": true,
+            "title": "Gender"
           },
           "geboortedatum": {
             "type": "string",
             "description": "Date of birth in ISO 8601 format",
             "format": "date",
-            "facetable": true
+            "facetable": true,
+            "title": "Date of Birth"
           },
           "geboorteplaats": {
             "type": "string",
             "description": "Place of birth",
             "maxLength": 80,
-            "facetable": true
+            "facetable": true,
+            "title": "Place of Birth"
           },
           "geboorteland": {
             "type": "string",
             "description": "Country of birth",
             "maxLength": 80,
-            "facetable": true
+            "facetable": true,
+            "title": "Country of Birth"
           },
           "geboortelandCode": {
             "type": "string",
             "description": "Country of birth code (Tabel 34 Landentabel)",
             "maxLength": 4,
-            "facetable": false
+            "facetable": false,
+            "title": "Country of Birth Code"
           },
           "nationaliteit": {
             "type": "string",
             "description": "Nationality description",
             "maxLength": 80,
-            "facetable": true
+            "facetable": true,
+            "title": "Nationality"
           },
           "nationaliteitCode": {
             "type": "string",
             "description": "Nationality code (Tabel 32 Nationaliteitentabel)",
             "maxLength": 4,
-            "facetable": false
+            "facetable": false,
+            "title": "Nationality Code"
           },
           "verblijfplaats": {
             "type": "object",
@@ -136,43 +155,51 @@
               "straat": {
                 "type": "string",
                 "description": "Street name (naam openbare ruimte)",
-                "maxLength": 80
+                "maxLength": 80,
+                "title": "Street Name"
               },
               "huisnummer": {
                 "type": "integer",
                 "description": "House number",
                 "minimum": 1,
-                "maximum": 99999
+                "maximum": 99999,
+                "title": "House Number"
               },
               "huisletter": {
                 "type": "string",
                 "description": "House letter (optional)",
-                "maxLength": 1
+                "maxLength": 1,
+                "title": "House Letter"
               },
               "huisnummertoevoeging": {
                 "type": "string",
                 "description": "House number addition (optional)",
-                "maxLength": 4
+                "maxLength": 4,
+                "title": "House Number Addition"
               },
               "postcode": {
                 "type": "string",
                 "description": "Dutch postal code (####XX)",
-                "pattern": "^[0-9]{4}[A-Z]{2}$"
+                "pattern": "^[0-9]{4}[A-Z]{2}$",
+                "title": "Postal Code"
               },
               "woonplaats": {
                 "type": "string",
                 "description": "City / woonplaats",
-                "maxLength": 80
+                "maxLength": 80,
+                "title": "City"
               },
               "adresseerbaarObjectIdentificatie": {
                 "type": "string",
                 "description": "BAG verblijfsobject identification (16 digits)",
-                "pattern": "^[0-9]{16}$"
+                "pattern": "^[0-9]{16}$",
+                "title": "Addressable Object Identification"
               },
               "nummeraanduidingIdentificatie": {
                 "type": "string",
                 "description": "BAG nummeraanduiding identification (16 digits)",
-                "pattern": "^[0-9]{16}$"
+                "pattern": "^[0-9]{16}$",
+                "title": "Address Designation Identification"
               },
               "functieAdres": {
                 "type": "string",
@@ -180,28 +207,33 @@
                 "enum": [
                   "W",
                   "B"
-                ]
+                ],
+                "title": "Address Function"
               }
             },
-            "facetable": false
+            "facetable": false,
+            "title": "Residential Address"
           },
           "gemeenteVanInschrijving": {
             "type": "string",
             "description": "Municipality of registration",
             "maxLength": 80,
-            "facetable": true
+            "facetable": true,
+            "title": "Municipality of Registration"
           },
           "gemeenteVanInschrijvingCode": {
             "type": "string",
             "description": "Municipality code (4 digits)",
             "pattern": "^[0-9]{4}$",
-            "facetable": true
+            "facetable": true,
+            "title": "Municipality Code"
           },
           "datumInschrijvingInGemeente": {
             "type": "string",
             "description": "Date of registration in the municipality",
             "format": "date",
-            "facetable": false
+            "facetable": false,
+            "title": "Date of Municipal Registration"
           },
           "immigratie": {
             "type": "object",
@@ -210,15 +242,18 @@
               "datumVestiging": {
                 "type": "string",
                 "description": "Date of settlement in the Netherlands",
-                "format": "date"
+                "format": "date",
+                "title": "Date of Settlement"
               },
               "landVanHerkomst": {
                 "type": "string",
                 "description": "Country of origin",
-                "maxLength": 80
+                "maxLength": 80,
+                "title": "Country of Origin"
               }
             },
-            "facetable": false
+            "facetable": false,
+            "title": "Immigration Details"
           },
           "overlijden": {
             "type": "object",
@@ -227,15 +262,18 @@
               "datum": {
                 "type": "string",
                 "description": "Date of death",
-                "format": "date"
+                "format": "date",
+                "title": "Date of Death"
               },
               "plaats": {
                 "type": "string",
                 "description": "Place of death",
-                "maxLength": 80
+                "maxLength": 80,
+                "title": "Place of Death"
               }
             },
-            "facetable": false
+            "facetable": false,
+            "title": "Death Details"
           },
           "partners": {
             "type": "array",
@@ -245,11 +283,13 @@
               "properties": {
                 "burgerservicenummer": {
                   "type": "string",
-                  "description": "Partner's BSN"
+                  "description": "Partner's BSN",
+                  "title": "Partner BSN"
                 },
                 "naam": {
                   "type": "string",
-                  "description": "Partner's full name"
+                  "description": "Partner's full name",
+                  "title": "Partner Name"
                 },
                 "soortVerbintenis": {
                   "type": "string",
@@ -257,11 +297,13 @@
                   "enum": [
                     "H",
                     "P"
-                  ]
+                  ],
+                  "title": "Partnership Type"
                 }
               }
             },
-            "facetable": false
+            "facetable": false,
+            "title": "Partners"
           },
           "ouders": {
             "type": "array",
@@ -271,11 +313,13 @@
               "properties": {
                 "burgerservicenummer": {
                   "type": "string",
-                  "description": "Parent's BSN"
+                  "description": "Parent's BSN",
+                  "title": "Parent BSN"
                 },
                 "naam": {
                   "type": "string",
-                  "description": "Parent's full name"
+                  "description": "Parent's full name",
+                  "title": "Parent Name"
                 },
                 "ouderAanduiding": {
                   "type": "string",
@@ -283,11 +327,13 @@
                   "enum": [
                     "1",
                     "2"
-                  ]
+                  ],
+                  "title": "Parent Indicator"
                 }
               }
             },
-            "facetable": false
+            "facetable": false,
+            "title": "Parents"
           },
           "kinderen": {
             "type": "array",
@@ -297,15 +343,18 @@
               "properties": {
                 "burgerservicenummer": {
                   "type": "string",
-                  "description": "Child's BSN"
+                  "description": "Child's BSN",
+                  "title": "Child BSN"
                 },
                 "naam": {
                   "type": "string",
-                  "description": "Child's full name"
+                  "description": "Child's full name",
+                  "title": "Child Name"
                 }
               }
             },
-            "facetable": false
+            "facetable": false,
+            "title": "Children"
           }
         },
         "hardValidation": false,

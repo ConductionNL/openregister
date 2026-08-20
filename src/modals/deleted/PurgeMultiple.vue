@@ -1,38 +1,64 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { deletedStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'permanentlyDeleteMultiple'"
-		:name="`Purge ${objectsToDelete.length} object${objectsToDelete.length !== 1 ? 's' : ''} from database`"
+	<NcDialog
+		v-if="navigationStore.dialog === 'permanentlyDeleteMultiple'"
+		:name="
+			n(
+				'openregister',
+				'Purge {count} object from database',
+				'Purge {count} objects from database',
+				objectsToDelete.length,
+				{ count: objectsToDelete.length },
+			)
+		"
 		size="normal"
-		:can-close="false">
+		:canClose="false">
 		<!-- Object Selection Review -->
 		<div v-if="success === null" class="delete-step">
 			<h3 class="step-title">
-				Confirm Permanent Object Deletion
+				{{ t('openregister', 'Confirm Permanent Object Deletion') }}
 			</h3>
 
 			<NcNoteCard type="warning">
-				Review the selected objects below. You can remove any objects you don't want to permanently delete by clicking the remove button. This action cannot be undone.
+				{{
+					t(
+						'openregister',
+						"Review the selected objects below. You can remove any objects you don't want to permanently delete by clicking the remove button. This action cannot be undone.",
+					)
+				}}
 			</NcNoteCard>
 
 			<div class="selected-objects-container">
-				<h4>Selected Objects ({{ objectsToDelete.length }})</h4>
+				<h4>
+					{{
+						t('openregister', 'Selected Objects ({count})', {
+							count: objectsToDelete.length,
+						})
+					}}
+				</h4>
 
 				<div v-if="objectsToDelete.length" class="selected-objects-list">
-					<div v-for="obj in objectsToDelete"
+					<div
+						v-for="obj in objectsToDelete"
 						:key="obj.id"
 						class="selected-object-item">
 						<div class="object-info">
 							<strong>{{ getObjectTitle(obj) }}</strong>
 							<p class="object-id">
-								ID: {{ obj.id }}
+								{{ t('openregister', 'ID: {id}', { id: obj.id }) }}
 							</p>
 						</div>
-						<NcButton type="tertiary"
-							:aria-label="`Remove ${getObjectTitle(obj)}`"
+						<NcButton
+							variant="tertiary"
+							:aria-label="
+								t('openregister', 'Remove {title}', {
+									title: getObjectTitle(obj),
+								})
+							"
 							@click="removeObject(obj.id)">
 							<template #icon>
 								<Close :size="20" />
@@ -41,9 +67,16 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 					</div>
 				</div>
 
-				<NcEmptyContent v-else name="No objects selected">
+				<NcEmptyContent
+					v-else
+					:name="t('openregister', 'No objects selected')">
 					<template #description>
-						No objects are currently selected for permanent deletion.
+						{{
+							t(
+								'openregister',
+								'No objects are currently selected for permanent deletion.',
+							)
+						}}
 					</template>
 				</NcEmptyContent>
 			</div>
@@ -61,12 +94,16 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success === null ? 'Cancel' : 'Close' }}
+				{{
+					success === null
+						? t('openregister', 'Cancel')
+						: t('openregister', 'Close')
+				}}
 			</NcButton>
 			<NcButton
 				v-if="success === null"
 				:disabled="loading || objectsToDelete.length === 0"
-				type="error"
+				variant="error"
 				@click="permanentlyDeleteMultiple()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -86,10 +123,10 @@ import {
 	NcLoadingIcon,
 	NcNoteCard,
 } from '@nextcloud/vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Close from 'vue-material-design-icons/Close.vue'
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import eventBus from '../../eventBus.js'
 
 export default {
 	name: 'PurgeMultiple',
@@ -104,6 +141,7 @@ export default {
 		Cancel,
 		Close,
 	},
+
 	data() {
 		return {
 			success: null,
@@ -114,25 +152,37 @@ export default {
 			selectedObjects: [],
 		}
 	},
+
 	computed: {
+		/**
+		 * @spec exclude Computed passthrough exposing the selected-objects list to the template; UI state helper.
+		 */
 		objectsToDelete() {
 			return this.selectedObjects
 		},
 	},
+
 	watch: {
-		'navigationStore.dialog'(newValue, oldValue) {
-			if (newValue === 'permanentlyDeleteMultiple' && oldValue !== 'permanentlyDeleteMultiple') {
+		'navigationStore.dialog': function (newValue, oldValue) {
+			if (
+				newValue === 'permanentlyDeleteMultiple'
+				&& oldValue !== 'permanentlyDeleteMultiple'
+			) {
 				this.initializeSelection()
 			}
 		},
 	},
+
 	mounted() {
 		this.initializeSelection()
 	},
+
 	methods: {
 		/**
 		 * Initialize selection from transfer data
+		 *
 		 * @return {void}
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		initializeSelection() {
 			const data = deletedStore.selectedForBulkAction || []
@@ -141,20 +191,28 @@ export default {
 				this.closeDialog()
 			}
 		},
+
 		/**
 		 * Remove object from selection
+		 *
 		 * @param {string} objectId - ID of object to remove
 		 * @return {void}
+		 * @spec exclude Removes one object from the local bulk-selection list; UI selection plumbing.
 		 */
 		removeObject(objectId) {
-			this.selectedObjects = this.selectedObjects.filter(obj => obj.id !== objectId)
+			this.selectedObjects = this.selectedObjects.filter(
+				(obj) => obj.id !== objectId,
+			)
 			if (this.selectedObjects.length === 0) {
 				this.closeDialog()
 			}
 		},
+
 		/**
 		 * Close the dialog and reset state
+		 *
 		 * @return {void}
+		 * @spec exclude Modal close handler resetting navigationStore.dialog and local state; UI plumbing.
 		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
@@ -168,7 +226,9 @@ export default {
 
 		/**
 		 * Permanently delete multiple objects
+		 *
 		 * @return {Promise<void>}
+		 * @spec exclude Bulk-purge confirm handler delegating to deletedStore.permanentlyDeleteMultiple; entity mutation lives in the store, this is modal orchestration plumbing.
 		 */
 		async permanentlyDeleteMultiple() {
 			if (!this.objectsToDelete || this.objectsToDelete.length === 0) {
@@ -179,7 +239,7 @@ export default {
 			this.loading = true
 
 			try {
-				const ids = this.objectsToDelete.map(obj => obj.id)
+				const ids = this.objectsToDelete.map((obj) => obj.id)
 				const result = await deletedStore.permanentlyDeleteMultiple(ids)
 
 				this.success = true
@@ -187,23 +247,37 @@ export default {
 
 				// Build success message
 				if (result.deleted > 0) {
-					let message = t('openregister', 'Successfully permanently deleted {count} objects', { count: result.deleted })
+					let message = t(
+						'openregister',
+						'Successfully permanently deleted {count} objects',
+						{ count: result.deleted },
+					)
 					if (result.failed > 0) {
-						message += t('openregister', ', {failed} failed', { failed: result.failed })
+						message += t('openregister', ', {failed} failed', {
+							failed: result.failed,
+						})
 					}
 					this.successMessage = message
 				} else {
-					this.successMessage = t('openregister', 'No objects were permanently deleted')
+					this.successMessage = t(
+						'openregister',
+						'No objects were permanently deleted',
+					)
 				}
 
 				// Auto-close after 3 seconds
 				this.closeModalTimeout = setTimeout(this.closeDialog, 3000)
 
 				// Emit event to refresh parent list
-				this.$root.$emit('deleted-objects-permanently-deleted', ids)
+				eventBus.emit('deleted-objects-permanently-deleted', ids)
 			} catch (error) {
 				this.success = false
-				this.error = error.message || t('openregister', 'An error occurred while permanently deleting the objects')
+				this.error =
+					error.message
+					|| t(
+						'openregister',
+						'An error occurred while permanently deleting the objects',
+					)
 			} finally {
 				this.loading = false
 			}
@@ -211,11 +285,20 @@ export default {
 
 		/**
 		 * Get object title from object data
+		 *
 		 * @param {object} object - The object
 		 * @return {string} The object title
 		 */
 		getObjectTitle(object) {
-			return object?.title || object?.fileName || object?.name || object?.object?.title || object?.object?.name || object?.id || 'Unknown'
+			return (
+				object?.title
+				|| object?.fileName
+				|| object?.name
+				|| object?.object?.title
+				|| object?.object?.name
+				|| object?.id
+				|| 'Unknown'
+			)
 		},
 	},
 }

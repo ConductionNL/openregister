@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCP\IAppConfig;
 use OCP\ICacheFactory;
 use OCP\IMemcache;
 use OCP\IUserSession;
@@ -20,314 +21,314 @@ use Psr\Log\LoggerInterface;
  * getObject, preloadObjects, getStats, setObjectName, clearSearchCache,
  * clearAllCaches, invalidateForObjectChange.
  */
-class CacheHandlerBranchCoverageTest extends TestCase
-{
-    private CacheHandler $handler;
-    private MagicMapper&MockObject $objectMapper;
-    private OrganisationMapper&MockObject $organisationMapper;
-    private LoggerInterface&MockObject $logger;
-    private ICacheFactory&MockObject $cacheFactory;
-    private IUserSession&MockObject $userSession;
-    private IMemcache&MockObject $queryCache;
-    private IMemcache&MockObject $nameDistCache;
+class CacheHandlerBranchCoverageTest extends TestCase {
+	private CacheHandler $handler;
+	private MagicMapper&MockObject $objectMapper;
+	private OrganisationMapper&MockObject $organisationMapper;
+	private LoggerInterface&MockObject $logger;
+	private ICacheFactory&MockObject $cacheFactory;
+	private IUserSession&MockObject $userSession;
+	private IMemcache&MockObject $queryCache;
+	private IMemcache&MockObject $nameDistCache;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->objectMapper = $this->createMock(MagicMapper::class);
-        $this->organisationMapper = $this->createMock(OrganisationMapper::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
-        $this->cacheFactory = $this->createMock(ICacheFactory::class);
-        $this->userSession = $this->createMock(IUserSession::class);
-        $this->queryCache = $this->createMock(IMemcache::class);
-        $this->nameDistCache = $this->createMock(IMemcache::class);
+		$this->objectMapper = $this->createMock(MagicMapper::class);
+		$this->organisationMapper = $this->createMock(OrganisationMapper::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->cacheFactory = $this->createMock(ICacheFactory::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->queryCache = $this->createMock(IMemcache::class);
+		$this->nameDistCache = $this->createMock(IMemcache::class);
 
-        $this->cacheFactory->method('createDistributed')
-            ->willReturnCallback(function ($prefix) {
-                if ($prefix === 'openregister_query_results') {
-                    return $this->queryCache;
-                }
-                return $this->nameDistCache;
-            });
+		$this->cacheFactory->method('createDistributed')
+			->willReturnCallback(function ($prefix) {
+				if ($prefix === 'openregister_query_results') {
+					return $this->queryCache;
+				}
+				return $this->nameDistCache;
+			});
 
-        $container = $this->createMock(\OCP\AppFramework\IAppContainer::class);
-        $objectMapperRef = $this->objectMapper;
-        $container->method('get')
-            ->willReturnCallback(function (string $class) use ($objectMapperRef) {
-                if ($class === MagicMapper::class) {
-                    return $objectMapperRef;
-                }
-                return null;
-            });
+		$container = $this->createMock(\OCP\AppFramework\IAppContainer::class);
+		$objectMapperRef = $this->objectMapper;
+		$container->method('get')
+			->willReturnCallback(function (string $class) use ($objectMapperRef) {
+				if ($class === MagicMapper::class) {
+					return $objectMapperRef;
+				}
+				return null;
+			});
 
-        $this->handler = new CacheHandler(
-            $this->organisationMapper,
-            $this->logger,
-            $this->cacheFactory,
-            $this->userSession,
-            $container
-        );
-    }
+		// These branch-coverage tests predate SEC-CTRL-2 step 2 and assert the
+		// resolver with no tenant boundary in force — a real supported
+		// configuration. CacheHandlerTenantScopeTest covers the scoped behaviour.
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')
+			->willReturnCallback(function (string $app, string $key, string $default = '') {
+				if ($app === 'openregister' && $key === 'multitenancy') {
+					return '{"enabled":false}';
+				}
 
-    /**
-     * Helper: create ObjectEntity mock with addMethods for magic getters.
-     */
-    private function createObjectMock(
-        int $id,
-        string $uuid,
-        ?int $register = null,
-        ?int $schema = null,
-        ?string $organisation = null,
-        ?string $name = null,
-        ?string $deleted = null
-    ): ObjectEntity&MockObject {
-        $mock = $this->getMockBuilder(ObjectEntity::class)
-            ->addMethods(['getId', 'getUuid', 'getRegister', 'getSchema', 'getOrganisation', 'getName', 'getDeleted'])
-            ->getMock();
-        $mock->method('getId')->willReturn($id);
-        $mock->method('getUuid')->willReturn($uuid);
-        $mock->method('getRegister')->willReturn($register);
-        $mock->method('getSchema')->willReturn($schema);
-        $mock->method('getOrganisation')->willReturn($organisation);
-        $mock->method('getName')->willReturn($name);
-        $mock->method('getDeleted')->willReturn($deleted);
-        return $mock;
-    }
+				return $default;
+			});
 
-    // =========================================================================
-    // getObject — cache hit + cache miss
-    // =========================================================================
+		$this->handler = new CacheHandler(
+			$this->organisationMapper,
+			$this->logger,
+			$this->cacheFactory,
+			$this->userSession,
+			$container,
+			null,
+			null,
+			null,
+			null,
+			$appConfig
+		);
+	}
 
-    public function testGetObjectCacheMissLoadsFromDb(): void
-    {
-        $object = $this->createObjectMock(42, 'uuid-123');
+	/**
+	 * Helper: create ObjectEntity mock with addMethods for magic getters.
+	 */
+	private function createObjectMock(
+		int $id,
+		string $uuid,
+		// STRING, not int: `register` and `schema` are `addType(…, 'string')`
+		// fields backed by `?string` properties, so an int is a value the
+		// entity cannot hold. It went unnoticed while these getters were magic
+		// and therefore untyped.
+		?string $register = null,
+		?string $schema = null,
+		?string $organisation = null,
+		?string $name = null,
+		?string $deleted = null,
+	): ObjectEntity&MockObject {
+		$mock = $this->getMockBuilder(ObjectEntity::class)
+			->onlyMethods(['getUuid', 'getRegister', 'getSchema', 'getOrganisation'])
+			->addMethods(['getId', 'getName', 'getDeleted'])
+			->getMock();
+		$mock->method('getId')->willReturn($id);
+		$mock->method('getUuid')->willReturn($uuid);
+		$mock->method('getRegister')->willReturn($register);
+		$mock->method('getSchema')->willReturn($schema);
+		$mock->method('getOrganisation')->willReturn($organisation);
+		$mock->method('getName')->willReturn($name);
+		$mock->method('getDeleted')->willReturn($deleted);
+		return $mock;
+	}
 
-        $this->objectMapper->method('find')
-            ->with(42)
-            ->willReturn($object);
+	// =========================================================================
+	// getObject — cache hit + cache miss
+	// =========================================================================
 
-        $result = $this->handler->getObject(42);
-        $this->assertSame($object, $result);
+	public function testGetObjectCacheMissLoadsFromDb(): void {
+		$object = $this->createObjectMock(42, 'uuid-123');
 
-        // Second call should hit the cache
-        $result2 = $this->handler->getObject(42);
-        $this->assertSame($object, $result2);
-    }
+		$this->objectMapper->method('find')
+			->with(42)
+			->willReturn($object);
 
-    public function testGetObjectReturnsNullOnException(): void
-    {
-        $this->objectMapper->method('find')
-            ->willThrowException(new \Exception('Not found'));
+		$result = $this->handler->getObject(42);
+		$this->assertSame($object, $result);
 
-        $result = $this->handler->getObject(999);
-        $this->assertNull($result);
-    }
+		// Second call should hit the cache
+		$result2 = $this->handler->getObject(42);
+		$this->assertSame($object, $result2);
+	}
 
-    // =========================================================================
-    // preloadObjects
-    // =========================================================================
+	public function testGetObjectReturnsNullOnException(): void {
+		$this->objectMapper->method('find')
+			->willThrowException(new \Exception('Not found'));
 
-    public function testPreloadObjectsEmptyArray(): void
-    {
-        $result = $this->handler->preloadObjects([]);
-        $this->assertSame([], $result);
-    }
+		$result = $this->handler->getObject(999);
+		$this->assertNull($result);
+	}
 
-    public function testPreloadObjectsAllAlreadyCached(): void
-    {
-        $object = $this->createObjectMock(1, 'uuid-1');
-        $this->objectMapper->method('find')->willReturn($object);
-        $this->handler->getObject(1);
+	// =========================================================================
+	// preloadObjects
+	// =========================================================================
 
-        $result = $this->handler->preloadObjects([1]);
-        $this->assertCount(1, $result);
-    }
+	public function testPreloadObjectsEmptyArray(): void {
+		$result = $this->handler->preloadObjects([]);
+		$this->assertSame([], $result);
+	}
 
-    public function testPreloadObjectsBulkLoadFailure(): void
-    {
-        $this->objectMapper->method('findMultiple')
-            ->willThrowException(new \Exception('DB error'));
+	public function testPreloadObjectsAllAlreadyCached(): void {
+		$object = $this->createObjectMock(1, 'uuid-1');
+		$this->objectMapper->method('find')->willReturn($object);
+		$this->handler->getObject(1);
 
-        $result = $this->handler->preloadObjects([1, 2, 3]);
-        $this->assertSame([], $result);
-    }
+		$result = $this->handler->preloadObjects([1]);
+		$this->assertCount(1, $result);
+	}
 
-    public function testPreloadObjectsSuccess(): void
-    {
-        $obj1 = $this->createObjectMock(1, 'uuid-1');
-        $obj2 = $this->createObjectMock(2, 'uuid-2');
+	public function testPreloadObjectsBulkLoadFailure(): void {
+		$this->objectMapper->method('findMultiple')
+			->willThrowException(new \Exception('DB error'));
 
-        $this->objectMapper->method('findMultiple')
-            ->willReturn([$obj1, $obj2]);
+		$result = $this->handler->preloadObjects([1, 2, 3]);
+		$this->assertSame([], $result);
+	}
 
-        $result = $this->handler->preloadObjects([1, 2]);
-        $this->assertCount(2, $result);
-    }
+	public function testPreloadObjectsSuccess(): void {
+		$obj1 = $this->createObjectMock(1, 'uuid-1');
+		$obj2 = $this->createObjectMock(2, 'uuid-2');
 
-    // =========================================================================
-    // getStats
-    // =========================================================================
+		$this->objectMapper->method('findMultiple')
+			->willReturn([$obj1, $obj2]);
 
-    public function testGetStatsInitial(): void
-    {
-        $stats = $this->handler->getStats();
-        $this->assertSame(0, $stats['hits']);
-        $this->assertSame(0, $stats['misses']);
-        $this->assertSame(0.0, $stats['hit_rate']);
-        $this->assertSame(0, $stats['cache_size']);
-    }
+		$result = $this->handler->preloadObjects([1, 2]);
+		$this->assertCount(2, $result);
+	}
 
-    public function testGetStatsAfterCacheMiss(): void
-    {
-        $this->objectMapper->method('find')
-            ->willThrowException(new \Exception('Not found'));
-        $this->handler->getObject(1);
+	// =========================================================================
+	// getStats
+	// =========================================================================
 
-        $stats = $this->handler->getStats();
-        $this->assertSame(1, $stats['misses']);
-        $this->assertSame(0.0, $stats['hit_rate']);
-    }
+	public function testGetStatsInitial(): void {
+		$stats = $this->handler->getStats();
+		$this->assertSame(0, $stats['hits']);
+		$this->assertSame(0, $stats['misses']);
+		$this->assertSame(0.0, $stats['hit_rate']);
+		$this->assertSame(0, $stats['cache_size']);
+	}
 
-    // =========================================================================
-    // setObjectName
-    // =========================================================================
+	public function testGetStatsAfterCacheMiss(): void {
+		$this->objectMapper->method('find')
+			->willThrowException(new \Exception('Not found'));
+		$this->handler->getObject(1);
 
-    public function testSetObjectNameStoresInBothCaches(): void
-    {
-        $this->nameDistCache->expects($this->once())
-            ->method('set')
-            ->with('name_uuid-123', 'Test Object', $this->anything());
+		$stats = $this->handler->getStats();
+		$this->assertSame(1, $stats['misses']);
+		$this->assertSame(0.0, $stats['hit_rate']);
+	}
 
-        $this->handler->setObjectName('uuid-123', 'Test Object');
-    }
+	// =========================================================================
+	// setObjectName
+	// =========================================================================
 
-    public function testSetObjectNameDistributedCacheFailure(): void
-    {
-        $this->nameDistCache->method('set')
-            ->willThrowException(new \Exception('Cache write error'));
+	public function testSetObjectNameStoresInBothCaches(): void {
+		$this->nameDistCache->expects($this->once())
+			->method('set')
+			->with('name_uuid-123', ['n' => 'Test Object', 'o' => null], $this->anything());
 
-        $this->handler->setObjectName('uuid-456', 'Test');
-        $this->assertTrue(true);
-    }
+		$this->handler->setObjectName('uuid-123', 'Test Object');
+	}
 
-    // =========================================================================
-    // clearSearchCache
-    // =========================================================================
+	public function testSetObjectNameDistributedCacheFailure(): void {
+		$this->nameDistCache->method('set')
+			->willThrowException(new \Exception('Cache write error'));
 
-    public function testClearSearchCacheWithoutPattern(): void
-    {
-        $this->queryCache->expects($this->once())->method('clear');
-        $this->handler->clearSearchCache();
-    }
+		$this->handler->setObjectName('uuid-456', 'Test');
+		$this->assertTrue(true);
+	}
 
-    public function testClearSearchCacheWithPattern(): void
-    {
-        $this->queryCache->expects($this->once())->method('clear');
-        $this->handler->clearSearchCache('schema_1');
-    }
+	// =========================================================================
+	// clearSearchCache
+	// =========================================================================
 
-    public function testClearSearchCacheDistributedFailure(): void
-    {
-        $this->queryCache->method('clear')
-            ->willThrowException(new \Exception('Cache clear failed'));
+	public function testClearSearchCacheWithoutPattern(): void {
+		$this->queryCache->expects($this->once())->method('clear');
+		$this->handler->clearSearchCache();
+	}
 
-        $this->handler->clearSearchCache();
-        $this->assertTrue(true);
-    }
+	public function testClearSearchCacheWithPattern(): void {
+		$this->queryCache->expects($this->once())->method('clear');
+		$this->handler->clearSearchCache('schema_1');
+	}
 
-    // =========================================================================
-    // clearAllCaches
-    // =========================================================================
+	public function testClearSearchCacheDistributedFailure(): void {
+		$this->queryCache->method('clear')
+			->willThrowException(new \Exception('Cache clear failed'));
 
-    public function testClearAllCaches(): void
-    {
-        $object = $this->createObjectMock(1, 'uuid-1');
-        $this->objectMapper->method('find')->willReturn($object);
-        $this->handler->getObject(1);
+		$this->handler->clearSearchCache();
+		$this->assertTrue(true);
+	}
 
-        $this->queryCache->expects($this->once())->method('clear');
-        $this->nameDistCache->expects($this->once())->method('clear');
+	// =========================================================================
+	// clearAllCaches
+	// =========================================================================
 
-        $this->handler->clearAllCaches();
+	public function testClearAllCaches(): void {
+		$object = $this->createObjectMock(1, 'uuid-1');
+		$this->objectMapper->method('find')->willReturn($object);
+		$this->handler->getObject(1);
 
-        $stats = $this->handler->getStats();
-        $this->assertSame(0, $stats['hits']);
-        $this->assertSame(0, $stats['cache_size']);
-    }
+		$this->queryCache->expects($this->once())->method('clear');
+		$this->nameDistCache->expects($this->once())->method('clear');
 
-    public function testClearAllCachesDistributedFailures(): void
-    {
-        $this->queryCache->method('clear')
-            ->willThrowException(new \Exception('Query cache error'));
-        $this->nameDistCache->method('clear')
-            ->willThrowException(new \Exception('Name cache error'));
+		$this->handler->clearAllCaches();
 
-        $this->handler->clearAllCaches();
-        $this->assertTrue(true);
-    }
+		$stats = $this->handler->getStats();
+		$this->assertSame(0, $stats['hits']);
+		$this->assertSame(0, $stats['cache_size']);
+	}
 
-    // =========================================================================
-    // clearCache (legacy)
-    // =========================================================================
+	public function testClearAllCachesDistributedFailures(): void {
+		$this->queryCache->method('clear')
+			->willThrowException(new \Exception('Query cache error'));
+		$this->nameDistCache->method('clear')
+			->willThrowException(new \Exception('Name cache error'));
 
-    public function testClearCacheDelegatesToClearAllCaches(): void
-    {
-        $this->handler->clearCache();
-        $stats = $this->handler->getStats();
-        $this->assertSame(0, $stats['hits']);
-    }
+		$this->handler->clearAllCaches();
+		$this->assertTrue(true);
+	}
 
-    // =========================================================================
-    // invalidateForObjectChange
-    // =========================================================================
+	// =========================================================================
+	// clearCache (legacy)
+	// =========================================================================
 
-    public function testInvalidateForObjectChangeCreate(): void
-    {
-        $object = $this->createObjectMock(1, 'uuid-1', 10, 20, 'org-1', 'Test Object');
-        $this->handler->invalidateForObjectChange($object, 'create');
-        $this->assertTrue(true);
-    }
+	public function testClearCacheDelegatesToClearAllCaches(): void {
+		$this->handler->clearCache();
+		$stats = $this->handler->getStats();
+		$this->assertSame(0, $stats['hits']);
+	}
 
-    public function testInvalidateForObjectChangeDelete(): void
-    {
-        $object = $this->createObjectMock(1, 'uuid-1', 10, 20, 'org-1', null);
-        $this->nameDistCache->method('remove')
-            ->willThrowException(new \Exception('Remove failed'));
+	// =========================================================================
+	// invalidateForObjectChange
+	// =========================================================================
 
-        $this->handler->invalidateForObjectChange($object, 'delete');
-        $this->assertTrue(true);
-    }
+	public function testInvalidateForObjectChangeCreate(): void {
+		$object = $this->createObjectMock(1, 'uuid-1', '10', '20', 'org-1', 'Test Object');
+		$this->handler->invalidateForObjectChange($object, 'create');
+		$this->assertTrue(true);
+	}
 
-    public function testInvalidateForObjectChangeNullObject(): void
-    {
-        $this->handler->invalidateForObjectChange(null, 'unknown', 10, 20);
-        $this->assertTrue(true);
-    }
+	public function testInvalidateForObjectChangeDelete(): void {
+		$object = $this->createObjectMock(1, 'uuid-1', '10', '20', 'org-1', null);
+		$this->nameDistCache->method('remove')
+			->willThrowException(new \Exception('Remove failed'));
 
-    public function testInvalidateForObjectChangeNullSchemaId(): void
-    {
-        $this->handler->invalidateForObjectChange(null, 'update');
-        $this->assertTrue(true);
-    }
+		$this->handler->invalidateForObjectChange($object, 'delete');
+		$this->assertTrue(true);
+	}
 
-    // =========================================================================
-    // Constructor — cache factory exception
-    // =========================================================================
+	public function testInvalidateForObjectChangeNullObject(): void {
+		$this->handler->invalidateForObjectChange(null, 'unknown', 10, 20);
+		$this->assertTrue(true);
+	}
 
-    public function testConstructorHandlesCacheFactoryException(): void
-    {
-        $cacheFactory = $this->createMock(ICacheFactory::class);
-        $cacheFactory->method('createDistributed')
-            ->willThrowException(new \Exception('Cache init failed'));
+	public function testInvalidateForObjectChangeNullSchemaId(): void {
+		$this->handler->invalidateForObjectChange(null, 'update');
+		$this->assertTrue(true);
+	}
 
-        $handler = new CacheHandler(
-            $this->organisationMapper,
-            $this->logger,
-            $cacheFactory,
-            $this->userSession
-        );
+	// =========================================================================
+	// Constructor — cache factory exception
+	// =========================================================================
 
-        $this->assertInstanceOf(CacheHandler::class, $handler);
-    }
+	public function testConstructorHandlesCacheFactoryException(): void {
+		$cacheFactory = $this->createMock(ICacheFactory::class);
+		$cacheFactory->method('createDistributed')
+			->willThrowException(new \Exception('Cache init failed'));
+
+		$handler = new CacheHandler(
+			$this->organisationMapper,
+			$this->logger,
+			$cacheFactory,
+			$this->userSession
+		);
+
+		$this->assertInstanceOf(CacheHandler::class, $handler);
+	}
 }

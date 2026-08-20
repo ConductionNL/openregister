@@ -1,17 +1,36 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { objectStore, navigationStore } from '../../store/store.js'
+import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'deleteObject'"
-		:name="'Delete ' + (objectStore.objectItem?.['@self']?.schema?.title ? objectStore.objectItem['@self'].schema.title + ' — ' : '') + (objectStore.objectItem?.['@self']?.name || objectStore.objectItem?.name || objectStore.objectItem?.['@self']?.title || objectStore.objectItem?.id || 'Object')"
+	<NcDialog
+		v-if="navigationStore.dialog === 'deleteObject'"
+		:name="
+			'Delete '
+			+ (objectStore.objectItem?.['@self']?.schema?.title
+				? objectStore.objectItem['@self'].schema.title + ' — '
+				: '')
+			+ (objectStore.objectItem?.['@self']?.name
+				|| objectStore.objectItem?.name
+				|| objectStore.objectItem?.['@self']?.title
+				|| objectStore.objectItem?.id
+				|| 'Object')
+		"
 		size="normal"
-		:can-close="false">
+		:canClose="false">
 		<p v-if="success === null">
 			Do you want to permanently delete
-			<span v-if="objectStore.objectItem?.['@self']?.schema?.title">{{ objectStore.objectItem['@self'].schema.title.toLowerCase() }} </span>
-			<b>{{ objectStore.objectItem?.['@self']?.name || objectStore.objectItem?.name || objectStore.objectItem?.['@self']?.title || objectStore.objectItem?.id }}</b>? This action cannot be undone.
+			<span v-if="objectStore.objectItem?.['@self']?.schema?.title"
+				>{{ objectStore.objectItem['@self'].schema.title.toLowerCase() }}
+			</span>
+			<b>{{
+				objectStore.objectItem?.['@self']?.name
+				|| objectStore.objectItem?.name
+				|| objectStore.objectItem?.['@self']?.title
+				|| objectStore.objectItem?.id
+			}}</b
+			>? This action cannot be undone.
 		</p>
 
 		<NcNoteCard v-if="success" type="success">
@@ -31,7 +50,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 			<NcButton
 				v-if="success === null"
 				:disabled="loading"
-				type="error"
+				variant="error"
 				@click="deleteObject()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -44,13 +63,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import {
-	NcButton,
-	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
-
+import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
@@ -65,6 +78,7 @@ export default {
 		TrashCanOutline,
 		Cancel,
 	},
+
 	data() {
 		return {
 			success: null,
@@ -73,7 +87,11 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			clearTimeout(this.closeModalTimeout)
@@ -81,6 +99,10 @@ export default {
 			this.loading = false
 			this.error = false
 		},
+
+		/**
+		 * @spec exclude Modal action plumbing — delegates deletion to objectStore.deleteObject (lifecycle owned elsewhere).
+		 */
 		async deleteObject() {
 			this.loading = true
 
@@ -91,7 +113,9 @@ export default {
 				const id = self?.id
 
 				if (!register || !schema || !id) {
-					throw new Error('Object is missing required metadata (register, schema, or id)')
+					throw new Error(
+						'Object is missing required metadata (register, schema, or id)',
+					)
 				}
 
 				const type = objectStore.createObjectTypeSlug(register, schema)
@@ -101,14 +125,17 @@ export default {
 
 				const success = await objectStore.deleteObject(type, id)
 				this.success = success
-				this.error = success ? false : (objectStore.errors?.[type] || 'Failed to delete object')
+				this.error = success
+					? false
+					: objectStore.errors?.[type] || 'Failed to delete object'
 				if (success) {
 					objectStore.refetchSearchCollection()
 					this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
 				}
 			} catch (error) {
 				this.success = false
-				this.error = error.message || 'An error occurred while deleting the object'
+				this.error =
+					error.message || 'An error occurred while deleting the object'
 			} finally {
 				this.loading = false
 			}

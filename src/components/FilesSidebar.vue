@@ -7,9 +7,10 @@
 		<!-- Search Field -->
 		<div class="search-section">
 			<NcTextField
-				:value.sync="localSearch"
+				v-model="localSearch"
+				:aria-label="t('openregister', 'Search by file name or path')"
 				:placeholder="t('openregister', 'Search by file name or path')"
-				@input="handleSearchInput">
+				@update:modelValue="handleSearchInput">
 				<Magnify :size="20" />
 			</NcTextField>
 		</div>
@@ -19,38 +20,38 @@
 			<h4>{{ t('openregister', 'Extraction Status') }}</h4>
 			<div class="filter-options">
 				<NcCheckboxRadioSwitch
-					:checked="selectedStatus === null"
+					:modelValue="selectedStatus === null"
 					type="radio"
 					value="all"
-					@update:checked="updateStatus(null)">
+					@update:modelValue="updateStatus(null)">
 					{{ t('openregister', 'All Files') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:checked="selectedStatus === 'pending'"
+					:modelValue="selectedStatus === 'pending'"
 					type="radio"
 					value="pending"
-					@update:checked="updateStatus('pending')">
+					@update:modelValue="updateStatus('pending')">
 					{{ t('openregister', 'Pending') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:checked="selectedStatus === 'processing'"
+					:modelValue="selectedStatus === 'processing'"
 					type="radio"
 					value="processing"
-					@update:checked="updateStatus('processing')">
+					@update:modelValue="updateStatus('processing')">
 					{{ t('openregister', 'Processing') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:checked="selectedStatus === 'completed'"
+					:modelValue="selectedStatus === 'completed'"
 					type="radio"
 					value="completed"
-					@update:checked="updateStatus('completed')">
+					@update:modelValue="updateStatus('completed')">
 					{{ t('openregister', 'Completed') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:checked="selectedStatus === 'failed'"
+					:modelValue="selectedStatus === 'failed'"
 					type="radio"
 					value="failed"
-					@update:checked="updateStatus('failed')">
+					@update:modelValue="updateStatus('failed')">
 					{{ t('openregister', 'Failed') }}
 				</NcCheckboxRadioSwitch>
 			</div>
@@ -61,45 +62,45 @@
 			<h4>{{ t('openregister', 'Risk Level') }}</h4>
 			<div class="filter-options">
 				<NcCheckboxRadioSwitch
-					:checked="selectedRiskLevel === null"
+					:modelValue="selectedRiskLevel === null"
 					type="radio"
 					value="all"
-					@update:checked="updateRiskLevel(null)">
+					@update:modelValue="updateRiskLevel(null)">
 					{{ t('openregister', 'All Levels') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:checked="selectedRiskLevel === 'none'"
+					:modelValue="selectedRiskLevel === 'none'"
 					type="radio"
 					value="none"
-					@update:checked="updateRiskLevel('none')">
+					@update:modelValue="updateRiskLevel('none')">
 					{{ t('openregister', 'None') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:checked="selectedRiskLevel === 'low'"
+					:modelValue="selectedRiskLevel === 'low'"
 					type="radio"
 					value="low"
-					@update:checked="updateRiskLevel('low')">
+					@update:modelValue="updateRiskLevel('low')">
 					{{ t('openregister', 'Low') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:checked="selectedRiskLevel === 'medium'"
+					:modelValue="selectedRiskLevel === 'medium'"
 					type="radio"
 					value="medium"
-					@update:checked="updateRiskLevel('medium')">
+					@update:modelValue="updateRiskLevel('medium')">
 					{{ t('openregister', 'Medium') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:checked="selectedRiskLevel === 'high'"
+					:modelValue="selectedRiskLevel === 'high'"
 					type="radio"
 					value="high"
-					@update:checked="updateRiskLevel('high')">
+					@update:modelValue="updateRiskLevel('high')">
 					{{ t('openregister', 'High') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:checked="selectedRiskLevel === 'very_high'"
+					:modelValue="selectedRiskLevel === 'very_high'"
 					type="radio"
 					value="very_high"
-					@update:checked="updateRiskLevel('very_high')">
+					@update:modelValue="updateRiskLevel('very_high')">
 					{{ t('openregister', 'Very High') }}
 				</NcCheckboxRadioSwitch>
 			</div>
@@ -107,19 +108,17 @@
 
 		<!-- Clear Filters Button -->
 		<div v-if="hasActiveFilters" class="clear-filters">
-			<NcButton
-				type="secondary"
-				@click="clearFilters">
-				{{ t('openregister', 'Clear Filters') }}
+			<NcButton variant="secondary" @click="clearFilters">
+				{{ t('openregister', 'Clear filters') }}
 			</NcButton>
 		</div>
 	</div>
 </template>
 
 <script>
-import { NcTextField, NcCheckboxRadioSwitch, NcButton } from '@nextcloud/vue'
-import Magnify from 'vue-material-design-icons/Magnify.vue'
 import { t } from '@nextcloud/l10n'
+import { NcButton, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
 
 export default {
 	name: 'FilesSidebar',
@@ -132,14 +131,25 @@ export default {
 	},
 
 	props: {
+		/**
+		 * @spec exclude two-way-bound search prop, UI plumbing
+		 */
 		search: {
 			type: String,
 			default: '',
 		},
+
+		/**
+		 * @spec exclude two-way-bound extraction-status filter prop, UI plumbing
+		 */
 		status: {
 			type: String,
 			default: null,
 		},
+
+		/**
+		 * @spec exclude two-way-bound risk-level filter prop, UI plumbing
+		 */
 		riskLevel: {
 			type: String,
 			default: null,
@@ -162,17 +172,35 @@ export default {
 		 * @return {boolean} True if filters are active
 		 */
 		hasActiveFilters() {
-			return this.selectedStatus !== null || this.localSearch !== '' || this.selectedRiskLevel !== null
+			return (
+				this.selectedStatus !== null
+				|| this.localSearch !== ''
+				|| this.selectedRiskLevel !== null
+			)
 		},
 	},
 
 	watch: {
+		/**
+		 * @param newVal
+		 * @spec exclude computed filter-state binding
+		 */
 		search(newVal) {
 			this.localSearch = newVal
 		},
+
+		/**
+		 * @param newVal
+		 * @spec exclude computed filter-state binding
+		 */
 		status(newVal) {
 			this.selectedStatus = newVal
 		},
+
+		/**
+		 * @param newVal
+		 * @spec exclude computed filter-state binding
+		 */
 		riskLevel(newVal) {
 			this.selectedRiskLevel = newVal
 		},
@@ -186,6 +214,7 @@ export default {
 		 *
 		 * @param {string} value - The search value
 		 * @return {void}
+		 * @spec exclude debounced search-emit UI plumbing
 		 */
 		handleSearchInput(value) {
 			clearTimeout(this.searchTimeout)
@@ -199,6 +228,7 @@ export default {
 		 *
 		 * @param {string|null} status - The status to filter by
 		 * @return {void}
+		 * @spec exclude filter-state writer emitting update:status, UI plumbing
 		 */
 		updateStatus(status) {
 			this.selectedStatus = status
@@ -210,6 +240,7 @@ export default {
 		 *
 		 * @param {string|null} level - The risk level to filter by
 		 * @return {void}
+		 * @spec exclude filter-state writer emitting update:riskLevel, UI plumbing
 		 */
 		updateRiskLevel(level) {
 			this.selectedRiskLevel = level
@@ -220,6 +251,7 @@ export default {
 		 * Clear all filters
 		 *
 		 * @return {void}
+		 * @spec exclude filter-reset emitting cleared values, UI plumbing
 		 */
 		clearFilters() {
 			this.localSearch = ''

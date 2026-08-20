@@ -17,20 +17,34 @@
 			<!-- Show detailed breakdown if available -->
 			<div v-if="objectStats && objectCount > 0" class="object-breakdown">
 				<div class="breakdown-item">
-					<span class="breakdown-label">{{ t('openregister', 'Total:') }}</span>
+					<span class="breakdown-label">{{
+						t('openregister', 'Total:')
+					}}</span>
 					<span class="breakdown-value">{{ objectStats.total }}</span>
 				</div>
 				<div class="breakdown-item">
-					<span class="breakdown-label">{{ t('openregister', 'Invalid:') }}</span>
-					<span class="breakdown-value invalid">{{ objectStats.invalid }}</span>
+					<span class="breakdown-label">{{
+						t('openregister', 'Invalid:')
+					}}</span>
+					<span class="breakdown-value invalid">{{
+						objectStats.invalid
+					}}</span>
 				</div>
 				<div class="breakdown-item">
-					<span class="breakdown-label">{{ t('openregister', 'Deleted:') }}</span>
-					<span class="breakdown-value deleted">{{ objectStats.deleted }}</span>
+					<span class="breakdown-label">{{
+						t('openregister', 'Deleted:')
+					}}</span>
+					<span class="breakdown-value deleted">{{
+						objectStats.deleted
+					}}</span>
 				</div>
 				<div v-if="objectStats.locked !== undefined" class="breakdown-item">
-					<span class="breakdown-label">{{ t('openregister', 'Locked:') }}</span>
-					<span class="breakdown-value locked">{{ objectStats.locked }}</span>
+					<span class="breakdown-label">{{
+						t('openregister', 'Locked:')
+					}}</span>
+					<span class="breakdown-value locked">{{
+						objectStats.locked
+					}}</span>
 				</div>
 			</div>
 		</div>
@@ -38,32 +52,37 @@
 </template>
 
 <script>
-import { NcLoadingIcon } from '@nextcloud/vue'
 import { t } from '@nextcloud/l10n'
+import { NcLoadingIcon } from '@nextcloud/vue'
 
 export default {
 	name: 'SchemaStatsBlock',
 	components: {
 		NcLoadingIcon,
 	},
+
 	props: {
 		objectCount: {
 			type: Number,
 			default: 0,
 		},
+
 		objectStats: {
 			type: Object,
 			default: null,
 		},
+
 		loading: {
 			type: Boolean,
 			default: false,
 		},
+
 		title: {
 			type: String,
 			default: '',
 		},
 	},
+
 	methods: {
 		t,
 	},

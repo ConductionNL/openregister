@@ -7,7 +7,7 @@ status: implemented
 ## Purpose
 Provide production-grade observability for OpenRegister deployments through Prometheus metrics, structured logging, health/readiness endpoints, and audit-compliant monitoring. This capability enables operations teams to monitor application health, track SLA compliance, detect anomalies in real-time, and satisfy BIO (Baseline Informatiebeveiliging Overheid) audit logging requirements for Dutch government deployments.
 
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Prometheus Metrics Endpoint
 The system SHALL expose a dedicated metrics endpoint that returns all application metrics in Prometheus text exposition format (version 0.0.4). The endpoint MUST be served at `GET /index.php/apps/openregister/api/metrics` and MUST return the `Content-Type: text/plain; version=0.0.4; charset=utf-8` header. The `MetricsController` (`lib/Controller/MetricsController.php`) already implements this endpoint with basic gauge metrics; this requirement extends it with counters, histograms, and richer labels.

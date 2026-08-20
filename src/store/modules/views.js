@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 
 /**
@@ -12,31 +11,35 @@ import { defineStore } from 'pinia'
  * @package
  * @author Conduction Development Team
  * @copyright 2024
- * @license AGPL-3.0-or-later
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version 1.0.0
  */
 export const useViewsStore = defineStore('views', {
 	state: () => ({
 		/**
 		 * The currently active view
+		 *
 		 * @type {object|null}
 		 */
 		activeView: null,
 
 		/**
 		 * List of all views
+		 *
 		 * @type {Array}
 		 */
 		viewsList: [],
 
 		/**
 		 * Loading state
+		 *
 		 * @type {boolean}
 		 */
 		loading: false,
 
 		/**
 		 * Error state
+		 *
 		 * @type {string|null}
 		 */
 		error: null,
@@ -45,6 +48,7 @@ export const useViewsStore = defineStore('views', {
 	getters: {
 		/**
 		 * Get the active view
+		 *
 		 * @param {object} state - Store state
 		 * @return {object|null} The active view
 		 */
@@ -52,6 +56,7 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Get all views
+		 *
 		 * @param {object} state - Store state
 		 * @return {Array} All views
 		 */
@@ -59,27 +64,34 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Get public views (shared by other users)
+		 *
 		 * @param {object} state - Store state
 		 * @return {Array} Public views
 		 */
-		getPublicViews: (state) => state.viewsList.filter(view => view.isPublic === true),
+		getPublicViews: (state) =>
+			state.viewsList.filter((view) => view.isPublic === true),
 
 		/**
 		 * Get user's private views
+		 *
 		 * @param {object} state - Store state
 		 * @return {Array} Private views
 		 */
-		getPrivateViews: (state) => state.viewsList.filter(view => view.isPublic !== true),
+		getPrivateViews: (state) =>
+			state.viewsList.filter((view) => view.isPublic !== true),
 
 		/**
 		 * Get default view if one exists
+		 *
 		 * @param {object} state - Store state
 		 * @return {object|null} Default view
 		 */
-		getDefaultView: (state) => state.viewsList.find(view => view.isDefault === true) || null,
+		getDefaultView: (state) =>
+			state.viewsList.find((view) => view.isDefault === true) || null,
 
 		/**
 		 * Check if loading
+		 *
 		 * @param {object} state - Store state
 		 * @return {boolean} Loading state
 		 */
@@ -87,6 +99,7 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Get error message
+		 *
 		 * @param {object} state - Store state
 		 * @return {string|null} Error message
 		 */
@@ -96,38 +109,48 @@ export const useViewsStore = defineStore('views', {
 	actions: {
 		/**
 		 * Set the active view
+		 *
 		 * @param {object|null} view - The view to set as active
 		 * @return {void}
+		 *
+		 * @spec exclude Pure client UI-state setter — active saved view. No backend contract.
 		 */
 		setActiveView(view) {
 			this.activeView = view
-			console.info('Active view set:', view)
 		},
 
 		/**
 		 * Clear the active view
+		 *
 		 * @return {void}
+		 *
+		 * @spec exclude Pure client UI-state mutator — clears the active saved view. No backend contract.
 		 */
 		clearActiveView() {
 			this.activeView = null
-			console.info('Active view cleared')
 		},
 
 		/**
 		 * Fetch all views from the API
+		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec exclude Thin API passthrough — GET /api/views list; observable contract owned by zoeken-filteren.
 		 */
 		async fetchViews() {
 			this.loading = true
 			this.error = null
 
 			try {
-				const response = await fetch('/index.php/apps/openregister/api/views', {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
+				const response = await fetch(
+					'/index.php/apps/openregister/api/views',
+					{
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+						},
 					},
-				})
+				)
 
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
@@ -135,8 +158,6 @@ export const useViewsStore = defineStore('views', {
 
 				const data = await response.json()
 				this.viewsList = data.results || []
-
-				console.info('Views fetched successfully:', this.viewsList.length, 'views')
 			} catch (error) {
 				console.error('Error fetching views:', error)
 				this.error = error.message
@@ -148,20 +169,26 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Fetch a specific view by ID
+		 *
 		 * @param {string} id - The view ID
 		 * @return {Promise<object>}
+		 *
+		 * @spec exclude Thin API passthrough — GET /api/views/{id}; observable contract owned by zoeken-filteren.
 		 */
 		async fetchView(id) {
 			this.loading = true
 			this.error = null
 
 			try {
-				const response = await fetch(`/index.php/apps/openregister/api/views/${id}`, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
+				const response = await fetch(
+					`/index.php/apps/openregister/api/views/${id}`,
+					{
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+						},
 					},
-				})
+				)
 
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
@@ -172,7 +199,6 @@ export const useViewsStore = defineStore('views', {
 				// API returns { view: {...} }, so unwrap it
 				const view = data.view || data
 
-				console.info('View fetched successfully:', view)
 				return view
 			} catch (error) {
 				console.error('Error fetching view:', error)
@@ -185,21 +211,27 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Create a new view
+		 *
 		 * @param {object} viewData - The view data
 		 * @return {Promise<object>}
+		 *
+		 * @spec exclude Thin API passthrough — POST /api/views; observable contract owned by zoeken-filteren.
 		 */
 		async createView(viewData) {
 			this.loading = true
 			this.error = null
 
 			try {
-				const response = await fetch('/index.php/apps/openregister/api/views', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
+				const response = await fetch(
+					'/index.php/apps/openregister/api/views',
+					{
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify(viewData),
 					},
-					body: JSON.stringify(viewData),
-				})
+				)
 
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
@@ -213,7 +245,6 @@ export const useViewsStore = defineStore('views', {
 				// Add to views list
 				this.viewsList.push(newView)
 
-				console.info('View created successfully:', newView)
 				return newView
 			} catch (error) {
 				console.error('Error creating view:', error)
@@ -226,9 +257,12 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Update an existing view
+		 *
 		 * @param {string} id - The view ID
 		 * @param {object} viewData - The updated view data
 		 * @return {Promise<object>}
+		 *
+		 * @spec exclude Thin API passthrough — PUT /api/views/{id}; observable contract owned by zoeken-filteren.
 		 */
 		async updateView(id, viewData) {
 			this.loading = true
@@ -238,13 +272,16 @@ export const useViewsStore = defineStore('views', {
 			const cleanedData = this.cleanViewForSave(viewData)
 
 			try {
-				const response = await fetch(`/index.php/apps/openregister/api/views/${id}`, {
-					method: 'PUT',
-					headers: {
-						'Content-Type': 'application/json',
+				const response = await fetch(
+					`/index.php/apps/openregister/api/views/${id}`,
+					{
+						method: 'PUT',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify(cleanedData),
 					},
-					body: JSON.stringify(cleanedData),
-				})
+				)
 
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
@@ -256,17 +293,21 @@ export const useViewsStore = defineStore('views', {
 				const updatedView = data.view || data
 
 				// Update in views list
-				const index = this.viewsList.findIndex(v => v.id === id || v.uuid === id)
+				const index = this.viewsList.findIndex(
+					(v) => v.id === id || v.uuid === id,
+				)
 				if (index !== -1) {
 					this.viewsList[index] = updatedView
 				}
 
 				// Update active view if it's the same
-				if (this.activeView && (this.activeView.id === id || this.activeView.uuid === id)) {
+				if (
+					this.activeView
+					&& (this.activeView.id === id || this.activeView.uuid === id)
+				) {
 					this.activeView = updatedView
 				}
 
-				console.info('View updated successfully:', updatedView)
 				return updatedView
 			} catch (error) {
 				console.error('Error updating view:', error)
@@ -279,8 +320,11 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Clean view data for saving - remove read-only fields
+		 *
 		 * @param {object} viewData - The view data to clean
 		 * @return {object} Cleaned view data
+		 *
+		 * @spec exclude Client-side payload sanitiser — strips read-only fields before save. No standalone backend contract.
 		 */
 		cleanViewForSave(viewData) {
 			const cleaned = { ...viewData }
@@ -296,34 +340,43 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Delete a view
+		 *
 		 * @param {string} id - The view ID
 		 * @return {Promise<void>}
+		 *
+		 * @spec exclude Thin API passthrough — DELETE /api/views/{id}; observable contract owned by zoeken-filteren.
 		 */
 		async deleteView(id) {
 			this.loading = true
 			this.error = null
 
 			try {
-				const response = await fetch(`/index.php/apps/openregister/api/views/${id}`, {
-					method: 'DELETE',
-					headers: {
-						'Content-Type': 'application/json',
+				const response = await fetch(
+					`/index.php/apps/openregister/api/views/${id}`,
+					{
+						method: 'DELETE',
+						headers: {
+							'Content-Type': 'application/json',
+						},
 					},
-				})
+				)
 
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
 				}
 
 				// Remove from views list
-				this.viewsList = this.viewsList.filter(v => v.id !== id && v.uuid !== id)
+				this.viewsList = this.viewsList.filter(
+					(v) => v.id !== id && v.uuid !== id,
+				)
 
 				// Clear active view if it's the same
-				if (this.activeView && (this.activeView.id === id || this.activeView.uuid === id)) {
+				if (
+					this.activeView
+					&& (this.activeView.id === id || this.activeView.uuid === id)
+				) {
 					this.activeView = null
 				}
-
-				console.info('View deleted successfully')
 			} catch (error) {
 				console.error('Error deleting view:', error)
 				this.error = error.message
@@ -335,13 +388,15 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Apply a view's configuration to the current search state
+		 *
 		 * @param {object} view - The view to apply
 		 * @param {object} searchStore - The search store instance
 		 * @return {void}
+		 *
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		applyView(view, searchStore) {
 			if (!view || !view.configuration) {
-				console.warn('Invalid view provided to applyView')
 				return
 			}
 
@@ -396,20 +451,27 @@ export const useViewsStore = defineStore('views', {
 			}
 
 			this.setActiveView(view)
-
-			console.info('View applied successfully:', view.name)
 		},
 
 		/**
 		 * Create a view from current search state
+		 *
 		 * @param {object} searchStore - The search store instance
 		 * @param {string} name - The name for the new view
 		 * @param {string} description - Optional description
 		 * @param {boolean} isDefault - Whether this should be the default view
 		 * @param {boolean} isPublic - Whether this view should be public
 		 * @return {object} The view configuration
+		 *
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
-		createViewFromSearchState(searchStore, name, description = '', isDefault = false, isPublic = false) {
+		createViewFromSearchState(
+			searchStore,
+			name,
+			description = '',
+			isDefault = false,
+			isPublic = false,
+		) {
 			return {
 				name,
 				description,
@@ -427,6 +489,98 @@ export const useViewsStore = defineStore('views', {
 					sorting: searchStore.sorting || {},
 					columns: searchStore.columns || {},
 				},
+			}
+		},
+
+		/**
+		 * Fetch the kanban board for a view: columns derived from
+		 * `presentation.kanban.groupByField` (columnOrder > enum > discovered),
+		 * with cards paginated per the existing object-query machinery.
+		 *
+		 * @param {string} id - The view ID
+		 * @param {object} [params] - Optional query params (`_limit`/`_offset`, applied to every column)
+		 * @return {Promise<{viewType: string, groupByField: string, columns: Array<object>}>}
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md#requirement-kanban-columns-and-cards-req-view-kanban-02
+		 */
+		async fetchKanbanBoard(id, params = {}) {
+			this.loading = true
+			this.error = null
+
+			try {
+				const query = new URLSearchParams()
+				if (params._limit != null) query.set('_limit', params._limit)
+				if (params._offset != null) query.set('_offset', params._offset)
+				const qs = query.toString()
+				const url = `/index.php/apps/openregister/api/views/${id}/kanban${qs ? `?${qs}` : ''}`
+
+				const response = await fetch(url, {
+					method: 'GET',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				})
+
+				if (!response.ok) {
+					const body = await response.json().catch(() => null)
+					throw new Error(
+						body?.error || `HTTP error! status: ${response.status}`,
+					)
+				}
+
+				return await response.json()
+			} catch (error) {
+				console.error('Error fetching kanban board:', error)
+				this.error = error.message
+				throw error
+			} finally {
+				this.loading = false
+			}
+		},
+
+		/**
+		 * Fetch the objects for a calendar view whose `presentation.calendar.dateField`
+		 * falls within the visible range (spanning to `endDateField` when configured).
+		 *
+		 * @param {string} id - The view ID
+		 * @param {string} rangeStart - Inclusive range start (ISO 8601 date/datetime)
+		 * @param {string} rangeEnd - Inclusive range end (ISO 8601 date/datetime)
+		 * @return {Promise<{viewType: string, dateField: string, endDateField: (string|null), rangeStart: string, rangeEnd: string, objects: Array<object>, total: number}>}
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md#requirement-calendar-plots-objects-by-a-date-field-over-a-range-req-view-cal-04
+		 */
+		async fetchCalendarObjects(id, rangeStart, rangeEnd) {
+			this.loading = true
+			this.error = null
+
+			try {
+				const query = new URLSearchParams({
+					start: rangeStart,
+					end: rangeEnd,
+				})
+				const url = `/index.php/apps/openregister/api/views/${id}/calendar?${query.toString()}`
+
+				const response = await fetch(url, {
+					method: 'GET',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				})
+
+				if (!response.ok) {
+					const body = await response.json().catch(() => null)
+					throw new Error(
+						body?.error || `HTTP error! status: ${response.status}`,
+					)
+				}
+
+				return await response.json()
+			} catch (error) {
+				console.error('Error fetching calendar objects:', error)
+				this.error = error.message
+				throw error
+			} finally {
+				this.loading = false
 			}
 		},
 	},

@@ -1,18 +1,31 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { objectStore, registerStore, schemaStore, dashboardStore } from '../../store/store.js'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
+import {
+	dashboardStore,
+	objectStore,
+	registerStore,
+	schemaStore,
+} from '../../store/store.js'
 </script>
 
 <template>
 	<NcAppSidebar
 		ref="sidebar"
 		v-model="activeTab"
-		name="Dashboard"
-		subname="Get real-time insights into your organization's data health by focusing on on registers, schema definitions, and object storage and usage."
+		:name="t('openregister', 'Dashboard')"
+		:subname="
+			t(
+				'openregister',
+				'Get real-time insights into your organization\'s data health by focusing on registers, schema definitions, and object storage and usage.',
+			)
+		"
 		:open="isSidebarOpen"
 		class="dashboard-sidebar"
-		@update:open="(e) => isSidebarOpen = e">
-		<NcAppSidebarTab id="overview-tab" name="Overview" :order="1">
+		@update:open="(e) => (isSidebarOpen = e)">
+		<NcAppSidebarTab
+			id="overview-tab"
+			:name="t('openregister', 'Overview')"
+			:order="1">
 			<template #icon>
 				<Magnify :size="20" />
 			</template>
@@ -21,26 +34,32 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 			<div class="filterSection">
 				<h3>{{ t('openregister', 'Filter Statistics') }}</h3>
 				<div class="filterGroup">
-					<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
-					<NcSelect v-bind="registerOptions"
+					<label for="registerSelect">{{
+						t('openregister', 'Register')
+					}}</label>
+					<NcSelect
+						v-bind="registerOptions"
 						id="registerSelect"
-						:model-value="selectedRegisterValue"
+						:modelValue="selectedRegisterValue"
 						:loading="registerLoading"
 						:disabled="registerLoading"
-						:input-label="t('openregister', 'Register')"
-						placeholder="Select a register"
-						@update:model-value="handleRegisterChange" />
+						:inputLabel="t('openregister', 'Register')"
+						:placeholder="t('openregister', 'Select a register')"
+						@update:modelValue="handleRegisterChange" />
 				</div>
 				<div class="filterGroup">
-					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
-					<NcSelect v-bind="schemaOptions"
+					<label for="schemaSelect">{{
+						t('openregister', 'Schema')
+					}}</label>
+					<NcSelect
+						v-bind="schemaOptions"
 						id="schemaSelect"
-						:model-value="selectedSchemaValue"
+						:modelValue="selectedSchemaValue"
 						:loading="schemaLoading"
 						:disabled="!registerStore.registerItem || schemaLoading"
-						:input-label="t('openregister', 'Schema')"
-						placeholder="Select a schema"
-						@update:model-value="handleSchemaChange" />
+						:inputLabel="t('openregister', 'Schema')"
+						:placeholder="t('openregister', 'Select a schema')"
+						@update:modelValue="handleSchemaChange" />
 				</div>
 			</div>
 
@@ -55,52 +74,101 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 				</div>
 				<div v-else-if="systemTotals" class="statsContainer">
 					<table class="statisticsTable">
+						<thead>
+							<tr>
+								<th scope="col">
+									{{ t('openregister', 'Name') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Count') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Size') }}
+								</th>
+							</tr>
+						</thead>
 						<tbody>
 							<tr>
-								<td>{{ t('openregister', 'Registers') }}</td>
+								<th scope="row">
+									{{ t('openregister', 'Registers') }}
+								</th>
 								<td>{{ filteredRegisters.length }}</td>
 								<td>-</td>
 							</tr>
 							<tr>
-								<td>{{ t('openregister', 'Schemas') }}</td>
+								<th scope="row">
+									{{ t('openregister', 'Schemas') }}
+								</th>
 								<td>{{ totalSchemas }}</td>
 								<td>-</td>
 							</tr>
 							<tr>
-								<td>{{ t('openregister', 'Objects') }}</td>
-								<td>{{ systemTotals.stats?.objects?.total || 0 }}</td>
-								<td>{{ formatBytes(systemTotals.stats?.objects?.size || 0) }}</td>
+								<th scope="row">
+									{{ t('openregister', 'Objects') }}
+								</th>
+								<td>
+									{{ systemTotals.stats?.objects?.total || 0 }}
+								</td>
+								<td>
+									{{
+										formatBytes(
+											systemTotals.stats?.objects?.size || 0,
+										)
+									}}
+								</td>
 							</tr>
 							<tr class="subRow">
-								<td class="indented">
+								<th scope="row" class="indented">
 									{{ t('openregister', 'Invalid') }}
+								</th>
+								<td>
+									{{ systemTotals.stats?.objects?.invalid || 0 }}
 								</td>
-								<td>{{ systemTotals.stats?.objects?.invalid || 0 }}</td>
 								<td>-</td>
 							</tr>
 							<tr class="subRow">
-								<td class="indented">
+								<th scope="row" class="indented">
 									{{ t('openregister', 'Deleted') }}
+								</th>
+								<td>
+									{{ systemTotals.stats?.objects?.deleted || 0 }}
 								</td>
-								<td>{{ systemTotals.stats?.objects?.deleted || 0 }}</td>
 								<td>-</td>
 							</tr>
 							<tr class="subRow">
-								<td class="indented">
+								<th scope="row" class="indented">
 									{{ t('openregister', 'Locked') }}
+								</th>
+								<td>
+									{{ systemTotals.stats?.objects?.locked || 0 }}
 								</td>
-								<td>{{ systemTotals.stats?.objects?.locked || 0 }}</td>
 								<td>-</td>
 							</tr>
 							<tr>
-								<td>{{ t('openregister', 'Logs') }}</td>
+								<th scope="row">
+									{{ t('openregister', 'Logs') }}
+								</th>
 								<td>{{ systemTotals.stats?.logs?.total || 0 }}</td>
-								<td>{{ formatBytes(systemTotals.stats?.logs?.size || 0) }}</td>
+								<td>
+									{{
+										formatBytes(
+											systemTotals.stats?.logs?.size || 0,
+										)
+									}}
+								</td>
 							</tr>
 							<tr>
-								<td>{{ t('openregister', 'Files') }}</td>
+								<th scope="row">
+									{{ t('openregister', 'Files') }}
+								</th>
 								<td>{{ systemTotals.stats?.files?.total || 0 }}</td>
-								<td>{{ formatBytes(systemTotals.stats?.files?.size || 0) }}</td>
+								<td>
+									{{
+										formatBytes(
+											systemTotals.stats?.files?.size || 0,
+										)
+									}}
+								</td>
 							</tr>
 						</tbody>
 					</table>
@@ -118,42 +186,87 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 				</div>
 				<div v-else-if="orphanedItems" class="statsContainer">
 					<table class="statisticsTable">
+						<thead>
+							<tr>
+								<th scope="col">
+									{{ t('openregister', 'Name') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Count') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Size') }}
+								</th>
+							</tr>
+						</thead>
 						<tbody>
 							<tr>
-								<td>{{ t('openregister', 'Objects') }}</td>
-								<td>{{ orphanedItems.stats?.objects?.total || 0 }}</td>
-								<td>{{ formatBytes(orphanedItems.stats?.objects?.size || 0) }}</td>
+								<th scope="row">
+									{{ t('openregister', 'Objects') }}
+								</th>
+								<td>
+									{{ orphanedItems.stats?.objects?.total || 0 }}
+								</td>
+								<td>
+									{{
+										formatBytes(
+											orphanedItems.stats?.objects?.size || 0,
+										)
+									}}
+								</td>
 							</tr>
 							<tr class="subRow">
-								<td class="indented">
+								<th scope="row" class="indented">
 									{{ t('openregister', 'Invalid') }}
+								</th>
+								<td>
+									{{ orphanedItems.stats?.objects?.invalid || 0 }}
 								</td>
-								<td>{{ orphanedItems.stats?.objects?.invalid || 0 }}</td>
 								<td>-</td>
 							</tr>
 							<tr class="subRow">
-								<td class="indented">
+								<th scope="row" class="indented">
 									{{ t('openregister', 'Deleted') }}
+								</th>
+								<td>
+									{{ orphanedItems.stats?.objects?.deleted || 0 }}
 								</td>
-								<td>{{ orphanedItems.stats?.objects?.deleted || 0 }}</td>
 								<td>-</td>
 							</tr>
 							<tr class="subRow">
-								<td class="indented">
+								<th scope="row" class="indented">
 									{{ t('openregister', 'Locked') }}
+								</th>
+								<td>
+									{{ orphanedItems.stats?.objects?.locked || 0 }}
 								</td>
-								<td>{{ orphanedItems.stats?.objects?.locked || 0 }}</td>
 								<td>-</td>
 							</tr>
 							<tr>
-								<td>{{ t('openregister', 'Logs') }}</td>
+								<th scope="row">
+									{{ t('openregister', 'Logs') }}
+								</th>
 								<td>{{ orphanedItems.stats?.logs?.total || 0 }}</td>
-								<td>{{ formatBytes(orphanedItems.stats?.logs?.size || 0) }}</td>
+								<td>
+									{{
+										formatBytes(
+											orphanedItems.stats?.logs?.size || 0,
+										)
+									}}
+								</td>
 							</tr>
 							<tr>
-								<td>{{ t('openregister', 'Files') }}</td>
+								<th scope="row">
+									{{ t('openregister', 'Files') }}
+								</th>
 								<td>{{ orphanedItems.stats?.files?.total || 0 }}</td>
-								<td>{{ formatBytes(orphanedItems.stats?.files?.size || 0) }}</td>
+								<td>
+									{{
+										formatBytes(
+											orphanedItems.stats?.files?.size || 0,
+										)
+									}}
+								</td>
 							</tr>
 						</tbody>
 					</table>
@@ -164,9 +277,14 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 </template>
 
 <script>
-import formatBytes from '../../services/formatBytes.js'
-import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcLoadingIcon } from '@nextcloud/vue'
+import {
+	NcAppSidebar,
+	NcAppSidebarTab,
+	NcLoadingIcon,
+	NcSelect,
+} from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
+import formatBytes from '../../services/formatBytes.js'
 
 export default {
 	name: 'DashboardSideBar',
@@ -177,6 +295,7 @@ export default {
 		NcLoadingIcon,
 		Magnify,
 	},
+
 	data() {
 		return {
 			registerLoading: false,
@@ -185,44 +304,83 @@ export default {
 			searchQuery: '',
 			activeTab: 'overview-tab',
 			searchTimeout: null,
-			isSidebarOpen: true,
+			// Dashboard opens with the sidebar collapsed; the user can open it
+			// manually via the standard NC toggle (which writes back here).
+			isSidebarOpen: false,
 		}
 	},
+
 	computed: {
+		/**
+		 * Build the register dropdown options for the dashboard filter.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object} NcSelect options bag for registers
+		 */
 		registerOptions() {
 			return {
-				options: registerStore.registerList.map(register => ({
+				options: registerStore.registerList.map((register) => ({
 					value: register.id,
 					label: register.title,
 					title: register.title,
 					register,
 				})),
-				reduce: option => option.register,
+
+				reduce: (option) => option.register,
 				label: 'title',
-				getOptionLabel: option => {
-					return option.title || (option.register && option.register.title) || option.label || ''
+				getOptionLabel: (option) => {
+					return (
+						option.title
+						|| (option.register && option.register.title)
+						|| option.label
+						|| ''
+					)
 				},
 			}
 		},
+
+		/**
+		 * Build the schema dropdown options scoped to the selected register.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object} NcSelect options bag for schemas
+		 */
 		schemaOptions() {
 			if (!registerStore.registerItem) return { options: [] }
 
 			return {
 				options: schemaStore.schemaList
-					.filter(schema => registerStore.registerItem.schemas.some(registerSchema => registerSchema.id === schema.id))
-					.map(schema => ({
+					.filter((schema) =>
+						registerStore.registerItem.schemas.some(
+							(registerSchema) => registerSchema.id === schema.id,
+						),
+					)
+					.map((schema) => ({
 						value: schema.id,
 						label: schema.title,
 						title: schema.title,
 						schema,
 					})),
-				reduce: option => option.schema,
+
+				reduce: (option) => option.schema,
 				label: 'title',
-				getOptionLabel: option => {
-					return option.title || (option.schema && option.schema.title) || option.label || ''
+				getOptionLabel: (option) => {
+					return (
+						option.title
+						|| (option.schema && option.schema.title)
+						|| option.label
+						|| ''
+					)
 				},
 			}
 		},
+
+		/**
+		 * Resolve the currently-selected register into NcSelect value shape.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object|null} Selected register option, or null
+		 */
 		selectedRegisterValue() {
 			if (!registerStore.registerItem) return null
 			const register = registerStore.registerItem
@@ -233,6 +391,13 @@ export default {
 				register,
 			}
 		},
+
+		/**
+		 * Resolve the currently-selected schema into NcSelect value shape.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object|null} Selected schema option, or null
+		 */
 		selectedSchemaValue() {
 			if (!schemaStore.schemaItem) return null
 			const schema = schemaStore.schemaItem
@@ -243,38 +408,62 @@ export default {
 				schema,
 			}
 		},
+
+		/**
+		 * Flatten the object metadata map into column descriptors for display.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {Array} Metadata column descriptors
+		 */
 		metadataColumns() {
 			return Object.entries(objectStore.metadata).map(([id, meta]) => ({
 				id,
 				...meta,
 			}))
 		},
+
 		/**
 		 * Get system totals from dashboardStore
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {object | null}
 		 */
 		systemTotals() {
-			return dashboardStore.registers.find(register => register.title === 'System Totals')
+			return dashboardStore.registers.find(
+				(register) => register.title === 'System Totals',
+			)
 		},
+
 		/**
 		 * Get orphaned items from dashboardStore
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {object | null}
 		 */
 		orphanedItems() {
-			return dashboardStore.registers.find(register => register.title === 'Orphaned Items')
+			return dashboardStore.registers.find(
+				(register) => register.title === 'Orphaned Items',
+			)
 		},
+
 		/**
 		 * Get filtered registers (excluding system and orphaned)
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {Array}
 		 */
 		filteredRegisters() {
-			return dashboardStore.registers.filter(register =>
-				register.title !== 'System Totals'
-				&& register.title !== 'Orphaned Items',
+			return dashboardStore.registers.filter(
+				(register) =>
+					register.title !== 'System Totals'
+					&& register.title !== 'Orphaned Items',
 			)
 		},
+
 		/**
 		 * Get total number of schemas in filtered registers
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {number}
 		 */
 		totalSchemas() {
@@ -283,8 +472,9 @@ export default {
 			}, 0)
 		},
 	},
+
 	watch: {
-		'searchQuery'(value) {
+		searchQuery(value) {
 			if (this.searchTimeout) {
 				clearTimeout(this.searchTimeout)
 			}
@@ -300,10 +490,15 @@ export default {
 				}
 			}, 1000)
 		},
+
 		// Watch for schema changes to initialize properties
 		// Use immediate: true equivalent in mounted
 		// This watcher will update properties when schema changes
 		'$root.schemaStore.schemaItem': {
+			/**
+			 * @param newSchema
+			 * @spec exclude Vue watch handler plumbing; re-initialises object properties when the selected schema changes.
+			 */
 			handler(newSchema) {
 				if (newSchema) {
 					objectStore.initializeProperties(newSchema)
@@ -312,9 +507,14 @@ export default {
 					objectStore.initializeColumnFilters()
 				}
 			},
+
 			deep: true,
 		},
 	},
+
+	/**
+	 * @spec exclude Lifecycle plumbing; fire-and-forget load of register/schema/object lists for the dashboard filter, no domain logic.
+	 */
 	mounted() {
 		objectStore.initializeColumnFilters()
 		this.registerLoading = true
@@ -322,14 +522,16 @@ export default {
 
 		// Only load lists if they're empty
 		if (!registerStore.registerList.length) {
-			registerStore.refreshRegisterList()
+			registerStore
+				.refreshRegisterList()
 				.finally(() => (this.registerLoading = false))
 		} else {
 			this.registerLoading = false
 		}
 
 		if (!schemaStore.schemaList.length) {
-			schemaStore.refreshSchemaList()
+			schemaStore
+				.refreshSchemaList()
 				.finally(() => (this.schemaLoading = false))
 		} else {
 			this.schemaLoading = false
@@ -340,11 +542,28 @@ export default {
 			objectStore.refreshObjectList()
 		}
 	},
+
 	methods: {
+		/**
+		 * Apply a new register selection and reset the dependent schema state.
+		 *
+		 * @param {object|null} option - The selected register (or null to clear)
+		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-24-files-sidebar-tabs/tasks.md#task-2
+		 */
 		handleRegisterChange(option) {
 			registerStore.setRegisterItem(option)
 			schemaStore.setSchemaItem(null)
 		},
+
+		/**
+		 * Apply a schema selection: set the schema, initialise its properties, and
+		 * refresh the object list for the new filter context.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
+		 * @param {object|null} option - The selected schema (or null to clear)
+		 * @return {Promise<void>}
+		 */
 		async handleSchemaChange(option) {
 			schemaStore.setSchemaItem(option)
 			if (option) {
@@ -352,6 +571,13 @@ export default {
 				objectStore.refreshObjectList()
 			}
 		},
+
+		/**
+		 * Re-run the object search for the current register/schema with the search term.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
+		 * @return {void}
+		 */
 		handleSearch() {
 			if (registerStore.registerItem && schemaStore.schemaItem) {
 				objectStore.refreshObjectList({
@@ -406,9 +632,11 @@ export default {
 	border-collapse: collapse;
 	font-size: 0.9em;
 
-	td {
+	td,
+	th {
 		padding: 4px 8px;
 		border-bottom: 1px solid var(--color-border);
+		text-align: left;
 
 		&:nth-child(2),
 		&:nth-child(3) {
@@ -416,7 +644,13 @@ export default {
 		}
 	}
 
-	.subRow td {
+	/* Row headers are labels, not emphasis — keep the original visual weight. */
+	tbody th {
+		font-weight: normal;
+	}
+
+	.subRow td,
+	.subRow th {
 		color: var(--color-text-maxcontrast);
 	}
 
@@ -424,7 +658,8 @@ export default {
 		padding-left: 24px;
 	}
 
-	tr:last-child td {
+	tr:last-child td,
+	tr:last-child th {
 		border-bottom: none;
 	}
 }

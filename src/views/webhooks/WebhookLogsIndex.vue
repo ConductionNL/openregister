@@ -7,9 +7,7 @@
 					<h1 class="viewHeaderTitleIndented">
 						{{ t('openregister', 'Webhook Logs') }}
 					</h1>
-					<NcButton
-						type="tertiary"
-						@click="goBack">
+					<NcButton variant="tertiary" @click="goBack">
 						<template #icon>
 							<ArrowLeft :size="20" />
 						</template>
@@ -17,7 +15,12 @@
 					</NcButton>
 				</div>
 				<p>
-					{{ t('openregister', 'View webhook delivery logs and filter by webhook') }}
+					{{
+						t(
+							'openregister',
+							'View webhook delivery logs and filter by webhook',
+						)
+					}}
 				</p>
 			</div>
 
@@ -25,10 +28,16 @@
 			<div class="viewActionsBar">
 				<div class="viewInfo">
 					<span class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} log entries', {
-							showing: logsList.length,
-							total: totalLogs
-						}) }}
+						{{
+							t(
+								'openregister',
+								'Showing {showing} of {total} log entries',
+								{
+									showing: logsList.length,
+									total: totalLogs,
+								},
+							)
+						}}
 					</span>
 				</div>
 				<div class="viewActions">
@@ -37,16 +46,14 @@
 						:options="webhookOptions"
 						:placeholder="t('openregister', 'Filter by webhook')"
 						:clearable="true"
-						:label-outside="true"
-						:input-label="t('openregister', 'Filter by webhook')"
-						@update:value="handleWebhookFilterChange">
+						:labelOutside="true"
+						:inputLabel="t('openregister', 'Filter by webhook')"
+						@update:modelValue="handleWebhookFilterChange">
 						<template #option="{ option }">
 							{{ option.label }}
 						</template>
 					</NcSelect>
-					<NcButton
-						type="secondary"
-						@click="refreshLogs">
+					<NcButton variant="secondary" @click="refreshLogs">
 						<template #icon>
 							<Refresh :size="20" />
 						</template>
@@ -64,7 +71,12 @@
 				<NcEmptyContent
 					v-else-if="!logsList.length"
 					:name="t('openregister', 'No log entries found')"
-					:description="t('openregister', 'There are no webhook log entries matching your filters.')">
+					:description="
+						t(
+							'openregister',
+							'There are no webhook log entries matching your filters.',
+						)
+					">
 					<template #icon>
 						<FileDocumentOutline :size="64" />
 					</template>
@@ -73,14 +85,28 @@
 				<table v-else class="webhooksTable">
 					<thead>
 						<tr>
-							<th>{{ t('openregister', 'Webhook') }}</th>
-							<th>{{ t('openregister', 'Event') }}</th>
-							<th>{{ t('openregister', 'Status') }}</th>
-							<th>{{ t('openregister', 'Status Code') }}</th>
-							<th>{{ t('openregister', 'Attempt') }}</th>
-							<th>{{ t('openregister', 'Created') }}</th>
-							<th>{{ t('openregister', 'Error') }}</th>
-							<th class="column-actions">
+							<th scope="col">
+								{{ t('openregister', 'Webhook') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Event') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Status') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Status Code') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Attempt') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Created') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Error') }}
+							</th>
+							<th scope="col" class="column-actions">
 								{{ t('openregister', 'Actions') }}
 							</th>
 						</tr>
@@ -91,11 +117,22 @@
 								{{ getWebhookName(log.webhookId) }}
 							</td>
 							<td>
-								<span class="event-class">{{ truncateEventClass(log.eventClass) }}</span>
+								<span class="event-class">{{
+									truncateEventClass(log.eventClass)
+								}}</span>
 							</td>
 							<td>
-								<span :class="log.success ? 'status-success' : 'status-failed'">
-									{{ log.success ? t('openregister', 'Success') : t('openregister', 'Failed') }}
+								<span
+									:class="
+										log.success
+											? 'status-success'
+											: 'status-failed'
+									">
+									{{
+										log.success
+											? t('openregister', 'Success')
+											: t('openregister', 'Failed')
+									}}
 								</span>
 							</td>
 							<td>
@@ -108,7 +145,10 @@
 								{{ formatDate(log.created) }}
 							</td>
 							<td>
-								<span v-if="log.errorMessage" class="error-message" :title="log.errorMessage">
+								<span
+									v-if="log.errorMessage"
+									class="error-message"
+									:title="log.errorMessage">
 									{{ truncateText(log.errorMessage, 50) }}
 								</span>
 								<span v-else>-</span>
@@ -116,7 +156,7 @@
 							<td class="column-actions">
 								<NcActions>
 									<NcActionButton
-										close-after-click
+										closeAfterClick
 										@click="viewLogDetails(log)">
 										<template #icon>
 											<Eye :size="20" />
@@ -131,16 +171,16 @@
 
 				<!-- Pagination -->
 				<div v-if="totalLogs > limit" class="pagination">
-					<NcButton
-						:disabled="offset === 0"
-						@click="previousPage">
+					<NcButton :disabled="offset === 0" @click="previousPage">
 						{{ t('openregister', 'Previous') }}
 					</NcButton>
 					<span class="pagination-info">
-						{{ t('openregister', 'Page {current} of {total}', {
-							current: currentPage,
-							total: totalPages
-						}) }}
+						{{
+							t('openregister', 'Page {current} of {total}', {
+								current: currentPage,
+								total: totalPages,
+							})
+						}}
 					</span>
 					<NcButton
 						:disabled="offset + limit >= totalLogs"
@@ -154,25 +194,23 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import axios from '@nextcloud/axios'
-import { navigationStore } from '../../store/store.js'
-
 import {
-	NcAppContent,
-	NcActions,
 	NcActionButton,
+	NcActions,
+	NcAppContent,
 	NcButton,
-	NcLoadingIcon,
 	NcEmptyContent,
+	NcLoadingIcon,
 	NcSelect,
 } from '@nextcloud/vue'
-
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
+import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import { navigationStore } from '../../store/store.js'
 
 /**
  * Webhook Logs Index View
@@ -192,6 +230,7 @@ export default {
 		FileDocumentOutline,
 		Eye,
 	},
+
 	data() {
 		return {
 			logsList: [],
@@ -203,10 +242,12 @@ export default {
 			selectedWebhookId: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * Get current page number
 		 *
+		 * @spec exclude UI plumbing — derived pagination view state
 		 * @return {number} Current page
 		 */
 		currentPage() {
@@ -216,6 +257,7 @@ export default {
 		/**
 		 * Get total number of pages
 		 *
+		 * @spec exclude UI plumbing — derived pagination view state
 		 * @return {number} Total pages
 		 */
 		totalPages() {
@@ -225,6 +267,7 @@ export default {
 		/**
 		 * Webhook options for filter dropdown
 		 *
+		 * @spec exclude UI plumbing — derived select-option list
 		 * @return {Array} Webhook options
 		 */
 		webhookOptions() {
@@ -232,13 +275,20 @@ export default {
 				{ value: null, label: t('openregister', 'All Webhooks') },
 			]
 			return options.concat(
-				this.webhooksList.map(webhook => ({
+				this.webhooksList.map((webhook) => ({
 					value: webhook.id,
 					label: webhook.name || webhook.url,
 				})),
 			)
 		},
 	},
+
+	/**
+	 * Lifecycle hook: load webhooks and logs and subscribe to retry events.
+	 *
+	 * @spec exclude UI plumbing — view-mount data fetch and event wiring
+	 * @return {void}
+	 */
 	mounted() {
 		// Get webhook ID from transfer data if available.
 		const transferData = navigationStore.getTransferData()
@@ -251,14 +301,23 @@ export default {
 		// Listen for retry events to refresh logs.
 		window.addEventListener('webhook-log-retried', this.loadLogs)
 	},
-	beforeDestroy() {
+
+	/**
+	 * Lifecycle hook: remove the retry event listener before teardown.
+	 *
+	 * @spec exclude UI plumbing — event-listener teardown
+	 * @return {void}
+	 */
+	beforeUnmount() {
 		// Clean up event listener.
 		window.removeEventListener('webhook-log-retried', this.loadLogs)
 	},
+
 	methods: {
 		/**
 		 * Load webhooks list
 		 *
+		 * @spec exclude UI plumbing — fetches the webhook list for display
 		 * @return {Promise<void>}
 		 */
 		async loadWebhooks() {
@@ -275,6 +334,7 @@ export default {
 		/**
 		 * Load logs list
 		 *
+		 * @spec exclude UI plumbing — fetches webhook logs for display
 		 * @return {Promise<void>}
 		 */
 		async loadLogs() {
@@ -305,6 +365,7 @@ export default {
 		 * Handle webhook filter change
 		 *
 		 * @param {number|null} webhookId - Selected webhook ID
+		 * @spec exclude UI plumbing — filter handler reloads logs
 		 * @return {void}
 		 */
 		handleWebhookFilterChange(webhookId) {
@@ -316,6 +377,7 @@ export default {
 		/**
 		 * Refresh logs
 		 *
+		 * @spec exclude UI plumbing — refresh button reloads logs
 		 * @return {void}
 		 */
 		refreshLogs() {
@@ -325,6 +387,7 @@ export default {
 		/**
 		 * Go to previous page
 		 *
+		 * @spec exclude UI plumbing — pagination handler reloads logs
 		 * @return {void}
 		 */
 		previousPage() {
@@ -337,6 +400,7 @@ export default {
 		/**
 		 * Go to next page
 		 *
+		 * @spec exclude UI plumbing — pagination handler reloads logs
 		 * @return {void}
 		 */
 		nextPage() {
@@ -350,17 +414,19 @@ export default {
 		 * Get webhook name by ID
 		 *
 		 * @param {number} webhookId - Webhook ID
+		 * @spec exclude UI plumbing — display lookup helper
 		 * @return {string} Webhook name
 		 */
 		getWebhookName(webhookId) {
-			const webhook = this.webhooksList.find(w => w.id === webhookId)
-			return webhook ? (webhook.name || webhook.url) : `#${webhookId}`
+			const webhook = this.webhooksList.find((w) => w.id === webhookId)
+			return webhook ? webhook.name || webhook.url : `#${webhookId}`
 		},
 
 		/**
 		 * Truncate event class name
 		 *
 		 * @param {string} eventClass - Event class name
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Truncated event class
 		 */
 		truncateEventClass(eventClass) {
@@ -374,6 +440,7 @@ export default {
 		 *
 		 * @param {string} text - Text to truncate
 		 * @param {number} maxLength - Maximum length
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Truncated text
 		 */
 		truncateText(text, maxLength) {
@@ -386,6 +453,7 @@ export default {
 		 * Format date for display
 		 *
 		 * @param {string} date - Date string
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Formatted date
 		 */
 		formatDate(date) {
@@ -397,6 +465,7 @@ export default {
 		 * View log details
 		 *
 		 * @param {object} log - Log entry
+		 * @spec exclude UI plumbing — opens the log-details modal
 		 * @return {void}
 		 */
 		viewLogDetails(log) {
@@ -408,6 +477,7 @@ export default {
 		/**
 		 * Go back to webhooks list
 		 *
+		 * @spec exclude UI plumbing — router navigation
 		 * @return {void}
 		 */
 		goBack() {
@@ -539,14 +609,6 @@ export default {
 	min-width: 80px;
 	width: 80px;
 	text-align: right;
-}
-
-.webhooksTable tbody tr:hover .column-actions {
-	background: var(--color-background-hover);
-}
-
-.webhooksTable thead .column-actions {
-	z-index: 10;
 }
 
 .webhooksTable tbody tr:hover .column-actions {

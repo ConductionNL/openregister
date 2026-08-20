@@ -1,16 +1,16 @@
 ---
-status: implemented
-retrofit_extensions: [REQ-017]
+status: done
+retrofit_extensions:
+  - REQ-017
 ---
 # Content Versioning
 
-
 # Content Versioning
 ## Purpose
+
+@e2e exclude backend version tracking — covered by PHPUnit
 Content versioning provides a complete lifecycle for register objects, enabling users to track every change as a numbered version, create named draft versions for work-in-progress edits, compare any two versions with field-level diffs, and roll back to any previous state. This capability is essential for government compliance (WOO, Archiefwet), editorial workflows where changes require review before publication, and multi-user collaboration where concurrent edits must be managed safely.
-
 ## Requirements
-
 ### Requirement: Every save operation MUST produce a new version
 Each create or update operation on an object MUST increment the object's semantic version number and record the full change set in the audit trail. The version number MUST follow semantic versioning (MAJOR.MINOR.PATCH) where PATCH increments on every save, MINOR increments on draft promotion, and MAJOR increments on schema-breaking changes or explicit user action.
 
@@ -40,9 +40,9 @@ Each create or update operation on an object MUST increment the object's semanti
 
 ### Requirement: Objects MUST support a draft/published lifecycle
 
-> **Status: deferred** — No DraftService or draft version entity found in codebase as of 2026-04-30 coverage scan. Track separately before implementing.
-
 Each object MUST have a published version (the current live data) and support one or more named draft versions for work-in-progress changes. Drafts MUST store only the delta (changed fields) relative to the published version to optimize storage. The published version MUST remain accessible and unmodified while drafts exist.
+
+> **Status: deferred** — No DraftService or draft version entity found in codebase as of 2026-04-30 coverage scan. Track separately before implementing.
 
 #### Scenario: Create a draft version
 - **GIVEN** a published object `melding-1` with title `Geluidsoverlast` and status `nieuw` at version `1.0.3`
@@ -77,9 +77,9 @@ Each object MUST have a published version (the current live data) and support on
 
 ### Requirement: Drafts MUST be promotable to published version
 
-> **Status: deferred** — Depends on draft/published lifecycle (see above). Not implemented as of 2026-04-30.
-
 A draft version MUST be mergeable into the published version, replacing the current live data with the draft changes. Promotion MUST create a new version entry in the audit trail and MUST increment the MINOR version number.
+
+> **Status: deferred** — Depends on draft/published lifecycle (see above). Not implemented as of 2026-04-30.
 
 #### Scenario: Promote a draft to published
 - **GIVEN** draft `status-update` for `melding-1` (published at `1.0.3`) with status changed to `in_behandeling`
@@ -110,9 +110,9 @@ A draft version MUST be mergeable into the published version, replacing the curr
 
 ### Requirement: The system MUST support version comparison with visual diffs
 
-> **Status: deferred** — No diffing service found in codebase as of 2026-04-30 coverage scan. Track separately before implementing.
-
 Users MUST be able to compare any two versions (draft vs published, any two historical versions) with field-level diffs. The diff MUST identify added, removed, and modified fields with their old and new values.
+
+> **Status: deferred** — No diffing service found in codebase as of 2026-04-30 coverage scan. Track separately before implementing.
 
 #### Scenario: Compare draft with published version
 - **GIVEN** published `melding-1` has title `Overlast` and status `nieuw`
@@ -238,9 +238,9 @@ Every version (audit trail entry) MUST record who made the change, when, from wh
 
 ### Requirement: Version storage MUST use a delta strategy for drafts and full snapshots for published versions
 
-> **Status: deferred** — Draft delta storage not implemented as of 2026-04-30. Audit trail stores full diffs (implemented); draft-specific delta storage is not.
-
 Published version history MUST store the full changed-field diff (old and new values) in the audit trail as currently implemented by `AuditTrailMapper.createAuditTrail()`. Draft versions MUST store only the delta (changed fields with new values only) relative to the current published version to minimize storage overhead.
+
+> **Status: deferred** — Draft delta storage not implemented as of 2026-04-30. Audit trail stores full diffs (implemented); draft-specific delta storage is not.
 
 #### Scenario: Audit trail stores full diff for published versions
 - **GIVEN** object `melding-1` at version `1.0.3` has title `Overlast` and status `nieuw`
@@ -442,6 +442,41 @@ The key `main` MUST always refer to the current published version of an object. 
 - **GIVEN** a user creates a draft with key `Status Update v2!`
 - **WHEN** the request is processed
 - **THEN** the system MUST reject the key and return HTTP 422 with a message requiring lowercase alphanumeric characters and hyphens only
+
+### Requirement: Successful file-version restore MUST dispatch a typed FileVersionRestoredEvent for integration listeners
+
+When a file version is restored via `FilesController::restoreVersion()` (after `FileVersioningHandler::restoreVersion()` returns successfully and the audit-trail entry has been written), the controller MUST construct and dispatch a typed `FileVersionRestoredEvent` via `IEventDispatcher::dispatchTyped()`. The event DTO carries the parent object UUID, the restored file ID, and an arbitrary `data` array. The event is the integration hook that n8n webhook triggers, registered Nextcloud event listeners, and downstream activity-stream providers consume; without it, file-version restores are observable only via the audit trail (best-effort) and not via the event bus.
+
+This requirement (tracked as REQ-018) documents the observed event-dispatch contract — REQ-017 specifies the operation in `FileVersioningHandler::restoreVersion()` but stops at "return true on success" without mentioning the controller-level event side effect.
+
+#### Scenario: Event is dispatched after successful restore
+
+- **GIVEN** an authenticated user invokes `POST /api/objects/{register}/{schema}/{id}/files/{fileId}/versions/{versionId}/restore`
+- **AND** the parent object resolves, the file resolves, and `FileVersioningHandler::restoreVersion()` returns `true`
+- **WHEN** the controller continues past the audit-trail call
+- **THEN** the controller MUST call `IEventDispatcher::dispatchTyped()` with a `FileVersionRestoredEvent` instance
+- **AND** the event MUST carry `objectUuid = $object->getUuid()`, `fileId = <the restored file id>`, and `data = ["versionId" => <the restored version id>]`
+
+#### Scenario: Event carries the version identifier so listeners can correlate with audit-trail entries
+
+- **GIVEN** the controller has just dispatched `FileVersionRestoredEvent` with `data = ["versionId" => "v-1710892800"]`
+- **WHEN** a registered listener receives the event and calls `$event->getData()`
+- **THEN** the returned array MUST equal `["versionId" => "v-1710892800"]`
+- **AND** `$event->getObjectUuid()` MUST return the parent object UUID exactly as it appears on the audit-trail entry's `object` column for the same restore operation
+- **AND** `$event->getFileId()` MUST return the restored file ID as an `int`
+
+#### Scenario: Event is NOT dispatched when the underlying restore fails
+
+- **GIVEN** `FileVersioningHandler::restoreVersion()` throws `Exception("Version not found")` (per REQ-017 graceful-degradation contract)
+- **WHEN** the controller's try/catch block handles the exception and returns a 4xx `JSONResponse`
+- **THEN** no `FileVersionRestoredEvent` MUST be dispatched
+- **AND** no audit-trail `file.version_restored` entry MUST be written for this request
+
+#### Notes
+
+- `FileVersionRestoredEvent` extends `OCP\EventDispatcher\Event`. Its constructor declares the three carried fields as `private readonly` promoted properties, exposed via `getObjectUuid()`, `getFileId()`, and `getData()`. Listeners MUST NOT mutate the event payload — there is no setter API.
+- The `data` array is intentionally untyped: REQ-017 currently only writes `versionId` into it, but the open-ended shape lets future restore-related metadata (e.g. `restoredBy`, `previousVersionId`) be added without breaking the event signature.
+- This requirement is paired with the audit-trail `file.version_restored` entry and REQ-017 (the `FileVersioningHandler::restoreVersion()` operation itself). All three fire on the same successful restore; only this requirement governs the typed-event side effect.
 
 ## Current Implementation Status
 - **Implemented:**

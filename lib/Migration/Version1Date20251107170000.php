@@ -32,75 +32,68 @@ use OCP\Migration\SimpleMigrationStep;
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  */
-class Version1Date20251107170000 extends SimpleMigrationStep
-{
-    /**
-     * Modify the database schema
-     *
-     * @param IOutput $output        Output handler
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Options
-     *
-     * @return ISchemaWrapper|null The modified schema or null
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20251107170000 extends SimpleMigrationStep {
+	/**
+	 * Modify the database schema
+	 *
+	 * @param IOutput $output Output handler
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Options
+	 *
+	 * @return ISchemaWrapper|null The modified schema or null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema  = $schemaClosure();
-        $updated = false;
+		$schema = $schemaClosure();
+		$updated = false;
 
-        if ($schema->hasTable('openregister_file_texts') === true) {
-            $table = $schema->getTable('openregister_file_texts');
+		if ($schema->hasTable('openregister_file_texts') === true) {
+			$table = $schema->getTable('openregister_file_texts');
 
-            if ($table->hasColumn('chunks_json') === false) {
-                $table->addColumn(
-                    'chunks_json',
-                    Types::TEXT,
-                    [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => 'JSON-encoded array of text chunks with metadata',
-                    ]
-                );
-                $output->info(message: '✅ Added chunks_json column to file_texts table');
-                $updated = true;
-            }
+			if ($table->hasColumn('chunks_json') === false) {
+				$table->addColumn(
+					'chunks_json',
+					Types::TEXT,
+					[
+						'notnull' => false,
+						'default' => null,
+						'comment' => 'JSON-encoded array of text chunks with metadata',
+					]
+				);
+				$output->info(message: '✅ Added chunks_json column to file_texts table');
+				$updated = true;
+			}
 
-            if ($table->hasColumn('chunks_json') === true && $updated === false) {
-                $output->info(message: 'ℹ️  chunks_json column already exists in file_texts table');
-            }
-        }//end if
+			if ($table->hasColumn('chunks_json') === true && $updated === false) {
+				$output->info(message: 'ℹ️  chunks_json column already exists in file_texts table');
+			}
+		}//end if
 
-        if ($schema->hasTable('openregister_file_texts') === false) {
-            $output->warning(message: '⚠️  openregister_file_texts table does not exist');
-        }//end if
+		if ($schema->hasTable('openregister_file_texts') === false) {
+			$output->warning(message: '⚠️  openregister_file_texts table does not exist');
+		}//end if
 
-        if ($updated === false) {
-            return null;
-        }
+		if ($updated === false) {
+			return null;
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Post-schema change hook
-     *
-     * @param IOutput $output        Output handler
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Options
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-        $output->info(message: '✅ Migration complete - Text extraction is now independent of SOLR');
-        $output->info(message: '   Chunks will be generated during extraction and stored for later use');
-    }//end postSchemaChange()
+	/**
+	 * Post-schema change hook
+	 *
+	 * @param IOutput $output Output handler
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Options
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+		$output->info(message: '✅ Migration complete - Text extraction is now independent of SOLR');
+		$output->info(message: '   Chunks will be generated during extraction and stored for later use');
+	}//end postSchemaChange()
 }//end class

@@ -5,19 +5,30 @@
 			{{ t('openregister', 'Loading preferences...') }}
 		</div>
 		<div v-else class="notifications-section">
-			<div v-for="(label, key) in toggleLabels" :key="key" class="notifications-section__toggle">
-				<NcCheckboxRadioSwitch :checked.sync="prefs[key]" @update:checked="save">
+			<div
+				v-for="(label, key) in toggleLabels"
+				:key="key"
+				class="notifications-section__toggle">
+				<NcCheckboxRadioSwitch
+					v-model="prefs[key]"
+					@update:modelValue="save">
 					{{ label }}
 				</NcCheckboxRadioSwitch>
 			</div>
 			<div class="notifications-section__digest">
-				<label for="email-digest">{{ t('openregister', 'Email digest frequency') }}</label>
-				<NcSelect v-model="prefs.emailDigest"
+				<label for="email-digest">{{
+					t('openregister', 'Email digest frequency')
+				}}</label>
+				<NcSelect
+					v-model="prefs.emailDigest"
+					inputLabel="Prefs Email Digest"
 					:options="digestOptions"
-					input-id="email-digest"
-					@input="save" />
+					inputId="email-digest"
+					@update:modelValue="save" />
 			</div>
-			<p v-if="message" :class="{ 'section__error': isError, 'section__success': !isError }">
+			<p
+				v-if="message"
+				:class="{ section__error: isError, section__success: !isError }">
 				{{ message }}
 			</p>
 		</div>
@@ -25,11 +36,10 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
-import NcSelect from '@nextcloud/vue/dist/Components/NcSelect.js'
+import { NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
 
 export default {
 	name: 'NotificationsSection',
@@ -44,20 +54,31 @@ export default {
 				systemAnnouncements: true,
 				emailDigest: 'daily',
 			},
+
 			message: '',
 			isError: false,
 			digestOptions: ['none', 'daily', 'weekly'],
 			toggleLabels: {
 				objectChanges: t('openregister', 'Object changes in owned objects'),
 				assignments: t('openregister', 'Assignment notifications'),
-				organisationChanges: t('openregister', 'Organisation membership changes'),
+				organisationChanges: t(
+					'openregister',
+					'Organisation membership changes',
+				),
+
 				systemAnnouncements: t('openregister', 'System announcements'),
 			},
 		}
 	},
+
+	/**
+	 * @spec exclude settings-section lifecycle fetch of notification preferences on mount
+	 */
 	async mounted() {
 		try {
-			const { data } = await axios.get(generateUrl('/apps/openregister/api/user/me/notifications'))
+			const { data } = await axios.get(
+				generateUrl('/apps/openregister/api/user/me/notifications'),
+			)
 			this.prefs = { ...this.prefs, ...data }
 		} catch (e) {
 			// Use defaults.
@@ -65,8 +86,12 @@ export default {
 			this.loading = false
 		}
 	},
+
 	methods: {
 		t,
+		/**
+		 * @spec exclude settings-section save plumbing; PUTs notification preferences and shows a status message
+		 */
 		async save() {
 			this.message = ''
 			try {
@@ -78,7 +103,9 @@ export default {
 				this.message = t('openregister', 'Preferences saved')
 				this.isError = false
 			} catch (e) {
-				this.message = e.response?.data?.error || t('openregister', 'Failed to save preferences')
+				this.message =
+					e.response?.data?.error
+					|| t('openregister', 'Failed to save preferences')
 				this.isError = true
 			}
 		},
@@ -87,11 +114,37 @@ export default {
 </script>
 
 <style scoped>
-.section { margin-bottom: 32px; padding: 16px; border-bottom: 1px solid var(--color-border); }
-.section__loading { color: var(--color-text-maxcontrast); }
-.section__error { color: var(--color-error); margin-top: 8px; }
-.section__success { color: var(--color-success); margin-top: 8px; }
-.notifications-section__toggle { margin-bottom: 8px; }
-.notifications-section__digest { margin-top: 16px; }
-.notifications-section__digest label { display: block; margin-bottom: 4px; font-weight: bold; }
+.section {
+	margin-bottom: 32px;
+	padding: 16px;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.section__loading {
+	color: var(--color-text-maxcontrast);
+}
+
+.section__error {
+	color: var(--color-error);
+	margin-top: 8px;
+}
+
+.section__success {
+	color: var(--color-success);
+	margin-top: 8px;
+}
+
+.notifications-section__toggle {
+	margin-bottom: 8px;
+}
+
+.notifications-section__digest {
+	margin-top: 16px;
+}
+
+.notifications-section__digest label {
+	display: block;
+	margin-bottom: 4px;
+	font-weight: bold;
+}
 </style>

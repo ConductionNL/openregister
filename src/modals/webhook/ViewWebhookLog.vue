@@ -3,7 +3,7 @@
 		v-if="navigationStore.modal === 'viewWebhookLog'"
 		:name="t('openregister', 'Webhook Log Details')"
 		size="large"
-		:can-close="true"
+		:canClose="true"
 		:open="true"
 		@update:open="handleDialogClose">
 		<div v-if="logItem" class="logDetailsContainer">
@@ -12,52 +12,63 @@
 				<h3>{{ t('openregister', 'Basic Information') }}</h3>
 				<table class="logDetailsTable">
 					<tr>
-						<td class="logLabel">
+						<th scope="row" class="logLabel">
 							{{ t('openregister', 'Webhook') }}
-						</td>
+						</th>
 						<td class="logValue">
 							{{ getWebhookName(logItem.webhookId) }}
 						</td>
 					</tr>
 					<tr>
-						<td class="logLabel">
+						<th scope="row" class="logLabel">
 							{{ t('openregister', 'Event') }}
-						</td>
+						</th>
 						<td class="logValue">
 							<code class="event-class">{{ logItem.eventClass }}</code>
 						</td>
 					</tr>
 					<tr>
-						<td class="logLabel">
+						<th scope="row" class="logLabel">
 							{{ t('openregister', 'Status') }}
-						</td>
+						</th>
 						<td class="logValue">
-							<span :class="logItem.success ? 'status-success' : 'status-failed'">
-								{{ logItem.success ? t('openregister', 'Success') : t('openregister', 'Failed') }}
+							<span
+								:class="
+									logItem.success
+										? 'status-success'
+										: 'status-failed'
+								">
+								{{
+									logItem.success
+										? t('openregister', 'Success')
+										: t('openregister', 'Failed')
+								}}
 							</span>
 						</td>
 					</tr>
 					<tr>
-						<td class="logLabel">
+						<th scope="row" class="logLabel">
 							{{ t('openregister', 'Status Code') }}
-						</td>
+						</th>
 						<td class="logValue">
-							<span v-if="logItem.statusCode">{{ logItem.statusCode }}</span>
+							<span v-if="logItem.statusCode">{{
+								logItem.statusCode
+							}}</span>
 							<span v-else class="text-muted">-</span>
 						</td>
 					</tr>
 					<tr>
-						<td class="logLabel">
+						<th scope="row" class="logLabel">
 							{{ t('openregister', 'Attempt') }}
-						</td>
+						</th>
 						<td class="logValue">
 							{{ logItem.attempt }}
 						</td>
 					</tr>
 					<tr>
-						<td class="logLabel">
+						<th scope="row" class="logLabel">
 							{{ t('openregister', 'Created') }}
-						</td>
+						</th>
 						<td class="logValue">
 							{{ formatDate(logItem.created) }}
 						</td>
@@ -110,31 +121,31 @@
 			</NcButton>
 			<NcButton
 				v-if="logItem && !logItem.success"
-				type="primary"
+				variant="primary"
 				:disabled="retrying"
 				@click="retryWebhook">
 				<template #icon>
 					<Refresh v-if="!retrying" :size="20" />
 					<NcLoadingIcon v-else :size="20" />
 				</template>
-				{{ retrying ? t('openregister', 'Retrying...') : t('openregister', 'Retry') }}
+				{{
+					retrying
+						? t('openregister', 'Retrying...')
+						: t('openregister', 'Retry')
+				}}
 			</NcButton>
 		</template>
 	</NcDialog>
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import axios from '@nextcloud/axios'
-import { navigationStore } from '../../store/store.js'
-import {
-	NcButton,
-	NcDialog,
-	NcLoadingIcon,
-} from '@nextcloud/vue'
+import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import { navigationStore } from '../../store/store.js'
 
 /**
  * ViewWebhookLog modal component
@@ -144,7 +155,7 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
  * @module Modals/Webhook
  * @author Conduction
  * @copyright 2024 Conduction
- * @license AGPL-3.0-or-later
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version 1.0.0
  */
 export default {
@@ -155,6 +166,7 @@ export default {
 		NcLoadingIcon,
 		Refresh,
 	},
+
 	data() {
 		return {
 			logItem: null,
@@ -162,25 +174,33 @@ export default {
 			retrying: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * Navigation store computed property for template access.
 		 *
 		 * @return {object} Navigation store instance
+		 * @spec exclude Computed passthrough exposing navigationStore to the template; UI plumbing.
 		 */
 		navigationStore() {
 			return navigationStore
 		},
 	},
+
+	/**
+	 * @spec exclude Vue mounted() hook loading log + webhook data on open; modal init plumbing.
+	 */
 	mounted() {
 		this.loadLogData()
 		this.loadWebhooks()
 	},
+
 	methods: {
 		/**
 		 * Load log data from navigation store transferData.
 		 *
 		 * @return {void}
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		loadLogData() {
 			const transferData = navigationStore.getTransferData()
@@ -188,9 +208,10 @@ export default {
 				this.logItem = { ...transferData.log }
 				// Map payload to requestBody if requestBody is not available.
 				if (!this.logItem.requestBody && this.logItem.payload) {
-					this.logItem.requestBody = typeof this.logItem.payload === 'string'
-						? this.logItem.payload
-						: JSON.stringify(this.logItem.payload)
+					this.logItem.requestBody =
+						typeof this.logItem.payload === 'string'
+							? this.logItem.payload
+							: JSON.stringify(this.logItem.payload)
 				}
 			}
 		},
@@ -199,12 +220,15 @@ export default {
 		 * Load webhooks list for name lookup.
 		 *
 		 * @return {Promise<void>}
+		 * @spec exclude Loads the webhook list for id-to-name lookup; UI form-loading plumbing.
 		 */
 		async loadWebhooks() {
 			try {
 				const { generateUrl } = await import('@nextcloud/router')
 				const axios = (await import('@nextcloud/axios')).default
-				const response = await axios.get(generateUrl('/apps/openregister/api/webhooks'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/webhooks'),
+				)
 				if (response.data && Array.isArray(response.data)) {
 					this.webhooksList = response.data
 				}
@@ -218,9 +242,10 @@ export default {
 		 *
 		 * @param {number} webhookId - Webhook ID
 		 * @return {string} Webhook name or ID
+		 * @spec exclude Resolves a webhook id to its display name; UI presentation helper.
 		 */
 		getWebhookName(webhookId) {
-			const webhook = this.webhooksList.find(w => w.id === webhookId)
+			const webhook = this.webhooksList.find((w) => w.id === webhookId)
 			return webhook ? webhook.name : `#${webhookId}`
 		},
 
@@ -229,6 +254,7 @@ export default {
 		 *
 		 * @param {string} dateString - Date string to format
 		 * @return {string} Formatted date
+		 * @spec exclude Locale date-string formatter for display; UI presentation helper.
 		 */
 		formatDate(dateString) {
 			if (!dateString) {
@@ -247,6 +273,7 @@ export default {
 		 *
 		 * @param {string} jsonString - JSON string to format
 		 * @return {string} Formatted JSON or original string if invalid
+		 * @spec exclude Pretty-prints a JSON payload string for display; UI presentation helper.
 		 */
 		formatJson(jsonString) {
 			if (!jsonString) {
@@ -266,6 +293,7 @@ export default {
 		 *
 		 * @param {boolean} open - Dialog open state
 		 * @return {void}
+		 * @spec exclude Dialog close-event handler closing the modal on dismiss; UI plumbing.
 		 */
 		handleDialogClose(open) {
 			if (!open) {
@@ -277,6 +305,7 @@ export default {
 		 * Retry failed webhook delivery.
 		 *
 		 * @return {Promise<void>}
+		 * @spec exclude Retry handler posting to the webhook-log retry endpoint and refreshing the parent; UI orchestration plumbing.
 		 */
 		async retryWebhook() {
 			if (!this.logItem || !this.logItem.id) {
@@ -286,21 +315,31 @@ export default {
 			this.retrying = true
 			try {
 				const response = await axios.post(
-					generateUrl(`/apps/openregister/api/webhooks/logs/${this.logItem.id}/retry`),
+					generateUrl(
+						`/apps/openregister/api/webhooks/logs/${this.logItem.id}/retry`,
+					),
 				)
 
 				if (response.data && response.data.success === true) {
-					showSuccess(t('openregister', 'Webhook retry delivered successfully'))
+					showSuccess(
+						t('openregister', 'Webhook retry delivered successfully'),
+					)
 					// Close modal and refresh parent view.
 					this.closeModal()
 					// Trigger a custom event to refresh logs list.
 					window.dispatchEvent(new CustomEvent('webhook-log-retried'))
 				} else {
-					const message = response.data?.message || response.data?.error || t('openregister', 'Webhook retry delivery failed')
+					const message =
+						response.data?.message
+						|| response.data?.error
+						|| t('openregister', 'Webhook retry delivery failed')
 					showError(message)
 				}
 			} catch (error) {
-				const errorMessage = error.response?.data?.error || error.response?.data?.message || t('openregister', 'Failed to retry webhook')
+				const errorMessage =
+					error.response?.data?.error
+					|| error.response?.data?.message
+					|| t('openregister', 'Failed to retry webhook')
 				showError(errorMessage)
 			} finally {
 				this.retrying = false
@@ -311,6 +350,7 @@ export default {
 		 * Close modal.
 		 *
 		 * @return {void}
+		 * @spec exclude Modal close handler resetting navigationStore.modal/transferData; UI plumbing.
 		 */
 		closeModal() {
 			navigationStore.setModal(false)
@@ -346,9 +386,11 @@ export default {
 	border-bottom: 1px solid var(--color-border);
 }
 
-.logDetailsTable td {
+.logDetailsTable td,
+.logDetailsTable th {
 	padding: 12px 0;
 	vertical-align: top;
+	text-align: left;
 }
 
 .logLabel {
@@ -426,7 +468,8 @@ export default {
 }
 
 .codeBlock code {
-	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+	font-family:
+		'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
 	font-size: 12px;
 	line-height: 1.5;
 	color: var(--color-main-text);

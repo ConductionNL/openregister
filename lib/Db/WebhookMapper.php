@@ -5,6 +5,9 @@
  *
  * Mapper for Webhook entities to handle database operations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -22,15 +25,16 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Service\Webhook\WebhookInterceptionCache;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
-use OCP\IAppConfig;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -64,389 +68,437 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Webhook dispatching requires event and HTTP dependencies
  */
-class WebhookMapper extends QBMapper
-{
-    use MultiTenancyTrait;
+class WebhookMapper extends QBMapper {
+	use MultiTenancyTrait;
 
-    /**
-     * Organisation mapper for multi-tenancy
-     *
-     * Used to get active organisation and apply organisation filters.
-     *
-     * @var OrganisationMapper Organisation mapper instance
-     */
-    protected OrganisationMapper $organisationMapper;
+	/**
+	 * Organisation mapper for multi-tenancy
+	 *
+	 * Used to get active organisation and apply organisation filters.
+	 *
+	 * @var OrganisationMapper Organisation mapper instance
+	 */
+	protected OrganisationMapper $organisationMapper;
 
-    /**
-     * App configuration for multitenancy settings
-     *
-     * Used by MultiTenancyTrait for checking multitenancy configuration.
-     *
-     * @var IAppConfig App configuration instance
-     */
-    protected IAppConfig $appConfig;
+	/**
+	 * App configuration for multitenancy settings
+	 *
+	 * Used by MultiTenancyTrait for checking multitenancy configuration.
+	 *
+	 * @var IAppConfig App configuration instance
+	 */
+	protected IAppConfig $appConfig;
 
-    /**
-     * User session for current user
-     *
-     * Used to determine current user context for RBAC filtering.
-     *
-     * @var IUserSession User session instance
-     */
-    private readonly IUserSession $userSession;
+	/**
+	 * User session for current user
+	 *
+	 * Used to determine current user context for RBAC filtering.
+	 *
+	 * @var IUserSession User session instance
+	 */
+	private readonly IUserSession $userSession;
 
-    /**
-     * Group manager for RBAC
-     *
-     * Used to check user group memberships for access control.
-     *
-     * @var IGroupManager Group manager instance
-     */
-    private readonly IGroupManager $groupManager;
+	/**
+	 * Group manager for RBAC
+	 *
+	 * Used to check user group memberships for access control.
+	 *
+	 * @var IGroupManager Group manager instance
+	 */
+	private readonly IGroupManager $groupManager;
 
-    /**
-     * Constructor
-     *
-     * Initializes mapper with database connection and multi-tenancy/RBAC dependencies.
-     * Calls parent constructor to set up base mapper functionality.
-     *
-     * @param IDBConnection      $db                 Database connection
-     * @param OrganisationMapper $organisationMapper Organisation mapper for multi-tenancy
-     * @param IUserSession       $userSession        User session
-     * @param IGroupManager      $groupManager       Group manager
-     * @param IAppConfig         $appConfig          App configuration for multitenancy settings
-     *
-     * @return void
-     */
-    public function __construct(
-        IDBConnection $db,
-        OrganisationMapper $organisationMapper,
-        IUserSession $userSession,
-        IGroupManager $groupManager,
-        IAppConfig $appConfig
-    ) {
-        // Call parent constructor to initialize base mapper with table name and entity class.
-        parent::__construct(db: $db, tableName: 'openregister_webhooks', entityClass: Webhook::class);
+	/**
+	 * Interception-flag cache invalidated on every webhook CRUD operation
+	 *
+	 * Nullable so the mapper stays constructible without a cache backend
+	 * (unit tests, degraded environments); invalidation is skipped then.
+	 *
+	 * @var WebhookInterceptionCache|null Interception cache instance
+	 */
+	private readonly ?WebhookInterceptionCache $interceptionCache;
 
-        // Store dependencies for use in mapper methods.
-        $this->organisationMapper = $organisationMapper;
-        $this->userSession        = $userSession;
-        $this->groupManager       = $groupManager;
-        $this->appConfig          = $appConfig;
-    }//end __construct()
+	/**
+	 * Constructor
+	 *
+	 * Initializes mapper with database connection and multi-tenancy/RBAC dependencies.
+	 * Calls parent constructor to set up base mapper functionality.
+	 *
+	 * @param IDBConnection $db Database connection
+	 * @param OrganisationMapper $organisationMapper Organisation mapper for multi-tenancy
+	 * @param IUserSession $userSession User session
+	 * @param IGroupManager $groupManager Group manager
+	 * @param IAppConfig $appConfig App configuration for multitenancy settings
+	 * @param WebhookInterceptionCache|null $interceptionCache Interception-flag cache invalidated on webhook CRUD
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		IDBConnection $db,
+		OrganisationMapper $organisationMapper,
+		IUserSession $userSession,
+		IGroupManager $groupManager,
+		IAppConfig $appConfig,
+		?WebhookInterceptionCache $interceptionCache = null,
+	) {
+		// Call parent constructor to initialize base mapper with table name and entity class.
+		parent::__construct(db: $db, tableName: 'openregister_webhooks', entityClass: Webhook::class);
 
-    /**
-     * Find all webhooks
-     *
-     * Retrieves all webhooks with organisation filtering for multi-tenancy.
-     * Returns only webhooks belonging to the current organisation.
-     * Supports pagination and filtering.
-     *
-     * @param int|null $limit   Maximum number of results to return
-     * @param int|null $offset  Number of results to skip
-     * @param array    $filters Optional filters to apply
-     *
-     * @return Webhook[]
-     *
-     * @psalm-return list<OCA\OpenRegister\Db\Webhook>
-     */
-    public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[]): array
-    {
-        // Check if table exists before querying (migrations might not have run yet).
-        if ($this->tableExists() === false) {
-            return [];
-        }
+		// Store dependencies for use in mapper methods.
+		$this->organisationMapper = $organisationMapper;
+		$this->userSession = $userSession;
+		$this->groupManager = $groupManager;
+		$this->appConfig = $appConfig;
+		$this->interceptionCache = $interceptionCache;
+	}//end __construct()
 
-        // Step 1: Get query builder instance.
-        $qb = $this->db->getQueryBuilder();
+	/**
+	 * Find all webhooks
+	 *
+	 * Retrieves all webhooks with organisation filtering for multi-tenancy.
+	 * Returns only webhooks belonging to the current organisation.
+	 * Supports pagination and filtering.
+	 *
+	 * @param int|null $limit Maximum number of results to return
+	 * @param int|null $offset Number of results to skip
+	 * @param array $filters Optional filters to apply
+	 *
+	 * @return Webhook[]
+	 *
+	 * @psalm-return list<OCA\OpenRegister\Db\Webhook>
+	 */
+	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = []): array {
+		// Check if table exists before querying (migrations might not have run yet).
+		if ($this->tableExists() === false) {
+			return [];
+		}
 
-        // Step 2: Build SELECT query for all columns.
-        $qb->select('*')
-            ->from($this->getTableName());
+		// Step 1: Get query builder instance.
+		$qb = $this->db->getQueryBuilder();
 
-        // Step 3: Apply pagination if provided.
-        if ($limit !== null) {
-            $qb->setMaxResults($limit);
-        }
+		// Step 2: Build SELECT query for all columns.
+		$qb->select('*')
+			->from($this->getTableName());
 
-        if ($offset !== null) {
-            $qb->setFirstResult($offset);
-        }
+		// Step 3: Apply pagination if provided.
+		if ($limit !== null) {
+			$qb->setMaxResults($limit);
+		}
 
-        // Step 4: Apply filters if provided.
-        foreach ($filters ?? [] as $filter => $value) {
-            if ($value === 'IS NOT NULL') {
-                $qb->andWhere($qb->expr()->isNotNull($filter));
-                continue;
-            }
+		if ($offset !== null) {
+			$qb->setFirstResult($offset);
+		}
 
-            if ($value === 'IS NULL') {
-                $qb->andWhere($qb->expr()->isNull($filter));
-                continue;
-            }
+		// Step 4: Apply filters if provided.
+		foreach ($filters ?? [] as $filter => $value) {
+			if ($value === 'IS NOT NULL') {
+				$qb->andWhere($qb->expr()->isNotNull($filter));
+				continue;
+			}
 
-            $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
-        }
+			if ($value === 'IS NULL') {
+				$qb->andWhere($qb->expr()->isNull($filter));
+				continue;
+			}
 
-        // Step 5: Apply organisation filter for multi-tenancy.
-        // This ensures users only see webhooks from their organisation.
-        $this->applyOrganisationFilter(qb: $qb);
+			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+		}
 
-        // Step 6: Execute query and return entities.
-        return $this->findEntities(query: $qb);
-    }//end findAll()
+		// Step 5: Apply organisation filter for multi-tenancy.
+		// This ensures users only see webhooks from their organisation.
+		$this->applyOrganisationFilter(qb: $qb);
 
-    /**
-     * Find a single webhook by ID
-     *
-     * Retrieves webhook by ID with organisation filtering for multi-tenancy.
-     * Throws exception if webhook not found or doesn't belong to current organisation.
-     *
-     * @param int $id Webhook ID to find
-     *
-     * @return Webhook The found webhook entity
-     *
-     * @throws DoesNotExistException If webhook not found or not accessible
-     * @throws MultipleObjectsReturnedException If multiple webhooks found (should not happen)
-     */
-    public function find(int $id): Webhook
-    {
-        // Check if table exists before querying (migrations might not have run yet).
-        if ($this->tableExists() === false) {
-            throw new DoesNotExistException('Webhook table does not exist. Please run migrations.');
-        }
+		// Step 6: Execute query and return entities.
+		return $this->findEntities(query: $qb);
+	}//end findAll()
 
-        // Step 1: Get query builder instance.
-        $qb = $this->db->getQueryBuilder();
+	/**
+	 * Find a single webhook by ID
+	 *
+	 * Retrieves webhook by ID with organisation filtering for multi-tenancy.
+	 * Throws exception if webhook not found or doesn't belong to current organisation.
+	 *
+	 * @param int $id Webhook ID to find
+	 *
+	 * @return Webhook The found webhook entity
+	 *
+	 * @throws DoesNotExistException If webhook not found or not accessible
+	 * @throws MultipleObjectsReturnedException If multiple webhooks found (should not happen)
+	 */
+	public function find(int $id): Webhook {
+		// Check if table exists before querying (migrations might not have run yet).
+		if ($this->tableExists() === false) {
+			throw new DoesNotExistException('Webhook table does not exist. Please run migrations.');
+		}
 
-        // Step 2: Build SELECT query with ID filter.
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+		// Step 1: Get query builder instance.
+		$qb = $this->db->getQueryBuilder();
 
-        // Step 3: Apply organisation filter for multi-tenancy.
-        // This ensures users can only access webhooks from their organisation.
-        $this->applyOrganisationFilter(qb: $qb);
+		// Step 2: Build SELECT query with ID filter.
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        // Step 4: Execute query and return single entity.
-        return $this->findEntity(query: $qb);
-    }//end find()
+		// Step 3: Apply organisation filter for multi-tenancy.
+		// This ensures users can only access webhooks from their organisation.
+		$this->applyOrganisationFilter(qb: $qb);
 
-    /**
-     * Find all enabled webhooks
-     *
-     * Retrieves all enabled webhooks with organisation filtering for multi-tenancy.
-     * Only returns webhooks that are currently enabled and belong to current organisation.
-     *
-     * @return Webhook[]
-     *
-     * @psalm-return list<\OCA\OpenRegister\Db\Webhook>
-     */
-    public function findEnabled(): array
-    {
-        // Check if table exists before querying (migrations might not have run yet).
-        if ($this->tableExists() === false) {
-            return [];
-        }
+		// Step 4: Execute query and return single entity.
+		return $this->findEntity(query: $qb);
+	}//end find()
 
-        // Step 1: Get query builder instance.
-        $qb = $this->db->getQueryBuilder();
+	/**
+	 * Find all enabled webhooks
+	 *
+	 * Retrieves all enabled webhooks with organisation filtering for multi-tenancy.
+	 * Only returns webhooks that are currently enabled and belong to current organisation.
+	 *
+	 * @return Webhook[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Webhook>
+	 */
+	public function findEnabled(): array {
+		// Check if table exists before querying (migrations might not have run yet).
+		if ($this->tableExists() === false) {
+			return [];
+		}
 
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('enabled', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)));
+		// Step 1: Get query builder instance.
+		$qb = $this->db->getQueryBuilder();
 
-        // Apply organisation filter.
-        $this->applyOrganisationFilter(qb: $qb);
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('enabled', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)));
 
-        return $this->findEntities(query: $qb);
-    }//end findEnabled()
+		// Apply organisation filter.
+		$this->applyOrganisationFilter(qb: $qb);
 
-    /**
-     * Find webhooks that match an event
-     *
-     * @param string $eventClass Event class name
-     *
-     * @return Webhook[]
-     *
-     * @psalm-return array<int<0, max>, Webhook>
-     */
-    public function findForEvent(string $eventClass): array
-    {
-        // Get all enabled webhooks.
-        $webhooks = $this->findEnabled();
+		return $this->findEntities(query: $qb);
+	}//end findEnabled()
 
-        // Filter webhooks that match the event.
-        return array_filter(
-            $webhooks,
-            function ($webhook) use ($eventClass) {
-                return $webhook->matchesEvent($eventClass);
-            }
-        );
-    }//end findForEvent()
+	/**
+	 * Find all enabled webhooks WITHOUT organisation filtering
+	 *
+	 * Tenant-agnostic variant of findEnabled() used exclusively to compute
+	 * the global "has interception webhooks for event X" cache flag. The
+	 * flag must consider ALL organisations: a per-tenant "no webhooks"
+	 * answer cached globally would silently disable another tenant's
+	 * interception hooks. Callers that deliver webhooks must still use the
+	 * organisation-filtered findEnabled()/findForEvent() paths.
+	 *
+	 * @return Webhook[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Webhook>
+	 *
+	 * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-must-support-pre-event-webhooks
+	 */
+	public function findEnabledForInterceptionScan(): array {
+		// Check if table exists before querying (migrations might not have run yet).
+		if ($this->tableExists() === false) {
+			return [];
+		}
 
-    /**
-     * Insert a new webhook
-     *
-     * @param Entity $entity Webhook entity to insert
-     *
-     * @return Webhook The inserted webhook
-     * @throws \Exception
-     */
-    public function insert(Entity $entity): Entity
-    {
-        // Verify RBAC permission to create.
-        $this->verifyRbacPermission(action: 'create', entityType: 'webhook');
+		$qb = $this->db->getQueryBuilder();
 
-        if ($entity instanceof Webhook) {
-            // Generate UUID if not set.
-            if (empty($entity->getUuid()) === true) {
-                $entity->setUuid(Uuid::v4()->toRfc4122());
-            }
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('enabled', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)));
 
-            $entity->setCreated(new DateTime());
-            $entity->setUpdated(new DateTime());
-        }
+		// Deliberately NO organisation filter — see method docblock.
+		return $this->findEntities(query: $qb);
+	}//end findEnabledForInterceptionScan()
 
-        // Auto-set organisation from active session.
-        $this->setOrganisationOnCreate(entity: $entity);
+	/**
+	 * Find webhooks that match an event
+	 *
+	 * @param string $eventClass Event class name
+	 *
+	 * @return Webhook[]
+	 *
+	 * @psalm-return array<int<0, max>, Webhook>
+	 */
+	public function findForEvent(string $eventClass): array {
+		// Get all enabled webhooks.
+		$webhooks = $this->findEnabled();
 
-        return parent::insert(entity: $entity);
-    }//end insert()
+		// Filter webhooks that match the event.
+		return array_filter(
+			$webhooks,
+			function ($webhook) use ($eventClass) {
+				return $webhook->matchesEvent($eventClass);
+			}
+		);
+	}//end findForEvent()
 
-    /**
-     * Update an existing webhook
-     *
-     * @param Entity $entity Webhook entity to update
-     *
-     * @return Webhook The updated webhook
-     * @throws \Exception
-     */
-    public function update(Entity $entity): Entity
-    {
-        // Verify RBAC permission to update.
-        $this->verifyRbacPermission(action: 'update', entityType: 'webhook');
+	/**
+	 * Insert a new webhook
+	 *
+	 * @param Entity $entity Webhook entity to insert
+	 *
+	 * @return Webhook The inserted webhook
+	 * @throws \Exception
+	 */
+	public function insert(Entity $entity): Entity {
+		// Verify RBAC permission to create.
+		$this->verifyRbacPermission(action: 'create', entityType: 'webhook');
 
-        // Verify user has access to this organisation.
-        $this->verifyOrganisationAccess(entity: $entity);
+		if ($entity instanceof Webhook) {
+			// Generate UUID if not set.
+			if (empty($entity->getUuid()) === true) {
+				$entity->setUuid(Uuid::v4()->toRfc4122());
+			}
 
-        if ($entity instanceof Webhook) {
-            $entity->setUpdated(new DateTime());
-        }
+			$entity->setCreated(new DateTime());
+			$entity->setUpdated(new DateTime());
+		}
 
-        return parent::update(entity: $entity);
-    }//end update()
+		// Auto-set organisation from active session.
+		$this->setOrganisationOnCreate(entity: $entity);
 
-    /**
-     * Delete a webhook
-     *
-     * @param Entity $entity Webhook entity to delete
-     *
-     * @return Webhook The deleted webhook
-     * @throws \Exception
-     */
-    public function delete(Entity $entity): Entity
-    {
-        // Verify RBAC permission to delete.
-        $this->verifyRbacPermission(action: 'delete', entityType: 'webhook');
+		$inserted = parent::insert(entity: $entity);
 
-        // Verify user has access to this organisation.
-        $this->verifyOrganisationAccess(entity: $entity);
+		// A new webhook can introduce interception for any event type.
+		$this->interceptionCache?->invalidate();
 
-        return parent::delete(entity: $entity);
-    }//end delete()
+		return $inserted;
+	}//end insert()
 
-    /**
-     * Update webhook statistics
-     *
-     * @param Webhook $webhook       Webhook to update
-     * @param bool    $success       Was delivery successful
-     * @param bool    $incrementOnly Only increment counters, don't update timestamps
-     *
-     * @return Webhook
-     *
-     * @psalm-suppress PossiblyUnusedReturnValue
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control update behavior
-     */
-    public function updateStatistics(Webhook $webhook, bool $success, bool $incrementOnly=false): Webhook
-    {
-        $webhook->setTotalDeliveries($webhook->getTotalDeliveries() + 1);
+	/**
+	 * Update an existing webhook
+	 *
+	 * @param Entity $entity Webhook entity to update
+	 *
+	 * @return Webhook The updated webhook
+	 * @throws \Exception
+	 */
+	public function update(Entity $entity): Entity {
+		// Verify RBAC permission to update.
+		$this->verifyRbacPermission(action: 'update', entityType: 'webhook');
 
-        if ($incrementOnly === false) {
-            $webhook->setLastTriggeredAt(new DateTime());
-        }
+		// Verify user has access to this organisation.
+		$this->verifyOrganisationAccess(entity: $entity);
 
-        if ($success === true) {
-            $webhook->setSuccessfulDeliveries($webhook->getSuccessfulDeliveries() + 1);
-            if ($incrementOnly === false) {
-                $webhook->setLastSuccessAt(new DateTime());
-            }
+		if ($entity instanceof Webhook) {
+			$entity->setUpdated(new DateTime());
+		}
 
-            return $this->update(entity: $webhook);
-        }
+		$updated = parent::update(entity: $entity);
 
-        $webhook->setFailedDeliveries($webhook->getFailedDeliveries() + 1);
-        if ($incrementOnly === false) {
-            $webhook->setLastFailureAt(new DateTime());
-        }
+		// Enabled/events/configuration may have changed interception applicability.
+		$this->interceptionCache?->invalidate();
 
-        return $this->update(entity: $webhook);
-    }//end updateStatistics()
+		return $updated;
+	}//end update()
 
-    /**
-     * Create webhook from array
-     *
-     * @param array $data Webhook data
-     *
-     * @return Webhook
-     */
-    public function createFromArray(array $data): Webhook
-    {
-        $webhook = new Webhook();
-        $webhook->hydrate($data);
+	/**
+	 * Delete a webhook
+	 *
+	 * @param Entity $entity Webhook entity to delete
+	 *
+	 * @return Webhook The deleted webhook
+	 * @throws \Exception
+	 */
+	public function delete(Entity $entity): Entity {
+		// Verify RBAC permission to delete.
+		$this->verifyRbacPermission(action: 'delete', entityType: 'webhook');
 
-        return $this->insert(entity: $webhook);
-    }//end createFromArray()
+		// Verify user has access to this organisation.
+		$this->verifyOrganisationAccess(entity: $entity);
 
-    /**
-     * Update webhook from array
-     *
-     * @param int   $id   Webhook ID
-     * @param array $data Webhook data
-     *
-     * @return Webhook
-     * @throws DoesNotExistException
-     * @throws MultipleObjectsReturnedException
-     */
-    public function updateFromArray(int $id, array $data): Webhook
-    {
-        $webhook = $this->find(id: $id);
-        $webhook->hydrate($data);
+		$deleted = parent::delete(entity: $entity);
 
-        return $this->update(entity: $webhook);
-    }//end updateFromArray()
+		// Removing a webhook can drop the last interception hook for an event type.
+		$this->interceptionCache?->invalidate();
 
-    /**
-     * Check if the webhooks table exists
-     *
-     * Used to gracefully handle cases where migrations haven't run yet.
-     *
-     * @return bool True if table exists, false otherwise
-     */
-    private function tableExists(): bool
-    {
-        try {
-            // Try to execute a simple query to check if table exists.
-            $qb = $this->db->getQueryBuilder();
-            $qb->select($qb->createFunction('COUNT(*)'))
-                ->from($this->getTableName())
-                ->setMaxResults(1);
-            $qb->executeQuery();
-            return true;
-        } catch (\Exception $e) {
-            // If query fails, table likely doesn't exist.
-            return false;
-        }
-    }//end tableExists()
+		return $deleted;
+	}//end delete()
+
+	/**
+	 * Update webhook statistics
+	 *
+	 * @param Webhook $webhook Webhook to update
+	 * @param bool $success Was delivery successful
+	 * @param bool $incrementOnly Only increment counters, don't update timestamps
+	 *
+	 * @return Webhook
+	 *
+	 * @psalm-suppress PossiblyUnusedReturnValue
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control update behavior
+	 */
+	public function updateStatistics(Webhook $webhook, bool $success, bool $incrementOnly = false): Webhook {
+		$webhook->setTotalDeliveries($webhook->getTotalDeliveries() + 1);
+
+		if ($incrementOnly === false) {
+			$webhook->setLastTriggeredAt(new DateTime());
+		}
+
+		if ($success === true) {
+			$webhook->setSuccessfulDeliveries($webhook->getSuccessfulDeliveries() + 1);
+			if ($incrementOnly === false) {
+				$webhook->setLastSuccessAt(new DateTime());
+			}
+
+			return $this->update(entity: $webhook);
+		}
+
+		$webhook->setFailedDeliveries($webhook->getFailedDeliveries() + 1);
+		if ($incrementOnly === false) {
+			$webhook->setLastFailureAt(new DateTime());
+		}
+
+		return $this->update(entity: $webhook);
+	}//end updateStatistics()
+
+	/**
+	 * Create webhook from array
+	 *
+	 * @param array $data Webhook data
+	 *
+	 * @return Webhook
+	 */
+	public function createFromArray(array $data): Webhook {
+		$webhook = new Webhook();
+		$webhook->hydrate($data);
+
+		return $this->insert(entity: $webhook);
+	}//end createFromArray()
+
+	/**
+	 * Update webhook from array
+	 *
+	 * @param int $id Webhook ID
+	 * @param array $data Webhook data
+	 *
+	 * @return Webhook
+	 * @throws DoesNotExistException
+	 * @throws MultipleObjectsReturnedException
+	 */
+	public function updateFromArray(int $id, array $data): Webhook {
+		$webhook = $this->find(id: $id);
+		$webhook->hydrate($data);
+
+		return $this->update(entity: $webhook);
+	}//end updateFromArray()
+
+	/**
+	 * Check if the webhooks table exists
+	 *
+	 * Used to gracefully handle cases where migrations haven't run yet.
+	 *
+	 * @return bool True if table exists, false otherwise
+	 */
+	private function tableExists(): bool {
+		try {
+			// Try to execute a simple query to check if table exists.
+			$qb = $this->db->getQueryBuilder();
+			$qb->select($qb->createFunction('COUNT(*)'))
+				->from($this->getTableName())
+				->setMaxResults(1);
+			$qb->executeQuery();
+			return true;
+		} catch (\Exception $e) {
+			// If query fails, table likely doesn't exist.
+			return false;
+		}
+	}//end tableExists()
 }//end class

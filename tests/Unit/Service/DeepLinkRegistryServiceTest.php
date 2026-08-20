@@ -8,293 +8,328 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeepLinkRegistration;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
-class DeepLinkRegistryServiceTest extends TestCase
-{
-
-    /**
-     * @var ContainerInterface&MockObject
-     */
-    private ContainerInterface $container;
-
-    /**
-     * @var RegisterMapper&MockObject
-     */
-    private RegisterMapper $registerMapper;
-
-    /**
-     * @var SchemaMapper&MockObject
-     */
-    private SchemaMapper $schemaMapper;
-
-    /**
-     * @var LoggerInterface&MockObject
-     */
-    private LoggerInterface $logger;
-
-    private DeepLinkRegistryService $service;
-
-    protected function setUp(): void
-    {
-        // Reset static state before each test.
-        DeepLinkRegistryService::reset();
-
-        $this->registerMapper = $this->createMock(RegisterMapper::class);
-        $this->schemaMapper = $this->createMock(SchemaMapper::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
-
-        $this->container = $this->createMock(ContainerInterface::class);
-        $this->container->method('get')->willReturnCallback(function (string $class) {
-            if ($class === RegisterMapper::class) {
-                return $this->registerMapper;
-            }
-            if ($class === SchemaMapper::class) {
-                return $this->schemaMapper;
-            }
-            return null;
-        });
-
-        $this->service = new DeepLinkRegistryService(
-            $this->container,
-            $this->logger
-        );
-    }
-
-    protected function tearDown(): void
-    {
-        DeepLinkRegistryService::reset();
-    }
-
-    // --- register ---
-
-    public function testRegisterAddsRegistration(): void
-    {
-        $this->service->register('procest', 'my-register', 'my-schema', '/apps/procest/#/cases/{uuid}');
-
-        $this->assertTrue($this->service->hasRegistrations());
-    }
-
-    public function testRegisterIgnoresDuplicateKey(): void
-    {
-        $this->service->register('procest', 'reg', 'schema', '/apps/procest/{uuid}');
-        $this->service->register('pipelinq', 'reg', 'schema', '/apps/pipelinq/{uuid}');
-
-        // The first registration should win.
-        $this->assertTrue($this->service->hasRegistrations());
-    }
-
-    public function testRegisterWithCustomIcon(): void
-    {
-        $this->service->register('procest', 'reg', 'schema', '/apps/procest/{uuid}', 'custom-icon');
-
-        $this->assertTrue($this->service->hasRegistrations());
-    }
-
-    public function testRegisterWithDefaultIcon(): void
-    {
-        $this->service->register('procest', 'reg', 'schema', '/apps/procest/{uuid}');
-
-        $this->assertTrue($this->service->hasRegistrations());
-    }
-
-    // --- resolve ---
-
-    public function testResolveReturnsNullWhenNoRegistrations(): void
-    {
-        $result = $this->service->resolve(1, 1);
-
-        $this->assertNull($result);
-    }
-
-    public function testResolveReturnsRegistrationByIds(): void
-    {
-        // Register a deep link.
-        $this->service->register('procest', 'cases', 'case-schema', '/apps/procest/#/cases/{uuid}');
-
-        // Mock register mapper to return a register with slug "cases".
-        $register = new Register();
-        $reflection = new \ReflectionClass($register);
-        $idProp = $reflection->getProperty('id');
-        $idProp->setAccessible(true);
-        $idProp->setValue($register, 1);
-        $register->setSlug('cases');
-
-        $this->registerMapper
-            ->method('findAll')
-            ->willReturn([$register]);
-
-        // Mock schema mapper.
-        $schema = new Schema();
-        $sReflection = new \ReflectionClass($schema);
-        $sIdProp = $sReflection->getProperty('id');
-        $sIdProp->setAccessible(true);
-        $sIdProp->setValue($schema, 10);
-        $schema->setSlug('case-schema');
-
-        $this->schemaMapper
-            ->method('findAll')
-            ->willReturn([$schema]);
-
-        $result = $this->service->resolve(1, 10);
+class DeepLinkRegistryServiceTest extends TestCase {
+
+	/**
+	 * @var ContainerInterface&MockObject
+	 */
+	private ContainerInterface $container;
+
+	/**
+	 * @var RegisterMapper&MockObject
+	 */
+	private RegisterMapper $registerMapper;
+
+	/**
+	 * @var SchemaMapper&MockObject
+	 */
+	private SchemaMapper $schemaMapper;
+
+	/**
+	 * @var LoggerInterface&MockObject
+	 */
+	private LoggerInterface $logger;
+
+	private DeepLinkRegistryService $service;
+
+	protected function setUp(): void {
+		// Reset static state before each test.
+		DeepLinkRegistryService::reset();
+
+		$this->registerMapper = $this->createMock(RegisterMapper::class);
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
+
+		$this->container = $this->createMock(ContainerInterface::class);
+		$this->container->method('get')->willReturnCallback(function (string $class) {
+			if ($class === RegisterMapper::class) {
+				return $this->registerMapper;
+			}
+			if ($class === SchemaMapper::class) {
+				return $this->schemaMapper;
+			}
+			return null;
+		});
 
-        $this->assertNotNull($result);
-        $this->assertInstanceOf(DeepLinkRegistration::class, $result);
-        $this->assertSame('procest', $result->appId);
-    }
+		$this->service = new DeepLinkRegistryService(
+			$this->container,
+			$this->logger
+		);
+	}
 
-    public function testResolveReturnsNullForUnknownIds(): void
-    {
-        $this->service->register('procest', 'cases', 'case-schema', '/apps/procest/{uuid}');
+	protected function tearDown(): void {
+		DeepLinkRegistryService::reset();
+	}
 
-        $this->registerMapper
-            ->method('findAll')
-            ->willReturn([]);
+	// --- register ---
 
-        $this->schemaMapper
-            ->method('findAll')
-            ->willReturn([]);
+	public function testRegisterAddsRegistration(): void {
+		$this->service->register('procest', 'my-register', 'my-schema', '/apps/procest/#/cases/{uuid}');
+
+		$this->assertTrue($this->service->hasRegistrations());
+	}
 
-        $result = $this->service->resolve(999, 999);
+	public function testRegisterIgnoresDuplicateKey(): void {
+		$this->service->register('procest', 'reg', 'schema', '/apps/procest/{uuid}');
+		$this->service->register('pipelinq', 'reg', 'schema', '/apps/pipelinq/{uuid}');
+
+		// The first registration should win.
+		$this->assertTrue($this->service->hasRegistrations());
+	}
 
-        $this->assertNull($result);
-    }
+	public function testRegisterWithCustomIcon(): void {
+		$this->service->register('procest', 'reg', 'schema', '/apps/procest/{uuid}', 'custom-icon');
 
-    // --- resolveUrl ---
+		$this->assertTrue($this->service->hasRegistrations());
+	}
 
-    public function testResolveUrlReturnsNullWhenNoRegistration(): void
-    {
-        $result = $this->service->resolveUrl(1, 1, ['uuid' => 'abc']);
+	public function testRegisterWithDefaultIcon(): void {
+		$this->service->register('procest', 'reg', 'schema', '/apps/procest/{uuid}');
 
-        $this->assertNull($result);
-    }
+		$this->assertTrue($this->service->hasRegistrations());
+	}
 
-    public function testResolveUrlResolvesTemplate(): void
-    {
-        $this->service->register('procest', 'cases', 'case-schema', '/apps/procest/#/cases/{uuid}');
+	// --- resolve ---
 
-        $register = new Register();
-        $reflection = new \ReflectionClass($register);
-        $idProp = $reflection->getProperty('id');
-        $idProp->setAccessible(true);
-        $idProp->setValue($register, 1);
-        $register->setSlug('cases');
+	public function testResolveReturnsNullWhenNoRegistrations(): void {
+		$result = $this->service->resolve(1, 1);
 
-        $schema = new Schema();
-        $sReflection = new \ReflectionClass($schema);
-        $sIdProp = $sReflection->getProperty('id');
-        $sIdProp->setAccessible(true);
-        $sIdProp->setValue($schema, 10);
-        $schema->setSlug('case-schema');
+		$this->assertNull($result);
+	}
 
-        $this->registerMapper->method('findAll')->willReturn([$register]);
-        $this->schemaMapper->method('findAll')->willReturn([$schema]);
+	public function testResolveReturnsRegistrationByIds(): void {
+		// Register a deep link.
+		$this->service->register('procest', 'cases', 'case-schema', '/apps/procest/#/cases/{uuid}');
 
-        $result = $this->service->resolveUrl(1, 10, ['uuid' => 'abc-123']);
+		// Mock register mapper to return a register with slug "cases".
+		$register = new Register();
+		$reflection = new \ReflectionClass($register);
+		$idProp = $reflection->getProperty('id');
+		$idProp->setAccessible(true);
+		$idProp->setValue($register, 1);
+		$register->setSlug('cases');
 
-        $this->assertSame('/apps/procest/#/cases/abc-123', $result);
-    }
+		$this->registerMapper
+			->method('findAll')
+			->willReturn([$register]);
 
-    // --- resolveIcon ---
+		// Mock schema mapper.
+		$schema = new Schema();
+		$sReflection = new \ReflectionClass($schema);
+		$sIdProp = $sReflection->getProperty('id');
+		$sIdProp->setAccessible(true);
+		$sIdProp->setValue($schema, 10);
+		$schema->setSlug('case-schema');
 
-    public function testResolveIconReturnsNullWhenNoRegistration(): void
-    {
-        $result = $this->service->resolveIcon(1, 1);
+		$this->schemaMapper
+			->method('findAll')
+			->willReturn([$schema]);
 
-        $this->assertNull($result);
-    }
+		$result = $this->service->resolve(1, 10);
 
-    public function testResolveIconReturnsIcon(): void
-    {
-        $this->service->register('procest', 'cases', 'case-schema', '/apps/procest/{uuid}', 'my-icon');
+		$this->assertNotNull($result);
+		$this->assertInstanceOf(DeepLinkRegistration::class, $result);
+		$this->assertSame('procest', $result->appId);
+	}
 
-        $register = new Register();
-        $reflection = new \ReflectionClass($register);
-        $idProp = $reflection->getProperty('id');
-        $idProp->setAccessible(true);
-        $idProp->setValue($register, 1);
-        $register->setSlug('cases');
+	public function testResolveReturnsNullForUnknownIds(): void {
+		$this->service->register('procest', 'cases', 'case-schema', '/apps/procest/{uuid}');
 
-        $schema = new Schema();
-        $sReflection = new \ReflectionClass($schema);
-        $sIdProp = $sReflection->getProperty('id');
-        $sIdProp->setAccessible(true);
-        $sIdProp->setValue($schema, 10);
-        $schema->setSlug('case-schema');
+		$this->registerMapper
+			->method('findAll')
+			->willReturn([]);
 
-        $this->registerMapper->method('findAll')->willReturn([$register]);
-        $this->schemaMapper->method('findAll')->willReturn([$schema]);
+		$this->schemaMapper
+			->method('findAll')
+			->willReturn([]);
 
-        $result = $this->service->resolveIcon(1, 10);
+		$result = $this->service->resolve(999, 999);
 
-        $this->assertSame('my-icon', $result);
-    }
+		$this->assertNull($result);
+	}
 
-    // --- hasRegistrations ---
+	// --- resolveUrl ---
 
-    public function testHasRegistrationsReturnsFalseWhenEmpty(): void
-    {
-        $this->assertFalse($this->service->hasRegistrations());
-    }
+	public function testResolveUrlReturnsNullWhenNoRegistration(): void {
+		$result = $this->service->resolveUrl(1, 1, ['uuid' => 'abc']);
 
-    public function testHasRegistrationsReturnsTrueAfterRegister(): void
-    {
-        $this->service->register('procest', 'reg', 'schema', '/url/{uuid}');
+		$this->assertNull($result);
+	}
 
-        $this->assertTrue($this->service->hasRegistrations());
-    }
+	public function testResolveUrlResolvesTemplate(): void {
+		$this->service->register('procest', 'cases', 'case-schema', '/apps/procest/#/cases/{uuid}');
 
-    // --- reset ---
+		$register = new Register();
+		$reflection = new \ReflectionClass($register);
+		$idProp = $reflection->getProperty('id');
+		$idProp->setAccessible(true);
+		$idProp->setValue($register, 1);
+		$register->setSlug('cases');
 
-    public function testResetClearsAllRegistrations(): void
-    {
-        $this->service->register('procest', 'reg', 'schema', '/url/{uuid}');
-        $this->assertTrue($this->service->hasRegistrations());
+		$schema = new Schema();
+		$sReflection = new \ReflectionClass($schema);
+		$sIdProp = $sReflection->getProperty('id');
+		$sIdProp->setAccessible(true);
+		$sIdProp->setValue($schema, 10);
+		$schema->setSlug('case-schema');
 
-        DeepLinkRegistryService::reset();
+		$this->registerMapper->method('findAll')->willReturn([$register]);
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
 
-        $this->assertFalse($this->service->hasRegistrations());
-    }
+		$result = $this->service->resolveUrl(1, 10, ['uuid' => 'abc-123']);
 
-    // --- Edge cases with mapper errors ---
+		$this->assertSame('/apps/procest/#/cases/abc-123', $result);
+	}
 
-    public function testResolveHandlesRegisterMapperException(): void
-    {
-        $this->service->register('procest', 'cases', 'case-schema', '/url/{uuid}');
+	// --- resolveIcon ---
 
-        $this->registerMapper
-            ->method('findAll')
-            ->willThrowException(new \Exception('DB error'));
+	public function testResolveIconReturnsNullWhenNoRegistration(): void {
+		$result = $this->service->resolveIcon(1, 1);
 
-        $this->schemaMapper
-            ->method('findAll')
-            ->willReturn([]);
+		$this->assertNull($result);
+	}
 
-        // Should return null when slugs can't be resolved.
-        $result = $this->service->resolve(1, 1);
+	public function testResolveIconReturnsIcon(): void {
+		$this->service->register('procest', 'cases', 'case-schema', '/apps/procest/{uuid}', 'my-icon');
 
-        $this->assertNull($result);
-    }
+		$register = new Register();
+		$reflection = new \ReflectionClass($register);
+		$idProp = $reflection->getProperty('id');
+		$idProp->setAccessible(true);
+		$idProp->setValue($register, 1);
+		$register->setSlug('cases');
 
-    public function testResolveHandlesSchemaMapperException(): void
-    {
-        $this->service->register('procest', 'cases', 'case-schema', '/url/{uuid}');
+		$schema = new Schema();
+		$sReflection = new \ReflectionClass($schema);
+		$sIdProp = $sReflection->getProperty('id');
+		$sIdProp->setAccessible(true);
+		$sIdProp->setValue($schema, 10);
+		$schema->setSlug('case-schema');
 
-        $register = new Register();
-        $reflection = new \ReflectionClass($register);
-        $idProp = $reflection->getProperty('id');
-        $idProp->setAccessible(true);
-        $idProp->setValue($register, 1);
-        $register->setSlug('cases');
+		$this->registerMapper->method('findAll')->willReturn([$register]);
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
 
-        $this->registerMapper->method('findAll')->willReturn([$register]);
-        $this->schemaMapper->method('findAll')->willThrowException(new \Exception('DB error'));
+		$result = $this->service->resolveIcon(1, 10);
 
-        $result = $this->service->resolve(1, 10);
+		$this->assertSame('my-icon', $result);
+	}
 
-        $this->assertNull($result);
-    }
+	// --- resolveDisplayName ---
+
+	private function wireCasesRegistration(): void {
+		$register = new Register();
+		$reflection = new \ReflectionClass($register);
+		$idProp = $reflection->getProperty('id');
+		$idProp->setAccessible(true);
+		$idProp->setValue($register, 1);
+		$register->setSlug('cases');
+
+		$schema = new Schema();
+		$sReflection = new \ReflectionClass($schema);
+		$sIdProp = $sReflection->getProperty('id');
+		$sIdProp->setAccessible(true);
+		$sIdProp->setValue($schema, 10);
+		$schema->setSlug('case-schema');
+
+		$this->registerMapper->method('findAll')->willReturn([$register]);
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
+	}
+
+	public function testResolveDisplayNameReturnsExplicitName(): void {
+		$this->service->register('pipelinq', 'cases', 'case-schema', '/url/{uuid}', '', 'Pipelinq');
+		$this->wireCasesRegistration();
+
+		$this->assertSame('Pipelinq', $this->service->resolveDisplayName(1, 10));
+	}
+
+	public function testResolveDisplayNameFallsBackToAppId(): void {
+		// No displayName provided → falls back to appId.
+		$this->service->register('procest', 'cases', 'case-schema', '/url/{uuid}');
+		$this->wireCasesRegistration();
+
+		$this->assertSame('procest', $this->service->resolveDisplayName(1, 10));
+	}
+
+	public function testResolveDisplayNameReturnsNullForUnclaimedPair(): void {
+		$this->service->register('procest', 'cases', 'case-schema', '/url/{uuid}');
+		$this->registerMapper->method('findAll')->willReturn([]);
+		$this->schemaMapper->method('findAll')->willReturn([]);
+
+		$this->assertNull($this->service->resolveDisplayName(999, 999));
+	}
+
+	public function testRegisterRemainsSourceCompatibleWithoutDisplayName(): void {
+		// Pre-extension argument list must still succeed with displayName = null.
+		$this->service->register('procest', 'cases', 'case-schema', '/url/{uuid}');
+		$this->wireCasesRegistration();
+
+		$registration = $this->service->resolve(1, 10);
+		$this->assertNotNull($registration);
+		$this->assertNull($registration->displayName);
+	}
+
+	// --- hasRegistrations ---
+
+	public function testHasRegistrationsReturnsFalseWhenEmpty(): void {
+		$this->assertFalse($this->service->hasRegistrations());
+	}
+
+	public function testHasRegistrationsReturnsTrueAfterRegister(): void {
+		$this->service->register('procest', 'reg', 'schema', '/url/{uuid}');
+
+		$this->assertTrue($this->service->hasRegistrations());
+	}
+
+	// --- reset ---
+
+	public function testResetClearsAllRegistrations(): void {
+		$this->service->register('procest', 'reg', 'schema', '/url/{uuid}');
+		$this->assertTrue($this->service->hasRegistrations());
+
+		DeepLinkRegistryService::reset();
+
+		$this->assertFalse($this->service->hasRegistrations());
+	}
+
+	// --- Edge cases with mapper errors ---
+
+	public function testResolveHandlesRegisterMapperException(): void {
+		$this->service->register('procest', 'cases', 'case-schema', '/url/{uuid}');
+
+		$this->registerMapper
+			->method('findAll')
+			->willThrowException(new \Exception('DB error'));
+
+		$this->schemaMapper
+			->method('findAll')
+			->willReturn([]);
+
+		// Should return null when slugs can't be resolved.
+		$result = $this->service->resolve(1, 1);
+
+		$this->assertNull($result);
+	}
+
+	public function testResolveHandlesSchemaMapperException(): void {
+		$this->service->register('procest', 'cases', 'case-schema', '/url/{uuid}');
+
+		$register = new Register();
+		$reflection = new \ReflectionClass($register);
+		$idProp = $reflection->getProperty('id');
+		$idProp->setAccessible(true);
+		$idProp->setValue($register, 1);
+		$register->setSlug('cases');
+
+		$this->registerMapper->method('findAll')->willReturn([$register]);
+		$this->schemaMapper->method('findAll')->willThrowException(new \Exception('DB error'));
+
+		$result = $this->service->resolve(1, 10);
+
+		$this->assertNull($result);
+	}
 }

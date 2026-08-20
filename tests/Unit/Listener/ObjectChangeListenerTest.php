@@ -16,143 +16,133 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
-class ObjectChangeListenerTest extends TestCase
-{
-    private ObjectChangeListener $listener;
-    private TextExtractionService&MockObject $textExtractSvc;
-    private SettingsService&MockObject $settingsService;
-    private IJobList&MockObject $jobList;
-    private LoggerInterface&MockObject $logger;
+class ObjectChangeListenerTest extends TestCase {
+	private ObjectChangeListener $listener;
+	private TextExtractionService&MockObject $textExtractSvc;
+	private SettingsService&MockObject $settingsService;
+	private IJobList&MockObject $jobList;
+	private LoggerInterface&MockObject $logger;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->textExtractSvc = $this->createMock(TextExtractionService::class);
-        $this->settingsService = $this->createMock(SettingsService::class);
-        $this->jobList = $this->createMock(IJobList::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
+	protected function setUp(): void {
+		parent::setUp();
+		$this->textExtractSvc = $this->createMock(TextExtractionService::class);
+		$this->settingsService = $this->createMock(SettingsService::class);
+		$this->jobList = $this->createMock(IJobList::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        $this->listener = new ObjectChangeListener(
-            $this->textExtractSvc,
-            $this->settingsService,
-            $this->jobList,
-            $this->logger,
-        );
-    }
+		$this->listener = new ObjectChangeListener(
+			$this->textExtractSvc,
+			$this->settingsService,
+			$this->jobList,
+			$this->logger,
+		);
+	}
 
-    public function testEarlyReturnForUnrelatedEvent(): void
-    {
-        $event = $this->createMock(Event::class);
-        $this->settingsService->expects($this->never())->method('getFileSettingsOnly');
-        $this->listener->handle($event);
-    }
+	public function testEarlyReturnForUnrelatedEvent(): void {
+		$event = $this->createMock(Event::class);
+		$this->settingsService->expects($this->never())->method('getFileSettingsOnly');
+		$this->listener->handle($event);
+	}
 
-    public function testHandlesObjectCreatedEvent(): void
-    {
-        $object = new ObjectEntity();
-        $object->setId(42);
-        $object->setUuid('test-uuid');
-        $event = new ObjectCreatedEvent($object);
+	public function testHandlesObjectCreatedEvent(): void {
+		$object = new ObjectEntity();
+		$object->setId(42);
+		$object->setUuid('test-uuid');
+		$event = new ObjectCreatedEvent($object);
 
-        $this->settingsService->method('getFileSettingsOnly')
-            ->willReturn(['extractionMode' => 'background']);
+		$this->settingsService->method('getFileSettingsOnly')
+			->willReturn(['extractionMode' => 'background']);
 
-        $this->jobList->expects($this->once())->method('add');
+		$this->jobList->expects($this->once())->method('add');
 
-        $this->listener->handle($event);
-    }
+		$this->listener->handle($event);
+	}
 
-    public function testHandlesObjectUpdatedEvent(): void
-    {
-        $object = new ObjectEntity();
-        $object->setId(42);
-        $object->setUuid('test-uuid');
-        $event = new ObjectUpdatedEvent($object);
+	public function testHandlesObjectUpdatedEvent(): void {
+		$object = new ObjectEntity();
+		$object->setId(42);
+		$object->setUuid('test-uuid');
+		$event = new ObjectUpdatedEvent($object);
 
-        $this->settingsService->method('getFileSettingsOnly')
-            ->willReturn(['extractionMode' => 'background']);
+		$this->settingsService->method('getFileSettingsOnly')
+			->willReturn(['extractionMode' => 'background']);
 
-        $this->jobList->expects($this->once())->method('add');
+		$this->jobList->expects($this->once())->method('add');
 
-        $this->listener->handle($event);
-    }
+		$this->listener->handle($event);
+	}
 
-    public function testImmediateExtractionMode(): void
-    {
-        $object = new ObjectEntity();
-        $object->setId(42);
-        $object->setUuid('test-uuid');
-        $event = new ObjectCreatedEvent($object);
+	public function testImmediateExtractionMode(): void {
+		$object = new ObjectEntity();
+		$object->setId(42);
+		$object->setUuid('test-uuid');
+		$event = new ObjectCreatedEvent($object);
 
-        $this->settingsService->method('getFileSettingsOnly')
-            ->willReturn(['extractionMode' => 'immediate']);
+		$this->settingsService->method('getFileSettingsOnly')
+			->willReturn(['extractionMode' => 'immediate']);
 
-        $this->textExtractSvc->expects($this->once())
-            ->method('extractObject');
+		$this->textExtractSvc->expects($this->once())
+			->method('extractObject');
 
-        $this->listener->handle($event);
-    }
+		$this->listener->handle($event);
+	}
 
-    public function testCronModeSkipsProcessing(): void
-    {
-        $object = new ObjectEntity();
-        $object->setId(42);
-        $object->setUuid('test-uuid');
-        $event = new ObjectCreatedEvent($object);
+	public function testCronModeSkipsProcessing(): void {
+		$object = new ObjectEntity();
+		$object->setId(42);
+		$object->setUuid('test-uuid');
+		$event = new ObjectCreatedEvent($object);
 
-        $this->settingsService->method('getFileSettingsOnly')
-            ->willReturn(['extractionMode' => 'cron']);
+		$this->settingsService->method('getFileSettingsOnly')
+			->willReturn(['extractionMode' => 'cron']);
 
-        $this->textExtractSvc->expects($this->never())->method('extractObject');
-        $this->jobList->expects($this->never())->method('add');
+		$this->textExtractSvc->expects($this->never())->method('extractObject');
+		$this->jobList->expects($this->never())->method('add');
 
-        $this->listener->handle($event);
-    }
+		$this->listener->handle($event);
+	}
 
-    public function testManualModeSkipsProcessing(): void
-    {
-        $object = new ObjectEntity();
-        $object->setId(42);
-        $object->setUuid('test-uuid');
-        $event = new ObjectCreatedEvent($object);
+	public function testManualModeSkipsProcessing(): void {
+		$object = new ObjectEntity();
+		$object->setId(42);
+		$object->setUuid('test-uuid');
+		$event = new ObjectCreatedEvent($object);
 
-        $this->settingsService->method('getFileSettingsOnly')
-            ->willReturn(['extractionMode' => 'manual']);
+		$this->settingsService->method('getFileSettingsOnly')
+			->willReturn(['extractionMode' => 'manual']);
 
-        $this->textExtractSvc->expects($this->never())->method('extractObject');
-        $this->jobList->expects($this->never())->method('add');
+		$this->textExtractSvc->expects($this->never())->method('extractObject');
+		$this->jobList->expects($this->never())->method('add');
 
-        $this->listener->handle($event);
-    }
+		$this->listener->handle($event);
+	}
 
-    public function testNullObjectIdSkipsExtraction(): void
-    {
-        $object = new ObjectEntity();
-        // id is null by default (unsaved/magic mapper)
-        $object->setUuid('test-uuid');
-        $event = new ObjectCreatedEvent($object);
+	public function testNullObjectIdSkipsExtraction(): void {
+		$object = new ObjectEntity();
+		// id is null by default (unsaved/magic mapper)
+		$object->setUuid('test-uuid');
+		$event = new ObjectCreatedEvent($object);
 
-        $this->settingsService->method('getFileSettingsOnly')
-            ->willReturn(['extractionMode' => 'background']);
+		$this->settingsService->method('getFileSettingsOnly')
+			->willReturn(['extractionMode' => 'background']);
 
-        $this->jobList->expects($this->never())->method('add');
-        $this->textExtractSvc->expects($this->never())->method('extractObject');
+		$this->jobList->expects($this->never())->method('add');
+		$this->textExtractSvc->expects($this->never())->method('extractObject');
 
-        $this->listener->handle($event);
-    }
+		$this->listener->handle($event);
+	}
 
-    public function testExceptionDuringExtractionLogsError(): void
-    {
-        $object = new ObjectEntity();
-        $object->setId(42);
-        $object->setUuid('test-uuid');
-        $event = new ObjectCreatedEvent($object);
+	public function testExceptionDuringExtractionLogsError(): void {
+		$object = new ObjectEntity();
+		$object->setId(42);
+		$object->setUuid('test-uuid');
+		$event = new ObjectCreatedEvent($object);
 
-        $this->settingsService->method('getFileSettingsOnly')
-            ->willThrowException(new \Exception('Settings error'));
+		$this->settingsService->method('getFileSettingsOnly')
+			->willThrowException(new \Exception('Settings error'));
 
-        $this->logger->expects($this->atLeastOnce())->method('error');
+		$this->logger->expects($this->atLeastOnce())->method('error');
 
-        $this->listener->handle($event);
-    }
+		$this->listener->handle($event);
+	}
 }

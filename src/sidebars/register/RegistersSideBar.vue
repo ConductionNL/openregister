@@ -1,20 +1,31 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { objectStore, registerStore, schemaStore, dashboardStore, navigationStore } from '../../store/store.js'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
+import {
+	dashboardStore,
+	navigationStore,
+	objectStore,
+	registerStore,
+	schemaStore,
+} from '../../store/store.js'
 </script>
 
 <template>
 	<NcAppSidebar
 		ref="sidebar"
 		v-model="activeTab"
-		name="Registers"
-		subtitle="Register Overview"
-		subname="Statistics and Metrics"
+		:name="t('openregister', 'Registers')"
+		:subtitle="t('openregister', 'Register Overview')"
+		:subname="t('openregister', 'Statistics and Metrics')"
 		:open="navigationStore.sidebarState.registers"
-		@update:open="(e) => {
-			navigationStore.setSidebarState('registers', e)
-		}">
-		<NcAppSidebarTab id="overview-tab" name="Overview" :order="1">
+		@update:open="
+			(e) => {
+				navigationStore.setSidebarState('registers', e)
+			}
+		">
+		<NcAppSidebarTab
+			id="overview-tab"
+			:name="t('openregister', 'Overview')"
+			:order="1">
 			<template #icon>
 				<ChartBar :size="20" />
 			</template>
@@ -23,26 +34,32 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 			<div class="filterSection">
 				<h3>{{ t('openregister', 'Filter Statistics') }}</h3>
 				<div class="filterGroup">
-					<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
-					<NcSelect v-bind="registerOptions"
+					<label for="registerSelect">{{
+						t('openregister', 'Register')
+					}}</label>
+					<NcSelect
+						v-bind="registerOptions"
 						id="registerSelect"
-						:model-value="selectedRegisterValue"
+						:modelValue="selectedRegisterValue"
 						:loading="registerLoading"
 						:disabled="registerLoading"
-						aria-label-combobox="Select a register"
-						placeholder="Select a register"
-						@update:model-value="handleRegisterChange" />
+						:aria-label-combobox="t('openregister', 'Select a register')"
+						:placeholder="t('openregister', 'Select a register')"
+						@update:modelValue="handleRegisterChange" />
 				</div>
 				<div class="filterGroup">
-					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
-					<NcSelect v-bind="schemaOptions"
+					<label for="schemaSelect">{{
+						t('openregister', 'Schema')
+					}}</label>
+					<NcSelect
+						v-bind="schemaOptions"
 						id="schemaSelect"
-						:model-value="selectedSchemaValue"
+						:modelValue="selectedSchemaValue"
 						:loading="schemaLoading"
 						:disabled="!registerStore.registerItem || schemaLoading"
-						aria-label-combobox="Select a schema"
-						placeholder="Select a schema"
-						@update:model-value="handleSchemaChange" />
+						:aria-label-combobox="t('openregister', 'Select a schema')"
+						:placeholder="t('openregister', 'Select a schema')"
+						@update:modelValue="handleSchemaChange" />
 				</div>
 			</div>
 
@@ -59,54 +76,73 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 					<CnStatsBlock
 						:title="t('openregister', 'Registers')"
 						:count="filteredRegisters.length"
-						:count-label="t('openregister', 'register{plural}', {
-							plural: filteredRegisters.length !== 1 ? 's' : ''
-						})"
+						:countLabel="
+							t('openregister', 'register{plural}', {
+								plural: filteredRegisters.length !== 1 ? 's' : '',
+							})
+						"
 						:icon="DatabaseOutline"
 						variant="primary"
 						horizontal
-						show-zero-count />
+						showZeroCount />
 					<CnStatsBlock
 						:title="t('openregister', 'Schemas')"
 						:count="totalSchemas"
-						:count-label="t('openregister', 'schema{plural}', {
-							plural: totalSchemas !== 1 ? 's' : ''
-						})"
+						:countLabel="
+							t('openregister', 'schema{plural}', {
+								plural: totalSchemas !== 1 ? 's' : '',
+							})
+						"
 						:icon="TableIcon"
 						variant="primary"
 						horizontal
-						show-zero-count />
+						showZeroCount />
 					<CnStatsBlock
 						:title="t('openregister', 'Objects')"
 						:count="systemTotals.stats?.objects?.total || 0"
-						:count-label="t('openregister', 'object{plural}', {
-							plural: systemTotals.stats?.objects?.total !== 1 ? 's' : ''
-						})"
+						:countLabel="
+							t('openregister', 'object{plural}', {
+								plural:
+									systemTotals.stats?.objects?.total !== 1
+										? 's'
+										: '',
+							})
+						"
 						:icon="PackageVariantClosed"
 						variant="primary"
 						horizontal
-						show-zero-count
+						showZeroCount
 						:breakdown="objectsBreakdown(systemTotals)" />
 					<CnStatsBlock
 						:title="t('openregister', 'Logs')"
 						:count="systemTotals.stats?.logs?.total || 0"
-						:count-label="t('openregister', 'log{plural}', {
-							plural: systemTotals.stats?.logs?.total !== 1 ? 's' : ''
-						})"
+						:countLabel="
+							t('openregister', 'log{plural}', {
+								plural:
+									systemTotals.stats?.logs?.total !== 1 ? 's' : '',
+							})
+						"
 						:icon="TextBoxOutline"
 						horizontal
-						show-zero-count
+						showZeroCount
 						:breakdown="sizeBreakdown(systemTotals.stats?.logs?.size)" />
 					<CnStatsBlock
 						:title="t('openregister', 'Files')"
 						:count="systemTotals.stats?.files?.total || 0"
-						:count-label="t('openregister', 'file{plural}', {
-							plural: systemTotals.stats?.files?.total !== 1 ? 's' : ''
-						})"
+						:countLabel="
+							t('openregister', 'file{plural}', {
+								plural:
+									systemTotals.stats?.files?.total !== 1
+										? 's'
+										: '',
+							})
+						"
 						:icon="FileDocumentOutline"
 						horizontal
-						show-zero-count
-						:breakdown="sizeBreakdown(systemTotals.stats?.files?.size)" />
+						showZeroCount
+						:breakdown="
+							sizeBreakdown(systemTotals.stats?.files?.size)
+						" />
 				</div>
 			</div>
 
@@ -123,36 +159,53 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 					<CnStatsBlock
 						:title="t('openregister', 'Objects')"
 						:count="orphanedItems.stats?.objects?.total || 0"
-						:count-label="t('openregister', 'object{plural}', {
-							plural: systemTotals.stats?.objects?.total !== 1 ? 's' : ''
-						})"
+						:countLabel="
+							t('openregister', 'object{plural}', {
+								plural:
+									systemTotals.stats?.objects?.total !== 1
+										? 's'
+										: '',
+							})
+						"
 						:icon="PackageVariantClosed"
 						variant="warning"
 						horizontal
-						show-zero-count
+						showZeroCount
 						:breakdown="objectsBreakdown(orphanedItems)" />
 					<CnStatsBlock
 						:title="t('openregister', 'Logs')"
 						:count="orphanedItems.stats?.logs?.total || 0"
-						:count-label="t('openregister', 'log{plural}', {
-							plural: systemTotals.stats?.logs?.total !== 1 ? 's' : ''
-						})"
+						:countLabel="
+							t('openregister', 'log{plural}', {
+								plural:
+									systemTotals.stats?.logs?.total !== 1 ? 's' : '',
+							})
+						"
 						:icon="TextBoxOutline"
 						variant="warning"
 						horizontal
-						show-zero-count
-						:breakdown="sizeBreakdown(orphanedItems.stats?.logs?.size)" />
+						showZeroCount
+						:breakdown="
+							sizeBreakdown(orphanedItems.stats?.logs?.size)
+						" />
 					<CnStatsBlock
 						:title="t('openregister', 'Files')"
 						:count="orphanedItems.stats?.files?.total || 0"
-						:count-label="t('openregister', 'file{plural}', {
-							plural: systemTotals.stats?.files?.total !== 1 ? 's' : ''
-						})"
+						:countLabel="
+							t('openregister', 'file{plural}', {
+								plural:
+									systemTotals.stats?.files?.total !== 1
+										? 's'
+										: '',
+							})
+						"
 						:icon="FileDocumentOutline"
 						variant="warning"
 						horizontal
-						show-zero-count
-						:breakdown="sizeBreakdown(orphanedItems.stats?.files?.size)" />
+						showZeroCount
+						:breakdown="
+							sizeBreakdown(orphanedItems.stats?.files?.size)
+						" />
 				</div>
 			</div>
 		</NcAppSidebarTab>
@@ -160,14 +213,19 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 </template>
 
 <script>
-import { NcAppSidebar, NcAppSidebarTab, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
 import { CnStatsBlock } from '@conduction/nextcloud-vue'
+import {
+	NcAppSidebar,
+	NcAppSidebarTab,
+	NcLoadingIcon,
+	NcSelect,
+} from '@nextcloud/vue'
 import ChartBar from 'vue-material-design-icons/ChartBar.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
-import TableIcon from 'vue-material-design-icons/Table.vue'
-import PackageVariantClosed from 'vue-material-design-icons/PackageVariantClosed.vue'
-import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import PackageVariantClosed from 'vue-material-design-icons/PackageVariantClosed.vue'
+import TableIcon from 'vue-material-design-icons/Table.vue'
+import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import formatBytes from '../../services/formatBytes.js'
 // Ensure data is loaded
 dashboardStore.preload()
@@ -182,6 +240,7 @@ export default {
 		CnStatsBlock,
 		ChartBar,
 	},
+
 	data() {
 		return {
 			activeTab: 'overview-tab',
@@ -191,6 +250,7 @@ export default {
 				from: null,
 				till: null,
 			},
+
 			registerLoading: false,
 			schemaLoading: false,
 			ignoreNextPageWatch: false,
@@ -203,58 +263,124 @@ export default {
 			FileDocumentOutline,
 		}
 	},
+
 	computed: {
+		/**
+		 * System totals stats from the dashboard store.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object|null}
+		 */
 		systemTotals() {
 			return dashboardStore.getSystemTotals
 		},
+
+		/**
+		 * Orphaned-items stats from the dashboard store.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object|null}
+		 */
 		orphanedItems() {
 			return dashboardStore.getOrphanedItems
 		},
+
+		/**
+		 * Registers excluding the synthetic System Totals / Orphaned Items rows.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {Array}
+		 */
 		filteredRegisters() {
-			return dashboardStore.registers.filter(register =>
-				register.title !== 'System Totals'
-				&& register.title !== 'Orphaned Items',
+			return dashboardStore.registers.filter(
+				(register) =>
+					register.title !== 'System Totals'
+					&& register.title !== 'Orphaned Items',
 			)
 		},
+
+		/**
+		 * Total schema count across the filtered registers.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {number}
+		 */
 		totalSchemas() {
 			return this.filteredRegisters.reduce((total, register) => {
 				return total + (register.schemas?.length || 0)
 			}, 0)
 		},
+
+		/**
+		 * Build the register dropdown options for the registers-overview filter.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object} NcSelect options bag for registers
+		 */
 		registerOptions() {
 			return {
-				options: registerStore.registerList.map(register => ({
+				options: registerStore.registerList.map((register) => ({
 					value: register.id,
 					label: register.title,
 					title: register.title,
 					register,
 				})),
-				reduce: option => option.register,
+
+				reduce: (option) => option.register,
 				label: 'title',
-				getOptionLabel: option => {
-					return option.title || (option.register && option.register.title) || option.label || ''
+				getOptionLabel: (option) => {
+					return (
+						option.title
+						|| (option.register && option.register.title)
+						|| option.label
+						|| ''
+					)
 				},
 			}
 		},
+
+		/**
+		 * Build the schema dropdown options scoped to the selected register.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object} NcSelect options bag for schemas
+		 */
 		schemaOptions() {
 			if (!registerStore.registerItem) return { options: [] }
 
 			return {
 				options: schemaStore.schemaList
-					.filter(schema => registerStore.registerItem.schemas.some(registerSchema => registerSchema.id === schema.id))
-					.map(schema => ({
+					.filter((schema) =>
+						registerStore.registerItem.schemas.some(
+							(registerSchema) => registerSchema.id === schema.id,
+						),
+					)
+					.map((schema) => ({
 						value: schema.id,
 						label: schema.title,
 						title: schema.title,
 						schema,
 					})),
-				reduce: option => option.schema,
+
+				reduce: (option) => option.schema,
 				label: 'title',
-				getOptionLabel: option => {
-					return option.title || (option.schema && option.schema.title) || option.label || ''
+				getOptionLabel: (option) => {
+					return (
+						option.title
+						|| (option.schema && option.schema.title)
+						|| option.label
+						|| ''
+					)
 				},
 			}
 		},
+
+		/**
+		 * Resolve the currently-selected register into NcSelect value shape.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object|null} Selected register option, or null
+		 */
 		selectedRegisterValue() {
 			if (!registerStore.registerItem) return null
 			const register = registerStore.registerItem
@@ -265,6 +391,13 @@ export default {
 				register,
 			}
 		},
+
+		/**
+		 * Resolve the currently-selected schema into NcSelect value shape.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object|null} Selected schema option, or null
+		 */
 		selectedSchemaValue() {
 			if (!schemaStore.schemaItem) return null
 			const schema = schemaStore.schemaItem
@@ -276,11 +409,27 @@ export default {
 			}
 		},
 	},
+
 	methods: {
+		/**
+		 * Apply a register selection and reset dependent schema state (cascade).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
+		 * @param {object|null} option - Selected register (or null to clear)
+		 * @return {void}
+		 */
 		handleRegisterChange(option) {
 			registerStore.setRegisterItem(option)
 			schemaStore.setSchemaItem(null)
 		},
+
+		/**
+		 * Apply a schema selection, initialise properties, and refresh the object list.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
+		 * @param {object|null} option - Selected schema (or null to clear)
+		 * @return {void}
+		 */
 		handleSchemaChange(option) {
 			schemaStore.setSchemaItem(option)
 			if (option) {
@@ -288,9 +437,22 @@ export default {
 				objectStore.refreshObjectList()
 			}
 		},
+
+		/**
+		 * Push the selected date range into the dashboard store for stats scoping.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {void}
+		 */
 		onDateRangeChange() {
 			dashboardStore.setDateRange(this.dateRange.from, this.dateRange.till)
 		},
+
+		/**
+		 * @spec exclude Presentation-only formatter; builds the objects stats breakdown descriptor for a stats source.
+		 * @param {object} source - Stats-bearing record
+		 * @return {object|null} Breakdown descriptor or null
+		 */
 		objectsBreakdown(source) {
 			const stats = source?.stats?.objects
 			if (!stats) return null
@@ -301,6 +463,12 @@ export default {
 			if (stats.locked) breakdown.locked = stats.locked
 			return Object.keys(breakdown).length > 0 ? breakdown : null
 		},
+
+		/**
+		 * @spec exclude Presentation-only formatter; renders a byte size as a stats breakdown descriptor.
+		 * @param {number} size - Byte size
+		 * @return {object|null} Breakdown descriptor or null
+		 */
 		sizeBreakdown(size) {
 			if (!size) return null
 			return { size: formatBytes(size) }

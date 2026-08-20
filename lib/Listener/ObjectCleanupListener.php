@@ -6,6 +6,20 @@
  * Listens for ObjectDeletedEvent and cleans up associated notes, tasks,
  * email links, calendar event links, contact links, and deck card links.
  *
+ * Post-event listener, so the work is DEFERRED by default (see
+ * openspec/changes/object-event-sync-async-split): the cleanup spans a full
+ * CalDAV calendar walk and vCard/VEVENT rewrites, none of which the deleting
+ * request needs to wait for. The listener itself now only buffers one entry
+ * per deleted object onto ListenerDeferralService; the real work runs in
+ * ObjectCleanupJob under the forwarded actor.
+ *
+ * Setting `openregister/listenerDeferral` to `inline` restores the previous
+ * synchronous behaviour — the identical ObjectRelationCleanupService call,
+ * executed in-request.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Listener
  * @package   OCA\OpenRegister\Listener
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -19,16 +33,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\BackgroundJob\ObjectCleanupJob;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
-use OCA\OpenRegister\Service\CalendarEventService;
-use OCA\OpenRegister\Service\ContactService;
-use OCA\OpenRegister\Service\DeckCardService;
-use OCA\OpenRegister\Service\EmailService;
-use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
+use OCA\OpenRegister\Service\ObjectRelationCleanupService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use Psr\Log\LoggerInterface;
 
 /**
  * ObjectCleanupListener cleans up all entity relations when an object is deleted.
@@ -48,279 +58,62 @@ use Psr\Log\LoggerInterface;
  *
  * @template-implements IEventListener<ObjectDeletedEvent>
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Cleanup requires all service dependencies
+ * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md
  */
-class ObjectCleanupListener implements IEventListener
-{
+class ObjectCleanupListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param ListenerDeferralService $deferral Buffers the entry and enqueues the chunk job.
+	 * @param ObjectRelationCleanupService $cleanup Shared cleanup, used by the inline fallback.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md
+	 */
+	public function __construct(
+		private readonly ListenerDeferralService $deferral,
+		private readonly ObjectRelationCleanupService $cleanup,
+	) {
+	}//end __construct()
 
-    /**
-     * Note service.
-     *
-     * @var NoteService
-     */
-    private readonly NoteService $noteService;
+	/**
+	 * Handle the ObjectDeletedEvent.
+	 *
+	 * Buffers the deleted object's identity for ObjectCleanupJob. The entry
+	 * carries register and schema alongside the uuid so the job's re-create
+	 * guard can target one magic table instead of a cross-table UUID scan.
+	 *
+	 * @param Event $event The event to handle
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md
+	 */
+	public function handle(Event $event): void {
+		if (($event instanceof ObjectDeletedEvent) === false) {
+			return;
+		}
 
-    /**
-     * Task service.
-     *
-     * @var TaskService
-     */
-    private readonly TaskService $taskService;
+		$object = $event->getObject();
+		$objectUuid = (string)$object->getUuid();
+		if ($objectUuid === '') {
+			return;
+		}
 
-    /**
-     * Email service.
-     *
-     * @var EmailService
-     */
-    private readonly EmailService $emailService;
+		if ($this->deferral->isDeferralEnabled() === false) {
+			$this->cleanup->cleanup(objectUuid: $objectUuid);
+			return;
+		}
 
-    /**
-     * Calendar event service.
-     *
-     * @var CalendarEventService
-     */
-    private readonly CalendarEventService $calendarEventService;
-
-    /**
-     * Contact service.
-     *
-     * @var ContactService
-     */
-    private readonly ContactService $contactService;
-
-    /**
-     * Deck card service.
-     *
-     * @var DeckCardService
-     */
-    private readonly DeckCardService $deckCardService;
-
-    /**
-     * Logger.
-     *
-     * @var LoggerInterface
-     */
-    private readonly LoggerInterface $logger;
-
-    /**
-     * Constructor.
-     *
-     * @param NoteService          $noteService          Note service
-     * @param TaskService          $taskService          Task service
-     * @param EmailService         $emailService         Email service
-     * @param CalendarEventService $calendarEventService Calendar event service
-     * @param ContactService       $contactService       Contact service
-     * @param DeckCardService      $deckCardService      Deck card service
-     * @param LoggerInterface      $logger               Logger
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
-     */
-    public function __construct(
-        NoteService $noteService,
-        TaskService $taskService,
-        EmailService $emailService,
-        CalendarEventService $calendarEventService,
-        ContactService $contactService,
-        DeckCardService $deckCardService,
-        LoggerInterface $logger
-    ) {
-        $this->noteService          = $noteService;
-        $this->taskService          = $taskService;
-        $this->emailService         = $emailService;
-        $this->calendarEventService = $calendarEventService;
-        $this->contactService       = $contactService;
-        $this->deckCardService      = $deckCardService;
-        $this->logger = $logger;
-    }//end __construct()
-
-    /**
-     * Handle the ObjectDeletedEvent.
-     *
-     * Cleans up all entity relations. Each cleanup runs independently;
-     * failure in one does not block the others.
-     *
-     * @param Event $event The event to handle
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
-     */
-    public function handle(Event $event): void
-    {
-        if (($event instanceof ObjectDeletedEvent) === false) {
-            return;
-        }
-
-        $object     = $event->getObject();
-        $objectUuid = $object->getUuid();
-
-        // (a) Delete all notes (comments).
-        $this->cleanupNotes(objectUuid: $objectUuid);
-
-        // (b) Delete all CalDAV tasks.
-        $this->cleanupTasks(objectUuid: $objectUuid);
-
-        // (c) Delete all email links.
-        $this->cleanupEmails(objectUuid: $objectUuid);
-
-        // (d) Unlink all calendar events (remove X-OPENREGISTER-* properties).
-        $this->cleanupCalendarEvents(objectUuid: $objectUuid);
-
-        // (e) Delete contact links and clean vCard properties.
-        $this->cleanupContacts(objectUuid: $objectUuid);
-
-        // (f) Delete deck card links.
-        $this->cleanupDeckCards(objectUuid: $objectUuid);
-    }//end handle()
-
-    /**
-     * Clean up notes for the deleted object.
-     *
-     * @param string $objectUuid The object UUID.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
-     */
-    private function cleanupNotes(string $objectUuid): void
-    {
-        try {
-            $this->noteService->deleteNotesForObject($objectUuid);
-            $this->logger->info('Cleaned up notes for deleted object: '.$objectUuid);
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                'Failed to clean up notes for deleted object: '.$objectUuid.': '.$e->getMessage(),
-                ['exception' => $e]
-            );
-        }
-    }//end cleanupNotes()
-
-    /**
-     * Clean up tasks for the deleted object.
-     *
-     * @param string $objectUuid The object UUID.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
-     */
-    private function cleanupTasks(string $objectUuid): void
-    {
-        try {
-            $tasks = $this->taskService->getTasksForObject($objectUuid);
-            foreach ($tasks as $task) {
-                try {
-                    $this->taskService->deleteTask($task['calendarId'], $task['id']);
-                } catch (\Exception $e) {
-                    $this->logger->warning(
-                        'Failed to delete task '.$task['id'].' for object '.$objectUuid.': '.$e->getMessage(),
-                        ['exception' => $e]
-                    );
-                }
-            }
-
-            if (empty($tasks) === false) {
-                $this->logger->info('Cleaned up '.count($tasks).' task(s) for deleted object: '.$objectUuid);
-            }
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                'Failed to clean up tasks for deleted object: '.$objectUuid.': '.$e->getMessage(),
-                ['exception' => $e]
-            );
-        }//end try
-    }//end cleanupTasks()
-
-    /**
-     * Clean up email links for the deleted object.
-     *
-     * @param string $objectUuid The object UUID.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
-     */
-    private function cleanupEmails(string $objectUuid): void
-    {
-        try {
-            $count = $this->emailService->deleteLinksForObject($objectUuid);
-            if ($count > 0) {
-                $this->logger->info('Cleaned up '.$count.' email link(s) for deleted object: '.$objectUuid);
-            }
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                'Failed to clean up email links for deleted object: '.$objectUuid.': '.$e->getMessage(),
-                ['exception' => $e]
-            );
-        }
-    }//end cleanupEmails()
-
-    /**
-     * Clean up calendar events for the deleted object (unlink, not delete).
-     *
-     * @param string $objectUuid The object UUID.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
-     */
-    private function cleanupCalendarEvents(string $objectUuid): void
-    {
-        try {
-            $this->calendarEventService->unlinkEventsForObject($objectUuid);
-            $this->logger->info('Unlinked calendar events for deleted object: '.$objectUuid);
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                'Failed to unlink calendar events for deleted object: '.$objectUuid.': '.$e->getMessage(),
-                ['exception' => $e]
-            );
-        }
-    }//end cleanupCalendarEvents()
-
-    /**
-     * Clean up contact links for the deleted object.
-     *
-     * @param string $objectUuid The object UUID.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
-     */
-    private function cleanupContacts(string $objectUuid): void
-    {
-        try {
-            $this->contactService->deleteLinksForObject($objectUuid);
-            $this->logger->info('Cleaned up contact links for deleted object: '.$objectUuid);
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                'Failed to clean up contact links for deleted object: '.$objectUuid.': '.$e->getMessage(),
-                ['exception' => $e]
-            );
-        }
-    }//end cleanupContacts()
-
-    /**
-     * Clean up deck card links for the deleted object.
-     *
-     * @param string $objectUuid The object UUID.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
-     */
-    private function cleanupDeckCards(string $objectUuid): void
-    {
-        try {
-            $count = $this->deckCardService->deleteLinksForObject($objectUuid);
-            if ($count > 0) {
-                $this->logger->info('Cleaned up '.$count.' deck link(s) for deleted object: '.$objectUuid);
-            }
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                'Failed to clean up deck links for deleted object: '.$objectUuid.': '.$e->getMessage(),
-                ['exception' => $e]
-            );
-        }
-    }//end cleanupDeckCards()
+		$this->deferral->defer(
+			jobClass: ObjectCleanupJob::class,
+			entry: [
+				'uuid' => $objectUuid,
+				'register' => (string)$object->getRegister(),
+				'schema' => (string)$object->getSchema(),
+			],
+			dedupeKey: $objectUuid
+		);
+	}//end handle()
 }//end class

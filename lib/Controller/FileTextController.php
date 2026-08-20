@@ -5,6 +5,9 @@
  *
  * Controller for file text management operations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -21,16 +24,23 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCP\AppFramework\Http;
 use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Exception\ManualEntityException;
+use OCA\OpenRegister\Exception\PdfAnonymisationException;
+use OCA\OpenRegister\Service\File\ManualEntityResult;
+use OCA\OpenRegister\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\TextExtractionService;
-use OCA\OpenRegister\Service\IndexService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\Files\IRootFolder;
 use OCP\IAppConfig;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * FileTextController
@@ -40,553 +50,880 @@ use Psr\Log\LoggerInterface;
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  * @author   OpenRegister Team
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @psalm-suppress UnusedClass
  *
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class FileTextController extends Controller
-{
-    /**
-     * Constructor
-     *
-     * @param string                $appName              App name
-     * @param IRequest              $request              Request object
-     * @param TextExtractionService $textExtractor        Text extraction service
-     * @param IndexService          $indexService         Index service for file operations
-     * @param FileService           $fileService          File service for file operations
-     * @param EntityRelationMapper  $entityRelationMapper Entity relation mapper
-     * @param LoggerInterface       $logger               Logger
-     * @param IAppConfig            $config               Application configuration
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly TextExtractionService $textExtractor,
-        private readonly IndexService $indexService,
-        private readonly FileService $fileService,
-        private readonly EntityRelationMapper $entityRelationMapper,
-        private readonly LoggerInterface $logger,
-        private readonly IAppConfig $config
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-    }//end __construct()
+class FileTextController extends Controller {
+	/**
+	 * Constructor
+	 *
+	 * @param string $appName App name
+	 * @param IRequest $request Request object
+	 * @param TextExtractionService $textExtractor Text extraction service
+	 * @param FileService $fileService File service for file operations
+	 * @param EntityRelationMapper $entityRelationMapper Entity relation mapper
+	 * @param LoggerInterface $logger Logger
+	 * @param IAppConfig $config Application configuration
+	 * @param ManualEntityService $manualEntityService Orchestrator for the manual-entity write path
+	 * @param IUserSession $userSession Session user accessor (for the manual-entity endpoint)
+	 * @param IRootFolder $rootFolder Root folder for per-user file access checks
+	 * @param IGroupManager $groupManager Group manager for admin checks
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly TextExtractionService $textExtractor,
+		private readonly FileService $fileService,
+		private readonly EntityRelationMapper $entityRelationMapper,
+		private readonly LoggerInterface $logger,
+		private readonly IAppConfig $config,
+		private readonly ManualEntityService $manualEntityService,
+		private readonly IUserSession $userSession,
+		private readonly IRootFolder $rootFolder,
+		private readonly IGroupManager $groupManager,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+	}//end __construct()
 
-    /**
-     * Get extracted text for a file
-     *
-     * @param int $fileId Nextcloud file ID
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with file text or error
-     */
-    public function getFileText(int $fileId): JSONResponse
-    {
-        try {
-            // TextExtractionService works with chunks, not FileText entities.
-            // For now, return a message indicating this endpoint needs to be updated.
-            // TODO: Implement chunk retrieval for file text display.
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'This endpoint is deprecated. Use chunk-based endpoints instead.',
-                    'file_id' => $fileId,
-                ],
-                statusCode: 404
-            );
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[FileTextController] Failed to get file text',
-                context: [
-                    'file'    => __FILE__,
-                    'line'    => __LINE__,
-                    'file_id' => $fileId,
-                    'error'   => $e->getMessage(),
-                ]
-            );
+	/**
+	 * Whether the current session user can access the given Nextcloud file.
+	 *
+	 * Resolves the file through the caller's own user folder so Nextcloud's
+	 * share/permission ACLs apply. A file the user cannot access resolves to
+	 * no node — preventing IDOR where a caller forces (re-)extraction of
+	 * arbitrary file IDs they do not own.
+	 *
+	 * @param int $fileId Nextcloud file ID.
+	 *
+	 * @return bool True when the file is reachable in the caller's user folder.
+	 */
+	private function hasFileAccess(int $fileId): bool {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return false;
+		}
 
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Failed to retrieve file text: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end getFileText()
+		$userFolder = $this->rootFolder->getUserFolder($user->getUID());
+		return empty($userFolder->getById($fileId)) === false;
+	}//end hasFileAccess()
 
-    /**
-     * Extract text from a file (force re-extraction)
-     *
-     * @param int $fileId Nextcloud file ID
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with extraction result
-     */
-    public function extractFileText(int $fileId): JSONResponse
-    {
-        $hasFileManagement    = $this->config->hasKey(app: 'openregister', key: 'fileManagement');
-        $fileManagementConfig = json_decode(
-            $this->config->getValueString(app: 'openregister', key: 'fileManagement'),
-            true
-        );
-        $extractionScope      = $fileManagementConfig['extractionScope'] ?? null;
-        if ($hasFileManagement === false || $extractionScope === 'none') {
-            $logMsg = '[FileTextController] File extraction is disabled. Not extracting text from files.';
-            $this->logger->info(message: $logMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-            return new JSONResponse(
-                data: ['success' => false, 'message' => 'Text extraction disabled'],
-                statusCode: Http::STATUS_NOT_IMPLEMENTED
-            );
-        }
+	/**
+	 * Check whether the currently authenticated user is a Nextcloud administrator.
+	 *
+	 * The bulk extraction endpoint processes pending files across the whole
+	 * instance, so it is admin-only.
+	 *
+	 * @return bool True if a user is signed in and belongs to the admin group.
+	 */
+	private function isCurrentUserAdmin(): bool {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return false;
+		}
 
-        try {
-            // Force re-extraction.
-            $this->textExtractor->extractFile(fileId: $fileId, forceReExtract: true);
+		return $this->groupManager->isAdmin($user->getUID());
+	}//end isCurrentUserAdmin()
 
-            return new JSONResponse(
-                data: [
-                    'success' => true,
-                    'message' => 'Text extracted successfully',
-                ]
-            );
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[FileTextController] Failed to extract file text',
-                context: [
-                    'file'    => __FILE__,
-                    'line'    => __LINE__,
-                    'file_id' => $fileId,
-                    'error'   => $e->getMessage(),
-                ]
-            );
+	/**
+	 * Get extracted text for a file
+	 *
+	 * @param int $fileId Nextcloud file ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with file text or error
+	 *
+	 * @no-admin-idor-exempt Deprecated no-op stub: returns HTTP 404 unconditionally
+	 *   and performs no file/object read; there is no per-object resource to guard.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
+	 */
+	public function getFileText(int $fileId): JSONResponse {
+		try {
+			// TextExtractionService works with chunks, not FileText entities.
+			// For now, return a message indicating this endpoint needs to be updated.
+			// TODO: Implement chunk retrieval for file text display.
+			return new JSONResponse(
+				data: [
+					'success' => false,
+					'message' => 'This endpoint is deprecated. Use chunk-based endpoints instead.',
+					'file_id' => $fileId,
+				],
+				statusCode: 404
+			);
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[FileTextController] Failed to get file text',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'file_id' => $fileId,
+					'error' => $e->getMessage(),
+				]
+			);
 
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Failed to extract file text: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end extractFileText()
+			return new JSONResponse(
+				data: [
+					'success' => false,
+					'message' => 'Failed to retrieve file text: ' . $e->getMessage(),
+				],
+				statusCode: 500
+			);
+		}//end try
+	}//end getFileText()
 
-    /**
-     * Bulk extract text from multiple files
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with bulk extraction result
-     */
-    public function bulkExtract(): JSONResponse
-    {
-        try {
-            $limit = (int) $this->request->getParam('limit', 100);
-            $limit = min($limit, 500);
-            // Max 500 files at once.
-            $result = $this->textExtractor->extractPendingFiles($limit);
+	/**
+	 * Extract text from a file (force re-extraction)
+	 *
+	 * @param int $fileId Nextcloud file ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with extraction result
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
+	 */
+	public function extractFileText(int $fileId): JSONResponse {
+		// IDOR guard: only (re-)extract files the caller can access. 404 (not
+		// 403) so a non-owner cannot probe which file IDs exist.
+		if ($this->hasFileAccess(fileId: $fileId) === false) {
+			return new JSONResponse(
+				data: ['success' => false, 'message' => 'File not found or access denied'],
+				statusCode: 404
+			);
+		}
 
-            return new JSONResponse(
-                data: [
-                    'success'   => true,
-                    'processed' => $result['processed'],
-                    'failed'    => $result['failed'],
-                    'total'     => $result['total'],
-                ]
-            );
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[FileTextController] Failed bulk extraction',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                ]
-            );
+		$hasFileManagement = $this->config->hasKey(app: 'openregister', key: 'fileManagement');
+		$fileManagementConfig = json_decode(
+			$this->config->getValueString(app: 'openregister', key: 'fileManagement'),
+			true
+		);
+		$extractionScope = $fileManagementConfig['extractionScope'] ?? null;
+		if ($hasFileManagement === false || $extractionScope === 'none') {
+			$logMsg = '[FileTextController] File extraction is disabled. Not extracting text from files.';
+			$this->logger->info(message: $logMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
+			return new JSONResponse(
+				data: ['success' => false, 'message' => 'Text extraction disabled'],
+				statusCode: Http::STATUS_NOT_IMPLEMENTED
+			);
+		}
 
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Bulk extraction failed: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end bulkExtract()
+		try {
+			// Force re-extraction.
+			$this->textExtractor->extractFile(fileId: $fileId, forceReExtract: true);
 
-    /**
-     * Get file text extraction statistics
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with extraction stats
-     */
-    public function getStats(): JSONResponse
-    {
-        try {
-            $stats = $this->textExtractor->getStats();
+			return new JSONResponse(
+				data: [
+					'success' => true,
+					'message' => 'Text extracted successfully',
+				]
+			);
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[FileTextController] Failed to extract file text',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'file_id' => $fileId,
+					'error' => $e->getMessage(),
+				]
+			);
 
-            return new JSONResponse(
-                data: [
-                    'success' => true,
-                    'stats'   => $stats,
-                ]
-            );
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[FileTextController] Failed to get stats',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                ]
-            );
+			return new JSONResponse(
+				data: [
+					'success' => false,
+					'message' => 'Failed to extract file text: ' . $e->getMessage(),
+				],
+				statusCode: 500
+			);
+		}//end try
+	}//end extractFileText()
 
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Failed to retrieve statistics: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end getStats()
+	/**
+	 * Bulk extract text from multiple files
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with bulk extraction result
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
+	 */
+	public function bulkExtract(): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(['success' => false, 'message' => 'Admin privileges required'], 403);
+		}
 
-    /**
-     * Delete file text by file ID
-     *
-     * @param int $fileId Nextcloud file ID
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with deletion result
-     */
-    public function deleteFileText(int $fileId): JSONResponse
-    {
-        try {
-            // TextExtractionService works with chunks.
-            // TODO: Implement chunk deletion for file.
-            // For now, return a message indicating this needs implementation.
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Chunk deletion not yet implemented. Use chunk-based endpoints.',
-                ],
-                statusCode: 501
-            );
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[FileTextController] Failed to delete file text',
-                context: [
-                    'file'    => __FILE__,
-                    'line'    => __LINE__,
-                    'file_id' => $fileId,
-                    'error'   => $e->getMessage(),
-                ]
-            );
+		try {
+			$limit = (int)$this->request->getParam('limit', 100);
+			$limit = min($limit, 500);
+			// Max 500 files at once.
+			$result = $this->textExtractor->extractPendingFiles($limit);
 
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Failed to delete file text: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end deleteFileText()
+			return new JSONResponse(
+				data: [
+					'success' => true,
+					'processed' => $result['processed'],
+					'failed' => $result['failed'],
+					'total' => $result['total'],
+				]
+			);
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[FileTextController] Failed bulk extraction',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'error' => $e->getMessage(),
+				]
+			);
 
-    /**
-     * Process extracted files and index their chunks to SOLR
-     *
-     * @param int|null $limit        Maximum number of files to process
-     * @param int|null $chunkSize    Chunk size in characters
-     * @param int|null $chunkOverlap Overlap between chunks in characters
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with indexing stats
-     */
-    public function processAndIndexExtracted(?int $limit=null, ?int $chunkSize=null, ?int $chunkOverlap=null): JSONResponse
-    {
-        try {
-            $options = [];
-            if ($chunkSize !== null) {
-                $options['chunk_size'] = $chunkSize;
-            }
+			return new JSONResponse(
+				data: [
+					'success' => false,
+					'message' => 'Bulk extraction failed: ' . $e->getMessage(),
+				],
+				statusCode: 500
+			);
+		}//end try
+	}//end bulkExtract()
 
-            if ($chunkOverlap !== null) {
-                $options['chunk_overlap'] = $chunkOverlap;
-            }
+	/**
+	 * Get file text extraction statistics
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with extraction stats
+	 *
+	 * @no-admin-idor-exempt No per-object resource: returns aggregate extraction
+	 *   counters (TextExtractionService::getStats); takes no caller-supplied file id.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
+	 */
+	public function getStats(): JSONResponse {
+		try {
+			$stats = $this->textExtractor->getStats();
 
-            $result = $this->indexService->processUnindexedChunks(limit: $limit);
+			return new JSONResponse(
+				data: [
+					'success' => true,
+					'stats' => $stats,
+				]
+			);
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[FileTextController] Failed to get stats',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'error' => $e->getMessage(),
+				]
+			);
 
-            return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[FileTextController] Failed to process extracted files',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                ]
-            );
+			return new JSONResponse(
+				data: [
+					'success' => false,
+					'message' => 'Failed to retrieve statistics: ' . $e->getMessage(),
+				],
+				statusCode: 500
+			);
+		}//end try
+	}//end getStats()
 
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Failed to process extracted files: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end processAndIndexExtracted()
+	/**
+	 * Delete file text by file ID
+	 *
+	 * @param int $fileId Nextcloud file ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with deletion result
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
+	 */
+	public function deleteFileText(int $fileId): JSONResponse {
+		// IDOR guard: deletion targets a file by id — only permit it for files
+		// the caller can access (guards the stub before it is implemented).
+		if ($this->hasFileAccess(fileId: $fileId) === false) {
+			return new JSONResponse(
+				data: ['success' => false, 'message' => 'File not found or access denied'],
+				statusCode: 404
+			);
+		}
 
-    /**
-     * Process and index a single extracted file
-     *
-     * @param int      $fileId        File ID
-     * @param int|null $chunkSize     Chunk size in characters
-     * @param int|null $_chunkOverlap Overlap between chunks in characters (reserved for future use)
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter) $_chunkOverlap reserved for future implementation
-     *
-     * @return JSONResponse JSON response with indexing result
-     */
-    public function processAndIndexFile(int $fileId, ?int $chunkSize=null, ?int $_chunkOverlap=null): JSONResponse
-    {
-        try {
-            $options = [];
-            if ($chunkSize !== null) {
-                $options['chunk_size'] = $chunkSize;
-            }
+		try {
+			// TextExtractionService works with chunks.
+			// TODO: Implement chunk deletion for file.
+			// For now, return a message indicating this needs implementation.
+			return new JSONResponse(
+				data: [
+					'success' => false,
+					'message' => 'Chunk deletion not yet implemented. Use chunk-based endpoints.',
+				],
+				statusCode: 501
+			);
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[FileTextController] Failed to delete file text',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'file_id' => $fileId,
+					'error' => $e->getMessage(),
+				]
+			);
 
-            // Process unindexed chunks for all files (fileId and options are not supported by current API).
-            // TODO: Implement file-specific chunk processing with chunk size/overlap options.
-            $result = $this->indexService->processUnindexedChunks();
+			return new JSONResponse(
+				data: [
+					'success' => false,
+					'message' => 'Failed to delete file text: ' . $e->getMessage(),
+				],
+				statusCode: 500
+			);
+		}//end try
+	}//end deleteFileText()
 
-            return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[FileTextController] Failed to process file',
-                context: [
-                    'file'    => __FILE__,
-                    'line'    => __LINE__,
-                    'file_id' => $fileId,
-                    'error'   => $e->getMessage(),
-                ]
-            );
+	/**
+	 * Anonymize a file by replacing detected entities with placeholders
+	 *
+	 * Creates a new anonymized copy of the file with all detected PII entities
+	 * replaced by placeholders in the format [ENTITY_TYPE: key].
+	 * The original file remains unchanged.
+	 *
+	 * Accepts an optional `preserveStructure` request param (REQ-ORTPR-004):
+	 * PDF only, tri-state (absent/empty = auto — preserve iff the input is a
+	 * tagged PDF). The response carries a `structurePreservation` block for
+	 * PDF inputs (REQ-ORTPR-003) — omitted for DOCX/ODT/text.
+	 *
+	 * @param int $fileId Nextcloud file ID to anonymize
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with anonymization result
+	 *
+	 * @SuppressWarnings(PHPMD.NPathComplexity) Sequential independent request-param guards
+	 *                                          (scope, dossierKey, preserveStructure) and a
+	 *                                          response-shape guard — not nested branching.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
+	 * @spec openspec/specs/pdf-anonymisation/spec.md
+	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
+	 */
+	public function anonymizeFile(int $fileId): JSONResponse {
+		try {
+			$this->logger->info(
+				message: '[FileTextController] Anonymizing file',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
+			);
 
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Failed to process file: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end processAndIndexFile()
+			// Get the file node.
+			$fileNode = $this->fileService->getFileById($fileId);
+			if ($fileNode === null) {
+				return new JSONResponse(
+					data: [
+						'success' => false,
+						'message' => 'File not found',
+					],
+					statusCode: Http::STATUS_NOT_FOUND
+				);
+			}
 
-    /**
-     * Get chunking statistics
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with chunking stats
-     */
-    public function getChunkingStats(): JSONResponse
-    {
-        try {
-            $stats = $this->indexService->getChunkingStats();
+			// Check if the file is already anonymized.
+			$fileName = $fileNode->getName();
+			if (strpos($fileName, '_anonymized') !== false) {
+				return new JSONResponse(
+					data: [
+						'success' => false,
+						'message' => 'File is already anonymized',
+					],
+					statusCode: Http::STATUS_BAD_REQUEST
+				);
+			}
 
-            return new JSONResponse(
-                data: [
-                    'success' => true,
-                    'stats'   => $stats,
-                ]
-            );
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[FileTextController] Failed to get chunking stats',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                ]
-            );
+			// Get detected entities for this file, excluding those the operator
+			// has flagged with skip_anonymization=true. Per the
+			// `entity-relation-grondslagen` change, the anonymise pass MUST NOT
+			// redact rows that carry an operator skip decision.
+			$entityData = $this->entityRelationMapper->findEntitiesForAnonymization($fileId);
 
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Failed to get chunking stats: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end getChunkingStats()
+			if (empty($entityData) === true) {
+				return new JSONResponse(
+					data: [
+						'success' => false,
+						'message' => 'No entities detected in this file. Run text extraction first.',
+					],
+					statusCode: Http::STATUS_BAD_REQUEST
+				);
+			}
 
-    /**
-     * Anonymize a file by replacing detected entities with placeholders
-     *
-     * Creates a new anonymized copy of the file with all detected PII entities
-     * replaced by placeholders in the format [ENTITY_TYPE: key].
-     * The original file remains unchanged.
-     *
-     * @param int $fileId Nextcloud file ID to anonymize
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with anonymization result
-     */
-    public function anonymizeFile(int $fileId): JSONResponse
-    {
-        try {
-            $this->logger->info(
-                message: '[FileTextController] Anonymizing file',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
-            );
+			// Build entities array in the format expected by anonymizeDocument.
+			// Format: [['text' => 'value', 'entityType' => 'TYPE', 'key' => 'unique_key'], ...].
+			$entities = [];
+			$processedValues = [];
+			// Track unique values to avoid duplicates.
+			foreach ($entityData as $entity) {
+				$value = $entity['entity_value'];
 
-            // Get the file node.
-            $fileNode = $this->fileService->getFileById($fileId);
-            if ($fileNode === null) {
-                return new JSONResponse(
-                    data: [
-                        'success' => false,
-                        'message' => 'File not found',
-                    ],
-                    statusCode: Http::STATUS_NOT_FOUND
-                );
-            }
+				// Skip if we've already processed this value.
+				if (isset($processedValues[$value]) === true) {
+					continue;
+				}
 
-            // Check if the file is already anonymized.
-            $fileName = $fileNode->getName();
-            if (strpos($fileName, '_anonymized') !== false) {
-                return new JSONResponse(
-                    data: [
-                        'success' => false,
-                        'message' => 'File is already anonymized',
-                    ],
-                    statusCode: Http::STATUS_BAD_REQUEST
-                );
-            }
+				$processedValues[$value] = true;
+				$entities[] = [
+					'text' => $value,
+					'entityType' => $entity['entity_type'],
+					'key' => substr(md5($value . $entity['entity_type']), 0, 8),
+				];
+			}
 
-            // Get detected entities for this file.
-            $entityData = $this->entityRelationMapper->findEntitiesForFile($fileId);
+			$this->logger->debug(
+				message: '[FileTextController] Found entities to anonymize',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'file_id' => $fileId,
+					'entity_count' => count($entities),
+				]
+			);
 
-            if (empty($entityData) === true) {
-                return new JSONResponse(
-                    data: [
-                        'success' => false,
-                        'message' => 'No entities detected in this file. Run text extraction first.',
-                    ],
-                    statusCode: Http::STATUS_BAD_REQUEST
-                );
-            }
+			// Perform anonymization. `anonymizeDocument` is the canonical
+			// caller of `EntityRelationMapper::markAsAnonymized` per the
+			// `entity-relation-grondslagen` Requirement on canonical
+			// marking ownership: marking the source's relation rows is the
+			// responsibility of the redaction path itself (which exists on
+			// every entry point — HTTP, DI, event listeners), not the
+			// controller (which is bypassed by the non-HTTP paths). A
+			// controller-side mark would conflict with the DocumentProcessingHandler's
+			// mark on this same fileId (second UPDATE overwrites
+			// `anonymized_value`), so this controller MUST NOT call
+			// `markAsAnonymized` directly.
+			// Placeholder-numbering scope (anonymisation-placeholder-id-scope):
+			// optional request-body params. `scope` defaults to 'document'
+			// (counter restarts per run); `scope=dossier` makes the number
+			// consistent across the dossier folder's files. `dossierKey` is the
+			// stable folder id; when omitted under scope=dossier the handler
+			// falls back to the file's parent folder (forgiving default — no
+			// HTTP 400). Any value other than 'dossier' normalises to
+			// per-document so existing callers are unaffected.
+			$scopeParam = (string)$this->request->getParam('scope', 'document');
+			$scope = 'document';
+			if ($scopeParam === 'dossier') {
+				$scope = 'dossier';
+			}
 
-            // Build entities array in the format expected by anonymizeDocument.
-            // Format: [['text' => 'value', 'entityType' => 'TYPE', 'key' => 'unique_key'], ...].
-            $entities        = [];
-            $processedValues = [];
-            // Track unique values to avoid duplicates.
-            foreach ($entityData as $entity) {
-                $value = $entity['entity_value'];
+			$fileKeyParam = $this->request->getParam('dossierKey', null);
+			$fileKey = null;
+			if ($fileKeyParam !== null && $fileKeyParam !== '') {
+				$fileKey = (string)$fileKeyParam;
+			}
 
-                // Skip if we've already processed this value.
-                if (isset($processedValues[$value]) === true) {
-                    continue;
-                }
+			// PDF-only tag-preserving-redaction option (REQ-ORTPR-004): tri-state,
+			// absent/empty MUST resolve to null (auto — preserve iff the input is
+			// a tagged PDF); the request param is otherwise cast via
+			// FILTER_VALIDATE_BOOLEAN so "false"/"0" resolve to explicit false.
+			$preserveOptionParam = $this->request->getParam('preserveStructure', null);
+			$preserveStructure = null;
+			if ($preserveOptionParam !== null && $preserveOptionParam !== '') {
+				$preserveStructure = filter_var($preserveOptionParam, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+			}
 
-                $processedValues[$value] = true;
-                $entities[] = [
-                    'text'       => $value,
-                    'entityType' => $entity['entity_type'],
-                    'key'        => substr(md5($value.$entity['entity_type']), 0, 8),
-                ];
-            }
+			$anonymizedFile = $this->fileService->anonymizeDocument(
+				node: $fileNode,
+				entities: $entities,
+				scope: $scope,
+				fileKey: $fileKey,
+				preserveStructure: $preserveStructure
+			);
 
-            $this->logger->debug(
-                message: '[FileTextController] Found entities to anonymize',
-                context: [
-                    'file'         => __FILE__,
-                    'line'         => __LINE__,
-                    'file_id'      => $fileId,
-                    'entity_count' => count($entities),
-                ]
-            );
+			// Best-effort policy: the file is produced even when some entity
+			// text could not be removed. Surface the residuals so the operator
+			// can iterate (manual entities, skip unselected occurrences). Logs
+			// stay PII-free (ADR-005); the residual TEXT is carried only in
+			// this authenticated response for the review UI (deliberate,
+			// product-owner-approved deviation from the no-PII-in-responses rule).
+			$residualEntities = $this->fileService->getLastResidualEntities();
+			$isComplete = (count($residualEntities) === 0);
 
-            // Perform anonymization.
-            $anonymizedFile = $this->fileService->anonymizeDocument($fileNode, $entities);
+			// Tag-preserving-redaction result block (REQ-ORTPR-003): PDF
+			// inputs only — null for DOCX/ODT/text (no PDF structure tree).
+			$structureResult = $this->fileService->getLastStructurePreservation();
 
-            // Mark entity relations as anonymized.
-            $this->entityRelationMapper->markAsAnonymized(
-                fileId: $fileId,
-                anonymizedValue: 'anonymized_'.date('Y-m-d_H-i-s')
-            );
+			$logSuffix = ' with residual entities';
+			$messageResult = 'File anonymized, but some entities could not be fully removed — review the output'
+				. ' and refine the entities (manual entities, skip unselected occurrences).';
+			if ($isComplete === true) {
+				$logSuffix = ' successfully';
+				$messageResult = 'File anonymized successfully';
+			}
 
-            $this->logger->info(
-                message: '[FileTextController] File anonymized successfully',
-                context: [
-                    'file'               => __FILE__,
-                    'line'               => __LINE__,
-                    'original_file_id'   => $fileId,
-                    'anonymized_file_id' => $anonymizedFile->getId(),
-                    'anonymized_path'    => $anonymizedFile->getPath(),
-                    'entities_replaced'  => count($entities),
-                ]
-            );
+			$this->logger->info(
+				message: '[FileTextController] File anonymized' . $logSuffix,
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'original_file_id' => $fileId,
+					'anonymized_file_id' => $anonymizedFile->getId(),
+					'anonymized_path' => $anonymizedFile->getPath(),
+					'entities_replaced' => count($entities),
+					'complete' => $isComplete,
+					// PII-free: count only, never the residual text.
+					'residual_count' => count($residualEntities),
+				]
+			);
 
-            return new JSONResponse(
-                data: [
-                    'success'            => true,
-                    'message'            => 'File anonymized successfully',
-                    'original_file_id'   => $fileId,
-                    'anonymized_file_id' => $anonymizedFile->getId(),
-                    'anonymized_path'    => $anonymizedFile->getPath(),
-                    'entities_replaced'  => count($entities),
-                ]
-            );
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[FileTextController] Failed to anonymize file',
-                context: [
-                    'file'    => __FILE__,
-                    'line'    => __LINE__,
-                    'file_id' => $fileId,
-                    'error'   => $e->getMessage(),
-                    'trace'   => $e->getTraceAsString(),
-                ]
-            );
+			$responseData = [
+				'success' => true,
+				'complete' => $isComplete,
+				'message' => $messageResult,
+				'original_file_id' => $fileId,
+				'anonymized_file_id' => $anonymizedFile->getId(),
+				'anonymized_path' => $anonymizedFile->getPath(),
+				'entities_replaced' => count($entities),
+				'residual_count' => count($residualEntities),
+				'residual_entities' => $residualEntities,
+			];
 
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Failed to anonymize file: '.$e->getMessage(),
-                ],
-                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-            );
-        }//end try
-    }//end anonymizeFile()
+			// Omit the block entirely for non-PDF redactions (REQ-ORTPR-003) —
+			// the accessor already returns null on the DOCX/ODT/text branches.
+			if ($structureResult !== null) {
+				$responseData['structurePreservation'] = $structureResult->jsonSerialize();
+			}
+
+			return new JSONResponse(data: $responseData);
+		} catch (PdfAnonymisationException $e) {
+			// Map the structured PDF-anonymisation reason to an HTTP status
+			// per the `pdf-anonymisation` spec (REQ:filter-coverage +
+			// REQ:validation-gate + REQ:image-only-defer):
+			//
+			// - encrypted_pdf       → 422 (caller-correctable)
+			// - text_layer_missing → 422 (caller MUST route to OCR via
+			// the `ocr-document-scanning`
+			// capability — the controller
+			// surfaces a structured body so
+			// the caller can dispatch; v1
+			// does not auto-redirect)
+			// - validation_failed  → 500 (pipeline integrity failure;
+			// fail-closed for the strict
+			// entity-anonymisation flow)
+			// - internal_error     → 500 (unexpected pipeline failure)
+			//
+			// Per ADR-005 the response body MUST NOT echo the
+			// operator-supplied entity text — the exception's diagnostic
+			// surface is PII-free by construction (counts + structural
+			// counters only) and is the only thing we forward.
+			$reason = $e->getReason();
+			$statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
+			switch ($reason) {
+				case PdfAnonymisationException::REASON_ENCRYPTED_PDF:
+				case PdfAnonymisationException::REASON_TEXT_LAYER_MISSING:
+					$statusCode = Http::STATUS_UNPROCESSABLE_ENTITY;
+					break;
+				case PdfAnonymisationException::REASON_VALIDATION_FAILED:
+				case PdfAnonymisationException::REASON_INTERNAL_ERROR:
+				default:
+					$statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
+					break;
+			}
+
+			// PII-redacted error log: NEVER include the operator-supplied
+			// entity text (ADR-005). The PdfAnonymisationException
+			// diagnostic surface is constructed to be PII-free; carry
+			// only that + the structured reason + the file id.
+			$this->logger->error(
+				message: '[FileTextController] PDF anonymisation failed',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'file_id' => $fileId,
+					'reason' => $reason,
+					'diagnostic' => $e->getDiagnostic(),
+				]
+			);
+
+			return new JSONResponse(
+				data: [
+					'success' => false,
+					'error' => 'pdf_anonymisation_failed',
+					'reason' => $reason,
+					'details' => $e->getDiagnostic(),
+				],
+				statusCode: $statusCode
+			);
+		} catch (\Exception $e) {
+			// PII-redacted error log: never echo operator-supplied entity
+			// text or the substitution map in error responses or logs
+			// (ADR-005). The exception message + file id are the only
+			// thing safe to surface — the audit trail (ADR-022) keeps
+			// entity values.
+			$this->logger->error(
+				message: '[FileTextController] Failed to anonymize file',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'file_id' => $fileId,
+					'error' => $e->getMessage(),
+				]
+			);
+
+			return new JSONResponse(
+				data: [
+					'success' => false,
+					'message' => 'Failed to anonymize file: ' . $e->getMessage(),
+				],
+				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}//end try
+	}//end anonymizeFile()
+
+	/**
+	 * Add an operator-supplied manual entity to a file.
+	 *
+	 * Implements `manual-entity-anonymisation`: takes an operator-typed
+	 * value + type, performs chunk-aware string matching against the
+	 * file's extracted text, creates (or reuses) the catalogue entry,
+	 * and inserts one `EntityRelation` row per occurrence found.
+	 *
+	 * Idempotent: re-calling for the same value on the same file does
+	 * NOT create duplicate relation rows. Zero-match responses are
+	 * non-errors (HTTP 200 with a `message` field).
+	 *
+	 * Request body:
+	 *
+	 *     {
+	 *         "value":         "Jan Jansen",     // required
+	 *         "type":          "PERSON",          // required
+	 *         "category":      "name",            // optional
+	 *         "wholeWord":     true,              // optional, default true
+	 *         "caseSensitive": true               // optional, default true
+	 *     }
+	 *
+	 * @param int $fileId Nextcloud file ID the manual entity applies to.
+	 *
+	 * @return JSONResponse 201 on matches found, 200 on zero matches, 4xx/5xx on failure.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 */
+	public function addManualEntity(int $fileId): JSONResponse {
+		// Content-type guard. The endpoint accepts JSON only; reject
+		// other media types with 415 so callers don't accidentally
+		// trip the body-parser heuristics.
+		$contentType = (string)$this->request->getHeader('Content-Type');
+		$mediaType = strtolower(trim(explode(';', $contentType, 2)[0]));
+		if ($mediaType !== 'application/json' && $mediaType !== '') {
+			return new JSONResponse(
+				data: [
+					'error' => 'unsupported_media_type',
+					'reason' => 'POST /api/files/{fileId}/manual-entities requires Content-Type: application/json',
+				],
+				statusCode: Http::STATUS_UNSUPPORTED_MEDIA_TYPE
+			);
+		}
+
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(
+				data: ['error' => 'unauthenticated'],
+				statusCode: Http::STATUS_UNAUTHORIZED
+			);
+		}
+
+		$body = $this->request->getParams();
+		unset($body['fileId'], $body['_route']);
+
+		$value = '';
+		if (isset($body['value']) === true) {
+			$value = (string)$body['value'];
+		}
+
+		$type = '';
+		if (isset($body['type']) === true) {
+			$type = (string)$body['type'];
+		}
+
+		$wholeWord = true;
+		if (isset($body['wholeWord']) === true) {
+			$wholeWord = (bool)$body['wholeWord'];
+		}
+
+		$caseSensitive = true;
+		if (isset($body['caseSensitive']) === true) {
+			$caseSensitive = (bool)$body['caseSensitive'];
+		}
+
+		if ($value === '') {
+			return new JSONResponse(
+				data: ['error' => 'invalid_request', 'field' => 'value'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		if ($type === '') {
+			return new JSONResponse(
+				data: ['error' => 'invalid_request', 'field' => 'type'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		// ADR-005 PII rule: log the request shape WITHOUT the value.
+		$this->logger->info(
+			message: '[FileTextController] addManualEntity request',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'fileId' => $fileId,
+				'type' => $type,
+				'wholeWord' => $wholeWord,
+				'caseSensitive' => $caseSensitive,
+				'valueLength' => strlen($value),
+				'actor' => $user->getUID(),
+			]
+		);
+
+		try {
+			$result = $this->manualEntityService->addManualEntity(
+				fileId: $fileId,
+				value: $value,
+				type: $type,
+				wholeWord: $wholeWord,
+				caseSensitive: $caseSensitive,
+				actor: $user
+			);
+		} catch (ManualEntityException $e) {
+			return $this->mapManualEntityException(exception: $e, fileId: $fileId);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				message: '[FileTextController] addManualEntity unexpected failure',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'fileId' => $fileId,
+					'error' => $e->getMessage(),
+				]
+			);
+			return new JSONResponse(
+				data: ['error' => 'internal_error'],
+				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}//end try
+
+		return $this->formatManualEntityResponse(result: $result);
+	}//end addManualEntity()
+
+	/**
+	 * Translate a `ManualEntityException` to the matching HTTP response.
+	 *
+	 * Per the spec:
+	 *   file_not_extracted      → 422 (operator must run extraction first)
+	 *   regex_compile_failure   → 400 (malformed needle)
+	 *   unsupported_entity_type → 400
+	 *   forbidden               → 403 (service-side write-access check failed)
+	 *   internal_error          → 500
+	 *
+	 * @param ManualEntityException $exception Source exception.
+	 * @param int $fileId Target file id (used for logging).
+	 *
+	 * @return JSONResponse Structured error body with no PII echo.
+	 */
+	private function mapManualEntityException(ManualEntityException $exception, int $fileId): JSONResponse {
+		$reason = $exception->getReason();
+
+		if ($reason === ManualEntityException::REASON_FORBIDDEN) {
+			return new JSONResponse(
+				data: [
+					'error' => 'forbidden',
+					'reason' => 'write access to file required',
+				],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		$statusByReason = [
+			ManualEntityException::REASON_FILE_NOT_EXTRACTED => Http::STATUS_UNPROCESSABLE_ENTITY,
+			ManualEntityException::REASON_REGEX_COMPILE_FAILURE => Http::STATUS_BAD_REQUEST,
+			ManualEntityException::REASON_UNSUPPORTED_ENTITY_TYPE => Http::STATUS_BAD_REQUEST,
+			ManualEntityException::REASON_INTERNAL_ERROR => Http::STATUS_INTERNAL_SERVER_ERROR,
+		];
+
+		$status = ($statusByReason[$reason] ?? Http::STATUS_INTERNAL_SERVER_ERROR);
+
+		$this->logger->info(
+			message: '[FileTextController] addManualEntity translated exception',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'fileId' => $fileId,
+				'reason' => $reason,
+				'status' => $status,
+			]
+		);
+
+		return new JSONResponse(
+			data: ['error' => $reason],
+			statusCode: $status
+		);
+
+	}//end mapManualEntityException()
+
+	/**
+	 * Format the success response body per the proposal.
+	 *
+	 * 201 when one or more matches were found; 200 with a `message`
+	 * field when zero matches were found (catalogue entry was still
+	 * created or reused).
+	 *
+	 * @param ManualEntityResult $result Service-layer result.
+	 *
+	 * @return JSONResponse
+	 */
+	private function formatManualEntityResponse(ManualEntityResult $result): JSONResponse {
+		$entityPayload = [
+			'id' => (int)$result->entity->getId(),
+			'uuid' => $result->entity->getUuid(),
+			'value' => $result->entity->getValue(),
+			'type' => $result->entity->getType(),
+			'reused' => ($result->entityWasNew === false),
+		];
+
+		$relationsPayload = [];
+		foreach ($result->relations as $relation) {
+			$relationsPayload[] = [
+				'id' => (int)$relation->getId(),
+				'chunkId' => $relation->getChunkId(),
+				'positionStart' => $relation->getPositionStart(),
+				'positionEnd' => $relation->getPositionEnd(),
+				'context' => $relation->getContext(),
+			];
+		}
+
+		$body = [
+			'entity' => $entityPayload,
+			'relations' => $relationsPayload,
+			'matchCount' => $result->matchCount,
+			'matchesSkipped' => $result->matchesSkipped,
+		];
+
+		if ($result->matchCount === 0) {
+			$body['message'] = 'Text not found in file. Catalogue entry created (or reused) and is available for use on other files.';
+			return new JSONResponse(data: $body, statusCode: Http::STATUS_OK);
+		}
+
+		return new JSONResponse(data: $body, statusCode: Http::STATUS_CREATED);
+	}//end formatManualEntityResponse()
 }//end class

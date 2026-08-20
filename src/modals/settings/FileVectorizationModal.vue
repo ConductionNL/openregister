@@ -1,11 +1,17 @@
 <template>
-	<NcDialog v-if="show"
+	<NcDialog
+		v-if="show"
 		:name="t('openregister', 'Vectorize All Files')"
 		size="large"
 		@closing="$emit('closing')">
 		<div class="vectorization-config-content">
 			<p class="description">
-				{{ t('openregister', 'Configure parameters for file vectorization. This process will generate vector embeddings for all extracted file chunks.') }}
+				{{
+					t(
+						'openregister',
+						'Configure parameters for file vectorization. This process will generate vector embeddings for all extracted file chunks.',
+					)
+				}}
 			</p>
 
 			<!-- Execution Mode -->
@@ -23,13 +29,34 @@
 					value="parallel"
 					name="execution_mode"
 					type="radio">
-					{{ t('openregister', 'Parallel Mode (Faster, more resource intensive)') }}
+					{{
+						t(
+							'openregister',
+							'Parallel Mode (Faster, more resource intensive)',
+						)
+					}}
 				</NcCheckboxRadioSwitch>
 			</div>
 
 			<div class="mode-descriptions">
-				<p><strong>{{ t('openregister', 'Serial:') }}</strong> {{ t('openregister', 'Processes file chunks sequentially (safest).') }}</p>
-				<p><strong>{{ t('openregister', 'Parallel:') }}</strong> {{ t('openregister', 'Processes chunks in batches with simulated parallelism.') }}</p>
+				<p>
+					<strong>{{ t('openregister', 'Serial:') }}</strong>
+					{{
+						t(
+							'openregister',
+							'Processes file chunks sequentially (safest).',
+						)
+					}}
+				</p>
+				<p>
+					<strong>{{ t('openregister', 'Parallel:') }}</strong>
+					{{
+						t(
+							'openregister',
+							'Processes chunks in batches with simulated parallelism.',
+						)
+					}}
+				</p>
 			</div>
 
 			<!-- File Chunk Prediction -->
@@ -37,27 +64,45 @@
 				<h4>📊 {{ t('openregister', 'File Chunk Prediction') }}</h4>
 				<div class="prediction-stats">
 					<div class="stat">
-						<span class="label">{{ t('openregister', 'Files with Completed Extraction:') }}</span>
-						<span class="value">{{ stats.extractedFiles.toLocaleString() }}</span>
+						<span class="label">{{
+							t('openregister', 'Files with Completed Extraction:')
+						}}</span>
+						<span class="value">{{
+							stats.extractedFiles.toLocaleString()
+						}}</span>
 					</div>
 					<div class="stat highlight">
-						<span class="label">{{ t('openregister', 'Total Chunks Available:') }}</span>
-						<span class="value">{{ stats.totalChunks.toLocaleString() }}</span>
+						<span class="label">{{
+							t('openregister', 'Total Chunks Available:')
+						}}</span>
+						<span class="value">{{
+							stats.totalChunks.toLocaleString()
+						}}</span>
 					</div>
 					<div class="stat highlight primary">
-						<span class="label">{{ t('openregister', 'Chunks to Vectorize:') }}</span>
-						<span class="value">{{ stats.chunksToProcess.toLocaleString() }}</span>
+						<span class="label">{{
+							t('openregister', 'Chunks to Vectorize:')
+						}}</span>
+						<span class="value">{{
+							stats.chunksToProcess.toLocaleString()
+						}}</span>
 					</div>
 					<div class="stat">
-						<span class="label">{{ t('openregister', 'Estimated Batches:') }}</span>
+						<span class="label">{{
+							t('openregister', 'Estimated Batches:')
+						}}</span>
 						<span class="value">{{ estimatedBatches }}</span>
 					</div>
 					<div class="stat">
-						<span class="label">{{ t('openregister', 'Estimated Duration:') }}</span>
+						<span class="label">{{
+							t('openregister', 'Estimated Duration:')
+						}}</span>
 						<span class="value">{{ estimatedDuration }}</span>
 					</div>
 					<div class="stat">
-						<span class="label">{{ t('openregister', 'Estimated Cost:') }}</span>
+						<span class="label">{{
+							t('openregister', 'Estimated Cost:')
+						}}</span>
 						<span class="value">{{ estimatedCost }}</span>
 					</div>
 				</div>
@@ -67,14 +112,26 @@
 			<h3>{{ t('openregister', 'Processing Limits') }}</h3>
 
 			<div class="form-group">
-				<label for="max-files">{{ t('openregister', 'Max Files (0 = all)') }}</label>
+				<label for="max-files">{{
+					t('openregister', 'Max Files (0 = all)')
+				}}</label>
 				<input
 					id="max-files"
 					v-model.number="maxFiles"
 					type="number"
 					min="0"
-					:placeholder="t('openregister', 'Maximum number of files to process. Set to 0 to process all files.')">
-				<small>{{ t('openregister', 'Maximum number of files to process. Set to 0 to process all files.') }}</small>
+					:placeholder="
+						t(
+							'openregister',
+							'Maximum number of files to process. Set to 0 to process all files.',
+						)
+					" />
+				<small>{{
+					t(
+						'openregister',
+						'Maximum number of files to process. Set to 0 to process all files.',
+					)
+				}}</small>
 			</div>
 
 			<div class="form-group">
@@ -85,27 +142,46 @@
 					type="number"
 					min="1"
 					max="100"
-					:placeholder="t('openregister', 'Number of chunks to vectorize in one API call (1-100).')">
-				<small>{{ t('openregister', 'Number of chunks to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.') }}</small>
+					:placeholder="
+						t(
+							'openregister',
+							'Number of chunks to vectorize in one API call (1-100).',
+						)
+					" />
+				<small>{{
+					t(
+						'openregister',
+						'Number of chunks to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.',
+					)
+				}}</small>
 			</div>
 
 			<!-- File Type Selection -->
 			<h3>{{ t('openregister', 'File Type Selection') }}</h3>
 			<div class="info-box">
 				<InformationOutline :size="20" />
-				<p>{{ t('openregister', 'Choose which file types to include in the vectorization process. Only files with extracted text and chunks will be processed.') }}</p>
+				<p>
+					{{
+						t(
+							'openregister',
+							'Choose which file types to include in the vectorization process. Only files with extracted text and chunks will be processed.',
+						)
+					}}
+				</p>
 			</div>
 
 			<div class="form-group">
-				<NcCheckboxRadioSwitch
-					v-model="vectorizeAllTypes"
-					type="switch">
+				<NcCheckboxRadioSwitch v-model="vectorizeAllTypes" type="switch">
 					{{ t('openregister', 'Vectorize all file types') }}
 				</NcCheckboxRadioSwitch>
 			</div>
 
-			<div v-if="!vectorizeAllTypes && fileTypes.length > 0" class="file-type-selection">
-				<label>{{ t('openregister', 'Select File Types to Vectorize:') }}</label>
+			<div
+				v-if="!vectorizeAllTypes && fileTypes.length > 0"
+				class="file-type-selection">
+				<label>{{
+					t('openregister', 'Select File Types to Vectorize:')
+				}}</label>
 				<div class="type-list">
 					<NcCheckboxRadioSwitch
 						v-for="type in fileTypes"
@@ -113,7 +189,17 @@
 						v-model="selectedTypes"
 						:value="type.mime"
 						type="checkbox">
-						{{ type.name }} ({{ type.fileCount }} {{ type.fileCount === 1 ? t('openregister', 'file') : t('openregister', 'files') }}, {{ type.chunkCount }} {{ type.chunkCount === 1 ? t('openregister', 'chunk') : t('openregister', 'chunks') }})
+						{{ type.name }} ({{ type.fileCount }}
+						{{
+							type.fileCount === 1
+								? t('openregister', 'file')
+								: t('openregister', 'files')
+						}}, {{ type.chunkCount }}
+						{{
+							type.chunkCount === 1
+								? t('openregister', 'chunk')
+								: t('openregister', 'chunks')
+						}})
 					</NcCheckboxRadioSwitch>
 				</div>
 			</div>
@@ -121,11 +207,17 @@
 			<!-- Progress (shown during processing) -->
 			<div v-if="processing" class="progress-section">
 				<NcProgressBar :value="progress" :error="failed > 0">
-					{{ processed }} / {{ stats.chunksToProcess }} {{ t('openregister', 'chunks processed') }}
+					{{ processed }} / {{ stats.chunksToProcess }}
+					{{ t('openregister', 'chunks processed') }}
 				</NcProgressBar>
 				<div class="progress-stats">
-					<span class="success">✓ {{ vectorized }} {{ t('openregister', 'vectorized') }}</span>
-					<span v-if="failed > 0" class="error">✗ {{ failed }} {{ t('openregister', 'failed') }}</span>
+					<span class="success"
+						>✓ {{ vectorized }}
+						{{ t('openregister', 'vectorized') }}</span
+					>
+					<span v-if="failed > 0" class="error"
+						>✗ {{ failed }} {{ t('openregister', 'failed') }}</span
+					>
 				</div>
 			</div>
 		</div>
@@ -135,30 +227,36 @@
 				{{ t('openregister', 'Cancel') }}
 			</NcButton>
 			<NcButton
-				type="primary"
-				:disabled="processing || (stats.chunksToProcess === 0)"
+				variant="primary"
+				:disabled="processing || stats.chunksToProcess === 0"
 				@click="startVectorization">
 				<template #icon>
 					<PlayCircle v-if="!processing" :size="20" />
 					<NcLoadingIcon v-else :size="20" />
 				</template>
-				{{ processing ? t('openregister', 'Processing...') : t('openregister', 'Start Vectorization') }}
+				{{
+					processing
+						? t('openregister', 'Processing...')
+						: t('openregister', 'Start Vectorization')
+				}}
 			</NcButton>
 		</template>
 	</NcDialog>
 </template>
 
 <script>
-import NcDialog from '@nextcloud/vue/dist/Components/NcDialog.js'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
-import NcProgressBar from '@nextcloud/vue/dist/Components/NcProgressBar.js'
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcDialog,
+	NcLoadingIcon,
+	NcProgressBar,
+} from '@nextcloud/vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import PlayCircle from 'vue-material-design-icons/PlayCircle.vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { showSuccess, showError } from '@nextcloud/dialogs'
 
 export default {
 	name: 'FileVectorizationModal',
@@ -178,6 +276,7 @@ export default {
 			type: Boolean,
 			required: true,
 		},
+
 		extractionStats: {
 			type: Object,
 			default: () => ({
@@ -187,6 +286,7 @@ export default {
 				totalChunks: 0,
 			}),
 		},
+
 		vectorStats: {
 			type: Object,
 			default: () => ({
@@ -214,8 +314,14 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude computed display helper aggregating vectorization stats
+		 */
 		stats() {
-			const extractedFiles = this.extractionStats?.completed || this.extractionStats?.processedFiles || 0
+			const extractedFiles =
+				this.extractionStats?.completed
+				|| this.extractionStats?.processedFiles
+				|| 0
 			const totalChunks = this.extractionStats?.totalChunks || 0
 			const vectorizedChunks = this.vectorStats?.stats?.file_vectors || 0
 			const chunksToProcess = Math.max(0, totalChunks - vectorizedChunks)
@@ -227,16 +333,25 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude computed progress percentage helper
+		 */
 		progress() {
 			if (this.stats.chunksToProcess === 0) return 0
 			return Math.round((this.processed / this.stats.chunksToProcess) * 100)
 		},
 
+		/**
+		 * @spec exclude computed estimate of batch count
+		 */
 		estimatedBatches() {
 			if (this.stats.chunksToProcess === 0 || this.batchSize === 0) return 0
 			return Math.ceil(this.stats.chunksToProcess / this.batchSize)
 		},
 
+		/**
+		 * @spec exclude computed estimate of duration
+		 */
 		estimatedDuration() {
 			// Estimate ~100-200ms per chunk for embedding generation
 			const avgTimePerChunk = 0.15 // seconds
@@ -251,6 +366,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude computed estimate of cost
+		 */
 		estimatedCost() {
 			// Assuming OpenAI pricing: $0.0001 per 1K tokens
 			// Average chunk is ~1000 characters = ~750 tokens
@@ -263,6 +381,10 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * @param newValue
+		 * @spec exclude watcher reloading file types when modal opens
+		 */
 		show(newValue) {
 			if (newValue) {
 				// Reload file types when modal is opened
@@ -271,6 +393,9 @@ export default {
 		},
 	},
 
+	/**
+	 * @spec exclude Vue lifecycle hook loading file types
+	 */
 	mounted() {
 		if (this.show) {
 			this.loadFileTypes()
@@ -278,18 +403,28 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * @spec exclude form-state loader for file types via API
+		 */
 		async loadFileTypes() {
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/files/types'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/files/types'),
+				)
 				if (response.data.success) {
 					this.fileTypes = response.data.data
-					console.info('[FileVectorizationModal] Loaded file types:', this.fileTypes)
 				}
 			} catch (error) {
-				console.error('[FileVectorizationModal] Failed to load file types:', error)
+				console.error(
+					'[FileVectorizationModal] Failed to load file types:',
+					error,
+				)
 			}
 		},
 
+		/**
+		 * @spec exclude modal submit handler triggering batch vectorization via API
+		 */
 		async startVectorization() {
 			if (this.stats.chunksToProcess === 0) {
 				showError(this.t('openregister', 'No chunks to vectorize'))
@@ -320,11 +455,17 @@ export default {
 					this.failed = result.failed || 0
 					this.processed = this.vectorized + this.failed
 
-					showSuccess(this.t('openregister', 'File vectorization completed! {vectorized} chunks vectorized from {files} files. {failed} failed.', {
-						vectorized: this.vectorized,
-						files: result.total_files || 0,
-						failed: this.failed,
-					}))
+					showSuccess(
+						this.t(
+							'openregister',
+							'File vectorization completed! {vectorized} chunks vectorized from {files} files. {failed} failed.',
+							{
+								vectorized: this.vectorized,
+								files: result.total_files || 0,
+								failed: this.failed,
+							},
+						),
+					)
 
 					// Emit completion event to reload stats in parent
 					this.$emit('completed')
@@ -339,12 +480,29 @@ export default {
 				const errorData = error.response?.data
 
 				// Check if it's a "not implemented" response
-				if (error.response?.status === 501 || errorData?.error === 'File vectorization not yet implemented') {
-					showError(this.t('openregister', 'File chunk vectorization is not yet implemented. The chunks are ready and stored, but the vectorization service is under development.'))
+				if (
+					error.response?.status === 501
+					|| errorData?.error === 'File vectorization not yet implemented'
+				) {
+					showError(
+						this.t(
+							'openregister',
+							'File chunk vectorization is not yet implemented. The chunks are ready and stored, but the vectorization service is under development.',
+						),
+					)
 				} else {
-					showError(this.t('openregister', 'Failed to vectorize files: {error}', {
-						error: errorData?.error || errorData?.message || error.message,
-					}))
+					showError(
+						this.t(
+							'openregister',
+							'Failed to vectorize files: {error}',
+							{
+								error:
+									errorData?.error
+									|| errorData?.message
+									|| error.message,
+							},
+						),
+					)
 				}
 			} finally {
 				this.processing = false

@@ -2,24 +2,32 @@
 	<div class="section">
 		<h2>{{ t('openregister', 'Avatar') }}</h2>
 		<div v-if="!canChangeAvatar" class="section__disabled">
-			{{ t('openregister', 'Avatar changes are not supported by your authentication provider.') }}
+			{{
+				t(
+					'openregister',
+					'Avatar changes are not supported by your authentication provider.',
+				)
+			}}
 		</div>
 		<div v-else class="avatar-section">
-			<NcAvatar :user="userId" :size="128" :show-user-status="false" />
+			<NcAvatar :user="userId" :size="128" :showUserStatus="false" />
 			<div class="avatar-section__actions">
-				<NcButton type="primary" @click="triggerUpload">
+				<NcButton variant="primary" @click="triggerUpload">
 					{{ t('openregister', 'Upload new avatar') }}
 				</NcButton>
-				<NcButton type="error" @click="deleteAvatar">
+				<NcButton variant="error" @click="deleteAvatar">
 					{{ t('openregister', 'Remove avatar') }}
 				</NcButton>
-				<input ref="fileInput"
+				<input
+					ref="fileInput"
 					type="file"
 					accept="image/jpeg,image/png,image/gif,image/webp"
-					style="display: none;"
-					@change="uploadAvatar">
+					style="display: none"
+					@change="uploadAvatar" />
 			</div>
-			<p v-if="message" :class="{ 'section__error': isError, 'section__success': !isError }">
+			<p
+				v-if="message"
+				:class="{ section__error: isError, section__success: !isError }">
 				{{ message }}
 			</p>
 		</div>
@@ -27,11 +35,10 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import NcAvatar from '@nextcloud/vue/dist/Components/NcAvatar.js'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+import { NcAvatar, NcButton } from '@nextcloud/vue'
 
 export default {
 	name: 'AvatarSection',
@@ -44,20 +51,46 @@ export default {
 			isError: false,
 		}
 	},
+
+	/**
+	 * Lifecycle hook: load the current user's id and avatar capability for display.
+	 *
+	 * @spec exclude UI plumbing — view-mount data fetch for display only
+	 * @return {Promise<void>}
+	 */
 	async mounted() {
 		try {
-			const { data } = await axios.get(generateUrl('/apps/openregister/api/user/me'))
+			const { data } = await axios.get(
+				generateUrl('/apps/openregister/api/user/me'),
+			)
 			this.userId = data?.uid || ''
 			this.canChangeAvatar = data?.backendCapabilities?.avatar ?? true
 		} catch (e) {
 			// Default to showing the section.
 		}
 	},
+
 	methods: {
 		t,
+		/**
+		 * Open the native file picker by programmatically clicking the hidden
+		 * file input. Avatar upload itself runs from the input's `change` handler
+		 * (`uploadAvatar`), not from this method.
+		 *
+		 * @spec openspec/specs/account-self-service/spec.md
+		 * @return {void}
+		 */
 		triggerUpload() {
 			this.$refs.fileInput.click()
 		},
+
+		/**
+		 * Upload the selected image as the user's avatar via the account API.
+		 *
+		 * @param {Event} event The file input change event.
+		 * @spec exclude UI plumbing — delegates to the account avatar API
+		 * @return {Promise<void>}
+		 */
 		async uploadAvatar(event) {
 			const file = event.target.files[0]
 			if (!file) return
@@ -72,18 +105,31 @@ export default {
 				this.message = t('openregister', 'Avatar updated successfully')
 				this.isError = false
 			} catch (e) {
-				this.message = e.response?.data?.error || t('openregister', 'Failed to upload avatar')
+				this.message =
+					e.response?.data?.error
+					|| t('openregister', 'Failed to upload avatar')
 				this.isError = true
 			}
 		},
+
+		/**
+		 * Remove the user's avatar via the account API.
+		 *
+		 * @spec exclude UI plumbing — delegates to the account avatar API
+		 * @return {Promise<void>}
+		 */
 		async deleteAvatar() {
 			this.message = ''
 			try {
-				await axios.delete(generateUrl('/apps/openregister/api/user/me/avatar'))
+				await axios.delete(
+					generateUrl('/apps/openregister/api/user/me/avatar'),
+				)
 				this.message = t('openregister', 'Avatar removed')
 				this.isError = false
 			} catch (e) {
-				this.message = e.response?.data?.error || t('openregister', 'Failed to remove avatar')
+				this.message =
+					e.response?.data?.error
+					|| t('openregister', 'Failed to remove avatar')
 				this.isError = true
 			}
 		},
@@ -92,10 +138,36 @@ export default {
 </script>
 
 <style scoped>
-.section { margin-bottom: 32px; padding: 16px; border-bottom: 1px solid var(--color-border); }
-.section__disabled { color: var(--color-text-maxcontrast); font-style: italic; }
-.section__error { color: var(--color-error); margin-top: 8px; }
-.section__success { color: var(--color-success); margin-top: 8px; }
-.avatar-section { display: flex; flex-direction: column; gap: 16px; align-items: flex-start; }
-.avatar-section__actions { display: flex; gap: 8px; }
+.section {
+	margin-bottom: 32px;
+	padding: 16px;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.section__disabled {
+	color: var(--color-text-maxcontrast);
+	font-style: italic;
+}
+
+.section__error {
+	color: var(--color-error);
+	margin-top: 8px;
+}
+
+.section__success {
+	color: var(--color-success);
+	margin-top: 8px;
+}
+
+.avatar-section {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	align-items: flex-start;
+}
+
+.avatar-section__actions {
+	display: flex;
+	gap: 8px;
+}
 </style>

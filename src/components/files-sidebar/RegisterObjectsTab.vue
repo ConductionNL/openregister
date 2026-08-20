@@ -6,7 +6,8 @@
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent v-else-if="error"
+		<NcEmptyContent
+			v-else-if="error"
 			:name="t('openregister', 'Failed to load register data')"
 			:description="errorMessage">
 			<template #icon>
@@ -15,7 +16,8 @@
 		</NcEmptyContent>
 
 		<!-- Empty state -->
-		<NcEmptyContent v-else-if="objects.length === 0"
+		<NcEmptyContent
+			v-else-if="objects.length === 0"
 			:name="t('openregister', 'No register objects reference this file')">
 			<template #icon>
 				<DatabaseOffOutline :size="44" />
@@ -24,10 +26,12 @@
 
 		<!-- Objects list -->
 		<ul v-else class="register-objects-tab__list">
-			<li v-for="obj in objects"
+			<li
+				v-for="obj in objects"
 				:key="obj.uuid"
 				class="register-objects-tab__item">
-				<a :href="getObjectUrl(obj)"
+				<a
+					:href="getObjectUrl(obj)"
 					class="register-objects-tab__link"
 					:aria-label="getAriaLabel(obj)">
 					<div class="register-objects-tab__title">
@@ -49,11 +53,10 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import axios from '@nextcloud/axios'
-import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+import { NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import DatabaseOffOutline from 'vue-material-design-icons/DatabaseOffOutline.vue'
 
@@ -85,11 +88,16 @@ export default {
 
 	watch: {
 		fileId: {
+			/**
+			 * @param newVal
+			 * @spec exclude watcher refetching objects on fileId change, UI plumbing
+			 */
 			handler(newVal) {
 				if (newVal) {
 					this.fetchObjects()
 				}
 			},
+
 			immediate: true,
 		},
 	},
@@ -99,6 +107,8 @@ export default {
 
 		/**
 		 * Fetch objects referencing this file from the API.
+		 *
+		 * @spec exclude API passthrough loading file-referencing objects; object contract owned by object capability
 		 */
 		async fetchObjects() {
 			this.loading = true
@@ -107,16 +117,20 @@ export default {
 			this.objects = []
 
 			try {
-				const url = generateUrl('/apps/openregister/api/files/{fileId}/objects', {
-					fileId: this.fileId,
-				})
+				const url = generateUrl(
+					'/apps/openregister/api/files/{fileId}/objects',
+					{
+						fileId: this.fileId,
+					},
+				)
 				const response = await axios.get(url)
 
 				if (response.data?.success) {
 					this.objects = response.data.data || []
 				} else {
 					this.error = true
-					this.errorMessage = response.data?.error || t('openregister', 'Unknown error')
+					this.errorMessage =
+						response.data?.error || t('openregister', 'Unknown error')
 				}
 			} catch (err) {
 				this.error = true
@@ -132,6 +146,7 @@ export default {
 		 *
 		 * @param {object} obj The object data
 		 * @return {string} The absolute URL to the object detail page
+		 * @spec exclude computed object-detail URL builder, UI plumbing
 		 */
 		getObjectUrl(obj) {
 			return generateUrl(
@@ -149,6 +164,7 @@ export default {
 		 *
 		 * @param {object} obj The object data
 		 * @return {string} Accessible label text
+		 * @spec exclude computed aria-label display helper, UI plumbing
 		 */
 		getAriaLabel(obj) {
 			return t('openregister', '{title} in {register} / {schema}', {
@@ -222,5 +238,11 @@ export default {
 	width: 64px;
 	height: 64px;
 	fill: currentColor;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.register-objects-tab__link {
+		transition: none;
+	}
 }
 </style>

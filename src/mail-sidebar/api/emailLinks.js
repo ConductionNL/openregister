@@ -3,9 +3,10 @@
  *
  * Uses the generic linked entity API instead of email-specific endpoints.
  *
- * @package OpenRegister
+ * @package
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-47
+ * @spec openspec/specs/mail-sidebar/spec.md#requirement-quick-link-endpoint-for-sidebar-use
+ * @spec openspec/specs/mail-sidebar/spec.md
  */
 
 import axios from '@nextcloud/axios'
@@ -56,7 +57,7 @@ export async function fetchSenderObjects(sender, signal) {
  * @param {object} params The link parameters (objectUuid, mailAccountId, mailMessageId).
  * @return {Promise<object>} The updated linked IDs.
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-47
+ * @spec openspec/specs/mail-sidebar/spec.md#requirement-quick-link-endpoint-for-sidebar-use
  */
 export async function createQuickLink(params) {
 	const { objectUuid, mailAccountId, mailMessageId } = params
@@ -76,10 +77,13 @@ export async function createQuickLink(params) {
  * @return {Promise<object>} The response data.
  */
 export async function deleteEmailLink(objectUuid, entityId) {
-	const url = generateUrl('/apps/openregister/api/objects/{uuid}/_linked/mail/{entityId}', {
-		uuid: objectUuid,
-		entityId,
-	})
+	const url = generateUrl(
+		'/apps/openregister/api/objects/{uuid}/_linked/mail/{entityId}',
+		{
+			uuid: objectUuid,
+			entityId,
+		},
+	)
 	const response = await axios.delete(url, { timeout: TIMEOUT })
 	return response.data
 }

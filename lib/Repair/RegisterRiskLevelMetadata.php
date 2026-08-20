@@ -3,6 +3,9 @@
 /**
  * Repair step to register the risk level metadata key.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Repair
  * @package  OCA\OpenRegister\Repair
  *
@@ -31,44 +34,41 @@ use OCP\Migration\IRepairStep;
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
-class RegisterRiskLevelMetadata implements IRepairStep
-{
-    /**
-     * Constructor.
-     *
-     * @param RiskLevelService $riskLevelService Risk level service
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-21
-     */
-    public function __construct(
-        private readonly RiskLevelService $riskLevelService
-    ) {
-    }//end __construct()
+class RegisterRiskLevelMetadata implements IRepairStep {
+	/**
+	 * Constructor.
+	 *
+	 * @param RiskLevelService $riskLevelService Risk level service
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function __construct(
+		private readonly RiskLevelService $riskLevelService,
+	) {
+	}//end __construct()
 
-    /**
-     * Get the name of this repair step.
-     *
-     * @return string
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-21
-     */
-    public function getName(): string
-    {
-        return 'Register OpenRegister risk level file metadata';
-    }//end getName()
+	/**
+	 * Get the name of this repair step.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getName(): string {
+		return 'Register OpenRegister risk level file metadata';
+	}//end getName()
 
-    /**
-     * Run the repair step.
-     *
-     * @param IOutput $output Output interface for status messages
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-21
-     */
-    public function run(IOutput $output): void
-    {
-        $this->riskLevelService->initMetadataKey();
-        $output->info('Registered openregister-risk-level metadata key');
-    }//end run()
+	/**
+	 * Run the repair step.
+	 *
+	 * @param IOutput $output Output interface for status messages
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function run(IOutput $output): void {
+		$this->riskLevelService->initMetadataKey();
+		$output->info('Registered openregister-risk-level metadata key');
+	}//end run()
 }//end class

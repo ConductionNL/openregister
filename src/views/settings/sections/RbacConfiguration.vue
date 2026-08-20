@@ -3,10 +3,10 @@
 		name="Role Based Access Control (RBAC)"
 		description="Configure access permissions and user groups"
 		:loading="loading"
-		loading-message="Loading RBAC settings...">
+		:loadingMessage="t('openregister', 'Loading RBAC settings...')">
 		<template #actions>
 			<NcButton
-				type="error"
+				variant="error"
 				:disabled="loading || saving || rebasing"
 				@click="showRebaseDialog">
 				<template #icon>
@@ -16,7 +16,7 @@
 				Rebase
 			</NcButton>
 			<NcButton
-				type="primary"
+				variant="primary"
 				:disabled="loading || saving || rebasing"
 				@click="saveSettings">
 				<template #icon>
@@ -30,28 +30,44 @@
 		<!-- Section Description -->
 		<div class="section-description-full">
 			<p class="main-description">
-				Role Based Access Control (RBAC) allows you to control who can access and modify different parts of your Open Register.
-				When enabled, users are assigned to specific Nextcloud groups that determine their permissions for registers, schemas, and objects.
-				Note: This system uses Nextcloud's built-in group functionality rather than separate roles.
+				Role Based Access Control (RBAC) allows you to control who can access
+				and modify different parts of your Open Register. When enabled, users
+				are assigned to specific Nextcloud groups that determine their
+				permissions for registers, schemas, and objects. Note: This system
+				uses Nextcloud's built-in group functionality rather than separate
+				roles.
 			</p>
 			<p class="toggle-status">
 				<strong>Current Status:</strong>
-				<span :class="rbacOptions.enabled ? 'status-enabled' : 'status-disabled'">
-					{{ rbacOptions.enabled ? 'Role Based Access Control enabled' : 'Role Based Access Control disabled' }}
+				<span
+					:class="
+						rbacOptions.enabled ? 'status-enabled' : 'status-disabled'
+					">
+					{{
+						rbacOptions.enabled
+							? 'Role Based Access Control enabled'
+							: 'Role Based Access Control disabled'
+					}}
 				</span>
 			</p>
 			<p class="impact-description">
-				<strong>{{ rbacOptions.enabled ? 'Disabling' : 'Enabling' }} RBAC will:</strong><br>
+				<strong
+					>{{ rbacOptions.enabled ? 'Disabling' : 'Enabling' }} RBAC
+					will:</strong
+				><br />
 				<span v-if="!rbacOptions.enabled">
-					• Provide fine-grained access control over registers and schemas<br>
-					• Allow you to assign users to specific Nextcloud groups (Viewer, Editor, Admin)<br>
-					• Enable secure multi-user environments with proper permission boundaries<br>
+					• Provide fine-grained access control over registers and
+					schemas<br />
+					• Allow you to assign users to specific Nextcloud groups (Viewer,
+					Editor, Admin)<br />
+					• Enable secure multi-user environments with proper permission
+					boundaries<br />
 					• Require group assignment for new users accessing the system
 				</span>
 				<span v-else>
-					• Remove all group-based restrictions and permissions<br>
-					• Grant all users full access to all registers and schemas<br>
-					• Simplify user management but reduce security controls<br>
+					• Remove all group-based restrictions and permissions<br />
+					• Grant all users full access to all registers and schemas<br />
+					• Simplify user management but reduce security controls<br />
 					• Allow unrestricted access to sensitive data and configurations
 				</span>
 			</p>
@@ -60,19 +76,27 @@
 		<!-- Enable RBAC Toggle -->
 		<div class="option-section">
 			<NcCheckboxRadioSwitch
-				:checked.sync="rbacOptions.enabled"
+				v-model="rbacOptions.enabled"
 				:disabled="saving"
 				type="switch">
-				{{ rbacOptions.enabled ? 'Role Based Access Control enabled' : 'Role Based Access Control disabled' }}
+				{{
+					rbacOptions.enabled
+						? 'Role Based Access Control enabled'
+						: 'Role Based Access Control disabled'
+				}}
 			</NcCheckboxRadioSwitch>
 
 			<!-- Admin Override -->
 			<div v-if="rbacOptions.enabled">
 				<NcCheckboxRadioSwitch
-					:checked.sync="rbacOptions.adminOverride"
+					v-model="rbacOptions.adminOverride"
 					:disabled="saving"
 					type="switch">
-					{{ rbacOptions.adminOverride ? 'Admin override enabled' : 'Admin override disabled' }}
+					{{
+						rbacOptions.adminOverride
+							? 'Admin override enabled'
+							: 'Admin override disabled'
+					}}
 				</NcCheckboxRadioSwitch>
 				<p class="option-description">
 					Allow administrators to bypass all RBAC restrictions
@@ -98,7 +122,8 @@
 
 				<h4>Default User Groups</h4>
 				<p class="option-description">
-					Configure which Nextcloud groups different types of users are assigned to by default
+					Configure which Nextcloud groups different types of users are
+					assigned to by default
 				</p>
 
 				<div class="groups-table">
@@ -106,14 +131,15 @@
 						<div class="group-label">
 							<strong>Anonymous Users</strong>
 							<p class="user-type-description">
-								Unidentified, non-logged-in users who access public content without authentication
+								Unidentified, non-logged-in users who access public
+								content without authentication
 							</p>
 						</div>
 						<div class="group-select">
 							<NcSelect
 								v-model="rbacOptions.anonymousGroup"
 								:options="groupOptions"
-								input-label="Anonymous Group"
+								:inputLabel="t('openregister', 'Anonymous Group')"
 								:disabled="loading || saving" />
 						</div>
 					</div>
@@ -122,14 +148,15 @@
 						<div class="group-label">
 							<strong>Default New Users</strong>
 							<p class="user-type-description">
-								Authenticated users who have logged in but haven't been assigned to specific groups yet
+								Authenticated users who have logged in but haven't
+								been assigned to specific groups yet
 							</p>
 						</div>
 						<div class="group-select">
 							<NcSelect
 								v-model="rbacOptions.defaultNewUserGroup"
 								:options="groupOptions"
-								input-label="New User Group"
+								:inputLabel="t('openregister', 'New User Group')"
 								:disabled="loading || saving" />
 						</div>
 					</div>
@@ -138,14 +165,15 @@
 						<div class="group-label">
 							<strong>Default Object Owner</strong>
 							<p class="user-type-description">
-								Default user assigned as owner when creating new objects without explicit ownership
+								Default user assigned as owner when creating new
+								objects without explicit ownership
 							</p>
 						</div>
 						<div class="group-select">
 							<NcSelect
 								v-model="rbacOptions.defaultObjectOwner"
 								:options="userOptions"
-								input-label="Default Owner"
+								:inputLabel="t('openregister', 'Default Owner')"
 								:disabled="loading || saving" />
 						</div>
 					</div>
@@ -156,15 +184,21 @@
 </template>
 
 <script>
+import { translate as t } from '@nextcloud/l10n'
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcLoadingIcon,
+	NcSelect,
+} from '@nextcloud/vue'
 /**
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+ * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
  */
 import { mapStores } from 'pinia'
-import { useSettingsStore } from '../../../store/settings.js'
-import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import { NcButton, NcLoadingIcon, NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Save from 'vue-material-design-icons/ContentSave.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import { useSettingsStore } from '../../../store/settings.js'
 
 export default {
 	name: 'RbacConfiguration',
@@ -184,13 +218,15 @@ export default {
 
 		rbacOptions: {
 			/**
-			 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+			 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 			 */
 			get() {
 				return this.settingsStore.rbacOptions
 			},
+
 			/**
-			 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+			 * @param value
+			 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 			 */
 			set(value) {
 				this.settingsStore.rbacOptions = value
@@ -198,35 +234,35 @@ export default {
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 		 */
 		groupOptions() {
 			return this.settingsStore.groupOptions
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 		 */
 		userOptions() {
 			return this.settingsStore.userOptions
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 		 */
 		loading() {
 			return this.settingsStore.loading
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 		 */
 		saving() {
 			return this.settingsStore.saving
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 		 */
 		rebasing() {
 			return this.settingsStore.rebasing
@@ -235,14 +271,14 @@ export default {
 
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 		 */
 		showRebaseDialog() {
 			this.settingsStore.showRebaseDialog()
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 		 */
 		async saveSettings() {
 			await this.settingsStore.updateRbacSettings(this.rbacOptions)

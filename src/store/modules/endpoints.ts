@@ -1,5 +1,5 @@
-import { ref } from 'vue'
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
 const apiEndpoint = '/index.php/apps/openregister/api/endpoints'
 
@@ -15,11 +15,11 @@ export const useEndpointStore = defineStore('endpoint', () => {
 
 	/**
 	 * Set the active endpoint item.
+	 *
 	 * @param item - The endpoint item to set
 	 */
 	const setEndpointItem = (item) => {
 		endpointItem.value = item
-		console.info('Active endpoint item set to ' + (item ? item.id : 'null'))
 	}
 
 	/**
@@ -38,17 +38,17 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	 * const endpointItem = computed(() => useEndpointStore().getEndpointItem())
 	 * ```
 	 *
-	 * @return {object | null} The active endpoint item
+	 * @return The active endpoint item
 	 */
 	const getEndpointItem = () => endpointItem.value
 
 	/**
 	 * Set the active endpoint list.
+	 *
 	 * @param list - The endpoint list to set
 	 */
 	const setEndpointList = (list) => {
 		endpointList.value = list
-		console.info('Endpoint list set to ' + list.length + ' items')
 	}
 
 	/**
@@ -67,7 +67,7 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	 * const endpointList = computed(() => useEndpointStore().getEndpointList())
 	 * ```
 	 *
-	 * @return {Array} The active endpoint list
+	 * @return The active endpoint list
 	 */
 	const getEndpointList = () => endpointList.value
 
@@ -79,8 +79,6 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	 * Fetch the list of endpoints from the API
 	 */
 	const refreshEndpointList = () => {
-		console.info('Refreshing endpoint list')
-
 		fetch(apiEndpoint, {
 			method: 'GET',
 		})
@@ -96,11 +94,10 @@ export const useEndpointStore = defineStore('endpoint', () => {
 
 	/**
 	 * Create a new endpoint on the API
+	 *
 	 * @param item - The endpoint item to create
 	 */
 	const createEndpoint = (item) => {
-		console.info('Creating endpoint:', item)
-
 		return fetch(apiEndpoint, {
 			method: 'POST',
 			headers: {
@@ -115,7 +112,6 @@ export const useEndpointStore = defineStore('endpoint', () => {
 				return response.json()
 			})
 			.then((data) => {
-				console.info('Endpoint created successfully:', data)
 				setEndpointItem(data)
 				refreshEndpointList()
 				return data
@@ -128,14 +124,13 @@ export const useEndpointStore = defineStore('endpoint', () => {
 
 	/**
 	 * Update an existing endpoint on the API
+	 *
 	 * @param item - The endpoint item to update
 	 */
 	const updateEndpoint = (item) => {
 		if (!item.id) {
 			throw new Error('Endpoint ID is required for update')
 		}
-
-		console.info('Updating endpoint:', item)
 
 		return fetch(`${apiEndpoint}/${item.id}`, {
 			method: 'PUT',
@@ -151,7 +146,6 @@ export const useEndpointStore = defineStore('endpoint', () => {
 				return response.json()
 			})
 			.then((data) => {
-				console.info('Endpoint updated successfully:', data)
 				setEndpointItem(data)
 				refreshEndpointList()
 				return data
@@ -164,14 +158,13 @@ export const useEndpointStore = defineStore('endpoint', () => {
 
 	/**
 	 * Delete an endpoint from the API
+	 *
 	 * @param item - The endpoint item to delete
 	 */
 	const deleteEndpoint = (item) => {
 		if (!item.id) {
 			throw new Error('Endpoint ID is required for deletion')
 		}
-
-		console.info('Deleting endpoint:', item)
 
 		return fetch(`${apiEndpoint}/${item.id}`, {
 			method: 'DELETE',
@@ -180,7 +173,6 @@ export const useEndpointStore = defineStore('endpoint', () => {
 				if (!response.ok) {
 					throw new Error('Failed to delete endpoint')
 				}
-				console.info('Endpoint deleted successfully')
 				// Clear the active item if it was the deleted one.
 				if (endpointItem.value && endpointItem.value.id === item.id) {
 					setEndpointItem(null)
@@ -195,6 +187,7 @@ export const useEndpointStore = defineStore('endpoint', () => {
 
 	/**
 	 * Test an endpoint by executing it
+	 *
 	 * @param item - The endpoint item to test
 	 * @param testData - Optional test data to send
 	 */
@@ -202,8 +195,6 @@ export const useEndpointStore = defineStore('endpoint', () => {
 		if (!item.id) {
 			throw new Error('Endpoint ID is required for testing')
 		}
-
-		console.info('Testing endpoint:', item)
 
 		return fetch(`${apiEndpoint}/${item.id}/test`, {
 			method: 'POST',
@@ -215,13 +206,14 @@ export const useEndpointStore = defineStore('endpoint', () => {
 			.then((response) => {
 				return response.json().then((data) => {
 					if (!response.ok) {
-						throw new Error(data.error || data.message || 'Failed to test endpoint')
+						throw new Error(
+							data.error || data.message || 'Failed to test endpoint',
+						)
 					}
 					return data
 				})
 			})
 			.then((data) => {
-				console.info('Endpoint tested successfully:', data)
 				return data
 			})
 			.catch((err) => {

@@ -33,46 +33,42 @@ use OCP\Migration\SimpleMigrationStep;
  * Removes the roles column after data has been migrated to groups column.
  * This is a cleanup migration to complete the roles→groups renaming.
  */
-class Version1Date20251107000000 extends SimpleMigrationStep
-{
-    /**
-     * Remove roles column from organisations table
-     *
-     * @param IOutput $output        Migration output interface
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Migration options
-     *
-     * @return ISchemaWrapper|null Updated schema
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20251107000000 extends SimpleMigrationStep {
+	/**
+	 * Remove roles column from organisations table
+	 *
+	 * @param IOutput $output Migration output interface
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Migration options
+	 *
+	 * @return ISchemaWrapper|null Updated schema
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_organisations') === true) {
-            $table = $schema->getTable('openregister_organisations');
+		if ($schema->hasTable('openregister_organisations') === true) {
+			$table = $schema->getTable('openregister_organisations');
 
-            // Check if roles column still exists.
-            if ($table->hasColumn('roles') === false) {
-                $output->info(message: '   ℹ️  Roles column already removed');
-                return null;
-            }
+			// Check if roles column still exists.
+			if ($table->hasColumn('roles') === false) {
+				$output->info(message: '   ℹ️  Roles column already removed');
+				return null;
+			}
 
-            $output->info(message: '🗑️  Removing deprecated roles column from organisations table...');
+			$output->info(message: '🗑️  Removing deprecated roles column from organisations table...');
 
-            $table->dropColumn('roles');
+			$table->dropColumn('roles');
 
-            $output->info(message: '   ✓ Dropped roles column');
-            $output->info(message: '✅ Cleanup completed - organisations table now only uses groups column');
+			$output->info(message: '   ✓ Dropped roles column');
+			$output->info(message: '✅ Cleanup completed - organisations table now only uses groups column');
 
-            return $schema;
-        }
+			return $schema;
+		}
 
-        return null;
-    }//end changeSchema()
+		return null;
+	}//end changeSchema()
 }//end class

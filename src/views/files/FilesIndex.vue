@@ -1,5 +1,5 @@
 <template>
-	<NcAppContent :show-details="sidebarOpen" @update:showDetails="toggleSidebar">
+	<NcAppContent :showDetails="sidebarOpen" @update:showDetails="toggleSidebar">
 		<div class="viewContainer">
 			<!-- Header -->
 			<div class="viewHeader">
@@ -8,17 +8,26 @@
 						{{ t('openregister', 'Files') }}
 					</h1>
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:aria-label="t('openregister', 'Toggle search sidebar')"
 						@click="toggleSidebar">
 						<template #icon>
 							<FilterVariant :size="20" />
 						</template>
-						{{ sidebarOpen ? t('openregister', 'Hide Filters') : t('openregister', 'Show Filters') }}
+						{{
+							sidebarOpen
+								? t('openregister', 'Hide Filters')
+								: t('openregister', 'Show Filters')
+						}}
 					</NcButton>
 				</div>
 				<p>
-					{{ t('openregister', 'Manage and monitor file text extraction status') }}
+					{{
+						t(
+							'openregister',
+							'Manage and monitor file text extraction status',
+						)
+					}}
 				</p>
 			</div>
 
@@ -26,20 +35,17 @@
 			<div class="viewActionsBar">
 				<div class="viewInfo">
 					<span v-if="filesList.length" class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} files', {
-							showing: filesList.length,
-							total: totalFiles
-						}) }}
+						{{
+							t('openregister', 'Showing {showing} of {total} files', {
+								showing: filesList.length,
+								total: totalFiles,
+							})
+						}}
 					</span>
 				</div>
 				<div class="viewActions">
-					<NcActions
-						:force-name="true"
-						:inline="1"
-						menu-name="Actions">
-						<NcActionButton
-							close-after-click
-							@click="refreshFiles">
+					<NcActions :forceName="true" :inline="1" menuName="Actions">
+						<NcActionButton closeAfterClick @click="refreshFiles">
 							<template #icon>
 								<Refresh :size="20" />
 							</template>
@@ -56,7 +62,9 @@
 				<NcEmptyContent
 					v-else-if="!filesList.length"
 					:name="t('openregister', 'No files found')"
-					:description="t('openregister', 'No files have been extracted yet')">
+					:description="
+						t('openregister', 'No files have been extracted yet')
+					">
 					<template #icon>
 						<FileDocumentOutline :size="64" />
 					</template>
@@ -65,34 +73,76 @@
 				<table v-else class="filesTable">
 					<thead>
 						<tr>
-							<th class="column-filename sortable" @click="toggleSort('fileName')">
+							<th
+								scope="col"
+								class="column-filename sortable"
+								@click="toggleSort('fileName')">
 								{{ t('openregister', 'File Name') }}
-								<span v-if="sortField === 'fileName'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
+								<span
+									v-if="sortField === 'fileName'"
+									class="sort-indicator"
+									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
+								>
 							</th>
-							<th class="column-mimetype">
+							<th scope="col" class="column-mimetype">
 								{{ t('openregister', 'Type') }}
 							</th>
-							<th class="column-size sortable" @click="toggleSort('fileSize')">
+							<th
+								scope="col"
+								class="column-size sortable"
+								@click="toggleSort('fileSize')">
 								{{ t('openregister', 'Size') }}
-								<span v-if="sortField === 'fileSize'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
+								<span
+									v-if="sortField === 'fileSize'"
+									class="sort-indicator"
+									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
+								>
 							</th>
-							<th class="column-chunks sortable" @click="toggleSort('chunkCount')">
+							<th
+								scope="col"
+								class="column-chunks sortable"
+								@click="toggleSort('chunkCount')">
 								{{ t('openregister', 'Chunks') }}
-								<span v-if="sortField === 'chunkCount'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
+								<span
+									v-if="sortField === 'chunkCount'"
+									class="sort-indicator"
+									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
+								>
 							</th>
-							<th class="column-entities sortable" @click="toggleSort('entityCount')">
+							<th
+								scope="col"
+								class="column-entities sortable"
+								@click="toggleSort('entityCount')">
 								{{ t('openregister', 'Entities') }}
-								<span v-if="sortField === 'entityCount'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
+								<span
+									v-if="sortField === 'entityCount'"
+									class="sort-indicator"
+									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
+								>
 							</th>
-							<th class="column-risk sortable" @click="toggleSort('riskLevel')">
+							<th
+								scope="col"
+								class="column-risk sortable"
+								@click="toggleSort('riskLevel')">
 								{{ t('openregister', 'Risk Level') }}
-								<span v-if="sortField === 'riskLevel'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
+								<span
+									v-if="sortField === 'riskLevel'"
+									class="sort-indicator"
+									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
+								>
 							</th>
-							<th class="column-extracted sortable" @click="toggleSort('extractedAt')">
+							<th
+								scope="col"
+								class="column-extracted sortable"
+								@click="toggleSort('extractedAt')">
 								{{ t('openregister', 'Extracted At') }}
-								<span v-if="sortField === 'extractedAt'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
+								<span
+									v-if="sortField === 'extractedAt'"
+									class="sort-indicator"
+									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
+								>
 							</th>
-							<th class="column-actions">
+							<th scope="col" class="column-actions">
 								{{ t('openregister', 'Actions') }}
 							</th>
 						</tr>
@@ -101,12 +151,18 @@
 						<tr v-for="file in filesList" :key="file.id">
 							<td class="column-filename">
 								<div class="file-name-cell">
-									<FileDocumentOutline :size="20" class="file-icon" />
-									<span class="file-name">{{ file.fileName }}</span>
+									<FileDocumentOutline
+										:size="20"
+										class="file-icon" />
+									<span class="file-name">{{
+										file.fileName
+									}}</span>
 								</div>
 							</td>
 							<td class="column-mimetype">
-								<span class="badge badge-mimetype">{{ formatMimeType(file.mimeType) }}</span>
+								<span class="badge badge-mimetype">{{
+									formatMimeType(file.mimeType)
+								}}</span>
 							</td>
 							<td class="column-size">
 								{{ formatFileSize(file.fileSize) }}
@@ -118,7 +174,9 @@
 								{{ file.entityCount || 0 }}
 							</td>
 							<td class="column-risk">
-								<span class="badge" :class="'badge-risk-' + file.riskLevel">
+								<span
+									class="badge"
+									:class="'badge-risk-' + file.riskLevel">
 									{{ formatRiskLevel(file.riskLevel) }}
 								</span>
 							</td>
@@ -129,7 +187,7 @@
 								<NcActions>
 									<NcActionButton
 										v-if="file.extractionStatus === 'failed'"
-										close-after-click
+										closeAfterClick
 										@click="retryExtraction(file.id)">
 										<template #icon>
 											<Refresh :size="20" />
@@ -138,7 +196,7 @@
 									</NcActionButton>
 									<NcActionButton
 										v-if="file.extractionError"
-										close-after-click
+										closeAfterClick
 										@click="showError(file)">
 										<template #icon>
 											<AlertCircleOutline :size="20" />
@@ -153,16 +211,16 @@
 
 				<!-- Pagination -->
 				<div v-if="totalFiles > limit" class="pagination">
-					<NcButton
-						:disabled="offset === 0"
-						@click="previousPage">
+					<NcButton :disabled="offset === 0" @click="previousPage">
 						{{ t('openregister', 'Previous') }}
 					</NcButton>
 					<span class="pagination-info">
-						{{ t('openregister', 'Page {current} of {total}', {
-							current: currentPage,
-							total: totalPages
-						}) }}
+						{{
+							t('openregister', 'Page {current} of {total}', {
+								current: currentPage,
+								total: totalPages,
+							})
+						}}
 					</span>
 					<NcButton
 						:disabled="offset + limit >= totalFiles"
@@ -176,9 +234,9 @@
 		<!-- Search Sidebar -->
 		<template #details>
 			<FilesSidebar
-				:search.sync="searchQuery"
-				:status.sync="statusFilter"
-				:risk-level.sync="riskLevelFilter"
+				v-model:search="searchQuery"
+				v-model:status="statusFilter"
+				v-model:riskLevel="riskLevelFilter"
 				@update:search="handleSearchUpdate"
 				@update:status="handleStatusUpdate"
 				@update:riskLevel="handleRiskLevelUpdate" />
@@ -187,25 +245,22 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import axios from '@nextcloud/axios'
-
 import {
-	NcAppContent,
-	NcActions,
 	NcActionButton,
+	NcActions,
+	NcAppContent,
 	NcButton,
-	NcLoadingIcon,
 	NcEmptyContent,
+	NcLoadingIcon,
 } from '@nextcloud/vue'
-
-import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
+import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
-
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 import FilesSidebar from '../../components/FilesSidebar.vue'
 
 /**
@@ -226,6 +281,7 @@ export default {
 		FilterVariant,
 		FilesSidebar,
 	},
+
 	data() {
 		return {
 			filesList: [],
@@ -241,10 +297,12 @@ export default {
 			sortOrder: 'DESC',
 		}
 	},
+
 	computed: {
 		/**
 		 * Get current page number
 		 *
+		 * @spec exclude list-view pagination current-page helper (computed)
 		 * @return {number} Current page
 		 */
 		currentPage() {
@@ -254,21 +312,25 @@ export default {
 		/**
 		 * Get total number of pages
 		 *
+		 * @spec exclude list-view pagination total-pages helper (computed)
 		 * @return {number} Total pages
 		 */
 		totalPages() {
 			return Math.ceil(this.totalFiles / this.limit)
 		},
 	},
+
 	mounted() {
 		this.loadFiles()
 	},
+
 	methods: {
 		t,
 
 		/**
 		 * Toggle sidebar visibility
 		 *
+		 * @spec exclude list-view detail-sidebar toggle plumbing
 		 * @return {void}
 		 */
 		toggleSidebar() {
@@ -278,6 +340,7 @@ export default {
 		/**
 		 * Toggle sort field and direction
 		 *
+		 * @spec exclude list-view sort-toggle plumbing; resets offset and reloads
 		 * @param {string} field - The field to sort by
 		 * @return {void}
 		 */
@@ -295,6 +358,7 @@ export default {
 		/**
 		 * Handle search query update
 		 *
+		 * @spec exclude list-view search-input handler; resets offset and reloads
 		 * @param {string} query - Search query
 		 * @return {void}
 		 */
@@ -307,6 +371,7 @@ export default {
 		/**
 		 * Handle status filter update
 		 *
+		 * @spec exclude list-view filter-input handler; resets offset and reloads
 		 * @param {string|null} status - Status filter
 		 * @return {void}
 		 */
@@ -319,6 +384,7 @@ export default {
 		/**
 		 * Handle risk level filter update
 		 *
+		 * @spec exclude list-view filter-input handler; resets offset and reloads
 		 * @param {string|null} level - Risk level filter
 		 * @return {void}
 		 */
@@ -331,6 +397,7 @@ export default {
 		/**
 		 * Load files from the API
 		 *
+		 * @spec exclude list-view API fetch plumbing
 		 * @return {Promise<void>}
 		 */
 		async loadFiles() {
@@ -375,6 +442,7 @@ export default {
 		/**
 		 * Refresh the files list
 		 *
+		 * @spec exclude list-view manual refresh plumbing
 		 * @return {void}
 		 */
 		refreshFiles() {
@@ -384,6 +452,7 @@ export default {
 		/**
 		 * Go to previous page
 		 *
+		 * @spec exclude list-view pagination previous-page handler
 		 * @return {void}
 		 */
 		previousPage() {
@@ -396,6 +465,7 @@ export default {
 		/**
 		 * Go to next page
 		 *
+		 * @spec exclude list-view pagination next-page handler
 		 * @return {void}
 		 */
 		nextPage() {
@@ -408,6 +478,7 @@ export default {
 		/**
 		 * Retry extraction for a failed file
 		 *
+		 * @spec exclude list-view row-action wiring; POSTs a re-extract request and reloads
 		 * @param {number} fileId - File ID
 		 * @return {Promise<void>}
 		 */
@@ -428,6 +499,7 @@ export default {
 		/**
 		 * Show error details for a failed file
 		 *
+		 * @spec exclude list-view toast-display helper for extraction errors
 		 * @param {object} file - File object
 		 * @return {void}
 		 */
@@ -444,6 +516,7 @@ export default {
 		/**
 		 * Format file size in human-readable format
 		 *
+		 * @spec exclude list-view file-size formatting display helper
 		 * @param {number} bytes - File size in bytes
 		 * @return {string} Formatted file size
 		 */
@@ -452,12 +525,13 @@ export default {
 			const k = 1024
 			const sizes = ['B', 'KB', 'MB', 'GB']
 			const i = Math.floor(Math.log(bytes) / Math.log(k))
-			return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+			return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
 		},
 
 		/**
 		 * Format extraction status
 		 *
+		 * @spec exclude list-view status-label formatting display helper
 		 * @param {string} status - Extraction status
 		 * @return {string} Formatted status
 		 */
@@ -474,6 +548,7 @@ export default {
 		/**
 		 * Format mime type for display
 		 *
+		 * @spec exclude list-view mime-type formatting display helper
 		 * @param {string} mimeType - MIME type
 		 * @return {string} Formatted MIME type
 		 */
@@ -486,6 +561,7 @@ export default {
 		/**
 		 * Format risk level for display
 		 *
+		 * @spec exclude list-view risk-level formatting display helper
 		 * @param {string} level - Risk level
 		 * @return {string} Formatted risk level
 		 */
@@ -503,6 +579,7 @@ export default {
 		/**
 		 * Format date for display
 		 *
+		 * @spec exclude list-view date-formatting display helper
 		 * @param {string} date - Date string
 		 * @return {string} Formatted date
 		 */

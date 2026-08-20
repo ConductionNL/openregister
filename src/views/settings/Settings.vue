@@ -1,33 +1,30 @@
 <template>
-	<div>
-		<!-- Page Title with Documentation Link -->
-		<NcSettingsSection
-			name="OpenRegister Settings"
-			description="Configure your OpenRegister installation"
-			doc-url="https://docs.openregister.nl" />
-
-		<!-- Version Information Section -->
-		<VersionInfoCard
-			:app-name="settingsStore.versionInfo.appName || 'Open Register'"
-			:app-version="settingsStore.versionInfo.appVersion || 'Unknown'"
-			:loading="settingsStore.loadingVersionInfo"
-			:is-up-to-date="true"
-			:show-update-button="true"
-			title="Version Information"
-			description="Information about the current OpenRegister installation">
-			<template #actions>
-				<NcButton
-					type="secondary"
-					:disabled="settingsStore.clearingAppStoreCache"
-					@click="settingsStore.clearAppStoreCache('all')">
-					<template #icon>
-						<NcLoadingIcon v-if="settingsStore.clearingAppStoreCache" :size="20" />
-						<Refresh v-else :size="20" />
-					</template>
-					{{ settingsStore.clearingAppStoreCache ? 'Clearing...' : 'Clear App Store Cache' }}
-				</NcButton>
-			</template>
-		</VersionInfoCard>
+	<CnAdminSettingsShell
+		appId="openregister"
+		appName="Open Register"
+		docUrl="https://docs.openregister.nl"
+		:appVersion="settingsStore.versionInfo.appVersion || 'Unknown'"
+		:isUpToDate="true"
+		:showReimport="false">
+		<!-- Clear App Store Cache action in the version card header -->
+		<template #actions>
+			<NcButton
+				variant="secondary"
+				:disabled="settingsStore.clearingAppStoreCache"
+				@click="settingsStore.clearAppStoreCache('all')">
+				<template #icon>
+					<NcLoadingIcon
+						v-if="settingsStore.clearingAppStoreCache"
+						:size="20" />
+					<Refresh v-else :size="20" />
+				</template>
+				{{
+					settingsStore.clearingAppStoreCache
+						? 'Clearing...'
+						: 'Clear App Store Cache'
+				}}
+			</NcButton>
+		</template>
 
 		<!-- System Statistics Section -->
 		<StatisticsOverview />
@@ -48,10 +45,15 @@
 		<MultitenancyConfiguration />
 
 		<!-- Retention Configuration Section -->
+		<FlowConfiguration />
+
 		<RetentionConfiguration />
 
-		<!-- SOLR Configuration Section -->
-		<SolrConfiguration />
+		<!-- Audit hash-chain health: seal coverage + on-demand verification -->
+		<LogIntegrity />
+
+		<!-- Push Notifications Status Section -->
+		<PushNotificationsConfiguration :pushStatus="pushStatus" />
 
 		<!-- n8n Workflow Configuration Section -->
 		<N8nConfiguration />
@@ -67,30 +69,30 @@
 
 		<!-- Dialogs -->
 		<Dialogs />
-	</div>
+	</CnAdminSettingsShell>
 </template>
 
 <script>
-/* eslint-disable no-console */
+import { CnAdminSettingsShell } from '@conduction/nextcloud-vue'
+import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import { mapStores } from 'pinia'
-import { useSettingsStore } from '../../store/settings.js'
-
-import { NcSettingsSection, NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
-import VersionInfoCard from '../../components/shared/VersionInfoCard.vue'
-import SolrConfiguration from './sections/SolrConfiguration.vue'
-import StatisticsOverview from './sections/StatisticsOverview.vue'
-import CacheManagement from './sections/CacheManagement.vue'
-import RbacConfiguration from './sections/RbacConfiguration.vue'
-import PermissionMatrix from './sections/PermissionMatrix.vue'
-import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
-import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
-import RetentionConfiguration from './sections/RetentionConfiguration.vue'
-import N8nConfiguration from './sections/N8nConfiguration.vue'
-import LlmConfiguration from './sections/LlmConfiguration.vue'
-import FileConfiguration from './sections/FileConfiguration.vue'
-import ApiTokenConfiguration from './sections/ApiTokenConfiguration.vue'
 import Dialogs from '../../dialogs/Dialogs.vue'
+import ApiTokenConfiguration from './sections/ApiTokenConfiguration.vue'
+import CacheManagement from './sections/CacheManagement.vue'
+import FileConfiguration from './sections/FileConfiguration.vue'
+import FlowConfiguration from './sections/FlowConfiguration.vue'
+import LlmConfiguration from './sections/LlmConfiguration.vue'
+import LogIntegrity from './sections/LogIntegrity.vue'
+import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
+import N8nConfiguration from './sections/N8nConfiguration.vue'
+import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
+import PermissionMatrix from './sections/PermissionMatrix.vue'
+import PushNotificationsConfiguration from './sections/PushNotificationsConfiguration.vue'
+import RbacConfiguration from './sections/RbacConfiguration.vue'
+import RetentionConfiguration from './sections/RetentionConfiguration.vue'
+import StatisticsOverview from './sections/StatisticsOverview.vue'
+import { useSettingsStore } from '../../store/settings.js'
 
 /**
  * Main settings component that orchestrates all settings sections using Pinia store.
@@ -100,24 +102,36 @@ export default {
 	name: 'Settings',
 
 	components: {
-		NcSettingsSection,
+		CnAdminSettingsShell,
 		NcButton,
 		NcLoadingIcon,
 		Refresh,
-		VersionInfoCard,
-		SolrConfiguration,
 		StatisticsOverview,
 		CacheManagement,
 		RbacConfiguration,
 		PermissionMatrix,
 		OrganisationConfiguration,
 		MultitenancyConfiguration,
+		FlowConfiguration,
 		RetentionConfiguration,
+		LogIntegrity,
+		PushNotificationsConfiguration,
 		N8nConfiguration,
 		LlmConfiguration,
 		FileConfiguration,
 		ApiTokenConfiguration,
 		Dialogs,
+	},
+
+	props: {
+		/**
+		 * Push notification status from PHP initial state.
+		 * One of: 'not_installed' | 'unreachable' | 'active'
+		 */
+		pushStatus: {
+			type: String,
+			default: 'not_installed',
+		},
 	},
 
 	computed: {
@@ -127,10 +141,11 @@ export default {
 	/**
 	 * Component created lifecycle hook
 	 * Initializes the settings store and loads all data
+	 *
+	 * @spec exclude UI plumbing — view-creation data fetch for display only
+	 * @return {Promise<void>}
 	 */
 	async created() {
-		console.log('🔧 Settings component created - loading data from store')
-
 		try {
 			// Load all settings data through the store
 			await this.settingsStore.loadSettings()
@@ -140,8 +155,6 @@ export default {
 				this.settingsStore.loadStats(),
 				this.settingsStore.loadCacheStats(),
 			])
-
-			console.log('✅ Settings data loaded successfully')
 		} catch (error) {
 			console.error('❌ Failed to load settings data:', error)
 		}

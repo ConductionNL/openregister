@@ -6,8 +6,9 @@
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author  Conduction Development Team <dev@conductio.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  */
@@ -29,45 +30,40 @@ use OCP\Migration\SimpleMigrationStep;
  * by a given configuration, enabling mapping import from JSON config files.
  *
  * @package OCA\OpenRegister\Migration
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class Version1Date20260308000000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput $output        Migration output
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Migration options
-     *
-     * @return ISchemaWrapper|null The updated schema
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        // @var ISchemaWrapper $schema
-        $schema = $schemaClosure();
+class Version1Date20260308000000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Migration output
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Migration options
+	 *
+	 * @return ISchemaWrapper|null The updated schema
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		// @var ISchemaWrapper $schema
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_configurations') === false) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_configurations') === false) {
+			return null;
+		}
 
-        $table = $schema->getTable('openregister_configurations');
+		$table = $schema->getTable('openregister_configurations');
 
-        if ($table->hasColumn('mappings') === true) {
-            return null;
-        }
+		if ($table->hasColumn('mappings') === true) {
+			return null;
+		}
 
-        $table->addColumn(
-            'mappings',
-            Types::TEXT,
-            [
-                'notnull' => false,
-                'default' => null,
-            ]
-        );
+		$table->addColumn(
+			'mappings',
+			Types::TEXT,
+			[
+				'notnull' => false,
+				'default' => null,
+			]
+		);
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

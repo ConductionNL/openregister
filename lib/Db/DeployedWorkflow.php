@@ -3,10 +3,13 @@
 /**
  * OpenRegister DeployedWorkflow Entity
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -49,148 +52,144 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor
  */
-class DeployedWorkflow extends Entity implements JsonSerializable
-{
+class DeployedWorkflow extends Entity implements JsonSerializable {
 
-    /**
-     * UUID for external reference.
-     *
-     * @var string|null
-     */
-    protected ?string $uuid = null;
+	/**
+	 * UUID for external reference.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $uuid = null;
 
-    /**
-     * Human-readable name from import.
-     *
-     * @var string|null
-     */
-    protected ?string $name = null;
+	/**
+	 * Human-readable name from import.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $name = null;
 
-    /**
-     * Engine identifier (e.g., "n8n", "windmill").
-     *
-     * @var string|null
-     */
-    protected ?string $engine = null;
+	/**
+	 * Engine identifier (e.g., "n8n", "windmill").
+	 *
+	 * @var string|null
+	 */
+	protected ?string $engine = null;
 
-    /**
-     * ID returned by the engine after deploy.
-     *
-     * @var string|null
-     */
-    protected ?string $engineWorkflowId = null;
+	/**
+	 * ID returned by the engine after deploy.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $engineWorkflowId = null;
 
-    /**
-     * SHA-256 hash of the workflow definition.
-     *
-     * @var string|null
-     */
-    protected ?string $sourceHash = null;
+	/**
+	 * SHA-256 hash of the workflow definition.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $sourceHash = null;
 
-    /**
-     * Schema slug that this workflow is attached to (null if no attachTo).
-     *
-     * @var string|null
-     */
-    protected ?string $attachedSchema = null;
+	/**
+	 * Schema slug that this workflow is attached to (null if no attachTo).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $attachedSchema = null;
 
-    /**
-     * Hook event type (e.g., "creating", "created").
-     *
-     * @var string|null
-     */
-    protected ?string $attachedEvent = null;
+	/**
+	 * Hook event type (e.g., "creating", "created").
+	 *
+	 * @var string|null
+	 */
+	protected ?string $attachedEvent = null;
 
-    /**
-     * Filename or identifier of the import source.
-     *
-     * @var string|null
-     */
-    protected ?string $importSource = null;
+	/**
+	 * Filename or identifier of the import source.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $importSource = null;
 
-    /**
-     * Version number, incremented on each update (starts at 1).
-     *
-     * @var integer
-     */
-    protected int $version = 1;
+	/**
+	 * Version number, incremented on each update (starts at 1).
+	 *
+	 * @var integer
+	 */
+	protected int $version = 1;
 
-    /**
-     * Timestamp when the entity was created.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $created = null;
+	/**
+	 * Timestamp when the entity was created.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $created = null;
 
-    /**
-     * Timestamp when the entity was last updated.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $updated = null;
+	/**
+	 * Timestamp when the entity was last updated.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $updated = null;
 
-    /**
-     * Constructor for DeployedWorkflow entity.
-     *
-     * Registers column types for the database mapper.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'uuid', type: 'string');
-        $this->addType(fieldName: 'name', type: 'string');
-        $this->addType(fieldName: 'engine', type: 'string');
-        $this->addType(fieldName: 'engineWorkflowId', type: 'string');
-        $this->addType(fieldName: 'sourceHash', type: 'string');
-        $this->addType(fieldName: 'attachedSchema', type: 'string');
-        $this->addType(fieldName: 'attachedEvent', type: 'string');
-        $this->addType(fieldName: 'importSource', type: 'string');
-        $this->addType(fieldName: 'version', type: 'integer');
-        $this->addType(fieldName: 'created', type: 'datetime');
-        $this->addType(fieldName: 'updated', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Constructor for DeployedWorkflow entity.
+	 *
+	 * Registers column types for the database mapper.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'uuid', type: 'string');
+		$this->addType(fieldName: 'name', type: 'string');
+		$this->addType(fieldName: 'engine', type: 'string');
+		$this->addType(fieldName: 'engineWorkflowId', type: 'string');
+		$this->addType(fieldName: 'sourceHash', type: 'string');
+		$this->addType(fieldName: 'attachedSchema', type: 'string');
+		$this->addType(fieldName: 'attachedEvent', type: 'string');
+		$this->addType(fieldName: 'importSource', type: 'string');
+		$this->addType(fieldName: 'version', type: 'integer');
+		$this->addType(fieldName: 'created', type: 'datetime');
+		$this->addType(fieldName: 'updated', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * Hydrate entity from array.
-     *
-     * @param array<string, mixed> $object Data to hydrate from
-     *
-     * @return self
-     */
-    public function hydrate(array $object): self
-    {
-        foreach ($object as $key => $value) {
-            $method = 'set'.ucfirst($key);
+	/**
+	 * Hydrate entity from array.
+	 *
+	 * @param array<string, mixed> $object Data to hydrate from
+	 *
+	 * @return self
+	 */
+	public function hydrate(array $object): self {
+		foreach ($object as $key => $value) {
+			$method = 'set' . ucfirst($key);
 
-            try {
-                $this->$method($value);
-            } catch (\Exception $exception) {
-                // Silently ignore invalid properties.
-            }
-        }
+			try {
+				$this->$method($value);
+			} catch (\Exception $exception) {
+				// Silently ignore invalid properties.
+			}
+		}
 
-        return $this;
-    }//end hydrate()
+		return $this;
+	}//end hydrate()
 
-    /**
-     * Serialize to JSON.
-     *
-     * @return array<string, mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'               => $this->id,
-            'uuid'             => $this->uuid,
-            'name'             => $this->name,
-            'engine'           => $this->engine,
-            'engineWorkflowId' => $this->engineWorkflowId,
-            'sourceHash'       => $this->sourceHash,
-            'attachedSchema'   => $this->attachedSchema,
-            'attachedEvent'    => $this->attachedEvent,
-            'importSource'     => $this->importSource,
-            'version'          => $this->version,
-            'created'          => $this->created?->format('c'),
-            'updated'          => $this->updated?->format('c'),
-        ];
-    }//end jsonSerialize()
+	/**
+	 * Serialize to JSON.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'uuid' => $this->uuid,
+			'name' => $this->name,
+			'engine' => $this->engine,
+			'engineWorkflowId' => $this->engineWorkflowId,
+			'sourceHash' => $this->sourceHash,
+			'attachedSchema' => $this->attachedSchema,
+			'attachedEvent' => $this->attachedEvent,
+			'importSource' => $this->importSource,
+			'version' => $this->version,
+			'created' => $this->created?->format('c'),
+			'updated' => $this->updated?->format('c'),
+		];
+	}//end jsonSerialize()
 }//end class

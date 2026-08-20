@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
-use Exception;
 use OCA\OpenRegister\Controller\ConfigurationController;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
+use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\NotificationService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
@@ -22,248 +21,244 @@ use Psr\Log\LoggerInterface;
 /**
  * Coverage tests for ConfigurationController — targets uncovered branches.
  */
-class ConfigurationControllerCoverageTest extends TestCase
-{
-    private ConfigurationController $controller;
-    private IRequest&MockObject $request;
-    private ConfigurationMapper&MockObject $configurationMapper;
-    private ConfigurationService&MockObject $configurationService;
-    private GitHubHandler&MockObject $githubHandler;
-    private GitLabHandler&MockObject $gitlabHandler;
-    private NotificationService&MockObject $notificationService;
-    private LoggerInterface&MockObject $logger;
-    private IAppManager&MockObject $appManager;
+class ConfigurationControllerCoverageTest extends TestCase {
+	private ConfigurationController $controller;
+	private IRequest&MockObject $request;
+	private ConfigurationMapper&MockObject $configurationMapper;
+	private ConfigurationService&MockObject $configurationService;
+	private GitHubHandler&MockObject $githubHandler;
+	private GitLabHandler&MockObject $gitlabHandler;
+	private NotificationService&MockObject $notificationService;
+	private LoggerInterface&MockObject $logger;
+	private IAppManager&MockObject $appManager;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->request = $this->createMock(IRequest::class);
-        $this->configurationMapper = $this->createMock(ConfigurationMapper::class);
-        $this->configurationService = $this->createMock(ConfigurationService::class);
-        $this->notificationService = $this->createMock(NotificationService::class);
-        $this->githubHandler = $this->createMock(GitHubHandler::class);
-        $this->gitlabHandler = $this->createMock(GitLabHandler::class);
-        $this->appManager = $this->createMock(IAppManager::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
+		$this->request = $this->createMock(IRequest::class);
+		$this->configurationMapper = $this->createMock(ConfigurationMapper::class);
+		$this->configurationService = $this->createMock(ConfigurationService::class);
+		$this->notificationService = $this->createMock(NotificationService::class);
+		$this->githubHandler = $this->createMock(GitHubHandler::class);
+		$this->gitlabHandler = $this->createMock(GitLabHandler::class);
+		$this->appManager = $this->createMock(IAppManager::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        $this->controller = new ConfigurationController(
-            'openregister',
-            $this->request,
-            $this->configurationMapper,
-            $this->configurationService,
-            $this->notificationService,
-            $this->githubHandler,
-            $this->gitlabHandler,
-            $this->appManager,
-            $this->logger
-        );
-    }
+		// SEC-CTRL-3: show/preview/export now require an admin (403 otherwise).
+		// Wire an admin session so the happy-path coverage tests still hold.
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getUID')->willReturn('admin');
+		$userSession = $this->createMock(\OCP\IUserSession::class);
+		$userSession->method('getUser')->willReturn($user);
+		$groupManager = $this->createMock(\OCP\IGroupManager::class);
+		$groupManager->method('isAdmin')->willReturn(true);
 
-    // =========================================================================
-    // checkVersion — remote version null path
-    // =========================================================================
+		$this->controller = new ConfigurationController(
+			'openregister',
+			$this->request,
+			$this->configurationMapper,
+			$this->configurationService,
+			$this->notificationService,
+			$this->githubHandler,
+			$this->gitlabHandler,
+			$this->appManager,
+			$this->logger,
+			$userSession,
+			$groupManager
+		);
+	}
 
-    public function testCheckVersionRemoteVersionNull(): void
-    {
-        $config = $this->createMock(Configuration::class);
-        $this->configurationMapper->method('find')->with(1)->willReturn($config);
-        $this->configurationService->method('checkRemoteVersion')->willReturn(null);
+	// =========================================================================
+	// versionStatus — remote version null path
+	// =========================================================================
 
-        $result = $this->controller->checkVersion(1);
+	public function testCheckVersionRemoteVersionNull(): void {
+		$config = $this->createMock(Configuration::class);
+		$this->configurationMapper->method('find')->with(1)->willReturn($config);
+		$this->configurationService->method('checkRemoteVersion')->willReturn(null);
 
-        $this->assertEquals(500, $result->getStatus());
-        $data = $result->getData();
-        $this->assertEquals('Could not check remote version', $data['error']);
-    }
+		$result = $this->controller->versionStatus(1);
 
-    public function testCheckVersionGenericException(): void
-    {
-        $config = $this->createMock(Configuration::class);
-        $this->configurationMapper->method('find')->with(1)->willReturn($config);
-        $this->configurationService->method('checkRemoteVersion')
-            ->willThrowException(new \Exception('Unknown error'));
+		$this->assertEquals(500, $result->getStatus());
+		$data = $result->getData();
+		$this->assertEquals('Could not check remote version', $data['error']);
+	}
 
-        $result = $this->controller->checkVersion(1);
+	public function testCheckVersionGenericException(): void {
+		$config = $this->createMock(Configuration::class);
+		$this->configurationMapper->method('find')->with(1)->willReturn($config);
+		$this->configurationService->method('checkRemoteVersion')
+			->willThrowException(new \Exception('Unknown error'));
 
-        $this->assertEquals(500, $result->getStatus());
-        $data = $result->getData();
-        $this->assertEquals('Failed to check version', $data['error']);
-    }
+		$result = $this->controller->versionStatus(1);
 
-    // =========================================================================
-    // preview — returns JSONResponse directly vs array
-    // =========================================================================
+		$this->assertEquals(500, $result->getStatus());
+		$data = $result->getData();
+		$this->assertEquals('Failed to check version', $data['error']);
+	}
 
-    public function testPreviewReturnsJsonResponseDirectly(): void
-    {
-        $config = $this->createMock(Configuration::class);
-        $this->configurationMapper->method('find')->with(1)->willReturn($config);
+	// =========================================================================
+	// preview — returns JSONResponse directly vs array
+	// =========================================================================
 
-        $jsonResponse = new JSONResponse(['preview' => 'data'], 200);
-        $this->configurationService->method('previewConfigurationChanges')
-            ->willReturn($jsonResponse);
+	public function testPreviewReturnsJsonResponseDirectly(): void {
+		$config = $this->createMock(Configuration::class);
+		$this->configurationMapper->method('find')->with(1)->willReturn($config);
 
-        $result = $this->controller->preview(1);
+		$jsonResponse = new JSONResponse(['preview' => 'data'], 200);
+		$this->configurationService->method('previewConfigurationChanges')
+			->willReturn($jsonResponse);
 
-        $this->assertEquals(200, $result->getStatus());
-        $this->assertEquals(['preview' => 'data'], $result->getData());
-    }
+		$result = $this->controller->preview(1);
 
-    public function testPreviewReturnsArray(): void
-    {
-        $config = $this->createMock(Configuration::class);
-        $this->configurationMapper->method('find')->with(1)->willReturn($config);
+		$this->assertEquals(200, $result->getStatus());
+		$this->assertEquals(['preview' => 'data'], $result->getData());
+	}
 
-        $this->configurationService->method('previewConfigurationChanges')
-            ->willReturn(['changes' => ['register1']]);
+	public function testPreviewReturnsArray(): void {
+		$config = $this->createMock(Configuration::class);
+		$this->configurationMapper->method('find')->with(1)->willReturn($config);
 
-        $result = $this->controller->preview(1);
+		$this->configurationService->method('previewConfigurationChanges')
+			->willReturn(['changes' => ['register1']]);
 
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertArrayHasKey('changes', $data);
-    }
+		$result = $this->controller->preview(1);
 
-    // =========================================================================
-    // export — includeObjects variations
-    // =========================================================================
+		$this->assertEquals(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertArrayHasKey('changes', $data);
+	}
 
-    public function testExportWithIncludeObjectsTrue(): void
-    {
-        $config = $this->createMock(Configuration::class);
-        $this->configurationMapper->method('find')->with(1)->willReturn($config);
+	// =========================================================================
+	// export — includeObjects variations
+	// =========================================================================
 
-        $this->request->method('getParams')->willReturn(['includeObjects' => true]);
-        $this->configurationService->expects($this->once())
-            ->method('exportConfig')
-            ->with($config, true)
-            ->willReturn(['registers' => [], 'schemas' => [], 'objects' => [['id' => 1]]]);
+	public function testExportWithIncludeObjectsTrue(): void {
+		$config = $this->createMock(Configuration::class);
+		$this->configurationMapper->method('find')->with(1)->willReturn($config);
 
-        $result = $this->controller->export(1);
+		$this->request->method('getParams')->willReturn(['includeObjects' => true]);
+		$this->configurationService->expects($this->once())
+			->method('exportConfig')
+			->with($config, true)
+			->willReturn(['registers' => [], 'schemas' => [], 'objects' => [['id' => 1]]]);
 
-        $this->assertEquals(200, $result->getStatus());
-    }
+		$result = $this->controller->export(1);
 
-    public function testExportWithIncludeObjectsFalse(): void
-    {
-        $config = $this->createMock(Configuration::class);
-        $this->configurationMapper->method('find')->with(1)->willReturn($config);
+		$this->assertEquals(200, $result->getStatus());
+	}
 
-        $this->request->method('getParams')->willReturn(['includeObjects' => false]);
-        $this->configurationService->expects($this->once())
-            ->method('exportConfig')
-            ->with($config, false)
-            ->willReturn(['registers' => [], 'schemas' => []]);
+	public function testExportWithIncludeObjectsFalse(): void {
+		$config = $this->createMock(Configuration::class);
+		$this->configurationMapper->method('find')->with(1)->willReturn($config);
 
-        $result = $this->controller->export(1);
+		$this->request->method('getParams')->willReturn(['includeObjects' => false]);
+		$this->configurationService->expects($this->once())
+			->method('exportConfig')
+			->with($config, false)
+			->willReturn(['registers' => [], 'schemas' => []]);
 
-        $this->assertEquals(200, $result->getStatus());
-    }
+		$result = $this->controller->export(1);
 
-    // =========================================================================
-    // discover — gitlab path
-    // =========================================================================
+		$this->assertEquals(200, $result->getStatus());
+	}
 
-    public function testDiscoverGitLabPath(): void
-    {
-        $this->request->method('getParams')->willReturn([
-            'source' => 'gitlab',
-            '_search' => 'openregister',
-            'page' => 1,
-        ]);
-        $this->gitlabHandler->method('searchConfigurations')
-            ->willReturn(['results' => [['name' => 'config1']]]);
+	// =========================================================================
+	// discover — gitlab path
+	// =========================================================================
 
-        $result = $this->controller->discover();
+	public function testDiscoverGitLabPath(): void {
+		$this->request->method('getParams')->willReturn([
+			'source' => 'gitlab',
+			'_search' => 'openregister',
+			'page' => 1,
+		]);
+		$this->gitlabHandler->method('searchConfigurations')
+			->willReturn(['results' => [['name' => 'config1']]]);
 
-        $this->assertEquals(200, $result->getStatus());
-    }
+		$result = $this->controller->discover();
 
-    // =========================================================================
-    // getGitHubRepositories — with page/per_page params
-    // =========================================================================
+		$this->assertEquals(200, $result->getStatus());
+	}
 
-    public function testGetGitHubRepositoriesWithPagination(): void
-    {
-        $this->request->method('getParams')->willReturn([
-            'page' => 2,
-            'per_page' => 50,
-        ]);
-        $this->githubHandler->expects($this->once())
-            ->method('getRepositories')
-            ->with(2, 50)
-            ->willReturn([['name' => 'repo1']]);
+	// =========================================================================
+	// getGitHubRepositories — with page/per_page params
+	// =========================================================================
 
-        $result = $this->controller->getGitHubRepositories();
+	public function testGetGitHubRepositoriesWithPagination(): void {
+		$this->request->method('getParams')->willReturn([
+			'page' => 2,
+			'per_page' => 50,
+		]);
+		$this->githubHandler->expects($this->once())
+			->method('getRepositories')
+			->with(2, 50)
+			->willReturn([['name' => 'repo1']]);
 
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertCount(1, $data['repositories']);
-    }
+		$result = $this->controller->getGitHubRepositories();
 
-    public function testGetGitHubRepositoriesDefaultPagination(): void
-    {
-        $this->request->method('getParams')->willReturn([]);
-        $this->githubHandler->expects($this->once())
-            ->method('getRepositories')
-            ->with(1, 100)
-            ->willReturn([]);
+		$this->assertEquals(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertCount(1, $data['repositories']);
+	}
 
-        $result = $this->controller->getGitHubRepositories();
+	public function testGetGitHubRepositoriesDefaultPagination(): void {
+		$this->request->method('getParams')->willReturn([]);
+		$this->githubHandler->expects($this->once())
+			->method('getRepositories')
+			->with(1, 100)
+			->willReturn([]);
 
-        $this->assertEquals(200, $result->getStatus());
-    }
+		$result = $this->controller->getGitHubRepositories();
 
-    // =========================================================================
-    // getGitHubConfigurations — with branch param
-    // =========================================================================
+		$this->assertEquals(200, $result->getStatus());
+	}
 
-    public function testGetGitHubConfigurationsMissingOwnerAndRepo(): void
-    {
-        $this->request->method('getParams')->willReturn([]);
+	// =========================================================================
+	// getGitHubConfigurations — with branch param
+	// =========================================================================
 
-        $result = $this->controller->getGitHubConfigurations();
+	public function testGetGitHubConfigurationsMissingOwnerAndRepo(): void {
+		$this->request->method('getParams')->willReturn([]);
 
-        $this->assertEquals(400, $result->getStatus());
-    }
+		$result = $this->controller->getGitHubConfigurations();
 
-    public function testGetGitHubConfigurationsWithBranch(): void
-    {
-        $this->request->method('getParams')->willReturn([
-            'owner' => 'conduction',
-            'repo' => 'openregister',
-            'branch' => 'develop',
-        ]);
-        $this->githubHandler->expects($this->once())
-            ->method('listConfigurationFiles')
-            ->with('conduction', 'openregister', 'develop')
-            ->willReturn([['path' => '.openregister/config.json']]);
+		$this->assertEquals(400, $result->getStatus());
+	}
 
-        $result = $this->controller->getGitHubConfigurations();
+	public function testGetGitHubConfigurationsWithBranch(): void {
+		$this->request->method('getParams')->willReturn([
+			'owner' => 'conduction',
+			'repo' => 'openregister',
+			'branch' => 'develop',
+		]);
+		$this->githubHandler->expects($this->once())
+			->method('listConfigurationFiles')
+			->with('conduction', 'openregister', 'develop')
+			->willReturn([['path' => '.openregister/config.json']]);
 
-        $this->assertEquals(200, $result->getStatus());
-    }
+		$result = $this->controller->getGitHubConfigurations();
 
-    // =========================================================================
-    // getGitLabBranches / getGitLabConfigurations — missing params
-    // =========================================================================
+		$this->assertEquals(200, $result->getStatus());
+	}
 
-    public function testGetGitLabBranchesMissingParams(): void
-    {
-        $this->request->method('getParams')->willReturn([]);
+	// =========================================================================
+	// getGitLabBranches / getGitLabConfigurations — missing params
+	// =========================================================================
 
-        $result = $this->controller->getGitLabBranches();
+	public function testGetGitLabBranchesMissingParams(): void {
+		$this->request->method('getParams')->willReturn([]);
 
-        $this->assertEquals(400, $result->getStatus());
-    }
+		$result = $this->controller->getGitLabBranches();
 
-    public function testGetGitLabConfigurationsMissingParams(): void
-    {
-        $this->request->method('getParams')->willReturn([]);
+		$this->assertEquals(400, $result->getStatus());
+	}
 
-        $result = $this->controller->getGitLabConfigurations();
+	public function testGetGitLabConfigurationsMissingParams(): void {
+		$this->request->method('getParams')->willReturn([]);
 
-        $this->assertEquals(400, $result->getStatus());
-    }
+		$result = $this->controller->getGitLabConfigurations();
+
+		$this->assertEquals(400, $result->getStatus());
+	}
 }

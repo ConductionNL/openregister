@@ -5,6 +5,9 @@
  *
  * Background job for evaluating and executing scheduled actions.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -15,6 +18,8 @@
  * @version GIT: <git-id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/specs/actions/spec.md
  */
 
 declare(strict_types=1);
@@ -39,129 +44,126 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  */
-class ActionScheduleJob extends TimedJob
-{
-    /**
-     * Constructor
-     *
-     * @param ITimeFactory    $time           Time factory
-     * @param ActionMapper    $actionMapper   Action mapper
-     * @param ActionExecutor  $actionExecutor Action executor
-     * @param LoggerInterface $logger         Logger
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-6
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly ActionMapper $actionMapper,
-        private readonly ActionExecutor $actionExecutor,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
-        $this->setInterval(seconds: 60);
-    }//end __construct()
+class ActionScheduleJob extends TimedJob {
+	/**
+	 * Constructor
+	 *
+	 * @param ITimeFactory $time Time factory
+	 * @param ActionMapper $actionMapper Action mapper
+	 * @param ActionExecutor $actionExecutor Action executor
+	 * @param LoggerInterface $logger Logger
+	 *
+	 * @spec openspec/specs/workflow-engine-abstraction/spec.md
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly ActionMapper $actionMapper,
+		private readonly ActionExecutor $actionExecutor,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
+		$this->setInterval(seconds: 60);
+	}//end __construct()
 
-    /**
-     * Run the schedule evaluation
-     *
-     * @param mixed $argument Job arguments (unused)
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-6
-     */
-    protected function run($argument): void
-    {
-        try {
-            $actions = $this->actionMapper->findAll(
-                filters: [
-                    'enabled'  => true,
-                    'status'   => 'active',
-                    'schedule' => 'IS NOT NULL',
-                ]
-            );
+	/**
+	 * Run the schedule evaluation
+	 *
+	 * @param mixed $argument Job arguments (unused)
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/specs/workflow-engine-abstraction/spec.md
+	 * @spec openspec/specs/actions/spec.md
+	 */
+	protected function run($argument): void {
+		try {
+			$actions = $this->actionMapper->findAll(
+				filters: [
+					'enabled' => true,
+					'status' => 'active',
+					'schedule' => 'IS NOT NULL',
+				]
+			);
 
-            // Further filter to ensure schedule is actually non-null (the mapper filter
-            // uses IS NOT NULL which is correct, but double-check in PHP).
-            $scheduledActions = array_filter(
-                $actions,
-                function ($action) {
-                    return $action->getSchedule() !== null
-                        && $action->getSchedule() !== ''
-                        && $action->getDeleted() === null;
-                }
-            );
+			// Further filter to ensure schedule is actually non-null (the mapper filter
+			// uses IS NOT NULL which is correct, but double-check in PHP).
+			$scheduledActions = array_filter(
+				$actions,
+				function ($action) {
+					return $action->getSchedule() !== null
+						&& $action->getSchedule() !== ''
+						&& $action->getDeleted() === null;
+				}
+			);
 
-            $now = new DateTime();
+			$now = new DateTime();
 
-            foreach ($scheduledActions as $action) {
-                try {
-                    /*
-                     * @psalm-suppress UndefinedClass CronExpression is an optional runtime dependency
-                     */
+			foreach ($scheduledActions as $action) {
+				try {
+					/*
+					 * @psalm-suppress UndefinedClass CronExpression is an optional runtime dependency
+					 */
 
-                    $cron = new CronExpression($action->getSchedule());
+					$cron = new CronExpression($action->getSchedule());
 
-                    $lastExecuted = $action->getLastExecutedAt();
-                    $isDue        = false;
+					$lastExecuted = $action->getLastExecutedAt();
+					$isDue = true;
 
-                    if ($lastExecuted === null) {
-                        $isDue = true;
-                    } else {
-                        /*
-                         * @psalm-suppress UndefinedClass
-                         */
+					if ($lastExecuted !== null) {
+						/*
+						 * @psalm-suppress UndefinedClass
+						 */
 
-                        $nextRun = $cron->getNextRunDate($lastExecuted);
-                        $isDue   = $nextRun <= $now;
-                    }
+						$nextRun = $cron->getNextRunDate($lastExecuted);
+						$isDue = $nextRun <= $now;
+					}
 
-                    if ($isDue === false) {
-                        continue;
-                    }
+					if ($isDue === false) {
+						continue;
+					}
 
-                    $this->logger->info(
-                        message: '[ActionScheduleJob] Executing scheduled action',
-                        context: [
-                            'actionId'   => $action->getId(),
-                            'actionName' => $action->getName(),
-                            'schedule'   => $action->getSchedule(),
-                        ]
-                    );
+					$this->logger->info(
+						message: '[ActionScheduleJob] Executing scheduled action',
+						context: [
+							'actionId' => $action->getId(),
+							'actionName' => $action->getName(),
+							'schedule' => $action->getSchedule(),
+						]
+					);
 
-                    // Build synthetic scheduled event payload.
-                    $payload = [
-                        'schedule'  => $action->getSchedule(),
-                        'schemas'   => $action->getSchemasArray(),
-                        'registers' => $action->getRegistersArray(),
-                    ];
+					// Build synthetic scheduled event payload.
+					$payload = [
+						'schedule' => $action->getSchedule(),
+						'schemas' => $action->getSchemasArray(),
+						'registers' => $action->getRegistersArray(),
+					];
 
-                    // Create a synthetic event for scheduled execution.
-                    $syntheticEvent = new Event();
+					// Create a synthetic event for scheduled execution.
+					$syntheticEvent = new Event();
 
-                    $this->actionExecutor->executeActions(
-                        actions: [$action],
-                        event: $syntheticEvent,
-                        payload: $payload,
-                        eventType: 'nl.openregister.action.scheduled'
-                    );
-                } catch (\Exception $e) {
-                    $this->logger->error(
-                        message: '[ActionScheduleJob] Error executing scheduled action',
-                        context: [
-                            'actionId' => $action->getId(),
-                            'error'    => $e->getMessage(),
-                        ]
-                    );
-                }//end try
-            }//end foreach
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[ActionScheduleJob] Error in schedule evaluation',
-                context: ['error' => $e->getMessage()]
-            );
-        }//end try
-    }//end run()
+					$this->actionExecutor->executeActions(
+						actions: [$action],
+						event: $syntheticEvent,
+						payload: $payload,
+						eventType: 'nl.openregister.action.scheduled'
+					);
+				} catch (\Exception $e) {
+					$this->logger->error(
+						message: '[ActionScheduleJob] Error executing scheduled action',
+						context: [
+							'actionId' => $action->getId(),
+							'error' => $e->getMessage(),
+						]
+					);
+				}//end try
+			}//end foreach
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[ActionScheduleJob] Error in schedule evaluation',
+				context: ['error' => $e->getMessage()]
+			);
+		}//end try
+	}//end run()
 }//end class

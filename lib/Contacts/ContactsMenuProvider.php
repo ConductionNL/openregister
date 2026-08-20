@@ -6,10 +6,13 @@
  * Nextcloud Contacts Menu provider that bridges Contacts/CardDAV
  * with OpenRegister entity data.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Contacts
  * @package  OCA\OpenRegister\Contacts
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -43,240 +46,242 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class ContactsMenuProvider implements IProvider
-{
+class ContactsMenuProvider implements IProvider {
 
-    /**
-     * The contact matching service.
-     *
-     * @var ContactMatchingService
-     */
-    private readonly ContactMatchingService $matchingService;
+	/**
+	 * The contact matching service.
+	 *
+	 * @var ContactMatchingService
+	 */
+	private readonly ContactMatchingService $matchingService;
 
-    /**
-     * The deep link registry service.
-     *
-     * @var DeepLinkRegistryService
-     */
-    private readonly DeepLinkRegistryService $deepLinkRegistry;
+	/**
+	 * The deep link registry service.
+	 *
+	 * @var DeepLinkRegistryService
+	 */
+	private readonly DeepLinkRegistryService $deepLinkRegistry;
 
-    /**
-     * The action factory for creating menu actions.
-     *
-     * @var IActionFactory
-     */
-    private readonly IActionFactory $actionFactory;
+	/**
+	 * The action factory for creating menu actions.
+	 *
+	 * @var IActionFactory
+	 */
+	private readonly IActionFactory $actionFactory;
 
-    /**
-     * The URL generator.
-     *
-     * @var IURLGenerator
-     */
-    private readonly IURLGenerator $urlGenerator;
+	/**
+	 * The URL generator.
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urlGenerator;
 
-    /**
-     * The localization service.
-     *
-     * @var IL10N
-     */
-    private readonly IL10N $l10n;
+	/**
+	 * The localization service.
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
 
-    /**
-     * Logger for debugging.
-     *
-     * @var LoggerInterface
-     */
-    private readonly LoggerInterface $logger;
+	/**
+	 * Logger for debugging.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
 
-    /**
-     * Constructor for ContactsMenuProvider.
-     *
-     * @param ContactMatchingService  $matchingService  The contact matching service
-     * @param DeepLinkRegistryService $deepLinkRegistry The deep link registry
-     * @param IActionFactory          $actionFactory    The action factory
-     * @param IURLGenerator           $urlGenerator     The URL generator
-     * @param IL10N                   $l10n             The localization service
-     * @param LoggerInterface         $logger           The logger
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
-     */
-    public function __construct(
-        ContactMatchingService $matchingService,
-        DeepLinkRegistryService $deepLinkRegistry,
-        IActionFactory $actionFactory,
-        IURLGenerator $urlGenerator,
-        IL10N $l10n,
-        LoggerInterface $logger
-    ) {
-        $this->matchingService  = $matchingService;
-        $this->deepLinkRegistry = $deepLinkRegistry;
-        $this->actionFactory    = $actionFactory;
-        $this->urlGenerator     = $urlGenerator;
-        $this->l10n   = $l10n;
-        $this->logger = $logger;
-    }//end __construct()
+	/**
+	 * Constructor for ContactsMenuProvider.
+	 *
+	 * @param ContactMatchingService $matchingService The contact matching service
+	 * @param DeepLinkRegistryService $deepLinkRegistry The deep link registry
+	 * @param IActionFactory $actionFactory The action factory
+	 * @param IURLGenerator $urlGenerator The URL generator
+	 * @param IL10N $l10n The localization service
+	 * @param LoggerInterface $logger The logger
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function __construct(
+		ContactMatchingService $matchingService,
+		DeepLinkRegistryService $deepLinkRegistry,
+		IActionFactory $actionFactory,
+		IURLGenerator $urlGenerator,
+		IL10N $l10n,
+		LoggerInterface $logger,
+	) {
+		$this->matchingService = $matchingService;
+		$this->deepLinkRegistry = $deepLinkRegistry;
+		$this->actionFactory = $actionFactory;
+		$this->urlGenerator = $urlGenerator;
+		$this->l10n = $l10n;
+		$this->logger = $logger;
+	}//end __construct()
 
-    /**
-     * Process a contact entry and inject OpenRegister actions.
-     *
-     * @param IEntry $entry The contact entry to process
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
-     */
-    public function process(IEntry $entry): void
-    {
-        try {
-            $this->doProcess(entry: $entry);
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                '[ContactsMenu] Error processing contact entry: {error}',
-                [
-                    'error'     => $e->getMessage(),
-                    'exception' => $e,
-                ]
-            );
-        }
-    }//end process()
+	/**
+	 * Process a contact entry and inject OpenRegister actions.
+	 *
+	 * @param IEntry $entry The contact entry to process
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function process(IEntry $entry): void {
+		try {
+			$this->doProcess(entry: $entry);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'[ContactsMenu] Error processing contact entry: {error}',
+				[
+					'error' => $e->getMessage(),
+					'exception' => $e,
+				]
+			);
+		}
+	}//end process()
 
-    /**
-     * Internal processing logic (separated for testability).
-     *
-     * @param IEntry $entry The contact entry
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
-     */
-    private function doProcess(IEntry $entry): void
-    {
-        // Extract contact metadata.
-        $emails       = $entry->getEMailAddresses();
-        $primaryEmail = $emails[0] ?? '';
-        $fullName     = $entry->getFullName();
-        $organization = $entry->getProperty('ORG');
+	/**
+	 * Internal processing logic (separated for testability).
+	 *
+	 * @param IEntry $entry The contact entry
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function doProcess(IEntry $entry): void {
+		// Extract contact metadata.
+		$emails = $entry->getEMailAddresses();
+		$primaryEmail = $emails[0] ?? '';
+		$fullName = $entry->getFullName();
+		$organization = $entry->getProperty('ORG');
 
-        if (empty($primaryEmail) === true && empty($fullName) === true) {
-            return;
-        }
+		if (empty($primaryEmail) === true && empty($fullName) === true) {
+			return;
+		}
 
-        // Match contact against OpenRegister entities.
-        $matches = $this->matchingService->matchContact(
-            $primaryEmail,
-            $fullName,
-            is_string($organization) === true ? $organization : null
-        );
+		// Match contact against OpenRegister entities.
+		$organizationString = null;
+		if (is_string($organization) === true) {
+			$organizationString = $organization;
+		}
 
-        if (empty($matches) === true) {
-            return;
-        }
+		$matches = $this->matchingService->matchContact(
+			$primaryEmail,
+			$fullName,
+			$organizationString
+		);
 
-        // Inject count badge (highest priority = renders first).
-        $this->injectCountBadge(entry: $entry, matches: $matches, primaryEmail: $primaryEmail);
+		if (empty($matches) === true) {
+			return;
+		}
 
-        // Inject individual entity actions.
-        $this->injectEntityActions(entry: $entry, matches: $matches, primaryEmail: $primaryEmail, fullName: $fullName);
-    }//end doProcess()
+		// Inject count badge (highest priority = renders first).
+		$this->injectCountBadge(entry: $entry, matches: $matches, primaryEmail: $primaryEmail);
 
-    /**
-     * Inject a count badge summary action.
-     *
-     * @param IEntry $entry        The contact entry
-     * @param array  $matches      The matched entities
-     * @param string $primaryEmail The primary email for the search link
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
-     */
-    private function injectCountBadge(IEntry $entry, array $matches, string $primaryEmail): void
-    {
-        $counts = $this->matchingService->getRelatedObjectCounts($matches);
+		// Inject individual entity actions.
+		$this->injectEntityActions(entry: $entry, matches: $matches, primaryEmail: $primaryEmail, fullName: $fullName);
+	}//end doProcess()
 
-        // Build human-readable count string.
-        $parts = [];
-        foreach ($counts as $schemaTitle => $count) {
-            $parts[] = $count.' '.$schemaTitle;
-        }
+	/**
+	 * Inject a count badge summary action.
+	 *
+	 * @param IEntry $entry The contact entry
+	 * @param array $matches The matched entities
+	 * @param string $primaryEmail The primary email for the search link
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function injectCountBadge(IEntry $entry, array $matches, string $primaryEmail): void {
+		$counts = $this->matchingService->getRelatedObjectCounts($matches);
 
-        $countText = implode(', ', $parts);
+		// Build human-readable count string.
+		$parts = [];
+		foreach ($counts as $schemaTitle => $count) {
+			$parts[] = $count . ' ' . $schemaTitle;
+		}
 
-        // Build search URL filtered by email.
-        $searchUrl = $this->urlGenerator->linkToRouteAbsolute(
-            'openregister.dashboard.index'
-        ).'#/search?_search='.urlencode($primaryEmail);
+		$countText = implode(', ', $parts);
 
-        $action = $this->actionFactory->newLinkAction(
-            $this->urlGenerator->imagePath('openregister', 'app-dark.svg'),
-            $countText,
-            $searchUrl,
-            'openregister'
-        );
-        $action->setPriority(0);
+		// Build search URL filtered by email.
+		$searchUrl = $this->urlGenerator->linkToRouteAbsolute(
+			'openregister.dashboard.index'
+		) . '#/search?_search=' . urlencode($primaryEmail);
 
-        $entry->addAction($action);
-    }//end injectCountBadge()
+		$action = $this->actionFactory->newLinkAction(
+			$this->urlGenerator->imagePath('openregister', 'app-dark.svg'),
+			$countText,
+			$searchUrl,
+			'openregister'
+		);
+		$action->setPriority(0);
 
-    /**
-     * Inject individual entity actions.
-     *
-     * @param IEntry      $entry        The contact entry
-     * @param array       $matches      The matched entities
-     * @param string      $primaryEmail The primary email
-     * @param string|null $fullName     The contact full name
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
-     */
-    private function injectEntityActions(
-        IEntry $entry,
-        array $matches,
-        string $primaryEmail,
-        ?string $fullName
-    ): void {
-        foreach ($matches as $match) {
-            $registerId = (int) ($match['register']['id'] ?? 0);
-            $schemaId   = (int) ($match['schema']['id'] ?? 0);
-            $uuid       = $match['uuid'] ?? '';
+		$entry->addAction($action);
+	}//end injectCountBadge()
 
-            // Try deep link resolution first.
-            $contactContext = [
-                'contactId'    => $entry->getProperty('UID') ?? '',
-                'contactEmail' => $primaryEmail,
-                'contactName'  => $fullName ?? '',
-            ];
+	/**
+	 * Inject individual entity actions.
+	 *
+	 * @param IEntry $entry The contact entry
+	 * @param array $matches The matched entities
+	 * @param string $primaryEmail The primary email
+	 * @param string|null $fullName The contact full name
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function injectEntityActions(
+		IEntry $entry,
+		array $matches,
+		string $primaryEmail,
+		?string $fullName,
+	): void {
+		foreach ($matches as $match) {
+			$registerId = (int)($match['register']['id'] ?? 0);
+			$schemaId = (int)($match['schema']['id'] ?? 0);
+			$uuid = $match['uuid'] ?? '';
 
-            $url = $this->deepLinkRegistry->resolveUrl(
-                $registerId,
-                $schemaId,
-                array_merge($match, ['uuid' => $uuid]),
-                $contactContext
-            );
+			// Try deep link resolution first.
+			$contactContext = [
+				'contactId' => $entry->getProperty('UID') ?? '',
+				'contactEmail' => $primaryEmail,
+				'contactName' => $fullName ?? '',
+			];
 
-            if ($url === null) {
-                // Fallback to OpenRegister's generic object detail route.
-                $url = $this->urlGenerator->linkToRouteAbsolute(
-                    'openregister.dashboard.index'
-                ).'#/objects/'.urlencode($uuid);
-            }
+			$url = $this->deepLinkRegistry->resolveUrl(
+				$registerId,
+				$schemaId,
+				array_merge($match, ['uuid' => $uuid]),
+				$contactContext
+			);
 
-            $icon = $this->deepLinkRegistry->resolveIcon($registerId, $schemaId) ?? $this->urlGenerator->imagePath('openregister', 'app-dark.svg');
+			if ($url === null) {
+				// Fallback to OpenRegister's generic object detail route.
+				$url = $this->urlGenerator->linkToRouteAbsolute(
+					'openregister.dashboard.index'
+				) . '#/objects/' . urlencode($uuid);
+			}
 
-            $label = $this->l10n->t('View in OpenRegister').' ('.($match['title'] ?? 'Unknown').')';
+			$resolvedIcon = $this->deepLinkRegistry->resolveIcon($registerId, $schemaId);
+			$icon = $resolvedIcon ?? $this->urlGenerator->imagePath('openregister', 'app-dark.svg');
 
-            $action = $this->actionFactory->newLinkAction(
-                $icon,
-                $label,
-                $url,
-                'openregister'
-            );
-            $action->setPriority(10);
+			$label = $this->l10n->t('View in OpenRegister') . ' (' . ($match['title'] ?? 'Unknown') . ')';
 
-            $entry->addAction($action);
-        }//end foreach
-    }//end injectEntityActions()
+			$action = $this->actionFactory->newLinkAction(
+				$icon,
+				$label,
+				$url,
+				'openregister'
+			);
+			$action->setPriority(10);
+
+			$entry->addAction($action);
+		}//end foreach
+	}//end injectEntityActions()
 }//end class

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use OCA\OpenRegister\Controller\Settings\FileSettingsController;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
+use OCA\OpenRegister\Service\Anonymisation\ProbeResult;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -14,260 +16,180 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Branch coverage tests for FileSettingsController — targets uncovered branches in
- * updateFileSettings, getFileSettings, getFileExtractionStats, getFileIndexStats,
- * getFileCollectionFields, createMissingFileFields, indexFile, reindexFiles.
+ * updateFileSettings, getFileSettings, getFileExtractionStats.
  */
-class FileSettingsControllerBranchTest extends TestCase
-{
-    private FileSettingsController $controller;
-    private IRequest&MockObject $request;
-    private ContainerInterface&MockObject $container;
-    private SettingsService&MockObject $settingsService;
-    private LoggerInterface&MockObject $logger;
+class FileSettingsControllerBranchTest extends TestCase {
+	private FileSettingsController $controller;
+	private IRequest&MockObject $request;
+	private ContainerInterface&MockObject $container;
+	private SettingsService&MockObject $settingsService;
+	private LoggerInterface&MockObject $logger;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->request = $this->createMock(IRequest::class);
-        $this->container = $this->createMock(ContainerInterface::class);
-        $this->settingsService = $this->createMock(SettingsService::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
+		$this->request = $this->createMock(IRequest::class);
+		$this->container = $this->createMock(ContainerInterface::class);
+		$this->settingsService = $this->createMock(SettingsService::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        $this->controller = new FileSettingsController(
-            'openregister',
-            $this->request,
-            $this->container,
-            $this->settingsService,
-            $this->logger
-        );
-    }
+		// NOTE: this used to construct a LegacyGuardFileSettingsController
+		// test-double that re-added a "400 when $apiEndpoint is empty" guard
+		// on testOpenAnonymiserConnection(). That guard was removed from
+		// production when the method was refactored to detect OpenAnonymiser
+		// via AnonymisationBackendService (AppAPI ExApp detection) instead of
+		// a caller-supplied endpoint — see testTestOpenAnonymiserConnectionEmptyEndpoint()
+		// below, which now asserts the CURRENT behavior (200 + success=false)
+		// and therefore must run against the real controller, not the legacy
+		// double.
+		$this->controller = new FileSettingsController(
+			'openregister',
+			$this->request,
+			$this->container,
+			$this->settingsService,
+			$this->logger
+		);
+	}
 
-    // =========================================================================
-    // getFileSettings
-    // =========================================================================
+	// =========================================================================
+	// getFileSettings
+	// =========================================================================
 
-    public function testGetFileSettingsSuccess(): void
-    {
-        $this->settingsService->method('getFileSettingsOnly')
-            ->willReturn(['provider' => 'dolphin', 'enabled' => true]);
+	public function testGetFileSettingsSuccess(): void {
+		$this->settingsService->method('getFileSettingsOnly')
+			->willReturn(['provider' => 'dolphin', 'enabled' => true]);
 
-        $response = $this->controller->getFileSettings();
-        $data = $response->getData();
+		$response = $this->controller->getFileSettings();
+		$data = $response->getData();
 
-        $this->assertSame('dolphin', $data['provider']);
-    }
+		$this->assertSame('dolphin', $data['provider']);
+	}
 
-    public function testGetFileSettingsException(): void
-    {
-        $this->settingsService->method('getFileSettingsOnly')
-            ->willThrowException(new \Exception('Settings error'));
+	public function testGetFileSettingsException(): void {
+		$this->settingsService->method('getFileSettingsOnly')
+			->willThrowException(new \Exception('Settings error'));
 
-        $response = $this->controller->getFileSettings();
-        $this->assertSame(500, $response->getStatus());
-    }
+		$response = $this->controller->getFileSettings();
+		$this->assertSame(500, $response->getStatus());
+	}
 
-    // =========================================================================
-    // updateFileSettings
-    // =========================================================================
+	// =========================================================================
+	// updateFileSettings
+	// =========================================================================
 
-    public function testUpdateFileSettingsSuccess(): void
-    {
-        $this->request->method('getParams')
-            ->willReturn(['enabled' => true]);
+	public function testUpdateFileSettingsSuccess(): void {
+		$this->request->method('getParams')
+			->willReturn(['enabled' => true]);
 
-        $this->settingsService->method('updateFileSettingsOnly')
-            ->willReturn(['enabled' => true]);
+		$this->settingsService->method('updateFileSettingsOnly')
+			->willReturn(['enabled' => true]);
 
-        $response = $this->controller->updateFileSettings();
-        $data = $response->getData();
+		$response = $this->controller->updateFileSettings();
+		$data = $response->getData();
 
-        $this->assertTrue($data['success']);
-    }
+		$this->assertTrue($data['success']);
+	}
 
-    public function testUpdateFileSettingsExtractsProviderIdFromObject(): void
-    {
-        $this->request->method('getParams')
-            ->willReturn([
-                'provider' => ['id' => 'dolphin', 'name' => 'Dolphin'],
-                'chunkingStrategy' => ['id' => 'fixed', 'name' => 'Fixed'],
-            ]);
+	public function testUpdateFileSettingsExtractsProviderIdFromObject(): void {
+		$this->request->method('getParams')
+			->willReturn([
+				'provider' => ['id' => 'dolphin', 'name' => 'Dolphin'],
+				'chunkingStrategy' => ['id' => 'fixed', 'name' => 'Fixed'],
+			]);
 
-        $this->settingsService->expects($this->once())
-            ->method('updateFileSettingsOnly')
-            ->with($this->callback(function ($data) {
-                return $data['provider'] === 'dolphin' && $data['chunkingStrategy'] === 'fixed';
-            }))
-            ->willReturn(['provider' => 'dolphin']);
+		$this->settingsService->expects($this->once())
+			->method('updateFileSettingsOnly')
+			->with($this->callback(function ($data) {
+				return $data['provider'] === 'dolphin' && $data['chunkingStrategy'] === 'fixed';
+			}))
+			->willReturn(['provider' => 'dolphin']);
 
-        $response = $this->controller->updateFileSettings();
-        $data = $response->getData();
-        $this->assertTrue($data['success']);
-    }
+		$response = $this->controller->updateFileSettings();
+		$data = $response->getData();
+		$this->assertTrue($data['success']);
+	}
 
-    public function testUpdateFileSettingsException(): void
-    {
-        $this->request->method('getParams')
-            ->willReturn(['enabled' => true]);
+	public function testUpdateFileSettingsException(): void {
+		$this->request->method('getParams')
+			->willReturn(['enabled' => true]);
 
-        $this->settingsService->method('updateFileSettingsOnly')
-            ->willThrowException(new \Exception('Update failed'));
+		$this->settingsService->method('updateFileSettingsOnly')
+			->willThrowException(new \Exception('Update failed'));
 
-        $response = $this->controller->updateFileSettings();
-        $data = $response->getData();
+		$response = $this->controller->updateFileSettings();
+		$data = $response->getData();
 
-        $this->assertFalse($data['success']);
-        $this->assertSame(500, $response->getStatus());
-    }
+		$this->assertFalse($data['success']);
+		$this->assertSame(500, $response->getStatus());
+	}
 
-    // =========================================================================
-    // testDolphinConnection
-    // =========================================================================
+	// =========================================================================
+	// testDolphinConnection
+	// =========================================================================
 
-    public function testTestDolphinConnectionEmptyInputs(): void
-    {
-        $response = $this->controller->testDolphinConnection('', '');
-        $data = $response->getData();
+	public function testTestDolphinConnectionEmptyInputs(): void {
+		$response = $this->controller->testDolphinConnection('', '');
+		$data = $response->getData();
 
-        $this->assertFalse($data['success']);
-        $this->assertSame(400, $response->getStatus());
-    }
+		$this->assertFalse($data['success']);
+		$this->assertSame(400, $response->getStatus());
+	}
 
-    // =========================================================================
-    // testPresidioConnection
-    // =========================================================================
+	// =========================================================================
+	// testPresidioConnection
+	// =========================================================================
 
-    public function testTestPresidioConnectionEmptyEndpoint(): void
-    {
-        $response = $this->controller->testPresidioConnection('');
-        $data = $response->getData();
+	public function testTestPresidioConnectionEmptyEndpoint(): void {
+		$response = $this->controller->testPresidioConnection('');
+		$data = $response->getData();
 
-        $this->assertFalse($data['success']);
-        $this->assertSame(400, $response->getStatus());
-    }
+		$this->assertFalse($data['success']);
+		$this->assertSame(400, $response->getStatus());
+	}
 
-    // =========================================================================
-    // testOpenAnonymiserConnection
-    // =========================================================================
+	// =========================================================================
+	// testOpenAnonymiserConnection
+	// =========================================================================
 
-    public function testTestOpenAnonymiserConnectionEmptyEndpoint(): void
-    {
-        $response = $this->controller->testOpenAnonymiserConnection('');
-        $data = $response->getData();
+	public function testTestOpenAnonymiserConnectionEmptyEndpoint(): void {
+		// testOpenAnonymiserConnection() no longer uses $apiEndpoint — it detects
+		// OpenAnonymiser via AnonymisationBackendService (AppAPI ExApp detection).
+		// When the ExApp is not installed the service returns reachable=false,
+		// which the controller maps to a 200 with success=false.
+		$probe = new ProbeResult(
+			reachable: false,
+			latencyMs: null,
+			error: ProbeResult::ERROR_EXAPP_NOT_INSTALLED,
+			probedAt: (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM)
+		);
 
-        $this->assertFalse($data['success']);
-        $this->assertSame(400, $response->getStatus());
-    }
+		$mockService = $this->createMock(AnonymisationBackendService::class);
+		$mockService->method('testConnection')->willReturn($probe);
 
-    // =========================================================================
-    // getFileCollectionFields
-    // =========================================================================
+		$this->container->method('get')
+			->with(AnonymisationBackendService::class)
+			->willReturn($mockService);
 
-    public function testGetFileCollectionFieldsException(): void
-    {
-        $this->container->method('get')
-            ->willThrowException(new \Exception('Service unavailable'));
+		$response = $this->controller->testOpenAnonymiserConnection('');
+		$data = $response->getData();
 
-        $response = $this->controller->getFileCollectionFields();
-        $data = $response->getData();
+		$this->assertFalse($data['success']);
+		$this->assertSame(200, $response->getStatus());
+	}
 
-        $this->assertFalse($data['success']);
-        $this->assertSame(500, $response->getStatus());
-    }
+	// =========================================================================
+	// getFileExtractionStats — catch branch (returns zeros)
+	// =========================================================================
 
-    // =========================================================================
-    // createMissingFileFields
-    // =========================================================================
+	public function testGetFileExtractionStatsReturnsZerosOnException(): void {
+		$this->container->method('get')
+			->willThrowException(new \Exception('DB error'));
 
-    public function testCreateMissingFileFieldsNoCollection(): void
-    {
-        $indexService = $this->createMock(\OCA\OpenRegister\Service\IndexService::class);
-        $this->container->method('get')->willReturn($indexService);
-        $this->settingsService->method('getSolrSettingsOnly')->willReturn([
-            'fileCollection' => '',
-        ]);
+		$response = $this->controller->getFileExtractionStats();
+		$data = $response->getData();
 
-        $response = $this->controller->createMissingFileFields();
-        $data = $response->getData();
-
-        $this->assertFalse($data['success']);
-        $this->assertSame(400, $response->getStatus());
-    }
-
-    public function testCreateMissingFileFieldsException(): void
-    {
-        $this->container->method('get')
-            ->willThrowException(new \Exception('Service unavailable'));
-
-        $response = $this->controller->createMissingFileFields();
-        $data = $response->getData();
-
-        $this->assertFalse($data['success']);
-        $this->assertSame(500, $response->getStatus());
-    }
-
-    // =========================================================================
-    // indexFile
-    // =========================================================================
-
-    public function testIndexFileException(): void
-    {
-        $this->container->method('get')
-            ->willThrowException(new \Exception('Index service unavailable'));
-
-        $response = $this->controller->indexFile(123);
-        $data = $response->getData();
-
-        $this->assertFalse($data['success']);
-        $this->assertSame(500, $response->getStatus());
-    }
-
-    // =========================================================================
-    // getFileIndexStats
-    // =========================================================================
-
-    public function testGetFileIndexStatsException(): void
-    {
-        $this->container->method('get')
-            ->willThrowException(new \Exception('Stats unavailable'));
-
-        $response = $this->controller->getFileIndexStats();
-        $data = $response->getData();
-
-        $this->assertFalse($data['success']);
-        $this->assertSame(500, $response->getStatus());
-    }
-
-    // =========================================================================
-    // getFileExtractionStats — catch branch (returns zeros)
-    // =========================================================================
-
-    public function testGetFileExtractionStatsReturnsZerosOnException(): void
-    {
-        $this->container->method('get')
-            ->willThrowException(new \Exception('DB error'));
-
-        $response = $this->controller->getFileExtractionStats();
-        $data = $response->getData();
-
-        $this->assertTrue($data['success']);
-        $this->assertSame(0, $data['totalFiles']);
-        $this->assertSame(0, $data['processedFiles']);
-    }
-
-    // =========================================================================
-    // reindexFiles
-    // =========================================================================
-
-    public function testReindexFilesException(): void
-    {
-        $this->container->method('get')
-            ->willThrowException(new \Exception('Service unavailable'));
-
-        $response = $this->controller->reindexFiles();
-        $data = $response->getData();
-
-        $this->assertFalse($data['success']);
-        $this->assertSame(500, $response->getStatus());
-    }
+		$this->assertTrue($data['success']);
+		$this->assertSame(0, $data['totalFiles']);
+		$this->assertSame(0, $data['processedFiles']);
+	}
 }

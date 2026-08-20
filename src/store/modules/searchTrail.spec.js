@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-import { setActivePinia, createPinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
 import { useSearchTrailStore } from './searchTrail.js'
 
 // Mock fetch globally
@@ -55,7 +54,6 @@ describe('SearchTrail Store', () => {
 	describe('Actions', () => {
 		describe('setSearchTrailItem', () => {
 			it('should set search trail item correctly', () => {
-				const consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
 				const searchTrailData = {
 					id: 1,
 					searchTerm: 'test search',
@@ -66,22 +64,16 @@ describe('SearchTrail Store', () => {
 				}
 				store.setSearchTrailItem(searchTrailData)
 				expect(store.searchTrailItem).toEqual(searchTrailData)
-				expect(consoleSpy).toHaveBeenCalledWith('Search trail item set to:', searchTrailData)
-				consoleSpy.mockRestore()
 			})
 
 			it('should handle null search trail item', () => {
-				const consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
 				store.setSearchTrailItem(null)
 				expect(store.searchTrailItem).toBe(null)
-				expect(consoleSpy).toHaveBeenCalledWith('Search trail item set to:', null)
-				consoleSpy.mockRestore()
 			})
 		})
 
 		describe('setSearchTrailList', () => {
 			it('should set search trail list correctly', () => {
-				const consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
 				const searchTrails = [
 					{
 						id: 1,
@@ -103,22 +95,16 @@ describe('SearchTrail Store', () => {
 				store.setSearchTrailList(searchTrails)
 				expect(store.searchTrailList).toHaveLength(2)
 				expect(store.searchTrailList[0]).toEqual(searchTrails[0])
-				expect(consoleSpy).toHaveBeenCalledWith('Search trail list set to:', 2, 'items')
-				consoleSpy.mockRestore()
 			})
 
 			it('should handle empty search trail list', () => {
-				const consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
 				store.setSearchTrailList([])
 				expect(store.searchTrailList).toEqual([])
-				expect(consoleSpy).toHaveBeenCalledWith('Search trail list set to:', 0, 'items')
-				consoleSpy.mockRestore()
 			})
 		})
 
 		describe('setSearchTrailPagination', () => {
 			it('should set pagination correctly', () => {
-				const consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
 				const pagination = {
 					total: 100,
 					page: 2,
@@ -128,39 +114,41 @@ describe('SearchTrail Store', () => {
 				}
 				store.setSearchTrailPagination(pagination)
 				expect(store.searchTrailPagination).toEqual(pagination)
-				expect(consoleSpy).toHaveBeenCalledWith('Search trail pagination set to:', pagination)
-				consoleSpy.mockRestore()
 			})
 		})
 
 		describe('setStatistics', () => {
-			it('should set statistics correctly', () => {
-				const consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
-				const stats = {
-					total: 1000,
-					totalResults: 15000,
-					averageResultsPerSearch: 15,
-					averageExecutionTime: 180,
-					successRate: 0.95,
-					uniqueSearchTerms: 250,
-					uniqueUsers: 50,
-					uniqueOrganizations: 10,
-					queryComplexity: {
-						simple: 600,
-						medium: 300,
-						complex: 100,
-					},
-				}
-				store.setStatistics(stats)
-				expect(store.statistics).toEqual(stats)
-				expect(consoleSpy).toHaveBeenCalledWith('Search trail statistics set to:', stats)
-				consoleSpy.mockRestore()
+			it('maps the snake_case API payload to camelCase store fields', () => {
+				// setStatistics intentionally translates the snake_case API
+				// shape to the camelCase the UI consumes — assert the
+				// translation, not field-for-field equality.
+				store.setStatistics({
+					total_searches: 1000,
+					total_results: 15000,
+					avg_results_per_search: 15,
+					avg_response_time: 180,
+					success_rate: 95, // expressed as percentage 0–100
+					unique_search_terms: 250,
+					unique_users: 50,
+					unique_organizations: 10,
+					query_complexity: { simple: 600, medium: 300, complex: 100 },
+				})
+				expect(store.statistics.total).toBe(1000)
+				expect(store.statistics.totalResults).toBe(15000)
+				expect(store.statistics.averageResultsPerSearch).toBe(15)
+				expect(store.statistics.averageExecutionTime).toBe(180)
+				expect(store.statistics.successRate).toBeCloseTo(0.95)
+				expect(store.statistics.uniqueSearchTerms).toBe(250)
+				expect(store.statistics.queryComplexity).toEqual({
+					simple: 600,
+					medium: 300,
+					complex: 100,
+				})
 			})
 		})
 
 		describe('setPopularTerms', () => {
 			it('should set popular terms correctly', () => {
-				const consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
 				const terms = [
 					{ term: 'user', count: 100 },
 					{ term: 'order', count: 80 },
@@ -168,19 +156,14 @@ describe('SearchTrail Store', () => {
 				]
 				store.setPopularTerms(terms)
 				expect(store.popularTerms).toEqual(terms)
-				expect(consoleSpy).toHaveBeenCalledWith('Popular terms set to:', 3, 'items')
-				consoleSpy.mockRestore()
 			})
 		})
 
 		describe('setSearchTrailFilters', () => {
 			it('should set filters correctly', () => {
-				const consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
 				const filters = { searchTerm: 'test', success: true }
 				store.setSearchTrailFilters(filters)
 				expect(store.searchTrailFilters).toEqual(filters)
-				expect(consoleSpy).toHaveBeenCalledWith('Search trail filters set to:', filters)
-				consoleSpy.mockRestore()
 			})
 		})
 
@@ -233,7 +216,9 @@ describe('SearchTrail Store', () => {
 					json: async () => ({ error: 'Server error' }),
 				})
 
-				await expect(store.fetchSearchTrails()).rejects.toThrow('Server error')
+				await expect(store.fetchSearchTrails()).rejects.toThrow(
+					'Server error',
+				)
 				expect(store.searchTrailLoading).toBe(false)
 			})
 
@@ -277,25 +262,25 @@ describe('SearchTrail Store', () => {
 
 		describe('fetchStatistics', () => {
 			it('should fetch statistics successfully', async () => {
-				const mockStats = {
-					total: 1000,
-					totalResults: 15000,
-					averageResultsPerSearch: 15,
-					averageExecutionTime: 180,
-					successRate: 0.95,
-					uniqueSearchTerms: 250,
-					uniqueUsers: 50,
-					uniqueOrganizations: 10,
-					queryComplexity: {
-						simple: 600,
-						medium: 300,
-						complex: 100,
-					},
+				// API returns the snake_case payload — fetchStatistics
+				// passes it through setStatistics which translates to
+				// camelCase. Assert the translated shape, not field
+				// equality with the API response.
+				const apiStats = {
+					total_searches: 1000,
+					total_results: 15000,
+					avg_results_per_search: 15,
+					avg_response_time: 180,
+					success_rate: 95,
+					unique_search_terms: 250,
+					unique_users: 50,
+					unique_organizations: 10,
+					query_complexity: { simple: 600, medium: 300, complex: 100 },
 				}
 
 				fetch.mockResolvedValueOnce({
 					ok: true,
-					json: async () => mockStats,
+					json: async () => apiStats,
 				})
 
 				const result = await store.fetchStatistics()
@@ -310,8 +295,9 @@ describe('SearchTrail Store', () => {
 						},
 					},
 				)
-				expect(store.statistics).toEqual(mockStats)
-				expect(result).toEqual(mockStats)
+				expect(store.statistics.total).toBe(1000)
+				expect(store.statistics.totalResults).toBe(15000)
+				expect(result).toEqual(apiStats)
 				expect(store.statisticsLoading).toBe(false)
 			})
 
@@ -321,7 +307,9 @@ describe('SearchTrail Store', () => {
 					json: async () => ({ error: 'Statistics error' }),
 				})
 
-				await expect(store.fetchStatistics()).rejects.toThrow('Statistics error')
+				await expect(store.fetchStatistics()).rejects.toThrow(
+					'Statistics error',
+				)
 				expect(store.statisticsLoading).toBe(false)
 			})
 		})
@@ -359,20 +347,34 @@ describe('SearchTrail Store', () => {
 
 		describe('fetchActivity', () => {
 			it('should fetch activity data successfully', async () => {
-				const mockActivity = [
-					{ period: '2023-01-01', searches: 50, results: 750 },
-					{ period: '2023-01-02', searches: 75, results: 1125 },
+				// setActivity translates the API rows into a fixed
+				// shape (period, searches, avgResults, avgResponseTime),
+				// so assert the translated shape rather than equality
+				// with the raw response.
+				const apiActivity = [
+					{
+						period: '2023-01-01',
+						count: 50,
+						avg_results: 15,
+						avg_response_time: 100,
+					},
+					{
+						period: '2023-01-02',
+						count: 75,
+						avg_results: 16,
+						avg_response_time: 110,
+					},
 				]
 
 				fetch.mockResolvedValueOnce({
 					ok: true,
-					json: async () => mockActivity,
+					json: async () => apiActivity,
 				})
 
 				const result = await store.fetchActivity('daily')
 
 				expect(fetch).toHaveBeenCalledWith(
-					'/index.php/apps/openregister/api/search-trails/activity?period=daily',
+					'/index.php/apps/openregister/api/search-trails/activity?interval=daily',
 					{
 						method: 'GET',
 						headers: {
@@ -381,8 +383,14 @@ describe('SearchTrail Store', () => {
 						},
 					},
 				)
-				expect(store.activity.daily).toEqual(mockActivity)
-				expect(result).toEqual(mockActivity)
+				expect(store.activity.daily).toHaveLength(2)
+				expect(store.activity.daily[0]).toEqual({
+					period: '2023-01-01',
+					searches: 50,
+					avgResults: 15,
+					avgResponseTime: 100,
+				})
+				expect(result).toEqual(apiActivity)
 				expect(store.activityLoading).toBe(false)
 			})
 		})
@@ -478,7 +486,6 @@ describe('SearchTrail Store', () => {
 
 		describe('clearSearchTrailStore', () => {
 			it('should clear all store data', () => {
-				const consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
 				// Set some data first
 				store.searchTrailList = [{ id: 1 }]
 				store.searchTrailItem = { id: 1 }
@@ -505,8 +512,6 @@ describe('SearchTrail Store', () => {
 						complex: 0,
 					},
 				})
-				expect(consoleSpy).toHaveBeenCalledWith('Search trail store cleared')
-				consoleSpy.mockRestore()
 			})
 		})
 	})

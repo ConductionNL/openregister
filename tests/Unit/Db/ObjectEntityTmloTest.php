@@ -30,157 +30,141 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Db\ObjectEntity
  */
-class ObjectEntityTmloTest extends TestCase
-{
+class ObjectEntityTmloTest extends TestCase {
 
+	/**
+	 * Test tmlo getter returns empty array by default.
+	 *
+	 * @return void
+	 */
+	public function testTmloGetterDefaultsToEmptyArray(): void {
+		$entity = new ObjectEntity();
+		$tmlo = $entity->getTmlo();
 
-    /**
-     * Test tmlo getter returns empty array by default.
-     *
-     * @return void
-     */
-    public function testTmloGetterDefaultsToEmptyArray(): void
-    {
-        $entity = new ObjectEntity();
-        $tmlo   = $entity->getTmlo();
+		$this->assertIsArray($tmlo);
+		$this->assertEmpty($tmlo);
+	}//end testTmloGetterDefaultsToEmptyArray()
 
-        $this->assertIsArray($tmlo);
-        $this->assertEmpty($tmlo);
-    }//end testTmloGetterDefaultsToEmptyArray()
+	/**
+	 * Test setTmlo and getTmlo round-trip.
+	 *
+	 * @return void
+	 */
+	public function testSetAndGetTmlo(): void {
+		$entity = new ObjectEntity();
+		$tmloData = [
+			'classification' => '1.1',
+			'archiefnominatie' => 'blijvend_bewaren',
+			'archiefstatus' => 'actief',
+			'bewaarTermijn' => 'P7Y',
+		];
 
+		$entity->setTmlo($tmloData);
+		$result = $entity->getTmlo();
 
-    /**
-     * Test setTmlo and getTmlo round-trip.
-     *
-     * @return void
-     */
-    public function testSetAndGetTmlo(): void
-    {
-        $entity  = new ObjectEntity();
-        $tmloData = [
-            'classificatie'    => '1.1',
-            'archiefnominatie' => 'blijvend_bewaren',
-            'archiefstatus'    => 'actief',
-            'bewaarTermijn'    => 'P7Y',
-        ];
+		$this->assertEquals('1.1', $result['classification']);
+		$this->assertEquals('blijvend_bewaren', $result['archiefnominatie']);
+		$this->assertEquals('actief', $result['archiefstatus']);
+		$this->assertEquals('P7Y', $result['bewaarTermijn']);
+	}//end testSetAndGetTmlo()
 
-        $entity->setTmlo($tmloData);
-        $result = $entity->getTmlo();
+	/**
+	 * Test tmlo field appears in getObjectArray output.
+	 *
+	 * @return void
+	 */
+	public function testTmloInGetObjectArray(): void {
+		$entity = new ObjectEntity();
+		$entity->setUuid('test-uuid');
+		$entity->setTmlo([
+			'archiefstatus' => 'actief',
+		]);
 
-        $this->assertEquals('1.1', $result['classificatie']);
-        $this->assertEquals('blijvend_bewaren', $result['archiefnominatie']);
-        $this->assertEquals('actief', $result['archiefstatus']);
-        $this->assertEquals('P7Y', $result['bewaarTermijn']);
-    }//end testSetAndGetTmlo()
+		$objectArray = $entity->getObjectArray();
 
+		$this->assertArrayHasKey('tmlo', $objectArray);
+		$this->assertEquals('actief', $objectArray['tmlo']['archiefstatus']);
+	}//end testTmloInGetObjectArray()
 
-    /**
-     * Test tmlo field appears in getObjectArray output.
-     *
-     * @return void
-     */
-    public function testTmloInGetObjectArray(): void
-    {
-        $entity = new ObjectEntity();
-        $entity->setUuid('test-uuid');
-        $entity->setTmlo([
-            'archiefstatus' => 'actief',
-        ]);
+	/**
+	 * Test tmlo field appears in jsonSerialize output under @self.
+	 *
+	 * @return void
+	 */
+	public function testTmloInJsonSerialize(): void {
+		$entity = new ObjectEntity();
+		$entity->setUuid('test-uuid-json');
+		$entity->setTmlo([
+			'classification' => '2.1',
+			'archiefstatus' => 'semi_statisch',
+		]);
 
-        $objectArray = $entity->getObjectArray();
+		$json = $entity->jsonSerialize();
 
-        $this->assertArrayHasKey('tmlo', $objectArray);
-        $this->assertEquals('actief', $objectArray['tmlo']['archiefstatus']);
-    }//end testTmloInGetObjectArray()
+		$this->assertArrayHasKey('@self', $json);
+		$this->assertArrayHasKey('tmlo', $json['@self']);
+		$this->assertEquals('2.1', $json['@self']['tmlo']['classification']);
+	}//end testTmloInJsonSerialize()
 
+	/**
+	 * Test hydrate sets tmlo from array.
+	 *
+	 * @return void
+	 */
+	public function testHydrateSetsTmlo(): void {
+		$entity = new ObjectEntity();
+		$entity->hydrate([
+			'tmlo' => [
+				'archiefstatus' => 'actief',
+				'classification' => '3.1',
+				'bewaarTermijn' => 'P10Y',
+				'archiefnominatie' => 'vernietigen',
+			],
+		]);
 
-    /**
-     * Test tmlo field appears in jsonSerialize output under @self.
-     *
-     * @return void
-     */
-    public function testTmloInJsonSerialize(): void
-    {
-        $entity = new ObjectEntity();
-        $entity->setUuid('test-uuid-json');
-        $entity->setTmlo([
-            'classificatie' => '2.1',
-            'archiefstatus' => 'semi_statisch',
-        ]);
+		$tmlo = $entity->getTmlo();
 
-        $json = $entity->jsonSerialize();
+		$this->assertEquals('actief', $tmlo['archiefstatus']);
+		$this->assertEquals('3.1', $tmlo['classification']);
+		$this->assertEquals('P10Y', $tmlo['bewaarTermijn']);
+	}//end testHydrateSetsTmlo()
 
-        $this->assertArrayHasKey('@self', $json);
-        $this->assertArrayHasKey('tmlo', $json['@self']);
-        $this->assertEquals('2.1', $json['@self']['tmlo']['classificatie']);
-    }//end testTmloInJsonSerialize()
+	/**
+	 * Test setTmlo with null resets to null.
+	 *
+	 * @return void
+	 */
+	public function testSetTmloNull(): void {
+		$entity = new ObjectEntity();
+		$entity->setTmlo(['archiefstatus' => 'actief']);
+		$entity->setTmlo(null);
 
+		// getTmlo returns empty array for null (via getter override).
+		$tmlo = $entity->getTmlo();
+		$this->assertIsArray($tmlo);
+		$this->assertEmpty($tmlo);
+	}//end testSetTmloNull()
 
-    /**
-     * Test hydrate sets tmlo from array.
-     *
-     * @return void
-     */
-    public function testHydrateSetsTmlo(): void
-    {
-        $entity = new ObjectEntity();
-        $entity->hydrate([
-            'tmlo' => [
-                'archiefstatus'    => 'actief',
-                'classificatie'    => '3.1',
-                'bewaarTermijn'    => 'P10Y',
-                'archiefnominatie' => 'vernietigen',
-            ],
-        ]);
+	/**
+	 * Test tmlo field with all six TMLO fields.
+	 *
+	 * @return void
+	 */
+	public function testFullTmloFieldSet(): void {
+		$entity = new ObjectEntity();
+		$fullTmlo = [
+			'classification' => '1.1.2',
+			'archiefnominatie' => 'vernietigen',
+			'archiefactiedatum' => '2032-06-15',
+			'archiefstatus' => 'semi_statisch',
+			'bewaarTermijn' => 'P7Y',
+			'vernietigingsCategorie' => 'cat-b2',
+		];
 
-        $tmlo = $entity->getTmlo();
+		$entity->setTmlo($fullTmlo);
+		$result = $entity->getTmlo();
 
-        $this->assertEquals('actief', $tmlo['archiefstatus']);
-        $this->assertEquals('3.1', $tmlo['classificatie']);
-        $this->assertEquals('P10Y', $tmlo['bewaarTermijn']);
-    }//end testHydrateSetsTmlo()
-
-
-    /**
-     * Test setTmlo with null resets to null.
-     *
-     * @return void
-     */
-    public function testSetTmloNull(): void
-    {
-        $entity = new ObjectEntity();
-        $entity->setTmlo(['archiefstatus' => 'actief']);
-        $entity->setTmlo(null);
-
-        // getTmlo returns empty array for null (via getter override).
-        $tmlo = $entity->getTmlo();
-        $this->assertIsArray($tmlo);
-        $this->assertEmpty($tmlo);
-    }//end testSetTmloNull()
-
-
-    /**
-     * Test tmlo field with all six TMLO fields.
-     *
-     * @return void
-     */
-    public function testFullTmloFieldSet(): void
-    {
-        $entity  = new ObjectEntity();
-        $fullTmlo = [
-            'classificatie'          => '1.1.2',
-            'archiefnominatie'       => 'vernietigen',
-            'archiefactiedatum'      => '2032-06-15',
-            'archiefstatus'          => 'semi_statisch',
-            'bewaarTermijn'          => 'P7Y',
-            'vernietigingsCategorie' => 'cat-b2',
-        ];
-
-        $entity->setTmlo($fullTmlo);
-        $result = $entity->getTmlo();
-
-        $this->assertEquals($fullTmlo, $result);
-    }//end testFullTmloFieldSet()
-
+		$this->assertEquals($fullTmlo, $result);
+	}//end testFullTmloFieldSet()
 
 }//end class

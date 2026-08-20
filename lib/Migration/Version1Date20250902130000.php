@@ -35,55 +35,48 @@ use OCP\Migration\SimpleMigrationStep;
  * for improved search performance. Uses prefix indexes for TEXT columns to avoid
  * MySQL key length limits.
  */
-class Version1Date20250902130000 extends SimpleMigrationStep
-{
-    /**
-     * Apply database schema changes for search performance
-     *
-     * @param IOutput                 $output        Migration output interface
-     * @param Closure                 $schemaClosure Schema closure that returns ISchemaWrapper
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return null|ISchemaWrapper Updated schema or null
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        $schema = $schemaClosure();
+class Version1Date20250902130000 extends SimpleMigrationStep {
+	/**
+	 * Apply database schema changes for search performance
+	 *
+	 * @param IOutput $output Migration output interface
+	 * @param Closure $schemaClosure Schema closure that returns ISchemaWrapper
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return null|ISchemaWrapper Updated schema or null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_objects') === false) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_objects') === false) {
+			return null;
+		}
 
-        // Skip name index creation for now to avoid MySQL key length issues.
-        // TODO: Add name index after app is enabled with proper length prefix.
-        $output->info(message: 'Skipping name index creation to avoid MySQL key length issues');
+		// Skip name index creation for now to avoid MySQL key length issues.
+		// TODO: Add name index after app is enabled with proper length prefix.
+		$output->info(message: 'Skipping name index creation to avoid MySQL key length issues');
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Execute raw SQL for TEXT column prefix indexes
-     *
-     * @param IOutput                 $output        Migration output interface
-     * @param Closure                 $schemaClosure Schema closure that returns ISchemaWrapper
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-        $schema = $schemaClosure();
+	/**
+	 * Execute raw SQL for TEXT column prefix indexes
+	 *
+	 * @param IOutput $output Migration output interface
+	 * @param Closure $schemaClosure Schema closure that returns ISchemaWrapper
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_objects') === false) {
-            return;
-        }
+		if ($schema->hasTable('openregister_objects') === false) {
+			return;
+		}
 
-        // Skip complex index creation for now to avoid MySQL key length issues.
-        // TODO: Add indexes after app is enabled.
-        $output->info(message: 'Skipping complex index creation to avoid MySQL key length issues');
-    }//end postSchemaChange()
+		// Skip complex index creation for now to avoid MySQL key length issues.
+		// TODO: Add indexes after app is enabled.
+		$output->info(message: 'Skipping complex index creation to avoid MySQL key length issues');
+	}//end postSchemaChange()
 }//end class

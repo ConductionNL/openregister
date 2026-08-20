@@ -5,6 +5,9 @@
  *
  * Transmits SIP packages to e-Depot systems via OpenConnector synchronization.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot\Transport
  *
@@ -33,151 +36,148 @@ use RuntimeException;
  *
  * @psalm-suppress UnusedClass
  */
-class OpenConnectorTransport implements TransportInterface
-{
-    /**
-     * Constructor.
-     *
-     * @param Client          $httpClient The HTTP client.
-     * @param LoggerInterface $logger     Logger.
-     */
-    public function __construct(
-        private readonly Client $httpClient,
-        private readonly LoggerInterface $logger,
-    ) {
-    }//end __construct()
+class OpenConnectorTransport implements TransportInterface {
+	/**
+	 * Constructor.
+	 *
+	 * @param Client $httpClient The HTTP client.
+	 * @param LoggerInterface $logger Logger.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	public function __construct(
+		private readonly Client $httpClient,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Send a SIP package via OpenConnector.
-     *
-     * @param string              $sipFilePath The local path to the SIP ZIP archive.
-     * @param array<string,mixed> $config      OpenConnector configuration: sourceId, baseUrl.
-     *
-     * @return TransportResult The result of the transport.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
-     */
-    public function send(string $sipFilePath, array $config): TransportResult
-    {
-        $this->logger->info(
-            message: '[OpenConnectorTransport] Starting OpenConnector transfer',
-            context: ['sourceId' => ($config['sourceId'] ?? 'unknown')]
-        );
+	/**
+	 * Send a SIP package via OpenConnector.
+	 *
+	 * @param string $sipFilePath The local path to the SIP ZIP archive.
+	 * @param array<string,mixed> $config OpenConnector configuration: sourceId, baseUrl.
+	 *
+	 * @return TransportResult The result of the transport.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	public function send(string $sipFilePath, array $config): TransportResult {
+		$this->logger->info(
+			message: '[OpenConnectorTransport] Starting OpenConnector transfer',
+			context: ['sourceId' => ($config['sourceId'] ?? 'unknown')]
+		);
 
-        try {
-            $this->validateConfig(config: $config);
+		try {
+			$this->validateConfig(config: $config);
 
-            if (file_exists($sipFilePath) === false) {
-                throw new RuntimeException("SIP file not found: {$sipFilePath}");
-            }
+			if (file_exists($sipFilePath) === false) {
+				throw new RuntimeException("SIP file not found: {$sipFilePath}");
+			}
 
-            $baseUrl  = rtrim(($config['baseUrl'] ?? 'http://localhost:8080'), '/');
-            $sourceId = $config['sourceId'];
+			$baseUrl = rtrim(($config['baseUrl'] ?? 'http://localhost:8080'), '/');
+			$sourceId = $config['sourceId'];
 
-            $response = $this->httpClient->post(
-                "{$baseUrl}/index.php/apps/openconnector/api/synchronizations",
-                [
-                    'json'    => [
-                        'sourceId' => $sourceId,
-                        'action'   => 'push',
-                        'payload'  => [
-                            'type'     => 'sip_package',
-                            'filePath' => $sipFilePath,
-                            'fileName' => basename($sipFilePath),
-                            'fileSize' => filesize($sipFilePath),
-                        ],
-                    ],
-                    'timeout' => 60,
-                ]
-            );
+			$response = $this->httpClient->post(
+				"{$baseUrl}/index.php/apps/openconnector/api/synchronizations",
+				[
+					'json' => [
+						'sourceId' => $sourceId,
+						'action' => 'push',
+						'payload' => [
+							'type' => 'sip_package',
+							'filePath' => $sipFilePath,
+							'fileName' => basename($sipFilePath),
+							'fileSize' => filesize($sipFilePath),
+						],
+					],
+					'timeout' => 60,
+				]
+			);
 
-            $body      = json_decode((string) $response->getBody(), true);
-            $callLogId = ($body['callLogId'] ?? $body['id'] ?? null);
+			$body = json_decode((string)$response->getBody(), true);
+			$callLogId = ($body['callLogId'] ?? $body['id'] ?? null);
 
-            $this->logger->info(
-                message: '[OpenConnectorTransport] Synchronization job created',
-                context: [
-                    'sourceId'  => $sourceId,
-                    'callLogId' => $callLogId,
-                ]
-            );
+			$this->logger->info(
+				message: '[OpenConnectorTransport] Synchronization job created',
+				context: [
+					'sourceId' => $sourceId,
+					'callLogId' => $callLogId,
+				]
+			);
 
-            return new TransportResult(
-                success: true,
-                transferReference: (string) $callLogId
-            );
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[OpenConnectorTransport] Transfer failed',
-                context: ['error' => $e->getMessage()]
-            );
+			return new TransportResult(
+				success: true,
+				transferReference: (string)$callLogId
+			);
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[OpenConnectorTransport] Transfer failed',
+				context: ['error' => $e->getMessage()]
+			);
 
-            return new TransportResult(
-                success: false,
-                errorMessage: $e->getMessage()
-            );
-        }//end try
-    }//end send()
+			return new TransportResult(
+				success: false,
+				errorMessage: $e->getMessage()
+			);
+		}//end try
+	}//end send()
 
-    /**
-     * Test OpenConnector connection.
-     *
-     * @param array<string,mixed> $config OpenConnector configuration.
-     *
-     * @return bool True if connection test succeeds.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
-     */
-    public function testConnection(array $config): bool
-    {
-        try {
-            $this->validateConfig(config: $config);
+	/**
+	 * Test OpenConnector connection.
+	 *
+	 * @param array<string,mixed> $config OpenConnector configuration.
+	 *
+	 * @return bool True if connection test succeeds.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	public function testConnection(array $config): bool {
+		try {
+			$this->validateConfig(config: $config);
 
-            $baseUrl  = rtrim(($config['baseUrl'] ?? 'http://localhost:8080'), '/');
-            $sourceId = $config['sourceId'];
+			$baseUrl = rtrim(($config['baseUrl'] ?? 'http://localhost:8080'), '/');
+			$sourceId = $config['sourceId'];
 
-            $response = $this->httpClient->get(
-                "{$baseUrl}/index.php/apps/openconnector/api/sources/{$sourceId}",
-                ['timeout' => 10]
-            );
+			$response = $this->httpClient->get(
+				"{$baseUrl}/index.php/apps/openconnector/api/sources/{$sourceId}",
+				['timeout' => 10]
+			);
 
-            return ($response->getStatusCode() < 400);
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                message: '[OpenConnectorTransport] Connection test failed',
-                context: ['error' => $e->getMessage()]
-            );
-            return false;
-        }
-    }//end testConnection()
+			return ($response->getStatusCode() < 400);
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[OpenConnectorTransport] Connection test failed',
+				context: ['error' => $e->getMessage()]
+			);
+			return false;
+		}
+	}//end testConnection()
 
-    /**
-     * Get transport name.
-     *
-     * @return string The transport name.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
-     */
-    public function getName(): string
-    {
-        return 'openconnector';
-    }//end getName()
+	/**
+	 * Get transport name.
+	 *
+	 * @return string The transport name.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	public function getName(): string {
+		return 'openconnector';
+	}//end getName()
 
-    /**
-     * Validate OpenConnector configuration.
-     *
-     * @param array<string,mixed> $config The configuration to validate.
-     *
-     * @return void
-     *
-     * @throws RuntimeException If required configuration is missing.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
-     */
-    private function validateConfig(array $config): void
-    {
-        if (empty($config['sourceId']) === true) {
-            throw new RuntimeException('Missing required OpenConnector config: sourceId');
-        }
-    }//end validateConfig()
+	/**
+	 * Validate OpenConnector configuration.
+	 *
+	 * @param array<string,mixed> $config The configuration to validate.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException If required configuration is missing.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	private function validateConfig(array $config): void {
+		if (empty($config['sourceId']) === true) {
+			throw new RuntimeException('Missing required OpenConnector config: sourceId');
+		}
+	}//end validateConfig()
 }//end class
