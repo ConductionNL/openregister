@@ -631,6 +631,10 @@ function loadLocaleConfig(loc) {
 		pluralBoundary: raw.pluralBoundary || null,
 		cognates: raw.cognates || {},
 		corrections: raw.corrections || {},
+		// Read by spell.js: words legitimately absent from a general hunspell
+		// dictionary (product names, code tokens, domain coinages), so a report shows
+		// only what still needs triaging.
+		spellAllow: raw.spellAllow || [],
 	}
 }
 

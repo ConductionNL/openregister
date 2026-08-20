@@ -29,8 +29,8 @@ belongs in `en.js`, never in `en.json`.** There is no scanner for the backend se
 (it would have to walk `lib/` for PHP `$l->t()`), so `en.json` is maintained by hand.
 
 Re-measure before trusting any number here — `npm run check:l10n` prints it all.
-**As of 2026-08-20**: `en.js` holds 2052 keys, 32 locales at full parity, 4 in progress
-(`sq mk be bs`, in that order — the owner has confirmed the order, so no need to
+**As of 2026-08-20**: `en.js` holds 2052 keys, 33 locales at full parity, 3 in progress
+(`mk be bs`, in that order — the owner has confirmed the order, so no need to
 re-ask per locale). **`test:l10n` is currently RED at HEAD and not because of l10n work**:
 a `development` merge replaced the Dutch GDPR source terms with English ones and added
 flow strings, leaving 17 keys used in `src/` but missing from `en.js`. That is the
@@ -126,7 +126,7 @@ indistinguishable from finished work, so nobody revisits it. Audit with
 `npm run test:l10n:parity -- --strict-identical`.
 
 **Cognate enforcement is opt-in per locale**, keyed on `locales/<loc>.json`
-existing. Only `tr ca et hr lt lv ro sk sl bg sr rm ga mt is cs lb` are held to it; the other 15 predate the rule and
+existing. Only `tr ca et hr lt lv ro sk sl bg sr rm ga mt is cs lb sq` are held to it; the other 15 predate the rule and
 carry ~375 unreviewed identical values, some legitimate. The gate prints which
 locales are enforced and which are merely unreviewed, so a green run cannot be read
 as verified. **Reviewing those 16 is open work.**
@@ -218,6 +218,21 @@ scan THREW and §5 step 2 could not run by accident. `lb` had one catalogue with
 it *succeeded* — and would have reported a register verdict computed from **0 markers**, since
 those 72 values contain no address form. Measure the marker count, not the catalogue count.
 `bs` (55 values) is the same trap.
+
+**A capitalisation ratio conflates two populations, and the confound invents work.** Measure
+mid-sentence casing over **prose only** (English key ≥6 words and not Title Case) and
+separately ask whether short labels **mirror** the key's Title Case. On `sq` the naive scan
+reported the bundle capitalising domain terms 25–35% against a family rate near zero — a
+tidy ~110-value defect class that does not exist: prose is 0-of-177, and every hit was a
+Title-Cased heading correctly following its source. If a defect class is large, uniform and
+concentrated in short values, you are measuring the source, not the translation.
+
+**A marker guard must know where the target puts a MORPHEME boundary, not just what is a
+letter.** `(?<!\p{L})` is wrong for Albanian, which attaches the definite ending to acronyms
+after a hyphen (`UUID-je`, `Token-i`, `PHP-ja`) — so it matched an inflectional ending as the
+2sg copula. `detectors/sq.js` uses `(?<![\p{L}-])`, but must NOT guard the apostrophe, since
+`t'ju` is formal and `s'ke` informal. Catalan needed the interpunct *inside* the token class;
+same question, opposite answer.
 
 **Check core AND the call site before "fixing" an outlier.** Core `cs` overturned four
 candidate corrections, one of which was the only value in its family that actually matched

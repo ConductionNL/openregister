@@ -109,19 +109,18 @@ is how you tell "in progress" from "broken".
 
 ### 2.3 Order of work
 
-The high-confidence group is **done**, and so are `rm`, `ga`, `mt`, `is` and `lb`, the
-first five of the low-resource ones. Four remain: `sq mk be bs`, **in that order** — the
+The high-confidence group is **done**, and so are `rm`, `ga`, `mt`, `is`, `lb` and `sq`, the
+first six of the low-resource ones. Three remain: `mk be bs`, **in that order** — the
 owner has confirmed the order, so there is no need to re-ask per locale as long as it is
 kept.
 
 **Check whether core can decide the register at all before planning a pass.** One of
-the four remaining locales cannot be measured from core, which §5 step 2 assumes:
+the three remaining locales cannot be measured from core, which §5 step 2 assumes:
 
 | Locale | Core coverage | Consequence |
 | --- | --- | --- |
 | `bs` | 1 catalogue, 55 values | not evidence of anything; use the §6.4 fallback |
 | `mk` `be` | 24 / 14 catalogues | core is usable |
-| `sq` | 12 harvest sources, core usable | measure it |
 
 (`rm` and `mt` both had **zero** catalogues. `rm` is the worked example of the fallback,
 §6.4; `mt` extended it by measuring the sibling apps' **frontend** `mt.js` alongside the
@@ -145,7 +144,7 @@ sources, not counts — these will not go stale):
 | --- | --- |
 | `mk` `be` | Non-Latin. `npm run l10n:script` replaces the English-leftover sweep in §5 step 8 |
 | `mk` | Confirmed to disagree with the library on the plural *boundary* (at 11 and 111 only, the library selecting the SINGULAR where Macedonian takes the plural). Not fixable by reordering; needs `pluralBoundary: "library"` and an explicit note of which counts stay wrong (§6.7). `is` had the same class of problem in the opposite direction and is now done |
-| `bs` `sq` | Very few harvest sources (7 and 12) — expect to translate almost everything by hand. Even `ga`, with 40 sources, only got a 7% hit rate, `mt` 5.2% from 7, and `lb` 4.5% from 7 |
+| `bs` | Very few harvest sources (7) — expect to translate almost everything by hand. Even `ga`, with 40 sources, only got a 7% hit rate, `mt` 5.2% from 7, `lb` 4.5% from 7 and `sq` 6.2% from 12 |
 | `bs` | openbuild's Croatian catalogue also ships under `bs.json`; dropped automatically |
 | `bs` `mk` | Same openbuild Croatian catalogue again. It has now been observed under **seven** names (`bs cs hr mk sk sl sr`), and in `sr` the contamination had already reached the *committed* bundle as `Revizijski trag #{id}` — so for these two, expect the defect **inside** the file and not only in the harvest sources (§8.4) |
 
@@ -409,6 +408,13 @@ are all in use. Note `loadLocaleConfig` whitelists the keys it reads, so a **new
 functional field must be added there or it is silently dropped (this bit once, with
 `pluralOrder`, which is why `pluralBoundary` was added to the whitelist in the same
 commit that started reading it).
+
+It has now happened twice — `spellAllow` was read by `spell.js` but absent from the
+whitelist, so `ca.json`'s 43 recorded words were dropped and every run printed
+`0 allowlisted` while re-reporting the same words. **What makes this class survive is that
+it fails in the safe direction**: a dropped allowlist makes a report noisier, never wrong, so
+nothing goes red and nobody looks. So verify a new field by making it do something
+observable, not by reading the code back.
 
 **`scripts/l10n/detectors/<loc>.js`** — the register detector. The gates call exactly two
 things, so those are the required exports: **`score(s) -> {f, i}`** and
@@ -1158,6 +1164,7 @@ this goes wrong:
 | `mt` | 4 | **Semitic, not European**: `1` / `0 and n%100 2–10` / `n%100 11–19` / `20+`. The noun is PLURAL only in form 1 — forms 0, 2 and 3 all take the SINGULAR (`ħdax-il ktieb`, `għoxrin ktieb`), so three near-identical forms are correct, not a defect. Header and library agree exactly |
 | `bg` | 2 | plain `n != 1` — but see the **count form** hazard below |
 | `lb` | 2 | plain `n != 1`, and header and library **agree at every count** with both forms reachable. The safe shape §7.1 predicts. Its one pre-existing array is the model for a two-form Germanic locale: `%n Antrag huet` / `%n Anträg hunn` agrees in BOTH the umlaut plural of the noun AND the verb, so an array here cannot be built by swapping the noun alone |
+| `sq` | 2 | plain `n != 1`, header and library agree at every count. Its pre-existing array is the model for a locale with an irregular noun plural: `%n zë ende nuk ka hash` / `%n zëra ende nuk kanë hash` agrees in the noun (`zë`/`zëra`) **and** the verb (`ka`/`kanë`) |
 | `rm` | 2 declared | the library knows no Romansh and returns **form 0 at every count**, so form 1 is unreachable — see the collapsed-form hazard below |
 
 The distinct hazards, every one of which has actually bitten (deliberately not numbered —
@@ -1261,7 +1268,7 @@ the library governs which element renders. `runtime-check.mjs` calls `unregister
 ### 7.2 Register verdicts, all measured
 
 Informal: `nl de sv da nb pl fi hu et lv ga mt is`.
-Formal: `fr cs ru uk tr el sr bg ca hr lt ro sk sl lb`.
+Formal: `fr cs ru uk tr el sr bg ca hr lt ro sk sl lb sq`.
 
 **`ga` is in the informal column for a different reason from every other entry in it**, and
 copying the label without the reason would be a real error: Irish has **no T-V distinction**,
@@ -1278,6 +1285,7 @@ mean they measured the same thing.
 | Locale | Prose | Evidence |
 | --- | --- | --- |
 | `sk` | formal | **1001 vs 1** over 4991 values / 31 catalogues — the clearest of any |
+| `sq` | formal | core 218 vs 1, family 556 vs 2 — and `ti` occurs **zero** times in 3980 values. The three informal values in the whole corpus are all outside this bundle (one in core/encryption, two in openconnector) |
 | `tr` | formal | 841 vs 0 |
 | `hr` | formal | 744 vs 1 (and the 1 is an example email address) |
 | `lt` | formal | 689 vs 0 |
@@ -1316,8 +1324,40 @@ decide.
 | bare 2sg imperative, whatever the prose | `ca` `et` `hr` `sl` `sr` `ga` `mt` | `Desa`, `Salvesta`, `Spremi`, `Shrani`, `Сачувај`, `Sábháil`, `Issejvja` |
 | **infinitive — register-neutral** | `cs` `lt` `lv` `sk` `rm` `is` `lb` | `Zobrazit`, `Įrašyti`, `Saglabāt`, `Uložiť`, `Memorisar`, `Vista`, `Späicheren` |
 | **verbal noun — register-neutral** | `ro` `bg` | `Salvare`, `Adăugare endpoint`; `Запазване`, `Добавяне на крайна точка` |
+| **2sg imperative for a label, 2pl once it is a sentence — GRADED BY LENGTH** | `sq` | `Ruaj` / `Fshi` / `Shto`, but `Menaxhoni regjistrat …`, `Filtroni dhe analizoni …` |
 
 Infinitive buttons must **not** be "corrected" to imperatives.
+
+**`sq` is a FIFTH pattern, and it is the first that is not categorical.** The other four
+pick one form and apply it to the whole label population; Albanian slides between two forms
+as the string gets longer, with no length at which they are interchangeable:
+
+| value length | 2sg | 2pl |
+| --- | --- | --- |
+| 1–14 | 219 | 1 |
+| 15–24 | 149 | 30 |
+| 25–39 | 69 | 37 |
+| 40–79 | 32 | 42 |
+| 80+ | 7 | 35 |
+
+Measured over core plus all four sibling frontends. The crossover sits at **~40
+characters**, and the reading is that the long end is not a "label convention" at all — it
+is ordinary formal prose that happens to open with a verb, so the register (§7.2) governs
+it and the button convention governs only the short end. That reframing is the useful part:
+**check whether a locale's apparent button convention is really two populations before
+recording one answer.** A single ratio over all action-verb keys would have reported
+`sq` as 476:145 "mostly 2sg" and produced a 2sg `Menaxho regjistrat e të dhënave tuaja`,
+which no sibling app writes.
+
+`ro.js` already used a length cap (40 characters) as a *detector* trick, to catch
+imperatives in labels while ignoring prose. Here the same boundary turns out to describe
+the convention itself, which is why the trick generalises: when a locale distinguishes
+label from sentence, a length bound is measuring something real.
+
+One lexical override sits on top of the gradient: **`Select …` / `Choose …` placeholder
+prompts take the 2pl imperative at any length** (67 vs 26), so `Zgjidhni një regjistër`
+even though it is 22 characters. Look for this shape elsewhere — a dropdown prompt is
+addressed to the user in a way a toolbar button is not.
 
 `cs` was the one entry in the infinitive row that had been **assumed rather than measured**
 (it predates the tooling, §9.2). It is now measured and it holds decisively: 48 bare action
@@ -1438,6 +1478,11 @@ Every one of these produced a wrong measurement:
 | `cs` | any 2sg imperative used unguarded | **its own 2pl counterpart**, because Czech forms the 2pl by suffixing `-te`: `vyber`⊂`vyberte`, `zadej`⊂`zadejte`, `přidej`⊂`přidejte`, `nastav`⊂`nastavte`, `zvol`⊂`zvolte`, `smaž`⊂`smažte`. This bundle holds 64 `vyberte` and core 48 `zadejte`, so an unguarded 2sg list scores the commonest **formal** shape in the corpus as informal and **inverts the verdict outright**. Worse than the `sk` `vy-` prefix, because it hits the markers themselves rather than unrelated vocabulary. Several stems are also prefixes of the app's own nouns — `nastav`⊂`nastavení` (the commonest noun in the bundle), `zobraz`⊂`zobrazení`, `obnov`⊂`obnovení`, `ulož`⊂`uložené`, `smaž`⊂`smazané` |
 | `cs` | `tvá` (informal possessive) | a **substring of `vytvářet`/`vytváření`** ("to create"/"creating"), one of the commonest verbs in this app — a raw scan finds it 48 times, every one inside that verb and none a possessive. Same polarity-inverting shape; `vytvoř` sits inside `vytvoření` likewise |
 
+| `sq` | `-ni`, the 2pl ending — present and imperative alike, so it looks like the single most productive formal marker | the **definite singular of every masculine noun whose stem ends in `-n`**. The corpus holds 220 distinct `-ni` tokens and the nouns among them are ordinary and frequent: `aplikacioni` 15, `pozicioni` 9, `versioni` 6, `tani` ("now") 6, `dokumentacioni` 4, `informacioni` 4, `shablloni` 3, `ekrani` 2, and `ini` 3 from `php.ini`. A `-ni` rule reports ~45 ordinary nouns as deferential address. The closed list runs to ~85 verb forms and is the only usable shape |
+| `sq` | `-sh`, the 2sg subjunctive ending | the **ablative plural of every noun**. `klasa objektesh`, `prej problemesh`, `kopjeruajtjesh`, `rimarrjesh`, `pultesh`, `veglash` are all real values. Closed list, and check that no member of it is also a noun form |
+| `sq` | bare `do`, the 2sg present of `dua` ("want") | **also the 3sg present, and also the FUTURE PARTICLE.** `do të` occurs **101 times** in the corpus in ordinary third-person prose (`Fjalëkalimi juaj do të skadojë nesër`). Counting bare `do` scores 108 values informal and inverts the verdict. Same shape as `lb` `muss` — a modal syncretising 2sg with 3sg — but an order of magnitude more frequent, because the syncretic form doubles as a tense marker |
+| `sq` | the whole `-oj` verb class, whose 2sg present looks like a marker | **spelled identically to the 3sg present**, for the largest verb class in the language: `krijon` is "you create" AND "it creates", likewise `ruan`, `fshin`, `filtron`, `dëshiron`. Unlike `bg` there is no conjugation split to rescue part of it — the syncretism *is* the paradigm, so the class is a total loss and informal recall rests on three irregulars (`ke`, `je`, `mundesh`), the possessives, the imperfect and a closed subjunctive list |
+
 Use closed word lists. Always.
 
 **The lesson generalises past Czech**: in any language whose 2pl is the 2sg plus a suffix —
@@ -1524,6 +1569,24 @@ recall where it is not needed.
   tell is a cluster of implausible short "words" that all share a stem with a real one. Check the
   target's own conventions — the apostrophe is already handled, but the interpunct, the Catalan/
   Occitan `ç`, and any language writing a digraph with an internal mark need the same treatment.
+- **THE LEFT GUARD MAY NEED A HYPHEN, AND `\p{L}` ALONE WILL NOT TELL YOU.** Every detector
+  in this directory guards its markers with `(?<!\p{L}) … (?!\p{L})`, which is correct for a
+  language that writes inflection inside the word. Albanian does not always: it attaches the
+  definite and case endings to acronyms and unassimilated loanwords **after a hyphen** —
+  `UUID-je`, `URL-je`, `Token-i`, `PHP-ja`, `DN-ja`, `email-it`, `webhook-it`. A hyphen is
+  not a letter, so `(?<!\p{L})je` matches the *inflectional ending* of `UUID-je` and scores
+  two real values (one core, one launchpad) as the 2sg copula "you are". `detectors/sq.js`
+  therefore guards every marker with `(?<![\p{L}-])`. Two further points that took measuring:
+  - **The right guard must stay `(?![\p{L}])`.** An ending attaches after the hyphen, never
+    before it, so barring a following hyphen only loses recall.
+  - **Do NOT extend the guard to the apostrophe.** Albanian contracts on both sides of the
+    register line — `t'ju` ("to you") is formal, `s'ke` ("you don't have") is informal — so an
+    apostrophe in the left guard would silence one real marker of each polarity.
+
+  The general rule: before writing the guard, ask **where the target language puts a
+  morpheme boundary**, not just what counts as a letter. Catalan needed the interpunct
+  *inside* the token class; Albanian needs the hyphen *outside* it. Both are the same
+  question answered in opposite directions.
 - **A probe without the `i` flag will under-count and look like a real finding.** The first
   `mt` register probe scored **zero** for the pronoun and would have been recorded that way;
   the bundle's three `Inti ċert li trid…` values are sentence-initial and so capitalised.
@@ -1782,6 +1845,32 @@ How to measure: count capitalised-mid-sentence against lowercase **per term** (t
 split is a convention to follow; a 1-of-34 outlier is a slip worth normalising while you are
 there, since leaving it means explaining later why the rule has exceptions.
 
+**AND CONDITION ON THE ENGLISH KEY'S OWN CASING, OR THE MEASUREMENT WILL INVENT WORK.**
+This is the `sq` finding and it is the one to carry forward, because the confound points
+the wrong way — it manufactures a defect class that does not exist:
+
+- The naive scan (every value, guard as above) reported openregister's own `sq` half
+  capitalising domain terms **25–35% of the time** — `objekt` 13/56, `gjurm` 12/38, `audit`
+  10/31, `skedar` 13/42 — against a family rate near **zero** (`pult` 4/134, `sinkroniz`
+  0/38, `botim` 6/85). That reads as a clean ~110-value defect and it is entirely spurious.
+- Re-run over **prose only** — English keys of ≥6 words that are *not* Title Case — and the
+  number is **0 capitalised against 177 lowercase**, with core 0/17 and the siblings 3/304.
+  The bundle never capitalises a domain term inside a sentence.
+- Every one of those 110 "defects" was a **Title-Cased heading key** (`Add Endpoint`,
+  `Active Filters`, `Total Deleted Items`), where the value correctly mirrors the source.
+  Measured that way — conditioning on the key — the family **follows** the English casing:
+  openregister 270 vs 11, core 39 vs 1, opencatalogi 100 vs 0, launchpad 65 vs 5, with
+  openconnector the lone dissenter at 9 vs 96.
+
+So there are **two populations and one gate-invisible rule for each**: mirror the key's
+casing for a short label or heading, lowercase inside a sentence. A single ratio over both
+is not a weaker measurement, it is a wrong one — and note the direction of the error, since
+"my locale capitalises where the family does not" is exactly the shape a pass will believe
+and act on. Getting this wrong costs 110 unnecessary edits to already-correct values.
+
+The cheap tell: if a supposed defect class is large, uniform, and concentrated in short
+values, check whether you are measuring the source rather than the translation.
+
 The same applies to the conventions already collected in `docs/l10n-ui-translation.md`:
 ellipsis spacing (`nb` and `sl` put a space before, `ru` and `bg` do not), dash choice,
 whether `%` takes a space, quote glyphs (`da` opens with `”`, `ru` uses guillemets), and
@@ -1877,15 +1966,15 @@ audited, `locales/cs.json` written), so the remaining set is
 are *doubly* un-audited, so the re-audit handoff reasonably predicted they would be as bad as
 `is` or worse. On this evidence the opposite is true for the mature ones:
 
-| | `is` (Transifex half) | `cs` (whole bundle) | `sk` (whole bundle) | `ca` (whole bundle) | `lb` (pre-existing half) |
-| --- | --- | --- | --- | --- | --- |
-| values audited | 1052 | 2052 | 2052 | 2052 | 1011 |
-| defects | 235 (**22%**) | 113 (**5.5%**) | 57 (**2.8%**) | 128 (**6.2%**) | 77 (**7.6%**) |
-| garbled words / foreign stems | 14 | **0** | 1 (one typo) | 2 (Spanish calques) | 2 (a French and a German form) |
-| agreement failures | 11 | **0** | **0** | 1 | 2 (both gender) |
-| wrong case | 19 | 6 | **0** | — (no case system) | **0** |
-| wrong plural arrays | — | **0** | **0** | **0** | **0** |
-| dominant class | malformed compounds, wrong senses | **terminology drift and internal inconsistency** | **one term (37 of 57), plus stray one-offs** | **on-screen collisions plus a long tail** | **one obligatory ORTHOGRAPHIC rule, 60 of 77 (§8.11)** |
+| | `is` (Transifex half) | `cs` (whole bundle) | `sk` (whole bundle) | `ca` (whole bundle) | `lb` (pre-existing half) | `sq` (pre-existing half) |
+| --- | --- | --- | --- | --- | --- | --- |
+| values audited | 1052 | 2052 | 2052 | 2052 | 1011 | 1018 |
+| defects | 235 (**22%**) | 113 (**5.5%**) | 57 (**2.8%**) | 128 (**6.2%**) | 77 (**7.6%**) | 160 (**15.7%**) |
+| garbled words / foreign stems | 14 | **0** | 1 (one typo) | 2 (Spanish calques) | 2 (a French and a German form) | 2 (both unparseable Albanian) |
+| agreement failures | 11 | **0** | **0** | 1 | 2 (both gender) | 14 (8 adjective, 6 participle) |
+| wrong case | 19 | 6 | **0** | — (no case system) | **0** | **0** |
+| wrong plural arrays | — | **0** | **0** | **0** | **0** | **0** |
+| dominant class | malformed compounds, wrong senses | **terminology drift and internal inconsistency** | **one term (37 of 57), plus stray one-offs** | **on-screen collisions plus a long tail** | **one obligatory ORTHOGRAPHIC rule, 60 of 77 (§8.11)** | **one ORTHOGRAPHIC stem (39) plus the button convention (36)** |
 
 Czech is an actively maintained locale with a real translator community and the bundle reads
 like it. So **budget these passes for terminology counting, not grammar repair** — and expect
@@ -1902,6 +1991,29 @@ third was unavailable: `lb` is one of the six locales with **no hunspell diction
 the spell report was a known gap rather than a clean result. Where all three reports come
 back thin, do not conclude the locale is healthy — ask what rule the language has that the
 reports are structurally unable to check.
+
+**`sq` is the highest defect rate outside `is` — 15.7% — and the two big classes were both
+things a reader's eye slides over.** 39 of the 160 were a single stem misspelled
+(`vectoriz-` for `vektoriz-`, in a bundle that already wrote `vektoriale` 15 times and once
+carried both spellings in the same value), and 36 were the button convention: a 2pl
+imperative on a short label, correct Albanian in isolation and wrong for a toolbar. Neither
+is a grammar failure and neither is terminology drift, so both fall outside the split the
+rows above describe. The generalisation: **a locale can be healthy in grammar and healthy in
+vocabulary and still be 15% wrong, if it is inconsistent about a mechanical rule.** `lb`'s
+sandhi and `sq`'s stem-and-register are the same shape — measure the *rule*, then count
+violations, rather than reading values and hoping to notice.
+
+Two further `sq` lessons about the reports themselves, both about false signals rather than
+missed ones:
+
+- **`termdrift` reported the minority side and the minority was right.** `hyrje` for *entry*
+  held 18 keys against `zë`'s 11, but core sq uses `hyrje` for **access** and renders
+  "directory entries" as `zëra`. Following the majority would have entrenched a collision
+  with the bundle's own need for "access". §6.9 says the majority is not automatically right;
+  this is the case that earns it.
+- **A capitalisation sweep manufactured a 110-value defect class that does not exist**, and
+  the confound pointed toward doing the work rather than away from it. See §8.10 — condition
+  on the English key's own casing before believing any casing measurement.
 
 **`ca` breaks the "defects concentrate" pattern, and that is the thing to plan for.** `sk` was
 37-of-57 in a single term, so the pass was one sweep. `ca`'s biggest class was 35 keys and *eleven
@@ -2038,3 +2150,18 @@ As of 2026-08-14 openconnector is behind on four counts:
 
 The whole of `scripts/l10n/` is worth porting, not just the library — openconnector has the
 same 37-bundle problem and none of the tooling.
+
+**Two `sq` register slips found in openconnector's own bundle** by the `sq` detector's
+family scan, and they are the only informal values in the whole 3980-value corpus:
+
+- `Nuk ke ende kredenciale të ndërmjetësuara. Krijo një së pari në OpenRegister.` — 2sg
+  present `ke`
+- `Referoju një kredenciali që mbahet nga ndërmjetësi … në vend që të ruash …` — 2sg
+  subjunctive `ruash`
+
+Both should be 2pl (`Nuk keni ende …`, `… të ruani …`). Albanian is measured formal at 218:1
+in core and 556:2 across the family (§7.2), so these are defects rather than a house style.
+Run `node scripts/l10n/detectors/sq.js` from this repo to re-find them after any fix.
+
+**`lib.js` gained a `spellAllow` line in the whitelist** during the `sq` pass (§4.4) — port
+it with the rest, or a vendored copy will keep silently dropping the field.

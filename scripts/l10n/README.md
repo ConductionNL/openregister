@@ -94,7 +94,7 @@ fifteen are left and ~375 identical values with them. Failing CI on those would 
 history as a regression, and some are legitimate — `nl` renders `Bewaartermijn` and
 `AVG / Verwerkingsregister` unchanged because those are Dutch words in a Dutch
 bundle. So enforcement keys on the existence of `locales/<loc>.json`: the sixteen
-recorded locales (`tr ca et hr lt lv ro sk sl bg sr rm ga mt is cs lb`) are held to it, the rest are
+recorded locales (`tr ca et hr lt lv ro sk sl bg sr rm ga mt is cs lb sq`) are held to it, the rest are
 **reported** as unreviewed by both
 `test:l10n:parity` and `runtime-check.mjs`. Add a `locales/<loc>.json` as each old
 locale gets reviewed and it becomes enforced from that moment.

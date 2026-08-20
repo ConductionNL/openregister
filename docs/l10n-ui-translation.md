@@ -47,7 +47,7 @@ by counting formal vs informal markers across core (`server/core`, `lib`,
 
 Measured results: informal for `nl`, `de`, `sv`, `da`, `nb`, `pl`, `fi`, `hu`,
 `et`, `lv`, `ga`, `mt`, `is`; formal for `fr`, `cs`, `ru`, `uk`, `tr`, `el`, `sr`, `bg`, `ca`, `hr`,
-`lt`, `sk`, `sl`, `rm`.
+`lt`, `sk`, `sl`, `rm`, `lb`, `sq`.
 
 **`cs` is measured as of this pass, not inherited.** It sat in the formal column from before
 any of the tooling existed (it is one of the sixteen pre-rule locales), and re-measuring it
@@ -117,7 +117,7 @@ paturēt?`) rather than only in notification email. The three formal hits are tw
 imperatives: `Skatiet dokumentāciju` twice, plus the tagline `Turiet savus kolēģus
 un draugus vienuviet`.
 
-**Button labels follow their own convention, and there are four patterns.**
+**Button labels follow their own convention, and there are five patterns.**
 Measure the *prose* register, then establish the button style separately from
 core's own short labels — a single verdict for the locale is usually meaningless:
 
@@ -127,6 +127,14 @@ core's own short labels — a single verdict for the locale is usually meaningle
 | bare 2sg imperative, whatever the prose | `ca`, `et`, `hr`, `sl`, `sr`, `ga`, `mt` | `Desa`, `Salvesta`, `Spremi`, `Shrani`, `Сачувај`, `Sábháil`, `Issejvja` |
 | **infinitive — register-neutral** | `cs`, `lt`, `lv`, `sk`, `rm`, `is` | `Zobrazit`/`Smazat`, `Įrašyti`/`Ištrinti`/`Atsisakyti`, `Saglabāt`/`Dzēst`/`Atcelt`, `Uložiť`/`Odstrániť`/`Zrušiť`, `Memorisar`/`Stizzar`/`Annullar`, `Vista`/`Eyða`/`Hætta við` |
 | **verbal noun — register-neutral** | `ro`, `bg` | `Salvare`/`Ștergere`/`Anulare`/`Adăugare endpoint`; `Запазване`/`Изтриване`/`Отказ`/`Добавяне на крайна точка` |
+| **2sg imperative for a label, 2pl once it is a sentence — GRADED BY LENGTH** | `sq` | `Ruaj`/`Fshi`/`Anulo`/`Eksporto`, but `Menaxhoni regjistrat …`/`Filtroni dhe analizoni …`; and `Zgjidhni …` for any `Select`/`Choose` prompt |
+
+`sq` is the only non-categorical entry: it slides between two forms with string length
+(219:1 in favour of 2sg at ≤14 characters, 7:35 the other way at 80+, crossover ~40).
+The reading is that the long end is not a label convention at all but formal prose that
+opens with a verb, so the register governs it and the button rule covers only the short
+end — see §7.3 of `docs/l10n-workflow.md`. **Check whether a locale's apparent button
+convention is really two populations before recording one answer.**
 
 `bg` reaches the same form as `ro` by the ordinary route rather than by divergence, and
 for a reason no Latin-script locale here has: **Bulgarian has no infinitive at all.** It
@@ -1467,10 +1475,10 @@ grammar repair. Counting competing renderings per English term produced about 70
   correct, including `_Successfully restored {count} object_`, which switches the participle's
   agreement per form (`Obnoven`/`Obnoveny`/`Obnoveno`) exactly as Czech requires.
 
-Thirty-two locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
+Thirty-three locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
 `nb`, `pl`, `cs`, `ru`, `uk`, `el`, `fi`, `hu`, `tr`, `ca`, `et`, `hr`, `lt`, `lv`,
-`ro`, `sk`, `sl`, `bg`, `sr`, `rm`, `ga`, `mt`, `is`, `lb` — the whole high-confidence group plus the
-first five of the low-resource ones. Four remain (`sq`, `mk`, `be`, `bs`),
+`ro`, `sk`, `sl`, `bg`, `sr`, `rm`, `ga`, `mt`, `is`, `lb`, `sq` — the whole high-confidence group plus the
+first six of the low-resource ones. Three remain (`mk`, `be`, `bs`),
 in that order, which the owner has confirmed — no need to re-ask per locale as long as
 the order is kept.
 
@@ -1611,3 +1619,83 @@ did. **`bs`, at 55 values in one catalogue, is the same trap.**
   Luxembourgish IT register borrows it and `Dreiwer` would be a coinage, but §3.3 finds 21
   distinct values and the `cs` pass called its own identical `Driver` filler. Challenge it if
   a native speaker disagrees.
+
+### `sq` traps
+
+Albanian was the least ambiguous **register** verdict in the set and one of the more
+interesting **convention** ones. Core is usable here (five catalogues, 603 values), so §5
+step 2 ran as written and needed no fallback.
+
+- **Register is formal beyond argument.** Core scores 218 polite markers to 1; the four
+  sibling frontends 556 to 2. The 2sg pronoun `ti` occurs **zero** times across 3980 values,
+  and the three informal values in the entire corpus all live outside this bundle — one in
+  core/encryption (`Vendos fjalëkalimin tënd`) and two in openconnector (`Nuk ke ende
+  kredenciale…`, `…në vend që të ruash…`). openregister's own 1019 pre-existing values carry
+  none. Both openconnector slips are §11 reciprocal work.
+- **`ju lutem` is register-bearing, which makes Albanian only the second locale where the
+  politeness formula pays.** Albanian's "please" inflects for the **addressee** — `ju lutem`
+  is "I beg you(pl)", `të lutem` "I beg you(sg)" — so the choice of object clitic *is* the
+  T-V choice. Measured 83 to 0. Contrast `lb` `wann ech glift`, `is` `vinsamlegast` and `ga`
+  `le do thoil`, all of which inflect for the speaker and are useless. Four of six checked
+  now come back empty; keep checking, because when it lands it is free and high-frequency.
+- **The button convention is a fifth pattern and the first non-categorical one.** 2sg
+  imperative for a label, 2pl once the string is a sentence, sliding monotonically with
+  length: 219:1 at ≤14 characters, 32:42 at 40–79, 7:35 at 80+. The crossover is ~40
+  characters. The right reading is that the long end is not a label convention at all but
+  ordinary formal prose opening with a verb — so §7.2 governs it and the button rule governs
+  only the short end. A single ratio over all action keys reports "476:145, mostly 2sg" and
+  would have produced `Menaxho regjistrat e të dhënave tuaja`, which no sibling writes.
+  On top of the gradient, `Select …`/`Choose …` prompts take 2pl at any length (67:26).
+- **Four detector exclusions, every one measured, and two of them are total.** `-ni` is the
+  2pl ending *and* the definite singular of every masculine `-n` stem (≈45 ordinary nouns in
+  the corpus: `aplikacioni`, `pozicioni`, `versioni`, `tani`, `php.ini`). `-sh` is the 2sg
+  subjunctive *and* the ablative plural of every noun. Bare `do` is 2sg **and** 3sg of `dua`
+  **and** the future particle — 101 occurrences of `do të` in third-person prose, so counting
+  it inverts the verdict. And the whole `-oj` class is unusable because its 2sg and 3sg
+  present are homographs; unlike `bg` there is no conjugation split to rescue part of it, so
+  informal recall rests on three irregulars, the possessives, the imperfect and a closed
+  subjunctive list. `tij`/`tyre` are excluded as third-person despite looking like `tënd`.
+- **THE LEFT GUARD NEEDED A HYPHEN, which is new in this set.** Albanian attaches the
+  definite/case ending to acronyms after a hyphen — `UUID-je`, `URL-je`, `Token-i`, `PHP-ja`,
+  `email-it` — so the standard `(?<!\p{L})` guard matched the *ending* of `UUID-je` as the 2sg
+  copula `je` and scored two real values informal. Every guard is `(?<![\p{L}-])`. The
+  apostrophe is deliberately **not** guarded: `t'ju` is formal, `s'ke` informal.
+- **The capitalisation measurement nearly manufactured 110 edits.** A naive mid-sentence scan
+  put this bundle at 25–35% capitalised domain terms against a family rate near zero.
+  Conditioned on the English key — prose only, ≥6 words and not Title Case — it is **0 of
+  177**, with core 0/17 and siblings 3/304. Every hit was a Title-Cased heading key whose
+  value correctly mirrors its source, and measured that way the family *follows* the English
+  casing (openregister 270:11, core 39:1, opencatalogi 100:0, launchpad 65:5, openconnector
+  the lone dissenter at 9:96). Two populations, two rules, and the naive number points the
+  wrong way. This is the most transferable finding of the pass; it is now §8.10.
+- **The dominant defect class was orthographic, not terminological.** 39 of the 160
+  corrections were `vectoriz-` → `vektoriz-`: Albanian `c` is /ts/, and the bundle *already*
+  wrote `vektoriale`/`vektorë`/`Rivektorizoni` 15 times. One value carried both spellings —
+  `parametrat për vectorizimin … embeddings vektoriale` — which settles it without an ask.
+- **Two collisions, both user-visible and both gate-invisible.** `Logs` and `Registers` were
+  each rendering `Regjistra` **as adjacent tabs** in `src/modals/source/ViewSource.vue:246`;
+  every finished locale distinguishes them (`sl` Dnevniki/Registri, `is` Annálar/Gagnaskrár,
+  `lb` Protokoller/Registeren), so `ditar` takes the log sense across 12 keys. And `Purge`
+  collided with `Clear` on `Pastro`; `Purge` is a button, so it took `Spastro`.
+- **`hyrje` was the wrong word for *entry*, and the majority was the defect.** 18 keys used
+  it against 11 using `zë`/`zëra` — but core sq uses `hyrje` for **access** ("të kenë hyrje
+  te instanca") and renders "directory entries" as `zëra`, and this bundle's own plural array
+  and chain-verification prose already used `zë`. `termdrift` reported the minority side, as
+  it is designed to; §6.9's warning that the majority is not automatically right earned its
+  place here.
+- **A tooling bug found by following the report's own advice.** `spell.js` tells you to put
+  legitimate words in `spellAllow` — and `loadLocaleConfig` had never whitelisted that field,
+  so `ca.json`'s 43 recorded words had been silently dropped since the `ca` pass while every
+  run printed "0 allowlisted". Fixed in `lib.js`; `ca` drops from 63 unknown words to 19 and
+  `sq` from 185 to 25. It failed in the safe direction, which is why it survived: a dropped
+  allowlist makes a report noisier, never wrong, so nothing ever went red.
+- **`Right` fired the §8.4 trap again.** The harvest offered `Djathtas` ("to the right");
+  the call site is an RBAC "Special Rights" `<th>` in `EditOrganisation.vue`, so it is
+  `E drejta`. `Display Name` offered `Trego Emrin` ("show the name!") for what is a field
+  label, `Emri i Shfaqur`. `View`, by contrast, really *is* an action button here and
+  `Shiko` was right — the harvest is not always the one that is wrong.
+- **`Read` is the only permission-matrix key that could be fixed.** §8.7 wants verbal nouns,
+  and `Read`'s two call sites are both nouns, so it became `Lexim`. `Create`/`Update`/`Delete`
+  are buttons in 8, 2 and 16 other files and cannot be, which leaves that header row mixed —
+  the same unresolved shape `sl` and `sr` shipped, and the same source-side defect `ro` had to
+  diverge from core over (§10).
