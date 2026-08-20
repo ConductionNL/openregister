@@ -327,4 +327,112 @@ class CredentialControllerTest extends TestCase {
 		$this->assertIsString($encoded);
 		$this->assertStringNotContainsString('SUPERSECRETTOKEN', $encoded);
 	}//end testSecretNeverAppearsInResponse()
+
+	/**
+	 * PUT /api/credentials/{id} is the ROTATION path — it writes to the vault
+	 * directly, bypassing CredentialBrokerService::mint() entirely, so it needs
+	 * its own trim (credential-broker-upstream-diagnostics D3). Pins the exact
+	 * incident: a secret rotated with a trailing newline must reach the vault
+	 * trimmed, not byte-for-byte.
+	 */
+	public function testUpdateTrimsTrailingWhitespaceFromARotatedSecret(): void {
+		$capturedSecret = null;
+		$store = $this->createMock(CredentialStore::class);
+		$store->method('put')->willReturnCallback(
+			function (string $uuid, string $secret, string $scope) use (&$capturedSecret) {
+				$capturedSecret = $secret;
+			}
+		);
+
+		$controller = $this->makeUpdateController(
+			ownerUid: 'alice',
+			credData: ['name' => 'My GitHub', 'provider' => 'github', 'allowedApps' => ['hermiq']],
+			params: ['secret' => "gho_rotated\n"],
+			store: $store
+		);
+
+		$response = $controller->update('cred-1');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame('gho_rotated', $capturedSecret);
+	}//end testUpdateTrimsTrailingWhitespaceFromARotatedSecret()
+
+	/**
+	 * A whitespace-only rotated secret trims to '' and is treated as "no
+	 * rotation requested" — the vault is never touched.
+	 */
+	public function testUpdateWithWhitespaceOnlySecretNeverTouchesTheVault(): void {
+		$store = $this->createMock(CredentialStore::class);
+		$store->expects($this->never())->method('put');
+
+		$controller = $this->makeUpdateController(
+			ownerUid: 'alice',
+			credData: ['name' => 'My GitHub', 'provider' => 'github', 'allowedApps' => ['hermiq']],
+			params: ['secret' => "  \n\t "],
+			store: $store
+		);
+
+		$response = $controller->update('cred-1');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+	}//end testUpdateWithWhitespaceOnlySecretNeverTouchesTheVault()
+
+	/**
+	 * Build a CredentialController for exercising update() — an owned personal
+	 * credential, a stub saveObject() that echoes the merged property bag back,
+	 * and a caller-supplied CredentialStore mock to assert the vault write.
+	 *
+	 * @param string $ownerUid The session/owner uid (owner guard passes).
+	 * @param array<string, mixed> $credData The existing credential's property bag.
+	 * @param array<string, mixed> $params The request body params (e.g. `secret`).
+	 * @param CredentialStore&\PHPUnit\Framework\MockObject\MockObject $store The vault mock.
+	 *
+	 * @return CredentialController The wired controller.
+	 */
+	private function makeUpdateController(
+		string $ownerUid,
+		array $credData,
+		array $params,
+		CredentialStore $store,
+	): CredentialController {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($ownerUid);
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+
+		$entity = new ObjectEntity();
+		$entity->setOwner($ownerUid);
+		$entity->setObject($credData);
+
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->method('find')->willReturn($entity);
+		$objectService->method('saveObject')->willReturnCallback(
+			function (array $object, ...$rest) {
+				$saved = new ObjectEntity();
+				$saved->setObject($object);
+				return $saved;
+			}
+		);
+
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParam')->willReturnCallback(
+			static function (string $key, $default = null) use ($params) {
+				return array_key_exists($key, $params) ? $params[$key] : $default;
+			}
+		);
+
+		return new CredentialController(
+			'openregister',
+			$request,
+			$session,
+			$this->createMock(IGroupManager::class),
+			$objectService,
+			$store,
+			$this->createMock(ProviderCatalogue::class),
+			$this->createMock(CredentialBrokerService::class),
+			$this->createMock(CredentialAppTokenService::class),
+			$this->createMock(OrganisationService::class),
+			new SharePrincipalDeriver()
+		);
+	}//end makeUpdateController()
 }//end class

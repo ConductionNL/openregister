@@ -45,6 +45,20 @@
  * fourth are enforced when the flow is SAVED, because a flow that could delete
  * unboundedly must not be persistable at all.
  *
+ * BULK MODE (`bulk: true`) trades the per-item service round-trip for ONE
+ * `ObjectService::saveObjects()` call covering the whole page of items. It is
+ * for pipelines whose item count comes from an external source — a
+ * synchronization page of hundreds of rows — where per-item `saveObject()` is
+ * the dominant cost. The trade is explicit and validated at save time:
+ * only `create` and `upsert` qualify (`update` and `delete` keep their
+ * per-item guards), a bulk upsert must match on `uuid` alone and carry
+ * `replace: true` because the bulk path replaces whole objects and cannot
+ * patch, and `onConflict: fail` is refused because the bulk path cannot
+ * arbitrate per-row claims. Per-object lifecycle events are not dispatched —
+ * that is much of what makes it bulk. Attribution and RBAC do not move:
+ * the one call still runs inside `runAs($owner)` and `saveObjects()` applies
+ * its own per-row permission checks.
+ *
  * The delete is SOFT unless `permanent: true` says otherwise, and that default
  * does not move: a tombstone is what makes a mistaken flow recoverable. The
  * opt-out exists for a row that is a CLAIM rather than a record — a lock, a slot,
@@ -83,6 +97,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -93,6 +108,7 @@ use OCP\IUserManager;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCP\WorkflowEngine\IManager;
 use RuntimeException;
+use Symfony\Component\Uid\Uuid;
 use Throwable;
 use UnexpectedValueException;
 
@@ -104,7 +120,7 @@ use UnexpectedValueException;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One branch per named configuration key and one per operation; collapsing it hides the guards.
  * @SuppressWarnings(PHPMD.TooManyMethods)           One small, named method per guard and per operation; merging them would bury the delete guards.
  */
-class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys {
+class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm {
 
 	/**
 	 * Insert a new object; never look for an existing one.
@@ -409,6 +425,8 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys {
 			'fields',
 			'match',
 			'replace',
+			'bulk',
+			'skipWhen',
 			'output',
 			'confirmDelete',
 			'permanent',
@@ -419,6 +437,152 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys {
 		];
 
 	}//end configKeys()
+
+	/**
+	 * The fields this node is edited through.
+	 *
+	 * `fields` and `match` are deliberately absent: they are structured values
+	 * whose shape depends on the schema being written, and the editor's JSON
+	 * pane represents them honestly where a flat text field would not.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/changes/or-flow-bulk-object-write/specs/flow-object-write-bulk/spec.md
+	 */
+	public function configForm(): array {
+		return array_merge($this->targetConfigForm(), $this->policyConfigForm());
+	}//end configForm()
+
+	/**
+	 * The form fields naming WHAT is written and where.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/changes/or-flow-bulk-object-write/specs/flow-object-write-bulk/spec.md
+	 */
+	private function targetConfigForm(): array {
+		return [
+			[
+				'key' => 'register',
+				'label' => $this->l10n->t('Register'),
+				'type' => 'select',
+				'help' => $this->l10n->t('The register the objects are written into.'),
+				'required' => true,
+				'optionsFrom' => '/apps/openregister/api/registers',
+			],
+			[
+				'key' => 'schema',
+				'label' => $this->l10n->t('Schema'),
+				'type' => 'select',
+				'help' => $this->l10n->t(
+					'The schema the objects are validated against. A slug is resolved within the chosen register only.'
+				),
+				'required' => true,
+				'optionsFrom' => '/apps/openregister/api/schemas',
+			],
+			[
+				'key' => 'operation',
+				'label' => $this->l10n->t('Operation'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'One of: create, update, upsert, delete. Update, upsert and delete need at least one match pair.'
+				),
+				'required' => true,
+			],
+			[
+				'key' => 'bulk',
+				'label' => $this->l10n->t('Write the whole page in one call'),
+				'type' => 'boolean',
+				'help' => $this->l10n->t(
+					'Create and upsert only. One bulk save covers every item — much faster for large pages, '
+					.'but per-object lifecycle events are not dispatched, and a bulk upsert must match on "uuid" alone with "replace" on.'
+				),
+			],
+			[
+				'key' => 'skipWhen',
+				'label' => $this->l10n->t('Skip an item when this field says so'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'A field on the item. When it holds true, or the word "skip", that item passes through '
+					.'UNWRITTEN and still travels on to later steps. Use it to leave unchanged objects alone. '
+					.'Filtering those items out instead would remove them from what a synchronization sweep '
+					.'counts as reached, and the sweep would then delete them.'
+				),
+			],
+			[
+				'key' => 'replace',
+				'label' => $this->l10n->t('Replace instead of patch'),
+				'type' => 'boolean',
+				'help' => $this->l10n->t(
+					'An update normally patches only the fields named. '
+					.'Replacing writes the payload as the whole object — fields it does not name are gone.'
+				),
+			],
+			[
+				'key' => 'output',
+				'label' => $this->l10n->t('Field to store the written object in'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'With a field name, the incoming item is preserved and the written object is added under it. '
+					.'Empty means the written object replaces the item.'
+				),
+			],
+		];
+	}//end targetConfigForm()
+
+	/**
+	 * The form fields naming HOW capping, conflict and deletion behave.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/changes/or-flow-bulk-object-write/specs/flow-object-write-bulk/spec.md
+	 */
+	private function policyConfigForm(): array {
+		return [
+			[
+				'key' => 'maxWrites',
+				'label' => $this->l10n->t('Write cap'),
+				'type' => 'number',
+				'help' => $this->l10n->t('The most writes one step execution may perform. The instance default applies when empty.'),
+			],
+			[
+				'key' => 'onMissing',
+				'label' => $this->l10n->t('When a field value is missing'),
+				'type' => 'text',
+				'help' => $this->l10n->t('"omit" (default) drops the field from the payload; "fail" fails the item.'),
+			],
+			[
+				'key' => 'onConflict',
+				'label' => $this->l10n->t('When a created identifier is taken'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'"overwrite" (default) keeps the historical upsert behaviour; '
+					.'"fail" refuses, for writes that are claims — locks, slots, leases. Not available in bulk.'
+				),
+			],
+			[
+				'key' => 'onNoMatch',
+				'label' => $this->l10n->t('When a delete matches nothing'),
+				'type' => 'text',
+				'help' => $this->l10n->t('"error" (default) fails the item; "skip" passes it through with "deleted": false.'),
+			],
+			[
+				'key' => 'confirmDelete',
+				'label' => $this->l10n->t('Confirm deletion'),
+				'type' => 'boolean',
+				'help' => $this->l10n->t('A delete step will not save without this deliberate second acknowledgement.'),
+			],
+			[
+				'key' => 'permanent',
+				'label' => $this->l10n->t('Destroy instead of tombstone'),
+				'type' => 'boolean',
+				'help' => $this->l10n->t(
+					'Deletes are soft by default, which is what makes a mistaken flow recoverable. '
+					.'Turn this on only for rows that are claims whose identifier must become claimable again.'
+				),
+			],
+		];
+	}//end policyConfigForm()
 
 	/**
 	 * Refuse a configuration the author cannot have meant.
@@ -475,7 +639,93 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys {
 		$this->validateOperationKeys(config: $config, operation: $operation);
 		$this->validateOptionKeys(config: $config);
 
+		if (array_key_exists('bulk', $config) === true) {
+			$this->validateBulkKeys(config: $config, operation: $operation);
+		}
+
 	}//end validateConfig()
+
+	/**
+	 * The save-time half of the bulk guards.
+	 *
+	 * Bulk mode swaps the per-item service round-trip for one
+	 * `saveObjects()` call, and that path genuinely has fewer semantics than
+	 * the single-object one: it replaces rather than patches, it cannot
+	 * arbitrate a per-row claim, and it decides create-versus-update by row
+	 * uuid rather than by a composite match. Every one of those gaps is
+	 * refused HERE, at save time, rather than silently absorbed at 3am —
+	 * the same rule the delete guards follow.
+	 *
+	 * @param array $config The step configuration.
+	 * @param string $operation The configured operation.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When bulk is combined with semantics the bulk path does not have.
+	 *
+	 * @spec openspec/changes/or-flow-bulk-object-write/specs/flow-object-write-bulk/spec.md
+	 */
+	private function validateBulkKeys(array $config, string $operation): void {
+		// A boolean, strictly — the string "false" is truthy, and this switch
+		// changes which write path a whole page of items goes down.
+		if (is_bool($config['bulk']) === false) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('"bulk" must be true or false, as a boolean.')
+			);
+		}
+
+		if ($config['bulk'] === false) {
+			return;
+		}
+
+		if (in_array($operation, [self::OP_CREATE, self::OP_UPSERT], true) === false) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('"bulk" supports create and upsert only; a "%s" step writes one object at a time, keeping its per-item guards.', [$operation])
+			);
+		}
+
+		// `saveObjects()` upserts silently; there is no per-row failIfExists.
+		// Offering `fail` here would accept the claim semantics and not
+		// deliver them, which is the exact defect ON_CONFLICT_FAIL exists
+		// to prevent.
+		if (($config['onConflict'] ?? null) === self::ON_CONFLICT_FAIL) {
+			throw new UnexpectedValueException(
+				$this->l10n->t(
+					'"onConflict": "fail" is not available in bulk; the bulk path cannot arbitrate per-row claims. '
+					.'Use the single-object path for writes that are claims.'
+				)
+			);
+		}
+
+		if ($operation !== self::OP_UPSERT) {
+			return;
+		}
+
+		// The bulk path is PUT-semantic — MagicMapper writes whole rows and
+		// never consults the stored object first — so a bulk upsert without
+		// `replace: true` would silently null every field the mapping did not
+		// mention. Rule 2 of this node forbids exactly that, so the author
+		// must say the word.
+		if (($config['replace'] ?? null) !== true) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('A bulk upsert must carry "replace": true — the bulk path replaces whole objects and cannot patch.')
+			);
+		}
+
+		// `saveObjects()` decides create-versus-update by the row's uuid, so
+		// the uuid is the ONLY match a bulk upsert can honour. A composite
+		// match accepted here would be evaluated by nothing.
+		$pairs = $this->matchPairs(config: $config);
+		$property = ($pairs[0]['property'] ?? '');
+		if (count($pairs) !== 1
+			|| in_array($property, ['uuid', self::SELF_PREFIX.'uuid'], true) === false
+		) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('A bulk upsert must match on exactly one property, "uuid" (or "@self.uuid"); a composite match needs the single-object path.')
+			);
+		}
+
+	}//end validateBulkKeys()
 
 	/**
 	 * Write one object per item, as the run's owner.
@@ -554,6 +804,23 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys {
 		//
 		// This narrows; it never grants. A run whose owner cannot write is
 		// still refused, and now says so for the right reason.
+		if (($config['bulk'] ?? false) === true) {
+			return $this->objects->runAs(
+				$owner,
+				fn (): array => $this->writeBulk(
+					items: $items,
+					config: $config,
+					operation: $operation,
+					register: $register,
+					schema: $schema,
+					pairs: $pairs,
+					fields: $fields,
+					onMissing: $onMissing,
+					cap: $cap
+				)
+			);
+		}
+
 		return $this->objects->runAs(
 			$owner,
 			fn (): array => $this->writeItems(
@@ -621,9 +888,23 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys {
 		$writes = 0;
 		$out = [];
 
+		$skipWhen = trim((string)($config['skipWhen'] ?? ''));
+
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
 			$binary = (array)($item[FlowItems::BINARY] ?? []);
+
+			// PASS THROUGH, DO NOT DROP. An item the author marked as
+			// already-current is emitted unchanged and costs no write and no
+			// cap. It must still be EMITTED: `openregister.filter` would
+			// remove it, and a synchronisation's sweep decides what to delete
+			// from the target ids its items carry — so dropping an unchanged
+			// item is what makes the next sweep delete the very object that
+			// was fine.
+			if ($skipWhen !== '' && $this->isSkipped(path: $skipWhen, json: $json) === true) {
+				$out[] = FlowItems::item(json: $json, binary: $binary, fromItemIndex: (int)$index);
+				continue;
+			}
 
 			if ($operation === self::OP_DELETE) {
 				$out[] = $this->executeDelete(
@@ -677,6 +958,251 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys {
 
 		return $out;
 	}//end writeItems()
+
+	/**
+	 * Write the whole page of items through ONE `saveObjects()` call.
+	 *
+	 * Every row's uuid is decided CLIENT-SIDE before the call — generated for
+	 * a create, taken from the item's match value for an upsert — because the
+	 * bulk result comes back categorised (`saved` / `updated` / `unchanged`),
+	 * not in input order. Owning the uuid is what lets each output item name
+	 * the row it produced without guessing at a correlation, and it is what a
+	 * downstream contract-commit step reads as the target id.
+	 *
+	 * The cap is enforced against the page size BEFORE anything is written.
+	 * The per-item path stops at the cap mid-page, which is recoverable
+	 * because each write already happened or did not; one bulk call has no
+	 * such midpoint, so the only honest cap is a refusal up front.
+	 *
+	 * @param array $items The input items.
+	 * @param array $config The step configuration.
+	 * @param string $operation The resolved operation (create or upsert).
+	 * @param Register $register The resolved register.
+	 * @param Schema $schema The resolved schema.
+	 * @param array $pairs The match pairs (one uuid pair for an upsert).
+	 * @param array $fields The configured fields.
+	 * @param string $onMissing The missing-field policy.
+	 * @param int $cap The write cap.
+	 *
+	 * @return array One output item per input item.
+	 *
+	 * @throws RuntimeException When the page exceeds the cap, a match value cannot
+	 *                          be resolved, or the bulk save rejected rows.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The parameters execute() already resolved, same as writeItems().
+	 *
+	 * @spec openspec/changes/or-flow-bulk-object-write/specs/flow-object-write-bulk/spec.md
+	 */
+	private function writeBulk(
+		array $items,
+		array $config,
+		string $operation,
+		Register $register,
+		Schema $schema,
+		array $pairs,
+		array $fields,
+		string $onMissing,
+		int $cap,
+	): array {
+		if (count($items) > $cap) {
+			throw new RuntimeException(
+				$this->l10n->t(
+					'This bulk write of %1$s items exceeds the step\'s write cap of %2$s; nothing was written.',
+					[(string)count($items), (string)$cap]
+				)
+			);
+		}
+
+		$plan = $this->planBulkRows(
+			items: $items,
+			config: $config,
+			operation: $operation,
+			pairs: $pairs,
+			fields: $fields,
+			onMissing: $onMissing
+		);
+		$rows = $plan['rows'];
+		$ids = $plan['ids'];
+		$skipped = $plan['skipped'];
+
+		// Nothing to write once the skips are removed: return the items as
+		// they arrived rather than calling saveObjects() with an empty payload.
+		if ($rows === []) {
+			return $this->passThrough(items: $items);
+		}
+
+		// Validation stays ON to keep parity with the single-object path;
+		// per-object lifecycle events stay OFF because dispatching thousands
+		// of them is precisely the cost bulk mode exists to shed — the
+		// palette help says so in as many words.
+		$result = $this->objects->saveObjects(
+			objects: $rows,
+			register: $register,
+			schema: $schema,
+			validation: true,
+			events: false
+		);
+
+		$this->guardBulkFailures(result: $result);
+		$written = $this->indexBulkResults(result: $result);
+
+		$out = [];
+		$position = 0;
+		foreach ($items as $index => $item) {
+			// Skipped items were never sent, so they have no row and no id.
+			// Emit them exactly as they arrived, in place.
+			if (array_key_exists($index, $skipped) === true) {
+				$out[] = FlowItems::item(
+					json: (array)($item[FlowItems::JSON] ?? []),
+					binary: (array)($item[FlowItems::BINARY] ?? []),
+					fromItemIndex: (int)$index
+				);
+				continue;
+			}
+
+			$id = (string)$ids[$index];
+			$saved = ($written[$id] ?? null);
+
+			// The bulk result carries the serialised row when the id came
+			// back; the sent payload is the fallback so the output never
+			// goes dark.
+			$json = $saved;
+			if (is_array($json) === false) {
+				$json = $rows[$position];
+			}
+
+			$position++;
+
+			unset($json['@self'], $json['id']);
+			$json['uuid'] = $id;
+			$json['register'] = $this->identifierOf(register: $register);
+			$json['schema'] = $this->labelOf(schema: $schema);
+
+			$out[] = FlowItems::item(
+				json: $this->outputJson(
+					incoming: (array)($item[FlowItems::JSON] ?? []),
+					written: $json,
+					config: $config
+				),
+				binary: (array)($item[FlowItems::BINARY] ?? []),
+				fromItemIndex: (int)$index
+			);
+		}//end foreach
+
+		return $out;
+	}//end writeBulk()
+
+	/**
+	 * The uuid one bulk row is written under.
+	 *
+	 * A create generates one — the same v4 form `saveObjects()` itself would
+	 * assign — so the node knows every row's identity without re-reading. An
+	 * upsert resolves the single uuid match pair against the item; a value
+	 * that does not resolve fails the item rather than widening into a
+	 * create, because a match key is never omitted.
+	 *
+	 * @param string $operation The resolved operation.
+	 * @param array $pairs The match pairs.
+	 * @param array $json The item's record.
+	 *
+	 * @return string The row uuid.
+	 *
+	 * @throws RuntimeException When an upsert's match value cannot be resolved.
+	 *
+	 * @spec openspec/changes/or-flow-bulk-object-write/specs/flow-object-write-bulk/spec.md
+	 */
+	private function bulkRowId(string $operation, array $pairs, array $json): string {
+		if ($operation === self::OP_CREATE) {
+			return Uuid::v4()->toRfc4122();
+		}
+
+		$property = (string)($pairs[0]['property'] ?? 'uuid');
+		$resolved = $this->resolveTemplate(value: ($pairs[0]['value'] ?? null), json: $json);
+		$id = '';
+		if ($resolved['resolved'] === true && is_scalar($resolved['value']) === true) {
+			$id = trim((string)$resolved['value']);
+		}
+
+		if ($id === '') {
+			throw new RuntimeException(
+				$this->l10n->t('The match value for "%s" could not be resolved from the item; a match key is never omitted.', [$property])
+			);
+		}
+
+		return $id;
+	}//end bulkRowId()
+
+	/**
+	 * Refuse to report a bulk save that rejected rows as a success.
+	 *
+	 * `saveObjects()` never throws for a rejected row — refusals land in the
+	 * result's `invalid` and `errors` buckets while the accepted rows are
+	 * already written. Folding that into per-item output would be exactly the
+	 * hollow success this node's third rule forbids, so the step fails
+	 * loudly, naming the count, the first reason, and the fact that the
+	 * accepted writes were not rolled back.
+	 *
+	 * @param array $result The bulk save result.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When any row was rejected.
+	 *
+	 * @spec openspec/changes/or-flow-bulk-object-write/specs/flow-object-write-bulk/spec.md
+	 */
+	private function guardBulkFailures(array $result): void {
+		$invalid = (array)($result['invalid'] ?? []);
+		$errors = (array)($result['errors'] ?? []);
+
+		// `invalid` and `errors` mirror each other for safeguard rejections;
+		// take the larger so a bucket populated by only one path still counts.
+		$failures = max(count($invalid), count($errors));
+		if ($failures === 0) {
+			return;
+		}
+
+		$first = '';
+		foreach (array_merge($invalid, $errors) as $entry) {
+			if (is_array($entry) === true && trim((string)($entry['error'] ?? '')) !== '') {
+				$first = trim((string)$entry['error']);
+				break;
+			}
+		}
+
+		throw new RuntimeException(
+			$this->l10n->t(
+				'The bulk write rejected %1$s of its rows (first reason: %2$s); accepted rows were written and were not rolled back.',
+				[(string)$failures, $first]
+			)
+		);
+
+	}//end guardBulkFailures()
+
+	/**
+	 * Index the bulk result's serialised rows by uuid.
+	 *
+	 * @param array $result The bulk save result.
+	 *
+	 * @return array<string, array<string, mixed>> Serialised rows keyed by uuid.
+	 */
+	private function indexBulkResults(array $result): array {
+		$written = [];
+		foreach (['saved', 'updated', 'unchanged'] as $bucket) {
+			foreach ((array)($result[$bucket] ?? []) as $row) {
+				if (is_array($row) === false) {
+					continue;
+				}
+
+				$self = (array)($row['@self'] ?? []);
+				$uuid = (string)($self['uuid'] ?? $self['id'] ?? $row['uuid'] ?? $row['id'] ?? '');
+				if ($uuid !== '') {
+					$written[$uuid] = $row;
+				}
+			}
+		}
+
+		return $written;
+	}//end indexBulkResults()
 
 	/**
 	 * The json a written item carries onward.
@@ -1366,6 +1892,117 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys {
 
 		return ['resolved' => true, 'value' => $out];
 	}//end resolveTemplate()
+
+	/**
+	 * Decide, for a bulk page, which items are written and under which ids.
+	 *
+	 * Split out of {@see writeBulk()} to keep that method inside phpmd's
+	 * length and complexity thresholds once `skipWhen` added a branch to it.
+	 *
+	 * @param array $items The input items.
+	 * @param array $config The step configuration.
+	 * @param string $operation The resolved operation.
+	 * @param array $pairs The match pairs.
+	 * @param array $fields The configured fields.
+	 * @param string $onMissing The missing-field policy.
+	 *
+	 * @return array{rows: array, ids: array, skipped: array} The plan.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The parameters writeBulk() already resolved.
+	 *
+	 * @spec openspec/changes/or-flow-object-write-skip-when/specs/flow-object-write-skip-when/spec.md
+	 */
+	private function planBulkRows(
+		array $items,
+		array $config,
+		string $operation,
+		array $pairs,
+		array $fields,
+		string $onMissing,
+	): array {
+		// A skipped item contributes NO row, so it is not written — but it is
+		// still emitted by the caller, with its own json untouched. See the
+		// note in writeItems(): dropping it is what makes a later sweep
+		// delete it.
+		$skipWhen = trim((string)($config['skipWhen'] ?? ''));
+
+		$rows = [];
+		$ids = [];
+		$skipped = [];
+		foreach ($items as $index => $item) {
+			$json = (array)($item[FlowItems::JSON] ?? []);
+			if ($skipWhen !== '' && $this->isSkipped(path: $skipWhen, json: $json) === true) {
+				$skipped[$index] = true;
+				continue;
+			}
+
+			$payload = $this->buildPayload(fields: $fields, json: $json, onMissing: $onMissing);
+			$id = $this->bulkRowId(operation: $operation, pairs: $pairs, json: $json);
+			$payload['id'] = $id;
+			$rows[] = $payload;
+			$ids[$index] = $id;
+		}
+
+		return ['rows' => $rows, 'ids' => $ids, 'skipped' => $skipped];
+	}//end planBulkRows()
+
+	/**
+	 * Emit every item exactly as it arrived.
+	 *
+	 * @param array $items The input items.
+	 *
+	 * @return array One output item per input item.
+	 *
+	 * @spec openspec/changes/or-flow-object-write-skip-when/specs/flow-object-write-skip-when/spec.md
+	 */
+	private function passThrough(array $items): array {
+		$out = [];
+		foreach ($items as $index => $item) {
+			$out[] = FlowItems::item(
+				json: (array)($item[FlowItems::JSON] ?? []),
+				binary: (array)($item[FlowItems::BINARY] ?? []),
+				fromItemIndex: (int)$index
+			);
+		}
+
+		return $out;
+	}//end passThrough()
+
+	/**
+	 * Whether this item says it is already current, so no write is needed.
+	 *
+	 * Truthiness is deliberately narrow. A dot-path landing on the STRING
+	 * "skip" counts, because that is the vocabulary the synchronisation
+	 * pipeline's contract step stamps (`contract.outcome`), and the natural
+	 * thing to configure is `skipWhen: "contract.outcome"`. Booleans count for
+	 * a flow that computes its own flag. Everything else — including the
+	 * strings "false" and "0", which are truthy in PHP — does NOT, because a
+	 * value nobody meant as a skip must not silence a write.
+	 *
+	 * @param string $path The configured dot-path.
+	 * @param array $json The item's record.
+	 *
+	 * @return bool Whether the item is already current.
+	 *
+	 * @spec openspec/changes/or-flow-object-write-skip-when/specs/flow-object-write-skip-when/spec.md
+	 */
+	private function isSkipped(string $path, array $json): bool {
+		$found = $this->lookupPath(path: $path, json: $json);
+		if ($found['found'] === false) {
+			return false;
+		}
+
+		$value = $found['value'];
+		if (is_bool($value) === true) {
+			return $value;
+		}
+
+		if (is_string($value) === true) {
+			return (strtolower(trim($value)) === 'skip');
+		}
+
+		return false;
+	}//end isSkipped()
 
 	/**
 	 * Walk a dotted path through the item's record.

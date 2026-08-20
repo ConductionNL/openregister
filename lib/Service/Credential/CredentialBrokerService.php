@@ -254,7 +254,8 @@ class CredentialBrokerService {
 			url: $resolvedUrl,
 			headers: $requestHeaders,
 			body: $body,
-			credentialId: $credentialId
+			credentialId: $credentialId,
+			secret: (string)$secret
 		);
 	}//end request()
 
@@ -402,6 +403,15 @@ class CredentialBrokerService {
 			throw new InvalidArgumentException(message: 'A credential requires a name and a provider');
 		}
 
+		// Garbage-in prevention: a copy-pasted secret can carry a trailing
+		// newline or stray whitespace that later fails header injection at
+		// call time (openregister broker-error-swallow incident). Trim it
+		// once, here, so every mint (HTTP create + any in-process minter)
+		// stores the same normalised value. An all-whitespace secret trims
+		// to '', which the empty-secret branch below already treats as
+		// "metadata only, no vault write".
+		$secret = $this->trimmedSecret(secret: $secret);
+
 		$data = [
 			'name' => $name,
 			'provider' => $provider,
@@ -485,6 +495,28 @@ class CredentialBrokerService {
 			);
 		}
 	}//end discardOrphanedCredential()
+
+	/**
+	 * Trim leading/trailing whitespace (including newlines) from an incoming secret.
+	 *
+	 * A `null` secret ("metadata only, no vault write") passes through unchanged.
+	 * An all-whitespace secret trims to `''`, which the caller's existing
+	 * empty-secret check already treats as "no secret supplied" — introducing
+	 * no new edge case.
+	 *
+	 * @param string|null $secret The raw, caller-supplied secret, or null.
+	 *
+	 * @return string|null The trimmed secret, or null unchanged.
+	 *
+	 * @spec openspec/changes/credential-broker-upstream-diagnostics/specs/credential-broker/spec.md#requirement-a-credential-secret-is-trimmed-of-surrounding-whitespace-before-storage
+	 */
+	private function trimmedSecret(?string $secret): ?string {
+		if ($secret === null) {
+			return null;
+		}
+
+		return trim($secret);
+	}//end trimmedSecret()
 
 	/**
 	 * Whether a resolved provider entry is inject-only (app-side injection, never proxied).
@@ -1115,14 +1147,16 @@ class CredentialBrokerService {
 	 * @param array<string, string> $headers The final request headers (auth injected).
 	 * @param string|null $body The optional raw request body.
 	 * @param string $credentialId The credential UUID (for logging).
+	 * @param string $secret The raw secret injected into this call's headers, redacted out of any
+	 *                       transport failure's message before it is logged or re-thrown (design D1).
 	 *
 	 * @return array{status: int, headers: array<string, mixed>, body: string} The upstream response.
 	 *
 	 * @throws CredentialUpstreamException When the call fails at the transport level.
 	 *
-	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/changes/credential-broker-upstream-diagnostics/specs/credential-broker/spec.md#requirement-upstream-transport-failures-carry-a-secret-free-real-reason
 	 */
-	private function performCall(string $method, string $url, array $headers, ?string $body, string $credentialId): array {
+	private function performCall(string $method, string $url, array $headers, ?string $body, string $credentialId, string $secret): array {
 		$options = [
 			'headers' => $headers,
 			'http_errors' => false,
@@ -1135,11 +1169,18 @@ class CredentialBrokerService {
 			$client = $this->clientService->newClient();
 			$response = $client->request($method, $url, $options);
 		} catch (Throwable $e) {
+			// The secret was just injected into these headers a few lines above,
+			// so a transport exception's OWN message can embed it verbatim (e.g.
+			// NC's HTTP client rejects an invalid header value by quoting the
+			// value it rejected — openregister broker-error-swallow incident,
+			// where the rejected value WAS the header carrying the secret).
+			// Redact before this reaches a log line or an exception object.
+			$reason = $this->describeUpstreamFailure(exception: $e, secret: $secret);
 			$this->logger->error(
 				'[CredentialBrokerService] upstream call failed',
-				['credential' => $credentialId, 'error' => $e->getMessage()]
+				['credential' => $credentialId, 'error' => $reason]
 			);
-			throw new CredentialUpstreamException(message: 'Upstream request failed');
+			throw new CredentialUpstreamException(message: 'Upstream request failed: ' . $reason);
 		}
 
 		$rawBody = $response->getBody();
@@ -1153,6 +1194,47 @@ class CredentialBrokerService {
 			'body' => (string)$rawBody,
 		];
 	}//end performCall()
+
+	/**
+	 * Describe a transport failure with the credential's secret redacted.
+	 *
+	 * Redacts by exact substring rather than by heuristic: the broker already
+	 * knows the precise secret value injected into this call, so removing
+	 * exactly that string (and its trimmed variant, in case a transport layer
+	 * normalises whitespace before surfacing the value) cannot under- or
+	 * over-redact the way a generic "looks like a token" pattern could. The
+	 * exception's class name is kept — it is real diagnostic signal (a header
+	 * rejection vs. a DNS failure vs. a timeout look nothing alike) and cannot
+	 * itself carry a secret.
+	 *
+	 * This description is used for the server-side log line and the
+	 * `CredentialUpstreamException` thrown to in-process callers. It is
+	 * deliberately NOT surfaced in the HTTP API response — the controller
+	 * maps every `CredentialUpstreamException` to a single static generic
+	 * message regardless of its content (design D2), so a redaction bug here
+	 * can never become a cross-app disclosure over HTTP.
+	 *
+	 * @param Throwable $exception The transport-level exception.
+	 * @param string $secret The exact secret value injected into this call's headers.
+	 *
+	 * @return string A secret-redacted `ClassName: message` description.
+	 *
+	 * @spec openspec/changes/credential-broker-upstream-diagnostics/specs/credential-broker/spec.md#requirement-upstream-transport-failures-carry-a-secret-free-real-reason
+	 */
+	private function describeUpstreamFailure(Throwable $exception, string $secret): string {
+		$message = $exception->getMessage();
+
+		if ($secret !== '') {
+			$message = str_replace($secret, '[redacted]', $message);
+
+			$trimmedSecret = trim($secret);
+			if ($trimmedSecret !== '' && $trimmedSecret !== $secret) {
+				$message = str_replace($trimmedSecret, '[redacted]', $message);
+			}
+		}
+
+		return get_class($exception) . ': ' . $message;
+	}//end describeUpstreamFailure()
 
 	/**
 	 * Normalise and validate a caller-supplied path (reject `..`, require a single leading `/`).

@@ -1194,4 +1194,469 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->assertSame('uuid-1', $out[0]['json']['uuid']);
 	}
 
+	// ── Bulk mode (or-flow-bulk-object-write) ───────────────────────────
+
+	/**
+	 * The config vocabulary is pinned, `bulk` included.
+	 *
+	 * @return void
+	 */
+	public function testTheConfigVocabularyIsPinnedWithBulk(): void {
+		$this->assertSame(
+			[
+				'register',
+				'schema',
+				'operation',
+				'fields',
+				'match',
+				'replace',
+				'bulk',
+				'skipWhen',
+				'output',
+				'confirmDelete',
+				'permanent',
+				'maxWrites',
+				'onConflict',
+				'onMissing',
+				'onNoMatch',
+			],
+			$this->node->configKeys()
+		);
+	}
+
+	/**
+	 * Every form field edits a key the node actually reads, and the
+	 * register / schema fields are pickers fed by a declared URL — never
+	 * bare uuid boxes.
+	 *
+	 * @return void
+	 */
+	public function testTheConfigFormDescribesOnlyKeysTheNodeReads(): void {
+		$form = $this->node->configForm();
+		$keys = $this->node->configKeys();
+
+		$this->assertNotSame([], $form);
+		$byKey = [];
+		foreach ($form as $field) {
+			$this->assertContains($field['key'], $keys);
+			$byKey[$field['key']] = $field;
+		}
+
+		foreach (['register', 'schema'] as $picker) {
+			$this->assertSame('select', $byKey[$picker]['type']);
+			$this->assertNotSame('', (string)($byKey[$picker]['optionsFrom'] ?? ''));
+		}
+	}
+
+	/**
+	 * @return array<string, array{0: array<string, mixed>, 1: string}>
+	 */
+	public static function refusedBulkConfigurations(): array {
+		$upsert = [
+			'operation' => ObjectWriteNode::OP_UPSERT,
+			'match' => ['@self.uuid' => '{{uuid}}'],
+			'replace' => true,
+			'bulk' => true,
+		];
+
+		return [
+			'bulk update keeps its per-item guards' => [
+				['operation' => ObjectWriteNode::OP_UPDATE, 'match' => ['title' => 'x'], 'bulk' => true],
+				'supports create and upsert only',
+			],
+			'bulk delete keeps its per-item guards' => [
+				[
+					'operation' => ObjectWriteNode::OP_DELETE,
+					'match' => ['@self.uuid' => '{{uuid}}'],
+					'confirmDelete' => true,
+					'fields' => null,
+					'bulk' => true,
+				],
+				'supports create and upsert only',
+			],
+			'bulk upsert cannot patch' => [
+				array_merge($upsert, ['replace' => null]),
+				'cannot patch',
+			],
+			'bulk upsert matches on uuid alone' => [
+				array_merge($upsert, ['match' => ['title' => '{{title}}']]),
+				'exactly one property',
+			],
+			'bulk upsert refuses a composite match' => [
+				array_merge($upsert, ['match' => ['@self.uuid' => '{{uuid}}', 'title' => 'x']]),
+				'exactly one property',
+			],
+			'bulk cannot arbitrate per-row claims' => [
+				['operation' => ObjectWriteNode::OP_CREATE, 'onConflict' => 'fail', 'bulk' => true],
+				'cannot arbitrate',
+			],
+			'bulk must be a boolean' => [
+				['operation' => ObjectWriteNode::OP_CREATE, 'bulk' => 'true'],
+				'true or false, as a boolean',
+			],
+		];
+	}
+
+	/**
+	 * Bulk is refused at save time wherever the bulk path's semantics are
+	 * narrower than the per-item path's.
+	 *
+	 * @dataProvider refusedBulkConfigurations
+	 *
+	 * @param array<string, mixed> $overrides Config overrides.
+	 * @param string $because Expected message fragment.
+	 *
+	 * @return void
+	 */
+	public function testBulkIsRefusedWhereItsSemanticsAreNarrower(array $overrides, string $because): void {
+		$config = $this->config($overrides);
+		foreach ($config as $key => $value) {
+			if ($value === null) {
+				unset($config[$key]);
+			}
+		}
+
+		$this->expectException(UnexpectedValueException::class);
+		$this->expectExceptionMessageMatches('/' . preg_quote($because, '/') . '/');
+		$this->node->validateConfig($config);
+	}
+
+	/**
+	 * Build a well-formed empty bulk result the mock can build on.
+	 *
+	 * @param array<string, mixed> $overrides Bucket overrides.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function bulkResult(array $overrides = []): array {
+		return array_merge(
+			[
+				'saved' => [],
+				'updated' => [],
+				'unchanged' => [],
+				'invalid' => [],
+				'errors' => [],
+				'statistics' => [],
+			],
+			$overrides
+		);
+	}
+
+	/**
+	 * A bulk create is ONE `saveObjects()` call carrying one row per item,
+	 * each under its own generated uuid — and each output item names its row.
+	 *
+	 * @return void
+	 */
+	public function testABulkCreateIsOneCallWithOneOwnedRowPerItem(): void {
+		$sent = null;
+		$this->objects->expects($this->never())->method('saveObject');
+		$this->objects->expects($this->once())->method('saveObjects')->willReturnCallback(
+			function (array $objects) use (&$sent): array {
+				$sent = $objects;
+
+				return $this->bulkResult();
+			}
+		);
+
+		$out = $this->node->execute(
+			$this->items([['title' => 'a'], ['title' => 'b'], ['title' => 'c']]),
+			$this->config(['bulk' => true, 'fields' => ['title' => '{{title}}']]),
+			$this->registerContext
+		);
+
+		$this->assertCount(3, $sent);
+		$ids = array_column($sent, 'id');
+		$this->assertCount(3, array_unique($ids));
+		foreach ($ids as $id) {
+			$this->assertMatchesRegularExpression('/^[0-9a-f-]{36}$/', $id);
+		}
+
+		$this->assertCount(3, $out);
+		foreach ($out as $index => $item) {
+			$this->assertSame($ids[$index], $item['json']['uuid']);
+			$this->assertSame('example-hydra-cache', $item['json']['register']);
+		}
+	}
+
+	/**
+	 * A bulk upsert's row ids come from each item's uuid match value, so the
+	 * bulk save updates exactly the rows the page named.
+	 *
+	 * @return void
+	 */
+	public function testABulkUpsertTakesRowIdsFromTheMatchValue(): void {
+		$sent = null;
+		$this->objects->expects($this->once())->method('saveObjects')->willReturnCallback(
+			function (array $objects) use (&$sent): array {
+				$sent = $objects;
+
+				return $this->bulkResult();
+			}
+		);
+
+		$this->node->execute(
+			$this->items([['uuid' => 'row-1', 'title' => 'a'], ['uuid' => 'row-2', 'title' => 'b']]),
+			$this->config([
+				'operation' => ObjectWriteNode::OP_UPSERT,
+				'match' => ['@self.uuid' => '{{uuid}}'],
+				'replace' => true,
+				'bulk' => true,
+				'fields' => ['title' => '{{title}}'],
+			]),
+			$this->registerContext
+		);
+
+		$this->assertSame(['row-1', 'row-2'], array_column($sent, 'id'));
+	}
+
+	/**
+	 * An upsert item whose match value does not resolve fails rather than
+	 * widening into a create — a match key is never omitted.
+	 *
+	 * @return void
+	 */
+	public function testABulkUpsertWithAnUnresolvedMatchValueFailsTheItem(): void {
+		$this->objects->expects($this->never())->method('saveObjects');
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessageMatches('/never omitted/');
+		$this->node->execute(
+			$this->items([['title' => 'no-uuid-here']]),
+			$this->config([
+				'operation' => ObjectWriteNode::OP_UPSERT,
+				'match' => ['@self.uuid' => '{{uuid}}'],
+				'replace' => true,
+				'bulk' => true,
+				'fields' => ['title' => '{{title}}'],
+			]),
+			$this->registerContext
+		);
+	}
+
+	/**
+	 * A page larger than the cap is refused BEFORE the call — one bulk call
+	 * has no honest midpoint to stop at.
+	 *
+	 * @return void
+	 */
+	public function testABulkPageOverTheCapWritesNothing(): void {
+		$this->objects->expects($this->never())->method('saveObjects');
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessageMatches('/nothing was written/');
+		$this->node->execute(
+			$this->items([['title' => 'a'], ['title' => 'b'], ['title' => 'c']]),
+			$this->config(['bulk' => true, 'maxWrites' => 2, 'fields' => ['title' => '{{title}}']]),
+			$this->registerContext
+		);
+	}
+
+	/**
+	 * A bulk result carrying rejected rows fails the step loudly — refusals
+	 * land in the result's buckets, and folding them into per-item output
+	 * would be a hollow success.
+	 *
+	 * @return void
+	 */
+	public function testABulkResultWithRejectedRowsFailsLoudly(): void {
+		$this->objects->method('saveObjects')->willReturn(
+			$this->bulkResult([
+				'invalid' => [['object' => [], 'error' => 'Row 2 failed schema validation']],
+				'errors' => [['error' => 'Row 2 failed schema validation', 'type' => 'ValidationException']],
+			])
+		);
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessageMatches('/rejected 1 of its rows.*Row 2 failed schema validation.*not rolled back/');
+		$this->node->execute(
+			$this->items([['title' => 'a']]),
+			$this->config(['bulk' => true, 'fields' => ['title' => '{{title}}']]),
+			$this->registerContext
+		);
+	}
+
+	/**
+	 * When the bulk result carries the serialised row, the output item
+	 * prefers it over the sent payload — server-computed fields included.
+	 *
+	 * @return void
+	 */
+	public function testBulkOutputPrefersTheServersSerialisedRow(): void {
+		$this->objects->method('saveObjects')->willReturnCallback(
+			function (array $objects): array {
+				$row = $objects[0];
+
+				return $this->bulkResult([
+					'saved' => [
+						[
+							'@self' => ['uuid' => $row['id']],
+							'title' => $row['title'],
+							'serverComputed' => 'slug-a',
+						],
+					],
+				]);
+			}
+		);
+
+		$out = $this->node->execute(
+			$this->items([['title' => 'a']]),
+			$this->config(['bulk' => true, 'fields' => ['title' => '{{title}}']]),
+			$this->registerContext
+		);
+
+		$this->assertSame('slug-a', $out[0]['json']['serverComputed']);
+		$this->assertArrayNotHasKey('@self', $out[0]['json']);
+	}
+
+	// ── skipWhen (or-flow-object-write-skip-when) ───────────────────────
+
+	/**
+	 * An item the flow marked `skip` passes through and is never written.
+	 *
+	 * @return void
+	 */
+	public function testASkippedItemIsEmittedButNotWritten(): void {
+		$this->objects->expects($this->never())->method('saveObject');
+
+		$out = $this->node->execute(
+			$this->items([['title' => 'a', 'contract' => ['outcome' => 'skip']]]),
+			$this->config(['skipWhen' => 'contract.outcome']),
+			$this->registerContext
+		);
+
+		$this->assertCount(1, $out, 'a skipped item must still be emitted, never dropped');
+		$this->assertSame('a', $out[0]['json']['title']);
+		$this->assertSame('skip', $out[0]['json']['contract']['outcome']);
+	}
+
+	/**
+	 * Mixed pages keep every item, in order, and write only the unskipped.
+	 *
+	 * @return void
+	 */
+	public function testOnlyUnskippedItemsAreWrittenAndOrderIsKept(): void {
+		$written = [];
+		$this->objects->method('saveObject')->willReturnCallback(
+			function (mixed $object, ?array $extend = [], mixed $register = null, mixed $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, bool $_validation = true, ?array $uploadedFiles = null, ?IUser $currentUser = null) use (&$written): ObjectEntity {
+				$written[] = $object['title'] ?? null;
+
+				return $this->entity('u', $object);
+			}
+		);
+
+		$out = $this->node->execute(
+			$this->items([
+				['title' => 'keep-1', 'contract' => ['outcome' => 'create']],
+				['title' => 'skip-me', 'contract' => ['outcome' => 'skip']],
+				['title' => 'keep-2', 'contract' => ['outcome' => 'update']],
+			]),
+			$this->config(['skipWhen' => 'contract.outcome', 'fields' => ['title' => '{{title}}']]),
+			$this->registerContext
+		);
+
+		$this->assertCount(3, $out, 'every input item must be emitted');
+		$this->assertSame(['keep-1', 'keep-2'], $written, 'only unskipped items are written');
+		$this->assertSame('skip-me', $out[1]['json']['title'], 'the skipped item keeps its place');
+	}
+
+	/**
+	 * A skipped item costs no write, so it cannot exhaust the cap.
+	 *
+	 * @return void
+	 */
+	public function testSkippedItemsDoNotConsumeTheWriteCap(): void {
+		$this->objects->expects($this->never())->method('saveObject');
+
+		$out = $this->node->execute(
+			$this->items([
+				['title' => 'a', 'contract' => ['outcome' => 'skip']],
+				['title' => 'b', 'contract' => ['outcome' => 'skip']],
+				['title' => 'c', 'contract' => ['outcome' => 'skip']],
+			]),
+			$this->config(['skipWhen' => 'contract.outcome', 'maxWrites' => 1]),
+			$this->registerContext
+		);
+
+		$this->assertCount(3, $out);
+	}
+
+	/**
+	 * Only `true` and the word `skip` skip. "false" and "0" are truthy in PHP
+	 * and must NOT silence a write.
+	 *
+	 * @return void
+	 */
+	public function testOnlyADeliberateSkipValueSkips(): void {
+		$this->objects->expects($this->exactly(2))->method('saveObject')->willReturn($this->entity('u', []));
+
+		$out = $this->node->execute(
+			$this->items([
+				['title' => 'a', 'flag' => 'false'],
+				['title' => 'b', 'flag' => '0'],
+				['title' => 'c', 'flag' => true],
+			]),
+			$this->config(['skipWhen' => 'flag', 'fields' => ['title' => '{{title}}']]),
+			$this->registerContext
+		);
+
+		$this->assertCount(3, $out);
+	}
+
+	/**
+	 * With `skipWhen` absent, nothing changes — the guard is opt-in.
+	 *
+	 * @return void
+	 */
+	public function testWithoutSkipWhenEveryItemIsStillWritten(): void {
+		$this->objects->expects($this->exactly(2))->method('saveObject')->willReturn($this->entity('u', []));
+
+		$this->node->execute(
+			$this->items([
+				['title' => 'a', 'contract' => ['outcome' => 'skip']],
+				['title' => 'b', 'contract' => ['outcome' => 'skip']],
+			]),
+			$this->config(['fields' => ['title' => '{{title}}']]),
+			$this->registerContext
+		);
+	}
+
+	/**
+	 * In BULK, a skipped row is not sent, and an all-skipped page never calls
+	 * saveObjects() at all.
+	 *
+	 * @return void
+	 */
+	public function testBulkExcludesSkippedRowsAndSkipsTheCallEntirely(): void {
+		$sent = null;
+		$this->objects->method('saveObjects')->willReturnCallback(
+			function (array $objects) use (&$sent): array {
+				$sent = $objects;
+
+				return ['saved' => [], 'updated' => [], 'unchanged' => [], 'invalid' => [], 'errors' => [], 'statistics' => []];
+			}
+		);
+
+		$out = $this->node->execute(
+			$this->items([
+				['title' => 'a', 'contract' => ['outcome' => 'skip']],
+				['title' => 'b', 'contract' => ['outcome' => 'create']],
+			]),
+			$this->config(['bulk' => true, 'skipWhen' => 'contract.outcome', 'fields' => ['title' => '{{title}}']]),
+			$this->registerContext
+		);
+
+		$this->assertCount(1, $sent, 'only the unskipped row is sent');
+		$this->assertCount(2, $out, 'both items are emitted');
+
+		// An all-skipped page must not reach the service at all.
+		$this->objects->expects($this->never())->method('saveObjects');
+		$allSkipped = $this->node->execute(
+			$this->items([['title' => 'x', 'contract' => ['outcome' => 'skip']]]),
+			$this->config(['bulk' => true, 'skipWhen' => 'contract.outcome', 'fields' => ['title' => '{{title}}']]),
+			$this->registerContext
+		);
+		$this->assertCount(1, $allSkipped);
+	}
+
 }//end class

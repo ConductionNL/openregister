@@ -20,10 +20,12 @@ declare(strict_types=1);
 
 namespace Unit\Service\Credential;
 
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
+use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -115,6 +117,104 @@ class CredentialBrokerServiceTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(OrganisationService::class)
 		);
+	}
+
+	/** @var array<string, mixed>|null Captured logger->error() context. */
+	private ?array $capturedLogContext = null;
+
+	/**
+	 * Wire a broker whose outbound client throws a transport-level exception,
+	 * with a logger mock that captures the context passed to error().
+	 *
+	 * @param \Throwable $transportException The exception the client throws.
+	 */
+	private function makeServiceWithTransportFailure(\Throwable $transportException): CredentialBrokerService {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+
+		$entity = new ObjectEntity();
+		$entity->setOwner('alice');
+		$entity->setObject(['provider' => 'github', 'allowedApps' => ['hermiq']]);
+
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->method('find')->willReturn($entity);
+
+		$catalogue = $this->createMock(ProviderCatalogue::class);
+		$catalogue->method('get')->willReturn($this->githubProvider());
+
+		$store = $this->createMock(CredentialStore::class);
+		$store->method('get')->willReturn('SUPERSECRETTOKEN' . "\n");
+
+		$client = $this->createMock(IClient::class);
+		$client->method('request')->willThrowException($transportException);
+		$clientService = $this->createMock(IClientService::class);
+		$clientService->method('newClient')->willReturn($client);
+
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('error')->willReturnCallback(
+			function (string $message, array $context = []) {
+				$this->capturedLogContext = $context;
+			}
+		);
+
+		return new CredentialBrokerService(
+			$objectService,
+			$store,
+			$catalogue,
+			$session,
+			$clientService,
+			$logger,
+			$this->createMock(OrganisationService::class)
+		);
+	}
+
+	/**
+	 * The thrown exception carries the real, secret-free reason — not the
+	 * hardcoded generic literal the broker used to throw.
+	 */
+	public function testUpstreamFailureExceptionCarriesRedactedRealReason(): void {
+		$secret = 'SUPERSECRETTOKEN' . "\n";
+		$transportException = new InvalidArgumentException(
+			'"token ' . $secret . '" is not valid header value'
+		);
+		$service = $this->makeServiceWithTransportFailure($transportException);
+
+		try {
+			$service->request('cred-1', 'hermiq', 'GET', '/repos/Conduction/openregister');
+			$this->fail('Expected CredentialUpstreamException');
+		} catch (CredentialUpstreamException $e) {
+			// The real reason survives...
+			$this->assertStringContainsString('is not valid header value', $e->getMessage());
+			$this->assertStringContainsString(InvalidArgumentException::class, $e->getMessage());
+			// ...but the secret never appears in the exception message.
+			$this->assertStringNotContainsString('SUPERSECRETTOKEN', $e->getMessage());
+		}
+	}
+
+	/**
+	 * The server-side log line carries the same redacted reason — never the raw
+	 * secret, even when the underlying transport exception's own message
+	 * embedded it (the exact openregister broker-error-swallow scenario).
+	 */
+	public function testUpstreamFailureLogLineNeverContainsTheRawSecret(): void {
+		$secret = 'SUPERSECRETTOKEN' . "\n";
+		$transportException = new InvalidArgumentException(
+			'"token ' . $secret . '" is not valid header value'
+		);
+		$service = $this->makeServiceWithTransportFailure($transportException);
+
+		try {
+			$service->request('cred-1', 'hermiq', 'GET', '/repos/Conduction/openregister');
+		} catch (CredentialUpstreamException $e) {
+			// Expected — assert the log capture below.
+		}
+
+		$this->assertNotNull($this->capturedLogContext);
+		$logged = (string)json_encode($this->capturedLogContext);
+		$this->assertStringNotContainsString('SUPERSECRETTOKEN', $logged);
+		$this->assertStringContainsString('is not valid header value', $logged);
 	}
 
 	public function testOwnerGuardRejectsNonOwner(): void {
