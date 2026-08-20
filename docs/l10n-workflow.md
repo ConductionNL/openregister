@@ -1058,8 +1058,12 @@ values broke the tie. Keep the two straight: one contradicts core, the other fol
 2026-08-19). So: pick a reasonable shape for the locale, record it in `pluralHackNote`, and
 **do not spend pass effort on it**. Do not weigh parenthetical against slash against bare
 plural noun-by-noun, do not treat an awkward rendering as a defect worth escalating, and do
-not flag it in the commit message. The same applies to the sibling `(s)` keys
-(`register(s)`, `schema(s)`, `configuration(s)`) and to plain `{count} X` phrases.
+not flag it in the commit message. The same "do not spend effort" applies to plain
+`{count} X` phrases.
+
+It does **not** apply to the sibling `(s)` keys (`register(s)`, `schema(s)`,
+`configuration(s)`, …). Those are not this defect at all — the `(s)` there is ordinary
+translatable text, not an interpolated variable — and they are covered separately below.
 
 The source hardcodes English morphology: 13 call sites pass `plural: count !== 1 ? 's' : ''`
 for five keys. What the finished locales did, kept only so you can pick a shape quickly:
@@ -1089,6 +1093,38 @@ Always runtime-assert no `{plural}` residue and no stray trailing `-s` survives.
 that a locale which **keeps** `{plural}` is not broken — `es` keeps it in all five, `ca` in
 four — so any assertion about those keys must branch on whether the placeholder survived:
 kept → the value **must** vary with count; dropped → it **cannot**.
+
+#### The sibling `(s)` keys are a DIFFERENT thing, and carry no source defect
+
+Fourteen keys spell a literal `(s)` in the English source — `register(s)`,
+`configuration(s)`, `schema(s) selected`, `{days} day(s) left`, `{count} widget(s)` and the
+rest. Unlike `{plural}`, that `(s)` is **ordinary translatable text rather than an
+interpolated variable**, so a locale may render it however its morphology wants, including
+dropping the parenthetical. Nothing needs fixing in `src/` and nothing needs noting in
+`pluralHackNote`. Do not carry the `{plural}` treatment across to them.
+
+Three strategies are in use and all three are correct:
+
+| Strategy | Locales |
+| --- | --- |
+| its own parenthetical | `mk` `nb` (14 of 14), `da` (13), `sq` (12), `et` `ro` `uk` (11) |
+| **no parenthetical at all** | `bs` `hu` `it` (14 of 14) |
+| keeps `(s)`, because `-s` **is** the native plural marker | `es` `pt` `fr` `ca` `rm`, and Dutch `configuratie(s)`, Latvian `konfigurācija(s)` |
+
+**So "the value contains `(s)`" is not an audit signal** — it flags the whole Romance group
+for writing correct Romance. The signal that works is **inconsistency within one locale**,
+which needs no knowledge of the target morphology: a locale using its own parenthetical in
+most of the fourteen and `(s)` in a few. That finds two real defects, both in Tier 1
+locales and so belonging to the re-audit rather than to a locale pass:
+
+- `de` — `Schema(s)` and `Schema(s) ausgewählt`, beside its own `Konfiguration(en)`,
+  `Objekt(e)`, `Tag(e)`. German pluralises this `Schemata`/`Schemen`, never `Schemas`.
+- `nl` — `schema(s) geselecteerd`, beside `object(en)`, `dag(en)`. Dutch is `schema's` or
+  `schemata`.
+
+`Dashboard(s)` and `Widget(s)` in `de`/`nl`/`lb`/`da` are **not** defects by contrast: those
+languages keep `-s` on English loanwords. `lv` mixes `(s)`, `(i)`, `(ām)` and `(us)` across
+eight keys and needs a case-by-case read, since Latvian declines and each may be right.
 
 ---
 
@@ -1505,6 +1541,12 @@ becomes enforced from that moment — no code change needed, the gate keys on th
 existing. Expect a high legitimate rate in some (`nl` renders `Bewaartermijn` unchanged —
 Dutch words in a Dutch bundle) and the opposite in others; this is the audit that turned up
 46 placeholders in `tr`.
+
+Two defects are already located and waiting in this set, both in the literal-`(s)` keys
+(§7.4): `de` writes `Schema(s)` beside its own `Konfiguration(en)`/`Objekt(e)`, and `nl`
+writes `schema(s) geselecteerd` beside `object(en)`/`dag(en)`. `lv` needs the same keys read
+case-by-case. Check the fourteen for **intra-locale** inconsistency in every Tier 1 pass —
+it is a three-line check and needs no knowledge of the target's morphology.
 
 The register verdicts for these 16 were already recorded, so step 2 is done — but
 **re-measure rather than trusting the record.** A detector is required for `selfcheck`
