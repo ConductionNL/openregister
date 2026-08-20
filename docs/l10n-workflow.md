@@ -53,11 +53,9 @@ nineteen. Measure instead — every number you need is one command away.
 
 ```
 36 required locales; checked 2 translation set(s)
-N locale(s) declared finished and held at key-for-key parity:  <the finished set>
+all 36 required locale(s) are held at key-for-key parity, unconditionally: <every locale>
 M of those also hold every English-identical value to a recorded justification: <enforced>
-K finished locale(s) predate the cognate rule and are NOT yet held to it: <unreviewed>
-L locale(s) still in progress (not gated):
-  · frontend (.js) <loc>: 999 of 2052 key(s) to go     <- the backlog, with counts
+K locale(s) predate the cognate rule and are NOT yet held to it: <unreviewed>
 OK — every finished locale is at full parity
 ```
 
@@ -73,7 +71,7 @@ checked.
 | how `en.js` compares to `src/` — missing, unused, unwrapped | `npm run check:l10n` |
 | which locales are **enforced** for cognates | `ls scripts/l10n/locales/` |
 | which locales have a register **detector** | `ls scripts/l10n/detectors/` |
-| which locales the gate treats as **finished** | `FINISHED_DEFAULT` in `tests/l10n/check-l10n-parity.js` |
+| which locales the gate holds to parity | all of them, unconditionally — §9.1 |
 | every locale's size at a glance | `wc -l l10n/*.js` |
 
 The last one is the fastest smell test there is — see invariant 2.
@@ -117,10 +115,8 @@ is how you tell "in progress" from "broken".
 remaining streams are the re-audit of the already-finished bundles (§9.2 and
 `handoff_re-auditing.txt`) and the source-side defects of §10.
 
-**So the CLOSING TASK of §9.1 is now DUE, and it is not optional cleanup.** With nothing in
-progress, `FINISHED_DEFAULT`, the `FINISHED` set and the `L10N_FINISHED_LOCALES` override are
-exactly the knobs someone reaches for to turn a red build green. Do that before starting a
-re-audit pass.
+Parity is held unconditionally for every locale, and §9.1 says why that must not be
+loosened.
 
 **Check whether core can decide the register at all before planning a pass**, because §5
 step 2 assumes it can. **Measure the marker COUNT, not the catalogue count.** Zero
@@ -136,13 +132,12 @@ question applies before trusting core for it.
 
 ## 3. Hard rules — all binding
 
-### 3.1 Every finished locale is key-for-key identical to `en.js`, always
+### 3.1 Every locale is key-for-key identical to `en.js`, always
 
-Enforced, not aspirational: `npm run test:l10n:parity` fails the build when a locale in the
-finished set is missing a key, and it runs in CI as its own leg. Add an English string and
-you **translate it or unwrap it**. You never leave the finished locales one key short, and
-you **never drop a locale from the finished set to get a green build** — that is the one
-move the gate exists to prevent.
+Enforced, not aspirational: `npm run test:l10n:parity` fails the build when any locale is
+missing a key, and it runs in CI as its own leg. Add an English string and you **translate it
+or unwrap it**. You never leave a locale one key short, and you **never add an exemption to
+get a green build** — that is the one move the gate exists to prevent (§9.1).
 
 ### 3.2 The cognate rule
 
@@ -328,7 +323,7 @@ Three gotchas, all load-bearing:
 `l10n:status` and `l10n:worklist` are both `batch.js` (`status` / `absent`); it is read-only.
 
 Environment overrides, for a checkout that differs from the default layout:
-`L10N_WORKSPACE`, `L10N_SERVER_DIR`, `L10N_APPS_DIR`, and `L10N_FINISHED_LOCALES`.
+`L10N_WORKSPACE`, `L10N_SERVER_DIR` and `L10N_APPS_DIR`.
 
 ### 4.3 The four CI legs
 
@@ -512,10 +507,9 @@ npm run check:l10n                 # 0 missing / 0 unused
 npm run test:l10n && npm run test:l10n:parity
 ```
 
-**10. Add `$LOC` to `FINISHED_DEFAULT`** in `tests/l10n/check-l10n-parity.js`, then
-**negative-test the gate**. Adding a locale to that list is a *claim* that the gate now
-holds it; this checks the claim rather than assuming it, because a gate nobody has seen
-fail is not known to work.
+**10. Negative-test the gate** on this locale. Parity is unconditional, so there is no list
+to add to — but a gate nobody has seen fail is not known to work, so break the bundle on
+purpose and check that it fails and names the locale.
 
 ```bash
 npm run l10n:gatetest -- $LOC        # snapshot, break, assert, restore, re-assert
@@ -1481,21 +1475,25 @@ cannot check, and be willing for the answer to be a different rule each time —
 
 ## 9. Remaining work
 
-### 9.1 CLOSING TASK — delete `FINISHED_DEFAULT` once all 36 are done
+### 9.1 Parity is unconditional — keep it that way
 
-`FINISHED_DEFAULT` in `tests/l10n/check-l10n-parity.js` is **scaffolding for the migration,
-not the end state.** It exists only so the gate can be fatal for finished locales while the
-rest are in progress. The moment the last locale reaches parity:
+`test:l10n:parity` holds **every** required locale to full key-for-key parity, with no
+per-locale exemption list and no env override. A missing key fails the build for any locale,
+the same way an empty value and a wrong plural arity do.
 
-- Delete `FINISHED_DEFAULT`, the `FINISHED` set, and the `L10N_FINISHED_LOCALES` override.
-- Make missing-key parity **fatal for every locale, unconditionally** — the way empty values
-  and wrong arity already are.
-- Delete the backlog-reporting branch. With nothing in progress there is no backlog, and
-  leaving it in invites someone to re-add an "in progress" escape hatch.
-- Update `CLAUDE.md`, `docs/l10n-ui-translation.md`, `scripts/l10n/README.md` and §2 here.
+**Do not add an exemption mechanism back.** A per-locale "in progress" set, or an env override of
+the gated set, is exactly the knob someone reaches for to turn a red build green, and it
+defeats the one invariant this gate exists to protect. If a new English
+string lands without translations, the failure is the missing translation: §6.15 has the
+procedure, which is to translate it or to unwrap it from `t()` and delete the key from all 37
+bundles including `en.js`.
 
-Rationale worth preserving: the env override and the per-locale set are exactly the knobs
-someone reaches for to turn a red build green. Once unnecessary they are a liability.
+`gate-negative-test.js` is what keeps the gate honest — it breaks one bundle on purpose and
+asserts the gate notices and names it. Run it after any change to the gate.
+
+Cognate enforcement is the one thing that is still opt-in, keyed on
+`scripts/l10n/locales/<loc>.json` existing, because 15 locales predate that rule and carry
+~375 unreviewed identical values. Reviewing them is §9.2, not a reason to loosen parity.
 
 ### 9.2 Review the pre-rule locales — `cs` done, 15 to go
 

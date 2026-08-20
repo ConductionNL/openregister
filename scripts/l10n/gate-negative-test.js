@@ -3,13 +3,13 @@
 /* eslint-disable no-console */
 /* eslint-disable n/shebang */
 /**
- * Prove that test:l10n:parity actually FAILS when a finished locale loses a key.
+ * Prove that test:l10n:parity actually FAILS when a locale loses a key.
  *
  *   node scripts/l10n/gate-negative-test.js <loc> [key]
  *
- * Adding a locale to FINISHED_DEFAULT is a claim that the gate now holds it. This
- * checks the claim instead of assuming it, and it is the last step of every locale
- * pass. A gate nobody has seen fail is not known to work.
+ * A gate nobody has seen fail is not known to work, so this breaks one bundle on
+ * purpose and asserts the gate notices and names it. Run it after any change to the
+ * gate itself, and on any locale whose parity you are relying on.
  *
  * ## Why this exists as a committed script
  *
@@ -119,8 +119,10 @@ try {
 	// exit code is necessary but the named line is what ties the failure to us.
 	const { code, out } = runGate()
 	check(`gate FAILS with a key missing from ${loc}`, code !== 0, `exit ${code}`)
-	check(`the failure names ${loc} as declared FINISHED`,
-		out.includes(`(.js) ${loc} (declared FINISHED)`))
+	// The failure must NAME the locale, not just exit non-zero: a gate that fails
+	// without saying which bundle broke sends the reader through 36 files.
+	check(`the failure names ${loc}`,
+		out.includes(`(.js) ${loc}:`))
 } catch (e) {
 	check('test ran', false, e.message)
 } finally {

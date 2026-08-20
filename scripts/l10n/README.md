@@ -57,10 +57,10 @@ node scripts/l10n/apply.js      lv patch-1.json --apply
 
 node scripts/l10n/selfcheck.js     lv          # 16 assertions, must be all-pass
 node scripts/l10n/runtime-check.mjs lv         # what actually renders
-node scripts/l10n/script-coverage.js bg        # non-Latin locales only; read the two lists
+node scripts/l10n/script-coverage.js lv        # homoglyphs for any locale; script sweep if non-Latin
 npm run check:l10n && npm run test:l10n:parity
 
-# add lv to FINISHED_DEFAULT, then prove the gate now holds it
+# prove the gate really fails when this bundle loses a key
 node scripts/l10n/gate-negative-test.js lv
 ```
 

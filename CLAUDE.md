@@ -29,14 +29,11 @@ belongs in `en.js`, never in `en.json`.** There is no scanner for the backend se
 (it would have to walk `lib/` for PHP `$l->t()`), so `en.json` is maintained by hand.
 
 Re-measure before trusting any number here — `npm run check:l10n` prints it all.
-**As of 2026-08-20**: `en.js` holds 2052 keys, and `bs` was the last locale — **all 36 are
-now at full parity, none in progress.** Do not trust a finished-locale count written here —
-`npm run test:l10n:parity` prints the finished / cognate-enforced / unreviewed split in five
-lines, and that is the only number that cannot go stale. **The §9.1 CLOSING TASK is now
-due**: `FINISHED_DEFAULT`, the `FINISHED` set and the `L10N_FINISHED_LOCALES` override are
-migration scaffolding, and with nothing in progress they are the knobs someone reaches for
-to turn a red build green. Missing-key parity should become fatal for every locale
-unconditionally. **`test:l10n` is currently RED at HEAD and not because of l10n work**:
+**As of 2026-08-20**: `en.js` holds 2052 keys and **all 36 locales are at full parity**.
+Parity is unconditional — `test:l10n:parity` fails for any locale missing a key, with no
+exemption list and no env override (§9.1). Do not trust a locale count written here;
+`npm run test:l10n:parity` prints the parity / cognate-enforced / unreviewed split in four
+lines, and that is the only number that cannot go stale. **`test:l10n` is currently RED at HEAD and not because of l10n work**:
 a `development` merge replaced the Dutch GDPR source terms with English ones and added
 flow strings, leaving 17 keys used in `src/` but missing from `en.js`. That is the
 `docs/l10n-workflow.md` §6.15 procedure and its own commit — see §10.
@@ -101,10 +98,10 @@ every automated check.
 
 ## Hard rules
 
-**Every finished locale is key-for-key identical to `en.js`, always.** Enforced, not
-aspirational: `test:l10n:parity` fails the build when a finished locale is missing a
-key. Add an English string and you translate it or you unwrap it — you never drop a
-locale from the finished set to get a green build.
+**Every locale is key-for-key identical to `en.js`, always.** Enforced, not
+aspirational: `test:l10n:parity` fails the build when any locale is missing a key.
+Add an English string and you translate it or you unwrap it — you never add an
+exemption to get a green build.
 
 That splits into two cases, and getting the split wrong is the easy mistake:
 
@@ -327,10 +324,10 @@ finished locale one key short, which the parity gate treats as fatal — the pro
   `l10n-ai.js set` refuses pluralized (array) keys — edit those by hand.
 - `find:unwrapped` is deliberately high-recall (~1500 candidates). Audit by hand; do
   not "fix" it by tightening the heuristic until real strings are missed.
-- `test:l10n:parity` **passes, and must keep passing.** Empty values and wrong
-  plural arity fail for *every* locale, because those render blank. The finished set
-  is `FINISHED_DEFAULT` in the script, overridable with `L10N_FINISHED_LOCALES`; add
-  a locale the moment it reaches parity.
+- `test:l10n:parity` **passes, and must keep passing.** Missing keys, empty values
+  and wrong plural arity fail for *every* locale, unconditionally — there is no
+  exemption list and no env override, and adding one back is the move the gate
+  exists to prevent.
 - **A `SKIP` or `NOTE` from `selfcheck.js` / `runtime-check.mjs` is not a bug to
   tighten away**, and neither is a locale that keeps `{plural}` (`es` in all five
   keys, `ca` in four). Both have bitten; see "Two traps in the verification scripts"
