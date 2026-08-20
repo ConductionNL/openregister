@@ -29,10 +29,14 @@ belongs in `en.js`, never in `en.json`.** There is no scanner for the backend se
 (it would have to walk `lib/` for PHP `$l->t()`), so `en.json` is maintained by hand.
 
 Re-measure before trusting any number here — `npm run check:l10n` prints it all.
-**As of 2026-08-20**: `en.js` holds 2052 keys, and `be` completes the low-resource group.
-Do not trust a finished-locale count written here — `npm run test:l10n:parity` prints the
-finished / cognate-enforced / unreviewed split in five lines, and that is the only number
-that cannot go stale. **`test:l10n` is currently RED at HEAD and not because of l10n work**:
+**As of 2026-08-20**: `en.js` holds 2052 keys, and `bs` was the last locale — **all 36 are
+now at full parity, none in progress.** Do not trust a finished-locale count written here —
+`npm run test:l10n:parity` prints the finished / cognate-enforced / unreviewed split in five
+lines, and that is the only number that cannot go stale. **The §9.1 CLOSING TASK is now
+due**: `FINISHED_DEFAULT`, the `FINISHED` set and the `L10N_FINISHED_LOCALES` override are
+migration scaffolding, and with nothing in progress they are the knobs someone reaches for
+to turn a red build green. Missing-key parity should become fatal for every locale
+unconditionally. **`test:l10n` is currently RED at HEAD and not because of l10n work**:
 a `development` merge replaced the Dutch GDPR source terms with English ones and added
 flow strings, leaving 17 keys used in `src/` but missing from `en.js`. That is the
 `docs/l10n-workflow.md` §6.15 procedure and its own commit — see §10.
@@ -128,7 +132,7 @@ indistinguishable from finished work, so nobody revisits it. Audit with
 `npm run test:l10n:parity -- --strict-identical`.
 
 **Cognate enforcement is opt-in per locale**, keyed on `locales/<loc>.json`
-existing. Only `tr ca et hr lt lv ro sk sl bg sr rm ga mt is cs lb sq mk be` are held to it; the other 15 predate the rule and
+existing. Only `tr ca et hr lt lv ro sk sl bg sr rm ga mt is cs lb sq mk be bs` are held to it; the other 15 predate the rule and
 carry ~375 unreviewed identical values, some legitimate. The gate prints which
 locales are enforced and which are merely unreviewed, so a green run cannot be read
 as verified. **Reviewing those 15 is open work.**

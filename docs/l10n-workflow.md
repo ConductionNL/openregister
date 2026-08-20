@@ -113,29 +113,24 @@ is how you tell "in progress" from "broken".
 
 ### 2.3 Order of work
 
-The high-confidence group is **done**, and so are all the low-resource ones bar the last.
-One remains: **`bs`**.
+**All 36 locales are at full parity. There is no translation queue left**, and the only
+remaining streams are the re-audit of the already-finished bundles (§9.2 and
+`handoff_re-auditing.txt`) and the source-side defects of §10.
+
+**So the CLOSING TASK of §9.1 is now DUE, and it is not optional cleanup.** With nothing in
+progress, `FINISHED_DEFAULT`, the `FINISHED` set and the `L10N_FINISHED_LOCALES` override are
+exactly the knobs someone reaches for to turn a red build green. Do that before starting a
+re-audit pass.
 
 **Check whether core can decide the register at all before planning a pass**, because §5
 step 2 assumes it can. **Measure the marker COUNT, not the catalogue count.** Zero
 catalogues is the safe failure — `coreCatalogues()` throws, so step 2 cannot run by
-accident. A *thin* core is the dangerous one: `lb` had one catalogue with 72 values, so the
-scan **succeeded** and would have reported a verdict computed from 0 markers of either
-polarity. That is the shape that lets a pass record a measurement it never made.
-
-| Locale | Core coverage | Consequence |
-| --- | --- | --- |
-| `bs` | 1 catalogue, 55 values | not evidence of anything; use the §6.4 fallback, widened to the sibling apps' frontend bundles |
-
-Durable per-locale notes for the one not yet done (facts about the language or the sources,
-not counts — these will not go stale):
-
-| Locale | Note |
-| --- | --- |
-| `bs` | Very few harvest sources (7) — expect to translate almost everything by hand. Recent passes ran a 4.5–7% hit rate even with 12–40 sources |
-| `bs` | openbuild's Croatian catalogue ships under `bs.json` too; dropped automatically (§6.6). It has been observed under **seven** names (`bs cs hr mk sk sl sr`) and has twice reached a *committed* bundle in the same key — `Audit trail #{id}`. Expect the defect **inside** the file, not only in the harvest sources, and check that one key first. A third language reached that same key in a committed bundle on `be` (Russian), so it is now three for three |
-
-**The closing task**, once the last locale lands, is §9.1. It is not optional cleanup.
+accident. A *thin* core is the dangerous one, and both shapes have now been met: `lb` had one
+catalogue with 72 values and `bs` one with 55, so the scan **succeeded** in each case and
+would have reported a verdict computed from **0 markers of either polarity**. That is the
+shape that lets a pass record a measurement it never made, and it stays relevant to the
+re-audit stream: a Tier 1 locale needs its register measured for the first time, so the same
+question applies before trusting core for it.
 
 ---
 
@@ -628,7 +623,7 @@ Most locales must **exclude** the bare 2sg imperative from the detector. Two ind
 tests, and exclusion follows from **either**:
 
 1. Is the imperative the locale's own **label convention**? If yes, counting it flags every
-   button in the app. (`ca`, `et`, `hr`, `sl`, `sr`, `ga`, `mt`: yes.)
+   button in the app. (`ca`, `et`, `hr`, `sl`, `sr`, `ga`, `mt`, `bs`: yes.)
 2. Is the imperative a **homograph** of a form that is live in this bundle's prose — the 3sg
    present, a past tense, a verbal noun, a participle, or an ordinary noun? If yes, counting
    it flags ordinary third-person prose.
@@ -994,7 +989,7 @@ the library governs which element renders. `runtime-check.mjs` calls `unregister
 ### 7.2 Register verdicts
 
 Informal: `nl de sv da nb pl fi hu et lv ga mt is`.
-Formal: `fr cs ru uk tr el sr bg ca hr lt ro sk sl lb sq mk be`.
+Formal: `fr cs ru uk tr el sr bg ca hr lt ro sk sl lb sq mk be bs`.
 
 The counts and how each was measured are in `locales/<loc>.json` and in the companion doc.
 What belongs here is the taxonomy, because **the label is the same and the situation is
@@ -1025,7 +1020,7 @@ Two measurement rules that generalise:
 | Pattern | Locales | Example |
 | --- | --- | --- |
 | same register as prose | `tr` `ru` | formal imperative |
-| bare 2sg imperative, whatever the prose | `ca` `et` `hr` `sl` `sr` `ga` `mt` | `Desa`, `Salvesta`, `Spremi`, `Shrani`, `Сачувај`, `Sábháil`, `Issejvja` |
+| bare 2sg imperative, whatever the prose | `ca` `et` `hr` `sl` `sr` `ga` `mt` `bs` | `Desa`, `Salvesta`, `Spremi`, `Shrani`, `Сачувај`, `Sábháil`, `Issejvja`, `Sačuvaj` |
 | **infinitive — register-neutral** | `cs` `lt` `lv` `sk` `rm` `is` `lb` `be` | `Zobrazit`, `Įrašyti`, `Saglabāt`, `Uložiť`, `Memorisar`, `Vista`, `Späicheren`, `Захаваць` |
 | **verbal noun — register-neutral** | `ro` `bg` | `Salvare`, `Adăugare endpoint`; `Запазване`, `Добавяне на крайна точка` |
 | **2sg imperative for a label, 2pl once it is a sentence — GRADED BY LENGTH** | `sq` `mk` | `Ruaj` / `Fshi` / `Shto`, but `Menaxhoni regjistrat …`; `Зачувај` / `Избриши`, but `Управувајте со вашите апликации …` |
@@ -1047,6 +1042,14 @@ to describe the convention itself is why the trick generalises.)
 2pl at any length — but `Search` goes the other way and is not close (core `mk` 61:1 for the
 2sg). The distinction that predicts it is neither length nor prompt-ness: a dropdown you pick
 from and a field you type into address the user, a toolbar button is something you press.
+
+**But WHICH lexemes are inside the override differs per locale, so measure it per verb and
+never carry the set over.** `bs` is a categorical pattern-2 locale with no gradient at all,
+and it still has the override — splitting it *between* `Select` and `Choose`, which `mk`
+groups together: `Select …` takes the 2sg at 14–45 characters (20 of 20) while `Choose …` and
+`Enter …` take the 2pl at 15–128 (5 of 5 each). Three locales, three different partitions of
+the same small verb set. A `Please …` frame forces the 2pl independently, and a prompt
+embedded in prose follows the prose.
 
 `ro` is the only locale where the convention is a **project decision that knowingly diverges
 from core**, and it was forced: `Create`/`Read`/`Update`/`Delete` are single keys rendered
@@ -1177,6 +1180,21 @@ The per-language table is in the companion doc. The rules:
   their distinctions ride on the acute alone (`ti`/`tí`, `vyber`/`výber`, `uprav`/`úprav`).
 - **A missing `i` flag under-counts and looks like a real finding.** Any measurement that
   comes out at exactly zero deserves a second look before it goes into `registerEvidence`.
+- **A HOMOGLYPH is invisible to every gate and to the eye, in both directions.** A Cyrillic
+  `о` (U+043E) inside a Latin word, or a Latin `a` (U+0061) inside a Cyrillic one, renders
+  identically to the right letter while breaking search, sorting and speech. The value is not
+  empty, not identical to English, not wrong-arity, and reads as finished work. `npm run
+  l10n:script` now checks this **for every locale including Latin-script ones**, which had no
+  coverage at all; it found one defect in `bs` (`proširenо`) and one in `mk` (`првa`). Two
+  things make the check usable, and both were wrong on the first cut:
+  - **A hyphen is a morpheme boundary and must break the run.** Macedonian, Serbian, Bosnian
+    and Albanian all attach case endings to a Latin acronym across one — `API-клуч`,
+    `webhook-a`, `UUID-je` — which is correct morphology. Testing whole words reported 105
+    hits on `mk` and 19 on `uk`, essentially all of it that construction.
+  - **Check core before believing the rest.** `mk` writes `сè` with a *Latin* `è` and core
+    `mk` does the same in 7 values with zero of the Cyrillic U+0450, so those 29 hits are the
+    prevailing convention. Record such a run in `homoglyphAllow`, never suppress it in the
+    script, and only ever with that corroboration.
   Detectors get this right because `fold()` lowercases; a throwaway probe written alongside
   one easily does not. This also applies to a *casing* measurement, where it reads as a
   contradiction and is not: match case-insensitively, then test the matched text's own case.
@@ -1337,9 +1355,22 @@ pre-existing half of the bundle before the first batch, and record the counts in
 terms is the big one: in `sr` it decides a third of all values, and no gate can see a
 wrongly-cased value because it is otherwise a perfectly good translation.
 
-**How to measure: per term, capitalised-mid-sentence against lowercase**, with a
-`(?<=.)(?<!\p{L})` guard to keep sentence-initial positions out. A one-sided split is a
-convention to follow; a 1-of-34 outlier is a slip worth normalising while you are there.
+**How to measure: `npm run l10n:casing -- <loc>`.** Do not hand-roll it again. The three ways
+the hand measurement misled — a missing `i` flag hiding the very occurrences being counted, a
+`(?<=.)` guard that excludes the value's first word but not a later sentence's, and brackets /
+leading emoji / all-caps each licensing a capital — are all encoded, along with the
+conditioning on the English key that separates prose from Title-Cased headings. It prints the
+bundle against the sibling-frontend and core baselines, and every term with its own up:down
+split. `--mine` restricts it to the values this working tree changed, which is the split-at-HEAD
+check for your own drift.
+
+A one-sided split is a convention to follow; a 1-of-34 outlier is a slip worth normalising
+while you are there. **Aggregate by word class before deciding**, because the report keys terms
+by surface form: `bs` looked like four separate 5:0-to-20:0 terms and was one lemma at 29:0.
+**And a term that is one-sided in neither direction has no convention to follow** — `bs`
+capitalised `Izvor` in 5 values and lowercased it in 4, against five other nouns at zero
+counter-examples. Resolve that one DOWN, to the ordinary-noun default: the capitalised set is
+an explicit exception list and a term the bundle never settled does not join it.
 
 **Five outcomes have turned up, and they need opposite handling** — so run the *conditioned*
 measurement even when the unconditioned one already looks one-sided, because that is the

@@ -1503,10 +1503,12 @@ grammar repair. Counting competing renderings per English term produced about 70
   correct, including `_Successfully restored {count} object_`, which switches the participle's
   agreement per form (`Obnoven`/`Obnoveny`/`Obnoveno`) exactly as Czech requires.
 
-Thirty-five locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
+**All thirty-six locales are complete**: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
 `nb`, `pl`, `cs`, `ru`, `uk`, `el`, `fi`, `hu`, `tr`, `ca`, `et`, `hr`, `lt`, `lv`,
-`ro`, `sk`, `sl`, `bg`, `sr`, `rm`, `ga`, `mt`, `is`, `lb`, `sq`, `mk`, `be` — the whole
-high-confidence group plus the low-resource ones bar the last. One remains (`bs`).
+`ro`, `sk`, `sl`, `bg`, `sr`, `rm`, `ga`, `mt`, `is`, `lb`, `sq`, `mk`, `be`, `bs` — the
+whole high-confidence group and every low-resource one. There is no translation queue
+left; the remaining work is the re-audit of the finished bundles and the source-side
+defects, and the §9.1 closing task is now due.
 
 For non-Latin locales (`ru`, `uk`, `bg`, `be`, `mk`, `sr`, `el`) a script-coverage
 check replaces the English-leftover check, and it is now a committed script:
@@ -1869,3 +1871,64 @@ exclusively and never the three dots. The one mismatch was a slip, not a second 
   `Bucket` → `Сегмент` (never *interval*, which is its own key), `redaction` → `зацямненне`
   (never *рэдагаванне*, this app's *Edit* — the `lt` trap), `Totals` → `Разам` (it was
   byte-identical to `Results` on the dashboard sidebar).
+
+### `bs` is where byte-identity with a sibling language stopped being evidence
+
+Bosnian, Croatian and Serbian share most of their morphology and much of their lexicon, so
+the contamination test that works everywhere else — a value byte-identical to another
+locale's — returns almost nothing here. `Revizijski trag #{id}` matches `hr` exactly and is
+correct Bosnian. §2.3 predicted the openbuild Croatian catalogue would be found *inside* this
+committed bundle, as it was in `sr` and `mk`; it was not, because for `bs` that catalogue is
+filed under `bs.json`, the **backend** set, which §1 puts out of scope and `harvest.js` drops.
+
+**What to measure instead is standard-language lexicon, per term.** Bosnian is ijekavian like
+Croatian (`Osvježi`, `Sljedeće`, where `sr` is ekavian) while its lexicon leans to the
+Eastern and international side (`Sačuvaj` not `Spremi`, `Obriši` not `Izbriši`, `Kreiraj` not
+`Stvori`, `Nazad` not `Natrag`). A sweep of the whole known bs/hr divergence set over the
+pre-existing half found exactly two Croatianisms, both agent-noun or term choices rather than
+grammar: `pružatelj` for *provider* in 7 values, where Bosnian forms this class in `-lac`
+(`pružalac`, gen. `pružaoca`, as BiH legal usage has `pružalac usluga`), and `predložak` for
+*template* in 3, where Bosnian uses `šablon`. Both had the pass's own half on the other side,
+so the bundle was split against itself in both cases.
+
+**Two false leads worth not repeating.** The `-irati` / `-ovati` split on internationalist
+verbs is *not* drift: `analizirati` is `-ir-` and `vektorizovati`, `sinhronizovati`,
+`serijalizovati`, `konfigurisati` are `-ov-`/`-is-`, each consistent across two independent
+sibling apps. Cross-app agreement is what upgrades a uniform lemma from "one decision copied"
+(§8.11) to a convention. And the ekavian check needs care in both directions: `vremena` and
+`vremenu` are the correct ijekavian *oblique* forms, since the root shortens outside the
+nominative in every BCS variant, and any such sweep must run over values only — over the raw
+`.js` file the English key `Delete` scores as an ekavian `del-` root.
+
+### `bs` traps
+
+- **Register is formal (Vi) but core cannot say so.** One core catalogue, 55 values, **0
+  markers of either polarity** — the §2.3 thin-core trap, where the scan succeeds rather than
+  throwing. The §6.4 fallback over this bundle plus three sibling frontends gives 367 formal
+  against 1 informal over 3416 values. The single informal hit is not in this app: it is
+  openconnector's `Još nemaš posredovanih vjerodajnica…`, the same defect class the `sq` pass
+  found in the same sibling bundle (§11).
+- **The prompt override is lexically bounded and the English VERB decides it**, which is a
+  third distinct partition of the same verb set after `sq`'s length grading and `mk`'s
+  "Select/Choose/Enter all take 2pl". Here `Select …` takes the 2sg (`Odaberi`, 20 of 20, at
+  14–45 characters) while `Choose …` and `Enter …` take the 2pl (`Odaberite`, `Unesite`, 5 of
+  5 each, at 15–128 characters). Length is not the variable. Measure it per verb.
+- **`svoj-` is excluded from the detector on two independent counts**: it is person-neutral,
+  and it is the stem of `svojstvo`, the app's own word for *property*, which occurs 30+ times.
+- **The hyphen question comes out the opposite way from Albanian.** Bosnian attaches case
+  endings to Latin-script loanwords across a hyphen (`webhook-a`, `webhook-ovi`, `VAPID-om`),
+  but those endings are only case endings, none of which is a register marker — so the plain
+  `(?<!\p{L})` guard is right and the hyphen stays outside it. `sq` needed `(?<![\p{L}-])`
+  because Albanian attaches the *definite article* there and it collides with the copula.
+- **Capitalisation is a convention to follow, bounded to five nouns.** `Objekat` 29:0,
+  `Datoteka` 21:0, `Šema` 13:0, `Registar` 15:0, `Svojstvo` 7:0 in prose, against ordinary
+  nouns one-sided the other way (`vrijednost` 0:4, `korisnik` 0:5). That is the `sr` outcome,
+  not `mk`'s. `Izvor` was the one term one-sided in neither direction (5 up, 4 down) and was
+  resolved down — see §8.10.
+- **The `(s)` key family is the one place the bundle does not capitalise those nouns**, and it
+  was left alone: `registar/i`, `šema/e`, `konfiguracija/e` were already there, so §7.4's
+  "reuse the house style" gave `datoteka/e`, `objekat/i`, `zapis/i`.
+- **`kôd` carries a circumflex and it is load-bearing** — it separates the noun *code* from
+  the preposition `kod` (*at*). Both duplicate-key pairs (`Code`/`Status Code`) use it.
+- **A Cyrillic `о` was hiding in `proširenо`**, in a Latin-script bundle where nothing looks
+  for one. See §8.3.
