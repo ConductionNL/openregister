@@ -42,6 +42,7 @@
     "l10n:script": "node scripts/l10n/script-coverage.js",
     "l10n:corediff": "node scripts/l10n/core-diff.js",
     "l10n:termdrift": "node scripts/l10n/termdrift.js",
+    "l10n:casing": "node scripts/l10n/casing.js",
     "l10n:spell": "node scripts/l10n/spell.js",
     "l10n:fetchdicts": "node scripts/l10n/fetch-dicts.js",
     "check:json-strict": "node tests/validate-json-strict.js",

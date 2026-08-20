@@ -635,6 +635,13 @@ function loadLocaleConfig(loc) {
 		// dictionary (product names, code tokens, domain coinages), so a report shows
 		// only what still needs triaging.
 		spellAllow: raw.spellAllow || [],
+		// Read by script-coverage.js: letter runs that legitimately mix two scripts,
+		// so the homoglyph section stays actionable. Only ever a spelling this
+		// locale's OWN core catalogues also use — mk writes `сè` with a Latin è
+		// (U+00E8) and core mk does the same in 7 values with zero of the Cyrillic
+		// U+0450, so it is the prevailing convention rather than 29 defects. A run
+		// listed here without that corroboration is hiding a real defect.
+		homoglyphAllow: raw.homoglyphAllow || [],
 	}
 }
 
