@@ -127,6 +127,7 @@ const FINISHED_DEFAULT = [
 	'nl', 'de', 'fr', 'es', 'it', 'pt', 'sv', 'da', 'nb',
 	'pl', 'cs', 'ru', 'uk', 'el', 'fi', 'hu', 'tr', 'ca', 'et',
 	'hr', 'lt', 'lv', 'ro', 'sk', 'sl', 'bg', 'sr', 'rm', 'ga', 'mt', 'is', 'lb', 'sq',
+	'mk',
 ].join(',')
 const FINISHED = new Set((process.env.L10N_FINISHED_LOCALES || FINISHED_DEFAULT)
 	.split(',').map((s) => s.trim()).filter(Boolean))

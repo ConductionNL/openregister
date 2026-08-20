@@ -47,7 +47,7 @@ by counting formal vs informal markers across core (`server/core`, `lib`,
 
 Measured results: informal for `nl`, `de`, `sv`, `da`, `nb`, `pl`, `fi`, `hu`,
 `et`, `lv`, `ga`, `mt`, `is`; formal for `fr`, `cs`, `ru`, `uk`, `tr`, `el`, `sr`, `bg`, `ca`, `hr`,
-`lt`, `sk`, `sl`, `rm`, `lb`, `sq`.
+`lt`, `sk`, `sl`, `rm`, `lb`, `sq`, `mk`.
 
 **`cs` is measured as of this pass, not inherited.** It sat in the formal column from before
 any of the tooling existed (it is one of the sixteen pre-rule locales), and re-measuring it
@@ -127,10 +127,13 @@ core's own short labels — a single verdict for the locale is usually meaningle
 | bare 2sg imperative, whatever the prose | `ca`, `et`, `hr`, `sl`, `sr`, `ga`, `mt` | `Desa`, `Salvesta`, `Spremi`, `Shrani`, `Сачувај`, `Sábháil`, `Issejvja` |
 | **infinitive — register-neutral** | `cs`, `lt`, `lv`, `sk`, `rm`, `is` | `Zobrazit`/`Smazat`, `Įrašyti`/`Ištrinti`/`Atsisakyti`, `Saglabāt`/`Dzēst`/`Atcelt`, `Uložiť`/`Odstrániť`/`Zrušiť`, `Memorisar`/`Stizzar`/`Annullar`, `Vista`/`Eyða`/`Hætta við` |
 | **verbal noun — register-neutral** | `ro`, `bg` | `Salvare`/`Ștergere`/`Anulare`/`Adăugare endpoint`; `Запазване`/`Изтриване`/`Отказ`/`Добавяне на крайна точка` |
-| **2sg imperative for a label, 2pl once it is a sentence — GRADED BY LENGTH** | `sq` | `Ruaj`/`Fshi`/`Anulo`/`Eksporto`, but `Menaxhoni regjistrat …`/`Filtroni dhe analizoni …`; and `Zgjidhni …` for any `Select`/`Choose` prompt |
+| **2sg imperative for a label, 2pl once it is a sentence — GRADED BY LENGTH** | `sq`, `mk` | `Ruaj`/`Fshi`/`Anulo`/`Eksporto`, but `Menaxhoni regjistrat …`/`Filtroni dhe analizoni …`; and `Zgjidhni …` for any `Select`/`Choose` prompt. `Зачувај`/`Избриши`/`Додај`/`Откажи`, but `Управувајте со вашите апликации и модули`; and `Изберете …` / `Внесете …` for any prompt |
 
-`sq` is the only non-categorical entry: it slides between two forms with string length
-(219:1 in favour of 2sg at ≤14 characters, 7:35 the other way at 80+, crossover ~40).
+The fifth row is the only non-categorical one, and it has now been measured twice — which is
+what makes it a shape to check for rather than one locale's quirk. `sq` slides between two
+forms with string length (219:1 in favour of 2sg at ≤14 characters, 7:35 the other way at 80+,
+crossover ~40) and `mk` does the same, with the crossover in the same place: core `mk` runs
+128:1 at ≤14 and 6:12 at 80+, the siblings 139:3 and 1:26, the bundle 41:2 and 7:14.
 The reading is that the long end is not a label convention at all but formal prose that
 opens with a verb, so the register governs it and the button rule covers only the short
 end — see §7.3 of `docs/l10n-workflow.md`. **Check whether a locale's apparent button
@@ -471,6 +474,14 @@ Both remaining flagged locales turned out to be boundary cases, **in opposite di
 - `mk` — same modular header, but the library implements the modular rule and merely **drops
   the `n%100 != 11` guard** (`number % 10 === 1 ? 0 : 1`), so only 11 and 111 disagree, and
   they go the other way: the library picks the *singular* where Macedonian takes the plural.
+  Because form 0 is still reached correctly at 1, 21, 31 …, the call is the opposite of
+  `is`'s: form 0 is the plain counted singular, form 1 the true plural, and the residue is
+  just those two counts. **And Macedonian has NO productive counted form**, which is the trap
+  for anyone arriving from the `bg` note below: the избројана форма in `-а` exists for
+  masculine non-person nouns, so `5 објекта` looks right, but core writes `%n бајти`,
+  `{count} известувања`, `%n датотеки` and the app family `{count} објекти` / `{count} записи`.
+  The `-а` form survives in core only for a closed set of measure nouns (`%n дена`, `%n часа`,
+  while `месец` takes plain `месеци`).
 
 The general signal: **a two-form header whose expression is modular rather than `n != 1`**
 is the shape to check, because the library's coarse groups are mostly written `n === 1`.
@@ -1475,10 +1486,10 @@ grammar repair. Counting competing renderings per English term produced about 70
   correct, including `_Successfully restored {count} object_`, which switches the participle's
   agreement per form (`Obnoven`/`Obnoveny`/`Obnoveno`) exactly as Czech requires.
 
-Thirty-three locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
+Thirty-four locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
 `nb`, `pl`, `cs`, `ru`, `uk`, `el`, `fi`, `hu`, `tr`, `ca`, `et`, `hr`, `lt`, `lv`,
-`ro`, `sk`, `sl`, `bg`, `sr`, `rm`, `ga`, `mt`, `is`, `lb`, `sq` — the whole high-confidence group plus the
-first six of the low-resource ones. Three remain (`mk`, `be`, `bs`),
+`ro`, `sk`, `sl`, `bg`, `sr`, `rm`, `ga`, `mt`, `is`, `lb`, `sq`, `mk` — the whole high-confidence group plus the
+first seven of the low-resource ones. Two remain (`be`, `bs`),
 in that order, which the owner has confirmed — no need to re-ask per locale as long as
 the order is kept.
 
@@ -1699,3 +1710,72 @@ step 2 ran as written and needed no fallback.
   are buttons in 8, 2 and 16 other files and cannot be, which leaves that header row mixed —
   the same unresolved shape `sl` and `sr` shipped, and the same source-side defect `ro` had to
   diverge from core over (§10).
+
+### `mk` traps
+
+Macedonian came out **formal** (core 565 vs 59 over 24 catalogues / 3424 values, the
+bundle's own 1053 values 31 vs 0), with the bare **2sg imperative** for short labels and
+the **2pl** once a value becomes a sentence — the `sq` gradient, replicated, crossover in
+the same place at ~40 characters. Core and the file agreed, so unlike `et` and `lv` there was
+nothing to overrule, and unlike `ga`/`mt`/`is` there is no structural story: the T-V
+distinction is live and ordinary, which makes this the plain `cs`-style case.
+
+**`ВИ` is the Macedonian acronym for AI** — вештачка интелигенција — and a homograph of the
+formal dative clitic `ви`. `ВИ-агент` and `ВИ-функции` are real values in this bundle, so a
+detector that folds case scores the app's AI vocabulary as deference. Case is the whole of the
+discriminator, since the acronym is always all-caps and the pronoun is `ви` or sentence-initial
+`Ви`, so `detectors/mk.js` **consumes the all-caps form in `fold()` before lowercasing**. That
+is the `lb` `dir`/`Dir` problem from the other end: `lb` had to preserve case throughout, `mk`
+needs it for one token and can spend it up front, which keeps the word lists readable. The
+hyphen belongs in the **left** guard only — Macedonian attaches acronyms to the following noun
+with one (`API-клуч`, `LLM-дејства`, `push-известувања`), so the acronym must still match with
+a hyphen after it.
+
+Suffix rules that fail here, all measured: **`-те`** is the 2pl ending *and* the definite
+plural article, so it scores every plural noun phrase as formal prose (`објектите`,
+`датотеките`, `филтрите` — the `bg` situation exactly); **`-ш`** is the 2sg present ending
+*and* the end of `ваш`, your-FORMAL, so it inverts the polarity, and this bundle also carries
+the nouns `хеш` and `кеш`. Bare **`си`** is excluded as both the 2sg of `сум` and the reflexive
+clitic — but it is *absent outright*, 0 of 6864 corpus values, so the exclusion costs nothing.
+**`треба`** is impersonal and **`молиме`** is 1pl; in `Ве молиме` the register is carried by
+`Ве`.
+
+Two useful negatives. Bare **`ти` is usable** — Macedonian's demonstratives are тој/таа/тоа/тие,
+so there is no demonstrative reading to collide with. And bare **`те` is usable, where `bg`'s
+is not**: Bulgarian `те` is the 3pl pronoun *they*, Macedonian's is `тие`, so `те` here is only
+ever the 2sg accusative clitic. Do not port `bg`'s `те` exclusion across.
+
+The 2sg imperative is **excluded**, and §6.5 test 1 alone forces it — the bare imperative *is*
+the short-label convention, so counting it would flag every button. Test 2 comes out the other
+way and is worth recording rather than inferring: Macedonian imperatives are **not** 3sg
+homographs the way Bulgarian's и-conjugation is (`избриши` against the 3sg aorist `избриша`,
+`зачувај` against `зачува`/`зачувува`). So `mk` gives the paradigm up to convention rather than
+to ambiguity, and the recall lost is real.
+
+**Orthography: flat lowercase, and the bundle broke it 118 times.** Macedonian does not
+capitalise common nouns mid-sentence *or* in a heading, and the corpus is unanimous — the
+sibling frontends run 1:273 in prose, core 2:~480, and under Title-Cased keys core is 7:122 and
+the siblings 40:518. The bundle's own half ran 41:146 in prose and 65:507 in headings, with all
+41 prose hits inside four terms (`Датотека` 20:0, `Шема` 9:5, `Регистар` 7:6, `Извор` 3:0,
+`Својство` 2:5) while `објект` — the app's most central noun — was 0:26. That inconsistency is
+what makes it a defect rather than an `sr`-style convention, and §8.11's rule settles the
+uniform terms: a uniform lemma is one decision copied, not a rule.
+
+**Clitic doubling is the rule that looks mechanical and is not.** Macedonian obligatorily
+doubles a definite direct object with a resumptive accusative clitic (`Избриши ГО објектот`),
+which is the obvious §8.11 candidate here. It scored **0 of 5**, because the trigger is
+*semantic* (definiteness, invisible to a regex) and the clitic's position depends on clause
+type. Recorded so the next pass does not rebuild it.
+
+Terminology settled by the bundle's own values against core (§3.5), all of which core
+disagreed with: `Create` → `Создај` (core `Креирај`), `Settings` → `Поставки` (core
+`Параметри`), `Actions` → `Дејства` (core `Акции`), `Type` → `Тип` (core `Вид`), `Views` →
+`Прикази` (core `Прегледи`). The sibling frontends agree with the bundle in every case.
+`termdrift`'s minority was right once: `прегледи` in `Avg Object Views/Session` is a *page-view
+count*, not the View entity, so it correctly does not use `прикази`.
+
+`Slug` → `Кратко име`, following the descriptive shape `lt` (`Trumpinys`), `is` (`Stuttheiti`)
+and `hu` take rather than the `Слаг` transliteration `be`/`ru`/`sr`/`uk` use — the bundle needs
+`Ознака` for `Label` and `Етикети` for `Labels` (§8.4), so a transliteration would have been
+the only way to avoid a collision and it reads as nothing to a Macedonian user. `ID` and `URL`
+stay Latin because the bundle already writes them that way in ten of its own values.

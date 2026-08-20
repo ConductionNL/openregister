@@ -29,8 +29,8 @@ belongs in `en.js`, never in `en.json`.** There is no scanner for the backend se
 (it would have to walk `lib/` for PHP `$l->t()`), so `en.json` is maintained by hand.
 
 Re-measure before trusting any number here — `npm run check:l10n` prints it all.
-**As of 2026-08-20**: `en.js` holds 2052 keys, 33 locales at full parity, 3 in progress
-(`mk be bs`, in that order — the owner has confirmed the order, so no need to
+**As of 2026-08-20**: `en.js` holds 2052 keys, 34 locales at full parity, 2 in progress
+(`be bs`, in that order — the owner has confirmed the order, so no need to
 re-ask per locale). **`test:l10n` is currently RED at HEAD and not because of l10n work**:
 a `development` merge replaced the Dutch GDPR source terms with English ones and added
 flow strings, leaving 17 keys used in `src/` but missing from `en.js`. That is the
@@ -66,7 +66,8 @@ Everything lives in **`scripts/l10n/`**. Read three documents, in this order:
    Irish has **no T-V distinction at all**, so the label names the only address form;
    Maltese **has** one and merely leaves it unused; Icelandic **had** one and abandoned
    it in the 20th century, so its V-forms are archaic rather than absent or merely
-   unfashionable. There are also four separate *button* conventions. Plus the plural
+   unfashionable. There are also five separate *button* conventions, one of which is graded
+   by string length rather than categorical and has now been measured in two locales. Plus the plural
    boundaries per language and the conventions already established. **Locales measuring
    the same way is not evidence they are the same case.**
 
@@ -126,7 +127,7 @@ indistinguishable from finished work, so nobody revisits it. Audit with
 `npm run test:l10n:parity -- --strict-identical`.
 
 **Cognate enforcement is opt-in per locale**, keyed on `locales/<loc>.json`
-existing. Only `tr ca et hr lt lv ro sk sl bg sr rm ga mt is cs lb sq` are held to it; the other 15 predate the rule and
+existing. Only `tr ca et hr lt lv ro sk sl bg sr rm ga mt is cs lb sq mk` are held to it; the other 15 predate the rule and
 carry ~375 unreviewed identical values, some legitimate. The gate prints which
 locales are enforced and which are merely unreviewed, so a green run cannot be read
 as verified. **Reviewing those 16 is open work.**
@@ -194,6 +195,16 @@ a defect no amount of "both words are correct Catalan" excuses. **The reports al
 blind spot** — `l10n:spell` was splitting every Catalan `l·l` word in half and reporting the halves
 as misspellings, so a locale's orthography can defeat the tooling silently.
 
+**`lb` generalises as a QUESTION to ask, not as a promise that a sandhi rule is waiting.**
+`mk` is where it was asked and came out no. Macedonian obligatorily doubles a definite direct
+object with an accusative clitic (`Избриши ГО објектот`), which looks exactly like the Eifeler
+Regel and is not the same shape: the trigger is **semantic** (definiteness) rather than
+orthographic, and the clitic's position depends on clause type. The check scored **0 of 5** —
+ordinary words ending in the letters that spell the definite articles, plus a clause whose
+clitic sat in front of the verb where the check was not looking. What paid instead was
+**capitalisation**: 118 occurrences over 105 values, the whole dominant class of the pass. So
+ask the question every time; expect the answer to be a different rule each time.
+
 **Ask whether the language has an OBLIGATORY SANDHI rule before budgeting the audit.** `lb`
 is the counter-example to "budget for terminology, not grammar": its terminology was healthy
 and **60 of its 77 corrections were one orthographic rule** — the Eifeler Regel, where
@@ -226,6 +237,53 @@ reported the bundle capitalising domain terms 25–35% against a family rate nea
 tidy ~110-value defect class that does not exist: prose is 0-of-177, and every hit was a
 Title-Cased heading correctly following its source. If a defect class is large, uniform and
 concentrated in short values, you are measuring the source, not the translation.
+
+**But the conditioned measurement can still come back real, and on `mk` it did.** Restricted
+to prose keys the bundle capitalised **41 against 146** where the sibling frontends run 1:273
+and core 2:~480, and the same rule was broken again in its headings (65:507 against core's
+7:122). What tells that apart from `sq`'s phantom is that it does not evaporate under the
+restriction and that the bundle is **internally inconsistent**: `објект`, the app's most
+central noun, is 0:26 lowercase while `Датотека` is 20:0 capitalised. Three of the four
+capitalised terms are themselves split. So there was no convention to follow — unlike `sr`,
+which capitalised its six first-class concepts one-sidedly across the whole bundle. The `lb`
+lesson decides it: **a uniform lemma is one decision copied, not a rule** — by word class the
+same bundle does both, 41 to 146.
+
+**Three ways a casing measurement misleads, all met on `mk`.** A stem alternation written
+without the `i` flag matches only the lowercase form, so every capitalised occurrence — the
+entire thing being measured — is invisible and every term reports a clean 0-up. `(?<=.)`
+excludes the value's first word but **not a later sentence's**, so `… пребарување. Објектите
+се …` scores as a mid-sentence capital; three first-cut hits were that, and each would have
+been "corrected" into an error. And an opening parenthesis, a leading emoji and deliberate
+all-caps each license a capital the same way a sentence start does — 14 of `mk`'s 132 raw hits
+were those. Review the word list before applying any casing fix.
+
+**An ACRONYM can be a homograph of a register marker, and case is the only thing separating
+them.** `ВИ` is Macedonian for *AI* (вештачка интелигенција) and this bundle uses it —
+`ВИ-агент`, `ВИ-функции` — while `ви` is the formal dative clitic. A detector that folds case
+scores the app's AI vocabulary as deferential address. `detectors/mk.js` therefore **consumes
+the all-caps form in `fold()` before lowercasing**: the acronym is always all-caps, the
+pronoun is `ви` or sentence-initial `Ви`. That is the `lb` `dir`/`Dir` situation from the other
+end — `lb` had to preserve case throughout, `mk` needs it for one token and can spend it up
+front, which keeps the word lists readable. Note the hyphen goes in the **left** guard only:
+Macedonian attaches acronyms to the following noun with a hyphen, so the acronym must still
+match with a hyphen after it.
+
+**`sq`'s LENGTH-GRADED button convention replicated on `mk`, which is what makes it a shape
+worth checking rather than one locale's quirk** — and the crossover landed in the same place,
+~40 characters. Core `mk` runs 128:1 for the 2sg imperative at ≤14 characters and 6:12 the
+other way at 80+. Its `Select`/`Choose`/`Enter` prompts take the 2pl at any length, exactly as
+`sq`'s do. But measuring one more prompt family shows the override is **lexically bounded, not
+"any prompt"**: `Search` goes the other way and is not close (core 61:1 for 2sg), because a
+dropdown you pick from and a field you type into address the user while a toolbar button is
+something you press.
+
+**A functional field described in prose is not a functional field.** The `mk` pass wrote the
+whole `pluralBoundary` rationale into `pluralNote` and never set `pluralBoundary` itself. This
+is the third instance of the `scripts/l10n/locales/<loc>.json` field class after `pluralOrder`
+and `spellAllow` — but the first that failed **loudly**, because `runtime-check` treats an
+unacknowledged boundary disagreement as fatal. The two earlier ones failed in the safe
+direction and so went unnoticed for passes. Set the field, then re-run the check that reads it.
 
 **A marker guard must know where the target puts a MORPHEME boundary, not just what is a
 letter.** `(?<!\p{L})` is wrong for Albanian, which attaches the definite ending to acronyms
