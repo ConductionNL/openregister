@@ -712,17 +712,7 @@ class TransitionEngine {
 		}
 
 		// Reject when a required input is absent or empty-string.
-		$missing = [];
-		foreach ($declared as $fieldName => $required) {
-			if ($required === false) {
-				continue;
-			}
-
-			if (array_key_exists($fieldName, $data) === false || $data[$fieldName] === '') {
-				$missing[] = $fieldName;
-			}
-		}
-
+		$missing = $this->collectMissingRequiredInputs(declared: $declared, data: $data);
 		if ($missing !== []) {
 			throw new InvalidTransitionInputException(
 				message: sprintf(
@@ -737,6 +727,36 @@ class TransitionEngine {
 		// Everything present is declared — merge it all.
 		return $data;
 	}//end resolveTransitionInputs()
+
+
+	/**
+	 * Collect the declared `required` inputs a payload fails to satisfy.
+	 *
+	 * A required input counts as missing when the payload omits the key entirely
+	 * or supplies an empty string. Extracted from {@see resolveTransitionInputs()}
+	 * so each rejection (undeclared keys, missing required) reads as one guard.
+	 *
+	 * @param array<string, bool> $declared Map of declared field name to its `required` flag.
+	 * @param array<string, mixed> $data The caller-supplied payload.
+	 *
+	 * @return array<int, string> The missing required field names, empty when satisfied.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function collectMissingRequiredInputs(array $declared, array $data): array {
+		$missing = [];
+		foreach ($declared as $fieldName => $required) {
+			if ($required === false) {
+				continue;
+			}
+
+			if (array_key_exists($fieldName, $data) === false || $data[$fieldName] === '') {
+				$missing[] = $fieldName;
+			}
+		}
+
+		return $missing;
+	}//end collectMissingRequiredInputs()
 
 	/**
 	 * Normalise a transition's `inputs` declaration into fieldName => required.

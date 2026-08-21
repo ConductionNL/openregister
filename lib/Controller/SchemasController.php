@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
+use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
@@ -85,6 +86,8 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) REST controllers have many endpoints; extraction
  * into sub-controllers would break the route registration.
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)     REST controllers have many endpoints; extraction
+ * into sub-controllers would break the route registration.
+ * @SuppressWarnings(PHPMD.TooManyMethods)           REST controllers have many endpoints; extraction
  * into sub-controllers would break the route registration.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   NC AppFramework controller DI requires injecting
  * framework + RBAC + audit + domain services, each used in separate endpoint groups.
@@ -297,7 +300,7 @@ class SchemasController extends Controller {
 	}//end index()
 
 	/**
-	 * Resolve the {id} route parameter to a Schema, register-scoped when possible.
+	 * Resolve the {id} route parameter to a Schema, register-scoped when the caller names one.
 	 *
 	 * WHY this exists. Schema slugs are unique WITHIN a register, never across the
 	 * instance, but `SchemaMapper::find()` matches `LOWER(slug)` globally and returns
@@ -320,52 +323,15 @@ class SchemasController extends Controller {
 	 * @return Schema The resolved schema.
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When nothing matches.
+	 * @throws RegisterNotFoundException When a named register does not resolve.
+	 *
+	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
 	private function resolveSchema(int|string $id): Schema {
 		$registerParam = $this->request->getParam(key: 'register', default: null);
 
-		// Register-scoped resolution. A numeric id is resolved globally below;
-		// scoping applies to slugs only.
-		//
-		// The two failures below are deliberately NOT handled together, and the
-		// separation is load-bearing. An *unresolvable register parameter* is not a
-		// reason to fail the schema read — the caller gets what they would have got
-		// without the parameter. But a register that resolves and does not carry the
-		// slug is a refusal, because naming a register makes it a boundary.
-		//
-		// Both used to sit inside one try/catch. Throwing the refusal from in there
-		// would have been caught by that same catch and logged as "scope could not
-		// be applied", restoring the exact fallback this change removes — a silent
-		// no-op that looks like a fix.
-		if ($registerParam !== null && $registerParam !== '' && is_string($id) === true && is_numeric($id) === false) {
-			$register = null;
-			try {
-				$register = $this->registerMapper->find(id: $registerParam, _rbac: false, _multitenancy: false);
-			} catch (Exception $e) {
-				$this->logger->debug(
-					'[SchemasController] register scope could not be applied: ' . $e->getMessage(),
-					['register' => $registerParam, 'schema' => $id]
-				);
-			}
-
-			if ($register !== null) {
-				$registerSchemaIds = ($register->getSchemas() ?? []);
-				$scoped            = $this->schemaMapper->findBySlugInIds(
-					slug: $id,
-					schemaIds: $registerSchemaIds
-				);
-				if ($scoped !== null) {
-					return $scoped;
-				}
-
-				throw new SchemaNotInRegisterException(
-					schemaSlug: $id,
-					registerId: $register->getId(),
-					registerSlug: $register->getSlug(),
-					candidatesElsewhere: $this->schemaMapper->countBySlug(slug: $id),
-					registerSchemaCount: count($registerSchemaIds)
-				);
-			}
+		if (is_scalar($registerParam) === true && (string)$registerParam !== '') {
+			return $this->resolveSchemaInRegister(id: $id, registerParam: (string)$registerParam);
 		}
 
 		$schema = $this->schemaMapper->find(id: $id, _extend: [], _multitenancy: false);
@@ -379,6 +345,69 @@ class SchemasController extends Controller {
 
 		return $schema;
 	}//end resolveSchema()
+
+
+	/**
+	 * Resolve the {id} route parameter inside the register the caller named.
+	 *
+	 * Naming a register makes it a BOUNDARY, and the boundary holds for every
+	 * identifier form — numeric id, uuid, and slug alike. Earlier this scoping
+	 * applied to slugs only and an unresolvable `?register=` fell back to global
+	 * resolution "so the caller gets what they would have got without the
+	 * parameter". Both softenings put the silent cross-app read back: measured on
+	 * the shared dev instance 2026-08-21, three schemas carried the slug
+	 * `timeEntry` and hrmq's form dialog was served ANOTHER app's schema (id 161
+	 * instead of hrmq's 9466) — precisely the read a caller passes `?register=`
+	 * to rule out. A mistyped register name that silently widens the scope back
+	 * to the whole instance is indistinguishable, from the caller's side, from a
+	 * correct scoped hit; refusing it loudly is the only observable behaviour.
+	 *
+	 * The register lookup runs with `_rbac: false, _multitenancy: false`,
+	 * matching the schema metadata-read it scopes: this resolves WHICH schema is
+	 * meant, it grants nothing — the read-visibility guard in {@see show()}
+	 * still runs on the result.
+	 *
+	 * @param int|string $id            The {id} route parameter — a numeric id, a uuid, or a slug.
+	 * @param string     $registerParam The `?register=` parameter — a register id, uuid, or slug.
+	 *
+	 * @return Schema The schema, resolved among the register's carried schemas only.
+	 *
+	 * @throws RegisterNotFoundException    When the named register does not resolve (→ 404).
+	 * @throws SchemaNotInRegisterException When the register does not carry the identifier (→ 404).
+	 *
+	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
+	 */
+	private function resolveSchemaInRegister(int|string $id, string $registerParam): Schema {
+		try {
+			$register = $this->registerMapper->find(id: $registerParam, _rbac: false, _multitenancy: false);
+		} catch (Exception $e) {
+			throw new RegisterNotFoundException(
+				registerSlugOrId: $registerParam,
+				previous: $e,
+				remedies: 'The schema was therefore not resolved, because naming a register makes it a '
+					. 'boundary and falling back to instance-wide resolution would serve a schema from '
+					. 'outside it. Omit ?register= to resolve the identifier globally.'
+			);
+		}
+
+		$registerSchemaIds = ($register->getSchemas() ?? []);
+		$scoped            = $this->schemaMapper->findInIds(
+			id: $id,
+			schemaIds: $registerSchemaIds
+		);
+		if ($scoped !== null) {
+			return $scoped;
+		}
+
+		throw new SchemaNotInRegisterException(
+			schemaSlug: (string)$id,
+			registerId: $register->getId(),
+			registerSlug: $register->getSlug(),
+			candidatesElsewhere: $this->schemaMapper->countBySlug(slug: (string)$id),
+			registerSchemaCount: count($registerSchemaIds)
+		);
+	}//end resolveSchemaInRegister()
+
 
 	/**
 	 * Log a debug line naming every schema a slug could have resolved to.
@@ -486,6 +515,12 @@ class SchemasController extends Controller {
 			}
 
 			return new JSONResponse(data: $schemaArr);
+		} catch (SchemaNotInRegisterException | RegisterNotFoundException $e) {
+			// Register-scoped refusals carry a diagnosis — which register, how many
+			// same-slug schemas exist elsewhere, the repair command. Flattening them
+			// to a bare "Schema not found" reads as "your slug is wrong", which is
+			// the one conclusion that is certainly false when duplicates exist.
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 404);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
 		} catch (\OCA\OpenRegister\Exception\ValidationException $e) {
