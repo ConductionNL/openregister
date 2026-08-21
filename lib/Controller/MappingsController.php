@@ -334,7 +334,7 @@ class MappingsController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with test results
 	 *
-	 * @suppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
 	 * @spec openspec/specs/openapi-generation/spec.md#requirement-schema-authoring-sub-resources-and-meta-entity-operational-endpoints
 	 */

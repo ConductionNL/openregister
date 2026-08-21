@@ -92,8 +92,8 @@ class LlmSettingsController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with updated LLM settings
 	 *
-	 * @suppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @suppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
@@ -332,8 +332,8 @@ class LlmSettingsController extends Controller {
 	 *     modified: mixed|null, name: 'unknown'|mixed, size: 0|mixed}>,
 	 *     count?: int<0, max>}, array<never, never>>
 	 *
-	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @suppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */

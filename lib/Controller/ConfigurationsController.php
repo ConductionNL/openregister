@@ -173,9 +173,9 @@ class ConfigurationsController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @suppressWarnings(PHPMD.StaticAccess)         Uuid::v4() is a standard utility pattern
-	 * @suppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @suppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::v4() is a standard utility pattern
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
 	 * @return JSONResponse JSON response with created configuration or error
 	 *
@@ -357,7 +357,7 @@ class ConfigurationsController extends Controller {
 	 *     array<never, never>>|JSONResponse<400, array{error: string},
 	 *     array<never, never>>
 	 *
-	 * @suppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to include/exclude objects in export
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to include/exclude objects in export
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-14
 	 */

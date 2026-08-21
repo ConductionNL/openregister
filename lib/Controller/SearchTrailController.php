@@ -39,8 +39,8 @@ use OCP\IUserSession;
  *
  * @psalm-suppress UnusedClass
  *
- * @suppressWarnings(PHPMD.TooManyPublicMethods)
- * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class SearchTrailController extends Controller {
 	/**
@@ -100,9 +100,9 @@ class SearchTrailController extends Controller {
 	 *
 	 * @return array Request parameters including pagination and filters
 	 *
-	 * @suppressWarnings(PHPMD.NPathComplexity)       Request parameter extraction requires many conditional checks
-	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @suppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)       Request parameter extraction requires many conditional checks
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
 	 * @spec exclude Private helper: parses pagination/filter/date params; the search-trail analytics API is owned by
 	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3.
@@ -248,8 +248,8 @@ class SearchTrailController extends Controller {
 	 *     prev?: null|string
 	 * }
 	 *
-	 * @suppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @suppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
 	 * @spec exclude Private helper: shared pagination-envelope builder; the search-trail analytics API is owned by
 	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3.

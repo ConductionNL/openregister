@@ -57,3 +57,19 @@ parameters:
         - '#should return [^ ]+ but returns ddn\\sapp\\(obj|value|pdfentry|buffer|bytes|str)\b#'
         - '#Parameter \$pdf_object of method ddn\\sapp\\PDFDoc::add_object\(\) expects ddn\\sapp\\PDFObject, ddn\\sapp\\obj given#'
         - '#Strict comparison using === between ddn\\sapp\\(obj|value|pdfentry) and false will always evaluate to false#'
+        # MultiTenancyTrait guards every log call with `isset($this->logger)`
+        # because a TRAIT cannot require a property — PHP has no abstract
+        # properties. Both classes using it today (SchemaMapper, MappingMapper)
+        # declare a non-nullable `LoggerInterface $logger`, so PHPStan resolves
+        # the guard per-using-class and calls it always-true (16 reports, 8 per
+        # class).
+        #
+        # The guard is NOT redundant in the trait's own terms: a future class
+        # using MultiTenancyTrait without declaring $logger would hit an
+        # undefined property, and isset() is what keeps that a skipped log line
+        # rather than a fatal. Scoped to the trait so it cannot mask the same
+        # shape anywhere else.
+        -
+            message: '#Property .+::\$logger \(Psr\\Log\\LoggerInterface\) in isset\(\) is not nullable#'
+            identifier: isset.property
+            path: lib/Db/MultiTenancyTrait.php

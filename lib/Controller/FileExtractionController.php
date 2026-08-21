@@ -51,7 +51,7 @@ use OCP\IUserSession;
  *
  * @psalm-suppress UnusedClass
  *
- * @suppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
@@ -331,7 +331,7 @@ class FileExtractionController extends Controller {
 	 *     array<never, never>
 	 * >
 	 *
-	 * @suppressWarnings(PHPMD.BooleanArgumentFlag) Force flag allows re-extraction bypass
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag allows re-extraction bypass
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */

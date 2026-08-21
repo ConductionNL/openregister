@@ -616,7 +616,7 @@ class FilesController extends Controller {
 	 *     array{error?: mixed|string, labels?: list<string>,...},
 	 *     array<never, never>>
 	 *
-	 * @suppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
 	 *

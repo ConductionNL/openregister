@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b91761870b0b3b4e242eee6912c58ed5",
+    "content-hash": "afcdeab8bd2a2678bfc97c9368dddee9",
     "packages": [
         {
             "name": "adbario/php-dot-notation",
@@ -7048,16 +7048,16 @@
         },
         {
             "name": "conduction/hydra-gates",
-            "version": "v1.8.1",
+            "version": "v1.8.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ConductionNL/.github.git",
-                "reference": "8e0e9857e54d6c680e157939e78a468e58d3751a"
+                "reference": "3dfcd1e56d27bd06eaa98a9a66e377e7e14fe491"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ConductionNL/.github/zipball/8e0e9857e54d6c680e157939e78a468e58d3751a",
-                "reference": "8e0e9857e54d6c680e157939e78a468e58d3751a",
+                "url": "https://api.github.com/repos/ConductionNL/.github/zipball/3dfcd1e56d27bd06eaa98a9a66e377e7e14fe491",
+                "reference": "3dfcd1e56d27bd06eaa98a9a66e377e7e14fe491",
                 "shasum": ""
             },
             "require": {
@@ -7101,9 +7101,9 @@
             "support": {
                 "docs": "https://github.com/ConductionNL/.github/blob/main/hydra-gates/README.md",
                 "issues": "https://github.com/ConductionNL/.github/issues",
-                "source": "https://github.com/ConductionNL/.github/tree/v1.8.1"
+                "source": "https://github.com/ConductionNL/.github/tree/v1.8.2"
             },
-            "time": "2026-08-20T05:07:22+00:00"
+            "time": "2026-08-20T09:37:12+00:00"
         },
         {
             "name": "consolidation/annotated-command",
@@ -9721,15 +9721,15 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "1.12.33",
+            "version": "2.2.8",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/37982d6fc7cbb746dda7773530cda557cdf119e1",
-                "reference": "37982d6fc7cbb746dda7773530cda557cdf119e1",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/e285254e60f33c21902efef4a926ca0987c06804",
+                "reference": "e285254e60f33c21902efef4a926ca0987c06804",
                 "shasum": ""
             },
             "require": {
-                "php": "^7.2|^8.0"
+                "php": "^7.4|^8.0"
             },
             "conflict": {
                 "phpstan/phpstan-shim": "*"
@@ -9747,6 +9747,17 @@
             "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Ondřej Mirtes"
+                },
+                {
+                    "name": "Markus Staab"
+                },
+                {
+                    "name": "Vincent Langlet"
+                }
             ],
             "description": "PHPStan - PHP Static Analysis Tool",
             "keywords": [
@@ -9770,7 +9781,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-02-28T20:30:03+00:00"
+            "time": "2026-08-04T22:21:45+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",

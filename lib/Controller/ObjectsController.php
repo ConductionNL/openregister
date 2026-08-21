@@ -76,13 +76,13 @@ use Symfony\Component\Uid\Uuid;
  *
  * @psalm-suppress UnusedClass
  *
- * @suppressWarnings(PHPMD.ExcessiveClassLength)
- * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @suppressWarnings(PHPMD.TooManyMethods)
- * @suppressWarnings(PHPMD.TooManyPublicMethods)
- * @suppressWarnings(PHPMD.CouplingBetweenObjects)
- * @suppressWarnings(PHPMD.ElseExpression)           File upload extraction requires conditional branching
- * @suppressWarnings(PHPMD.ExcessiveMethodLength)    Complex file upload handling with multiple formats
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ElseExpression)           File upload extraction requires conditional branching
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    Complex file upload handling with multiple formats
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  *
@@ -134,7 +134,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return void
 	 *
-	 * @suppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
 		string $appName,
@@ -637,7 +637,7 @@ class ObjectsController extends Controller {
 	 *     ids: array|null
 	 * }
 	 *
-	 * @suppressWarnings(PHPMD.UnusedFormalParameter)
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
 	private function getConfig(?string $_register = null, ?string $_schema = null, ?array $ids = null): array {
 		$params = $this->request->getParams();
@@ -826,7 +826,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @psalm-suppress UnusedParam Params are used in foreach loops and method calls.
 	 *
-	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 */
 	private function crossTableSearch(array $registers, array $schemas, ObjectService $objectService): JSONResponse {
 		$magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
@@ -1081,8 +1081,8 @@ class ObjectsController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200|404, array<string, mixed>, array<never, never>>
 	 *
-	 * @suppressWarnings(PHPMD.NPathComplexity)       Complex request parameter handling for flexible API
-	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)       Complex request parameter handling for flexible API
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-schema search + pagination + filtering requires branching
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -2140,8 +2140,8 @@ class ObjectsController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200, array<string, mixed>, array<never, never>>
 	 *
-	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @suppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Cross-table search + multi-schema routing requires branching
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -2362,7 +2362,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with the object or error
 	 *
-	 * @suppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Object retrieval with slug resolution + access checks requires branching
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -2569,7 +2569,7 @@ class ObjectsController extends Controller {
 	 * @psalm-suppress TypeDoesNotContainType
 	 * @psalm-suppress NoValue
 	 *
-	 * @suppressWarnings(PHPMD.NPathComplexity) Object creation requires many validation and processing steps
+	 * @SuppressWarnings(PHPMD.NPathComplexity) Object creation requires many validation and processing steps
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 *
@@ -2769,8 +2769,8 @@ class ObjectsController extends Controller {
 	 * @psalm-suppress TypeDoesNotContainType
 	 * @psalm-suppress NoValue
 	 *
-	 * @suppressWarnings(PHPMD.NPathComplexity)       Object update requires many validation and processing steps
-	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)       Object update requires many validation and processing steps
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Object update requires many validation and processing steps
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -2993,8 +2993,8 @@ class ObjectsController extends Controller {
 	 *
 	 * @PublicPage
 	 *
-	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @suppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
@@ -3804,7 +3804,7 @@ class ObjectsController extends Controller {
 	 *     message?: 'Object does not belong to specified register/schema'|'Object not found'},
 	 *     array<never, never>>
 	 *
-	 * @suppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Audit log retrieval with pagination + access checks requires branching
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
