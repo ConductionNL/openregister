@@ -20,18 +20,6 @@ includes:
     - phpstan-baseline-nc34-ocp.neon
 
 parameters:
-    typeAliases:
-        # OCP declares `@psalm-type DataResponseType = ...` in the DataResponse
-        # class docblock and immediately uses it as a @template bound. PHPStan
-        # does not pick the alias up from that position and resolves the bound
-        # to a non-existent class `OCP\AppFramework\Http\DataResponseType`, so
-        # any `new JSONResponse(...)` whose payload it cannot fully verify is
-        # reported as argument.unresolvableType. This is a verbatim copy of the
-        # OCP alias, not a widening — it makes the generic bound resolvable
-        # instead of silencing the rule. Same entry procest carries; belongs in
-        # the shared base once a third app needs it.
-        DataResponseType: 'array|int|float|string|bool|object|null|\stdClass|\JsonSerializable'
-
     # App-specific only. The base already sets level, paths, bootstrapFiles,
     # excludePaths, scanDirectories and every fleet-wide ignore.
     excludePaths:
