@@ -101,7 +101,7 @@ import {
 						<NcTextField
 							:label="t('openregister', 'App ID')"
 							placeholder="myapp"
-							:model-value="
+							:modelValue="
 								configurationStore.configurationItem?.app || ''
 							"
 							@update:modelValue="updateApp">

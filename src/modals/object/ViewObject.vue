@@ -1166,8 +1166,8 @@ import {
 					{{
 						isSaving
 							? isNewObject
-								? t('openregister', 'Creating...')
-								: t('openregister', 'Saving...')
+								? t('openregister', 'Creating…')
+								: t('openregister', 'Saving…')
 							: isNewObject
 								? t('openregister', 'Create')
 								: t('openregister', 'Save')

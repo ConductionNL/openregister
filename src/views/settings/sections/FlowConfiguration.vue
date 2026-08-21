@@ -84,7 +84,7 @@
 		<NcButton type="primary" :disabled="saving" @click="save">
 			{{
 				saving
-					? t('openregister', 'Saving...')
+					? t('openregister', 'Saving…')
 					: t('openregister', 'Save flow settings')
 			}}
 		</NcButton>

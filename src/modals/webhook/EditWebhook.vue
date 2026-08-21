@@ -34,7 +34,7 @@
 						<NcTextField
 							:label="t('openregister', 'URL') + ' *'"
 							placeholder="https://example.com/webhook"
-							:model-value="webhookItem?.url || ''"
+							:modelValue="webhookItem?.url || ''"
 							type="url"
 							:error="!webhookItem?.url?.trim?.()"
 							@update:modelValue="updateUrl">
