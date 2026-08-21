@@ -2573,11 +2573,11 @@ class ImportHandler {
 						version: $version,
 						force: $force
 					);
-					if ($register !== null) {
-						// Store register in map by slug for reference.
-						$this->registersMap[$slug] = $register;
-						$result['registers'][] = $register;
-					}
+					// Store register in map by slug for reference. The import call
+					// above is declared non-nullable and throws on failure, which
+					// the catch below handles.
+					$this->registersMap[$slug] = $register;
+					$result['registers'][] = $register;
 				} catch (\Throwable $e) {
 					$result['skipped']['registers']++;
 					$this->logger->warning(

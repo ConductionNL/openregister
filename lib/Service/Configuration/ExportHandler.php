@@ -371,7 +371,7 @@ class ExportHandler {
 		}//end foreach
 
 		// Export mappings associated with this configuration.
-		if (isset($configuration) === true && $configuration instanceof Configuration) {
+		if (isset($configuration) === true) {
 			$mappingIds = $configuration->getMappings() ?? [];
 			foreach ($mappingIds as $mappingId) {
 				try {

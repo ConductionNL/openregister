@@ -1415,7 +1415,7 @@ class ObjectsController extends Controller {
 
 				// Content negotiation: JSON-LD @graph for magic-mapped results
 				// (json-ld-output).
-				if ($this->wantsJsonLd() === true && $registerEntity !== null && $schemaEntity !== null) {
+				if ($this->wantsJsonLd() === true) {
 					return $this->jsonLdCollectionResponse(
 						result: $responseData,
 						register: $registerEntity,

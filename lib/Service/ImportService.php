@@ -1460,16 +1460,13 @@ class ImportService {
 			}
 
 			// Transform row data to object format.
-			$object = $this->transformCsvRowToObject(
+			// transformCsvRowToObject() is declared non-nullable, so no guard.
+			$allObjects[] = $this->transformCsvRowToObject(
 				rowData: $rowData,
 				register: $register,
 				schema: $schema,
 				currentUser: $currentUser
 			);
-
-			if ($object !== null) {
-				$allObjects[] = $object;
-			}
 		}//end for
 
 		$summary['found'] = count($allObjects);

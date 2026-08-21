@@ -1488,10 +1488,9 @@ class ValidateObject {
 	private function findSchemaBySlug(string $slug): ?Schema {
 		try {
 			// Try direct slug match first using the find method which supports slug lookups.
-			$schema = $this->schemaMapper->find($slug);
-			if ($schema !== null) {
-				return $schema;
-			}
+			// find() throws when there is no match; the catch below is the
+			// "not found" path, so no null test is needed here.
+			return $this->schemaMapper->find($slug);
 		} catch (Exception $e) {
 			// Continue with case-insensitive search.
 		}

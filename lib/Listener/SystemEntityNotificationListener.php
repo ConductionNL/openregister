@@ -149,10 +149,10 @@ class SystemEntityNotificationListener implements IEventListener {
 
 		if ($event instanceof RegisterUpdatedEvent) {
 			$old = $event->getOldRegister();
-			$oldData = null;
-			if ($old instanceof \JsonSerializable) {
-				$oldData = $old->jsonSerialize();
-			}
+			// Every Db entity extends OCP Entity, which implements
+			// JsonSerializable, so the instanceof guard that used to wrap this
+			// was always true and the null default unreachable.
+			$oldData = $old->jsonSerialize();
 
 			return [$event->getNewRegister(), SystemSchemaRules::SLUG_REGISTER, 'updated', $oldData];
 		}
@@ -163,10 +163,10 @@ class SystemEntityNotificationListener implements IEventListener {
 
 		if ($event instanceof SchemaUpdatedEvent) {
 			$old = $event->getOldSchema();
-			$oldData = null;
-			if ($old instanceof \JsonSerializable) {
-				$oldData = $old->jsonSerialize();
-			}
+			// Every Db entity extends OCP Entity, which implements
+			// JsonSerializable, so the instanceof guard that used to wrap this
+			// was always true and the null default unreachable.
+			$oldData = $old->jsonSerialize();
 
 			return [$event->getNewSchema(), SystemSchemaRules::SLUG_SCHEMA, 'updated', $oldData];
 		}
@@ -177,10 +177,10 @@ class SystemEntityNotificationListener implements IEventListener {
 
 		if ($event instanceof ConfigurationUpdatedEvent) {
 			$old = $event->getOldConfiguration();
-			$oldData = null;
-			if ($old instanceof \JsonSerializable) {
-				$oldData = $old->jsonSerialize();
-			}
+			// Every Db entity extends OCP Entity, which implements
+			// JsonSerializable, so the instanceof guard that used to wrap this
+			// was always true and the null default unreachable.
+			$oldData = $old->jsonSerialize();
 
 			return [$event->getNewConfiguration(), SystemSchemaRules::SLUG_CONFIGURATION, 'updated', $oldData];
 		}
@@ -191,10 +191,10 @@ class SystemEntityNotificationListener implements IEventListener {
 
 		if ($event instanceof SourceUpdatedEvent) {
 			$old = $event->getOldSource();
-			$oldData = null;
-			if ($old instanceof \JsonSerializable) {
-				$oldData = $old->jsonSerialize();
-			}
+			// Every Db entity extends OCP Entity, which implements
+			// JsonSerializable, so the instanceof guard that used to wrap this
+			// was always true and the null default unreachable.
+			$oldData = $old->jsonSerialize();
 
 			return [$event->getNewSource(), SystemSchemaRules::SLUG_SOURCE, 'updated', $oldData];
 		}
@@ -205,10 +205,10 @@ class SystemEntityNotificationListener implements IEventListener {
 
 		if ($event instanceof AgentUpdatedEvent) {
 			$old = $event->getOldAgent();
-			$oldData = null;
-			if ($old instanceof \JsonSerializable) {
-				$oldData = $old->jsonSerialize();
-			}
+			// Every Db entity extends OCP Entity, which implements
+			// JsonSerializable, so the instanceof guard that used to wrap this
+			// was always true and the null default unreachable.
+			$oldData = $old->jsonSerialize();
 
 			return [$event->getNewAgent(), SystemSchemaRules::SLUG_AGENT, 'updated', $oldData];
 		}
