@@ -49,12 +49,20 @@ import {
 						<tr>
 							<th scope="col">Sheet</th>
 							<th scope="col">Found</th>
-							<th scope="col">Created</th>
-							<th scope="col">Updated</th>
-							<th scope="col">Unchanged</th>
-							<th scope="col">Invalid</th>
+							<th scope="col">
+								{{ t('openregister', 'Created') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Updated') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Unchanged') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Invalid') }}
+							</th>
 							<th scope="col">Errors</th>
-							<th scope="col">Total</th>
+							<th scope="col">{{ t('openregister', 'Total') }}</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -267,9 +275,18 @@ import {
 													<th scope="col">Row</th>
 													<th scope="col">Error Type</th>
 													<th scope="col">
-														Error Message
+														{{
+															t(
+																'openregister',
+																'Error Message',
+															)
+														}}
 													</th>
-													<th scope="col">Data</th>
+													<th scope="col">
+														{{
+															t('openregister', 'Data')
+														}}
+													</th>
 												</tr>
 											</thead>
 											<tbody>

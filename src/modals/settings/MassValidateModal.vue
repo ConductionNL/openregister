@@ -166,7 +166,7 @@
 
 				<!-- Success Rate Display -->
 				<div v-if="results.stats" class="success-rate-display">
-					<h5>Success Rate</h5>
+					<h5>{{ t('openregister', 'Success Rate') }}</h5>
 					<div class="success-rate-container">
 						<div class="success-rate-bar">
 							<div
@@ -273,21 +273,26 @@
 				</div>
 
 				<div class="form-section">
-					<h4>Execution Mode</h4>
+					<h4>{{ t('openregister', 'Execution Mode') }}</h4>
 					<div class="radio-group">
 						<NcCheckboxRadioSwitch
 							v-model="localConfig.mode"
 							name="validate_mode"
 							value="serial"
 							type="radio">
-							Serial Mode (Safer, slower)
+							{{ t('openregister', 'Serial Mode (Safer, slower)') }}
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
 							v-model="localConfig.mode"
 							name="validate_mode"
 							value="parallel"
 							type="radio">
-							Parallel Mode (Faster, more resource intensive)
+							{{
+								t(
+									'openregister',
+									'Parallel Mode (Faster, more resource intensive)',
+								)
+							}}
 						</NcCheckboxRadioSwitch>
 					</div>
 					<p class="form-description">
@@ -298,7 +303,7 @@
 				</div>
 
 				<div class="form-section">
-					<h4>Processing Limits</h4>
+					<h4>{{ t('openregister', 'Processing Limits') }}</h4>
 
 					<!-- Object Count Prediction -->
 					<div class="object-prediction">
@@ -318,17 +323,20 @@
 							class="prediction-content">
 							<div class="prediction-stats">
 								<div class="stat-item">
-									<span class="stat-label"
-										>Total Objects in Database:</span
-									>
+									<span class="stat-label">{{
+										t(
+											'openregister',
+											'Total Objects in Database:',
+										)
+									}}</span>
 									<span class="stat-value">{{
 										objectStats.totalObjects.toLocaleString()
 									}}</span>
 								</div>
 								<div class="stat-item">
-									<span class="stat-label"
-										>Objects to Process:</span
-									>
+									<span class="stat-label">{{
+										t('openregister', 'Objects to Process:')
+									}}</span>
 									<span class="stat-value">
 										{{
 											localConfig.maxObjects === 0
@@ -350,9 +358,9 @@
 									</span>
 								</div>
 								<div class="stat-item">
-									<span class="stat-label"
-										>Estimated Batches:</span
-									>
+									<span class="stat-label">{{
+										t('openregister', 'Estimated Batches:')
+									}}</span>
 									<span class="stat-value">
 										{{
 											Math.ceil(
@@ -367,9 +375,9 @@
 									</span>
 								</div>
 								<div class="stat-item">
-									<span class="stat-label"
-										>Estimated Duration:</span
-									>
+									<span class="stat-label">{{
+										t('openregister', 'Estimated Duration:')
+									}}</span>
 									<span class="stat-value">
 										{{ estimateValidationDuration() }}
 									</span>
@@ -382,7 +390,7 @@
 										v-if="memoryPredictionLoading"
 										class="stat-value loading">
 										<NcLoadingIcon :size="16" />
-										Loading...
+										{{ t('openregister', 'Loading...') }}
 									</span>
 									<span
 										v-else
@@ -408,7 +416,9 @@
 
 					<div class="form-row">
 						<label class="form-label" for="mass-validate-max-objects">
-							<strong>Max Objects (0 = all)</strong>
+							<strong>{{
+								t('openregister', 'Max Objects (0 = all)')
+							}}</strong>
 							<p class="form-description">
 								Maximum number of objects to process. Set to 0 to
 								process all objects.
@@ -428,9 +438,14 @@
 
 					<div class="form-row">
 						<label class="form-label" for="mass-validate-batch-size">
-							<strong>Batch Size</strong>
+							<strong>{{ t('openregister', 'Batch Size') }}</strong>
 							<p class="form-description">
-								Number of objects to process in each batch (1-5000).
+								{{
+									t(
+										'openregister',
+										'Number of objects to process in each batch (1-5000).',
+									)
+								}}
 							</p>
 						</label>
 						<div class="form-input">

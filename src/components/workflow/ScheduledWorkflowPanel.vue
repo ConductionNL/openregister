@@ -4,11 +4,11 @@
 		<table v-if="schedules.length" class="schedule-table">
 			<thead>
 				<tr>
-					<th scope="col">Name</th>
+					<th scope="col">{{ t('openregister', 'Name') }}</th>
 					<th scope="col">Engine</th>
 					<th scope="col">Workflow</th>
-					<th scope="col">Interval</th>
-					<th scope="col">Enabled</th>
+					<th scope="col">{{ t('openregister', 'Interval') }}</th>
+					<th scope="col">{{ t('openregister', 'Enabled') }}</th>
 					<th scope="col">Last Run</th>
 					<th scope="col">Last Status</th>
 				</tr>
@@ -41,7 +41,9 @@
 		</NcButton>
 		<div v-if="showForm" class="create-form">
 			<div class="form-group">
-				<label for="scheduled-workflow-name">Name</label>
+				<label for="scheduled-workflow-name">{{
+					t('openregister', 'Name')
+				}}</label>
 				<input
 					id="scheduled-workflow-name"
 					v-model="form.name"
@@ -72,7 +74,9 @@
 					type="number"
 					class="input-field" />
 			</div>
-			<NcButton variant="primary" @click="createSchedule"> Save </NcButton>
+			<NcButton variant="primary" @click="createSchedule">
+				{{ t('openregister', 'Save') }}
+			</NcButton>
 		</div>
 	</div>
 </template>

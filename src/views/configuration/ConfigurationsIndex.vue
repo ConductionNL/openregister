@@ -71,7 +71,10 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						</NcCheckboxRadioSwitch>
 					</div>
 
-					<NcActions :forceName="true" :inline="3" menuName="Actions">
+					<NcActions
+						:forceName="true"
+						:inline="3"
+						:menuName="t('openregister', 'Actions')">
 						<NcActionButton
 							:primary="true"
 							closeAfterClick

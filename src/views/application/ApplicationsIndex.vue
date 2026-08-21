@@ -48,7 +48,9 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 							<ApplicationOutline :size="20" />
 							{{ object.name }}
 						</h2>
-						<NcActions :primary="true" menuName="Actions">
+						<NcActions
+							:primary="true"
+							:menuName="t('openregister', 'Actions')">
 							<template #icon>
 								<DotsHorizontal :size="20" />
 							</template>

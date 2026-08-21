@@ -7,7 +7,9 @@
 						{{ objectStore.objectItem.id }}
 					</h1>
 
-					<NcActions :primary="true" menuName="Actions">
+					<NcActions
+						:primary="true"
+						:menuName="t('openregister', 'Actions')">
 						<template #icon>
 							<LockOutline
 								v-if="objectStore.objectItem.locked"
