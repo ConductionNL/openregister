@@ -2522,7 +2522,7 @@ class MagicMapper extends AbstractObjectMapper {
 			case 'boolean':
 				// Determine default value.
 				$defaultValue = null;
-				if (is_array($propertyConfig) === true && array_key_exists('default', $propertyConfig) === true) {
+				if (array_key_exists('default', $propertyConfig) === true) {
 					$defaultValue = $propertyConfig['default'];
 				}
 
@@ -2788,7 +2788,7 @@ class MagicMapper extends AbstractObjectMapper {
 
 		// Determine default value.
 		$defaultValue = null;
-		if (is_array($propertyConfig) === true && array_key_exists('default', $propertyConfig) === true) {
+		if (array_key_exists('default', $propertyConfig) === true) {
 			$defaultValue = $propertyConfig['default'];
 		}
 
@@ -2827,7 +2827,7 @@ class MagicMapper extends AbstractObjectMapper {
 
 		// Determine default value.
 		$defaultValue = null;
-		if (is_array($propertyConfig) === true && array_key_exists('default', $propertyConfig) === true) {
+		if (array_key_exists('default', $propertyConfig) === true) {
 			$defaultValue = $propertyConfig['default'];
 		}
 

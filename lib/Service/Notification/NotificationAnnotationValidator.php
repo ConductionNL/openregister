@@ -457,7 +457,7 @@ final class NotificationAnnotationValidator {
 			}
 
 			// When the `webhook` channel is declared, the spec MUST include a `webhook.url` value.
-			if (is_array($channels) === true && in_array('webhook', $channels, true) === true) {
+			if (in_array('webhook', $channels, true) === true) {
 				$hook = ($spec['webhook'] ?? null);
 				$hookBad = is_array($hook) === false;
 				if ($hookBad === false) {
@@ -477,7 +477,7 @@ final class NotificationAnnotationValidator {
 			}
 
 			// When the `talk` channel is declared, the spec MUST include a `talk.token`.
-			if (is_array($channels) === true && in_array('talk', $channels, true) === true) {
+			if (in_array('talk', $channels, true) === true) {
 				$talk = ($spec['talk'] ?? null);
 				$talkBad = is_array($talk) === false;
 				if ($talkBad === false) {

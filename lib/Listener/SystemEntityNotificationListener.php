@@ -112,7 +112,7 @@ class SystemEntityNotificationListener implements IEventListener {
 				$newData = $entity->jsonSerialize();
 			}
 
-			if (is_array($newData) === true && is_array($oldData) === true) {
+			if (is_array($newData) === true) {
 				$context['_newData'] = $newData;
 				$context['_oldData'] = $oldData;
 			}

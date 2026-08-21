@@ -395,8 +395,8 @@ class FileExtractionController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<
-	 *     200|500,
-	 *     array{
+	 *     200|403|500,
+	 *     array{success: false, error: string}|array{
 	 *         success: bool,
 	 *         error?: 'File discovery failed',
 	 *         message: string,
@@ -454,8 +454,8 @@ class FileExtractionController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<
-	 *     200|500,
-	 *     array{
+	 *     200|403|500,
+	 *     array{success: false, error: string}|array{
 	 *         success: bool,
 	 *         error?: 'Batch extraction failed',
 	 *         message: string,
@@ -505,8 +505,8 @@ class FileExtractionController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<
-	 *     200|500,
-	 *     array{
+	 *     200|403|500,
+	 *     array{success: false, error: string}|array{
 	 *         success: bool,
 	 *         error?: 'Retry failed',
 	 *         message: string,
@@ -610,8 +610,8 @@ class FileExtractionController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<
-	 *     200|500,
-	 *     array{
+	 *     200|403|500,
+	 *     array{success: false, error: string}|array{
 	 *         success: bool,
 	 *         error?: 'Cleanup failed',
 	 *         message: string,

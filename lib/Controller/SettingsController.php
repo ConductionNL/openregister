@@ -1012,11 +1012,9 @@ class SettingsController extends Controller {
 				weights: $weights,
 				provider: $provider
 			);
-			// Ensure result is an array for the spread operator.
-			$resultArray = [];
-			if (is_array($result) === true) {
-				$resultArray = $result;
-			}
+			// The service already returns an array, so the old is_array() guard
+			// (and the [] fallback it protected) could never fire.
+			$resultArray = $result;
 
 			return new JSONResponse(
 				data: [

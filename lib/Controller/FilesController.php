@@ -526,7 +526,7 @@ class FilesController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @psalm-return JSONResponse<200|400|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
+	 * @psalm-return JSONResponse<200|400|403|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 *
@@ -612,7 +612,7 @@ class FilesController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @psalm-return JSONResponse<200|400|404,
+	 * @psalm-return JSONResponse<200|400|403|404,
 	 *     array{error?: mixed|string, labels?: list<string>,...},
 	 *     array<never, never>>
 	 *
@@ -722,7 +722,7 @@ class FilesController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @psalm-return JSONResponse<200|400|404, array{error?: string, 0?: array<string, mixed>,...}, array<never, never>>
+	 * @psalm-return JSONResponse<200|400|403|404, array{error?: string, 0?: array<string, mixed>,...}, array<never, never>>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
 	 *
@@ -859,7 +859,7 @@ class FilesController extends Controller {
 		}
 
 		// Multiple file upload.
-		if ($fileName !== null && is_array($fileName) === true) {
+		if ($fileName !== null) {
 			$uploadedFiles = $this->normalizeMultipleFiles(files: $files, data: $data, fileNames: $fileName);
 		}
 
@@ -974,7 +974,7 @@ class FilesController extends Controller {
 	 *
 	 * @throws Exception If file validation or processing fails
 	 *
-	 * @psalm-return list<OCP\Files\File>
+	 * @psalm-return list<\OCP\Files\File>
 	 */
 	private function processUploadedFiles(ObjectEntity $object, array $uploadedFiles): array {
 		$results = [];

@@ -152,7 +152,6 @@ class RelationHandler {
 					$serialized = $object->jsonSerialize();
 					$idRaw = null;
 					if (is_array($property) === true
-						&& is_array($serialized) === true
 						&& isset($property['inversedBy']) === true
 					) {
 						$idRaw = $serialized[$property['inversedBy']];

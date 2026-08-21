@@ -150,7 +150,7 @@ class AuditTrailProvider extends AbstractIntegrationProvider {
 				// older schemas.
 				try {
 					$entries = $this->mapper->findAll(filters: ['object_uuid' => $objectId]);
-					if (is_array($entries) === true && count($entries) > 0) {
+					if (count($entries) > 0) {
 						return $this->normalize(entries: $entries);
 					}
 				} catch (\Throwable $e) {

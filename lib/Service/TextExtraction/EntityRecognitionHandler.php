@@ -1063,10 +1063,8 @@ class EntityRecognitionHandler {
 		}
 
 		if (function_exists('mb_scrub') === true) {
-			$scrubbed = mb_scrub($value, 'UTF-8');
-			if (is_string($scrubbed) === true) {
-				return $scrubbed;
-			}
+			// mb_scrub() returns string, so no is_string() re-check is needed.
+			return mb_scrub($value, 'UTF-8');
 		}
 
 		$converted = @iconv('UTF-8', 'UTF-8//IGNORE', $value);

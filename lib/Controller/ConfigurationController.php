@@ -205,8 +205,8 @@ class ConfigurationController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<200, Configuration,
-	 *     array<never, never>>|JSONResponse<404|500,
-	 *     array{error: 'Configuration not found'|'Failed to fetch configuration'},
+	 *     array<never, never>>|JSONResponse<403|404|500,
+	 *     array{error: string},
 	 *     array<never, never>>
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
@@ -714,7 +714,7 @@ class ConfigurationController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @psalm-return JSONResponse<200|404|500, array, array<never, never>>
+	 * @psalm-return JSONResponse<200|403|404|500, array, array<never, never>>
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
@@ -761,7 +761,7 @@ class ConfigurationController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @psalm-return JSONResponse<200|400|500,
+	 * @psalm-return JSONResponse<200|400|403|500,
 	 *     array{error?: string, total_count?: int<0, max>|mixed,
 	 *     results?: list{0?: array{repository?: mixed, owner?: string,
 	 *     repo?: string, path: mixed|string, url: ''|mixed, stars?: 0|mixed,

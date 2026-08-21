@@ -180,7 +180,7 @@ class ConfigurationsController extends Controller {
 	 * @return JSONResponse JSON response with created configuration or error
 	 *
 	 * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Configuration,
-	 *     array<never, never>>|JSONResponse<400, array{error: string},
+	 *     array<never, never>>|JSONResponse<400|403, array{error: string},
 	 *     array<never, never>>
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
@@ -244,7 +244,7 @@ class ConfigurationsController extends Controller {
 	 * @return JSONResponse JSON response with updated configuration or error
 	 *
 	 * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
-	 *     array<never, never>>|JSONResponse<400, array{error: string},
+	 *     array<never, never>>|JSONResponse<400|403, array{error: string},
 	 *     array<never, never>>
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
@@ -299,7 +299,7 @@ class ConfigurationsController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
-	 *     array<never, never>>|JSONResponse<400, array{error: string},
+	 *     array<never, never>>|JSONResponse<400|403, array{error: string},
 	 *     array<never, never>>
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
@@ -320,7 +320,7 @@ class ConfigurationsController extends Controller {
 	 * @return JSONResponse JSON response on success (204) or error
 	 *
 	 * @psalm-return JSONResponse<204, null,
-	 *     array<never, never>>|JSONResponse<400, array{error: string},
+	 *     array<never, never>>|JSONResponse<400|403, array{error: string},
 	 *     array<never, never>>
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
@@ -354,7 +354,7 @@ class ConfigurationsController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @psalm-return DataDownloadResponse<200, 'application/json',
-	 *     array<never, never>>|JSONResponse<400, array{error: string},
+	 *     array<never, never>>|JSONResponse<400|403, array{error: string},
 	 *     array<never, never>>
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to include/exclude objects in export
