@@ -1555,7 +1555,7 @@ class GitHubHandler {
 	 *
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-2
 	 */
-	private function resolveCreateIssueToken(string $userId, ?bool &$useServerPat): string {
+	private function resolveCreateIssueToken(string $userId, bool &$useServerPat): string {
 		$userToken = $this->getUserToken(userId: $userId) ?? '';
 		$useServerPat = $userToken === '';
 		if ($useServerPat === false) {

@@ -1808,47 +1808,18 @@ class RegistersController extends Controller {
 	 *     200|404|500,
 	 *     array{
 	 *         error?: string,
-	 *         register?: array{
-	 *             id: int,
-	 *             uuid: null|string,
-	 *             slug: null|string,
-	 *             title: null|string,
-	 *             version: null|string,
-	 *             description: null|string,
-	 *             schemas: array<int|string>,
-	 *             source: null|string,
-	 *             tablePrefix: null|string,
-	 *             folder: null|string,
-	 *             updated: null|string,
-	 *             created: null|string,
-	 *             owner: null|string,
-	 *             application: null|string,
-	 *             organisation: null|string,
-	 *             authorization: array|null,
-	 *             groups: array<string, list<string>>,
-	 *             configuration: array|null,
-	 *             quota: array{
-	 *                 storage: null,
-	 *                 bandwidth: null,
-	 *                 requests: null,
-	 *                 users: null,
-	 *                 groups: null
-	 *             },
-	 *             usage: array{
-	 *                 storage: 0,
-	 *                 bandwidth: 0,
-	 *                 requests: 0,
-	 *                 users: 0,
-	 *                 groups: int<0, max>
-	 *             },
-	 *             deleted: null|string,
-	 *             published: null|string,
-	 *             depublished: null|string
-	 *         },
+	 *         register?: array<string, mixed>,
 	 *         message?: 'Stats calculation not yet implemented'
 	 *     },
 	 *     array<never, never>
 	 * >
+	 *
+	 * `register` is deliberately `array<string, mixed>` and not a spelled-out
+	 * shape. The previous annotation duplicated Register::jsonSerialize() field
+	 * by field and had rotted into nonsense: it pinned `quota` to all-null and
+	 * `usage` to all-literal-zero, because it was inferred from a register that
+	 * had neither. The entity's serializer owns that contract; restating it here
+	 * only guarantees the copy drifts again.
 	 *
 	 * @spec openspec/specs/production-observability/spec.md#requirement-per-entity-statistics-and-endpoint-delivery-log-api
 	 */

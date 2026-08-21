@@ -537,13 +537,13 @@ class SaveObject {
 		// Try direct slug match as last resort.
 		try {
 			// SchemaMapper->find() supports id, uuid, and slug via orX().
+			// find() throws when there is no match; the catch below is the
+			// "not found" path, so no null test is needed here.
 			$schema = $this->schemaMapper->find(id: $slug, _rbac: false, _multitenancy: false);
-			if ($schema !== null) {
-				$schemaId = (string)$schema->getId();
-				$this->schemaCache[$schemaId] = $schema;
-				$this->schemaReferenceCache[$reference] = $schemaId;
-				return $schemaId;
-			}
+			$schemaId = (string)$schema->getId();
+			$this->schemaCache[$schemaId] = $schema;
+			$this->schemaReferenceCache[$reference] = $schemaId;
+			return $schemaId;
 		} catch (Exception $e) {
 			// Schema not found.
 		}
@@ -3108,8 +3108,9 @@ class SaveObject {
 
 			// Use cached schema lookup instead of direct mapper call.
 			$schema = $this->getCachedSchema(schemaId: $schemaId);
-		} elseif (is_int($schema) === true) {
-			// It's an integer ID - use cached lookup.
+		} else {
+			// Only the integer-ID case is left after the Schema and string arms
+			// above, so no is_int() re-test — use the cached lookup.
 			$schemaId = $schema;
 			$schema = $this->getCachedSchema(schemaId: $schema);
 		}

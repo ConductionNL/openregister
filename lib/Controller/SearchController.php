@@ -24,9 +24,9 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
@@ -135,30 +135,24 @@ class SearchController extends Controller {
 			 */
 
 			function ($object): array {
-				// Probe the PROPERTY, not the method. searchObjectsPaginated()
-				// returns ObjectEntity rows, and ObjectEntity declares getUuid() and
-				// getName() only as `@method` — Nextcloud's Entity serves them through
-				// __call(). method_exists() is FALSE for both, so every row fell past
-				// this branch, and the array branch below cannot read an object either:
-				// $objectArr stayed [] and EVERY search hit was returned as
-				// `id: null, name: 'Unknown'`.
+				// searchObjectsPaginated() returns ObjectEntity rows, and
+				// ObjectEntity declares getUuid() / getName() only as `@method`
+				// — Nextcloud's Entity serves them through __call(). An earlier
+				// version of this closure probed with method_exists(), which is
+				// FALSE for both, so every row fell past this branch and came
+				// back as `id: null, name: 'Unknown'`.
 				//
-				// There is no fallback to recover it here: unlike the getUuid probes
-				// elsewhere in this app, nothing on this path routes through
-				// getObject(), which is the concrete method that injects the uuid
-				// under 'id'. property_exists() is the same test Entity::getter() runs
-				// before returning the value, so it cannot throw.
-				if ($object instanceof Entity && property_exists($object, 'uuid') === true) {
-					$name = null;
-					if (property_exists($object, 'name') === true) {
-						// @phpstan-ignore-next-line Entity::getName() is dispatched via __call.
-						$name = $object->getName();
-					}
-
+				// Narrowing on ObjectEntity rather than the OCP Entity base is
+				// what makes the accessors resolvable: the `@method` tags live on
+				// ObjectEntity. Against the base they produced an error type that
+				// propagated out through this array and left the whole
+				// JSONResponse payload unverifiable. It also makes the
+				// property_exists('uuid') / ('name') probes redundant — both are
+				// declared properties of ObjectEntity — so they are gone.
+				if ($object instanceof ObjectEntity) {
 					return [
-						// @phpstan-ignore-next-line Entity::getUuid() is dispatched via __call.
 						'id' => $object->getUuid(),
-						'name' => $name ?? 'Unknown',
+						'name' => $object->getName() ?? 'Unknown',
 						'type' => 'object',
 						'url' => null,
 						'source' => 'openregister',

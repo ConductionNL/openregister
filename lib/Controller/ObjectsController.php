@@ -2140,7 +2140,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @PublicPage
 	 *
-	 * @psalm-return JSONResponse<200, array<string, mixed>, array<never, never>>
+	 * @psalm-return JSONResponse<200|404, array<string, mixed>, array<never, never>>
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)

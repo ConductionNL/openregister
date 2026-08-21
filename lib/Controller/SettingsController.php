@@ -127,14 +127,12 @@ use RuntimeException;
  */
 class SettingsController extends Controller {
 
-	/**
-	 * The OpenRegister object service
-	 *
-	 * Lazily loaded from container when needed.
-	 *
-	 * @var \OCA\OpenRegister\Service\ObjectService|null OpenRegister object service or null
+	/*
+	 * There is no $objectService property: getObjectService() below assigned it
+	 * null and returned that (the "CIRCULAR FIX"), so it was never anything but
+	 * null. Code that needs the service resolves it from the container at the
+	 * point of use instead — see the $objectService locals further down.
 	 */
-	private ?\OCA\OpenRegister\Service\ObjectService $objectService = null;
 
 	/**
 	 * SettingsController constructor.
@@ -178,9 +176,9 @@ class SettingsController extends Controller {
 	 */
 	public function getObjectService() {
 		if (in_array(needle: 'openregister', haystack: $this->appManager->getInstalledApps()) === true) {
-			$this->objectService = null;
-			// CIRCULAR FIX.
-			return $this->objectService;
+			// CIRCULAR FIX: returning the service here would close a container
+			// cycle, so callers resolve it themselves.
+			return null;
 		}
 
 		throw new RuntimeException('OpenRegister service is not available.');

@@ -1738,24 +1738,24 @@ class Schema extends Entity implements JsonSerializable {
 				$nestedProperty->title = $property['title'];
 				$nestedProperty->required = [];
 
-				if (($property['properties'] ?? null) !== null) {
-					foreach ($property['properties'] as $subName => $subProperty) {
-						$isRequired = (($subProperty['required'] ?? null) !== null);
-						if ($isRequired === true && ($subProperty['required'] === true) === true) {
-							$nestedProperty->required[] = $subName;
-						}
-
-						$nestedProp = new stdClass();
-						foreach ($subProperty as $key => $value) {
-							if ($key === 'oneOf' && empty($value) === true) {
-								continue;
-							}
-
-							$nestedProp->{$key} = $value;
-						}
-
-						$nestedProperties->{$subName} = $nestedProp;
+				// No null guard on $property['properties']: this arm is only
+				// entered for a nested object, which always carries one.
+				foreach ($property['properties'] as $subName => $subProperty) {
+					$isRequired = (($subProperty['required'] ?? null) !== null);
+					if ($isRequired === true && ($subProperty['required'] === true) === true) {
+						$nestedProperty->required[] = $subName;
 					}
+
+					$nestedProp = new stdClass();
+					foreach ($subProperty as $key => $value) {
+						if ($key === 'oneOf' && empty($value) === true) {
+							continue;
+						}
+
+						$nestedProp->{$key} = $value;
+					}
+
+					$nestedProperties->{$subName} = $nestedProp;
 				}
 
 				$nestedProperty->properties = $nestedProperties;
@@ -2845,24 +2845,24 @@ class Schema extends Entity implements JsonSerializable {
 			// Determine appropriate facet type based on property configuration.
 			$facetType = $this->determineFacetType(property: $property);
 
-			if ($facetType !== null) {
-				$facetConfig['object_fields'][$propertyKey] = [
-					'type' => $facetType,
-					'title' => $property['title'] ?? $propertyKey,
-					'description' => $property['description'] ?? null,
-					'data_type' => $property['type'] ?? 'string',
-					'queryParameter' => $propertyKey,
-				];
+			// determineFacetType() is declared `: string`, so there is no null
+			// case to guard against.
+			$facetConfig['object_fields'][$propertyKey] = [
+				'type' => $facetType,
+				'title' => $property['title'] ?? $propertyKey,
+				'description' => $property['description'] ?? null,
+				'data_type' => $property['type'] ?? 'string',
+				'queryParameter' => $propertyKey,
+			];
 
-				// Add type-specific configuration.
-				if ($facetType === 'date_histogram') {
-					$facetConfig['object_fields'][$propertyKey]['default_interval'] = 'month';
-					$facetConfig['object_fields'][$propertyKey]['supported_intervals'] = ['day', 'week', 'month', 'year'];
-				} elseif ($facetType === 'range') {
-					$facetConfig['object_fields'][$propertyKey]['supports_custom_ranges'] = true;
-				} elseif ($facetType === 'terms' && (($property['enum'] ?? null) !== null)) {
-					$facetConfig['object_fields'][$propertyKey]['predefined_values'] = $property['enum'];
-				}
+			// Add type-specific configuration.
+			if ($facetType === 'date_histogram') {
+				$facetConfig['object_fields'][$propertyKey]['default_interval'] = 'month';
+				$facetConfig['object_fields'][$propertyKey]['supported_intervals'] = ['day', 'week', 'month', 'year'];
+			} elseif ($facetType === 'range') {
+				$facetConfig['object_fields'][$propertyKey]['supports_custom_ranges'] = true;
+			} elseif ($facetType === 'terms' && (($property['enum'] ?? null) !== null)) {
+				$facetConfig['object_fields'][$propertyKey]['predefined_values'] = $property['enum'];
 			}
 		}//end foreach
 

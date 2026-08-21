@@ -179,7 +179,12 @@ class SharePrincipalDeriver {
 	 * @param mixed $sharedWith The raw `sharedWith` value.
 	 * @param string $userId The acting user id.
 	 * @param string[] $userGroups The acting user's group ids.
-	 * @param string[] $permissions Permissions that satisfy the check.
+	 * @param array<string|null> $permissions Permissions that satisfy the check.
+	 *        null is a MEANINGFUL member, not sloppiness: a share entry that
+	 *        carries no explicit permission has `permission => null`, and both
+	 *        callers pass `['use', null]` to mean "an unqualified share counts
+	 *        as 'use'". Narrowing this to string[] would silently stop matching
+	 *        those entries.
 	 *
 	 * @return bool True when a matching principal holds one of the permissions.
 	 */

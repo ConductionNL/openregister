@@ -147,10 +147,11 @@ class NotificationSubscriptionMapper extends QBMapper {
 			)
 			->orderBy('created', 'DESC');
 
-		/*
-		 * @var NotificationSubscription[] $rows
-		 */
-
+		// findEntities() is typed Entity[] on the parent; this mapper's generic
+		// binding narrows it to NotificationSubscription at runtime. The
+		// annotation has to be a /** */ docblock to be honoured — the /* */ one
+		// that used to sit here was inert.
+		/** @var NotificationSubscription[] $rows */
 		$rows = $this->findEntities(query: $qb);
 		return $rows;
 	}//end findByUser()

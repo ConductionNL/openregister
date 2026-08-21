@@ -20,6 +20,18 @@ includes:
     - phpstan-baseline-nc34-ocp.neon
 
 parameters:
+    typeAliases:
+        # OCP declares `@psalm-type DataResponseType = ...` in the DataResponse
+        # class docblock and immediately uses it as a @template bound. PHPStan
+        # does not pick the alias up from that position and resolves the bound
+        # to a non-existent class `OCP\AppFramework\Http\DataResponseType`, so
+        # any `new JSONResponse(...)` whose payload it cannot fully verify is
+        # reported as argument.unresolvableType. This is a verbatim copy of the
+        # OCP alias, not a widening — it makes the generic bound resolvable
+        # instead of silencing the rule. Same entry procest carries; belongs in
+        # the shared base once a third app needs it.
+        DataResponseType: 'array|int|float|string|bool|object|null|\stdClass|\JsonSerializable'
+
     # App-specific only. The base already sets level, paths, bootstrapFiles,
     # excludePaths, scanDirectories and every fleet-wide ignore.
     excludePaths:
@@ -104,3 +116,50 @@ parameters:
             message: '#Unreachable statement - code above always terminates#'
             identifier: deadCode.unreachable
             path: lib/Listener/FilesSidebarListener.php
+
+        # FlowNodePreflight catches BOTH UnexpectedValueException and
+        # InvalidArgumentException from a third-party node's validateConfig().
+        # The docblock at the call site sets out why: either is a defensible
+        # spelling of "this argument is wrong", and third-party nodes
+        # (openconnector, hermiq) pick whichever they like. Those node classes
+        # are not on the analysis path, so PHPStan only sees the in-tree nodes
+        # and concludes InvalidArgumentException is never thrown. Dropping the
+        # arm would reclassify a third-party node's REFUSAL as a crash.
+        -
+            message: '#Dead catch - InvalidArgumentException is never thrown in the try block#'
+            identifier: catch.neverThrown
+            path: lib/Service/Flow/FlowNodePreflight.php
+
+        # ConfigurationMapper::invalidateConfigurationCache() is an INTENTIONAL
+        # no-op: organisation lookup was pulled out of the mapper (services do
+        # not belong in mappers) and invalidation now happens in the service
+        # layer. The method and its three call sites are kept so the seam stays
+        # visible; PHPStan correctly observes the body has no side effects.
+        # Delete the method, its calls AND this ignore together if the seam is
+        # ever removed for good.
+        -
+            message: '#Method .+ConfigurationMapper::invalidateConfigurationCache\(\) returns void but does not have any side effects#'
+            identifier: void.pure
+            path: lib/Db/ConfigurationMapper.php
+
+        # SystemEntityObjectAdapter is a VIRTUAL ObjectEntity: it is only ever
+        # built by `new SystemEntityObjectAdapter(entity:, systemSlug:)` in
+        # SystemEntityNotificationListener, never hydrated from a database row.
+        # PHPStan flags its required constructor parameters because the parent
+        # (OCP Entity, via ObjectEntity) exposes fromRow()/fromParams() static
+        # factories that do `new static()` — a path this subclass never takes.
+        # Giving the parameters defaults would let a caller build a meaningless
+        # adapter with no entity and no slug, which is worse than the warning.
+        -
+            message: '#Parameter \#[12] \$(entity|systemSlug) of method .+SystemEntityObjectAdapter::__construct\(\) is not optional#'
+            identifier: parameter.notOptional
+            path: lib/Service/Notification/SystemEntityObjectAdapter.php
+
+        # OCP types IDBConnection::executeQuery()'s $params as `string[]`, but
+        # bound parameters are legitimately int/float/null too — the narrow stub
+        # does not describe the real contract. Belongs in the shared base the
+        # moment a second fleet app hits it; openregister is the only one today.
+        -
+            message: '#Parameter \#2 \$params of method OCP\\IDBConnection::executeQuery\(\) expects array<string>#'
+            identifier: argument.type
+            path: lib/Service/Vectorization/Handlers/VectorSearchHandler.php

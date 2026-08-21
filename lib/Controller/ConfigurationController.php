@@ -1645,13 +1645,13 @@ class ConfigurationController extends Controller {
 	 *
 	 * Checks if configuration is local and can be published to GitHub.
 	 *
-	 * @param object $configuration Configuration entity.
+	 * @param Configuration $configuration Configuration entity.
 	 *
 	 * @return JSONResponse|null Error response if validation fails, null if valid.
 	 *
 	 * @psalm-return JSONResponse<400, array{error: 'Only local configurations can be published'}, array<never, never>>|null
 	 */
-	private function validateConfigurationForPublishing(object $configuration): ?JSONResponse {
+	private function validateConfigurationForPublishing(Configuration $configuration): ?JSONResponse {
 		// Only allow publishing local configurations.
 		if ($configuration->getIsLocal() !== true) {
 			return new JSONResponse(
@@ -1669,11 +1669,11 @@ class ConfigurationController extends Controller {
 	 * Extracts owner, repo, path, branch, and commit message from request.
 	 * Validates required parameters and normalizes path.
 	 *
-	 * @param object $configuration Configuration entity.
+	 * @param Configuration $configuration Configuration entity.
 	 *
 	 * @return array<string, string> Parameters array or error array.
 	 */
-	private function extractGitHubPublishParams(object $configuration): array {
+	private function extractGitHubPublishParams(Configuration $configuration): array {
 		$data = $this->request->getParams();
 		$owner = $data['owner'] ?? '';
 		$repo = $data['repo'] ?? '';
@@ -1733,12 +1733,12 @@ class ConfigurationController extends Controller {
 	 *
 	 * Exports configuration and adds GitHub metadata.
 	 *
-	 * @param object $configuration Configuration entity.
+	 * @param Configuration $configuration Configuration entity.
 	 * @param array<string, string> $params Publishing parameters.
 	 *
 	 * @return false|string JSON content ready for GitHub.
 	 */
-	private function prepareConfigurationForGitHub(object $configuration, array $params): string|false {
+	private function prepareConfigurationForGitHub(Configuration $configuration, array $params): string|false {
 		// Export configuration to array.
 		$configData = $this->configurationService->exportConfig(
 			input: $configuration,
@@ -1823,12 +1823,12 @@ class ConfigurationController extends Controller {
 	 *
 	 * Updates local configuration entity with GitHub publishing details.
 	 *
-	 * @param object $configuration Configuration entity.
+	 * @param Configuration $configuration Configuration entity.
 	 * @param array<string, string> $params Publishing parameters.
 	 *
 	 * @return void
 	 */
-	private function updateConfigurationWithGitHubInfo(object $configuration, array $params): void {
+	private function updateConfigurationWithGitHubInfo(Configuration $configuration, array $params): void {
 		$githubRepo = "{$params['owner']}/{$params['repo']}";
 		$sourceUrl = "https://github.com/{$githubRepo}/blob/{$params['branch']}/{$params['path']}";
 
@@ -1845,13 +1845,13 @@ class ConfigurationController extends Controller {
 	 *
 	 * Logs successful GitHub publishing operation.
 	 *
-	 * @param object $configuration Configuration entity.
+	 * @param Configuration $configuration Configuration entity.
 	 * @param array<string, string> $params Publishing parameters.
 	 * @param array<string, mixed> $result GitHub API result.
 	 *
 	 * @return void
 	 */
-	private function logPublishingSuccess(object $configuration, array $params, array $result): void {
+	private function logPublishingSuccess(Configuration $configuration, array $params, array $result): void {
 		$this->logger->debug(
 			message: "[ConfigurationController] Successfully published configuration {$configuration->getTitle()} to GitHub",
 			context: [
@@ -1871,13 +1871,13 @@ class ConfigurationController extends Controller {
 	 *
 	 * Creates success response including GitHub URLs and indexing notes.
 	 *
-	 * @param object $configuration Configuration entity.
+	 * @param Configuration $configuration Configuration entity.
 	 * @param array<string, string> $params Publishing parameters.
 	 * @param array<string, mixed> $result GitHub API result.
 	 *
 	 * @return JSONResponse JSON response with publish success data
 	 */
-	private function buildPublishSuccessResponse(object $configuration, array $params, array $result): JSONResponse {
+	private function buildPublishSuccessResponse(Configuration $configuration, array $params, array $result): JSONResponse {
 		// Get default branch for indexing note.
 		$defaultBranch = $this->getRepositoryDefaultBranch(params: $params);
 

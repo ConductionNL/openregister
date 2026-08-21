@@ -142,7 +142,10 @@ class DocumentProcessingHandler {
 	 * `[<TYPE>: <entity_id>]` from the global id. Empty when the last run
 	 * matched no catalogue entity.
 	 *
-	 * @var array<string, string>
+	 * Keys are int|string, not string: entity ids are canonical numeric strings,
+	 * which PHP coerces to int array keys.
+	 *
+	 * @var array<int|string, string>
 	 */
 	private array $lastPlaceholderMap = [];
 

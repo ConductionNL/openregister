@@ -4306,7 +4306,7 @@ class ImportHandler {
 		// circuits when the table already exists (see MagicTableHandler
 		// line 109-112). The seed-objects loop further down still calls
 		// the same method as a defensive no-op.
-		if ($this->magicMapper !== null && $register !== null) {
+		if ($this->magicMapper !== null) {
 			foreach ($schemas as $schema) {
 				if ($schema instanceof Schema === false) {
 					continue;
