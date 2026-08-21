@@ -142,25 +142,26 @@ class AuditTrailProvider extends AbstractIntegrationProvider {
 				return $this->normalize(entries: $entries);
 			}
 
-			if (method_exists($this->mapper, 'findAll') === true) {
-				// The audit table's `object` column is INTEGER (numeric
-				// object id) while `object_uuid` is the UUID string the
-				// sub-resource controller actually receives. Try the
-				// UUID-typed filter first and fall back to `object` for
-				// older schemas.
-				try {
-					$entries = $this->mapper->findAll(filters: ['object_uuid' => $objectId]);
-					if (count($entries) > 0) {
-						return $this->normalize(entries: $entries);
-					}
-				} catch (\Throwable $e) {
-					// Fall through to legacy filter.
-					unset($e);
+			// No method_exists() probe for findAll(): AuditTrailMapper declares
+			// it. The findAllByObject() probe above IS needed — that one is not
+			// on the mapper.
+			//
+			// The audit table's `object` column is INTEGER (numeric object id)
+			// while `object_uuid` is the UUID string the sub-resource controller
+			// actually receives. Try the UUID-typed filter first and fall back to
+			// `object` for older schemas.
+			try {
+				$entries = $this->mapper->findAll(filters: ['object_uuid' => $objectId]);
+				if (count($entries) > 0) {
+					return $this->normalize(entries: $entries);
 				}
-
-				$entries = $this->mapper->findAll(filters: ['object' => $objectId]);
-				return $this->normalize(entries: $entries);
+			} catch (\Throwable $e) {
+				// Fall through to legacy filter.
+				unset($e);
 			}
+
+			$entries = $this->mapper->findAll(filters: ['object' => $objectId]);
+			return $this->normalize(entries: $entries);
 		} catch (\Throwable $e) {
 			// AuditTrail history is a soft surface — never block the
 			// detail page on a stale or missing audit row.

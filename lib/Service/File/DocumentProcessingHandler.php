@@ -373,11 +373,10 @@ class DocumentProcessingHandler {
 		// Resolve the source file id once — the substitution placeholder
 		// format and the post-redaction audit flag both key off it.
 		$fileId = 0;
-		if (method_exists($node, 'getId') === true) {
-			$candidate = $node->getId();
-			if (is_int($candidate) === true && $candidate > 0) {
-				$fileId = $candidate;
-			}
+		// OCP\Files\Node declares getId(): int, so no method_exists() probe.
+		$candidate = $node->getId();
+		if ($candidate > 0) {
+			$fileId = $candidate;
 		}
 
 		// Defensive filter — per the `entity-relation-grondslagen` change,

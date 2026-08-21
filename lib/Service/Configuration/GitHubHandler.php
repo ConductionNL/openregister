@@ -1763,10 +1763,9 @@ class GitHubHandler {
 			return 0;
 		}
 
-		// The class is confirmed by the is_a() check above, so getResponse() is safe.
-		if (method_exists($exception, 'getResponse') === false) {
-			return 0;
-		}
+		// The class is confirmed by the is_a() check above, so getResponse() is
+		// safe — the method_exists() bail-out that used to sit here could never
+		// be reached.
 
 		// BadResponseException always carries a response (it is required by its constructor),
 		// so getResponse() is non-null here.

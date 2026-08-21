@@ -383,7 +383,7 @@ class ViewPresentationService {
 				}
 			}
 
-			if (property_exists($object, 'id') === true && $object->getId() !== null) {
+			if ($object->getId() !== null) {
 				return (string)$object->getId();
 			}
 		}
