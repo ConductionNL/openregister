@@ -154,7 +154,11 @@ class NamesController extends Controller {
 					}
 				}
 
-				if (is_string($requestedIds) === false && is_array($requestedIds) === false) {
+				// Not `is_string() === false && ...`: every path above turns a
+				// string into an array (explode/array_map, or json_decode of a
+				// '['-prefixed string), and a non-string never enters that block,
+				// so the string test here can only ever be true.
+				if (is_array($requestedIds) === false) {
 					$requestedIds = [(string)$requestedIds];
 				}
 

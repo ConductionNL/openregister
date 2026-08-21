@@ -930,7 +930,13 @@ class ObjectsController extends Controller {
 		// NOT gate the writeOnly strip (#460): `$query['_rbac']` is false for an ADMIN here,
 		// and an admin is not exempt from the writeOnly render boundary (#389).
 		$renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
-		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac'] ?? true);
+		// No `?? true` on THIS path: `_rbac` is assigned unconditionally above and
+		// the unset() in between does not remove it, so the fallback was dead --
+		// and had it ever fired it would have forced the RBAC strip on exactly the
+		// admin case the comment above says is false. The sibling call further down
+		// keeps its `??` because there `$query` comes straight from
+		// buildSearchQuery() with no `_rbac` assignment.
+		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac']);
 
 		// Serialize results.
 		$serializedResults = [];
