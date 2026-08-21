@@ -24,7 +24,7 @@ const path = require('path')
 const vm = require('vm')
 const {
 	loadJsTranslations, serializeJs, APP_ROOT, isIdentical, hasIdenticalForm, placeholders, npluralsOf,
-	PLURAL_HACK_KEYS, loadLocaleConfig, loadDetector, bundleAtHead,
+	MORPHOLOGY_PLACEHOLDER, loadLocaleConfig, loadDetector, bundleAtHead,
 } = require('./lib.js')
 
 const loc = process.argv[2]
@@ -130,34 +130,31 @@ for (const k of keys) {
 	}
 	const dropped = [...enPh].filter(x => !lPh.has(x))
 	const added = [...lPh].filter(x => !enPh.has(x))
-	const okDrop = added.length === 0 && dropped.length === 1 && dropped[0] === '{plural}' && PLURAL_HACK_KEYS.has(k)
-	if ((dropped.length || added.length) && !okDrop) {
+	if (dropped.length || added.length) {
 		drift.push([k, [...enPh], [...lPh]])
 	}
 }
-check('placeholders preserved both ways (only the {plural} keys may drop)', drift.length === 0,
+check('placeholders preserved both ways', drift.length === 0,
 	drift.length ? JSON.stringify(drift.slice(0, 3)) : '')
 
-// `{plural}` is legitimate in a value ONLY for the five source-hack keys, and only
-// where the language's plural genuinely is +s — `es` keeps it for all five, `ca` for
-// four ("fitxer" -> "fitxers"). Anywhere else it would reach the user as a literal.
-// Whether KEEPING it renders correctly is a runtime question; runtime-check.mjs
-// asserts the substitution, and asserting count-stability here would be backwards
-// for exactly the locales that are right to keep it.
-const strayPlural = keys.filter(k => !PLURAL_HACK_KEYS.has(k)
-	&& [].concat(cur.translations[k]).some(x => /\{plural\}/.test(String(x))))
-check('{plural} appears only in the five source-hack keys', strayPlural.length === 0,
+// `{plural}` is BANNED outright — it is English morphology assembled from a
+// placeholder, and the five source keys that forced locales to carry it are real
+// n() calls now. This is the fast local mirror of the same ban in
+// tests/l10n/check-l10n-parity.js; the drift check above would also catch a
+// `{plural}` that en.js does not have, but only as an anonymous "added
+// placeholder", which does not tell the reader what to do about it.
+const strayPlural = keys.filter(k => [].concat(cur.translations[k])
+	.some(x => MORPHOLOGY_PLACEHOLDER.test(String(x))))
+check('no {plural} in any value (use a real n() plural key)', strayPlural.length === 0,
 	strayPlural.length ? JSON.stringify(strayPlural) : '')
-const keepsHack = [...PLURAL_HACK_KEYS].filter(k => k in cur.translations
-	&& String(cur.translations[k]).includes('{plural}'))
-if (keepsHack.length) {
-	console.log(`NOTE  ${loc} keeps {plural} in ${keepsHack.length} of ${PLURAL_HACK_KEYS.size} key(s)`
-		+ ' — only correct where the plural really is +s; runtime-check.mjs verifies the substitution')
-}
 
 // 6. register: gate on the DEVIATION from the measured register, never on a
 // carried-over assumption. Five consecutive locales measured differently.
-if (!detector || !cfg.register) {
+if (!cfg.register && String(cfg.registerNotMeasured || '').trim().length >= 15) {
+	// A config that exists for a narrower reason than a full pass — see
+	// registerNotMeasured in lib.js. SKIP, never PASS: nothing has been verified.
+	console.log(`SKIP  register not measured for ${loc} — ${cfg.registerNotMeasured}`)
+} else if (!detector || !cfg.register) {
 	checkRecorded('register detector present and register measured', false,
 		`detector=${detector ? 'yes' : 'MISSING'}, register=${cfg.register || 'NOT MEASURED'}`)
 } else {
@@ -187,7 +184,13 @@ if (head === null) {
 	for (const [k, v] of Object.entries(head)) {
 		const wasPlaceholder = typeof v === 'string' && v === k
 		if (!(k in cur.translations)) {
-			lost.push(k)
+			// A key en.js no longer carries was DELETED from the catalogue, not lost
+			// from this bundle. Without this the check fires on every locale at once
+			// for a single deliberate removal — which is exactly what the `{plural}`
+			// conversion did to five keys across all 37 files — and 36 identical
+			// failures read as a broken pass rather than one intended change. A key
+			// still in en.js and missing here is the real defect and still fires.
+			if (k in en.translations) lost.push(k)
 			continue
 		}
 		const now = cur.translations[k]

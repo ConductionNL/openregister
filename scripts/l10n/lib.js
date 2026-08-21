@@ -223,11 +223,51 @@ function readStringLiteral(text, start) {
 }
 
 /**
+ * Index of the `)` closing the `(` at `open`, or -1 if it is unbalanced.
+ *
+ * Skips over string and template literals so a paren inside a quoted value does
+ * not shift the depth. This is what gives a translation call a SPAN rather than
+ * just a start offset, which the `{plural}` guard in tests/l10n/check-l10n.js
+ * needs: the defect it looks for -- English morphology assembled in JS, e.g.
+ * `{ plural: n !== 1 ? 's' : '' }` -- lives in the call's ARGUMENTS, not in its
+ * key, so a guard reading only the extracted key cannot see it. Bounding the
+ * search by the real closing paren is what keeps it from matching an unrelated
+ * ternary further down the file.
+ *
+ * @param {string} text One source file's text.
+ * @param {number} open Index of the opening paren.
+ * @return {number} Index of the matching close paren, or -1.
+ */
+function matchingParen(text, open) {
+	let depth = 0
+	for (let i = open; i < text.length; i++) {
+		const c = text[i]
+		if (c === "'" || c === '"' || c === '`') {
+			const lit = c
+			i++
+			while (i < text.length && text[i] !== lit) {
+				if (text[i] === '\\') i++
+				i++
+			}
+			continue
+		}
+		if (c === '(') depth++
+		else if (c === ')') {
+			depth--
+			if (depth === 0) return i
+		}
+	}
+	return -1
+}
+
+/**
  * Extract every static translation call for `app` from one file's text.
  *
  * Returns { calls, unanalyzable }:
- *   calls        [{ fn, keys, index }] -- `keys` holds the call's SOURCE STRINGS:
- *                1 for t(), and 2 for n() (singular then plural).
+ *   calls        [{ fn, keys, index, end }] -- `keys` holds the call's SOURCE
+ *                STRINGS: 1 for t(), and 2 for n() (singular then plural).
+ *                `end` is the index of the call's closing paren, or -1 when it
+ *                could not be matched.
  *
  * Neither n() argument is a catalogue key on its own. The key is the identifier
  * the two combine into -- see pluralIdentifier() -- so a caller deciding "is this
@@ -276,8 +316,10 @@ function extractTranslationCalls(text, app) {
 			pos = j + 1
 			while (pos < text.length && /\s/.test(text[pos])) pos++
 		}
-		if (ok && keys.length === wanted) calls.push({ fn, keys, index: m.index })
-		else unanalyzable.push({ index: m.index })
+		if (ok && keys.length === wanted) {
+			const open = m.index + m[0].indexOf('(')
+			calls.push({ fn, keys, index: m.index, end: matchingParen(text, open) })
+		} else unanalyzable.push({ index: m.index })
 	}
 	return { calls, unanalyzable }
 }
@@ -573,19 +615,40 @@ function npluralsOf(pluralForm) {
 }
 
 /**
- * The `{plural}` keys, which are a SOURCE defect rather than a translation
- * problem: the call sites interpolate a literal "s" or "", i.e. hardcoded English
- * morphology, so no language whose plural is not a suffixed -s can render them
- * correctly. Croatian and Lithuanian cannot render them correctly at ALL, having
- * three numeral cases each.
+ * English morphology assembled in JS and handed to a translation call.
  *
- * Dropping `{plural}` is therefore the ONE permitted placeholder loss. Every
- * other drift stays refused. See docs/l10n-ui-translation.md for what each
- * language family does instead.
+ * This is the shape the five `X{plural}` keys used to have: the call site passed
+ * `{ plural: count !== 1 ? 's' : '' }`, so the catalogue key was `object{plural}`
+ * and the runtime glued an English "s" onto whatever the locale had written. No
+ * language whose plural is not a suffixed -s can render that, and a three- or
+ * four-form language cannot render it at ALL -- the whole form set has to fit in
+ * one string. Every locale worked around it differently: `bestand(en)`,
+ * `súbor(y)`, `аб'ект(ы)`, none of which is how the language is actually written.
+ *
+ * It is now BANNED rather than tolerated, and the ban is enforced in four places
+ * so it cannot come back by any route:
+ *
+ *   1. tests/l10n/check-l10n.js   the source scan, on every PR (test:l10n)
+ *   2. tests/l10n/check-l10n-parity.js  every catalogue value (test:l10n:parity)
+ *   3. scripts/l10n/apply.js      the only writer into l10n/*.js
+ *   4. scripts/l10n/selfcheck.js  the fast local mirror of 2
+ *
+ * `scripts/l10n/gate-negative-test.js` proves all four actually fail, because a
+ * gate nobody has seen fail is not known to work.
+ *
+ * The replacement is a real plural call, which gives every locale as many forms
+ * as it needs: `n('openregister', 'object', 'objects', count)`.
  */
-const PLURAL_HACK_KEYS = new Set([
-	'file{plural}', 'log{plural}', 'object{plural}', 'register{plural}', 'schema{plural}',
-])
+const MORPHOLOGY_PLACEHOLDER = /\{plural\}/
+
+/**
+ * The same defect spelled as a ternary rather than a placeholder -- `? 's' : ''`
+ * and its mirror `? '' : 's'`, in either quote style. Only ever applied INSIDE a
+ * translation call's argument span (see matchingParen), because the identical
+ * expression in an ordinary template literal is a different problem: an unwrapped
+ * string, which is tracked separately and must not fail this gate.
+ */
+const MORPHOLOGY_TERNARY = /\?\s*(['"])s\1\s*:\s*(['"])\2|\?\s*(['"])\3\s*:\s*(['"])s\4/
 
 /** Locale codes that have a committed config, i.e. a started or finished pass. */
 function configuredLocales() {
@@ -601,17 +664,34 @@ function configuredLocales() {
  * yet, so callers can treat "not started" and "in progress" uniformly.
  *
  * @param {string} loc Locale code.
- * @return {{register: string|null, pluralOrder: string|null, pluralBoundary: string|null,
- *   cognates: object, corrections: object}} Config.
+ * @return {{register: string|null, registerNotMeasured: string|null, pluralOrder: string|null,
+ *   pluralBoundary: string|null, cognates: object, corrections: object}} Config.
  */
 function loadLocaleConfig(loc) {
 	const f = path.join(LOCALES_DIR, `${loc}.json`)
 	if (!fs.existsSync(f)) {
-		return { register: null, pluralOrder: null, pluralBoundary: null, cognates: {}, corrections: {} }
+		return {
+			register: null, registerNotMeasured: null, pluralOrder: null,
+			pluralBoundary: null, cognates: {}, corrections: {},
+		}
 	}
 	const raw = JSON.parse(fs.readFileSync(f, 'utf8'))
 	return {
 		register: raw.register || null,
+		// A WRITTEN reason this locale has a config file but no measured register.
+		//
+		// selfcheck treats "has a locales/<loc>.json" as "has had a pass", which was
+		// true while the only reason to create one was to run a pass. It stopped
+		// being true when a file had to be created for a narrower reason: apply.js
+		// refuses an identical value without a recorded cognate, so a locale can now
+		// acquire a config without anyone having measured its register (nl, for the
+		// n() plural conversion). Without this field that locale reports a hard FAIL
+		// forever, which trains the reader to ignore selfcheck output.
+		//
+		// It is a written justification rather than a boolean on purpose: the same
+		// shape as `cognates`, so opting out of the check costs saying why in the
+		// file, and a reviewer can see at a glance that nothing was measured.
+		registerNotMeasured: raw.registerNotMeasured || null,
 		// "library" acknowledges that this locale's plural= header and the runtime
 		// library disagree on which index each count selects, and that the arrays are
 		// deliberately ordered by the library. Read by runtime-check.mjs; without it a
@@ -810,7 +890,9 @@ module.exports = {
 	hasIdenticalForm,
 	placeholders,
 	npluralsOf,
-	PLURAL_HACK_KEYS,
+	MORPHOLOGY_PLACEHOLDER,
+	MORPHOLOGY_TERNARY,
+	matchingParen,
 	configuredLocales,
 	loadLocaleConfig,
 	loadDetector,

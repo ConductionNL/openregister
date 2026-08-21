@@ -364,8 +364,11 @@ Neither of these is documentation. The gates read both.
 `register` and `cognates` are consumed by the gates. `pluralOrder: "library"` and
 `pluralBoundary: "library"` are the two recognised plural acknowledgements, and they are
 **not** interchangeable — §6.7. Any other field is free-form documentation and is ignored:
-`registerEvidence`, `buttons`, `orthographyNote`, `lexiconNote`, `pluralHackNote` are all in
-use.
+`registerEvidence`, `buttons`, `orthographyNote`, `lexiconNote`, `siblingParentheticalNote`
+are all in use. `registerNotMeasured` is the exception among the note-shaped fields: it IS
+functional — a written reason this locale has a config without a measured register, which
+`selfcheck` reads to SKIP the register check instead of failing it. See §6.7's neighbours
+and `loadLocaleConfig`.
 
 **A functional field must be added to `loadLocaleConfig`'s whitelist or it is silently
 dropped.** This has happened three times — `pluralOrder`, `spellAllow`, `pluralBoundary` —
@@ -1052,56 +1055,75 @@ column would be wrong. `bg` reaches the same verbal noun for an ordinary §3.5 r
 — Bulgarian has no infinitive, core is genuinely mixed, and the file's 1053 pre-existing
 values broke the tie. Keep the two straight: one contradicts core, the other follows the file.
 
-### 7.4 The `{plural}` source hack — KNOWN DEFECT, note it and move on
+### 7.4 `{plural}` is BANNED — and four gates enforce it
 
-**The owner is aware of this and will fix it once all translations are finished** (decided
-2026-08-19). So: pick a reasonable shape for the locale, record it in `pluralHackNote`, and
-**do not spend pass effort on it**. Do not weigh parenthetical against slash against bare
-plural noun-by-noun, do not treat an awkward rendering as a defect worth escalating, and do
-not flag it in the commit message. The same "do not spend effort" applies to plain
-`{count} X` phrases.
+Nothing to decide here any more. `{plural}` cannot appear in a key, in a value, or in a
+translation call, and if you write one the build stops.
 
-It does **not** apply to the sibling `(s)` keys (`register(s)`, `schema(s)`,
-`configuration(s)`, …). Those are not this defect at all — the `(s)` there is ordinary
-translatable text, not an interpolated variable — and they are covered separately below.
+The defect it names: 13 call sites used to pass `plural: count !== 1 ? 's' : ''` for five
+keys, so the catalogue key was `object{plural}` and the **runtime** glued an English `s`
+onto whatever the locale had written. A language whose plural is not a suffixed `-s` cannot
+render that, and a three- or four-form language cannot render it at all — the entire form
+set has to fit in one string. Every locale invented its own workaround (`bestand(en)`,
+`súbor(y)`, `аб'ект(ы)`, `objekat/i`), and none of them is how the language is written.
 
-The source hardcodes English morphology: 13 call sites pass `plural: count !== 1 ? 's' : ''`
-for five keys. What the finished locales did, kept only so you can pick a shape quickly:
+The five keys are now real `n()` calls with a form array per locale, so a locale gets as
+many forms as its grammar needs:
 
-| Shape | Locales | Example |
+```js
+n('openregister', 'object', 'objects', count)                          // bare label
+n('openregister', '{count} schema', '{count} schemas', c, { count: c }) // number in the string
+```
+
+Where the ban is enforced, and what each arm catches that the others cannot:
+
+| Gate | Runs | Catches |
 | --- | --- | --- |
-| keep the placeholder — plural really is `+s` | `es`, `ca` (4 of 5) | `fitxer{plural}` |
-| parenthetical | `nl de fi ru pl cs et sk sl` | `bestand(en)`, `súbor(y)` |
-| slash, where the stem changes | `fr`, `ca`, `et` | `journal/journaux` |
-| bare noun — no plural after a numeral | `hu` `tr` `ga` | `fájl`, `dosya`, `comhad` |
-| parenthetical AND slash, mixed **per noun** | `is` | `skrá(r)`, but `hlutur/hlutir` where the stem changes |
-| the form correct for the most counts | `hr` `lv` `ro` | gender-dependent |
-| genitive plural, conventional invariant counter | `lt` | `failų` |
+| `tests/l10n/check-l10n.js` | CI, `test:l10n` | `{plural}` in an extracted key, **and** `? 's' : ''` inside a call's argument span. Independent of the missing-key check, so adding the key to `en.js` does not buy a pass. `--write` refuses to extract it. |
+| `tests/l10n/check-l10n-parity.js` | CI, `test:l10n:parity` | `{plural}` in any key or value of any `.js` bundle — a hand-edit or stale Transifex pull that never touched `src/` |
+| `scripts/l10n/apply.js` | the only writer | a patch carrying it, refused before anything lands |
+| `scripts/l10n/selfcheck.js` | local | the same as parity, without waiting for CI |
 
-Three rules that override a quick pick:
+`npm run l10n:gatetest -- <loc>` proves all four refuse, by injection. There is deliberately
+no live example left in the tree to read, so that script is the only evidence.
 
-- **Reuse the bundle's own house style if it has one** — `sk` and `sl` already had
-  `register(-tre)` / `register(-i)` for the sibling `(s)` keys.
-- **But grammar outranks the house style**, and the call site decides: every `{plural}` call
-  site renders the label beside a numeral, so in a language that takes the singular after a
-  numeral a parenthetical is *wrong* rather than merely unidiomatic (`ga`).
-- **A locale can legitimately need more than one shape, chosen per noun** (`is`): the
-  parenthetical works where the plural is stem + `-r`, and produces a non-word where the
-  stem changes.
+**The ternary arm is bounded to the inside of a translation call**, so
+`` `${years} year${years !== 1 ? 's' : ''}` `` in ordinary template-literal prose does *not*
+fail it. That is an unwrapped string — a separate problem, counted by `npm run check:l10n`.
 
-Always runtime-assert no `{plural}` residue and no stray trailing `-s` survives. And note
-that a locale which **keeps** `{plural}` is not broken — `es` keeps it in all five, `ca` in
-four — so any assertion about those keys must branch on whether the placeholder survived:
-kept → the value **must** vary with count; dropped → it **cannot**.
+**Scope limit worth knowing:** the backend `l10n/*.json` set still carries the five dead
+keys. No PHP references them and nothing in `scripts/l10n/` writes that set, so the parity
+gate reports them once as a NOTE instead of failing on a file it cannot offer a fix for.
+
+**It never applied to the sibling `(s)` keys** (`register(s)`, `schema(s)`,
+`configuration(s)`, …). That `(s)` is ordinary translatable text, not an interpolated
+variable — covered separately below, and still live.
+
+#### The one thing the conversion did NOT make automatic
+
+A form array is only as good as its forms, and two hazards survive the fix:
+
+- **The counted form is decided by what the user reads, not by what the string holds.**
+  `bg`'s count form (§7.1) is triggered by a numeral, and these labels render beside one
+  even though the string itself has no `{count}` — so they take `обекта`, not `обекти`.
+  `ga` is the mirror: Irish takes the singular after a numeral, so all five of its forms are
+  the same counted singular.
+- **A form that is also a key in the same bundle renders that other key's value.**
+  `translatePlural` hands the form it picked back to `translate()`, which resolves it
+  against the bundle again. `rm`'s lowercase `schema(s)` collided with the bundle's own
+  `schema(s)` key. `test:l10n:parity` now fails on this; before it did not, and nothing else
+  would have shown it.
 
 #### The sibling `(s)` keys are a DIFFERENT thing, and carry no source defect
 
 Fourteen keys spell a literal `(s)` in the English source — `register(s)`,
 `configuration(s)`, `schema(s) selected`, `{days} day(s) left`, `{count} widget(s)` and the
-rest. Unlike `{plural}`, that `(s)` is **ordinary translatable text rather than an
-interpolated variable**, so a locale may render it however its morphology wants, including
-dropping the parenthetical. Nothing needs fixing in `src/` and nothing needs noting in
-`pluralHackNote`. Do not carry the `{plural}` treatment across to them.
+rest. Unlike the banned `{plural}`, that `(s)` is **ordinary translatable text rather than
+an interpolated variable**, so a locale may render it however its morphology wants,
+including dropping the parenthetical. Nothing needs fixing in `src/`, and the ban does not
+reach them. Where a locale has something to say about the shape it chose, that goes in
+`siblingParentheticalNote` — `ca`, `is` and `bs` carry one, and `is`'s records a known
+non-word (`skema(r)`) still sitting in two pre-existing values.
 
 Three strategies are in use and all three are correct:
 
@@ -1363,8 +1385,10 @@ capitalised `Read`/`Create`/… — the lowercase set are the matrix columns.
   were read. Every committed script takes the locale as an argument and errors without one.
 - **A verification script written for one locale encodes that locale's assumptions.**
   Generalising `selfcheck`/`runtime-check` from `hr`/`lt` to all 21 exposed three wrong
-  assertions, all from assuming every locale drops `{plural}`. Run a new assertion across
-  **every** finished locale before trusting it.
+  assertions, all from assuming every locale handled `{plural}` the same way. Run a new
+  assertion across **every** finished locale before trusting it. The `n()` conversion hit
+  the same shape from the other side: six locales needed a cognate record for a form that
+  renders the English source, and only a sweep over all 36 found them.
 - **Doubled-whitespace checks must be horizontal-only** (`[ \t]{2,}`). `\s\s` also matches
   the `\n\n` paragraph breaks the English source carries.
 - **`clean:l10n` needs review before every run.** It removes keys from all 37 bundles, and
@@ -1600,14 +1624,12 @@ renders wrongly in every locale.
   renames first, then `test:l10n:write` for the genuinely new keys, then translate those
   across the finished set. Its own commit, per §3.10. Re-run `npm run test:l10n` to see
   whether this is still open.
-- **`{plural}` hardcodes English morphology** — 13 call sites in
-  `src/sidebars/register/RegisterSideBar.vue`, `RegistersSideBar.vue`,
-  `src/views/register/RegistersIndex.vue`. Should be `n()` with real plural keys. **Highest
-  value fix left:** 5 keys × 36 locales of deliberate approximation, and `hr`/`lt`/`sl`
-  showed it cannot be done correctly at all in a three- or four-form language. **The owner
-  has taken this one: it will be fixed after all 36 locales are done** (2026-08-19), so a
-  locale pass should note its chosen shape in `pluralHackNote` and otherwise ignore the
-  issue entirely — §7.4.
+- ~~**`{plural}` hardcodes English morphology**~~ — **DONE.** The 13 call sites are real
+  `n()` calls, all 36 locales carry a proper form array, and `{plural}` is banned by four
+  gates — §7.4. Two things it left behind: the backend `l10n/*.json` set still holds the
+  five dead keys (no PHP reads them; the parity gate reports it as a NOTE), and `nl`
+  acquired a cognate-only `locales/nl.json`, which moved it into the cognate-enforced set
+  without it having had a pass.
 - **Dual-role keys.** `Create`/`Read`/`Update`/`Delete` render as both `<th>` headers and
   buttons, which is what forced `ro` onto verbal nouns (§7.3). Splitting them would let the
   pure-button keys take imperatives.

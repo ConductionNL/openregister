@@ -29,9 +29,14 @@
  *                              would also match the `\n\n` paragraph breaks that
  *                              several multi-line confirm dialogs carry in the
  *                              English source too.
- *   5. placeholder drift     — both directions. The one permitted loss is
- *                              `{plural}`, a source defect; see lib.js.
- *   6. clobbering a real value — refused unless the key is named explicitly in
+ *   5. `{plural}` in a value  — English morphology assembled from a placeholder.
+ *                              Banned outright; use a real n() plural key. Ordered
+ *                              ahead of drift so the message names the real fix.
+ *                              See MORPHOLOGY_PLACEHOLDER in lib.js.
+ *   6. placeholder drift     — both directions, with no exemptions. `{plural}`
+ *                              used to be the one permitted loss; gate 5 now
+ *                              refuses it instead.
+ *   7. clobbering a real value — refused unless the key is named explicitly in
  *                              --allow-replace, which prints every old -> new pair
  *                              so a correction can never happen as a silent side
  *                              effect of a bulk apply.
@@ -46,7 +51,7 @@ const fs = require('fs')
 const path = require('path')
 const {
 	loadJsTranslations, serializeJs, APP_ROOT, isIdentical, placeholders, npluralsOf,
-	PLURAL_HACK_KEYS, loadLocaleConfig,
+	MORPHOLOGY_PLACEHOLDER, loadLocaleConfig,
 } = require('./lib.js')
 
 const [loc, patchFile] = process.argv.slice(2)
@@ -68,7 +73,6 @@ const patch = JSON.parse(fs.readFileSync(patchFile, 'utf8'))
 const next = { ...cur.translations }
 const problems = []
 const corrections = []
-const pluralDrops = []
 let written = 0
 let replaced = 0
 let cognatesWritten = 0
@@ -119,7 +123,29 @@ for (const [k, v] of Object.entries(patch)) {
 		}
 	}
 
-	// gate 5: placeholders, both directions
+	// gate 5: no English morphology assembled from a placeholder. This used to be
+	// an EXEMPTION in gate 6 -- `{plural}` was the one placeholder a value was
+	// allowed to drop, because the five source-hack keys could not be rendered any
+	// other way. The source defect is gone (those keys are real n() calls now), so
+	// the exemption is inverted into a ban: a value carrying `{plural}` can only
+	// come from a hand-edit or a resurrected hack, and neither should land. See
+	// MORPHOLOGY_PLACEHOLDER in lib.js for the four places this is enforced.
+	//
+	// Ordered BEFORE the drift check on purpose. Drift would catch the same value
+	// anyway -- `{plural}` is a placeholder en.js no longer has -- but it would
+	// report it as an anonymous "added placeholder", which does not tell the reader
+	// that the fix is an n() call rather than a corrected brace.
+	let banned = false
+	for (const x of Array.isArray(v) ? v : [v]) {
+		if (MORPHOLOGY_PLACEHOLDER.test(String(x))) {
+			problems.push('{plural} is banned — use a real n() plural key: '
+				+ `${JSON.stringify(k)} ${JSON.stringify(x)}`)
+			banned = true
+		}
+	}
+	if (banned) continue
+
+	// gate 6: placeholders, both directions
 	const enPh = new Set()
 	for (const f of Array.isArray(en[k]) ? en[k] : [en[k]]) {
 		for (const p of placeholders(f)) {
@@ -135,16 +161,11 @@ for (const [k, v] of Object.entries(patch)) {
 	const dropped = [...enPh].filter(p => !vPh.has(p))
 	const added = [...vPh].filter(p => !enPh.has(p))
 	if (dropped.length || added.length) {
-		const onlyPluralHack = added.length === 0 && dropped.length === 1
-			&& dropped[0] === '{plural}' && PLURAL_HACK_KEYS.has(k)
-		if (!onlyPluralHack) {
-			problems.push(`placeholder drift: ${JSON.stringify(k)} en=${[...enPh]} loc=${[...vPh]}`)
-			continue
-		}
-		pluralDrops.push(k)
+		problems.push(`placeholder drift: ${JSON.stringify(k)} en=${[...enPh]} loc=${[...vPh]}`)
+		continue
 	}
 
-	// gate 6: never clobber a real translation unsupervised
+	// gate 7: never clobber a real translation unsupervised
 	if (k in next && !isIdentical(k, next[k])) {
 		if (!allowReplace.has(k)) {
 			problems.push(`would clobber real value: ${JSON.stringify(k)} existing=${JSON.stringify(next[k])}`)
@@ -188,13 +209,6 @@ if (corrections.length) {
 			console.log('      NOTE: no reason recorded in '
 				+ `scripts/l10n/locales/${loc}.json under "corrections" — add one before committing`)
 		}
-	}
-}
-
-if (pluralDrops.length) {
-	console.log(`NOTE: {plural} deliberately dropped in ${pluralDrops.length} key(s) — hardcoded English morphology:`)
-	for (const k of pluralDrops) {
-		console.log(`  ${JSON.stringify(k)} -> ${JSON.stringify(patch[k])}`)
 	}
 }
 

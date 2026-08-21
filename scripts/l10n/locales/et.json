@@ -1,6 +1,7 @@
 {
  "register": "informal",
  "cognates": {
+  "_register_::_registers_": "Form 0 only. 'register' is the Estonian noun, spelled as the English singular — the bundle's own 'Register' and 'Registers' keys already carry it. Form 1 is the partitive 'registrit', which Estonian takes after any numeral above one, so only the singular coincides.",
   "Audit": "'Audit' is the Estonian noun, spelled identically; it is standard in Estonian administrative and financial usage.",
   "CSV": "Format acronym, invariant in Estonian.",
   "Deck": "Nextcloud app name; kept untranslated in all 18 finished locales.",

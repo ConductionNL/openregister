@@ -24,7 +24,7 @@ the conventions already established per locale.
 | `patchcheck.js` | Runs a locale's register detector over a patch **before** it is applied. |
 | `selfcheck.js` | Full pre-commit verification for one locale. |
 | `runtime-check.mjs` | Drives the real `@nextcloud/l10n` against a real bundle. |
-| `gate-negative-test.js` | Proves `test:l10n:parity` really fails when one locale loses a key. Snapshots, breaks, asserts, restores. |
+| `gate-negative-test.js` | Proves the gates really refuse: a locale losing a key, the `{plural}` ban in all four places, and a plural form colliding with a key. Snapshots, breaks, asserts, restores. |
 | `script-coverage.js` | Two jobs. For a non-Latin locale (`bg sr mk be uk ru el`) the script sweep that replaces §5 step 8's English-word scan. For **every** locale including Latin ones, the homoglyph check: a single word mixing two scripts. Reading aid, never a gate. |
 | `core-diff.js` | Bundle vs Nextcloud core, split AGREE / DISAGREE. **First thing in an audit** — its AGREE list is what you must not "fix". Reading aid, never a gate. |
 | `termdrift.js` | English words this bundle renders two ways. The §6.9 term count over *every* word rather than a guessed list. Reading aid, never a gate. |
@@ -115,18 +115,31 @@ and an unrecorded English rendering fails, while a locale without one gets a not
 a human. If you hit a NOTE, either record the reason or translate the value — do not
 narrow the check until it stops firing.
 
-**2. A locale that keeps `{plural}` is not broken.** `es` keeps it in all five keys
-and `ca` in four, because their plural genuinely is `+s` (`fitxer` → `fitxers`). Any
-assertion about those keys must branch on whether the value still carries the
-placeholder:
+**2. A plural form that is also a KEY renders the other key's value.**
+`translatePlural` picks the form and then hands it back to `translate()`:
 
-- keeps it → the value **must** vary with the count; asserting count-stability is
-  exactly backwards.
-- drops it → the value **cannot** vary, and a literal `{plural}` would reach the user.
+```js
+return translate(app, translation[plural], vars, number, options)
+```
 
-Three assertions inherited from the `hr`/`lt` passes were wrong for `ca` on this
-point: count-stability, a blanket no-trailing-`s` rule (which flagged the correct
-slash form `esquema/esquemes`), and an unconditional no-`{plural}`-residue rule.
+and `translate()` resolves `bundle.translations[text] || text`. So if a form's text
+happens to be another key in the same bundle, the user sees *that* key's value. The
+array is right, the file reads right, and nothing else notices — arity is fine, no
+value is empty, none equals English, and `runtime-check` only asserts the result is
+non-empty and translated, which the substituted value also is.
+
+Found on `rm`, whose form 0 has to be correct at every count (the library reaches no
+other form for Romansh) and so carries a `(s)` parenthetical — `schema(s)`, which is
+*also* a key in that bundle, so it rendered `Schema(s)`. `test:l10n:parity` now fails
+on the whole class; the fix is to reword the form, not the key.
+
+Historical note, because the shape recurs: `{plural}` used to be a *tolerated* thing
+here, with assertions branching on whether a locale had kept the placeholder. It is
+now banned outright (`MORPHOLOGY_PLACEHOLDER` in `lib.js`, four gates, proved by
+`gate-negative-test.js`). Three assertions inherited from the `hr`/`lt` passes had
+been wrong for `ca` under the old regime — count-stability, a blanket
+no-trailing-`s` rule that flagged the correct slash form `esquema/esquemes`, and an
+unconditional no-residue rule. Only the last one survives, and now unconditionally.
 
 ## One thing about the runtime that is easy to get wrong
 

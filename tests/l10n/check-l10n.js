@@ -84,6 +84,8 @@ const {
 	makeLineResolver,
 	SRC_EXTS,
 	pluralIdentifier,
+	MORPHOLOGY_PLACEHOLDER,
+	MORPHOLOGY_TERNARY,
 } = require('../../scripts/l10n/lib.js')
 
 const ROOT = process.cwd()
@@ -118,6 +120,9 @@ const files = walk(srcDir, SRC_EXTS)
 const used = new Map()
 // plural identifier -> [singular, plural], for --write's forms array.
 const formsOf = new Map()
+// [{ where, snippet, why }] — English morphology assembled in JS. See the ban
+// below; this is collected in the same walk so no second pass over src is needed.
+const morphology = []
 
 for (const file of files) {
 	const text = fs.readFileSync(file, 'utf8')
@@ -125,6 +130,33 @@ for (const file of files) {
 	const { calls } = extractTranslationCalls(text, appId)
 	for (const c of calls) {
 		const where = `${path.relative(ROOT, file)}:${posToLine(c.index)}`
+
+		// BAN: hardcoded English morphology inside a translation call.
+		//
+		// Two spellings of one defect. A key like `object{plural}` paired with
+		// `{ plural: count !== 1 ? 's' : '' }` makes the RUNTIME glue an English
+		// "s" onto the locale's value, so a language whose plural is not a
+		// suffixed -s cannot render it, and a three- or four-form language cannot
+		// render it at all. Five such keys shipped for the life of this app and
+		// every locale had to invent a workaround for them.
+		//
+		// Checked here rather than only against en.js because the defect is in the
+		// CALL, not in the catalogue: adding `object{plural}` to en.js would
+		// otherwise make it "present" and this gate would pass. That is why the
+		// ban runs before the missing-key comparison and reports independently.
+		//
+		// The ternary form is bounded by the call's own parens (c.end), so the
+		// identical expression in an ordinary template literal —
+		// `${years} year${years !== 1 ? 's' : ''}` — does NOT fail here. That is an
+		// unwrapped string, a different and separately tracked problem.
+		if (c.keys.some((k) => MORPHOLOGY_PLACEHOLDER.test(k))) {
+			morphology.push({ where, snippet: c.keys.find((k) => MORPHOLOGY_PLACEHOLDER.test(k)), why: '{plural} in the key' })
+		} else if (c.end > c.index) {
+			const span = text.slice(c.index, c.end + 1)
+			if (MORPHOLOGY_TERNARY.test(span)) {
+				morphology.push({ where, snippet: span.replace(/\s+/g, ' ').slice(0, 90), why: "English \"s\" built with ? 's' : ''" })
+			}
+		}
 		// c.keys is [key] for t(), [singular, plural] for n(). For n() the
 		// catalogue key is neither one: it is the identifier they combine into.
 		const isPlural = c.fn === 'n' && c.keys.length === 2
@@ -149,6 +181,27 @@ for (const [key, locations] of used) {
 console.log(`l10n-check [${appId}]: scanned ${files.length} files, `
 	+ `${used.size} distinct literal keys used, `
 	+ `${Object.keys(translations).length} keys in en.js`)
+
+// The morphology ban is reported BEFORE the missing-key comparison and exits on
+// its own. Two reasons it cannot be folded into `missing`: the offending key may
+// well be present in en.js (adding it is the wrong fix, not the right one), and
+// --write must refuse to extract it rather than helpfully making it permanent.
+if (morphology.length) {
+	console.error(`\nl10n-check: FAIL — ${morphology.length} translation call(s) build English `
+		+ 'morphology in JS:')
+	for (const { where, snippet, why } of morphology) {
+		console.error(`  • ${where}  (${why})`)
+		console.error(`      ${snippet}`)
+	}
+	console.error('\nA placeholder cannot carry a plural. The runtime would glue an English "s" onto')
+	console.error('the translated value, which is wrong in every language whose plural is not +s and')
+	console.error('impossible in one with three or four forms. Use a real plural call instead:')
+	console.error("\n    n('openregister', 'object', 'objects', count)")
+	console.error("    n('openregister', '{count} object', '{count} objects', count, { count })")
+	console.error('\nIts catalogue key is NEITHER source string — it is "_object_::_objects_".')
+	console.error('See docs/l10n-workflow.md §7.1.')
+	process.exit(1)
+}
 
 if (missing.length === 0) {
 	console.log('l10n-check: OK — every used translation key is present in l10n/en.js')

@@ -42,7 +42,7 @@ import { createRequire } from 'module'
 
 const require = createRequire(import.meta.url)
 const {
-	APP_ROOT, npluralsOf, PLURAL_HACK_KEYS, loadLocaleConfig, configuredLocales,
+	APP_ROOT, npluralsOf, MORPHOLOGY_PLACEHOLDER, loadLocaleConfig, configuredLocales,
 } = require('./lib.js')
 
 const loc = process.argv[2]
@@ -239,38 +239,30 @@ for (const [key] of arrays) {
 	}
 }
 
-// 3. The {plural} source hack. The call sites interpolate a literal "s" or "", so
-// a locale has exactly two correct options, and which one it took is readable from
-// whether the value still carries the placeholder:
+// 3. No `{plural}` reaches the user, in any key or any value.
 //
-//   KEEPS it   — only valid where the plural genuinely is +s. `es` does this for
-//                all five, `ca` for four ("fitxer" -> "fitxers"). Then the value
-//                MUST vary with the count, and asserting count-stability would be
-//                exactly backwards.
-//   DROPS it   — every other language, because no suffix can be right. Then the
-//                value cannot vary, and a residual "{plural}" would reach the user.
+// This used to be the section that VERIFIED the hack: five keys interpolated a
+// literal "s" or "", and the check branched on whether a locale had kept the
+// placeholder (`es` kept all five, `ca` four) or dropped it. Both branches are
+// gone with the hack itself — those five keys are real n() calls now, and every
+// locale carries a proper form array instead of `bestand(en)` or `súbor(y)`.
 //
-// Either way the rendered value must not still be the English source. Catalan is
-// the reason this is split: `schema{plural}` is "esquema/esquemes", which ends in
-// an "s" legitimately (the slash device), so a blanket no-trailing-s rule is wrong.
-for (const key of PLURAL_HACK_KEYS) {
-	if (!(key in translations)) continue
-	const keepsPlaceholder = String(translations[key]).includes('{plural}')
-	const one = t('openregister', key, { plural: '' })
-	const many = t('openregister', key, { plural: 's' })
-
-	if (keepsPlaceholder) {
-		ok(many === one + 's', `t(${JSON.stringify(key)}) keeps {plural} and substitutes it`, [one, many])
-	} else {
-		ok(one === many, `t(${JSON.stringify(key)}) dropped {plural}, so it cannot vary with count`, one)
+// What is left is the runtime end of the ban. The static gates
+// (check-l10n.js, check-l10n-parity.js, apply.js, selfcheck.js) read the files;
+// this reads what the LIBRARY actually renders, which is the only place a
+// residue would be visible to a user. A key here is a defect regardless of
+// which form it sits in, so plural arrays are flattened rather than sampled.
+const pluralResidue = []
+for (const [key, value] of Object.entries(translations)) {
+	const forms = Array.isArray(value) ? value : [value]
+	if (MORPHOLOGY_PLACEHOLDER.test(key) || forms.some((f) => MORPHOLOGY_PLACEHOLDER.test(String(f)))) {
+		pluralResidue.push(key)
 	}
-	ok(!one.includes('{plural}') && !many.includes('{plural}'),
-		`t(${JSON.stringify(key)}) leaves no {plural} residue`, one)
-	// Still the untranslated English, e.g. "object" / "objects"? Dutch `register` /
-	// `registers` trips this legitimately, hence notEnglish() rather than ok().
-	const asEnglish = one === key.replace('{plural}', '') && many === key.replace('{plural}', 's')
-	notEnglish(!asEnglish, key, `t(${JSON.stringify(key)}) is not left as the English source`, [one, many])
 }
+ok(pluralResidue.length === 0,
+	'{plural} appears in no key and no value — English morphology is not assembled '
+	+ 'from a placeholder; use a real n() plural key',
+	pluralResidue.slice(0, 5))
 
 console.log(fails === 0 ? '\nALL RUNTIME CHECKS PASS' : `\n${fails} RUNTIME CHECK(S) FAILED`)
 process.exitCode = fails ? 1 : 0

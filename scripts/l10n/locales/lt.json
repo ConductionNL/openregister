@@ -1,6 +1,8 @@
 {
  "register": "formal",
  "cognates": {
+  "_schema_::_schemas_": "Form 0 only. 'schema' is the Lithuanian nominative singular, spelled as the English — the bundle's own 'Schema' key already carries it. Forms 1 and 2 are 'schemos' and the genitive plural 'schemų', so only the singular coincides.",
+  "_{count} schema_::_{count} schemas_": "Form 0 only, for the same reason as the bare '_schema_::_schemas_' key: '{count} schema' matches the English because 'schema' is the Lithuanian nominative singular. Forms 1 and 2 carry 'schemos' and 'schemų'.",
   "CSV": "File-format initialism, identical in Lithuanian; every other finished locale keeps it as-is.",
   "Deck": "Proper name of the Nextcloud Deck app; product names are not translated.",
   "DSAR": "Initialism for Data Subject Access Request. Lithuanian practice has coined no equivalent acronym, and the expanded key 'Data-subject access request' is translated in full beside it.",

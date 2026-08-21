@@ -84,7 +84,9 @@ const EUROPEAN = [
 // a deliberate cognate apart from placeholder-shaped filler — without it, "19
 // English-identical" is a number nobody can act on. Still dependency-free pure
 // Node; it is a sibling file in this repo, not an npm package.
-const { loadLocaleConfig, configuredLocales, hasIdenticalForm } = require('../../scripts/l10n/lib.js')
+const {
+	loadLocaleConfig, configuredLocales, hasIdenticalForm, MORPHOLOGY_PLACEHOLDER,
+} = require('../../scripts/l10n/lib.js')
 
 // Locales whose identical values are held to a recorded justification. This is
 // OPT-IN per locale, keyed on the existence of scripts/l10n/locales/<loc>.json,
@@ -195,6 +197,9 @@ const sets = [
 ]
 
 const failures = []
+// locale -> keys, for the backend `.json` set only. Reported, never fatal — see
+// the scope note at the pluralHack check.
+const backendPluralResidue = new Map()
 let checkedSets = 0
 
 for (const set of sets) {
@@ -243,6 +248,61 @@ for (const set of sets) {
 			&& !isEmpty(locObj[k])
 			&& JSON.stringify(locObj[k]) === JSON.stringify(enObj[k]),
 		)
+
+		// BAN: `{plural}` anywhere in a key or a value.
+		//
+		// The catalogue arm of the ban whose source arm lives in check-l10n.js.
+		// Both are needed and neither implies the other: src/ can be clean while a
+		// bundle still carries `bestand(en)`-style residue from the era when five
+		// keys interpolated an English "s", and a hand-edit or a stale Transifex
+		// pull can reintroduce it into a bundle without touching src/ at all.
+		//
+		// Fatal for EVERY locale, including the fourteen that predate the cognate
+		// rule — unlike the identical-value check, this one is not scoped by
+		// `enforced`, because a literal "{plural}" reaching a user is a runtime
+		// defect rather than an unreviewed judgement call.
+		//
+		// It IS scoped to the frontend set, and that is a scope limit rather than a
+		// judgement that the backend is clean: `l10n/*.json` still carries the five
+		// dead keys, which no PHP references and which are residue of the frontend
+		// hack rather than backend strings in their own right. Nothing in this
+		// tooling writes the `.json` set (see scripts/l10n/README.md and
+		// l10n-ai.js), so failing CI on a file no sanctioned tool can fix would
+		// leave the build red with no green path. They are reported instead, once,
+		// after the per-locale loop.
+		const hits = Object.entries(locObj)
+			.filter(([k, v]) => MORPHOLOGY_PLACEHOLDER.test(k)
+				|| (Array.isArray(v) ? v : [v]).some((f) => MORPHOLOGY_PLACEHOLDER.test(String(f))))
+			.map(([k]) => k)
+		const frontend = set.kind === 'frontend (.js)'
+		const pluralHack = frontend ? hits : []
+		if (!frontend && hits.length) {
+			backendPluralResidue.set(loc, hits)
+		}
+
+		// A plural form that is ALSO a key in the same bundle.
+		//
+		// translatePlural picks the form and then hands it BACK to translate():
+		//
+		//   return translate(app, translation[plural], vars, number, options)
+		//
+		// and translate() resolves `bundle.translations[text] || text`. So a form
+		// whose text happens to be another key renders that OTHER key's value. The
+		// array is right, the file reads right, and the user sees something the
+		// array never said. Found when `rm`'s form 0 "schema(s)" — chosen because
+		// the library reaches no other form for Romansh — collided with the
+		// bundle's own `schema(s)` key and rendered "Schema(s)".
+		//
+		// Not caught by anything else: arity is right, no value is empty, nothing
+		// equals English, and runtime-check only asserts the result is non-empty
+		// and translated, which the substituted value also is. Forms that resolve
+		// to themselves are skipped — that re-translation is a no-op.
+		const pluralCollision = frontend
+			? Object.entries(locObj).flatMap(([k, v]) => (Array.isArray(v) ? v : [])
+				.map((form, i) => ({ k, i, form }))
+				.filter(({ form }) => Object.prototype.hasOwnProperty.call(locObj, form)
+					&& JSON.stringify(locObj[form]) !== JSON.stringify(form)))
+			: []
 
 		// Plural arity, frontend set only (.json plurals use a keyed object shape).
 		const badArity = []
@@ -297,6 +357,8 @@ for (const set of sets) {
 			|| missing.length > 0
 			|| unjustified.length > 0
 			|| staleCognates.length > 0
+			|| pluralHack.length > 0
+			|| pluralCollision.length > 0
 			|| (strictIdentical && identical.length > 0)
 		const entry = {
 			set: set.kind,
@@ -308,6 +370,8 @@ for (const set of sets) {
 			unjustified,
 			staleCognates,
 			badArity,
+			pluralHack,
+			pluralCollision,
 			total: enKeys.length,
 		}
 		if (fatal) {
@@ -330,6 +394,18 @@ console.log(`l10n-parity: all ${allLocales.length} required locale(s) are held a
 
 // Say plainly which locales have their identical values under justification, and
 // which do not. Silence here would let the unreviewed ~375 pass as verified.
+// The backend residue, printed on every run whether or not anything failed. It is
+// the one place `{plural}` still exists in this repo, so silence here would read
+// as "the ban covers everything" when it covers the frontend only.
+if (backendPluralResidue.size) {
+	const keys = [...new Set([...backendPluralResidue.values()].flat())].sort()
+	console.log(`l10n-parity: NOTE — ${backendPluralResidue.size} backend (.json) bundle(s) still carry `
+		+ `${keys.length} {plural} key(s): ${keys.join(' ')}`)
+	console.log('             Residue of the removed frontend hack — no PHP references them. Not fatal:')
+	console.log('             nothing in scripts/l10n/ writes the .json set, so this gate would have no')
+	console.log('             green path. Removing them is a separate, deliberate change.')
+}
+
 const enforcedList = allLocales.filter((l) => COGNATES_ENFORCED.has(l))
 const unreviewed = allLocales.filter((l) => !COGNATES_ENFORCED.has(l))
 console.log(`l10n-parity: ${enforcedList.length} of those also hold every English-identical value to a `
@@ -380,6 +456,13 @@ for (const f of failures) {
 			console.error(`      arity:     ${JSON.stringify(b.key)} has ${b.got} form(s), `
 				+ `locale declares nplurals=${b.want}`)
 		}
+		for (const k of (f.pluralHack || []).slice(0, 6)) {
+			console.error(`      {plural}:  ${JSON.stringify(k)} — banned, use a real n() plural key`)
+		}
+		for (const c of (f.pluralCollision || []).slice(0, 6)) {
+			console.error(`      collision: ${JSON.stringify(c.k)} form ${c.i} is ${JSON.stringify(c.form)}, `
+				+ 'which is also a key in this bundle — it will render that key\'s value instead')
+		}
 	}
 }
 console.error('\nEvery locale must carry every English source key.')
@@ -395,4 +478,11 @@ console.error('               nplurals declares, or the runtime renders blank fo
 console.error('  identical -> tolerated by default: a deliberate cognate is the correct value and is')
 console.error('               written out so the locale stays key-for-key identical to en.js. Run with')
 console.error('               --strict-identical to audit a locale for placeholder-shaped filler.')
+console.error('  collision -> translatePlural re-translates the form it selects, so a form that is')
+console.error('               also a key in this bundle renders that key\'s value instead of its own.')
+console.error('               Reword the form so it is not a catalogue key.')
+console.error('  {plural}  -> banned everywhere. A placeholder cannot carry a plural: the runtime')
+console.error('               would glue an English "s" onto the value. Convert the call site to')
+console.error("               n('openregister', 'object', 'objects', count) and give this locale a")
+console.error('               real form array — docs/l10n-workflow.md §7.1.')
 process.exit(1)

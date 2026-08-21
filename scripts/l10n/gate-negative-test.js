@@ -136,7 +136,151 @@ try {
 // 2. And it must be green again, which also proves the restore was complete.
 check('gate is green again after the restore', runGate().code === 0)
 
+// ------------------------------------------------------------- the {plural} ban
+//
+// `{plural}` is banned in four places (MORPHOLOGY_PLACEHOLDER in lib.js), and a
+// ban nobody has watched refuse something is exactly the kind of gate this script
+// exists to distrust. The five source-hack keys it used to describe were removed
+// when the call sites became real n() calls, so there is no longer any live
+// example in the tree to reason from — which makes proving it by injection the
+// only evidence available.
+//
+// Each phase mutates ONE thing, asserts the specific gate refuses it AND says
+// enough for a reader to act, then restores from its own snapshot. As above:
+// never git, because during a locale pass the bundle is uncommitted for hours.
+
+/**
+ * Run a node script from the app root and return its exit code plus both streams.
+ *
+ * @param {string[]} argv Script path (relative to APP_ROOT) and its arguments.
+ * @return {{code: number, out: string}} Exit code and stdout+stderr.
+ */
+function run(argv) {
+	try {
+		const out = execFileSync('node', [path.join(APP_ROOT, argv[0]), ...argv.slice(1)],
+			{ cwd: APP_ROOT, stdio: 'pipe' })
+		return { code: 0, out: String(out) }
+	} catch (e) {
+		return {
+			code: e.status === undefined ? 1 : e.status,
+			out: String(e.stdout || '') + String(e.stderr || ''),
+		}
+	}
+}
+
+console.log('\n--- the {plural} ban')
+
+// Phase A — a poisoned VALUE. Covers check-l10n-parity.js (CI) and selfcheck.js.
+try {
+	const cur = loadJsTranslations(locFile)
+	const victim = Object.keys(cur.translations).find((k) => typeof cur.translations[k] === 'string')
+	cur.translations[victim] = `${cur.translations[victim]}{plural}`
+	fs.writeFileSync(locFile, serializeJs({
+		app: cur.app, translations: cur.translations, pluralForm: cur.pluralForm,
+	}))
+	console.log(`      poisoned value of ${JSON.stringify(victim)} with {plural}`)
+
+	const parity = runGate()
+	check('parity gate FAILS on {plural} in a value', parity.code !== 0, `exit ${parity.code}`)
+	check('parity names the locale and the key',
+		parity.out.includes(`(.js) ${loc}:`) && parity.out.includes('{plural}'))
+
+	// selfcheck is the fast local mirror. It reports per-check lines rather than
+	// exiting on the first problem, so assert on the named check, not just the code.
+	const self = run(['scripts/l10n/selfcheck.js', loc])
+	check('selfcheck FAILS on {plural} in a value', self.code !== 0, `exit ${self.code}`)
+	check('selfcheck names the {plural} check',
+		/FAIL\s+no \{plural\} in any value/.test(self.out))
+} catch (e) {
+	check('poisoned-value phase ran', false, e.message)
+} finally {
+	fs.writeFileSync(locFile, original)
+	check('bundle restored byte-identical after the value phase',
+		Buffer.compare(fs.readFileSync(locFile), original) === 0)
+}
+
+// Phase B — a poisoned CALL SITE. Covers tests/l10n/check-l10n.js (CI).
+//
+// Both spellings are injected, because they fail for different reasons: the key
+// form is caught by reading the extracted key, the ternary form only by reading
+// the call's argument span. A guard that caught one and not the other would look
+// identical from the outside.
+const probe = path.join(APP_ROOT, 'src', '__gate_negative_probe__.vue')
+for (const [shape, body] of [
+	['{plural} in the key', "t('openregister', 'widget{plural}', { plural: count !== 1 ? 's' : '' })"],
+	["? 's' : '' in the arguments", "t('openregister', 'widget', { suffix: count !== 1 ? 's' : '' })"],
+]) {
+	try {
+		fs.writeFileSync(probe, `<script setup>\nconst x = ${body}\n</script>\n`)
+		const res = run(['tests/l10n/check-l10n.js'])
+		check(`check-l10n FAILS on ${shape}`, res.code !== 0, `exit ${res.code}`)
+		check(`check-l10n names the probe file for ${shape}`,
+			res.out.includes('__gate_negative_probe__.vue')
+			&& res.out.includes('build English morphology in JS'))
+		// --write must refuse rather than extracting the defect into en.js.
+		const enBefore = fs.readFileSync(path.join(APP_ROOT, 'l10n', 'en.js'))
+		run(['tests/l10n/check-l10n.js', '--write'])
+		check(`--write does not extract ${shape} into en.js`,
+			Buffer.compare(fs.readFileSync(path.join(APP_ROOT, 'l10n', 'en.js')), enBefore) === 0)
+	} catch (e) {
+		check(`call-site phase (${shape}) ran`, false, e.message)
+	} finally {
+		fs.rmSync(probe, { force: true })
+	}
+}
+check('probe file removed', !fs.existsSync(probe))
+
+// Phase C — a poisoned PATCH. Covers apply.js, the only writer into l10n/*.js.
+// apply.js refuses a patch whole rather than landing part of it, so a dry run is
+// enough here and nothing needs restoring.
+try {
+	const tmp = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'l10n-gate-')), 'patch.json')
+	const cur = loadJsTranslations(locFile)
+	const victim = Object.keys(cur.translations).find((k) => typeof cur.translations[k] === 'string')
+	fs.writeFileSync(tmp, JSON.stringify({ [victim]: 'iets{plural}' }))
+	const res = run(['scripts/l10n/apply.js', loc, tmp])
+	check('apply.js REFUSES a patch carrying {plural}', res.code !== 0, `exit ${res.code}`)
+	check('apply.js says {plural} is banned', /\{plural\} is banned/.test(res.out))
+	fs.rmSync(path.dirname(tmp), { recursive: true, force: true })
+} catch (e) {
+	check('poisoned-patch phase ran', false, e.message)
+}
+
+// Phase D — a plural form that is ALSO a key. The defect translatePlural's
+// re-translation causes; see the collision check in check-l10n-parity.js. Proved
+// by injection for the same reason as the ban: there is deliberately no live
+// example left in the tree.
+try {
+	const cur = loadJsTranslations(locFile)
+	const arrayKey = Object.keys(cur.translations).find((k) => Array.isArray(cur.translations[k]))
+	// Borrow a real key whose value differs from itself, so the substitution is
+	// observable rather than a no-op.
+	const donor = Object.keys(cur.translations).find((k) => typeof cur.translations[k] === 'string'
+		&& cur.translations[k] !== k && k.length > 3)
+	const forms = [...cur.translations[arrayKey]]
+	forms[0] = donor
+	cur.translations[arrayKey] = forms
+	fs.writeFileSync(locFile, serializeJs({
+		app: cur.app, translations: cur.translations, pluralForm: cur.pluralForm,
+	}))
+	console.log(`      set ${JSON.stringify(arrayKey)} form 0 to ${JSON.stringify(donor)}, `
+		+ 'which is itself a key')
+
+	const res = runGate()
+	check('parity gate FAILS on a plural form that is also a key', res.code !== 0, `exit ${res.code}`)
+	check('parity explains the collision', res.out.includes('which is also a key in this bundle'))
+} catch (e) {
+	check('collision phase ran', false, e.message)
+} finally {
+	fs.writeFileSync(locFile, original)
+	check('bundle restored byte-identical after the collision phase',
+		Buffer.compare(fs.readFileSync(locFile), original) === 0)
+}
+
+// Everything above mutated something. Prove the tree is clean again.
+check('parity gate is green after every phase', runGate().code === 0)
+
 console.log(failures === 0
-	? `\n${loc}: the parity gate genuinely holds this locale`
+	? `\n${loc}: the parity gate genuinely holds this locale, and the {plural} ban genuinely refuses`
 	: `\n${failures} CHECK(S) FAILED — the gate may not be holding ${loc}`)
 process.exitCode = failures ? 1 : 0
