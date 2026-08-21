@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Exception\HookStoppedException;
+use OCA\OpenRegister\Exception\InvalidTransitionInputException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\AppFramework\Controller;
@@ -58,6 +59,10 @@ class TransitionController extends Controller {
 	 * the same endpoint covers every transition declared on the schema —
 	 * apps don't need a route per action.
 	 *
+	 * An optional `data` object carries input values for the transition's
+	 * declared `inputs` (see the engine); an undeclared key, a missing
+	 * required input, or a non-object `data` value is a 400.
+	 *
 	 * @param string $id Object id/uuid/slug.
 	 *
 	 * @return JSONResponse JSON response with the transitioned object or an error.
@@ -67,6 +72,7 @@ class TransitionController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-6
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function transition(string $id): JSONResponse {
 		$action = (string)($this->request->getParam('action') ?? '');
@@ -77,8 +83,28 @@ class TransitionController extends Controller {
 			);
 		}
 
+		$data = $this->request->getParam('data') ?? [];
+		if (is_array($data) === false) {
+			return new JSONResponse(
+				['error' => 'Field "data" must be an object of input values.'],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
 		try {
-			$object = $this->engine->transition(objectId: $id, action: $action);
+			$object = $this->engine->transition(objectId: $id, action: $action, data: $data);
+		} catch (InvalidTransitionInputException $e) {
+			// The payload violates the transition's declared `inputs`
+			// allowlist (undeclared key, or missing required input). The
+			// request itself is malformed → 400, with the offending field
+			// names machine-readable next to the human message.
+			return new JSONResponse(
+				[
+					'error' => $e->getMessage(),
+					'fields' => $e->getFields(),
+				],
+				Http::STATUS_BAD_REQUEST
+			);
 		} catch (NotAuthorizedException $e) {
 			// Caller lacks `update` permission on the object. Surface
 			// as 403 so clients can distinguish "not allowed" from

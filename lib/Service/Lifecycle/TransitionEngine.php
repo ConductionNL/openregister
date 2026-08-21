@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
+use OCA\OpenRegister\Exception\InvalidTransitionInputException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
@@ -229,21 +230,31 @@ class TransitionEngine {
 	/**
 	 * Apply a named transition to an object.
 	 *
+	 * When the transition declares `inputs`, the (optional) `$data` payload is
+	 * validated against that allowlist and the accepted values are merged into
+	 * the SAME write that flips the lifecycle field — so pre-save listeners
+	 * (ObjectUpdatingEvent) observe the status change and the inputs together,
+	 * and the normal schema validation / readOnly enforcement applies to them.
+	 *
 	 * @param string $objectId Object id/uuid/slug.
 	 * @param string $action Transition action name.
+	 * @param array<string, mixed> $data Optional input values for the transition's declared `inputs`.
 	 *
 	 * @return ObjectEntity The saved object after the transition.
 	 *
 	 * @throws RuntimeException When the object/schema/transition is missing,
 	 *                          the action is not allowed from the current
 	 *                          state, or the underlying save is rejected.
+	 * @throws InvalidTransitionInputException When `$data` contains a key the
+	 *                          transition does not declare, or a `required`
+	 *                          input is absent or empty-string.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Linear resolve→guard→mutate→save flow; splitting would obscure the transition contract.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
 	 */
-	public function transition(string $objectId, string $action): ObjectEntity {
+	public function transition(string $objectId, string $action, array $data = []): ObjectEntity {
 		$object = $this->objectService->find(id: $objectId);
 		if ($object === null) {
 			throw new RuntimeException(sprintf('Object "%s" not found.', $objectId));
@@ -301,7 +312,8 @@ class TransitionEngine {
 					object: $object,
 					graph: $graph,
 					field: $field,
-					action: $action
+					action: $action,
+					data: $data
 				);
 			}
 		}
@@ -316,8 +328,8 @@ class TransitionEngine {
 		$targetState = (string)($spec['to'] ?? '');
 		$from = (array)($spec['from'] ?? []);
 
-		$data = $object->getObject() ?? [];
-		$currentValue = (string)($data[$field] ?? '');
+		$objectData = $object->getObject() ?? [];
+		$currentValue = (string)($objectData[$field] ?? '');
 
 		if (in_array($currentValue, $from, true) === false) {
 			throw new RuntimeException(
@@ -329,9 +341,19 @@ class TransitionEngine {
 			);
 		}
 
+		// Validate the payload against the transition's `inputs` allowlist and
+		// merge the accepted values BEFORE flipping the lifecycle field, so the
+		// status write always wins and both land in the same save.
+		$accepted = $this->resolveTransitionInputs(
+			inputs: (array)($spec['inputs'] ?? []),
+			data: $data,
+			action: $action
+		);
+		$objectData = array_merge($objectData, $accepted);
+
 		// Mutate the lifecycle field. The validator listener will re-check
 		// the transition on save; the guard (if any) will run there too.
-		$data[$field] = $targetState;
+		$objectData[$field] = $targetState;
 
 		// Snapshot the session user at the transition boundary and forward it
 		// explicitly to the save path, so the @self.folder check uses the SAME
@@ -341,7 +363,7 @@ class TransitionEngine {
 		$actingUser = $this->userSession->getUser();
 
 		$saved = $this->objectService->saveObject(
-			object: $data,
+			object: $objectData,
 			register: $object->getRegister(),
 			schema: $object->getSchema(),
 			uuid: $object->getUuid(),
@@ -650,6 +672,104 @@ class TransitionEngine {
 	}//end buildGraphAction()
 
 	/**
+	 * Validate a transition `data` payload against the declared `inputs` allowlist.
+	 *
+	 * A transition may declare `inputs: [{"field": "<propertyName>", "required": true|false}, ...]`
+	 * on its `x-openregister-lifecycle.transitions.<action>` block. Only declared
+	 * fields are accepted from the payload; anything else is rejected — a
+	 * transition with no `inputs` therefore rejects ANY payload, keeping today's
+	 * behaviour for schemas that never opted in. The accepted values are NOT
+	 * validated here against the property definitions: they are merged into the
+	 * carrying object write, so the standard save-path validation (and readOnly
+	 * enforcement) applies to them exactly like any other object write.
+	 *
+	 * @param array<int, mixed> $inputs The transition's declared `inputs` list.
+	 * @param array<string, mixed> $data The caller-supplied payload.
+	 * @param string $action The transition action name, for error messages.
+	 *
+	 * @return array<string, mixed> The accepted field => value pairs to merge into the write.
+	 *
+	 * @throws InvalidTransitionInputException When `$data` contains an undeclared
+	 *                          key, or a `required` input is absent or empty-string.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function resolveTransitionInputs(array $inputs, array $data, string $action): array {
+		$declared = $this->normaliseDeclaredInputs(inputs: $inputs);
+
+		// Reject any payload key the transition does not declare.
+		$unknown = array_diff(array_keys($data), array_keys($declared));
+		if ($unknown !== []) {
+			$unknown = array_values(array_map('strval', $unknown));
+			throw new InvalidTransitionInputException(
+				message: sprintf(
+					'Transition "%s" does not accept input field(s): %s.',
+					$action,
+					'"'.implode('", "', $unknown).'"'
+				),
+				fields: $unknown
+			);
+		}
+
+		// Reject when a required input is absent or empty-string.
+		$missing = [];
+		foreach ($declared as $fieldName => $required) {
+			if ($required === false) {
+				continue;
+			}
+
+			if (array_key_exists($fieldName, $data) === false || $data[$fieldName] === '') {
+				$missing[] = $fieldName;
+			}
+		}
+
+		if ($missing !== []) {
+			throw new InvalidTransitionInputException(
+				message: sprintf(
+					'Transition "%s" is missing required input field(s): %s.',
+					$action,
+					'"'.implode('", "', $missing).'"'
+				),
+				fields: $missing
+			);
+		}
+
+		// Everything present is declared — merge it all.
+		return $data;
+	}//end resolveTransitionInputs()
+
+	/**
+	 * Normalise a transition's `inputs` declaration into fieldName => required.
+	 *
+	 * Malformed entries (non-arrays, or entries without a `field` name) are
+	 * skipped rather than fatal: a broken declaration must not take the whole
+	 * transition down, it simply allowlists nothing.
+	 *
+	 * @param array<int, mixed> $inputs The transition's declared `inputs` list.
+	 *
+	 * @return array<string, bool> Map of declared field name to its `required` flag.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function normaliseDeclaredInputs(array $inputs): array {
+		$declared = [];
+		foreach ($inputs as $input) {
+			if (is_array($input) === false) {
+				continue;
+			}
+
+			$fieldName = (string)($input['field'] ?? '');
+			if ($fieldName === '') {
+				continue;
+			}
+
+			$declared[$fieldName] = (bool)($input['required'] ?? false);
+		}
+
+		return $declared;
+	}//end normaliseDeclaredInputs()
+
+	/**
 	 * Apply a graph-mode transition.
 	 *
 	 * Re-runs the SAME derivation as `availableActions()`, accepts the posted
@@ -661,10 +781,13 @@ class TransitionEngine {
 	 * @param array<string, mixed> $graph The `graph` block off the annotation.
 	 * @param string $field The lifecycle field name on the object.
 	 * @param string $action The requested `move-to-<uuid>` action.
+	 * @param array<string, mixed> $data Caller-supplied input payload; graph-derived
+	 *                                   actions declare no `inputs`, so any payload is rejected.
 	 *
 	 * @return ObjectEntity The saved object after the transition.
 	 *
 	 * @throws RuntimeException When the action is not a current candidate.
+	 * @throws InvalidTransitionInputException When `$data` is non-empty.
 	 *
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
 	 */
@@ -673,7 +796,13 @@ class TransitionEngine {
 		array $graph,
 		string $field,
 		string $action,
+		array $data = [],
 	): ObjectEntity {
+		// Graph-derived actions carry no `inputs` declaration, so nothing is
+		// allowlisted: a non-empty payload is rejected just like an undeclared
+		// key on a static transition.
+		$this->resolveTransitionInputs(inputs: [], data: $data, action: $action);
+
 		$candidates = $this->deriveGraphActions(object: $object, graph: $graph, field: $field);
 
 		$match = null;
@@ -691,17 +820,17 @@ class TransitionEngine {
 		}
 
 		$targetState = (string)$match['to'];
-		$data = $object->getObject() ?? [];
-		$from = (string)($data[$field] ?? '');
+		$objectData = $object->getObject() ?? [];
+		$from = (string)($objectData[$field] ?? '');
 
-		$data[$field] = $targetState;
+		$objectData[$field] = $targetState;
 
 		// Snapshot the session user at the transition boundary and forward it
 		// explicitly to the save path, mirroring the static-mode contract.
 		$actingUser = $this->userSession->getUser();
 
 		$saved = $this->objectService->saveObject(
-			object: $data,
+			object: $objectData,
 			register: $object->getRegister(),
 			schema: $object->getSchema(),
 			uuid: $object->getUuid(),
