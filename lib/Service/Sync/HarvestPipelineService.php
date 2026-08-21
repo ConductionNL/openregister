@@ -235,7 +235,7 @@ class HarvestPipelineService {
 	 * @param Source $source The source
 	 * @param SyncRecord $record The fetched record
 	 * @param Mapping|null $mapping The configured mapping (or null for pass-through)
-	 * @param array<string, int|string> $summary Running summary (by reference)
+	 * @param array{executionId: string, gathered: int, created: int, updated: int, unchanged: int, conflicts: int, errors: int} $summary Running summary (by reference)
 	 *
 	 * @return void
 	 *

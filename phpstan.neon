@@ -73,3 +73,34 @@ parameters:
             message: '#Property .+::\$logger \(Psr\\Log\\LoggerInterface\) in isset\(\) is not nullable#'
             identifier: isset.property
             path: lib/Db/MultiTenancyTrait.php
+
+        # Same shape as the isset() guard above, reached through `?? null`
+        # instead of isset(): the trait cannot require the property, both using
+        # classes declare it non-nullable, so PHPStan resolves the coalesce
+        # per-using-class and calls the left side always-set.
+        -
+            message: '#Property .+::\$logger \(Psr\\Log\\LoggerInterface\) on left side of \?\? is not nullable#'
+            identifier: nullCoalesce.property
+            path: lib/Db/MultiTenancyTrait.php
+
+        # FilesSidebarListener is registered for OCA\Files\Event\LoadAdditional-
+        # ScriptsEvent and compares get_class($event) against that class-string
+        # DELIBERATELY, so the app carries no hard dependency on the Files app
+        # (see the comment at the call site). The class ships with an optional
+        # Nextcloud app and is therefore absent during analysis, so PHPStan
+        # narrows get_class() to class-string<Event>, concludes the comparison
+        # can never match, and then reports everything after the early return as
+        # unreachable.
+        #
+        # At runtime the comparison DOES match — the listener only ever fires for
+        # that event. Replacing the string compare with an instanceof would be a
+        # compile-time reference to the absent class, i.e. exactly the dependency
+        # the string compare exists to avoid. Scoped to this one file.
+        -
+            message: '#Strict comparison using !== between class-string and .OCA\\\\Files\\\\Event\\\\LoadAdditionalScriptsEvent. will always evaluate to true#'
+            identifier: notIdentical.alwaysTrue
+            path: lib/Listener/FilesSidebarListener.php
+        -
+            message: '#Unreachable statement - code above always terminates#'
+            identifier: deadCode.unreachable
+            path: lib/Listener/FilesSidebarListener.php

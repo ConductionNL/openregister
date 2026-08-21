@@ -5687,8 +5687,9 @@ class SaveObject {
 			return false;
 		}
 
-		// For objects/arrays with content, check recursively.
-		if (is_array($value) === true && empty($value) === false) {
+		// For objects/arrays with content, check recursively. The empty-array
+		// case already returned above, so only the array-ness matters here.
+		if (is_array($value) === true) {
 			// If it's an associative array (object-like), check if it's effectively empty.
 			if (array_keys($value) !== range(0, count($value) - 1)) {
 				return $this->isEffectivelyEmptyObject(object: $value) === false;

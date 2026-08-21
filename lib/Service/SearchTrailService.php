@@ -806,7 +806,9 @@ class SearchTrailService {
 			if (preg_match($pattern, $userAgent, $matches) === 1) {
 				return [
 					'browser' => $browser,
-					'version' => $matches[1] ?? 'unknown',
+					// Every pattern above has exactly one capturing group and we
+					// only get here when preg_match returned 1, so group 1 is set.
+					'version' => $matches[1],
 					'full_string' => $userAgent,
 				];
 			}

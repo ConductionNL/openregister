@@ -1147,7 +1147,7 @@ class DocumentProcessingHandler {
 			return $newFile;
 		} catch (Exception $e) {
 			// Clean up temp file if it exists.
-			if (isset($tempFile) === true && file_exists($tempFile) === true) {
+			if (file_exists($tempFile) === true) {
 				unlink($tempFile);
 			}
 

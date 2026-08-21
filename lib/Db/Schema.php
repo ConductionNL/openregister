@@ -2176,6 +2176,9 @@ class Schema extends Entity implements JsonSerializable {
 	 * @param array<int, string> $boolFields Bool-typed config fields.
 	 * @param array<int, string> $passThrough Keys stored without validation.
 	 * @param array<string, mixed> $validatedConfig Accumulator, passed by reference.
+	 * @param-out array<int|string, mixed> $validatedConfig A config key that is a canonical
+	 *         numeric string ("12") gets an INT key from PHP's array-key coercion, so the
+	 *         accumulator that comes back out is not key-narrowable to string.
 	 *
 	 * @throws \InvalidArgumentException If the value is invalid for the key.
 	 *

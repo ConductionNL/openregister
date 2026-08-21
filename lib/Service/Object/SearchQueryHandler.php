@@ -440,10 +440,17 @@ class SearchQueryHandler {
 						$searchTerms = implode(' ', $viewQuery['searchTerms']);
 					}
 
-					// Merge with existing search if present.
-					$query['_search'] = $searchTerms;
-					if (isset($query['_search']) === true && empty($query['_search']) === false) {
+					// Merge with the caller's existing search if there is one,
+					// otherwise take the view's terms as-is.
+					//
+					// This used to assign $query['_search'] = $searchTerms BEFORE
+					// the isset()/empty() test, which then always passed and
+					// appended the same terms a second time — a view search for
+					// "foo" was sent to the backend as "foo foo".
+					if (empty($query['_search']) === false) {
 						$query['_search'] .= ' ' . $searchTerms;
+					} else {
+						$query['_search'] = $searchTerms;
 					}
 				}//end if
 

@@ -509,11 +509,17 @@ class SchemaGenerator {
 				$description = null;
 			}
 
-			// Annotate authorization requirements in description.
+			// Annotate authorization requirements in description. Nest the
+			// null test rather than repeating isset() in an elseif: the two
+			// branches differ only in whether there is an existing description
+			// to append to, and a property with no description must NOT come
+			// out as ". Requires ...".
 			if (isset($authInfo[$name]) === true) {
-				$description = $description . '. ' . $authInfo[$name];
-			} elseif (isset($authInfo[$name]) === true) {
-				$description = $authInfo[$name];
+				if ($description === null) {
+					$description = $authInfo[$name];
+				} else {
+					$description = $description . '. ' . $authInfo[$name];
+				}
 			}
 
 			$fields[$fieldName] = [

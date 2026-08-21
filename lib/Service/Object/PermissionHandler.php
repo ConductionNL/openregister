@@ -1211,9 +1211,9 @@ class PermissionHandler {
 			}
 		}//end foreach
 
-		// No array_filter for nulls: $filteredUuids never contains one, so the
-		// callback matched every element and the filter was a no-op.
-		return array_values($filteredUuids);
+		// No array_filter for nulls and no array_values: $filteredUuids never
+		// contains a null and is already a list, so both were no-ops.
+		return $filteredUuids;
 	}//end filterUuidsForPermissions()
 
 	/**

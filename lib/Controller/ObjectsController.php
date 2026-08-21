@@ -929,8 +929,10 @@ class ObjectsController extends Controller {
 		// `_rbac` is forwarded only to gate the property `authorization.read` strip. It does
 		// NOT gate the writeOnly strip (#460): `$query['_rbac']` is false for an ADMIN here,
 		// and an admin is not exempt from the writeOnly render boundary (#389).
+		// No `?? true` fallback: this method sets $query['_rbac'] unconditionally
+		// a few lines above, so the key is always present here.
 		$renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
-		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac'] ?? true);
+		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac']);
 
 		// Serialize results.
 		$serializedResults = [];

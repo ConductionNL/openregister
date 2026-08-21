@@ -133,7 +133,7 @@ class CascadingHandler {
 
 			// Handle array properties.
 			if ($definition['type'] === 'array' && isset($definition['items']['inversedBy']) === true) {
-				if (is_array($propertyValue) === true && empty($propertyValue) === false) {
+				if (empty($propertyValue) === false) {
 					$createdUuids = [];
 					foreach ($propertyValue as $item) {
 						if (is_array($item) === true && $this->utilityHandler->isUuid($item) === false) {

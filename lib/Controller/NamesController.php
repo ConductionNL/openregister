@@ -154,7 +154,9 @@ class NamesController extends Controller {
 					}
 				}
 
-				if (is_string($requestedIds) === false && is_array($requestedIds) === false) {
+				// The is_string() branch above has already converted every string
+				// form to an array, so only the non-array case is left to wrap.
+				if (is_array($requestedIds) === false) {
 					$requestedIds = [(string)$requestedIds];
 				}
 

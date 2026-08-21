@@ -348,9 +348,8 @@ class MappingService {
 				$cast = explode(',', (string)$cast);
 			}
 
-			if ($cast === false) {
-				continue;
-			}
+			// No `$cast === false` bail-out: after the branch above $cast is
+			// always an array (explode() cannot return false), so it never fired.
 
 			foreach ($cast as $singleCast) {
 				$this->handleCast(dotArray: $dotArray, key: $key, cast: $singleCast);

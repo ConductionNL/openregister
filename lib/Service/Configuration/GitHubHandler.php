@@ -993,7 +993,9 @@ class GitHubHandler {
 						'file' => __FILE__,
 						'line' => __LINE__,
 						'status_code' => $statusCode,
-						'has_token' => (empty($token) === false),
+						// Always true: $token is a non-empty-string by this point, so
+						// the only way into this branch is the 401.
+						'has_token' => true,
 					]
 				);
 				return [];
