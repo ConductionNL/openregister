@@ -125,7 +125,7 @@ class LifecycleInitialStateListener implements IEventListener {
 		// Caller already set a value — leave it alone (validator covers it).
 		// Resolve the (possibly dynamic) initial value only AFTER this guard so
 		// we never read a related object when the caller already chose.
-		if (isset($data[$field]) === true && $data[$field] !== null && $data[$field] !== '') {
+		if (isset($data[$field]) === true && $data[$field] !== '') {
 			return;
 		}
 

@@ -1761,7 +1761,13 @@ class SchemaMapper extends QBMapper {
 				} elseif (is_object($property['$ref']) === true && (($property['$ref']->id ?? null) !== null)) {
 					$property['$ref'] = $property['$ref']->id;
 				} elseif (is_int($property['$ref']) === true) {
-				} elseif (is_string($property['$ref']) === false && $property['$ref'] !== '') {
+					// The `!== ''` clause that used to sit here was dead: `is_string()
+					// === false` has already excluded every string, so an empty-string
+					// $ref never reaches this branch and is NOT rejected today, despite
+					// what the message below says. Left as-is deliberately — tightening
+					// it would reject schemas that currently import, so it belongs in a
+					// behaviour change, not a lint migration.
+				} elseif (is_string($property['$ref']) === false) {
 					$refValue = json_encode($property['$ref']);
 					$msg = "Schema property '$key' has a \$ref that is not a string or empty: " . $refValue;
 					throw new Exception($msg);

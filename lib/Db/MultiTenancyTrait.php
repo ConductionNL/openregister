@@ -359,7 +359,7 @@ trait MultiTenancyTrait {
 	 * @return string Qualified column name
 	 */
 	private function buildQualifiedColumnName(string $columnName, string $tableAlias): string {
-		if ($tableAlias !== null && $tableAlias !== '') {
+		if ($tableAlias !== '') {
 			return $tableAlias . '.' . $columnName;
 		}
 

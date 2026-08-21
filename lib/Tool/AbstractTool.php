@@ -388,7 +388,7 @@ abstract class AbstractTool implements ToolInterface {
 					// Step 5c: Type-cast argument to match method signature.
 					// This ensures type safety when LLM provides loosely-typed values.
 					$type = $param->getType();
-					if ($type !== null && $type instanceof \ReflectionNamedType) {
+					if ($type instanceof \ReflectionNamedType) {
 						$typeName = $type->getName();
 
 						if ($typeName === 'int') {

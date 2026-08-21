@@ -777,7 +777,7 @@ class MagicMapper extends AbstractObjectMapper {
 					schema: $schema,
 					tableName: $tableName
 				);
-				if ($uuid !== null && $uuid !== '') {
+				if ($uuid !== '') {
 					$savedUuids[] = $uuid;
 				}
 			}
@@ -2170,7 +2170,7 @@ class MagicMapper extends AbstractObjectMapper {
 				// Metadata columns have '_' prefix, schema properties don't.
 				// Both '_name' (metadata) and 'name' (schema property) can coexist.
 				$column = $this->mapSchemaPropertyToColumn(propertyName: $propertyName, propertyConfig: $propertyConfig);
-				if ($column !== null && $column !== '') {
+				if ($column !== '') {
 					// BUG-DB-8: disambiguate column-name collisions deterministically.
 					if (isset($usedColumnNames[$column['name']]) === true) {
 						$base = $column['name'];

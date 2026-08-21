@@ -546,7 +546,7 @@ class SchemaService {
 		}
 
 		// Merge detected formats (if consistent patterns emerge).
-		if (($newAnalysis['detected_format'] ?? null) !== null && ($newAnalysis['detected_format'] !== null) === true) {
+		if (($newAnalysis['detected_format'] ?? null) !== null) {
 			$existingAnalysis['detected_format'] = $this->consolidateFormatDetection(
 				existingFormat: $existingAnalysis['detected_format'] ?? null,
 				newFormat: $newAnalysis['detected_format']
@@ -1163,7 +1163,6 @@ class SchemaService {
 
 		// Check for missing format.
 		if (($analysis['detected_format'] ?? null) !== null
-			&& ($analysis['detected_format'] !== null) === true
 			&& ($analysis['detected_format'] !== '') === true
 		) {
 			$currentFormat = $currentConfig['format'] ?? null;

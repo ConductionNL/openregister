@@ -410,7 +410,7 @@ class LlmSettingsController extends Controller {
 					$description = $family;
 					if ($size !== '') {
 						// Add size separator if description exists.
-						if ($description !== null && $description !== '') {
+						if ($description !== '') {
 							$description .= ' • ';
 						}
 
