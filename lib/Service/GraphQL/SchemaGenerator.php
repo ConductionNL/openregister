@@ -515,11 +515,12 @@ class SchemaGenerator {
 			// to append to, and a property with no description must NOT come
 			// out as ". Requires ...".
 			if (isset($authInfo[$name]) === true) {
-				if ($description === null) {
-					$description = $authInfo[$name];
-				} else {
-					$description = $description . '. ' . $authInfo[$name];
+				$prefix = '';
+				if ($description !== null) {
+					$prefix = $description . '. ';
 				}
+
+				$description = $prefix . $authInfo[$name];
 			}
 
 			$fields[$fieldName] = [

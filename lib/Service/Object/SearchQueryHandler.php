@@ -447,11 +447,12 @@ class SearchQueryHandler {
 					// the isset()/empty() test, which then always passed and
 					// appended the same terms a second time — a view search for
 					// "foo" was sent to the backend as "foo foo".
+					$existingSearch = '';
 					if (empty($query['_search']) === false) {
-						$query['_search'] .= ' ' . $searchTerms;
-					} else {
-						$query['_search'] = $searchTerms;
+						$existingSearch = $query['_search'] . ' ';
 					}
+
+					$query['_search'] = $existingSearch . $searchTerms;
 				}//end if
 
 				$this->logger->debug(

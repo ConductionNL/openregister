@@ -1131,7 +1131,7 @@ class SettingsService {
 					// Schema|string|int|null $schema, ?string $uuid, ...).
 					$objectData = $object->getObject();
 					// Get the object business data.
-					$savedObject = $objectService->saveObject(
+					$objectService->saveObject(
 						object: $objectData,
 						extend: [],
 						register: $object->getRegister(),
@@ -1344,7 +1344,7 @@ class SettingsService {
 				// Schema|string|int|null $schema, ?string $uuid, ...).
 				$objectData = $object->getObject();
 				// Get the object business data.
-				$savedObject = $objectService->saveObject(
+				$objectService->saveObject(
 					object: $objectData,
 					extend: [],
 					register: $object->getRegister(),
