@@ -71,6 +71,8 @@ class DedupeSharedSchemasCommand extends Command {
 	 * Define command name, description, and options.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/dedupe-shared-schemas/proposal.md
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:registers:dedupe-shared-schemas')
@@ -111,6 +113,8 @@ class DedupeSharedSchemasCommand extends Command {
 	 * @param OutputInterface $output The console output.
 	 *
 	 * @return int The exit code.
+	 *
+	 * @spec openspec/changes/dedupe-shared-schemas/proposal.md
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$write  = (bool)$input->getOption('write');
