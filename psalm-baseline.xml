@@ -94,11 +94,6 @@
       <code><![CDATA[Uuid::v4()]]></code>
     </ImplicitToStringCast>
   </file>
-  <file src="lib/Db/Mapping.php">
-    <RedundantPropertyInitializationCheck>
-      <code><![CDATA[isset($this->id) === true]]></code>
-    </RedundantPropertyInitializationCheck>
-  </file>
   <file src="lib/Db/MultiTenancyTrait.php">
     <RedundantPropertyInitializationCheck>
       <code><![CDATA[$entity->getOrganisation() === null && isset($this->appConfig) === true]]></code>
@@ -385,19 +380,6 @@
       <code><![CDATA[?SetupHandler]]></code>
       <code><![CDATA[SetupHandler|null]]></code>
     </UndefinedClass>
-  </file>
-  <file src="lib/Service/Sync/HarvestPipelineService.php">
-    <StringIncrement>
-      <code><![CDATA[$summary['conflicts']]]></code>
-      <code><![CDATA[$summary['created']]]></code>
-      <code><![CDATA[$summary['errors']]]></code>
-      <code><![CDATA[$summary['unchanged']]]></code>
-      <code><![CDATA[$summary['unchanged']]]></code>
-      <code><![CDATA[$summary['updated']]]></code>
-    </StringIncrement>
-    <UnusedParam>
-      <code><![CDATA[$summary]]></code>
-    </UnusedParam>
   </file>
   <file src="lib/Service/TaskService.php">
     <UndefinedClass>
