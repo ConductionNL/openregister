@@ -1208,6 +1208,10 @@ class ObjectWriteNodeTest extends TestCase {
 				'schema',
 				'operation',
 				'fields',
+				// `payloadFrom` writes the object at a path WHOLE, for the case where
+				// the properties are not known up front — a synchronization with no
+				// mapping. It is an alternative to `fields`, never a companion.
+				'payloadFrom',
 				'match',
 				'replace',
 				'bulk',
