@@ -821,6 +821,12 @@ class FlowNodePreflight {
 	 */
 	private function declaredKeys(IFlowNode $node): ?array {
 		if (($node instanceof IFlowNodeConfigKeys) === false) {
+			// A node that describes a FORM but declares no vocabulary stays
+			// unchecked. A form may be partial by design
+			// ({@see IFlowNodeConfigForm}), so its field list is a subset of
+			// what the node reads, and treating a subset as the whole would
+			// reject keys the node handles perfectly well. Only configKeys()
+			// claims completeness, so only configKeys() can gate.
 			return null;
 		}
 
@@ -837,8 +843,60 @@ class FlowNodePreflight {
 			return null;
 		}
 
-		return array_map(static fn ($key): string => (string)$key, (array)$known);
+		$keys = array_map(static fn ($key): string => (string)$key, (array)$known);
+
+		// UNION with the node's own form, never a substitute for it.
+		//
+		// The two declarations can disagree: a node that grows a form field
+		// and forgets the matching configKeys() entry would have the EDITOR
+		// writing a key the PREFLIGHT then refuses — the dialog and the save
+		// contradicting each other over the same node, with the operator in
+		// between and nothing on screen explaining why. Whichever of the two
+		// the author got wrong, refusing a key the node's own form offers is
+		// the worse failure, so the form widens the vocabulary and never
+		// narrows it.
+		return array_values(array_unique(array_merge($keys, $this->formKeys(node: $node))));
 	}//end declaredKeys()
+
+	/**
+	 * The config keys a node's own edit form writes, if it describes one.
+	 *
+	 * @param IFlowNode $node The resolved node.
+	 *
+	 * @return array<int, string> The keys, empty when there is no form.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	private function formKeys(IFlowNode $node): array {
+		if (($node instanceof IFlowNodeConfigForm) === false) {
+			return [];
+		}
+
+		try {
+			$fields = $node->configForm();
+		} catch (Throwable $e) {
+			// Same rule as configKeys() above: one node whose metadata throws
+			// cannot be allowed to make the instance unsavable.
+			$this->logger->warning(
+				message: '[FlowNodePreflight] A node\'s configForm() failed, ignoring it for the dialect check: '
+					. $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'node' => get_class($node)]
+			);
+			return [];
+		}
+
+		$keys = [];
+		foreach ((array)$fields as $field) {
+			$key = trim((string)(((array)$field)['key'] ?? ''));
+			if ($key === '') {
+				continue;
+			}
+
+			$keys[] = $key;
+		}
+
+		return $keys;
+	}//end formKeys()
 
 	/**
 	 * Split a step's config keys into the ones nothing will read.
