@@ -45,131 +45,19 @@ use Psr\Log\LoggerInterface;
  * @version  1.0.0
  */
 class FileValidationHandler {
-
-	/**
-	 * Leading byte signatures of container formats that are unambiguously binary.
-	 *
-	 * A positive match here means the payload is a real image / audio / video /
-	 * archive / document container, so a `<?php` or `<?=` byte pair found inside
-	 * its compressed body is noise, not source code. Used ONLY to scope the
-	 * embedded-PHP-tag scan in {@see detectExecutableMagicBytes()}; every other
-	 * check in this class still runs on these files.
-	 *
-	 * This is a WHITELIST on purpose: anything that does not positively identify
-	 * as one of these formats keeps the full, unchanged scan.
-	 *
-	 * @var array<string, string>
-	 */
-	private const BINARY_CONTENT_SIGNATURES = [
-		// Images.
-		"\x89PNG\r\n\x1A\n" => 'image/png',
-		"\xFF\xD8\xFF" => 'image/jpeg',
-		'GIF87a' => 'image/gif',
-		'GIF89a' => 'image/gif',
-		"II*\x00" => 'image/tiff',
-		"MM\x00*" => 'image/tiff',
-		"\x00\x00\x01\x00" => 'image/vnd.microsoft.icon',
-		'8BPS' => 'image/vnd.adobe.photoshop',
-		// RIFF containers: webp, wav, avi.
-		'RIFF' => 'application/x-riff',
-		// Documents.
-		'%PDF-' => 'application/pdf',
-		"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1" => 'application/x-ole-storage',
-		// Archives and zip-based office formats (docx/xlsx/pptx/odt).
-		"PK\x03\x04" => 'application/zip',
-		"PK\x05\x06" => 'application/zip',
-		"PK\x07\x08" => 'application/zip',
-		"\x1F\x8B" => 'application/gzip',
-		'BZh' => 'application/x-bzip2',
-		"\xFD7zXZ\x00" => 'application/x-xz',
-		"7z\xBC\xAF\x27\x1C" => 'application/x-7z-compressed',
-		"Rar!\x1A\x07" => 'application/vnd.rar',
-		// Audio and video.
-		'ID3' => 'audio/mpeg',
-		'OggS' => 'application/ogg',
-		'fLaC' => 'audio/flac',
-		"\x1A\x45\xDF\xA3" => 'video/x-matroska',
-		"FLV\x01" => 'video/x-flv',
-		// Data.
-		"SQLite format 3\x00" => 'application/vnd.sqlite3',
-	];
-
-	/**
-	 * Filename extensions that are ALWAYS scanned for embedded PHP tags.
-	 *
-	 * These are the extensions under which a server or a browser may hand the
-	 * bytes to an interpreter or a markup parser, so a PHP tag inside them is
-	 * meaningful regardless of what the leading bytes look like. A polyglot that
-	 * opens with PNG magic but is named `x.html` still gets the full scan.
-	 *
-	 * @var array<string>
-	 */
-	private const ALWAYS_SCANNED_EXTENSIONS = [
-		'txt',
-		'text',
-		'log',
-		'md',
-		'markdown',
-		'csv',
-		'tsv',
-		'htm',
-		'html',
-		'xhtml',
-		'shtml',
-		'xml',
-		'xsl',
-		'xslt',
-		'svg',
-		'svgz',
-		'json',
-		'yaml',
-		'yml',
-		'ini',
-		'conf',
-		'cfg',
-		'env',
-		'htaccess',
-		'htpasswd',
-		'tpl',
-		'twig',
-		'twig.html',
-		'mustache',
-		'hbs',
-		'ejs',
-		'erb',
-		'jsp',
-		'asp',
-		'aspx',
-		'cshtml',
-		'css',
-		'scss',
-		'less',
-		'sql',
-		'sh',
-		'bash',
-		'php',
-		'phtml',
-		'php3',
-		'php4',
-		'php5',
-		'phps',
-		'phar',
-		'inc',
-		'module',
-		'install',
-	];
-
 	/**
 	 * Constructor for FileValidationHandler.
 	 *
 	 * @param FileMapper $fileMapper File mapper for ownership operations.
 	 * @param IUserSession $userSession User session for user context.
 	 * @param LoggerInterface $logger Logger for logging operations.
+	 * @param ExecutableContentDetector $executableDetector Shared executable-content detection.
 	 */
 	public function __construct(
 		private readonly FileMapper $fileMapper,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
+		private readonly ExecutableContentDetector $executableDetector = new ExecutableContentDetector(),
 	) {
 	}//end __construct()
 
@@ -294,6 +182,12 @@ class FileValidationHandler {
 	 * Magic bytes are signatures at the start of files that identify the file type.
 	 * This provides defense-in-depth against renamed executables.
 	 *
+	 * The three checks themselves live in {@see ExecutableContentDetector}, the
+	 * single source of truth shared with
+	 * {@see \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler}.
+	 * This method owns only the caller-facing message shapes and the logging,
+	 * which differ between the two call sites and are asserted on by tests.
+	 *
 	 * @param string $content The file content to check.
 	 * @param string $fileName The filename for error messages.
 	 *
@@ -307,62 +201,33 @@ class FileValidationHandler {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function detectExecutableMagicBytes(string $content, string $fileName): void {
-		// Common executable magic bytes.
-		$magicBytes = [
-			'MZ' => 'Windows executable (PE/EXE)',
-			"\x7FELF" => 'Linux/Unix executable (ELF)',
-			'#!/bin/sh' => 'Shell script',
-			'#!/bin/bash' => 'Bash script',
-			'#!/usr/bin/env' => 'Script with env shebang',
-			'<?php' => 'PHP script',
-			"\xCA\xFE\xBA\xBE" => 'Java class file',
-		];
+		// Offset-0 executable signatures — universal, every upload.
+		$description = $this->executableDetector->matchExecutableSignature(content: $content);
+		if ($description !== null) {
+			$this->logger->warning(
+				message: '[FileValidationHandler] Executable magic bytes detected',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'app' => 'openregister',
+					'filename' => $fileName,
+					'type' => $description,
+				]
+			);
 
-		foreach ($magicBytes as $signature => $description) {
-			if (strpos($content, $signature) === 0) {
-				$this->logger->warning(
-					message: '[FileValidationHandler] Executable magic bytes detected',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'app' => 'openregister',
-						'filename' => $fileName,
-						'type' => $description,
-					]
-				);
-
-				$execMsg = "File '$fileName' contains executable code ($description). ";
-				throw new Exception($execMsg . 'Executable files are blocked for security.');
-			}
+			$execMsg = "File '$fileName' contains executable code ($description). ";
+			throw new Exception($execMsg . 'Executable files are blocked for security.');
 		}
 
-		// Check for script shebangs anywhere in first 4 lines.
-		$firstLines = substr($content, 0, 1024);
-		if (preg_match('/^#!.*\/(sh|bash|zsh|ksh|csh|python|perl|ruby|php|node)/m', $firstLines) === 1) {
+		// Script shebangs — universal, every upload.
+		if ($this->executableDetector->hasScriptShebang(content: $content) === true) {
 			throw new Exception(
 				"File '$fileName' contains script shebang. Script files are blocked for security reasons."
 			);
 		}
 
-		// Check for embedded PHP tags — TEXT-ISH PAYLOADS ONLY.
-		//
-		// openregister#2776: this scan used to run over the first kilobyte of
-		// EVERY upload, including compressed binary bodies where a `<?` byte pair
-		// carries no meaning. A genuine 1283x926 PNG screenshot was rejected as
-		// "contains PHP code" because its deflate stream happened to contain
-		// `<?=`, and the hard 400 took 284 storable files down with it.
-		//
-		// The scan is now skipped only when the payload POSITIVELY identifies as
-		// a known binary container by its leading bytes AND is not named with an
-		// extension a server or browser would hand to an interpreter. Everything
-		// else — plain text, HTML, XML/SVG, unknown byte streams — is scanned
-		// exactly as before, and every other check in this method is unchanged
-		// and still universal.
-		if ($this->shouldScanForEmbeddedPhp(content: $content, fileName: $fileName) === false) {
-			return;
-		}
-
-		if (preg_match('/<\?php|<\?=|<script\s+language\s*=\s*["\']php/i', $firstLines) === 1) {
+		// Embedded PHP tags — text-ish payloads only, see openregister#2776.
+		if ($this->executableDetector->containsEmbeddedPhpTag(content: $content, fileName: $fileName) === true) {
 			throw new Exception(
 				"File '$fileName' contains PHP code. PHP files are blocked for security reasons."
 			);
@@ -370,22 +235,10 @@ class FileValidationHandler {
 	}//end detectExecutableMagicBytes()
 
 	/**
-	 * Decide whether the embedded-PHP-tag scan applies to this payload.
+	 * Whether the embedded-PHP-tag scan applies to this payload.
 	 *
-	 * Returns false ONLY when both of the following hold:
-	 *  1. the content's leading bytes positively match a known binary container
-	 *     signature ({@see BINARY_CONTENT_SIGNATURES}) — an image, audio, video,
-	 *     archive or binary document format whose body is compressed or encoded,
-	 *     so an embedded `<?` byte pair is statistically expected noise; and
-	 *  2. the filename does NOT carry an extension under which a server or a
-	 *     browser would hand the bytes to an interpreter or a markup parser
-	 *     ({@see ALWAYS_SCANNED_EXTENSIONS}).
-	 *
-	 * Both conditions are required so that a polyglot — PNG magic bytes followed
-	 * by PHP source, saved as `payload.html` or `payload.phtml` — is still
-	 * scanned. Note that such a file is already rejected earlier by
-	 * {@see blockExecutableFile()}'s extension blocklist; this is defence in
-	 * depth, not the primary control.
+	 * Thin delegation to {@see ExecutableContentDetector::shouldScanForEmbeddedPhp()},
+	 * kept on this class because it is part of the handler's published surface.
 	 *
 	 * @param string $content The file content whose leading bytes are sniffed.
 	 * @param string $fileName The filename, used for its extension only.
@@ -398,28 +251,17 @@ class FileValidationHandler {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function shouldScanForEmbeddedPhp(string $content, string $fileName): bool {
-		if ($this->sniffBinaryContentType(content: $content) === null) {
-			// Not a recognised binary container — scan, as before.
-			return true;
-		}
-
-		return $this->hasAlwaysScannedExtension(fileName: $fileName);
+		return $this->executableDetector->shouldScanForEmbeddedPhp(content: $content, fileName: $fileName);
 	}//end shouldScanForEmbeddedPhp()
 
 	/**
 	 * Sniff the content's leading bytes against the known binary container list.
 	 *
-	 * ISO base media files (mp4/mov/m4a/heic) are special-cased because their
-	 * `ftyp` box marker sits at offset 4, not offset 0.
-	 *
-	 * The declared MIME type from the request is deliberately NOT consulted: it
-	 * is client-supplied and would let a caller opt out of the scan by lying.
-	 * Only the bytes decide.
+	 * Thin delegation to {@see ExecutableContentDetector::sniffBinaryContentType()}.
 	 *
 	 * @param string $content The file content to sniff.
 	 *
-	 * @return string|null The matched container MIME type, or null when the
-	 *                     content is not a recognised binary container.
+	 * @return string|null The matched container MIME type, or null.
 	 *
 	 * @psalm-return   string|null
 	 * @phpstan-return string|null
@@ -427,27 +269,13 @@ class FileValidationHandler {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function sniffBinaryContentType(string $content): ?string {
-		if ($content === '') {
-			return null;
-		}
-
-		foreach (self::BINARY_CONTENT_SIGNATURES as $signature => $mimeType) {
-			if (str_starts_with($content, (string)$signature) === true) {
-				return $mimeType;
-			}
-		}
-
-		// ISO base media file format (mp4, m4a, mov, 3gp, heic): 4-byte box
-		// length, then the literal 'ftyp' brand marker at offset 4.
-		if (strlen($content) >= 12 && substr($content, 4, 4) === 'ftyp') {
-			return 'video/mp4';
-		}
-
-		return null;
+		return $this->executableDetector->sniffBinaryContentType(content: $content);
 	}//end sniffBinaryContentType()
 
 	/**
 	 * Check whether the filename carries an extension that is always scanned.
+	 *
+	 * Thin delegation to {@see ExecutableContentDetector::hasAlwaysScannedExtension()}.
 	 *
 	 * @param string $fileName The filename to inspect.
 	 *
@@ -459,14 +287,7 @@ class FileValidationHandler {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function hasAlwaysScannedExtension(string $fileName): bool {
-		$extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-
-		if ($extension === '') {
-			// A file with no extension at all is treated as text-ish and scanned.
-			return true;
-		}
-
-		return in_array($extension, self::ALWAYS_SCANNED_EXTENSIONS, true);
+		return $this->executableDetector->hasAlwaysScannedExtension(fileName: $fileName);
 	}//end hasAlwaysScannedExtension()
 
 	/**
