@@ -1680,6 +1680,38 @@ class ObjectService implements ObjectServiceInterface
         Register | string | int | null $register,
         Schema | string | int | null $schema
     ): void {
+        // A CALLER THAT NAMES BOTH CANNOT INHERIT A PENDING REF FROM ANYWHERE.
+        //
+        // `setRegister()` re-resolves `$currentSchemaRef` so the chain
+        // `setSchema($s)->setRegister($r)` still scopes. That ref is instance
+        // state, and ObjectService is reused for many operations in one process,
+        // so an operation that set a schema and never set a register leaves one
+        // behind. The NEXT caller's `setRegister()` then consumes it — and is
+        // refused with a slug it never asked for.
+        //
+        // #2792 made the ref single-use, which stops it being consumed twice. It
+        // does not stop it being consumed ONCE by the wrong operation, and that
+        // is the failure still live on `development`:
+        //
+        //   POST /apps/docudesk/api/templates
+        //   Failed to create template: Schema slug "application" is not carried
+        //   by register "docudesk" (id 19) …
+        //
+        // Docudesk asked for register 19 / schema 18 (`template`). `application`
+        // is openbuild's schema, from an unrelated earlier call on the same
+        // instance. Measured on buildiq E2E 2026-08-22 12:26 UTC, which is after
+        // #2792 landed at 11:09.
+        //
+        // When BOTH are supplied there is nothing to inherit: the caller has
+        // named the pair outright, so any pending ref is by definition stale.
+        // Dropping it here leaves the setSchema()/setRegister() order-independence
+        // intact for callers that genuinely use that chain, and keeps the register
+        // boundary exactly as strict — the schema below is still resolved inside
+        // the register named here.
+        if ($register !== null && $schema !== null) {
+            $this->clearPendingSchemaRef();
+        }
+
         // Set the current register context if provided.
         if ($register !== null) {
             $this->setRegister(register: $register);
@@ -1690,6 +1722,21 @@ class ObjectService implements ObjectServiceInterface
             $this->setSchema(schema: $schema);
         }
     }//end setContextFromParameters()
+
+    /**
+     * Drop a pending schema ref left behind by an earlier operation.
+     *
+     * Named rather than inlined so the one place that owns this state is
+     * greppable: `$currentSchemaRef` is written by setSchema(), consumed by
+     * setRegister(), and discarded here.
+     *
+     * @return void
+     */
+    private function clearPendingSchemaRef(): void
+    {
+        $this->currentSchemaRef = null;
+
+    }//end clearPendingSchemaRef()
 
     /**
      * Extract UUID and normalize object to array format.
