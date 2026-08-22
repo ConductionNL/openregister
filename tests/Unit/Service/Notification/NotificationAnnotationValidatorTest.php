@@ -935,4 +935,57 @@ class NotificationAnnotationValidatorTest extends TestCase {
 		);
 	}
 
+	// ---- app-defined trigger events (issue shillinq#1193) ----
+
+	private function appEventSchema($trigger): array {
+		return [
+			'x-openregister-notifications' => [
+				'someRule' => [
+					'trigger' => $trigger,
+					'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+					'channels' => ['nc-notification'],
+					'subject' => 'something happened',
+				],
+			],
+			'properties' => [],
+		];
+	}
+
+	public function testNamespacedStringTriggerIsAcceptedAsAnAppEvent(): void {
+		foreach (['booking.confirmed', 'generation.draft', 'booking.reminder-due'] as $event) {
+			$this->assertSame([], $this->v->validate($this->appEventSchema($event)), $event . ' should validate');
+		}
+	}
+
+	public function testObjectFormMayAlsoNameAnAppEvent(): void {
+		$this->assertSame([], $this->v->validate($this->appEventSchema(['event' => 'booking.cancelled'])));
+	}
+
+	public function testAppEventMustBeNamespaced(): void {
+		// Without the dot, an app event could collide with a trigger type added
+		// later — "onCreate" is exactly the near-miss that motivated the rule.
+		$codes = array_column($this->v->validate($this->appEventSchema('onCreate')), 'code');
+		$this->assertContains('notification-bad-app-event', $codes);
+	}
+
+	public function testAppEventMayNotBeAReservedTriggerType(): void {
+		$errors = $this->v->validate($this->appEventSchema('scheduled'));
+		$this->assertContains('notification-app-event-reserved', array_column($errors, 'code'));
+		$this->assertStringContainsString('{"type": "scheduled"}', implode(' ', array_column($errors, 'message')));
+	}
+
+	public function testAppEventMustBeLowercase(): void {
+		$codes = array_column($this->v->validate($this->appEventSchema('Booking.Confirmed')), 'code');
+		$this->assertContains('notification-bad-app-event', $codes);
+	}
+
+	public function testEmptyAppEventIsRejected(): void {
+		$codes = array_column($this->v->validate($this->appEventSchema('')), 'code');
+		$this->assertContains('notification-bad-app-event', $codes);
+	}
+
+	public function testReservedTriggerTypesStillValidateInObjectForm(): void {
+		$this->assertSame([], $this->v->validate($this->appEventSchema(['type' => 'created'])));
+	}
+
 }

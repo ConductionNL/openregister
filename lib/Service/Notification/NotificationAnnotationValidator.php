@@ -88,6 +88,78 @@ final class NotificationAnnotationValidator {
 	}//end __construct()
 
 	/**
+	 * Validate an app-defined trigger event name.
+	 *
+	 * An app event is namespaced and lowercase — `booking.confirmed`,
+	 * `generation.draft`. The dot is required so an app event can never
+	 * collide with a reserved trigger type, present or future: `created` is
+	 * always the engine's, `booking.created` is always the app's. Without that
+	 * rule, adding a trigger type later would silently capture somebody's
+	 * event.
+	 *
+	 * @param string $ruleKey The notification rule key, for diagnostics.
+	 * @param mixed  $event   The declared event name.
+	 *
+	 * @return array<int, array<string, mixed>> Errors, empty when the name is well-formed.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function validateAppEvent(string $ruleKey, $event): array {
+		if (is_string($event) === false || $event === '') {
+			return [
+				[
+					'code' => 'notification-bad-app-event',
+					'ruleKey' => $ruleKey,
+					'field' => 'trigger',
+					'value' => $event,
+					'message' => sprintf(
+						'Notification "%s" declares an app event that is not a non-empty string.',
+						$ruleKey
+					),
+				],
+			];
+		}
+
+		if (in_array($event, self::VALID_TRIGGERS, true) === true) {
+			return [
+				[
+					'code' => 'notification-app-event-reserved',
+					'ruleKey' => $ruleKey,
+					'field' => 'trigger',
+					'value' => $event,
+					'message' => sprintf(
+						'Notification "%s" names "%s" as an app event, but that is a reserved trigger type; '
+						. 'use the object form {"type": "%s"} instead.',
+						$ruleKey,
+						$event,
+						$event
+					),
+				],
+			];
+		}
+
+		if (preg_match('/^[a-z][a-z0-9-]*(\.[a-z0-9-]+)+$/', $event) !== 1) {
+			return [
+				[
+					'code' => 'notification-bad-app-event',
+					'ruleKey' => $ruleKey,
+					'field' => 'trigger',
+					'value' => $event,
+					'message' => sprintf(
+						'Notification "%s" app event "%s" must be lowercase and namespaced with a dot '
+						. '(e.g. "booking.confirmed"), so it can never collide with a reserved trigger type.',
+						$ruleKey,
+						$event
+					),
+				],
+			];
+		}
+
+		return [];
+
+	}//end validateAppEvent()
+
+	/**
 	 * Validate the `x-openregister-notifications` annotation.
 	 *
 	 * @param array<string, mixed> $schema Full schema (must include `properties`).
@@ -142,15 +214,27 @@ final class NotificationAnnotationValidator {
 
 			$trigger = ($spec['trigger'] ?? null);
 			$triggerType = '';
+			$appEvent = null;
 			if (is_array($trigger) === true) {
 				$triggerType = (string)($trigger['type'] ?? '');
+				if (isset($trigger['event']) === true) {
+					$appEvent = $trigger['event'];
+				}
+			} elseif (is_string($trigger) === true) {
+				// Bare-string shorthand for an app-defined event.
+				$appEvent = $trigger;
 			}
 
-			if (in_array($triggerType, self::VALID_TRIGGERS, true) === false) {
+			if ($appEvent !== null) {
+				foreach ($this->validateAppEvent(ruleKey: (string)$name, event: $appEvent) as $eventError) {
+					$errors[] = $eventError;
+				}
+			} elseif (in_array($triggerType, self::VALID_TRIGGERS, true) === false) {
 				$errors[] = [
 					'code' => 'notification-bad-trigger',
 					'message' => sprintf(
-						'Notification "%s" trigger.type must be one of [%s].',
+						'Notification "%s" trigger.type must be one of [%s], or the trigger must name an '
+						. 'app-defined event as a namespaced string (e.g. "booking.confirmed").',
 						$name,
 						implode(', ', self::VALID_TRIGGERS)
 					),
