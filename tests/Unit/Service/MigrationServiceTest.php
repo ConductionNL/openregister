@@ -39,10 +39,11 @@ class MigrationServiceTest extends TestCase {
 		);
 	}
 
-	private function createRegister(int $id): Register {
+	private function createRegister(int $id, array $schemaIds = [2]): Register {
 		$register = new Register();
 		$register->setTitle('TestRegister');
 		$register->setSlug('test-register');
+		$register->setSchemas($schemaIds);
 		$ref = new \ReflectionClass($register);
 		$prop = $ref->getProperty('id');
 		$prop->setAccessible(true);
@@ -66,7 +67,11 @@ class MigrationServiceTest extends TestCase {
 		$schema = $this->createSchema(2);
 
 		$this->registerMapper->method('find')->willReturn($register);
-		$this->schemaMapper->method('find')->willReturn($schema);
+		// The schema is resolved WITHIN the register now (findInIds), never by the
+		// instance-wide find() — a `{register}/{schema}` pair whose schema lives in
+		// another register used to report on, and migrate, the wrong table.
+		$this->schemaMapper->method('findInIds')->willReturn($schema);
+		$this->schemaMapper->expects($this->never())->method('find');
 
 		$result = $this->service->resolveRegisterAndSchema(1, 2);
 
@@ -79,7 +84,11 @@ class MigrationServiceTest extends TestCase {
 		$schema = $this->createSchema(2);
 
 		$this->registerMapper->method('find')->willReturn($register);
-		$this->schemaMapper->method('find')->willReturn($schema);
+		// The schema is resolved WITHIN the register now (findInIds), never by the
+		// instance-wide find() — a `{register}/{schema}` pair whose schema lives in
+		// another register used to report on, and migrate, the wrong table.
+		$this->schemaMapper->method('findInIds')->willReturn($schema);
+		$this->schemaMapper->expects($this->never())->method('find');
 
 		$result = $this->service->resolveRegisterAndSchema('test-register', 'test-schema');
 

@@ -167,8 +167,21 @@ class AggregationRunnerTest extends TestCase {
 	 *
 	 * @spec openspec/changes/aggregation-runner-multitenancy-policy/specs/auth-system/spec.md
 	 */
-	public function testLoadRegisterPassesMultitenancyFalseToTheMapper(): void {
-		$register = $this->createMock(Register::class);
+	public function testRegisterLoadPassesMultitenancyFalse(): void {
+		// The standalone `loadRegister()` is gone — the register is now loaded as
+		// part of the register-scoped (register, schema) pair resolution, because
+		// resolving a register WITHOUT then bounding a schema by it is the shape
+		// that let the aggregation endpoints serve another app's rows. The
+		// metadata-read bypass it documented is unchanged and is asserted here at
+		// its new home.
+		$register = new Register();
+		$register->setId(12);
+		$register->setSlug('zaken');
+		$register->setSchemas([7]);
+
+		$schema = new Schema();
+		$schema->setId(7);
+		$schema->setSlug('zaak');
 
 		$this->registerMapper->expects($this->once())
 			->method('find')
@@ -179,12 +192,20 @@ class AggregationRunnerTest extends TestCase {
 			)
 			->willReturn($register);
 
+		$this->schemaMapper->expects($this->once())
+			->method('findInIds')
+			->with('zaak', [7])
+			->willReturn($schema);
+		// The global resolver must not run once a register is named.
+		$this->schemaMapper->expects($this->never())->method('find');
+
 		$runner = $this->makeRunner();
-		$result = $this->privateMethod($runner, 'loadRegister')->invoke($runner, 'zaken');
+		$result = $this->privateMethod($runner, 'loadSchemaInRegister')->invoke($runner, 'zaak', 'zaken');
 
-		$this->assertSame($register, $result, 'loadRegister MUST return the register the mapper resolves');
+		$this->assertSame($register, $result['register'], 'the register the mapper resolves MUST be returned');
+		$this->assertSame($schema, $result['schema'], 'the schema MUST come from the register-scoped lookup');
 
-	}//end testLoadRegisterPassesMultitenancyFalseToTheMapper()
+	}//end testRegisterLoadPassesMultitenancyFalse()
 
 	/**
 	 * Locks the 404-rethrow path: when the mapper raises DoesNotExistException
