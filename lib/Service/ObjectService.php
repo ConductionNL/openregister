@@ -731,6 +731,27 @@ class ObjectService implements ObjectServiceInterface
         $previousRegister = $this->currentRegister;
         $previousSchema   = $this->currentSchema;
 
+        // ...AND THE PENDING REF, WHICH IS THE OTHER HALF OF THAT ISOLATION.
+        //
+        // `setSchema()` remembers its RAW ref so a later `setRegister()` can
+        // re-resolve it inside the register the caller names — that is what
+        // makes the two setters order-independent. But the ref is instance
+        // state on a SHARED service, and the very next thing this method does
+        // is call `setRegister()`. A ref left behind by an unrelated earlier
+        // caller therefore gets re-resolved inside THIS call's register, and
+        // the call dies on a schema it never mentioned.
+        //
+        // Measured on the dev instance: every `openconnector` object read
+        // failed with `Schema slug "application" is not carried by register
+        // "openconnector"` while the caller had asked for `synchronization`.
+        // The name in that error belonged to a previous caller.
+        //
+        // The `finally` below already clears this on the way OUT. Clearing it
+        // on the way IN is the same rule applied at the other end: find()
+        // supplies its own scope through its arguments and must never inherit
+        // a pending one.
+        $this->currentSchemaRef = null;
+
         try {
             $callRegister = null;
             $callSchema   = null;
