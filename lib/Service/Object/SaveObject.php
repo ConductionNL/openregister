@@ -4792,7 +4792,14 @@ class SaveObject {
 		$status ??= new BatchOperationStatus();
 		$status->start();
 
+		// Position in the submitted batch. A failed create has no UUID yet, so
+		// this is the only thing that lets a caller identify the row it lost
+		// (issue #2778). Counted rather than read from the key because $rows is
+		// an iterable and may be a generator.
+		$rowIndex = -1;
+
 		foreach ($rows as $row) {
+			$rowIndex++;
 			$cacheBefore = count($this->referenceValidationCache);
 
 			try {
@@ -4872,7 +4879,8 @@ class SaveObject {
 				$status->recordFailed(
 					uuid: $rowUuid,
 					message: $e->getMessage(),
-					exceptionClass: $e::class
+					exceptionClass: $e::class,
+					index: $rowIndex
 				);
 
 				$this->logger->warning(
@@ -4881,6 +4889,7 @@ class SaveObject {
 						'file' => __FILE__,
 						'line' => __LINE__,
 						'uuid' => $rowUuid,
+						'index' => $rowIndex,
 						'error' => $e->getMessage(),
 					]
 				);
