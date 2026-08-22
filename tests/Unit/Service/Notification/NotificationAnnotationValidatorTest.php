@@ -974,7 +974,15 @@ class NotificationAnnotationValidatorTest extends TestCase {
 		$this->assertStringContainsString('{"type": "scheduled"}', implode(' ', array_column($errors, 'message')));
 	}
 
-	public function testAppEventMustBeLowercase(): void {
+	public function testAppEventMayUseCamelCaseSegments(): void {
+		// The dot is the safety property, not the casing. `lifecycle.optIn` is
+		// as collision-proof as `lifecycle.opt-in`, and rejecting it would be
+		// style-policing dressed up as a rule.
+		$this->assertSame([], $this->v->validate($this->appEventSchema('lifecycle.optIn')));
+		$this->assertSame([], $this->v->validate($this->appEventSchema('lifecycle.warnThreshold')));
+	}
+
+	public function testAppEventMustStartLowercase(): void {
 		$codes = array_column($this->v->validate($this->appEventSchema('Booking.Confirmed')), 'code');
 		$this->assertContains('notification-bad-app-event', $codes);
 	}

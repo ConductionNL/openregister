@@ -90,8 +90,10 @@ final class NotificationAnnotationValidator {
 	/**
 	 * Validate an app-defined trigger event name.
 	 *
-	 * An app event is namespaced and lowercase — `booking.confirmed`,
-	 * `generation.draft`. The dot is required so an app event can never
+	 * An app event is namespaced with a dot — `booking.confirmed`,
+	 * `generation.draft`, `lifecycle.optIn`. The dot is the whole safeguard, and
+	 * the only part of the name this rule polices: it is required so an app event
+	 * can never
 	 * collide with a reserved trigger type, present or future: `created` is
 	 * always the engine's, `booking.created` is always the app's. Without that
 	 * rule, adding a trigger type later would silently capture somebody's
@@ -138,7 +140,7 @@ final class NotificationAnnotationValidator {
 			];
 		}
 
-		if (preg_match('/^[a-z][a-z0-9-]*(\.[a-z0-9-]+)+$/', $event) !== 1) {
+		if (preg_match('/^[a-z][A-Za-z0-9-]*(\.[A-Za-z0-9-]+)+$/', $event) !== 1) {
 			return [
 				[
 					'code' => 'notification-bad-app-event',
@@ -146,8 +148,9 @@ final class NotificationAnnotationValidator {
 					'field' => 'trigger',
 					'value' => $event,
 					'message' => sprintf(
-						'Notification "%s" app event "%s" must be lowercase and namespaced with a dot '
-						. '(e.g. "booking.confirmed"), so it can never collide with a reserved trigger type.',
+						'Notification "%s" app event "%s" must be namespaced with a dot and start lowercase '
+						. '(e.g. "booking.confirmed", "lifecycle.optIn"), so it can never collide with a '
+						. 'reserved trigger type.',
 						$ruleKey,
 						$event
 					),
