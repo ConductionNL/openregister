@@ -440,19 +440,22 @@ class SearchQueryHandler {
 						$searchTerms = implode(' ', $viewQuery['searchTerms']);
 					}
 
-					// Merge with the caller's existing search if there is one,
-					// otherwise take the view's terms as-is.
+					// Merge with existing search if present.
 					//
-					// This used to assign $query['_search'] = $searchTerms BEFORE
-					// the isset()/empty() test, which then always passed and
-					// appended the same terms a second time — a view search for
-					// "foo" was sent to the backend as "foo foo".
-					$existingSearch = '';
-					if (empty($query['_search']) === false) {
-						$existingSearch = $query['_search'] . ' ';
+					// This previously assigned $query['_search'] FIRST and then
+					// appended $searchTerms to it, so the isset() guard could only
+					// ever see the value just written. Two things went wrong: the
+					// caller's own `_search` was discarded (the merge this comment
+					// describes never happened), and the view's terms were appended
+					// to themselves, producing "foo foo". Mirrors the `schemas`
+					// merge above: read what is there, then combine.
+					$existingSearch = ($query['_search'] ?? '');
+					$searchPrefix = '';
+					if (is_string($existingSearch) === true && $existingSearch !== '') {
+						$searchPrefix = $existingSearch . ' ';
 					}
 
-					$query['_search'] = $existingSearch . $searchTerms;
+					$query['_search'] = $searchPrefix . $searchTerms;
 				}//end if
 
 				$this->logger->debug(

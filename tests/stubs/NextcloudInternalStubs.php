@@ -199,11 +199,13 @@ if (class_exists(\OC::class) === false) {
             public function getServerProtocol(): string { return "HTTP/1.1"; }
             public function getServerHost(): string { return "localhost"; }
             public function getInsecureServerHost(): string { return "localhost"; }
-            // Added to OCP\IRequest in Nextcloud 34. Without them the anonymous
-            // class is abstract and instantiating it is a FATAL that aborts the
-            // whole unit run partway through, which reads as a hang rather than
-            // as a failing test.
-            public function throwDecodingExceptionIfAny(): void { }
+            // Added in newer OCP (present in v34). A double that is MISSING an
+            // interface method is a FATAL -- PHP refuses to declare the class and
+            // the suite dies mid-run rather than reporting a failed assertion --
+            // whereas a double carrying a method an older OCP does not declare is
+            // simply an extra method. So these are safe on every version in the
+            // matrix, and their absence was not.
+            public function throwDecodingExceptionIfAny(): void {}
             public function getFormat(): ?string { return null; }
         };
         return $req;

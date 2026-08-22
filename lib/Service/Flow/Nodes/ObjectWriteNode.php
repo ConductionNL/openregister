@@ -423,6 +423,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			'schema',
 			'operation',
 			'fields',
+			'payloadFrom',
 			'match',
 			'replace',
 			'bulk',
@@ -488,6 +489,17 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 					'One of: create, update, upsert, delete. Update, upsert and delete need at least one match pair.'
 				),
 				'required' => true,
+			],
+			[
+				'key' => 'payloadFrom',
+				'label' => $this->l10n->t('Write object at path'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'Write the object found at this path WHOLE, instead of listing properties in "fields". '
+					. 'Use it when the properties are not known up front — a synchronization with no mapping, '
+					. 'for example. Configure this or "fields", never both.'
+				),
+				'required' => false,
 			],
 			[
 				'key' => 'bulk',
@@ -889,6 +901,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		$out = [];
 
 		$skipWhen = trim((string)($config['skipWhen'] ?? ''));
+		$payloadFrom = trim((string)($config['payloadFrom'] ?? ''));
 
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
@@ -921,7 +934,12 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 				continue;
 			}
 
-			$payload = $this->buildPayload(fields: $fields, json: $json, onMissing: $onMissing);
+			$payload = $this->buildPayload(
+				fields: $fields,
+				json: $json,
+				onMissing: $onMissing,
+				payloadFrom: $payloadFrom
+			);
 			$matched = null;
 			if ($operation !== self::OP_CREATE) {
 				$matched = $this->findMatch(pairs: $pairs, json: $json, register: $register, schema: $schema, owner: $owner);
@@ -1807,12 +1825,46 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @param array $fields The configured mapping.
 	 * @param array $json The item's record.
 	 * @param string $onMissing What an unresolvable value means.
+	 * @param string|null $payloadFrom Path whose resolved object IS the payload, when the
+	 *                                 properties are not known up front. Alternative to `$fields`.
 	 *
 	 * @return array The payload to write.
 	 *
 	 * @throws RuntimeException When a value is unresolvable and `onMissing` is `fail`.
 	 */
-	private function buildPayload(array $fields, array $json, string $onMissing): array {
+	private function buildPayload(
+		array $fields,
+		array $json,
+		string $onMissing,
+		?string $payloadFrom = null
+	): array {
+		// WRITING AN ITEM WHOLE. `fields` enumerates the properties to write, which
+		// requires knowing them up front — a synchronization with no mapping has no
+		// such list, and that single gap refused 98 of 99 unmigratable
+		// synchronizations measured on the dev instance. `payloadFrom` names a path
+		// whose resolved value IS the payload.
+		//
+		// An unresolvable path THROWS regardless of `onMissing`, deliberately.
+		// `onMissing: omit` is a per-field rule — it drops one property and writes
+		// the rest. There is no "rest" here: omitting a whole payload would write a
+		// BLANK object, which is the same hazard the field loop's own comment warns
+		// about, one level up.
+		if ($payloadFrom !== null && trim($payloadFrom) !== '') {
+			$found = $this->lookupPath(path: trim($payloadFrom), json: $json);
+
+			if ($found['found'] === false || is_array($found['value']) === false) {
+				throw new RuntimeException(
+					$this->l10n->t(
+						'"payloadFrom" path "%s" did not resolve to an object on this item, so there is '
+						. 'nothing to write. Writing an empty object instead would create a blank record.',
+						[trim($payloadFrom)]
+					)
+				);
+			}
+
+			return $found['value'];
+		}
+
 		$payload = [];
 
 		foreach ($fields as $key => $value) {
@@ -1925,6 +1977,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		// note in writeItems(): dropping it is what makes a later sweep
 		// delete it.
 		$skipWhen = trim((string)($config['skipWhen'] ?? ''));
+		$payloadFrom = trim((string)($config['payloadFrom'] ?? ''));
 
 		$rows = [];
 		$ids = [];
@@ -1936,7 +1989,12 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 				continue;
 			}
 
-			$payload = $this->buildPayload(fields: $fields, json: $json, onMissing: $onMissing);
+			$payload = $this->buildPayload(
+				fields: $fields,
+				json: $json,
+				onMissing: $onMissing,
+				payloadFrom: $payloadFrom
+			);
 			$id = $this->bulkRowId(operation: $operation, pairs: $pairs, json: $json);
 			$payload['id'] = $id;
 			$rows[] = $payload;
@@ -2169,9 +2227,28 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			);
 		}
 
-		if ((array)($config['fields'] ?? []) === []) {
+		$hasFields = ((array)($config['fields'] ?? []) !== []);
+		$hasPayloadFrom = (trim((string)($config['payloadFrom'] ?? '')) !== '');
+
+		// The two are alternatives, not layers: `fields` enumerates properties,
+		// `payloadFrom` writes an object whole. Accepting both would leave the
+		// author unable to tell which one produced the record that was written.
+		if ($hasFields === true && $hasPayloadFrom === true) {
 			throw new UnexpectedValueException(
-				$this->l10n->t('An object-write step with operation "%s" needs at least one field to write.', [$operation])
+				$this->l10n->t(
+					'"fields" and "payloadFrom" are alternatives: "fields" lists the properties to write, '
+					. '"payloadFrom" writes the object at a path whole. Configure one, not both.'
+				)
+			);
+		}
+
+		if ($hasFields === false && $hasPayloadFrom === false) {
+			throw new UnexpectedValueException(
+				$this->l10n->t(
+					'An object-write step with operation "%s" needs either at least one field to write, '
+					. 'or a "payloadFrom" path naming the object to write whole.',
+					[$operation]
+				)
 			);
 		}
 
@@ -2198,6 +2275,15 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		if (array_key_exists('fields', $config) === true) {
 			throw new UnexpectedValueException(
 				$this->l10n->t('"fields" has no meaning for a delete step.')
+			);
+		}
+
+		// Same reasoning as `fields`: a delete names WHICH object goes, never what
+		// to write into it. Accepting the key would let an author believe the
+		// payload mattered.
+		if (array_key_exists('payloadFrom', $config) === true) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('"payloadFrom" has no meaning for a delete step.')
 			);
 		}
 

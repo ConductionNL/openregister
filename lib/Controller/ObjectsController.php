@@ -932,6 +932,12 @@ class ObjectsController extends Controller {
 		// No `?? true` fallback: this method sets $query['_rbac'] unconditionally
 		// a few lines above, so the key is always present here.
 		$renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+		// No `?? true` on THIS path: `_rbac` is assigned unconditionally above and
+		// the unset() in between does not remove it, so the fallback was dead --
+		// and had it ever fired it would have forced the RBAC strip on exactly the
+		// admin case the comment above says is false. The sibling call further down
+		// keeps its `??` because there `$query` comes straight from
+		// buildSearchQuery() with no `_rbac` assignment.
 		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac']);
 
 		// Serialize results.

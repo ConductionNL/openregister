@@ -220,6 +220,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\EncryptFieldCommand</command>
 		<command>OCA\OpenRegister\Command\DedupeRegistersCommand</command>
 		<command>OCA\OpenRegister\Command\RelinkRegisterSchemasCommand</command>
+		<command>OCA\OpenRegister\Command\DedupeSharedSchemasCommand</command>
 		<command>OCA\OpenRegister\Command\ReconcileMagicTablesCommand</command>
 		<command>OCA\OpenRegister\Command\DedupeConfigurationsCommand</command>
 		<command>OCA\OpenRegister\Command\ResolverListCommand</command>

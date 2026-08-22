@@ -45,6 +45,23 @@ parameters:
         - vendor-bin
 
     ignoreErrors:
+        # FilesSidebarListener guards on an OPTIONAL app's event class.
+        #
+        # The listener is registered for 'OCA\Files\Event\LoadAdditionalScriptsEvent'
+        # (AppInfo/Application.php) and re-checks the class by NAME so OpenRegister
+        # carries no hard dependency on the Files app. That class ships with Files,
+        # not with nextcloud/ocp, so the analyser cannot resolve it: it types
+        # get_class($event) as class-string<Event>, decides the comparison can never
+        # match, and concludes the early return always fires — making the body dead.
+        # It is not dead at runtime, where Files is installed and dispatches it.
+        #
+        # Surfaced by hydra-gates v1.8.2's `treatPhpDocTypesAsCertain: false`.
+        # Deleting the "unreachable" body would remove the sidebar; narrowing with
+        # instanceof would reintroduce the hard dependency the string check avoids.
+        -
+            message: '#Unreachable statement - code above always terminates#'
+            path: lib/Listener/FilesSidebarListener.php
+
         # ConductionNL/sapp fork uses lowercase pseudo-classes `obj` /
         # `value` / `pdfentry` / `buffer` / `bytes` etc. in `@return`
         # PHPDocs (upstream typo — fictitious classes that PHPStan can't

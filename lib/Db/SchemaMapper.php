@@ -616,6 +616,96 @@ class SchemaMapper extends QBMapper {
 		return $this->resolveSchemaExtension(schema: Schema::fromRow($row));
 	}//end findBySlugInIds()
 
+
+	/**
+	 * Resolve a schema identifier (numeric id, uuid, or slug) within a set of schema ids.
+	 *
+	 * The register-scoped counterpart of {@see find()}: it matches the SAME
+	 * identifier forms with the SAME case-insensitive slug semantics and the SAME
+	 * tie-break ordering, but only among the given ids — a register's `schemas`
+	 * list. {@see findBySlugInIds()} scopes slugs only; this method exists so the
+	 * boundary a caller names holds for EVERY identifier form: a numeric id or a
+	 * uuid the register does not carry must not resolve merely because a schema
+	 * with that id exists elsewhere on the instance.
+	 *
+	 * @param string|int $id        The identifier — numeric id, uuid, or slug (slug matched case-insensitively).
+	 * @param array      $schemaIds The candidate schema ids (a register's schemas list).
+	 *
+	 * @return Schema|null The matching schema within the id set, or null when none matches.
+	 *
+	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
+	 */
+	public function findInIds(string|int $id, array $schemaIds): ?Schema {
+		// Normalise to a list of positive integers; an empty set can never match.
+		$ids = [];
+		foreach ($schemaIds as $candidate) {
+			if (is_numeric($candidate) === true && (int)$candidate > 0) {
+				$ids[] = (int)$candidate;
+			}
+		}
+
+		if ($ids === []) {
+			return null;
+		}
+
+		$this->traceRead(method: 'findInIds');
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_schemas');
+
+		// Same identifier forms as find(): uuid, case-insensitive slug, and —
+		// only when numeric (PostgreSQL strict typing) — the primary key id.
+		$orConditions = $qb->expr()->orX(
+			$qb->expr()->eq('uuid', $qb->createNamedParameter(value: (string)$id, type: IQueryBuilder::PARAM_STR)),
+			$qb->expr()->eq(
+				$qb->func()->lower('slug'),
+				$qb->createNamedParameter(value: strtolower((string)$id), type: IQueryBuilder::PARAM_STR)
+			)
+		);
+
+		$idParam = null;
+		if (is_numeric($id) === true) {
+			$idParam = $qb->createNamedParameter(value: (int)$id, type: IQueryBuilder::PARAM_INT);
+			$orConditions->add(
+				$qb->expr()->eq('id', $idParam)
+			);
+		}
+
+		$qb->where($orConditions)
+			->andWhere(
+				$qb->expr()->in('id', $qb->createNamedParameter(value: $ids, type: IQueryBuilder::PARAM_INT_ARRAY))
+			);
+
+		// Same tie-breaks as find(): an exact primary-key hit first, then rows an
+		// app owns over unattributed leftovers, then the lowest id.
+		if ($idParam !== null) {
+			$qb->addOrderBy(
+				$qb->createFunction(
+					'CASE WHEN id = ' . $idParam . ' THEN 0 ELSE 1 END'
+				),
+				'ASC'
+			);
+		}
+
+		$qb->addOrderBy(
+			$qb->createFunction("CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END"),
+			'ASC'
+		);
+		$qb->addOrderBy('id', 'ASC');
+		$qb->setMaxResults(1);
+
+		$result = $qb->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+
+		if ($row === false) {
+			return null;
+		}
+
+		return $this->resolveSchemaExtension(schema: Schema::fromRow($row));
+	}//end findInIds()
+
 	/**
 	 * Count how many schemas on the instance carry a slug.
 	 *
