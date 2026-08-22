@@ -152,7 +152,7 @@ class MappingMapper extends QBMapper {
 	 *
 	 * @return Mapping[]
 	 *
-	 * @psalm-return list<OCA\OpenRegister\Db\Mapping>
+	 * @psalm-return list<\OCA\OpenRegister\Db\Mapping>
 	 */
 	public function findAll(?int $limit = null, ?int $offset = null): array {
 		// Step 1: Get query builder instance.

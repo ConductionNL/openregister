@@ -340,10 +340,8 @@ class QualityStatisticsService {
 			return [];
 		}
 
-		if ($entity instanceof Schema === false) {
-			return [];
-		}
-
+		// No instanceof re-check: the lookup above is declared to return Schema
+		// and throws otherwise, which the catch already handles.
 		$config = ($entity->getConfiguration() ?? []);
 		$annotation = ($config['x-openregister-quality'] ?? null);
 		if (is_array($annotation) === true) {

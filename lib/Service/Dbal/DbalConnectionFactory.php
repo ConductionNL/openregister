@@ -219,7 +219,7 @@ class DbalConnectionFactory {
 			'user' => (string)($config['user'] ?? ''),
 		];
 
-		if (isset($config['port']) === true && $config['port'] !== null && $config['port'] !== '') {
+		if (isset($config['port']) === true && $config['port'] !== '') {
 			$params['port'] = (int)$config['port'];
 		}
 

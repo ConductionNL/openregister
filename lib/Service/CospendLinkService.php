@@ -495,7 +495,7 @@ class CospendLinkService {
 			if ($projectId !== '') {
 				$billId = ($row['billId'] ?? '');
 				$billPath = '';
-				if ($billId !== '' && $billId !== null) {
+				if ($billId !== '') {
 					$billPath = '/b/' . rawurlencode((string)$billId);
 				}
 

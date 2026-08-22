@@ -837,10 +837,8 @@ class TypeMapperHandler {
 	 */
 	public function getPropertyAuthDescriptions(RegisterSchema $schema): array {
 		$result = [];
-		if (method_exists(object_or_class: $schema, method: 'getPropertiesWithAuthorization') === false) {
-			return $result;
-		}
-
+		// Schema declares getPropertiesWithAuthorization(), so the early return
+		// that used to guard this call was unreachable.
 		$authProps = $schema->getPropertiesWithAuthorization();
 		foreach ($authProps as $propName => $authConfig) {
 			$groups = [];

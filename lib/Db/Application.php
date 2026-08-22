@@ -605,7 +605,7 @@ class Application extends Entity implements JsonSerializable {
 	 *     registers: array|null, schemas: array|null, owner: null|string,
 	 *     active: bool|null, groups: array|null,
 	 *     quota: array{storage: int|null, bandwidth: int|null,
-	 *     requests: int|null, users: null, groups: null},
+	 *     requests: int|null, users: int|null, groups: int|null},
 	 *     usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0,
 	 *     groups: int<0, max>}, authorization: array,
 	 *     created: null|string, updated: null|string,

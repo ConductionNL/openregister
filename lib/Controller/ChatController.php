@@ -65,7 +65,7 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  *
- * @suppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ChatController extends Controller {
 
@@ -180,7 +180,7 @@ class ChatController extends Controller {
 	 *
 	 * @return void
 	 *
-	 * @suppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
 		string $appName,
@@ -697,7 +697,7 @@ class ChatController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with feedback confirmation or error
 	 *
-	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */

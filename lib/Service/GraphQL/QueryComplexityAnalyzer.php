@@ -200,15 +200,14 @@ class QueryComplexityAnalyzer {
 					$totalCost += ($childResult['cost'] * $multiplier);
 				}
 			} elseif ($selection instanceof InlineFragmentNode) {
-				if ($selection->selectionSet !== null) {
-					$result = $this->analyzeSelectionSet(
-						selectionSet: $selection->selectionSet,
-						currentDepth: $currentDepth,
-						variables: $variables
-					);
-					$maxDepth = max($maxDepth, $result['depth']);
-					$totalCost += $result['cost'];
-				}
+				// InlineFragmentNode::$selectionSet is non-nullable.
+				$result = $this->analyzeSelectionSet(
+					selectionSet: $selection->selectionSet,
+					currentDepth: $currentDepth,
+					variables: $variables
+				);
+				$maxDepth = max($maxDepth, $result['depth']);
+				$totalCost += $result['cost'];
 			}//end if
 		}//end foreach
 

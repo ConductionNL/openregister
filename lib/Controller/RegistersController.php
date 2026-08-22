@@ -81,14 +81,14 @@ use Symfony\Component\Uid\Uuid;
  *
  * @psalm-suppress UnusedClass
  *
- * @suppressWarnings(PHPMD.ExcessiveClassLength)     NC REST controller must expose all CRUD + subresource
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     NC REST controller must expose all CRUD + subresource
  *   endpoints (registers, schemas, objects, statistics) in one class per NC AppFramework routing;
  *   splitting into multiple controllers would require additional routing registration.
- * @suppressWarnings(PHPMD.ExcessiveClassComplexity) Aggregate complexity from N independent REST actions;
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Aggregate complexity from N independent REST actions;
  *   each action is individually simple — the class total is a routing artifact, not design debt.
- * @suppressWarnings(PHPMD.TooManyPublicMethods)     Each public method maps to one REST endpoint; NC AppFramework
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)     Each public method maps to one REST endpoint; NC AppFramework
  *   requires public methods for route dispatch — they cannot be made protected/private.
- * @suppressWarnings(PHPMD.CouplingBetweenObjects)   NC Controller DI injects AppFramework, RBAC, audit, domain
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   NC Controller DI injects AppFramework, RBAC, audit, domain
  *   services, and mappers — each dep is used and cannot be combined without violating SRP.
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    The create/update actions include multi-step validation
  *   that is a single atomic write; extracting sub-steps would create misleading partial-update helpers.
@@ -190,7 +190,7 @@ class RegistersController extends Controller {
 	 *
 	 * @return void
 	 *
-	 * @suppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
 		string $appName,
@@ -256,8 +256,8 @@ class RegistersController extends Controller {
 	 *
 	 * @return JSONResponse The JSON response containing the list of registers
 	 *
-	 * @suppressWarnings(PHPMD.NPathComplexity)      Complex request parameter handling for flexible API
-	 * @suppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)      Complex request parameter handling for flexible API
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
 	 * @spec openspec/changes/register-schema-read-accessibility/tasks.md#task-1
 	 */
@@ -541,7 +541,7 @@ class RegistersController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @suppressWarnings(PHPMD.StaticAccess) DatabaseConstraintException factory method is standard pattern
+	 * @SuppressWarnings(PHPMD.StaticAccess) DatabaseConstraintException factory method is standard pattern
 	 *
 	 * @return JSONResponse JSON response with created register or error
 	 *
@@ -1179,9 +1179,9 @@ class RegistersController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with publish result or error
 	 *
-	 * @suppressWarnings(PHPMD.NPathComplexity)       GitHub publishing requires many conditional checks
-	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @suppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)       GitHub publishing requires many conditional checks
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-5
 	 */
@@ -1357,10 +1357,10 @@ class RegistersController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @suppressWarnings(PHPMD.BooleanArgumentFlag)   Force flag to override version checks
-	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @suppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @suppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force flag to override version checks
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-10
 	 */
@@ -1808,47 +1808,18 @@ class RegistersController extends Controller {
 	 *     200|404|500,
 	 *     array{
 	 *         error?: string,
-	 *         register?: array{
-	 *             id: int,
-	 *             uuid: null|string,
-	 *             slug: null|string,
-	 *             title: null|string,
-	 *             version: null|string,
-	 *             description: null|string,
-	 *             schemas: array<int|string>,
-	 *             source: null|string,
-	 *             tablePrefix: null|string,
-	 *             folder: null|string,
-	 *             updated: null|string,
-	 *             created: null|string,
-	 *             owner: null|string,
-	 *             application: null|string,
-	 *             organisation: null|string,
-	 *             authorization: array|null,
-	 *             groups: array<string, list<string>>,
-	 *             configuration: array|null,
-	 *             quota: array{
-	 *                 storage: null,
-	 *                 bandwidth: null,
-	 *                 requests: null,
-	 *                 users: null,
-	 *                 groups: null
-	 *             },
-	 *             usage: array{
-	 *                 storage: 0,
-	 *                 bandwidth: 0,
-	 *                 requests: 0,
-	 *                 users: 0,
-	 *                 groups: int<0, max>
-	 *             },
-	 *             deleted: null|string,
-	 *             published: null|string,
-	 *             depublished: null|string
-	 *         },
+	 *         register?: array<string, mixed>,
 	 *         message?: 'Stats calculation not yet implemented'
 	 *     },
 	 *     array<never, never>
 	 * >
+	 *
+	 * `register` is deliberately `array<string, mixed>` and not a spelled-out
+	 * shape. The previous annotation duplicated Register::jsonSerialize() field
+	 * by field and had rotted into nonsense: it pinned `quota` to all-null and
+	 * `usage` to all-literal-zero, because it was inferred from a register that
+	 * had neither. The entity's serializer owns that contract; restating it here
+	 * only guarantees the copy drifts again.
 	 *
 	 * @spec openspec/specs/production-observability/spec.md#requirement-per-entity-statistics-and-endpoint-delivery-log-api
 	 */
@@ -1887,7 +1858,7 @@ class RegistersController extends Controller {
 	 *
 	 * @return bool The parsed boolean value
 	 *
-	 * @suppressWarnings(PHPMD.BooleanArgumentFlag) Default value is needed for parameter parsing
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Default value is needed for parameter parsing
 	 */
 	private function parseBooleanParam(string $paramName, bool $default = false): bool {
 		$value = $this->request->getParam(key: $paramName, default: $default);

@@ -124,7 +124,7 @@ class EndpointMapper extends QBMapper {
 	 *
 	 * @return Endpoint[]
 	 *
-	 * @psalm-return list<OCA\OpenRegister\Db\Endpoint>
+	 * @psalm-return list<\OCA\OpenRegister\Db\Endpoint>
 	 */
 	public function findAll(?int $limit = null, ?int $offset = null): array {
 		// Step 1: Get query builder instance.

@@ -727,11 +727,9 @@ class MagicSearchHandler {
 			$searchConditions[] = "similarity(_name::text, {$quotedTerm}) > 0.1";
 		}
 
-		if (empty($searchConditions) === false) {
-			return '(' . implode(' OR ', $searchConditions) . ')';
-		}
-
-		return null;
+		// Both branches above push three conditions, so $searchConditions is
+		// never empty here and the old null return was unreachable.
+		return '(' . implode(' OR ', $searchConditions) . ')';
 	}//end buildSearchConditionSql()
 
 	/**

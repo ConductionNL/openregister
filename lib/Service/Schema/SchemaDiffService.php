@@ -306,7 +306,10 @@ class SchemaDiffService {
 				continue;
 			}
 
-			if ($hadOld === true && $hasNew === false) {
+			// Only the $hadOld && !$hasNew combination is left: the equal case and
+			// the !$hadOld && $hasNew case both continue above, so $hadOld is
+			// already known true here.
+			if ($hasNew === false) {
 				// Removed bound = relaxation.
 				$changes[] = [
 					'property' => $name,

@@ -593,7 +593,9 @@ class EntityRelationMapper extends QBMapper {
 	 * honoured (skipped rows untouched).
 	 *
 	 * @param int $fileId The file ID.
-	 * @param array<string, string> $placeholderByEntityId Map of (stringified) entity id → the
+	 * @param array<int|string, string> $placeholderByEntityId Keys are int|string,
+	 *        not string: a stringified entity id is a canonical numeric string,
+	 *        which PHP coerces to an int array key. Map of entity id → the
 	 *                                                     exact placeholder emitted for it
 	 *                                                     (e.g. "7" => "[PERSOON: 1]").
 	 *

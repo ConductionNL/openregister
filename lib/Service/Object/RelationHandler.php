@@ -152,7 +152,6 @@ class RelationHandler {
 					$serialized = $object->jsonSerialize();
 					$idRaw = null;
 					if (is_array($property) === true
-						&& is_array($serialized) === true
 						&& isset($property['inversedBy']) === true
 					) {
 						$idRaw = $serialized[$property['inversedBy']];
@@ -849,9 +848,14 @@ class RelationHandler {
 	 *
 	 * @return (array|int|mixed|string)[] Paginated results with referencing objects.
 	 *
-	 * @psalm-return array{results: array<never, never>, total: 0,
-	 *     limit: 30|mixed, offset: 0|mixed,
+	 * @psalm-return array{results: list<array<string, mixed>>, total: int<0, max>,
+	 *     limit: mixed, offset: mixed,
 	 *     message?: 'Reverse relationship lookup not yet implemented'}
+	 *
+	 * The previous annotation said `results: array<never, never>, total: 0` —
+	 * inferred back when this method was a stub that returned nothing and the
+	 * "not yet implemented" message. It has since been implemented and returns
+	 * real rows; only the `message` key is still optional/legacy.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC/multitenancy flags follow established API patterns
 	 *

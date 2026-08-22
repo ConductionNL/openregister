@@ -1297,7 +1297,7 @@ class ObjectService implements ObjectServiceInterface
         // If UUID was null and is now set, mark it as auto-generated in object data.
         // This allows SaveObject to distinguish between user-provided UUIDs (UPDATE)
         // and auto-generated UUIDs (CREATE).
-        if ($uuidWasNull === true && $uuid !== null && is_array($object) === true) {
+        if ($uuidWasNull === true && $uuid !== null) {
             // Store flag in @self to indicate this is a CREATE operation.
             if (isset($object['@self']) === false || is_array($object['@self']) === false) {
                 $object['@self'] = [];
@@ -1347,7 +1347,7 @@ class ObjectService implements ObjectServiceInterface
         // carry a UUID); the seed itself is empty-field-only and fail-soft, so
         // it never overwrites a client-supplied value. See the object-lifecycle
         // spec: fk-graph-lifecycle-transitions.
-        if ($uuidWasNull === true && is_array($object) === true) {
+        if ($uuidWasNull === true) {
             $object = $this->saveHandler->seedLifecycleFieldOnCreate(
                 schema: $this->currentSchema,
                 data: $object
@@ -3491,10 +3491,9 @@ class ObjectService implements ObjectServiceInterface
             }
         }//end if
 
-        // Collect UUIDs from object properties.
-        if (is_array($objectData) === true) {
-            $this->collectUuidsFromObjectData(data: $objectData, uuids: $uuids);
-        }
+        // Collect UUIDs from object properties. $objectData is always an array
+        // by this point, so the old is_array() guard could never skip the call.
+        $this->collectUuidsFromObjectData(data: $objectData, uuids: $uuids);
     }//end collectUuidsFromArrayResult()
 
     /**

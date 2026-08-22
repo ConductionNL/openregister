@@ -620,9 +620,7 @@ class FilePropertyHandler {
 						fileConfig: $fileConfig,
 						index: $index
 					);
-					if ($fileId !== null) {
-						$fileIds[] = $fileId;
-					}
+					$fileIds[] = $fileId;
 				}
 			}
 
@@ -641,9 +639,7 @@ class FilePropertyHandler {
 				);
 
 				// Replace the file content with file ID in the object data.
-				if ($fileId !== null) {
-					$object[$propertyName] = $fileId;
-				}
+				$object[$propertyName] = $fileId;
 			}
 		}//end if
 	}//end handleFileProperty()

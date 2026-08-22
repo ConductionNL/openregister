@@ -388,7 +388,7 @@ class MagicFacetHandler {
 			}
 
 			// Add schema property title if available.
-			if (isset($config['title']) === true && $config['title'] !== null) {
+			if (isset($config['title']) === true) {
 				$facets[$field]['title'] = $config['title'];
 			}
 
@@ -512,7 +512,7 @@ class MagicFacetHandler {
 			}//end if
 
 			// Add schema property title if available.
-			if (isset($config['title']) === true && $config['title'] !== null) {
+			if (isset($config['title']) === true) {
 				$facets[$field]['title'] = $config['title'];
 			}
 

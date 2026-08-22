@@ -105,7 +105,7 @@ class UserController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with user profile data
 	 *
-	 * @suppressWarnings(PHPMD.ShortMethodName) Standard REST API endpoint name for current user
+	 * @SuppressWarnings(PHPMD.ShortMethodName) Standard REST API endpoint name for current user
 	 *
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
