@@ -322,6 +322,54 @@ class ObjectServiceTest extends TestCase {
 	}
 
 	/**
+	 * The pending schema ref is SINGLE USE: consumed by the first
+	 * setRegister() that follows, then cleared.
+	 *
+	 * ObjectService is reused for many operations in one process. A ref left
+	 * behind by an operation that set a schema and never set a register would
+	 * be re-resolved against the NEXT caller's register and refuse it —
+	 * measured on the shared instance as a pipelinq repair step seeding
+	 * `trustConfiguration` being told `posJournalEntryOutbound` is not carried
+	 * by its register, a slug from an entirely unrelated operation.
+	 */
+	public function testPendingSchemaRefIsClearedOnceConsumed(): void {
+		// The register must actually carry the schema, or the scoped resolve
+		// refuses for the RIGHT reason and hides what this test is about.
+		$this->register->setSchemas([2]);
+		$this->schemaMapper->method('find')->willReturn($this->schema);
+		$this->schemaMapper->method('findInIds')->willReturn($this->schema);
+		$this->registerMapper->method('find')->willReturn($this->register);
+
+		$this->service->setSchema(schema: 'my-schema');
+		$this->assertSame('my-schema', $this->getProperty('currentSchemaRef'));
+
+		$this->service->setRegister(register: 1);
+
+		$this->assertNull(
+			$this->getProperty('currentSchemaRef'),
+			'The pending ref must not survive the setRegister() that consumed it.'
+		);
+	}
+
+	/**
+	 * A setRegister() with no pending ref must not re-resolve anything — the
+	 * leak this guards against is a stale ref from an earlier operation.
+	 */
+	public function testSetRegisterWithoutAPendingRefDoesNotRescope(): void {
+		$this->registerMapper->method('find')->willReturn($this->register);
+		$this->setProperty('currentSchemaRef', null);
+		$this->setProperty('currentSchema', $this->schema);
+
+		$this->service->setRegister(register: 1);
+
+		$this->assertSame(
+			$this->schema,
+			$this->getProperty('currentSchema'),
+			'An already-resolved schema must survive a later setRegister() untouched.'
+		);
+	}
+
+	/**
 	 * Test setSchema with string slug uses mapper find.
 	 */
 	public function testSetSchemaWithSlugUsesMapperFind(): void {

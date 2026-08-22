@@ -502,9 +502,23 @@ class ObjectService implements ObjectServiceInterface
         // round the two setters are called, in ONE place, instead of requiring
         // every call site to remember an ordering nothing enforces.
         if ($this->currentSchemaRef !== null) {
+            // SINGLE USE. The pending ref belongs to the setSchema() call that
+            // created it, and is consumed by the FIRST setRegister() that
+            // follows. Clearing it here is what keeps this instance-level state
+            // from leaking across unrelated operations: ObjectService is reused
+            // for many calls in one process, so a ref left behind by an
+            // operation that set a schema and never set a register would be
+            // re-resolved against the NEXT caller's register and refuse it.
+            // Measured on the shared instance after this scoping landed: a
+            // pipelinq repair step seeding `trustConfiguration` was told
+            // `posJournalEntryOutbound` is not carried by its register — a slug
+            // from an entirely different operation.
+            $pendingRef             = $this->currentSchemaRef;
+            $this->currentSchemaRef = null;
+
             $this->currentSchema = $this->scopedSchemaResolver->resolveSchemaWithin(
                 register: $register,
-                schemaRef: $this->currentSchemaRef
+                schemaRef: $pendingRef
             );
         }
 
