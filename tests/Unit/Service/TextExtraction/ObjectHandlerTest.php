@@ -83,10 +83,16 @@ class ObjectHandlerTest extends TestCase {
 	private function buildObjectMock(array $attrs = []): ObjectEntity&MockObject {
 		$object = $this->getMockBuilder(ObjectEntity::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['getObject', 'getUuid', 'getSchema', 'getRegister', 'getOwner'])
+			// getOrganisation is REAL (ObjectEntity::getOrganisation), so it belongs
+			// in onlyMethods. It used to sit in addMethods as `getOrganization` —
+			// with a z — and addMethods INVENTS a method that does not exist on the
+			// class, so the double manufactured exactly the accessor the production
+			// code was wrongly calling. That is why the suite stayed green while
+			// every ObjectTextExtractionJob run threw "organization is not a valid
+			// attribute" out of Entity::__call.
+			->onlyMethods(['getObject', 'getUuid', 'getSchema', 'getRegister', 'getOwner', 'getOrganisation'])
 			->addMethods([
 				'getVersion',
-				'getOrganization',
 				'getUpdated',
 				'getId',
 			])
@@ -102,7 +108,7 @@ class ObjectHandlerTest extends TestCase {
 		$object->method('getSchema')->willReturn(isset($attrs['schema']) ? (string)$attrs['schema'] : null);
 		$object->method('getRegister')->willReturn(isset($attrs['register']) ? (string)$attrs['register'] : null);
 		$object->method('getObject')->willReturn($attrs['object'] ?? ['name' => 'Test Object']);
-		$object->method('getOrganization')->willReturn($attrs['organization'] ?? null);
+		$object->method('getOrganisation')->willReturn($attrs['organisation'] ?? null);
 		$object->method('getOwner')->willReturn($attrs['owner'] ?? null);
 		$object->method('getUpdated')->willReturn($attrs['updated'] ?? null);
 		$object->method('getId')->willReturn($attrs['id'] ?? 1);
@@ -260,14 +266,17 @@ class ObjectHandlerTest extends TestCase {
 		$this->assertSame('object', $result['source_type']);
 	}//end testExtractTextContinuesWhenRegisterNotFound()
 
-	public function testExtractTextIncludesOrganization(): void {
-		$object = $this->buildObjectMock(['organization' => 'Conduction BV', 'object' => ['x' => 'y']]);
+	public function testExtractTextIncludesOrganisation(): void {
+		$object = $this->buildObjectMock(['organisation' => 'Conduction BV', 'object' => ['x' => 'y']]);
 		$this->objectMapper->method('find')->willReturn($object);
 
 		$result = $this->handler->extractText(1, []);
 
 		$this->assertStringContainsString('Conduction BV', $result['text']);
-	}//end testExtractTextIncludesOrganization()
+		// The label too, so the accessor's spelling cannot silently regress: the
+		// value would still land in the text via any getter that returned it.
+		$this->assertStringContainsString('Organisation: Conduction BV', $result['text']);
+	}//end testExtractTextIncludesOrganisation()
 
 	public function testExtractTextChecksumIsSha256(): void {
 		$object = $this->buildObjectMock(['object' => ['key' => 'value']]);
@@ -318,9 +327,9 @@ class ObjectHandlerTest extends TestCase {
 		// Use an object whose getUuid returns null and no other fields.
 		$object = $this->getMockBuilder(ObjectEntity::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['getObject', 'getUuid', 'getSchema', 'getRegister', 'getOwner'])
+			->onlyMethods(['getObject', 'getUuid', 'getSchema', 'getRegister', 'getOwner', 'getOrganisation'])
 			->addMethods([
-				'getVersion', 'getOrganization', 'getUpdated', 'getId',
+				'getVersion', 'getUpdated', 'getId',
 			])
 			->getMock();
 
@@ -329,7 +338,7 @@ class ObjectHandlerTest extends TestCase {
 		$object->method('getSchema')->willReturn(null);
 		$object->method('getRegister')->willReturn(null);
 		$object->method('getObject')->willReturn([]);   // empty → no Content: line
-		$object->method('getOrganization')->willReturn(null);
+		$object->method('getOrganisation')->willReturn(null);
 		$object->method('getOwner')->willReturn(null);
 		$object->method('getUpdated')->willReturn(null);
 		$object->method('getId')->willReturn(1);
@@ -420,7 +429,7 @@ class ObjectHandlerTest extends TestCase {
 			'schema' => 2,
 			'register' => 1,
 			'version' => '1.0.0',
-			'organization' => 'OrgX',
+			'organisation' => 'OrgX',
 			'owner' => 'user1',
 			'updated' => $updated,
 		]);
@@ -428,9 +437,14 @@ class ObjectHandlerTest extends TestCase {
 
 		$meta = $this->handler->getSourceMetadata(7);
 
-		foreach (['id', 'uuid', 'schema', 'register', 'version', 'organization', 'owner', 'updated'] as $key) {
+		// `organisation`, with an s. TextExtractionService reads
+		// $sourceMeta['organisation'], so the old `organization` key here meant the
+		// consumer silently read null even on the paths that did not throw.
+		foreach (['id', 'uuid', 'schema', 'register', 'version', 'organisation', 'owner', 'updated'] as $key) {
 			$this->assertArrayHasKey($key, $meta, "Missing key: {$key}");
 		}
+
+		$this->assertSame('OrgX', $meta['organisation']);
 
 		$this->assertSame('source-uuid', $meta['uuid']);
 		// STRINGS, for the same reason as above: `schema` and `register` are
@@ -516,5 +530,61 @@ class ObjectHandlerTest extends TestCase {
 
 		$this->assertIsString($result['text']);
 	}//end testExtractTextRespectsMaxRecursionDepth()
+
+	// ── A REAL ObjectEntity, because the mocks are what hid this ──────────
+
+	/**
+	 * getSourceMetadata() must work against a real ObjectEntity.
+	 *
+	 * Every test above builds its entity with getMockBuilder(), and the
+	 * organisation accessor used to be declared through addMethods() under the
+	 * name `getOrganization` — with a z. addMethods() INVENTS a method that does
+	 * not exist on the class, so the double manufactured exactly the accessor the
+	 * production code was wrongly calling, and the whole file stayed green while
+	 * every ObjectTextExtractionJob run in production threw:
+	 *
+	 *     organization is not a valid attribute
+	 *     at OCA\OpenRegister\Db\ObjectEntity->getter()
+	 *     ObjectHandler->getSourceMetadata() -> TextExtractionService->extractObject()
+	 *
+	 * A `@method string|null getOrganization()` on ObjectEntity kept static
+	 * analysis quiet about it too, so neither layer could see the mistake.
+	 *
+	 * Passing the real entity is the only shape that can catch it: the property,
+	 * the column and the accessor are all spelled `organisation`.
+	 *
+	 * @return void
+	 */
+	public function testGetSourceMetadataWorksAgainstARealObjectEntity(): void {
+		$entity = new ObjectEntity();
+		$entity->setUuid('real-uuid');
+		$entity->setOrganisation('Conduction BV');
+
+		$this->objectMapper->method('find')->willReturn($entity);
+
+		$meta = $this->handler->getSourceMetadata(1);
+
+		$this->assertArrayHasKey('organisation', $meta);
+		$this->assertSame('Conduction BV', $meta['organisation']);
+	}//end testGetSourceMetadataWorksAgainstARealObjectEntity()
+
+	/**
+	 * extractText() must likewise survive a real ObjectEntity — this is the path
+	 * ObjectTextExtractionJob actually takes.
+	 *
+	 * @return void
+	 */
+	public function testExtractTextWorksAgainstARealObjectEntity(): void {
+		$entity = new ObjectEntity();
+		$entity->setUuid('real-uuid');
+		$entity->setOrganisation('Conduction BV');
+		$entity->setObject(['title' => 'Hello']);
+
+		$this->objectMapper->method('find')->willReturn($entity);
+
+		$result = $this->handler->extractText(1, []);
+
+		$this->assertStringContainsString('Organisation: Conduction BV', $result['text']);
+	}//end testExtractTextWorksAgainstARealObjectEntity()
 
 }//end class
