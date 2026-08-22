@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use ReflectionProperty;
 
 /**
@@ -88,6 +89,46 @@ class SaveObjectStreamingOutcomeTest extends TestCase {
 
 		return $handler;
 	}//end handlerYielding()
+
+	/**
+	 * A SaveObject whose `saveObject()` throws for exactly one row position.
+	 *
+	 * The failure branch logs, so the logger — a readonly promoted property the
+	 * skipped constructor never filled — is injected here; without it the catch
+	 * block would fail on an uninitialised property instead of on the row.
+	 *
+	 * @param int $failIndex Zero-based position of the row that throws.
+	 *
+	 * @return SaveObject The instrumented handler.
+	 */
+	private function handlerYieldingWithFailureAt(int $failIndex): SaveObject {
+		$handler = $this->createPartialMock(SaveObject::class, ['saveObject']);
+
+		$logger = new ReflectionProperty(SaveObject::class, 'logger');
+		$logger->setAccessible(true);
+		$logger->setValue($handler, $this->createMock(LoggerInterface::class));
+
+		$call = 0;
+		$handler->method('saveObject')->willReturnCallback(
+			function () use ($failIndex, &$call): ObjectEntity {
+				$current = $call;
+				$call++;
+
+				if ($current === $failIndex) {
+					throw new \OCA\OpenRegister\Exception\ValidationException(
+						'resolutiondate must match the date-time format'
+					);
+				}
+
+				$entity = new ObjectEntity();
+				$entity->setUuid('uuid-' . $call);
+
+				return $entity;
+			}
+		);
+
+		return $handler;
+	}//end handlerYieldingWithFailureAt()
 
 	/**
 	 * THE MISSING BRANCH. A row the save path resolved as `unchanged` lands in
@@ -172,6 +213,32 @@ class SaveObjectStreamingOutcomeTest extends TestCase {
 		$this->assertSame(['uuid-3'], $status->getUpdated());
 
 	}//end testEachRowIsClassifiedIndependently()
+
+	/**
+	 * A FAILED ROW MUST NAME ITSELF. The row that throws is recorded with its
+	 * POSITION in the submitted batch, not only its message: a failed create
+	 * has no uuid yet, so before issue #2778 a caller reading the failure list
+	 * could not tell which of its rows had been refused.
+	 *
+	 * @return void
+	 */
+	public function testAFailedRowRecordsItsPositionInTheBatch(): void {
+		$handler = $this->handlerYieldingWithFailureAt(failIndex: 1);
+
+		$status = $handler->saveObjectsStreaming(
+			register: 1,
+			schema: 1,
+			rows: [['title' => 'a'], ['title' => 'bad'], ['title' => 'c']]
+		);
+
+		$failed = $status->getFailed();
+		$this->assertCount(1, $failed);
+		$this->assertSame(1, $failed[0]['index']);
+		$this->assertSame('resolutiondate must match the date-time format', $failed[0]['message']);
+		// The rows either side still wrote — failure isolation is unchanged.
+		$this->assertSame(2, $status->getCreatedCount());
+
+	}//end testAFailedRowRecordsItsPositionInTheBatch()
 
 	/**
 	 * THE STALE-SLOT GUARD. Row 1 publishes `unchanged`; row 2 publishes

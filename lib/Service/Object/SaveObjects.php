@@ -707,7 +707,14 @@ class SaveObjects {
 			// defence; phpstan flagged it as dead because the typed shape
 			// contracts on the public method. Callers passing non-array
 			// rows would be a programmer error, not a runtime concern.
-			unset($index);
+			//
+			// The key is the caller's own array position and travels with every
+			// rejection below (issue #2778) — it used to be discarded here, and
+			// a refused row then had no way of naming itself in the response.
+			$rowIndex = null;
+			if (is_int($index) === true) {
+				$rowIndex = $index;
+			}
 
 			// Step 1: strip dangerous @self fields for non-admins.
 			$sanitised = $this->stripSelfInjectionFields(object: $object, isAdmin: $isAdmin);
@@ -733,7 +740,8 @@ class SaveObjects {
 					$this->recordSafeguardRejection(
 						object: $sanitised,
 						reason: 'Schema could not be resolved; refusing to write a row whose permissions cannot be checked.',
-						result: $result
+						result: $result,
+						index: $rowIndex
 					);
 					continue;
 				}
@@ -758,7 +766,8 @@ class SaveObjects {
 				$this->recordSafeguardRejection(
 					object: $sanitised,
 					reason: 'Schema is appendOnly; UPDATE rejected for row UUID ' . ((string)($uuid ?? '?')),
-					result: $result
+					result: $result,
+					index: $rowIndex
 				);
 				continue;
 			}
@@ -778,7 +787,8 @@ class SaveObjects {
 					$this->recordSafeguardRejection(
 						object: $sanitised,
 						reason: 'Permission denied for action ' . $action . ' on schema ' . $rowSchema->getSlug(),
-						result: $result
+						result: $result,
+						index: $rowIndex
 					);
 					continue;
 				}
@@ -798,7 +808,8 @@ class SaveObjects {
 						$this->recordSafeguardRejection(
 							object: $sanitised,
 							reason: 'Schema validation failed: ' . $errorMessage,
-							result: $result
+							result: $result,
+							index: $rowIndex
 						);
 						continue;
 					}
@@ -806,7 +817,8 @@ class SaveObjects {
 					$this->recordSafeguardRejection(
 						object: $sanitised,
 						reason: 'Schema validation threw: ' . $e->getMessage(),
-						result: $result
+						result: $result,
+						index: $rowIndex
 					);
 					continue;
 				}//end try
@@ -1127,20 +1139,31 @@ class SaveObjects {
 	/**
 	 * Record a rejection from `applyBulkSafeguards` into the result accumulator.
 	 *
+	 * The row's position in the submitted batch is recorded alongside the
+	 * reason (issue #2778). Without it a caller reading the response cannot say
+	 * WHICH of its objects was refused: a rejected row often carries no uuid
+	 * yet (it is a create), and the reason alone does not identify it. The
+	 * index is the caller's own array key, so it maps straight back onto the
+	 * payload they sent.
+	 *
 	 * @param array $object Sanitised row (post-strip — safe to log shape).
 	 * @param string $reason Human-readable rejection reason.
 	 * @param array $result Result accumulator (mutated in place).
+	 * @param int|null $index Position of the row in the submitted batch, when known.
 	 *
 	 * @return void
 	 */
-	private function recordSafeguardRejection(array $object, string $reason, array &$result): void {
+	private function recordSafeguardRejection(array $object, string $reason, array &$result, ?int $index = null): void {
 		$result['invalid'][] = [
 			'object' => $object,
 			'error' => $reason,
+			'index' => $index,
+			'type' => 'BulkSafeguardException',
 		];
 		$result['errors'][] = [
 			'error' => $reason,
 			'type' => 'BulkSafeguardException',
+			'index' => $index,
 		];
 		$result['statistics']['invalid']++;
 		$result['statistics']['errors']++;
@@ -1149,7 +1172,12 @@ class SaveObjects {
 		// kind of thing someone comes to the log to find.
 		$this->logger->info(
 			message: '[SaveObjects] Wave-12 bulk safeguard rejected row',
-			context: ['file' => __FILE__, 'line' => __LINE__, 'reason' => $reason]
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'reason' => $reason,
+				'index' => $index,
+			]
 		);
 	}//end recordSafeguardRejection()
 

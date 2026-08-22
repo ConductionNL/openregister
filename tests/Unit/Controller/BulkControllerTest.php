@@ -9,6 +9,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -438,6 +439,10 @@ class BulkControllerTest extends TestCase {
 	}
 
 	public function testSaveWithEmptyStatistics(): void {
+		// Issue #2778: statistics that account for NOTHING while the caller
+		// submitted a row is a total loss, not a success. `saved_count` still
+		// reports 0 (existing behaviour), but the response no longer calls it
+		// a 200/success — it was previously asserted to be exactly that.
 		$this->stubAdminUser();
 		$this->stubSchemaLookup(2);
 		$this->setupResolveSuccess();
@@ -451,9 +456,345 @@ class BulkControllerTest extends TestCase {
 
 		$result = $this->controller->save('1', '2');
 
-		$this->assertEquals(Http::STATUS_OK, $result->getStatus());
+		$this->assertEquals(Http::STATUS_UNPROCESSABLE_ENTITY, $result->getStatus());
 		$data = $result->getData();
 		$this->assertEquals(0, $data['saved_count']);
+		$this->assertFalse($data['success']);
+		$this->assertEquals(1, $data['failed_count']);
+		$this->assertEquals('UnaccountedObject', $data['failures'][0]['type']);
+	}
+
+	// ========================================================================
+	// save() partial-write reporting — issue #2778
+	// ========================================================================
+
+	/**
+	 * The real defect, in the shape it was found in.
+	 *
+	 * A Jira export row carried `2025-08-15T16:42:42.922+0200` — an RFC-822
+	 * offset, which fails JSON-Schema `date-time` (RFC3339 wants `+02:00`).
+	 * The validator produced a precise message and the response threw it away,
+	 * answering `success: true` with a smaller `saved_count`.
+	 */
+	public function testSaveRejectedObjectFailsTheResponseAndCarriesTheValidationMessage(): void {
+		$this->stubAdminUser();
+		$this->stubSchemaLookup(2);
+		$this->setupResolveSuccess();
+
+		$validationMessage = 'Schema validation failed: resolutiondate: The data must match the '
+			. "'date-time' format (got \"2025-08-15T16:42:42.922+0200\")";
+
+		$this->objectService->method('saveObjects')->willReturn([
+			'statistics' => ['saved' => 1, 'updated' => 0, 'invalid' => 1, 'errors' => 1],
+			'invalid' => [
+				[
+					'object' => [
+						'@self' => ['id' => 'b2f0d0f1-0000-4000-8000-000000000002'],
+						'resolutiondate' => '2025-08-15T16:42:42.922+0200',
+					],
+					'error' => $validationMessage,
+					'index' => 1,
+					'type' => 'BulkSafeguardException',
+				],
+			],
+			'errors' => [
+				['error' => $validationMessage, 'type' => 'BulkSafeguardException', 'index' => 1],
+			],
+		]);
+
+		$this->request->method('getParams')->willReturn([
+			'objects' => [
+				['summary' => 'ok row'],
+				['resolutiondate' => '2025-08-15T16:42:42.922+0200'],
+			],
+		]);
+
+		$result = $this->controller->save('1', '2');
+
+		// A partial write is not a success, and the status says so too.
+		$this->assertEquals(Http::STATUS_UNPROCESSABLE_ENTITY, $result->getStatus());
+		$data = $result->getData();
+		$this->assertFalse($data['success']);
+
+		// The counts still reconcile: 1 written, 1 rejected, 2 requested.
+		$this->assertEquals(1, $data['saved_count']);
+		$this->assertEquals(1, $data['failed_count']);
+		$this->assertEquals(2, $data['requested_count']);
+
+		// The rejected object names itself AND says why.
+		$this->assertCount(1, $data['failures']);
+		$failure = $data['failures'][0];
+		$this->assertEquals(1, $failure['index']);
+		$this->assertEquals('b2f0d0f1-0000-4000-8000-000000000002', $failure['uuid']);
+		$this->assertStringContainsString('date-time', $failure['error']);
+		$this->assertStringContainsString('2025-08-15T16:42:42.922+0200', $failure['error']);
+		$this->assertStringContainsString('resolutiondate', $failure['error']);
+
+		// And the message points at the list rather than claiming success.
+		$this->assertStringContainsString('rejected', $data['message']);
+	}
+
+	/**
+	 * Must-PASS control: the fix must not turn every batch into a failure.
+	 */
+	public function testSaveAllValidBatchStillReportsSuccess(): void {
+		$this->stubAdminUser();
+		$this->stubSchemaLookup(2);
+		$this->setupResolveSuccess();
+		$this->objectService->method('saveObjects')->willReturn([
+			'statistics' => ['saved' => 2, 'updated' => 1, 'invalid' => 0, 'errors' => 0],
+			'invalid' => [],
+			'errors' => [],
+		]);
+
+		$this->request->method('getParams')->willReturn([
+			'objects' => [['name' => 'obj1'], ['name' => 'obj2'], ['name' => 'obj3']],
+		]);
+
+		$result = $this->controller->save('1', '2');
+
+		$this->assertEquals(Http::STATUS_OK, $result->getStatus());
+		$data = $result->getData();
+		$this->assertTrue($data['success']);
+		$this->assertEquals(3, $data['saved_count']);
+		$this->assertEquals(3, $data['requested_count']);
+		$this->assertEquals(0, $data['failed_count']);
+		$this->assertSame([], $data['failures']);
+		$this->assertEquals('Bulk save operation completed successfully', $data['message']);
+	}
+
+	/**
+	 * An unchanged row is written work the caller already has — deduplication
+	 * must not be mistaken for loss, or every re-import would report a failure.
+	 */
+	public function testSaveUnchangedObjectsDoNotCountAsLoss(): void {
+		$this->stubAdminUser();
+		$this->stubSchemaLookup(2);
+		$this->setupResolveSuccess();
+		$this->objectService->method('saveObjects')->willReturn([
+			'statistics' => ['saved' => 1, 'updated' => 0, 'unchanged' => 2],
+			'invalid' => [],
+			'errors' => [],
+		]);
+
+		$this->request->method('getParams')->willReturn([
+			'objects' => [['name' => 'obj1'], ['name' => 'obj2'], ['name' => 'obj3']],
+		]);
+
+		$result = $this->controller->save('1', '2');
+
+		$this->assertEquals(Http::STATUS_OK, $result->getStatus());
+		$data = $result->getData();
+		$this->assertTrue($data['success']);
+		$this->assertEquals(0, $data['failed_count']);
+		// saved_count keeps its existing meaning: created + updated only.
+		$this->assertEquals(1, $data['saved_count']);
+	}
+
+	/**
+	 * The migration batch, to scale: 31 of 58 stored and NOT ONE recorded
+	 * reason. The shortfall must still be reported rather than rounded away
+	 * because no per-object error happened to be captured.
+	 */
+	public function testSaveShortfallWithoutRecordedReasonsIsStillReported(): void {
+		$this->stubAdminUser();
+		$this->stubSchemaLookup(2);
+		$this->setupResolveSuccess();
+		$this->objectService->method('saveObjects')->willReturn([
+			'statistics' => ['saved' => 31, 'updated' => 0],
+			'invalid' => [],
+			'errors' => [],
+		]);
+
+		$this->request->method('getParams')->willReturn([
+			'objects' => array_fill(0, 58, ['name' => 'issue']),
+		]);
+
+		$result = $this->controller->save('1', '2');
+
+		$this->assertEquals(Http::STATUS_UNPROCESSABLE_ENTITY, $result->getStatus());
+		$data = $result->getData();
+		$this->assertFalse($data['success']);
+		$this->assertEquals(31, $data['saved_count']);
+		$this->assertEquals(58, $data['requested_count']);
+		$this->assertEquals(27, $data['failed_count']);
+		$this->assertCount(1, $data['failures']);
+		$this->assertEquals('UnaccountedObject', $data['failures'][0]['type']);
+		$this->assertStringContainsString('27 object(s) were not written', $data['failures'][0]['error']);
+	}
+
+	/**
+	 * A batch-level error that belongs to no row is quoted into the synthetic
+	 * failure, so the caller does not have to go to the server log for it.
+	 */
+	public function testSaveShortfallQuotesBatchLevelErrors(): void {
+		$this->stubAdminUser();
+		$this->stubSchemaLookup(2);
+		$this->setupResolveSuccess();
+		$this->objectService->method('saveObjects')->willReturn([
+			'statistics' => ['saved' => 0, 'updated' => 0],
+			'invalid' => [],
+			'errors' => [
+				[
+					'error' => 'No objects were successfully prepared for bulk save',
+					'type' => 'NoObjectsPreparedException',
+				],
+			],
+		]);
+
+		$this->request->method('getParams')->willReturn([
+			'objects' => [['name' => 'obj1'], ['name' => 'obj2']],
+		]);
+
+		$result = $this->controller->save('1', '2');
+
+		$data = $result->getData();
+		$this->assertFalse($data['success']);
+		$this->assertEquals(2, $data['failed_count']);
+		$this->assertStringContainsString(
+			'No objects were successfully prepared',
+			$data['failures'][0]['error']
+		);
+	}
+
+	/**
+	 * `partial: true` is the opt-in for best-effort semantics: it relaxes the
+	 * HTTP status so a client library does not raise, and it does NOT relax
+	 * `success` — that would rebuild the exact shape #2778 is about.
+	 */
+	public function testSavePartialOptInKeepsOkStatusButSuccessStaysFalse(): void {
+		$this->stubAdminUser();
+		$this->stubSchemaLookup(2);
+		$this->setupResolveSuccess();
+		$this->objectService->method('saveObjects')->willReturn([
+			'statistics' => ['saved' => 1, 'updated' => 0],
+			'invalid' => [
+				[
+					'object' => ['uuid' => 'row-2'],
+					'error' => 'Schema validation failed: due: format date-time',
+					'index' => 1,
+					'type' => 'BulkSafeguardException',
+				],
+			],
+			'errors' => [],
+		]);
+
+		$this->request->method('getParams')->willReturn([
+			'objects' => [['name' => 'obj1'], ['name' => 'obj2']],
+			'partial' => true,
+		]);
+
+		$result = $this->controller->save('1', '2');
+
+		$this->assertEquals(Http::STATUS_OK, $result->getStatus());
+		$data = $result->getData();
+		$this->assertFalse($data['success']);
+		$this->assertTrue($data['partial']);
+		$this->assertEquals(1, $data['failed_count']);
+		$this->assertEquals('row-2', $data['failures'][0]['uuid']);
+	}
+
+	/**
+	 * The streaming path already derived `success` from its failed count, but
+	 * it reported the detail under its own key layout. It now answers with the
+	 * same `failed_count` / `failures` contract as the default path.
+	 */
+	public function testSaveStreamingReportsPerRowFailures(): void {
+		$this->stubAdminUser();
+		$this->stubSchemaLookup(2);
+		$this->setupResolveSuccess();
+
+		$status = new BatchOperationStatus();
+		$status->start();
+		$status->recordCreated('created-uuid');
+		$status->recordFailed(
+			'failed-uuid',
+			"resolutiondate: The data must match the 'date-time' format",
+			\OCA\OpenRegister\Exception\ValidationException::class,
+			1
+		);
+		$status->complete();
+
+		$this->objectService->method('saveObjectsStreaming')->willReturn($status);
+
+		$this->request->method('getParams')->willReturn([
+			'objects' => [['name' => 'obj1'], ['name' => 'obj2']],
+			'stream' => true,
+		]);
+
+		$result = $this->controller->save('1', '2');
+
+		$this->assertEquals(Http::STATUS_UNPROCESSABLE_ENTITY, $result->getStatus());
+		$data = $result->getData();
+		$this->assertFalse($data['success']);
+		$this->assertEquals(1, $data['saved_count']);
+		$this->assertEquals(1, $data['failed_count']);
+		$this->assertEquals(2, $data['requested_count']);
+		$this->assertEquals(1, $data['failures'][0]['index']);
+		$this->assertEquals('failed-uuid', $data['failures'][0]['uuid']);
+		$this->assertStringContainsString('date-time', $data['failures'][0]['error']);
+	}
+
+	/**
+	 * Must-PASS control for the streaming path.
+	 */
+	public function testSaveStreamingAllValidStillReportsSuccess(): void {
+		$this->stubAdminUser();
+		$this->stubSchemaLookup(2);
+		$this->setupResolveSuccess();
+
+		$status = new BatchOperationStatus();
+		$status->start();
+		$status->recordCreated('uuid-1');
+		$status->recordUpdated('uuid-2');
+		$status->complete();
+
+		$this->objectService->method('saveObjectsStreaming')->willReturn($status);
+
+		$this->request->method('getParams')->willReturn([
+			'objects' => [['name' => 'obj1'], ['name' => 'obj2']],
+			'stream' => true,
+		]);
+
+		$result = $this->controller->save('1', '2');
+
+		$this->assertEquals(Http::STATUS_OK, $result->getStatus());
+		$data = $result->getData();
+		$this->assertTrue($data['success']);
+		$this->assertEquals(2, $data['saved_count']);
+		$this->assertEquals(0, $data['failed_count']);
+		$this->assertSame([], $data['failures']);
+	}
+
+	/**
+	 * A streaming batch that simply stops short — rows consumed but never
+	 * classified — is a loss with no recorded reason, and must not read as a
+	 * success either.
+	 */
+	public function testSaveStreamingSilentShortfallIsReported(): void {
+		$this->stubAdminUser();
+		$this->stubSchemaLookup(2);
+		$this->setupResolveSuccess();
+
+		$status = new BatchOperationStatus();
+		$status->start();
+		$status->recordCreated('uuid-1');
+		$status->complete();
+
+		$this->objectService->method('saveObjectsStreaming')->willReturn($status);
+
+		$this->request->method('getParams')->willReturn([
+			'objects' => [['name' => 'obj1'], ['name' => 'obj2'], ['name' => 'obj3']],
+			'stream' => true,
+		]);
+
+		$result = $this->controller->save('1', '2');
+
+		$this->assertEquals(Http::STATUS_UNPROCESSABLE_ENTITY, $result->getStatus());
+		$data = $result->getData();
+		$this->assertFalse($data['success']);
+		$this->assertEquals(2, $data['failed_count']);
+		$this->assertEquals('UnaccountedObject', $data['failures'][0]['type']);
 	}
 
 	// publishSchema() tests removed — deprecated per deprecate-published-metadata spec
