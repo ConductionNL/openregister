@@ -137,13 +137,15 @@ class TablesControllerTest extends TestCase {
 		$this->assertSame('Failed to sync magic table', $data['error']);
 	}
 
-	public function testSyncRefusesASchemaTheRegisterDoesNotCarry(): void {
+	public function testSyncRefusesASlugTheRegisterDoesNotCarry(): void {
 		// Previously a global `find()` miss surfaced as a generic 500 'Failed to
-		// sync magic table'. The lookup is now register-scoped, so a ref the
-		// register does not carry is a 404 that names the register, the count of
-		// same-slug schemas elsewhere, and the relink-schemas repair command —
-		// and, unlike before, a ref that resolves ELSEWHERE on the instance no
-		// longer reshapes this register's table.
+		// sync magic table'. A SLUG is now register-scoped, so one the register
+		// does not carry is a 404 naming the register, the count of same-slug
+		// schemas elsewhere, and the relink-schemas repair command — and a slug
+		// that resolves ELSEWHERE on the instance no longer reshapes this
+		// register's table. The boundary is deliberately slug-only: a numeric id
+		// or uuid is unique by construction, so scoping it would protect nothing
+		// and would refuse callers whose register carries a stale schemas list.
 		$register = $this->createRegister(1, [1]);
 		$this->registerMapper->method('find')->willReturn($register);
 		$this->stubScopedSchema(null);
@@ -151,7 +153,7 @@ class TablesControllerTest extends TestCase {
 		$this->schemaMapper->expects($this->never())->method('find');
 		$this->magicMapper->expects($this->never())->method('syncTableForRegisterSchema');
 
-		$result = $this->controller->sync(1, 999);
+		$result = $this->controller->sync(1, 'timeEntry');
 
 		$this->assertSame(404, $result->getStatus());
 		$error = $result->getData()['error'];
