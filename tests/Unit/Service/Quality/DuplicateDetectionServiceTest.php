@@ -6,6 +6,8 @@ namespace Unit\Service\Quality;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Quality\DuplicateDetectionService;
@@ -21,18 +23,43 @@ class DuplicateDetectionServiceTest extends TestCase {
 	/** @var SchemaMapper&MockObject */
 	private $schemaMapper;
 
+	private $registerMapper;
+
 	private DuplicateDetectionService $service;
 
 	protected function setUp(): void {
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->service = new DuplicateDetectionService(
 			$this->objectService,
 			$this->schemaMapper,
+			$this->registerMapper,
 			new SimilarityCalculator(),
 			$this->createMock(LoggerInterface::class)
 		);
 	}
+
+	/**
+	 * Stub the register-scoped resolution path the annotation lookup now takes.
+	 *
+	 * The annotation is no longer read via a GLOBAL SchemaMapper::find(): the
+	 * register named in the route is the boundary, so the schema ref is matched
+	 * only among the ids that register carries (SchemaMapper::findInIds()).
+	 *
+	 * @param mixed $schema The schema the scoped lookup should resolve to.
+	 *
+	 * @return void
+	 */
+	private function stubScopedSchema($schema): void {
+		$register = new Register();
+		$register->setId(1);
+		$register->setSlug('reg');
+		$register->setSchemas([1]);
+
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->schemaMapper->method('findInIds')->willReturn($schema);
+	}//end stubScopedSchema()
 
 	/**
 	 * Build an ObjectEntity carrying the given uuid + payload.
@@ -108,7 +135,7 @@ class DuplicateDetectionServiceTest extends TestCase {
 				'threshold' => 0.9,
 			],
 		]);
-		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->stubScopedSchema($schema);
 
 		// No caller rules — service must fall back to annotation rules.
 		$pairs = $this->service->findDuplicates(1, 1, null);
@@ -132,7 +159,7 @@ class DuplicateDetectionServiceTest extends TestCase {
 				'threshold' => 0.85,
 			],
 		]);
-		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->stubScopedSchema($schema);
 
 		$this->assertSame([], $this->service->findDuplicates(1, 1, null));
 	}
@@ -140,7 +167,7 @@ class DuplicateDetectionServiceTest extends TestCase {
 	public function testNoRulesAnywhereReturnsEmpty(): void {
 		$schema = $this->createMock(Schema::class);
 		$schema->method('getConfiguration')->willReturn([]);
-		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->stubScopedSchema($schema);
 
 		$this->assertSame([], $this->service->findDuplicates(1, 1, null));
 	}
@@ -187,7 +214,7 @@ class DuplicateDetectionServiceTest extends TestCase {
 				'threshold' => 0.85,
 			],
 		]);
-		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->stubScopedSchema($schema);
 
 		$this->assertSame([], $this->service->findDuplicates(1, 1, null));
 	}
@@ -229,7 +256,7 @@ class DuplicateDetectionServiceTest extends TestCase {
 				'threshold' => 0.85,
 			],
 		]);
-		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->stubScopedSchema($schema);
 
 		$pairs = $this->service->findDuplicates(1, 1, null);
 

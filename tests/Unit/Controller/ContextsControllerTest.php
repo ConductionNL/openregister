@@ -84,6 +84,9 @@ class ContextsControllerTest extends TestCase {
 
 	public function testSchemaContextShape(): void {
 		$this->registerMapper->method('find')->willReturn($this->makeRegister());
+		// The `{register}` segment is now the boundary: the schema ref resolves
+		// among the ids the register carries (findInIds), not instance-wide.
+		$this->schemaMapper->method('findInIds')->willReturn($this->makeSchema());
 		$this->schemaMapper->method('find')->willReturn($this->makeSchema());
 		$this->request->method('getHeader')->willReturn('');
 

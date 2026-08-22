@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -120,10 +121,22 @@ class ContextsController extends Controller {
 			return new DataResponse(['error' => 'Register not found'], Http::STATUS_NOT_FOUND);
 		}
 
+		// REGISTER-SCOPED. The two refs used to be resolved INDEPENDENTLY, so the
+		// `{register}` segment named a register whose context document then
+		// described a schema from somewhere else entirely — a JSON-LD `@context`
+		// is a published contract, and publishing another app's term definitions
+		// under this register's URL is a durable, cacheable wrong answer.
+		//
+		// The sibling {@see loadSchemas()} was already scoped: it walks
+		// `$register->getSchemas()`. This is the same boundary, applied to the
+		// single-schema variant.
 		try {
-			$schemaEntity = $this->schemaMapper->find($schema);
+			$schemaEntity = (new RegisterScopedSchemaResolver(
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper
+			))->resolveSchemaWithin(register: $registerEntity, schemaRef: $schema);
 		} catch (DoesNotExistException|\Exception $e) {
-			return new DataResponse(['error' => 'Schema not found'], Http::STATUS_NOT_FOUND);
+			return new DataResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		}
 
 		$contextMap = $this->contextService->buildSchemaContext(register: $registerEntity, schema: $schemaEntity);

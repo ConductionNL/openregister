@@ -29,6 +29,8 @@ namespace Unit\Service\Quality;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Quality\QualityScorer;
@@ -49,18 +51,43 @@ class QualityStatisticsServiceTest extends TestCase {
 	 */
 	private $schemaMapper;
 
+	private $registerMapper;
+
 	private QualityStatisticsService $service;
 
 	protected function setUp(): void {
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->service = new QualityStatisticsService(
 			$this->objectService,
 			$this->schemaMapper,
+			$this->registerMapper,
 			new QualityScorer(),
 			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
+
+	/**
+	 * Stub the register-scoped resolution path the annotation lookup now takes.
+	 *
+	 * The annotation is no longer read via a GLOBAL SchemaMapper::find(): the
+	 * register named in the route is the boundary, so the schema ref is matched
+	 * only among the ids that register carries (SchemaMapper::findInIds()).
+	 *
+	 * @param mixed $schema The schema the scoped lookup should resolve to.
+	 *
+	 * @return void
+	 */
+	private function stubScopedSchema($schema): void {
+		$register = new Register();
+		$register->setId(1);
+		$register->setSlug('reg');
+		$register->setSchemas([1]);
+
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->schemaMapper->method('findInIds')->willReturn($schema);
+	}//end stubScopedSchema()
 
 	/**
 	 * Build an ObjectEntity carrying the nil placeholder uuid + payload.
@@ -89,7 +116,7 @@ class QualityStatisticsServiceTest extends TestCase {
 	private function stubQualityAnnotation(array $quality): void {
 		$schema = $this->createMock(Schema::class);
 		$schema->method('getConfiguration')->willReturn(['x-openregister-quality' => $quality]);
-		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->stubScopedSchema($schema);
 	}//end stubQualityAnnotation()
 
 	public function testAverageAndBucketsOverScoredSchema(): void {

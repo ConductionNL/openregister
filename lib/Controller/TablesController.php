@@ -24,6 +24,7 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -39,6 +40,21 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class TablesController extends Controller {
+
+	/**
+	 * The shared register-scoped schema resolver.
+	 *
+	 * Built here rather than injected: it is a stateless collaborator over the
+	 * `RegisterMapper` + `SchemaMapper` this class already holds, so constructing
+	 * it directly keeps every existing unit test — all of which mock those two
+	 * mappers — exercising the REAL resolution path instead of a mock of the very
+	 * thing under test.
+	 *
+	 * @var RegisterScopedSchemaResolver
+	 */
+	private readonly RegisterScopedSchemaResolver $scopedSchemaResolver;
+
+
 	/**
 	 * Constructor
 	 *
@@ -60,6 +76,10 @@ class TablesController extends Controller {
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
+			registerMapper: $registerMapper,
+			schemaMapper: $schemaMapper
+		);
 	}//end __construct()
 
 	/**
@@ -98,18 +118,21 @@ class TablesController extends Controller {
 				return new JSONResponse(['error' => 'Register not found'], 404);
 			}
 
-			// Find schema.
-			$schema = null;
-			if (is_numeric($schemaId) === true) {
-				$schema = $this->schemaMapper->find((int)$schemaId);
-			}
-
-			if (is_numeric($schemaId) === false) {
-				$schema = $this->schemaMapper->findBySlug($schemaId);
-			}
-
-			if ($schema === null) {
-				return new JSONResponse(['error' => 'Schema not found'], 404);
+			// Find schema — REGISTER-SCOPED.
+			//
+			// This used to be a global `find()` for a numeric id and a global
+			// `findBySlug()` for a slug, so the register just resolved above was
+			// never a boundary. Syncing a table is a SCHEMA-SHAPED DDL operation
+			// against `oc_openregister_table_<registerId>_<schemaId>`: resolving to
+			// another app's same-slug schema would reshape this register's table to
+			// a foreign definition. Scoping makes that unreachable.
+			try {
+				$schema = $this->scopedSchemaResolver->resolveSchemaWithin(
+					register: $register,
+					schemaRef: $schemaId
+				);
+			} catch (\Throwable $e) {
+				return new JSONResponse(['error' => $e->getMessage()], 404);
 			}
 
 			// Trigger table sync (without dropping/recreating).
@@ -233,18 +256,13 @@ class TablesController extends Controller {
 					}
 
 					try {
-						$schema = null;
-						if (is_numeric($schemaId) === true) {
-							$schema = $this->schemaMapper->find((int)$schemaId);
-						}
-
-						if (is_numeric($schemaId) === false) {
-							$schema = $this->schemaMapper->findBySlug((string)$schemaId);
-						}
-
-						if ($schema === null) {
-							continue;
-						}
+						// REGISTER-SCOPED — see sync(). The ref comes from THIS
+						// register's own schemas list, so resolving it anywhere
+						// else can only ever be wrong.
+						$schema = $this->scopedSchemaResolver->resolveSchemaWithin(
+							register: $register,
+							schemaRef: $schemaId
+						);
 
 						$this->magicMapper->syncTableForRegisterSchema(
 							register: $register,

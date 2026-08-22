@@ -29,7 +29,9 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCA\OpenRegister\Service\TmloService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -50,6 +52,21 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class TmloController extends Controller {
+
+	/**
+	 * The shared register-scoped schema resolver.
+	 *
+	 * Built here rather than injected: it is a stateless collaborator over the
+	 * `RegisterMapper` + `SchemaMapper` this class already holds, so constructing
+	 * it directly keeps every existing unit test — all of which mock those two
+	 * mappers — exercising the REAL resolution path instead of a mock of the very
+	 * thing under test.
+	 *
+	 * @var RegisterScopedSchemaResolver
+	 */
+	private readonly RegisterScopedSchemaResolver $scopedSchemaResolver;
+
+
 	/**
 	 * Constructor.
 	 *
@@ -73,6 +90,10 @@ class TmloController extends Controller {
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
+			registerMapper: $registerMapper,
+			schemaMapper: $schemaMapper
+		);
 	}//end __construct()
 
 	/**
@@ -94,7 +115,14 @@ class TmloController extends Controller {
 	public function exportSingle(string $register, string $schema, string $id): Response {
 		try {
 			$registerEntity = $this->registerMapper->find($register);
-			$schemaEntity = $this->schemaMapper->find($schema);
+			// REGISTER-SCOPED: the schema ref resolves among the ids this register
+			// carries, never instance-wide. The two used to be resolved
+			// independently, so a `{register}`/`{schema}` pair could export the
+			// archival metadata of another app's same-slug schema.
+			$schemaEntity = $this->scopedSchemaResolver->resolveSchemaWithin(
+				register: $registerEntity,
+				schemaRef: $schema
+			);
 
 			$object = $this->objectService->find(
 				identifier: $id,
@@ -107,6 +135,13 @@ class TmloController extends Controller {
 			$response = new DataResponse($xml, Http::STATUS_OK);
 			$response->addHeader('Content-Type', 'application/xml; charset=UTF-8');
 			return $response;
+		} catch (SchemaNotInRegisterException $e) {
+			// The register-scoped refusal carries a diagnosis — which register, how
+			// many same-slug schemas exist elsewhere, the relink-schemas repair
+			// command. Flattening it into the generic 'not found' below would read
+			// as "your slug is wrong", the one conclusion that is certainly false
+			// when duplicates demonstrably exist.
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(
 				['error' => 'Register or schema not found'],
@@ -144,7 +179,14 @@ class TmloController extends Controller {
 	public function exportBatch(string $register, string $schema): Response {
 		try {
 			$registerEntity = $this->registerMapper->find($register);
-			$schemaEntity = $this->schemaMapper->find($schema);
+			// REGISTER-SCOPED: the schema ref resolves among the ids this register
+			// carries, never instance-wide. The two used to be resolved
+			// independently, so a `{register}`/`{schema}` pair could export the
+			// archival metadata of another app's same-slug schema.
+			$schemaEntity = $this->scopedSchemaResolver->resolveSchemaWithin(
+				register: $registerEntity,
+				schemaRef: $schema
+			);
 
 			// Get all query parameters for filtering.
 			$params = $this->request->getParams();
@@ -168,6 +210,13 @@ class TmloController extends Controller {
 			$response = new DataResponse($xml, Http::STATUS_OK);
 			$response->addHeader('Content-Type', 'application/xml; charset=UTF-8');
 			return $response;
+		} catch (SchemaNotInRegisterException $e) {
+			// The register-scoped refusal carries a diagnosis — which register, how
+			// many same-slug schemas exist elsewhere, the relink-schemas repair
+			// command. Flattening it into the generic 'not found' below would read
+			// as "your slug is wrong", the one conclusion that is certainly false
+			// when duplicates demonstrably exist.
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(
 				['error' => 'Register or schema not found'],
@@ -210,7 +259,11 @@ class TmloController extends Controller {
 				);
 			}
 
-			$schemaEntity = $this->schemaMapper->find($schema);
+			// REGISTER-SCOPED — see exportSingle().
+			$schemaEntity = $this->scopedSchemaResolver->resolveSchemaWithin(
+				register: $registerEntity,
+				schemaRef: $schema
+			);
 
 			// Initialize counts.
 			$counts = [
@@ -231,6 +284,13 @@ class TmloController extends Controller {
 			}
 
 			return new JSONResponse($counts, Http::STATUS_OK);
+		} catch (SchemaNotInRegisterException $e) {
+			// The register-scoped refusal carries a diagnosis — which register, how
+			// many same-slug schemas exist elsewhere, the relink-schemas repair
+			// command. Flattening it into the generic 'not found' below would read
+			// as "your slug is wrong", the one conclusion that is certainly false
+			// when duplicates demonstrably exist.
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		} catch (DoesNotExistException $e) {
 			// Unknown register/schema slug or id: return a clean 404 instead of
 			// leaking the internal DBAL SQL through the generic 500 handler.

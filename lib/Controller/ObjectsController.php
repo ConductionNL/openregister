@@ -4038,10 +4038,23 @@ class ObjectsController extends Controller {
 		$type = $this->request->getParam(key: 'format') ?? $this->request->getParam(key: 'type', default: 'excel');
 
 		// Get register and schema entities.
-		// Bypass multi-tenancy since the user already has access via setRegister/setSchema above,
-		// and this lookup is only needed for the export filename and metadata.
-		$registerEntity = $this->registerMapper->find($register, _multitenancy: false);
-		$schemaEntity = $this->schemaMapper->find($schema, _multitenancy: false);
+		//
+		// Reuse what setRegister()/setSchema() already resolved instead of
+		// re-resolving. The re-resolution was GLOBAL — `$this->schemaMapper->find()`
+		// matches `LOWER(slug)` across the whole instance — so on an instance where
+		// two apps share a schema slug the export was named after ANOTHER app's
+		// schema while its rows came from this register's. A filename is exactly
+		// where that goes unnoticed: the file downloads, opens, and lies about its
+		// own provenance.
+		$registerEntity = $objectService->getCurrentRegisterEntity();
+		$schemaEntity = $objectService->getCurrentSchemaEntity();
+		if ($registerEntity === null || $schemaEntity === null) {
+			// Unreachable in practice — setRegister()/setSchema() above either
+			// resolve or throw. Refusing here rather than re-resolving keeps the
+			// register a boundary: a fallback lookup would be a second, unscoped
+			// chance to find *a* schema with this slug, which is the whole defect.
+			return new JSONResponse(data: ['error' => 'Register or schema not found'], statusCode: 404);
+		}
 
 		// Generate filename base.
 		$filenameBase = sprintf(

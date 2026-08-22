@@ -36,8 +36,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Quality;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -62,10 +64,24 @@ class DuplicateDetectionService {
 	private const MAX_CANDIDATES = 1000;
 
 	/**
+	 * The shared register-scoped schema resolver.
+	 *
+	 * Built here rather than injected: it is a stateless collaborator over the
+	 * `RegisterMapper` + `SchemaMapper` this class already holds, so constructing
+	 * it directly keeps every existing unit test — all of which mock those two
+	 * mappers — exercising the REAL resolution path instead of a mock of the very
+	 * thing under test.
+	 *
+	 * @var RegisterScopedSchemaResolver
+	 */
+	private readonly RegisterScopedSchemaResolver $scopedSchemaResolver;
+
+	/**
 	 * Wire collaborators.
 	 *
 	 * @param ObjectService $objectService Object query path (RBAC + tenant scoped).
 	 * @param SchemaMapper $schemaMapper Schema lookup for the dedup annotation.
+	 * @param RegisterMapper $registerMapper Register lookup — the boundary the schema resolves inside.
 	 * @param SimilarityCalculator $similarity Pure field-similarity primitives.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
@@ -76,10 +92,16 @@ class DuplicateDetectionService {
 	public function __construct(
 		private readonly ObjectService $objectService,
 		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapper $registerMapper,
 		private readonly SimilarityCalculator $similarity,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
+			registerMapper: $registerMapper,
+			schemaMapper: $schemaMapper
+		);
 	}//end __construct()
+
 
 	/**
 	 * Find duplicate-candidate pairs within a register/schema.
@@ -101,7 +123,7 @@ class DuplicateDetectionService {
 	 * @spec openspec/changes/mdm-foundation/tasks.md#task-6
 	 */
 	public function findDuplicates($register, $schema, ?array $matchRules = null, ?float $threshold = null): array {
-		$config = $this->resolveConfig(schema: $schema, matchRules: $matchRules, threshold: $threshold);
+		$config = $this->resolveConfig(register: $register, schema: $schema, matchRules: $matchRules, threshold: $threshold);
 		if ($config === null) {
 			return [];
 		}
@@ -130,14 +152,15 @@ class DuplicateDetectionService {
 	 *
 	 * Returns `[rules, blockingKeys, threshold]`, or null when no usable rules exist.
 	 *
+	 * @param int|string $register Register reference — the boundary.
 	 * @param int|string $schema Schema reference.
 	 * @param array<int, mixed>|null $matchRules Caller-supplied rules, or null.
 	 * @param float|null $threshold Caller-supplied threshold, or null.
 	 *
 	 * @return array{0: array<int, array<string, mixed>>, 1: array<int, string>, 2: float}|null
 	 */
-	private function resolveConfig($schema, ?array $matchRules, ?float $threshold): ?array {
-		$annotation = $this->loadAnnotation(schema: $schema);
+	private function resolveConfig($register, $schema, ?array $matchRules, ?float $threshold): ?array {
+		$annotation = $this->loadAnnotation(register: $register, schema: $schema);
 
 		$rules = $matchRules;
 		if ($rules === null) {
@@ -204,13 +227,30 @@ class DuplicateDetectionService {
 	/**
 	 * Read the `x-openregister-dedup` annotation off a schema.
 	 *
+	 * REGISTER-SCOPED. `GET /api/objects/duplicates/{register}/{schema}` has always
+	 * carried a register, and this lookup used to ignore it and resolve the slug
+	 * globally — so on an instance where two apps share a schema slug, ANOTHER
+	 * app's match rules and threshold decided which of THIS register's rows count
+	 * as duplicates. Match rules name payload fields, so the wrong annotation
+	 * silently compares fields that may not even exist here.
+	 *
+	 * A miss still degrades to `[]` rather than throwing, matching this method's
+	 * pre-existing contract: an absent dedup annotation is a normal state and the
+	 * caller falls back to its own rules.
+	 *
+	 * @param int|string $register Register reference — the boundary.
 	 * @param int|string $schema Schema reference.
 	 *
 	 * @return array<string, mixed> Annotation (empty array when absent / unresolvable).
+	 *
+	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
-	private function loadAnnotation($schema): array {
+	private function loadAnnotation($register, $schema): array {
 		try {
-			$entity = $this->schemaMapper->find($schema, _multitenancy: false);
+			$entity = $this->scopedSchemaResolver->resolvePair(
+				registerRef: $register,
+				schemaRef: $schema
+			)['schema'];
 		} catch (Throwable $e) {
 			return [];
 		}
