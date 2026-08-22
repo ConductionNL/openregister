@@ -353,6 +353,183 @@ class FileValidationHandlerTest extends TestCase {
 		$this->handler->detectExecutableMagicBytes($content, 'page.html');
 	}//end testDetectExecutableMagicBytesPhpScriptTagSingleQuotes()
 
+	// =========================================================================
+	// detectExecutableMagicBytes - binary MIME scoping (openregister#2776)
+	//
+	// The embedded-PHP-tag scan used to run over the first kilobyte of EVERY
+	// upload. A genuine PNG screenshot whose deflate stream happens to contain
+	// `<?=` was rejected as "contains PHP code" (HTTP 400), and because the
+	// throw aborted the caller's batch, one false positive took 284 storable
+	// files with it.
+	//
+	// These tests pin BOTH directions: the real-world PNG must pass, and every
+	// text-ish payload must still be refused.
+	// =========================================================================
+
+	/**
+	 * Path to the reproducer from the Jira attachment migration: a real
+	 * 1283x926 PNG screenshot whose first 1024 bytes contain the `<?=` byte
+	 * sequence at offset 710.
+	 *
+	 * @return string
+	 */
+	private function falsePositivePngPath(): string {
+		return __DIR__ . '/../../../fixtures/files/php-tag-false-positive.png';
+	}//end falsePositivePngPath()
+
+	public function testFixturePngGenuinelyContainsThePhpShortEchoSequence(): void {
+		// Guard the guard: if this fixture is ever re-encoded and loses the
+		// `<?=` bytes, the regression tests below would pass vacuously.
+		$content = (string)file_get_contents($this->falsePositivePngPath());
+
+		$this->assertStringStartsWith("\x89PNG\r\n\x1A\n", $content, 'fixture must be a real PNG');
+		$this->assertStringContainsString('<?=', substr($content, 0, 1024), 'fixture must trip the old rule');
+	}//end testFixturePngGenuinelyContainsThePhpShortEchoSequence()
+
+	public function testRealPngWithEmbeddedPhpShortEchoSequenceIsAccepted(): void {
+		$content = (string)file_get_contents($this->falsePositivePngPath());
+
+		$this->handler->detectExecutableMagicBytes($content, 'Gegevens weergeven.PNG');
+
+		$this->assertTrue(true, 'a genuine PNG must not be rejected as PHP');
+	}//end testRealPngWithEmbeddedPhpShortEchoSequenceIsAccepted()
+
+	public function testRealPngPassesTheFullBlockExecutableFileGate(): void {
+		$content = (string)file_get_contents($this->falsePositivePngPath());
+
+		$this->handler->blockExecutableFile('Gegevens weergeven.PNG', $content);
+
+		$this->assertTrue(true, 'a genuine PNG must survive the whole upload gate');
+	}//end testRealPngPassesTheFullBlockExecutableFileGate()
+
+	/**
+	 * @dataProvider binaryContainerProvider
+	 */
+	public function testBinaryContainersSkipTheEmbeddedPhpScan(string $magic, string $fileName): void {
+		$content = $magic . str_repeat("\x00", 32) . "<?php system('whoami'); ?>" . str_repeat("\x00", 32);
+
+		$this->handler->detectExecutableMagicBytes($content, $fileName);
+
+		$this->assertTrue(true, "{$fileName} must not be scanned for PHP tags");
+	}//end testBinaryContainersSkipTheEmbeddedPhpScan()
+
+	/**
+	 * @return array<string, array{string, string}>
+	 */
+	public static function binaryContainerProvider(): array {
+		return [
+			'png' => ["\x89PNG\r\n\x1A\n", 'screenshot.png'],
+			'jpeg' => ["\xFF\xD8\xFF\xE0", 'photo.jpg'],
+			'gif' => ['GIF89a', 'anim.gif'],
+			'pdf' => ['%PDF-1.7', 'report.pdf'],
+			'zip/docx' => ["PK\x03\x04", 'contract.docx'],
+			'gzip' => ["\x1F\x8B\x08", 'dump.gz'],
+			'ole/doc' => ["\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1", 'legacy.doc'],
+			'matroska' => ["\x1A\x45\xDF\xA3", 'clip.mkv'],
+			'ogg' => ['OggS', 'sound.ogg'],
+			'sqlite' => ["SQLite format 3\x00", 'data.sqlite'],
+		];
+	}//end binaryContainerProvider()
+
+	public function testIsoBaseMediaMp4SkipsTheEmbeddedPhpScan(): void {
+		// 4-byte box length, then the 'ftyp' brand marker at offset 4.
+		$content = "\x00\x00\x00\x20" . 'ftypisom' . str_repeat("\x00", 16) . '<?php echo 1; ?>';
+
+		$this->handler->detectExecutableMagicBytes($content, 'movie.mp4');
+
+		$this->assertTrue(true, 'an mp4 must not be scanned for PHP tags');
+	}//end testIsoBaseMediaMp4SkipsTheEmbeddedPhpScan()
+
+	// --- MUST-FAIL side: the protection is unchanged for everything else. ---
+
+	/**
+	 * @dataProvider stillRejectedProvider
+	 */
+	public function testPhpPayloadsAreStillRejected(string $content, string $fileName): void {
+		$this->expectException(Exception::class);
+
+		$this->handler->detectExecutableMagicBytes($content, $fileName);
+	}//end testPhpPayloadsAreStillRejected()
+
+	/**
+	 * @return array<string, array{string, string}>
+	 */
+	public static function stillRejectedProvider(): array {
+		$php = "<?php system(\$_GET['c']); ?>";
+
+		return [
+			// Plain text and markup are scanned exactly as before.
+			'php source as .php' => [$php, 'shell.php'],
+			'php source as .phtml' => [$php, 'shell.phtml'],
+			'php source as .txt' => [$php, 'notes.txt'],
+			'php source as .html' => ["<html><body>$php</body></html>", 'page.html'],
+			'php short echo in xml' => ["<root><?= 'x' ?></root>", 'feed.xml'],
+			'php inside svg' => ["<svg xmlns='http://www.w3.org/2000/svg'>$php</svg>", 'logo.svg'],
+			'script language=php' => ['<script language="php">echo 1;</script>', 'page.html'],
+			// No extension at all is treated as text-ish and still scanned.
+			'php source, no extension' => [$php, 'attachment'],
+			// An unrecognised byte stream is NOT a known binary container, so the
+			// scan still applies — the skip is a whitelist, not a blocklist.
+			'unknown binary-looking prefix' => ["\x01\x02\x03\x04" . $php, 'blob.dat'],
+			// A polyglot: real PNG magic bytes, but named so a server would
+			// hand it to an interpreter or a markup parser.
+			'png magic saved as .phtml' => ["\x89PNG\r\n\x1A\n" . $php, 'polyglot.phtml'],
+			'png magic saved as .html' => ["\x89PNG\r\n\x1A\n" . $php, 'polyglot.html'],
+			'png magic saved as .svg' => ["\x89PNG\r\n\x1A\n" . $php, 'polyglot.svg'],
+		];
+	}//end stillRejectedProvider()
+
+	public function testUniversalChecksStillApplyToBinaryContainers(): void {
+		// The MIME scoping narrows ONLY the embedded-PHP-tag scan. A PNG-named
+		// file whose leading bytes are a Windows executable is still refused by
+		// the offset-0 magic-byte table.
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('executable');
+
+		$this->handler->detectExecutableMagicBytes('MZ' . str_repeat("\x00", 64), 'innocent.png');
+	}//end testUniversalChecksStillApplyToBinaryContainers()
+
+	public function testShebangStillRejectedRegardlessOfName(): void {
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('shebang');
+
+		$this->handler->detectExecutableMagicBytes("#!/usr/bin/env python\nprint(1)\n", 'data.png');
+	}//end testShebangStillRejectedRegardlessOfName()
+
+	public function testPhpExtensionStillBlockedBeforeContentIsEvenLookedAt(): void {
+		// blockExecutableFile()'s extension blocklist is the primary control and
+		// is untouched: a .php upload is refused whatever its bytes look like.
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('executable file');
+
+		$this->handler->blockExecutableFile('shell.php', "\x89PNG\r\n\x1A\n" . '<?php echo 1;');
+	}//end testPhpExtensionStillBlockedBeforeContentIsEvenLookedAt()
+
+	// =========================================================================
+	// sniffBinaryContentType / shouldScanForEmbeddedPhp
+	// =========================================================================
+	public function testSniffBinaryContentTypeIdentifiesPng(): void {
+		$this->assertSame('image/png', $this->handler->sniffBinaryContentType("\x89PNG\r\n\x1A\n1234"));
+	}//end testSniffBinaryContentTypeIdentifiesPng()
+
+	public function testSniffBinaryContentTypeReturnsNullForText(): void {
+		$this->assertNull($this->handler->sniffBinaryContentType('Hello, world.'));
+	}//end testSniffBinaryContentTypeReturnsNullForText()
+
+	public function testSniffBinaryContentTypeReturnsNullForEmptyContent(): void {
+		$this->assertNull($this->handler->sniffBinaryContentType(''));
+	}//end testSniffBinaryContentTypeReturnsNullForEmptyContent()
+
+	public function testShouldScanForEmbeddedPhpDefaultsToTrue(): void {
+		$this->assertTrue($this->handler->shouldScanForEmbeddedPhp('some plain text', 'readme.txt'));
+	}//end testShouldScanForEmbeddedPhpDefaultsToTrue()
+
+	public function testShouldScanForEmbeddedPhpIsFalseForRealPng(): void {
+		$content = (string)file_get_contents($this->falsePositivePngPath());
+
+		$this->assertFalse($this->handler->shouldScanForEmbeddedPhp($content, 'Gegevens weergeven.PNG'));
+	}//end testShouldScanForEmbeddedPhpIsFalseForRealPng()
+
 	public function testDetectExecutableMagicBytesLogsWarningOnDetection(): void {
 		$this->logger->expects($this->once())
 			->method('warning');
