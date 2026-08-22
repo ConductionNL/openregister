@@ -182,8 +182,12 @@ class BulkSaveOutcome {
 			$failures[] = [
 				'index' => ($failure['index'] ?? null),
 				'uuid' => ($failure['uuid'] ?? null),
-				'error' => (string)($failure['message'] ?? 'Row failed without a recorded reason'),
-				'type' => (string)($failure['exceptionClass'] ?? 'BulkSaveRejection'),
+				// No `??` fallbacks on these two: getFailed() declares both
+				// `message` and `exceptionClass` as required, non-nullable
+				// strings, so neither default could ever be reached. `index` and
+				// `uuid` above ARE nullable and keep theirs.
+				'error' => (string)$failure['message'],
+				'type' => (string)$failure['exceptionClass'],
 			];
 		}
 

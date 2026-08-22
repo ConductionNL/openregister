@@ -291,10 +291,10 @@ class SharedSchemaDedupeService {
 		unset($clone['id'], $clone['uuid'], $clone['uri'], $clone['created'], $clone['updated']);
 		$clone['application'] = $register->getApplication();
 
+		// No `getId() === null` check: createFromArray() returns a persisted
+		// Schema whose id the mapper has already assigned, and it throws rather
+		// than handing back an unsaved one.
 		$schema = $this->schemaMapper->createFromArray(object: $clone);
-		if ($schema->getId() === null) {
-			throw new RuntimeException(sprintf('Could not create a replacement for schema %d.', $oldId));
-		}
 
 		return $schema;
 	}//end createReplacementSchema()
@@ -425,11 +425,8 @@ class SharedSchemaDedupeService {
 	 */
 	private function loadRegisters(): array {
 		$registers = [];
+		// No instanceof filter: findAll() is declared to return Register[].
 		foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
-			if ($register instanceof Register === false) {
-				continue;
-			}
-
 			$registers[(int)$register->getId()] = $register;
 		}
 
