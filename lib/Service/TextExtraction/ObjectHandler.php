@@ -170,9 +170,12 @@ class ObjectHandler implements TextExtractionHandlerInterface {
 			}
 		}
 
-		// Add organization.
-		if ($object->getOrganization() !== null && $object->getOrganization() !== '') {
-			$textParts[] = 'Organization: ' . $object->getOrganization();
+		// Add organisation. NOTE the spelling: the entity's property, column and
+		// accessor are all `organisation`. `getOrganization()` does not exist and
+		// throws "organization is not a valid attribute" out of Entity::__call.
+		$organisation = $object->getOrganisation();
+		if ($organisation !== null && $organisation !== '') {
+			$textParts[] = 'Organisation: ' . $organisation;
 		}
 
 		// Join all parts.
@@ -193,7 +196,7 @@ class ObjectHandler implements TextExtractionHandlerInterface {
 			'checksum' => $checksum,
 			'method' => 'object_extraction',
 			'owner' => $object->getOwner() ?? null,
-			'organisation' => $object->getOrganization() ?? null,
+			'organisation' => $object->getOrganisation() ?? null,
 			'language' => null,
 			'language_level' => null,
 			'language_confidence' => null,
@@ -245,7 +248,7 @@ class ObjectHandler implements TextExtractionHandlerInterface {
 	 * @throws DoesNotExistException If object not found.
 	 *
 	 * @psalm-return array{id: int, uuid: null|string, schema: null|string,
-	 *     register: null|string, version: null|string, organization: mixed,
+	 *     register: null|string, version: null|string, organisation: null|string,
 	 *     owner: null|string, updated: \DateTime|null}
 	 *
 	 * @spec openspec/specs/text-extraction/spec.md
@@ -259,7 +262,7 @@ class ObjectHandler implements TextExtractionHandlerInterface {
 			'schema' => $object->getSchema(),
 			'register' => $object->getRegister(),
 			'version' => $object->getVersion(),
-			'organization' => $object->getOrganization(),
+			'organisation' => $object->getOrganisation(),
 			'owner' => $object->getOwner(),
 			'updated' => $object->getUpdated(),
 		];
