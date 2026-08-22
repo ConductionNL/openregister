@@ -110,6 +110,7 @@ class ContextsControllerTest extends TestCase {
 
 	public function testRegisterContextZeroConfig(): void {
 		$this->registerMapper->method('find')->willReturn($this->makeRegister());
+		$this->schemaMapper->method('findInIds')->willReturn($this->makeSchema());
 		$this->schemaMapper->method('find')->willReturn($this->makeSchema());
 		$this->request->method('getHeader')->willReturn('');
 
@@ -127,6 +128,10 @@ class ContextsControllerTest extends TestCase {
 		}
 
 		$this->registerMapper->method('find')->willReturn($this->makeRegister());
+		// The controller resolves the schema WITHIN the register's carried ids
+		// (findInIds), not instance-wide — a register named in the path is a
+		// boundary. Stub both so the test exercises the real resolution path.
+		$this->schemaMapper->method('findInIds')->willReturn($this->makeSchema());
 		$this->schemaMapper->method('find')->willReturn($this->makeSchema());
 
 		// First call to learn the ETag.
@@ -160,6 +165,7 @@ class ContextsControllerTest extends TestCase {
 
 	public function testUnknownSchemaReturns404(): void {
 		$this->registerMapper->method('find')->willReturn($this->makeRegister());
+		$this->schemaMapper->method('findInIds')->willReturn(null);
 		$this->schemaMapper->method('find')->willThrowException(new DoesNotExistException('nope'));
 		$this->request->method('getHeader')->willReturn('');
 
