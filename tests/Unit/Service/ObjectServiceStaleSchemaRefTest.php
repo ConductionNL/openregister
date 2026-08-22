@@ -213,6 +213,65 @@ class ObjectServiceStaleSchemaRefTest extends TestCase {
 	}//end testAPendingSchemaRefFromAPreviousCallerIsNotResolvedInThisCallsRegister()
 
 	/**
+	 * THE SAME LEAK, VIA findAll() — the shape that broke a flow run.
+	 *
+	 * `find()` was guarded first (#2790) and the ref was made single-use
+	 * (#2792), but single-use only means the leaked ref claims ONE victim
+	 * instead of many: it is still handed to the FIRST `setRegister()` that
+	 * follows, whoever that is.
+	 *
+	 * Measured on development 2026-08-22: an unrelated operation left a
+	 * `synchronization_contract` ref behind, and a flow's `object-write` — which
+	 * names its OWN register and schema — was refused with
+	 * `Schema slug "synchronization_contract" is not carried by register
+	 * "fns-…-reg"`. A register that had never heard of that slug, named in an
+	 * error for a call that never mentioned it.
+	 *
+	 * @return void
+	 */
+	public function testALeakedRefDoesNotRefuseAnOperationThatNamesItsOwnScope(): void {
+		$contract = new Schema();
+		$contract->setId(222);
+		$contract->setSlug('synchronization_contract');
+
+		$this->schemaMapper->method('find')->willReturn($contract);
+		// An unrelated operation anchors on a schema by slug and never sets a
+		// register — exactly what leaves a ref pending.
+		$this->service->setSchema('synchronization_contract');
+
+		// A flow now writes into ITS OWN register, naming both halves.
+		$flowRegister = new Register();
+		$flowRegister->setId(15);
+		$flowRegister->setSlug('fns-run-reg');
+		$flowRegister->setSchemas([9001]);
+
+		$target = new Schema();
+		$target->setId(9001);
+		$target->setSlug('target');
+
+		$this->registerMapper->method('find')->willReturn($flowRegister);
+		$this->schemaMapper->method('findBySlugInIds')->willReturnCallback(
+			static fn (string $slug, array $ids) => ($slug === 'target') ? $target : null
+		);
+		$this->schemaMapper->method('findInIds')->willReturnCallback(
+			static fn ($ref, array $ids) => ($ref === 'target' || $ref === 9001) ? $target : null
+		);
+
+		// BEFORE THIS FIX: SchemaNotInRegisterException naming
+		// "synchronization_contract" inside "fns-run-reg". findAll() is the
+		// lighter of the two paths and is the one openconnector's contract
+		// lookup actually takes (SynchronizationService passes register+schema
+		// inside `filters`, which prepareFindAllConfig turns into
+		// setRegister()->setSchema()).
+		$this->service->findAll(
+			config: ['filters' => ['register' => 'fns-run-reg', 'schema' => 'target']]
+		);
+
+		$this->addToAssertionCount(1);
+
+	}//end testALeakedRefDoesNotRefuseAnOperationThatNamesItsOwnScope()
+
+	/**
 	 * The same leak, on the WRITE path — which find() never covered.
 	 *
 	 * find() clears the pending ref itself. saveObject() and patchObject() do

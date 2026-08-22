@@ -609,6 +609,39 @@ class ObjectService implements ObjectServiceInterface
     }//end setSchema()
 
     /**
+     * Drop any schema ref still pending from an earlier, unrelated call.
+     *
+     * WHY EVERY OPERATION MUST DO THIS FIRST.
+     *
+     * `setSchema()` leaves a raw ref so a LATER `setRegister()` can re-resolve
+     * it inside the register the caller names. That makes the two setters
+     * order-independent, which is the point — but the ref is instance state on
+     * a service reused for many calls in one process, so it outlives the chain
+     * that created it.
+     *
+     * Making it SINGLE-USE (#2792) bounded the damage to one victim instead of
+     * many; it did not remove the victim. The ref is still handed to the FIRST
+     * `setRegister()` that follows, whoever that turns out to be. Measured on
+     * development 2026-08-22: a leaked `synchronization_contract` ref was
+     * re-resolved inside a flow's own target register — a register that had
+     * never heard of it — and failed `object-write` mid-run.
+     *
+     * A pending ref belongs to the fluent chain that created it. An operation
+     * that supplies its own scope through its arguments is by definition a new
+     * chain, so it starts by discarding whatever was left behind. Callers that
+     * really do chain (`setSchema($s)->setRegister($r)`) are unaffected: no
+     * operation runs between the two setters.
+     *
+     * @return void
+     *
+     * @spec exclude Context hygiene shared by every entry point; no business rule of its own.
+     */
+    private function discardPendingSchemaRef(): void
+    {
+        $this->currentSchemaRef = null;
+    }//end discardPendingSchemaRef()
+
+    /**
      * Get the register entity resolved by the last setRegister() call.
      *
      * Exposes the already-resolved entity so callers (e.g. controllers that
@@ -764,7 +797,7 @@ class ObjectService implements ObjectServiceInterface
         // on the way IN is the same rule applied at the other end: find()
         // supplies its own scope through its arguments and must never inherit
         // a pending one.
-        $this->currentSchemaRef = null;
+        $this->discardPendingSchemaRef();
 
         try {
             $callRegister = null;
@@ -1036,6 +1069,7 @@ class ObjectService implements ObjectServiceInterface
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
+        $this->discardPendingSchemaRef();
         // Check if a register is provided and set the current register context.
         if ($register !== null) {
             $this->setRegister(register: $register);
@@ -1092,6 +1126,7 @@ class ObjectService implements ObjectServiceInterface
      */
     public function findAll(array $config=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
+        $this->discardPendingSchemaRef();
         // Prepare configuration and set context.
         $config = $this->prepareFindAllConfig(config: $config);
 
@@ -1191,6 +1226,7 @@ class ObjectService implements ObjectServiceInterface
     public function count(
         array $config=[]
     ): int {
+        $this->discardPendingSchemaRef();
         // Scope the count to the current register/schema context (set via
         // setRegister()/setSchema()) by passing them to the mapper as typed
         // params. Without them MagicMapper::countAll() sums EVERY register/schema
@@ -1341,6 +1377,7 @@ class ObjectService implements ObjectServiceInterface
         bool $failIfExists=false,
         bool $_unowned=false
     ): ObjectEntity {
+        $this->discardPendingSchemaRef();
         // Bound the folder-access revalidation cache to this single save call
         // (not the whole FileService/request lifetime), so a cascade save that
         // moves or trashes a folder mid-request can't be waved through on a
@@ -2209,6 +2246,7 @@ class ObjectService implements ObjectServiceInterface
         ?IUser $currentUser=null,
         bool $permanent=false
     ): bool {
+        $this->discardPendingSchemaRef();
         // Explicit acting user for the permission check; null keeps today's
         // session-resolved behaviour for every existing caller.
         $actingUserId = $currentUser?->getUID();
@@ -3878,6 +3916,7 @@ class ObjectService implements ObjectServiceInterface
         bool $enrich=true,
         bool $_audit=true
     ): array {
+        $this->discardPendingSchemaRef();
 
         // Bound the folder-access revalidation cache to this bulk-save call
         // (see saveObject) so mid-request folder mutations are re-validated.
@@ -4076,6 +4115,7 @@ class ObjectService implements ObjectServiceInterface
      */
     public function deleteObjects(array $uuids=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
+        $this->discardPendingSchemaRef();
         if (empty($uuids) === true) {
             return ['deleted_uuids' => [], 'skipped_uuids' => [], 'cascade_count' => 0];
         }
