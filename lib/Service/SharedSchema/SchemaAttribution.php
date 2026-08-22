@@ -287,7 +287,9 @@ class SchemaAttribution {
 			$result[] = $entry;
 		}
 
-		return array_values($result);
+		// No array_values(): $result is only ever appended to, so it is already
+		// a list.
+		return $result;
 	}//end replaceSchemaId()
 
 	/**
