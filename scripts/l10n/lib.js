@@ -763,7 +763,12 @@ function loadDetector(loc) {
  * @return {RegExp} Test against a bare filename.
  */
 function localeFileRe(loc) {
-	return new RegExp(`^${loc}(_[A-Za-z]{2,3})?\\.json$`)
+	// `loc` reaches here from a command-line argument, so it goes through the
+	// standard metacharacter escape before it is interpolated into a pattern.
+	// Without it a caller could pass `.*` and have this match every catalogue
+	// on disk instead of one locale's (CodeQL js/regex-injection).
+	const escaped = String(loc).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+	return new RegExp(`^${escaped}(_[A-Za-z]{2,3})?\\.json$`)
 }
 
 function coreCatalogues(loc) {

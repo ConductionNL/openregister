@@ -78,7 +78,13 @@ function prose(s) {
 		.replace(/`[^`]*`/g, ' ')
 		.replace(/https?:\/\/\S+/g, ' ')
 		.replace(/\b[\w.-]+\.(json|js|vue|ods|xlsx|php|md|ya?ml)\b/gi, ' ')
-		.replace(/\b[a-z_]+(?:_[a-z_]+)+\b/gi, ' ') // snake_case identifiers
+		// snake_case identifiers. The classes either side of the underscore are
+		// DISJOINT on purpose: the previous `[a-z_]+(?:_[a-z_]+)+` let both
+		// halves consume underscores, so a run of them ("a__________b") gave the
+		// engine an exponential number of ways to split the same text — CodeQL
+		// js/redos. `_+` here still absorbs repeated underscores, so `foo__bar`
+		// matches exactly as before, but there is only one way to match it.
+		.replace(/\b[a-z0-9]+(?:_+[a-z0-9]+)+\b/gi, ' ')
 		.replace(/\b[a-z]+[A-Z]\w*/g, ' ') // camelCase identifiers
 		.replace(/(?<!\p{L})\p{Lu}{2,}(?!\p{Ll})/gu, ' ') // ALLCAPS initialisms
 }

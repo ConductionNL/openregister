@@ -390,7 +390,7 @@
 										v-if="memoryPredictionLoading"
 										class="stat-value loading">
 										<NcLoadingIcon :size="16" />
-										{{ t('openregister', 'Loading...') }}
+										{{ t('openregister', 'Loading…') }}
 									</span>
 									<span
 										v-else

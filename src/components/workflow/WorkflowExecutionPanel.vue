@@ -2,7 +2,7 @@
 	<div class="workflow-execution-panel">
 		<h3>Execution History</h3>
 		<div v-if="loading" class="loading">
-			{{ t('openregister', 'Loading...') }}
+			{{ t('openregister', 'Loading…') }}
 		</div>
 		<table v-else-if="executions.length" class="execution-table">
 			<thead>
