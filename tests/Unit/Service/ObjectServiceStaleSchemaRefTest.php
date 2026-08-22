@@ -211,4 +211,74 @@ class ObjectServiceStaleSchemaRefTest extends TestCase {
 		$this->addToAssertionCount(1);
 
 	}//end testAPendingSchemaRefFromAPreviousCallerIsNotResolvedInThisCallsRegister()
+
+	/**
+	 * The same leak, on the WRITE path — which find() never covered.
+	 *
+	 * find() clears the pending ref itself. saveObject() and patchObject() do
+	 * not go through find(): they call setContextFromParameters(), which was
+	 * left unguarded, so the ref survived into the write path and was consumed
+	 * by the setRegister() of an operation that never mentioned it.
+	 *
+	 * MEASURED on buildiq's E2E 2026-08-22 12:26 UTC, AFTER the single-use fix
+	 * landed at 11:09:
+	 *
+	 *     POST /apps/docudesk/api/templates
+	 *     Failed to create template: Schema slug "application" is not carried by
+	 *     register "docudesk" (id 19) …
+	 *
+	 * Docudesk asked for register 19 / schema 18 (`template`). `application` is
+	 * openbuild's schema, left pending by an unrelated earlier call on the same
+	 * shared ObjectService instance.
+	 *
+	 * Driven through the private helper by reflection rather than through
+	 * saveObject(): the leak lives entirely in context resolution, and the rest
+	 * of a save needs a dozen more collaborators that would obscure what is
+	 * being asserted.
+	 *
+	 * @return void
+	 */
+	public function testAPendingSchemaRefDoesNotLeakIntoAWriteThatNamesBoth(): void {
+		// An earlier, unrelated caller anchored the shared service on a slug.
+		$appSchema = new Schema();
+		$appSchema->setId(28);
+		$appSchema->setSlug('application');
+
+		$this->schemaMapper->method('find')->willReturn($appSchema);
+		$this->service->setSchema('application');
+
+		// Now a write names BOTH sides outright — docudesk's own pair.
+		$register = new Register();
+		$register->setId(19);
+		$register->setSlug('docudesk');
+		$register->setSchemas([18]);
+
+		$template = new Schema();
+		$template->setId(18);
+		$template->setSlug('template');
+
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->schemaMapper->method('findInIds')->willReturnCallback(
+			static function ($ref, array $ids) use ($template) {
+				return ((int) $ref === 18) ? $template : null;
+			}
+		);
+
+		$setContext = new \ReflectionMethod($this->service, 'setContextFromParameters');
+		$setContext->setAccessible(true);
+
+		// BEFORE THE FIX this throws SchemaNotInRegisterException naming
+		// "application" — a schema this write never mentioned.
+		$setContext->invoke($this->service, 19, 18);
+
+		$schema = new \ReflectionProperty($this->service, 'currentSchema');
+		$schema->setAccessible(true);
+
+		$this->assertSame(
+			18,
+			$schema->getValue($this->service)?->getId(),
+			'the write must resolve the schema it named, not the one left pending'
+		);
+
+	}//end testAPendingSchemaRefDoesNotLeakIntoAWriteThatNamesBoth()
 }//end class
