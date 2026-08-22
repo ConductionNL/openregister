@@ -884,4 +884,55 @@ class NotificationAnnotationValidatorTest extends TestCase {
 		$this->assertContains('notification-scheduled-bad-dedupe-fields', $codes);
 	}
 
+	// ---- notification-scheduled-filter-grammar ----
+
+	public function testMapWithoutOperatorIsNowAnErrorRatherThanASilentAccept(): void {
+		// This is the exact hole the change closes. Before, any array lacking an
+		// `operator` key was accepted as a "scalar shortcut" and then compared
+		// by identity against a scalar field, so it matched nothing — forever,
+		// quietly. 24 filter entries across three apps shipped this way.
+		$errors = $this->v->validate(
+			$this->scheduledSchemaWith(['filter' => ['status' => ['unexpected' => 'shape']]])
+		);
+
+		$this->assertContains('notification-scheduled-bad-filter-shape', array_column($errors, 'code'));
+	}
+
+	public function testOpKeyIsRejectedWithAMessageNamingOperator(): void {
+		// openconnector job.job-overdue.
+		$errors = $this->v->validate(
+			$this->scheduledSchemaWith(['filter' => ['isEnabled' => ['op' => 'equals', 'value' => true]]])
+		);
+
+		$codes = array_column($errors, 'code');
+		$this->assertContains('notification-scheduled-bad-filter-operator-key', $codes);
+
+		$messages = implode(' ', array_column($errors, 'message'));
+		$this->assertStringContainsString('"operator"', $messages);
+	}
+
+	public function testBareListAndCombinatorFiltersValidate(): void {
+		// decidesk's 18 rules and shillinq's 4, which the grammar now admits.
+		$this->assertSame(
+			[],
+            $this->v->validate($this->scheduledSchemaWith(['filter' => ['lifecycle' => ['open', 'in-uitvoering']]]))
+		);
+
+		$this->assertSame(
+			[],
+			$this->v->validate(
+				$this->scheduledSchemaWith(
+					[
+						'filter' => [
+							'all' => [
+								['field' => 'state', 'operator' => 'notIn', 'values' => ['paid']],
+								['field' => 'dueDate', 'operator' => 'before', 'value' => 'now'],
+							],
+						],
+					]
+				)
+			)
+		);
+	}
+
 }

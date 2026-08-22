@@ -322,4 +322,83 @@ final class ScheduledFilterEvaluatorTest extends TestCase {
 		);
 	}
 
+	// ---- notification-scheduled-filter-grammar: membership, instants, combinators ----
+
+	public function testBareListMeansMembership(): void {
+		// decidesk's 18 rappel rules are written this way.
+		$filter = ['lifecycle' => ['open', 'in-uitvoering']];
+
+		self::assertTrue($this->evaluator->matches(objectData: ['lifecycle' => 'open'], filter: $filter, now: $this->now));
+		self::assertTrue($this->evaluator->matches(objectData: ['lifecycle' => 'in-uitvoering'], filter: $filter, now: $this->now));
+		self::assertFalse($this->evaluator->matches(objectData: ['lifecycle' => 'afgedaan'], filter: $filter, now: $this->now));
+		self::assertFalse($this->evaluator->matches(objectData: [], filter: $filter, now: $this->now));
+	}
+
+	public function testNotInIsSatisfiedByAMissingField(): void {
+		$filter = ['state' => ['operator' => 'notIn', 'values' => ['paid']]];
+
+		self::assertTrue($this->evaluator->matches(objectData: [], filter: $filter, now: $this->now));
+		self::assertTrue($this->evaluator->matches(objectData: ['state' => 'open'], filter: $filter, now: $this->now));
+		self::assertFalse($this->evaluator->matches(objectData: ['state' => 'paid'], filter: $filter, now: $this->now));
+	}
+
+	public function testMembershipOverAnArrayFieldIsIntersection(): void {
+		$filter = ['tags' => ['b', 'c']];
+
+		self::assertTrue($this->evaluator->matches(objectData: ['tags' => ['a', 'b']], filter: $filter, now: $this->now));
+		self::assertFalse($this->evaluator->matches(objectData: ['tags' => ['a']], filter: $filter, now: $this->now));
+	}
+
+	public function testBeforeAndAfterResolveTheThreeInstantSpellings(): void {
+		$past = ['d' => '2026-06-01T00:00:00+00:00'];
+
+		self::assertTrue($this->evaluator->matches(objectData: $past, filter: ['d' => ['operator' => 'before', 'value' => 'now']], now: $this->now));
+		self::assertTrue($this->evaluator->matches(objectData: $past, filter: ['d' => ['operator' => 'before', 'value' => '2026-07-01']], now: $this->now));
+		// Signed duration: "-P7D" is a week ago, so a June date is before it.
+		self::assertTrue($this->evaluator->matches(objectData: $past, filter: ['d' => ['operator' => 'before', 'value' => '-P7D']], now: $this->now));
+		self::assertFalse($this->evaluator->matches(objectData: $past, filter: ['d' => ['operator' => 'after', 'value' => 'now']], now: $this->now));
+	}
+
+	public function testShillinqCombinatorEvaluates(): void {
+		// APTransaction.overdue, verbatim.
+		$filter = [
+			'all' => [
+				['field' => 'state', 'operator' => 'notIn', 'values' => ['paid', 'written-off', 'voided']],
+				['field' => 'dueDate', 'operator' => 'before', 'value' => 'now'],
+			],
+		];
+
+		self::assertTrue($this->evaluator->matches(objectData: ['state' => 'open', 'dueDate' => '2026-06-01T00:00:00+00:00'], filter: $filter, now: $this->now));
+		self::assertFalse($this->evaluator->matches(objectData: ['state' => 'paid', 'dueDate' => '2026-06-01T00:00:00+00:00'], filter: $filter, now: $this->now));
+		self::assertFalse($this->evaluator->matches(objectData: ['state' => 'open', 'dueDate' => '2027-01-01T00:00:00+00:00'], filter: $filter, now: $this->now));
+	}
+
+	public function testEmptyAllMatchesButEmptyAnyDoesNot(): void {
+		// "any of nothing" is false; treating it as true would silently widen a
+		// rule to the whole table.
+		self::assertTrue($this->evaluator->matches(objectData: ['x' => 1], filter: ['all' => []], now: $this->now));
+		self::assertFalse($this->evaluator->matches(objectData: ['x' => 1], filter: ['any' => []], now: $this->now));
+	}
+
+	public function testAnyIsADisjunction(): void {
+		$filter = [
+			'any' => [
+				['field' => 'a', 'operator' => 'equals', 'value' => 1],
+				['field' => 'b', 'operator' => 'equals', 'value' => 2],
+			],
+		];
+
+		self::assertTrue($this->evaluator->matches(objectData: ['a' => 1, 'b' => 9], filter: $filter, now: $this->now));
+		self::assertTrue($this->evaluator->matches(objectData: ['a' => 9, 'b' => 2], filter: $filter, now: $this->now));
+		self::assertFalse($this->evaluator->matches(objectData: ['a' => 9, 'b' => 9], filter: $filter, now: $this->now));
+	}
+
+	public function testAnUnexecutableFilterMatchesNothing(): void {
+		// openconnector's `op` spelling. Previously accepted and silently
+		// non-matching; now explicitly non-matching, and loud about it.
+		$filter = ['isEnabled' => ['op' => 'equals', 'value' => true]];
+
+		self::assertFalse($this->evaluator->matches(objectData: ['isEnabled' => true], filter: $filter, now: $this->now));
+	}
+
 }//end class
