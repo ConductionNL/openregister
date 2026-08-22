@@ -86,7 +86,7 @@ class TmloController extends Controller {
 		private readonly TmloService $tmloService,
 		private readonly ObjectService $objectService,
 		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		SchemaMapper $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);

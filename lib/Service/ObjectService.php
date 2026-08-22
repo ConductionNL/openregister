@@ -835,14 +835,32 @@ class ObjectService implements ObjectServiceInterface
             // RBAC code points at the right context — never at the stale
             // leftover from a previous call. This mutation is undone by the
             // `finally` block before returning to the caller.
+            //
+            // These ids come off the OBJECT ROW, which is ground truth: the row
+            // physically lives in `oc_openregister_table_<register>_<schema>`, so
+            // the pair is consistent by construction. They must therefore NOT be
+            // re-scoped against `register->getSchemas()` the way a caller-supplied
+            // route ref is — a register whose linkage list has gone stale would
+            // otherwise make an object that demonstrably exists unreadable, which
+            // is a worse failure than the cross-app read the scoping prevents.
+            // Hence the direct assignment instead of setSchema()/setRegister().
             if ($callSchema === null) {
-                $this->setSchema(schema: $object->getSchema());
+                $this->currentSchema    = $this->schemaMapper->find(
+                    id: $object->getSchema(),
+                    _rbac: false,
+                    _multitenancy: false
+                );
+                $this->currentSchemaRef = null;
             }
 
             if ($callRegister === null) {
                 $registerRef = $object->getRegister();
                 if ($registerRef !== null && $registerRef !== '') {
-                    $this->setRegister(register: $registerRef);
+                    $this->currentRegister = $this->registerMapper->find(
+                        id: $registerRef,
+                        _rbac: false,
+                        _multitenancy: false
+                    );
                 }
             }
 

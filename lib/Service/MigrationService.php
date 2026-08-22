@@ -59,8 +59,8 @@ class MigrationService {
 	 */
 	public function __construct(
 		private readonly MagicMapper $magicMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		RegisterMapper $registerMapper,
+		SchemaMapper $schemaMapper,
 		private readonly IDBConnection $db,
 	) {
 		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(

@@ -72,7 +72,7 @@ class TablesController extends Controller {
 		private readonly IAppConfig $config,
 		private readonly MagicMapper $magicMapper,
 		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		SchemaMapper $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);

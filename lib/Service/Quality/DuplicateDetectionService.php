@@ -91,8 +91,8 @@ class DuplicateDetectionService {
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		SchemaMapper $schemaMapper,
+		RegisterMapper $registerMapper,
 		private readonly SimilarityCalculator $similarity,
 		private readonly LoggerInterface $logger,
 	) {

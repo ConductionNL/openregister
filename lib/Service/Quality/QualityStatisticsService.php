@@ -121,8 +121,8 @@ class QualityStatisticsService {
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		SchemaMapper $schemaMapper,
+		RegisterMapper $registerMapper,
 		private readonly QualityScorer $scorer,
 		private readonly LoggerInterface $logger,
 	) {
