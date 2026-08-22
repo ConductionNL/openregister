@@ -213,7 +213,7 @@ final class ScheduledFilterEvaluator {
 				return ($this->membershipMatches(actual: $actual, values: (array)$operand) === false);
 			case 'before':
 			case 'after':
-				$instant = $this->resolveInstant(value: (string)$operand, field: $field, operator: $operator, now: $now);
+				$instant = $this->resolveInstant(value: (string)$operand, field: $field, now: $now);
 				if ($instant === null) {
 					return false;
 				}
@@ -314,12 +314,11 @@ final class ScheduledFilterEvaluator {
 	 *
 	 * @param string $value The instant as written.
 	 * @param string $field The field name, for diagnostics.
-	 * @param string $operator The operator name, for diagnostics.
 	 * @param DateTimeImmutable $now Logical "now".
 	 *
 	 * @return DateTimeImmutable|null The instant, or null when unresolvable.
 	 */
-	private function resolveInstant(string $value, string $field, string $operator, DateTimeImmutable $now): ?DateTimeImmutable {
+	private function resolveInstant(string $value, string $field, DateTimeImmutable $now): ?DateTimeImmutable {
 		if ($value === 'now') {
 			return $now;
 		}
