@@ -2838,7 +2838,7 @@ class SaveObject {
 						_rbac: false,
 						_multitenancy: false
 					);
-					// find() throws DoesNotExistException rather than returning
+					// The find() call throws DoesNotExistException rather than returning
 					// null — that catch below is the real "missing" path.
 					$existingObjectData = $tempExistingObject->getObject();
 				} catch (DoesNotExistException $e) {

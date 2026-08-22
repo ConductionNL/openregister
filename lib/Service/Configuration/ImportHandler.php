@@ -3409,10 +3409,11 @@ class ImportHandler {
 	 * @param array<int, array<string, mixed>> $workflows Workflow entries from import JSON
 	 * @param array<string, mixed> $result Current import result array
 	 * @param array<string, DeployedWorkflow> $deployedWorkflows Map populated by reference
+	 * @param string $importSource Import source identifier
+	 *
 	 * @param-out array<int|string, DeployedWorkflow> $deployedWorkflows A workflow named
 	 *         with a canonical numeric string ("12") gets an INT key from PHP's array-key
 	 *         coercion, so the map that comes back out is not key-narrowable to string.
-	 * @param string $importSource Import source identifier
 	 *
 	 * @return array<string, mixed> Updated result array
 	 *

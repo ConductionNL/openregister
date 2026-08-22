@@ -1063,7 +1063,7 @@ class EntityRecognitionHandler {
 		}
 
 		if (function_exists('mb_scrub') === true) {
-			// mb_scrub() returns string, so no is_string() re-check is needed.
+			// The mb_scrub() call returns string, so no is_string() re-check.
 			return mb_scrub($value, 'UTF-8');
 		}
 

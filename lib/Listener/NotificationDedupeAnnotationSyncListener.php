@@ -105,13 +105,13 @@ final class NotificationDedupeAnnotationSyncListener implements IEventListener {
 	 */
 	private function resolveSchema(Event $event): ?Schema {
 		if ($event instanceof SchemaCreatedEvent) {
-			// getSchema() is declared to return Schema, so the instanceof
+			// The getSchema() accessor is declared to return Schema, so the instanceof
 			// re-check and its null fallback were both unreachable.
 			return $event->getSchema();
 		}
 
 		if ($event instanceof SchemaUpdatedEvent) {
-			// getNewSchema() is declared to return Schema; see above.
+			// The getNewSchema() accessor is declared to return Schema; see above.
 			return $event->getNewSchema();
 		}
 

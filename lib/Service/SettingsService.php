@@ -1141,7 +1141,7 @@ class SettingsService {
 						uuid: $object->getUuid()
 					);
 
-					// saveObject() is declared non-nullable and signals failure by
+					// The saveObject() call is declared non-nullable and signals failure by
 					// throwing, so reaching this line IS the success case. The
 					// "Save operation returned null" branch that used to sit here
 					// could never run; the catch below is the real failure path

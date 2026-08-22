@@ -8384,7 +8384,7 @@ class MagicMapper extends AbstractObjectMapper {
 				$columnToPropertyMap = $this->rowColumnToPropertyCache[$schemaIdForMap];
 			} else {
 				try {
-					// find() throws when the schema is missing; the catch below is
+					// The find() call throws when the schema is missing; the catch below is
 					// the "not found" path, so no null test is needed here.
 					$schema = $this->schemaMapper->find($schemaIdForMap);
 

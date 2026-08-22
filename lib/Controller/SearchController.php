@@ -135,7 +135,7 @@ class SearchController extends Controller {
 			 */
 
 			function ($object): array {
-				// searchObjectsPaginated() returns ObjectEntity rows, and
+				// The searchObjectsPaginated() call returns ObjectEntity rows, and
 				// ObjectEntity declares getUuid() / getName() only as `@method`
 				// — Nextcloud's Entity serves them through __call(). An earlier
 				// version of this closure probed with method_exists(), which is

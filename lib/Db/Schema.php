@@ -2845,7 +2845,7 @@ class Schema extends Entity implements JsonSerializable {
 			// Determine appropriate facet type based on property configuration.
 			$facetType = $this->determineFacetType(property: $property);
 
-			// determineFacetType() is declared `: string`, so there is no null
+			// The determineFacetType() helper is declared `: string`, so there is no null
 			// case to guard against.
 			$facetConfig['object_fields'][$propertyKey] = [
 				'type' => $facetType,

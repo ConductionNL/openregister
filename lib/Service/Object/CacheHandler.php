@@ -1374,7 +1374,7 @@ class CacheHandler {
 		try {
 			// STEP 1: Try to find as organisation first (they take priority).
 			try {
-				// findByUuid() throws rather than returning null; the catch below
+				// The findByUuid() call throws rather than returning null; the catch below
 				// is the "no such organisation" path.
 				$organisation = $this->organisationMapper->findByUuid((string)$identifier);
 				$name = $organisation->getName() ?? $organisation->getUuid();

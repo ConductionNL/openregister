@@ -1583,7 +1583,7 @@ class SchemaMapper extends QBMapper {
 		if (strpos($fieldValue, '{{') !== false && strpos($fieldValue, '}}') !== false) {
 			// Extract property names from template: {{ propName }}.
 			preg_match_all('/\{\{\s*([a-zA-Z0-9_-]+)\s*\}\}/', $fieldValue, $matches);
-			// preg_match_all always populates group 1, so no `?? []` fallback.
+			// Group 1 is always populated by preg_match_all, so no `?? []` fallback.
 			$templateProps = $matches[1];
 
 			if (empty($templateProps) === true) {

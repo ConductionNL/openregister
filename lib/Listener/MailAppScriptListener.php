@@ -83,7 +83,7 @@ class MailAppScriptListener implements IEventListener {
 			return;
 		}
 
-		// getResponse() is declared to return TemplateResponse, so the
+		// The getResponse() accessor is declared to return TemplateResponse, so the
 		// instanceof bail-out that used to sit here was unreachable.
 		$response = $event->getResponse();
 		if ($response->getApp() !== 'mail') {

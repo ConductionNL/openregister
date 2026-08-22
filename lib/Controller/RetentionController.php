@@ -160,7 +160,7 @@ class RetentionController extends Controller {
 							false,
 							false
 						);
-						// find() throws rather than returning null; the catch below
+						// The find() call throws rather than returning null; the catch below
 						// is what handles a missing object.
 						$this->retentionService->extendArchiveActionDate($exclObject);
 						$this->objectMapper->update($exclObject);
@@ -311,7 +311,7 @@ class RetentionController extends Controller {
 
 				try {
 					$object = $this->objectMapper->find($uuid, null, null, false, false, false);
-					// find() throws rather than returning null; the catch below is
+					// The find() call throws rather than returning null; the catch below is
 					// what handles a missing object.
 					$this->retentionService->extendArchiveActionDate($object);
 					$this->objectMapper->update($object);

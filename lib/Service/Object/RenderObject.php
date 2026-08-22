@@ -1019,6 +1019,7 @@ class RenderObject {
 		// per-file tag loop as iterating an always-empty array. It is not: PHP
 		// applies the same coercion on lookup, so `$allTagIdsPerFile["123"]`
 		// finds the row stored under 123.
+		// phpcs:ignore Squiz.Commenting.InlineComment.DocBlock -- PHPStan only reads @var from a /** */ block.
 		/** @var array<int|string, list<string>> $allTagIdsPerFile */
 		$allTagIdsPerFile = $this->systemTagMapper->getTagIdsForObjects(
 			objIds: $allFileIds,
@@ -4103,6 +4104,7 @@ class RenderObject {
 
 			// Numeric-string keys are coerced to int by PHP — see the longer
 			// note on the other getTagIdsForObjects() call in this class.
+			// phpcs:ignore Squiz.Commenting.InlineComment.DocBlock -- PHPStan only reads @var from a /** */ block.
 			/** @var array<int|string, list<string>> $allTagIdsPerFile */
 			$allTagIdsPerFile = $this->systemTagMapper->getTagIdsForObjects(
 				objIds: $stringFileIds,

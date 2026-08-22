@@ -235,7 +235,15 @@ class HarvestPipelineService {
 	 * @param Source $source The source
 	 * @param SyncRecord $record The fetched record
 	 * @param Mapping|null $mapping The configured mapping (or null for pass-through)
-	 * @param array{executionId: string, gathered: int, created: int, updated: int, unchanged: int, conflicts: int, errors: int} $summary Running summary (by reference)
+	 * @param array $summary Running summary (by reference)
+	 *
+	 * The precise shape lives in @phpstan-param below rather than inline: every
+	 * counter is an int, which is what stops `$summary['created']++` reading as
+	 * a string increment. It does not fit on one @param line under the 150-char
+	 * limit, and wrapping a @param breaks the parameter-name sniff.
+	 *
+	 * @phpstan-param array{executionId: string, gathered: int, created: int,
+	 *     updated: int, unchanged: int, conflicts: int, errors: int} $summary
 	 *
 	 * @return void
 	 *
