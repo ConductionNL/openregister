@@ -767,6 +767,157 @@ class BulkControllerTest extends TestCase {
 	}
 
 	/**
+	 * THE PAYLOAD A REAL SERVER RETURNS.
+	 *
+	 * Captured verbatim from a live OpenRegister instance running `development`,
+	 * by replaying the Newman suite's own request
+	 * (`Bulk Operations Tests / Bulk 1: Save Multiple Objects`): two objects
+	 * submitted against a schema whose `name` property is required, both refused
+	 * because the bulk path strips `name` out of the business payload (#2781).
+	 *
+	 * The instance answered HTTP 200, `success: true`, `saved_count: 0` — and
+	 * both objects were lost. The exact shape #2778 is about, sitting inside the
+	 * repo's own API suite, green.
+	 *
+	 * Two details here are what the hand-written mocks above got wrong, and are
+	 * why this fixture exists: the real `invalid[]` entries come from
+	 * `enforceChunkGuards()`, so they carry NO `index`, and their `object` is the
+	 * TRANSFORMED row — uuid at the top level, business data nested under
+	 * `object`. The failure list must still identify each object from that shape.
+	 */
+	public function testRealServerRejectionPayloadIsReportedAsAFailure(): void {
+		$this->stubAdminUser();
+		$this->stubSchemaLookup(2);
+		$this->setupResolveSuccess();
+
+		$missingName = 'The required property (name) is missing. Please provide a value for '
+			. 'this property or set it to null if allowed.';
+
+		$this->objectService->method('saveObjects')->willReturn([
+			'saved' => [],
+			'updated' => [],
+			'unchanged' => [],
+			'invalid' => [
+				[
+					'object' => [
+						'register' => 4894,
+						'schema' => 9478,
+						'uuid' => '7aeab5c2-f323-4e2f-a5b8-8141a9b264d0',
+						'id' => '7aeab5c2-f323-4e2f-a5b8-8141a9b264d0',
+						'owner' => 'admin',
+						'organisation' => '286a9152-4b09-4714-9115-fabbbad342d0',
+						'name' => 'Updated Bulk 1',
+						'relations' => [],
+						'object' => ['age' => 26],
+					],
+					'error' => $missingName,
+					'type' => 'ValidationException',
+				],
+				[
+					'object' => [
+						'register' => 4894,
+						'schema' => 9478,
+						'uuid' => 'f2350c89-ecaa-4f4c-adbf-0eba2e49ae3e',
+						'id' => 'f2350c89-ecaa-4f4c-adbf-0eba2e49ae3e',
+						'owner' => 'admin',
+						'organisation' => '286a9152-4b09-4714-9115-fabbbad342d0',
+						'name' => 'Updated Bulk 2',
+						'relations' => [],
+						'object' => ['age' => 31],
+					],
+					'error' => $missingName,
+					'type' => 'ValidationException',
+				],
+			],
+			'errors' => [],
+			'statistics' => [
+				'totalProcessed' => 2,
+				'saved' => 0,
+				'updated' => 0,
+				'unchanged' => 0,
+				'invalid' => 2,
+				'errors' => 2,
+				'processingTimeMs' => 0,
+			],
+		]);
+
+		$this->request->method('getParams')->willReturn([
+			'objects' => [
+				['uuid' => 'u1', 'name' => 'Updated Bulk 1', 'age' => 26],
+				['uuid' => 'u2', 'name' => 'Updated Bulk 2', 'age' => 31],
+			],
+		]);
+
+		$result = $this->controller->save('1', '2');
+
+		$this->assertEquals(Http::STATUS_UNPROCESSABLE_ENTITY, $result->getStatus());
+		$data = $result->getData();
+		$this->assertFalse($data['success']);
+		$this->assertEquals(0, $data['saved_count']);
+		$this->assertEquals(2, $data['failed_count']);
+		$this->assertEquals(2, $data['requested_count']);
+
+		// Both objects are named — by uuid, since a chunk-guard rejection carries
+		// no index — and each carries the validator's own words.
+		$this->assertCount(2, $data['failures']);
+		$this->assertEquals('7aeab5c2-f323-4e2f-a5b8-8141a9b264d0', $data['failures'][0]['uuid']);
+		$this->assertEquals('f2350c89-ecaa-4f4c-adbf-0eba2e49ae3e', $data['failures'][1]['uuid']);
+		$this->assertNull($data['failures'][0]['index']);
+		$this->assertEquals('ValidationException', $data['failures'][0]['type']);
+		$this->assertStringContainsString('required property (name) is missing', $data['failures'][0]['error']);
+
+		// No synthetic entry: every lost object is explained by a real rejection.
+		$this->assertNotContains('UnaccountedObject', array_column($data['failures'], 'type'));
+	}
+
+	/**
+	 * The same live instance, same endpoint, a batch with NO metadata-name
+	 * collision: two updates addressed by `@self.id` came back `updated: 2` /
+	 * `invalid: 0`. Pinned here as the real-payload must-PASS control — the
+	 * accounting has to call that 200 and `success: true`, or the fix would be
+	 * trading a silent loss for a false alarm on every ordinary bulk write.
+	 */
+	public function testRealServerSuccessPayloadStillReportsSuccess(): void {
+		$this->stubAdminUser();
+		$this->stubSchemaLookup(2);
+		$this->setupResolveSuccess();
+
+		$this->objectService->method('saveObjects')->willReturn([
+			'saved' => [],
+			'updated' => [['id' => 'a'], ['id' => 'b']],
+			'unchanged' => [],
+			'invalid' => [],
+			'errors' => [],
+			'statistics' => [
+				'totalProcessed' => 2,
+				'saved' => 0,
+				'updated' => 2,
+				'unchanged' => 0,
+				'invalid' => 0,
+				'errors' => 0,
+				'processingTimeMs' => 0,
+			],
+		]);
+
+		$this->request->method('getParams')->willReturn([
+			'objects' => [
+				['@self' => ['id' => 'a'], 'title' => 'T1 updated', 'age' => 26],
+				['@self' => ['id' => 'b'], 'title' => 'T2 updated', 'age' => 31],
+			],
+		]);
+
+		$result = $this->controller->save('1', '2');
+
+		$this->assertEquals(Http::STATUS_OK, $result->getStatus());
+		$data = $result->getData();
+		$this->assertTrue($data['success']);
+		$this->assertEquals(2, $data['saved_count']);
+		$this->assertEquals(2, $data['requested_count']);
+		$this->assertEquals(0, $data['failed_count']);
+		$this->assertSame([], $data['failures']);
+	}
+
+	/**
 	 * A streaming batch that simply stops short — rows consumed but never
 	 * classified — is a loss with no recorded reason, and must not read as a
 	 * success either.
