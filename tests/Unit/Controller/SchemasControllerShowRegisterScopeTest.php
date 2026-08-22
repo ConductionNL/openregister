@@ -280,23 +280,27 @@ class SchemasControllerShowRegisterScopeTest extends TestCase {
 	}//end testNumericIdResolvesWithinTheRegister()
 
 	/**
-	 * A numeric id the register does not carry is refused: the boundary holds
-	 * for every identifier form, not for slugs only.
+	 * A numeric id the register does not LIST still resolves.
+	 *
+	 * The boundary is about ambiguity: a slug can name a different schema in
+	 * every register, a numeric id cannot. Refusing an unlisted id protects
+	 * nothing and punishes a caller whose register carries a stale `schemas`
+	 * array — which is precisely how it 404'd object writes addressed by id.
 	 *
 	 * @return void
 	 */
-	public function testNumericIdOutsideTheRegisterIsRefused(): void {
+	public function testNumericIdResolvesEvenWhenTheRegisterDoesNotListIt(): void {
 		$this->withRegisterParam('hrmq');
 		$this->registerMapper->method('find')->willReturn($this->registerWith(id: 12, schemaIds: [9466]));
 
 		$this->schemaMapper->method('findInIds')->willReturn(null);
 		$this->schemaMapper->method('countBySlug')->willReturn(0);
-		$this->schemaMapper->expects($this->never())->method('find');
+		$this->schemaMapper->expects($this->once())
+			->method('find')
+			->willReturn($this->schemaWithId(id: 161, slug: 'persoon'));
 
 		$response = $this->controller->show('161');
 
-		$this->assertSame(404, $response->getStatus());
-		$error = $response->getData()['error'];
-		$this->assertStringContainsString('is not carried by register "hrmq" (id 12)', $error);
-	}//end testNumericIdOutsideTheRegisterIsRefused()
+		$this->assertSame(200, $response->getStatus());
+	}//end testNumericIdResolvesEvenWhenTheRegisterDoesNotListIt()
 }//end class

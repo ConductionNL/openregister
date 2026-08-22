@@ -44,11 +44,14 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Exception\RegisterNotFoundException;
+use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCA\OpenRegister\Service\Search\PlaceholderResolver;
 use OCP\IDBConnection;
 use OCP\IUserSession;
@@ -93,6 +96,19 @@ class AggregationRunner {
 	private const PHP_FALLBACK_ROW_CAP = 10000;
 
 	/**
+	 * The shared register-scoped schema resolver.
+	 *
+	 * Built here rather than injected: it is a stateless collaborator over the
+	 * `RegisterMapper` + `SchemaMapper` this class already holds, so constructing
+	 * it directly keeps every existing unit test — all of which mock those two
+	 * mappers — exercising the REAL resolution path instead of a mock of the very
+	 * thing under test.
+	 *
+	 * @var RegisterScopedSchemaResolver
+	 */
+	private readonly RegisterScopedSchemaResolver $scopedResolver;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param MagicMapper $magicMapper Magic-table mapper used for the PHP fallback path.
@@ -132,7 +148,12 @@ class AggregationRunner {
 		private readonly ?LoggerInterface $logger = null,
 		private readonly ?DbalObjectSourceProvider $dbalSourceProvider = null,
 	) {
+		$this->scopedResolver = new RegisterScopedSchemaResolver(
+			registerMapper: $registerMapper,
+			schemaMapper: $schemaMapper
+		);
 	}//end __construct()
+
 
 	/**
 	 * Run the named aggregation on the given (register, schema).
@@ -182,8 +203,13 @@ class AggregationRunner {
 		bool $bypassRbac = false,
 		array $parentRow = [],
 	): array {
-		$schema = $this->loadSchema(schemaRef: $schemaRef);
-		$register = $this->loadRegister(registerRef: $registerRef);
+		// REGISTER-SCOPED RESOLUTION. The register is the boundary and is
+		// resolved FIRST; the schema ref is then matched only among the schemas
+		// that register carries. See loadSchemaInRegister() for the measured
+		// cross-app read the previous schema-first ordering produced.
+		$pair = $this->loadSchemaInRegister(schemaRef: $schemaRef, registerRef: $registerRef);
+		$schema = $pair['schema'];
+		$register = $pair['register'];
 
 		// SECURITY: gate aggregation behind list-permission on the schema
 		// before any native or fallback path executes. Without this gate,
@@ -862,10 +888,12 @@ class AggregationRunner {
 		string $schemaRef,
 		AggregationQuery $query,
 	): array {
-		$schema = $this->loadSchema(schemaRef: $schemaRef);
-		$register = $this->loadRegister(registerRef: $registerRef);
+		// REGISTER-SCOPED RESOLUTION — see run() and loadSchemaInRegister().
+		// `value`, `grouped` and `timeseries` all land here, and all three are
+		// the surfaces the dashboard `stat`/`chart` widgets call.
+		$pair = $this->loadSchemaInRegister(schemaRef: $schemaRef, registerRef: $registerRef);
 
-		return $this->runAdhoc(register: $register, schema: $schema, query: $query);
+		return $this->runAdhoc(register: $pair['register'], schema: $pair['schema'], query: $query);
 	}//end runAdhocByRef()
 
 	/**
@@ -875,17 +903,29 @@ class AggregationRunner {
 	 * (we want a 400 from the validation layer, not a 404 from inside
 	 * runAdhocByRef()).
 	 *
-	 * @param string $schemaRef Schema slug/uuid/id.
+	 * When `$registerRef` is supplied the lookup is REGISTER-SCOPED and must
+	 * resolve to the same schema `runAdhocByRef()` will subsequently resolve —
+	 * `timeseries()` calls both, and a validator that validated the field
+	 * allow-list of one schema while the aggregate ran against another would be
+	 * worse than no validation at all. Callers with no register boundary in hand
+	 * omit it and keep global resolution.
+	 *
+	 * @param string      $schemaRef   Schema slug/uuid/id.
+	 * @param string|null $registerRef Optional register slug/uuid/id — when given, the boundary.
 	 *
 	 * @return Schema The loaded schema.
 	 *
-	 * @throws RuntimeException When the schema can't be found.
+	 * @throws RuntimeException When the schema can't be found, or is not carried by the register.
 	 *
-	 * @spec exclude Thin public convenience wrapper over the private loadSchema mapper lookup; exposed only so
+	 * @spec exclude Thin public convenience wrapper over the private schema lookups; exposed only so
 	 *              the REST controller can validate field allow-lists before building an AggregationQuery.
 	 *              No business logic of its own.
 	 */
-	public function findSchema(string $schemaRef): Schema {
+	public function findSchema(string $schemaRef, ?string $registerRef = null): Schema {
+		if ($registerRef !== null && $registerRef !== '') {
+			return $this->loadSchemaInRegister(schemaRef: $schemaRef, registerRef: $registerRef)['schema'];
+		}
+
 		return $this->loadSchema(schemaRef: $schemaRef);
 	}//end findSchema()
 
@@ -2762,7 +2802,61 @@ class AggregationRunner {
 	}//end findRegisterForSchema()
 
 	/**
+	 * Resolve the (register, schema) pair a request named, with the register as the boundary.
+	 *
+	 * WHY THE PAIR IS RESOLVED TOGETHER. Every aggregation endpoint carries a
+	 * `{register}` path segment, and until this method existed not one of them used
+	 * it to disambiguate: `run()` and `runAdhocByRef()` both opened with
+	 * `loadSchema($schemaRef)` and only then loaded the register, so by the time the
+	 * register was known the schema had already been matched against every register
+	 * and every app on the instance. Measured on the shared dev instance 2026-08-21,
+	 * a dashboard `stat` widget therefore aggregated ANOTHER APP's rows: `TimeEntry`
+	 * resolved to planix's schema 161 instead of hrmq's 9466, and `Expense` to
+	 * pipelinq's 507 instead of hrmq's 5026. The register was in hand the whole
+	 * time; the ordering threw it away.
+	 *
+	 * The consequence is not only a wrong number. The `x-openregister-aggregations`
+	 * annotation, the RBAC `list` gate and the object-row scan are ALL driven off
+	 * the resolved schema, so a mis-resolution silently evaluates permissions
+	 * against the wrong schema's authorization config.
+	 *
+	 * @param string $schemaRef   Schema slug/uuid/id.
+	 * @param string $registerRef Register slug/uuid/id — the boundary.
+	 *
+	 * @return array{register: Register, schema: Schema} The resolved pair.
+	 *
+	 * @throws RuntimeException When the register does not resolve, or does not carry the schema.
+	 *
+	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
+	 */
+	private function loadSchemaInRegister(string $schemaRef, string $registerRef): array {
+		try {
+			$pair = $this->scopedResolver->resolvePair(registerRef: $registerRef, schemaRef: $schemaRef);
+		} catch (SchemaNotInRegisterException | RegisterNotFoundException $e) {
+			// Re-thrown as RuntimeException so the existing controller contract
+			// holds: AggregationController maps RuntimeException to HTTP 404 and
+			// echoes the message. The message is carried through UNCHANGED — which
+			// register, how many same-slug schemas exist elsewhere, and the
+			// relink-schemas repair command are the whole point of the refusal.
+			// Flattening it to `Schema "%s" not found.` would read as "your slug is
+			// wrong", the one conclusion that is certainly false when duplicates
+			// demonstrably exist.
+			throw new RuntimeException($e->getMessage(), 0, $e);
+		}
+
+		return $pair;
+	}//end loadSchemaInRegister()
+
+	/**
 	 * Load a schema by ref, throwing a RuntimeException when missing.
+	 *
+	 * GLOBAL resolution, deliberately retained for the two callers that hold no
+	 * register boundary: {@see findSchema()} when invoked without a register ref,
+	 * and the cross-schema `from:` target in {@see runCrossSchemaAggregation()},
+	 * whose ref is written by the schema author and may legitimately point at
+	 * another register (the runner then locates that schema's own register via
+	 * {@see findRegisterForSchema()}). Every path that DOES carry a `{register}`
+	 * uses {@see loadSchemaInRegister()} instead.
 	 *
 	 * @param string $schemaRef Schema slug/uuid/id.
 	 *
@@ -2786,26 +2880,15 @@ class AggregationRunner {
 		}
 	}//end loadSchema()
 
-	/**
-	 * Load a register by ref, throwing a RuntimeException when missing.
-	 *
-	 * @param string $registerRef Register slug/uuid/id.
-	 *
-	 * @return Register The loaded register.
-	 *
-	 * @throws RuntimeException When the register can't be found.
-	 */
-	private function loadRegister(string $registerRef): \OCA\OpenRegister\Db\Register {
-		try {
-			// Metadata-read bypass per auth-system "Schema and register
-			// METADATA-READ lookups MUST bypass multi-tenancy" — see the
-			// same rationale on loadSchema(). Register definitions are part
-			// of the same globally-visible catalog.
-			return $this->registerMapper->find($registerRef, _multitenancy: false);
-		} catch (\Throwable $e) {
-			throw new RuntimeException(sprintf('Register "%s" not found.', $registerRef), 0, $e);
-		}
-	}//end loadRegister()
+	// NOTE. `loadRegister()` lived here and is gone: the register load is now part
+	// of the (register, schema) pair resolution and belongs with it — see
+	// loadSchemaInRegister(). Keeping a second, standalone register loader would
+	// have left a path that resolves a register WITHOUT then bounding a schema by
+	// it, which is the shape this change removes. The metadata-read bypass it
+	// documented (`_multitenancy: false`, per the auth-system requirement "Schema
+	// and register METADATA-READ lookups MUST bypass multi-tenancy") is unchanged
+	// and now lives in RegisterScopedSchemaResolver::resolveRegister(); it is
+	// locked by AggregationRunnerTest::testRegisterLoadPassesMultitenancyFalse.
 
 	/**
 	 * Read the `x-openregister-aggregations` annotation off a schema.

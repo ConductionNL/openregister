@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Dto\BulkSaveOutcome;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Service\ObjectService;
@@ -326,12 +327,22 @@ class BulkController extends Controller {
 	 * choosing automatically would need a threshold nobody has measured — so it
 	 * is a decision the caller makes rather than one inferred here.
 	 *
+	 * Both paths report a shortfall the same way — see {@see bulkSaveResponse()}.
+	 * A row this endpoint refused is a row the caller still believes it stored,
+	 * so neither path may answer `success: true` unless every submitted row is
+	 * accounted for.
+	 *
 	 * @param array $objects Rows to write.
 	 * @param int $register Resolved register id.
 	 * @param int|null $schema Resolved schema id, or null for a mixed-schema batch.
 	 * @param bool $stream Whether to use the row-at-a-time path.
+	 * @param bool $partial Whether the caller opted into best-effort semantics.
 	 *
 	 * @return JSONResponse The batch outcome.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) BulkSaveOutcome::from*() are named
+	 *   constructors on a value object, not calls into a collaborator — there is
+	 *   nothing here a test would want to substitute.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -340,7 +351,10 @@ class BulkController extends Controller {
 		int $register,
 		?int $schema,
 		bool $stream,
+		bool $partial,
 	): JSONResponse {
+		$requestedCount = count($objects);
+
 		if ($stream === true) {
 			$status = $this->objectService->saveObjectsStreaming(
 				objects: $objects,
@@ -348,14 +362,20 @@ class BulkController extends Controller {
 				schema: $schema
 			);
 
-			return new JSONResponse(
-				data: [
-					'success' => ($status->getFailedCount() === 0),
-					'message' => 'Bulk save operation completed (streaming)',
-					'saved_count' => ($status->getCreatedCount() + $status->getUpdatedCount()),
-					'saved_objects' => $status->toArray(),
-					'requested_count' => count($objects),
-				]
+			$savedCount = ($status->getCreatedCount() + $status->getUpdatedCount());
+			$accounted = ($savedCount + $status->getUnchangedCount());
+
+			return $this->bulkSaveResponse(
+				successMessage: 'Bulk save operation completed (streaming)',
+				savedCount: $savedCount,
+				requestedCount: $requestedCount,
+				outcome: BulkSaveOutcome::fromBatchStatus(
+					status: $status,
+					requestedCount: $requestedCount,
+					accountedCount: $accounted
+				),
+				extra: ['saved_objects' => $status->toArray()],
+				partial: $partial
 			);
 		}
 
@@ -369,22 +389,117 @@ class BulkController extends Controller {
 			events: false
 		);
 
-		$savedCount = (($savedObjects['statistics']['saved'] ?? 0) + ($savedObjects['statistics']['updated'] ?? 0));
+		$statistics = ($savedObjects['statistics'] ?? []);
+		$savedCount = ((int)($statistics['saved'] ?? 0) + (int)($statistics['updated'] ?? 0));
+		$accounted = ($savedCount + (int)($statistics['unchanged'] ?? 0));
 
-		return new JSONResponse(
-			data: [
-				'success' => true,
-				'message' => 'Bulk save operation completed successfully',
-				'saved_count' => $savedCount,
-				'saved_objects' => $savedObjects,
-				'requested_count' => count($objects),
-			]
+		return $this->bulkSaveResponse(
+			successMessage: 'Bulk save operation completed successfully',
+			savedCount: $savedCount,
+			requestedCount: $requestedCount,
+			outcome: BulkSaveOutcome::fromBulkResult(
+				bulkResult: $savedObjects,
+				requestedCount: $requestedCount,
+				accountedCount: $accounted
+			),
+			extra: ['saved_objects' => $savedObjects],
+			partial: $partial
 		);
 
 	}//end writeBatch()
 
 	/**
+	 * Build the bulk-save response so a shortfall can never read as a success.
+	 *
+	 * The rule this enforces (issue #2778): `success` is true only when EVERY
+	 * submitted object was written. It used to be the constant `true` on the
+	 * non-streaming path, so a batch where 27 of 58 rows were refused for
+	 * failing schema validation answered "completed successfully" and only
+	 * `saved_count` — which the caller had to think to compare against its own
+	 * request size — carried the loss. A caller that trusts `success` has
+	 * already moved on by then, and `events: false` on this path means nothing
+	 * downstream notices either.
+	 *
+	 * `success` is therefore unconditional and never softened by `partial`:
+	 * making the flag mean "some rows landed" would re-create exactly the shape
+	 * this fixes. What `partial` changes is only the HTTP status — an opted-in
+	 * caller gets 200 with an honest `success: false` plus the failures, rather
+	 * than a 422 its client library would raise on.
+	 *
+	 * 422 (not 500) matches the sibling `save()` catch for a unique-constraint
+	 * collision: the request was understood, and the server refused the content
+	 * of specific rows. Rows that DID write are not rolled back — this endpoint
+	 * has never been transactional — which is why `saved_count` stays in the
+	 * body of the failure response: it is what the caller must reconcile against.
+	 *
+	 * @param string $successMessage Message used when nothing failed.
+	 * @param int $savedCount Rows created or updated.
+	 * @param int $requestedCount Rows the caller submitted.
+	 * @param BulkSaveOutcome $outcome What the save path lost, and why.
+	 * @param array $extra Path-specific payload merged into the response body.
+	 * @param bool $partial Whether the caller opted into best-effort semantics.
+	 *
+	 * @return JSONResponse The batch outcome.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function bulkSaveResponse(
+		string $successMessage,
+		int $savedCount,
+		int $requestedCount,
+		BulkSaveOutcome $outcome,
+		array $extra,
+		bool $partial,
+	): JSONResponse {
+		$failedCount = $outcome->failedCount;
+		$complete = $outcome->isComplete();
+
+		$message = $successMessage;
+		if ($complete === false) {
+			$message = sprintf(
+				'Bulk save incomplete: %d of %d objects were rejected and NOT written. See "failures" for the reason per object.',
+				$failedCount,
+				$requestedCount
+			);
+		}
+
+		$status = Http::STATUS_UNPROCESSABLE_ENTITY;
+		if ($complete === true || $partial === true) {
+			$status = Http::STATUS_OK;
+		}
+
+		return new JSONResponse(
+			data: array_merge(
+				[
+					'success' => $complete,
+					'message' => $message,
+					'saved_count' => $savedCount,
+					'failed_count' => $failedCount,
+					'requested_count' => $requestedCount,
+					'failures' => $outcome->failures,
+					'partial' => $partial,
+				],
+				$extra
+			),
+			statusCode: $status
+		);
+
+	}//end bulkSaveResponse()
+
+	/**
 	 * Perform bulk save operations on objects
+	 *
+	 * Request body:
+	 *  - `objects`  (required) the rows to write.
+	 *  - `stream`   (optional) row-at-a-time write path — see writeBatch().
+	 *  - `partial`  (optional) opt into best-effort semantics: a batch with
+	 *               rejected rows still answers 200 instead of 422. It does NOT
+	 *               make `success` true — see bulkSaveResponse() for why.
+	 *
+	 * Response body always carries `saved_count`, `failed_count`,
+	 * `requested_count` and `failures` (index / uuid / error / type per
+	 * rejected object), so a shortfall names itself instead of hiding behind a
+	 * count the caller has to think to compare.
 	 *
 	 * @param string $register The register identifier
 	 * @param string $schema The schema identifier
@@ -454,12 +569,14 @@ class BulkController extends Controller {
 				$schemaToUse = null;
 			}
 
-			// See writeBatch() for why `stream` is opt-in.
+			// See writeBatch() for why `stream` is opt-in, and bulkSaveResponse()
+			// for what `partial` does and does not change.
 			return $this->writeBatch(
 				objects: $objects,
 				register: $resolved['register'],
 				schema: $schemaToUse,
-				stream: filter_var(($data['stream'] ?? false), FILTER_VALIDATE_BOOLEAN)
+				stream: filter_var(($data['stream'] ?? false), FILTER_VALIDATE_BOOLEAN),
+				partial: filter_var(($data['partial'] ?? false), FILTER_VALIDATE_BOOLEAN)
 			);
 		} catch (UniqueConstraintViolationException $e) {
 			// WF3 (wave-11): a client-supplied UUID collided with an existing row at a

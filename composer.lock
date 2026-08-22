@@ -7048,16 +7048,16 @@
         },
         {
             "name": "conduction/hydra-gates",
-            "version": "v1.8.2",
+            "version": "v1.9.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ConductionNL/.github.git",
-                "reference": "3dfcd1e56d27bd06eaa98a9a66e377e7e14fe491"
+                "reference": "9801ffdbff17d05f0934742190742d733ac912b4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ConductionNL/.github/zipball/3dfcd1e56d27bd06eaa98a9a66e377e7e14fe491",
-                "reference": "3dfcd1e56d27bd06eaa98a9a66e377e7e14fe491",
+                "url": "https://api.github.com/repos/ConductionNL/.github/zipball/9801ffdbff17d05f0934742190742d733ac912b4",
+                "reference": "9801ffdbff17d05f0934742190742d733ac912b4",
                 "shasum": ""
             },
             "require": {
@@ -7072,11 +7072,6 @@
                     "runner": "hydra-gates/scripts/run-hydra-gates.sh",
                     "helpers": "hydra-gates/scripts/lib",
                     "schemas": "hydra-gates/scripts/schemas"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "OCA\\OpenRegister\\Contract\\": "hydra-gates/contracts/"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -7101,9 +7096,9 @@
             "support": {
                 "docs": "https://github.com/ConductionNL/.github/blob/main/hydra-gates/README.md",
                 "issues": "https://github.com/ConductionNL/.github/issues",
-                "source": "https://github.com/ConductionNL/.github/tree/v1.8.2"
+                "source": "https://github.com/ConductionNL/.github/tree/v1.9.0"
             },
-            "time": "2026-08-20T09:37:12+00:00"
+            "time": "2026-08-22T00:30:18+00:00"
         },
         {
             "name": "consolidation/annotated-command",

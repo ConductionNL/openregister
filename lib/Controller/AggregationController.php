@@ -413,8 +413,14 @@ class AggregationController extends Controller {
 		// Resolve schema first so the validator can consult the
 		// declared property list. A missing schema is a 404; a bad
 		// query-param shape is a 400.
+		//
+		// The `{register}` path segment is passed through: this lookup must
+		// resolve the SAME schema that runAdhocByRef() resolves below, and the
+		// register is what disambiguates a slug several apps share. Without it
+		// the validator would police one app's property list while the
+		// aggregate ran over another's rows.
 		try {
-			$schemaEntity = $this->runner->findSchema(schemaRef: $schema);
+			$schemaEntity = $this->runner->findSchema(schemaRef: $schema, registerRef: $register);
 		} catch (RuntimeException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		}

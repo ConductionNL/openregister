@@ -40,6 +40,7 @@ use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
@@ -98,6 +99,19 @@ class SchemasController extends Controller {
 	use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 
 	/**
+	 * The shared register-scoped schema resolver.
+	 *
+	 * Built here rather than injected: it is a stateless collaborator over the
+	 * `RegisterMapper` + `SchemaMapper` this class already holds, so constructing
+	 * it directly keeps every existing unit test — all of which mock those two
+	 * mappers — exercising the REAL resolution path instead of a mock of the very
+	 * thing under test.
+	 *
+	 * @var RegisterScopedSchemaResolver
+	 */
+	private readonly RegisterScopedSchemaResolver $scopedSchemaResolver;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes controller with required dependencies for schema operations.
@@ -148,6 +162,10 @@ class SchemasController extends Controller {
 	) {
 		// Call parent constructor to initialize base controller.
 		parent::__construct(appName: $appName, request: $request);
+		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
+			registerMapper: $registerMapper,
+			schemaMapper: $schemaMapper
+		);
 	}//end __construct()
 
 	/**
@@ -372,35 +390,20 @@ class SchemasController extends Controller {
 	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
 	private function resolveSchemaInRegister(int|string $id, string $registerParam): Schema {
-		try {
-			$register = $this->registerMapper->find(id: $registerParam, _rbac: false, _multitenancy: false);
-		} catch (Exception $e) {
-			throw new RegisterNotFoundException(
-				registerSlugOrId: $registerParam,
-				previous: $e,
-				remedies: 'The schema was therefore not resolved, because naming a register makes it a '
-					. 'boundary and falling back to instance-wide resolution would serve a schema from '
-					. 'outside it. Omit ?register= to resolve the identifier globally.'
-			);
-		}
-
-		$registerSchemaIds = ($register->getSchemas() ?? []);
-		$scoped            = $this->schemaMapper->findInIds(
-			id: $id,
-			schemaIds: $registerSchemaIds
-		);
-		if ($scoped !== null) {
-			return $scoped;
-		}
-
-		throw new SchemaNotInRegisterException(
-			schemaSlug: (string)$id,
-			registerId: $register->getId(),
-			registerSlug: $register->getSlug(),
-			candidatesElsewhere: $this->schemaMapper->countBySlug(slug: (string)$id),
-			registerSchemaCount: count($registerSchemaIds)
-		);
+		// Delegated to the shared resolver rather than kept inline. This method was
+		// the FIRST implementation of the boundary and, being private, could not be
+		// reused — so the aggregation endpoints, which carry a `{register}` path
+		// segment, went on resolving globally and served another app's rows
+		// (measured 2026-08-21: `TimeEntry` → planix schema 161 instead of hrmq's
+		// 9466). One implementation is the only way the wording, the identifier
+		// forms and the refusal stay identical across every surface.
+		return $this->scopedSchemaResolver->resolvePair(
+			registerRef: $registerParam,
+			schemaRef: $id
+		)['schema'];
 	}//end resolveSchemaInRegister()
+
+
 
 
 	/**
