@@ -120,13 +120,14 @@ final class ScheduledFilterParser {
 	private function parseFieldEntry(string $field, $spec, string $ruleKey, string $path): array {
 		// Scalar shortcut — strict equality, the historical default.
 		if (is_array($spec) === false) {
-			return $this->accept(['type' => 'leaf', 'field' => $field, 'operator' => 'equals', 'operand' => $spec]);
+			return $this->accept(node: ['type' => 'leaf', 'field' => $field, 'operator' => 'equals', 'operand' => $spec]);
 		}
 
 		// Bare list — membership over the list.
 		if (array_is_list($spec) === true) {
 			if ($spec === []) {
-				return $this->reject($this->error(
+				return $this->reject(
+				error: $this->error(
 							code: 'notification-scheduled-empty-list',
 							ruleKey: $ruleKey,
 							field: $path,
@@ -139,7 +140,7 @@ final class ScheduledFilterParser {
 						));
 			}
 
-			return $this->accept(['type' => 'leaf', 'field' => $field, 'operator' => 'in', 'operand' => $spec]);
+			return $this->accept(node: ['type' => 'leaf', 'field' => $field, 'operator' => 'in', 'operand' => $spec]);
 		}//end if
 
 		// Operator object.
@@ -182,7 +183,8 @@ final class ScheduledFilterParser {
 				];
 			}
 
-			return $this->reject($this->error(
+			return $this->reject(
+				error: $this->error(
 						code: 'notification-scheduled-bad-filter-shape',
 						ruleKey: $ruleKey,
 						field: sprintf('trigger.filter.%s', $path),
@@ -221,7 +223,8 @@ final class ScheduledFilterParser {
 		$operandKey = ScheduledFilterGrammar::operandKey($operator);
 
 		if (array_key_exists($operandKey, $spec) === false) {
-			return $this->reject($this->error(
+			return $this->reject(
+				error: $this->error(
 						code: 'notification-scheduled-bad-filter-missing-value',
 						ruleKey: $ruleKey,
 						field: sprintf('trigger.filter.%s.%s', $path, $operandKey),
@@ -249,7 +252,7 @@ final class ScheduledFilterParser {
 			return ['node' => null, 'errors' => $errors];
 		}
 
-		return $this->accept(['type' => 'leaf', 'field' => $field, 'operator' => $operator, 'operand' => $operand]);
+		return $this->accept(node: ['type' => 'leaf', 'field' => $field, 'operator' => $operator, 'operand' => $operand]);
 
 	}//end parseOperatorObject()
 
@@ -433,7 +436,7 @@ final class ScheduledFilterParser {
 	private function parseCombinator(string $combinator, $spec, string $ruleKey, string $path, int $depth): array {
 		if ($depth > ScheduledFilterGrammar::MAX_DEPTH) {
 			return $this->reject(
-				$this->error(
+				error: $this->error(
 					code: 'notification-scheduled-filter-too-deep',
 					ruleKey: $ruleKey,
 					field: sprintf('trigger.filter.%s', $path),
@@ -450,7 +453,7 @@ final class ScheduledFilterParser {
 
 		if (is_array($spec) === false || array_is_list($spec) === false) {
 			return $this->reject(
-				$this->error(
+				error: $this->error(
 					code: 'notification-scheduled-bad-combinator',
 					ruleKey: $ruleKey,
 					field: sprintf('trigger.filter.%s', $path),
@@ -483,7 +486,7 @@ final class ScheduledFilterParser {
 			return ['node' => null, 'errors' => $errors];
 		}
 
-		return $this->accept(['type' => $combinator, 'clauses' => $clauses]);
+		return $this->accept(node: ['type' => $combinator, 'clauses' => $clauses]);
 
 	}//end parseCombinator()
 
