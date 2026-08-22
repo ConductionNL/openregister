@@ -165,6 +165,26 @@ class RegisterScopedSchemaResolver {
 			return $scoped;
 		}
 
+		// THE BOUNDARY EXISTS FOR SLUGS, NOT FOR UNIQUE IDENTIFIERS.
+		// A slug is not unique instance-wide — several registers legitimately
+		// carry a `TimeEntry`, and resolving one globally is what served
+		// another app's schema into a leaf app's forms and aggregations. A
+		// numeric id and a uuid are unique BY CONSTRUCTION, so scoping them
+		// adds no protection; all it can do is refuse a caller whose register
+		// happens to have a stale `schemas` list. That refusal is exactly what
+		// broke `POST /api/objects/{registerId}/{schemaId}` for existing
+		// clients, so a unique identifier resolves globally and the membership
+		// list is treated as the cache it is.
+		if ($this->isUniqueIdentifier(ref: $schemaRef) === true) {
+			try {
+				return $this->schemaMapper->find($schemaRef);
+			} catch (\Throwable) {
+				// Genuinely absent, not merely unlisted — fall through to the
+				// refusal below. The global lookup widens for AMBIGUITY, never
+				// for absence.
+			}
+		}
+
 		throw new SchemaNotInRegisterException(
 			schemaSlug: (string)$schemaRef,
 			registerId: $register->getId(),
@@ -203,4 +223,28 @@ class RegisterScopedSchemaResolver {
 			'schema'   => $this->resolveSchemaWithin(register: $register, schemaRef: $schemaRef),
 		];
 	}//end resolvePair()
+	/**
+	 * Whether a schema reference is unique instance-wide by construction.
+	 *
+	 * Numeric ids and uuids identify exactly one schema; slugs do not. Only
+	 * the ambiguous form needs the register as a boundary.
+	 *
+	 * @param int|string $ref The schema reference.
+	 *
+	 * @return bool True when the reference cannot be ambiguous.
+	 *
+	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
+	 */
+	private function isUniqueIdentifier(int|string $ref): bool {
+		if (is_int($ref) === true) {
+			return true;
+		}
+
+		if (ctype_digit($ref) === true) {
+			return true;
+		}
+
+		return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $ref) === 1;
+	}//end isUniqueIdentifier()
+
 }//end class

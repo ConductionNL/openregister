@@ -322,27 +322,34 @@ class AggregationRegisterScopeTest extends TestCase {
 
 
 	/**
-	 * A numeric schema id the register does not carry is refused too: the
-	 * boundary holds for every identifier form, not for slugs only.
+	 * A numeric schema id NOT in the register's list still resolves.
+	 *
+	 * The boundary exists because a SLUG is ambiguous instance-wide; a numeric
+	 * id is unique by construction, so scoping it protects nothing and can
+	 * only refuse a caller whose register carries a stale `schemas` list.
+	 * Enforcing it there turned `POST /api/objects/{registerId}/{schemaId}`
+	 * into a 404 for existing clients — measured in the Newman suite — which
+	 * is what this test now prevents recurring.
 	 *
 	 * @return void
 	 */
-	public function testNumericSchemaIdOutsideTheRegisterIsRefused(): void {
+	public function testNumericSchemaIdResolvesEvenWhenTheMembershipListIsStale(): void {
 		$this->registerMapper->method('find')->willReturn($this->registerWith(id: 12, schemaIds: [9466]));
 
 		$this->schemaMapper->method('findInIds')->willReturn(null);
 		$this->schemaMapper->method('countBySlug')->willReturn(0);
-		$this->schemaMapper->expects($this->never())->method('find');
+		$this->schemaMapper->expects($this->once())
+			->method('find')
+			->willReturn($this->schemaWithId(id: 161));
 
-		$this->expectException(RuntimeException::class);
-		$this->expectExceptionMessage('is not carried by register "hrmq" (id 12)');
-
-		$this->runner->runAdhocByRef(
+		$result = $this->runner->runAdhocByRef(
 			registerRef: 'hrmq',
 			schemaRef: '161',
 			query: AggregationQuery::create(metric: 'count')
 		);
-	}//end testNumericSchemaIdOutsideTheRegisterIsRefused()
+
+		$this->assertNotNull($result);
+	}//end testNumericSchemaIdResolvesEvenWhenTheMembershipListIsStale()
 
 
 	/**
