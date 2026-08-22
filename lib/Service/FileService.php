@@ -1534,8 +1534,9 @@ class FileService {
 		);
 
 		// Return sorted array of tag names.
+		// sort() already reindexes to a list, so no array_values().
 		sort($tagNames);
-		return array_values($tagNames);
+		return $tagNames;
 	}//end getAllTags()
 
 	/**

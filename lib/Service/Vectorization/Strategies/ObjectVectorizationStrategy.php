@@ -244,8 +244,9 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface {
 			$description = $objectData['beschrijving'] ?? $objectData['summary'] ?? $objectData['_summary'] ?? '';
 		}
 
-		// Extract @self keys for logging.
-		$this->extractSelfKeys(objectData: $objectData);
+		// No "extract @self keys for logging" call here: extractSelfKeys() is
+		// pure, nothing consumed its result, and the metadata builder above
+		// already calls it for the '@self_keys' field that is actually stored.
 
 		// Extract register and schema IDs from multiple possible locations.
 		$selfData = $objectData['@self'] ?? [];

@@ -299,7 +299,7 @@ class EndpointsController extends Controller {
 	 * @return JSONResponse JSON response with created endpoint or error
 	 *
 	 * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Endpoint,
-	 *     array<never, never>>|JSONResponse<400|500, array{error: string},
+	 *     array<never, never>>|JSONResponse<400|403|500, array{error: string},
 	 *     array<never, never>>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
@@ -381,7 +381,7 @@ class EndpointsController extends Controller {
 	 * @return JSONResponse JSON response with updated endpoint or error
 	 *
 	 * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Endpoint,
-	 *     array<never, never>>|JSONResponse<404|500, array{error: string},
+	 *     array<never, never>>|JSONResponse<403|404|500, array{error: string},
 	 *     array<never, never>>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7

@@ -47,7 +47,7 @@ use OCP\IUserSession;
  *
  * @psalm-suppress UnusedClass
  *
- * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  *
  * @spec openspec/specs/data-import-export/spec.md
  * @spec openspec/specs/object-lifecycle/spec.md

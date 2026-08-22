@@ -57,19 +57,12 @@ class DeepLinkRegistryService {
 	 */
 	private static array $registrations = [];
 
-	/**
-	 * Cached slug→ID map for registers. Null means not yet loaded.
-	 *
-	 * @var array<string, int>|null
+	/*
+	 * There are no $registerSlugMap / $schemaSlugMap properties: the forward
+	 * slug→ID direction was declared and reset but never populated or read, so
+	 * both were permanently null. Only the reverse ID→slug maps below are used
+	 * (by ensureIdMaps() and resolveDeepLink()).
 	 */
-	private static ?array $registerSlugMap = null;
-
-	/**
-	 * Cached slug→ID map for schemas. Null means not yet loaded.
-	 *
-	 * @var array<string, int>|null
-	 */
-	private static ?array $schemaSlugMap = null;
 
 	/**
 	 * Cached reverse map: ID→slug for registers.
@@ -361,8 +354,6 @@ class DeepLinkRegistryService {
 	 */
 	public static function reset(): void {
 		self::$registrations = [];
-		self::$registerSlugMap = null;
-		self::$schemaSlugMap = null;
 		self::$registerIdMap = null;
 		self::$schemaIdMap = null;
 	}//end reset()

@@ -86,6 +86,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setOrganisation(?string $organisation)
  * @method string|null getNotes()
  * @method void setNotes(?string $notes)
+ * @method string|null getComment()
+ * @method void setComment(?string $comment)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()

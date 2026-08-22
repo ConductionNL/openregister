@@ -98,7 +98,7 @@ class ValidationSettingsController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with mass validation results
 	 *
-	 * @suppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
 	 * @spec openspec/specs/production-observability/spec.md
 	 */

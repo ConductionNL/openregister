@@ -149,7 +149,7 @@ class DeletedController extends Controller {
 	 *
 	 * @return array Request parameters including pagination and filters
 	 *
-	 * @suppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	private function extractRequestParameters(): array {
 		$params = $this->request->getParams();

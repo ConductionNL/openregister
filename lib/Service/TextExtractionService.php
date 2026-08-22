@@ -1632,7 +1632,7 @@ class TextExtractionService {
 			$chunks,
 			function ($chunk) {
 				$trimmed = trim($chunk['text']);
-				return $trimmed !== '' && $trimmed !== null;
+				return $trimmed !== '';
 			}
 		);
 	}//end chunkFixedSize()
@@ -1812,7 +1812,7 @@ class TextExtractionService {
 			$chunks,
 			function ($chunk) {
 				$trimmed = trim($chunk['text']);
-				return $trimmed !== '' && $trimmed !== null;
+				return $trimmed !== '';
 			}
 		);
 	}//end recursiveSplit()

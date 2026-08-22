@@ -31,6 +31,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Event\UserProfileUpdatedEvent;
 use OCP\Accounts\IAccountManager;
+use OCP\Accounts\PropertyDoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAvatarManager;
 use OCP\IConfig;
@@ -196,35 +197,24 @@ class UserService {
 			$avatarScope = $user->getAvatarScope();
 		}
 
-		$lastLogin = 0;
-		if (method_exists($user, 'getLastLogin') === true) {
-			$lastLogin = $user->getLastLogin();
-		}
-
-		$backend = 'unknown';
-		if (method_exists($user, 'getBackendClassName') === true) {
-			$backend = $user->getBackendClassName();
-		}
-
-		$canChangeDisplayName = false;
-		if (method_exists($user, 'canChangeDisplayName') === true) {
-			$canChangeDisplayName = $user->canChangeDisplayName();
-		}
+		// OCP\IUser declares getLastLogin(), getBackendClassName(),
+		// canChangeDisplayName(), canChangePassword() and canChangeAvatar(), so
+		// the method_exists() guards that used to wrap these could never be
+		// false and their defaults were unreachable. The two guards that remain
+		// (getAvatarScope above, canChangeMailAddress below) are NOT decoration:
+		// those methods are absent from the interface and only present on some
+		// implementations.
+		$lastLogin = $user->getLastLogin();
+		$backend = $user->getBackendClassName();
+		$canChangeDisplayName = $user->canChangeDisplayName();
 
 		$canChangeEmail = false;
 		if (method_exists($user, 'canChangeMailAddress') === true) {
 			$canChangeEmail = $user->canChangeMailAddress();
 		}
 
-		$canChangePassword = false;
-		if (method_exists($user, 'canChangePassword') === true) {
-			$canChangePassword = $user->canChangePassword();
-		}
-
-		$canChangeAvatar = false;
-		if (method_exists($user, 'canChangeAvatar') === true) {
-			$canChangeAvatar = $user->canChangeAvatar();
-		}
+		$canChangePassword = $user->canChangePassword();
+		$canChangeAvatar = $user->canChangeAvatar();
 
 		$result = [
 			'uid' => $user->getUID(),
@@ -478,10 +468,8 @@ class UserService {
 	 */
 	private function buildQuotaInformation(IUser $user): array {
 		try {
-			$userQuota = 'none';
-			if (method_exists($user, 'getQuota') === true) {
-				$userQuota = $user->getQuota();
-			}
+			// OCP\IUser declares getQuota(), so the 'none' default was dead.
+			$userQuota = $user->getQuota();
 
 			$usedSpace = 0;
 
@@ -741,12 +729,11 @@ class UserService {
 
 		foreach ($neededProperties as $propertyName => $apiField) {
 			try {
-				$property = $account->getProperty($propertyName);
-				if ($property !== null) {
-					$value = $property->getValue();
-					if (empty($value) === false) {
-						$additionalInfo[$apiField] = $value;
-					}
+				// No `!== null` check: getProperty() throws rather than returning
+				// null, and the surrounding catch already handles that.
+				$value = $account->getProperty($propertyName)->getValue();
+				if (empty($value) === false) {
+					$additionalInfo[$apiField] = $value;
 				}
 			} catch (\Exception $e) {
 				$this->logger->debug(
@@ -774,7 +761,6 @@ class UserService {
 	 */
 	private function updateStandardUserProperties(IUser $user, array $data): void {
 		if (isset($data['displayName']) === true
-			&& method_exists($user, 'canChangeDisplayName') === true
 			&& $user->canChangeDisplayName() === true
 		) {
 			$user->setDisplayName($data['displayName']);
@@ -788,7 +774,6 @@ class UserService {
 		}
 
 		if (isset($data['password']) === true
-			&& method_exists($user, 'canChangePassword') === true
 			&& $user->canChangePassword() === true
 		) {
 			$user->setPassword($data['password']);
@@ -838,7 +823,14 @@ class UserService {
 
 				$value = (string)$data[$apiField];
 
-				if ($account->getProperty($accountProperty) !== null) {
+				// IAccount::getProperty() THROWS PropertyDoesNotExistException when
+				// the property is absent — it never returns null. The `!== null`
+				// test that used to guard this block was therefore always true,
+				// which made the create-it fallback below UNREACHABLE: an unknown
+				// property escaped to the outer catch and abandoned the whole
+				// account update with a warning instead of being created. Catching
+				// the exception here is what actually reaches that fallback.
+				try {
 					$property = $account->getProperty($accountProperty);
 					if ($property->getValue() !== $value) {
 						$property->setValue($value);
@@ -846,6 +838,8 @@ class UserService {
 					}
 
 					continue;
+				} catch (PropertyDoesNotExistException $e) {
+					// Fall through to the create path below.
 				}
 
 				// Property doesn't exist, create it.
@@ -936,7 +930,7 @@ class UserService {
 	 */
 	public function changePassword(IUser $user, string $currentPassword, string $newPassword): array {
 		// Check backend capability.
-		if (method_exists($user, 'canChangePassword') === true && $user->canChangePassword() === false) {
+		if ($user->canChangePassword() === false) {
 			throw new RuntimeException(
 				'Password changes are not supported by your authentication backend',
 				409
@@ -982,7 +976,7 @@ class UserService {
 	 */
 	public function uploadAvatar(IUser $user, string $data, string $mimeType, int $size): array {
 		// Check backend capability.
-		if (method_exists($user, 'canChangeAvatar') === true && $user->canChangeAvatar() === false) {
+		if ($user->canChangeAvatar() === false) {
 			throw new RuntimeException(
 				'Avatar changes are not supported by your authentication backend',
 				409
@@ -1027,7 +1021,7 @@ class UserService {
 	 */
 	public function deleteAvatar(IUser $user): array {
 		// Check backend capability.
-		if (method_exists($user, 'canChangeAvatar') === true && $user->canChangeAvatar() === false) {
+		if ($user->canChangeAvatar() === false) {
 			throw new RuntimeException(
 				'Avatar changes are not supported by your authentication backend',
 				409

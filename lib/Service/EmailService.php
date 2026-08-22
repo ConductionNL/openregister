@@ -208,7 +208,7 @@ class EmailService {
 		$link->setLinkedBy($user->getUID());
 		$link->setLinkedAt(new DateTime());
 
-		if (isset($messageData['date']) === true && $messageData['date'] !== null) {
+		if (isset($messageData['date']) === true) {
 			$link->setMailDate(new DateTime($messageData['date']));
 		}
 
@@ -408,7 +408,7 @@ class EmailService {
 			}
 
 			$sentAt = null;
-			if (isset($row['sent_at']) === true && $row['sent_at'] !== null) {
+			if (isset($row['sent_at']) === true) {
 				$sentAt = date('c', (int)$row['sent_at']);
 			}
 

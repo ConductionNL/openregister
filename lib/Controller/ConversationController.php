@@ -53,7 +53,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @psalm-suppress UnusedClass
  *
- * @suppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ConversationController extends Controller {
 
@@ -127,7 +127,7 @@ class ConversationController extends Controller {
 	 * @param LoggerInterface $logger Logger
 	 * @param string $userId User ID
 	 *
-	 * @suppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
 		string $appName,
@@ -681,7 +681,7 @@ class ConversationController extends Controller {
 	 *     'Failed to delete conversation', message: string, uuid?: string,
 	 *     archived?: true}, array<never, never>>
 	 *
-	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */

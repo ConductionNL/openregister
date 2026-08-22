@@ -252,7 +252,7 @@ class SourcesController extends Controller {
 		$data = $this->sanitizeDatabaseSourceData(data: $data);
 
 		// Encrypt databaseUrl at rest before persisting (legacy harvest path).
-		if (isset($data['databaseUrl']) === true && $data['databaseUrl'] !== null && $data['databaseUrl'] !== '') {
+		if (isset($data['databaseUrl']) === true && $data['databaseUrl'] !== '') {
 			$data['databaseUrl'] = $this->crypto->encrypt((string)$data['databaseUrl']);
 		}
 
@@ -303,7 +303,7 @@ class SourcesController extends Controller {
 		$data = $this->sanitizeDatabaseSourceData(data: $data);
 
 		// Encrypt databaseUrl at rest before persisting (legacy harvest path).
-		if (isset($data['databaseUrl']) === true && $data['databaseUrl'] !== null && $data['databaseUrl'] !== '') {
+		if (isset($data['databaseUrl']) === true && $data['databaseUrl'] !== '') {
 			$data['databaseUrl'] = $this->crypto->encrypt((string)$data['databaseUrl']);
 		}
 

@@ -2573,11 +2573,11 @@ class ImportHandler {
 						version: $version,
 						force: $force
 					);
-					if ($register !== null) {
-						// Store register in map by slug for reference.
-						$this->registersMap[$slug] = $register;
-						$result['registers'][] = $register;
-					}
+					// Store register in map by slug for reference. The import call
+					// above is declared non-nullable and throws on failure, which
+					// the catch below handles.
+					$this->registersMap[$slug] = $register;
+					$result['registers'][] = $register;
 				} catch (\Throwable $e) {
 					$result['skipped']['registers']++;
 					$this->logger->warning(
@@ -3410,6 +3410,10 @@ class ImportHandler {
 	 * @param array<string, mixed> $result Current import result array
 	 * @param array<string, DeployedWorkflow> $deployedWorkflows Map populated by reference
 	 * @param string $importSource Import source identifier
+	 *
+	 * @param-out array<int|string, DeployedWorkflow> $deployedWorkflows A workflow named
+	 *         with a canonical numeric string ("12") gets an INT key from PHP's array-key
+	 *         coercion, so the map that comes back out is not key-narrowable to string.
 	 *
 	 * @return array<string, mixed> Updated result array
 	 *
@@ -4303,7 +4307,7 @@ class ImportHandler {
 		// circuits when the table already exists (see MagicTableHandler
 		// line 109-112). The seed-objects loop further down still calls
 		// the same method as a defensive no-op.
-		if ($this->magicMapper !== null && $register !== null) {
+		if ($this->magicMapper !== null) {
 			foreach ($schemas as $schema) {
 				if ($schema instanceof Schema === false) {
 					continue;

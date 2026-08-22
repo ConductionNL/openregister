@@ -577,13 +577,11 @@ class ShareLinkService {
 			}
 
 			$owner = (string)($share->getSharedBy() ?? '');
+			// IShare::getNode() is declared to return Node and throws when the
+			// node is gone, so the null guard here was unreachable.
 			$node = $share->getNode();
-			$fileName = '';
-			$fileId = 0;
-			if ($node !== null) {
-				$fileName = (string)$node->getName();
-				$fileId = (int)$node->getId();
-			}
+			$fileName = (string)$node->getName();
+			$fileId = (int)$node->getId();
 
 			return [
 				'shareId' => $shareId,

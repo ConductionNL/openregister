@@ -993,7 +993,9 @@ class GitHubHandler {
 						'file' => __FILE__,
 						'line' => __LINE__,
 						'status_code' => $statusCode,
-						'has_token' => (empty($token) === false),
+						// Always true: $token is a non-empty-string by this point, so
+						// the only way into this branch is the 401.
+						'has_token' => true,
 					]
 				);
 				return [];
@@ -1553,7 +1555,7 @@ class GitHubHandler {
 	 *
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-2
 	 */
-	private function resolveCreateIssueToken(string $userId, ?bool &$useServerPat): string {
+	private function resolveCreateIssueToken(string $userId, bool &$useServerPat): string {
 		$userToken = $this->getUserToken(userId: $userId) ?? '';
 		$useServerPat = $userToken === '';
 		if ($useServerPat === false) {
@@ -1763,10 +1765,9 @@ class GitHubHandler {
 			return 0;
 		}
 
-		// The class is confirmed by the is_a() check above, so getResponse() is safe.
-		if (method_exists($exception, 'getResponse') === false) {
-			return 0;
-		}
+		// The class is confirmed by the is_a() check above, so getResponse() is
+		// safe — the method_exists() bail-out that used to sit here could never
+		// be reached.
 
 		// BadResponseException always carries a response (it is required by its constructor),
 		// so getResponse() is non-null here.

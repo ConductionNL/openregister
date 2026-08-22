@@ -183,20 +183,14 @@ class SchemasController extends Controller {
 	 * @return JSONResponse JSON response with array of schemas
 	 *
 	 * @psalm-return JSONResponse<200,
-	 *     array{results: array<array{id: int, uuid: null|string,
-	 *     uri: null|string, slug: null|string, title: null|string,
-	 *     description: null|string, version: null|string,
-	 *     summary: null|string, icon: null|string, required: array,
-	 *     properties: array, archive: array|null, source: null|string,
-	 *     hardValidation: bool, immutable: bool, searchable: bool,
-	 *     updated: null|string, created: null|string, maxDepth: int,
-	 *     owner: null|string, application: null|string,
-	 *     organisation: null|string,
-	 *     groups: array<string, list<string>>|null,
-	 *     authorization: array|null, deleted: null|string,
-	 *     published: null|string, depublished: null|string,
-	 *     configuration: array|null|string, allOf: array|null,
-	 *     oneOf: array|null, anyOf: array|null}>}, array<never, never>>
+	 *     array{results: list<array<string, mixed>>}, array<never, never>>
+	 *
+	 * Each result is deliberately `array<string, mixed>` and not a spelled-out
+	 * shape. The previous annotation restated Schema::jsonSerialize() field by
+	 * field and was already wrong: it omitted the four keys (`objects`, `logs`,
+	 * `files`, `registers`) that the `_stats` block appends to every entry. The
+	 * entity's serializer owns that contract; copying it here only guarantees
+	 * the copy drifts.
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple optional extend/pagination/filter parameters each add one branch.
 	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple optional extend/pagination/filter parameters each add one branch.

@@ -114,10 +114,9 @@ class CompositionHandler {
 	 * @spec openspec/specs/graphql-api/spec.md
 	 */
 	private function applyAllOf(RegisterSchema $schema, array &$fields): void {
-		$allOf = null;
-		if (method_exists(object_or_class: $schema, method: 'getAllOf') === true) {
-			$allOf = $schema->getAllOf();
-		}
+		// Schema declares getAllOf(), so no method_exists() probe is needed; the
+		// is_array() check below still does real work because it can return null.
+		$allOf = $schema->getAllOf();
 
 		if (is_array(value: $allOf) === false) {
 			return;
@@ -155,10 +154,8 @@ class CompositionHandler {
 	 * @spec openspec/specs/graphql-api/spec.md
 	 */
 	private function applyOneOf(RegisterSchema $schema, array &$fields): void {
-		$oneOf = null;
-		if (method_exists(object_or_class: $schema, method: 'getOneOf') === true) {
-			$oneOf = $schema->getOneOf();
-		}
+		// Schema declares getOneOf(); see applyAllOf() above.
+		$oneOf = $schema->getOneOf();
 
 		if (is_array(value: $oneOf) === false || empty($oneOf) === true) {
 			return;
@@ -199,10 +196,8 @@ class CompositionHandler {
 	 * @spec openspec/specs/graphql-api/spec.md
 	 */
 	private function applyAnyOf(RegisterSchema $schema, array &$fields): void {
-		$anyOf = null;
-		if (method_exists(object_or_class: $schema, method: 'getAnyOf') === true) {
-			$anyOf = $schema->getAnyOf();
-		}
+		// Schema declares getAnyOf(); see applyAllOf() above.
+		$anyOf = $schema->getAnyOf();
 
 		if (is_array(value: $anyOf) === false || empty($anyOf) === true) {
 			return;

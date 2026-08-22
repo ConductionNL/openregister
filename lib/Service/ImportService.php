@@ -323,7 +323,13 @@ class ImportService {
 	 *     debug?: array,
 	 *     schema?: array{id: int, slug: null|string, title: null|string},
 	 *     deduplication_efficiency?: string
-	 * }>
+	 * }|string>
+	 *
+	 * The `|string` is not slack: the result is a map of sheet title => summary,
+	 * but the method also writes a scalar `importJobId` into the SAME map. A
+	 * caller that iterates the result and assumes every value is a summary array
+	 * will hit that key. Kept as-is because moving it would change the response
+	 * shape for existing clients; the union at least makes it visible.
 	 *
 	 * @psalm-return array<string, array{
 	 *     created: array,
@@ -1460,16 +1466,13 @@ class ImportService {
 			}
 
 			// Transform row data to object format.
-			$object = $this->transformCsvRowToObject(
+			// transformCsvRowToObject() is declared non-nullable, so no guard.
+			$allObjects[] = $this->transformCsvRowToObject(
 				rowData: $rowData,
 				register: $register,
 				schema: $schema,
 				currentUser: $currentUser
 			);
-
-			if ($object !== null) {
-				$allObjects[] = $object;
-			}
 		}//end for
 
 		$summary['found'] = count($allObjects);

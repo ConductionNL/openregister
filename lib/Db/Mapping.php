@@ -303,7 +303,7 @@ class Mapping extends Entity implements JsonSerializable {
 
 		// Safe fallback if empty.
 		$prefix = 'mapping';
-		if (isset($this->id) === true && (string)$this->id !== '') {
+		if ((string)$this->id !== '') {
 			return $prefix . '-' . (string)$this->id;
 		}
 
