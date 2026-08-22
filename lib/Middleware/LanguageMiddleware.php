@@ -108,7 +108,7 @@ class LanguageMiddleware extends Middleware {
 
 		// 2. Accept-Language header is the next priority.
 		$acceptLanguage = $this->request->getHeader('Accept-Language');
-		if ($acceptLanguage !== '' && $acceptLanguage !== null) {
+		if ($acceptLanguage !== '') {
 			$acceptedLanguages = LanguageService::parseAcceptLanguageHeader($acceptLanguage);
 			$this->languageService->setAcceptedLanguages($acceptedLanguages);
 
@@ -129,7 +129,7 @@ class LanguageMiddleware extends Middleware {
 		$method = strtoupper((string)$this->request->getMethod());
 		if (in_array($method, ['POST', 'PUT', 'PATCH'], true) === true) {
 			$targetHeader = $this->request->getHeader('X-Translation-Target-Language');
-			if ($targetHeader !== '' && $targetHeader !== null) {
+			if ($targetHeader !== '') {
 				$targetTrim = trim($targetHeader);
 				if (preg_match(self::BCP47_PATTERN, $targetTrim) === 1) {
 					$this->languageService->setTargetLanguage($targetTrim);

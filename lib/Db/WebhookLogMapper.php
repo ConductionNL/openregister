@@ -114,7 +114,7 @@ class WebhookLogMapper extends QBMapper {
 	 *
 	 * @return WebhookLog[]
 	 *
-	 * @psalm-return list<OCA\OpenRegister\Db\WebhookLog>
+	 * @psalm-return list<\OCA\OpenRegister\Db\WebhookLog>
 	 */
 	public function findAll(?int $limit = null, ?int $offset = null): array {
 		$qb = $this->db->getQueryBuilder();

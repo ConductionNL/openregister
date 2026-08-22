@@ -266,15 +266,14 @@ class TranslationHandler {
 				continue;
 			}//end if
 
-			// Simple value path.
-			if ($value !== null) {
-				if ($targetLanguage !== null && $targetLanguage !== '') {
-					// Shape B — wrap under the target language.
-					$objectData[$propName] = [$targetLanguage => $value];
-				} else {
-					// Shape A — legacy: wrap under register default.
-					$objectData[$propName] = [$defaultLanguage => $value];
-				}
+			// Simple value path. $value is non-null by this point — the null
+			// case is handled by the continue above.
+			if ($targetLanguage !== null && $targetLanguage !== '') {
+				// Shape B — wrap under the target language.
+				$objectData[$propName] = [$targetLanguage => $value];
+			} else {
+				// Shape A — legacy: wrap under register default.
+				$objectData[$propName] = [$defaultLanguage => $value];
 			}
 		}//end foreach
 

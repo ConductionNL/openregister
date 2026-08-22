@@ -270,7 +270,7 @@ class N8nSettingsController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with initialization result
 	 *
-	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 *
 	 * @spec openspec/specs/production-observability/spec.md
 	 */

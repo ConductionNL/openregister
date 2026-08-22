@@ -131,30 +131,29 @@ class CascadingHandler {
 
 			$propertyValue = $object[$propertyName];
 
-			// Handle array properties.
+			// Handle array properties. No emptiness re-check: the loop head above
+			// already skipped every empty $object[$propertyName].
 			if ($definition['type'] === 'array' && isset($definition['items']['inversedBy']) === true) {
-				if (is_array($propertyValue) === true && empty($propertyValue) === false) {
-					$createdUuids = [];
-					foreach ($propertyValue as $item) {
-						if (is_array($item) === true && $this->utilityHandler->isUuid($item) === false) {
-							// This is a nested object, create it first.
-							$createdUuid = $this->createRelatedObject(
-								objectData: $item,
-								definition: $definition['items'],
-								parentUuid: $uuid,
-								currentRegister: $currentRegister
-							);
+				$createdUuids = [];
+				foreach ($propertyValue as $item) {
+					if (is_array($item) === true && $this->utilityHandler->isUuid($item) === false) {
+						// This is a nested object, create it first.
+						$createdUuid = $this->createRelatedObject(
+							objectData: $item,
+							definition: $definition['items'],
+							parentUuid: $uuid,
+							currentRegister: $currentRegister
+						);
 
-							// If creation failed, keep original item to avoid empty array.
-							$createdUuids[] = $createdUuid ?? $item;
-						} elseif (is_string($item) === true && $this->utilityHandler->isUuid($item) === true) {
-							// This is already a UUID, keep it.
-							$createdUuids[] = $item;
-						}
+						// If creation failed, keep original item to avoid empty array.
+						$createdUuids[] = $createdUuid ?? $item;
+					} elseif (is_string($item) === true && $this->utilityHandler->isUuid($item) === true) {
+						// This is already a UUID, keep it.
+						$createdUuids[] = $item;
 					}
+				}
 
-					$object[$propertyName] = $createdUuids;
-				}//end if
+				$object[$propertyName] = $createdUuids;
 			} elseif (isset($definition['inversedBy']) === true && $definition['type'] !== 'array') {
 				// Handle single object properties.
 				if (is_array($propertyValue) === true && $this->utilityHandler->isUuid($propertyValue) === false) {

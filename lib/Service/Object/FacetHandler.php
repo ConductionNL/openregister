@@ -185,12 +185,10 @@ class FacetHandler {
 			$facetConfig = [$facetConfig];
 		}
 
-		// Handle _facets as numerically-indexed array (e.g., _facets[]=standaardversies).
-		// PHP converts ?_facets[]=foo&_facets[]=bar into [0 => 'foo', 1 => 'bar'].
-		// Ensure it stays a simple list of field names.
-		if (is_array($facetConfig) === true && array_is_list($facetConfig) === true) {
-			$facetConfig = array_values(array: $facetConfig);
-		}
+		// No reindex step for the numerically-indexed `_facets[]=foo&_facets[]=bar`
+		// form: PHP already delivers that as [0 => 'foo', 1 => 'bar'], and the
+		// array_values() that used to sit here only ran when array_is_list() was
+		// already true — i.e. never did anything.
 
 		// **PAGINATION INDEPENDENCE**: Remove pagination params for facet calculation.
 		$facetQuery = $query;

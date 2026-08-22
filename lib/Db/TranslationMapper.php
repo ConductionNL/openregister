@@ -306,7 +306,9 @@ class TranslationMapper extends QBMapper {
 	 * register. Used by the
 	 * `openregister:translations:backfill-source-language` console command.
 	 *
-	 * @param array<string, string> $registerDefaults Map of `register_id => default_language`.
+	 * @param array<int|string, string> $registerDefaults Map of `register_id =>
+	 *        default_language`. Keys are int|string, not string: register ids are
+	 *        canonical numeric strings, which PHP coerces to int array keys.
 	 * @param int $batchSize Maximum rows updated per pass.
 	 *
 	 * @return int Number of rows updated across all batches.

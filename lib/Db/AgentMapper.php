@@ -317,7 +317,7 @@ class AgentMapper extends QBMapper {
 	 *
 	 * @throws \Exception If user doesn't have read permission
 	 *
-	 * @psalm-return list<OCA\OpenRegister\Db\Agent>
+	 * @psalm-return list<\OCA\OpenRegister\Db\Agent>
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */

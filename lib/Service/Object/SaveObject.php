@@ -537,13 +537,13 @@ class SaveObject {
 		// Try direct slug match as last resort.
 		try {
 			// SchemaMapper->find() supports id, uuid, and slug via orX().
+			// find() throws when there is no match; the catch below is the
+			// "not found" path, so no null test is needed here.
 			$schema = $this->schemaMapper->find(id: $slug, _rbac: false, _multitenancy: false);
-			if ($schema !== null) {
-				$schemaId = (string)$schema->getId();
-				$this->schemaCache[$schemaId] = $schema;
-				$this->schemaReferenceCache[$reference] = $schemaId;
-				return $schemaId;
-			}
+			$schemaId = (string)$schema->getId();
+			$this->schemaCache[$schemaId] = $schema;
+			$this->schemaReferenceCache[$reference] = $schemaId;
+			return $schemaId;
 		} catch (Exception $e) {
 			// Schema not found.
 		}
@@ -2838,9 +2838,9 @@ class SaveObject {
 						_rbac: false,
 						_multitenancy: false
 					);
-					if ($tempExistingObject !== null) {
-						$existingObjectData = $tempExistingObject->getObject();
-					}
+					// The find() call throws DoesNotExistException rather than returning
+					// null — that catch below is the real "missing" path.
+					$existingObjectData = $tempExistingObject->getObject();
 				} catch (DoesNotExistException $e) {
 					// Object doesn't exist, treat as create.
 					$isCreate = true;
@@ -3108,8 +3108,9 @@ class SaveObject {
 
 			// Use cached schema lookup instead of direct mapper call.
 			$schema = $this->getCachedSchema(schemaId: $schemaId);
-		} elseif (is_int($schema) === true) {
-			// It's an integer ID - use cached lookup.
+		} else {
+			// Only the integer-ID case is left after the Schema and string arms
+			// above, so no is_int() re-test — use the cached lookup.
 			$schemaId = $schema;
 			$schema = $this->getCachedSchema(schemaId: $schema);
 		}
@@ -5687,8 +5688,9 @@ class SaveObject {
 			return false;
 		}
 
-		// For objects/arrays with content, check recursively.
-		if (is_array($value) === true && empty($value) === false) {
+		// For objects/arrays with content, check recursively. The empty-array
+		// case already returned above, so only the array-ness matters here.
+		if (is_array($value) === true) {
 			// If it's an associative array (object-like), check if it's effectively empty.
 			if (array_keys($value) !== range(0, count($value) - 1)) {
 				return $this->isEffectivelyEmptyObject(object: $value) === false;

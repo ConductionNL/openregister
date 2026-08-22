@@ -24,7 +24,10 @@ still succeed.
 
 If the linkage of an existing register was lost, `occ
 openregister:registers:relink-schemas` inspects and repairs it from the physical
-object tables.
+object tables. If several registers wrongly share ONE schema entity — pre-fix
+drift, where every import rewrites the definition for all of them — `occ
+openregister:registers:dedupe-shared-schemas` splits them apart; see
+[Repairing schemas shared by several registers](../Technical/repairing-shared-schemas.md).
 
 ## Error Handling for Missing Register or Schema
 

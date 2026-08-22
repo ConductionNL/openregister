@@ -70,7 +70,7 @@ class ActionListener implements IEventListener {
 	 */
 	public function handle(Event $event): void {
 		// Respect propagation stop from inline hooks or previous listeners.
-		if (method_exists($event, 'isPropagationStopped') === true && $event->isPropagationStopped() === true) {
+		if ($event->isPropagationStopped() === true) {
 			$this->logger->debug(
 				message: '[ActionListener] Propagation already stopped, skipping action execution'
 			);

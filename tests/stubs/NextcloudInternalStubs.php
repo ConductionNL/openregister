@@ -199,8 +199,44 @@ if (class_exists(\OC::class) === false) {
             public function getServerProtocol(): string { return "HTTP/1.1"; }
             public function getServerHost(): string { return "localhost"; }
             public function getInsecureServerHost(): string { return "localhost"; }
+            // Added in newer OCP (present in v34). A double that is MISSING an
+            // interface method is a FATAL -- PHP refuses to declare the class and
+            // the suite dies mid-run rather than reporting a failed assertion --
+            // whereas a double carrying a method an older OCP does not declare is
+            // simply an extra method. So these are safe on every version in the
+            // matrix, and their absence was not.
+            public function throwDecodingExceptionIfAny(): void {}
+            public function getFormat(): ?string { return null; }
         };
         return $req;
+    });
+
+    // Nextcloud 34 made Response::getHeaders() resolve IUserSession from the
+    // container to stamp an X-User-Id header, and Response::cacheFor() resolve
+    // ITimeFactory. Neither was registered here, so ANY test that read a
+    // response header or set a cache lifetime died on "getUser()/getTime() on
+    // null" — 30 of them. Anonymous classes rather than interface
+    // implementations, matching the note above: the stub must survive a
+    // signature change in either interface.
+    OC::$server->registerService(\OCP\IUserSession::class, function() {
+        return new class {
+            /** @return mixed Always null: unit tests run unauthenticated. */
+            public function getUser() { return null; }
+            public function isLoggedIn(): bool { return false; }
+        };
+    });
+
+    OC::$server->registerService(\OCP\AppFramework\Utility\ITimeFactory::class, function() {
+        return new class {
+            public function getTime(): int { return 1700000000; }
+            public function getDateTime(string $type = "now", ?\DateTimeZone $timezone = null): \DateTime {
+                return new \DateTime("@1700000000");
+            }
+            public function now(): \DateTimeImmutable { return new \DateTimeImmutable("@1700000000"); }
+            public function getTimeZone(?string $timezone = null): \DateTimeZone {
+                return new \DateTimeZone($timezone ?? "UTC");
+            }
+        };
     });
 
     // Pre-register a minimal IFactory (L10N factory) so OCP\Util::addInitScript()
@@ -305,6 +341,46 @@ if (interface_exists(\OC\Authentication\Token\IToken::class) === false) {
 if (class_exists(\OC\AppFramework\Http\Request::class) === false) {
 	eval('namespace OC\AppFramework\Http;
     class Request {}');
+}//end if
+
+// -----------------------------------------------------------------
+// OC\Security\CSP\ContentSecurityPolicyNonceManager
+//
+// GraphQLController type-hints this internal server class to obtain the CSP
+// nonce for the GraphiQL shell. It is not part of nextcloud/ocp, so
+// createMock() on it threw UnknownTypeException and the three explorer tests
+// could never run.
+// -----------------------------------------------------------------
+if (class_exists(\OC\Security\CSP\ContentSecurityPolicyNonceManager::class) === false) {
+	eval('namespace OC\Security\CSP;
+    class ContentSecurityPolicyNonceManager {
+        public function getNonce(): string { return ""; }
+    }');
+}//end if
+
+// -----------------------------------------------------------------
+// OC\Security\CSRF\CsrfToken + CsrfTokenManager
+//
+// Same story as the nonce manager above: GraphQLController type-hints these
+// internal server classes to stamp a request token into the GraphiQL fetcher.
+// -----------------------------------------------------------------
+if (class_exists(\OC\Security\CSRF\CsrfToken::class) === false) {
+	eval('namespace OC\Security\CSRF;
+    class CsrfToken {
+        public function getName(): string { return ""; }
+        public function getValue(): string { return ""; }
+        public function getEncryptedValue(): string { return ""; }
+    }');
+}//end if
+
+if (class_exists(\OC\Security\CSRF\CsrfTokenManager::class) === false) {
+	eval('namespace OC\Security\CSRF;
+    class CsrfTokenManager {
+        public function getToken(): CsrfToken { return new CsrfToken(); }
+        public function refreshToken(): CsrfToken { return new CsrfToken(); }
+        public function removeToken(): void { }
+        public function isTokenValid(CsrfToken $token): bool { return true; }
+    }');
 }//end if
 
 // -----------------------------------------------------------------

@@ -714,14 +714,14 @@ class MagicStatisticsHandler {
 
 			// CRITICAL FIX: Explicitly set ID and UUID to ensure they are never null.
 			// These are essential for audit trails, rendering, and API responses.
-			if (isset($metadata['id']) === true && $metadata['id'] !== null) {
+			if (isset($metadata['id']) === true) {
 				$idValue = $metadata['id'];
 				if (is_numeric($idValue) === true) {
 					$objectEntity->setId((int)$idValue);
 				}
 			}
 
-			if (isset($metadata['uuid']) === true && $metadata['uuid'] !== null) {
+			if (isset($metadata['uuid']) === true) {
 				$objectEntity->setUuid($metadata['uuid']);
 			}
 

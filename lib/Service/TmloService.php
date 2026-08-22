@@ -267,7 +267,6 @@ class TmloService {
 
 		// Validate archiefnominatie.
 		if (isset($tmlo['archiefnominatie']) === true
-			&& $tmlo['archiefnominatie'] !== null
 			&& in_array($tmlo['archiefnominatie'], self::VALID_ARCHIEFNOMINATIE, true) === false
 		) {
 			$allowed = implode(', ', self::VALID_ARCHIEFNOMINATIE);
@@ -277,7 +276,6 @@ class TmloService {
 
 		// Validate archiefstatus.
 		if (isset($tmlo['archiefstatus']) === true
-			&& $tmlo['archiefstatus'] !== null
 			&& in_array($tmlo['archiefstatus'], self::VALID_ARCHIEFSTATUS, true) === false
 		) {
 			$allowed = implode(', ', self::VALID_ARCHIEFSTATUS);
@@ -286,7 +284,7 @@ class TmloService {
 		}
 
 		// Validate bewaarTermijn as ISO-8601 duration.
-		if (isset($tmlo['bewaarTermijn']) === true && $tmlo['bewaarTermijn'] !== null) {
+		if (isset($tmlo['bewaarTermijn']) === true) {
 			try {
 				new DateInterval($tmlo['bewaarTermijn']);
 			} catch (Exception $e) {
@@ -296,7 +294,7 @@ class TmloService {
 		}
 
 		// Validate archiefactiedatum as ISO-8601 date.
-		if (isset($tmlo['archiefactiedatum']) === true && $tmlo['archiefactiedatum'] !== null) {
+		if (isset($tmlo['archiefactiedatum']) === true) {
 			$date = DateTime::createFromFormat('Y-m-d', $tmlo['archiefactiedatum']);
 			if ($date === false || $date->format('Y-m-d') !== $tmlo['archiefactiedatum']) {
 				$got = $tmlo['archiefactiedatum'];

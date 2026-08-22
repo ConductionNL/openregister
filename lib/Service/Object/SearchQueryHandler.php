@@ -441,10 +441,21 @@ class SearchQueryHandler {
 					}
 
 					// Merge with existing search if present.
-					$query['_search'] = $searchTerms;
-					if (isset($query['_search']) === true && empty($query['_search']) === false) {
-						$query['_search'] .= ' ' . $searchTerms;
+					//
+					// This previously assigned $query['_search'] FIRST and then
+					// appended $searchTerms to it, so the isset() guard could only
+					// ever see the value just written. Two things went wrong: the
+					// caller's own `_search` was discarded (the merge this comment
+					// describes never happened), and the view's terms were appended
+					// to themselves, producing "foo foo". Mirrors the `schemas`
+					// merge above: read what is there, then combine.
+					$existingSearch = ($query['_search'] ?? '');
+					$searchPrefix = '';
+					if (is_string($existingSearch) === true && $existingSearch !== '') {
+						$searchPrefix = $existingSearch . ' ';
 					}
+
+					$query['_search'] = $searchPrefix . $searchTerms;
 				}//end if
 
 				$this->logger->debug(

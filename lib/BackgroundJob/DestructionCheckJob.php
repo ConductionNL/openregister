@@ -272,7 +272,7 @@ class DestructionCheckJob extends TimedJob {
 
 			// Rebuild the persisted set from only the still-in-window UUIDs plus the freshly
 			// notified ones, dropping any whose destruction date has passed or moved away.
-			$rebuilt = array_values(array_keys($stillRelevant + $newNotified));
+			$rebuilt = array_keys($stillRelevant + $newNotified);
 
 			if ($newCount > 0 || count($rebuilt) !== count($notified)) {
 				$appConfig->setValueString('openregister', self::NOTIFIED_KEY, json_encode($rebuilt));

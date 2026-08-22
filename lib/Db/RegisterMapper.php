@@ -719,9 +719,12 @@ class RegisterMapper extends QBMapper {
 		// Capture: major.minor.patch followed by an optional -prerelease/+build suffix.
 		if (preg_match('/^(\d+)(?:\.(\d+))?(?:\.(\d+))?(.*)$/', trim($version), $matches) === 1) {
 			$major = (int)$matches[1];
-			$minor = (int)($matches[2] ?? 0);
-			$patch = (int)($matches[3] ?? 0);
-			$suffix = $matches[4] ?? '';
+			// Groups 2-4 are always present: the trailing `(.*)` always matches,
+			// so PHP fills the earlier optional groups with '' rather than
+			// omitting them. (int)'' is 0, so the old `?? 0` was a no-op.
+			$minor = (int)$matches[2];
+			$patch = (int)$matches[3];
+			$suffix = $matches[4];
 
 			return $major . '.' . $minor . '.' . ($patch + 1) . $suffix;
 		}

@@ -798,15 +798,15 @@ class AnnotationNotificationDispatcher {
 
 		$object = new ObjectEntity();
 		$object->setUuid((string)($payload['objectUuid'] ?? ''));
-		if (isset($payload['objectRegister']) === true && $payload['objectRegister'] !== null) {
+		if (isset($payload['objectRegister']) === true) {
 			$object->setRegister((string)$payload['objectRegister']);
 		}
 
-		if (isset($payload['objectSchema']) === true && $payload['objectSchema'] !== null) {
+		if (isset($payload['objectSchema']) === true) {
 			$object->setSchema((string)$payload['objectSchema']);
 		}
 
-		if (isset($payload['objectName']) === true && $payload['objectName'] !== null) {
+		if (isset($payload['objectName']) === true) {
 			$object->setName((string)$payload['objectName']);
 		}
 
