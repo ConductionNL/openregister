@@ -268,4 +268,9 @@ jobs:
       # Measured on this tree before enabling: PASSES, 428 of 478 tracked
       # frontend files in scope (l10n/, docs/ and js/ excluded via
       # .prettierignore / .gitignore, which prettier 3 also reads).
-      frontend-checks: '["check:specs", "test:l10n", "format"]'
+      # `check:schema-l10n` is a RATCHET, not a gate. Every string inside a form
+      # comes from the schema and is a key in THIS app's catalogue; an absent key
+      # renders the English source inside an otherwise translated form, silently.
+      # The fleet had 30,459 such strings, so this records the current count and
+      # fails only when it GROWS — burning it down stays an ordinary PR.
+      frontend-checks: '["check:specs", "test:l10n", "format", "check:schema-l10n"]'
