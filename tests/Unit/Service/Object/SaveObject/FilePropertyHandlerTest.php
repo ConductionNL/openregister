@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject;
 
 use Exception;
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
@@ -2398,5 +2399,71 @@ class FilePropertyHandlerTest extends TestCase {
 		$schema->method('getProperties')->willReturn([]);
 
 		$this->assertFalse($this->handler->isFileProperty('anything', $schema, 'document'));
+	}
+
+	/**
+	 * A URL pointing at loopback is refused before any request is made.
+	 *
+	 * SEC-SVC-2 guards this path against read-SSRF, and it had no test at all:
+	 * the guard could have been deleted outright and every existing assertion
+	 * would still have passed. A literal IP is used rather than a hostname so
+	 * the refusal comes from the address check itself and not from DNS — the
+	 * test then needs no network and cannot go green for the wrong reason.
+	 *
+	 * @return void
+	 */
+	public function testFetchFileFromUrlRefusesALoopbackAddress(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('non-public address');
+		$this->invokePrivateMethod('fetchFileFromUrl', ['http://127.0.0.1/secret']);
+	}
+
+	/**
+	 * A URL in a private RFC-1918 range is refused.
+	 *
+	 * Loopback alone would be satisfied by a guard that only special-cased
+	 * 127/8; the cloud-metadata and internal-service cases this control exists
+	 * for live in the private and reserved ranges instead.
+	 *
+	 * @return void
+	 */
+	public function testFetchFileFromUrlRefusesAPrivateAddress(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('non-public address');
+		$this->invokePrivateMethod('fetchFileFromUrl', ['http://169.254.169.254/latest/meta-data/']);
+	}
+
+	/**
+	 * A non-http(s) scheme is refused before the address check runs.
+	 *
+	 * ftp:// is used rather than file:// because the two are rejected by
+	 * different branches, and only this one reaches the scheme test: a
+	 * file:/// URL has no host at all, so it is already gone as malformed by
+	 * the time the scheme is looked at. Asserting the message is what makes
+	 * that distinction hold — without it both inputs pass this test while
+	 * leaving the scheme branch unexercised. No lookup happens either way,
+	 * since the scheme is checked before any resolution.
+	 *
+	 * @return void
+	 */
+	public function testFetchFileFromUrlRefusesANonHttpScheme(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Only http and https URLs are allowed.');
+		$this->invokePrivateMethod('fetchFileFromUrl', ['ftp://example.com/payload.bin']);
+	}
+
+	/**
+	 * A file:// URL is refused as malformed, closing arbitrary local-file read.
+	 *
+	 * Kept alongside the scheme case because it is the input that matters in
+	 * practice and it exits through a different branch — a future refactor
+	 * that made the scheme check the first thing to run would keep this
+	 * passing, which is the point.
+	 *
+	 * @return void
+	 */
+	public function testFetchFileFromUrlRefusesAFileUrl(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->invokePrivateMethod('fetchFileFromUrl', ['file:///etc/passwd']);
 	}
 }
