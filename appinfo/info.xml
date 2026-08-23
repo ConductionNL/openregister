@@ -205,6 +205,9 @@ Vrij en open source onder de EUPL-licentie.
 		<!-- Annotation-related commands have light DI graphs (mappers + evaluator). -->
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
+		<!-- App-rename repair: re-points registers and schemas at a new owning
+		     app id. Only a DB connection, so the DI graph stays light. -->
+		<command>OCA\OpenRegister\Command\MigrateSchemaApplicationCommand</command>
 		<command>OCA\OpenRegister\Command\RechainAuditTrailCommand</command>
 		<!-- Read-only report: which RBAC groups this instance declares, and whether
 		     anyone belongs to them. Provisioning guarantees a declared group EXISTS;
