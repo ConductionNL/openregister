@@ -1,10 +1,10 @@
 <?php
 
 /**
- * MigrateSchemaApplicationCommand unit tests
+ * SchemaApplicationMigrator unit tests
  *
  * @category Test
- * @package  OCA\OpenRegister\Tests\Unit\Command
+ * @package  OCA\OpenRegister\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -16,16 +16,16 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Tests\Unit\Command;
+namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use OCA\OpenRegister\Command\MigrateSchemaApplicationCommand;
+use OCA\OpenRegister\Service\SchemaApplicationMigrator;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Locks planCollisions(): the rule that decides whether an app-id migration is
  * safe to perform or has to be refused.
  */
-class MigrateSchemaApplicationCommandTest extends TestCase {
+class SchemaApplicationMigratorTest extends TestCase {
 
 	/**
 	 * Nothing under the target id means nothing can collide.
@@ -38,7 +38,7 @@ class MigrateSchemaApplicationCommandTest extends TestCase {
 	public function testNoTargetSlugsMeansNoCollisions(): void {
 		$this->assertSame(
 			[],
-			MigrateSchemaApplicationCommand::planCollisions(
+			SchemaApplicationMigrator::planCollisions(
 				fromSlugs: ['case', 'caseType', 'bezwaar'],
 				toSlugs: []
 			)
@@ -55,7 +55,7 @@ class MigrateSchemaApplicationCommandTest extends TestCase {
 	public function testDisjointSlugsDoNotCollide(): void {
 		$this->assertSame(
 			[],
-			MigrateSchemaApplicationCommand::planCollisions(
+			SchemaApplicationMigrator::planCollisions(
 				fromSlugs: ['case', 'caseType'],
 				toSlugs: ['invoice', 'contract']
 			)
@@ -77,7 +77,7 @@ class MigrateSchemaApplicationCommandTest extends TestCase {
 	public function testSharedSlugIsReportedAsACollision(): void {
 		$this->assertSame(
 			['case'],
-			MigrateSchemaApplicationCommand::planCollisions(
+			SchemaApplicationMigrator::planCollisions(
 				fromSlugs: ['case', 'caseType'],
 				toSlugs: ['case']
 			)
@@ -100,7 +100,7 @@ class MigrateSchemaApplicationCommandTest extends TestCase {
 	public function testCollisionDetectionIsCaseInsensitive(): void {
 		$this->assertSame(
 			['casetype'],
-			MigrateSchemaApplicationCommand::planCollisions(
+			SchemaApplicationMigrator::planCollisions(
 				fromSlugs: ['CaseType'],
 				toSlugs: ['casetype']
 			)
@@ -117,7 +117,7 @@ class MigrateSchemaApplicationCommandTest extends TestCase {
 	public function testDuplicateSourceSlugsAreReportedOnce(): void {
 		$this->assertSame(
 			['case'],
-			MigrateSchemaApplicationCommand::planCollisions(
+			SchemaApplicationMigrator::planCollisions(
 				fromSlugs: ['case', 'CASE', 'case'],
 				toSlugs: ['case']
 			)
