@@ -27,6 +27,7 @@
     "test:e2e:install": "playwright install chromium",
     "test:l10n": "node tests/l10n/check-l10n.js",
     "test:l10n:write": "node tests/l10n/check-l10n.js --write",
+    "check:schema-l10n": "node scripts/check-schema-l10n.js",
     "check:json-strict": "node tests/validate-json-strict.js",
     "check:manifest": "node tests/validate-manifest.js",
     "check:register": "node tests/validate-register.js",
