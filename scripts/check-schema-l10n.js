@@ -104,7 +104,8 @@ function collect(node, where, sink) {
 				if (source === null || typeof source !== 'object') continue
 				const labels = source['x-enum-labels']
 				if (labels === null || typeof labels !== 'object') continue
-				for (const label of Object.values(labels)) remember(label, `${key}.x-enum-labels`)
+				for (const label of Object.values(labels))
+					remember(label, `${key}.x-enum-labels`)
 			}
 		}
 	}
@@ -129,7 +130,11 @@ function main() {
 
 	let covered = new Set()
 	try {
-		covered = new Set(Object.keys(JSON.parse(fs.readFileSync(CATALOGUE, 'utf8')).translations || {}))
+		covered = new Set(
+			Object.keys(
+				JSON.parse(fs.readFileSync(CATALOGUE, 'utf8')).translations || {},
+			),
+		)
 	} catch {
 		// no catalogue yet — then everything is uncovered, which the baseline records
 	}
@@ -141,33 +146,48 @@ function main() {
 	}
 
 	if (update) {
-		fs.writeFileSync(BASELINE, JSON.stringify({ uncovered: uncovered.length }, null, 2) + '\n')
-		console.log(`baseline written: ${uncovered.length} uncovered schema string(s)`)
+		fs.writeFileSync(
+			BASELINE,
+			JSON.stringify({ uncovered: uncovered.length }, null, 2) + '\n',
+		)
+		console.log(
+			`baseline written: ${uncovered.length} uncovered schema string(s)`,
+		)
 		return
 	}
 
 	if (!fs.existsSync(BASELINE)) {
-		console.error('No baseline. Run `npm run check:schema-l10n -- --update` and commit it.')
+		console.error(
+			'No baseline. Run `npm run check:schema-l10n -- --update` and commit it.',
+		)
 		process.exit(1)
 	}
 	const baseline = JSON.parse(fs.readFileSync(BASELINE, 'utf8')).uncovered
 
-	console.log(`${strings.size} schema string(s); ${uncovered.length} uncovered, baseline ${baseline}`)
+	console.log(
+		`${strings.size} schema string(s); ${uncovered.length} uncovered, baseline ${baseline}`,
+	)
 
 	if (uncovered.length > baseline) {
 		const added = uncovered.length - baseline
 		console.error('')
-		console.error(`${added} schema string(s) added with no catalogue key — they will render`)
+		console.error(
+			`${added} schema string(s) added with no catalogue key — they will render`,
+		)
 		console.error('in English inside an otherwise translated form.')
 		console.error('')
-		console.error('Add them to l10n/en.json (identity) and l10n/nl.json (translated), then')
+		console.error(
+			'Add them to l10n/en.json (identity) and l10n/nl.json (translated), then',
+		)
 		console.error('run `npm run l10n:build`. See what is uncovered with:')
 		console.error('  node scripts/check-schema-l10n.js --list')
 		process.exit(1)
 	}
 
 	if (uncovered.length < baseline) {
-		console.log(`${baseline - uncovered.length} fewer than the baseline — lower it with:`)
+		console.log(
+			`${baseline - uncovered.length} fewer than the baseline — lower it with:`,
+		)
 		console.log('  npm run check:schema-l10n -- --update')
 	}
 }
