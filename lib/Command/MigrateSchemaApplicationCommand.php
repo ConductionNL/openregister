@@ -104,37 +104,13 @@ class MigrateSchemaApplicationCommand extends Command {
 		}
 
 		if ((bool)$input->getOption('dry-run') === true) {
-			$collisions = $this->migrator->collidingSlugs(from: $from, to: $to);
-			if (empty($collisions) === false) {
-				$output->writeln('<error>Would refuse: these slugs already exist under the target application id.</error>');
-				foreach ($collisions as $slug) {
-					$output->writeln('  - ' . $slug);
-				}
-
-				return 1;
-			}
-
-			$output->writeln(
-				sprintf(
-					'<comment>Dry run: would move %d schema(s) and %d register(s) from "%s" to "%s".</comment>',
-					$schemas,
-					$registers,
-					$from,
-					$to
-				)
-			);
-			return 0;
+			return $this->dryRun(output: $output, from: $from, to: $to, schemas: $schemas, registers: $registers);
 		}
 
 		$result = $this->migrator->migrate(from: $from, to: $to);
 
 		if ($result['ok'] === false) {
-			$output->writeln('<error>Refusing: these slugs already exist under the target application id.</error>');
-			foreach ($result['collisions'] as $slug) {
-				$output->writeln('  - ' . $slug);
-			}
-
-			$output->writeln('An import has already forked these schemas. Resolve the duplicates first (see openregister:schemas:dedup).');
+			$this->reportRefusal(output: $output, collisions: $result['collisions'], wouldRefuse: false);
 			return 1;
 		}
 
@@ -152,6 +128,70 @@ class MigrateSchemaApplicationCommand extends Command {
 		return 0;
 
 	}//end execute()
+
+
+	/**
+	 * Report what a real run would do, including whether it would refuse.
+	 *
+	 * The collision check runs here too, deliberately. A dry run that reports
+	 * what it "would move" without checking whether the real run would refuse
+	 * is worse than no dry run, because it reads as a green light.
+	 *
+	 * @param OutputInterface $output    The console output.
+	 * @param string          $from      The current application id.
+	 * @param string          $to        The new application id.
+	 * @param int             $schemas   Schemas owned by `from`.
+	 * @param int             $registers Registers owned by `from`.
+	 *
+	 * @return int 0 when the real run would proceed, 1 when it would refuse.
+	 */
+	private function dryRun(OutputInterface $output, string $from, string $to, int $schemas, int $registers): int {
+		$collisions = $this->migrator->collidingSlugs(from: $from, to: $to);
+		if (empty($collisions) === false) {
+			$this->reportRefusal(output: $output, collisions: $collisions, wouldRefuse: true);
+			return 1;
+		}
+
+		$output->writeln(
+			sprintf(
+				'<comment>Dry run: would move %d schema(s) and %d register(s) from "%s" to "%s".</comment>',
+				$schemas,
+				$registers,
+				$from,
+				$to
+			)
+		);
+
+		return 0;
+
+	}//end dryRun()
+
+
+	/**
+	 * Print the refusal and the slugs that caused it.
+	 *
+	 * @param OutputInterface $output      The console output.
+	 * @param string[]        $collisions  The colliding slugs.
+	 * @param bool            $wouldRefuse True when reporting a dry run.
+	 *
+	 * @return void
+	 */
+	private function reportRefusal(OutputInterface $output, array $collisions, bool $wouldRefuse): void {
+		$lead = 'Refusing:';
+		if ($wouldRefuse === true) {
+			$lead = 'Would refuse:';
+		}
+
+		$output->writeln('<error>' . $lead . ' these slugs already exist under the target application id.</error>');
+		foreach ($collisions as $slug) {
+			$output->writeln('  - ' . $slug);
+		}
+
+		$output->writeln(
+			'An import has already forked these schemas. Resolve the duplicates first (see openregister:schemas:dedup).'
+		);
+
+	}//end reportRefusal()
 
 
 }//end class
