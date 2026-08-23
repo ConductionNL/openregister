@@ -46,6 +46,8 @@ class MigrateSchemaApplicationCommand extends Command {
 	 * Constructor.
 	 *
 	 * @param SchemaApplicationMigrator $migrator The migration service.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function __construct(private readonly SchemaApplicationMigrator $migrator) {
 		parent::__construct();
@@ -57,6 +59,8 @@ class MigrateSchemaApplicationCommand extends Command {
 	 * Configure the command.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:migrate-application')
@@ -75,6 +79,8 @@ class MigrateSchemaApplicationCommand extends Command {
 	 * @param OutputInterface $output The console output.
 	 *
 	 * @return int 0 on success, 1 on refusal.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$from = (string)$input->getArgument('from');
@@ -144,6 +150,8 @@ class MigrateSchemaApplicationCommand extends Command {
 	 * @param int             $registers Registers owned by `from`.
 	 *
 	 * @return int 0 when the real run would proceed, 1 when it would refuse.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function dryRun(OutputInterface $output, string $from, string $to, int $schemas, int $registers): int {
 		$collisions = $this->migrator->collidingSlugs(from: $from, to: $to);
@@ -175,6 +183,8 @@ class MigrateSchemaApplicationCommand extends Command {
 	 * @param bool            $wouldRefuse True when reporting a dry run.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function reportRefusal(OutputInterface $output, array $collisions, bool $wouldRefuse): void {
 		$lead = 'Refusing:';

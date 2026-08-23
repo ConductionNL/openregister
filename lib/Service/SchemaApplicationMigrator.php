@@ -49,6 +49,8 @@ class SchemaApplicationMigrator {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db The database connection.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function __construct(private readonly IDBConnection $db) {
 
@@ -69,6 +71,8 @@ class SchemaApplicationMigrator {
 	 * @param string[] $toSlugs   Slugs owned by the new application id.
 	 *
 	 * @return string[] The colliding slugs, lower-cased and unique.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public static function planCollisions(array $fromSlugs, array $toSlugs): array {
 		$target = [];
@@ -100,6 +104,8 @@ class SchemaApplicationMigrator {
 	 * @param string $application The owning application id.
 	 *
 	 * @return int The row count.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function countFor(string $table, string $application): int {
 		$qb = $this->db->getQueryBuilder();
@@ -122,6 +128,8 @@ class SchemaApplicationMigrator {
 	 * @param string $application The owning application id.
 	 *
 	 * @return string[] The slugs.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function slugsFor(string $application): array {
 		$qb = $this->db->getQueryBuilder();
@@ -149,6 +157,8 @@ class SchemaApplicationMigrator {
 	 * @param string $to   The new application id.
 	 *
 	 * @return string[] The colliding slugs.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function collidingSlugs(string $from, string $to): array {
 		return self::planCollisions(
@@ -167,6 +177,8 @@ class SchemaApplicationMigrator {
 	 * @param string $to    The new application id.
 	 *
 	 * @return int The number of rows updated.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function moveApplication(string $table, string $from, string $to): int {
 		$qb = $this->db->getQueryBuilder();
@@ -191,6 +203,8 @@ class SchemaApplicationMigrator {
 	 * @return array{ok: bool, reason: string, collisions: string[], schemas: int, registers: int}
 	 *     The outcome. `ok` false with a non-empty `collisions` means an import
 	 *     already forked those schemas and the caller must resolve them first.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function migrate(string $from, string $to): array {
 		$result = [
