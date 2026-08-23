@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/oas-validation/tasks.md#task-validation-error-reporting
+ * @spec openspec/specs/oas-validation/spec.md "Validation Error Reporting"
  */
 
 declare(strict_types=1);

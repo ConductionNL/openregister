@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/oas-validation/tasks.md#task-validation-modes
+ * @spec openspec/specs/oas-validation/spec.md "Validation Modes (Strict vs Lenient)"
  */
 
 declare(strict_types=1);
