@@ -83,12 +83,26 @@ class FilesControllerTest extends TestCase {
 	// ObjectService::setSchema() resolves a schema SLUG register-scoped only
 	// when a register is ALREADY set; with no register context it falls back
 	// to a global LOWER(slug) match across every register on the instance.
-	// The controller used to call setSchema() first, so an upload addressed
-	// to planix/task resolved to openbuild's `task` schema and 500'd with a
+	// The controller called setSchema() first, so an upload addressed to
+	// planix/task resolved to openbuild's `task` schema and 500'd with a
 	// message naming a register the caller never mentioned.
 	//
-	// The fake below reproduces exactly that resolution behaviour, so these
-	// tests fail against the old ordering and pass against the new one.
+	// TWO LAYERS NOW GUARD THIS, DELIBERATELY.
+	//   1. ObjectService, since #2774 (merged after this branch was cut):
+	//      setRegister() re-resolves a pending schema ref, so the boundary
+	//      holds whichever order the two setters are called in. That is the
+	//      backstop for the ~24 call sites nobody has reordered yet.
+	//   2. This controller: it asks for the context in the correct order in
+	//      the first place, through one helper.
+	//
+	// Layer 2 is not redundant. #2774's own comment names FilesController as
+	// the shape of the problem, and a backstop that silently repairs a wrong
+	// call order leaves the call order wrong — every future reader still has
+	// to know that setSchema-then-setRegister only works by rescue. These
+	// tests pin the controller's ordering contract directly, which is why the
+	// fake below reproduces the resolution semantics AS THEY WERE when #2779
+	// was filed: that is the behaviour layer 2 has to be correct against, and
+	// it is what makes these tests fail if the ordering ever regresses.
 	// =====================================================================
 
 	/**

@@ -22,6 +22,7 @@ use Exception;
 use finfo;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\File\ExecutableContentDetector;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\SecurityService;
 use OCP\Files\File;
@@ -55,12 +56,14 @@ class FilePropertyHandler {
 	 *
 	 * @param LoggerInterface $logger Logger for logging operations
 	 * @param FileService $fileService File service for file operations
+	 * @param ExecutableContentDetector $executableDetector Shared executable-content detection
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
 		private readonly FileService $fileService,
+		private readonly ExecutableContentDetector $executableDetector = new ExecutableContentDetector(),
 	) {
 	}//end __construct()
 
@@ -1172,9 +1175,16 @@ class FilePropertyHandler {
 			}
 		}//end if
 
-		// Check magic bytes (file signatures) in content.
+		// Check magic bytes (file signatures) in content. The filename is passed
+		// through because the embedded-PHP-tag scan is scoped by extension as
+		// well as by sniffed content type — see openregister#2776. An absent
+		// filename yields '', which is treated as text-ish and always scanned.
 		if (($fileData['content'] ?? null) !== null && empty($fileData['content']) === false) {
-			$this->detectExecutableMagicBytes(content: $fileData['content'], errorPrefix: $errorPrefix);
+			$this->detectExecutableMagicBytes(
+				content: $fileData['content'],
+				errorPrefix: $errorPrefix,
+				fileName: (string)($fileData['filename'] ?? '')
+			);
 		}
 
 		// Check MIME types for executables.
@@ -1204,13 +1214,28 @@ class FilePropertyHandler {
 	 * Magic bytes are signatures at the start of files that identify the file type.
 	 * This provides defense-in-depth against renamed executables.
 	 *
+	 * The three checks themselves live in {@see ExecutableContentDetector}, the
+	 * single source of truth shared with {@see \OCA\OpenRegister\Service\File\FileValidationHandler}.
+	 * This method used to carry a byte-identical COPY of them, which is why
+	 * openregister#2776 — a legitimate PNG rejected as "contains PHP code" —
+	 * was a defect on this path too, not only on the `/files` endpoints. This
+	 * method now owns only its caller-facing message shape and its logging.
+	 *
+	 * The removed copy also carried a disabled `PK\x03\x04` (ZIP) entry, skipped
+	 * via a `false` description with a note that JARs are ZIPs and need deeper
+	 * inspection. It never matched anything, so dropping it changes nothing;
+	 * ZIP containers are handled by the shared binary-container sniff instead.
+	 *
 	 * @param string $content The file content to check.
 	 * @param string $errorPrefix The error message prefix.
+	 * @param string $fileName The filename, used for its extension only; '' when unknown.
 	 *
 	 * @psalm-param   string $content
 	 * @psalm-param   string $errorPrefix
+	 * @psalm-param   string $fileName
 	 * @phpstan-param string $content
 	 * @phpstan-param string $errorPrefix
+	 * @phpstan-param string $fileName
 	 *
 	 * @return void
 	 *
@@ -1221,53 +1246,33 @@ class FilePropertyHandler {
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
-	private function detectExecutableMagicBytes(string $content, string $errorPrefix): void {
-		// Common executable magic bytes.
-		$magicBytes = [
-			'MZ' => 'Windows executable (PE/EXE)',
-			"\x7FELF" => 'Linux/Unix executable (ELF)',
-			'#!/bin/sh' => 'Shell script',
-			'#!/bin/bash' => 'Bash script',
-			'#!/usr/bin/env' => 'Script with env shebang',
-			'<?php' => 'PHP script',
-			"\xCA\xFE\xBA\xBE" => 'Java class file',
-			"PK\x03\x04" => false,
-			// ZIP - need deeper inspection as JARs are ZIPs.
-			// Note: "\x50\x4B\x03\x04" is the same as "PK\x03\x04" (PK in hex), so removed duplicate.
-		];
+	private function detectExecutableMagicBytes(string $content, string $errorPrefix, string $fileName = ''): void {
+		// Offset-0 executable signatures — universal, every file property.
+		$description = $this->executableDetector->matchExecutableSignature(content: $content);
+		if ($description !== null) {
+			$this->logger->warning(
+				message: '[FilePropertyHandler] Executable magic bytes detected',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'app' => 'openregister',
+					'type' => $description,
+				]
+			);
 
-		foreach ($magicBytes as $signature => $description) {
-			if ($description === false) {
-				continue;
-				// Skip patterns that need deeper inspection.
-			}
+			$msg = "$errorPrefix contains executable code ($description). ";
+			throw new Exception($msg . 'Executable files are blocked for security reasons.');
+		}
 
-			if (strpos($content, $signature) === 0) {
-				$this->logger->warning(
-					message: '[FilePropertyHandler] Executable magic bytes detected',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'app' => 'openregister',
-						'type' => $description,
-					]
-				);
-
-				$msg = "$errorPrefix contains executable code ($description). ";
-				throw new Exception($msg . 'Executable files are blocked for security reasons.');
-			}
-		}//end foreach
-
-		// Check for script shebangs anywhere in first 4 lines.
-		$firstLines = substr($content, 0, 1024);
-		if (preg_match('/^#!.*\/(sh|bash|zsh|ksh|csh|python|perl|ruby|php|node)/m', $firstLines) === 1) {
+		// Script shebangs — universal, every file property.
+		if ($this->executableDetector->hasScriptShebang(content: $content) === true) {
 			throw new Exception(
 				"$errorPrefix contains script shebang. Script files are blocked for security reasons."
 			);
 		}
 
-		// Check for embedded PHP tags.
-		if (preg_match('/<\?php|<\?=|<script\s+language\s*=\s*["\']php/i', $firstLines) === 1) {
+		// Embedded PHP tags — text-ish payloads only, see openregister#2776.
+		if ($this->executableDetector->containsEmbeddedPhpTag(content: $content, fileName: $fileName) === true) {
 			throw new Exception(
 				"$errorPrefix contains PHP code. PHP files are blocked for security reasons."
 			);

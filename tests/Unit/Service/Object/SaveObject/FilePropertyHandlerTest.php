@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject;
 
 use Exception;
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
@@ -849,6 +850,158 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->handler->validateFileAgainstConfig($fileData, $fileConfig, 'doc');
 		$this->assertTrue(true);
 	}
+
+	// =========================================================================
+	// Binary MIME scoping on the OBJECT-SAVE path — openregister#2776
+	//
+	// This handler carried a byte-identical COPY of the executable-content
+	// checks, so the same legitimate PNG that the `/files` endpoints rejected
+	// was also rejected here. Both call sites now share
+	// ExecutableContentDetector; these tests pin BOTH directions on THIS path
+	// so the two can never drift apart again.
+	// =========================================================================
+
+	/**
+	 * The reproducer from the Jira attachment migration: a real 1283x926 PNG
+	 * screenshot whose first 1024 bytes contain `<?=` at offset 710.
+	 *
+	 * @return string
+	 */
+	private function falsePositivePngPath(): string {
+		return __DIR__ . '/../../../../fixtures/files/php-tag-false-positive.png';
+	}//end falsePositivePngPath()
+
+	public function testFilePropertyPathAcceptsTheRealPngReproducer(): void {
+		$content = (string)file_get_contents($this->falsePositivePngPath());
+
+		// Guard the guard: the fixture must still trip the OLD universal rule,
+		// otherwise this test would pass vacuously.
+		$this->assertStringContainsString('<?=', substr($content, 0, 1024));
+
+		$fileData = [
+			'filename' => 'Gegevens weergeven.PNG',
+			'mimeType' => 'image/png',
+			'content' => $content,
+		];
+
+		$this->handler->blockExecutableFiles($fileData, 'File at attachment');
+
+		$this->assertTrue(true, 'a genuine PNG must not be rejected as PHP on the object-save path');
+	}//end testFilePropertyPathAcceptsTheRealPngReproducer()
+
+	/**
+	 * @dataProvider filePropertyBinaryContainerProvider
+	 */
+	public function testFilePropertyPathSkipsPhpScanForBinaryContainers(string $magic, string $fileName, string $mime): void {
+		$fileData = [
+			'filename' => $fileName,
+			'mimeType' => $mime,
+			'content' => $magic . str_repeat("\x00", 32) . "<?php system('whoami'); ?>",
+		];
+
+		$this->handler->blockExecutableFiles($fileData, 'File at attachment');
+
+		$this->assertTrue(true, "{$fileName} must not be scanned for PHP tags");
+	}//end testFilePropertyPathSkipsPhpScanForBinaryContainers()
+
+	/**
+	 * @return array<string, array{string, string, string}>
+	 */
+	public static function filePropertyBinaryContainerProvider(): array {
+		return [
+			'png' => ["\x89PNG\r\n\x1A\n", 'screenshot.png', 'image/png'],
+			'jpeg' => ["\xFF\xD8\xFF\xE0", 'photo.jpg', 'image/jpeg'],
+			'pdf' => ['%PDF-1.7', 'report.pdf', 'application/pdf'],
+			'docx' => ["PK\x03\x04", 'contract.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+		];
+	}//end filePropertyBinaryContainerProvider()
+
+	// --- MUST-FAIL side: the protection survives on this path too. ---
+
+	/**
+	 * @dataProvider filePropertyStillRejectedProvider
+	 */
+	public function testFilePropertyPathStillRejectsPhpPayloads(string $content, string $fileName, string $mime): void {
+		$fileData = [
+			'filename' => $fileName,
+			'mimeType' => $mime,
+			'content' => $content,
+		];
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('PHP code');
+
+		$this->handler->blockExecutableFiles($fileData, 'File at attachment');
+	}//end testFilePropertyPathStillRejectsPhpPayloads()
+
+	/**
+	 * Note: a `.php`/`.phtml` name is refused by the extension blocklist BEFORE
+	 * content is read, with a different message, so those cases are covered by
+	 * the existing extension tests rather than here. These all reach the
+	 * content scan and must still be refused by it.
+	 *
+	 * @return array<string, array{string, string, string}>
+	 */
+	public static function filePropertyStillRejectedProvider(): array {
+		$php = "<?php system(\$_GET['c']); ?>";
+
+		return [
+			'php source as .txt' => ["notes\n$php", 'notes.txt', 'text/plain'],
+			'php in html' => ["<html><body>$php</body></html>", 'page.html', 'text/html'],
+			'php short echo in xml' => ["<root><?= 'x' ?></root>", 'feed.xml', 'application/xml'],
+			'php inside svg' => ["<svg xmlns='http://www.w3.org/2000/svg'>$php</svg>", 'logo.svg', 'image/svg+xml'],
+			'script language=php' => ["<html><script language=\"php\">echo 1;</script>", 'page.html', 'text/html'],
+			'no extension at all' => ["notes\n$php", 'attachment', 'application/octet-stream'],
+			'unrecognised byte stream' => ["\x01\x02\x03\x04$php", 'blob.dat', 'application/octet-stream'],
+			// Polyglots: real PNG magic bytes under an interpreted/markup name.
+			'png magic saved as .html' => ["\x89PNG\r\n\x1A\n$php", 'polyglot.html', 'text/html'],
+			'png magic saved as .svg' => ["\x89PNG\r\n\x1A\n$php", 'polyglot.svg', 'image/svg+xml'],
+		];
+	}//end filePropertyStillRejectedProvider()
+
+	public function testFilePropertyPathStillRejectsExecutableBytesUnderAnImageName(): void {
+		// The MIME scoping narrows ONLY the embedded-PHP-tag scan. The offset-0
+		// signature table is untouched and still universal on this path.
+		$fileData = [
+			'filename' => 'innocent.png',
+			'mimeType' => 'image/png',
+			'content' => 'MZ' . str_repeat("\x00", 64),
+		];
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('executable code');
+
+		$this->handler->blockExecutableFiles($fileData, 'File at attachment');
+	}//end testFilePropertyPathStillRejectsExecutableBytesUnderAnImageName()
+
+	public function testFilePropertyPathStillRejectsShebangUnderAnImageName(): void {
+		$fileData = [
+			'filename' => 'data.png',
+			'mimeType' => 'image/png',
+			'content' => "#!/usr/bin/env python\nprint(1)\n",
+		];
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('shebang');
+
+		$this->handler->blockExecutableFiles($fileData, 'File at attachment');
+	}//end testFilePropertyPathStillRejectsShebangUnderAnImageName()
+
+	public function testFilePropertyPathStillRejectsPhpSourceUnderAPhpName(): void {
+		// The dangerous-extension blocklist is the primary control and runs
+		// before content is even read — a .php upload is refused whatever its
+		// bytes look like, including a PNG-magic polyglot.
+		$fileData = [
+			'filename' => 'polyglot.phtml',
+			'mimeType' => 'image/png',
+			'content' => "\x89PNG\r\n\x1A\n<?php echo 1;",
+		];
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('executable file');
+
+		$this->handler->blockExecutableFiles($fileData, 'File at attachment');
+	}//end testFilePropertyPathStillRejectsPhpSourceUnderAPhpName()
 
 	// =========================================================================
 	// blockExecutableFiles
@@ -2246,5 +2399,71 @@ class FilePropertyHandlerTest extends TestCase {
 		$schema->method('getProperties')->willReturn([]);
 
 		$this->assertFalse($this->handler->isFileProperty('anything', $schema, 'document'));
+	}
+
+	/**
+	 * A URL pointing at loopback is refused before any request is made.
+	 *
+	 * SEC-SVC-2 guards this path against read-SSRF, and it had no test at all:
+	 * the guard could have been deleted outright and every existing assertion
+	 * would still have passed. A literal IP is used rather than a hostname so
+	 * the refusal comes from the address check itself and not from DNS — the
+	 * test then needs no network and cannot go green for the wrong reason.
+	 *
+	 * @return void
+	 */
+	public function testFetchFileFromUrlRefusesALoopbackAddress(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('non-public address');
+		$this->invokePrivateMethod('fetchFileFromUrl', ['http://127.0.0.1/secret']);
+	}
+
+	/**
+	 * A URL in a private RFC-1918 range is refused.
+	 *
+	 * Loopback alone would be satisfied by a guard that only special-cased
+	 * 127/8; the cloud-metadata and internal-service cases this control exists
+	 * for live in the private and reserved ranges instead.
+	 *
+	 * @return void
+	 */
+	public function testFetchFileFromUrlRefusesAPrivateAddress(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('non-public address');
+		$this->invokePrivateMethod('fetchFileFromUrl', ['http://169.254.169.254/latest/meta-data/']);
+	}
+
+	/**
+	 * A non-http(s) scheme is refused before the address check runs.
+	 *
+	 * ftp:// is used rather than file:// because the two are rejected by
+	 * different branches, and only this one reaches the scheme test: a
+	 * file:/// URL has no host at all, so it is already gone as malformed by
+	 * the time the scheme is looked at. Asserting the message is what makes
+	 * that distinction hold — without it both inputs pass this test while
+	 * leaving the scheme branch unexercised. No lookup happens either way,
+	 * since the scheme is checked before any resolution.
+	 *
+	 * @return void
+	 */
+	public function testFetchFileFromUrlRefusesANonHttpScheme(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Only http and https URLs are allowed.');
+		$this->invokePrivateMethod('fetchFileFromUrl', ['ftp://example.com/payload.bin']);
+	}
+
+	/**
+	 * A file:// URL is refused as malformed, closing arbitrary local-file read.
+	 *
+	 * Kept alongside the scheme case because it is the input that matters in
+	 * practice and it exits through a different branch — a future refactor
+	 * that made the scheme check the first thing to run would keep this
+	 * passing, which is the point.
+	 *
+	 * @return void
+	 */
+	public function testFetchFileFromUrlRefusesAFileUrl(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->invokePrivateMethod('fetchFileFromUrl', ['file:///etc/passwd']);
 	}
 }

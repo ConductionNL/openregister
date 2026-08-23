@@ -789,4 +789,51 @@ class FileValidationHandlerTest extends TestCase {
 		$this->handler->detectExecutableMagicBytes($content, 'safe.txt');
 		$this->assertTrue(true);
 	}//end testDetectMagicBytesShebangBeyond1024BytesNotDetected()
+
+	/**
+	 * A text-ish extension is reported as always-scanned.
+	 *
+	 * This is the seam the ExecutableContentDetector extraction created: the
+	 * handler no longer owns the extension list, it delegates. The delegation
+	 * itself is what is asserted here — an extraction that forwards to the
+	 * wrong collaborator, or forgets to forward at all, is invisible to the
+	 * tests for the list's contents because those exercise the detector
+	 * directly and never travel through this method.
+	 *
+	 * @return void
+	 */
+	public function testHasAlwaysScannedExtensionAcceptsATextExtension(): void {
+		$this->assertTrue($this->handler->hasAlwaysScannedExtension('notes.txt'));
+	}//end testHasAlwaysScannedExtensionAcceptsATextExtension()
+
+	/**
+	 * The check is case-insensitive, and a binary extension is not in the list.
+	 *
+	 * Both directions are asserted in one place on purpose: a delegation that
+	 * always returned true would satisfy the positive case above on its own.
+	 *
+	 * @return void
+	 */
+	public function testHasAlwaysScannedExtensionIsCaseInsensitiveAndRejectsBinaries(): void {
+		$this->assertTrue(
+			$this->handler->hasAlwaysScannedExtension('CONFIG.YML'),
+			'the list is matched after lowercasing, so an upper-case extension still counts'
+		);
+		$this->assertFalse(
+			$this->handler->hasAlwaysScannedExtension('photo.jpg'),
+			'a binary format is not in the always-scanned list'
+		);
+	}//end testHasAlwaysScannedExtensionIsCaseInsensitiveAndRejectsBinaries()
+
+	/**
+	 * A file with no extension at all is always scanned.
+	 *
+	 * This is the deliberate fail-closed branch: an unnamed extension carries
+	 * no signal about the content, so it is scanned rather than trusted.
+	 *
+	 * @return void
+	 */
+	public function testHasAlwaysScannedExtensionScansAnExtensionlessFile(): void {
+		$this->assertTrue($this->handler->hasAlwaysScannedExtension('Makefile'));
+	}//end testHasAlwaysScannedExtensionScansAnExtensionlessFile()
 }//end class
