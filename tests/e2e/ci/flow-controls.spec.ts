@@ -396,14 +396,29 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// COUNT THE EDGE, DO NOT ASK WHETHER IT IS "VISIBLE".
 		//
 		// The edge is an SVG <path>. Auto-layout stacks these two steps in one
-		// column, so the orthogonal route between them is a STRAIGHT VERTICAL
-		// LINE — a bounding box of zero width. Playwright treats a zero-area
-		// element as not visible, so `toBeVisible()` fails on an edge that is
-		// on screen and plainly drawn (the failure screenshot shows the arrow).
-		// Presence is the honest assertion here, and it is the one that fails
-		// if the connection genuinely never happened.
+		// column, so the route between them can be a STRAIGHT VERTICAL LINE — a
+		// bounding box of zero width. Playwright treats a zero-area element as
+		// not visible, so `toBeVisible()` fails on an edge that is on screen and
+		// plainly drawn (the failure screenshot shows the arrow). Presence is
+		// the honest assertion here, and it is the one that fails if the
+		// connection genuinely never happened.
+		//
+		// THE EDGE STOPPED BEING OURS IN nextcloud-vue 2.15.0.
+		//
+		// CnFlowDetail used to hand-draw edges into a `#edge` slot with its own
+		// `edgePath()`, classed `.cn-flow-detail__edge`. 2.15.0 hands routing to
+		// Vue Flow, whose own comment says it plainly: "Edges are Vue Flow's
+		// now. The hand-drawn `#edge` slot and its orthogonal `edgePath()` are
+		// gone." So the class is no longer rendered by anything and this
+		// locator counted zero — the connection was being made, nothing was
+		// counting it.
+		//
+		// `.vue-flow__edge` is what actually carries an edge now. Same trap as
+		// the node wrapper above, and the same tell: the old class still has a
+		// live style rule in CnFlowDetail, so grepping the library for it finds
+		// it and the contract looks intact.
 		await expect(
-			page.locator('.cn-flow-detail__edge'),
+			page.locator('.vue-flow__edge'),
 			'the connection did not reach the canvas',
 		).toHaveCount(1)
 
