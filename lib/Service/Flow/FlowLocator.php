@@ -319,7 +319,9 @@ class FlowLocator {
 			if ($flow->canDispatch() === false) {
 				$this->logger->warning(
 					message: '[FlowLocator] Scheduled flow "' . $flow->getUuid()
-						. '" was not dispatched: it has no owner, so there is no identity to run it as.',
+						. '" was not dispatched: it is disabled, or its definition has no owner and is therefore '
+						. 'an orphan that cannot be listed, found or edited either. This is not the identity '
+						. 'check — whose rights a run uses comes from the schedule trigger node\'s runAs.',
 					context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow->getUuid()]
 				);
 				continue;

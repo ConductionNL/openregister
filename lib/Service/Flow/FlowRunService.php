@@ -122,6 +122,60 @@ class FlowRunService {
 	}//end __construct()
 
 	/**
+	 * Make an unattributed refusal visible on the flow, and stop a dead schedule.
+	 *
+	 * A logged warning is not a control surface. `FlowDeadEnd` already learned
+	 * this: it writes status and status_message onto the flow so the author sees
+	 * why without reading logs, and this follows the same path for the same
+	 * reason.
+	 *
+	 * 🔴 A SCHEDULE is additionally DISABLED, and that asymmetry is deliberate.
+	 * Every other trigger is driven by something that will notice — a person
+	 * clicking, an event with a caller, a parent run that gets an exception. A
+	 * schedule retries every tick forever with nobody watching, so leaving it
+	 * enabled means it stays "on" in the UI while firing nothing, indefinitely.
+	 * A schedule that quietly stops working is an instrument that lies; one that
+	 * is switched off with a reason attached is a fault someone can act on.
+	 *
+	 * Best-effort by construction. A failure to record the refusal must not
+	 * replace it — the caller still gets `FlowUnattributed`, which is the part
+	 * that actually prevents the run.
+	 *
+	 * @param string            $flowId  The flow that could not be attributed.
+	 * @param string            $trigger What started the run.
+	 * @param FlowUnattributed  $refusal The refusal, whose message is stored.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegated-identity/spec.md
+	 */
+	private function recordUnattributed(string $flowId, string $trigger, FlowUnattributed $refusal): void {
+		try {
+			$mapper = $this->container->get('OCA\OpenRegister\Db\FlowMapper');
+			$flow = $mapper->findByUuid($flowId);
+
+			$flow->setStatus(Flow::STATUS_ERROR);
+			$flow->setStatusMessage($refusal->getMessage());
+
+			if ($trigger === 'schedule') {
+				$flow->setEnabled(false);
+			}
+
+			$mapper->update($flow);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[FlowRunService] Could not record the unattributed refusal on the flow: ' . $e->getMessage(),
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'flow' => $flowId,
+				]
+			);
+		}//end try
+
+	}//end recordUnattributed()
+
+	/**
 	 * The node context a walk starts from, before its live handles are added.
 	 *
 	 * `triggeredBy` carries PROVENANCE into the node context — who caused the run.
@@ -374,6 +428,8 @@ class FlowRunService {
 		// this guard the nodes BEFORE the first object write still ran, so a
 		// flow could send mail and then fail to record why.
 		if ($attribution['user'] === null) {
+			$refusal = new FlowUnattributed(flowId: $flowId, trigger: $trigger);
+
 			$this->logger->warning(
 				message: '[FlowRunService] Refused to queue an unattributed run',
 				context: [
@@ -384,7 +440,9 @@ class FlowRunService {
 				]
 			);
 
-			throw new FlowUnattributed(flowId: $flowId, trigger: $trigger);
+			$this->recordUnattributed(flowId: $flowId, trigger: $trigger, refusal: $refusal);
+
+			throw $refusal;
 		}
 
 		$run = new FlowRun();

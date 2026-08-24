@@ -96,12 +96,17 @@ final class ObjectReadNodeTest extends TestCase {
 		$users = $this->createMock(originalClassName: IUserManager::class);
 		$users->method('get')->willReturnCallback(
 			function (string $uid): ?IUser {
-				if ($uid !== 'alice') {
+				// `dormant` exists but is disabled — the shape of an offboarded
+				// account. It must be told apart from `alice` (enabled) and from
+				// an unknown uid (null), because all three reach here and only
+				// one may act.
+				if (in_array($uid, ['alice', 'dormant'], true) === false) {
 					return null;
 				}
 
 				$user = $this->createMock(originalClassName: IUser::class);
-				$user->method('getUID')->willReturn('alice');
+				$user->method('getUID')->willReturn($uid);
+				$user->method('isEnabled')->willReturn($uid === 'alice');
 
 				return $user;
 			}
@@ -293,6 +298,30 @@ final class ObjectReadNodeTest extends TestCase {
 		$this->node->execute([FlowItems::item(json: [])], $this->config(), ['runAs' => 'mallory']);
 
 	}//end testAnUnknownOwnerAlsoFailsClosed()
+
+	/**
+	 * A DISABLED account is refused, even though it resolves.
+	 *
+	 * This is the case an existence check misses, and it is the common one:
+	 * disabling the account is how a departure is actually processed, far more
+	 * often than deleting it. `IUserManager::get()` returns a disabled user
+	 * happily, so without this the most ordinary revocation there is would go
+	 * unnoticed for as long as a parked run lived — and a run resumed weeks
+	 * later would read on behalf of someone who had been offboarded.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegated-identity/spec.md
+	 */
+	public function testADisabledActingIdentityFailsClosed(): void {
+		$this->objects->expects($this->never())->method('findAll');
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessageMatches('/disabled/');
+
+		$this->node->execute([FlowItems::item(json: [])], $this->config(), ['runAs' => 'dormant']);
+
+	}//end testADisabledActingIdentityFailsClosed()
 
 	/**
 	 * A FAILED read throws rather than looking like an empty one.

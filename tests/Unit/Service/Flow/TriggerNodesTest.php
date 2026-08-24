@@ -37,6 +37,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
+use OCP\IUser;
+use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -67,8 +69,16 @@ class TriggerNodesTest extends TestCase {
 		$urls = $this->createMock(IURLGenerator::class);
 		$urls->method('imagePath')->willReturn('/icon.svg');
 
+		// A schedule trigger must name a user its runs act as, and the node
+		// resolves it to prove the account exists. `alice` resolves here; every
+		// other uid does not, so the negative cases below are real.
+		$userManager = $this->createMock(IUserManager::class);
+		$userManager->method('get')->willReturnCallback(
+			fn (string $uid): ?IUser => $uid === 'alice' ? $this->createMock(IUser::class) : null
+		);
+
 		$this->object = new TriggerObjectNode($l10n, $urls);
-		$this->schedule = new TriggerScheduleNode($l10n, $urls);
+		$this->schedule = new TriggerScheduleNode($l10n, $urls, $userManager);
 		$this->manual = new TriggerManualNode($l10n, $urls);
 
 	}//end setUp()
@@ -210,12 +220,12 @@ class TriggerNodesTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheScheduleTriggerChecksTheShapeOfItsExpression(): void {
-		$this->schedule->validateConfig(['cron' => '*/5 * * * *']);
+		$this->schedule->validateConfig(['cron' => '*/5 * * * *', 'runAs' => 'alice']);
 		$this->addToAssertionCount(1);
 
 		foreach (['', '   ', '*/5 * * *', '*/5 * * * * *', 'every five minutes'] as $bad) {
 			try {
-				$this->schedule->validateConfig(['cron' => $bad]);
+				$this->schedule->validateConfig(['cron' => $bad, 'runAs' => 'alice']);
 				$this->fail(sprintf('The cron expression "%s" was accepted.', $bad));
 			} catch (InvalidArgumentException $e) {
 				$this->addToAssertionCount(1);
@@ -223,6 +233,73 @@ class TriggerNodesTest extends TestCase {
 		}
 
 	}//end testTheScheduleTriggerChecksTheShapeOfItsExpression()
+
+	/**
+	 * A schedule trigger that names no acting identity is refused.
+	 *
+	 * Nobody is present when a schedule fires, so unlike every other trigger it
+	 * has no caller to take an identity from. Accepting it produced a flow that
+	 * saved cleanly and then either ran as whoever authored it — standing consent
+	 * nobody gave — or ran as nobody and was refused one node at a time, reported
+	 * as a permissions error (ADR-099).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function testAScheduleTriggerWithoutAnActingIdentityIsRefused(): void {
+		foreach ([null, '', '   '] as $missing) {
+			$config = ['cron' => '*/5 * * * *'];
+			if ($missing !== null) {
+				$config['runAs'] = $missing;
+			}
+
+			try {
+				$this->schedule->validateConfig($config);
+				$this->fail('A schedule trigger with no runAs was accepted.');
+			} catch (InvalidArgumentException $e) {
+				// Name the key, so an author lands on the right field rather than
+				// re-reading a five-field cron expression that was never wrong.
+				$this->assertStringContainsString('runAs', $e->getMessage());
+			}
+		}
+
+	}//end testAScheduleTriggerWithoutAnActingIdentityIsRefused()
+
+	/**
+	 * A schedule trigger naming a user that does not exist is refused.
+	 *
+	 * A uid that resolves to nothing is not an identity. Storing it would defer
+	 * the failure to the first firing, where it reads as an outage rather than a
+	 * typo.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function testAScheduleTriggerNamingAnUnknownUserIsRefused(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessageMatches('/ghost/');
+
+		$this->schedule->validateConfig(['cron' => '*/5 * * * *', 'runAs' => 'ghost']);
+
+	}//end testAScheduleTriggerNamingAnUnknownUserIsRefused()
+
+	/**
+	 * The schedule trigger's vocabulary includes the identity it runs as.
+	 *
+	 * The preflight reports a key written in another node's dialect, so `runAs`
+	 * has to be declared here or an author's correctly-spelled identity would be
+	 * stored, ignored, and reported as healthy.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function testTheScheduleTriggerNamesItsVocabulary(): void {
+		$this->assertSame(['cron', 'runAs'], $this->schedule->configKeys());
+
+	}//end testTheScheduleTriggerNamesItsVocabulary()
 
 	/**
 	 * A manual trigger accepts no configuration at all.

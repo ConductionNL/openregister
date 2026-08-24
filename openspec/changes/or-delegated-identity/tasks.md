@@ -57,10 +57,14 @@ Implements ADR-099 (hydra `openspec/architecture/adr-099-acting-on-behalf-of-a-u
 
 ## 4. Identity comes from the trigger
 
-- [ ] 4.1 `TriggerScheduleNode::validate()` requires a `runAs` that resolves to an existing user, alongside the cron-expression check it already performs. Refuse the save with a message naming the missing or unresolvable user; add the field to the node's declared form.
-- [ ] 4.2 `FlowTriggerIndex` carries the trigger's identity so the cron registration and the identity it fires under derive from the same node. Deregister and re-register correctly when a trigger node is edited, removed, or its flow deleted.
-- [ ] 4.3 `FlowScheduleService::fire()` takes the identity from the trigger node and drops the flow-owner fallback, superseding the or#2158 comment there.
-- [ ] 4.4 Define and implement the column-side case surfaced by 1.1: a flow whose schedule still lives in the legacy `cron` column with an empty trigger-node config. It must not silently keep firing ownerless. Either the cutover populates the node (preferred — it is the direction `flow-engine` already mandates) or the flow is disabled with its owner notified. Decide with the migration in 3.1 so both land together.
+- [x] 4.1 `TriggerScheduleNode::validate()` requires a `runAs` that resolves to an existing user, alongside the cron-expression check it already performs. Refuse the save with a message naming the missing or unresolvable user; add the field to the node's declared form.
+- [x] 4.2 `FlowTriggerIndex` carries the trigger's identity so the cron registration and the identity it fires under derive from the same node. Deregister and re-register correctly when a trigger node is edited, removed, or its flow deleted.
+
+  **Resolved without a schema change.** The goal — registration and identity deriving from one node, so they cannot disagree — already holds: `FlowRunAttribution` reads `runAs` off the schedule trigger node at fire time, and the node is also what declares the schedule. Duplicating the identity into the index would create a second copy to drift, which is the defect this task existed to prevent.
+
+  What DID need fixing was a stale rationale that would mislead the next reader: `Flow::canDispatch()` and `FlowLocator::scheduledFlows()` both justified their owner check as "there is no identity to run it as". That is no longer true and reads as an authorization gate. Both now state that the owner is DEFINITION ownership (an unowned flow is an orphan that `belongsTo()` already fail-closes on) and point at the trigger node for identity. The gate itself is unchanged.
+- [x] 4.3 `FlowScheduleService::fire()` takes the identity from the trigger node and drops the flow-owner fallback, superseding the or#2158 comment there.
+- [x] 4.4 Define and implement the column-side case surfaced by 1.1: a flow whose schedule still lives in the legacy `cron` column with an empty trigger-node config. It must not silently keep firing ownerless. Either the cutover populates the node (preferred — it is the direction `flow-engine` already mandates) or the flow is disabled with its owner notified. Decide with the migration in 3.1 so both land together.
 
   Acceptance criteria:
   - A flow with both a manual and a schedule trigger runs as the clicking user when clicked, and as the declared user when fired
@@ -68,8 +72,8 @@ Implements ADR-099 (hydra `openspec/architecture/adr-099-acting-on-behalf-of-a-u
 
 ## 5. Re-resolve, never snapshot
 
-- [ ] 5.1 Re-resolve the acting identity at every fire and every resume, and fail the run closed with a reason when it no longer resolves to an enabled user. Do not fall back to the flow owner, to an administrator, or to no identity.
-- [ ] 5.2 When a registered schedule's identity dies, disable the schedule and notify the flow definition's owner via `x-openregister-notifications` (declarative, per ADR-031 and design.md). A schedule must never remain enabled while silently firing nothing.
+- [x] 5.1 Re-resolve the acting identity at every fire and every resume, and fail the run closed with a reason when it no longer resolves to an enabled user. Do not fall back to the flow owner, to an administrator, or to no identity.
+- [x] 5.2 When a registered schedule's identity dies, disable the schedule and notify the flow definition's owner via `x-openregister-notifications` (declarative, per ADR-031 and design.md). A schedule must never remain enabled while silently firing nothing.
 
   Acceptance criteria:
   - A permission revoked while a run is suspended takes effect when the run resumes

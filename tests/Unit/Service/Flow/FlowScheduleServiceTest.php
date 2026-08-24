@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowScheduleService;
@@ -148,8 +149,10 @@ class FlowScheduleServiceTest extends TestCase {
 			]
 		);
 
+		// Four arguments, not five: the scheduler no longer hands an identity
+		// down. See testAScheduledRunIsNotAttributedToTheFlowsOwner().
 		$this->runs->expects($this->once())->method('queue')
-			->with('agentflow-uuid', $this->anything(), 'schedule', $this->anything(), 'admin');
+			->with('agentflow-uuid', $this->anything(), 'schedule', $this->anything());
 
 		$this->assertSame(
 			['agentflow-uuid'],
@@ -158,22 +161,49 @@ class FlowScheduleServiceTest extends TestCase {
 	}//end testAFlowContributedByAnotherAppFires()
 
 	/**
-	 * FAILING PATH (or#2158, fourth instance): a scheduled run has no session,
-	 * so its owner must come from the flow object — the person who created and
-	 * enabled it. Queued without one, `context['triggeredBy']` is null and every
-	 * attribution-requiring node refuses; ObjectWriteNode returns "this flow run
-	 * has no owner". Every natively-scheduled flow was silently unable to write.
+	 * A scheduled run is NOT attributed to the flow's owner.
+	 *
+	 * This inverts the previous behaviour deliberately. or#2158 (fourth
+	 * instance) fixed an ownerless scheduled run — `context['triggeredBy']` was
+	 * null, every attribution-requiring node refused, and ObjectWriteNode
+	 * answered "this flow run has no owner", so every natively-scheduled flow
+	 * was silently unable to write — by handing `flow.owner` down as the
+	 * identity.
+	 *
+	 * That solved a loud problem by creating a quiet one. `flow.owner` says who
+	 * may EDIT the definition; using it as an acting identity turned authoring a
+	 * flow into standing consent to unattended execution as the author, under
+	 * whatever triggers anyone later added (ADR-099).
+	 *
+	 * The scheduler therefore passes no identity at all, and the schedule
+	 * TRIGGER NODE's `runAs` answers instead — the one place an author states it
+	 * deliberately. Asserting the argument is absent is the whole point: a
+	 * regression here is silent, because handing the owner down again produces a
+	 * run that works, writes, and is attributed to the wrong person.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function testAScheduledRunIsAttributedToTheFlowsOwner(): void {
+	public function testAScheduledRunIsNotAttributedToTheFlowsOwner(): void {
 		$this->registry->method('scheduledFlows')->willReturn([$this->schedule('f1', '*/5 * * * *', 'alice')]);
 
 		$this->runs->expects($this->once())->method('queue')
-			->with('f1', $this->anything(), 'schedule', $this->anything(), 'alice');
+			->willReturnCallback(
+				function (string $flowId, array $subject, string $trigger, array $context, ?string $user = null) {
+					$this->assertSame('f1', $flowId);
+					$this->assertSame('schedule', $trigger);
+					$this->assertNull(
+						$user,
+						"the scheduler must not name an identity — the trigger node's runAs does"
+					);
+
+					return new FlowRun();
+				}
+			);
 
 		$this->service->fireDueFlows(new DateTimeImmutable('2026-07-25 10:00:00'));
-	}//end testAScheduledRunIsAttributedToTheFlowsOwner()
+	}//end testAScheduledRunIsNotAttributedToTheFlowsOwner()
 
 	public function testAFlowThatFiredRecentlyIsNotDueAgain(): void {
 		// Fired at 10:00; the next */5 occurrence is 10:05, so at 10:02 it is
