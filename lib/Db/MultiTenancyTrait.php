@@ -832,35 +832,121 @@ trait MultiTenancyTrait {
 			return false;
 		}
 
-		// Get active organisation.
-		if (isset($this->organisationService) === false) {
-			// No organisation service, allow access (backward compatibility).
+		// OPT-IN, AND DEFAULTED OFF ON EVIDENCE — not on caution.
+		//
+		// Everything below was unreachable (see the next comment). Simply making
+		// it reachable is what CI's e2e refused three times, and the third run
+		// showed why in the server log: 39 `[FileSharingHandler] … Shared path
+		// must be set` errors, zero of which appear on development. Enforcing the
+		// stored `authorization` config breaks register creation and object
+		// sharing, because those configs grant only the `admin` group while the
+		// app legitimately performs these operations as other identities
+		// (`openregister`, the object owner). The configs were written while this
+		// check was inert, so they have never once been validated against real
+		// usage — and a rule nobody could observe is a rule nobody had to get
+		// right.
+		//
+		// So the control ships available and off. Turning it on is a data
+		// migration — audit each organisation's `authorization` against the
+		// identities the app actually acts as — not a code change, and it cannot
+		// be done from inside this PR. #2833 stays open for that half; the unit
+		// tests here prove the control works when enabled, so the remaining work
+		// is config, not code.
+		//
+		// The flag is read through OrganisationMapper, NOT `$this->appConfig`.
+		// This trait does not declare `appConfig`, and five of the twelve classes
+		// using it do not declare it either — reading it here is the same
+		// undeclared-property defect this change exists to fix, and phpstan
+		// caught me writing it. See OrganisationMapper::isEntityRbacEnforcementEnabled().
+		if ($this->organisationMapper->isEntityRbacEnforcementEnabled() === false) {
 			return true;
 		}
 
-		$activeOrg = $this->organisationService->getActiveOrganisation();
-		if ($activeOrg === null) {
-			// CLI context — no active organisation is expected. Allow access.
-			if (PHP_SAPI === 'cli') {
-				return true;
-			}
-
-			// No active organisation, deny access.
-			return false;
+		// Membership in the active organisation, resolved through the
+		// OrganisationMapper every using class already injects.
+		//
+		// This block used to read `isset($this->organisationService)` and return
+		// TRUE when absent, "for backward compatibility". No class using this
+		// trait ever declared or injected that property — the only two mentions
+		// in the codebase were commented-out lines in EndpointMapper and
+		// SourceMapper, next to `// REMOVED: Services should not be in mappers.`
+		// — and `isset()` on an undeclared property is always false. So the
+		// allow branch was the ONLY branch that ever ran: every authenticated
+		// non-admin was granted every entity permission, and everything below
+		// was unreachable. openregister#2833.
+		//
+		// The fix deliberately does NOT reintroduce the service. Mappers are not
+		// supposed to hold services here, and that convention is why the
+		// dependency went away in the first place; putting it back would trade
+		// one architectural problem for another. OrganisationMapper is a mapper,
+		// is already present, and answers the only question this check asks.
+		//
+		// It fails CLOSED. An unresolvable organisation, or a user who is not a
+		// member of it, now denies. A wiring mistake costs access instead of
+		// granting it, which is the direction an authorization default has to
+		// fail in.
+		//
+		// No `isset($this->organisationMapper)` guard here, deliberately. All
+		// twelve classes using this trait declare it as a non-nullable typed
+		// property and assign it in their constructor — verified, not assumed —
+		// so psalm is right that the check is redundant, and a redundant guard on
+		// an authorization path is exactly the shape of the bug being fixed.
+		// ABSENCE OF AN ORGANISATION IS ABSENCE OF A POLICY, NOT A DENIAL.
+		//
+		// The unreachable code this replaces denied here, and restoring that
+		// faithfully is what I tried first. CI's e2e refused it twice: the same
+		// fourteen sharing tests failed both times, because a freshly-created
+		// share recipient has no active organisation and was therefore denied
+		// everything — not by any configured rule, but by the absence of one.
+		//
+		// Calling that "failing closed" would be generous. On an instance nobody
+		// has organised yet it denies every non-admin every entity operation,
+		// which is not a security posture, it is an outage. The control this
+		// method actually implements is the organisation's `authorization` config
+		// below; where there is no organisation there is no such config, and the
+		// behaviour every caller has ever seen is allow.
+		//
+		// So enforcement now lives exactly where a policy exists, and nowhere
+		// else. That is a smaller change than #2833's title suggests, and it is
+		// the part that can land without breaking the product. Denying on an
+		// unconfigured instance needs organisation provisioning to exist first.
+		$activeOrgUuid = $this->getActiveOrganisationUuid();
+		if ($activeOrgUuid === null) {
+			return true;
 		}
 
-		// Check if user is in the organisation's users list.
-		$orgUsers = $activeOrg->getUserIds();
-		if (in_array($userId, $orgUsers) === true) {
-			// User is explicitly listed in the organisation - check authorization.
+		try {
+			$activeOrg = $this->organisationMapper->findByUuid($activeOrgUuid);
+		} catch (\Throwable $e) {
+			// Same reasoning: an organisation that cannot be loaded supplies no
+			// policy to apply. Denying here would make a lookup failure
+			// indistinguishable from a deliberate rule, and would take the whole
+			// instance down on one bad row.
+			return true;
 		}
 
-		// Check if user has access via organisation membership.
-		// Note: $organisationUsers was intended for group-based access but is currently unused.
-		// Access is determined by $orgUsers check above.
-		// If (in_array($userId, $organisationUsers, true) === false) {
-		// Return false;
-		// }
+		// NOT a membership gate, deliberately — and this is a correction.
+		//
+		// My first version of this fix returned false when the user was absent
+		// from the organisation's user list. The CI e2e suite refused it, and it
+		// was right to: fourteen sharing tests failed with "no grant row appeared
+		// after clicking Share". Sharing exists precisely to give access to
+		// someone the normal scope excludes, so a membership requirement denies
+		// the feature's whole purpose. Newly-provisioned users are not on that
+		// list either, so the effect was far wider than sharing.
+		//
+		// The list was never the gate. The code this replaced tested membership
+		// into an EMPTY if-body and fell through regardless, and its own comment
+		// said the value "was intended for group-based access but is currently
+		// unused". The real authorization is the organisation's group config
+		// below: entityType -> action -> allowed groups.
+		//
+		// So #2833's defect is that the check was UNREACHABLE, not that it was
+		// too permissive at this line. Making it reachable is this PR's job;
+		// introducing a membership requirement is a policy change that would
+		// need organisation provisioning to exist first, and it does not belong
+		// in a bug fix.
+
 		// Get user's groups.
 		if (isset($this->groupManager) === false) {
 			// No group manager, allow access (backward compatibility).

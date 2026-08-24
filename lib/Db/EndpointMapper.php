@@ -76,6 +76,16 @@ class EndpointMapper extends QBMapper {
 	private readonly IUserSession $userSession;
 
 	/**
+	 * Organisation mapper for multi-tenancy and the entity RBAC check.
+	 *
+	 * Not `readonly`/`private`: MultiTenancyTrait reads it, and the trait's
+	 * contract says the using class must supply it.
+	 *
+	 * @var OrganisationMapper Organisation mapper instance
+	 */
+	protected OrganisationMapper $organisationMapper;
+
+	/**
 	 * Group manager for RBAC
 	 *
 	 * Used to check user group memberships for access control.
@@ -91,6 +101,7 @@ class EndpointMapper extends QBMapper {
 	 * Calls parent constructor to set up base mapper functionality.
 	 *
 	 * @param IDBConnection $db Database connection
+	 * @param OrganisationMapper $organisationMapper Organisation mapper for multi-tenancy and RBAC
 	 * @param IUserSession $userSession User session
 	 * @param IGroupManager $groupManager Group manager
 	 *
@@ -98,8 +109,12 @@ class EndpointMapper extends QBMapper {
 	 */
 	public function __construct(
 		IDBConnection $db,
-		// REMOVED: Services should not be in mappers.
-		// OrganisationMapper $organisationMapper.
+		// A MAPPER, not a service — the removed dependency here was
+		// OrganisationService, and that removal stands. MultiTenancyTrait's RBAC
+		// check needs to resolve the active organisation's membership, and
+		// without this it can only fail closed and deny every non-admin write to
+		// endpoints. openregister#2833.
+		OrganisationMapper $organisationMapper,
 		IUserSession $userSession,
 		IGroupManager $groupManager,
 	) {
@@ -107,8 +122,7 @@ class EndpointMapper extends QBMapper {
 		parent::__construct(db: $db, tableName: 'openregister_endpoints', entityClass: Endpoint::class);
 
 		// Store dependencies for use in mapper methods.
-		// REMOVED: Services should not be in mappers.
-		// $this->organisationMapper = $organisationService.
+		$this->organisationMapper = $organisationMapper;
 		$this->userSession = $userSession;
 		$this->groupManager = $groupManager;
 	}//end __construct()
