@@ -135,7 +135,27 @@ class ChunkMapperLiveQueryTest extends TestCase {
 		// query below silently return nothing — exactly the vacuous-green failure
 		// mode this file exists to close. Prove the connection really talks to a
 		// database BEFORE asserting anything about query results.
-		$probe = $this->db->executeQuery('SELECT 1');
+		//
+		// A connection that cannot REACH a database is a different thing from one
+		// that answers wrongly, and only the second is a defect in this app. The
+		// instanceof guard above was meant to catch "no bootstrapped Nextcloud",
+		// but it does not: outside the container `\OC::$server` hands back a real
+		// IDBConnection built from the uninstalled server's config, which passes
+		// instanceof and then throws `unable to open database file` on first use.
+		// That surfaced as five ERRORS on every host run — noise that trains the
+		// reader to ignore this file's failures, which is worse than the skip.
+		// So: unreachable → SKIP with the same reason; reachable but wrong →
+		// FAIL, loudly, below.
+		try {
+			$probe = $this->db->executeQuery('SELECT 1');
+		} catch (\Throwable $unreachable) {
+			$this->markTestSkipped(
+				'ChunkMapperLiveQueryTest needs a bootstrapped Nextcloud (real IDBConnection). '
+				. 'One was resolved but could not reach a database (' . $unreachable->getMessage() . '). '
+				. 'Run it inside the container, e.g. '
+				. 'OPENREGISTER_TEST_NC_ROOT=/var/www/html php vendor/bin/phpunit tests/Unit/Db/ChunkMapperLiveQueryTest.php'
+			);
+		}
 		$this->assertInstanceOf(
 			IResult::class,
 			$probe,

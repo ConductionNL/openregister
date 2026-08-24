@@ -59,7 +59,7 @@ final class ObjectReadNodeTest extends TestCase {
 	 *
 	 * @var array<string, mixed>
 	 */
-	private array $ownedContext = ['triggeredBy' => 'alice'];
+	private array $ownedContext = ['runAs' => 'alice'];
 
 	/**
 	 * Wire the node over mocked collaborators.
@@ -274,9 +274,9 @@ final class ObjectReadNodeTest extends TestCase {
 		$this->objects->expects($this->never())->method('findAll');
 
 		$this->expectException(RuntimeException::class);
-		$this->expectExceptionMessageMatches('/triggeredBy/');
+		$this->expectExceptionMessageMatches('/runAs/');
 
-		$this->node->execute([FlowItems::item(json: [])], $this->config(), ['triggeredBy' => null]);
+		$this->node->execute([FlowItems::item(json: [])], $this->config(), ['runAs' => null]);
 
 	}//end testARunWithNoOwnerReadsNothing()
 
@@ -290,7 +290,7 @@ final class ObjectReadNodeTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 
-		$this->node->execute([FlowItems::item(json: [])], $this->config(), ['triggeredBy' => 'mallory']);
+		$this->node->execute([FlowItems::item(json: [])], $this->config(), ['runAs' => 'mallory']);
 
 	}//end testAnUnknownOwnerAlsoFailsClosed()
 

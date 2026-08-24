@@ -1522,10 +1522,16 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @throws RuntimeException When the run carries no resolvable owner.
 	 */
 	private function resolveOwner(array $context): IUser {
-		$uid = ($context['triggeredBy'] ?? null);
+		// `runAs`, not `triggeredBy`. The two answer different questions and
+		// this one is the ACCESS decision: `triggeredBy` records who caused the
+		// run and is provenance, while `runAs` names whose rights its steps use.
+		// For a scheduled run they differ — the cause is a schedule, the acting
+		// identity is the user the trigger declares — and reading provenance here
+		// is what made a scheduled write execute as whoever authored the flow.
+		$uid = ($context['runAs'] ?? null);
 		if (is_string($uid) === false || trim($uid) === '') {
 			throw new RuntimeException(
-				$this->l10n->t('This flow run has no owner (triggeredBy); an object write must be attributable.')
+				$this->l10n->t('This flow run has no acting identity (runAs); an object write must be attributable.')
 			);
 		}
 
@@ -1533,7 +1539,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		if ($user === null) {
 			throw new RuntimeException(
 				$this->l10n->t(
-					'This flow run\'s owner "%s" (triggeredBy) is not a user account; an object write must be attributable.',
+					'This flow run\'s acting identity "%s" (runAs) is not a user account; an object write must be attributable.',
 					[trim($uid)]
 				)
 			);

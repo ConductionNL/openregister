@@ -182,7 +182,23 @@ class RelationsControllerTest extends TestCase {
 	 */
 	public function testSuccessfulAggregationOmitsErrorsKey(): void {
 		$this->setupObject();
-		$this->request->method('getParams')->willReturn([]);
+
+		// Scope the request to the types this test actually stubs.
+		//
+		// Unfiltered, `gatherRelations()` also walks LEAF_INTEGRATIONS, whose
+		// services it resolves through the STATIC `\OCP\Server::get()` — which no
+		// fixture can intercept. Those are OpenRegister's own services, so they
+		// resolve fine and then call `isXAvailable()`, which needs AppConfig and
+		// throws "Nextcloud is not installed yet" on a host run. Eleven leaves
+		// then landed in `_errors` and failed this test for a reason that cannot
+		// occur in production, where AppConfig is always available.
+		//
+		// Filtering keeps the assertion honest and hermetic: it still proves that
+		// a fully successful aggregation carries no `_errors` key, over exactly
+		// the providers this test controls. The leaf path has its own coverage.
+		$this->request->method('getParams')->willReturn([
+			'types' => 'notes,tasks,emails,events,contacts,deck',
+		]);
 
 		$this->noteService->method('getNotesForObject')->willReturn([]);
 		$this->taskService->method('getTasksForObject')->willReturn([]);
@@ -198,7 +214,16 @@ class RelationsControllerTest extends TestCase {
 		$response = $this->controller->index('1', '2', 'abc-123');
 		$data = $response->getData();
 
-		$this->assertArrayNotHasKey('_errors', $data);
+		// Name the offenders. A bare "array has the key '_errors'" failure says
+		// that SOMETHING partially failed but not what, and the usual cause is a
+		// provider added to the controller since this test was written and never
+		// stubbed here — which is a fixture gap, not a regression. Printing the
+		// map turns a ten-minute bisect into a one-line read.
+		$this->assertArrayNotHasKey(
+			'_errors',
+			$data,
+			'unexpected partial failures: ' . json_encode(($data['_errors'] ?? []))
+		);
 	}
 
 	/**

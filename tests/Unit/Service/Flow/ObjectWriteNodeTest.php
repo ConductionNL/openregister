@@ -49,7 +49,7 @@ class ObjectWriteNodeTest extends TestCase {
 	private Schema $schema;
 
 	/** @var array<int, string> */
-	private array $registerContext = ['triggeredBy' => 'alice'];
+	private array $registerContext = ['runAs' => 'alice'];
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -258,9 +258,9 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->objects->expects($this->never())->method('deleteObject');
 
 		$this->expectException(RuntimeException::class);
-		$this->expectExceptionMessageMatches('/triggeredBy/');
+		$this->expectExceptionMessageMatches('/runAs/');
 
-		$this->node->execute($this->items([['id' => 'a']]), $this->config(), ['triggeredBy' => null]);
+		$this->node->execute($this->items([['id' => 'a']]), $this->config(), ['runAs' => null]);
 
 	}//end testARunWithNoOwnerWritesNothing()
 
@@ -282,7 +282,7 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 
-		$this->node->execute($this->items([['id' => 'a']]), $this->config(), ['triggeredBy' => 'nobody']);
+		$this->node->execute($this->items([['id' => 'a']]), $this->config(), ['runAs' => 'nobody']);
 
 	}//end testAnUnknownOwnerAccountAlsoFailsClosed()
 

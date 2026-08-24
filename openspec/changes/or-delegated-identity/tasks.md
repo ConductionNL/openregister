@@ -46,10 +46,10 @@ Implements ADR-099 (hydra `openspec/architecture/adr-099-acting-on-behalf-of-a-u
 
 ## 3. Attribution vs authorization on the run
 
-- [ ] 3.1 Add `runAs` to `FlowRun` (entity, mapper, migration) alongside the existing `triggeredBy`. Backfill `runAs = triggeredBy` for existing rows in the migration; no row may be left with a null `runAs`.
-- [ ] 3.2 Fold in the working-tree `FlowRunAttribution`: keep caller-wins and the independent tenancy resolution; replace the `flow.owner` identity fallback with the trigger node's declared identity, failing closed when there is none. Tenancy keeps its flow-organisation fallback.
-- [ ] 3.3 `FlowRunService::queue()` refuses an unattributable dispatch instead of writing a run every node will later reject. One refusal naming the cause; no run row created.
-- [ ] 3.4 `ObjectReadNode` and `ObjectWriteNode` read `runAs` rather than `context['triggeredBy']` for their access decisions; their existing fail-closed refusals keep their wording but name the right field.
+- [x] 3.1 Add `runAs` to `FlowRun` (entity, mapper, migration) alongside the existing `triggeredBy`. Backfill `runAs = triggeredBy` for existing rows in the migration; no row may be left with a null `runAs`.
+- [x] 3.2 Fold in the working-tree `FlowRunAttribution`: keep caller-wins and the independent tenancy resolution; replace the `flow.owner` identity fallback with the trigger node's declared identity, failing closed when there is none. Tenancy keeps its flow-organisation fallback.
+- [x] 3.3 `FlowRunService::queue()` refuses an unattributable dispatch instead of writing a run every node will later reject. One refusal naming the cause; no run row created.
+- [x] 3.4 `ObjectReadNode` and `ObjectWriteNode` read `runAs` rather than `context['triggeredBy']` for their access decisions; their existing fail-closed refusals keep their wording but name the right field.
 
   Acceptance criteria:
   - `triggeredBy` is no longer read anywhere to decide access (verify by grep, and by a test that changes only `triggeredBy` and asserts no access change)

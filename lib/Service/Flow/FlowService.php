@@ -217,12 +217,18 @@ class FlowService {
 	 * the same reason an update carries the stored owner forward rather than
 	 * re-reading it from the request.
 	 *
+	 * A CREATE is refused outright when either cannot be resolved. See
+	 * flowToSave(): a flow with no organisation belongs to nobody and can never
+	 * be listed, found, edited or run again, so accepting the write only buys a
+	 * silent orphan.
+	 *
 	 * @param array<string, mixed> $data The flow's fields.
 	 * @param string|null $uuid The flow to update, or null to create.
 	 *
 	 * @return Flow The stored flow.
 	 *
-	 * @throws DoesNotExistException When updating a flow that is not the caller's.
+	 * @throws DoesNotExistException When updating a flow that is not the caller's,
+	 *                               or creating one with no owner / organisation.
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
@@ -288,12 +294,32 @@ class FlowService {
 			return $this->find(uuid: $uuid);
 		}
 
+		$owner = $this->actingUser();
+		$organisation = $this->activeOrganisation();
+
+		// REFUSE rather than stamp nulls. `Flow::belongsTo()` is fail-closed on
+		// both sides, so a flow with no organisation belongs to nobody: it does
+		// not appear in index(), find() refuses it, and it can never be run or
+		// edited again. Accepting the write produced a permanent orphan and
+		// reported success — the caller had no way to tell that from a flow
+		// that saved. index() and count() already refuse a null organisation;
+		// this is the same rule on the write side, where it costs more.
+		//
+		// It also holds the invariant the run side depends on: a flow is where
+		// a scheduled or event-fired run gets its identity from, so a flow
+		// without one makes every run it fires unattributable.
+		if ($owner === null || $organisation === null) {
+			throw new DoesNotExistException(
+				'A flow needs a signed-in owner and an active organisation; refusing to create one that belongs to nobody.'
+			);
+		}
+
 		$flow = new Flow();
 		$flow->setUuid($this->newUuid());
 		$flow->setCreated(new DateTime());
 		$flow->setApp((string)($data['app'] ?? self::DEFAULT_APP));
-		$flow->setOwner($this->actingUser());
-		$flow->setOrganisation($this->activeOrganisation());
+		$flow->setOwner($owner);
+		$flow->setOrganisation($organisation);
 
 		return $flow;
 	}//end flowToSave()
