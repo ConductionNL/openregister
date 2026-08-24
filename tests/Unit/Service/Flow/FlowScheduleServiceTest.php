@@ -14,6 +14,7 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowScheduleService;
+use OCA\OpenRegister\Service\Flow\FlowUnattributed;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -263,4 +264,96 @@ class FlowScheduleServiceTest extends TestCase {
 		$this->registry->method('scheduledFlows')->willThrowException(new \RuntimeException('no such register'));
 		$this->assertSame([], $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25 10:00:00')));
 	}//end testNoFlowStoreFiresNothing()
+
+	/**
+	 * 🔴 ONE UNATTRIBUTED FLOW MUST NOT STOP THE SWEEP.
+	 *
+	 * This is the invariant the per-flow catch exists for, and it is the one that
+	 * fails invisibly. The sweep iterates every due flow; if `FlowUnattributed`
+	 * escaped the loop, the FIRST flow missing an identity would abort the pass
+	 * and every later flow would silently stop firing. That presents to an
+	 * operator as "cron stopped working" — a whole-instance outage — rather than
+	 * as a fault in one definition, and the flows that stopped would be the ones
+	 * that were fine.
+	 *
+	 * `FlowDeadEnd` already carries this rule; the identity refusal is new and had
+	 * no test. Asserting the SURVIVOR fires is the point: a test that only checked
+	 * the broken flow was skipped would pass against a sweep that aborted.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegated-identity/spec.md
+	 */
+	public function testAnUnattributedFlowDoesNotStopTheFlowsAfterIt(): void {
+		$this->registry->method('scheduledFlows')->willReturn(
+			[
+				$this->schedule('unattributed', '*/5 * * * *'),
+				$this->schedule('healthy', '*/5 * * * *'),
+			]
+		);
+
+		$this->runs->method('queue')->willReturnCallback(
+			function (string $flowId) {
+				if ($flowId === 'unattributed') {
+					throw new FlowUnattributed(flowId: $flowId, trigger: 'schedule');
+				}
+
+				return new FlowRun();
+			}
+		);
+
+		$fired = $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25 10:00:00'));
+
+		$this->assertSame(
+			['healthy'],
+			$fired,
+			'the flow after the refused one must still fire'
+		);
+	}//end testAnUnattributedFlowDoesNotStopTheFlowsAfterIt()
+
+	/**
+	 * A refused flow records no fire, so it stays due once it is repaired.
+	 *
+	 * Advancing the last-fire marker on a refusal would make a flow that never
+	 * ran look like one that had, and it would then wait a whole interval after
+	 * being fixed before trying again.
+	 *
+	 * @return void
+	 */
+	public function testARefusedFlowDoesNotRecordAFire(): void {
+		$this->registry->method('scheduledFlows')->willReturn([$this->schedule('unattributed', '*/5 * * * *')]);
+
+		$this->runs->method('queue')->willReturnCallback(
+			static function (string $flowId) {
+				throw new FlowUnattributed(flowId: $flowId, trigger: 'schedule');
+			}
+		);
+
+		$this->service->fireDueFlows(new DateTimeImmutable('2026-07-25 10:00:00'));
+
+		$this->assertArrayNotHasKey('flow_sched_last_unattributed', $this->store);
+	}//end testARefusedFlowDoesNotRecordAFire()
+
+	/**
+	 * The refusal names both the flow and the trigger.
+	 *
+	 * They point at different fixes — a manual dispatch with no identity means a
+	 * lost session, a schedule one means the trigger node declares no `runAs` —
+	 * so an exception carrying only the flow leaves the reader to guess.
+	 *
+	 * @return void
+	 */
+	public function testTheRefusalNamesTheFlowAndTheTrigger(): void {
+		$refusal = new FlowUnattributed(flowId: 'flow-9', trigger: 'schedule');
+
+		$this->assertSame('flow-9', $refusal->getFlowId());
+		$this->assertSame('schedule', $refusal->getTrigger());
+		$this->assertStringContainsString('flow-9', $refusal->getMessage());
+		$this->assertStringContainsString('schedule', $refusal->getMessage());
+		$this->assertStringContainsString(
+			'runAs',
+			$refusal->getMessage(),
+			'the message must name the key an author has to set'
+		);
+	}//end testTheRefusalNamesTheFlowAndTheTrigger()
 }//end class
