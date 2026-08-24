@@ -2416,7 +2416,13 @@ OC.L10N.register(
     "_Restore {count} object_::_Restore {count} objects_" : ["{count} object herstellen", "{count} objecten herstellen"],
     "_Successfully restored {count} object_::_Successfully restored {count} objects_" : ["{count} object succesvol hersteld", "{count} objecten succesvol hersteld"],
     "_{count} email_::_{count} emails_" : ["{count} e-mail", "{count} e-mails"],
-    "_%n entry has no hash yet_::_%n entries have no hash yet_" : ["%n regel heeft nog geen hash", "%n regels hebben nog geen hash"]
+    "_%n entry has no hash yet_::_%n entries have no hash yet_" : ["%n regel heeft nog geen hash", "%n regels hebben nog geen hash"],
+    "This flow run has no acting identity (runAs); an object read must be attributable." : "Deze flowuitvoering heeft geen handelende identiteit (runAs); een objectlezing moet toe te wijzen zijn.",
+    "This flow run has no acting identity (runAs); an object write must be attributable." : "Deze flowuitvoering heeft geen handelende identiteit (runAs); een objectschrijving moet toe te wijzen zijn.",
+    "This flow run's acting identity \"%s\" (runAs) is not a user account; an object read must be attributable." : "De handelende identiteit \"%s\" (runAs) van deze flowuitvoering is geen gebruikersaccount; een objectlezing moet toe te wijzen zijn.",
+    "This flow run's acting identity \"%s\" (runAs) is not a user account; an object write must be attributable." : "De handelende identiteit \"%s\" (runAs) van deze flowuitvoering is geen gebruikersaccount; een objectschrijving moet toe te wijzen zijn.",
+    "This flow run's acting identity \"%s\" (runAs) is a disabled account; an object read is refused rather than performed on their behalf." : "De handelende identiteit \"%s\" (runAs) van deze flowuitvoering is een gedeactiveerd account; een objectlezing wordt geweigerd in plaats van namens hen uitgevoerd.",
+    "This flow run's acting identity \"%s\" (runAs) is a disabled account; an object write is refused rather than performed on their behalf." : "De handelende identiteit \"%s\" (runAs) van deze flowuitvoering is een gedeactiveerd account; een objectschrijving wordt geweigerd in plaats van namens hen uitgevoerd."
 },
 "nplurals=2; plural=(n != 1);"
 );
