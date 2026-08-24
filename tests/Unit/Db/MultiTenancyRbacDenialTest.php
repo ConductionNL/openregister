@@ -125,34 +125,43 @@ class MultiTenancyRbacDenialTest extends TestCase {
 	}
 
 	/**
-	 * THE REGRESSION. A non-admin outside the active organisation is DENIED.
+	 * A user outside the organisation's user list is NOT denied on that alone.
 	 *
-	 * Before #2833 this returned true — the check never reached a decision.
+	 * This test asserted the opposite until CI's e2e suite refused it: fourteen
+	 * sharing tests failed with "no grant row appeared after clicking Share".
+	 * Sharing exists to give access to someone the normal scope excludes, so a
+	 * membership gate denies the feature's entire purpose — and newly-created
+	 * users are absent from that list too, making the blast radius far wider.
+	 *
+	 * The list was never the gate. The replaced code tested membership into an
+	 * empty if-body and fell through regardless. #2833 is about the check being
+	 * UNREACHABLE, not about this line being too permissive.
 	 *
 	 * @return void
 	 */
-	public function testANonAdminOutsideTheActiveOrganisationIsDenied(): void {
+	public function testANonMemberIsNotDeniedOnMembershipAlone(): void {
 		$mapper = $this->mapperAsUser('outsider');
 		$this->organisationMapper->method('getActiveOrganisationWithFallback')->willReturn('org-uuid-1');
 		$this->organisationMapper->method('findByUuid')
 			->willReturn($this->organisationWith(['alice', 'bob']));
 
-		$this->assertFalse(
+		$this->assertTrue(
 			$this->decide($mapper),
-			'a user who is not a member of the active organisation must not be granted entity permissions'
+			'membership in the organisation user list is not the authorization gate; '
+			. 'the organisation group config below it is'
 		);
 	}
 
 	/**
-	 * A non-admin who IS a member is not blocked by this branch.
+	 * A member is likewise decided by the authorization config, not the list.
 	 *
-	 * The counterpart matters as much as the denial: a check that refuses
-	 * everyone is as broken as one that permits everyone, and would be caught
-	 * only by someone losing access in production.
+	 * Kept as the counterpart: if this and the test above ever disagree while
+	 * the organisation carries no authorization config, the membership gate has
+	 * been reintroduced.
 	 *
 	 * @return void
 	 */
-	public function testAMemberOfTheActiveOrganisationPassesThisBranch(): void {
+	public function testAMemberIsAlsoAllowedWhenNoAuthorizationIsConfigured(): void {
 		$mapper = $this->mapperAsUser('alice');
 		$this->organisationMapper->method('getActiveOrganisationWithFallback')->willReturn('org-uuid-1');
 		$this->organisationMapper->method('findByUuid')
@@ -161,11 +170,6 @@ class MultiTenancyRbacDenialTest extends TestCase {
 		$this->assertTrue($this->decide($mapper));
 	}
 
-	/**
-	 * An organisation that cannot be resolved is not a permission to proceed.
-	 *
-	 * @return void
-	 */
 	public function testAnUnresolvableOrganisationIsDenied(): void {
 		$mapper = $this->mapperAsUser('alice');
 		$this->organisationMapper->method('getActiveOrganisationWithFallback')->willReturn('org-uuid-gone');

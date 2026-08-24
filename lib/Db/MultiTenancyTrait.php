@@ -879,11 +879,27 @@ trait MultiTenancyTrait {
 			return false;
 		}
 
-		// The user must belong to the active organisation.
-		$orgUsers = $activeOrg->getUserIds();
-		if (in_array($userId, $orgUsers, true) === false) {
-			return false;
-		}
+		// NOT a membership gate, deliberately — and this is a correction.
+		//
+		// My first version of this fix returned false when the user was absent
+		// from the organisation's user list. The CI e2e suite refused it, and it
+		// was right to: fourteen sharing tests failed with "no grant row appeared
+		// after clicking Share". Sharing exists precisely to give access to
+		// someone the normal scope excludes, so a membership requirement denies
+		// the feature's whole purpose. Newly-provisioned users are not on that
+		// list either, so the effect was far wider than sharing.
+		//
+		// The list was never the gate. The code this replaced tested membership
+		// into an EMPTY if-body and fell through regardless, and its own comment
+		// said the value "was intended for group-based access but is currently
+		// unused". The real authorization is the organisation's group config
+		// below: entityType -> action -> allowed groups.
+		//
+		// So #2833's defect is that the check was UNREACHABLE, not that it was
+		// too permissive at this line. Making it reachable is this PR's job;
+		// introducing a membership requirement is a policy change that would
+		// need organisation provisioning to exist first, and it does not belong
+		// in a bug fix.
 
 		// Get user's groups.
 		if (isset($this->groupManager) === false) {
