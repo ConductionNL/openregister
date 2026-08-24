@@ -832,6 +832,35 @@ trait MultiTenancyTrait {
 			return false;
 		}
 
+		// OPT-IN, AND DEFAULTED OFF ON EVIDENCE — not on caution.
+		//
+		// Everything below was unreachable (see the next comment). Simply making
+		// it reachable is what CI's e2e refused three times, and the third run
+		// showed why in the server log: 39 `[FileSharingHandler] … Shared path
+		// must be set` errors, zero of which appear on development. Enforcing the
+		// stored `authorization` config breaks register creation and object
+		// sharing, because those configs grant only the `admin` group while the
+		// app legitimately performs these operations as other identities
+		// (`openregister`, the object owner). The configs were written while this
+		// check was inert, so they have never once been validated against real
+		// usage — and a rule nobody could observe is a rule nobody had to get
+		// right.
+		//
+		// So the control ships available and off. Turning it on is a data
+		// migration — audit each organisation's `authorization` against the
+		// identities the app actually acts as — not a code change, and it cannot
+		// be done from inside this PR. #2833 stays open for that half; the unit
+		// tests here prove the control works when enabled, so the remaining work
+		// is config, not code.
+		//
+		// Default false, and read as an explicit opt-in: an unset or malformed
+		// value keeps today's behaviour rather than silently enabling a control
+		// that is known to break sharing.
+		$enforcement = $this->appConfig->getValueString('openregister', 'rbac_entity_enforcement', '');
+		if ($enforcement !== 'enabled') {
+			return true;
+		}
+
 		// Membership in the active organisation, resolved through the
 		// OrganisationMapper every using class already injects.
 		//

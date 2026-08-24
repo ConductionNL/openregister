@@ -83,6 +83,12 @@ class MultiTenancyRbacDenialTest extends TestCase {
 		// Non-admin: isAdmin() is consulted through the group manager.
 		$this->groupManager->method('isAdmin')->willReturn(false);
 
+		// Entity RBAC enforcement is opt-in and defaults OFF (see the trait).
+		// These tests are about what the control decides once enabled, so they
+		// turn it on explicitly; testEnforcementIsOffByDefault covers the default.
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturn('enabled');
+
 		return new RegisterMapper(
 			$this->createMock(IDBConnection::class),
 			$this->createMock(SchemaMapper::class),
@@ -91,7 +97,7 @@ class MultiTenancyRbacDenialTest extends TestCase {
 			$this->organisationMapper,
 			$this->userSession,
 			$this->groupManager,
-			$this->createMock(IAppConfig::class),
+			$appConfig,
 			$this->createMock(LoggerInterface::class)
 		);
 	}
@@ -153,6 +159,58 @@ class MultiTenancyRbacDenialTest extends TestCase {
 			'membership in the organisation user list is not the authorization gate; '
 			. 'the organisation group config below it is'
 		);
+	}
+
+	/**
+	 * Enforcement is OFF unless explicitly enabled — the shipping default.
+	 *
+	 * This is the assertion that keeps the PR safe to merge. CI's e2e refused
+	 * enforcement three times; the third run's server log carried 39
+	 * `[FileSharingHandler] … Shared path must be set` errors that appear zero
+	 * times on development, because the stored authorization configs grant only
+	 * the `admin` group while the app acts as other identities.
+	 *
+	 * An unset OR malformed value must keep today's behaviour. Anything else
+	 * would enable, by accident, a control known to break sharing.
+	 *
+	 * @return void
+	 */
+	public function testEnforcementIsOffUnlessExplicitlyEnabled(): void {
+		foreach (['', 'true', '1', 'yes', 'ENABLED', 'disabled'] as $value) {
+			$appConfig = $this->createMock(IAppConfig::class);
+			$appConfig->method('getValueString')->willReturn($value);
+
+			$user = $this->createMock(IUser::class);
+			$user->method('getUID')->willReturn('alice');
+			$userSession = $this->createMock(IUserSession::class);
+			$userSession->method('getUser')->willReturn($user);
+			$groupManager = $this->createMock(IGroupManager::class);
+			$groupManager->method('isAdmin')->willReturn(false);
+			$groupManager->method('getUserGroupIds')->willReturn(['users']);
+
+			$organisationMapper = $this->createMock(OrganisationMapper::class);
+			$organisationMapper->method('getActiveOrganisationWithFallback')->willReturn('org-uuid-1');
+			$organisationMapper->method('findByUuid')->willReturn(
+				$this->organisationWith(['alice'], ['register' => ['create' => ['admin']]])
+			);
+
+			$mapper = new RegisterMapper(
+				$this->createMock(IDBConnection::class),
+				$this->createMock(SchemaMapper::class),
+				$this->createMock(IEventDispatcher::class),
+				$this->createMock(ContainerInterface::class),
+				$organisationMapper,
+				$userSession,
+				$groupManager,
+				$appConfig,
+				$this->createMock(LoggerInterface::class)
+			);
+
+			$this->assertTrue(
+				$this->decide($mapper),
+				sprintf('value %s must not enable enforcement', var_export($value, true))
+			);
+		}
 	}
 
 	/**
