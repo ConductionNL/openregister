@@ -217,15 +217,16 @@ The dispatch in `anonymizeDocument` for DOCX, ODT, and plain-text inputs MUST be
 - **WHEN** the same ODT is processed on the post-change code path
 - **THEN** the output is semantically identical to the pre-change output
 
-### Requirement: Composer dependency on `Conduction/sapp` MUST be explicit and tracked
+### Requirement: Composer dependency on `ConductionNL/sapp` MUST be explicit and tracked
 
-The `composer.json` repository entry pointing at `Conduction/sapp` MUST be visible in the dependency manifest and called out in `CHANGELOG.md` under `### Dependencies` (or equivalent). When upstream `dealfonso/sapp` merges the work, the repositories entry is removed and the version constraint switches to a normal range; the spec describes this transition explicitly so future maintainers know the fork dependency is provisional, not permanent.
+The `composer.json` repository entry pointing at `ConductionNL/sapp` MUST be visible in the dependency manifest and called out in `CHANGELOG.md` under `### Dependencies` (or equivalent). When upstream `dealfonso/sapp` merges the work, the repositories entry is removed and the version constraint switches to a normal range; the spec describes this transition explicitly so future maintainers know the fork dependency is provisional, not permanent.
 
 #### Scenario: Composer manifest carries the fork repository
 
 - **GIVEN** the `pdf-anonymisation` change has shipped
 - **WHEN** a maintainer reads `composer.json`
-- **THEN** they see a `repositories` entry for `https://codeberg.org/Conduction/sapp`
-- **AND** the `ddn/sapp` constraint resolves to a `work/text-replacement`-branch dev-version
+- **THEN** they see a `repositories` entry for `https://github.com/ConductionNL/sapp`
+- **AND** the `ddn/sapp` constraint resolves to a commit-pinned dev-version of the fork branch
+  carrying the chained filter / text-replacement work
 - **AND** the CHANGELOG entry documents the fork dependency + the upstream PR series tracking it
 
