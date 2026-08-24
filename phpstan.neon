@@ -168,3 +168,24 @@ parameters:
             message: '#Parameter \#2 \$params of method OCP\\IDBConnection::executeQuery\(\) expects array<string>#'
             identifier: argument.type
             path: lib/Service/Vectorization/Handlers/VectorSearchHandler.php
+
+        # CredentialStoreResolver probes the credential app's service classes by
+        # name, under BOTH namespaces it has shipped (OCA\Keepiq, formerly
+        # OCA\Doriath). Neither is on this app's analysis path — that is the
+        # point of probing them as strings — so PHPStan proves class_exists()
+        # always false and reports the probe as dead code.
+        #
+        # At runtime the app is installed and the classes resolve; measured on a
+        # running instance, every OCA\Keepiq\Service\* class EXISTS. The list
+        # spans both spellings BECAUSE pinning one is what broke this: the app
+        # renamed without an alias and the credential store silently read as
+        # unavailable.
+        #
+        # An ignore rather than stubs: this app's tests override the protected
+        # probe accessors to point at contract fixtures, so there are no stub
+        # classes to scan. Scoped to the one file — an impossible class_exists
+        # anywhere else is still a real finding.
+        -
+            message: '#Call to function class_exists\(\) with .OCA..Doriath..Service…...OCA..Keepiq..Service…. will always evaluate to false#'
+            identifier: function.impossibleType
+            path: lib/Service/Credential/CredentialStoreResolver.php
