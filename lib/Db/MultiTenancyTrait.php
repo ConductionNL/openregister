@@ -851,12 +851,16 @@ trait MultiTenancyTrait {
 		// one architectural problem for another. OrganisationMapper is a mapper,
 		// is already present, and answers the only question this check asks.
 		//
-		// It fails CLOSED. A wiring mistake now costs access instead of granting
-		// it, which is the direction an authorization default has to fail in.
-		if (isset($this->organisationMapper) === false) {
-			return false;
-		}
-
+		// It fails CLOSED. An unresolvable organisation, or a user who is not a
+		// member of it, now denies. A wiring mistake costs access instead of
+		// granting it, which is the direction an authorization default has to
+		// fail in.
+		//
+		// No `isset($this->organisationMapper)` guard here, deliberately. All
+		// twelve classes using this trait declare it as a non-nullable typed
+		// property and assign it in their constructor — verified, not assumed —
+		// so psalm is right that the check is redundant, and a redundant guard on
+		// an authorization path is exactly the shape of the bug being fixed.
 		$activeOrgUuid = $this->getActiveOrganisationUuid();
 		if ($activeOrgUuid === null) {
 			// CLI context — no active organisation is expected. Allow access.
