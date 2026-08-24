@@ -8,7 +8,7 @@ chain: []
 
 `openregister_chunks.text_content` is already populated + PostgreSQL-tsvector-GIN-indexed by the merged [`hybrid-document-search`](../archive/) change, and `ChunkMapper::searchByKeyword()` runs `ts_rank` scoring over it. But that method is currently only reachable through `FileSearchController` (admin-only, chunk-shaped response) — no query path exists through `ObjectService::searchObjectsPaginated()`, so any consumer that wants "search my objects, including their attached files' body text" cannot get there without re-implementing the join.
 
-Concrete downstream consumer: OpenCatalogi's public full-text search endpoint (`GET /apps/opencatalogi/api/search`, shipped by WOO-506's [`add-public-fulltext-search`](https://codeberg.org/Conduction/opencatalogi/src/branch/development/openspec/changes/archive/2026-07-16-add-public-fulltext-search)) needs to widen its match surface to include document body text for WOO-517 ([opencatalogi #136 `add-document-content-search`](https://codeberg.org/Conduction/opencatalogi/pulls/136)). OpenCatalogi's follow-up change is a HARD dependency on this OR-side wire landing first — its proposal frontmatter carries `depends_on: openregister:expose-content-search-in-object-service`.
+Concrete downstream consumer: OpenCatalogi's public full-text search endpoint (`GET /apps/opencatalogi/api/search`, shipped by WOO-506's [`add-public-fulltext-search`](https://github.com/ConductionNL/opencatalogi/tree/development/openspec/changes/archive/2026-07-16-add-public-fulltext-search)) needs to widen its match surface to include document body text for WOO-517 (Codeberg PR opencatalogi#136 `add-document-content-search`, pre-migration, not migrated to GitHub). OpenCatalogi's follow-up change is a HARD dependency on this OR-side wire landing first — its proposal frontmatter carries `depends_on: openregister:expose-content-search-in-object-service`.
 
 Solution is a thin wire, not a new stack:
 
@@ -35,5 +35,5 @@ Solution is a thin wire, not a new stack:
 
 - **Chunk store shipped by:** [`hybrid-document-search`](../archive/2026-07-06-hybrid-document-search/) (already merged) — `openregister_chunks` table, `text_content` column, PostgreSQL `to_tsvector('simple', text_content)` GIN via migration `Version1Date20260706101000`.
 - **Existing keyword-search method (unchanged):** `lib/Db/ChunkMapper.php::searchByKeyword()` — `ts_rank`-scored, returns hits with `source_type` + `source_id`.
-- **Downstream OpenCatalogi consumer:** [opencatalogi #136 `add-document-content-search`](https://codeberg.org/Conduction/opencatalogi/pulls/136) (WOO-517). Its `depends_on` frontmatter names this change; impl of that change is gated on this one landing.
+- **Downstream OpenCatalogi consumer:** Codeberg PR opencatalogi#136 `add-document-content-search` (WOO-517, pre-migration, not migrated to GitHub). Its `depends_on` frontmatter names this change; impl of that change is gated on this one landing.
 - **Jira parent:** WOO-517 (Conduction Atlassian). This OR-side work is the prerequisite subtask referenced in that ticket's DoD.

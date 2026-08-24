@@ -2,7 +2,7 @@
   "spec_slug": "openregister-adopt-apphost",
   "title": "OpenRegister Adopts Its Own AppHost (Dogfood)",
   "app": "openregister",
-  "repo": "https://codeberg.org/Conduction/openregister",
+  "repo": "https://github.com/ConductionNL/openregister",
   "depends_on": [
     "apphost-observability-engine",
     "apphost-boilerplate-controllers"

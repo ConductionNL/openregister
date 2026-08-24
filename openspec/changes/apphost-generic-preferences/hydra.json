@@ -2,7 +2,7 @@
   "spec_slug": "apphost-generic-preferences",
   "title": "AppHost: ship the missing GenericPreferencesController",
   "app": "openregister",
-  "repo": "https://codeberg.org/Conduction/openregister",
+  "repo": "https://github.com/ConductionNL/openregister",
   "depends_on": [
     "apphost-boilerplate-controllers"
   ],
