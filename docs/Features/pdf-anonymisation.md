@@ -167,9 +167,9 @@ When the strict-mode gate fails:
 
 ## Composer dependency
 
-The PDF byte-replace pipeline uses the `ddn/sapp` fork hosted at `https://codeberg.org/Conduction/sapp`. While upstream PRs land, OpenRegister pins to a specific work-branch commit SHA via the VCS repository entry in `composer.json` for build reproducibility. When upstream `dealfonso/sapp` merges the work and tags a release, the `repositories` entry is removed and the constraint becomes a normal version range.
+The PDF byte-replace pipeline uses the `ddn/sapp` fork hosted at `https://github.com/ConductionNL/sapp`. While upstream PRs land, OpenRegister pins to a specific work-branch commit SHA via the VCS repository entry in `composer.json` for build reproducibility. When upstream `dealfonso/sapp` merges the work and tags a release, the `repositories` entry is removed and the constraint becomes a normal version range.
 
-The upstream-PR series tracking the fork→upstream transition lives at [`Conduction/sapp:docs/upstream-prs/`](https://codeberg.org/Conduction/sapp/tree/work/text-replacement/docs/upstream-prs).
+The upstream-PR series tracking the fork→upstream transition lives at [`ConductionNL/sapp:docs/upstream-prs/`](https://github.com/ConductionNL/sapp/tree/work/text-replacement/docs/upstream-prs).
 
 ## Spec references
 

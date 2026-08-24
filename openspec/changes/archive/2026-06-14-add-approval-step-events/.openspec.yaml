@@ -1,7 +1,7 @@
 schema_version: 2
 spec_slug: add-approval-step-events
 app: openregister
-repo: https://codeberg.org/Conduction/openregister
+repo: https://github.com/ConductionNL/openregister
 status: proposed
 issue: null
 depends_on: []

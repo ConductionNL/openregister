@@ -32,4 +32,4 @@
 
 ## 6. Cross-app follow-up
 
-- [x] 6.1 Cross-app follow-up tracked: **docudesk#125** (https://codeberg.org/Conduction/docudesk/issues/125) — add an explicit `read` grant to the `docudesk` **Publication Prohibition** schema in `docudesk/lib/Settings/docudesk_register.json` (its config omits `read`, so read/list would deny for non-admin/non-owner after this change). That file is outside OpenRegister's tree; the fix lands in the docudesk repo before/with this change reaching production.
+- [x] 6.1 Cross-app follow-up tracked: **Codeberg issue docudesk#125** (pre-migration, not migrated to GitHub; `docudesk` is now `filinq`) — add an explicit `read` grant to the `docudesk` **Publication Prohibition** schema in `docudesk/lib/Settings/docudesk_register.json` (its config omits `read`, so read/list would deny for non-admin/non-owner after this change). That file is outside OpenRegister's tree; the fix lands in the docudesk repo before/with this change reaching production.

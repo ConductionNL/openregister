@@ -16,7 +16,7 @@ Verified at HEAD, the redaction path is a pure-PHP byte pipeline that is
   text-showing operators in the content streams, and reserialises with
   `to_pdf_file_s(rebuild: true)` (`PdfTextReplacer.php:180`).
 - SAPP (`ddn/sapp`, pinned to `dev-feat/chained-filter-text-replace` from
-  `codeberg.org/Conduction/sapp`, composer.json:99) is a raw PDF-object /
+  `github.com/ConductionNL/sapp`, composer.json:99) is a raw PDF-object /
   content-stream library. It has **zero** awareness of the structure tree:
   no `/StructTreeRoot`, `/MarkInfo`, marked-content (`BDC`/`EMC` + `MCID`),
   `/Alt`, `/ActualText`, `/Lang` or reading order. `rebuild: true` walks the
