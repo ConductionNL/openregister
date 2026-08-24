@@ -93,6 +93,7 @@ class RegisterSchemaRbacTest extends TestCase {
 					$this->userSession,
 					$this->groupManager,
 					$this->appConfig,
+					$this->logger,
 				]
 			)
 			->getMock();

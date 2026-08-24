@@ -35,6 +35,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Env churn can leave several `openregister_registers` rows sharing a slug.
@@ -79,7 +80,8 @@ class RegisterMapperDeterministicFindTest extends TestCase {
 			$this->createMock(OrganisationMapper::class),
 			$this->createMock(IUserSession::class),
 			$this->createMock(IGroupManager::class),
-			$this->createMock(IAppConfig::class)
+			$this->createMock(IAppConfig::class),
+			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
 

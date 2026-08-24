@@ -35,6 +35,7 @@ use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -168,6 +169,21 @@ class RegisterMapper extends QBMapper {
 	 * @param IUserSession $userSession User session for current user context
 	 * @param IGroupManager $groupManager Group manager for RBAC checks
 	 * @param IAppConfig $appConfig App configuration for multitenancy settings
+	 * @param LoggerInterface $logger Structured logger for the resolution diagnostics.
+	 *
+	 * This class carried four `if (isset($this->logger))` logging sites, plus the
+	 * ones it inherits from {@see MultiTenancyTrait}, and never declared or
+	 * received a logger — the trait's own docblock says "classes should define
+	 * this property themselves" and this one did not. `isset()` on an
+	 * undeclared property is always false, so every one of those branches was
+	 * dead code that read as working instrumentation.
+	 *
+	 * The cost was concrete: find() answers `DoesNotExistException` for a
+	 * register whose row exists, the endpoint turns that into
+	 * "Register not found: '19'", and the error-level line that would have said
+	 * WHY — "Register not found after filters", carrying `existsBeforeFilter`,
+	 * i.e. "the row matched, then a filter removed it" — silently did not fire.
+	 * openregister#2820.
 	 *
 	 * @return void
 	 */
@@ -180,6 +196,7 @@ class RegisterMapper extends QBMapper {
 		IUserSession $userSession,
 		IGroupManager $groupManager,
 		IAppConfig $appConfig,
+		private readonly LoggerInterface $logger,
 	) {
 		// Initialize parent mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_registers', entityClass: Register::class);
