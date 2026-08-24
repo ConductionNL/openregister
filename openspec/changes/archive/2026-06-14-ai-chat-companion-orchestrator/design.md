@@ -1,5 +1,5 @@
 status: pr-created
-pr: https://codeberg.org/Conduction/openregister/pulls/62
+pr: Codeberg openregister PR 62 (pre-migration, not migrated to GitHub — the number does not correspond to any GitHub PR)
 
 ## Context
 
