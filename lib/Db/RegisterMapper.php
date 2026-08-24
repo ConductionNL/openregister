@@ -251,18 +251,22 @@ class RegisterMapper extends QBMapper {
 		}
 
 		// Log search attempt for debugging.
-		if (isset($this->logger) === true) {
-			$this->logger->info(
-				message: '[RegisterMapper] Searching for register',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'identifier' => $id,
-					'rbac' => $_rbac,
-					'multi' => $_multitenancy,
-				]
-			);
-		}
+		//
+		// The `isset($this->logger)` guard that used to wrap this (and the three
+		// below) is gone: it only ever existed because the property was never
+		// injected, and with the logger wired it is always true. phpstan says so
+		// outright — "Property ::$logger in isset() is not nullable nor
+		// uninitialized" — and a guard that cannot be false is not a guard.
+		$this->logger->info(
+			message: '[RegisterMapper] Searching for register',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'identifier' => $id,
+				'rbac' => $_rbac,
+				'multi' => $_multitenancy,
+			]
+		);
 
 		// Verify RBAC permission to read registers if RBAC is enabled.
 		if ($_rbac === true) {
@@ -304,29 +308,25 @@ class RegisterMapper extends QBMapper {
 		try {
 			$testResult = $this->findEntity(query: $qbBeforeFilter);
 			$existsBeforeFilter = true;
-			if (isset($this->logger) === true) {
-				$this->logger->debug(
-					message: '[RegisterMapper] Register exists before filters',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'identifier' => $id,
-						'registerId' => $testResult->getId(),
-						'organisation' => $testResult->getOrganisation(),
-					]
-				);
-			}
+			$this->logger->debug(
+				message: '[RegisterMapper] Register exists before filters',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'identifier' => $id,
+					'registerId' => $testResult->getId(),
+					'organisation' => $testResult->getOrganisation(),
+				]
+			);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException|\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-			if (isset($this->logger) === true) {
-				$this->logger->warning(
-					message: '[RegisterMapper] Register does not exist (or is duplicated) before filters',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'identifier' => $id,
-					]
-				);
-			}
+			$this->logger->warning(
+				message: '[RegisterMapper] Register does not exist (or is duplicated) before filters',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'identifier' => $id,
+				]
+			);
 		}//end try
 
 		// Apply organisation filter.
@@ -377,21 +377,21 @@ class RegisterMapper extends QBMapper {
 
 			return $register;
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			// Log detailed error information.
-			if (isset($this->logger) === true) {
-				$this->logger->error(
-					message: '[RegisterMapper] Register not found after filters',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'identifier' => $id,
-						'existsBeforeFilter' => $existsBeforeFilter,
-						'multiEnabled' => $_multitenancy,
-						'rbacEnabled' => $_rbac,
-						'error' => $e->getMessage(),
-					]
-				);
-			}
+			// Log detailed error information. `existsBeforeFilter` is the whole
+			// point: it separates "no such row" from "the row matched and then a
+			// filter removed it" — a bad identifier versus a scoping bug.
+			$this->logger->error(
+				message: '[RegisterMapper] Register not found after filters',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'identifier' => $id,
+					'existsBeforeFilter' => $existsBeforeFilter,
+					'multiEnabled' => $_multitenancy,
+					'rbacEnabled' => $_rbac,
+					'error' => $e->getMessage(),
+				]
+			);
 
 			throw $e;
 		}//end try
