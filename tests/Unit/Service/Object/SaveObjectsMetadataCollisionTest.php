@@ -69,7 +69,7 @@ class SaveObjectsMetadataCollisionTest extends TestCase {
 	 *
 	 * @return array The extracted business data.
 	 */
-	private function extract(array $object, ?Schema $schema = null): array {
+	private function extract(array $object, mixed $schema = null): array {
 		$method = new ReflectionMethod(SaveObjects::class, 'extractBusinessData');
 		$method->setAccessible(true);
 		return $method->invoke($this->service, $object, $schema);
@@ -241,6 +241,40 @@ class SaveObjectsMetadataCollisionTest extends TestCase {
 		);
 
 		$this->assertSame(['name' => 'inner', 'uuid' => 'kept-inside'], $business);
+	}
+
+	/**
+	 * A schema-cache MISS is treated as "no declaration information".
+	 *
+	 * The mixed-schema call site passes `$schemaCache[$id] ?? null` straight
+	 * through rather than guarding with `instanceof` itself, so this method has
+	 * to judge it. A miss must fall back to the old stripping, never fatal on a
+	 * method call against null.
+	 *
+	 * @return void
+	 */
+	public function testACacheMissIsTreatedAsNoSchema(): void {
+		$business = $this->extract(['name' => 'x', 'age' => 4], null);
+
+		$this->assertArrayNotHasKey('name', $business);
+		$this->assertSame(4, $business['age'] ?? null);
+	}
+
+	/**
+	 * A stale or unexpected cache value is refused, not called.
+	 *
+	 * `$schemaCache` is keyed by whatever `$selfData['schema']` holds, so an
+	 * unexpected entry is reachable. Anything that is not a Schema must degrade
+	 * to the old behaviour rather than reach getProperties() on it.
+	 *
+	 * @return void
+	 */
+	public function testANonSchemaCacheValueDoesNotReachGetProperties(): void {
+		foreach ([['not' => 'a schema'], 'planix', 42, new \stdClass()] as $value) {
+			$business = $this->extract(['name' => 'x', 'age' => 5], $value);
+			$this->assertArrayNotHasKey('name', $business);
+			$this->assertSame(5, $business['age'] ?? null);
+		}
 	}
 
 	/**

@@ -2733,15 +2733,14 @@ class SaveObjects {
 				]
 			);
 
-			// Extract business data and scan for relations. Resolve this object's
-			// schema from the cache so a declared property is not stripped as a
-			// metadata column of the same name (openregister#2781).
-			$objectSchema = $schemaCache[$selfData['schema']] ?? null;
-			if (($objectSchema instanceof Schema) === false) {
-				$objectSchema = null;
-			}
-
-			$businessData = $this->extractBusinessData(object: $object, schema: $objectSchema);
+			// Extract business data and scan for relations. The cache entry is
+			// handed over as-is: extractBusinessData() decides what counts as a
+			// usable schema, so a cache miss or an unexpected value is judged in
+			// ONE place instead of at every call site (openregister#2781).
+			$businessData = $this->extractBusinessData(
+				object: $object,
+				schema: ($schemaCache[$selfData['schema']] ?? null)
+			);
 
 			// RELATIONS EXTRACTION: Scan the business data for relations (UUIDs and URLs).
 			// ONLY scan if relations weren't already set during preparation phase.
@@ -2916,16 +2915,21 @@ class SaveObjects {
 	 * Supports both new structure (object property contains business data) and
 	 * legacy structure (metadata fields mixed with business data).
 	 *
-	 * @param array       $object The full object data
-	 * @param Schema|null $schema The schema this object is saved against, used to
-	 *                            tell a declared property from a metadata column
-	 *                            of the same name. Null keeps the old behaviour.
+	 * @param array $object The full object data
+	 * @param mixed $schema The schema this object is saved against, used to tell
+	 *                      a declared property from a metadata column of the same
+	 *                      name. Deliberately untyped: callers pass a schema-cache
+	 *                      lookup straight through, and anything that is not a
+	 *                      Schema — a miss, a null, a stale entry — means "no
+	 *                      declaration information", which is the pre-existing
+	 *                      behaviour. Judging that here keeps one rule in one
+	 *                      place rather than an `instanceof` at every call site.
 	 *
 	 * @return array The extracted business data
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function extractBusinessData(array $object, ?Schema $schema = null): array {
+	private function extractBusinessData(array $object, mixed $schema = null): array {
 		if (isset($object['object']) === true && is_array($object['object']) === true) {
 			// NEW STRUCTURE: object property contains business data.
 			$this->logger->debug('[SaveObjects] Using object property for business data (mixed)');
@@ -2950,7 +2954,7 @@ class SaveObjects {
 		// so the value ends up in both places, which is what the magic table is
 		// for.
 		$declared = [];
-		if ($schema !== null) {
+		if ($schema instanceof Schema) {
 			$declared = array_keys($schema->getProperties() ?? []);
 		}
 
