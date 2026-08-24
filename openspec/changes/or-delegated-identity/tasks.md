@@ -27,8 +27,17 @@
 > narrowing (they cover identity recording, refusal, and the context-override
 > rule), so no result here is vacuous. But the spec states a guarantee the
 > codebase keeps only conditionally, and saying so is the difference between a
-> caveat and a false claim. Making it unconditional is larger than #2833: it needs
-> organisation provisioning and a policy decision about what an empty config means.
+> caveat and a false claim. Making it unconditional is larger than #2834 and stays
+> open on #2833: it needs organisation provisioning to exist first, plus a policy
+> decision about what an unconfigured instance should mean.
+>
+> ⚠️ Do not "fix" that by denying when no organisation resolves. That was tried on
+> #2834 and reverted: a freshly-created share recipient has no active organisation,
+> so it denied them everything, and fourteen sharing e2e tests failed. On an
+> instance nobody has organised yet it denies every non-admin every entity
+> operation — an outage wearing a security-shaped justification. Sharing exists to
+> give access to someone the normal scope excludes, so a membership or
+> organisation-presence requirement denies the feature's whole purpose.
 
 Implements ADR-099 (hydra `openspec/architecture/adr-099-acting-on-behalf-of-a-user.md`).
 
