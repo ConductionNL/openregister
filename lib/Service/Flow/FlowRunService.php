@@ -122,15 +122,79 @@ class FlowRunService {
 	}//end __construct()
 
 	/**
+	 * Make an unattributed refusal visible on the flow, and stop a dead schedule.
+	 *
+	 * A logged warning is not a control surface. `FlowDeadEnd` already learned
+	 * this: it writes status and status_message onto the flow so the author sees
+	 * why without reading logs, and this follows the same path for the same
+	 * reason.
+	 *
+	 * 🔴 A SCHEDULE is additionally DISABLED, and that asymmetry is deliberate.
+	 * Every other trigger is driven by something that will notice — a person
+	 * clicking, an event with a caller, a parent run that gets an exception. A
+	 * schedule retries every tick forever with nobody watching, so leaving it
+	 * enabled means it stays "on" in the UI while firing nothing, indefinitely.
+	 * A schedule that quietly stops working is an instrument that lies; one that
+	 * is switched off with a reason attached is a fault someone can act on.
+	 *
+	 * Best-effort by construction. A failure to record the refusal must not
+	 * replace it — the caller still gets `FlowUnattributed`, which is the part
+	 * that actually prevents the run.
+	 *
+	 * @param string            $flowId  The flow that could not be attributed.
+	 * @param string            $trigger What started the run.
+	 * @param FlowUnattributed  $refusal The refusal, whose message is stored.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegated-identity/spec.md
+	 */
+	private function recordUnattributed(string $flowId, string $trigger, FlowUnattributed $refusal): void {
+		try {
+			$mapper = $this->container->get('OCA\OpenRegister\Db\FlowMapper');
+			$flow = $mapper->findByUuid($flowId);
+
+			$flow->setStatus(Flow::STATUS_ERROR);
+			$flow->setStatusMessage($refusal->getMessage());
+
+			if ($trigger === 'schedule') {
+				$flow->setEnabled(false);
+			}
+
+			$mapper->update($flow);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[FlowRunService] Could not record the unattributed refusal on the flow: ' . $e->getMessage(),
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'flow' => $flowId,
+				]
+			);
+		}//end try
+
+	}//end recordUnattributed()
+
+	/**
 	 * The node context a walk starts from, before its live handles are added.
 	 *
-	 * `triggeredBy` carries the run's owner into the node context. Nodes read it
-	 * to attribute what they do — ObjectWriteNode REFUSES to write without it,
-	 * SubFlowNode propagates it to child runs, and Hermiq's agent node runs the
-	 * turn as that user. Nothing else in lib/ ever wrote this key, so every
-	 * trigger reached its nodes ownerless and only hand-injected contexts (tests,
-	 * harnesses) worked. An explicit context value still wins, so a caller can
-	 * attribute a run to someone other than whoever queued it. See or#2158.
+	 * `triggeredBy` carries PROVENANCE into the node context — who caused the run.
+	 * Nothing else in lib/ ever wrote this key, so every trigger reached its nodes
+	 * ownerless and only hand-injected contexts (tests, harnesses) worked. An
+	 * explicit context value still wins for provenance, so a caller can record
+	 * that a run was made on someone's behalf. See or#2158.
+	 *
+	 * 🔴 `runAs` carries AUTHORIZATION, and comes from the RUN — never from the
+	 * context, even when the context names one. That asymmetry is the point.
+	 * Context is caller-supplied at queue time, so honouring a context `runAs`
+	 * would let any caller who can start a flow name the identity its steps
+	 * execute as, which is precisely the widening ADR-099 forbids: identity may
+	 * narrow along an invocation chain, and widening needs a grant checked
+	 * against the caller, not a key in a payload.
+	 *
+	 * The run's value is re-read on EVERY walk, including a resume, so a run
+	 * parked for weeks picks up its identity again rather than carrying a stale
+	 * copy forward in its stored context.
 	 *
 	 * @param FlowRun $run The run being executed.
 	 * @param boolean $resuming Whether this walk resumes a suspended run.
@@ -148,6 +212,11 @@ class FlowRunService {
 		$context['runUuid'] = $run->getUuid();
 		$context['resuming'] = $resuming;
 		$context['triggeredBy'] = ($context['triggeredBy'] ?? $run->getTriggeredBy());
+
+		// Assignment, not coalesce: the run wins over anything the stored context
+		// carries. See the docblock — a context-supplied acting identity would be
+		// an authoring-time privilege escalation.
+		$context['runAs'] = $run->getRunAs();
 
 		return $context;
 	}//end baseContextFor()
@@ -256,44 +325,6 @@ class FlowRunService {
 	}//end runtimeBudgetSeconds()
 
 	/**
-	 * The organisation to attribute a run to, or null when there is none.
-	 *
-	 * A run is queued from wherever the trigger fired: a request (there is a
-	 * session, so there is an active organisation), or a cron pass (there is
-	 * not). Only the first can be attributed, and an unattributed run is
-	 * recorded as such rather than guessed at — the active-runs surface scopes
-	 * strictly by this value, so a wrong guess would put one tenant's runs on
-	 * another's dashboard.
-	 *
-	 * `OrganisationService` is resolved lazily through the container, not
-	 * constructor-injected: `FlowRunService` is what the cron worker builds on
-	 * every pass, and it must not drag the whole organisation/RBAC graph into
-	 * that path to write a column it usually cannot fill anyway.
-	 *
-	 * @return string|null The active organisation uuid, or null.
-	 *
-	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
-	 */
-	private function activeOrganisation(): ?string {
-		try {
-			$organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
-			$uuid = $organisationService->getActiveOrganisation()?->getUuid();
-		} catch (Throwable $e) {
-			$this->logger->debug(
-				message: '[FlowRunService] Could not resolve the active organisation for a run: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return null;
-		}
-
-		if ($uuid === null || $uuid === '') {
-			return null;
-		}
-
-		return (string)$uuid;
-	}//end activeOrganisation()
-
-	/**
 	 * Queue a run without executing it.
 	 *
 	 * This is what a trigger calls. A Nextcloud Flow rule, an object event or a
@@ -315,8 +346,14 @@ class FlowRunService {
 	 *                     dispatch path arrives here, and a caller that cannot see
 	 *                     the refusal in the signature will not handle it — which
 	 *                     is how it reached HTTP as a bare 500.
+	 * @throws FlowUnattributed When nothing names the identity the run would
+	 *                         execute as. Declared for the same reason: the
+	 *                         schedule sweep must catch it PER FLOW, and a caller
+	 *                         that cannot see it in the signature lets one
+	 *                         unattributed flow abort the whole sweep.
 	 *
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/delegated-identity/spec.md
 	 */
 	public function queue(
 		string $flowId,
@@ -332,6 +369,50 @@ class FlowRunService {
 		// them.
 		$this->refuseDeadEnd(flowId: $flowId);
 
+		// A run is only runnable if it names WHOSE RIGHTS it executes with, and
+		// only listable if it names WHICH tenant it belongs to.
+		//
+		// This is the general form of a defect this codebase has now patched
+		// five times one call site at a time (or#2158: FlowMcpToolProvider,
+		// FlowRunService::execute(), FlowRunController::test(), and
+		// FlowScheduleService::fire(), which spells out that an ownerless run
+		// makes every attribution-requiring node refuse — ObjectWriteNode
+		// answers "this flow run has no owner"). Fixing it HERE covers all six
+		// dispatch paths for the same reason the dead-end refusal lives here,
+		// so the next path added inherits it instead of becoming the sixth.
+		$attribution = (new FlowRunAttribution($this->container, $this->logger))
+			->resolve(flowId: $flowId, user: $user, trigger: $trigger);
+
+		// REFUSE, rather than record a run every node will reject one at a time.
+		//
+		// The old behaviour wrote the row and let each attribution-requiring
+		// node fail separately, which surfaced as a per-node PERMISSION error
+		// ("User 'Anonymous' does not have permission to…") for what is actually
+		// a DISPATCH problem. That reads as "this user may not do this" when the
+		// truth is "nobody was named", and the two want opposite fixes — one
+		// sends you to the RBAC config, the other to the trigger.
+		//
+		// Refusing here also means a half-executed run cannot exist: without
+		// this guard the nodes BEFORE the first object write still ran, so a
+		// flow could send mail and then fail to record why.
+		if ($attribution['user'] === null) {
+			$refusal = new FlowUnattributed(flowId: $flowId, trigger: $trigger);
+
+			$this->logger->warning(
+				message: '[FlowRunService] Refused to queue an unattributed run',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'flow' => $flowId,
+					'trigger' => $trigger,
+				]
+			);
+
+			$this->recordUnattributed(flowId: $flowId, trigger: $trigger, refusal: $refusal);
+
+			throw $refusal;
+		}
+
 		$run = new FlowRun();
 		$run->setUuid($this->newUuid());
 		$run->setFlowId($flowId);
@@ -342,11 +423,14 @@ class FlowRunService {
 		$run->setSubjectUuid(($subject['uuid'] ?? null));
 		$run->setSubjectRegister(($subject['register'] ?? null));
 		$run->setSubjectSchema(($subject['schema'] ?? null));
-		$run->setTriggeredBy($user);
-		// Attribute the run to the caller's organisation so the active-runs
-		// surface can scope by tenant. Null when queued off a request (cron) —
-		// see activeOrganisation().
-		$run->setOrganisation($this->activeOrganisation());
+		// Both, deliberately. `triggeredBy` is PROVENANCE and keeps recording who
+		// caused the run; `runAs` is AUTHORIZATION and is what every access
+		// decision reads from here on. They are equal at this point for a
+		// caller-driven dispatch and differ for a scheduled one, where the cause
+		// is a schedule and the acting identity is the user its trigger names.
+		$run->setTriggeredBy($attribution['user']);
+		$run->setRunAs($attribution['user']);
+		$run->setOrganisation($attribution['organisation']);
 		$run->setCreated(new DateTime());
 		$run->setUpdated(new DateTime());
 
@@ -363,8 +447,9 @@ class FlowRunService {
 	 * reporting an error it no longer has.
 	 *
 	 * Resolved lazily through the container for the same reason
-	 * `activeOrganisation()` is: this service is constructed on paths that do
-	 * not need either collaborator, and several tests build it by hand.
+	 * {@see FlowRunAttribution} resolves its own collaborators that way: this
+	 * service is constructed on paths that do not need either collaborator, and
+	 * several tests build it by hand.
 	 *
 	 * @param string $flowId The flow uuid.
 	 *

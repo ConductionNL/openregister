@@ -85,7 +85,7 @@ function openregister_locate_nc_root(): ?string {
 $skipNc = getenv('OPENREGISTER_TEST_SKIP_NC');
 $skipNc = is_string($skipNc) === true && filter_var($skipNc, FILTER_VALIDATE_BOOLEAN) === true;
 
-if ($skipNc === false && !defined('OC_CONSOLE')) {
+if ($skipNc === false && defined('OC_CONSOLE') === false) {
 	$ncRoot = openregister_locate_nc_root();
 
 	if ($ncRoot !== null) {
@@ -123,6 +123,23 @@ if ($skipNc === false && !defined('OC_CONSOLE')) {
 					$e->getMessage()
 				)
 			);
+
+			// Say it once, then silence any child process — the same guard the
+			// "no NC root" branch below already carries, which this branch was
+			// missing.
+			//
+			// A `@runInSeparateProcess` test re-runs this bootstrap in a forked
+			// PHPUnit worker, and ANY output from that worker corrupts the
+			// channel PHPUnit uses to read the child's result back. The test
+			// then fails with this very notice as its error message rather than
+			// on its own merits. Observed on
+			// AppHost\BootstrapTest::testSettingsPlaneRegistrationIsLazy, which
+			// never touches the container and passes with the switch set.
+			//
+			// The child inherits this process's environment, so setting the
+			// harness's existing skip switch here keeps the diagnostic for the
+			// human running the suite while making every forked worker quiet.
+			putenv('OPENREGISTER_TEST_SKIP_NC=1');
 		}
 	} else {
 		// No NC root in scope — pure unit tests still work via the

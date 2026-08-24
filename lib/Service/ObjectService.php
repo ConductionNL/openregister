@@ -403,12 +403,37 @@ class ObjectService implements ObjectServiceInterface
      * Only pass operations whose inputs originate from code or the app's own
      * shipped data — never wrap handling of user-supplied request data.
      *
+     * 🔴 REACHABILITY BOUNDARY (ADR-099). This is code-initiated only. It MUST
+     * NOT be reachable from:
+     *
+     *  - a flow node,
+     *  - a tool invoked by an agent,
+     *  - the handling of an inbound request.
+     *
+     * The reason is not that those callers are untrusted in principle — it is
+     * that all three carry user-authored definitions or user-supplied input, and
+     * that this method is sitting right next to every place a missing identity
+     * makes something fail. An escape hatch that turns a refusal into a success
+     * gets taken. Where an identity cannot be resolved the correct outcome is a
+     * refusal naming what is missing; escalating to a userless principal instead
+     * answers a different question than the one that was asked.
+     *
+     * The legitimate callers are installation, migration, repair, and seeding of
+     * the application's own shipped data — work that genuinely has no user to
+     * act for, because a schema migration runs on nobody's behalf.
+     *
+     * Enforcement is structural first (the service is not injected into node,
+     * tool or endpoint classes) and a gate second. `SystemOperationContextBoundaryTest`
+     * pins the current call-site set so that adding one is a deliberate act with
+     * a visible diff rather than an accident.
+     *
      * @param callable $operation The trusted operation to execute.
      *
      * @return mixed Whatever the callable returns.
      *
      * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::run is the canonical scoped-elevation API
      *
+     * @spec openspec/specs/delegated-identity/spec.md
      * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function runAsSystem(callable $operation)
@@ -443,24 +468,44 @@ class ObjectService implements ObjectServiceInterface
      * This does not grant anything. If the named user cannot see a row, neither
      * can the callable.
      *
+     * 🔴 `setVolatileActiveUser()`, NOT `setUser()`. The two differ in one way
+     * that matters here: `setUser()` also writes `user_id` into the PHP session,
+     * and `lib/base.php` starts a real session on every request but
+     * `status.php`. A `finally` covers a throw, but not a fatal and not an
+     * `exit()` — so with `setUser()` a dying request leaves the acting identity
+     * written into the caller's session, and the response carries a session
+     * cookie for it. `setVolatileActiveUser()` (Nextcloud 29.0+; every fleet app
+     * declares `min-version="32"`) sets the active user and nothing else, so
+     * there is no persisted state to leak in the first place. The restore below
+     * is then a correctness measure for the rest of THIS request rather than the
+     * only thing standing between a scope and a hijacked session.
+     *
+     * This is a workaround for a missing parameter, not the end state. ADR-099
+     * keeps threading an acting user through the query layer as the target and
+     * records why it is not reachable in one change.
+     *
      * @param IUser    $user      The user to act as.
      * @param callable $operation The operation to execute as that user.
      *
      * @return mixed Whatever the callable returns.
      *
+     * @spec openspec/specs/delegated-identity/spec.md
      * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function runAs(IUser $user, callable $operation)
     {
         $previousUser = $this->userSession->getUser();
-        $this->userSession->setUser($user);
+        $this->userSession->setVolatileActiveUser($user);
 
         try {
             return $operation();
         } finally {
             // ALWAYS restore, including on a throw, so a long-lived process
             // (cron worker, queue runner) never leaks this identity forward.
-            $this->userSession->setUser($previousUser);
+            // Restore the PREVIOUS user rather than clearing, so that a nested
+            // scope returns control to its immediate caller's identity and not
+            // to nobody.
+            $this->userSession->setVolatileActiveUser($previousUser);
         }
     }//end runAs()
 

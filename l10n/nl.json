@@ -2718,7 +2718,13 @@
         "Legal basis": "Rechtsgrond",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Vind elk object dat verwijst naar een betrokkene (art. 15), bekijk een voorbeeld van verwijdering (art. 17), of exporteer hun gegevens (art. 20).",
         "Portability (Art 20)": "Overdraagbaarheid (Art 20)",
-        "Retention period": "Bewaartermijn"
+        "Retention period": "Bewaartermijn",
+        "This flow run has no acting identity (runAs); an object read must be attributable.": "Deze flowuitvoering heeft geen handelende identiteit (runAs); een objectlezing moet toe te wijzen zijn.",
+        "This flow run has no acting identity (runAs); an object write must be attributable.": "Deze flowuitvoering heeft geen handelende identiteit (runAs); een objectschrijving moet toe te wijzen zijn.",
+        "This flow run's acting identity \"%s\" (runAs) is not a user account; an object read must be attributable.": "De handelende identiteit \"%s\" (runAs) van deze flowuitvoering is geen gebruikersaccount; een objectlezing moet toe te wijzen zijn.",
+        "This flow run's acting identity \"%s\" (runAs) is not a user account; an object write must be attributable.": "De handelende identiteit \"%s\" (runAs) van deze flowuitvoering is geen gebruikersaccount; een objectschrijving moet toe te wijzen zijn.",
+        "This flow run's acting identity \"%s\" (runAs) is a disabled account; an object read is refused rather than performed on their behalf.": "De handelende identiteit \"%s\" (runAs) van deze flowuitvoering is een gedeactiveerd account; een objectlezing wordt geweigerd in plaats van namens hen uitgevoerd.",
+        "This flow run's acting identity \"%s\" (runAs) is a disabled account; an object write is refused rather than performed on their behalf.": "De handelende identiteit \"%s\" (runAs) van deze flowuitvoering is een gedeactiveerd account; een objectschrijving wordt geweigerd in plaats van namens hen uitgevoerd."
     },
     "plurals": {
         "{count} email": [

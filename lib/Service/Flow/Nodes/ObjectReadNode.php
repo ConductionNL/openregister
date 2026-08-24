@@ -469,10 +469,16 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys {
 	 * @throws RuntimeException When the run carries no resolvable owner.
 	 */
 	private function resolveOwner(array $context): IUser {
-		$uid = ($context['triggeredBy'] ?? null);
+		// `runAs`, not `triggeredBy`. The two answer different questions and
+		// this one is the ACCESS decision: `triggeredBy` records who caused the
+		// run and is provenance, while `runAs` names whose rights its steps use.
+		// For a scheduled run they differ — the cause is a schedule, the acting
+		// identity is the user the trigger declares — and reading provenance here
+		// is what made a scheduled read execute as whoever authored the flow.
+		$uid = ($context['runAs'] ?? null);
 		if (is_string($uid) === false || trim($uid) === '') {
 			throw new RuntimeException(
-				$this->l10n->t('This flow run has no owner (triggeredBy); an object read must be attributable.')
+				$this->l10n->t('This flow run has no acting identity (runAs); an object read must be attributable.')
 			);
 		}
 
@@ -480,7 +486,23 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys {
 		if ($user === null) {
 			throw new RuntimeException(
 				$this->l10n->t(
-					'This flow run\'s owner "%s" (triggeredBy) is not a user account; an object read must be attributable.',
+					'This flow run\'s acting identity "%s" (runAs) is not a user account; an object read must be attributable.',
+					[trim($uid)]
+				)
+			);
+		}
+
+		// A DISABLED account is not an identity work may proceed under, and
+		// `IUserManager::get()` still returns one. Rights are re-resolved at the
+		// moment work runs precisely so that a departure takes effect: a run
+		// parked for three weeks must not resume with the rights of somebody who
+		// has since been offboarded. Checking only for existence would let the
+		// most common revocation there is — disabling the account — pass
+		// unnoticed for as long as the run lives.
+		if ($user->isEnabled() === false) {
+			throw new RuntimeException(
+				$this->l10n->t(
+					'This flow run\'s acting identity "%s" (runAs) is a disabled account; an object read is refused rather than performed on their behalf.',
 					[trim($uid)]
 				)
 			);

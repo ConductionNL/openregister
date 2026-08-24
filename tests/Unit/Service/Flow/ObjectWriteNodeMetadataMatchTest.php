@@ -67,7 +67,7 @@ class ObjectWriteNodeMetadataMatchTest extends TestCase {
 	private Schema $schema;
 
 	/** @var array<int, string> */
-	private array $runContext = ['triggeredBy' => 'alice'];
+	private array $runContext = ['runAs' => 'alice'];
 
 	/**
 	 * The filter bag the node last handed to findAll().

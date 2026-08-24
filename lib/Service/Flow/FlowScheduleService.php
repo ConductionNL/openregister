@@ -142,18 +142,23 @@ class FlowScheduleService {
 				continue;
 			}
 
-			$owner = $candidate['owner'] ?? null;
-			if ($owner !== null) {
-				$owner = (string)$owner;
-			}
-
+			// The candidate's `owner` is deliberately NOT passed on as the run's
+			// identity any more. It is the DEFINITION's owner — who may edit this
+			// flow — and using it here made a scheduled run execute as whoever
+			// authored the flow, which nobody consented to (ADR-099). The
+			// identity now comes from the schedule trigger node's `runAs`,
+			// resolved by FlowRunAttribution, and its absence is a refusal.
+			//
 			// Per flow, not around the loop. A refused flow must not stop the
 			// ones after it from firing — one broken definition silently
 			// disabling every later schedule is a far bigger outage than the
 			// one being reported, and it would present as "cron stopped
 			// working" rather than as a fault in a specific flow.
 			try {
-				$this->fire(uuid: $uuid, now: $now, owner: $owner);
+				$this->fire(uuid: $uuid, now: $now);
+			} catch (FlowUnattributed $e) {
+				$this->reportUnattributed(uuid: $uuid, refusal: $e);
+				continue;
 			} catch (FlowDeadEnd $e) {
 				// The refusal already recorded status/status_message on the
 				// flow itself, so the author can see why without reading logs.
@@ -174,6 +179,34 @@ class FlowScheduleService {
 
 		return $fired;
 	}//end fireDueFlows()
+
+	/**
+	 * Report a due flow that named no acting identity.
+	 *
+	 * The refusal has already recorded status/status_message on the flow and
+	 * switched the schedule off, so this only writes the operator-facing log
+	 * line. Extracted from the sweep so `fireDueFlows()` stays inside its length
+	 * budget rather than growing a third inline catch body.
+	 *
+	 * @param string           $uuid    The flow that was refused.
+	 * @param FlowUnattributed $refusal The refusal.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegated-identity/spec.md
+	 */
+	private function reportUnattributed(string $uuid, FlowUnattributed $refusal): void {
+		$this->logger->warning(
+			message: '[FlowSchedule] Disabled a due flow — it names no acting identity: ' . $refusal->getMessage(),
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'flow' => $uuid,
+				'trigger' => $refusal->getTrigger(),
+			]
+		);
+
+	}//end reportUnattributed()
 
 	/**
 	 * The cron expression of a candidate that is an enabled schedule, or null.
@@ -243,25 +276,32 @@ class FlowScheduleService {
 	 *
 	 * @param string $uuid The flow uuid.
 	 * @param DateTimeInterface $now The moment it fired.
-	 * @param string|null $owner The user the run is attributed to, if known.
-	 *
 	 * @return void
+	 *
+	 * @throws FlowUnattributed When the schedule trigger names no acting identity.
+	 * @throws FlowDeadEnd     When the flow has a node that cannot pass its token on.
 	 */
-	private function fire(string $uuid, DateTimeInterface $now, ?string $owner = null): void {
-		// A scheduled run has no session, so the owner comes from the flow
-		// object itself — the person who created and enabled it. Without this
-		// the run is ownerless, context['triggeredBy'] is null, and every
-		// attribution-requiring node refuses: ObjectWriteNode returns "this
-		// flow run has no owner". That made every natively-scheduled flow
-		// silently incapable of writing anything. Fourth instance of the
-		// or#2158 defect class, after FlowMcpToolProvider::runFlow(),
-		// FlowRunService::execute() and FlowRunController::test().
+	private function fire(string $uuid, DateTimeInterface $now): void {
+		// No `user` is passed, and that is the fix rather than an omission.
+		//
+		// A scheduled run has no session, so this used to hand `flow.owner` down
+		// as the identity — "the person who created and enabled it". That solved
+		// the ownerless-run problem (or#2158: ObjectWriteNode answering "this
+		// flow run has no owner", which made every natively-scheduled flow
+		// silently incapable of writing anything) by creating a quieter one:
+		// authoring a flow became standing consent to unattended execution as
+		// its author, under whatever triggers anyone later added.
+		//
+		// Passing nothing lets FlowRunAttribution read the identity off the
+		// SCHEDULE TRIGGER NODE, which is where a run begins and the only place
+		// an author states it deliberately. When the node names nobody the queue
+		// refuses, and the refusal switches the schedule off with a reason
+		// attached instead of retrying every tick forever (ADR-099).
 		$this->runs->queue(
 			flowId: $uuid,
 			subject: [],
 			trigger: 'schedule',
-			context: ['payload' => ['flowId' => $uuid, 'scheduledAt' => $now->format(DATE_ATOM)]],
-			user: $owner
+			context: ['payload' => ['flowId' => $uuid, 'scheduledAt' => $now->format(DATE_ATOM)]]
 		);
 
 		// Remember the fire time so the next occurrence is measured from here,

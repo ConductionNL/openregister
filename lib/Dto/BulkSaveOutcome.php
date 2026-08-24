@@ -182,8 +182,13 @@ class BulkSaveOutcome {
 			$failures[] = [
 				'index' => ($failure['index'] ?? null),
 				'uuid' => ($failure['uuid'] ?? null),
-				'error' => (string)($failure['message'] ?? 'Row failed without a recorded reason'),
-				'type' => (string)($failure['exceptionClass'] ?? 'BulkSaveRejection'),
+				// No `??` fallback on these two: the source array's shape declares
+				// both as non-nullable `string`, so the fallback is unreachable and
+				// PHPStan reports it. A defaulted read that can never default is
+				// worse than none — it reads as a handled edge case that does not
+				// exist, and hides the day the shape actually changes.
+				'error' => (string)$failure['message'],
+				'type' => (string)$failure['exceptionClass'],
 			];
 		}
 

@@ -66,11 +66,19 @@ class ObjectServiceRunAsTest extends TestCase {
 
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturnCallback(fn (): ?IUser => $this->current);
-		$session->method('setUser')->willReturnCallback(
+		$session->method('setVolatileActiveUser')->willReturnCallback(
 			function (?IUser $user): void {
 				$this->current = $user;
 			}
 		);
+
+		// `setUser()` ALSO writes `user_id` into the PHP session, and a session
+		// is started on every request but status.php. A `finally` does not run
+		// on a fatal or an exit(), so using it here would leave the acting
+		// identity persisted in the caller's session. Asserting it is never
+		// called is the whole point of this double — a regression to setUser()
+		// would otherwise pass every other test in this class unchanged.
+		$session->expects($this->never())->method('setUser');
 
 		$reflection = new ReflectionClass(ObjectService::class);
 		$this->service = $reflection->newInstanceWithoutConstructor();
@@ -207,4 +215,42 @@ class ObjectServiceRunAsTest extends TestCase {
 		$this->assertSame('alice', $outer, 'the outer scope must survive the inner one');
 		$this->assertNull($this->current);
 	}//end testNestedScopesCompose()
+
+	/**
+	 * The acting identity is never written into the session.
+	 *
+	 * The session double in setUp() fails the test if `setUser()` is called at
+	 * all. This test states the guarantee by name so it reads as a requirement
+	 * rather than as an incidental mock expectation, and so a failure points at
+	 * the reason rather than at an unexpected-invocation message.
+	 *
+	 * Why it matters: `setUser()` persists `user_id` into the PHP session, a
+	 * session is started on every request but status.php, and the `finally` that
+	 * restores the subject does not run on a fatal or an `exit()`. A scope built
+	 * on `setUser()` therefore leaves the caller's session authenticated as the
+	 * acted-as user, and the response carries a cookie for it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegated-identity/spec.md
+	 */
+	public function testTheActingIdentityIsNeverWrittenToTheSession(): void {
+		$this->service->runAs($this->user('alice'), static fn (): bool => true);
+
+		try {
+			$this->service->runAs(
+				$this->user('alice'),
+				static function (): void {
+					throw new RuntimeException('boom');
+				}
+			);
+		} catch (RuntimeException) {
+			// The throwing path must not persist either.
+		}
+
+		$this->assertNull(
+			$this->current,
+			'no acting identity may survive the scopes that established it'
+		);
+	}//end testTheActingIdentityIsNeverWrittenToTheSession()
 }//end class
