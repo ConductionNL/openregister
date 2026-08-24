@@ -4,11 +4,31 @@ Implements ADR-099 (hydra `openspec/architecture/adr-099-acting-on-behalf-of-a-u
 
 ## 1. Measure before enforcing
 
-- [ ] 1.1 Count the live blast radius and record it in this file before task 5 lands: scheduled flows whose trigger node declares no identity, flow runs with a null `triggeredBy`, and schedule registrations whose flow owner no longer resolves to an enabled user. Query via `occ` against the dev instance and against a production dump if one is available.
+- [x] 1.1 Count the live blast radius and record it in this file before task 5 lands: scheduled flows whose trigger node declares no identity, flow runs with a null `triggeredBy`, and schedule registrations whose flow owner no longer resolves to an enabled user. Query via `occ` against the dev instance and against a production dump if one is available.
+
+  **Measured 2026-08-24** — source: `conduction-postgres` / `nextcloud` (the main dev instance, NC 34.0.0), read directly over `psql` because the app container was in maintenance awaiting a DB upgrade. Query: counts over `oc_openregister_flows` / `_flow_runs` / `_flow_triggers`.
+
+  | metric | count |
+  |---|---|
+  | flows | 92 (85 enabled) |
+  | flows with no owner | 0 |
+  | flow runs | 4045 |
+  | runs with null `triggeredBy` | 0 |
+  | flows with a schedule trigger node | 3 (2 enabled) |
+  | …of those, declaring a `runAs` | **0** |
+  | rows in the trigger index | **0** |
+
+  Three findings that change the plan:
+
+  - **The blast radius is 3 flows, all Hydra's own** (`Hydra lock reaper`, `Hydra dispatch`, `Hydra sequencer`), all owned by `admin`. Below the "handful" threshold, so 5.1 ships hard enforcement — no grace-period flag, no separate flip task.
+  - 🔴 **All three schedule trigger nodes carry `"config":[]`** — no `runAs` *and no `cron`*. `TriggerScheduleNode::validate()` already requires a cron expression, so these three would fail validation today if it ran on their save path. Their schedule lives in the legacy `cron` COLUMN instead. They are mid-cutover per `flow-engine`'s "The cutover from trigger COLUMNS to trigger NODES MUST be proven per flow". Task 4.1 must therefore not assume a populated node config, and 4.3 must define what happens to a flow whose schedule is still column-side. Added as 4.4.
+  - 🔴 **The trigger index is empty while 92 flows carry trigger nodes.** `BackfillFlowTriggerIndex` has not run here, so 4.2 cannot assume the index is populated and must be verified against a backfilled instance rather than this one.
+
+- [ ] 1.2 Re-run 1.1 against a production dump before merge, and update the table. The dev instance is Hydra's own workspace and is not representative of customer flow usage; a count of 3 here does not license hard enforcement everywhere.
 
   Acceptance criteria:
   - The counts are written into this task as a dated line, not reported only in a PR comment
-  - If scheduled flows without an identity exceed a handful, task 5.1 ships logging-only behind an app config flag and the flag flip is a separate task
+  - If scheduled flows without an identity exceed a handful on the production dump, task 5.1 ships logging-only behind an app config flag and the flag flip is a separate task
   - The measurement names its source (instance, date, query) so it can be re-run
 
 ## 2. The primitive
@@ -38,6 +58,7 @@ Implements ADR-099 (hydra `openspec/architecture/adr-099-acting-on-behalf-of-a-u
 - [ ] 4.1 `TriggerScheduleNode::validate()` requires a `runAs` that resolves to an existing user, alongside the cron-expression check it already performs. Refuse the save with a message naming the missing or unresolvable user; add the field to the node's declared form.
 - [ ] 4.2 `FlowTriggerIndex` carries the trigger's identity so the cron registration and the identity it fires under derive from the same node. Deregister and re-register correctly when a trigger node is edited, removed, or its flow deleted.
 - [ ] 4.3 `FlowScheduleService::fire()` takes the identity from the trigger node and drops the flow-owner fallback, superseding the or#2158 comment there.
+- [ ] 4.4 Define and implement the column-side case surfaced by 1.1: a flow whose schedule still lives in the legacy `cron` column with an empty trigger-node config. It must not silently keep firing ownerless. Either the cutover populates the node (preferred — it is the direction `flow-engine` already mandates) or the flow is disabled with its owner notified. Decide with the migration in 3.1 so both land together.
 
   Acceptance criteria:
   - A flow with both a manual and a schedule trigger runs as the clicking user when clicked, and as the declared user when fired
