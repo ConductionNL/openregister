@@ -1072,6 +1072,31 @@ class OrganisationMapper extends QBMapper {
 	}//end setActiveOrganisationForUser()
 
 	/**
+	 * Whether entity-level RBAC enforcement is switched on for this instance.
+	 *
+	 * Lives here rather than in MultiTenancyTrait because the trait must not
+	 * read `$this->appConfig`: it does not declare the property, and five of the
+	 * twelve classes using it (Agent, Application, Configuration, Endpoint and
+	 * Mapping mappers) do not declare it either. Reading it there is precisely
+	 * the defect this whole change exists to fix — a property nothing supplies —
+	 * and phpstan caught me doing it. OrganisationMapper already holds
+	 * `IAppConfig`, and every class using the trait already holds this mapper,
+	 * so the question gets one home instead of five new constructor arguments.
+	 *
+	 * Defaults to OFF, and only the exact string `enabled` turns it on: an unset
+	 * or malformed value must keep today's behaviour rather than enable, by
+	 * accident, a control that is known to break sharing until every
+	 * organisation's `authorization` has been audited. See openregister#2833.
+	 *
+	 * @return bool True when the check should be enforced.
+	 *
+	 * @spec openspec/specs/authorization-rbac/spec.md
+	 */
+	public function isEntityRbacEnforcementEnabled(): bool {
+		return $this->appConfig->getValueString('openregister', 'rbac_entity_enforcement', '') === 'enabled';
+	}//end isEntityRbacEnforcementEnabled()
+
+	/**
 	 * Get default organisation UUID from configuration
 	 *
 	 * @return string|null The default organisation UUID or null if not configured

@@ -853,11 +853,12 @@ trait MultiTenancyTrait {
 		// tests here prove the control works when enabled, so the remaining work
 		// is config, not code.
 		//
-		// Default false, and read as an explicit opt-in: an unset or malformed
-		// value keeps today's behaviour rather than silently enabling a control
-		// that is known to break sharing.
-		$enforcement = $this->appConfig->getValueString('openregister', 'rbac_entity_enforcement', '');
-		if ($enforcement !== 'enabled') {
+		// The flag is read through OrganisationMapper, NOT `$this->appConfig`.
+		// This trait does not declare `appConfig`, and five of the twelve classes
+		// using it do not declare it either — reading it here is the same
+		// undeclared-property defect this change exists to fix, and phpstan
+		// caught me writing it. See OrganisationMapper::isEntityRbacEnforcementEnabled().
+		if ($this->organisationMapper->isEntityRbacEnforcementEnabled() === false) {
 			return true;
 		}
 

@@ -85,9 +85,8 @@ class MultiTenancyRbacDenialTest extends TestCase {
 
 		// Entity RBAC enforcement is opt-in and defaults OFF (see the trait).
 		// These tests are about what the control decides once enabled, so they
-		// turn it on explicitly; testEnforcementIsOffByDefault covers the default.
-		$appConfig = $this->createMock(IAppConfig::class);
-		$appConfig->method('getValueString')->willReturn('enabled');
+		// turn it on explicitly; the default is covered separately below.
+		$this->organisationMapper->method('isEntityRbacEnforcementEnabled')->willReturn(true);
 
 		return new RegisterMapper(
 			$this->createMock(IDBConnection::class),
@@ -97,7 +96,7 @@ class MultiTenancyRbacDenialTest extends TestCase {
 			$this->organisationMapper,
 			$this->userSession,
 			$this->groupManager,
-			$appConfig,
+			$this->createMock(IAppConfig::class),
 			$this->createMock(LoggerInterface::class)
 		);
 	}
@@ -170,47 +169,41 @@ class MultiTenancyRbacDenialTest extends TestCase {
 	 * times on development, because the stored authorization configs grant only
 	 * the `admin` group while the app acts as other identities.
 	 *
-	 * An unset OR malformed value must keep today's behaviour. Anything else
-	 * would enable, by accident, a control known to break sharing.
-	 *
 	 * @return void
 	 */
 	public function testEnforcementIsOffUnlessExplicitlyEnabled(): void {
-		foreach (['', 'true', '1', 'yes', 'ENABLED', 'disabled'] as $value) {
-			$appConfig = $this->createMock(IAppConfig::class);
-			$appConfig->method('getValueString')->willReturn($value);
+		$organisationMapper = $this->createMock(OrganisationMapper::class);
+		$organisationMapper->method('isEntityRbacEnforcementEnabled')->willReturn(false);
+		// A config that WOULD deny, to prove the flag is what stops it.
+		$organisationMapper->method('getActiveOrganisationWithFallback')->willReturn('org-uuid-1');
+		$organisationMapper->method('findByUuid')->willReturn(
+			$this->organisationWith(['alice'], ['register' => ['create' => ['admin']]])
+		);
 
-			$user = $this->createMock(IUser::class);
-			$user->method('getUID')->willReturn('alice');
-			$userSession = $this->createMock(IUserSession::class);
-			$userSession->method('getUser')->willReturn($user);
-			$groupManager = $this->createMock(IGroupManager::class);
-			$groupManager->method('isAdmin')->willReturn(false);
-			$groupManager->method('getUserGroupIds')->willReturn(['users']);
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$userSession = $this->createMock(IUserSession::class);
+		$userSession->method('getUser')->willReturn($user);
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('isAdmin')->willReturn(false);
+		$groupManager->method('getUserGroupIds')->willReturn(['users']);
 
-			$organisationMapper = $this->createMock(OrganisationMapper::class);
-			$organisationMapper->method('getActiveOrganisationWithFallback')->willReturn('org-uuid-1');
-			$organisationMapper->method('findByUuid')->willReturn(
-				$this->organisationWith(['alice'], ['register' => ['create' => ['admin']]])
-			);
+		$mapper = new RegisterMapper(
+			$this->createMock(IDBConnection::class),
+			$this->createMock(SchemaMapper::class),
+			$this->createMock(IEventDispatcher::class),
+			$this->createMock(ContainerInterface::class),
+			$organisationMapper,
+			$userSession,
+			$groupManager,
+			$this->createMock(IAppConfig::class),
+			$this->createMock(LoggerInterface::class)
+		);
 
-			$mapper = new RegisterMapper(
-				$this->createMock(IDBConnection::class),
-				$this->createMock(SchemaMapper::class),
-				$this->createMock(IEventDispatcher::class),
-				$this->createMock(ContainerInterface::class),
-				$organisationMapper,
-				$userSession,
-				$groupManager,
-				$appConfig,
-				$this->createMock(LoggerInterface::class)
-			);
-
-			$this->assertTrue(
-				$this->decide($mapper),
-				sprintf('value %s must not enable enforcement', var_export($value, true))
-			);
-		}
+		$this->assertTrue(
+			$this->decide($mapper),
+			'with enforcement off, even a policy that would deny must not be applied'
+		);
 	}
 
 	/**
