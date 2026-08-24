@@ -80,6 +80,16 @@ class MappingMapper extends QBMapper {
 	private readonly IUserSession $userSession;
 
 	/**
+	 * Organisation mapper for multi-tenancy and the entity RBAC check.
+	 *
+	 * Not `readonly`/`private`: MultiTenancyTrait reads it, and the trait's
+	 * contract says the using class must supply it.
+	 *
+	 * @var OrganisationMapper Organisation mapper instance
+	 */
+	protected OrganisationMapper $organisationMapper;
+
+	/**
 	 * Group manager for RBAC
 	 *
 	 * Used to check user group memberships for access control.
@@ -109,6 +119,7 @@ class MappingMapper extends QBMapper {
 	 * Calls parent constructor to set up base mapper functionality.
 	 *
 	 * @param IDBConnection $db Database connection
+	 * @param OrganisationMapper $organisationMapper Organisation mapper for multi-tenancy and RBAC
 	 * @param IUserSession $userSession User session
 	 * @param IGroupManager $groupManager Group manager
 	 * @param ICacheFactory $cacheFactory Cache factory for distributed caching
@@ -118,6 +129,11 @@ class MappingMapper extends QBMapper {
 	 */
 	public function __construct(
 		IDBConnection $db,
+		// A MAPPER, not a service. MultiTenancyTrait's RBAC check resolves the
+		// active organisation's membership through this; without it the check can
+		// only fail closed and would deny every non-admin write to mappings.
+		// openregister#2833.
+		OrganisationMapper $organisationMapper,
 		IUserSession $userSession,
 		IGroupManager $groupManager,
 		ICacheFactory $cacheFactory,
@@ -127,6 +143,7 @@ class MappingMapper extends QBMapper {
 		parent::__construct(db: $db, tableName: 'openregister_mappings', entityClass: Mapping::class);
 
 		// Store dependencies for use in mapper methods.
+		$this->organisationMapper = $organisationMapper;
 		$this->userSession = $userSession;
 		$this->groupManager = $groupManager;
 

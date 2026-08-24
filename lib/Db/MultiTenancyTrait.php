@@ -832,14 +832,33 @@ trait MultiTenancyTrait {
 			return false;
 		}
 
-		// Get active organisation.
-		if (isset($this->organisationService) === false) {
-			// No organisation service, allow access (backward compatibility).
-			return true;
+		// Membership in the active organisation, resolved through the
+		// OrganisationMapper every using class already injects.
+		//
+		// This block used to read `isset($this->organisationService)` and return
+		// TRUE when absent, "for backward compatibility". No class using this
+		// trait ever declared or injected that property — the only two mentions
+		// in the codebase were commented-out lines in EndpointMapper and
+		// SourceMapper, next to `// REMOVED: Services should not be in mappers.`
+		// — and `isset()` on an undeclared property is always false. So the
+		// allow branch was the ONLY branch that ever ran: every authenticated
+		// non-admin was granted every entity permission, and everything below
+		// was unreachable. openregister#2833.
+		//
+		// The fix deliberately does NOT reintroduce the service. Mappers are not
+		// supposed to hold services here, and that convention is why the
+		// dependency went away in the first place; putting it back would trade
+		// one architectural problem for another. OrganisationMapper is a mapper,
+		// is already present, and answers the only question this check asks.
+		//
+		// It fails CLOSED. A wiring mistake now costs access instead of granting
+		// it, which is the direction an authorization default has to fail in.
+		if (isset($this->organisationMapper) === false) {
+			return false;
 		}
 
-		$activeOrg = $this->organisationService->getActiveOrganisation();
-		if ($activeOrg === null) {
+		$activeOrgUuid = $this->getActiveOrganisationUuid();
+		if ($activeOrgUuid === null) {
 			// CLI context — no active organisation is expected. Allow access.
 			if (PHP_SAPI === 'cli') {
 				return true;
@@ -849,18 +868,19 @@ trait MultiTenancyTrait {
 			return false;
 		}
 
-		// Check if user is in the organisation's users list.
-		$orgUsers = $activeOrg->getUserIds();
-		if (in_array($userId, $orgUsers) === true) {
-			// User is explicitly listed in the organisation - check authorization.
+		try {
+			$activeOrg = $this->organisationMapper->findByUuid($activeOrgUuid);
+		} catch (\Throwable $e) {
+			// An unresolvable organisation is not a permission to proceed.
+			return false;
 		}
 
-		// Check if user has access via organisation membership.
-		// Note: $organisationUsers was intended for group-based access but is currently unused.
-		// Access is determined by $orgUsers check above.
-		// If (in_array($userId, $organisationUsers, true) === false) {
-		// Return false;
-		// }
+		// The user must belong to the active organisation.
+		$orgUsers = $activeOrg->getUserIds();
+		if (in_array($userId, $orgUsers, true) === false) {
+			return false;
+		}
+
 		// Get user's groups.
 		if (isset($this->groupManager) === false) {
 			// No group manager, allow access (backward compatibility).
