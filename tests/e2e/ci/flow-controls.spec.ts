@@ -398,8 +398,21 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// on screen and plainly drawn (the failure screenshot shows the arrow).
 		// Presence is the honest assertion here, and it is the one that fails
 		// if the connection genuinely never happened.
+		//
+		// THE EDGE STOPPED BEING OURS IN 2.15.0, the version this PR bumps to.
+		//
+		// CnFlowDetail used to hand-draw edges into a `#edge` slot with its own
+		// `edgePath()`, classed `.cn-flow-detail__edge`. 2.15.0 hands routing to
+		// Vue Flow — its own comment reads "Edges are Vue Flow's now. The
+		// hand-drawn `#edge` slot and its orthogonal `edgePath()` are gone."
+		// Nothing renders the old class, so this counted zero while the edge was
+		// drawn correctly.
+		//
+		// Same trap as the node wrapper above: `.cn-flow-detail__edge` still has
+		// a live style rule in CnFlowDetail, so grepping the library for it
+		// finds it and the contract looks intact. See nextcloud-vue#749.
 		await expect(
-			page.locator('.cn-flow-detail__edge'),
+			page.locator('.vue-flow__edge'),
 			'the connection did not reach the canvas',
 		).toHaveCount(1)
 
