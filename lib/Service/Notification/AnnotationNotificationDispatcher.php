@@ -1504,8 +1504,12 @@ class AnnotationNotificationDispatcher {
 	 * `previously` (old value) must be satisfied for the rule to fire —
 	 * this is the boundary-crossing / debounce check.
 	 *
-	 * @param array<string, mixed> $triggerSpec The declared `trigger` sub-document.
-	 * @param string $trigger The active event type.
+	 * @param mixed $triggerSpec The declared `trigger` sub-document, or a bare string
+	 *        naming an app-defined event (`"booking.confirmed"`). Deliberately `mixed`:
+	 *        this is untrusted annotation data straight off a schema, so the shape is
+	 *        checked here rather than assumed — a malformed `trigger` must fail closed,
+	 *        not fatal.
+	 * @param string $trigger The active event type, or the app event being raised.
 	 * @param array<string, mixed> $context Per-event context (e.g. `action`).
 	 *
 	 * @return bool True when the rule should fire for this event.
@@ -1518,7 +1522,28 @@ class AnnotationNotificationDispatcher {
 	 * can independently pass or fail; the NPath count reflects spec-mandated combinations,
 	 * not accidental branching.
 	 */
-	private function matches(array $triggerSpec, string $trigger, array $context): bool {
+	private function matches($triggerSpec, string $trigger, array $context): bool {
+		// App-defined event: `"trigger": "booking.confirmed"`. The name is the
+		// whole contract — there are no sub-conditions to evaluate, because the
+		// app decided the event was worth raising before it called dispatch().
+		//
+		// This arm also stops a string trigger from reaching the array-typed
+		// parameter this method used to declare, which under strict_types threw
+		// a TypeError mid-dispatch rather than simply not matching.
+		if (is_string($triggerSpec) === true) {
+			return $triggerSpec === $trigger;
+		}
+
+		if (is_array($triggerSpec) === false) {
+			return false;
+		}
+
+		// Object form may also name an app event explicitly.
+		$declaredEvent = ($triggerSpec['event'] ?? null);
+		if (is_string($declaredEvent) === true && $declaredEvent !== '') {
+			return $declaredEvent === $trigger;
+		}
+
 		if ((string)($triggerSpec['type'] ?? '') !== $trigger) {
 			return false;
 		}

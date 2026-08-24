@@ -65,6 +65,16 @@ final class ScheduledNotificationJob extends TimedJob {
 	 * _filter+_limit in lib/Db/MagicMapper) and add a per-schema watermark for
 	 * delta scans, so we no longer load the whole table into PHP and filter
 	 * in-memory. Until then this cap bounds the blast radius.
+	 *
+	 * The pushdown input is the AST from `ScheduledFilterParser`, not the raw
+	 * annotation: every operator is a single-column predicate and `all` / `any`
+	 * are `AND` / `OR`, so the grammar translates to SQL directly. Two
+	 * constraints hold whatever a compiler does with it — reference instants
+	 * (`now`, signed durations) must be resolved against the scan's single
+	 * `$now` BEFORE compilation, or two rows in one pass can be judged against
+	 * different clocks; and a partial pushdown must select a superset that the
+	 * in-memory walk then narrows, so that pushing down more never changes which
+	 * objects a rule selects.
 	 */
 	private const MAX_OBJECTS_PER_FIRE = 5000;
 

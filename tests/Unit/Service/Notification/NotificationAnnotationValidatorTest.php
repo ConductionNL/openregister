@@ -884,4 +884,116 @@ class NotificationAnnotationValidatorTest extends TestCase {
 		$this->assertContains('notification-scheduled-bad-dedupe-fields', $codes);
 	}
 
+	// ---- notification-scheduled-filter-grammar ----
+
+	public function testMapWithoutOperatorIsNowAnErrorRatherThanASilentAccept(): void {
+		// This is the exact hole the change closes. Before, any array lacking an
+		// `operator` key was accepted as a "scalar shortcut" and then compared
+		// by identity against a scalar field, so it matched nothing — forever,
+		// quietly. 24 filter entries across three apps shipped this way.
+		$errors = $this->v->validate(
+			$this->scheduledSchemaWith(['filter' => ['status' => ['unexpected' => 'shape']]])
+		);
+
+		$this->assertContains('notification-scheduled-bad-filter-shape', array_column($errors, 'code'));
+	}
+
+	public function testOpKeyIsRejectedWithAMessageNamingOperator(): void {
+		// openconnector job.job-overdue.
+		$errors = $this->v->validate(
+			$this->scheduledSchemaWith(['filter' => ['isEnabled' => ['op' => 'equals', 'value' => true]]])
+		);
+
+		$codes = array_column($errors, 'code');
+		$this->assertContains('notification-scheduled-bad-filter-operator-key', $codes);
+
+		$messages = implode(' ', array_column($errors, 'message'));
+		$this->assertStringContainsString('"operator"', $messages);
+	}
+
+	public function testBareListAndCombinatorFiltersValidate(): void {
+		// decidesk's 18 rules and shillinq's 4, which the grammar now admits.
+		$this->assertSame(
+			[],
+            $this->v->validate($this->scheduledSchemaWith(['filter' => ['lifecycle' => ['open', 'in-uitvoering']]]))
+		);
+
+		$this->assertSame(
+			[],
+			$this->v->validate(
+				$this->scheduledSchemaWith(
+					[
+						'filter' => [
+							'all' => [
+								['field' => 'state', 'operator' => 'notIn', 'values' => ['paid']],
+								['field' => 'dueDate', 'operator' => 'before', 'value' => 'now'],
+							],
+						],
+					]
+				)
+			)
+		);
+	}
+
+	// ---- app-defined trigger events (issue shillinq#1193) ----
+
+	private function appEventSchema($trigger): array {
+		return [
+			'x-openregister-notifications' => [
+				'someRule' => [
+					'trigger' => $trigger,
+					'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+					'channels' => ['nc-notification'],
+					'subject' => 'something happened',
+				],
+			],
+			'properties' => [],
+		];
+	}
+
+	public function testNamespacedStringTriggerIsAcceptedAsAnAppEvent(): void {
+		foreach (['booking.confirmed', 'generation.draft', 'booking.reminder-due'] as $event) {
+			$this->assertSame([], $this->v->validate($this->appEventSchema($event)), $event . ' should validate');
+		}
+	}
+
+	public function testObjectFormMayAlsoNameAnAppEvent(): void {
+		$this->assertSame([], $this->v->validate($this->appEventSchema(['event' => 'booking.cancelled'])));
+	}
+
+	public function testAppEventMustBeNamespaced(): void {
+		// Without the dot, an app event could collide with a trigger type added
+		// later — "onCreate" is exactly the near-miss that motivated the rule.
+		$codes = array_column($this->v->validate($this->appEventSchema('onCreate')), 'code');
+		$this->assertContains('notification-bad-app-event', $codes);
+	}
+
+	public function testAppEventMayNotBeAReservedTriggerType(): void {
+		$errors = $this->v->validate($this->appEventSchema('scheduled'));
+		$this->assertContains('notification-app-event-reserved', array_column($errors, 'code'));
+		$this->assertStringContainsString('{"type": "scheduled"}', implode(' ', array_column($errors, 'message')));
+	}
+
+	public function testAppEventMayUseCamelCaseSegments(): void {
+		// The dot is the safety property, not the casing. `lifecycle.optIn` is
+		// as collision-proof as `lifecycle.opt-in`, and rejecting it would be
+		// style-policing dressed up as a rule.
+		$this->assertSame([], $this->v->validate($this->appEventSchema('lifecycle.optIn')));
+		$this->assertSame([], $this->v->validate($this->appEventSchema('lifecycle.warnThreshold')));
+	}
+
+	public function testAppEventMustStartLowercase(): void {
+		$codes = array_column($this->v->validate($this->appEventSchema('Booking.Confirmed')), 'code');
+		$this->assertContains('notification-bad-app-event', $codes);
+	}
+
+	public function testEmptyAppEventIsRejected(): void {
+		$codes = array_column($this->v->validate($this->appEventSchema('')), 'code');
+		$this->assertContains('notification-bad-app-event', $codes);
+	}
+
+	public function testReservedTriggerTypesStillValidateInObjectForm(): void {
+		$this->assertSame([], $this->v->validate($this->appEventSchema(['type' => 'created'])));
+	}
+
 }

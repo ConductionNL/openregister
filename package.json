@@ -45,6 +45,7 @@
     "l10n:casing": "node scripts/l10n/casing.js",
     "l10n:spell": "node scripts/l10n/spell.js",
     "l10n:fetchdicts": "node scripts/l10n/fetch-dicts.js",
+    "check:schema-l10n": "node scripts/check-schema-l10n.js",
     "check:json-strict": "node tests/validate-json-strict.js",
     "check:manifest": "node tests/validate-manifest.js",
     "check:register": "node tests/validate-register.js",

@@ -451,6 +451,7 @@ class FilesControllerRefactoredMethodsTest extends TestCase {
 		);
 
 		$this->assertIsArray($result, 'Result should be an array.');
-		$this->assertEmpty($result, 'Result should be empty when no files.');
+		$this->assertEmpty($result['stored'], 'Nothing should be stored when no files.');
+		$this->assertEmpty($result['rejected'], 'Nothing should be rejected when no files.');
 	}
 }
