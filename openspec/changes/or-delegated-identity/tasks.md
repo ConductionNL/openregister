@@ -1,19 +1,34 @@
 # Tasks — or-delegated-identity
 
-> 🔴 **Known limitation, found 2026-08-24 via openregister#2833 (fix in #2834).**
-> `specs/delegated-identity` requires that an acting identity NARROWS — "a row the
-> named user cannot read MUST remain unreadable". That guarantee is currently NOT
-> enforced at the entity-permission layer: `MultiTenancyTrait::hasRbacPermission()`
-> gates its whole organisation check behind `isset($this->organisationService)`,
-> and that property is never declared or assigned anywhere in `lib/Db/` — so the
-> guard is permanently false and the method returns `true` for every authenticated
-> non-admin.
+> 🔴 **Known limitation — narrowing is not enforced unconditionally.**
 >
-> Nothing in this change causes that, and nothing in this change's tests asserts
-> narrowing (they cover identity recording, refusal and the context-override rule),
-> so no result here is vacuous. But the spec states a guarantee the codebase does
-> not yet keep, and #2834 landing is what closes it. Do not read this change as
-> having proven narrowing end-to-end.
+> `specs/delegated-identity` requires that an acting identity NARROWS: "a row the
+> named user cannot read MUST remain unreadable". The codebase does not keep that
+> guarantee unconditionally, and the reason is subtler than it first looked.
+>
+> `MultiTenancyTrait::hasRbacPermission()` gates its organisation check behind
+> `isset($this->organisationService)`, and that property is never declared or
+> assigned anywhere in `lib/Db/` — so the guard is permanently false and the
+> method returns `true` for every authenticated non-admin (openregister#2833).
+> Same defect class as the never-injected logger in #2822.
+>
+> **#2834 makes that check REACHABLE. It does not make narrowing unconditional.**
+> The real authorization is the organisation's `authorization` config —
+> entityType → action → allowed groups — and an EMPTY config means allow. So after
+> #2834 an acting identity is narrowed only where that organisation has a config
+> for the entityType and action in question.
+>
+> Measured on the dev instance 2026-08-24: most organisations carry a config (all
+> restricting to `admin`), but `E2E Org` has none. A narrowing assertion written
+> against that organisation would therefore pass for the wrong reason — which is
+> exactly the vacuous green this change's other tests are built to avoid.
+>
+> Nothing in this change causes any of it, and none of this change's tests assert
+> narrowing (they cover identity recording, refusal, and the context-override
+> rule), so no result here is vacuous. But the spec states a guarantee the
+> codebase keeps only conditionally, and saying so is the difference between a
+> caveat and a false claim. Making it unconditional is larger than #2833: it needs
+> organisation provisioning and a policy decision about what an empty config means.
 
 Implements ADR-099 (hydra `openspec/architecture/adr-099-acting-on-behalf-of-a-user.md`).
 
@@ -39,7 +54,7 @@ Implements ADR-099 (hydra `openspec/architecture/adr-099-acting-on-behalf-of-a-u
   - 🔴 **All three schedule trigger nodes carry `"config":[]`** — no `runAs` *and no `cron`*. `TriggerScheduleNode::validate()` already requires a cron expression, so these three would fail validation today if it ran on their save path. Their schedule lives in the legacy `cron` COLUMN instead. They are mid-cutover per `flow-engine`'s "The cutover from trigger COLUMNS to trigger NODES MUST be proven per flow". Task 4.1 must therefore not assume a populated node config, and 4.3 must define what happens to a flow whose schedule is still column-side. Added as 4.4.
   - 🔴 **The trigger index is empty while 92 flows carry trigger nodes.** `BackfillFlowTriggerIndex` has not run here, so 4.2 cannot assume the index is populated and must be verified against a backfilled instance rather than this one.
 
-- [~] 1.2 Re-run 1.1 against a production dump before merge, and update the table. **BLOCKED — no production dump is available in this environment.** The dev-instance measurement (task 1.1) is what the enforcement decision rests on, and it is Hydra's own workspace: 3 schedule flows, all `admin`-owned. Re-run before this reaches a customer instance. Re-run 1.1 against a production dump before merge, and update the table. The dev instance is Hydra's own workspace and is not representative of customer flow usage; a count of 3 here does not license hard enforcement everywhere.
+- [~] 1.2 Re-run 1.1 against a production dump before merge, and update the table. **BLOCKED — no production dump is available in this environment.** The dev-instance measurement (task 1.1) is what the enforcement decision rests on, and it is Hydra's own workspace: 3 schedule flows, all `admin`-owned. Re-run before this reaches a customer instance. The dev instance is Hydra's own workspace and is not representative of customer flow usage; a count of 3 here does not license hard enforcement everywhere.
 
   Acceptance criteria:
   - The counts are written into this task as a dated line, not reported only in a PR comment
