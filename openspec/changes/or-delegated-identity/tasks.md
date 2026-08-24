@@ -1,5 +1,20 @@
 # Tasks — or-delegated-identity
 
+> 🔴 **Known limitation, found 2026-08-24 via openregister#2833 (fix in #2834).**
+> `specs/delegated-identity` requires that an acting identity NARROWS — "a row the
+> named user cannot read MUST remain unreadable". That guarantee is currently NOT
+> enforced at the entity-permission layer: `MultiTenancyTrait::hasRbacPermission()`
+> gates its whole organisation check behind `isset($this->organisationService)`,
+> and that property is never declared or assigned anywhere in `lib/Db/` — so the
+> guard is permanently false and the method returns `true` for every authenticated
+> non-admin.
+>
+> Nothing in this change causes that, and nothing in this change's tests asserts
+> narrowing (they cover identity recording, refusal and the context-override rule),
+> so no result here is vacuous. But the spec states a guarantee the codebase does
+> not yet keep, and #2834 landing is what closes it. Do not read this change as
+> having proven narrowing end-to-end.
+
 Implements ADR-099 (hydra `openspec/architecture/adr-099-acting-on-behalf-of-a-user.md`).
 
 ## 1. Measure before enforcing
