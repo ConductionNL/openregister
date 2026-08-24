@@ -2737,10 +2737,8 @@ class SaveObjects {
 			// handed over as-is: extractBusinessData() decides what counts as a
 			// usable schema, so a cache miss or an unexpected value is judged in
 			// ONE place instead of at every call site (openregister#2781).
-			$businessData = $this->extractBusinessData(
-				object: $object,
-				schema: ($schemaCache[$selfData['schema']] ?? null)
-			);
+			$objectSchema = ($schemaCache[$selfData['schema']] ?? null);
+			$businessData = $this->extractBusinessData(object: $object, schema: $objectSchema);
 
 			// RELATIONS EXTRACTION: Scan the business data for relations (UUIDs and URLs).
 			// ONLY scan if relations weren't already set during preparation phase.
