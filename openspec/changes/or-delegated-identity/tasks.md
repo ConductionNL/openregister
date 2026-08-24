@@ -33,9 +33,11 @@ Implements ADR-099 (hydra `openspec/architecture/adr-099-acting-on-behalf-of-a-u
 
 ## 2. The primitive
 
-- [ ] 2.1 `ObjectService::runAs()` switches from `IUserSession::setUser()` to `setVolatileActiveUser()`; keep restore-previous-in-`finally` and the return-value passthrough. Update the docblock: it currently explains the workaround but names the wrong method.
-- [ ] 2.2 Give `runAsSystem()` a stated reachability boundary — it MUST NOT be reachable from a flow node, an agent tool, or request handling. Enforce structurally where possible (do not inject the service into those classes) rather than by comment alone.
-- [ ] 2.3 Extend `ObjectServiceRunAsTest` for the session-persistence guarantee: assert the session's own recorded user is unchanged during and after a scope, and that a nested scope restores to its immediate caller rather than to null.
+- [x] 2.1 `ObjectService::runAs()` switches from `IUserSession::setUser()` to `setVolatileActiveUser()`; keep restore-previous-in-`finally` and the return-value passthrough. Update the docblock: it currently explains the workaround but names the wrong method.
+- [x] 2.2 Give `runAsSystem()` a stated reachability boundary — it MUST NOT be reachable from a flow node, an agent tool, or request handling. Enforce structurally where possible (do not inject the service into those classes) rather than by comment alone.
+
+  **Measured 2026-08-24**: OpenRegister already conforms. The four real call sites are `ObjectService` (the definition), `ConfigurationService::importFromApp()` (the app's own shipped config at boot/webcron), `Configuration/ImportHandler` (shipped seed data) and `Repair/SeedVocabularyRegister` (a repair step) — all genuinely userless. `ObjectWriteNode`, `MagicMapper`, `MultiTenancyTrait` and `PermissionHandler` only *mention* it in prose, and `ObjectWriteNode`'s mention is a documented refusal to use it. So the boundary needed stating and pinning, not repairing; `SystemOperationContextBoundaryTest` now pins the call-site set and hard-fails any call from `lib/Service/Flow/Nodes/`, `lib/Controller/` or `lib/Service/Mcp/`.
+- [x] 2.3 Extend `ObjectServiceRunAsTest` for the session-persistence guarantee: assert the session's own recorded user is unchanged during and after a scope, and that a nested scope restores to its immediate caller rather than to null.
 
   Acceptance criteria:
   - A scope established during a request with a session leaves `ISession`'s `user_id` untouched
