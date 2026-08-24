@@ -568,7 +568,13 @@ class UserService {
 				->andWhere($query->expr()->eq('m.mount_point', $query->createNamedParameter('/' . $userId . '/')))
 				->setMaxResults(1);
 
-			$result = $query->execute();
+			// `execute()` was removed from QueryBuilder in Nextcloud 34. It was
+			// the read/write-agnostic entry point; a SELECT now goes through
+			// executeQuery(). Calling the old name threw "Call to undefined
+			// method", which the catch below swallowed into a warning and a 0 —
+			// so used space silently read as empty for every user instead of
+			// failing loudly.
+			$result = $query->executeQuery();
 			$row = $result->fetch();
 			$result->closeCursor();
 
