@@ -340,4 +340,67 @@ class ObjectServiceStaleSchemaRefTest extends TestCase {
 		);
 
 	}//end testAPendingSchemaRefDoesNotLeakIntoAWriteThatNamesBoth()
+
+
+	/**
+	 * setSchema() BEFORE setRegister() still resolves inside that register.
+	 *
+	 * openregister#2786. Roughly 30 call sites across 26 controllers set the
+	 * schema first and the register second — the copy-pasted `validateObject()`
+	 * helper in the link controllers, plus ObjectsController and TagsController.
+	 * With no register in context yet, `setSchema()` on a slug can only match
+	 * globally, and the observed cost was concrete: `task` resolved to
+	 * openbuild's schema on a planix request and returned 500.
+	 *
+	 * The fix belonged in ObjectService, not in 30 hand-corrected call sites:
+	 * `setRegister()` re-resolves the pending ref, so the boundary holds
+	 * whichever way round the two setters are called. This test asserts that
+	 * property directly rather than trusting the comment that describes it —
+	 * a global find() is wired to return the WRONG app's schema, so an
+	 * implementation that skipped the re-resolution would keep it and fail here.
+	 *
+	 * @return void
+	 */
+	public function testSchemaSetBeforeRegisterStillResolvesInsideThatRegister(): void {
+		// What a GLOBAL slug match returns: another app's `task`.
+		$foreignTask = new Schema();
+		$foreignTask->setId(74);
+		$foreignTask->setSlug('task');
+
+		// What this register actually carries under the same slug.
+		$ownTask = new Schema();
+		$ownTask->setId(9477);
+		$ownTask->setSlug('task');
+
+		$register = new Register();
+		$register->setId(19);
+		$register->setSlug('planix');
+		$register->setSchemas([9477]);
+
+		$this->schemaMapper->method('find')->willReturn($foreignTask);
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->schemaMapper->method('findBySlugInIds')->willReturnCallback(
+			static function (string $slug, array $ids) use ($ownTask) {
+				return ($slug === 'task' && in_array(9477, $ids, true)) ? $ownTask : null;
+			}
+		);
+		$this->schemaMapper->method('findInIds')->willReturnCallback(
+			static function ($ref, array $ids) use ($ownTask) {
+				return ($ref === 'task' || $ref === 9477) ? $ownTask : null;
+			}
+		);
+
+		// The controller ordering, verbatim.
+		$this->service->setSchema('task');
+		$this->service->setRegister('planix');
+
+		$schema = new \ReflectionProperty(ObjectService::class, 'currentSchema');
+		$schema->setAccessible(true);
+
+		$this->assertSame(
+			9477,
+			$schema->getValue($this->service)?->getId(),
+			'schema-before-register must resolve within the register, not globally'
+		);
+	}//end testSchemaSetBeforeRegisterStillResolvesInsideThatRegister()
 }//end class
