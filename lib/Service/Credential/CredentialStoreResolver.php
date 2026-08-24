@@ -57,23 +57,45 @@ class CredentialStoreResolver {
 	public const DORIATH_APP_ID = 'doriath';
 
 	/**
-	 * Doriath service classes the leaf calls — ALL must exist for eligibility.
+	 * Credential-app namespaces to probe, NEWEST FIRST.
+	 *
+	 * The credential app renamed from OCA\Doriath to OCA\Keepiq with no
+	 * compatibility alias, and this resolver named only the old one — so every
+	 * probe missed and the credential store silently read as unavailable.
+	 * Nothing reported it, because "all four classes absent" is exactly what an
+	 * uninstalled optional app looks like, which is the case these probes exist
+	 * for. Measured on a running instance: every OCA\Keepiq\Service\* class
+	 * EXISTS while every OCA\Doriath\Service\* class is MISSING.
+	 *
+	 * A NAMESPACE rather than a flat class list, because eligibility requires
+	 * ALL FOUR services — a half-resolved set spanning both spellings would be
+	 * a store that exists on paper and fails on the first call.
 	 *
 	 * @var array<int, string>
 	 */
-	private const DORIATH_SERVICE_CLASSES = [
-		'OCA\\Doriath\\Service\\ApplicationService',
-		'OCA\\Doriath\\Service\\SecretService',
-		'OCA\\Doriath\\Service\\EncryptService',
-		'OCA\\Doriath\\Service\\DecryptService',
+	private const CREDENTIAL_APP_NAMESPACES = [
+		'OCA\\Keepiq\\Service\\',
+		'OCA\\Doriath\\Service\\',
 	];
 
 	/**
-	 * The Doriath service class carrying the application-scoped seam methods.
+	 * Service class names the leaf calls — ALL must exist for eligibility.
+	 *
+	 * @var array<int, string>
+	 */
+	private const SERVICE_NAMES = [
+		'ApplicationService',
+		'SecretService',
+		'EncryptService',
+		'DecryptService',
+	];
+
+	/**
+	 * The service carrying the application-scoped seam methods.
 	 *
 	 * @var string
 	 */
-	private const SECRET_SERVICE_CLASS = 'OCA\\Doriath\\Service\\SecretService';
+	private const SECRET_SERVICE_NAME = 'SecretService';
 
 	/**
 	 * Application-scoped seam methods that must exist on the secret service.
@@ -192,8 +214,51 @@ class CredentialStoreResolver {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	protected function doriathServiceClasses(): array {
-		return self::DORIATH_SERVICE_CLASSES;
+		return $this->classesForNamespace(namespace: $this->resolveNamespace());
 	}//end doriathServiceClasses()
+
+	/**
+	 * The credential-app namespace whose FULL service set is installed.
+	 *
+	 * Falls back to the FIRST candidate when none resolves, so the caller still
+	 * gets a coherent set of names to report as missing rather than an empty
+	 * list that would read as "nothing required".
+	 *
+	 * @return string The namespace prefix.
+	 */
+	private function resolveNamespace(): string {
+		foreach (self::CREDENTIAL_APP_NAMESPACES as $namespace) {
+			$complete = true;
+			foreach (self::SERVICE_NAMES as $name) {
+				if (class_exists($namespace . $name) === false) {
+					$complete = false;
+					break;
+				}
+			}
+
+			if ($complete === true) {
+				return $namespace;
+			}
+		}
+
+		return self::CREDENTIAL_APP_NAMESPACES[0];
+	}//end resolveNamespace()
+
+	/**
+	 * The four service FQCNs under one namespace.
+	 *
+	 * @param string $namespace The namespace prefix.
+	 *
+	 * @return array<int, string> The FQCNs.
+	 */
+	private function classesForNamespace(string $namespace): array {
+		$classes = [];
+		foreach (self::SERVICE_NAMES as $name) {
+			$classes[] = $namespace . $name;
+		}
+
+		return $classes;
+	}//end classesForNamespace()
 
 	/**
 	 * The secret-service class probed for the application-scoped seam methods.
@@ -205,6 +270,6 @@ class CredentialStoreResolver {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	protected function secretServiceClass(): string {
-		return self::SECRET_SERVICE_CLASS;
+		return $this->resolveNamespace() . self::SECRET_SERVICE_NAME;
 	}//end secretServiceClass()
 }//end class
