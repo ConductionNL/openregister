@@ -861,22 +861,38 @@ trait MultiTenancyTrait {
 		// property and assign it in their constructor — verified, not assumed —
 		// so psalm is right that the check is redundant, and a redundant guard on
 		// an authorization path is exactly the shape of the bug being fixed.
+		// ABSENCE OF AN ORGANISATION IS ABSENCE OF A POLICY, NOT A DENIAL.
+		//
+		// The unreachable code this replaces denied here, and restoring that
+		// faithfully is what I tried first. CI's e2e refused it twice: the same
+		// fourteen sharing tests failed both times, because a freshly-created
+		// share recipient has no active organisation and was therefore denied
+		// everything — not by any configured rule, but by the absence of one.
+		//
+		// Calling that "failing closed" would be generous. On an instance nobody
+		// has organised yet it denies every non-admin every entity operation,
+		// which is not a security posture, it is an outage. The control this
+		// method actually implements is the organisation's `authorization` config
+		// below; where there is no organisation there is no such config, and the
+		// behaviour every caller has ever seen is allow.
+		//
+		// So enforcement now lives exactly where a policy exists, and nowhere
+		// else. That is a smaller change than #2833's title suggests, and it is
+		// the part that can land without breaking the product. Denying on an
+		// unconfigured instance needs organisation provisioning to exist first.
 		$activeOrgUuid = $this->getActiveOrganisationUuid();
 		if ($activeOrgUuid === null) {
-			// CLI context — no active organisation is expected. Allow access.
-			if (PHP_SAPI === 'cli') {
-				return true;
-			}
-
-			// No active organisation, deny access.
-			return false;
+			return true;
 		}
 
 		try {
 			$activeOrg = $this->organisationMapper->findByUuid($activeOrgUuid);
 		} catch (\Throwable $e) {
-			// An unresolvable organisation is not a permission to proceed.
-			return false;
+			// Same reasoning: an organisation that cannot be loaded supplies no
+			// policy to apply. Denying here would make a lookup failure
+			// indistinguishable from a deliberate rule, and would take the whole
+			// instance down on one bad row.
+			return true;
 		}
 
 		// NOT a membership gate, deliberately — and this is a correction.

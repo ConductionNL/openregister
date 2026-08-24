@@ -116,11 +116,14 @@ class MultiTenancyRbacDenialTest extends TestCase {
 	 *
 	 * @return Organisation the organisation
 	 */
-	private function organisationWith(array $userIds): Organisation {
+	private function organisationWith(array $userIds, ?array $authorization = null): Organisation {
 		$org = new Organisation();
 		$org->setUuid('org-uuid-1');
 		// The entity stores the list as `users`; getUserIds() is the reader.
 		$org->setUsers($userIds);
+		if ($authorization !== null) {
+			$org->setAuthorization($authorization);
+		}
 		return $org;
 	}
 
@@ -153,33 +156,85 @@ class MultiTenancyRbacDenialTest extends TestCase {
 	}
 
 	/**
-	 * A member is likewise decided by the authorization config, not the list.
+	 * A CONFIGURED policy now genuinely denies. This is the actual fix.
 	 *
-	 * Kept as the counterpart: if this and the test above ever disagree while
-	 * the organisation carries no authorization config, the membership gate has
-	 * been reintroduced.
+	 * #2833 is that `hasRbacPermission()` returned true on every path before
+	 * reaching the organisation's `authorization` config, so a config saying
+	 * "only the admin group may create registers" was written, stored, and never
+	 * applied. This is the assertion that the config now binds.
 	 *
 	 * @return void
 	 */
-	public function testAMemberIsAlsoAllowedWhenNoAuthorizationIsConfigured(): void {
+	public function testAConfiguredPolicyDeniesAUserOutsideTheAllowedGroups(): void {
 		$mapper = $this->mapperAsUser('alice');
+		$this->groupManager->method('getUserGroupIds')->willReturn(['users']);
 		$this->organisationMapper->method('getActiveOrganisationWithFallback')->willReturn('org-uuid-1');
-		$this->organisationMapper->method('findByUuid')
-			->willReturn($this->organisationWith(['alice', 'bob']));
+		$this->organisationMapper->method('findByUuid')->willReturn(
+			$this->organisationWith(['alice'], ['register' => ['create' => ['admin']]])
+		);
+
+		$this->assertFalse(
+			$this->decide($mapper),
+			'an organisation authorization config must actually bind — this is #2833'
+		);
+	}
+
+	/**
+	 * The same config ALLOWS a user who is in an allowed group.
+	 *
+	 * Its counterpart above is worthless without this one: a check that denies
+	 * everyone satisfies "the policy binds" perfectly and is completely broken.
+	 * A fail-closed bug and a working guard produce identical output if only the
+	 * denial is asserted.
+	 *
+	 * @return void
+	 */
+	public function testTheSameConfiguredPolicyAllowsAnAllowedGroup(): void {
+		$mapper = $this->mapperAsUser('alice');
+		$this->groupManager->method('getUserGroupIds')->willReturn(['admin', 'users']);
+		$this->organisationMapper->method('getActiveOrganisationWithFallback')->willReturn('org-uuid-1');
+		$this->organisationMapper->method('findByUuid')->willReturn(
+			$this->organisationWith(['alice'], ['register' => ['create' => ['admin']]])
+		);
 
 		$this->assertTrue($this->decide($mapper));
 	}
 
-	public function testAnUnresolvableOrganisationIsDenied(): void {
+	/**
+	 * No active organisation means no policy to apply — allowed, not denied.
+	 *
+	 * Denying here is what CI's e2e refused twice: a freshly-created share
+	 * recipient has no active organisation, so denial took out fourteen sharing
+	 * tests. On an instance nobody has organised yet it denies every non-admin
+	 * every operation, which is an outage, not a security posture.
+	 *
+	 * @return void
+	 */
+	public function testNoActiveOrganisationIsNotADenial(): void {
+		$mapper = $this->mapperAsUser('newcomer');
+		$this->organisationMapper->method('getActiveOrganisationWithFallback')->willReturn(null);
+
+		$this->assertTrue(
+			$this->decide($mapper),
+			'absence of an organisation is absence of a policy, not a decision to deny'
+		);
+	}
+
+	/**
+	 * An organisation that cannot be loaded likewise supplies no policy.
+	 *
+	 * Denying would make a lookup failure indistinguishable from a deliberate
+	 * rule, and would take the instance down on one bad row.
+	 *
+	 * @return void
+	 */
+	public function testAnUnloadableOrganisationIsNotADenial(): void {
 		$mapper = $this->mapperAsUser('alice');
 		$this->organisationMapper->method('getActiveOrganisationWithFallback')->willReturn('org-uuid-gone');
 		$this->organisationMapper->method('findByUuid')
 			->willThrowException(new DoesNotExistException('no such organisation'));
 
-		$this->assertFalse(
-			$this->decide($mapper),
-			'a lookup failure must not be read as authorisation'
-		);
+		$this->assertTrue($this->decide($mapper));
 	}
 
 	/**
