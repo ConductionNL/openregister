@@ -32,7 +32,10 @@ const ADMIN = process.env.NEXTCLOUD_ADMIN_USER || 'admin'
 /** A uid that must NOT resolve. Used to prove the account check is real. */
 const GHOST = 'e2e-no-such-user-9f3a1c'
 
-interface FlowResponse { id: string, uuid?: string }
+interface FlowResponse {
+	id: string
+	uuid?: string
+}
 
 /**
  * Create a flow, returning its id.
@@ -89,7 +92,9 @@ const END_NODE = {
 const EDGE_START_TO_END = { id: 'e1', from: 'start', to: 'done' }
 
 test.describe('delegated-identity — a schedule trigger must name who it acts as', () => {
-	test('POSITIVE CONTROL: a schedule trigger naming a real user saves', async ({ request }) => {
+	test('POSITIVE CONTROL: a schedule trigger naming a real user saves', async ({
+		request,
+	}) => {
 		// Without this, every refusal below is satisfied by a validator that
 		// rejects all schedule triggers — which would look like a fix and be an
 		// outage.
@@ -99,24 +104,33 @@ test.describe('delegated-identity — a schedule trigger must name who it acts a
 			edges: [EDGE_START_TO_END],
 		})
 
-		expect(flow.id, 'a fully-specified schedule trigger must be storable').toBeTruthy()
+		expect(
+			flow.id,
+			'a fully-specified schedule trigger must be storable',
+		).toBeTruthy()
 
 		const read = await request.get(`/apps/openregister/api/flows/${flow.id}`)
 		expect(read.status()).toBe(200)
 
 		const stored = await read.json()
 		const trigger = (stored.nodes ?? []).find(
-			(n: Record<string, unknown>) => n.type === 'openregister.trigger-schedule',
+			(n: Record<string, unknown>) =>
+				n.type === 'openregister.trigger-schedule',
 		)
-		expect(trigger, 'the schedule trigger must survive the round trip').toBeTruthy()
+		expect(
+			trigger,
+			'the schedule trigger must survive the round trip',
+		).toBeTruthy()
 		expect(
 			(trigger.config ?? {}).runAs,
 			'the declared identity must be STORED, not silently dropped — a dropped '
-			+ 'runAs reads as a saved flow that later refuses to fire',
+				+ 'runAs reads as a saved flow that later refuses to fire',
 		).toBe(ADMIN)
 	})
 
-	test('a schedule trigger with no runAs is refused at save', async ({ request }) => {
+	test('a schedule trigger with no runAs is refused at save', async ({
+		request,
+	}) => {
 		const response = await request.post('/apps/openregister/api/flows', {
 			data: {
 				name: `${RUN_ID} schedule without identity`,
@@ -137,7 +151,9 @@ test.describe('delegated-identity — a schedule trigger must name who it acts a
 		expect((await response.text()).toLowerCase()).toContain('runas')
 	})
 
-	test('a schedule trigger naming a non-existent user is refused at save', async ({ request }) => {
+	test('a schedule trigger naming a non-existent user is refused at save', async ({
+		request,
+	}) => {
 		const response = await request.post('/apps/openregister/api/flows', {
 			data: {
 				name: `${RUN_ID} schedule with ghost identity`,
@@ -156,11 +172,18 @@ test.describe('delegated-identity — a schedule trigger must name who it acts a
 })
 
 test.describe('delegated-identity — a run records what it acts as, separately from its cause', () => {
-	test('a manual run acts as the caller and records both fields', async ({ request }) => {
+	test('a manual run acts as the caller and records both fields', async ({
+		request,
+	}) => {
 		const flow = await createFlow(request, {
 			name: 'manual attribution',
 			nodes: [
-				{ id: 'start', type: 'openregister.trigger-manual', config: {}, position: { x: 0, y: 0 } },
+				{
+					id: 'start',
+					type: 'openregister.trigger-manual',
+					config: {},
+					position: { x: 0, y: 0 },
+				},
 				END_NODE,
 			],
 			edges: [EDGE_START_TO_END],
@@ -190,7 +213,12 @@ test.describe('delegated-identity — a run records what it acts as, separately 
 		const flow = await createFlow(request, {
 			name: 'observable work',
 			nodes: [
-				{ id: 'start', type: 'openregister.trigger-manual', config: {}, position: { x: 0, y: 0 } },
+				{
+					id: 'start',
+					type: 'openregister.trigger-manual',
+					config: {},
+					position: { x: 0, y: 0 },
+				},
 				END_NODE,
 			],
 			edges: [EDGE_START_TO_END],
@@ -216,12 +244,16 @@ test.describe('delegated-identity — a run records what it acts as, separately 
 
 		// Every recorded step belongs to a run that named who it acted as. A step
 		// log with no identity behind it is the state this whole change removes.
-		expect(finished.runAs, 'work was done, so an identity must own it').toBe(ADMIN)
+		expect(finished.runAs, 'work was done, so an identity must own it').toBe(
+			ADMIN,
+		)
 	})
 })
 
 test.describe('delegated-identity — the acting identity cannot be chosen by the caller', () => {
-	test('a caller-supplied runAs in the run context is ignored', async ({ request }) => {
+	test('a caller-supplied runAs in the run context is ignored', async ({
+		request,
+	}) => {
 		// 🔴 The security property. Context is caller-supplied, so honouring a
 		// `runAs` in it would let anyone who can start a flow choose the identity
 		// its steps execute as. Identity narrows along an invocation chain and
@@ -230,7 +262,12 @@ test.describe('delegated-identity — the acting identity cannot be chosen by th
 		const flow = await createFlow(request, {
 			name: 'context override attempt',
 			nodes: [
-				{ id: 'start', type: 'openregister.trigger-manual', config: {}, position: { x: 0, y: 0 } },
+				{
+					id: 'start',
+					type: 'openregister.trigger-manual',
+					config: {},
+					position: { x: 0, y: 0 },
+				},
 				END_NODE,
 			],
 			edges: [EDGE_START_TO_END],
