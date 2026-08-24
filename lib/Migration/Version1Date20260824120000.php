@@ -137,8 +137,6 @@ class Version1Date20260824120000 extends SimpleMigrationStep {
 	 * @spec openspec/specs/delegated-identity/spec.md
 	 */
 	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-		$table = $this->connection->getPrefix() . self::TABLE;
-
 		// Raw SQL, not the query builder. `set()` would need the second argument
 		// wrapped to be read as a COLUMN rather than a bound literal, and the
 		// silent-failure mode of getting that wrong is that every row's run_as
@@ -179,7 +177,7 @@ class Version1Date20260824120000 extends SimpleMigrationStep {
 				. 'They are left unattributed deliberately — no identity can be inferred for them — and will '
 				. 'fail closed if resumed. Inspect them before re-enabling anything that resumes old runs.',
 				$unresolved,
-				$table
+				self::TABLE
 			)
 		);
 	}//end postSchemaChange()

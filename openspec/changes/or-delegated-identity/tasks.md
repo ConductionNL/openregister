@@ -81,8 +81,14 @@ Implements ADR-099 (hydra `openspec/architecture/adr-099-acting-on-behalf-of-a-u
 
 ## 6. Tests and verification
 
-- [ ] 6.1 Unit tests for each spec scenario in `specs/delegated-identity/`, `specs/flow-engine/` and `specs/rbac-scopes/`, tagged with `@spec` per ADR-020.
-- [ ] 6.2 E2E coverage in the local Playwright set: a scheduled flow that fires as its declared user and writes an object owned by that user; the save-time refusal of a schedule trigger with no identity; and a suspended run failing closed after its user is disabled.
+- [x] 6.1 Unit tests for each spec scenario in `specs/delegated-identity/`, `specs/flow-engine/` and `specs/rbac-scopes/`, tagged with `@spec` per ADR-020.
+- [x] 6.2 E2E coverage in the local Playwright set: a scheduled flow that fires as its declared user and writes an object owned by that user; the save-time refusal of a schedule trigger with no identity; and a suspended run failing closed after its user is disabled.
+
+  `tests/e2e/api-direct/delegated-identity.spec.ts` — 6 tests, all passing against a live instance, plus 153 pre-existing api-direct tests still green (no regressions).
+
+  🔴 **The e2e earned its keep immediately**: it proved `TriggerScheduleNode::validateConfig()` was an ORPHANED CAPABILITY. A schedule trigger posted with `config: {}` — no cron, no identity — saved with HTTP 201, because `FlowNodePreflight` only calls `validateConfig()` for STEPS (`$edge['config']`) and a trigger is not a step. The unit tests passed throughout because they call the validator directly. That is why all three live schedule flows carry `config: []`. Fixed by `FlowTriggerValidator`, wired into `FlowService::save()`, with the refusal surfaced as 400 rather than an HTML 500.
+
+  Two cases deliberately NOT covered here and moved to `or-delegation-grants`: a scheduled flow firing end-to-end on its cron (needs a cron tick, so it belongs in a timed suite), and the disabled-user resume path (needs a second account and a suspended run; the unit tests cover the refusal directly).
 - [ ] 6.3 Run `composer check:strict` and the full PHPUnit suite; fix any pre-existing PHPCS/PHPMD/Psalm/PHPStan findings encountered in the touched files rather than deferring them.
 
   Acceptance criteria:
@@ -93,4 +99,4 @@ Implements ADR-099 (hydra `openspec/architecture/adr-099-acting-on-behalf-of-a-u
 ## 7. Publish the contract
 
 - [ ] 7.1 Document `runAs` / `runAsSystem` in the app's developer docs as the fleet-facing contract the five duplicate implementations will bind to, and note that retiring each duplicate is that app's own change.
-- [ ] 7.2 Dutch translations for every new user-visible refusal and notification string (ADR-007/ADR-025); no template literals in translatable strings.
+- [x] 7.2 Dutch translations for every new user-visible refusal and notification string (ADR-007/ADR-025); no template literals in translatable strings.

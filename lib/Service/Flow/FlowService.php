@@ -211,16 +211,25 @@ class FlowService {
 	 * Create or update a flow.
 	 *
 	 * `owner` and `organisation` are SERVER-STAMPED on create and never taken
-	 * from the payload. Owner is the identity a triggered run executes as, so
-	 * accepting a client-supplied one would let any author mint a flow that
-	 * runs as somebody else — privilege escalation dressed as a form field. For
-	 * the same reason an update carries the stored owner forward rather than
-	 * re-reading it from the request.
+	 * from the payload. They are ownership of the DEFINITION — who may edit this
+	 * flow and which tenant it belongs to — and accepting a client-supplied one
+	 * would let an author hand their flow to another tenant, or claim another
+	 * user's. For the same reason an update carries the stored owner forward
+	 * rather than re-reading it from the request.
+	 *
+	 * 🔴 Owner is NOT the identity a triggered run executes as. It was, and
+	 * ADR-099 removed that: whose rights a run uses now comes from its TRIGGER
+	 * node, because authoring a flow is not consent to unattended execution as
+	 * the author. Do not restore the old reading — it is the reason a scheduled
+	 * run could act as somebody who never asked.
 	 *
 	 * A CREATE is refused outright when either cannot be resolved. See
 	 * flowToSave(): a flow with no organisation belongs to nobody and can never
 	 * be listed, found, edited or run again, so accepting the write only buys a
 	 * silent orphan.
+	 *
+	 * Trigger nodes are validated here, before the write — see
+	 * {@see FlowTriggerValidator}. Connectivity still only WARNS, per `flow-engine`.
 	 *
 	 * @param array<string, mixed> $data The flow's fields.
 	 * @param string|null $uuid The flow to update, or null to create.
@@ -236,6 +245,7 @@ class FlowService {
 		$flow = $this->flowToSave(data: $data, uuid: $uuid);
 
 		$this->applyEditableFields(flow: $flow, data: $data);
+		(new FlowTriggerValidator($this->container, $this->logger))->validate(flow: $flow);
 		$flow->setUpdated(new DateTime());
 
 		$stored = $this->persistFlow(flow: $flow, uuid: $uuid);
