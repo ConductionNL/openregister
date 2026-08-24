@@ -750,7 +750,12 @@ class Application extends App implements IBootstrap {
 					organisationMapper: $container->get(OrganisationMapper::class),
 					userSession: $container->get('OCP\IUserSession'),
 					groupManager: $container->get('OCP\IGroupManager'),
-					appConfig: $container->get('OCP\IAppConfig')
+					appConfig: $container->get('OCP\IAppConfig'),
+					// Explicitly wired: this factory overrides autowiring, so an
+					// argument omitted here is never supplied at all. That is how
+					// RegisterMapper ran with four dead logging branches
+					// (openregister#2820).
+					logger: $container->get('Psr\Log\LoggerInterface')
 				);
 			}
 		);
