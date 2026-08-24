@@ -346,8 +346,14 @@ class FlowRunService {
 	 *                     dispatch path arrives here, and a caller that cannot see
 	 *                     the refusal in the signature will not handle it — which
 	 *                     is how it reached HTTP as a bare 500.
+	 * @throws FlowUnattributed When nothing names the identity the run would
+	 *                         execute as. Declared for the same reason: the
+	 *                         schedule sweep must catch it PER FLOW, and a caller
+	 *                         that cannot see it in the signature lets one
+	 *                         unattributed flow abort the whole sweep.
 	 *
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/delegated-identity/spec.md
 	 */
 	public function queue(
 		string $flowId,

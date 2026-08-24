@@ -238,6 +238,7 @@ class FlowService {
 	 *
 	 * @throws DoesNotExistException When updating a flow that is not the caller's,
 	 *                               or creating one with no owner / organisation.
+	 * @throws \InvalidArgumentException When a trigger node rejects its own config.
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */

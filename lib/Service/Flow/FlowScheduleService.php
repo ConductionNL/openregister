@@ -279,6 +279,7 @@ class FlowScheduleService {
 	 * @return void
 	 *
 	 * @throws FlowUnattributed When the schedule trigger names no acting identity.
+	 * @throws FlowDeadEnd     When the flow has a node that cannot pass its token on.
 	 */
 	private function fire(string $uuid, DateTimeInterface $now): void {
 		// No `user` is passed, and that is the fix rather than an omission.

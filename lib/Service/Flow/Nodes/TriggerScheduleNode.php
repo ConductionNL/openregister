@@ -50,6 +50,8 @@ class TriggerScheduleNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTrigge
 	 *
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urls For the palette icon.
+	 * @param IUserManager $userManager Resolves the declared `runAs` to prove the
+	 *                                  account exists before the flow is stored.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
 	 */

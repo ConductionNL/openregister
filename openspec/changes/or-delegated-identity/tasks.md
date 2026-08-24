@@ -24,7 +24,7 @@ Implements ADR-099 (hydra `openspec/architecture/adr-099-acting-on-behalf-of-a-u
   - 🔴 **All three schedule trigger nodes carry `"config":[]`** — no `runAs` *and no `cron`*. `TriggerScheduleNode::validate()` already requires a cron expression, so these three would fail validation today if it ran on their save path. Their schedule lives in the legacy `cron` COLUMN instead. They are mid-cutover per `flow-engine`'s "The cutover from trigger COLUMNS to trigger NODES MUST be proven per flow". Task 4.1 must therefore not assume a populated node config, and 4.3 must define what happens to a flow whose schedule is still column-side. Added as 4.4.
   - 🔴 **The trigger index is empty while 92 flows carry trigger nodes.** `BackfillFlowTriggerIndex` has not run here, so 4.2 cannot assume the index is populated and must be verified against a backfilled instance rather than this one.
 
-- [ ] 1.2 Re-run 1.1 against a production dump before merge, and update the table. The dev instance is Hydra's own workspace and is not representative of customer flow usage; a count of 3 here does not license hard enforcement everywhere.
+- [~] 1.2 Re-run 1.1 against a production dump before merge, and update the table. **BLOCKED — no production dump is available in this environment.** The dev-instance measurement (task 1.1) is what the enforcement decision rests on, and it is Hydra's own workspace: 3 schedule flows, all `admin`-owned. Re-run before this reaches a customer instance. Re-run 1.1 against a production dump before merge, and update the table. The dev instance is Hydra's own workspace and is not representative of customer flow usage; a count of 3 here does not license hard enforcement everywhere.
 
   Acceptance criteria:
   - The counts are written into this task as a dated line, not reported only in a PR comment
@@ -89,7 +89,15 @@ Implements ADR-099 (hydra `openspec/architecture/adr-099-acting-on-behalf-of-a-u
   🔴 **The e2e earned its keep immediately**: it proved `TriggerScheduleNode::validateConfig()` was an ORPHANED CAPABILITY. A schedule trigger posted with `config: {}` — no cron, no identity — saved with HTTP 201, because `FlowNodePreflight` only calls `validateConfig()` for STEPS (`$edge['config']`) and a trigger is not a step. The unit tests passed throughout because they call the validator directly. That is why all three live schedule flows carry `config: []`. Fixed by `FlowTriggerValidator`, wired into `FlowService::save()`, with the refusal surfaced as 400 rather than an HTML 500.
 
   Two cases deliberately NOT covered here and moved to `or-delegation-grants`: a scheduled flow firing end-to-end on its cron (needs a cron tick, so it belongs in a timed suite), and the disabled-user resume path (needs a second account and a suspended run; the unit tests cover the refusal directly).
-- [ ] 6.3 Run `composer check:strict` and the full PHPUnit suite; fix any pre-existing PHPCS/PHPMD/Psalm/PHPStan findings encountered in the touched files rather than deferring them.
+- [x] 6.3 Run `composer check:strict` and the full PHPUnit suite; fix any pre-existing PHPCS/PHPMD/Psalm/PHPStan findings encountered in the touched files rather than deferring them.
+
+  **2026-08-24**: PHPCS **0 errors** (1137 files), PHPMD **clean** on every touched file, Psalm **0 errors**, PHPUnit **all Unit dirs green**. PHPStan down from 9 errors to **2**.
+
+  Fixed along the way, none of it introduced by this change: three pre-existing test failures (`ChunkMapperLiveQueryTest` errored instead of skipping when its probe could not reach a database; `RelationsControllerTest` reached the real container through static `Server::get()` for 11 unstubbed leaf providers; the `tests/bootstrap` diagnostic corrupted the result channel of `@runInSeparateProcess` workers because only one of its two branches silenced forked children), a dead `FlowRunService::activeOrganisation()`, and two unreachable `??` fallbacks in `BulkSaveOutcome`.
+
+  🔴 **Two PHPStan errors deliberately left**, both in `SharedSchemaDedupeService` (lines 295, 429) and both untouched by this branch: PHPStan calls two defensive `instanceof` / `=== null` guards dead *on the strength of a PHPDoc*. Deleting a runtime guard because a docblock claims it cannot fire is not debt repayment — it needs its own review, in code this change does not touch.
+
+  ⚠️ **Local PHPStan is 1.12.33; CI runs 2.x.** A local result is not evidence for the gate either way.
 
   Acceptance criteria:
   - Every ADDED requirement has at least one test referencing it
@@ -98,5 +106,5 @@ Implements ADR-099 (hydra `openspec/architecture/adr-099-acting-on-behalf-of-a-u
 
 ## 7. Publish the contract
 
-- [ ] 7.1 Document `runAs` / `runAsSystem` in the app's developer docs as the fleet-facing contract the five duplicate implementations will bind to, and note that retiring each duplicate is that app's own change.
+- [x] 7.1 Document `runAs` / `runAsSystem` in the app's developer docs as the fleet-facing contract the five duplicate implementations will bind to, and note that retiring each duplicate is that app's own change. — `docs/Patterns/acting-on-behalf-of-a-user.md`.
 - [x] 7.2 Dutch translations for every new user-visible refusal and notification string (ADR-007/ADR-025); no template literals in translatable strings.

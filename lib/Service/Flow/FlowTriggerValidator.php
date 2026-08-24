@@ -100,10 +100,10 @@ class FlowTriggerValidator {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function validate(Flow $flow): void {
+		// `getNodes()` is declared `array|null`, so the null-coalesce already
+		// guarantees an array — an is_array() guard here is dead by construction
+		// and PHPStan says so.
 		$nodes = ($flow->getNodes() ?? []);
-		if (is_array($nodes) === false) {
-			return;
-		}
 
 		$registry = $this->registry();
 		if ($registry === null) {
@@ -146,7 +146,13 @@ class FlowTriggerValidator {
 			return;
 		}
 
-		if (($resolved instanceof IFlowTriggerNode) === false) {
+		// BOTH interfaces, deliberately. `IFlowTriggerNode` is an empty MARKER —
+		// it says "this node is an entry point" and declares no methods — so
+		// narrowing on it alone leaves `validateConfig()` unproven, which is
+		// exactly what PHPStan flagged. `IFlowNode` is what declares the method.
+		if (($resolved instanceof IFlowTriggerNode) === false
+			|| ($resolved instanceof IFlowNode) === false
+		) {
 			return;
 		}
 
