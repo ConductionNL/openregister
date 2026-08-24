@@ -349,7 +349,7 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// documents as unreliable.
 		// DRIVE THE ELEMENT THAT OWNS THE HANDLER, NOT THE CARD INSIDE IT.
 		//
-		// `onNodeKeydown` is bound to CnGraphCanvas's `.cn-graph-canvas__node`
+		// `onNodeKeydown` is bound to CnFlowNode's `.cn-flow-node`
 		// wrapper — the element carrying `tabindex="0"`. `.cn-flow-detail__node`
 		// is the card CnFlowDetail renders into that wrapper's slot, and it is
 		// not focusable. Clicking the card and then pressing a key globally
@@ -367,11 +367,21 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// it sat behind a `NEW_EDITOR` feature-detect that read the INSTALLED
 		// library for a 2.4+ marker — false on every 2.3.x — so it never ran
 		// and reported green by not executing.
-		const startNode = page.locator('.cn-graph-canvas__node', {
+		//
+		// THE SELECTOR IS `.cn-flow-node`, NOT `.cn-graph-canvas__node`.
+		// The Vue Flow migration moved the node wrapper out of CnGraphCanvas
+		// and into CnFlowNode under the new name. The old class survives in the
+		// library's shipped CSS and source maps, so it reads as present while
+		// matching nothing — which is precisely how this locator went stale
+		// without anyone noticing. Confirmed against a running instance: the
+		// chain is `.vue-flow__node > .cn-flow-node > .cn-flow-node__body >
+		// .cn-flow-detail__node`, and `.cn-flow-node` is the one carrying
+		// tabindex="0" and role="button".
+		const startNode = page.locator('.cn-flow-node', {
 			hasText: 'When someone runs it',
 		})
 		await expect(startNode, 'the seeded start node is missing').toBeVisible()
-		const endNode = page.locator('.cn-graph-canvas__node', {
+		const endNode = page.locator('.cn-flow-node', {
 			hasText: 'End',
 		})
 		await expect(endNode, 'the End step is missing').toBeVisible()
