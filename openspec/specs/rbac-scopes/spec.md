@@ -1,11 +1,12 @@
 ---
-status: done
+status: in-progress
 ---
 
 # RBAC Scopes
 
 **OpenSpec changes**
 - `unify-rbac-condition-matching` (active) — collapses `PermissionHandler::evaluateMatchConditions` and `MagicRbacHandler`'s private PHP-side condition matcher onto the shared `ConditionMatcher` service, so schema-level RBAC honours the full operator set (`$eq/$ne/$gt/$gte/$lt/$lte/$in/$nin/$exists`) and dynamic variables (`$organisation/$userId/$now`) that the SQL and property layers already support. Fixes OpenCatalogi `PublicationsController::attachments` throwing on schemas with operator-based `public`-with-match rules.
+- `or-delegated-identity` (active) — states the contract for the two scoped operations on ObjectService that shipped without one (`runAs()` narrowing to a named user, `runAsSystem()` elevating to a trusted userless principal), moves the narrowing one off `IUserSession::setUser()` so an acting identity is never written into the session, gives the elevating one a reachability boundary (code-initiated only), and records that delegation is never expressed as a permission verb (ADR-010, ADR-099).
 
 ## Purpose
 
