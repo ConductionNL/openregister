@@ -2,7 +2,7 @@
   "spec_slug": "cross-app-semantic-references",
   "title": "Cross-app object references by canonical semantic type",
   "app": "openregister",
-  "repo": "https://codeberg.org/Conduction/openregister",
+  "repo": "https://github.com/ConductionNL/openregister",
   "depends_on": [
     "pluggable-integration-registry"
   ],

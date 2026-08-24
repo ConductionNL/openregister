@@ -8,7 +8,7 @@ status: pr-created
 
 `ChunkMapper::searchByKeyword($query, $limit, $filters)` is the existing keyword-search entry-point over extracted file body text (populated by `TextExtractionService` + per-format handlers, indexed via the PostgreSQL `to_tsvector('simple', text_content)` GIN shipped in the merged `hybrid-document-search` change). It returns chunk-shaped hits with `source_type` + `source_id` — ready to be joined back to the owning object.
 
-Today, `ChunkMapper::searchByKeyword()` is only reachable through `FileSearchController` (admin-only, chunk-shaped response). No path exists through `searchObjectsPaginated` — so any consumer that wants "search my objects, including their attached files' body text" cannot get there without re-implementing the chunk→object join in application code. The downstream consumer that surfaces this pain today: OpenCatalogi's WOO-517 [`add-document-content-search`](https://codeberg.org/Conduction/opencatalogi/pulls/136) is HARD-blocked on this wire landing.
+Today, `ChunkMapper::searchByKeyword()` is only reachable through `FileSearchController` (admin-only, chunk-shaped response). No path exists through `searchObjectsPaginated` — so any consumer that wants "search my objects, including their attached files' body text" cannot get there without re-implementing the chunk→object join in application code. The downstream consumer that surfaces this pain today: OpenCatalogi's WOO-517 `add-document-content-search` (Codeberg PR opencatalogi#136, pre-migration, not migrated to GitHub) is HARD-blocked on this wire landing.
 
 ## Goals
 
@@ -54,7 +54,7 @@ Pure code addition. No database migration, no config change, no data transformat
 
 - **Deploy** — plain code push. Opt-in default preserves all pre-change behaviour for every current consumer.
 - **Rollback** — remove or ignore the `_content_search` key in `ObjectService::searchObjectsPaginated()`; endpoint reverts to today's behaviour instantly. Chunk store data left in place (owned by the extraction pipeline, still valid).
-- **Coexistence** — OpenCatalogi WOO-517 (`add-document-content-search`, [#136](https://codeberg.org/Conduction/opencatalogi/pulls/136)) is HARD-blocked on this change merging first. Its own proposal.md carries `depends_on: openregister:expose-content-search-in-object-service` — spec-name matches this change slug, so Hydra's dependency-block will lift automatically once this PR merges to `development`.
+- **Coexistence** — OpenCatalogi WOO-517 (`add-document-content-search`, Codeberg PR opencatalogi#136, pre-migration, not migrated to GitHub) is HARD-blocked on this change merging first. Its own proposal.md carries `depends_on: openregister:expose-content-search-in-object-service` — spec-name matches this change slug, so Hydra's dependency-block will lift automatically once this PR merges to `development`.
 
 ## Open Questions
 

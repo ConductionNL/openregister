@@ -18,8 +18,8 @@ deferred to GitHub issues (see proposal.md "Gaps for issue filing").
 
 ## 3. Gaps deferred to issues (do NOT implement here)
 
-- [x] `extended-field-types#EFT-003` — `recurrence` type (file issue). **Filed:** [openregister#101](https://codeberg.org/Conduction/openregister/issues/101).
+- [x] `extended-field-types#EFT-003` — `recurrence` type (file issue). **Filed:** Codeberg issue openregister#101 (pre-migration, not migrated to GitHub).
 - [x] `extended-field-types#EFT-005` — real `color` type with per-format
-      validation incl. `oklch` (file issue). **Filed:** [openregister#102](https://codeberg.org/Conduction/openregister/issues/102).
-- [x] `geo-metadata-kaart#GEO-003` — PDOK map UI component (file issue). **Filed:** [openregister#103](https://codeberg.org/Conduction/openregister/issues/103).
-- [x] `geo-metadata-kaart#GEO-010` — geo-fencing + event triggers (file issue). **Filed:** [openregister#104](https://codeberg.org/Conduction/openregister/issues/104).
+      validation incl. `oklch` (file issue). **Filed:** Codeberg issue openregister#102 (pre-migration, not migrated to GitHub).
+- [x] `geo-metadata-kaart#GEO-003` — PDOK map UI component (file issue). **Filed:** Codeberg issue openregister#103 (pre-migration, not migrated to GitHub).
+- [x] `geo-metadata-kaart#GEO-010` — geo-fencing + event triggers (file issue). **Filed:** Codeberg issue openregister#104 (pre-migration, not migrated to GitHub).
