@@ -234,38 +234,13 @@ class Version1Date20260824120000 extends SimpleMigrationStep {
 			}
 
 			$owner = trim((string)($row['owner'] ?? ''));
-			$changed = false;
-
-			foreach ($nodes as $index => $node) {
-				if (is_array($node) === false
-					|| ($node['type'] ?? null) !== 'openregister.trigger-schedule'
-				) {
-					continue;
-				}
-
-				$config = ($node['config'] ?? []);
-				// A mid-cutover node stores `[]`, which json_decode gives back as
-				// an empty LIST, not an empty map. Writing a key into it would
-				// otherwise produce `{"0":…}`-shaped nonsense on re-encode.
-				if (is_array($config) === false) {
-					$config = [];
-				}
-
-				if (trim((string)($config['runAs'] ?? '')) !== '') {
-					continue;
-				}
-
-				if ($owner === '') {
-					$undeclarable[] = (string)$row['uuid'];
-					continue;
-				}
-
-				$config['runAs'] = $owner;
-				$nodes[$index]['config'] = $config;
-				$changed = true;
-			}
+			$changed = $this->declareOnScheduleNodes(nodes: $nodes, owner: $owner);
 
 			if ($changed === false) {
+				if ($owner === '' && $this->hasUndeclaredScheduleTrigger(nodes: $nodes) === true) {
+					$undeclarable[] = (string)$row['uuid'];
+				}
+
 				continue;
 			}
 
@@ -300,4 +275,87 @@ class Version1Date20260824120000 extends SimpleMigrationStep {
 			)
 		);
 	}//end declareScheduleIdentities()
+
+	/**
+	 * Write `runAs` onto every schedule trigger in one flow's node list.
+	 *
+	 * Mutates `$nodes` by reference and reports whether anything changed, so the
+	 * caller only writes back flows it actually touched.
+	 *
+	 * @param array  $nodes The decoded node list, mutated in place.
+	 * @param string $owner The uid to promote, or '' when the flow has none.
+	 *
+	 * @return boolean Whether any node was changed.
+	 */
+	private function declareOnScheduleNodes(array &$nodes, string $owner): bool {
+		if ($owner === '') {
+			return false;
+		}
+
+		$changed = false;
+
+		foreach ($nodes as $index => $node) {
+			if ($this->isUndeclaredScheduleTrigger(node: $node) === false) {
+				continue;
+			}
+
+			$config = $node['config'];
+
+			// A mid-cutover node stores `[]`, which json_decode returns as an
+			// empty LIST rather than an empty map. Writing a key into it would
+			// re-encode as `{"0":…}`-shaped nonsense, so normalise first.
+			if (is_array($config) === false) {
+				$config = [];
+			}
+
+			$config['runAs'] = $owner;
+			$nodes[$index]['config'] = $config;
+			$changed = true;
+		}
+
+		return $changed;
+	}//end declareOnScheduleNodes()
+
+	/**
+	 * Whether a node is a schedule trigger that declares no identity.
+	 *
+	 * @param mixed $node One entry from a flow's node list.
+	 *
+	 * @return boolean True when it is a schedule trigger without a `runAs`.
+	 */
+	private function isUndeclaredScheduleTrigger(mixed $node): bool {
+		if (is_array($node) === false
+			|| ($node['type'] ?? null) !== 'openregister.trigger-schedule'
+		) {
+			return false;
+		}
+
+		$config = ($node['config'] ?? []);
+		if (is_array($config) === false) {
+			return true;
+		}
+
+		return trim((string)($config['runAs'] ?? '')) === '';
+	}//end isUndeclaredScheduleTrigger()
+
+	/**
+	 * Whether any node in the list is a schedule trigger without an identity.
+	 *
+	 * Used only to report a flow that cannot be cut over because it has no owner
+	 * to promote — so the warning names flows that will actually refuse to fire,
+	 * rather than every ownerless flow on the instance.
+	 *
+	 * @param array $nodes The decoded node list.
+	 *
+	 * @return boolean True when at least one such node exists.
+	 */
+	private function hasUndeclaredScheduleTrigger(array $nodes): bool {
+		foreach ($nodes as $node) {
+			if ($this->isUndeclaredScheduleTrigger(node: $node) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end hasUndeclaredScheduleTrigger()
 }//end class

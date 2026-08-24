@@ -325,44 +325,6 @@ class FlowRunService {
 	}//end runtimeBudgetSeconds()
 
 	/**
-	 * The organisation to attribute a run to, or null when there is none.
-	 *
-	 * A run is queued from wherever the trigger fired: a request (there is a
-	 * session, so there is an active organisation), or a cron pass (there is
-	 * not). Only the first can be attributed, and an unattributed run is
-	 * recorded as such rather than guessed at — the active-runs surface scopes
-	 * strictly by this value, so a wrong guess would put one tenant's runs on
-	 * another's dashboard.
-	 *
-	 * `OrganisationService` is resolved lazily through the container, not
-	 * constructor-injected: `FlowRunService` is what the cron worker builds on
-	 * every pass, and it must not drag the whole organisation/RBAC graph into
-	 * that path to write a column it usually cannot fill anyway.
-	 *
-	 * @return string|null The active organisation uuid, or null.
-	 *
-	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
-	 */
-	private function activeOrganisation(): ?string {
-		try {
-			$organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
-			$uuid = $organisationService->getActiveOrganisation()?->getUuid();
-		} catch (Throwable $e) {
-			$this->logger->debug(
-				message: '[FlowRunService] Could not resolve the active organisation for a run: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return null;
-		}
-
-		if ($uuid === null || $uuid === '') {
-			return null;
-		}
-
-		return (string)$uuid;
-	}//end activeOrganisation()
-
-	/**
 	 * Queue a run without executing it.
 	 *
 	 * This is what a trigger calls. A Nextcloud Flow rule, an object event or a
@@ -479,8 +441,9 @@ class FlowRunService {
 	 * reporting an error it no longer has.
 	 *
 	 * Resolved lazily through the container for the same reason
-	 * `activeOrganisation()` is: this service is constructed on paths that do
-	 * not need either collaborator, and several tests build it by hand.
+	 * {@see FlowRunAttribution} resolves its own collaborators that way: this
+	 * service is constructed on paths that do not need either collaborator, and
+	 * several tests build it by hand.
 	 *
 	 * @param string $flowId The flow uuid.
 	 *

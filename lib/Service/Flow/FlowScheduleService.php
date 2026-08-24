@@ -157,18 +157,7 @@ class FlowScheduleService {
 			try {
 				$this->fire(uuid: $uuid, now: $now);
 			} catch (FlowUnattributed $e) {
-				// The refusal already recorded status/status_message on the flow
-				// and switched the schedule off, so it stops retrying every tick
-				// and says why in the UI rather than only in this log.
-				$this->logger->warning(
-					message: '[FlowSchedule] Disabled a due flow — it names no acting identity: ' . $e->getMessage(),
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'flow' => $uuid,
-						'trigger' => $e->getTrigger(),
-					]
-				);
+				$this->reportUnattributed(uuid: $uuid, refusal: $e);
 				continue;
 			} catch (FlowDeadEnd $e) {
 				// The refusal already recorded status/status_message on the
@@ -190,6 +179,34 @@ class FlowScheduleService {
 
 		return $fired;
 	}//end fireDueFlows()
+
+	/**
+	 * Report a due flow that named no acting identity.
+	 *
+	 * The refusal has already recorded status/status_message on the flow and
+	 * switched the schedule off, so this only writes the operator-facing log
+	 * line. Extracted from the sweep so `fireDueFlows()` stays inside its length
+	 * budget rather than growing a third inline catch body.
+	 *
+	 * @param string           $uuid    The flow that was refused.
+	 * @param FlowUnattributed $refusal The refusal.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegated-identity/spec.md
+	 */
+	private function reportUnattributed(string $uuid, FlowUnattributed $refusal): void {
+		$this->logger->warning(
+			message: '[FlowSchedule] Disabled a due flow — it names no acting identity: ' . $refusal->getMessage(),
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'flow' => $uuid,
+				'trigger' => $refusal->getTrigger(),
+			]
+		);
+
+	}//end reportUnattributed()
 
 	/**
 	 * The cron expression of a candidate that is an enabled schedule, or null.
