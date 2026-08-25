@@ -1039,6 +1039,22 @@ class ObjectsController extends Controller {
 		// So the register lookup is now resolved on its own, and only its
 		// failure is reported as a missing register. Anything the pending-ref
 		// re-resolution throws keeps its own identity.
+		// Start from a clean context — this is the other half of #2820.
+		//
+		// #2858 made this endpoint report a leaked-ref failure honestly, as a
+		// schema failure. It did not stop the leak: `setRegister()` re-resolves
+		// whatever schema ref is still pending on the SHARED ObjectService, and
+		// a ref left behind by an unrelated earlier caller then gets resolved
+		// inside a register it was never meant for. On the dev instance a
+		// preload resolves register `buildiq` moments before the request's own
+		// lookup, which is how a plain `GET /objects/19/9476` failed.
+		//
+		// Nothing pending can ever be legitimate here: this method is handed
+		// BOTH the register and the schema explicitly, so it has no use for a
+		// ref it did not receive. #2790 added the same isolation on LEAVING
+		// find(); this is the entering end.
+		$objectService->clearCurrents();
+
 		// The discriminator is `setRegister()`'s own order of operations: it
 		// assigns `currentRegister` BEFORE it re-resolves any pending schema ref.
 		// So a register entity that is NEW after the throw proves the register
