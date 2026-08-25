@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\BulkSaveOutcome;
+use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Service\ObjectService;
@@ -54,6 +55,8 @@ use OCP\IUserSession;
  * @spec openspec/specs/object-lifecycle/spec.md
  */
 class BulkController extends Controller {
+	use ResolvesRegisterAndSchemaTrait;
+
 	/**
 	 * Constructor for the BulkController
 	 *
@@ -192,49 +195,40 @@ class BulkController extends Controller {
 	}//end checkRegisterManagePermission()
 
 	/**
-	 * Resolve register and schema slugs/IDs to numeric IDs.
+	 * Resolve a register/schema path pair to numeric ids.
 	 *
-	 * This method handles both slugs and numeric IDs by attempting to set them
-	 * in the ObjectService, which will resolve slugs to IDs.
+	 * This method used to hold its own copy of the resolution logic. That copy
+	 * was identical to ObjectsController's until #2858 and #2860 fixed the
+	 * other one — after which `GET /api/objects/19/9476` succeeded while
+	 * `POST /api/bulk/19/9475/save` still answered
+	 * `404 Register not found: '19'` for the same register. openregister#2820
+	 * had survived its own fix, in the copy nobody edited.
 	 *
-	 * @param string $register The register slug or ID
-	 * @param string $schema The schema slug or ID
-	 * @param ObjectService $objectService The object service
+	 * @param string        $register      Register slug, uuid or numeric id.
+	 * @param string        $schema        Schema slug, uuid or numeric id.
+	 * @param ObjectService $objectService The request's object service.
 	 *
-	 * @return array{register: int, schema: int} Resolved numeric IDs
+	 * @return array The resolved ids.
 	 *
-	 * @throws RegisterNotFoundException If register not found
-	 * @throws SchemaNotFoundException If schema not found
+	 * @throws RegisterNotFoundException When the register does not resolve.
+	 * @throws SchemaNotFoundException   When the schema does not resolve.
 	 *
-	 * @psalm-return   array{register: int, schema: int}
-	 * @phpstan-return array{register: int, schema: int}
+	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
 	private function resolveRegisterSchemaIds(string $register, string $schema, ObjectService $objectService): array {
-		try {
-			// Resolve register slug/ID to numeric ID.
-			$objectService->setRegister(register: $register);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			throw new RegisterNotFoundException(registerSlugOrId: $register, code: 404, previous: $e);
-		}
+		$resolved = $this->resolveRegisterAndSchema(
+			register: $register,
+			schema: $schema,
+			objectService: $objectService
+		);
 
-		try {
-			// Resolve schema slug/ID to numeric ID.
-			$objectService->setSchema(schema: $schema);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			throw new SchemaNotFoundException(schemaSlugOrId: $schema, code: 404, previous: $e);
-		}
+		// Re-anchor on the resolved NUMERIC ids, as this controller did before:
+		// downstream bulk handlers read the service's current register/schema
+		// rather than the returned array.
+		$objectService->setRegister(register: (string)$resolved['register'])
+			->setSchema(schema: (string)$resolved['schema']);
 
-		// Get resolved numeric IDs.
-		$resolvedRegisterId = $objectService->getRegister();
-		$resolvedSchemaId = $objectService->getSchema();
-
-		// Reset ObjectService with resolved numeric IDs for consistency.
-		$objectService->setRegister(register: (string)$resolvedRegisterId)->setSchema(schema: (string)$resolvedSchemaId);
-
-		return [
-			'register' => $resolvedRegisterId,
-			'schema' => $resolvedSchemaId,
-		];
+		return ['register' => $resolved['register'], 'schema' => $resolved['schema']];
 	}//end resolveRegisterSchemaIds()
 
 	/**
