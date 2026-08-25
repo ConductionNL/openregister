@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\FlowRunStep;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Exception\FlowRunExpired;
+use OCA\OpenRegister\Service\Delegation\DelegationRefused;
 use OCP\IAppConfig;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -47,6 +48,8 @@ use Throwable;
 
 /**
  * The durable half of flow execution.
+ *
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class FlowRunService {
 	/**
@@ -174,6 +177,7 @@ class FlowRunService {
 		}//end try
 
 	}//end recordUnattributed()
+
 
 	/**
 	 * The node context a walk starts from, before its live handles are added.
@@ -351,6 +355,12 @@ class FlowRunService {
 	 *                         schedule sweep must catch it PER FLOW, and a caller
 	 *                         that cannot see it in the signature lets one
 	 *                         unattributed flow abort the whole sweep.
+	 * @throws DelegationRefused When the trigger asserts a delegation that is no
+	 *                         longer live. Declared for the same reason again —
+	 *                         and it is a DIFFERENT fault from the one above, so
+	 *                         it must not be folded into it: "nobody was named"
+	 *                         and "the person named it may no longer act as them"
+	 *                         want opposite fixes.
 	 *
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
 	 * @spec openspec/specs/delegated-identity/spec.md
@@ -412,6 +422,19 @@ class FlowRunService {
 
 			throw $refusal;
 		}
+
+		// 🔴 RE-RESOLVE, never trust the definition. The save-time check answered
+		// "may this be saved", against the grants that existed then. A grant can
+		// be revoked, expire, or be denied after a schedule is saved and before
+		// it ever fires — and the whole point of a revocation is that the next
+		// firing stops. Treating a stored trigger as standing authorization would
+		// make revocation cosmetic for exactly the runs nobody is watching.
+		(new FlowDelegationCheck($this->container, $this->logger))->refuseIfRevoked(
+			flowId: $flowId,
+			trigger: $trigger,
+			declaredBy: $attribution['declaredBy'],
+			runAs: $attribution['user']
+		);
 
 		$run = new FlowRun();
 		$run->setUuid($this->newUuid());
@@ -530,6 +553,8 @@ class FlowRunService {
 	 * @param string $flowId The flow's uuid.
 	 *
 	 * @return boolean True when a non-terminal run exists for this flow.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function hasActiveRun(string $flowId): bool {
 		return $this->mapper->hasActiveRun(flowId: $flowId);

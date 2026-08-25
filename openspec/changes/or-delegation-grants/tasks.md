@@ -55,9 +55,20 @@ Implements the open half of ADR-099. Depends on `or-delegated-identity`.
 
 ## 2. The record
 
-- [ ] 2.1 `DelegationGrant` entity + mapper + migration: `principal`, `actingAs`, `scope`, `status`, `expiresAt`, `grantedBy`, `reason`, `revokedAt`, `requestedAt`. Status is `requested | pending | granted | denied | expired | revoked`.
-- [ ] 2.2 Read the store through the MAPPER, never `ObjectService`. A grant lookup must need neither a subject nor an elevation — see design.md; routing it through object RBAC makes resolving a delegation require the delegation.
+- [x] 2.1 `DelegationGrant` entity + mapper + migration: `principal`, `actingAs`, `scope`, `status`, `expiresAt`, `grantedBy`, `reason`, `revokedAt`, `requestedAt`. Status is `requested | pending | granted | denied | expired | revoked`. — openregister#2851.
+- [x] 2.2 Read the store through the MAPPER, never `ObjectService`. A grant lookup must need neither a subject nor an elevation — see design.md; routing it through object RBAC makes resolving a delegation require the delegation. — `DelegationGrantMapper` extends `QBMapper` and touches no object layer.
 - [ ] 2.3 Declare the lifecycle and the consent notification declaratively (`x-openregister-lifecycle`, `x-openregister-notifications`) per ADR-031, not as a service class.
+
+  🔴 **IN TENSION WITH 2.2, AND 2.2 WINS FOR THE LIFECYCLE HALF.** The declarative
+  dialects are properties of a REGISTER SCHEMA and are evaluated by the object
+  layer. A grant that declared its lifecycle there would be an object, and reading
+  it would go through object RBAC — which is exactly the circularity 2.2 exists to
+  prevent: resolving a delegation would require the delegation. So the lifecycle
+  stays in `DelegationConsentService`, deliberately, and this is not "not done yet".
+
+  The NOTIFICATION half is still open and is not affected by that argument: a
+  notification is dispatched about the grant rather than read to authorise it. It
+  belongs with 4.1 and is tracked there.
 
   Acceptance criteria:
   - `denied` and `expired` are distinguishable in the record and in every read of it
@@ -65,13 +76,57 @@ Implements the open half of ADR-099. Depends on `or-delegated-identity`.
 
 ## 3. The check
 
-- [ ] 3.1 `ObjectService::runAsDelegated(IUser $principal, string $actingAs, callable $op)`: resolve the grant, refuse when absent/expired/revoked/out-of-scope, write the audit record naming `(principal, actingAs, grantId, reason)`. Acting as self short-circuits without touching the store.
-- [ ] 3.2 Save-time refusal in `FlowTriggerValidator` when a schedule trigger names a user the author holds no grant for. Naming yourself stays free.
-- [ ] 3.3 Fire-time and resume-time re-check, so a revoked grant stops a flow that was saved while it was live. Decide and implement the migration posture from 1.1 — grandfathered grants, or refuse until granted. If grandfathering: the grants must be visible, expiring, and attributed to the migration rather than to a person.
+- [x] 3.1 `runAsDelegated(string $principal, string $actingAs, callable $op)`: resolve the grant, refuse when absent/expired/revoked/out-of-scope, record `(principal, actingAs, grantId, reason)`. Acting as self short-circuits without touching the store.
+
+  **Placed on `DelegationService`, not `ObjectService`.** The ADR named
+  `ObjectService::runAsDelegated` and the layering says otherwise: `runAs()` is the
+  PRIMITIVE (hand it an `IUser`, it narrows), and the grant check is the
+  AUTHORIZATION layer above it. Folding the check into the primitive would make it
+  unusable by the callers that legitimately have no delegation to check — a request
+  handler running as its own authenticated user, a job replaying its recorded actor
+  — and the usual answer to that is a `$skipCheck` flag, i.e. a security check with
+  an off switch. `DelegationService` calls `ObjectService::runAs()`, so there is
+  still exactly one identity-switch primitive.
+
+  ⚠️ **The audit record is a structured LOG line, not a durable trail.**
+  `AuditTrailMapper` is object-scoped — it requires an `ObjectEntity` — and a
+  delegation is not an object mutation. Inventing a second durable trail is a
+  bigger decision than this task, so it is stated here rather than quietly skipped;
+  a delegation-use trail is open work.
+
+- [x] 3.2 Save-time refusal in `FlowTriggerValidator` when a schedule trigger names a user the author holds no grant for. Naming yourself stays free.
+
+  The validator additionally STAMPS `runAsDeclaredBy: <saver>` onto a permitted
+  delegating trigger, server-written on every save and never read from the request
+  body. 🔴 Without that record 3.3 is not implementable: a schedule fires
+  unattended, so at 03:00 there is no principal to check a grant against and the
+  only candidate left would be `flow.owner` — the fallback ADR-099 removed. The
+  stamp is stripped whenever the trigger names its own saver, so a forged value
+  cannot stand in for a grant.
+
+- [x] 3.3 Fire-time re-check, so a revoked grant stops a flow that was saved while it was live. Migration posture: **refuse until granted**, no grandfathering.
+
+  Warranted by 1.1: zero declarations on this instance name anyone other than
+  themselves, so nothing is grandfathered because nothing needs to be. A
+  grandfathering migration would have had to mint grants nobody asked for and
+  attribute them to the migration — permanent privilege created by a code path,
+  which is the thing this change exists to stop.
+
+  🔴 **The schedule is left ENABLED on a delegation refusal**, unlike the
+  unattributed case. The two faults recover differently: a flow naming nobody
+  cannot fix itself without an edit, so leaving it "on" would be a switch that
+  lies; a revoked delegation becomes valid again the moment the grant does, and
+  disabling would silently convert a temporary revocation into a permanent one
+  that only a human re-enabling could undo, with nothing telling them to.
+
+  ⚠️ RESUME-time is NOT yet re-checked — only queue time. A run already parked in
+  `suspended` picks its identity back up from the run row on resume without
+  re-resolving the grant. That belongs with 5.1, which is where run states are
+  being touched, and is recorded rather than left to be discovered.
 
   Acceptance criteria:
-  - Revoking a grant stops the next firing, and the refusal names the revocation rather than reporting a permission error against the acted-as user
-  - Save-time passing is never treated as standing authorization
+  - ✅ Revoking a grant stops the next firing, and the refusal names the revocation rather than reporting a permission error against the acted-as user — `FlowRunAttributionTest::testARevokedDelegationStopsTheNextFiring`, which asserts the REASON, not just the refusal
+  - ✅ Save-time passing is never treated as standing authorization — `FlowDelegationCheck` re-resolves at queue time; proven by the same test, whose flow saved cleanly
 
 ## 4. Consent
 
