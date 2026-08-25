@@ -294,6 +294,23 @@ class AggregationRunner {
 		// `where` as an alias for `filter` (new DSL) so callers can
 		// use either vocabulary on intra-schema specs too.
 		$metric = (string)($spec['metric'] ?? $spec['select'] ?? '');
+
+		// `metrics`: several figures over ONE grouping, e.g. a budget line that
+		// needs both sum(committed) and sum(invoiced) per coding combination.
+		//
+		// The whole multi-metric path already existed — AggregationQuery::
+		// $metrics, tryNativeMultiMetric(), computeMetrics() and the grouped
+		// computeGrouped(metrics:) branch are all live and reached by the
+		// ad-hoc controller. Only the ANNOTATION path never read the key, so a
+		// declaration could not ask for what the engine could already compute.
+		// Declaring a second aggregation instead is not equivalent: it groups
+		// and scans the table again, and the two results can disagree if a row
+		// is written between the calls.
+		$specMetrics = ($spec['metrics'] ?? null);
+		$metrics = null;
+		if (is_array($specMetrics) === true && $specMetrics !== []) {
+			$metrics = $specMetrics;
+		}
 		$field = ($spec['field'] ?? null);
 		$filter = (array)($spec['filter'] ?? $spec['where'] ?? []);
 		$groupBy = ($spec['groupBy'] ?? null);
@@ -329,6 +346,11 @@ class AggregationRunner {
 		$activeOrg = $this->organisationService->getActiveOrganisation();
 		$cacheKey = [
 			'metric' => $metric,
+			// `metrics` changes WHICH FIGURES the envelope carries, so two
+			// specs differing only here are different aggregations. Omitting
+			// it would serve a two-sum caller the single-sum result, or worse
+			// the reverse — a `values` map where the caller reads `value`.
+			'metrics' => $metrics,
 			'field' => $field,
 			'filter' => $resolvedFilter,
 			'groupBy' => $groupBy,
@@ -369,7 +391,8 @@ class AggregationRunner {
 			metric: $metric,
 			field: $nativeFieldArg,
 			filter: $resolvedFilter,
-			groupBy: $nativeGroupByArg
+			groupBy: $nativeGroupByArg,
+			metrics: $metrics
 		);
 		if ($native !== null) {
 			// R05: native Postgres aggregates over the full set, so
@@ -458,12 +481,21 @@ class AggregationRunner {
 				rows: $rows,
 				metric: $metric,
 				field: $field,
-				groupFields: $runGroupFields
+				groupFields: $runGroupFields,
+				metrics: $metrics
 			);
 		}
 
 		if (isset($result['groups']) === false) {
-			$result['value'] = $this->computeMetric(rows: $rows, metric: $metric, field: $field);
+			// Ungrouped multi-metric yields `values` (a map), single-metric
+			// yields `value` (a scalar). Emitting the scalar for a `metrics`
+			// spec would hand the caller one figure where it asked for several,
+			// and it would look like a working answer.
+			if ($metrics !== null && count($metrics) > 1) {
+				$result['values'] = $this->computeMetrics(rows: $rows, metrics: $metrics);
+			} else {
+				$result['value'] = $this->computeMetric(rows: $rows, metric: $metric, field: $field);
+			}
 		}
 
 		$result = $this->applyJoin(

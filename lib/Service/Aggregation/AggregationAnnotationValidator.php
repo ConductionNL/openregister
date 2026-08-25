@@ -74,14 +74,26 @@ final class AggregationAnnotationValidator {
 	private AggregationJoinAnnotationValidator $joinValidator;
 
 	/**
+	 * Validator for the `metrics` clause.
+	 *
+	 * Split out for the same reason as the join validator: the per-entry
+	 * checks are a small decision tree, and inlining them pushed this class
+	 * past its complexity threshold.
+	 *
+	 * @var AggregationMetricsAnnotationValidator
+	 */
+	private AggregationMetricsAnnotationValidator $metricsValidator;
+
+	/**
 	 * Constructor.
 	 *
-	 * Plain `new` rather than injection: both classes are pure shape
+	 * Plain `new` rather than injection: all three classes are pure shape
 	 * validators with no collaborators, and the schema-save call sites
 	 * construct this validator directly.
 	 */
 	public function __construct() {
 		$this->joinValidator = new AggregationJoinAnnotationValidator();
+		$this->metricsValidator = new AggregationMetricsAnnotationValidator();
 	}//end __construct()
 
 	/**
@@ -158,6 +170,34 @@ final class AggregationAnnotationValidator {
 			// schema author passing an array) must not reach the string cast —
 			// PHP emits "Array to string conversion" — so they collapse to ''
 			// and fail the metric check with a proper validation error.
+			// `metrics`: several figures over one grouping. Validated BEFORE the
+			// single-metric check because a spec carrying `metrics` satisfies
+			// the "what am I computing" question through that key instead, and
+			// would otherwise be rejected for a missing `metric` it does not
+			// need. Each entry is held to exactly the rules a single metric is:
+			// a metric from the closed vocabulary, and a field that the schema
+			// actually declares when the metric needs one. A `metrics` list the
+			// runner cannot execute must fail here rather than at read time,
+			// where it would surface as an empty envelope.
+			$metricsSpec = ($spec['metrics'] ?? null);
+			if ($metricsSpec !== null) {
+				$metricsErrors = $this->metricsValidator->validate(
+					name: $name,
+					metrics: $metricsSpec,
+					propKeys: $propKeys
+				);
+				$errors = array_merge($errors, $metricsErrors);
+				if ($metricsErrors !== []) {
+					continue;
+				}
+
+				$errors = array_merge(
+					$errors,
+					$this->validateGroupBy(name: $name, spec: $spec, propKeys: $propKeys)
+				);
+				continue;
+			}
+
 			$metric = ($spec['metric'] ?? $spec['select'] ?? '');
 			if (is_scalar($metric) === false) {
 				$metric = '';
@@ -399,4 +439,5 @@ final class AggregationAnnotationValidator {
 
 		return $errors;
 	}//end validateCrossSchemaSpec()
+
 }//end class
