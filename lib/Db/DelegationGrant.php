@@ -299,6 +299,8 @@ class DelegationGrant extends Entity implements JsonSerializable {
 	 * Serialise for the API.
 	 *
 	 * @return array<string, mixed> The serialised grant.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
 	public function jsonSerialize(): array {
 		return [

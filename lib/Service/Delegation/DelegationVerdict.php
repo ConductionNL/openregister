@@ -139,6 +139,8 @@ final class DelegationVerdict {
 	 * Acting as yourself.
 	 *
 	 * @return self The verdict.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
 	public static function self(): self {
 		return new self(
@@ -155,6 +157,8 @@ final class DelegationVerdict {
 	 * @param DelegationGrant $grant The grant relied on.
 	 *
 	 * @return self The verdict.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
 	public static function granted(DelegationGrant $grant): self {
 		return new self(
@@ -177,6 +181,8 @@ final class DelegationVerdict {
 	 * @param string $detail A human-readable explanation.
 	 *
 	 * @return self The verdict.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
 	public static function refused(string $reason, string $detail): self {
 		return new self(permitted: false, reason: $reason, detail: $detail, grant: null);
