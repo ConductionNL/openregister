@@ -66,6 +66,31 @@ class ObjectsControllerResolutionAttributionTest extends TestCase {
 	}
 
 	/**
+	 * A leaked schema ref from an earlier caller is cleared before resolving.
+	 *
+	 * This is the other half of #2820. #2858 made the failure REPORT honestly;
+	 * this stops it happening. `setRegister()` re-resolves whatever ref is
+	 * pending on the shared service, so a ref left by an unrelated caller was
+	 * being resolved inside a register it was never meant for — which is how a
+	 * plain `GET /objects/19/9476` failed on an instance where a preload had
+	 * just touched a different register.
+	 *
+	 * @return void
+	 */
+	public function testLeakedContextIsClearedBeforeResolving(): void {
+		$register = new Register();
+		$register->setId(19);
+
+		$service = $this->createMock(ObjectService::class);
+		$service->expects($this->once())->method('clearCurrents');
+		$service->method('getCurrentRegisterEntity')->willReturn($register);
+		$service->method('getRegister')->willReturn(19);
+		$service->method('getSchema')->willReturn(9476);
+
+		$this->resolve($service);
+	}
+
+	/**
 	 * A register that genuinely does not resolve is reported as the register.
 	 *
 	 * `setRegister()` throws without ever assigning an entity, so nothing new is
