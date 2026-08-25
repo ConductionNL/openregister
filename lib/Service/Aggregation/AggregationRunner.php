@@ -186,6 +186,11 @@ class AggregationRunner {
 	 *                                        references in a cross-schema `where` clause.  Pass the
 	 *                                        plain object array from the parent read path.  Ignored when
 	 *                                        the aggregation spec has no `from` key.
+	 * @param array<string, mixed> $extraFilter Caller-supplied constraints that NARROW the declared
+	 *                                          filter. A key the declaration already constrains is
+	 *                                          refused, not overwritten, and only scalar equality is
+	 *                                          accepted — so this can add a constraint but never relax
+	 *                                          a declared scoping one. See mergeNarrowingFilter().
 	 *
 	 * @return array{
 	 *   name: string,
@@ -211,6 +216,7 @@ class AggregationRunner {
 		string $name,
 		bool $bypassRbac = false,
 		array $parentRow = [],
+		array $extraFilter = [],
 	): array {
 		// REGISTER-SCOPED RESOLUTION. The register is the boundary and is
 		// resolved FIRST; the schema ref is then matched only among the schemas
@@ -331,6 +337,31 @@ class AggregationRunner {
 		}
 
 		$resolvedFilter = $this->placeholders->resolveArray($filter);
+
+		// CALLER-SUPPLIED NARROWING. A declared aggregation's filter is its
+		// contract, so a caller may ADD constraints and may never relax one.
+		// Everything about this is deliberately one-directional:
+		//
+		//   - a key the declaration already constrains is REFUSED, not
+		//     overwritten. Letting a request replace `administrationId` would
+		//     turn a scoping filter into a caller-chosen one, which is the
+		//     whole risk this method exists to avoid;
+		//   - only equality on scalars is accepted. An operator filter could
+		//     express `!=` or `>`, and "add a constraint" that widens the set
+		//     is not narrowing;
+		//   - the merged result, not the declared one, is what reaches the
+		//     query AND the cache key below, so two callers narrowing
+		//     differently cannot read each other's numbers.
+		//
+		// The motivating case: shillinq's per-budget-line rollup is declared
+		// once but must answer per administration, and an annotation has no
+		// way to name the caller's active one — `$currentUser` is the only
+		// placeholder the resolver knows.
+		$resolvedFilter = $this->mergeNarrowingFilter(
+			declared: $resolvedFilter,
+			extra: $extraFilter,
+			name: $name
+		);
 
 		// Cache lookup: the resolved filter (with placeholders concrete)
 		// is the cache key together with the user's RBAC scope. 60s TTL.
@@ -2774,6 +2805,71 @@ class AggregationRunner {
 
 		return $envelope;
 	}//end applyJoin()
+
+	/**
+	 * Merge caller-supplied constraints into a declared filter, narrowing only.
+	 *
+	 * A declared aggregation's filter is part of its contract. A caller may ADD
+	 * a constraint; it may never relax, replace or remove one. That asymmetry
+	 * is the entire point — a declared `administrationId` is a scoping filter,
+	 * and a request that could overwrite it would turn tenancy into a
+	 * caller-chosen parameter.
+	 *
+	 * Refusals are SILENT drops rather than exceptions, deliberately: this runs
+	 * on a read path reached from a URL, and a 500 on a stray query parameter
+	 * would make the page fail rather than the parameter. A dropped key leaves
+	 * the declared constraint in force, so the failure mode is "your narrowing
+	 * did not apply", never "you saw more than you should".
+	 *
+	 * Three rules:
+	 *   1. a key the declaration already constrains is dropped — the
+	 *      declaration wins, always;
+	 *   2. only scalars are accepted. An array is an operator filter, and
+	 *      `!=` / `>` / `in` can widen a set rather than narrow it;
+	 *   3. an empty-string value is dropped, because a caller omitting a
+	 *      parameter should not silently become a filter on ''.
+	 *
+	 * @param array<string, mixed> $declared The declared, placeholder-resolved filter.
+	 * @param array<string, mixed> $extra    Caller-supplied constraints.
+	 * @param string               $name     Aggregation name, for the debug log.
+	 *
+	 * @return array<string, mixed> The merged filter.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function mergeNarrowingFilter(array $declared, array $extra, string $name): array {
+		if ($extra === []) {
+			return $declared;
+		}
+
+		$merged = $declared;
+		foreach ($extra as $key => $value) {
+			if (is_string($key) === false || $key === '') {
+				continue;
+			}
+
+			if (array_key_exists($key, $declared) === true) {
+				// `?->` because the logger is an OPTIONAL constructor argument
+				// here (`?LoggerInterface $logger = null`). A bare `->debug()`
+				// is a fatal whenever it was not injected — and a fatal on a
+				// read path, thrown from the branch that ENFORCES the scoping
+				// rule, would be the worst possible place for one.
+				$this->logger?->debug(
+					'Aggregation: refusing a request filter that would relax a declared one.',
+					['aggregation' => $name, 'key' => $key]
+				);
+				continue;
+			}
+
+			if (is_scalar($value) === false || $value === '') {
+				continue;
+			}
+
+			$merged[$key] = $value;
+		}
+
+		return $merged;
+	}//end mergeNarrowingFilter()
 
 	/**
 	 * Load the joined schema, gate the caller on it, and locate its register.
