@@ -19,6 +19,15 @@ Implements the open half of ADR-099. Depends on `or-delegated-identity`.
   the fleet for anything constructing the shape being constrained, not only a
   count of what is already stored.
 
+  ⚠️ **And the search must distinguish "searched and found nothing" from "the
+  search did not answer".** They look identical in the output and mean opposite
+  things. Measured by another session the same day: GitHub's code-search API
+  rate-limited a fleet sweep mid-run and returned error bodies that the loop
+  counted as hits, so apps that were never actually checked would have been
+  reported clean. Assert a per-repo HTTP status and a non-empty repo list before
+  believing any "0 matches"; a sweep that cannot name which repos it covered has
+  not covered any.
+
   Acceptance criteria:
   - The counts come from a production dump as well as the dev instance — the dev box is Hydra's own workspace and its 3 schedule flows are all self-named, which proves nothing about customers
   - A fleet-wide code search for constructors of the constrained shape accompanies the row counts
