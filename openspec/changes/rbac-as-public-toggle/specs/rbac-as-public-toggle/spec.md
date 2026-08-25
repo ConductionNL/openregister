@@ -89,6 +89,16 @@ The `_rbac_as_public` flag MUST be honoured on both the single-schema path (`Mag
 - **THEN** the count query (used for `total` in pagination) MUST also apply the forced-anon context
 - **AND** the reported `total` MUST NOT include objects the admin could see but the public cannot
 
+#### Scenario: Multitenancy auto-bypasses under asPublic to preserve uniform visibility
+
+`MagicOrganizationHandler::applyOrganizationFilter` reads the live user session directly and does not honour `_rbacAsPublic`. Leaving multitenancy enabled under `_rbac_as_public: true` therefore filters an admin's rows to their active organisation while an anonymous caller receives `1=0` (deny-all) — breaking the uniform-visibility contract of SCH-PFTS-001. `MagicSearchHandler::resolveMultitenancyFlag` MUST auto-bypass multitenancy in this case, matching the pre-existing "public schema" auto-bypass behaviour.
+
+- **WHEN** a search is issued with `_rbac: true`, `_rbac_as_public: true`, `_multitenancy: true`, and `_multitenancy_explicit` absent or `false`
+- **THEN** the effective multitenancy MUST be `false` (auto-bypass)
+- **AND** the admin caller MUST see the same result set as an anonymous caller with the same query
+- **WHEN** the same search is issued with `_multitenancy_explicit: true`
+- **THEN** the effective multitenancy MUST remain `true` — the explicit request overrides the auto-bypass
+
 ### Requirement: asPublic flag is a reserved query parameter (RBA-PUBLIC-003)
 
 The string `_rbac_as_public` MUST be listed in `MagicSearchHandler::getReservedParams()`. It MUST NOT be forwarded as a SQL WHERE-clause filter condition (it is a control flag, not a data filter). It MUST be consumed by the RBAC plumbing only.

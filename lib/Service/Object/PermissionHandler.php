@@ -425,6 +425,7 @@ class PermissionHandler
      * @param array<string> $uuids         Array of object UUIDs to filter.
      * @param bool          $_rbac         Whether to apply RBAC filtering.
      * @param bool          $_multitenancy Whether to apply multitenancy filtering.
+     * @param bool          $_rbacAsPublic Force anonymous RBAC context regardless of session (RBA-PUBLIC-006).
      *
      * @return string[] Filtered array of UUIDs
      *

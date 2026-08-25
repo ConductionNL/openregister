@@ -300,17 +300,15 @@ class ObjectService
     }//end __construct()
 
     /**
-     * Check if the current user has permission to perform a specific CRUD action on objects of a given schema
-
-    /**
      * Check permission and throw exception if not granted
      *
-     * @param Schema            $schema      Schema to check permissions for
-     * @param string            $action      Action to check permission for
-     * @param string|null       $userId      User ID to check permissions for
-     * @param string|null       $objectOwner Object owner ID
-     * @param bool              $_rbac       Whether to enforce RBAC checks
-     * @param ObjectEntity|null $object      Optional object entity for conditional authorization matching
+     * @param Schema            $schema        Schema to check permissions for
+     * @param string            $action        Action to check permission for
+     * @param string|null       $userId        User ID to check permissions for
+     * @param string|null       $objectOwner   Object owner ID
+     * @param bool              $_rbac         Whether to enforce RBAC checks
+     * @param ObjectEntity|null $object        Optional object entity for conditional authorization matching
+     * @param bool              $_rbacAsPublic Force anonymous RBAC context regardless of session (RBA-PUBLIC-006)
      *
      * @return void
      *
@@ -561,6 +559,8 @@ class ObjectService
      * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
      * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
      * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * @param bool                     $_rbacAsPublic Force anonymous RBAC context regardless of session (RBA-PUBLIC-006).
+     *                                                Only server-side callers may set this; not exposed as a query parameter.
      *
      * @return ObjectEntity|null The rendered object or null.
      *
@@ -1817,6 +1817,34 @@ class ObjectService
     }//end getFacetableFields()
 
     /**
+     * Normalise the `_rbac_as_public` query flag for HTTP-hardening (RBA-PUBLIC-005).
+     *
+     * The `_rbac_as_public` flag MUST NOT be settable by external HTTP callers via the
+     * query dict — an attacker could otherwise inject `?_rbac_as_public=true` to force
+     * an anonymous evaluation on an admin surface (a downgrade, not an escalation, but
+     * still unwanted behaviour). Strip any client-supplied value first, then re-set from
+     * the trusted method parameter. When called with `$_rbacAsPublic=false`, the flag is
+     * absent from the returned dict regardless of what the caller passed in.
+     *
+     * Extracted from `searchObjectsPaginated` so the security-property can be unit-tested
+     * in isolation without constructing the full ObjectService dependency graph.
+     *
+     * @param array<string, mixed> $query         The raw query dict, possibly with a client-supplied flag.
+     * @param bool                 $_rbacAsPublic Trusted method-parameter value.
+     *
+     * @return array<string, mixed> Query dict with `_rbac_as_public` normalised.
+     */
+    private function normalizeRbacAsPublicFlag(array $query, bool $_rbacAsPublic): array
+    {
+        unset($query['_rbac_as_public']);
+        if ($_rbacAsPublic === true) {
+            $query['_rbac_as_public'] = true;
+        }
+
+        return $query;
+    }//end normalizeRbacAsPublicFlag()
+
+    /**
      * Search objects with pagination and comprehensive faceting support
      *
      * **SEARCH ENGINE**: This method uses Solr as the primary search engine when available,
@@ -1900,6 +1928,12 @@ class ObjectService
      * @param array|null  $ids           Optional array of object IDs to filter by
      * @param string|null $uses          Optional uses parameter for filtering
      * @param array|null  $views         Optional array of view IDs to apply filters from
+     * @param bool        $_rbacAsPublic Force anonymous RBAC context regardless of session (RBA-PUBLIC-005/006).
+     *                                   Only server-side callers may set this; any client-supplied
+     *                                   `_rbac_as_public` in the query dict is stripped at method entry.
+     *                                   When true and multitenancy was not explicitly requested via
+     *                                   `_multitenancy_explicit=true`, multitenancy is auto-disabled
+     *                                   so admin and anonymous callers see the same result set.
      *
      * @psalm-param   array<string, mixed> $query
      * @phpstan-param array<string, mixed> $query
@@ -1935,17 +1969,10 @@ class ObjectService
         ?array $views=null,
         bool $_rbacAsPublic=false
     ): array {
-        // Security (RBA-PUBLIC-005): the `_rbac_as_public` flag MUST NOT be
-        // settable by external HTTP callers via the query dict. Strip any
-        // client-supplied value first, then re-set from the trusted method
-        // parameter. This ensures a caller passing `?_rbac_as_public=true` in
-        // a query string has no effect — only server-side callers who
-        // explicitly pass `$_rbacAsPublic=true` can enable the anonymous
-        // context, and only for the duration of this call.
-        unset($query['_rbac_as_public']);
-        if ($_rbacAsPublic === true) {
-            $query['_rbac_as_public'] = true;
-        }
+        // Security (RBA-PUBLIC-005): normalise the `_rbac_as_public` flag so a
+        // client-supplied value in the query dict cannot enable the anonymous
+        // RBAC context — only the trusted server-side method parameter can.
+        $query = $this->normalizeRbacAsPublicFlag(query: $query, _rbacAsPublic: $_rbacAsPublic);
 
         // Add register and schema context to query for magic mapper routing.
         // Use array_key_exists to allow explicit null values to disable auto-setting.

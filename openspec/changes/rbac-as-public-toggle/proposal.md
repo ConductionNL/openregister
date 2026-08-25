@@ -35,7 +35,7 @@ This change adds a single boolean flag `_rbac_as_public: true` to OpenRegister's
 - **Code (openregister only):**
   - `lib/Db/MagicMapper/MagicRbacHandler.php` — add `$asPublic` param to `buildRbacConditionsSql` and `applyRbacFilters`; add forced-anon-context guard at method entry.
   - `lib/Db/MagicMapper/MagicSearchHandler.php` — add `$asPublic` threading through `buildRbacConditionSql`, `buildWhereConditionsSql`, `buildFilteredQuery`, `applyAccessControlFilters`; add `_rbac_as_public` to `getReservedParams()`.
-  - `tests/unit/Db/MagicMapper/MagicRbacHandlerTest.php` (or a sibling `MagicRbacHandlerAsPublicTest.php`) — unit tests for the new behaviour.
+  - `tests/Unit/Db/MagicMapper/MagicRbacHandlerTest.php` (or a sibling `MagicRbacHandlerAsPublicTest.php`) — unit tests for the new behaviour.
 - **API contract:** The `_rbac_as_public` key is now a reserved query parameter (added to `getReservedParams()`). Additive, non-breaking. Existing callers that don't supply the key see no change.
 - **Cross-app:** OpenCatalogi's `assemblePublicSearchResults()` will set `_rbac_as_public: true` alongside `_rbac: true` on every query it dispatches — implementing Q1 Option B (uniform public-endpoint visibility) via this primitive. Other consuming apps (DocuDesk, Pipelinq, Procest, ZaakAfhandelApp) are unaffected.
 - **Security:** The flag narrows, not widens, the result set for authenticated users — it removes owner and admin grants, not adds them. There is no path through which setting `_rbac_as_public: true` grants access that would otherwise be denied.

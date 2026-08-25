@@ -281,12 +281,15 @@ class MagicSearchHandler
         $_multitenancy  = $query['_multitenancy'] ?? true;
         $relationsContains = $query['_relations_contains'] ?? null;
 
-        // Resolve multitenancy flag based on public schema access and explicit request.
+        // Resolve multitenancy flag based on public schema access, `_rbac_as_public`,
+        // and explicit request. See resolveMultitenancyFlag() for the full rationale
+        // (RBA-PUBLIC-002 / SCH-PFTS-001).
         $multitenancyExplicit = $this->isExplicitlyTrue(value: $query['_multitenancy_explicit'] ?? false);
         $_multitenancy        = $this->resolveMultitenancyFlag(
             _multitenancy: $_multitenancy,
             multitenancyExplicit: $multitenancyExplicit,
-            schema: $schema
+            schema: $schema,
+            _rbacAsPublic: $_rbacAsPublic
         );
 
         // Extract and clean filters from the query.
@@ -427,7 +430,8 @@ class MagicSearchHandler
     /**
      * Build the RBAC SQL condition
      *
-     * @param Schema $schema Schema for RBAC rules
+     * @param Schema $schema   Schema for RBAC rules
+     * @param bool   $asPublic Force anonymous RBAC context regardless of session (RBA-PUBLIC-002)
      *
      * @return string|null SQL condition or null if no RBAC filtering needed
      */
@@ -784,18 +788,34 @@ class MagicSearchHandler
      * multitenancy with _multi=true. This allows public data to be visible across orgs
      * while still giving users the option to filter by their own organisation.
      *
+     * The same bypass applies when the caller forces an anonymous RBAC context via
+     * `_rbac_as_public: true` (RBA-PUBLIC-002): the endpoint has declared itself public
+     * for all callers, and `MagicOrganizationHandler::applyOrganizationFilter` reads
+     * the live session directly (it does not honour `_rbacAsPublic`), so leaving
+     * multitenancy on would filter the admin's rows to their active org while an
+     * anonymous caller receives `1=0` (deny-all) — breaking the uniform-visibility
+     * contract of SCH-PFTS-001. The auto-bypass keeps admin and anonymous callers
+     * on the same result set unless the caller explicitly asked for `_multi=true`.
+     *
      * @param bool   $_multitenancy        Current multitenancy flag
      * @param bool   $multitenancyExplicit Whether multitenancy was explicitly requested
      * @param Schema $schema               Schema to check for public access
+     * @param bool   $_rbacAsPublic        Whether the caller forced an anonymous RBAC context
      *
      * @return bool Resolved multitenancy flag
      */
     private function resolveMultitenancyFlag(
         bool $_multitenancy,
         bool $multitenancyExplicit,
-        Schema $schema
+        Schema $schema,
+        bool $_rbacAsPublic=false
     ): bool {
         if ($_multitenancy === true) {
+            // Forced-anon endpoint bypasses multitenancy UNLESS user explicitly set _multi=true.
+            if ($_rbacAsPublic === true && $multitenancyExplicit === false) {
+                return false;
+            }
+
             $schemaAuth = $schema->getAuthorization();
             $readGroups = $schemaAuth['read'] ?? [];
             $hasPublic  = $this->hasPublicReadAccess(readRules: $readGroups);
@@ -822,6 +842,7 @@ class MagicSearchHandler
      * @param bool          $_rbac                Whether RBAC filtering is enabled
      * @param bool          $_multitenancy        Whether multitenancy filtering is enabled
      * @param bool          $multitenancyExplicit Whether multitenancy was explicitly requested
+     * @param bool          $_rbacAsPublic        Force anonymous RBAC context regardless of session (RBA-PUBLIC-002)
      *
      * @return void
      */
