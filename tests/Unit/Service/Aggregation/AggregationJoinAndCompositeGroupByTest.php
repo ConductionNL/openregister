@@ -61,8 +61,27 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 /**
- * @covers \OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator
- * @covers \OCA\OpenRegister\Service\Aggregation\AggregationRunner
+ * NO `@covers` / `#[CoversClass]` METADATA — deliberately, and measured.
+ *
+ * This suite runs under `beStrictAboutCoverageMetadata="true"`. In that mode
+ * PHPUnit restricts recording to the named units and marks any test that
+ * executes anything else RISKY, discarding that test's coverage wholesale.
+ * Almost every test here legitimately runs a collaborator — `validateGroupBy()`
+ * calls `AggregationQuery::normaliseGroupByFields()`, the runner tests go
+ * through `PlaceholderResolver` — so naming the three classes under test threw
+ * away the measurement instead of focusing it. Measured on this exact file:
+ *
+ *   with `@covers` (or the `#[CoversClass]` attribute form):  38 / 1621 stmts
+ *   with no coverage metadata:                               661 / 1621 stmts
+ *
+ * Same tests, same assertions, same executed lines — only the attribution
+ * differs. The five files in this directory that report healthy coverage
+ * (AggregationAnnotationValidatorTest, AggregationCacheTest,
+ * AggregationQueryTest, ThresholdEvaluationServiceTest,
+ * WidgetAnnotationValidatorTest) all carry no metadata for the same reason;
+ * the ten that declare `@covers` are exactly the ones whose subject reports
+ * 0%. Restoring metadata here without also declaring a `#[UsesClass]` for
+ * every collaborator would silently zero this file's coverage again.
  */
 class AggregationJoinAndCompositeGroupByTest extends TestCase {
 
@@ -540,6 +559,359 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 	}//end testSingleFieldGroupByStillProjectsScalarKey()
 
 	// ------------------------------------------------------------------
+	// Validator — the remaining join rejection paths.
+	// ------------------------------------------------------------------
+
+	/**
+	 * A `join` written as a LIST rather than an object. Worth its own case
+	 * because `[]` and `{}` are the same type in PHP, so the guard has to
+	 * test list-ness explicitly or a JSON array would fall through to the
+	 * per-key reads and report five confusing errors instead of one.
+	 */
+	public function testJoinWrittenAsAListIsRejected(): void {
+		$validator = new AggregationAnnotationValidator();
+
+		$spec = $this->joinAnnotation();
+		$spec['join'] = ['through', 'on', 'select'];
+
+		$this->assertSame(
+			['aggregation-join-malformed'],
+			$this->codes($validator->validate($this->schemaDefinition(['committed' => $spec]))),
+			'a list-shaped join MUST raise exactly one shape error, not a cascade'
+		);
+	}//end testJoinWrittenAsAListIsRejected()
+
+	/**
+	 * A join with no `through` names no schema to join to.
+	 */
+	public function testJoinWithoutThroughIsRejected(): void {
+		$validator = new AggregationAnnotationValidator();
+
+		$spec = $this->joinAnnotation();
+		unset($spec['join']['through']);
+
+		$this->assertContains(
+			'aggregation-join-through-empty',
+			$this->codes($validator->validate($this->schemaDefinition(['committed' => $spec])))
+		);
+	}//end testJoinWithoutThroughIsRejected()
+
+	/**
+	 * `on` must be a non-empty string or a non-empty map. An empty map, a
+	 * list, and a non-string scalar all fail the same way.
+	 *
+	 * @param mixed $onClause The malformed `on` value.
+	 *
+	 * @dataProvider malformedOnProvider
+	 */
+	public function testMalformedJoinOnIsRejected(mixed $onClause): void {
+		$validator = new AggregationAnnotationValidator();
+
+		$spec = $this->joinAnnotation();
+		$spec['join']['on'] = $onClause;
+
+		$this->assertContains(
+			'aggregation-join-on-malformed',
+			$this->codes($validator->validate($this->schemaDefinition(['committed' => $spec])))
+		);
+	}//end testMalformedJoinOnIsRejected()
+
+	/**
+	 * @return array<string, array<int, mixed>>
+	 */
+	public static function malformedOnProvider(): array {
+		return [
+			'empty string' => [''],
+			'empty map' => [[]],
+			'list' => [['programmeCode']],
+			'integer' => [42],
+			'null' => [null],
+		];
+	}//end malformedOnProvider()
+
+	/**
+	 * A `select` entry that names no field — a bare number, or an object
+	 * with a `metric` but no `field`.
+	 *
+	 * @param mixed $entry The malformed select entry.
+	 *
+	 * @dataProvider malformedSelectEntryProvider
+	 */
+	public function testMalformedJoinSelectEntryIsRejected(mixed $entry): void {
+		$validator = new AggregationAnnotationValidator();
+
+		$spec = $this->joinAnnotation();
+		$spec['join']['select'] = [$entry];
+
+		$this->assertContains(
+			'aggregation-join-select-malformed',
+			$this->codes($validator->validate($this->schemaDefinition(['committed' => $spec])))
+		);
+	}//end testMalformedJoinSelectEntryIsRejected()
+
+	/**
+	 * @return array<string, array<int, mixed>>
+	 */
+	public static function malformedSelectEntryProvider(): array {
+		return [
+			'integer' => [42],
+			'empty string' => [''],
+			'object without field' => [['metric' => 'sum']],
+			'object with empty field' => [['field' => '']],
+			'object with non-string field' => [['field' => 7]],
+		];
+	}//end malformedSelectEntryProvider()
+
+	/**
+	 * A `select` list that is not a list at all.
+	 */
+	public function testNonListJoinSelectIsRejected(): void {
+		$validator = new AggregationAnnotationValidator();
+
+		$spec = $this->joinAnnotation();
+		$spec['join']['select'] = 'commitment-budget.authorisedAmount';
+
+		$this->assertContains(
+			'aggregation-join-select-empty',
+			$this->codes($validator->validate($this->schemaDefinition(['committed' => $spec])))
+		);
+	}//end testNonListJoinSelectIsRejected()
+
+	/**
+	 * The joined-side filter must be a map when present.
+	 */
+	public function testNonMapJoinFilterIsRejected(): void {
+		$validator = new AggregationAnnotationValidator();
+
+		$spec = $this->joinAnnotation();
+		$spec['join']['filter'] = 'afgesloten=false';
+
+		$this->assertContains(
+			'aggregation-join-filter-malformed',
+			$this->codes($validator->validate($this->schemaDefinition(['committed' => $spec])))
+		);
+	}//end testNonMapJoinFilterIsRejected()
+
+	/**
+	 * An explicit `on` map whose parent halves ARE declared properties
+	 * validates clean — the accept side of the check whose reject side
+	 * testJoinOnMapRejectsUndeclaredParentField pins.
+	 */
+	public function testJoinOnMapWithDeclaredParentFieldsValidates(): void {
+		$validator = new AggregationAnnotationValidator();
+
+		$spec = $this->joinAnnotation();
+		$spec['join']['on'] = ['programme' => 'programmeCode', 'costCentre' => 'ccCode'];
+
+		$this->assertSame([], $validator->validate($this->schemaDefinition(['committed' => $spec])));
+	}//end testJoinOnMapWithDeclaredParentFieldsValidates()
+
+	// ------------------------------------------------------------------
+	// Validator — groupBy shapes the composite check now leans on.
+	// ------------------------------------------------------------------
+
+	/**
+	 * groupBy spellings that normalise to NO fields are malformed. An empty
+	 * list is the interesting one: it is a perfectly good array, so a guard
+	 * that only tested `is_array()` would accept it and then group on
+	 * nothing.
+	 *
+	 * @param mixed $groupBy The groupBy value that names no field.
+	 *
+	 * @dataProvider emptyGroupByProvider
+	 */
+	public function testGroupByNamingNoFieldIsRejected(mixed $groupBy): void {
+		$validator = new AggregationAnnotationValidator();
+
+		$this->assertContains(
+			'aggregation-groupby-malformed',
+			$this->codes($validator->validate($this->schemaDefinition(
+				['x' => ['metric' => 'count', 'groupBy' => $groupBy]]
+			)))
+		);
+	}//end testGroupByNamingNoFieldIsRejected()
+
+	/**
+	 * @return array<string, array<int, mixed>>
+	 */
+	public static function emptyGroupByProvider(): array {
+		return [
+			'empty list' => [[]],
+			'empty fields list' => [['fields' => []]],
+			'object with neither field nor fields' => [['bucket' => 'day']],
+			'scalar' => ['programme'],
+		];
+	}//end emptyGroupByProvider()
+
+	/**
+	 * A single-element LIST is the boundary between the two group-key row
+	 * shapes: it must validate like the object form, and the runner must
+	 * still emit the legacy scalar `key` (not a one-entry `keys` map), or a
+	 * consumer that migrated its spelling would silently lose its keys.
+	 */
+	public function testSingleElementListGroupByValidatesAndKeepsScalarKeyShape(): void {
+		$validator = new AggregationAnnotationValidator();
+		$this->assertSame(
+			[],
+			$validator->validate($this->schemaDefinition(
+				['x' => ['metric' => 'count', 'groupBy' => ['programme']]]
+			))
+		);
+
+		$runner = $this->makeTranslatableRunner(
+			groupBy: ['programme'],
+			rows: [['programme' => 'P1', 'costCentre' => 'C1', 'remainingCommitted' => 10]]
+		);
+		$result = $runner->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'byTwo');
+
+		$this->assertSame('P1', $result['groups'][0]['key']);
+		$this->assertArrayNotHasKey('keys', $result['groups'][0]);
+	}//end testSingleElementListGroupByValidatesAndKeepsScalarKeyShape()
+
+	/**
+	 * The `{field, bucket}` object form — the full legacy spelling, bucket
+	 * included — still validates.
+	 */
+	public function testFieldAndBucketObjectGroupByValidates(): void {
+		$validator = new AggregationAnnotationValidator();
+
+		$this->assertSame(
+			[],
+			$validator->validate($this->schemaDefinition(
+				['x' => ['metric' => 'count', 'groupBy' => ['field' => 'programme', 'bucket' => 'day']]]
+			))
+		);
+	}//end testFieldAndBucketObjectGroupByValidates()
+
+	// ------------------------------------------------------------------
+	// Runner — join key spellings and merge edge cases.
+	// ------------------------------------------------------------------
+
+	/**
+	 * The explicit `{parentField: joinedField}` map and the single-string
+	 * shorthand must resolve to the SAME join. The shorthand infers the
+	 * parent side (first group field, since `programmeCode` is not itself
+	 * grouped); this pins that the inference lands where the explicit
+	 * spelling says it should, which is the whole basis for accepting the
+	 * shorthand at all.
+	 */
+	public function testExplicitOnMapAndStringShorthandAgree(): void {
+		$stringSpec = $this->joinAnnotation();
+
+		$mapSpec = $this->joinAnnotation();
+		$mapSpec['join']['on'] = ['programme' => 'programmeCode'];
+
+		$viaString = $this->makeJoinRunner(annotations: ['committed' => $stringSpec])
+			->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'committed');
+
+		$this->setUp();
+		$viaMap = $this->makeJoinRunner(annotations: ['committed' => $mapSpec])
+			->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'committed');
+
+		$this->assertSame(['programme' => 'programmeCode'], $viaString['join']['on']);
+		$this->assertSame(['programme' => 'programmeCode'], $viaMap['join']['on']);
+		$this->assertSame($this->foldJoined($viaString['groups']), $this->foldJoined($viaMap['groups']));
+	}//end testExplicitOnMapAndStringShorthandAgree()
+
+	/**
+	 * An explicit `on` naming a parent field that is NOT grouped is refused.
+	 * The merge reads the join key out of the group row, so an ungrouped
+	 * parent field has no value there — it would match nothing on every row
+	 * while looking like a working join.
+	 */
+	public function testOnMapNamingUngroupedParentFieldIsRefused(): void {
+		$spec = $this->joinAnnotation();
+		$spec['join']['on'] = ['remainingCommitted' => 'programmeCode'];
+
+		$runner = $this->makeJoinRunner(annotations: ['committed' => $spec]);
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('is not one of the groupBy fields');
+
+		$runner->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'committed');
+	}//end testOnMapNamingUngroupedParentFieldIsRefused()
+
+	/**
+	 * Joined rows that match NO parent group are dropped silently, and
+	 * SEVERAL joined rows sharing one key are reduced by the select metric
+	 * (`sum` by default) rather than one arbitrarily winning.
+	 */
+	public function testJoinedRowsWithNoGroupAreDroppedAndDuplicateKeysReduce(): void {
+		$runner = $this->makeJoinRunner(
+			joinedRowsOverride: [
+				['programmeCode' => 'P1', 'authorisedAmount' => 1000],
+				['programmeCode' => 'P1', 'authorisedAmount' => 250],
+				['programmeCode' => 'P2', 'authorisedAmount' => 2000],
+				['programmeCode' => 'P404', 'authorisedAmount' => 999999],
+			]
+		);
+
+		$result = $runner->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'committed');
+		$folded = $this->foldJoined($result['groups']);
+
+		$this->assertSame(1250.0, $folded['P1|C1']['joined'], 'duplicate join keys MUST reduce, not overwrite');
+		$this->assertSame(1250.0, $folded['P1|C2']['joined']);
+		$this->assertSame(2000.0, $folded['P2|C1']['joined']);
+		$this->assertNull($folded['P3|C9']['joined']);
+		$this->assertCount(4, $folded, 'the unmatched P404 budget MUST NOT invent a group');
+	}//end testJoinedRowsWithNoGroupAreDroppedAndDuplicateKeysReduce()
+
+	/**
+	 * The `{field, metric}` select spelling overrides the `sum` default, and
+	 * a metric outside the closed vocabulary is refused rather than quietly
+	 * reduced some other way.
+	 */
+	public function testSelectObjectSpellingHonoursMetricAndRejectsUnknownOnes(): void {
+		$maxSpec = $this->joinAnnotation();
+		$maxSpec['join']['select'] = [['field' => 'authorisedAmount', 'metric' => 'max', 'alias' => 'cap']];
+
+		$result = $this->makeJoinRunner(annotations: ['committed' => $maxSpec])
+			->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'committed');
+
+		$this->assertSame(['cap'], $result['join']['select'], 'the declared alias MUST be the response key');
+		$this->assertSame(1000.0, $result['groups'][0]['joined']['cap']);
+
+		$this->setUp();
+		$badSpec = $this->joinAnnotation();
+		$badSpec['join']['select'] = [['field' => 'authorisedAmount', 'metric' => 'median']];
+		$runner = $this->makeJoinRunner(annotations: ['committed' => $badSpec]);
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('join.select metric "median" is not supported');
+		$runner->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'committed');
+	}//end testSelectObjectSpellingHonoursMetricAndRejectsUnknownOnes()
+
+	/**
+	 * When the joined hydrate hits PHP_FALLBACK_ROW_CAP the envelope says so.
+	 * The joined numbers are then computed over a PREFIX of the joined table,
+	 * so a consumer that ignores `join.truncated` is reading a partial budget
+	 * as if it were the whole one.
+	 */
+	public function testJoinTruncatedIsSetWhenJoinedHydrateHitsTheRowCap(): void {
+		$capped = [];
+		for ($i = 0; $i < 10000; $i++) {
+			$capped[] = ['programmeCode' => 'P1', 'authorisedAmount' => 1];
+		}
+
+		$result = $this->makeJoinRunner(joinedRowsOverride: $capped)
+			->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'committed');
+
+		$this->assertTrue($result['join']['truncated'], 'a joined hydrate at the cap MUST flag truncation');
+		$this->assertSame(10000.0, $result['groups'][0]['joined']['commitment-budget.authorisedAmount']);
+	}//end testJoinTruncatedIsSetWhenJoinedHydrateHitsTheRowCap()
+
+	/**
+	 * The un-truncated control for the test above — without it, a bug that
+	 * hardcoded `truncated: true` would pass.
+	 */
+	public function testJoinTruncatedIsFalseBelowTheRowCap(): void {
+		$result = $this->makeJoinRunner()
+			->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'committed');
+
+		$this->assertFalse($result['join']['truncated']);
+	}//end testJoinTruncatedIsFalseBelowTheRowCap()
+
+	// ------------------------------------------------------------------
 	// Fixtures + helpers.
 	// ------------------------------------------------------------------
 
@@ -618,6 +990,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 	 * @param array<string, mixed>|null $annotations Override the parent annotation map.
 	 * @param bool $joinedSchemaListAllowed Whether the caller holds `list` on the joined schema.
 	 * @param bool $expectNoJoinedFetch Assert the joined table is never hydrated (RBAC refusal test).
+	 * @param array<int, array<string, mixed>>|null $joinedRowsOverride Replace the joined-side rows.
 	 *
 	 * @return AggregationRunner
 	 */
@@ -625,6 +998,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		?array $annotations = null,
 		bool $joinedSchemaListAllowed = true,
 		bool $expectNoJoinedFetch = false,
+		?array $joinedRowsOverride = null,
 	): AggregationRunner {
 		$annotations = ($annotations ?? ['committed' => $this->joinAnnotation()]);
 
@@ -659,10 +1033,10 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 			['programme' => 'P2', 'costCentre' => 'C1', 'remainingCommitted' => 200],
 			['programme' => 'P3', 'costCentre' => 'C9', 'remainingCommitted' => 7],
 		];
-		$joinedRows = [
+		$joinedRows = ($joinedRowsOverride ?? [
 			['programmeCode' => 'P1', 'authorisedAmount' => 1000],
 			['programmeCode' => 'P2', 'authorisedAmount' => 2000],
-		];
+		]);
 
 		$this->magicMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
 			function (Register $register, Schema $schema) use ($parentRows, $joinedRows, $expectNoJoinedFetch): array {
@@ -840,17 +1214,22 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 	}//end makeTranslatableRunner()
 
 	/**
-	 * Wrap plain row arrays in ObjectEntity stubs.
+	 * Wrap plain row arrays in real ObjectEntity instances.
+	 *
+	 * Real entities rather than mocks: the row-cap test builds 10 000 of
+	 * these, and PHPUnit's mock generator is far too slow at that volume.
+	 * `ObjectEntity::getObject()` prepends its own `id` key; harmless here,
+	 * since every assertion reads named fields.
 	 *
 	 * @param array<int, array<string, mixed>> $rows Row data.
 	 *
-	 * @return array<int, ObjectEntity&MockObject>
+	 * @return array<int, ObjectEntity>
 	 */
 	private function entities(array $rows): array {
 		$entities = [];
 		foreach ($rows as $row) {
-			$entity = $this->createMock(ObjectEntity::class);
-			$entity->method('getObject')->willReturn($row);
+			$entity = new ObjectEntity();
+			$entity->setObject($row);
 			$entities[] = $entity;
 		}
 
