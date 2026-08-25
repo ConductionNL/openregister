@@ -96,7 +96,26 @@ class AggregationController extends Controller {
 	 */
 	public function aggregate(string $register, string $schema, string $name): JSONResponse {
 		try {
-			$result = $this->runner->run(registerRef: $register, schemaRef: $schema, name: $name);
+			// `filter[...]` NARROWS a declared aggregation; it can never relax
+			// it. The runner refuses any key the declaration already
+			// constrains, so this cannot be used to widen a scoping filter —
+			// see AggregationRunner::mergeNarrowingFilter().
+			//
+			// It exists because an annotation has no way to name the caller's
+			// context: `$currentUser` is the only placeholder the resolver
+			// knows, so a per-tenant figure declared once could not be asked
+			// for per tenant.
+			$extraFilter = $this->request->getParam('filter', []);
+			if (is_array($extraFilter) === false) {
+				$extraFilter = [];
+			}
+
+			$result = $this->runner->run(
+				registerRef: $register,
+				schemaRef: $schema,
+				name: $name,
+				extraFilter: $extraFilter
+			);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
 		} catch (RuntimeException $e) {
