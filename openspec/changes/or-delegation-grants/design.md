@@ -105,6 +105,28 @@ service-account principal granted read-only delegation, and a denied request
 retained to prove denial is distinguishable from silence. No seeded grant may be
 unbounded or unexpiring — the seed is also documentation of the default.
 
+### What the entity-RBAC layer does and does not give us
+
+🔴 **Do not assume the entity permission check narrows anything.** As of
+openregister#2834 it is reachable but ships **OFF**, behind
+`openregister.rbac_entity_enforcement`, defaulting to current behaviour. On a
+default instance it does not narrow at all.
+
+That is not timidity, it is a measured finding worth carrying into this change:
+the stored `authorization` configs were written while the check was INERT, so
+they had never once been validated against real usage. Enabling them broke
+register creation and object sharing — 39 `Shared path must be set` errors — because
+those configs grant only the `admin` group while the app legitimately acts as
+`openregister` and as the object owner. Enabling entity RBAC is a data migration,
+not a flag flip.
+
+**The general form is worth stating, because this change adds another such
+control:** a dormant control's configuration has never been validated. A rule
+nobody could observe is a rule nobody had to get right. So when the delegation
+check here first goes live, expect the same class of surprise from whatever data
+exists by then — and measure before enforcing (task 1.1) rather than trusting that
+records written against an unenforced rule describe a workable intent.
+
 ## Risks / Trade-offs
 
 **This is the change that starts refusing real work.** `or-delegated-identity`

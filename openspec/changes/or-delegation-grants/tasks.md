@@ -6,8 +6,31 @@ Implements the open half of ADR-099. Depends on `or-delegated-identity`.
 
 - [ ] 1.1 Count what would start refusing: flows whose schedule trigger names a user other than the flow's owner; agents whose `actingUser` differs from the agent's owner; Consumers whose `userId` differs from the record's owner. Record the counts, dated, with the query.
 
+  🔴 **Count GENERATORS, not just records.** `or-delegated-identity` measured the
+  3 existing flows carrying a schedule trigger and missed the population that
+  actually broke: code in OTHER APPS that CREATES schedule triggers
+  programmatically. `integriq`'s `JobToFlowGenerator` emits
+  `'config' => ['cron' => $cron]` with no identity, so every flow it generated
+  began failing validation the moment the rule landed — fixed there by configuring
+  a service account (integriq#1573/#1574) rather than deriving one.
+  
+  A query over stored rows cannot see a generator, because the rows it would
+  produce do not exist yet. So this task's sweep must include a code search across
+  the fleet for anything constructing the shape being constrained, not only a
+  count of what is already stored.
+
+  ⚠️ **And the search must distinguish "searched and found nothing" from "the
+  search did not answer".** They look identical in the output and mean opposite
+  things. Measured by another session the same day: GitHub's code-search API
+  rate-limited a fleet sweep mid-run and returned error bodies that the loop
+  counted as hits, so apps that were never actually checked would have been
+  reported clean. Assert a per-repo HTTP status and a non-empty repo list before
+  believing any "0 matches"; a sweep that cannot name which repos it covered has
+  not covered any.
+
   Acceptance criteria:
   - The counts come from a production dump as well as the dev instance — the dev box is Hydra's own workspace and its 3 schedule flows are all self-named, which proves nothing about customers
+  - A fleet-wide code search for constructors of the constrained shape accompanies the row counts
   - The migration decision in 3.3 is made from these numbers, not from a guess
 
 ## 2. The record
