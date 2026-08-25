@@ -74,14 +74,26 @@ final class AggregationAnnotationValidator {
 	private AggregationJoinAnnotationValidator $joinValidator;
 
 	/**
+	 * Validator for the `metrics` clause.
+	 *
+	 * Split out for the same reason as the join validator: the per-entry
+	 * checks are a small decision tree, and inlining them pushed this class
+	 * past its complexity threshold.
+	 *
+	 * @var AggregationMetricsAnnotationValidator
+	 */
+	private AggregationMetricsAnnotationValidator $metricsValidator;
+
+	/**
 	 * Constructor.
 	 *
-	 * Plain `new` rather than injection: both classes are pure shape
+	 * Plain `new` rather than injection: all three classes are pure shape
 	 * validators with no collaborators, and the schema-save call sites
 	 * construct this validator directly.
 	 */
 	public function __construct() {
 		$this->joinValidator = new AggregationJoinAnnotationValidator();
+		$this->metricsValidator = new AggregationMetricsAnnotationValidator();
 	}//end __construct()
 
 	/**
@@ -169,7 +181,7 @@ final class AggregationAnnotationValidator {
 			// where it would surface as an empty envelope.
 			$metricsSpec = ($spec['metrics'] ?? null);
 			if ($metricsSpec !== null) {
-				$metricsErrors = $this->validateMetricsList(
+				$metricsErrors = $this->metricsValidator->validate(
 					name: $name,
 					metrics: $metricsSpec,
 					propKeys: $propKeys
@@ -428,108 +440,4 @@ final class AggregationAnnotationValidator {
 		return $errors;
 	}//end validateCrossSchemaSpec()
 
-	/**
-	 * Validate a `metrics` list — several figures over one grouping.
-	 *
-	 * Holds every entry to exactly the rules a single `metric` is held to: a
-	 * metric drawn from the closed vocabulary, and a field the schema actually
-	 * declares whenever the metric needs one. The point is that an entry the
-	 * runner cannot execute fails HERE, at save time, rather than at read time
-	 * where a rejected metric shows up as a missing figure in an otherwise
-	 * well-formed envelope — indistinguishable from a genuine zero.
-	 *
-	 * A single-entry list is accepted rather than rewritten to `metric`: the
-	 * runner treats `count($metrics) > 1` as the multi path and falls back to
-	 * the scalar shape below that, so one entry behaves exactly like the
-	 * single-metric spelling without the author having to know which to use.
-	 *
-	 * @param string             $name     The aggregation name, for messages.
-	 * @param mixed              $metrics  The declared `metrics` value.
-	 * @param array<int, string> $propKeys Property names the schema declares.
-	 *
-	 * @return array<int, array{code: string, message: string}> Validation errors.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function validateMetricsList(string $name, mixed $metrics, array $propKeys): array {
-		if (is_array($metrics) === false || $metrics === [] || array_is_list($metrics) === false) {
-			return [
-				[
-					'code' => 'aggregation-metrics-malformed',
-					'message' => sprintf(
-						'Aggregation "%s" metrics must be a non-empty list of {metric, field?} objects.',
-						$name
-					),
-				],
-			];
-		}
-
-		$errors = [];
-		foreach ($metrics as $index => $entry) {
-			if (is_array($entry) === false) {
-				$errors[] = [
-					'code' => 'aggregation-metrics-entry-malformed',
-					'message' => sprintf('Aggregation "%s" metrics[%d] must be an object.', $name, $index),
-				];
-				continue;
-			}
-
-			$entryMetric = ($entry['metric'] ?? '');
-			if (is_scalar($entryMetric) === false) {
-				$entryMetric = '';
-			}
-
-			$entryMetric = (string)$entryMetric;
-			if (in_array($entryMetric, self::VALID_METRICS, true) === false) {
-				$errors[] = [
-					'code' => 'aggregation-metrics-bad-metric',
-					'message' => sprintf(
-						'Aggregation "%s" metrics[%d] metric "%s" is not in [%s].',
-						$name,
-						$index,
-						$entryMetric,
-						implode(', ', self::VALID_METRICS)
-					),
-				];
-				continue;
-			}
-
-			if (in_array($entryMetric, self::REQUIRES_FIELD, true) === false) {
-				continue;
-			}
-
-			$entryField = ($entry['field'] ?? '');
-			if (is_scalar($entryField) === false) {
-				$entryField = '';
-			}
-
-			$entryField = (string)$entryField;
-			if ($entryField === '') {
-				$errors[] = [
-					'code' => 'aggregation-metrics-field-missing',
-					'message' => sprintf(
-						'Aggregation "%s" metrics[%d] with metric "%s" requires a field.',
-						$name,
-						$index,
-						$entryMetric
-					),
-				];
-				continue;
-			}
-
-			if (in_array($entryField, $propKeys, true) === false) {
-				$errors[] = [
-					'code' => 'aggregation-metrics-field-not-in-schema',
-					'message' => sprintf(
-						'Aggregation "%s" metrics[%d] field "%s" is not declared in the schema properties.',
-						$name,
-						$index,
-						$entryField
-					),
-				];
-			}
-		}//end foreach
-
-		return $errors;
-	}//end validateMetricsList()
 }//end class
