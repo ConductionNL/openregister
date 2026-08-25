@@ -98,6 +98,24 @@ jobs:
           docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ app:enable openregister"
           docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ app:list" | grep openregister
 
+      - name: Provide composer inside the container
+        # The unit-suite step below runs INSIDE the nextcloud container, which
+        # ships no composer — which is why this repo used to carry a committed
+        # `composer.phar` at its root and invoke `php composer.phar install`.
+        #
+        # A checked-in package-manager binary is exactly the supply-chain shape
+        # ADR-100 Decision 2 forbids: it is never reviewed, never updated with
+        # the lockfile, and its provenance is a git history nobody reads.
+        #
+        # The runner already has composer (see the `composer install` step
+        # above, which uses it), so hand that one to the container instead of
+        # shipping a second copy in the repository. `command -v` fails loudly
+        # if it is ever absent, rather than falling through to a missing binary.
+        run: |
+          set -e
+          docker cp "$(command -v composer)" nextcloud:/usr/local/bin/composer
+          docker exec nextcloud composer --version
+
       - name: PHPUnit unit suite (in-container, HARD GATE)
         # The unit suite requires the full Nextcloud runtime — the OCP stubs
         # reference Doctrine\DBAL\* and OC\* internals that only resolve once
@@ -127,7 +145,7 @@ jobs:
             # ext-gd is ignored too as a belt-and-suspenders no-op (phpspreadsheet
             # requires it; the NC image does ship gd, so this is harmless there).
             php -r "\$j=json_decode(file_get_contents(\"composer.json\"),true); \$j[\"config\"][\"autoloader-suffix\"]=\"OrTestCI\"; file_put_contents(\"composer.json\", json_encode(\$j, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES));"
-            php composer.phar install --no-interaction --no-progress --prefer-dist --ignore-platform-req=ext-xsl --ignore-platform-req=ext-gd
+            composer install --no-interaction --no-progress --prefer-dist --ignore-platform-req=ext-xsl --ignore-platform-req=ext-gd
             OPENREGISTER_TEST_NC_ROOT=/var/www/html php vendor/bin/phpunit -c phpunit.xml --no-coverage --colors=never tests/Unit
           '
 
