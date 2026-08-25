@@ -96,6 +96,15 @@ class AggregationRunner {
 	private const PHP_FALLBACK_ROW_CAP = 10000;
 
 	/**
+	 * Metrics a `join.select` entry may reduce the joined column with.
+	 * Deliberately the same closed vocabulary the rest of the engine
+	 * accepts — a join is an aggregation over a second schema, not a new
+	 * metric surface. `count_distinct` has no native SQL translation and
+	 * bails the whole join to the PHP fallback (see aggregateJoinedSchema()).
+	 */
+	private const JOIN_SELECT_METRICS = ['count', 'sum', 'avg', 'min', 'max', 'count_distinct'];
+
+	/**
 	 * The shared register-scoped schema resolver.
 	 *
 	 * Built here rather than injected: it is a stateless collaborator over the
@@ -296,6 +305,14 @@ class AggregationRunner {
 			$groupByArg = $groupBy;
 		}
 
+		// Optional join spec — attaches aggregates from a SECOND schema to
+		// each group. See applyJoin().
+		$join = ($spec['join'] ?? null);
+		$joinArg = null;
+		if (is_array($join) === true) {
+			$joinArg = $join;
+		}
+
 		$resolvedFilter = $this->placeholders->resolveArray($filter);
 
 		// Cache lookup: the resolved filter (with placeholders concrete)
@@ -303,12 +320,19 @@ class AggregationRunner {
 		// SECURITY: cache key MUST include userId + active organisation —
 		// two callers with different RBAC verdicts on the same (metric,
 		// field, filter) tuple would otherwise read each other's results.
+		// It MUST equally include `groupBy` and `join`: those two keys
+		// change WHICH ROWS and WHICH SCHEMAS the result is computed from,
+		// so two specs differing only there are different aggregations and
+		// omitting either would serve one caller the other's numbers —
+		// including numbers sourced from a joined schema the second spec
+		// never asked for.
 		$activeOrg = $this->organisationService->getActiveOrganisation();
 		$cacheKey = [
 			'metric' => $metric,
 			'field' => $field,
 			'filter' => $resolvedFilter,
 			'groupBy' => $groupBy,
+			'join' => $join,
 			'userId' => $userId,
 			'org' => $activeOrg?->getUuid(),
 		];
@@ -364,6 +388,12 @@ class AggregationRunner {
 				'backend' => 'postgres',
 				'truncated' => false,
 			] + $native;
+			$result = $this->applyJoin(
+				envelope: $result,
+				join: $joinArg,
+				groupFields: $this->resolveGroupFields(groupBy: $groupBy),
+				bypassRbac: $bypassRbac
+			);
 			$this->cache->set(
 				registerSlug: (string)$register->getSlug(),
 				schemaSlug: (string)$schema->getSlug(),
@@ -435,6 +465,13 @@ class AggregationRunner {
 		if (isset($result['groups']) === false) {
 			$result['value'] = $this->computeMetric(rows: $rows, metric: $metric, field: $field);
 		}
+
+		$result = $this->applyJoin(
+			envelope: $result,
+			join: $joinArg,
+			groupFields: $runGroupFields,
+			bypassRbac: $bypassRbac
+		);
 
 		$this->cache->set(
 			registerSlug: (string)$register->getSlug(),
@@ -739,10 +776,10 @@ class AggregationRunner {
 	 * the negotiated display language.
 	 *
 	 * `GET /api/objects/aggregations/{register}/{schema}/grouped` groups on
-	 * a single field via SQL `GROUP BY` (native path) or PHP bucketing
-	 * (fallback). When that field is `translatable: true`, the stored value
-	 * is a language-keyed map (e.g. `{"nl":"Foo","en":"Bar"}`), so each
-	 * group `key` comes back as the raw map (native: a JSON string; PHP: an
+	 * one or more fields via SQL `GROUP BY` (native path) or PHP bucketing
+	 * (fallback). When a grouped field is `translatable: true`, the stored
+	 * value is a language-keyed map (e.g. `{"nl":"Foo","en":"Bar"}`), so the
+	 * group key comes back as the raw map (native: a JSON string; PHP: an
 	 * associative array) instead of the single projected string a normal
 	 * read returns.
 	 *
@@ -750,26 +787,39 @@ class AggregationRunner {
 	 * reusing {@see TranslationHandler::resolveTranslationsForRender()} for
 	 * the language chain / fallback logic rather than reimplementing it.
 	 *
+	 * Both group-row shapes are handled, and BOTH must be — a composite
+	 * groupBy emits `keys: {fieldA: ..., fieldB: ...}` and never a scalar
+	 * `key`, so a guard written for the single-field shape alone silently
+	 * skips projection for every multi-field aggregation and hands the
+	 * caller raw language maps:
+	 * - single-field: the scalar `key` is projected;
+	 * - multi-field: EVERY translatable member of the `keys` map is
+	 *   projected, each against its own field name; non-translatable
+	 *   members are left byte-for-byte unchanged.
+	 *
 	 * No-op when:
 	 * - the envelope carries no `groups`;
-	 * - there is no single scalar `groupBy.field`;
-	 * - the groupBy field is NOT translatable on the schema;
+	 * - the groupBy spec names no fields;
+	 * - NO grouped field is translatable on the schema;
 	 * - `?_translations=all` is requested (keys are returned verbatim).
 	 *
 	 * @param array<string, mixed> $envelope The aggregation result envelope.
 	 * @param Schema $schema The schema being aggregated.
 	 * @param Register $register The owning register (language config).
-	 * @param array<string, mixed>|null $groupBy The groupBy spec ({field: ...}).
+	 * @param array<string, mixed>|null $groupBy The groupBy spec — any accepted
+	 *                                           spelling ({field}, {fields: [...]},
+	 *                                           or a plain list).
 	 *
 	 * @return array<string, mixed> The envelope with translatable group keys projected.
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *   The method is a chain of cheap short-circuit guards (no groups /
-	 *   no groupBy field / not translatable / _translations=all) before
+	 *   no groupBy field / nothing translatable / _translations=all) before
 	 *   the projection loop; each guard adds a branch but keeps the hot
 	 *   path a single early return.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private function projectTranslatableGroupKeys(
 		array $envelope,
@@ -781,17 +831,22 @@ class AggregationRunner {
 			return $envelope;
 		}
 
-		if ($groupBy === null || isset($groupBy['field']) === false) {
+		$groupFields = $this->resolveGroupFields(groupBy: $groupBy);
+		if (count($groupFields) === 0) {
 			return $envelope;
 		}
 
-		$groupField = (string)$groupBy['field'];
-
-		// Only project when the grouped field is actually translatable.
-		// getTranslatableProperties() is cheap and this keeps NON-translatable
-		// grouped fields byte-for-byte unchanged.
+		// Only project when at least one grouped field is actually
+		// translatable. getTranslatableProperties() is cheap and this keeps
+		// NON-translatable grouped fields byte-for-byte unchanged.
 		$translatableProps = $this->translationHandler->getTranslatableProperties(schema: $schema);
-		if (in_array($groupField, $translatableProps, true) === false) {
+		$translatableGroups = array_values(
+			array_filter(
+				$groupFields,
+				static fn (string $groupField): bool => in_array($groupField, $translatableProps, true)
+			)
+		);
+		if (count($translatableGroups) === 0) {
 			return $envelope;
 		}
 
@@ -801,13 +856,13 @@ class AggregationRunner {
 		}
 
 		foreach ($envelope['groups'] as $index => $group) {
-			if (is_array($group) === false || array_key_exists('key', $group) === false) {
+			if (is_array($group) === false) {
 				continue;
 			}
 
-			$envelope['groups'][$index]['key'] = $this->projectSingleTranslatableKey(
-				rawKey: $group['key'],
-				groupField: $groupField,
+			$envelope['groups'][$index] = $this->projectGroupRowKeys(
+				group: $group,
+				translatableGroups: $translatableGroups,
 				schema: $schema,
 				register: $register
 			);
@@ -815,6 +870,62 @@ class AggregationRunner {
 
 		return $envelope;
 	}//end projectTranslatableGroupKeys()
+
+	/**
+	 * Project the translatable key(s) of ONE grouped row.
+	 *
+	 * Handles both row shapes: the composite `keys` map (every translatable
+	 * member projected against its own field name) and the legacy scalar
+	 * `key`. A row carrying neither is returned untouched.
+	 *
+	 * @param array<string, mixed> $group The grouped row.
+	 * @param array<int, string> $translatableGroups Group fields that ARE translatable.
+	 * @param Schema $schema The schema being aggregated.
+	 * @param Register $register The owning register (language config).
+	 *
+	 * @return array<string, mixed> The row with its translatable key(s) projected.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function projectGroupRowKeys(
+		array $group,
+		array $translatableGroups,
+		Schema $schema,
+		Register $register,
+	): array {
+		// Composite groupBy: project every translatable member of the
+		// `keys` map against its OWN field name.
+		if (isset($group['keys']) === true && is_array($group['keys']) === true) {
+			foreach ($translatableGroups as $groupField) {
+				if (array_key_exists($groupField, $group['keys']) === false) {
+					continue;
+				}
+
+				$group['keys'][$groupField] = $this->projectSingleTranslatableKey(
+					rawKey: $group['keys'][$groupField],
+					groupField: $groupField,
+					schema: $schema,
+					register: $register
+				);
+			}
+
+			return $group;
+		}
+
+		// Single-field groupBy: the legacy scalar `key` shape.
+		if (array_key_exists('key', $group) === false) {
+			return $group;
+		}
+
+		$group['key'] = $this->projectSingleTranslatableKey(
+			rawKey: $group['key'],
+			groupField: $translatableGroups[0],
+			schema: $schema,
+			register: $register
+		);
+
+		return $group;
+	}//end projectGroupRowKeys()
 
 	/**
 	 * Project a single grouped key value to the negotiated language.
@@ -2480,6 +2591,636 @@ class AggregationRunner {
 		$name = preg_replace('/_+/', '_', $name);
 		return rtrim((string)$name, '_');
 	}//end sanitizeColumnName()
+
+	/**
+	 * Attach aggregates from a SECOND schema to each group of an already
+	 * computed grouped envelope (the `join` clause).
+	 *
+	 * Spec shape (see {@see AggregationJoinAnnotationValidator::validate()}):
+	 *   "join": {
+	 *     "through": "CommitmentBudget",
+	 *     "on":      "CommitmentBudget.programmeCode",
+	 *     "filter":  { },
+	 *     "select":  ["CommitmentBudget.authorised_amount"]
+	 *   }
+	 *
+	 * IMPLEMENTATION: TWO-QUERY MERGE, NOT A SQL JOIN
+	 * ------------------------------------------------
+	 * The parent aggregate has already run. This method aggregates the
+	 * JOINED schema independently — grouped on the joined side of the join
+	 * key — and merges the two result sets in PHP on that key. It does NOT
+	 * emit a `FROM parent JOIN joined` statement, deliberately:
+	 *
+	 * - The two schemas live in SEPARATE per-schema magic shard tables, and
+	 *   possibly in separate registers. A single statement would have to
+	 *   re-derive BOTH tables' tenancy (`_organisation`) and soft-delete
+	 *   predicates by hand. Every one of those is a place to silently widen
+	 *   the row set; routing the joined schema through the SAME
+	 *   {@see tryNativeAggregation()} the parent used means it inherits
+	 *   those predicates instead of re-implementing them.
+	 * - {@see tryNativeAggregation()} answers `null` (fall back to PHP) for
+	 *   any shape it cannot translate. A hand-written JOIN inside it would
+	 *   have to fall back too, and the PHP fallback has no join — the two
+	 *   paths would disagree exactly when the native path bailed.
+	 *
+	 * PERFORMANCE
+	 * -----------
+	 * Native path: `1 + N` queries, N = `count(select)`. Each is a grouped
+	 * aggregate over the joined table (same cost class as the parent's own
+	 * grouped query). Crucially the count is independent of the NUMBER OF
+	 * GROUPS — this is not an N+1-per-row lookup; 4 groups and 40,000
+	 * groups issue the same `1 + N` queries.
+	 * PHP fallback: the joined table is hydrated ONCE (capped at
+	 * {@see PHP_FALLBACK_ROW_CAP}) and all N select entries are computed
+	 * from those rows, so the fallback is `1` extra table scan, not N. The
+	 * merge itself is O(parent groups + joined groups) via a hash lookup.
+	 * When the joined hydrate hits the cap the envelope's `join.truncated`
+	 * flag is set — the joined numbers are then partial and the caller MUST
+	 * treat them as such.
+	 *
+	 * RBAC
+	 * ----
+	 * A join MUST NOT become a way to read a schema the caller cannot read.
+	 * Three independent controls, the same three the cross-schema `from`
+	 * path relies on:
+	 *  1. An explicit `list` permission gate on the JOINED schema via
+	 *     {@see PermissionHandler::hasPermission()}, refusing with
+	 *     RuntimeException('Forbidden: ...') before a single row is read.
+	 *  2. Tenancy: the joined aggregate runs through the same
+	 *     {@see tryNativeAggregation()} (which appends the
+	 *     `_organisation = ?` predicate, fail-closed to
+	 *     `__no_active_org__` when there is no active organisation) or the
+	 *     same {@see MagicMapper::findAllInRegisterSchemaTable()} the
+	 *     parent uses (MultiTenancyTrait). Note that register RESOLUTION
+	 *     ({@see findRegisterForSchema()}) deliberately bypasses
+	 *     multi-tenancy as a metadata read — it is NOT a tenancy control,
+	 *     and is not counted as one here.
+	 *  3. The cache key in {@see run()} carries the whole join spec plus
+	 *     userId + active organisation, so a permitted caller's joined
+	 *     numbers can never be served to a caller with a different verdict.
+	 *
+	 * @param array<string, mixed> $envelope The parent aggregation envelope (must carry `groups`).
+	 * @param array<string, mixed>|null $join The raw join spec; null is a no-op.
+	 * @param array<int, string> $groupFields The parent's ordered group fields.
+	 * @param bool $bypassRbac Internal-system mode: skip the list-permission gate
+	 *                         (tenancy predicates still apply — they are not bypassable here).
+	 *
+	 * @return array<string, mixed> The envelope with a `joined` map on each group and a `join` summary.
+	 *
+	 * @throws RuntimeException When the join spec is unusable, the joined schema cannot be
+	 *                          resolved, or the caller lacks list permission on it.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 *   The method is one linear pipeline (validate → resolve+gate → aggregate
+	 *   → merge); splitting the guards out would hide the fail-closed order,
+	 *   which is the security-relevant property.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function applyJoin(
+		array $envelope,
+		?array $join,
+		array $groupFields,
+		bool $bypassRbac,
+	): array {
+		if ($join === null) {
+			return $envelope;
+		}
+
+		if (count($groupFields) === 0) {
+			throw new RuntimeException(
+				'Aggregation join requires a groupBy — joined values are attached per group.'
+			);
+		}
+
+		if (isset($envelope['groups']) === false || is_array($envelope['groups']) === false) {
+			throw new RuntimeException('Aggregation join expected a grouped result to attach to.');
+		}
+
+		$through = (string)($join['through'] ?? '');
+		if ($through === '') {
+			throw new RuntimeException('Aggregation join is missing a non-empty `through` schema ref.');
+		}
+
+		$onMap = $this->resolveJoinKey(join: $join, groupFields: $groupFields);
+		$selectEntries = $this->parseJoinSelect(join: $join);
+
+		// Load the joined schema, gate on it, and locate its register —
+		// all BEFORE a single joined row is read.
+		[$joinedSchema, $joinedRegister] = $this->resolveJoinTarget(
+			through: $through,
+			bypassRbac: $bypassRbac
+		);
+
+		$joinedFilter = $this->placeholders->resolveArray((array)($join['filter'] ?? $join['where'] ?? []));
+
+		$lookup = $this->aggregateJoinedSchema(
+			register: $joinedRegister,
+			schema: $joinedSchema,
+			filter: $joinedFilter,
+			joinedFields: array_values($onMap),
+			selectEntries: $selectEntries
+		);
+
+		$aliases = array_map(static fn (array $entry): string => $entry['alias'], $selectEntries);
+
+		$envelope['groups'] = $this->mergeJoinedValues(
+			groups: $envelope['groups'],
+			onMap: $onMap,
+			aliases: $aliases,
+			lookup: $lookup['values']
+		);
+
+		$envelope['join'] = [
+			'through' => $through,
+			'on' => $onMap,
+			'select' => $aliases,
+			'backend' => $lookup['backend'],
+			'truncated' => $lookup['truncated'],
+		];
+
+		return $envelope;
+	}//end applyJoin()
+
+	/**
+	 * Load the joined schema, gate the caller on it, and locate its register.
+	 *
+	 * The ORDER is the security-relevant part: the `list` permission gate
+	 * runs before the register lookup and before any row read, so a caller
+	 * without rights on the joined schema learns nothing beyond the refusal.
+	 *
+	 * @param string $through The joined schema ref.
+	 * @param bool $bypassRbac Internal-system mode: skip the list-permission gate.
+	 *
+	 * @return array{0: Schema, 1: Register} The joined schema and its register.
+	 *
+	 * @throws RuntimeException When the caller lacks `list`, or no register carries the schema.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function resolveJoinTarget(string $through, bool $bypassRbac): array {
+		$joinedSchema = $this->loadSchema(schemaRef: $through);
+
+		// SECURITY (control 1 of 3, see applyJoin()'s docblock): list
+		// permission on the JOINED schema. `objectOwner: null` /
+		// `object: null` is the list-level form — the join has not selected
+		// any specific row.
+		$userId = $this->userSession->getUser()?->getUID();
+		if ($bypassRbac === false && $this->permissionHandler->hasPermission(
+			schema: $joinedSchema,
+			action: 'list',
+			userId: $userId,
+			objectOwner: null,
+			_rbac: true,
+			object: null
+		) === false
+		) {
+			throw new RuntimeException(
+				sprintf('Forbidden: caller lacks list permission on join target "%s".', $through)
+			);
+		}
+
+		$joinedRegister = $this->findRegisterForSchema(schema: $joinedSchema);
+		if ($joinedRegister === null) {
+			throw new RuntimeException(
+				sprintf('No register found that contains join target schema "%s".', $through)
+			);
+		}
+
+		return [$joinedSchema, $joinedRegister];
+	}//end resolveJoinTarget()
+
+	/**
+	 * Attach the joined lookup to each parent group under `joined`.
+	 *
+	 * Every alias is ALWAYS present, `null` on a miss. An absent key and a
+	 * null value read the same to a careless consumer; making the miss
+	 * explicit keeps "no matching row on the joined side" from looking like
+	 * "this alias was never requested".
+	 *
+	 * @param array<int, mixed> $groups The parent grouped rows.
+	 * @param array<string, string> $onMap Ordered parentField => joinedField map.
+	 * @param array<int, string> $aliases The select aliases, in declaration order.
+	 * @param array<string, array<string, int|float|null>> $lookup Joined values by merge key.
+	 *
+	 * @return array<int, mixed> The grouped rows, each carrying a `joined` map.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function mergeJoinedValues(array $groups, array $onMap, array $aliases, array $lookup): array {
+		$parentFields = array_keys($onMap);
+
+		foreach ($groups as $index => $group) {
+			if (is_array($group) === false) {
+				continue;
+			}
+
+			$tuple = [];
+			foreach ($parentFields as $parentField) {
+				if (isset($group['keys']) === true && is_array($group['keys']) === true) {
+					$tuple[] = ($group['keys'][$parentField] ?? null);
+					continue;
+				}
+
+				$tuple[] = ($group['key'] ?? null);
+			}
+
+			$tupleKey = $this->joinTupleKey(values: $tuple);
+
+			$joined = [];
+			foreach ($aliases as $alias) {
+				$joined[$alias] = ($lookup[$tupleKey][$alias] ?? null);
+			}
+
+			$groups[$index]['joined'] = $joined;
+		}//end foreach
+
+		return $groups;
+	}//end mergeJoinedValues()
+
+	/**
+	 * Resolve a join `on` clause to an ordered `parentField => joinedField` map.
+	 *
+	 * Two spellings:
+	 * - `{parentField: joinedField, ...}` — explicit and unambiguous, and
+	 *   the only spelling that can express a COMPOSITE join key.
+	 * - `"Through.column"` or bare `"column"` — single-column shorthand.
+	 *   The JOINED side is the column named. The PARENT side is inferred:
+	 *   the group field of the SAME name when one exists, otherwise the
+	 *   FIRST group field. The fallback is what makes shillinq's
+	 *   `on: "CommitmentBudget.programmeCode"` resolve to
+	 *   `programme => programmeCode` against
+	 *   `groupBy: [programme, costCentre, ...]`. It IS an inference; the
+	 *   map spelling exists for authors who would rather say it outright.
+	 *
+	 * @param array<string, mixed> $join The raw join spec.
+	 * @param array<int, string> $groupFields The parent's ordered group fields.
+	 *
+	 * @return array<string, string> Ordered parentField => joinedField map.
+	 *
+	 * @throws RuntimeException When `on` is missing or unusable.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function resolveJoinKey(array $join, array $groupFields): array {
+		$onClause = ($join['on'] ?? null);
+
+		if (is_array($onClause) === true && count($onClause) > 0 && array_is_list($onClause) === false) {
+			return $this->resolveJoinKeyMap(onClause: $onClause, groupFields: $groupFields);
+		}
+
+		if (is_string($onClause) === false || $onClause === '') {
+			throw new RuntimeException(
+				'Aggregation join.on must be a "Schema.column" string or a {parentField: joinedField} map.'
+			);
+		}
+
+		$joinedField = $this->stripSchemaPrefix(ref: $onClause);
+		if ($joinedField === '') {
+			throw new RuntimeException('Aggregation join.on names an empty column.');
+		}
+
+		// Same-named group field wins; otherwise the first group field.
+		$parentField = $groupFields[0];
+		if (in_array($joinedField, $groupFields, true) === true) {
+			$parentField = $joinedField;
+		}
+
+		return [$parentField => $joinedField];
+	}//end resolveJoinKey()
+
+	/**
+	 * Resolve the explicit `{parentField: joinedField}` spelling of `on`.
+	 *
+	 * Each parent-side field MUST be one of the groupBy fields: the merge
+	 * reads the join key out of the group row, so a parent field that is not
+	 * grouped has no value there and would silently match nothing.
+	 *
+	 * @param array<string, mixed> $onClause The `on` map.
+	 * @param array<int, string> $groupFields The parent's ordered group fields.
+	 *
+	 * @return array<string, string> Ordered parentField => joinedField map.
+	 *
+	 * @throws RuntimeException When a side is empty or the parent field is not grouped.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function resolveJoinKeyMap(array $onClause, array $groupFields): array {
+		$map = [];
+		foreach ($onClause as $parentField => $joinedField) {
+			$parentField = (string)$parentField;
+			$joinedField = $this->stripSchemaPrefix(ref: (string)$joinedField);
+			if ($parentField === '' || $joinedField === '') {
+				throw new RuntimeException('Aggregation join.on names an empty field.');
+			}
+
+			if (in_array($parentField, $groupFields, true) === false) {
+				throw new RuntimeException(
+					sprintf(
+						'Aggregation join.on parent field "%s" is not one of the groupBy fields.',
+						$parentField
+					)
+				);
+			}
+
+			$map[$parentField] = $joinedField;
+		}
+
+		return $map;
+	}//end resolveJoinKeyMap()
+
+	/**
+	 * Strip a leading `Schema.` qualifier from a join field reference.
+	 *
+	 * `"CommitmentBudget.programmeCode"` → `"programmeCode"`. ANY qualifier
+	 * is stripped, not only one matching the `through` ref: a schema ref may
+	 * be written as a slug, uuid or id, so requiring an exact textual match
+	 * would silently leave a dotted string as the column name and produce a
+	 * column-not-found bail to the PHP fallback instead of a readable error.
+	 *
+	 * @param string $ref The raw field reference.
+	 *
+	 * @return string The bare column name.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function stripSchemaPrefix(string $ref): string {
+		$position = strrpos($ref, '.');
+		if ($position === false) {
+			return $ref;
+		}
+
+		return substr($ref, ($position + 1));
+	}//end stripSchemaPrefix()
+
+	/**
+	 * Parse a join `select` list to `{alias, field, metric}` entries.
+	 *
+	 * Accepted entries:
+	 * - `"CommitmentBudget.authorised_amount"` — alias is the string AS
+	 *   WRITTEN (so a consumer reads back the key it declared), field is
+	 *   the bare column, metric defaults to `sum`.
+	 * - `{field: "authorised_amount", metric: "max", alias: "cap"}` —
+	 *   `metric` defaults to `sum`, `alias` defaults to `field`.
+	 *
+	 * `sum` is the default because the joined side is aggregated per join
+	 * key, not looked up per row: a budget schema holding exactly one row
+	 * per key sums to that row's value, and one holding several sums to
+	 * their total — which is the arithmetic a budget-vs-realised report
+	 * wants. An author who needs a different reduction says so with the
+	 * object spelling.
+	 *
+	 * @param array<string, mixed> $join The raw join spec.
+	 *
+	 * @return array<int, array{alias: string, field: string, metric: string}> Parsed entries.
+	 *
+	 * @throws RuntimeException When `select` is missing, empty or malformed.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function parseJoinSelect(array $join): array {
+		$select = ($join['select'] ?? null);
+		if (is_array($select) === false || count($select) === 0) {
+			throw new RuntimeException('Aggregation join requires a non-empty `select` list.');
+		}
+
+		$entries = [];
+		foreach ($select as $raw) {
+			$entries[] = $this->parseJoinSelectEntry(raw: $raw);
+		}
+
+		return $entries;
+	}//end parseJoinSelect()
+
+	/**
+	 * Parse ONE join `select` entry to `{alias, field, metric}`.
+	 *
+	 * @param mixed $raw The raw entry — a "Field" string or a {field, metric?, alias?} object.
+	 *
+	 * @return array{alias: string, field: string, metric: string} The parsed entry.
+	 *
+	 * @throws RuntimeException When the entry is malformed or names an unsupported metric.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function parseJoinSelectEntry(mixed $raw): array {
+		if (is_string($raw) === true && $raw !== '') {
+			return [
+				'alias' => $raw,
+				'field' => $this->stripSchemaPrefix(ref: $raw),
+				'metric' => 'sum',
+			];
+		}
+
+		if (is_array($raw) === false
+			|| isset($raw['field']) === false
+			|| is_string($raw['field']) === false
+			|| $raw['field'] === ''
+		) {
+			throw new RuntimeException(
+				'Aggregation join.select entries must be "Field" strings or {field, metric?} objects.'
+			);
+		}
+
+		$metric = (string)($raw['metric'] ?? 'sum');
+		if (in_array($metric, self::JOIN_SELECT_METRICS, true) === false) {
+			throw new RuntimeException(
+				sprintf('Aggregation join.select metric "%s" is not supported.', $metric)
+			);
+		}
+
+		return [
+			'alias' => (string)($raw['alias'] ?? $raw['field']),
+			'field' => $this->stripSchemaPrefix(ref: $raw['field']),
+			'metric' => $metric,
+		];
+	}//end parseJoinSelectEntry()
+
+	/**
+	 * Aggregate the joined schema, grouped on the joined side of the join key.
+	 *
+	 * Native first (one grouped query per select entry, reusing
+	 * {@see tryNativeAggregation()} verbatim so the joined read carries the
+	 * same tenancy and soft-delete predicates as the parent). If ANY entry
+	 * bails to null the WHOLE native attempt is abandoned and every entry is
+	 * recomputed in PHP — mirroring {@see tryNativeMultiMetric()}'s posture,
+	 * so a single response is never a partial native / partial-PHP mix.
+	 *
+	 * The PHP fallback hydrates the joined table ONCE and reuses those rows
+	 * for every select entry, and reduces them with the SAME
+	 * {@see computeGrouped()} the parent's fallback uses — which is what
+	 * makes the two paths agree rather than merely look similar.
+	 *
+	 * @param Register $register Register owning the joined schema.
+	 * @param Schema $schema The joined schema.
+	 * @param array<string, mixed> $filter Placeholder-resolved filter for the joined schema.
+	 * @param array<int, string> $joinedFields Joined-side join key field(s).
+	 * @param array<int, array{alias: string, field: string, metric: string}> $selectEntries Parsed select entries.
+	 *
+	 * @return array{values: array<string, array<string, int|float|null>>, backend: string, truncated: bool}
+	 *         Lookup keyed by {@see joinTupleKey()} → alias → value.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function aggregateJoinedSchema(
+		Register $register,
+		Schema $schema,
+		array $filter,
+		array $joinedFields,
+		array $selectEntries,
+	): array {
+		$groupBySpec = ['fields' => $joinedFields];
+		$isMulti = (count($joinedFields) > 1);
+
+		// --- Native attempt: 1 grouped query per select entry. ---
+		$native = [];
+		$nativeUsable = true;
+		foreach ($selectEntries as $entry) {
+			$single = $this->tryNativeAggregation(
+				register: $register,
+				schema: $schema,
+				metric: $entry['metric'],
+				field: $entry['field'],
+				filter: $filter,
+				groupBy: $groupBySpec
+			);
+
+			if ($single === null) {
+				$nativeUsable = false;
+				break;
+			}
+
+			$native[$entry['alias']] = ($single['groups'] ?? []);
+		}
+
+		if ($nativeUsable === true) {
+			return [
+				'values' => $this->indexJoinedGroups(perAlias: $native, isMulti: $isMulti, joinedFields: $joinedFields),
+				'backend' => 'postgres',
+				'truncated' => false,
+			];
+		}
+
+		// --- PHP fallback: hydrate ONCE, reduce per select entry. ---
+		$objects = $this->magicMapper->findAllInRegisterSchemaTable(
+			register: $register,
+			schema: $schema,
+			limit: self::PHP_FALLBACK_ROW_CAP
+		);
+		$truncated = (count($objects) >= self::PHP_FALLBACK_ROW_CAP);
+
+		$rows = [];
+		foreach ($objects as $object) {
+			$rows[] = $object->getObject();
+		}
+
+		$rows = $this->applyFilter(rows: $rows, filter: $filter);
+
+		$perAlias = [];
+		foreach ($selectEntries as $entry) {
+			$perAlias[$entry['alias']] = $this->computeGrouped(
+				rows: $rows,
+				metric: $entry['metric'],
+				field: $entry['field'],
+				groupFields: $joinedFields
+			);
+		}
+
+		return [
+			'values' => $this->indexJoinedGroups(perAlias: $perAlias, isMulti: $isMulti, joinedFields: $joinedFields),
+			'backend' => 'php-fallback',
+			'truncated' => $truncated,
+		];
+	}//end aggregateJoinedSchema()
+
+	/**
+	 * Fold per-alias grouped rows into one `joinKey => alias => value` lookup.
+	 *
+	 * @param array<string, array<int, array<string, mixed>>> $perAlias Grouped rows per select alias.
+	 * @param bool $isMulti Whether the join key is composite (rows carry `keys`, not `key`).
+	 * @param array<int, string> $joinedFields Joined-side join key field(s), in key order.
+	 *
+	 * @return array<string, array<string, int|float|null>> Lookup keyed by {@see joinTupleKey()}.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function indexJoinedGroups(array $perAlias, bool $isMulti, array $joinedFields): array {
+		$lookup = [];
+		foreach ($perAlias as $alias => $groups) {
+			foreach ($groups as $group) {
+				if (is_array($group) === false) {
+					continue;
+				}
+
+				$tuple = [($group['key'] ?? null)];
+				if ($isMulti === true) {
+					$keys = [];
+					if (isset($group['keys']) === true && is_array($group['keys']) === true) {
+						$keys = $group['keys'];
+					}
+
+					$tuple = [];
+					foreach ($joinedFields as $joinedField) {
+						$tuple[] = ($keys[$joinedField] ?? null);
+					}
+				}
+
+				$tupleKey = $this->joinTupleKey(values: $tuple);
+				$lookup[$tupleKey][$alias] = ($group['value'] ?? null);
+			}
+		}//end foreach
+
+		return $lookup;
+	}//end indexJoinedGroups()
+
+	/**
+	 * Build the merge key for one join-key tuple.
+	 *
+	 * Every member is normalised to its STRING form before hashing. That is
+	 * load-bearing, not cosmetic: the native path reads join-key columns
+	 * back through the DB driver (a numeric year arrives as `"2024"`) while
+	 * the PHP fallback reads them out of decoded JSON (`2024`). Keying on
+	 * the raw values would make the two paths match different groups on the
+	 * same data — the native path silently attaching nothing.
+	 *
+	 * `null` gets a sentinel distinct from the empty string so a genuinely
+	 * absent key does not collide with `""`.
+	 *
+	 * @param array<int, mixed> $values The tuple members, in key order.
+	 *
+	 * @return string The merge key.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function joinTupleKey(array $values): string {
+		$parts = [];
+		foreach ($values as $value) {
+			if ($value === null) {
+				$parts[] = "\x00null";
+				continue;
+			}
+
+			if ($value === true) {
+				$parts[] = 'true';
+				continue;
+			}
+
+			if ($value === false) {
+				$parts[] = 'false';
+				continue;
+			}
+
+			if (is_scalar($value) === true) {
+				$parts[] = (string)$value;
+				continue;
+			}
+
+			$parts[] = (string)json_encode($value);
+		}
+
+		return implode("\x1f", $parts);
+	}//end joinTupleKey()
 
 	/**
 	 * Execute a cross-schema aggregation.

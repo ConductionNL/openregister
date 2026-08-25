@@ -33,11 +33,14 @@ namespace OCA\OpenRegister\Service\Aggregation;
  * Each aggregation maps a name → spec object.  Two DSL variants are supported:
  *
  * Intra-schema (legacy + new alias):
- *   { metric|select, field?, filter|where?, groupBy? }
+ *   { metric|select, field?, filter|where?, groupBy?, join? }
  *   - `metric`/`select` MUST be one of count|sum|avg|min|max|count_distinct.
  *   - `field` is REQUIRED for sum|avg|min|max|count_distinct, MUST exist on the schema.
- *   - `groupBy.field` (when present) MUST exist on the schema.
+ *   - `groupBy` (when present) MUST name only declared schema properties. Three
+ *     interchangeable spellings are accepted — see below.
  *   - `filter`/`where` is a flat map of field → value-or-operator-shape.
+ *   - `join` (when present) attaches aggregates from a SECOND schema to each
+ *     group — see {@see validateJoinSpec()}.
  *
  * Cross-schema (new):
  *   { from, metric|select?, field?, where|filter?, groupBy? }
@@ -46,12 +49,40 @@ namespace OCA\OpenRegister\Service\Aggregation;
  *   - `where`/`filter` values may contain `@self.<field>` parent-references.
  *   - Field existence is **not** validated against the host schema's properties
  *     (the target schema is not available at annotation-save time).
+ *
+ * groupBy spellings (all three normalise to the SAME ordered field list via
+ * {@see AggregationQuery::normaliseGroupByFields()}, which is the one
+ * canonicaliser the RUNNER also uses — validator and executor MUST NOT own
+ * separate copies of this grammar or they drift and a spec accepted at save
+ * time silently groups on something else at run time):
+ *   - single-field object: `{ "field": "status" }`         (legacy, still live)
+ *   - multi-field object:  `{ "fields": ["a", "b"] }`
+ *   - plain ordered list:  `[ "a", "b" ]`
  */
 final class AggregationAnnotationValidator {
 
 	private const VALID_METRICS = ['count', 'sum', 'avg', 'min', 'max', 'count_distinct'];
 
 	private const REQUIRES_FIELD = ['sum', 'avg', 'min', 'max', 'count_distinct'];
+
+	/**
+	 * The `join` clause grammar, kept in its own class so this one does not
+	 * accumulate a second DSL's worth of branching.
+	 *
+	 * @var AggregationJoinAnnotationValidator
+	 */
+	private AggregationJoinAnnotationValidator $joinValidator;
+
+	/**
+	 * Constructor.
+	 *
+	 * Plain `new` rather than injection: both classes are pure shape
+	 * validators with no collaborators, and the schema-save call sites
+	 * construct this validator directly.
+	 */
+	public function __construct() {
+		$this->joinValidator = new AggregationJoinAnnotationValidator();
+	}//end __construct()
 
 	/**
 	 * Validate the `x-openregister-aggregations` annotation on a schema.
@@ -187,28 +218,124 @@ final class AggregationAnnotationValidator {
 				}
 			}//end if
 
-			$groupBy = ($spec['groupBy'] ?? null);
-			if ($groupBy !== null) {
-				if (is_array($groupBy) === false || isset($groupBy['field']) === false) {
-					$errors[] = [
-						'code' => 'aggregation-groupby-malformed',
-						'message' => sprintf('Aggregation "%s" groupBy must be {field, bucket?}.', $name),
-					];
-				} elseif (in_array((string)$groupBy['field'], $propKeys, true) === false) {
-					$errors[] = [
-						'code' => 'aggregation-groupby-field-unknown',
-						'message' => sprintf(
-							'Aggregation "%s" groupBy.field "%s" is not declared in the schema properties.',
-							$name,
-							(string)$groupBy['field']
-						),
-					];
-				}
-			}
+			$errors = array_merge(
+				$errors,
+				$this->validateGroupBy(name: $name, spec: $spec, propKeys: $propKeys)
+			);
+
+			$errors = array_merge(
+				$errors,
+				$this->joinValidator->validate(name: $name, spec: $spec, propKeys: $propKeys)
+			);
 		}//end foreach
 
 		return $errors;
 	}//end validate()
+
+	/**
+	 * Validate the `groupBy` clause of an intra-schema aggregation spec.
+	 *
+	 * Accepts all three spellings the runner accepts — `{field}`,
+	 * `{fields: [...]}` and a plain ordered list — by delegating the shape
+	 * question to {@see AggregationQuery::normaliseGroupByFields()}, the
+	 * SAME canonicaliser {@see AggregationRunner::resolveGroupFields()}
+	 * uses. Sharing the canonicaliser is deliberate: a validator that owns
+	 * its own copy of the grammar accepts specs the executor then reads
+	 * differently, and the disagreement is silent in both directions.
+	 *
+	 * Every named field MUST be a declared schema property — the same check
+	 * the single-field form has always applied, now applied per member so a
+	 * composite groupBy cannot smuggle in an undeclared column.
+	 *
+	 * @param string $name Aggregation name (for error messages).
+	 * @param array<string, mixed> $spec The raw spec object.
+	 * @param array<int, mixed> $propKeys Declared schema property names.
+	 *
+	 * @return array<int, array{code: string, message: string}> Error list (empty = valid).
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 *   AggregationQuery::normaliseGroupByFields() is deliberately the ONE
+	 *   canonicaliser shared by this validator, AggregationQuery and
+	 *   AggregationRunner. Injecting it to satisfy the rule would invite a
+	 *   second implementation, which is exactly the drift this sharing
+	 *   prevents — an accepted-but-differently-executed groupBy is silent
+	 *   in both directions.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function validateGroupBy(string $name, array $spec, array $propKeys): array {
+		$groupBy = ($spec['groupBy'] ?? null);
+		if ($groupBy === null) {
+			return [];
+		}
+
+		if (is_array($groupBy) === false) {
+			return [
+				[
+					'code' => 'aggregation-groupby-malformed',
+					'message' => sprintf(
+						'Aggregation "%s" groupBy must be {field, bucket?}, {fields: [...]} or a list of field names.',
+						$name
+					),
+				],
+			];
+		}
+
+		$groupFields = AggregationQuery::normaliseGroupByFields(groupBy: $groupBy);
+		if (count($groupFields) === 0) {
+			return [
+				[
+					'code' => 'aggregation-groupby-malformed',
+					'message' => sprintf(
+						'Aggregation "%s" groupBy must be {field, bucket?}, {fields: [...]} or a list of field names.',
+						$name
+					),
+				],
+			];
+		}
+
+		$errors = [];
+		$seen = [];
+		foreach ($groupFields as $groupField) {
+			if (is_string($groupField) === false || $groupField === '') {
+				$errors[] = [
+					'code' => 'aggregation-groupby-malformed',
+					'message' => sprintf(
+						'Aggregation "%s" groupBy members must be non-empty field-name strings.',
+						$name
+					),
+				];
+				continue;
+			}
+
+			if (in_array($groupField, $seen, true) === true) {
+				$errors[] = [
+					'code' => 'aggregation-groupby-duplicate-field',
+					'message' => sprintf(
+						'Aggregation "%s" groupBy names "%s" more than once.',
+						$name,
+						$groupField
+					),
+				];
+				continue;
+			}
+
+			$seen[] = $groupField;
+
+			if (in_array($groupField, $propKeys, true) === false) {
+				$errors[] = [
+					'code' => 'aggregation-groupby-field-unknown',
+					'message' => sprintf(
+						'Aggregation "%s" groupBy.field "%s" is not declared in the schema properties.',
+						$name,
+						$groupField
+					),
+				];
+			}
+		}//end foreach
+
+		return $errors;
+	}//end validateGroupBy()
 
 	/**
 	 * Validate a cross-schema aggregation spec (`from` key present).
@@ -252,6 +379,21 @@ final class AggregationAnnotationValidator {
 			$errors[] = [
 				'code' => 'aggregation-filter-malformed',
 				'message' => sprintf('Cross-schema aggregation "%s" where/filter must be a map.', $name),
+			];
+		}
+
+		// `from` + `join` would name THREE schemas in one spec (host, `from`
+		// target, `join` target) with no declared relationship between the
+		// second and third. Refuse at save time rather than ship a spec the
+		// runner silently ignores half of: runCrossSchema() has no join
+		// stage, so a `join` written beside a `from` would never execute.
+		if (isset($spec['join']) === true) {
+			$errors[] = [
+				'code' => 'aggregation-join-with-from',
+				'message' => sprintf(
+					'Cross-schema aggregation "%s" must not combine `from` with `join` — join is intra-schema only.',
+					$name
+				),
 			];
 		}
 
