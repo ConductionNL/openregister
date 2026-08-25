@@ -140,12 +140,18 @@ class PermissionHandler
      * TODO: Implement property-level RBAC checks
      * Properties can have their own authorization arrays that provide fine-grained access control.
      *
-     * @param Schema            $schema      The schema to check permissions for.
-     * @param string            $action      The CRUD action (create, read, update, delete).
-     * @param string|null       $userId      Optional user ID (defaults to current user).
-     * @param string|null       $objectOwner Optional object owner for ownership check.
-     * @param bool              $_rbac       Whether to apply RBAC checks (default: true).
-     * @param ObjectEntity|null $object      Optional object entity for conditional authorization matching.
+     * @param Schema            $schema        The schema to check permissions for.
+     * @param string            $action        The CRUD action (create, read, update, delete).
+     * @param string|null       $userId        Optional user ID (defaults to current user).
+     * @param string|null       $objectOwner   Optional object owner for ownership check.
+     * @param bool              $_rbac         Whether to apply RBAC checks (default: true).
+     * @param ObjectEntity|null $object        Optional object entity for conditional authorization matching.
+     * @param bool              $_rbacAsPublic When true (default false), force an anonymous
+     *                                         RBAC context regardless of the caller's session:
+     *                                         admin bypass skipped, owner grant suppressed,
+     *                                         `inheritFromPublic` inheritance suppressed. Only the
+     *                                         `public` group's `read` rules are evaluated. See
+     *                                         RBA-PUBLIC-006 and ADR-023.
      *
      * @return bool True if user has permission, false otherwise
      *
@@ -163,7 +169,8 @@ class PermissionHandler
         ?string $userId=null,
         ?string $objectOwner=null,
         bool $_rbac=true,
-        ?ObjectEntity $object=null
+        ?ObjectEntity $object=null,
+        bool $_rbacAsPublic=false
     ): bool {
         // If RBAC is disabled, always return true (bypass all permission checks).
         if ($_rbac === false) {
@@ -181,6 +188,23 @@ class PermissionHandler
         }
 
         $authorization = $this->resolveAuthorization(schema: $schema);
+
+        // RBA-PUBLIC-006: endpoint-level anonymous context. Route directly to the
+        // `public`-group check, bypassing the userId/admin/inheritFromPublic branches
+        // below. This mirrors the "unauthenticated requests" early-return but is
+        // triggered by the trusted method-parameter rather than a missing session.
+        if ($_rbacAsPublic === true) {
+            return $this->hasGroupPermission(
+                authorization: $authorization,
+                groupId: 'public',
+                action: $action,
+                userId: null,
+                userGroup: null,
+                objectOwner: $objectOwner,
+                objectData: $objectData,
+                objectOrganisation: $objectOrganisation
+            );
+        }
 
         // Get current user if not provided.
         if ($userId === null) {
@@ -264,12 +288,13 @@ class PermissionHandler
     /**
      * Check permission and throw exception if not granted
      *
-     * @param Schema            $schema      Schema to check permissions for.
-     * @param string            $action      Action to check permission for.
-     * @param string|null       $userId      User ID to check permissions for.
-     * @param string|null       $objectOwner Object owner ID.
-     * @param bool              $_rbac       Whether to enforce RBAC checks.
-     * @param ObjectEntity|null $object      Optional object entity for conditional authorization matching.
+     * @param Schema            $schema        Schema to check permissions for.
+     * @param string            $action        Action to check permission for.
+     * @param string|null       $userId        User ID to check permissions for.
+     * @param string|null       $objectOwner   Object owner ID.
+     * @param bool              $_rbac         Whether to enforce RBAC checks.
+     * @param ObjectEntity|null $object        Optional object entity for conditional authorization matching.
+     * @param bool              $_rbacAsPublic When true, force anonymous RBAC context. See RBA-PUBLIC-006.
      *
      * @return void
      *
@@ -285,7 +310,8 @@ class PermissionHandler
         ?string $userId=null,
         ?string $objectOwner=null,
         bool $_rbac=true,
-        ?ObjectEntity $object=null
+        ?ObjectEntity $object=null,
+        bool $_rbacAsPublic=false
     ): void {
         if ($this->hasPermission(
                 schema: $schema,
@@ -293,7 +319,8 @@ class PermissionHandler
                 userId: $userId,
                 objectOwner: $objectOwner,
                 _rbac: $_rbac,
-                object: $object
+                object: $object,
+                _rbacAsPublic: $_rbacAsPublic
             ) === false
         ) {
             $user     = $this->userSession->getUser();
@@ -317,6 +344,7 @@ class PermissionHandler
      * @param array<array<string, mixed>> $objects       Array of objects to filter.
      * @param bool                        $_rbac         Whether to apply RBAC filtering.
      * @param bool                        $_multitenancy Whether to apply multitenancy filtering.
+     * @param bool                        $_rbacAsPublic When true, force anonymous RBAC context (RBA-PUBLIC-006).
      *
      * @return array[] Filtered array of objects
      *
@@ -327,7 +355,7 @@ class PermissionHandler
      *
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
-    public function filterObjectsForPermissions(array $objects, bool $_rbac, bool $_multitenancy): array
+    public function filterObjectsForPermissions(array $objects, bool $_rbac, bool $_multitenancy, bool $_rbacAsPublic=false): array
     {
         $filteredObjects = [];
         $currentUser     = $this->userSession->getUser();
@@ -342,7 +370,10 @@ class PermissionHandler
             $self = $object['@self'] ?? [];
 
             // Check RBAC permissions if enabled.
-            if ($_rbac === true && $userId !== null) {
+            // RBA-PUBLIC-006: when $_rbacAsPublic is set, run the check even for
+            // anonymous callers ($userId === null) — the public-group rules
+            // determine visibility for everyone.
+            if ($_rbac === true && ($userId !== null || $_rbacAsPublic === true)) {
                 $objectOwner  = $self['owner'] ?? null;
                 $objectSchema = $self['schema'] ?? null;
 
@@ -356,7 +387,8 @@ class PermissionHandler
                                 action: 'create',
                                 userId: $userId,
                                 objectOwner: $objectOwner,
-                                _rbac: $_rbac
+                                _rbac: $_rbac,
+                                _rbacAsPublic: $_rbacAsPublic
                             ) === false
                         ) {
                             continue;
@@ -403,7 +435,7 @@ class PermissionHandler
      *
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
-    public function filterUuidsForPermissions(array $uuids, bool $_rbac, bool $_multitenancy): array
+    public function filterUuidsForPermissions(array $uuids, bool $_rbac, bool $_multitenancy, bool $_rbacAsPublic=false): array
     {
         $filteredUuids = [];
         $currentUser   = $this->userSession->getUser();
@@ -421,7 +453,9 @@ class PermissionHandler
             $objectUuid = $object->getUuid();
 
             // Check RBAC permissions if enabled.
-            if ($_rbac === true && $userId !== null) {
+            // RBA-PUBLIC-006: run the check even for anonymous callers when
+            // $_rbacAsPublic forces the public-group evaluation path.
+            if ($_rbac === true && ($userId !== null || $_rbacAsPublic === true)) {
                 $objectOwner  = $object->getOwner();
                 $objectSchema = $object->getSchema();
 
@@ -436,7 +470,8 @@ class PermissionHandler
                                 action: 'delete',
                                 userId: $userId,
                                 objectOwner: $objectOwner,
-                                _rbac: $_rbac
+                                _rbac: $_rbac,
+                                _rbacAsPublic: $_rbacAsPublic
                             ) === false
                         ) {
                             continue;

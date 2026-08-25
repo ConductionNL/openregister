@@ -322,7 +322,8 @@ class ObjectService
         ?string $userId=null,
         ?string $objectOwner=null,
         bool $_rbac=true,
-        ?ObjectEntity $object=null
+        ?ObjectEntity $object=null,
+        bool $_rbacAsPublic=false
     ): void {
         $this->permissionHandler->checkPermission(
             schema: $schema,
@@ -330,7 +331,8 @@ class ObjectService
             userId: $userId,
             objectOwner: $objectOwner,
             _rbac: $_rbac,
-            object: $object
+            object: $object,
+            _rbacAsPublic: $_rbacAsPublic
         );
     }//end checkPermission()
 
@@ -575,7 +577,8 @@ class ObjectService
         Register | string | int | null $register=null,
         Schema | string | int | null $schema=null,
         bool $_rbac=true,
-        bool $_multitenancy=true
+        bool $_multitenancy=true,
+        bool $_rbacAsPublic=false
     ): ?ObjectEntity {
         // Check if a register is provided and set the current register context.
         if ($register !== null) {
@@ -588,6 +591,10 @@ class ObjectService
         }
 
         // Retrieve the object using the current register, schema, ID, extend properties, and file information.
+        // Note: $_rbacAsPublic is NOT threaded into getHandler->find because MagicMapper::find
+        // does not currently enforce RBAC (its RBAC block is a placeholder). The per-object
+        // RBAC check for find() happens in $this->checkPermission below (line ~617), which
+        // does honour $_rbacAsPublic — see RBA-PUBLIC-006.
         $object = $this->getHandler->find(
             id: $id,
             register: $this->currentRegister,
@@ -610,13 +617,16 @@ class ObjectService
 
         // Check user has permission to read this specific object (includes object owner check).
         // Publication visibility is now handled by RBAC conditional rules with $now variable.
+        // RBA-PUBLIC-006: $_rbacAsPublic forces anonymous-context evaluation so admin sessions
+        // on a public endpoint see the same visibility as anonymous callers.
         $this->checkPermission(
             schema: $this->currentSchema,
             action: 'read',
             userId: null,
             objectOwner: $object->getOwner(),
             _rbac: $_rbac,
-            object: $object
+            object: $object,
+            _rbacAsPublic: $_rbacAsPublic
         );
 
         // Render the object before returning.
@@ -1922,8 +1932,21 @@ class ObjectService
         bool $deleted=false,
         ?array $ids=null,
         ?string $uses=null,
-        ?array $views=null
+        ?array $views=null,
+        bool $_rbacAsPublic=false
     ): array {
+        // Security (RBA-PUBLIC-005): the `_rbac_as_public` flag MUST NOT be
+        // settable by external HTTP callers via the query dict. Strip any
+        // client-supplied value first, then re-set from the trusted method
+        // parameter. This ensures a caller passing `?_rbac_as_public=true` in
+        // a query string has no effect — only server-side callers who
+        // explicitly pass `$_rbacAsPublic=true` can enable the anonymous
+        // context, and only for the duration of this call.
+        unset($query['_rbac_as_public']);
+        if ($_rbacAsPublic === true) {
+            $query['_rbac_as_public'] = true;
+        }
+
         // Add register and schema context to query for magic mapper routing.
         // Use array_key_exists to allow explicit null values to disable auto-setting.
         if ($this->currentRegister !== null && array_key_exists('_register', $query) === false) {

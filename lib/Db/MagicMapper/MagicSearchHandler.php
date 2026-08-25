@@ -277,6 +277,7 @@ class MagicSearchHandler
         $includeDeleted = $query['_includeDeleted'] ?? false;
         $ids            = $query['_ids'] ?? null;
         $_rbac          = $query['_rbac'] ?? true;
+        $_rbacAsPublic  = $query['_rbac_as_public'] ?? false;
         $_multitenancy  = $query['_multitenancy'] ?? true;
         $relationsContains = $query['_relations_contains'] ?? null;
 
@@ -310,7 +311,8 @@ class MagicSearchHandler
             schema: $schema,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
-            multitenancyExplicit: $multitenancyExplicit
+            multitenancyExplicit: $multitenancyExplicit,
+            _rbacAsPublic: $_rbacAsPublic
         );
 
         // Apply metadata filters.
@@ -375,6 +377,7 @@ class MagicSearchHandler
         $search         = $query['_search'] ?? null;
         $includeDeleted = $query['_includeDeleted'] ?? false;
         $_rbac          = $query['_rbac'] ?? true;
+        $_rbacAsPublic  = $query['_rbac_as_public'] ?? false;
 
         // 1. Deleted filter.
         if ($includeDeleted === false) {
@@ -383,7 +386,7 @@ class MagicSearchHandler
 
         // 2. RBAC filter (role-based access control).
         if ($_rbac === true) {
-            $rbacCondition = $this->buildRbacConditionSql(schema: $schema);
+            $rbacCondition = $this->buildRbacConditionSql(schema: $schema, asPublic: $_rbacAsPublic);
             if ($rbacCondition !== null) {
                 $conditions[] = $rbacCondition;
             }
@@ -428,9 +431,9 @@ class MagicSearchHandler
      *
      * @return string|null SQL condition or null if no RBAC filtering needed
      */
-    private function buildRbacConditionSql(Schema $schema): ?string
+    private function buildRbacConditionSql(Schema $schema, bool $asPublic=false): ?string
     {
-        $rbacResult = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read');
+        $rbacResult = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read', asPublic: $asPublic);
 
         if ($rbacResult['bypass'] === false) {
             // User doesn't have unconditional access.
@@ -718,6 +721,7 @@ class MagicSearchHandler
             '_aggregations',
             '_debug',
             '_rbac',
+            '_rbac_as_public',
             '_multitenancy',
             '_validation',
             '_events',
@@ -826,12 +830,17 @@ class MagicSearchHandler
         Schema $schema,
         bool $_rbac,
         bool $_multitenancy,
-        bool $multitenancyExplicit
+        bool $multitenancyExplicit,
+        bool $_rbacAsPublic=false
     ): void {
         // Check if user qualifies for any RBAC rule (simple or conditional).
         // When user has RBAC access, multitenancy is bypassed by default (RBAC controls access).
+        // Under $_rbacAsPublic the forced-anon context does not qualify for any
+        // conditional rule, so treat as non-privileged (multitenancy defaults on
+        // if configured); the anon-context filter in applyRbacFilters still
+        // enforces public-group visibility.
         $userHasRbacAccess = false;
-        if ($_rbac === true) {
+        if ($_rbac === true && $_rbacAsPublic === false) {
             $userHasRbacAccess = $this->rbacHandler->hasConditionalRulesBypassingMultitenancy(
                 schema: $schema,
                 action: 'read'
@@ -866,7 +875,8 @@ class MagicSearchHandler
             $this->rbacHandler->applyRbacFilters(
                 qb: $qb,
                 schema: $schema,
-                action: 'read'
+                action: 'read',
+                asPublic: $_rbacAsPublic
             );
         }
     }//end applyAccessControlFilters()
