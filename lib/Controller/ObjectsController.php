@@ -1024,12 +1024,41 @@ class ObjectsController extends Controller {
 	 * @throws SchemaNotFoundException When schema is not found.
 	 */
 	private function resolveRegisterSchemaIds(string $register, string $schema, ObjectService $objectService): array {
+		// STEP 1: Initial resolution - convert slugs/IDs to numeric IDs.
+		//
+		// `setRegister()` does TWO things, and only the first is about the
+		// register: it resolves the register, and then — if a schema ref is
+		// still pending from an earlier caller on this shared ObjectService — it
+		// re-resolves that ref INSIDE the register. A scoped miss there is a
+		// SCHEMA failure, and reporting it as `Register not found: '19'` sent a
+		// diagnosis down the wrong path for hours: the register plainly exists,
+		// so every reasonable first move (check the row, the magic tables, the
+		// organisation filter, run the mapper's query by hand) confirms it and
+		// explains nothing. openregister#2820.
+		//
+		// So the register lookup is now resolved on its own, and only its
+		// failure is reported as a missing register. Anything the pending-ref
+		// re-resolution throws keeps its own identity.
+		// The discriminator is `setRegister()`'s own order of operations: it
+		// assigns `currentRegister` BEFORE it re-resolves any pending schema ref.
+		// So a register entity that is NEW after the throw proves the register
+		// lookup succeeded and the schema side failed.
+		//
+		// Comparing against the entity held BEFORE the call is what makes this
+		// sound. ObjectService is shared, so `currentRegister` can already hold
+		// an earlier caller's register; testing it for null alone would report a
+		// genuine missing register as a schema problem whenever someone had used
+		// the service first — swapping one misattribution for another.
+		$registerBefore = $objectService->getCurrentRegisterEntity();
 		try {
-			// STEP 1: Initial resolution - convert slugs/IDs to numeric IDs.
 			$objectService->setRegister(register: $register);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			// If register not found, throw custom exception.
-			throw new RegisterNotFoundException(registerSlugOrId: $register, code: 404, previous: $e);
+			$registerAfter = $objectService->getCurrentRegisterEntity();
+			if ($registerAfter === null || $registerAfter === $registerBefore) {
+				throw new RegisterNotFoundException(registerSlugOrId: $register, code: 404, previous: $e);
+			}
+
+			throw new SchemaNotFoundException(schemaSlugOrId: $schema, code: 404, previous: $e);
 		}
 
 		try {
