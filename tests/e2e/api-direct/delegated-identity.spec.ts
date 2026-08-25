@@ -49,12 +49,20 @@ async function createFlow(
 ): Promise<FlowResponse> {
 	const response = await request.post('/apps/openregister/api/flows', {
 		data: {
-			name: `${RUN_ID} ${String(overrides.name ?? 'flow')}`,
 			description: 'Created by the delegated-identity e2e suite.',
 			trigger: 'manual',
 			nodes: [],
 			edges: [],
 			...overrides,
+			// AFTER the spread, deliberately. With `name` before it, an
+			// `overrides.name` overwrote the prefixed value and the RUN_ID never
+			// applied — so every run wrote flows called "schedule with identity"
+			// into the instance, indistinguishable from each other and from
+			// anything a person had made. The prefix exists for cleanup
+			// isolation; putting it where a caller can silently defeat it made
+			// the isolation decorative. Measured: two such flows left behind on
+			// the dev instance before this was noticed.
+			name: `${RUN_ID} ${String(overrides.name ?? 'flow')}`,
 		},
 	})
 

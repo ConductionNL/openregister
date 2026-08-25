@@ -4,7 +4,27 @@ Implements the open half of ADR-099. Depends on `or-delegated-identity`.
 
 ## 1. Measure before enforcing
 
-- [ ] 1.1 Count what would start refusing: flows whose schedule trigger names a user other than the flow's owner; agents whose `actingUser` differs from the agent's owner; Consumers whose `userId` differs from the record's owner. Record the counts, dated, with the query.
+- [x] 1.1 Count what would start refusing: flows whose schedule trigger names a user other than the flow's owner; agents whose `actingUser` differs from the agent's owner; Consumers whose `userId` differs from the record's owner. Record the counts, dated, with the query.
+
+  **Measured 2026-08-25** — source: `conduction-postgres` / `nextcloud` (main dev instance, NC 34.0.0), against merged `development` (`fa01bf17e`).
+
+  | metric | count |
+  |---|---|
+  | schedule triggers declaring a `runAs` | 5 |
+  | …naming someone OTHER than the flow's owner | **0** |
+  | agents declaring an `actingUser` | **0** (no such column exists on `oc_openregister_agents`) |
+  | integriq consumers with `job_flow_run_as` set | **0** (config unset) |
+
+  **Nothing on this instance would start refusing.** Every declaration is a
+  principal naming themselves, which is not delegation and needs no grant. That is
+  the expected shape for a fleet where the capability has not existed until now —
+  and it is exactly the condition under which the enforcement can ship without a
+  grandfathering migration.
+
+  ⚠️ It is also the condition under which the enforcement is UNTESTED against real
+  usage. See the dormant-control note in design.md: a rule nobody could observe is
+  a rule nobody had to get right. A zero here licenses shipping the check; it does
+  not license assuming the first real grant will behave.
 
   🔴 **Count GENERATORS, not just records.** `or-delegated-identity` measured the
   3 existing flows carrying a schedule trigger and missed the population that
