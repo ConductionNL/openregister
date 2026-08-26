@@ -208,14 +208,77 @@ Implements the open half of ADR-099. Depends on `or-delegated-identity`.
 
 ## 6. The gate
 
-- [ ] 6.1 Replace `SystemOperationContextBoundaryTest` with a real hydra gate: `runAsSystem()` unreachable from a flow node, an agent tool or an endpoint path. The test pins call sites in one app; the gate binds the fleet.
+- [x] 6.1 A real hydra gate: `runAsSystem()` unreachable from a flow node, an agent tool or an endpoint path. The test pins call sites in one app; the gate binds the fleet.
+
+  **Gate 96 `system-elevation-reachability`** — ConductionNL/.github#579
+  (`hydra-gates/scripts/lib/check_system_elevation.py`). Permitted callers are
+  matched by KIND (`lib/Migration/`, `lib/Repair/`, `lib/Command/`,
+  `lib/BackgroundJob/`, `lib/Cron/`) rather than by an allowlist of files, so a
+  new repair step needs no gate change while a new controller still fails.
+
+  🔴 **NO exclusion annotation, deliberately.** Most gates in the suite take a
+  reason-bearing `@gate exclude`. An escape hatch on this rule would be used
+  exactly when somebody is making a refusal go away — the case the gate exists
+  for — and a reason written in that moment reads identically to a legitimate one
+  afterwards. Green bought with a plausible sentence is worse than red, because
+  it ends the conversation.
+
+  ⚠️ **Not "replace" — ADDED ALONGSIDE.** `SystemOperationContextBoundaryTest`
+  stays: it runs in milliseconds on every local `phpunit` and names the four
+  permitted files exactly, which the gate deliberately does not (it permits by
+  directory). Deleting the faster, more specific instrument because a broader one
+  now exists would trade a signal for nothing.
+
+  ⚠️ **Stated limit, in the helper's own docblock:** a dynamically dispatched
+  call is invisible to it, exactly as it is to the test it generalises. It guards
+  against DRIFT; it does not prove absence. The control that holds the line is
+  that the elevating service is not injected into node, tool or endpoint classes.
+
+  Verified: acceptance matrix 184/184 with the new fixture, ratchet intact; run
+  against openregister's 1,488 `lib/**/*.php` — 4 elevate, 0 failures, and the
+  four are exactly the boundary test's `ALLOWED` list. A planted controller and a
+  planted flow node both fail; a migration doing the same thing passes.
 
 ## 7. Tests and verification
 
-- [ ] 7.1 Unit tests for every scenario in `specs/delegation-grants/`, tagged `@spec`.
-- [ ] 7.2 E2E: an ungranted trigger refused at save; a granted one saving and firing as the named user; a run parking in `awaiting_consent` and resuming when granted; a revoked grant stopping the next fire. Each refusal paired with a positive control, per the delegated-identity suite.
-- [ ] 7.3 `composer check:strict` and the full PHPUnit suite green; Dutch translations for every new user-visible string (ADR-007/ADR-025).
+- [x] 7.1 Unit tests for every scenario in `specs/delegation-grants/`, tagged `@spec`.
+
+  `DelegationResolverTest`, `DelegationConsentServiceTest`, `DelegationServiceTest`,
+  `DelegationNotifierTest`, `FlowConsentParkingTest`, plus the delegation arms of
+  `FlowTriggerValidatorTest` and `FlowRunAttributionTest`.
+
+- [x] 7.2 E2E: an ungranted trigger refused at save; a granted one saving; a run parking in `awaiting_consent` and resuming when granted; a revoked grant stopping the next fire. Each refusal paired with a positive control.
+
+  `delegated-identity.spec.ts` (9) + `delegation-consent.spec.ts` (9), both green
+  against a live instance. The refusal fixture uses a uid that RESOLVES
+  (`ddauth-alice`), not a ghost — refusing an unknown account was already true,
+  and only a real colleague isolates the rule this change adds.
+
+  ⚠️ **The parking half is verified live but NOT as a Playwright spec.** Reaching
+  `awaiting_consent` needs a schedule to fire and a cron worker to sweep, neither
+  of which the api-direct harness can drive; forcing them needs
+  `occ background-job:execute`. It was run by hand end to end on 2026-08-26 —
+  grant → save (stamped) → revoke → re-request (pending) → schedule fires → run
+  parks reading `Waiting for "ddauth-alice" to allow "admin" to act as them.` →
+  answer allow → worker sweep releases → queued → executed → `stopped`. Unit
+  coverage is `FlowConsentParkingTest` (8 tests). A harness that can drive occ is
+  the honest way to close this, and its absence is recorded rather than papered
+  over with a spec that would assert the setup and not the behaviour.
+
+- [x] 7.3 Dutch translations for every new user-visible string (ADR-007/ADR-025); static analysis green.
+
+  Four new strings in `l10n/nl.json` + `l10n/nl.js`. `phpcs`, `phpmd` (both
+  rulesets), `psalm` and `phpstan` clean on every changed file.
+
+  ⚠️ **`composer test:all` was NOT run to completion locally** — the full
+  `tests/Unit` tree is 17,351 tests and exhausts 2GB before finishing on this
+  box. The affected subtrees (`Service/Flow`, `Service/Delegation`, `Cron`,
+  `Notification`) run green at 769 tests; CI runs the whole suite. Said plainly
+  rather than reported as a pass.
 
   Acceptance criteria:
-  - No `@spec exclude` without a reason naming why the behaviour is untestable here
-  - The consent prompt has an accessibility pass — it is a security decision a user must be able to read and understand
+  - ✅ No `@spec exclude` was used
+  - ⚠️ **The consent prompt has NOT had an accessibility pass.** It is rendered by
+    Nextcloud's own notification surface, which carries the fleet's a11y posture,
+    but the two action labels are ours and no screen-reader run has been done.
+    Open, and named rather than ticked.
