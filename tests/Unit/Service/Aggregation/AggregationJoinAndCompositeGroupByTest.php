@@ -389,6 +389,172 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 	 * out of decoded JSON — so this is the test that would catch the merge
 	 * key silently matching nothing on one path.
 	 */
+	/**
+	 * REGRESSION: the caller's narrowing filter must scope the JOINED
+	 * aggregate, not only the parent rows.
+	 *
+	 * This is a cross-tenant read, and it shipped. The parent was correctly
+	 * narrowed to one administration while the join was computed over every
+	 * administration, so a group's `joined` figures described a population the
+	 * caller is not allowed to see. Measured on a live instance before the fix:
+	 * CommitmentLine narrowed to ADM-001 returned the right sums while
+	 * `CommitmentBudget.authorised_amount` came back 160,000,000 — ADM-001's
+	 * own 80,000,000 plus both of adm-demo's (50,000,000 + 30,000,000), because
+	 * the join matches on `programmeCode` alone.
+	 *
+	 * Nothing errored. The page showed another tenant's money as this tenant's
+	 * authorised budget, and the number looked entirely reasonable.
+	 *
+	 * The fixture mirrors that shape: tenant `A` holds 1000 for P1, tenant `B`
+	 * holds 400 for the same P1. Unfiltered the join is 1400; scoped to `A` it
+	 * must be 1000. A run of this test against the unfixed runner reports 1400.
+	 */
+	public function testJoinHonoursTheCallersNarrowingFilter(): void {
+		$runner = $this->makeTenantJoinRunner();
+
+		$result = $runner->run(
+			registerRef: 'finance',
+			schemaRef: 'commitment-line',
+			name: 'committed',
+			extraFilter: ['administrationId' => 'A']
+		);
+
+		$joined = [];
+		foreach ($result['groups'] as $group) {
+			$joined[$group['keys']['programme']] = $group['joined']['commitment-budget.authorisedAmount'];
+		}
+
+		$this->assertSame(
+			1000.0,
+			$joined['P1'],
+			'the joined figure must cover tenant A only; 1400 means tenant B leaked in'
+		);
+	}//end testJoinHonoursTheCallersNarrowingFilter()
+
+	/**
+	 * The un-narrowed call is unchanged — the fix scopes, it does not clamp.
+	 *
+	 * Without this, a join that always returned the caller's own tenant would
+	 * pass the test above for the wrong reason.
+	 */
+	public function testJoinWithoutACallerFilterStillSeesEveryTenant(): void {
+		$result = $this->makeTenantJoinRunner()->run(
+			registerRef: 'finance',
+			schemaRef: 'commitment-line',
+			name: 'committed'
+		);
+
+		$joined = [];
+		foreach ($result['groups'] as $group) {
+			$joined[$group['keys']['programme']] = $group['joined']['commitment-budget.authorisedAmount'];
+		}
+
+		$this->assertSame(1400.0, $joined['P1']);
+	}//end testJoinWithoutACallerFilterStillSeesEveryTenant()
+
+	/**
+	 * A caller filter naming a property the JOINED schema does not declare is
+	 * dropped rather than forwarded.
+	 *
+	 * Forwarding it would not raise: a filter on a property a schema does not
+	 * have matches nothing and returns an empty set, so the join would silently
+	 * become zero — trading a figure that is too big for one that is always
+	 * wrong, and in the direction that looks like "no budget yet".
+	 *
+	 * `costCentre` is a PARENT property here and absent from
+	 * `commitment-budget`, which is exactly the realistic case: the page sends
+	 * one filter map and only some of its keys mean anything on the joined side.
+	 */
+	public function testJoinDropsACallerFilterTheJoinedSchemaDoesNotDeclare(): void {
+		$result = $this->makeTenantJoinRunner()->run(
+			registerRef: 'finance',
+			schemaRef: 'commitment-line',
+			name: 'committed',
+			extraFilter: ['costCentre' => 'C1']
+		);
+
+		$joined = [];
+		foreach ($result['groups'] as $group) {
+			$joined[$group['keys']['programme']] = $group['joined']['commitment-budget.authorisedAmount'];
+		}
+
+		$this->assertSame(
+			1400.0,
+			$joined['P1'],
+			'an undeclared key must leave the join as wide as it was, not zero it'
+		);
+	}//end testJoinDropsACallerFilterTheJoinedSchemaDoesNotDeclare()
+
+	/**
+	 * A caller may not relax what the join declares.
+	 *
+	 * Same asymmetry as {@see AggregationRunner::mergeNarrowingFilter()} on the
+	 * parent: the declaration wins. Here the join declares
+	 * `administrationId: A`, and a caller asking for `B` must not widen or
+	 * switch it — otherwise a declared scoping filter becomes a request
+	 * parameter, which is the whole thing that rule exists to prevent.
+	 */
+	public function testCallerCannotOverrideADeclaredJoinFilter(): void {
+		$annotation = $this->joinAnnotation();
+		$annotation['join']['filter'] = ['administrationId' => 'A'];
+
+		$result = $this->makeTenantJoinRunner($annotation)->run(
+			registerRef: 'finance',
+			schemaRef: 'commitment-line',
+			name: 'committed',
+			extraFilter: ['administrationId' => 'B']
+		);
+
+		$joined = [];
+		foreach ($result['groups'] as $group) {
+			$joined[$group['keys']['programme']] = $group['joined']['commitment-budget.authorisedAmount'];
+		}
+
+		$this->assertSame(
+			1000.0,
+			$joined['P1'],
+			"the declared administrationId 'A' must stand; 400 means the caller switched tenants"
+		);
+	}//end testCallerCannotOverrideADeclaredJoinFilter()
+
+	/**
+	 * A caller constraint the PARENT declaration drops must not reach the join
+	 * either.
+	 *
+	 * This is the hole the obvious version of the fix opens. The parent
+	 * declaration pins `administrationId: A`; a caller asking for `B` is
+	 * refused there and the parent stays on A. Forwarding the RAW request to
+	 * the join would then scope the joined figures to B while the parent rows
+	 * are A — the same population mismatch as the original bug, pointed the
+	 * other way, and arguably worse: the dropped key never reaches the cache
+	 * key, so the mismatched envelope would be cached and served on.
+	 *
+	 * Hence applyJoin() receives what actually took effect on the parent
+	 * (`array_diff_key` against the pre-merge filter), never `$extraFilter`.
+	 */
+	public function testACallerKeyTheParentDeclarationDropsDoesNotReachTheJoin(): void {
+		$annotation = $this->joinAnnotation();
+		$annotation['filter'] = ['administrationId' => 'A'];
+
+		$result = $this->makeTenantJoinRunner($annotation)->run(
+			registerRef: 'finance',
+			schemaRef: 'commitment-line',
+			name: 'committed',
+			extraFilter: ['administrationId' => 'B']
+		);
+
+		$joined = [];
+		foreach ($result['groups'] as $group) {
+			$joined[$group['keys']['programme']] = $group['joined']['commitment-budget.authorisedAmount'];
+		}
+
+		$this->assertSame(
+			1400.0,
+			$joined['P1'],
+			'the refused key must not scope the join; 400 means the parent stayed on A while the join followed the caller to B'
+		);
+	}//end testACallerKeyTheParentDeclarationDropsDoesNotReachTheJoin()
+
 	public function testNativeJoinAgreesWithPhpFallback(): void {
 		$php = $this->makeJoinRunner()->run(
 			registerRef: 'finance',
@@ -1056,6 +1222,81 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 	}//end makeJoinRunner()
 
 	/**
+	 * A `commitment-line` / `commitment-budget` fixture whose rows span two
+	 * administrations, for the join-scoping tests.
+	 *
+	 * Differs from {@see makeJoinRunner()} in the two things those tests need:
+	 * the joined schema DECLARES `administrationId` (the narrowing filter is
+	 * restricted to declared keys, so a schema without it would drop the filter
+	 * and the test would pass without exercising anything), and both sides
+	 * carry rows for tenants `A` and `B` over the same programme `P1`.
+	 *
+	 * P1 authorised: A=1000, B=400. Unscoped the join reports 1400.
+	 *
+	 * @param array<string, mixed>|null $annotation Override the aggregation annotation.
+	 *
+	 * @return AggregationRunner
+	 */
+	private function makeTenantJoinRunner(?array $annotation = null): AggregationRunner {
+		$annotations = ['committed' => ($annotation ?? $this->joinAnnotation())];
+
+		$parentSchema = $this->makeSchema(
+			'commitment-line',
+			10,
+			$annotations,
+			[
+				'programme' => ['type' => 'string'],
+				'costCentre' => ['type' => 'string'],
+				'administrationId' => ['type' => 'string'],
+				'remainingCommitted' => ['type' => 'number'],
+			]
+		);
+		$joinedSchema = $this->makeSchema(
+			'commitment-budget',
+			20,
+			[],
+			[
+				'programmeCode' => ['type' => 'string'],
+				'administrationId' => ['type' => 'string'],
+				'authorisedAmount' => ['type' => 'number'],
+			]
+		);
+		$register = $this->makeRegister('finance', [10, 20]);
+
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->registerMapper->method('findAll')->willReturn([$register]);
+		$this->schemaMapper->method('find')->willReturnMap(
+			[
+				['commitment-line', [], true, false, $parentSchema],
+				['commitment-budget', [], true, false, $joinedSchema],
+			]
+		);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->usePhpFallback();
+
+		$parentRows = [
+			['programme' => 'P1', 'costCentre' => 'C1', 'administrationId' => 'A', 'remainingCommitted' => 100],
+			['programme' => 'P1', 'costCentre' => 'C1', 'administrationId' => 'B', 'remainingCommitted' => 60],
+		];
+		$joinedRows = [
+			['programmeCode' => 'P1', 'administrationId' => 'A', 'authorisedAmount' => 1000],
+			['programmeCode' => 'P1', 'administrationId' => 'B', 'authorisedAmount' => 400],
+		];
+
+		$this->magicMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
+			function (Register $register, Schema $schema) use ($parentRows, $joinedRows): array {
+				if ((string)$schema->getSlug() === 'commitment-budget') {
+					return $this->entities($joinedRows);
+				}
+
+				return $this->entities($parentRows);
+			}
+		);
+
+		return $this->makeRunner();
+	}//end makeTenantJoinRunner()
+
+	/**
 	 * The same `commitment-line` / `commitment-budget` fixture as
 	 * {@see makeJoinRunner()}, but backed by a real in-memory SQLite
 	 * database so the emitted `GROUP BY` SQL is genuinely parsed and
@@ -1278,15 +1519,22 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 	 * @param string $slug Schema slug.
 	 * @param int $id Schema DB id.
 	 * @param array<string, mixed> $aggregations Aggregation annotation map.
+	 * @param array<string, mixed> $properties Declared properties. The join's narrowing filter is
+	 *                                         restricted to keys the joined schema declares, so a
+	 *                                         fixture testing that path must set them.
 	 *
 	 * @return Schema
 	 */
-	private function makeSchema(string $slug, int $id, array $aggregations = []): Schema {
+	private function makeSchema(string $slug, int $id, array $aggregations = [], array $properties = []): Schema {
 		$schema = new Schema();
 		$schema->setSlug($slug);
 		$schema->setId($id);
 		if ($aggregations !== []) {
 			$schema->setConfiguration(['x-openregister-aggregations' => $aggregations]);
+		}
+
+		if ($properties !== []) {
+			$schema->setProperties($properties);
 		}
 
 		return $schema;
