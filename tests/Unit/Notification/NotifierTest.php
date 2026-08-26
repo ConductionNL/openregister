@@ -210,6 +210,21 @@ class NotifierTest extends TestCase {
 				return $notification;
 			}
 		);
+		$rich = [];
+		$notification->method('setRichSubject')->willReturnCallback(
+			static function (string $text, array $params = []) use ($notification, &$rich): INotification {
+				$rich[] = ['text' => $text, 'params' => $params];
+
+				return $notification;
+			}
+		);
+		$notification->method('setRichMessage')->willReturnCallback(
+			static function (string $text, array $params = []) use ($notification, &$rich): INotification {
+				$rich[] = ['text' => $text, 'params' => $params];
+
+				return $notification;
+			}
+		);
 
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnCallback(
@@ -232,6 +247,28 @@ class NotifierTest extends TestCase {
 		// And it must say what allowing it means, in the system's own words.
 		$this->assertStringContainsString('permissions', $rendered);
 		$this->assertStringContainsString('withdraw', $rendered);
+
+		// 🔴 BOTH SURFACES, and the rich one carries the requester as a USER
+		// rather than as a bare token. That is what lets a client render an
+		// avatar and a display name, and what lets a screen reader announce a
+		// person instead of an identifier. Asserting only the parsed text would
+		// pass against a notification no assistive technology can make sense of.
+		$this->assertCount(2, $rich, 'a rich subject AND a rich message');
+		foreach ($rich as $part) {
+			$this->assertSame('user', $part['params']['requester']['type']);
+			$this->assertSame('alice', $part['params']['requester']['id']);
+			$this->assertStringContainsString('{requester}', $part['text']);
+		}
+
+		// The two surfaces must say the SAME thing. A rich subject that read
+		// differently from its fallback would mean two people looking at the same
+		// security decision on different clients were answering different
+		// questions.
+		$this->assertSame(
+			str_replace('{requester}', 'alice', $rich[0]['text']),
+			$seen[0],
+			'the rich subject and its plain fallback must be one sentence'
+		);
 	}
 
 	/**
@@ -270,5 +307,97 @@ class NotifierTest extends TestCase {
 		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.test/answer');
 
 		$this->assertSame($notification, $this->notifier->prepare($notification, 'en'));
+	}
+
+	/**
+	 * The prompt shows a DISPLAY NAME, not a uid.
+	 *
+	 * A uid is an identifier. Asking somebody to grant rights to `j.devries3`
+	 * when the person they know is "Jan de Vries" makes the decision harder for
+	 * every reader, and materially harder for one using a screen reader who
+	 * cannot glance at a face beside it.
+	 *
+	 * The rich parameter keeps the UID as its `id` — that is the machine half,
+	 * and a client needs it to resolve an avatar — while `name` is what a person
+	 * reads. Both, and neither substitutes for the other.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	public function testThepromptShowsADisplayNameNotAUid(): void {
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getDisplayName')->willReturn('Jan de Vries');
+
+		$userManager = $this->createMock(\OCP\IUserManager::class);
+		$userManager->method('get')->willReturn($user);
+
+		$notifier = new Notifier($this->factory, $this->urlGenerator, $userManager);
+
+		$seen = [];
+		$rich = [];
+
+		$action = $this->createMock(IAction::class);
+		$action->method('setLabel')->willReturnSelf();
+		$action->method('setParsedLabel')->willReturnSelf();
+		$action->method('setPrimary')->willReturnSelf();
+		$action->method('setLink')->willReturnSelf();
+
+		$notification = $this->createMock(INotification::class);
+		$notification->method('getApp')->willReturn('openregister');
+		$notification->method('getSubject')->willReturn('delegation_consent_requested');
+		$notification->method('getSubjectParameters')->willReturn([
+			'principal' => 'j.devries3',
+			'actingAs' => 'mayor',
+			'grantUuid' => 'grant-1',
+		]);
+		$notification->method('createAction')->willReturn($action);
+		$notification->method('addAction')->willReturnSelf();
+		$notification->method('setIcon')->willReturnSelf();
+		$notification->method('setParsedSubject')->willReturnCallback(
+			static function (string $text) use ($notification, &$seen): INotification {
+				$seen[] = $text;
+
+				return $notification;
+			}
+		);
+		$notification->method('setParsedMessage')->willReturnCallback(
+			static function (string $text) use ($notification, &$seen): INotification {
+				$seen[] = $text;
+
+				return $notification;
+			}
+		);
+		$notification->method('setRichSubject')->willReturnCallback(
+			static function (string $text, array $params = []) use ($notification, &$rich): INotification {
+				$rich[] = $params;
+
+				return $notification;
+			}
+		);
+		$notification->method('setRichMessage')->willReturnCallback(
+			static function (string $text, array $params = []) use ($notification, &$rich): INotification {
+				$rich[] = $params;
+
+				return $notification;
+			}
+		);
+
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(
+			static fn (string $text, array $args = []): string => vsprintf($text, $args)
+		);
+		$this->factory->method('get')->willReturn($l10n);
+		$this->urlGenerator->method('imagePath')->willReturn('/icon.svg');
+		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.test/answer');
+
+		$notifier->prepare($notification, 'en');
+
+		$rendered = implode(' | ', $seen);
+		$this->assertStringContainsString('Jan de Vries', $rendered);
+		$this->assertStringNotContainsString('j.devries3', $rendered, 'the plain text is for a person to read');
+
+		$this->assertSame('Jan de Vries', $rich[0]['requester']['name']);
+		$this->assertSame('j.devries3', $rich[0]['requester']['id'], 'the uid is still how a client resolves the avatar');
 	}
 }
