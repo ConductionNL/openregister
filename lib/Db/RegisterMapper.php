@@ -318,9 +318,38 @@ class RegisterMapper extends QBMapper {
 					'organisation' => $testResult->getOrganisation(),
 				]
 			);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException|\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			// SAY WHICH IT WAS. This used to also catch
+			// MultipleObjectsReturnedException and report both as "does not
+			// exist (or is duplicated)" — naming an ambiguity the probe above
+			// has already made impossible.
+			//
+			// `setMaxResults(1)` means findEntity() can never see a second row,
+			// so MultipleObjectsReturnedException cannot be raised here; the
+			// comment on that cap says so in as many words. The only reachable
+			// cause is absence, and the message hedged anyway.
+			//
+			// It cost a real diagnosis: learniq#620 traced a runtime schema 404
+			// back to this line and could not tell from the log whether the
+			// register was missing or duplicated — the two have entirely
+			// different fixes. A warning that hedges between two causes is a
+			// warning that answers neither.
 			$this->logger->warning(
-				message: '[RegisterMapper] Register does not exist (or is duplicated) before filters',
+				message: '[RegisterMapper] Register does not exist before filters',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'identifier' => $id,
+				]
+			);
+		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+			// Kept, and deliberately worded as the contradiction it would be:
+			// reaching this branch means the single-row cap above did not hold,
+			// which is a fact about the query builder rather than about the
+			// data, and is worth knowing loudly rather than silently folding
+			// back into "not found".
+			$this->logger->error(
+				message: '[RegisterMapper] Register lookup returned multiple rows despite a single-row cap',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
