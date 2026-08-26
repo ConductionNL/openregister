@@ -86,7 +86,7 @@ runner. Its `approval_request` schema
 (`../openconnector/lib/Settings/register.d/hitl-approval-rule-action.json`)
 is the fleet's only source of `expiresAt` + `onTimeout: error|skip|dead_letter`
 + `onReject: error|skip|dead_letter`, swept at 300s by
-`../openconnector/lib/Cron/ApprovalTimeoutSweepJob.php:53` into
+`../openconnector/lib/BackgroundJob/ApprovalTimeoutSweepJob.php:53` into
 `ApprovalService::sweepExpired()`
 (`../openconnector/lib/Service/ApprovalService.php:638-681`).
 `flow-business-timers` already harvested the timer half. What it did not take

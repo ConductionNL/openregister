@@ -15,9 +15,9 @@ See proposal.md — Why. The design-relevant state of the code today:
   (`lib/Service/Flow/Nodes/AwaitSignalNode.php:87`) clamped to a 5-minute
   floor (`:98`). Neither is touched here.
 - **The worker cadence is already 300s.** `FlowScheduleWorker` sets
-  `setInterval(seconds: 300)` (`lib/Cron/FlowScheduleWorker.php:59`);
+  `setInterval(seconds: 300)` (`lib/BackgroundJob/FlowScheduleWorker.php:59`);
   `FlowRunWorker` sets a 60s FLOOR and says so in its own comment
-  (`lib/Cron/FlowRunWorker.php:163-172`). A new sweep does not need a new
+  (`lib/BackgroundJob/FlowRunWorker.php:163-172`). A new sweep does not need a new
   cadence.
 - **The declarative scheduled-notification path exists and works.**
   `lib/BackgroundJob/ScheduledNotificationJob.php` runs at 60s (`:105`),

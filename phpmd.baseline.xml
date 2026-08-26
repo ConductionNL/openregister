@@ -105,8 +105,8 @@
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/ViewsController.php" method="update"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/ViewsController.php" method="patch"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/WebhooksController.php" method="test"/>
-  <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Cron/FlowScheduleWorker.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Cron/SyncDataJob.php"/>
+  <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/BackgroundJob/FlowScheduleWorker.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/BackgroundJob/SyncDataJob.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Db/ConfigurationMapper.php"/>
   <violation rule="PHPMD\Rule\Design\TooManyPublicMethods" file="lib/Db/EntityRelationMapper.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Db/EntityRelationMapper.php"/>

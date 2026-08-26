@@ -8,7 +8,7 @@
  * `allOf` ancestors, via the resolver — may now cover a parked kind) or an
  * app is (re-)enabled (its lingering schemas become resolvable again), sweep
  * the parked queue and execute every entry whose kind now resolves. The
- * fallback {@see \OCA\OpenRegister\Cron\HandoffQueueDrainJob} catches paths
+ * fallback {@see \OCA\OpenRegister\BackgroundJob\HandoffQueueDrainJob} catches paths
  * that bypass these events (e.g. register import).
  *
  * The sweep is cheap when nothing is parked (one indexed SELECT), so running

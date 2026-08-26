@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Unit\Cron;
+namespace Unit\BackgroundJob;
 
-use OCA\OpenRegister\Cron\WebhookRetryJob;
+use OCA\OpenRegister\BackgroundJob\WebhookRetryJob;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;

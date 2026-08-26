@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Unit\Cron;
+namespace Unit\BackgroundJob;
 
-use OCA\OpenRegister\Cron\LogCleanUpTask;
+use OCA\OpenRegister\BackgroundJob\LogCleanUpTask;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Unit\Cron;
+namespace Unit\BackgroundJob;
 
 use Exception;
-use OCA\OpenRegister\Cron\ConfigurationCheckJob;
+use OCA\OpenRegister\BackgroundJob\ConfigurationCheckJob;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\ConfigurationService;

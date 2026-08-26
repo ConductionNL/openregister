@@ -35,7 +35,7 @@
       `AwaitSignalNode.php:87` and `:98`. NEVER `resumeAt: null` — that is
       the only shape `FlowRunMapper::findAbandonedSignals()`
       (`lib/Db/FlowRunMapper.php:589-605`) reaps, and it would FAIL slow
-      approvals at 14 days (`lib/Cron/FlowRunWorker.php:94`).
+      approvals at 14 days (`lib/BackgroundJob/FlowRunWorker.php:94`).
 - [ ] 2.3 Continuation path: read terminality from the TASK by uuid, never
       from `$context['signal']`. Non-terminal → suspend again without
       restamping the creation time. Terminal → continue. Idempotence is
@@ -78,7 +78,7 @@
       non-terminal task created by any user-task node in that run, reason
       naming the run and its status, propagation source as actor.
       Idempotent — terminality is observable twice (completing request and
-      `FlowRunWorker::reapStale()`, `lib/Cron/FlowRunWorker.php:226-287`).
+      `FlowRunWorker::reapStale()`, `lib/BackgroundJob/FlowRunWorker.php:226-287`).
 - [ ] 5.2 Branch-mootness call: when `keepOnlyTakenExits()`
       (`FlowEngine.php:410`, `:540`) prunes a place holding a live
       user-task node's task, terminate it with a reason naming the branch.

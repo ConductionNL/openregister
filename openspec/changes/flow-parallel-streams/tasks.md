@@ -41,7 +41,7 @@
       (`lib/Service/Flow/FlowConcurrency.php:72`) claims, clamped by
       `MAX_LIMIT` (`:83`) through the same `max(1, min(...))` as
       `boundedLimit()` (`:188-194`), and when the pass holds
-      `BATCH × DEFAULT_LIMIT` across all runs (`lib/Cron/FlowRunWorker.php:62`).
+      `BATCH × DEFAULT_LIMIT` across all runs (`lib/BackgroundJob/FlowRunWorker.php:62`).
 
 ## 3. The commit path
 
@@ -111,7 +111,7 @@
       the RUN: unstarted streams do not start, a stream already inside
       `dispatch()` commits that firing and then stops, and the refusing check's
       id is recorded via `FlowStop::checkId()` (`:454-456`).
-- [ ] 6.3 `FlowRunWorker::reapStale()` (`lib/Cron/FlowRunWorker.php:226-275`)
+- [ ] 6.3 `FlowRunWorker::reapStale()` (`lib/BackgroundJob/FlowRunWorker.php:226-275`)
       also releases claims older than its EXISTING cutoff (`:251-261`) — the
       same expression, not a second constant — fails the abandoned stream
       naming the branch, applies the run's error policy to its siblings, and

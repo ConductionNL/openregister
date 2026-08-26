@@ -11,7 +11,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Cron
- * @package  OCA\OpenRegister\Cron
+ * @package  OCA\OpenRegister\BackgroundJob
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -24,7 +24,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Cron;
+namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
 use OCA\OpenRegister\Db\WebhookLogMapper;

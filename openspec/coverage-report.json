@@ -1740,117 +1740,117 @@
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/ArchivalRetentionTask.php",
+        "file": "lib/BackgroundJob/ArchivalRetentionTask.php",
         "method": "__construct",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/ConfigurationCheckJob.php",
+        "file": "lib/BackgroundJob/ConfigurationCheckJob.php",
         "method": "__construct",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/ConfigurationCheckJob.php",
+        "file": "lib/BackgroundJob/ConfigurationCheckJob.php",
         "method": "run",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/ConfigurationCheckJob.php",
+        "file": "lib/BackgroundJob/ConfigurationCheckJob.php",
         "method": "isJobDisabled",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/ConfigurationCheckJob.php",
+        "file": "lib/BackgroundJob/ConfigurationCheckJob.php",
         "method": "checkSingleConfiguration",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/ConfigurationCheckJob.php",
+        "file": "lib/BackgroundJob/ConfigurationCheckJob.php",
         "method": "handleAutoUpdate",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/ConfigurationCheckJob.php",
+        "file": "lib/BackgroundJob/ConfigurationCheckJob.php",
         "method": "sendUpdateNotification",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/LogCleanUpTask.php",
+        "file": "lib/BackgroundJob/LogCleanUpTask.php",
         "method": "__construct",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/LogCleanUpTask.php",
+        "file": "lib/BackgroundJob/LogCleanUpTask.php",
         "method": "run",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/SyncConfigurationsJob.php",
+        "file": "lib/BackgroundJob/SyncConfigurationsJob.php",
         "method": "__construct",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/SyncConfigurationsJob.php",
+        "file": "lib/BackgroundJob/SyncConfigurationsJob.php",
         "method": "run",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/SyncConfigurationsJob.php",
+        "file": "lib/BackgroundJob/SyncConfigurationsJob.php",
         "method": "isDueForSync",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/SyncConfigurationsJob.php",
+        "file": "lib/BackgroundJob/SyncConfigurationsJob.php",
         "method": "syncConfiguration",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/SyncConfigurationsJob.php",
+        "file": "lib/BackgroundJob/SyncConfigurationsJob.php",
         "method": "syncFromGitHub",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/SyncConfigurationsJob.php",
+        "file": "lib/BackgroundJob/SyncConfigurationsJob.php",
         "method": "syncFromGitLab",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/SyncConfigurationsJob.php",
+        "file": "lib/BackgroundJob/SyncConfigurationsJob.php",
         "method": "syncFromUrl",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/SyncConfigurationsJob.php",
+        "file": "lib/BackgroundJob/SyncConfigurationsJob.php",
         "method": "syncFromLocal",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/TransferCheckJob.php",
+        "file": "lib/BackgroundJob/TransferCheckJob.php",
         "method": "__construct",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/TransferCheckJob.php",
+        "file": "lib/BackgroundJob/TransferCheckJob.php",
         "method": "run",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/TransferCheckJob.php",
+        "file": "lib/BackgroundJob/TransferCheckJob.php",
         "method": "isEdepotConfigured",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/TransferCheckJob.php",
+        "file": "lib/BackgroundJob/TransferCheckJob.php",
         "method": "findEligibleObjects",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/WebhookRetryJob.php",
+        "file": "lib/BackgroundJob/WebhookRetryJob.php",
         "method": "__construct",
         "spec_tag": "see file (method docblock)"
       },
       {
-        "file": "lib/Cron/WebhookRetryJob.php",
+        "file": "lib/BackgroundJob/WebhookRetryJob.php",
         "method": "run",
         "spec_tag": "see file (method docblock)"
       },
@@ -17217,7 +17217,7 @@
           "observed_behavior": "(triaged DROP from extended-field-types#EFT-007) Retention DSL literal parser; EFT-007 is GraphQL scalar"
         },
         {
-          "file": "lib/Cron/ArchivalRetentionTask.php",
+          "file": "lib/BackgroundJob/ArchivalRetentionTask.php",
           "method": "sweepSchema",
           "visibility": "private",
           "observed_behavior": "(triaged DROP from archival-destruction-workflow#REQ-001) Archival annotation sweep cron; REQ-001 is DestructionCheckJob"
@@ -17229,19 +17229,19 @@
           "observed_behavior": "(triaged DROP from extended-field-types#EFT-007) Retention DSL operator comparator; EFT-007 is GraphQL scalar"
         },
         {
-          "file": "lib/Cron/ArchivalRetentionTask.php",
+          "file": "lib/BackgroundJob/ArchivalRetentionTask.php",
           "method": "run",
           "visibility": "protected",
           "observed_behavior": "(triaged DROP from archival-destruction-workflow#REQ-001) Retention sweep cron; REQ-001 is DestructionCheckJob + destruction list generation"
         },
         {
-          "file": "lib/Cron/ArchivalRetentionTask.php",
+          "file": "lib/BackgroundJob/ArchivalRetentionTask.php",
           "method": "extractArchivalAnnotation",
           "visibility": "private",
           "observed_behavior": "(triaged DROP from archival-annotation-vocabulary#ISO-8601) Reads x-openregister-archival annotation; ISO-8601 validation is in SchemaMapper::insert"
         },
         {
-          "file": "lib/Cron/ArchivalRetentionTask.php",
+          "file": "lib/BackgroundJob/ArchivalRetentionTask.php",
           "method": "stripMetadataColumns",
           "visibility": "private",
           "observed_behavior": "(triaged DROP from archival-destruction-workflow#REQ-002) Internal metadata stripper; REQ-002 is destruction list management API"
@@ -30471,22 +30471,22 @@
           "file": "lib/Controller/WorkflowExecutionController.php"
         },
         {
-          "file": "lib/Cron/ArchivalRetentionTask.php"
+          "file": "lib/BackgroundJob/ArchivalRetentionTask.php"
         },
         {
-          "file": "lib/Cron/ConfigurationCheckJob.php"
+          "file": "lib/BackgroundJob/ConfigurationCheckJob.php"
         },
         {
-          "file": "lib/Cron/LogCleanUpTask.php"
+          "file": "lib/BackgroundJob/LogCleanUpTask.php"
         },
         {
-          "file": "lib/Cron/SyncConfigurationsJob.php"
+          "file": "lib/BackgroundJob/SyncConfigurationsJob.php"
         },
         {
-          "file": "lib/Cron/TransferCheckJob.php"
+          "file": "lib/BackgroundJob/TransferCheckJob.php"
         },
         {
-          "file": "lib/Cron/WebhookRetryJob.php"
+          "file": "lib/BackgroundJob/WebhookRetryJob.php"
         },
         {
           "file": "lib/Db/AbstractObjectMapper.php"
