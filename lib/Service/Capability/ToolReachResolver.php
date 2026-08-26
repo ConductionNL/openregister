@@ -47,7 +47,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/agent-capability-reach/specs/agent-capability-reach/spec.md#requirement-an-undeclared-or-unrecognised-reach-resolves-to-external
+ * @spec openspec/specs/agent-capability-reach/spec.md#requirement-an-undeclared-or-unrecognised-reach-resolves-to-external
  */
 
 declare(strict_types=1);
@@ -59,7 +59,7 @@ namespace OCA\OpenRegister\Service\Capability;
  *
  * @psalm-api
  *
- * @spec openspec/changes/agent-capability-reach/specs/agent-capability-reach/spec.md#requirement-an-undeclared-or-unrecognised-reach-resolves-to-external
+ * @spec openspec/specs/agent-capability-reach/spec.md#requirement-an-undeclared-or-unrecognised-reach-resolves-to-external
  */
 class ToolReachResolver {
 
@@ -143,7 +143,7 @@ class ToolReachResolver {
 	 *
 	 * @return string One of the ORDER constants.
 	 *
-	 * @spec openspec/changes/agent-capability-reach/specs/agent-capability-reach/spec.md#requirement-an-undeclared-or-unrecognised-reach-resolves-to-external
+	 * @spec openspec/specs/agent-capability-reach/spec.md#requirement-an-undeclared-or-unrecognised-reach-resolves-to-external
 	 */
 	public static function resolve(string $toolId, ?array $descriptor = null): string {
 		$declared = ($descriptor[self::REACH_KEY] ?? null);
@@ -165,7 +165,7 @@ class ToolReachResolver {
 	 *
 	 * @return string One of the ORDER constants.
 	 *
-	 * @spec openspec/changes/agent-capability-reach/specs/agent-capability-reach/spec.md#requirement-an-undeclared-or-unrecognised-reach-resolves-to-external
+	 * @spec openspec/specs/agent-capability-reach/spec.md#requirement-an-undeclared-or-unrecognised-reach-resolves-to-external
 	 */
 	private static function inferFromId(string $toolId): string {
 		$segments = explode('.', $toolId);
@@ -241,7 +241,7 @@ class ToolReachResolver {
 	 *
 	 * @return string The greater of the two.
 	 *
-	 * @spec openspec/changes/agent-capability-reach/specs/agent-capability-reach/spec.md#requirement-a-delegation-cannot-launder-reach
+	 * @spec openspec/specs/agent-capability-reach/spec.md#requirement-a-delegation-cannot-launder-reach
 	 */
 	public static function max(string $left, string $right): string {
 		$leftRank = self::rank(reach: $left);

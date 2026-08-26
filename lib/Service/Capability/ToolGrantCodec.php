@@ -52,7 +52,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md
+ * @spec openspec/specs/structured-tool-grants/spec.md
  */
 
 declare(strict_types=1);
@@ -62,7 +62,7 @@ namespace OCA\OpenRegister\Service\Capability;
 /**
  * The legacy grant-string grammar, read and written in one place.
  *
- * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md
+ * @spec openspec/specs/structured-tool-grants/spec.md
  */
 final class ToolGrantCodec {
 
@@ -78,7 +78,7 @@ final class ToolGrantCodec {
 	 *
 	 * @return string|array<string, mixed> The entry.
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#scenario-two-constrained-grants-for-one-tool-both-survive
+	 * @spec openspec/specs/structured-tool-grants/spec.md#scenario-two-constrained-grants-for-one-tool-both-survive
 	 */
 	public static function entryFor(string $id, array $args): string|array {
 		if ($args === []) {
@@ -95,7 +95,7 @@ final class ToolGrantCodec {
 	 *
 	 * @return string The grant string.
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
+	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
 	 */
 	public static function grantStringFor(string|array $entry): string {
 		if (is_string($entry) === true) {
@@ -143,7 +143,7 @@ final class ToolGrantCodec {
 	 *
 	 * @return array{0: string, 1: string, 2: string, 3: string|array<string, mixed>}
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
+	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
 	 */
 	public static function coordinatesFor(string $grant): array {
 		$id = $grant;
@@ -181,7 +181,7 @@ final class ToolGrantCodec {
 	 *
 	 * @return array<string, mixed> The constraints.
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
+	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
 	 */
 	public static function parseConstraints(string $query): array {
 		$args = [];
@@ -215,7 +215,7 @@ final class ToolGrantCodec {
 	 *
 	 * @return string|array<string, mixed>|null The clean entry, or null.
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#requirement-tool-grants-are-a-structure-in-the-domain-and-a-list-in-storage
+	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-tool-grants-are-a-structure-in-the-domain-and-a-list-in-storage
 	 */
 	public static function sanitiseEntry(mixed $entry): string|array|null {
 		if (is_string($entry) === true && $entry !== '') {

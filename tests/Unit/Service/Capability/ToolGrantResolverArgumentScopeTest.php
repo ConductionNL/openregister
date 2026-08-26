@@ -22,8 +22,8 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#requirement-schema-scoped-whitelist-grants-with-default-deny-for-writedestructive-tools
- * @spec openspec/changes/hydra-console-agent-leaves/tasks.md#task-4-argument-scoped-grants-in-the-resolver
+ * @spec openspec/specs/agent-tool-governance/spec.md#requirement-schema-scoped-whitelist-grants-with-default-deny-for-writedestructive-tools
+ * @spec openspec/specs/agent-tool-governance/spec.md#requirement-argument-constraints-on-a-grant-are-enforced-at-invocation
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for argument-scoped grant parsing, resolution and constraint checking.
  *
- * @spec openspec/changes/hydra-console-agent-leaves/tasks.md#task-4-argument-scoped-grants-in-the-resolver
+ * @spec openspec/specs/agent-tool-governance/spec.md#requirement-argument-constraints-on-a-grant-are-enforced-at-invocation
  */
 class ToolGrantResolverArgumentScopeTest extends TestCase {
 
@@ -88,7 +88,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#scenario-an-argument-scoped-grant-resolves-to-the-underlying-tool
+	 * @spec openspec/specs/agent-tool-governance/spec.md#scenario-an-argument-scoped-grant-resolves-to-the-underlying-tool
 	 */
 	public function testArgumentScopedGrantResolvesToTheUnderlyingToolId(): void {
 		$resolver = new ToolGrantResolver();
@@ -105,7 +105,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#scenario-an-argument-scoped-grant-resolves-to-the-underlying-tool
+	 * @spec openspec/specs/agent-tool-governance/spec.md#scenario-an-argument-scoped-grant-resolves-to-the-underlying-tool
 	 */
 	public function testBaseToolIdsStripsConstraintsAndLeavesLegacyGrantsVerbatim(): void {
 		$resolver = new ToolGrantResolver();
@@ -123,7 +123,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#requirement-argument-constraints-on-a-grant-are-enforced-at-invocation
+	 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-argument-constraints-on-a-grant-are-enforced-at-invocation
 	 */
 	public function testAPinAndAClosedSetRideInOneGrantString(): void {
 		$resolver = new ToolGrantResolver();
@@ -146,7 +146,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#scenario-a-pinned-argument-that-matches-is-dispatched
+	 * @spec openspec/specs/agent-tool-governance/spec.md#scenario-a-pinned-argument-that-matches-is-dispatched
 	 */
 	public function testConformingArgumentsYieldNoViolation(): void {
 		$resolver = new ToolGrantResolver();
@@ -167,7 +167,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#scenario-the-agent-may-run-exactly-one-flow
+	 * @spec openspec/specs/agent-tool-governance/spec.md#scenario-the-agent-may-run-exactly-one-flow
 	 */
 	public function testADifferentPinnedValueViolates(): void {
 		$resolver = new ToolGrantResolver();
@@ -189,7 +189,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#scenario-an-injected-instruction-cannot-escape-the-vocabulary
+	 * @spec openspec/specs/agent-tool-governance/spec.md#scenario-an-injected-instruction-cannot-escape-the-vocabulary
 	 */
 	public function testAValueOutsideTheClosedSetViolates(): void {
 		$resolver = new ToolGrantResolver();
@@ -212,7 +212,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#scenario-a-pinned-argument-that-differs-is-refused-before-dispatch
+	 * @spec openspec/specs/agent-tool-governance/spec.md#scenario-a-pinned-argument-that-differs-is-refused-before-dispatch
 	 */
 	public function testOmittingAConstrainedArgumentViolates(): void {
 		$resolver = new ToolGrantResolver();
@@ -230,7 +230,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#requirement-argument-constraints-on-a-grant-are-enforced-at-invocation
+	 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-argument-constraints-on-a-grant-are-enforced-at-invocation
 	 */
 	public function testAnUnmentionedArgumentIsNotConstrained(): void {
 		$resolver = new ToolGrantResolver();
@@ -253,7 +253,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#requirement-argument-constraints-on-a-grant-are-enforced-at-invocation
+	 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-argument-constraints-on-a-grant-are-enforced-at-invocation
 	 */
 	public function testAlternativeGrantSetsKeepTheirArgumentsPaired(): void {
 		$resolver = new ToolGrantResolver();
@@ -282,7 +282,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#requirement-schema-scoped-whitelist-grants-with-default-deny-for-writedestructive-tools
+	 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-schema-scoped-whitelist-grants-with-default-deny-for-writedestructive-tools
 	 */
 	public function testABareExactIdGrantIsNotNarrowedByASiblingConstrainedGrant(): void {
 		$resolver = new ToolGrantResolver();
@@ -301,7 +301,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#requirement-argument-constraints-on-a-grant-are-enforced-at-invocation
+	 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-argument-constraints-on-a-grant-are-enforced-at-invocation
 	 */
 	public function testUnconstrainedGrantsProduceAnEmptyConstraintMap(): void {
 		$resolver = new ToolGrantResolver();
@@ -319,7 +319,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#scenario-narrowing-does-not-downgrade-classification
+	 * @spec openspec/specs/agent-tool-governance/spec.md#scenario-narrowing-does-not-downgrade-classification
 	 */
 	public function testNarrowingDoesNotDowngradeClassification(): void {
 		$this->assertTrue(ToolGrantResolver::isWriteOrDestructive(id: 'openregister.runFlow'));
@@ -341,7 +341,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#requirement-schema-scoped-whitelist-grants-with-default-deny-for-writedestructive-tools
+	 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-schema-scoped-whitelist-grants-with-default-deny-for-writedestructive-tools
 	 */
 	public function testAConstrainedWildcardResolvesToNothing(): void {
 		$resolver = new ToolGrantResolver();
@@ -360,7 +360,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#requirement-argument-constraints-on-a-grant-are-enforced-at-invocation
+	 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-argument-constraints-on-a-grant-are-enforced-at-invocation
 	 */
 	public function testPercentEncodedConstraintValuesRoundTrip(): void {
 		$resolver = new ToolGrantResolver();
@@ -377,7 +377,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#requirement-argument-constraints-on-a-grant-are-enforced-at-invocation
+	 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-argument-constraints-on-a-grant-are-enforced-at-invocation
 	 */
 	public function testAStructuredArgumentCannotSatisfyAScalarConstraint(): void {
 		$resolver = new ToolGrantResolver();
@@ -398,7 +398,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#scenario-a-schema-wildcard-grants-read-verbs-only
+	 * @spec openspec/specs/agent-tool-governance/spec.md#scenario-a-schema-wildcard-grants-read-verbs-only
 	 */
 	public function testRegressionSchemaWildcardGrantsReadVerbsOnly(): void {
 		$resolver = new ToolGrantResolver();
@@ -415,7 +415,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#scenario-a-write-tool-is-granted-only-when-named-explicitly
+	 * @spec openspec/specs/agent-tool-governance/spec.md#scenario-a-write-tool-is-granted-only-when-named-explicitly
 	 */
 	public function testRegressionWriteModifierStillAddsWriteVerbs(): void {
 		$resolver = new ToolGrantResolver();
@@ -439,7 +439,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#scenario-a-write-tool-is-granted-only-when-named-explicitly
+	 * @spec openspec/specs/agent-tool-governance/spec.md#scenario-a-write-tool-is-granted-only-when-named-explicitly
 	 */
 	public function testRegressionExplicitVerbSubsetPassesThroughVerbatim(): void {
 		$resolver = new ToolGrantResolver();
@@ -474,7 +474,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-object-leaf/spec.md#scenario-a-deliberately-tool-less-agent-is-not-reported
+	 * @spec openspec/specs/agent-object-leaf/spec.md#scenario-a-deliberately-tool-less-agent-is-not-reported
 	 */
 	public function testRegressionNoToolsSentinelIsStillDeliberate(): void {
 		$resolver = new ToolGrantResolver();
@@ -492,7 +492,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-object-leaf/spec.md#scenario-grants-that-resolve-to-nothing-are-reported
+	 * @spec openspec/specs/agent-object-leaf/spec.md#scenario-grants-that-resolve-to-nothing-are-reported
 	 */
 	public function testRegressionMisspelledSchemaGrantIsReported(): void {
 		$resolver = new ToolGrantResolver();
@@ -511,7 +511,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#requirement-schema-scoped-whitelist-grants-with-default-deny-for-writedestructive-tools
+	 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-schema-scoped-whitelist-grants-with-default-deny-for-writedestructive-tools
 	 */
 	public function testRegressionWildcardDetectionUnchanged(): void {
 		$resolver = new ToolGrantResolver();
@@ -529,7 +529,7 @@ class ToolGrantResolverArgumentScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#requirement-schema-scoped-whitelist-grants-with-default-deny-for-writedestructive-tools
+	 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-schema-scoped-whitelist-grants-with-default-deny-for-writedestructive-tools
 	 */
 	public function testATrailingQuestionMarkDeclaresNoConstraint(): void {
 		$resolver = new ToolGrantResolver();

@@ -103,11 +103,11 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/agent-tool-governance-and-disclosure/tasks.md#task-1
+ * @spec openspec/specs/agent-tool-governance/spec.md#requirement-schema-scoped-whitelist-grants-with-default-deny-for-writedestructive-tools
  * @spec openspec/specs/agent-tool-governance/spec.md#requirement-schema-scoped-whitelist-grants-with-default-deny-for-writedestructive-tools
  * @spec openspec/specs/agent-tool-governance/spec.md#scenario-a-declared-hint-overrides-a-conflicting-verb-suffix
  * @spec openspec/specs/agent-tool-governance/spec.md#scenario-a-hint-less-curated-tool-fails-closed
- * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#requirement-schema-scoped-whitelist-grants-with-default-deny-for-writedestructive-tools
+ * @spec openspec/specs/agent-tool-governance/spec.md#requirement-schema-scoped-whitelist-grants-with-default-deny-for-writedestructive-tools
  */
 
 declare(strict_types=1);
@@ -124,7 +124,7 @@ namespace OCA\OpenRegister\Service\Capability;
  *   grammar has exactly one home on purpose — splitting it would leave two places that
  *   interpret a grant string, which is how a resolver and an enforcer drift apart.
  *
- * @spec openspec/changes/agent-tool-governance-and-disclosure/tasks.md#task-1
+ * @spec openspec/specs/agent-tool-governance/spec.md#requirement-schema-scoped-whitelist-grants-with-default-deny-for-writedestructive-tools
  */
 class ToolGrantResolver {
 
@@ -225,8 +225,8 @@ class ToolGrantResolver {
 	 *
 	 * @return array<int, string> The resolved, default-denied whitelist.
 	 *
-	 * @spec openspec/changes/agent-tool-governance-and-disclosure/specs/agent-tool-governance/spec.md#scenario-a-schema-wildcard-grants-read-verbs-only
-	 * @spec openspec/changes/agent-tool-governance-and-disclosure/specs/agent-tool-governance/spec.md#scenario-a-write-tool-is-granted-only-when-named-explicitly
+	 * @spec openspec/specs/agent-tool-governance/spec.md#scenario-a-schema-wildcard-grants-read-verbs-only
+	 * @spec openspec/specs/agent-tool-governance/spec.md#scenario-a-write-tool-is-granted-only-when-named-explicitly
 	 */
 	public function resolve(array $grants, array $catalog): array {
 		$descriptorsById = $this->descriptorsById(catalog: $catalog);
@@ -379,7 +379,7 @@ class ToolGrantResolver {
 	 * @return array<int, string> The same grants with constraints stripped, de-duplicated,
 	 *                            original order preserved.
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#scenario-an-argument-scoped-grant-resolves-to-the-underlying-tool
+	 * @spec openspec/specs/agent-tool-governance/spec.md#scenario-an-argument-scoped-grant-resolves-to-the-underlying-tool
 	 */
 	public function baseToolIds(array $grants): array {
 		$ids = [];
@@ -417,7 +417,7 @@ class ToolGrantResolver {
 	 * @return array<string, array<int, array<string, array{mode:string, values:array<int,string>}>>>
 	 *                                                                                                Tool id => list of alternative constraint sets.
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#requirement-argument-constraints-on-a-grant-are-enforced-at-invocation
+	 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-argument-constraints-on-a-grant-are-enforced-at-invocation
 	 */
 	public function argumentConstraints(array $grants): array {
 		$constrained = [];
@@ -472,8 +472,8 @@ class ToolGrantResolver {
 	 *                                                                            conforms — including when no constraint
 	 *                                                                            set was declared at all.
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#scenario-a-pinned-argument-that-differs-is-refused-before-dispatch
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#scenario-a-value-outside-a-closed-set-is-refused
+	 * @spec openspec/specs/agent-tool-governance/spec.md#scenario-a-pinned-argument-that-differs-is-refused-before-dispatch
+	 * @spec openspec/specs/agent-tool-governance/spec.md#scenario-a-value-outside-a-closed-set-is-refused
 	 */
 	public static function violationFor(array $constraintSets, array $arguments): ?array {
 		if ($constraintSets === []) {
@@ -576,7 +576,7 @@ class ToolGrantResolver {
 	 *
 	 * @return array{0:string, 1:string|null} `[baseId, query|null]`.
 	 *
-	 * @spec openspec/changes/agent-capability-reach/specs/agent-capability-reach/spec.md#requirement-a-grant-may-carry-a-noapproval-waiver-fragment-parsed-before-any-other-grant-parsing
+	 * @spec openspec/specs/agent-capability-reach/spec.md#requirement-a-grant-may-carry-a-noapproval-waiver-fragment-parsed-before-any-other-grant-parsing
 	 */
 	private function splitGrant(string $grant): array {
 		[$grant] = self::splitWaiver(grant: $grant);
@@ -604,7 +604,7 @@ class ToolGrantResolver {
 	 *
 	 * @return array{0:string, 1:bool} `[grantWithoutFragment, waived]`.
 	 *
-	 * @spec openspec/changes/agent-capability-reach/specs/agent-capability-reach/spec.md#requirement-a-grant-may-carry-a-noapproval-waiver-fragment-parsed-before-any-other-grant-parsing
+	 * @spec openspec/specs/agent-capability-reach/spec.md#requirement-a-grant-may-carry-a-noapproval-waiver-fragment-parsed-before-any-other-grant-parsing
 	 */
 	private static function splitWaiver(string $grant): array {
 		if (str_ends_with($grant, self::WAIVER_FRAGMENT) === false) {
@@ -636,7 +636,7 @@ class ToolGrantResolver {
 	 *
 	 * @return array<string, array<int, array<string, array{mode:string, values:array<int,string>}>>>
 	 *
-	 * @spec openspec/changes/agent-capability-reach/specs/agent-capability-reach/spec.md#requirement-the-waiver-suppresses-the-approval-gate-and-nothing-else
+	 * @spec openspec/specs/agent-capability-reach/spec.md#requirement-the-waiver-suppresses-the-approval-gate-and-nothing-else
 	 */
 	public function waivedConstraintSets(array $grants): array {
 		$sets = [];
@@ -684,7 +684,7 @@ class ToolGrantResolver {
 	 *
 	 * @return bool True when a waived entry covers this exact invocation.
 	 *
-	 * @spec openspec/changes/agent-capability-reach/specs/agent-capability-reach/spec.md#scenario-a-waived-granted-conforming-invocation-runs-without-an-approval
+	 * @spec openspec/specs/agent-capability-reach/spec.md#scenario-a-waived-granted-conforming-invocation-runs-without-an-approval
 	 */
 	public static function waives(array $waivedSets, string $toolId, array $arguments): bool {
 		$alternatives = ($waivedSets[$toolId] ?? []);
@@ -768,7 +768,7 @@ class ToolGrantResolver {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/agent-tool-governance-and-disclosure/tasks.md#task-2
+	 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-schema-scoped-whitelist-grants-with-default-deny-for-writedestructive-tools
 	 */
 	public function hasWildcardGrant(array $grants): bool {
 		foreach ($this->sanitizeGrants(grants: $grants) as $grant) {
@@ -856,7 +856,7 @@ class ToolGrantResolver {
 	 * @SuppressWarnings(PHPMD.StaticAccess) `ToolReachResolver` is a pure classification
 	 *   function, for the same reason this method is static — see `isWriteOrDestructive()`.
 	 *
-	 * @spec openspec/changes/agent-capability-reach/specs/agent-capability-reach/spec.md#requirement-default-deny-and-the-approval-gate-key-off-reach-in-union-with-the-existing-rule
+	 * @spec openspec/specs/agent-capability-reach/spec.md#requirement-default-deny-and-the-approval-gate-key-off-reach-in-union-with-the-existing-rule
 	 */
 	public static function requiresGrant(string $id, ?array $descriptor = null): bool {
 		if (self::isWriteOrDestructive(id: $id, descriptor: $descriptor) === true) {
@@ -913,7 +913,7 @@ class ToolGrantResolver {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/hydra-console-agent-leaves/specs/agent-tool-governance/spec.md#scenario-an-argument-scoped-grant-resolves-to-the-underlying-tool
+	 * @spec openspec/specs/agent-tool-governance/spec.md#scenario-an-argument-scoped-grant-resolves-to-the-underlying-tool
 	 */
 	private function expandGrant(string $grant, array $catalogIds): array {
 		[$grant, $query] = $this->splitGrant(grant: $grant);

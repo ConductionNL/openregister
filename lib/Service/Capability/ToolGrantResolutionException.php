@@ -44,7 +44,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/cli-runner-governed-mcp-and-egress/specs/governed-cli-mcp-transport/spec.md#requirement-a-turn-that-cannot-be-governed-fails-loudly-and-is-never-silently-tool-less
+ * @spec openspec/specs/governed-cli-mcp-transport/spec.md#requirement-a-turn-that-cannot-be-governed-fails-loudly-and-is-never-silently-tool-less
  */
 
 declare(strict_types=1);
@@ -56,7 +56,7 @@ use RuntimeException;
 /**
  * Signals that an agent's tool grants were configured but matched nothing.
  *
- * @spec openspec/changes/cli-runner-governed-mcp-and-egress/specs/governed-cli-mcp-transport/spec.md#requirement-a-turn-that-cannot-be-governed-fails-loudly-and-is-never-silently-tool-less
+ * @spec openspec/specs/governed-cli-mcp-transport/spec.md#requirement-a-turn-that-cannot-be-governed-fails-loudly-and-is-never-silently-tool-less
  */
 class ToolGrantResolutionException extends RuntimeException {
 

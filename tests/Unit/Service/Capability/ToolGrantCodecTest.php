@@ -19,7 +19,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
+ * @spec openspec/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for the grant grammar codec.
  *
- * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
+ * @spec openspec/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
  */
 class ToolGrantCodecTest extends TestCase {
 	/**
@@ -40,7 +40,7 @@ class ToolGrantCodecTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
+	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
 	 */
 	public function testDottedIdYieldsItsOwnCoordinates(): void {
 		[$app, $subject, $action, $entry] = ToolGrantCodec::coordinatesFor(
@@ -61,7 +61,7 @@ class ToolGrantCodecTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
+	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
 	 */
 	public function testHandWrittenIdIsBothSubjectAndAction(): void {
 		[$app, $subject, $action, $entry] = ToolGrantCodec::coordinatesFor(
@@ -82,7 +82,7 @@ class ToolGrantCodecTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
+	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
 	 */
 	public function testDeepIdKeepsItsMiddleSegments(): void {
 		[$app, $subject, $action] = ToolGrantCodec::coordinatesFor(
@@ -99,7 +99,7 @@ class ToolGrantCodecTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#scenario-two-constrained-grants-for-one-tool-both-survive
+	 * @spec openspec/specs/structured-tool-grants/spec.md#scenario-two-constrained-grants-for-one-tool-both-survive
 	 */
 	public function testConstraintsAreParsedOffTheId(): void {
 		[$app, $subject, $action, $entry] = ToolGrantCodec::coordinatesFor(
@@ -117,7 +117,7 @@ class ToolGrantCodecTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
+	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
 	 */
 	public function testInListConstraintBecomesAnArray(): void {
 		$args = ToolGrantCodec::parseConstraints(query: 'status=in:open,won&owner=me');
@@ -130,7 +130,7 @@ class ToolGrantCodecTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
+	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
 	 */
 	public function testConstraintWithoutAValueIsDropped(): void {
 		$this->assertSame([], ToolGrantCodec::parseConstraints(query: 'flowId'));
@@ -146,7 +146,7 @@ class ToolGrantCodecTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
+	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
 	 */
 	public function testOnlyTheFirstEqualsSeparates(): void {
 		$this->assertSame(
@@ -160,7 +160,7 @@ class ToolGrantCodecTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#requirement-tool-grants-are-a-structure-in-the-domain-and-a-list-in-storage
+	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-tool-grants-are-a-structure-in-the-domain-and-a-list-in-storage
 	 */
 	public function testEntryForKeepsAnUnconstrainedGrantAsAString(): void {
 		$this->assertSame('hermiq.listFiles', ToolGrantCodec::entryFor(id: 'hermiq.listFiles', args: []));
@@ -175,7 +175,7 @@ class ToolGrantCodecTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
+	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
 	 */
 	public function testGrantStringRendersConstraintsBack(): void {
 		$this->assertSame(
@@ -200,7 +200,7 @@ class ToolGrantCodecTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#scenario-a-grant-round-trips-without-losing-its-identity
+	 * @spec openspec/specs/structured-tool-grants/spec.md#scenario-a-grant-round-trips-without-losing-its-identity
 	 */
 	public function testEveryShapeRoundTrips(): void {
 		$grants = [
@@ -230,7 +230,7 @@ class ToolGrantCodecTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#requirement-tool-grants-are-a-structure-in-the-domain-and-a-list-in-storage
+	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-tool-grants-are-a-structure-in-the-domain-and-a-list-in-storage
 	 */
 	public function testAnEntryWithoutAnIdIsDropped(): void {
 		$this->assertNull(ToolGrantCodec::sanitiseEntry(entry: ['args' => ['flowId' => 'A']]));
@@ -246,7 +246,7 @@ class ToolGrantCodecTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#requirement-tool-grants-are-a-structure-in-the-domain-and-a-list-in-storage
+	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-tool-grants-are-a-structure-in-the-domain-and-a-list-in-storage
 	 */
 	public function testSanitiseNormalisesAnArgumentlessEntry(): void {
 		$this->assertSame('hermiq.listFiles', ToolGrantCodec::sanitiseEntry(entry: 'hermiq.listFiles'));

@@ -91,7 +91,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md
+ * @spec openspec/specs/structured-tool-grants/spec.md
  */
 
 declare(strict_types=1);
@@ -101,7 +101,7 @@ namespace OCA\OpenRegister\Service\Capability;
 /**
  * An agent's grants, addressed by app, subject and action.
  *
- * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md
+ * @spec openspec/specs/structured-tool-grants/spec.md
  *
  * @SuppressWarnings(PHPMD.StaticAccess) {@see ToolGrantCodec} is a pure,
  *   stateless grammar — a namespace for functions, not a collaborator. Injecting
@@ -151,7 +151,7 @@ final class ToolGrantSet {
 	 *
 	 * @return self The grants.
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md
+	 * @spec openspec/specs/structured-tool-grants/spec.md
 	 */
 	public static function fromStored(mixed $stored): self {
 		if (is_array($stored) === false || $stored === []) {
@@ -172,7 +172,7 @@ final class ToolGrantSet {
 	 *
 	 * @return self The grants.
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#requirement-the-legacy-string-shape-is-still-accepted-and-is-not-silently-rewritten
+	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-the-legacy-string-shape-is-still-accepted-and-is-not-silently-rewritten
 	 */
 	public static function fromGrantStrings(array $ids): self {
 		$grants = [];
@@ -211,7 +211,7 @@ final class ToolGrantSet {
 	 *
 	 * @return array<string, array<string, array<string, array<int, string|array<string, mixed>>>>> The structure.
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#scenario-a-grant-round-trips-without-losing-its-identity
+	 * @spec openspec/specs/structured-tool-grants/spec.md#scenario-a-grant-round-trips-without-losing-its-identity
 	 */
 	public function toStored(): array {
 		return $this->grants;
@@ -229,7 +229,7 @@ final class ToolGrantSet {
 	 *
 	 * @return array<int, string> The grant strings.
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md
+	 * @spec openspec/specs/structured-tool-grants/spec.md
 	 */
 	public function toGrantStrings(): array {
 		$out = [];
@@ -255,7 +255,7 @@ final class ToolGrantSet {
 	 *
 	 * @return bool True when granted.
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#requirement-tool-grants-are-a-structure-in-the-domain-and-a-list-in-storage
+	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-tool-grants-are-a-structure-in-the-domain-and-a-list-in-storage
 	 */
 	public function has(string $app, string $subject, string $action): bool {
 		return isset($this->grants[$app][$subject][$action]);
@@ -272,7 +272,7 @@ final class ToolGrantSet {
 	 *
 	 * @return self A new set including this grant.
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#scenario-two-constrained-grants-for-one-tool-both-survive
+	 * @spec openspec/specs/structured-tool-grants/spec.md#scenario-two-constrained-grants-for-one-tool-both-survive
 	 */
 	public function with(string $app, string $subject, string $action, string $toolId, array $args = []): self {
 		$grants = $this->grants;
@@ -297,7 +297,7 @@ final class ToolGrantSet {
 	 *
 	 * @return self A new set without this grant.
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#requirement-tool-grants-are-a-structure-in-the-domain-and-a-list-in-storage
+	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-tool-grants-are-a-structure-in-the-domain-and-a-list-in-storage
 	 */
 	public function without(string $app, string $subject, string $action): self {
 		$grants = $this->grants;
@@ -322,7 +322,7 @@ final class ToolGrantSet {
 	 *
 	 * @return array<int, string> The ids.
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#scenario-a-grant-round-trips-without-losing-its-identity
+	 * @spec openspec/specs/structured-tool-grants/spec.md#scenario-a-grant-round-trips-without-losing-its-identity
 	 */
 	public function toolIds(): array {
 		$ids = [];

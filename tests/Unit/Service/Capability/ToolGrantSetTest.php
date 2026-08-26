@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md
+ * @spec openspec/specs/structured-tool-grants/spec.md
  */
 
 declare(strict_types=1);
@@ -267,7 +267,7 @@ class ToolGrantSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#scenario-two-constrained-grants-for-one-tool-both-survive
+	 * @spec openspec/specs/structured-tool-grants/spec.md#scenario-two-constrained-grants-for-one-tool-both-survive
 	 */
 	public function testTwoConstraintsOnOneToolBothSurvive(): void {
 		$set = ToolGrantSet::fromGrantStrings(
@@ -291,7 +291,7 @@ class ToolGrantSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#scenario-two-constrained-grants-for-one-tool-both-survive
+	 * @spec openspec/specs/structured-tool-grants/spec.md#scenario-two-constrained-grants-for-one-tool-both-survive
 	 */
 	public function testABareGrantDoesNotDisplaceItsConstrainedSibling(): void {
 		$grants = ToolGrantSet::fromGrantStrings(
@@ -307,7 +307,7 @@ class ToolGrantSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#requirement-tool-grants-are-a-structure-in-the-domain-and-a-list-in-storage
+	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-tool-grants-are-a-structure-in-the-domain-and-a-list-in-storage
 	 */
 	public function testUnusableEntriesAreSkipped(): void {
 		$set = ToolGrantSet::fromGrantStrings(
@@ -325,7 +325,7 @@ class ToolGrantSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/structured-tool-grants/specs/structured-tool-grants/spec.md#requirement-tool-grants-are-a-structure-in-the-domain-and-a-list-in-storage
+	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-tool-grants-are-a-structure-in-the-domain-and-a-list-in-storage
 	 */
 	public function testAnEmptyListGrantsNothing(): void {
 		$set = ToolGrantSet::fromGrantStrings(ids: []);
