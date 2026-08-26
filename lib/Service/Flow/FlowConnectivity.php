@@ -50,6 +50,13 @@ namespace OCA\OpenRegister\Service\Flow;
  */
 class FlowConnectivity {
 	/**
+	 * Reads edge endpoints the one way the document defines them.
+	 *
+	 * @var FlowGraph
+	 */
+	private FlowGraph $graph;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param FlowNodeRegistry $registry Resolves whether a type ends a path.
@@ -59,6 +66,7 @@ class FlowConnectivity {
 	public function __construct(
 		private readonly FlowNodeRegistry $registry,
 	) {
+		$this->graph = new FlowGraph();
 
 	}//end __construct()
 
@@ -223,6 +231,18 @@ class FlowConnectivity {
 	 * `from` is the only key that matters: a node with an outgoing edge has
 	 * somewhere to send its token, however many edges arrive at it.
 	 *
+	 * ⚠️ `from` IS A LIST, AND READING IT AS A SCALAR REPORTED EVERY FLOW AS
+	 * BROKEN. An endpoint fans out — `{"from": ["a"], "to": ["b"]}` is the shape
+	 * `FlowDefinitionBuilder` writes and `FlowGraph::outgoing()` reads. This
+	 * method used `(string)$edge['from']`, and casting `["a"]` to string yields
+	 * the literal `"Array"`: the set came back keyed by `"Array"`, no real node
+	 * id was ever in it, and so EVERY non-terminal node was reported as a dead
+	 * end. The flow was drawn correctly, saved correctly and refused to run.
+	 *
+	 * It failed this way round because a wrong cast is not an error in PHP —
+	 * it produces a plausible string and carries on. The normaliser is the
+	 * document's only definition of an endpoint, so this reads through it.
+	 *
 	 * @param array $flow The flow document.
 	 *
 	 * @return array<string, boolean> A set keyed by node id.
@@ -236,8 +256,7 @@ class FlowConnectivity {
 				continue;
 			}
 
-			$from = trim((string)($edge['from'] ?? ''));
-			if ($from !== '') {
+			foreach ($this->graph->normaliseEndpoints(value: ($edge['from'] ?? null)) as $from) {
 				$hasOutgoing[$from] = true;
 			}
 		}//end foreach

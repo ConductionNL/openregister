@@ -248,4 +248,90 @@ class FlowDeadEndTest extends TestCase {
 		$this->assertStringContainsString('have', $many->getMessage());
 
 	}//end testRefusalMessageNamesTheNodes()
+
+	/**
+	 * A LIST endpoint connects the graph, exactly as a scalar one does.
+	 *
+	 * ⚠️ THIS IS THE SHAPE THE EDITOR ACTUALLY SAVES, AND NO TEST USED IT.
+	 * Every fixture above writes `'from' => 'a'`, while the flow canvas writes
+	 * `'from' => ['a']` — the form `FlowDefinitionBuilder` normalises to and
+	 * `FlowGraph::outgoing()` reads. The connectivity check read it with
+	 * `(string)$edge['from']`, which yields the literal `"Array"`, so no node
+	 * ever counted as having an exit and EVERY non-terminal node was reported
+	 * as a dead end. Real flows saved fine and then refused to run.
+	 *
+	 * The suite could not catch it because the fixtures agreed with the bug
+	 * rather than with the document: a fixture is only evidence about the
+	 * shape it actually contains.
+	 *
+	 * @return void
+	 */
+	public function testListEndpointsConnectTheGraph(): void {
+		$report = $this->preflight(stopping: ['openregister.end'])->inspect(
+			flow: [
+				'nodes' => [
+					['id' => 'trigger', 'type' => 'openregister.trigger-manual'],
+					['id' => 'action', 'type' => 'openregister.set-fields'],
+					['id' => 'end', 'type' => 'openregister.end'],
+				],
+				'edges' => [
+					['id' => 'trigger-action', 'from' => ['trigger'], 'to' => ['action']],
+					['id' => 'action-end', 'from' => ['action'], 'to' => ['end']],
+				],
+			]
+		);
+
+		$this->assertSame([], $this->deadEnds($report));
+
+	}//end testListEndpointsConnectTheGraph()
+
+	/**
+	 * The negative control: a list endpoint still reports a real dead end.
+	 *
+	 * Without this, the test above passes for a check that stopped reporting
+	 * anything at all — which is the failure mode a "make it green" fix
+	 * produces.
+	 *
+	 * @return void
+	 */
+	public function testListEndpointsStillReportARealSink(): void {
+		$report = $this->preflight(stopping: ['openregister.end'])->inspect(
+			flow: [
+				'nodes' => [
+					['id' => 'trigger', 'type' => 'openregister.trigger-manual'],
+					['id' => 'action', 'type' => 'openregister.set-fields'],
+					['id' => 'forgotten', 'type' => 'openregister.set-fields'],
+					['id' => 'end', 'type' => 'openregister.end'],
+				],
+				'edges' => [
+					['id' => 'trigger-action', 'from' => ['trigger'], 'to' => ['action']],
+					['id' => 'action-end', 'from' => ['action'], 'to' => ['end']],
+				],
+			]
+		);
+
+		$this->assertSame(['forgotten'], $this->deadEnds($report));
+
+	}//end testListEndpointsStillReportARealSink()
+
+	/**
+	 * A fan-out endpoint gives EVERY named source an exit, not just the first.
+	 *
+	 * @return void
+	 */
+	public function testFanOutEndpointCountsForEverySource(): void {
+		$report = $this->preflight(stopping: ['openregister.end'])->inspect(
+			flow: [
+				'nodes' => [
+					['id' => 'a', 'type' => 'openregister.set-fields'],
+					['id' => 'b', 'type' => 'openregister.set-fields'],
+					['id' => 'end', 'type' => 'openregister.end'],
+				],
+				'edges' => [['id' => 'both', 'from' => ['a', 'b'], 'to' => ['end']]],
+			]
+		);
+
+		$this->assertSame([], $this->deadEnds($report));
+
+	}//end testFanOutEndpointCountsForEverySource()
 }//end class
