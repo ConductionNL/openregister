@@ -163,4 +163,112 @@ class NotifierTest extends TestCase {
 		$result = $this->notifier->prepare($notification, 'en');
 		$this->assertSame($notification, $result);
 	}
+	/**
+	 * 🔴 The consent prompt is built from SERVER STATE, and says who is asking.
+	 *
+	 * The parameters carry the two uids and the grant uuid, read from the record.
+	 * The requester's stated REASON is deliberately not among them — a requester
+	 * can be an agent, and an agent's reasons can come from a document it read, so
+	 * a reason that reached this sentence would let the thing being granted author
+	 * the prompt that asks for its own privilege.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	public function testPrepareDelegationConsentRequested(): void {
+		$seen = [];
+
+		$action = $this->createMock(IAction::class);
+		$action->method('setLabel')->willReturnSelf();
+		$action->method('setParsedLabel')->willReturnSelf();
+		$action->method('setPrimary')->willReturnSelf();
+		$action->method('setLink')->willReturnSelf();
+
+		$notification = $this->createMock(INotification::class);
+		$notification->method('getApp')->willReturn('openregister');
+		$notification->method('getSubject')->willReturn('delegation_consent_requested');
+		$notification->method('getSubjectParameters')->willReturn([
+			'principal' => 'alice',
+			'actingAs' => 'mayor',
+			'grantUuid' => 'grant-1',
+		]);
+		$notification->method('createAction')->willReturn($action);
+		$notification->method('addAction')->willReturnSelf();
+		$notification->method('setIcon')->willReturnSelf();
+		$notification->method('setParsedSubject')->willReturnCallback(
+			static function (string $text) use ($notification, &$seen): INotification {
+				$seen[] = $text;
+
+				return $notification;
+			}
+		);
+		$notification->method('setParsedMessage')->willReturnCallback(
+			static function (string $text) use ($notification, &$seen): INotification {
+				$seen[] = $text;
+
+				return $notification;
+			}
+		);
+
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(
+			static fn (string $text, array $args = []): string => vsprintf($text, $args)
+		);
+
+		$this->factory->method('get')->willReturn($l10n);
+		$this->urlGenerator->method('imagePath')->willReturn('/apps/openregister/img/app.svg');
+		$this->urlGenerator->method('linkToRouteAbsolute')
+			->willReturn('https://example.test/apps/openregister/api/delegations/grant-1/answer');
+
+		$result = $this->notifier->prepare($notification, 'en');
+
+		$this->assertSame($notification, $result);
+		$rendered = implode(' | ', $seen);
+
+		// It must NAME the requester — a prompt that says "somebody" is one a
+		// person cannot answer responsibly.
+		$this->assertStringContainsString('alice', $rendered);
+		// And it must say what allowing it means, in the system's own words.
+		$this->assertStringContainsString('permissions', $rendered);
+		$this->assertStringContainsString('withdraw', $rendered);
+	}
+
+	/**
+	 * A consent prompt with no parameters still renders rather than fatalling.
+	 *
+	 * A notification row can outlive the shape that wrote it. Rendering an empty
+	 * name is a poor prompt; throwing takes down the notifications endpoint for
+	 * every other subject too.
+	 *
+	 * @return void
+	 */
+	public function testPrepareDelegationConsentWithNoParameters(): void {
+		$action = $this->createMock(IAction::class);
+		$action->method('setLabel')->willReturnSelf();
+		$action->method('setParsedLabel')->willReturnSelf();
+		$action->method('setPrimary')->willReturnSelf();
+		$action->method('setLink')->willReturnSelf();
+
+		$notification = $this->createMock(INotification::class);
+		$notification->method('getApp')->willReturn('openregister');
+		$notification->method('getSubject')->willReturn('delegation_consent_requested');
+		$notification->method('getSubjectParameters')->willReturn([]);
+		$notification->method('createAction')->willReturn($action);
+		$notification->method('addAction')->willReturnSelf();
+		$notification->method('setIcon')->willReturnSelf();
+		$notification->method('setParsedSubject')->willReturnSelf();
+		$notification->method('setParsedMessage')->willReturnSelf();
+
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(
+			static fn (string $text, array $args = []): string => vsprintf($text, $args)
+		);
+
+		$this->factory->method('get')->willReturn($l10n);
+		$this->urlGenerator->method('imagePath')->willReturn('/icon.svg');
+		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.test/answer');
+
+		$this->assertSame($notification, $this->notifier->prepare($notification, 'en'));
+	}
 }
