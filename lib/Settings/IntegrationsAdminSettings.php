@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Settings;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IL10N;
@@ -213,20 +214,25 @@ class IntegrationsAdminSettings implements ISettings {
 	 * @return string Absolute URL.
 	 */
 	private function buildOpenConnectorConfigureUrl(string $sourceId): string {
-		if ($this->appManager->isInstalled('openconnector') === false) {
+		// The app answers to `integriq` on development and `openconnector` on
+		// beta/main. Every one of the three references below is keyed on the
+		// registered app id — the install check, the route name, and the path —
+		// so all three resolve from the same id rather than a hardcoded name.
+		$appId = FleetAppId::resolve($this->appManager, 'integriq');
+		if ($appId === null) {
 			return $this->urlGenerator->getAbsoluteURL('/index.php/settings/apps/integration/openconnector');
 		}
 
 		try {
 			return $this->urlGenerator->linkToRouteAbsolute(
-				'openconnector.sources.show',
+				$appId.'.sources.show',
 				['id' => $sourceId]
 			);
 		} catch (\Throwable $e) {
 			// OpenConnector's route names have varied across versions —
 			// fall back to the source-edit URL by convention.
 			return $this->urlGenerator->getAbsoluteURL(
-				sprintf('/index.php/apps/openconnector/sources/%s', rawurlencode($sourceId))
+				sprintf('/index.php/apps/%s/sources/%s', $appId, rawurlencode($sourceId))
 			);
 		}
 	}//end buildOpenConnectorConfigureUrl()

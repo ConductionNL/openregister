@@ -32,6 +32,16 @@ const ADMIN = process.env.NEXTCLOUD_ADMIN_USER || 'admin'
 /** A uid that must NOT resolve. Used to prove the account check is real. */
 const GHOST = 'e2e-no-such-user-9f3a1c'
 
+/**
+ * A real account that is NOT the caller.
+ *
+ * Distinct from GHOST on purpose: the account check and the GRANT check refuse
+ * for different reasons, and a single fixture would let either one satisfy both
+ * assertions. A uid that resolves and is not you is the only shape that isolates
+ * the delegation rule.
+ */
+const OTHER = process.env.NEXTCLOUD_OTHER_USER || 'ddauth-alice'
+
 interface FlowResponse {
 	id: string
 	uuid?: string
@@ -176,6 +186,93 @@ test.describe('delegated-identity — a schedule trigger must name who it acts a
 			'a uid that resolves to no account is not an identity',
 		).toBeGreaterThanOrEqual(400)
 		expect(await response.text()).toContain(GHOST)
+	})
+})
+
+test.describe('delegated-identity — naming somebody else needs a grant', () => {
+	test('a schedule trigger naming another real user is refused without a grant', async ({
+		request,
+	}) => {
+		// 🔴 The delegation rule, end to end. The account EXISTS — that is the
+		// point. Refusing an unknown uid is an account check and was already
+		// true; refusing a real colleague you hold no grant for is the rule this
+		// change adds, and only a resolvable uid can tell the two apart.
+		const response = await request.post('/apps/openregister/api/flows', {
+			data: {
+				name: `${RUN_ID} schedule naming a colleague`,
+				trigger: 'manual',
+				nodes: [scheduleTrigger(OTHER), END_NODE],
+				edges: [EDGE_START_TO_END],
+			},
+		})
+
+		expect(
+			response.status(),
+			'scheduling unattended runs as somebody else is a delegation and needs their consent',
+		).toBeGreaterThanOrEqual(400)
+
+		const body = (await response.text()).toLowerCase()
+		expect(body).toContain(OTHER.toLowerCase())
+		// The reason has to be in the message. "Not allowed" leaves the author
+		// unable to tell "ask them" from "they said no" from "your grant ran
+		// out", which are three different next steps.
+		expect(body).toMatch(/none|denied|pending|revoked|expired|scope/)
+	})
+
+	test('POSITIVE CONTROL: the SAME trigger saves when it names the caller', async ({
+		request,
+	}) => {
+		// Byte-for-byte the flow above with one field changed. Without this, the
+		// refusal is satisfied by a validator that rejects every `runAs` — which
+		// would break the ordinary case, a person scheduling their own flow,
+		// while looking like a security fix.
+		const flow = await createFlow(request, {
+			name: 'schedule naming the caller',
+			nodes: [scheduleTrigger(ADMIN), END_NODE],
+			edges: [EDGE_START_TO_END],
+		})
+
+		expect(flow.id).toBeTruthy()
+	})
+
+	test('a self-named trigger carries no delegation stamp', async ({ request }) => {
+		// `runAsDeclaredBy` is what the fire path re-resolves a grant against, so
+		// a value surviving on a trigger that delegates nothing would be an
+		// assertion no save-time check ever examined. The server writes it, and
+		// strips it — this proves the stripping, including against a client that
+		// supplies one.
+		const flow = await createFlow(request, {
+			name: 'forged stamp on a self-named trigger',
+			nodes: [
+				{
+					id: 'start',
+					type: 'openregister.trigger-schedule',
+					config: {
+						cron: '*/5 * * * *',
+						runAs: ADMIN,
+						runAsDeclaredBy: OTHER,
+					},
+					position: { x: 0, y: 0 },
+				},
+				END_NODE,
+			],
+			edges: [EDGE_START_TO_END],
+		})
+
+		const read = await request.get(`/apps/openregister/api/flows/${flow.id}`)
+		expect(read.status()).toBe(200)
+
+		const stored = await read.json()
+		const trigger = (stored.nodes ?? []).find(
+			(n: Record<string, unknown>) =>
+				n.type === 'openregister.trigger-schedule',
+		)
+
+		expect(
+			(trigger.config ?? {}).runAsDeclaredBy,
+			'a stamp supplied by the client must not survive the save',
+		).toBeUndefined()
+		expect((trigger.config ?? {}).runAs).toBe(ADMIN)
 	})
 })
 

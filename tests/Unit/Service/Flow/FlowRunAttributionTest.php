@@ -20,8 +20,13 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\FlowStateMapper;
+use OCA\OpenRegister\Service\Delegation\DelegationRefused;
+use OCA\OpenRegister\Service\Delegation\DelegationService;
+use OCA\OpenRegister\Service\Delegation\DelegationVerdict;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
+use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
@@ -46,12 +51,14 @@ class FlowRunAttributionTest extends TestCase {
 	/**
 	 * Build the service with a flow the mapper will return.
 	 *
-	 * @param Flow|null   $flow         The flow to resolve, or null to make the lookup fail.
-	 * @param string|null $activeOrg    The organisation a session would resolve, if any.
+	 * @param Flow|null              $flow      The flow to resolve, or null to make the lookup fail.
+	 * @param string|null            $activeOrg The organisation a session would resolve, if any.
+	 * @param DelegationVerdict|null $verdict   The verdict the delegation service answers, or null
+	 *                                          to leave the service unresolvable.
 	 *
 	 * @return FlowRunService The service under test.
 	 */
-	private function service(?Flow $flow, ?string $activeOrg = null): FlowRunService {
+	private function service(?Flow $flow, ?string $activeOrg = null, ?DelegationVerdict $verdict = null): FlowRunService {
 		$runMapper = $this->createMock(FlowRunMapper::class);
 		$runMapper->method('insert')->willReturnArgument(0);
 		$runMapper->method('update')->willReturnArgument(0);
@@ -63,11 +70,21 @@ class FlowRunAttributionTest extends TestCase {
 			$flowMapper->method('findByUuid')->willReturn($flow);
 		}
 
+		$delegation = null;
+		if ($verdict !== null) {
+			$delegation = $this->createMock(DelegationService::class);
+			$delegation->method('verdictFor')->willReturn($verdict);
+		}
+
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			function (string $id) use ($flowMapper, $activeOrg): object {
+			function (string $id) use ($flowMapper, $activeOrg, $delegation): object {
 				if ($id === 'OCA\OpenRegister\Db\FlowMapper') {
 					return $flowMapper;
+				}
+
+				if ($id === DelegationService::class && $delegation !== null) {
+					return $delegation;
 				}
 
 				// A session-less caller: OrganisationService is unavailable, so
@@ -269,5 +286,133 @@ class FlowRunAttributionTest extends TestCase {
 		$this->expectException(FlowUnattributed::class);
 
 		$this->service(null)->queue(flowId: 'ghost', trigger: 'schedule');
+	}
+
+	/**
+	 * A flow whose schedule trigger asserts a delegation.
+	 *
+	 * @return Flow The flow.
+	 */
+	private function delegatingFlow(): Flow {
+		$flow = $this->ownedFlow('alice', 'org-a');
+		$flow->setNodes([
+			[
+				'id' => 'start',
+				'type' => 'openregister.trigger-schedule',
+				'config' => [
+					'runAs' => 'carol',
+					FlowTriggerValidator::CONFIG_DECLARED_BY => 'alice',
+				],
+			],
+			['id' => 'stop', 'type' => 'end'],
+		]);
+
+		return $flow;
+	}
+
+	/**
+	 * POSITIVE CONTROL: a still-live delegation fires.
+	 *
+	 * Without this, the revocation test below is satisfied by a fire path that
+	 * refuses every delegating schedule — which stops the wrong runs and would
+	 * present as "cron broke".
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	public function testALiveDelegationStillFires(): void {
+		$grant = new DelegationGrant();
+		$grant->setPrincipal('alice');
+		$grant->setActingAs('carol');
+
+		$run = $this->service($this->delegatingFlow(), null, DelegationVerdict::granted($grant))
+			->queue(flowId: 'flow-1', trigger: 'schedule');
+
+		$this->assertSame('carol', $run->getRunAs());
+	}
+
+	/**
+	 * 🔴 A REVOKED delegation stops the next firing.
+	 *
+	 * The save-time check answered against the grants that existed then. If the
+	 * stored trigger were treated as standing authorization, revoking a grant
+	 * would be cosmetic for exactly the runs nobody is watching — the unattended
+	 * ones — which is the opposite of what revoking is for.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	public function testARevokedDelegationStopsTheNextFiring(): void {
+		$refused = DelegationVerdict::refused(
+			DelegationVerdict::REASON_REVOKED,
+			'carol withdrew the grant.'
+		);
+
+		try {
+			$this->service($this->delegatingFlow(), null, $refused)
+				->queue(flowId: 'flow-1', trigger: 'schedule');
+			$this->fail('a revoked delegation must stop the run');
+		} catch (DelegationRefused $e) {
+			// The REASON, not just the refusal. "Revoked" and "no permission"
+			// send an operator to different places, and reporting a revocation
+			// as a permission error against the acted-as user sends them to the
+			// RBAC configuration of somebody who did nothing wrong.
+			$this->assertSame(DelegationVerdict::REASON_REVOKED, $e->getVerdict()->reason);
+			$this->assertSame('alice', $e->getPrincipal());
+			$this->assertSame('carol', $e->getActingAs());
+		}
+	}
+
+	/**
+	 * A trigger naming its own asserter is not re-checked as a delegation.
+	 *
+	 * Belt and braces against a stamp that agrees with `runAs`: there is no
+	 * delegation to resolve, so the delegation service is never asked — which
+	 * this proves by leaving it unresolvable and expecting the run to succeed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	public function testASelfNamedStampIsNotTreatedAsADelegation(): void {
+		$flow = $this->ownedFlow('alice', 'org-a');
+		$flow->setNodes([
+			[
+				'id' => 'start',
+				'type' => 'openregister.trigger-schedule',
+				'config' => [
+					'runAs' => 'carol',
+					FlowTriggerValidator::CONFIG_DECLARED_BY => 'carol',
+				],
+			],
+			['id' => 'stop', 'type' => 'end'],
+		]);
+
+		$run = $this->service($flow)->queue(flowId: 'flow-1', trigger: 'schedule');
+
+		$this->assertSame('carol', $run->getRunAs());
+	}
+
+	/**
+	 * An unreachable delegation store stops a DELEGATING run, and only that.
+	 *
+	 * Fail-closed where it counts and nowhere else: the two tests above prove a
+	 * non-delegating schedule still fires with the very same unresolvable
+	 * container, so this refusal is bounded to the runs whose authorization
+	 * genuinely cannot be established.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	public function testAnUnreachableDelegationStoreStopsADelegatingRun(): void {
+		try {
+			$this->service($this->delegatingFlow())->queue(flowId: 'flow-1', trigger: 'schedule');
+			$this->fail('an unverifiable delegation must not run');
+		} catch (DelegationRefused $e) {
+			$this->assertSame(DelegationVerdict::REASON_UNREADABLE, $e->getVerdict()->reason);
+		}
 	}
 }

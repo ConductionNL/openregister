@@ -24,6 +24,7 @@
 namespace OCA\OpenRegister\Notification;
 
 use OCP\IURLGenerator;
+use OCP\IUserManager;
 use OCP\L10N\IFactory;
 use OCP\Notification\INotification;
 use OCP\Notification\INotifier;
@@ -44,12 +45,49 @@ class Notifier implements INotifier {
 	 *
 	 * @param IFactory $factory The L10N factory instance
 	 * @param IURLGenerator $urlGenerator URL generator for notification icons and actions
+	 * @param IUserManager|null $userManager Resolves a uid to the DISPLAY NAME a
+	 *                                       person is asked about. Nullable and
+	 *                                       last so the existing hand-built
+	 *                                       construction in NotifierTest keeps
+	 *                                       binding; absent, the uid is shown,
+	 *                                       which is worse copy but never a wrong
+	 *                                       name.
 	 */
 	public function __construct(
 		private readonly IFactory $factory,
 		private readonly IURLGenerator $urlGenerator,
+		private readonly ?IUserManager $userManager = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The display name for a uid, falling back to the uid itself.
+	 *
+	 * A uid is an identifier, not a name. Asking somebody to grant rights to
+	 * `j.devries3` when the person they know is "Jan de Vries" makes the decision
+	 * harder for every reader and materially harder for one using a screen
+	 * reader, who cannot glance at a face beside it.
+	 *
+	 * @param string $uid The uid.
+	 *
+	 * @return string The display name, or the uid when it cannot be resolved.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	private function displayName(string $uid): string {
+		if ($this->userManager === null || $uid === '') {
+			return $uid;
+		}
+
+		$user = $this->userManager->get($uid);
+		if ($user === null) {
+			return $uid;
+		}
+
+		$name = trim($user->getDisplayName());
+
+		return ($name === '' ? $uid : $name);
+	}//end displayName()
 
 	/**
 	 * Identifier of the notifier.
@@ -109,6 +147,8 @@ class Notifier implements INotifier {
 				return $this->prepareScheduledReportDelivered(notification: $notification, l: $l);
 			case 'scheduled_report_failed':
 				return $this->prepareScheduledReportFailed(notification: $notification, l: $l);
+			case 'delegation_consent_requested':
+				return $this->prepareDelegationConsentRequested(notification: $notification, l: $l);
 			default:
 				// Unknown subject. Object-lifecycle subjects
 				// (object_created / object_updated / object_transitioned)
@@ -211,6 +251,122 @@ class Notifier implements INotifier {
 
 		return $notification;
 	}//end prepareHandoffDrainFailed()
+
+	/**
+	 * Render a request to act on somebody's behalf.
+	 *
+	 * 🔴 EVERY WORD HERE IS SERVER-AUTHORED. The only values interpolated are the
+	 * two uids, both read from the grant record. The requester's stated reason is
+	 * deliberately absent — see {@see \OCA\OpenRegister\Service\Delegation\DelegationNotifier}.
+	 * A requester that could write into this sentence would be authoring the
+	 * prompt that asks for its own privilege, and a person reading it would have
+	 * no way to tell which half the system was vouching for.
+	 *
+	 * The two ACTIONS are the decision. They are deliberately not "OK" and
+	 * "Cancel": a consent dialog whose buttons do not name the outcome is one
+	 * people dismiss, and dismissing is not deciding.
+	 *
+	 * @param INotification $notification The notification to prepare.
+	 * @param mixed         $l            The l10n factory.
+	 *
+	 * @return INotification The prepared notification.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	private function prepareDelegationConsentRequested(INotification $notification, $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+
+		$principal = (string)($parameters['principal'] ?? '');
+		$grantUuid = (string)($parameters['grantUuid'] ?? '');
+		$who = $this->displayName($principal);
+
+		// RICH FIRST, PARSED ALWAYS — both, and neither is optional.
+		//
+		// `setRichSubject` with a `user` parameter is what lets a client render
+		// the requester as a real user reference: the display name a colleague
+		// recognises, with an avatar and semantic markup a screen reader can
+		// announce as a person rather than as a bare token. `setParsedSubject` is
+		// the plain-text fallback every other surface reads — the email digest,
+		// the OCS API, a client that does not do rich text. A notification with
+		// only one of the two is either unreadable somewhere or unrenderable
+		// somewhere, and NC's own `isValidParsed()` refuses the second case.
+		//
+		// The two say the SAME sentence. A rich subject that read differently
+		// from its fallback would mean two people looking at the same security
+		// decision on different clients were answering different questions.
+		$notification->setRichSubject(
+			$l->t('{requester} asks to act on your behalf'),
+			[
+				'requester' => [
+					'type' => 'user',
+					'id' => $principal,
+					'name' => $who,
+				],
+			]
+		);
+		$notification->setParsedSubject(
+			$l->t('%s asks to act on your behalf', [$who])
+		);
+
+		// WHAT ALLOWING MEANS, BEFORE THE BUTTONS. A consent prompt whose
+		// consequence is not stated before the controls is one people answer by
+		// reflex, and a reader using a screen reader meets the buttons in reading
+		// order — so the sentence has to carry the whole decision on its own.
+		//
+		// Three facts, in the order a person needs them: what they gain, that it
+		// is recorded, and that it is reversible.
+		$message = $l->t(
+			'If you allow this, %s may perform work using your permissions until the grant expires '
+			. 'or you withdraw it. Anything they do will be recorded as done on your behalf. '
+			. 'You can withdraw the grant at any time.',
+			[$who]
+		);
+		$notification->setRichMessage(
+			$l->t(
+				'If you allow this, {requester} may perform work using your permissions until the grant '
+				. 'expires or you withdraw it. Anything they do will be recorded as done on your behalf. '
+				. 'You can withdraw the grant at any time.'
+			),
+			[
+				'requester' => [
+					'type' => 'user',
+					'id' => $principal,
+					'name' => $who,
+				],
+			]
+		);
+		$notification->setParsedMessage($message);
+
+		$base = $this->urlGenerator->linkToRouteAbsolute(
+			'openregister.delegation.answer',
+			['uuid' => $grantUuid]
+		);
+
+		// The labels NAME THE OUTCOME rather than acknowledging the dialog.
+		// "OK"/"Cancel" on a consent prompt is the shape people dismiss: neither
+		// word says what happens, so the decision is made by muscle memory. Out
+		// of context — which is how a screen reader reaches a button list — "OK"
+		// is meaningless and "Allow" is not.
+		$allow = $notification->createAction();
+		$allow->setLabel('allow')
+			->setParsedLabel($l->t('Allow'))
+			->setLink($base . '?allow=1', 'POST')
+			->setPrimary(true);
+		$notification->addAction($allow);
+
+		$deny = $notification->createAction();
+		$deny->setLabel('deny')
+			->setParsedLabel($l->t('Deny'))
+			->setLink($base . '?allow=0', 'POST')
+			->setPrimary(false);
+		$notification->addAction($deny);
+
+		$notification->setIcon(
+			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+		);
+
+		return $notification;
+	}//end prepareDelegationConsentRequested()
 
 	/**
 	 * Prepare the scheduled-report success notification (scheduled-report-jobs,
