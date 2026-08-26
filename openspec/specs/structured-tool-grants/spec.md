@@ -1,7 +1,7 @@
 # structured-tool-grants Specification
 
 **Status**: planned
-**Scope**: hermiq
+**Scope**: openregister (the ADR-099 §5 capability grammar); hermiq owns the rest of this capability
 **OpenSpec changes**:
 - `structured-tool-grants`
 
@@ -41,6 +41,29 @@ save that changed nothing. Reads still accept either shape, so an agent written 
 earlier build keeps working.
 
 ## ADDED Requirements
+
+<!--
+  RELOCATED SUBSET — the canonical home for this capability is hermiq.
+
+  ADR-099 §5 moved the tool-grant grammar (ToolGrantSet, ToolGrantCodec,
+  ToolGrantResolver, ToolReachResolver, ToolGrantResolutionException) into
+  OCA\OpenRegister\Service\Capability. The requirements below are the ones that
+  code implements, copied VERBATIM from hermiq so their headings — and therefore
+  every `@spec` anchor pointing at them — resolve unchanged.
+
+  🔴 THIS FILE IS NOT THE WHOLE SPEC. 1 further requirement(s) live in
+  hermiq's `openspec/specs/structured-tool-grants/spec.md` and are NOT duplicated here: they
+  describe behaviour hermiq still owns — the `Agent.tools` binding, the approval
+  gate, the oversight surface, the CLI transport. Read that file for them.
+
+  WHY A COPY AT ALL. A `@spec` tag is dereferenced by gate-46 against the
+  REPOSITORY it sits in, so a cross-repo reference is not expressible: an
+  openregister class citing a hermiq spec resolves to nothing, which is the
+  ~300-dead-tag shape this fleet already carries from archived changes. The
+  duplication is therefore structural rather than an oversight — and it is
+  bounded to exactly the requirements the moved code implements, which is why
+  this file is a subset and not the original.
+-->
 
 ### Requirement: Tool grants are a structure in the domain, and a list in storage
 
@@ -103,23 +126,6 @@ because regrouping by app reorders the grants and `baseToolIds()` promises order
 - **WHEN** the shape is detected
 - **THEN** it is read as the structured shape
 - **AND** the agent does not lose every one of its tools
-
-### Requirement: Saving without changing anything preserves the grants
-
-The grant matrix MUST render every stored grant it will write back. Saving an unmodified matrix MUST
-leave the stored grants unchanged in meaning.
-
-This is stated as a requirement because it is the failure mode this surface has already produced
-once: a read that returns less than was stored **deletes the difference on save**, and it does so
-while every unit test passes, because the tests exercise the codec rather than the round trip
-through the UI.
-
-#### Scenario: an untouched save loses nothing
-
-- **GIVEN** an agent with grants stored in the structured shape, including one carrying an argument constraint
-- **WHEN** the grant matrix is opened and saved without any change
-- **THEN** the stored grants are unchanged in meaning
-- **AND** the constrained grant still carries its constraint
 
 ### Requirement: The legacy grant grammar lives in exactly one place
 

@@ -29,37 +29,29 @@ Hermiq CONSUMES the derived catalog; it never derives it and ships no tool code 
 (ADR-063, gate-27). The authoritative authorization boundary stays OpenRegister RBAC at invoke
 time — everything here is a governance/UX layer that only ever NARROWS what an agent can reach.
 ## Requirements
-### Requirement: Progressive tool disclosure for large catalogs
-The system MUST NOT place every tool descriptor into the model context when an agent's resolved tool
-catalog exceeds a configurable threshold (`IAppConfig('hermiq', 'tools.disclosureThreshold')`,
-default **30**); it MUST instead expose a single `hermiq.searchTools` meta-tool and load full
-descriptors only for the tools the model selects via that meta-tool (deferred loading). Below the
-threshold, all resolved descriptors MAY be placed in context as today.
 
-#### Scenario: A resolved catalog exceeds the disclosure threshold
+<!--
+  RELOCATED SUBSET — the canonical home for this capability is hermiq.
 
-- **GIVEN** an agent whose resolved (grant-filtered) tool catalog contains more tools than the
-  configured disclosure threshold
-- **WHEN** the engine assembles the agent's turn
-- **THEN** the system MUST place only the `hermiq.searchTools` meta-tool (plus any always-on tools)
-  into the model context
-- **AND** the system MUST NOT place the full set of tool descriptors into the context
+  ADR-099 §5 moved the tool-grant grammar (ToolGrantSet, ToolGrantCodec,
+  ToolGrantResolver, ToolReachResolver, ToolGrantResolutionException) into
+  OCA\OpenRegister\Service\Capability. The requirements below are the ones that
+  code implements, copied VERBATIM from hermiq so their headings — and therefore
+  every `@spec` anchor pointing at them — resolve unchanged.
 
-#### Scenario: The model searches for and then invokes a deferred tool
+  🔴 THIS FILE IS NOT THE WHOLE SPEC. 4 further requirement(s) live in
+  hermiq's `openspec/specs/agent-tool-governance/spec.md` and are NOT duplicated here: they
+  describe behaviour hermiq still owns — the `Agent.tools` binding, the approval
+  gate, the oversight surface, the CLI transport. Read that file for them.
 
-- **GIVEN** progressive disclosure is active for an agent turn
-- **WHEN** the model calls `hermiq.searchTools` with a query
-- **THEN** the system MUST return only descriptors from that agent's already-resolved
-  (grant-filtered, default-denied) set that match the query
-- **AND** the system MUST make the matched tools invocable on a subsequent turn
-- **AND** the system MUST NOT return, or make invocable, any tool outside the agent's resolved set
-
-#### Scenario: A small catalog does not trigger disclosure
-
-- **GIVEN** an agent whose resolved catalog does not exceed the threshold
-- **WHEN** the engine assembles the turn
-- **THEN** the system MAY place all resolved descriptors directly into context
-- **AND** the `hermiq.searchTools` meta-tool need not be present
+  WHY A COPY AT ALL. A `@spec` tag is dereferenced by gate-46 against the
+  REPOSITORY it sits in, so a cross-repo reference is not expressible: an
+  openregister class citing a hermiq spec resolves to nothing, which is the
+  ~300-dead-tag shape this fleet already carries from archived changes. The
+  duplication is therefore structural rather than an oversight — and it is
+  bounded to exactly the requirements the moved code implements, which is why
+  this file is a subset and not the original.
+-->
 
 ### Requirement: Schema-scoped whitelist grants with default-deny for write/destructive tools
 
@@ -146,135 +138,6 @@ Per-tool annotations (`readOnlyHint`/`destructiveHint`/`scope`/`reach`) MUST be 
 - **AND** neither resolved set MUST contain an id containing the text `noapproval`
 @e2e exclude Resolver-internal expansion assertion on the fragment split order; asserted by unit test.
 
-### Requirement: Per-agent tool-invocation oversight surface (AI Act art.12/14)
-The system MUST provide, per agent and tenant-scoped, an oversight view of that agent's tool
-invocations — tool id, acting identity, parameter summary, result summary, data touched, and
-timestamp — sourced from OpenRegister's MCP invocation audit log, with a retention note and an
-export (CSV + JSON). The system MUST NOT fabricate rows when no invocations have been recorded.
-
-#### Scenario: An operator reviews an agent's tool activity
-
-- **GIVEN** an agent that has invoked several tools across past runs
-- **WHEN** an authorized operator opens the agent's oversight view
-- **THEN** the system MUST list the recorded invocations (newest first) with tool id, acting
-  identity, parameter summary, result summary, data touched, and timestamp, scoped to the operator's
-  tenant
-- **AND** the system MUST offer an export of those rows
-
-#### Scenario: The richer invocation audit shape is not yet available
-
-- **GIVEN** OpenRegister has not yet written the richer per-invocation MCP audit entries
-- **WHEN** the oversight view loads
-- **THEN** the system MUST degrade to the coarser `run`/tool-call audit entries already available
-- **AND** the system MUST indicate the reduced detail rather than erroring or fabricating rows
-
-#### Scenario: An agent has no recorded invocations
-
-- **GIVEN** an agent that has never invoked a tool
-- **WHEN** the oversight view loads
-- **THEN** the system MUST render an empty state
-- **AND** the system MUST NOT display any fabricated invocation row
-
-### Requirement: The tool-catalogue surface exposes reach alongside scope
-
-The system MUST include each tool's resolved `reach` in the grant-annotated tool catalogue it returns for an agent, alongside the existing `scope` and grant annotation, so that an operator configuring grants can see how far each tool reaches without reading source. The system MUST NOT return a catalogue entry with no `reach`; where a descriptor declares none, the fail-closed `external` value MUST be returned rather than an absent or null field.
-
-#### Scenario: Every catalogue entry carries a reach
-
-- **GIVEN** an agent with a resolved tool catalogue containing both native and derived tools
-- **WHEN** an authorized operator reads that agent's tool catalogue
-- **THEN** every entry MUST carry a `reach` drawn from the closed vocabulary
-- **AND** no entry MUST carry an absent or null `reach`
-@e2e Playwright: seed an agent, GET its tool catalogue through the API and assert every entry carries a reach from the closed vocabulary.
-
-#### Scenario: A tool whose descriptor declares no reach is returned as external
-
-- **GIVEN** a catalogue entry whose descriptor declares no `reach`
-- **WHEN** the catalogue is returned
-- **THEN** that entry's `reach` MUST be `external`
-@e2e exclude Requires a descriptor with no reach in the live catalogue, which the shipped provider does not produce; asserted by unit test on the catalogue assembler.
-
-## User Stories
-
-- As a municipal CISO, I want to see exactly which tools an agent invoked, when, and on which data,
-  so that I can demonstrate EU AI Act Art. 14 human oversight rather than merely assert it.
-- As an operator, I want to grant an agent a whole schema's read access in one entry, so that I do
-  not hand-curate dozens of derived tool ids.
-- As an operator, I want a wildcard to NEVER silently hand an agent `delete`, so that the safe
-  choice is the zero-config one.
-- As an agent builder, I want a large tool catalog not to blow my model's context, so that accuracy
-  and cost stay sane as the fleet grows.
-- As a security reviewer, I want tool annotations treated as untrusted, so that a spoofed
-  `readOnlyHint` cannot escalate past OpenRegister RBAC.
-
-## Acceptance Criteria
-
-- [x] `Agent.tools` accepts exact ids, `{app}.{schema}.*`, `{app}.{schema}.{verb}`, and
-      `{app}.{schema}.*:write`, resolved against the facade's catalog (`ToolGrantResolver`)
-- [x] A schema wildcard resolves to read verbs only; write/destructive derived tools require an
-      explicit grant (default-deny)
-- [x] Classification prefers a catalog descriptor's declared `scope`/`destructiveHint`/`readOnlyHint`
-      hint over the id's own verb suffix, even when they conflict (`hermiq-prefer-tool-hints`)
-- [x] An empty `Agent.tools` preserves "all discovered tools allowed" for READ-classified ids
-      (derived reads, or a hand-written/curated id carrying a read-classifying hint), stripping every
-      id classified write/destructive — including a hint-less, non-3-segment id, which now FAILS
-      CLOSED instead of silently passing (`hermiq-prefer-tool-hints`)
-- [x] Above `tools.disclosureThreshold` (default 30) only `hermiq.searchTools` enters the context;
-      the full resolved set is held off-context for deferred loading (`ToolSearchService`)
-- [x] `hermiq.searchTools` never returns a tool outside the agent's resolved set, and is handled
-      Hermiq-internally (no facade round-trip)
-- [x] An un-granted write/destructive invocation routes through the `human-approval-gate` state
-      machine instead of executing (see that spec's delta)
-- [x] `GET /api/agents/{agentId}/tool-catalog` returns the grant-annotated catalog; `PUT
-      .../tool-grants` persists `Agent.tools` via `ObjectService` (single write-path), owner-only
-- [x] `GET /api/agents/{agentId}/tool-invocations` returns tenant-scoped rows (newest first) with a
-      retention note and CSV/JSON export, degrading gracefully and never fabricating
-- [ ] Frontend grant editor + oversight view live-verified in a browser (source shipped; bundle
-      deferred — see Notes)
-
-## Notes
-
-- **ADR-063 consumer.** The derived catalog, its per-tool annotations, and the MCP invocation audit
-  entry shape are all produced by OpenRegister (`or-mcp-schema-dialect`,
-  `or-mcp-derived-tool-provider`, `or-mcp-tool-attribute`). Hermiq reads them through the unchanged
-  `ToolRegistryFacade` ABI and OR's `AuditTrailMapper`. Adding a new app/schema to the fleet must
-  expose new tools to a Hermiq agent with **zero Hermiq code change** — only a schema opt-in
-  upstream plus a grant edit on the agent.
-- **Upstream gap CLOSED (write/destructive classification).** OpenRegister's
-  `McpProviderBridge::getFunctions()` now forwards the `destructiveHint`/`scope`/`readOnlyHint`
-  annotation keys onto the descriptor additively, whenever a provider (a schema's
-  `x-openregister-mcp` dialect, or a `#[McpTool(...)]`-annotated service tool) sets them
-  (verified against HEAD 2026-07-13 — `openregister` `10e605cea`). `ToolGrantResolver` now prefers
-  those hints; the verb-suffix heuristic on a 3-segment derived id is the fallback for un-annotated
-  tools, unchanged. A hint-less id that is ALSO not a 3-segment derived id (a 2-segment
-  hand-written/curated/legacy id) now FAILS CLOSED — classified write/destructive — a deliberate
-  reversal of the prior "never classified this way" behaviour, which left curated write tools
-  unable to ever trip default-deny or the approval gate (`hermiq-prefer-tool-hints`).
-- **Known upstream limitation (agent principal).** OR's `createToolInvocationEntry()` records the
-  ambient Nextcloud **session user**, not an agent principal — the `IMcpToolProvider` ABI does not
-  thread an acting-agent identity into `invokeTool()`. The oversight surface therefore CORRELATES
-  invocations to an agent via that agent's owner plus its schedules' owners. A first-class
-  agent-identity column upstream would make this exact rather than correlated.
-- **Frontend bundle deferred.** `src/api/toolOversight.js`, `src/components/ToolGrantEditor.vue`
-  and `src/components/ToolInvocationTable.vue` ship as source and are wired into `AgentDetail.vue`;
-  they are syntax-checked but not webpack-built or browser-verified in this change.
-- Related: **ADR-063** (MCP as platform abstraction), **ADR-034** (Hermiq is the agent consumer),
-  **ADR-035 D4** (`Agent.tools` whitelist), **ADR-004** (governance via OR AuditTrail),
-  `human-approval-gate` (the destructive-invocation gate), `nc-native-tools` (the provider the
-  meta-tool registers through), `run-audit-log` (the degraded oversight fallback).
-
-
-<!--
-  RELOCATED WITH THE CODE (ADR-099 §5).
-
-  The requirements below arrived from hermiq's
-  `hydra-console-agent-leaves` change delta rather than from its promoted
-  spec, because they had not been promoted there yet. They are copied
-  VERBATIM — same headings, so every `@spec` anchor that already pointed at
-  them still resolves. Rewording one here would break the tags it exists to
-  serve.
--->
-
 ### Requirement: Argument constraints on a grant are enforced at invocation
 The system MUST enforce every argument constraint carried by an argument-scoped grant at the point
 of invocation, BEFORE the call is dispatched to the tool facade, and MUST refuse a non-conforming
@@ -315,37 +178,6 @@ be able to widen it.
 - **WHEN** the agent invokes the tool accordingly
 - **THEN** the call MUST be refused
 - **AND** the constraint MUST NOT be relaxed by any prompt, tool description or model rationale
-
-### Requirement: A flow invoked as an agent tool is attributed to an owning UID
-When an agent invokes a tool that queues a flow run, the queued run MUST carry the acting owner's
-Nextcloud UID, resolved from the run the agent is executing under, so the flow's own steps execute
-as an identified person and the run is attributable after the fact. The system MUST NOT queue an
-agent-initiated flow run with an absent, empty or system owner. Where the owner cannot be resolved,
-the invocation MUST be refused rather than dispatched.
-
-Attribution is required specifically because a flow's terminal step may command an external system:
-an unattributed run of such a flow is an unattributed command, and "who told it to do that" must be
-answerable from the record.
-
-#### Scenario: An agent-queued flow run names the acting owner
-
-- **GIVEN** an agent run executing on behalf of an identified user
-- **WHEN** the agent invokes the flow-running tool
-- **THEN** the queued flow run MUST record that user's UID as its owner
-- **AND** the flow's steps MUST execute as that owner
-
-#### Scenario: An unresolvable owner refuses the invocation
-
-- **GIVEN** an agent run with no resolvable owning UID
-- **WHEN** the agent invokes the flow-running tool
-- **THEN** the invocation MUST be refused
-- **AND** no flow run MUST be queued
-
-#### Scenario: The record answers who commanded the pipeline
-
-- **GIVEN** a completed flow run whose terminal step wrote to an external system
-- **WHEN** the audit trail is read
-- **THEN** it MUST name the owning UID, the invoking agent, the tool id and the constrained arguments
 
 ### Requirement: The pipeline command capability is one approval-gated, argument-scoped grant
 The triage agent's ONLY command capability MUST be a single argument-scoped grant over the existing

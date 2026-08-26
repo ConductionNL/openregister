@@ -3,6 +3,30 @@
 ## Purpose
 TBD - created by archiving change agent-capability-reach. Update Purpose after archive.
 ## Requirements
+
+<!--
+  RELOCATED SUBSET — the canonical home for this capability is hermiq.
+
+  ADR-099 §5 moved the tool-grant grammar (ToolGrantSet, ToolGrantCodec,
+  ToolGrantResolver, ToolReachResolver, ToolGrantResolutionException) into
+  OCA\OpenRegister\Service\Capability. The requirements below are the ones that
+  code implements, copied VERBATIM from hermiq so their headings — and therefore
+  every `@spec` anchor pointing at them — resolve unchanged.
+
+  🔴 THIS FILE IS NOT THE WHOLE SPEC. 3 further requirement(s) live in
+  hermiq's `openspec/specs/agent-capability-reach/spec.md` and are NOT duplicated here: they
+  describe behaviour hermiq still owns — the `Agent.tools` binding, the approval
+  gate, the oversight surface, the CLI transport. Read that file for them.
+
+  WHY A COPY AT ALL. A `@spec` tag is dereferenced by gate-46 against the
+  REPOSITORY it sits in, so a cross-repo reference is not expressible: an
+  openregister class citing a hermiq spec resolves to nothing, which is the
+  ~300-dead-tag shape this fleet already carries from archived changes. The
+  duplication is therefore structural rather than an oversight — and it is
+  bounded to exactly the requirements the moved code implements, which is why
+  this file is a subset and not the original.
+-->
+
 ### Requirement: Every tool descriptor declares a reach on a closed, ordered vocabulary
 
 The system MUST classify every tool in an agent's catalogue on a `reach` axis whose values are exactly `self`, `user`, `instance` and `external`, ordered `self` < `user` < `instance` < `external`. `reach` MUST be orthogonal to `scope`: it declares the widest set of principals a successful invocation can AFFECT or DISCLOSE TO, not the data verb the invocation performs and not the provenance of data it merely reads. `self` means only the invoking agent's own memory or state. `user` means only the acting user's own data and permission set, with no effect any other principal can observe. `instance` means other users of this Nextcloud can observe the effect. `external` means the effect, or the data, leaves this Nextcloud. The system MUST NOT remove, rename or reinterpret `scope`, `readOnlyHint` or `destructiveHint`; both axes are retained and answer different questions.
@@ -201,80 +225,3 @@ The system MUST treat `#noapproval` as suppressing the human-approval gate for t
 - **WHEN** the agent invokes that tool within the grant's constraints
 - **THEN** the system MUST dispatch the invocation without creating a pending approval
 @e2e exclude Requires driving a model turn against a live tool; asserted by unit test on the invoker's gate predicate.
-
-### Requirement: Only the agent owner may persist a grant list carrying a waiver
-
-The system MUST verify server-side that the acting user is the agent's owner before persisting any grant list for that agent, on EVERY path that can persist one — not only on Hermiq's own tool-grants endpoint. A client-side check, a disabled form control, or explanatory text in the UI MUST NOT be treated as satisfying this requirement. Where an agent's grants are persisted through the generic OpenRegister object write path, that path MUST be owner-scoped by the Agent schema's own authorization declaration rather than by an app-side pre-write guard, because data authorization is OpenRegister's layer (ADR-023 Rule 1).
-
-#### Scenario: A non-owner is refused on Hermiq's tool-grants endpoint
-
-- **GIVEN** an agent owned by user A
-- **WHEN** authenticated user B attempts to persist a grant list for that agent through Hermiq's
-  tool-grants endpoint
-- **THEN** the system MUST refuse the write with a forbidden response
-- **AND** the stored grant list MUST be unchanged
-@e2e Playwright: seed an agent as the owner, then attempt the same grant write as a second authenticated user and assert a forbidden response and an unchanged grant list.
-
-#### Scenario: A non-owner is refused on the generic object write path
-
-- **GIVEN** an agent owned by user A
-- **WHEN** authenticated user B attempts to write that agent's `tools` through the generic
-  OpenRegister object write path
-- **THEN** the system MUST refuse the write
-- **AND** the stored grant list MUST be unchanged
-@e2e Playwright: attempt the same `tools` write as a second authenticated user directly against the OpenRegister object path and assert it is refused and the grant list is unchanged.
-
-#### Scenario: The owner is not obstructed
-
-- **GIVEN** an agent owned by the acting user
-- **WHEN** that owner persists a grant list containing a waiver
-- **THEN** the system MUST accept the write
-@e2e Playwright: persist a waiver-bearing grant list as the agent's owner and assert it is accepted.
-
-### Requirement: Waiving approval is recorded as a distinct audited event
-
-The system MUST record the addition or removal of a `#noapproval` waiver as its own audited event, distinct from the ordinary "grants changed" write, carrying the acting user, the agent, the exact grant entry affected, and whether the waiver was added or removed. The system MUST NOT rely on a reader diffing two grant arrays to discover that human oversight was switched off. The event MUST be written through the same OpenRegister audit path all other Hermiq governance events use (ADR-004), and MUST be greppable by a single stable action token.
-
-#### Scenario: Adding a waiver writes a distinct audit event
-
-- **GIVEN** an agent whose grant list contains no waiver
-- **WHEN** its owner persists a grant list in which one entry now ends in `#noapproval`
-- **THEN** the system MUST write an audit event whose action token identifies a waiver being added
-- **AND** that event MUST carry the acting user, the agent and the exact grant entry
-@e2e Playwright: persist a waiver through the API and assert the agent's audit/oversight surface reports a waiver-added event naming the grant entry.
-
-#### Scenario: Removing a waiver writes a distinct audit event
-
-- **GIVEN** an agent whose grant list contains a waived entry
-- **WHEN** its owner persists a grant list in which that entry no longer ends in `#noapproval`
-- **THEN** the system MUST write an audit event whose action token identifies a waiver being removed
-@e2e exclude Symmetric to the add case, which is covered above; asserted by unit test on the audit writer.
-
-#### Scenario: An ordinary grant change is not reported as a waiver event
-
-- **GIVEN** an agent whose grant list contains no waiver before or after a change
-- **WHEN** its owner adds an ordinary grant entry
-- **THEN** the system MUST NOT write a waiver audit event
-@e2e exclude Absence-of-event assertion; asserted by unit test on the audit writer.
-
-### Requirement: The grant model is documented for operators
-
-The system MUST ship an operator-facing documentation page covering the complete grant model: every grant form (exact id, `{app}.{schema}.*`, `{app}.{schema}.*:write`, argument constraints in both the pinned and closed-set forms, and the `#noapproval` fragment), the `reach` vocabulary with a worked example for each of `self`, `user`, `instance` and `external`, the default-deny rule, the conditions under which the human-approval gate fires, and plainly what waiving approval gives up. The page MUST state that `hermiq.webSearch` and `hermiq.webFetch` become approval-gated unless explicitly granted, because that is the one capability an existing agent can lose. The page MUST NOT use realistic-looking secrets, real email addresses or real identifiers in its examples.
-
-#### Scenario: An operator can read the grant syntax without reading the source
-
-- **GIVEN** the shipped documentation
-- **WHEN** an operator looks up how to grant one schema's read verbs
-- **THEN** the documentation MUST show the grant form and a worked example
-- **AND** the documentation MUST state that a schema wildcard never grants write verbs
-@e2e exclude Documentation content, verified by review against the requirement rather than by a browser assertion.
-
-#### Scenario: The cost of waiving approval is stated plainly
-
-- **GIVEN** the shipped documentation
-- **WHEN** an operator reads the section on `#noapproval`
-- **THEN** the documentation MUST state that the human-approval gate is suppressed for that grant
-- **AND** the documentation MUST state that the waiver narrows nothing else and widens nothing
-- **AND** the documentation MUST state that adding or removing a waiver is audited
-@e2e exclude Documentation content, verified by review against the requirement.
-
