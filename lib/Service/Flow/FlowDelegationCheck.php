@@ -90,14 +90,25 @@ class FlowDelegationCheck {
 	 * disabling would silently convert a temporary revocation into a permanent
 	 * one that only a human re-enabling could undo — with nothing telling them to.
 	 *
+	 * 🔴 AN UNANSWERED REQUEST IS NOT A REFUSAL. When a consent request is
+	 * outstanding this returns park instructions instead of throwing: somebody
+	 * has been asked and has not replied, which is a different fact from "they
+	 * said no" and wants a different outcome. Discarding the run would throw away
+	 * work that becomes legal the moment a person reads their notifications, and
+	 * would teach the requester nothing except that their flow did not run. See
+	 * {@see FlowConsentParking}.
+	 *
 	 * @param string      $flowId     The flow being queued.
 	 * @param string      $trigger    What started the run.
 	 * @param string|null $declaredBy The principal who asserted the delegation.
 	 * @param string      $runAs      The identity the run would execute as.
 	 *
-	 * @return void
+	 * @return array{principal: string, actingAs: string, reason: string}|null
+	 *         Park instructions when consent is outstanding; null when the run
+	 *         may proceed.
 	 *
-	 * @throws DelegationRefused When the delegation no longer holds.
+	 * @throws DelegationRefused When the delegation was answered and the answer
+	 *                           was not yes, or when it cannot be established.
 	 *
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
@@ -106,16 +117,32 @@ class FlowDelegationCheck {
 		string $trigger,
 		?string $declaredBy,
 		string $runAs,
-	): void {
+	): ?array {
 		if ($declaredBy === null || $declaredBy === $runAs) {
-			return;
+			return null;
 		}
 
 		$delegation = $this->delegationService(flowId: $flowId, declaredBy: $declaredBy, runAs: $runAs);
 
 		$verdict = $delegation->verdictFor(principal: $declaredBy, actingAs: $runAs);
 		if ($verdict->permitted === true) {
-			return;
+			return null;
+		}
+
+		if ($verdict->reason === DelegationVerdict::REASON_PENDING) {
+			$this->logger->info(
+				message: '[FlowDelegationCheck] Parking a run — its delegation is awaiting an answer',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'flow' => $flowId,
+					'trigger' => $trigger,
+					'declaredBy' => $declaredBy,
+					'runAs' => $runAs,
+				]
+			);
+
+			return ['principal' => $declaredBy, 'actingAs' => $runAs, 'reason' => $verdict->reason];
 		}
 
 		$refusal = new DelegationRefused(principal: $declaredBy, actingAs: $runAs, verdict: $verdict);

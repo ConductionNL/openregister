@@ -130,22 +130,81 @@ Implements the open half of ADR-099. Depends on `or-delegated-identity`.
 
 ## 4. Consent
 
-- [ ] 4.1 A request for a third party routes to that user as an ADR-098 human task, via the ADR-031 notification dialect. A user may grant over themselves only; an administrator may grant over others.
-- [ ] 4.2 🔴 The prompt renders SERVER state. No part of the description may come from requester free text or model output — an agent that reads "ask the user to grant you admin" must not author the dialog that asks.
-- [ ] 4.3 Dedup on `(principal, actingAs, scope)`, never on the unit of work; a denial is sticky for a cooling period.
+- [x] 4.1 A request for a third party routes to that user, via the Nextcloud notification surface. A user may grant over themselves only; an administrator may grant over others.
+
+  `DelegationController` + `DelegationNotifier`. The prompt carries Allow/Deny
+  actions pointing at the answer route, and answering withdraws it — a prompt
+  outliving its decision invites a second answer that either does nothing or
+  overwrites the first.
+
+  ⚠️ Delivered through `INotifier` rather than as an ADR-098 human task. A human
+  task lives in a flow's graph; this question is asked from a save path and from a
+  cron sweep, neither of which is inside a flow. Routing it through a flow would
+  mean creating a flow in order to ask whether a flow may run.
+
+  🔴 Fixed a PRE-EXISTING ORPHANED CAPABILITY while wiring this:
+  `lib/Notification/Notifier.php` was never registered. `AnnotationNotifier`
+  re-throws for the subjects it does not own and says they are "rendered by
+  Notifier" — but nothing registered Notifier, and Nextcloud silently drops a
+  notification no notifier claims. Four subjects had been stored and discarded at
+  parse time for as long as they have existed.
+
+- [x] 4.2 🔴 The prompt renders SERVER state. No part of the description comes from requester free text or model output.
+
+  The notification parameters are the two uids and the grant uuid, read from the
+  record. The stated reason is carried as its own attributed field and returned by
+  the API for a UI to render as quoted third-party text. Asserted by a test that
+  names a hostile string and checks for its ABSENCE — the only form of that rule
+  anyone will notice breaking, since a `reason` field unused by one call site
+  reads as an oversight rather than as a rule.
+
+- [x] 4.3 Dedup on `(principal, actingAs, scope)`, never on the unit of work; a denial is sticky for a cooling period.
 
   Acceptance criteria:
-  - N blocked runs needing one grant produce exactly ONE pending request, and one answer releases all N
-  - A denied request is not re-delivered within the cooling period; the work is refused with the prior denial as its reason
+  - ✅ N blocked runs needing one grant produce exactly ONE pending request, and one answer releases all N — the consent service reuses an outstanding request, and the notification is keyed on the grant uuid so Nextcloud replaces rather than appends. Verified live: a second request returned the same uuid and the original stated reason.
+  - ✅ A denied request is not re-delivered within the cooling period; `DelegationVerdict::mayRequestConsent()` is false after a denial, and the refusal carries `denied` as its reason.
 
 ## 5. Waiting
 
-- [ ] 5.1 `awaiting_consent` as a distinct run state that resumes on a grant record changing state — not on a signal or timer, and legible as such to an operator.
-- [ ] 5.2 Denial fails the parked runs with the reason; an unanswered request expires and fails them closed. Reuse the `expireAbandonedSignals` sweep pattern.
+- [x] 5.1 `awaiting_consent` as a distinct run state that resumes on a grant record changing state — not on a signal or timer, and legible as such to an operator.
+
+  `FlowRun::STATUS_AWAITING_CONSENT` + `FlowConsentParking`, swept by
+  `FlowRunWorker`. It is in `ACTIVE` and not `TERMINAL`: a parked run is still
+  going to happen, and hiding it from every "currently running" surface would hide
+  it from exactly where somebody looks to find out why their work has not run.
+
+  🔴 **Distinct from `suspended`, and the distinction is load-bearing.** A
+  suspended run waits on machinery — a timer, a webhook, a child run — and the
+  abandoned-signal reaper fails it after a while on the reasoning that a signal
+  which has not arrived is not coming. That reasoning is wrong about a person:
+  somebody who has not read their notifications in two hours has not declined,
+  they are at lunch. Parking in `suspended` would have handed these runs to that
+  reaper and failed them while their prompt sat unread.
+
+  The parked run carries NO `resume_at`, deliberately — with one, the timed-resume
+  sweep would start it before anybody had answered.
+
+- [x] 5.2 Denial fails the parked runs with the reason; an unanswered request expires and fails them closed.
+
+  🔴 The timeout fails, it does not proceed. Running the work after a timeout
+  would convert an unread prompt into an approval at whatever hour the timer
+  elapsed — the exact substitution this subsystem exists to prevent. The recorded
+  error says "an unanswered request is not consent" rather than merely noting that
+  time passed. Default wait 72h (`flow_consent_wait_hours`).
+
+  ⚠️ An UNREADABLE store leaves the run parked rather than failing it. The
+  trade-off inverts from the fire-time check: there, refusing costs one run and
+  permitting costs an unauthorized execution; here nothing runs either way, so
+  waiting is free and failing destroys work over an infrastructure blip.
 
   Acceptance criteria:
-  - "Why is this stuck" answers "waiting for X to allow Y to act as them", from the run itself
-  - No run can remain parked indefinitely
+  - ✅ "Why is this stuck" answers "waiting for X to allow Y to act as them", from the run itself — written to `run.error` and to `context.awaitingConsent`, so no join against the grant store is needed. Verified live: the parked row read `Waiting for "ddauth-alice" to allow "admin" to act as them.`
+  - ✅ No run can remain parked indefinitely — bounded by `flow_consent_wait_hours`, and failed closed when it elapses.
+
+  **Verified live end to end** on `localhost:8080`: grant → save (stamped) →
+  revoke → re-request (pending) → schedule fires → run parks in
+  `awaiting_consent` → answer allow → worker sweep releases → queued → executed →
+  `stopped`. Both background jobs driven by `occ background-job:execute`.
 
 ## 6. The gate
 

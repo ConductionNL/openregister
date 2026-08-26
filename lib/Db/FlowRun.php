@@ -112,6 +112,27 @@ class FlowRun extends Entity implements JsonSerializable {
 	public const STATUS_FAILED = 'failed';
 
 	/**
+	 * Waiting for a person to allow the delegation this run needs.
+	 *
+	 * DISTINCT FROM `suspended`, on purpose. A suspended run is waiting on a
+	 * timer, a child run or a webhook — machinery, which arrives or does not.
+	 * This one is waiting on a DECISION BY A NAMED HUMAN, and the difference is
+	 * the whole reason it gets its own state: an operator asking "why is this
+	 * stuck" must be answered "waiting for X to allow Y to act as them" from the
+	 * run itself, not from correlating a run against a grant table nobody thought
+	 * to look at.
+	 *
+	 * Folding it into `suspended` would also put it in front of the resume
+	 * sweeps, which resume on a clock. A consent has no `resume_at` — asking
+	 * again in five minutes is not how a person decides — so it would land in
+	 * the abandoned-signal reaper and be failed as if nobody had answered, while
+	 * the prompt was still sitting unread in somebody's inbox.
+	 *
+	 * @var string
+	 */
+	public const STATUS_AWAITING_CONSENT = 'awaiting_consent';
+
+	/**
 	 * Statuses from which a run will never advance on its own.
 	 *
 	 * @var array<int, string>
@@ -137,6 +158,11 @@ class FlowRun extends Entity implements JsonSerializable {
 		self::STATUS_QUEUED,
 		self::STATUS_RUNNING,
 		self::STATUS_SUSPENDED,
+		// ACTIVE, not terminal. A parked run is still going to happen — it is
+		// waiting on an answer, and one answer releases it. Omitting it here
+		// would hide it from every "currently running" surface, which is exactly
+		// where somebody would go to find out why their work has not run.
+		self::STATUS_AWAITING_CONSENT,
 	];
 
 	/**

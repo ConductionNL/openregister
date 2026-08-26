@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Exception\FlowRunExpired;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
+use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCP\IAppConfig;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -429,7 +430,7 @@ class FlowRunService {
 		// it ever fires — and the whole point of a revocation is that the next
 		// firing stops. Treating a stored trigger as standing authorization would
 		// make revocation cosmetic for exactly the runs nobody is watching.
-		(new FlowDelegationCheck($this->container, $this->logger))->refuseIfRevoked(
+		$park = (new FlowDelegationCheck($this->container, $this->logger))->refuseIfRevoked(
 			flowId: $flowId,
 			trigger: $trigger,
 			declaredBy: $attribution['declaredBy'],
@@ -457,8 +458,47 @@ class FlowRunService {
 		$run->setCreated(new DateTime());
 		$run->setUpdated(new DateTime());
 
-		return $this->mapper->insert($run);
+		return $this->parkIfAwaiting(run: $this->mapper->insert($run), park: $park);
 	}//end queue()
+
+	/**
+	 * Park a freshly-inserted run whose delegation is still unanswered.
+	 *
+	 * Inserted FIRST, then parked. The row has to exist before it can carry a
+	 * state, and it holding `queued` for the instant between the two is harmless:
+	 * the worker reads in a separate process on a cron tick, not inside this
+	 * call.
+	 *
+	 * Resolved through the container, like every other collaborator on this path:
+	 * three test suites build this service by hand, and a new constructor
+	 * parameter would shift every later slot for them. Not a new fail-open —
+	 * {@see FlowDelegationCheck} already resolved the same service to get here.
+	 *
+	 * @param FlowRun    $run  The inserted run.
+	 * @param array|null $park Park instructions, or null when the run may proceed.
+	 *
+	 * @return FlowRun The run, parked or untouched.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	private function parkIfAwaiting(FlowRun $run, ?array $park): FlowRun {
+		if ($park === null) {
+			return $run;
+		}
+
+		$parking = new FlowConsentParking(
+			runs: $this->mapper,
+			delegation: $this->container->get(DelegationService::class),
+			logger: $this->logger
+		);
+
+		return $parking->park(
+			run: $run,
+			declaredBy: $park['principal'],
+			runAs: $park['actingAs'],
+			reason: $park['reason']
+		);
+	}//end parkIfAwaiting()
 
 	/**
 	 * Refuse to queue a flow that has a node its token cannot leave.
