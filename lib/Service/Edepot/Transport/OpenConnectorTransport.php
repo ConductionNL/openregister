@@ -76,9 +76,10 @@ class OpenConnectorTransport implements TransportInterface {
 
 			$baseUrl = rtrim(($config['baseUrl'] ?? 'http://localhost:8080'), '/');
 			$sourceId = $config['sourceId'];
+			$appId = $this->remoteAppId(config: $config);
 
 			$response = $this->httpClient->post(
-				"{$baseUrl}/index.php/apps/openconnector/api/synchronizations",
+				"{$baseUrl}/index.php/apps/{$appId}/api/synchronizations",
 				[
 					'json' => [
 						'sourceId' => $sourceId,
@@ -138,12 +139,21 @@ class OpenConnectorTransport implements TransportInterface {
 			$baseUrl = rtrim(($config['baseUrl'] ?? 'http://localhost:8080'), '/');
 			$sourceId = $config['sourceId'];
 
-			$response = $this->httpClient->get(
-				"{$baseUrl}/index.php/apps/openconnector/api/sources/{$sourceId}",
-				['timeout' => 10]
-			);
+			// The remote is a DIFFERENT instance, so the local app manager
+			// cannot say which id it registered. Probe the candidates newest
+			// first and treat the first non-404 as the live one.
+			foreach ($this->remoteAppIdCandidates(config: $config) as $appId) {
+				$response = $this->httpClient->get(
+					"{$baseUrl}/index.php/apps/{$appId}/api/sources/{$sourceId}",
+					['timeout' => 10, 'http_errors' => false]
+				);
 
-			return ($response->getStatusCode() < 400);
+				if ($response->getStatusCode() !== 404) {
+					return ($response->getStatusCode() < 400);
+				}
+			}
+
+			return false;
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[OpenConnectorTransport] Connection test failed',
@@ -152,6 +162,47 @@ class OpenConnectorTransport implements TransportInterface {
 			return false;
 		}
 	}//end testConnection()
+
+	/**
+	 * Candidate app ids for the REMOTE instance, newest first.
+	 *
+	 * OpenConnector was renamed to integriq. The new id ships on development;
+	 * beta and main still register the old one. This transport talks to another
+	 * instance over HTTP, so the local IAppManager cannot answer which id that
+	 * instance uses — and a URL segment is a routing key, so guessing wrong is
+	 * a 404 rather than an error we could interpret.
+	 *
+	 * An explicit `appId` in the transport config wins when set; otherwise both
+	 * names are offered, newest first.
+	 *
+	 * @param array<string,mixed> $config OpenConnector configuration.
+	 *
+	 * @return list<string> Candidate ids in priority order.
+	 */
+	private function remoteAppIdCandidates(array $config): array {
+		$configured = trim((string)($config['appId'] ?? ''));
+		if ($configured !== '') {
+			return [$configured];
+		}
+
+		return ['integriq', 'openconnector'];
+	}//end remoteAppIdCandidates()
+
+	/**
+	 * The app id to address the remote instance with.
+	 *
+	 * `send()` performs a state-changing POST, so it does not probe — a probe
+	 * would risk creating the synchronisation twice. It takes the first
+	 * candidate, which an operator can pin via the `appId` config key when the
+	 * remote has not been renamed yet.
+	 *
+	 * @param array<string,mixed> $config OpenConnector configuration.
+	 *
+	 * @return string The app id to use in the URL.
+	 */
+	private function remoteAppId(array $config): string {
+		return $this->remoteAppIdCandidates(config: $config)[0];
+	}//end remoteAppId()
 
 	/**
 	 * Get transport name.
