@@ -92,13 +92,10 @@ trait MarkerLookupTrait {
 			// "Call to a member function debug() on null". Seven provider tests
 			// died in the error handler rather than in the code under test.
 			try {
-				$logger = \OCP\Server::get(\Psr\Log\LoggerInterface::class);
-				if ($logger !== null) {
-					$logger->debug(
-						'[MarkerLookupTrait] ' . $table . '.' . $markerColumn . ' query failed: ' . $e->getMessage(),
-						['exception' => $e]
-					);
-				}
+				\OCP\Server::get(\Psr\Log\LoggerInterface::class)?->debug(
+					'[MarkerLookupTrait] ' . $table . '.' . $markerColumn . ' query failed: ' . $e->getMessage(),
+					['exception' => $e]
+				);
 			} catch (Throwable $loggingFailure) {
 				// No logger reachable at all — the degraded return below is
 				// still the correct outcome, so swallow and carry on.

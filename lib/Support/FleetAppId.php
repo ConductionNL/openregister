@@ -107,7 +107,7 @@ final class FleetAppId
      */
     public static function isInstalled(IAppManager $appManager, string $canonical): bool
     {
-        return self::resolve($appManager, $canonical) !== null;
+        return self::resolve(appManager: $appManager, canonical: $canonical) !== null;
 
     }//end isInstalled()
 
@@ -125,7 +125,7 @@ final class FleetAppId
      */
     public static function isEnabledForUser(IAppManager $appManager, string $canonical): bool
     {
-        $id = self::resolve($appManager, $canonical);
+        $id = self::resolve(appManager: $appManager, canonical: $canonical);
         if ($id === null) {
             return false;
         }
@@ -155,7 +155,7 @@ final class FleetAppId
      */
     public static function appPath(IAppManager $appManager, string $canonical, string $suffix = ''): ?string
     {
-        $id = self::resolve($appManager, $canonical);
+        $id = self::resolve(appManager: $appManager, canonical: $canonical);
         if ($id === null) {
             return null;
         }
