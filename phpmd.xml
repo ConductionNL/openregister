@@ -5,5 +5,33 @@
     xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.net/ruleset_xml_schema.xsd">
     <description>openregister — Conduction PHPMD ruleset (single source: conduction/hydra-gates).</description>
 
-    <rule ref="vendor/conduction/hydra-gates/quality-config/phpmd.xml"/>
+    <rule ref="vendor/conduction/hydra-gates/quality-config/phpmd.xml">
+        <exclude name="StaticAccess"/>
+    </rule>
+
+    <!-- StaticAccess: one exception, and only one.
+
+         `\OCA\OpenRegister\Support\FleetAppId` is a pure resolver over a
+         constant map: given an IAppManager and a canonical app name, it returns
+         whichever id the instance actually registered. It holds no state, has
+         no collaborators, and takes the only thing it needs as an argument —
+         so there is nothing here that could be injected. Making it a service
+         would add DI wiring around a lookup table.
+
+         It also exists to be DELETED. It bridges the window where
+         `development` carries the new fleet app ids and `beta`/`main` still
+         carry the old ones; once those agree, every call site becomes a plain
+         string again and this class goes away. Building an injectable
+         abstraction for that would outlive the problem it solves.
+
+         This uses the rule's OWN `exceptions` property — its designed
+         configuration surface — rather than an @SuppressWarnings annotation or
+         a baseline entry. The distinction matters: the rule stays fully active
+         for every other class, and the exception is one named class, visible in
+         config, with the reason attached. -->
+    <rule ref="rulesets/cleancode.xml/StaticAccess">
+        <properties>
+            <property name="exceptions" value="\OCA\OpenRegister\Support\FleetAppId"/>
+        </properties>
+    </rule>
 </ruleset>
