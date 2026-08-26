@@ -205,6 +205,57 @@ class DelegationGrantMapper extends QBMapper {
 	}//end findGrantsOver()
 
 	/**
+	 * One grant, by its uuid.
+	 *
+	 * The uuid rather than the numeric id, deliberately: the answer and revoke
+	 * endpoints take this value from a URL, and a sequential id there invites
+	 * walking the store — a person who may answer request 41 learns that 40 and
+	 * 42 exist and can probe them. The authorization check stops the probe from
+	 * succeeding; an opaque identifier stops it from being informative.
+	 *
+	 * @param string $uuid The grant's uuid.
+	 *
+	 * @return DelegationGrant The grant.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such grant exists.
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException When the uuid is not unique.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	public function findByUuid(string $uuid): DelegationGrant {
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid, IQueryBuilder::PARAM_STR)));
+
+		return $this->findEntity(query: $qb);
+	}//end findByUuid()
+
+	/**
+	 * Every grant a given principal holds or has asked for.
+	 *
+	 * The other side of {@see self::findGrantsOver()}: "what may I do on whose
+	 * behalf", asked by the principal rather than about the identity.
+	 *
+	 * @param string $principal The uid that would act.
+	 *
+	 * @return array<int, DelegationGrant> Every grant held by that principal.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	public function findHeldBy(string $principal): array {
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('principal', $qb->createNamedParameter($principal, IQueryBuilder::PARAM_STR)))
+			->orderBy('id', 'DESC');
+
+		return $this->findEntities(query: $qb);
+	}//end findHeldBy()
+
+	/**
 	 * Whether two scopes are the same delegation.
 	 *
 	 * Order-insensitive, because a scope is a set and two requests that differ

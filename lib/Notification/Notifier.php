@@ -109,6 +109,8 @@ class Notifier implements INotifier {
 				return $this->prepareScheduledReportDelivered(notification: $notification, l: $l);
 			case 'scheduled_report_failed':
 				return $this->prepareScheduledReportFailed(notification: $notification, l: $l);
+			case 'delegation_consent_requested':
+				return $this->prepareDelegationConsentRequested(notification: $notification, l: $l);
 			default:
 				// Unknown subject. Object-lifecycle subjects
 				// (object_created / object_updated / object_transitioned)
@@ -211,6 +213,72 @@ class Notifier implements INotifier {
 
 		return $notification;
 	}//end prepareHandoffDrainFailed()
+
+	/**
+	 * Render a request to act on somebody's behalf.
+	 *
+	 * 🔴 EVERY WORD HERE IS SERVER-AUTHORED. The only values interpolated are the
+	 * two uids, both read from the grant record. The requester's stated reason is
+	 * deliberately absent — see {@see \OCA\OpenRegister\Service\Delegation\DelegationNotifier}.
+	 * A requester that could write into this sentence would be authoring the
+	 * prompt that asks for its own privilege, and a person reading it would have
+	 * no way to tell which half the system was vouching for.
+	 *
+	 * The two ACTIONS are the decision. They are deliberately not "OK" and
+	 * "Cancel": a consent dialog whose buttons do not name the outcome is one
+	 * people dismiss, and dismissing is not deciding.
+	 *
+	 * @param INotification $notification The notification to prepare.
+	 * @param mixed         $l            The l10n factory.
+	 *
+	 * @return INotification The prepared notification.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	private function prepareDelegationConsentRequested(INotification $notification, $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+
+		$principal = (string)($parameters['principal'] ?? '');
+		$grantUuid = (string)($parameters['grantUuid'] ?? '');
+
+		$notification->setParsedSubject(
+			$l->t('%s asks to act on your behalf', [$principal])
+		);
+
+		$notification->setParsedMessage(
+			$l->t(
+				'If you allow this, "%s" may perform work using your permissions until the grant expires '
+				. 'or you withdraw it. Anything they do will be recorded as done on your behalf. '
+				. 'You can withdraw the grant at any time.',
+				[$principal]
+			)
+		);
+
+		$base = $this->urlGenerator->linkToRouteAbsolute(
+			'openregister.delegation.answer',
+			['uuid' => $grantUuid]
+		);
+
+		$allow = $notification->createAction();
+		$allow->setLabel('allow')
+			->setParsedLabel($l->t('Allow'))
+			->setLink($base . '?allow=1', 'POST')
+			->setPrimary(true);
+		$notification->addAction($allow);
+
+		$deny = $notification->createAction();
+		$deny->setLabel('deny')
+			->setParsedLabel($l->t('Deny'))
+			->setLink($base . '?allow=0', 'POST')
+			->setPrimary(false);
+		$notification->addAction($deny);
+
+		$notification->setIcon(
+			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+		);
+
+		return $notification;
+	}//end prepareDelegationConsentRequested()
 
 	/**
 	 * Prepare the scheduled-report success notification (scheduled-report-jobs,

@@ -323,8 +323,14 @@ class FlowScheduleService {
 	 * @param DateTimeInterface $now The moment it fired.
 	 * @return void
 	 *
-	 * @throws FlowUnattributed When the schedule trigger names no acting identity.
-	 * @throws FlowDeadEnd     When the flow has a node that cannot pass its token on.
+	 * @throws FlowUnattributed   When the schedule trigger names no acting identity.
+	 * @throws FlowDeadEnd       When the flow has a node that cannot pass its token on.
+	 * @throws DelegationRefused When the trigger asserts a delegation that is no
+	 *                           longer live. Declared SEPARATELY from
+	 *                           FlowUnattributed on purpose — the sweep catches
+	 *                           them apart because they mean opposite things, and
+	 *                           an undeclared throw here makes that catch look
+	 *                           dead to static analysis and to the next reader.
 	 */
 	private function fire(string $uuid, DateTimeInterface $now): void {
 		// No `user` is passed, and that is the fix rather than an omission.

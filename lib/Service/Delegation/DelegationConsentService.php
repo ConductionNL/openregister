@@ -283,11 +283,22 @@ class DelegationConsentService {
 	 */
 	public function describe(DelegationGrant $grant): array {
 		return [
+			// The uuid and the status are what make this ANSWERABLE rather than
+			// merely readable. Without the uuid a listed request names no route
+			// to act on it, and without the status a UI cannot tell an
+			// outstanding question from a decision already taken — so it renders
+			// Allow/Deny on both and the second answer either does nothing or
+			// overwrites the first.
+			'uuid' => $grant->getUuid(),
+			'status' => $grant->getStatus(),
 			'principal' => $grant->getPrincipal(),
 			'actingAs' => $grant->getActingAs(),
 			'scope' => ($grant->getScope() ?? []),
 			'expiresAt' => $grant->getExpiresAt()?->format('c'),
 			'requestedAt' => $grant->getRequestedAt()?->format('c'),
+			'answeredAt' => $grant->getAnsweredAt()?->format('c'),
+			'revokedAt' => $grant->getRevokedAt()?->format('c'),
+			'grantedBy' => $grant->getGrantedBy(),
 			// Quoted, attributed, and never interpolated into the sentence the
 			// system speaks in its own voice.
 			'statedReason' => $grant->getReason(),

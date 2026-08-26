@@ -235,9 +235,7 @@ test.describe('delegated-identity — naming somebody else needs a grant', () =>
 		expect(flow.id).toBeTruthy()
 	})
 
-	test('a self-named trigger carries no delegation stamp', async ({
-		request,
-	}) => {
+	test('a self-named trigger carries no delegation stamp', async ({ request }) => {
 		// `runAsDeclaredBy` is what the fire path re-resolves a grant against, so
 		// a value surviving on a trigger that delegates nothing would be an
 		// assertion no save-time check ever examined. The server writes it, and

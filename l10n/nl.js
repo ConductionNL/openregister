@@ -2422,7 +2422,11 @@ OC.L10N.register(
     "This flow run's acting identity \"%s\" (runAs) is not a user account; an object read must be attributable." : "De handelende identiteit \"%s\" (runAs) van deze flowuitvoering is geen gebruikersaccount; een objectlezing moet toe te wijzen zijn.",
     "This flow run's acting identity \"%s\" (runAs) is not a user account; an object write must be attributable." : "De handelende identiteit \"%s\" (runAs) van deze flowuitvoering is geen gebruikersaccount; een objectschrijving moet toe te wijzen zijn.",
     "This flow run's acting identity \"%s\" (runAs) is a disabled account; an object read is refused rather than performed on their behalf." : "De handelende identiteit \"%s\" (runAs) van deze flowuitvoering is een gedeactiveerd account; een objectlezing wordt geweigerd in plaats van namens hen uitgevoerd.",
-    "This flow run's acting identity \"%s\" (runAs) is a disabled account; an object write is refused rather than performed on their behalf." : "De handelende identiteit \"%s\" (runAs) van deze flowuitvoering is een gedeactiveerd account; een objectschrijving wordt geweigerd in plaats van namens hen uitgevoerd."
+    "This flow run's acting identity \"%s\" (runAs) is a disabled account; an object write is refused rather than performed on their behalf." : "De handelende identiteit \"%s\" (runAs) van deze flowuitvoering is een gedeactiveerd account; een objectschrijving wordt geweigerd in plaats van namens hen uitgevoerd.",
+    "%s asks to act on your behalf" : "%s vraagt om namens u te handelen",
+    "If you allow this, \"%s\" may perform work using your permissions until the grant expires or you withdraw it. Anything they do will be recorded as done on your behalf. You can withdraw the grant at any time." : "Als u dit toestaat, mag \"%s\" werk uitvoeren met uw rechten totdat de toestemming verloopt of u die intrekt. Alles wat zij doen wordt vastgelegd als namens u gedaan. U kunt de toestemming op elk moment intrekken.",
+    "Allow" : "Toestaan",
+    "Deny" : "Weigeren"
 },
 "nplurals=2; plural=(n != 1);"
 );
