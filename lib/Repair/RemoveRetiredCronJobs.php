@@ -1,13 +1,21 @@
 <?php
 
-declare(strict_types=1);
 /**
- * @license EUPL-1.2
- * @copyright Copyright (c) 2026, Conduction B.V. <info@conduction.nl>
+ * Repair step for removing the background-job registrations left behind by the
+ * move out of the retired `OCA\OpenRegister\Cron` namespace.
+ *
+ * @category Repair
+ * @package  OCA\OpenRegister\Repair
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  */
+
+declare(strict_types=1);
 
 
 namespace OCA\OpenRegister\Repair;
@@ -103,6 +111,9 @@ class RemoveRetiredCronJobs implements IRepairStep {
 	 * The step's name, as shown by `occ upgrade`.
 	 *
 	 * @return string The name.
+	 *
+	 * @spec exclude See the class docblock — no capability spec covers the
+	 *  namespace move this step cleans up after.
 	 */
 	public function getName(): string {
 		return 'Remove background-job registrations for the retired OpenRegister\Cron namespace';
@@ -119,6 +130,9 @@ class RemoveRetiredCronJobs implements IRepairStep {
 	 * @param IOutput $output The upgrade output.
 	 *
 	 * @return void
+	 *
+	 * @spec exclude See the class docblock — no capability spec covers the
+	 *  namespace move this step cleans up after.
 	 */
 	public function run(IOutput $output): void {
 		foreach (self::RETIRED_JOB_CLASSES as $class) {
