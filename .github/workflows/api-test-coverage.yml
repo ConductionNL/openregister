@@ -120,7 +120,15 @@ jobs:
         # the shebang, and needs nothing on the container's PATH.
         run: |
           set -e
-          docker cp "$(command -v composer)" nextcloud:/usr/local/bin/composer
+          # readlink -f, not `command -v` alone: setup-php puts a SYMLINK on
+          # PATH, and `docker cp` copies the link itself rather than its target
+          # — which lands a dangling symlink in the container and fails at use
+          # time with "Could not open input file: /usr/local/bin/composer".
+          COMPOSER_BIN="$(readlink -f "$(command -v composer)")"
+          echo "Copying composer from ${COMPOSER_BIN} ($(stat -c%s "${COMPOSER_BIN}") bytes)"
+          docker cp "${COMPOSER_BIN}" nextcloud:/usr/local/bin/composer
+          # Prove it is usable HERE, where the message names the cause, rather
+          # than 40 lines later where it reads as a dependency-install failure.
           docker exec nextcloud php /usr/local/bin/composer --version
 
       - name: PHPUnit unit suite (in-container, HARD GATE)
