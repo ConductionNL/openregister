@@ -319,24 +319,25 @@ class RegisterMapper extends QBMapper {
 				]
 			);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException|\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-			// SAY WHICH ONE IT WAS. This logged "does not exist (or is
-			// duplicated)" for both, hedging between two causes with entirely
-			// different fixes — one means the register was never created, the
-			// other means `openregister:registers:dedupe` has work to do. It cost
+			// SAY WHICH ONE IT WAS — in `cause`, not in prose.
+			//
+			// This logged "does not exist (or is duplicated)" for both, hedging
+			// between two causes with entirely different fixes: one means the
+			// register was never created, the other means
+			// `openregister:registers:dedupe` has work to do. It cost
 			// learniq#620 a diagnosis.
 			//
-			// Absence is in fact the only reachable case: the `setMaxResults(1)`
-			// above means findEntity() can never see a second row. The multiple
-			// branch is kept so "cannot happen" stays falsifiable — reaching it
-			// would be a fact about the query builder, not about the data.
+			// Absence is in fact the only reachable case — the `setMaxResults(1)`
+			// above means findEntity() can never see a second row — but the
+			// exception class is recorded rather than assumed, so "cannot happen"
+			// stays falsifiable if that cap is ever refactored away.
 			$this->logger->warning(
-				message: ($e instanceof \OCP\AppFramework\Db\MultipleObjectsReturnedException)
-					? '[RegisterMapper] Register lookup returned multiple rows despite a single-row cap'
-					: '[RegisterMapper] Register does not exist before filters',
+				message: '[RegisterMapper] Register not resolvable before filters',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
 					'identifier' => $id,
+					'cause' => $e::class,
 				]
 			);
 		}//end try
