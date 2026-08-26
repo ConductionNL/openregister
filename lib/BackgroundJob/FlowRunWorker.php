@@ -36,6 +36,8 @@ namespace OCA\OpenRegister\BackgroundJob;
 use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Service\Delegation\DelegationService;
+use OCA\OpenRegister\Service\Flow\FlowConsentParking;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -151,6 +153,18 @@ class FlowRunWorker extends TimedJob {
 	 * @param FlowRunAdvancer $advancer Advances one run (shared with sync runs).
 	 * @param IAppConfig $appConfig Reads the retention setting.
 	 * @param LoggerInterface $logger The logger.
+	 * @param DelegationService|null $delegation Re-resolves the grant a parked
+	 *                                           run waits on. Nullable so the two
+	 *                                           unit suites that build this
+	 *                                           worker positionally keep working
+	 *                                           — adding a required parameter
+	 *                                           would shift every later slot for
+	 *                                           them. Its absence is REPORTED
+	 *                                           rather than assumed harmless: see
+	 *                                           settleConsent(), which warns when
+	 *                                           runs are actually parked, because
+	 *                                           a sweep that skips looks exactly
+	 *                                           like one that found nothing.
 	 */
 	public function __construct(
 		ITimeFactory $time,
@@ -158,6 +172,7 @@ class FlowRunWorker extends TimedJob {
 		private readonly FlowRunAdvancer $advancer,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
+		private readonly ?DelegationService $delegation = null,
 	) {
 		parent::__construct(time: $time);
 		// A FLOOR, not a schedule. `setInterval` says "not more often than
@@ -191,6 +206,7 @@ class FlowRunWorker extends TimedJob {
 		$this->reapStale(now: $now);
 		$this->expireStaleQueued(now: $now);
 		$this->expireAbandonedSignals(now: $now);
+		$this->settleConsent(now: $now);
 
 		foreach ($this->mapper->findQueued(limit: self::BATCH) as $run) {
 			$this->advance(run: $run);
@@ -348,6 +364,76 @@ class FlowRunWorker extends TimedJob {
 		}//end foreach
 
 	}//end expireAbandonedSignals()
+
+	/**
+	 * Release or fail runs parked waiting for somebody to allow a delegation.
+	 *
+	 * Runs BEFORE the queue drain, so a run released this pass starts in the same
+	 * pass rather than waiting another cron period for no reason.
+	 *
+	 * 🔴 A MISSING COLLABORATOR IS REPORTED, NOT SKIPPED SILENTLY. If the
+	 * delegation service is absent, parked runs simply never move — and a sweep
+	 * that skipped produces exactly the same output as one that found nothing to
+	 * do. So the absence is only mentioned when runs are ACTUALLY parked, which
+	 * is the only time it is a fault rather than noise.
+	 *
+	 * @param DateTime $now The current time.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	private function settleConsent(DateTime $now): void {
+		if ($this->delegation === null) {
+			$parked = $this->mapper->findAwaitingConsent(limit: 1);
+			if ($parked !== []) {
+				$this->logger->error(
+					message: '[FlowRunWorker] Runs are parked awaiting consent but no delegation service is '
+						. 'available to settle them; they will not move.',
+					context: ['file' => __FILE__, 'line' => __LINE__]
+				);
+			}
+
+			return;
+		}
+
+		$hours = (int)$this->appConfig->getValueString(
+			'openregister',
+			'flow_consent_wait_hours',
+			(string)FlowConsentParking::DEFAULT_WAIT_HOURS
+		);
+
+		if ($hours <= 0) {
+			$hours = FlowConsentParking::DEFAULT_WAIT_HOURS;
+		}
+
+		try {
+			$outcome = (new FlowConsentParking(runs: $this->mapper, delegation: $this->delegation, logger: $this->logger))
+				->sweep(now: $now, waitHours: $hours, limit: self::BATCH);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				message: '[FlowRunWorker] The consent sweep failed: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+
+			return;
+		}
+
+		if ($outcome['released'] === 0 && $outcome['failed'] === 0) {
+			return;
+		}
+
+		$this->logger->info(
+			message: '[FlowRunWorker] Settled parked runs',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'released' => $outcome['released'],
+				'failed' => $outcome['failed'],
+			]
+		);
+
+	}//end settleConsent()
 
 	/**
 	 * Abandon queued runs that waited so long that running them is wrong.

@@ -131,14 +131,22 @@ class FlowRunAttribution {
 	 * IS the right fallback here: an organisation is a property of the definition
 	 * in a way an acting identity is not.
 	 *
+	 * **`declaredBy`: who ASSERTED a delegation, when one was asserted.**
+	 *
+	 * Only ever non-null when the identity came from a schedule trigger that
+	 * names someone other than the person who saved it. It is the principal whose
+	 * grant the fire path must re-resolve, and it exists because a schedule fires
+	 * unattended: at 03:00 there is nobody present to check a grant against, so
+	 * without this the only candidate left would be `flow.owner` — the fallback
+	 * this class exists to remove.
+	 *
 	 * @param string      $flowId  The flow being queued.
 	 * @param string|null $user    The caller's uid, when there is a session.
 	 * @param string      $trigger What started the run — `manual`, `schedule`, an
 	 *                             event id, `sub-flow`, `nc-flow`.
 	 *
-	 * @return array{user: string|null, organisation: string|null} The attribution.
-	 *                                                             A null `user`
-	 *                                                             means REFUSE.
+	 * @return array{user: string|null, organisation: string|null, declaredBy: string|null}
+	 *         The attribution. A null `user` means REFUSE.
 	 *
 	 * @spec openspec/specs/delegated-identity/spec.md
 	 * @spec openspec/specs/flow-engine/spec.md
@@ -148,14 +156,23 @@ class FlowRunAttribution {
 		$organisation = $this->activeOrganisation();
 
 		if ($caller !== null && $organisation !== null) {
-			return ['user' => $caller, 'organisation' => $organisation];
+			// A caller acts as themselves, so nothing was delegated and there is
+			// no grant to re-check.
+			return ['user' => $caller, 'organisation' => $organisation, 'declaredBy' => null];
 		}
 
 		$flow = $this->loadFlow(flowId: $flowId);
+		$declared = $this->declaredByTrigger(flow: $flow, trigger: $trigger);
+
+		$declaredBy = null;
+		if ($caller === null) {
+			$declaredBy = $declared['declaredBy'];
+		}
 
 		return [
-			'user' => ($caller ?? $this->declaredByTrigger(flow: $flow, trigger: $trigger)),
+			'user' => ($caller ?? $declared['user']),
 			'organisation' => ($organisation ?? $this->orNull(value: $flow?->getOrganisation())),
+			'declaredBy' => $declaredBy,
 		];
 	}//end resolve()
 
@@ -176,18 +193,21 @@ class FlowRunAttribution {
 	 * @param object|null $flow    The flow entity, or null when unreadable.
 	 * @param string      $trigger What started the run.
 	 *
-	 * @return string|null The declared uid, or null.
+	 * @return array{user: string|null, declaredBy: string|null} The declared
+	 *         identity and, when the declaration was a delegation, who asserted it.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	private function declaredByTrigger(?object $flow, string $trigger): ?string {
+	private function declaredByTrigger(?object $flow, string $trigger): array {
+		$none = ['user' => null, 'declaredBy' => null];
+
 		if ($flow === null || $trigger !== self::TRIGGER_SCHEDULE) {
-			return null;
+			return $none;
 		}
 
 		$nodes = $flow->getNodes();
 		if (is_array($nodes) === false) {
-			return null;
+			return $none;
 		}
 
 		foreach ($nodes as $node) {
@@ -209,11 +229,21 @@ class FlowRunAttribution {
 
 			$declared = $this->orNull(value: ($config[self::CONFIG_RUN_AS] ?? null));
 			if ($declared !== null) {
-				return $declared;
+				return [
+					'user' => $declared,
+					// Server-written at save time by FlowTriggerValidator, and
+					// absent whenever the trigger names its own saver. Its
+					// presence is what tells the fire path there is a grant to
+					// re-resolve; its absence means the identity was nobody's to
+					// delegate.
+					'declaredBy' => $this->orNull(
+						value: ($config[FlowTriggerValidator::CONFIG_DECLARED_BY] ?? null)
+					),
+				];
 			}
 		}
 
-		return null;
+		return $none;
 	}//end declaredByTrigger()
 
 	/**

@@ -79,6 +79,35 @@ class BlobMigrationJobTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
+		// 🔴 REFUSE BEFORE TOUCHING THE CONTAINER, and say what is unverified.
+		//
+		// This class resolves REAL services out of `\OC::$server` in order to
+		// restore them afterwards. On a box where the bootstrap found an NC root
+		// it could not initialise, that resolution does not fail — it RUNS AWAY.
+		// Measured 2026-08-26: `ServerContainer::get()` allocated until the
+		// process died, at 2GB and then identically at 5GB, at test 259 of
+		// 17,359. Raising the limit changed nothing because it is not a size
+		// problem, and the fatal takes the OTHER 17,100 TESTS WITH IT — the whole
+		// local suite reported as one PHP fatal rather than as one bad fixture.
+		//
+		// The bootstrap already knows this happened: its catch sets
+		// OPENREGISTER_TEST_SKIP_NC=1 when NC would not initialise. Its comment
+		// promises container-bound tests "will fail clearly"; this is the class
+		// where that promise was not kept.
+		//
+		// A skip is honest here ONLY because the message names what went
+		// untested. "Skipped" alone cannot tell "no NC" from "the job is broken",
+		// and reporting the second as the first is how a defect hides.
+		if (getenv('OPENREGISTER_TEST_SKIP_NC') === '1') {
+			$this->markTestSkipped(
+				'No initialised Nextcloud server in scope, so BlobMigrationJob\'s '
+				. '\\OCP\\Server::get() resolution is UNVERIFIED by this run — the blob '
+				. 'migration batching, its completion flag and its orphan grouping were '
+				. 'not exercised. Run inside a working NC checkout, or set '
+				. 'OPENREGISTER_TEST_NC_ROOT, to test them. CI always has one.'
+			);
+		}
+
 		if (self::$originalsCaptured === false) {
 			self::$originalServices = [
 				LoggerInterface::class => \OC::$server->get(LoggerInterface::class),

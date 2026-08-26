@@ -45,12 +45,15 @@ namespace OCA\OpenRegister\Service\Flow;
 use Cron\CronExpression;
 use DateTimeImmutable;
 use DateTimeInterface;
+use OCA\OpenRegister\Service\Delegation\DelegationRefused;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
  * Queues runs for the scheduled flows that are due.
+ *
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class FlowScheduleService {
 
@@ -159,6 +162,15 @@ class FlowScheduleService {
 			} catch (FlowUnattributed $e) {
 				$this->reportUnattributed(uuid: $uuid, refusal: $e);
 				continue;
+			} catch (DelegationRefused $e) {
+				// A SEPARATE catch, not folded into the one above. Both stop the
+				// flow, and they mean opposite things: "nobody was named" needs
+				// the definition edited, "the delegation is no longer live" needs
+				// a grant re-issued and will start working again on its own when
+				// one is. Reporting them in the same words would send the reader
+				// to the wrong one every second time.
+				$this->reportRefusedDelegation(uuid: $uuid, refusal: $e);
+				continue;
 			} catch (FlowDeadEnd $e) {
 				// The refusal already recorded status/status_message on the
 				// flow itself, so the author can see why without reading logs.
@@ -207,6 +219,39 @@ class FlowScheduleService {
 		);
 
 	}//end reportUnattributed()
+
+	/**
+	 * Report a due flow whose delegation is no longer live.
+	 *
+	 * Extracted for the same reason `reportUnattributed()` was: `fireDueFlows()`
+	 * has a length budget, and a third inline catch body was what pushed it over.
+	 *
+	 * The wording is deliberately NOT the unattributed wording. This flow named
+	 * somebody and the naming is what stopped being valid, so the fix is a grant
+	 * — and unlike the unattributed case it will start firing again on its own
+	 * once one exists, with nobody editing anything.
+	 *
+	 * @param string            $uuid    The flow that was refused.
+	 * @param DelegationRefused $refusal The refusal.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	private function reportRefusedDelegation(string $uuid, DelegationRefused $refusal): void {
+		$this->logger->warning(
+			message: '[FlowSchedule] Skipping due flow — its delegation is no longer live: ' . $refusal->getMessage(),
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'flow' => $uuid,
+				'principal' => $refusal->getPrincipal(),
+				'actingAs' => $refusal->getActingAs(),
+				'reason' => $refusal->getVerdict()->reason,
+			]
+		);
+
+	}//end reportRefusedDelegation()
 
 	/**
 	 * The cron expression of a candidate that is an enabled schedule, or null.
@@ -278,8 +323,14 @@ class FlowScheduleService {
 	 * @param DateTimeInterface $now The moment it fired.
 	 * @return void
 	 *
-	 * @throws FlowUnattributed When the schedule trigger names no acting identity.
-	 * @throws FlowDeadEnd     When the flow has a node that cannot pass its token on.
+	 * @throws FlowUnattributed   When the schedule trigger names no acting identity.
+	 * @throws FlowDeadEnd       When the flow has a node that cannot pass its token on.
+	 * @throws DelegationRefused When the trigger asserts a delegation that is no
+	 *                           longer live. Declared SEPARATELY from
+	 *                           FlowUnattributed on purpose — the sweep catches
+	 *                           them apart because they mean opposite things, and
+	 *                           an undeclared throw here makes that catch look
+	 *                           dead to static analysis and to the next reader.
 	 */
 	private function fire(string $uuid, DateTimeInterface $now): void {
 		// No `user` is passed, and that is the fix rather than an omission.
