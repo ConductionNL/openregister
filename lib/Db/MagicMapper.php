@@ -60,6 +60,7 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Support\QueryLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -151,6 +152,22 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.LongVariable)
  */
 class MagicMapper extends AbstractObjectMapper {
+	/**
+	 * Hard ceiling on a NUMERIC page size, per the objects-crud requirement
+	 * "List page size is bounded by a hard maximum".
+	 *
+	 * A client asking for `_limit=1000000` is not making a considered request,
+	 * so it is reduced to this. A client asking for `_limit=false` IS making
+	 * one, and that path skips the clause entirely — see the LIMIT/OFFSET block
+	 * in the UNION query and {@see \OCA\OpenRegister\Support\QueryLimit}.
+	 *
+	 * Previously spelled as the literal `1000` inside `min()`, which made it
+	 * invisible to anything that wanted to state or test the bound.
+	 *
+	 * @var int
+	 */
+	private const MAX_PAGE_SIZE = 1000;
+
 	/**
 	 * Table name prefix for register+schema-specific tables.
 	 *
@@ -1401,9 +1418,37 @@ class MagicMapper extends AbstractObjectMapper {
 		// Apply LIMIT/OFFSET to final UNION result.
 		// Cast + clamp at the boundary so raw user input cannot reach the
 		// interpolated SQL string (SQL injection via _limit / _offset).
-		$limit = max(1, min(1000, (int)($query['_limit'] ?? 100)));
+		//
+		// UNLIMITED OMITS THE CLAUSE, it does not interpolate a large number.
+		// This SQL is built by string concatenation rather than bound
+		// parameters, so "unlimited" must never become a value that travels
+		// into the string — there is nothing to bind it to, and a sentinel like
+		// PHP_INT_MAX would be both a lie and a number some databases reject.
+		//
+		// The previous clamp answered `_limit=0` with ONE row (max(1, …)) and
+		// `_limit=5000` with a silent 1000. Both are gone; the offset clamp
+		// stays exactly as it was, because it is still interpolated.
+		$normalisedLimit = QueryLimit::normalise($query['_limit'] ?? null);
 		$offset = max(0, (int)($query['_offset'] ?? 0));
-		$unionSql .= " LIMIT {$limit} OFFSET {$offset}";
+		if ($normalisedLimit === null) {
+			// MySQL and MariaDB reject a bare OFFSET without a LIMIT, so an
+			// offset with no limit still needs the clause. The upper bound is
+			// the largest value the syntax accepts, which is the documented
+			// idiom for "everything from here on".
+			if ($offset > 0) {
+				$unionSql .= ' LIMIT 18446744073709551615 OFFSET ' . $offset;
+			}
+		} else {
+			// A NUMERIC limit is still clamped to the documented maximum. That
+			// clamp is a deliberate protection (objects-crud: "List page size is
+			// bounded by a hard maximum") against a client loading an
+			// arbitrarily large result set by accident, and asking for
+			// `_limit=1000000` is an accident. Saying `_limit=false` is not —
+			// that is the explicit opt-in this change adds, and it is the only
+			// way past the bound.
+			$limit = min($normalisedLimit, self::MAX_PAGE_SIZE);
+			$unionSql .= " LIMIT {$limit} OFFSET {$offset}";
+		}
 
 		// Execute the combined query.
 		$stmt = $qb->getConnection()->prepare($unionSql);
