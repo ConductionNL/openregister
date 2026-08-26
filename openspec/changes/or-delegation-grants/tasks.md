@@ -57,22 +57,31 @@ Implements the open half of ADR-099. Depends on `or-delegated-identity`.
 
 - [x] 2.1 `DelegationGrant` entity + mapper + migration: `principal`, `actingAs`, `scope`, `status`, `expiresAt`, `grantedBy`, `reason`, `revokedAt`, `requestedAt`. Status is `requested | pending | granted | denied | expired | revoked`. — openregister#2851.
 - [x] 2.2 Read the store through the MAPPER, never `ObjectService`. A grant lookup must need neither a subject nor an elevation — see design.md; routing it through object RBAC makes resolving a delegation require the delegation. — `DelegationGrantMapper` extends `QBMapper` and touches no object layer.
-- [ ] 2.3 Declare the lifecycle and the consent notification declaratively (`x-openregister-lifecycle`, `x-openregister-notifications`) per ADR-031, not as a service class.
+- [x] 2.3 Declare the lifecycle and the consent notification declaratively per ADR-031 — **CLOSED AS NOT APPLICABLE, for a reason this task list creates.**
 
-  🔴 **IN TENSION WITH 2.2, AND 2.2 WINS FOR THE LIFECYCLE HALF.** The declarative
-  dialects are properties of a REGISTER SCHEMA and are evaluated by the object
-  layer. A grant that declared its lifecycle there would be an object, and reading
-  it would go through object RBAC — which is exactly the circularity 2.2 exists to
-  prevent: resolving a delegation would require the delegation. So the lifecycle
-  stays in `DelegationConsentService`, deliberately, and this is not "not done yet".
+  🔴 **BOTH DIALECTS REQUIRE THE GRANT TO BE AN OBJECT, AND 2.2 FORBIDS THAT.**
+  `x-openregister-lifecycle` and `x-openregister-notifications` are properties of a
+  REGISTER SCHEMA, evaluated by the object layer. A grant that declared either
+  would be an object, and reading it would go through object RBAC — the exact
+  circularity 2.2 exists to prevent: **resolving a delegation would require the
+  delegation.** The two tasks cannot both be satisfied, and 2.2 is the one holding
+  a security property.
 
-  The NOTIFICATION half is still open and is not affected by that argument: a
-  notification is dispatched about the grant rather than read to authorise it. It
-  belongs with 4.1 and is tracked there.
+  This is not a deferral. There is no version of the delegation store that is both
+  mapper-read and schema-declared, so the lifecycle stays in
+  `DelegationConsentService` permanently. Ticked as decided rather than left open,
+  because an open box invites somebody to "finish" it by making the grant an
+  object — which would silently reopen the circularity.
+
+  **The notification half IS delivered**, by 4.1, and the same argument explains
+  why it is imperative: `x-openregister-notifications` fires on OBJECT lifecycle
+  events, and a grant has none to fire on. `DelegationNotifier` dispatches through
+  `INotifier` instead. ADR-031's gate warns about imperative object-notification
+  dispatch *in a leaf app*; this is neither a leaf nor an object notification.
 
   Acceptance criteria:
-  - `denied` and `expired` are distinguishable in the record and in every read of it
-  - No grant can be stored with neither an expiry nor a scope
+  - ✅ `denied` and `expired` are distinguishable in the record and in every read of it — separate statuses, separate `DelegationVerdict` reasons, and `mayRequestConsent()` treats them differently: expired is re-askable, denied is not
+  - ✅ No grant can be stored with neither an expiry nor a scope — `DelegationConsentService::request()` always sets `expiresAt`, and `DelegationResolver::covers()` refuses to read an empty grant scope as unlimited
 
 ## 3. The check
 
