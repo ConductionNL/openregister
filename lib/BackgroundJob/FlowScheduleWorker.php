@@ -15,7 +15,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * @category Cron
- * @package  OCA\OpenRegister\Cron
+ * @package  OCA\OpenRegister\BackgroundJob
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,7 +28,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Cron;
+namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Flow\FlowScheduleService;
 use OCP\AppFramework\Utility\ITimeFactory;

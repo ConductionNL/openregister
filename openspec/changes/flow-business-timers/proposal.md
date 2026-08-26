@@ -43,7 +43,7 @@ about to retire.** openconnector's `approval_request.expiresAt` carries
 `onTimeout: error|skip|dead_letter`
 (`../openconnector/lib/Settings/register.d/hitl-approval-rule-action.json:90-95`)
 and is swept by `ApprovalTimeoutSweepJob` at 300s
-(`../openconnector/lib/Cron/ApprovalTimeoutSweepJob.php:53,71`) into
+(`../openconnector/lib/BackgroundJob/ApprovalTimeoutSweepJob.php:53,71`) into
 `ApprovalService::sweepExpired()`
 (`../openconnector/lib/Service/ApprovalService.php:636-681`). Every other
 fleet deadline merely notifies. ADR-065 retires that legacy runner, so the
@@ -226,7 +226,7 @@ other app that wants a ladder writes its own.
   `FlowTimerFire.php` + `FlowTimerFireMapper.php`; new
   `lib/Service/Flow/Timer/FlowTimerService.php`,
   `WorkingCalendarService.php`, `SlaCalculator.php`,
-  `EscalationLadderService.php`; new `lib/Cron/FlowTimerWorker.php`; one
+  `EscalationLadderService.php`; new `lib/BackgroundJob/FlowTimerWorker.php`; one
   migration; seed data for `working-calendar` (`nl-national`) and
   `escalation-ladder` (`nl-termijn-default`).
 - **Affected apps**: none yet, by design. procest, openconnector, shillinq

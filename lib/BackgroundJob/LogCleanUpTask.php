@@ -10,7 +10,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category  Cron
- * @package   OCA\OpenRegister\Cron
+ * @package   OCA\OpenRegister\BackgroundJob
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
@@ -18,7 +18,7 @@
  * @link      https://OpenRegister.app
  */
 
-namespace OCA\OpenRegister\Cron;
+namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -32,7 +32,7 @@ use Psr\Log\LoggerInterface;
  * This job runs periodically to remove expired audit trail entries from the database
  * to prevent the database from growing indefinitely and maintain performance.
  *
- * @package OCA\OpenRegister\Cron
+ * @package OCA\OpenRegister\BackgroundJob
  *
  * @psalm-suppress UnusedClass
  */

@@ -72,8 +72,22 @@ class TaggingNode implements IFlowNode {
  * A node that reliably outlives a one-second ceiling.
  *
  * It sleeps rather than reporting a fake duration, because what is under test is
- * the dispatcher measuring a real call. 1.2s buys enough margin that a loaded
- * machine cannot make this flap the other way.
+ * the dispatcher measuring a real call.
+ *
+ * WAITS ON THE CLOCK, NOT ON ONE usleep() CALL. This was a single
+ * `usleep(1_200_000)`, and the comment above it argued that 1.2s against a 1s
+ * ceiling "buys enough margin that a loaded machine cannot make this flap".
+ * That reasons about the wrong direction: load makes a sleep LONGER, which is
+ * the safe way to be wrong. What actually happens is that `usleep()` can return
+ * EARLY when a signal arrives — likely on a busy box with many child processes
+ * — and then the node finishes inside its ceiling, the dispatcher is right not
+ * to raise, and the test fails claiming the timeout is broken.
+ *
+ * Observed 2026-08-26: green in isolation three times over, red inside the full
+ * suite while phpcs and phpmd were saturating the machine.
+ *
+ * Looping until hrtime() says the target has genuinely elapsed makes the node
+ * outlive its ceiling whatever the sleep does.
  */
 class SlowNode extends TaggingNode {
 	public function __construct() {
@@ -81,7 +95,13 @@ class SlowNode extends TaggingNode {
 	}
 
 	public function execute(array $items, array $config, array $context): array {
-		usleep(1_200_000);
+		$deadline = (hrtime(true) + 1_200_000_000);
+		while (hrtime(true) < $deadline) {
+			$remaining = (int)(($deadline - hrtime(true)) / 1_000);
+			if ($remaining > 0) {
+				usleep($remaining);
+			}
+		}
 
 		return $items;
 	}

@@ -4,7 +4,7 @@
  * Unit tests for the handoff engine listeners + fallback drain job:
  * {@see \OCA\OpenRegister\Listener\HandoffLifecycleListener},
  * {@see \OCA\OpenRegister\Listener\HandoffQueueDrainListener}, and
- * {@see \OCA\OpenRegister\Cron\HandoffQueueDrainJob}.
+ * {@see \OCA\OpenRegister\BackgroundJob\HandoffQueueDrainJob}.
  *
  * Covers: lifecycle-triggered handoffs fire only for matching
  * `lifecycle:<state>` triggers and only for REAL actors (system transitions

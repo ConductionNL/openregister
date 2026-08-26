@@ -624,7 +624,7 @@ The webhook delivery layer MUST initialize an HTTP client tolerant of webhook en
 - `lib/Service/MappingService.php` -- Twig-based mapping engine with `executeMapping()`, supports dot-notation, casting, passThrough, unset
 - `lib/Listener/WebhookEventListener.php` -- Event listener handling 36+ event types across 11 entity categories (object, register, schema, application, agent, source, configuration, view, conversation, organisation), extracting structured payloads
 - `lib/BackgroundJob/WebhookDeliveryJob.php` -- Async delivery via Nextcloud's `QueuedJob`
-- `lib/Cron/WebhookRetryJob.php` -- Retry processing via `TimedJob` with 5-minute interval
+- `lib/BackgroundJob/WebhookRetryJob.php` -- Retry processing via `TimedJob` with 5-minute interval
 - `lib/Controller/WebhooksController.php` -- Full REST API: `index()`, `show()`, `create()`, `update()`, `destroy()`, `test()`, `events()`, `logs()`, `logStats()`, `allLogs()`, `retry()`
 - `lib/Migration/Version1Date20260308120000.php` -- Database migration adding nullable `mapping` column
 - `lib/Twig/MappingExtension.php` and `lib/Twig/MappingRuntime.php` -- Twig runtime functions for mapping templates

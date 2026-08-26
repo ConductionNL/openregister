@@ -14,7 +14,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Cron
- * @package  OCA\OpenRegister\Cron
+ * @package  OCA\OpenRegister\BackgroundJob
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,7 +25,7 @@
  * @link https://www.OpenRegister.app
  */
 
-namespace OCA\OpenRegister\Cron;
+namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
 use OCA\OpenRegister\Db\Source;
@@ -42,7 +42,7 @@ use Throwable;
 /**
  * Scheduled harvest driver.
  *
- * @package OCA\OpenRegister\Cron
+ * @package OCA\OpenRegister\BackgroundJob
  *
  * @psalm-suppress UnusedClass
  *

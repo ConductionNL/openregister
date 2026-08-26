@@ -10,7 +10,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category  Cron
- * @package   OCA\OpenRegister\Cron
+ * @package   OCA\OpenRegister\BackgroundJob
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
@@ -18,7 +18,7 @@
  * @link      https://www.OpenRegister.app
  */
 
-namespace OCA\OpenRegister\Cron;
+namespace OCA\OpenRegister\BackgroundJob;
 
 use Exception;
 use OCA\OpenRegister\Db\ConfigurationMapper;
@@ -36,7 +36,7 @@ use Psr\Log\LoggerInterface;
  * Runs at configurable intervals to check if remote configurations have newer versions.
  * Can automatically import updates if configured.
  *
- * @package OCA\OpenRegister\Cron
+ * @package OCA\OpenRegister\BackgroundJob
  *
  * @psalm-suppress UnusedClass
  */

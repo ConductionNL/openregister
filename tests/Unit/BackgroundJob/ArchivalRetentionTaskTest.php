@@ -13,9 +13,9 @@ declare(strict_types=1);
  * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-5-7
  */
 
-namespace Unit\Cron;
+namespace Unit\BackgroundJob;
 
-use OCA\OpenRegister\Cron\ArchivalRetentionTask;
+use OCA\OpenRegister\BackgroundJob\ArchivalRetentionTask;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;

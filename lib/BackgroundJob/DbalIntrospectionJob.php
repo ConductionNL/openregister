@@ -12,7 +12,7 @@
  * `run()` body performs the real work — there is no stub (hydra stub-scan gate).
  *
  * @category Cron
- * @package  OCA\OpenRegister\Cron
+ * @package  OCA\OpenRegister\BackgroundJob
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,7 +26,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Cron;
+namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
