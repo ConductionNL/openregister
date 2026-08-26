@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Unit\Cron;
+namespace Unit\BackgroundJob;
 
 use DateTime;
 use Exception;
 use GuzzleHttp\Client;
-use OCA\OpenRegister\Cron\SyncConfigurationsJob;
+use OCA\OpenRegister\BackgroundJob\SyncConfigurationsJob;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;

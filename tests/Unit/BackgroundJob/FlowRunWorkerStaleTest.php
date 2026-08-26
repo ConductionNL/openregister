@@ -16,10 +16,10 @@
 
 declare(strict_types=1);
 
-namespace Unit\Cron;
+namespace Unit\BackgroundJob;
 
 use DateTime;
-use OCA\OpenRegister\Cron\FlowRunWorker;
+use OCA\OpenRegister\BackgroundJob\FlowRunWorker;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;

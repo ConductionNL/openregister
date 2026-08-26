@@ -16,7 +16,7 @@ Scheduling is the missing **temporal** peer. Verified ground truth:
   `openconnector/appinfo/info.xml:50-54`, `openbuild/appinfo/info.xml:101-104`).
   A virtual app ships no `jobClass` and cannot add `<background-jobs>`.
 - **A data-driven scheduler already exists to reuse.** OpenConnector's
-  `lib/Cron/JobTask.php:63,91` is a `TimedJob` (interval 300s) that calls
+  `lib/BackgroundJob/JobTask.php:63,91` is a `TimedJob` (interval 300s) that calls
   `jobService->run()`. `JobService::run()`
   (`openconnector/lib/Service/JobService.php:638-665`) iterates OR `job` objects
   (schema `job`, register "OpenConnector Register", `isEnabled=true`, skipping
@@ -214,7 +214,7 @@ schedule must never run under an ambiguous or elevated identity.
 ### D-7 — Reuse of OC JobTask/JobService (ADR-011)
 
 The reconciler does not re-implement execution. It only produces/curates OC
-`job` objects; `openconnector/lib/Cron/JobTask.php` + `JobService::run()`
+`job` objects; `openconnector/lib/BackgroundJob/JobTask.php` + `JobService::run()`
 already: filter `isEnabled=true`, skip future `nextRun`, resolve `jobClass` via
 the container, call `$action->run($arguments)`, log, and advance
 `lastRun`/`nextRun`. Reconciler and executor are two independent `TimedJob`s

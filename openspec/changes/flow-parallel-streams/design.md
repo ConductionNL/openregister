@@ -46,7 +46,7 @@ See proposal.md — Why. The design-relevant state of the code today:
   the existing precedent for "only write this row in the state that makes the
   write mean something").
 - **Recovery already has a cutoff and a posture.** `FlowRunWorker::reapStale()`
-  (`lib/Cron/FlowRunWorker.php:226-275`) computes
+  (`lib/BackgroundJob/FlowRunWorker.php:226-275`) computes
   `max(flow_run_stale_minutes, flow_max_runtime_minutes + REAP_GRACE_MINUTES)`
   (`:251-261`, constants at `:81`, `:105`, `:117`) and FAILS what it reaps
   rather than requeueing it (`:263-272`, reasoning at `:207-218`).

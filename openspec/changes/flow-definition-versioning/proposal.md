@@ -33,7 +33,7 @@ notice it moved.
 That is tolerable while runs are short. It stops being tolerable the moment
 a run can wait for a person. `openregister.await-signal` suspends with
 `resumeAt = null` and the run is only reaped after **days**
-(`lib/Cron/FlowRunWorker.php`); a run parked two weeks on an approval wakes
+(`lib/BackgroundJob/FlowRunWorker.php`); a run parked two weeks on an approval wakes
 against a graph an author has edited three times since. Two concrete
 failures follow:
 

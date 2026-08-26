@@ -27,9 +27,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Tests\Unit\Cron;
+namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
-use OCA\OpenRegister\Cron\DbalIntrospectionJob;
+use OCA\OpenRegister\BackgroundJob\DbalIntrospectionJob;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;

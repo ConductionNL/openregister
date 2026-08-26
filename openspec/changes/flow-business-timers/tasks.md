@@ -99,8 +99,8 @@
 
 ## 5. Sweep and outcomes
 
-- [ ] 5.1 `lib/Cron/FlowTimerWorker.php` extending `TimedJob` at
-      `setInterval(seconds: 300)`, matching `lib/Cron/FlowScheduleWorker.php:59`.
+- [ ] 5.1 `lib/BackgroundJob/FlowTimerWorker.php` extending `TimedJob` at
+      `setInterval(seconds: 300)`, matching `lib/BackgroundJob/FlowScheduleWorker.php:59`.
       Two bounded range scans — `(state, fire_at)` for expiries and
       `(state, next_rung_at)` for rungs — each `LIMIT` batch (default 200),
       never a page of open rows filtered in PHP as

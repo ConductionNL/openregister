@@ -10,7 +10,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Cron
- * @package  OCA\OpenRegister\Cron
+ * @package  OCA\OpenRegister\BackgroundJob
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2025 Conduction B.V.
@@ -21,7 +21,7 @@
  * @link https://www.OpenRegister.app
  */
 
-namespace OCA\OpenRegister\Cron;
+namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
 use Exception;
@@ -41,7 +41,7 @@ use Psr\Log\LoggerInterface;
  * Background job for synchronizing external configurations with their sources.
  * Runs periodically to check and sync configurations that have sync enabled.
  *
- * @package OCA\OpenRegister\Cron
+ * @package OCA\OpenRegister\BackgroundJob
  *
  * @psalm-suppress UnusedClass
  */

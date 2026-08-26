@@ -530,7 +530,7 @@ _(Full list of 56 NEEDS-REVIEW entries is in `coverage-report.json` under `bucke
 
 ### cluster: `archival-destruction-workflow` (10 methods)
 
-- `lib/Cron/ArchivalRetentionTask.php` — `sweepSchema()`, `run()`, `extractArchivalAnnotation()`, `stripMetadataColumns()`
+- `lib/BackgroundJob/ArchivalRetentionTask.php` — `sweepSchema()`, `run()`, `extractArchivalAnnotation()`, `stripMetadataColumns()`
 - `lib/Service/Archival/ArchivalAnnotationValidator.php` — `validateRule()`
 - `lib/Service/Archival/RetentionConditionEvaluator.php` — `parseLiteral()`, `compare()`
 - `lib/Service/Archival/RetentionEvaluator.php` — `addDuration()`

@@ -5,7 +5,7 @@
  *
  * Fallback TimedJob sweep for `whenUnavailable: queue` handoffs (ADR-051):
  * every 5 minutes (the same cadence class as
- * {@see \OCA\OpenRegister\Cron\WebhookRetryJob}) it drains parked queue
+ * {@see \OCA\OpenRegister\BackgroundJob\WebhookRetryJob}) it drains parked queue
  * entries whose target kind now resolves to an installed provider — catching
  * provider arrivals the schema-save / app-enable listeners missed (e.g.
  * register import paths that bypass the schema-save event).
@@ -14,7 +14,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Cron
- * @package  OCA\OpenRegister\Cron
+ * @package  OCA\OpenRegister\BackgroundJob
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -29,7 +29,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Cron;
+namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCP\AppFramework\Utility\ITimeFactory;
