@@ -24,6 +24,7 @@ import * as path from 'path'
 import * as fs from 'fs'
 import { seedMdm } from './mdm-seed'
 import { resolveBaseUrl } from './base-url'
+import { seedFirstVisitOverlaysSeen } from '@conduction/nextcloud-vue/testing/playwright'
 
 const AUTH_DIR = path.resolve(__dirname, '.auth')
 const STORAGE_STATE = path.join(AUTH_DIR, 'admin.json')
@@ -204,30 +205,25 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 		timeout: 20_000,
 	})
 
-	// Suppress the openregister product walkthrough for automated runs. On
-	// first visit it mounts a modal spotlight tour whose full dim layer
-	// intercepts pointer events, so every left-navigation click times out. The
-	// "seen" marker is browser-local (`cn-walkthrough-seen:<appId>`), and a
-	// fresh Playwright context re-triggers the tour every run.
+	// Suppress the product walkthrough this PR adds. On first visit it mounts a
+	// modal spotlight tour whose full dim layer intercepts pointer events, so
+	// every left-navigation click times out. A fresh Playwright context has no
+	// "seen" marker, so the tour re-triggers on every run.
 	//
-	// Seeding the marker with a high sentinel version is what dossiq and
-	// shillinq already do: every step's `sinceVersion` sorts below it, so the
-	// tour composes to an empty step set and never mounts.
-	try {
-		await page.goto('/apps/openregister/', {
-			waitUntil: 'domcontentloaded',
-			timeout: 60_000,
-		})
-		await page.evaluate(() => {
-			try {
-				window.localStorage.setItem('cn-walkthrough-seen:openregister', '999.0.0')
-			} catch (e) {
-				// localStorage unavailable — the tour then dismisses via helper clicks.
-			}
-		})
-	} catch {
-		// App origin unreachable here is non-fatal; specs still run.
-	}
+	// Uses the library helper rather than writing localStorage by hand. The key
+	// name and the sentinel version are the library's to define, and
+	// `seedWalkthroughSeen` already writes exactly the pair `useWalkthrough`
+	// reads. Hand-rolling it duplicates a contract that can move underneath us,
+	// and both halves fail SILENTLY when wrong: a mistyped key reads back as
+	// "never seen", so the tour mounts and the suppression looks present while
+	// doing nothing.
+	//
+	// The `/index.php/` prefix is deliberate. CI serves Nextcloud with `php -S`
+	// and no router script, where `/apps/openregister/` is a directory with no
+	// index.php and 404s. A 404 shares the origin, so a seed written there
+	// would appear to succeed.
+	await page.goto('/index.php/apps/openregister/')
+	await seedFirstVisitOverlaysSeen(page, 'openregister')
 
 	await context.storageState({ path: STORAGE_STATE })
 	await browser.close()
