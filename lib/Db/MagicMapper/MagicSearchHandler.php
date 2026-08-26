@@ -49,6 +49,7 @@ use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Support\QueryLimit;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -244,7 +245,12 @@ class MagicSearchHandler {
 		$this->ignoredFilters = [];
 
 		// Extract options from query (prefixed with _).
-		$limit = $query['_limit'] ?? null;
+		// `_limit` is normalised to a positive row count or null (= unlimited).
+		// Doctrine reads null on setMaxResults() as "retrieve all results", so
+		// this is the one place that decides whether the SQL carries a LIMIT.
+		// Before normalisation `_limit=0` reached setMaxResults(0) and produced
+		// `LIMIT 0` — an empty page, HTTP 200, no explanation.
+		$limit = QueryLimit::normalise($query['_limit'] ?? null);
 		$offset = $query['_offset'] ?? null;
 		$page = $query['_page'] ?? null;
 		$order = $query['_order'] ?? [];

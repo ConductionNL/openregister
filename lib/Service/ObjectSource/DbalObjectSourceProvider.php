@@ -46,6 +46,7 @@ use OCA\OpenRegister\Db\SourceMapper;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionException;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
+use OCA\OpenRegister\Support\QueryLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -64,7 +65,10 @@ use Throwable;
  */
 class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	/**
-	 * Hard cap on rows returned by a single findAll(), regardless of the query.
+	 * Hard cap on rows returned by a single findAll() for a NUMERIC limit.
+	 *
+	 * An explicit unlimited (`limit=false`) bypasses it; an oversized number
+	 * does not. See {@see \OCA\OpenRegister\Support\QueryLimit}.
 	 *
 	 * @var int
 	 */
@@ -1159,12 +1163,29 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function limit(array $query): int {
-		$limit = (int)($query['limit'] ?? self::DEFAULT_LIMIT);
-		if ($limit < 1) {
-			$limit = self::DEFAULT_LIMIT;
+	private function limit(array $query): ?int {
+		// An ABSENT limit still takes this provider's default. That is the one
+		// place the default belongs: these queries run against a FOREIGN
+		// database over which this app has no operational control, so a caller
+		// that says nothing gets a bounded page rather than that database's
+		// entire table.
+		if (array_key_exists('limit', $query) === false) {
+			return self::DEFAULT_LIMIT;
 		}
 
+		// An EXPLICIT unlimited is honoured, and is no longer rewritten into
+		// the default. This is the only way past the bound, and it has to be
+		// asked for by name.
+		$limit = QueryLimit::normalise(limit: $query['limit']);
+		if ($limit === null) {
+			return null;
+		}
+
+		// A NUMERIC limit is still capped. The cap is a deliberate protection
+		// (objects-crud: "List page size is bounded by a hard maximum") and it
+		// matters more here than anywhere else: this provider queries a FOREIGN
+		// database, so an accidental `limit=1000000` spends someone else's
+		// resources.
 		return min($limit, self::MAX_RESULTS);
 	}//end limit()
 
