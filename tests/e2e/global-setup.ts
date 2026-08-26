@@ -204,6 +204,31 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 		timeout: 20_000,
 	})
 
+	// Suppress the openregister product walkthrough for automated runs. On
+	// first visit it mounts a modal spotlight tour whose full dim layer
+	// intercepts pointer events, so every left-navigation click times out. The
+	// "seen" marker is browser-local (`cn-walkthrough-seen:<appId>`), and a
+	// fresh Playwright context re-triggers the tour every run.
+	//
+	// Seeding the marker with a high sentinel version is what dossiq and
+	// shillinq already do: every step's `sinceVersion` sorts below it, so the
+	// tour composes to an empty step set and never mounts.
+	try {
+		await page.goto('/apps/openregister/', {
+			waitUntil: 'domcontentloaded',
+			timeout: 60_000,
+		})
+		await page.evaluate(() => {
+			try {
+				window.localStorage.setItem('cn-walkthrough-seen:openregister', '999.0.0')
+			} catch (e) {
+				// localStorage unavailable — the tour then dismisses via helper clicks.
+			}
+		})
+	} catch {
+		// App origin unreachable here is non-fatal; specs still run.
+	}
+
 	await context.storageState({ path: STORAGE_STATE })
 	await browser.close()
 
