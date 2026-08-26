@@ -65,6 +65,12 @@ use Throwable;
  * but it would delete on the strength of a NEGATIVE — a class failing to load
  * for any reason, mid-upgrade or otherwise, would be read as retired. An
  * explicit list can only ever remove something a human named.
+ *
+ * @psalm-suppress UnusedClass Nextcloud instantiates repair steps from
+ *  the `<repair-steps>` block in appinfo/info.xml, which is XML — psalm
+ *  reads PHP and therefore sees no caller. The sibling steps escape this
+ *  only because unrelated docblocks happen to `{@see}` them, which is a
+ *  coincidence rather than a contract.
  */
 class RemoveRetiredCronJobs implements IRepairStep {
 
@@ -144,7 +150,10 @@ class RemoveRetiredCronJobs implements IRepairStep {
 				// remove() only ever uses the value as the `class` column to
 				// delete on, so the narrower type is about callers registering
 				// jobs, not callers retiring them.
-				/* @phpstan-ignore argument.type */
+				/**
+				 * @phpstan-ignore argument.type
+				 * @psalm-suppress ArgumentTypeCoercion
+				 */
 				$this->jobList->remove($class);
 				$output->info('Removed retired background job registration: ' . $class);
 			} catch (Throwable $e) {
