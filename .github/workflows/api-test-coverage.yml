@@ -111,10 +111,17 @@ jobs:
         # above, which uses it), so hand that one to the container instead of
         # shipping a second copy in the repository. `command -v` fails loudly
         # if it is ever absent, rather than falling through to a missing binary.
+        #
+        # Copied to a plain path and invoked as `php /usr/local/bin/composer`,
+        # exactly as the old committed phar was invoked. `docker cp` does not
+        # carry the executable bit reliably, and the first attempt at this step
+        # failed with "composer: executable file not found in $PATH" for that
+        # reason. Running the phar through `php` sidesteps both the exec bit and
+        # the shebang, and needs nothing on the container's PATH.
         run: |
           set -e
           docker cp "$(command -v composer)" nextcloud:/usr/local/bin/composer
-          docker exec nextcloud composer --version
+          docker exec nextcloud php /usr/local/bin/composer --version
 
       - name: PHPUnit unit suite (in-container, HARD GATE)
         # The unit suite requires the full Nextcloud runtime — the OCP stubs
@@ -145,7 +152,7 @@ jobs:
             # ext-gd is ignored too as a belt-and-suspenders no-op (phpspreadsheet
             # requires it; the NC image does ship gd, so this is harmless there).
             php -r "\$j=json_decode(file_get_contents(\"composer.json\"),true); \$j[\"config\"][\"autoloader-suffix\"]=\"OrTestCI\"; file_put_contents(\"composer.json\", json_encode(\$j, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES));"
-            composer install --no-interaction --no-progress --prefer-dist --ignore-platform-req=ext-xsl --ignore-platform-req=ext-gd
+            php /usr/local/bin/composer install --no-interaction --no-progress --prefer-dist --ignore-platform-req=ext-xsl --ignore-platform-req=ext-gd
             OPENREGISTER_TEST_NC_ROOT=/var/www/html php vendor/bin/phpunit -c phpunit.xml --no-coverage --colors=never tests/Unit
           '
 
