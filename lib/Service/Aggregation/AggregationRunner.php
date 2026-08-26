@@ -357,11 +357,27 @@ class AggregationRunner {
 		// once but must answer per administration, and an annotation has no
 		// way to name the caller's active one — `$currentUser` is the only
 		// placeholder the resolver knows.
+		$declaredOnlyFilter = $resolvedFilter;
 		$resolvedFilter = $this->mergeNarrowingFilter(
 			declared: $resolvedFilter,
 			extra: $extraFilter,
 			name: $name
 		);
+
+		// The caller constraints that ACTUALLY took effect on the parent — not
+		// the ones that were asked for. applyJoin() forwards these to the joined
+		// aggregate so both sides describe the same population.
+		//
+		// Deriving it from the merge result rather than reusing $extraFilter is
+		// the difference between a fix and a second hole. mergeNarrowingFilter()
+		// drops a key the declaration already constrains, so a caller passing
+		// `administrationId: B` against a declaration pinning `A` leaves the
+		// parent on A — and forwarding the raw request would have scoped the
+		// JOIN to B while the parent stayed A, which is the same
+		// population-mismatch bug pointed the other way. Worse, the dropped key
+		// never reaches the cache key, so that mismatch would have been cached
+		// and served to the next caller.
+		$appliedExtraFilter = array_diff_key($resolvedFilter, $declaredOnlyFilter);
 
 		// Cache lookup: the resolved filter (with placeholders concrete)
 		// is the cache key together with the user's RBAC scope. 60s TTL.
@@ -446,7 +462,8 @@ class AggregationRunner {
 				envelope: $result,
 				join: $joinArg,
 				groupFields: $this->resolveGroupFields(groupBy: $groupBy),
-				bypassRbac: $bypassRbac
+				bypassRbac: $bypassRbac,
+				extraFilter: $appliedExtraFilter
 			);
 			$this->cache->set(
 				registerSlug: (string)$register->getSlug(),
@@ -533,7 +550,8 @@ class AggregationRunner {
 			envelope: $result,
 			join: $joinArg,
 			groupFields: $runGroupFields,
-			bypassRbac: $bypassRbac
+			bypassRbac: $bypassRbac,
+			extraFilter: $appliedExtraFilter
 		);
 
 		$this->cache->set(
@@ -2703,9 +2721,10 @@ class AggregationRunner {
 	 *
 	 * RBAC
 	 * ----
-	 * A join MUST NOT become a way to read a schema the caller cannot read.
-	 * Three independent controls, the same three the cross-schema `from`
-	 * path relies on:
+	 * A join MUST NOT become a way to read a schema the caller cannot read,
+	 * NOR a way around the scoping the caller asked for. Four controls — the
+	 * first three are the ones the cross-schema `from` path relies on; the
+	 * fourth was missing and cost a cross-tenant read (see $extraFilter below):
 	 *  1. An explicit `list` permission gate on the JOINED schema via
 	 *     {@see PermissionHandler::hasPermission()}, refusing with
 	 *     RuntimeException('Forbidden: ...') before a single row is read.
@@ -2727,6 +2746,12 @@ class AggregationRunner {
 	 * @param array<int, string> $groupFields The parent's ordered group fields.
 	 * @param bool $bypassRbac Internal-system mode: skip the list-permission gate
 	 *                         (tenancy predicates still apply — they are not bypassable here).
+	 * @param array<string, mixed> $extraFilter The caller's narrowing constraints, applied to the
+	 *                         JOINED aggregate as well as the parent — restricted to keys the
+	 *                         joined schema declares, and never overriding the declared
+	 *                         `join.filter`. Control 4: without it the parent was scoped to one
+	 *                         administration while the joined figures were computed across all
+	 *                         of them.
 	 *
 	 * @return array<string, mixed> The envelope with a `joined` map on each group and a `join` summary.
 	 *
@@ -2746,6 +2771,7 @@ class AggregationRunner {
 		?array $join,
 		array $groupFields,
 		bool $bypassRbac,
+		array $extraFilter = [],
 	): array {
 		if ($join === null) {
 			return $envelope;
@@ -2777,6 +2803,53 @@ class AggregationRunner {
 		);
 
 		$joinedFilter = $this->placeholders->resolveArray((array)($join['filter'] ?? $join['where'] ?? []));
+
+		// SECURITY (control 4): the caller's NARROWING filter must reach the
+		// joined side too.
+		//
+		// It did not, and the result was a cross-tenant read. The parent rows
+		// were correctly narrowed to one administration while the joined
+		// aggregate was computed over EVERY administration, so the joined
+		// figures described a different population than the groups they were
+		// attached to. Measured on a live instance: CommitmentLine narrowed to
+		// `ADM-001` returned the right sums, and the joined
+		// `CommitmentBudget.authorised_amount` came back 160,000,000 — the
+		// ADM-001 budget (80,000,000) plus both of `adm-demo`'s (50,000,000 +
+		// 30,000,000), because the join matches on `programmeCode` alone. The
+		// page rendered another tenant's money as this tenant's authorised
+		// budget, with no error and a perfectly plausible number.
+		//
+		// mergeNarrowingFilter()'s docblock promises the failure mode is never
+		// "you saw more than you should". On the parent that held; the join
+		// bypassed it entirely.
+		//
+		// Restricted to keys the joined schema DECLARES. A filter on a property
+		// a schema does not have is not an error in this stack — it matches
+		// nothing and returns an empty set — so forwarding an unknown key would
+		// silently zero the join instead of narrowing it, trading a figure that
+		// is too big for one that is always zero. Keys the joined schema does
+		// not declare are dropped and logged; the join then stays as wide as it
+		// was, which is the pre-existing behaviour rather than a new one.
+		$joinedProperties = array_keys(($joinedSchema->getProperties() ?? []));
+		$applicable = array_intersect_key($extraFilter, array_flip($joinedProperties));
+		$ignored = array_keys(array_diff_key($extraFilter, $applicable));
+		if ($ignored !== []) {
+			$this->logger?->debug(
+				'Aggregation join: caller filter keys not declared by the joined schema were dropped.',
+				[
+					'through' => $through,
+					'ignored' => $ignored,
+				]
+			);
+		}
+
+		if ($applicable !== []) {
+			$joinedFilter = $this->mergeNarrowingFilter(
+				declared: $joinedFilter,
+				extra: $applicable,
+				name: $through . ' (join)'
+			);
+		}
 
 		$lookup = $this->aggregateJoinedSchema(
 			register: $joinedRegister,

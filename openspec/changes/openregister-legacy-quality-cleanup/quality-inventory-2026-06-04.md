@@ -58,7 +58,7 @@ Distribution by directory cluster:
 | `lib/Service/Object/` | 140 | Sprint 4 |
 | `lib/Service/File/` | 56 | Sprint 4 |
 | Other (`lib/Search/`, `lib/Formats/`, etc.) | 49 | Sprint 4 |
-| `lib/BackgroundJob/` / `lib/Cron/` | 20 | Sprint 5 |
+| `lib/BackgroundJob/` / `lib/BackgroundJob/` | 20 | Sprint 5 |
 | `lib/Migration/` | 6 | Sprint 5 |
 | `lib/Service/Aggregation/` | 5 | Sprint 5 |
 | `lib/AppInfo/` | 3 | Sprint 5 |

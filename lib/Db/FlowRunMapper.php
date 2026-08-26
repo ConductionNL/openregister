@@ -574,7 +574,7 @@ class FlowRunMapper extends QBMapper {
 	 * missed signal silently retires the flow.
 	 *
 	 * These are FAILED rather than resumed, for the same reason
-	 * {@see \OCA\OpenRegister\Cron\FlowRunWorker::reapStale()} fails rather than
+	 * {@see \OCA\OpenRegister\BackgroundJob\FlowRunWorker::reapStale()} fails rather than
 	 * requeues: the run is mid-graph and resuming it would run the awaiting node
 	 * as though its answer had arrived, when what actually happened is that
 	 * nobody answered. Failing says that, and leaves retry to a person.

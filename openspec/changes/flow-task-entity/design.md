@@ -236,7 +236,7 @@ survive, and "why did this disappear from my inbox" must be answerable.
 
 Termination is idempotent and skips already-terminal tasks, because run
 terminality can be observed more than once (the stale-run reaper in
-`lib/Cron/FlowRunWorker.php` runs on a 15-minute cadence and can race a
+`lib/BackgroundJob/FlowRunWorker.php` runs on a 15-minute cadence and can race a
 completing run).
 
 ### D-9 — The inbox filters and paginates in the datastore

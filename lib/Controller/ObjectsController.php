@@ -42,6 +42,7 @@ use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
+use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
@@ -90,6 +91,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class ObjectsController extends Controller {
 	use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
+	use ResolvesRegisterAndSchemaTrait;
 
 	/**
 	 * Export service for handling data exports
@@ -1012,91 +1014,31 @@ class ObjectsController extends Controller {
 	}//end crossTableSearch()
 
 	/**
-	 * Resolve register and schema IDs from slugs or IDs.
+	 * Resolve a register/schema path pair to numeric ids.
 	 *
-	 * @param string $register Register ID or slug.
-	 * @param string $schema Schema ID or slug.
-	 * @param ObjectService $objectService Object service for resolution.
+	 * Delegates to ResolvesRegisterAndSchemaTrait so this controller and
+	 * BulkController share ONE implementation. They previously each held a
+	 * private copy; #2858 and #2860 fixed this one and the bulk copy kept the
+	 * bug, so `GET /api/objects/19/9476` worked while
+	 * `POST /api/bulk/19/9475/save` still 404'd on the same register.
 	 *
-	 * @return array Resolved register and schema information.
+	 * @param string        $register      Register slug, uuid or numeric id.
+	 * @param string        $schema        Schema slug, uuid or numeric id.
+	 * @param ObjectService $objectService The request's object service.
 	 *
-	 * @throws RegisterNotFoundException When register is not found.
-	 * @throws SchemaNotFoundException When schema is not found.
+	 * @return array The resolved ids and entities.
+	 *
+	 * @throws RegisterNotFoundException When the register does not resolve.
+	 * @throws SchemaNotFoundException   When the schema does not resolve.
+	 *
+	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
 	private function resolveRegisterSchemaIds(string $register, string $schema, ObjectService $objectService): array {
-		// STEP 1: Initial resolution - convert slugs/IDs to numeric IDs.
-		//
-		// `setRegister()` does TWO things, and only the first is about the
-		// register: it resolves the register, and then — if a schema ref is
-		// still pending from an earlier caller on this shared ObjectService — it
-		// re-resolves that ref INSIDE the register. A scoped miss there is a
-		// SCHEMA failure, and reporting it as `Register not found: '19'` sent a
-		// diagnosis down the wrong path for hours: the register plainly exists,
-		// so every reasonable first move (check the row, the magic tables, the
-		// organisation filter, run the mapper's query by hand) confirms it and
-		// explains nothing. openregister#2820.
-		//
-		// So the register lookup is now resolved on its own, and only its
-		// failure is reported as a missing register. Anything the pending-ref
-		// re-resolution throws keeps its own identity.
-		// Start from a clean context — this is the other half of #2820.
-		//
-		// #2858 made this endpoint report a leaked-ref failure honestly, as a
-		// schema failure. It did not stop the leak: `setRegister()` re-resolves
-		// whatever schema ref is still pending on the SHARED ObjectService, and
-		// a ref left behind by an unrelated earlier caller then gets resolved
-		// inside a register it was never meant for. On the dev instance a
-		// preload resolves register `buildiq` moments before the request's own
-		// lookup, which is how a plain `GET /objects/19/9476` failed.
-		//
-		// Nothing pending can ever be legitimate here: this method is handed
-		// BOTH the register and the schema explicitly, so it has no use for a
-		// ref it did not receive. #2790 added the same isolation on LEAVING
-		// find(); this is the entering end.
-		$objectService->clearCurrents();
-
-		// The discriminator is `setRegister()`'s own order of operations: it
-		// assigns `currentRegister` BEFORE it re-resolves any pending schema ref.
-		// So a register entity that is NEW after the throw proves the register
-		// lookup succeeded and the schema side failed.
-		//
-		// Comparing against the entity held BEFORE the call is what makes this
-		// sound. ObjectService is shared, so `currentRegister` can already hold
-		// an earlier caller's register; testing it for null alone would report a
-		// genuine missing register as a schema problem whenever someone had used
-		// the service first — swapping one misattribution for another.
-		$registerBefore = $objectService->getCurrentRegisterEntity();
-		try {
-			$objectService->setRegister(register: $register);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			$registerAfter = $objectService->getCurrentRegisterEntity();
-			if ($registerAfter === null || $registerAfter === $registerBefore) {
-				throw new RegisterNotFoundException(registerSlugOrId: $register, code: 404, previous: $e);
-			}
-
-			throw new SchemaNotFoundException(schemaSlugOrId: $schema, code: 404, previous: $e);
-		}
-
-		try {
-			$objectService->setSchema(schema: $schema);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			// If schema not found, throw custom exception.
-			throw new SchemaNotFoundException(schemaSlugOrId: $schema, code: 404, previous: $e);
-		}
-
-		// STEP 2: Get resolved numeric IDs.
-		$resolvedRegisterId = $objectService->getRegister();
-		$resolvedSchemaId = $objectService->getSchema();
-
-		// STEP 3: Reuse the entities already resolved by setRegister()/setSchema()
-		// above — re-fetching them via the mappers would resolve the same
-		// register and schema twice per request.
-		return [
-			'register' => $resolvedRegisterId,
-			'schema' => $resolvedSchemaId,
-			'registerEntity' => $objectService->getCurrentRegisterEntity(),
-			'schemaEntity' => $objectService->getCurrentSchemaEntity(),
-		];
+		return $this->resolveRegisterAndSchema(
+			register: $register,
+			schema: $schema,
+			objectService: $objectService
+		);
 	}//end resolveRegisterSchemaIds()
 
 	/**

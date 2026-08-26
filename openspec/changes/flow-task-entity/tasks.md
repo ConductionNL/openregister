@@ -76,7 +76,7 @@
       `stopped`, `dead_letter`, `failed` — `lib/Db/FlowRun.php` STATUS
       constants), plus an explicit service call for a task made moot by a
       branch decision. Idempotent (the reaper in
-      `lib/Cron/FlowRunWorker.php` can observe terminality more than
+      `lib/BackgroundJob/FlowRunWorker.php` can observe terminality more than
       once), audited with the propagation source as actor, and a NO-OP for
       any task with `run_uuid` null.
 
