@@ -32,8 +32,10 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Controller\DelegationController;
 use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\DelegationGrantMapper;
+use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\Delegation\DelegationConsentService;
 use OCA\OpenRegister\Service\Delegation\DelegationNotifier;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
@@ -42,6 +44,8 @@ use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
+use RuntimeException;
 
 /**
  * Locks who may ask, who may answer, and what the surface returns.
@@ -70,6 +74,20 @@ class DelegationControllerTest extends TestCase {
 	private array $accounts = ['alice', 'mayor'];
 
 	/**
+	 * Uids in the caller's organisations.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $orgMembers = ['alice', 'mayor'];
+
+	/**
+	 * Whether reading the caller's organisations throws.
+	 *
+	 * @var boolean
+	 */
+	private bool $orgsBroken = false;
+
+	/**
 	 * The request body.
 	 *
 	 * @var array
@@ -96,6 +114,8 @@ class DelegationControllerTest extends TestCase {
 		$this->caller = 'alice';
 		$this->isAdmin = false;
 		$this->accounts = ['alice', 'mayor'];
+		$this->orgMembers = ['alice', 'mayor'];
+		$this->orgsBroken = false;
 		$this->body = [];
 		$this->stored = null;
 		$this->notified = [];
@@ -190,6 +210,17 @@ class DelegationControllerTest extends TestCase {
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('isAdmin')->willReturnCallback(fn (): bool => $this->isAdmin);
 
+		$organisations = $this->createMock(OrganisationService::class);
+		$organisations->method('getUserOrganisations')->willReturnCallback(
+			function (): array {
+				if ($this->orgsBroken === true) {
+					throw new RuntimeException('tenancy unreadable');
+				}
+
+				return [$this->orgForMembers()];
+			}
+		);
+
 		return new DelegationController(
 			'openregister',
 			$request,
@@ -198,8 +229,26 @@ class DelegationControllerTest extends TestCase {
 			$notifier,
 			$session,
 			$userManager,
-			$groupManager
+			$groupManager,
+			$organisations,
+			new NullLogger()
 		);
+	}
+
+	/**
+	 * An organisation whose member list follows $this->orgMembers.
+	 *
+	 * @return Organisation The organisation.
+	 */
+	private function orgForMembers(): Organisation {
+		// A REAL entity, not a mock. `getUsers()` is a MAGIC method — declared as
+		// an `@method` tag and served by Entity::__call — so createMock() cannot
+		// stub it and answers "Method name is not configured". Every consumer of
+		// this class in tests hits the same wall.
+		$organisation = new Organisation();
+		$organisation->setUsers($this->orgMembers);
+
+		return $organisation;
 	}
 
 	/**
@@ -449,5 +498,96 @@ class DelegationControllerTest extends TestCase {
 		$this->controller($consent)->answer('grant-1');
 
 		$this->assertSame([true], $seen);
+	}
+	/**
+	 * 🔴 A caller may not ask a user OUTSIDE their organisation.
+	 *
+	 * Organisation is the fleet's tenancy unit — the same one that scopes every
+	 * register, schema and run. A delegation that crossed it would let one
+	 * tenant's user request rights inside another's.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	public function testACallerMayNotAskOutsideTheirOrganisation(): void {
+		$this->accounts = ['alice', 'mayor', 'outsider'];
+		$this->orgMembers = ['alice', 'mayor'];
+		$this->body = ['actingAs' => 'outsider', 'reason' => 'why'];
+
+		$response = $this->controller()->request();
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		$this->assertSame([], $this->notified);
+	}
+
+	/**
+	 * 🔴 THE ENDPOINT IS NOT A USER-EXISTENCE ORACLE.
+	 *
+	 * A real account outside the caller's organisation and an account that does
+	 * not exist at all must be INDISTINGUISHABLE — same status, same body.
+	 * Telling them apart is exactly what an enumeration oracle is built out of,
+	 * and it would be a NEW one: Nextcloud governs enumeration through its own
+	 * sharing settings, so an endpoint that answers around them removes a control
+	 * rather than adding a feature.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	public function testAnAbsentAccountAndAnUnreachableOneAreIndistinguishable(): void {
+		$this->accounts = ['alice', 'mayor', 'outsider'];
+		$this->orgMembers = ['alice', 'mayor'];
+
+		$this->body = ['actingAs' => 'outsider'];
+		$real = $this->controller()->request();
+
+		$this->body = ['actingAs' => 'no-such-person'];
+		$invented = $this->controller()->request();
+
+		$this->assertSame($real->getStatus(), $invented->getStatus());
+		$this->assertSame(
+			str_replace('outsider', 'X', (string)$real->getData()['error']),
+			str_replace('no-such-person', 'X', (string)$invented->getData()['error']),
+			'the two refusals must differ only in the uid the caller already supplied'
+		);
+	}
+
+	/**
+	 * An administrator may ask anyone — answering across tenants is what they are for.
+	 *
+	 * The control for the two tests above: without it, a controller that refused
+	 * every cross-organisation request would pass them and break the one caller
+	 * who legitimately spans tenants.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	public function testAnAdministratorMayAskAnyone(): void {
+		$this->isAdmin = true;
+		$this->accounts = ['alice', 'mayor', 'outsider'];
+		$this->orgMembers = ['alice'];
+		$this->body = ['actingAs' => 'outsider'];
+
+		$this->assertSame(Http::STATUS_CREATED, $this->controller()->request()->getStatus());
+	}
+
+	/**
+	 * An unreadable tenancy REFUSES rather than permitting.
+	 *
+	 * Fail closed. Treating an unreadable organisation list as "no restriction"
+	 * would re-open the enumeration surface wholesale, and it is the exact
+	 * fail-open shape this subsystem has already been bitten by twice.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	public function testAnUnreadableTenancyRefuses(): void {
+		$this->orgsBroken = true;
+		$this->body = ['actingAs' => 'mayor'];
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller()->request()->getStatus());
 	}
 }

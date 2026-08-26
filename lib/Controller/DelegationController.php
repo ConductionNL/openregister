@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\DelegationGrantMapper;
 use OCA\OpenRegister\Service\Delegation\DelegationConsentService;
 use OCA\OpenRegister\Service\Delegation\DelegationNotifier;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -60,13 +61,22 @@ use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserManager;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * REST surface for requesting, answering and revoking delegations.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The collaborators are the
- *   store, the lifecycle, the notifier and the three identity services the
+ *   store, the lifecycle, the notifier and the identity services the
  *   authorization rule is expressed in. Each is used once; none is optional.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) Ten, and every one of them is
+ *   part of an authorization decision this class is not allowed to guess at:
+ *   who is calling (session), whether the target exists (user manager), whether
+ *   the caller outranks the boundary (group manager), where the boundary is
+ *   (organisations), and what to say when the boundary cannot be read (logger).
+ *   Bundling them behind a "context" object would hide exactly the list a
+ *   reviewer needs to see to check the rule.
  */
 class DelegationController extends Controller {
 
@@ -81,6 +91,8 @@ class DelegationController extends Controller {
 	 * @param IUserSession             $userSession  Names the caller.
 	 * @param IUserManager             $userManager  Proves the acted-as account exists.
 	 * @param IGroupManager            $groupManager Distinguishes an administrator.
+	 * @param OrganisationService      $organisations Bounds who a caller may ask.
+	 * @param LoggerInterface          $logger        Records a tenancy that cannot be read.
 	 */
 	public function __construct(
 		string $appName,
@@ -91,6 +103,8 @@ class DelegationController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IUserManager $userManager,
 		private readonly IGroupManager $groupManager,
+		private readonly OrganisationService $organisations,
+		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -149,13 +163,12 @@ class DelegationController extends Controller {
 		$body = $this->request->getParams();
 		$actingAs = trim((string)($body['actingAs'] ?? ''));
 
-		if ($this->userManager->get($actingAs) === null) {
-			// Checked BEFORE the request is stored. A pending request naming an
-			// account that does not exist can never be answered, so it would sit
-			// in the store until it expired while its requester waited for a
-			// prompt nobody could ever see.
+		if ($this->mayRequestOver(caller: $caller, actingAs: $actingAs) === false) {
+			// ONE response for two different facts, deliberately. See
+			// mayRequestOver() — telling them apart is what makes this endpoint a
+			// user-existence oracle.
 			return new JSONResponse(
-				['error' => sprintf('"%s" resolves to no account.', $actingAs)],
+				['error' => sprintf('"%s" resolves to no account you may ask.', $actingAs)],
 				Http::STATUS_NOT_FOUND
 			);
 		}
@@ -266,6 +279,72 @@ class DelegationController extends Controller {
 
 		return new JSONResponse($this->consent->describe($revoked));
 	}//end revoke()
+
+	/**
+	 * May `$caller` raise a consent request naming `$actingAs`?
+	 *
+	 * TWO CHECKS, ONE ANSWER, and the collapsing is the security property.
+	 *
+	 * The account must EXIST — a pending request naming nobody can never be
+	 * answered, so it would sit in the store until it expired while its requester
+	 * waited for a prompt no account could receive.
+	 *
+	 * 🔴 And it must be someone the caller can already see. Without that, any
+	 * authenticated user could POST a uid and read the status code as an answer:
+	 * 201 for a real account, 404 for an invented one. That is a USER-EXISTENCE
+	 * ORACLE, and it would be a new one — Nextcloud governs enumeration through
+	 * its own sharing settings, and an endpoint that answers around them has
+	 * removed a control rather than added a feature.
+	 *
+	 * So both failures return the same 404. A requester learns "not someone you
+	 * may ask", which is all they need and all they are entitled to; the
+	 * difference between "no such person" and "not in your organisation" is
+	 * exactly the difference an oracle is built out of.
+	 *
+	 * ORGANISATION is the boundary because it is the fleet's tenancy unit — the
+	 * same one that scopes every register, schema and run. A delegation that
+	 * crossed it would let one tenant's user request rights inside another's.
+	 * An administrator is exempt: answering across tenants is what they are for.
+	 *
+	 * @param string $caller   The uid raising the request.
+	 * @param string $actingAs The uid it names.
+	 *
+	 * @return boolean Whether the request may be raised.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	private function mayRequestOver(string $caller, string $actingAs): bool {
+		if ($actingAs === '' || $this->userManager->get($actingAs) === null) {
+			return false;
+		}
+
+		if ($this->isAdmin(uid: $caller) === true) {
+			return true;
+		}
+
+		try {
+			$organisations = $this->organisations->getUserOrganisations();
+		} catch (Throwable $e) {
+			// Fail CLOSED. An unreadable tenancy is not "no restriction" — that
+			// is the fail-open shape this subsystem has already been bitten by,
+			// and here it would re-open the enumeration surface wholesale.
+			$this->logger->error(
+				message: '[DelegationController] Could not read the caller\'s organisations; refusing: '
+					. $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'caller' => $caller]
+			);
+
+			return false;
+		}
+
+		foreach ($organisations as $organisation) {
+			if (in_array($actingAs, (array)($organisation->getUsers() ?? []), true) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end mayRequestOver()
 
 	/**
 	 * The caller's uid, or null when there is no session.
