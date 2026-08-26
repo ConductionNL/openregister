@@ -400,4 +400,129 @@ class NotifierTest extends TestCase {
 		$this->assertSame('Jan de Vries', $rich[0]['requester']['name']);
 		$this->assertSame('j.devries3', $rich[0]['requester']['id'], 'the uid is still how a client resolves the avatar');
 	}
+
+	/**
+	 * A BLANK display name falls back to the uid.
+	 *
+	 * Nextcloud lets a display name be empty, and an empty one in a consent
+	 * prompt reads as "  asks to act on your behalf" — a security decision with
+	 * no subject in it. The uid is poorer copy and it is always a name for
+	 * somebody, which is the property that matters here.
+	 *
+	 * This branch arrived with the phpcs fix that turned the fallback ternary
+	 * into an explicit early return, and the coverage ratchet caught that it was
+	 * unexercised: 182 statements to 184, one of the two new ones uncovered, a
+	 * 0.09% drop. A small enough number to wave through and a real enough gap to
+	 * be worth a test.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	public function testABlankDisplayNameFallsBackToTheUid(): void {
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getDisplayName')->willReturn('   ');
+
+		$userManager = $this->createMock(\OCP\IUserManager::class);
+		$userManager->method('get')->willReturn($user);
+
+		$seen = [];
+		$notifier = new Notifier($this->factory, $this->urlGenerator, $userManager);
+
+		$action = $this->createMock(IAction::class);
+		$action->method('setLabel')->willReturnSelf();
+		$action->method('setParsedLabel')->willReturnSelf();
+		$action->method('setPrimary')->willReturnSelf();
+		$action->method('setLink')->willReturnSelf();
+
+		$notification = $this->createMock(INotification::class);
+		$notification->method('getApp')->willReturn('openregister');
+		$notification->method('getSubject')->willReturn('delegation_consent_requested');
+		$notification->method('getSubjectParameters')->willReturn([
+			'principal' => 'j.devries3',
+			'actingAs' => 'mayor',
+			'grantUuid' => 'grant-1',
+		]);
+		$notification->method('createAction')->willReturn($action);
+		$notification->method('addAction')->willReturnSelf();
+		$notification->method('setIcon')->willReturnSelf();
+		$notification->method('setRichSubject')->willReturnSelf();
+		$notification->method('setRichMessage')->willReturnSelf();
+		$notification->method('setParsedSubject')->willReturnCallback(
+			static function (string $text) use ($notification, &$seen): INotification {
+				$seen[] = $text;
+
+				return $notification;
+			}
+		);
+		$notification->method('setParsedMessage')->willReturnSelf();
+
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(
+			static fn (string $text, array $args = []): string => vsprintf($text, $args)
+		);
+		$this->factory->method('get')->willReturn($l10n);
+		$this->urlGenerator->method('imagePath')->willReturn('/icon.svg');
+		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.test/answer');
+
+		$notifier->prepare($notification, 'en');
+
+		$this->assertStringContainsString('j.devries3', implode(' ', $seen));
+	}
+
+	/**
+	 * With NO user manager the uid is used, and nothing throws.
+	 *
+	 * The collaborator is nullable so the existing hand-built construction keeps
+	 * binding. That is only safe if the null path is exercised — an untested
+	 * optional dependency is one whose absence is discovered in production.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	public function testWithoutAUserManagerTheUidIsUsed(): void {
+		$seen = [];
+
+		$action = $this->createMock(IAction::class);
+		$action->method('setLabel')->willReturnSelf();
+		$action->method('setParsedLabel')->willReturnSelf();
+		$action->method('setPrimary')->willReturnSelf();
+		$action->method('setLink')->willReturnSelf();
+
+		$notification = $this->createMock(INotification::class);
+		$notification->method('getApp')->willReturn('openregister');
+		$notification->method('getSubject')->willReturn('delegation_consent_requested');
+		$notification->method('getSubjectParameters')->willReturn([
+			'principal' => 'alice',
+			'actingAs' => 'mayor',
+			'grantUuid' => 'grant-1',
+		]);
+		$notification->method('createAction')->willReturn($action);
+		$notification->method('addAction')->willReturnSelf();
+		$notification->method('setIcon')->willReturnSelf();
+		$notification->method('setRichSubject')->willReturnSelf();
+		$notification->method('setRichMessage')->willReturnSelf();
+		$notification->method('setParsedSubject')->willReturnCallback(
+			static function (string $text) use ($notification, &$seen): INotification {
+				$seen[] = $text;
+
+				return $notification;
+			}
+		);
+		$notification->method('setParsedMessage')->willReturnSelf();
+
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(
+			static fn (string $text, array $args = []): string => vsprintf($text, $args)
+		);
+		$this->factory->method('get')->willReturn($l10n);
+		$this->urlGenerator->method('imagePath')->willReturn('/icon.svg');
+		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.test/answer');
+
+		// No third argument — the nullable collaborator is absent.
+		$this->notifier->prepare($notification, 'en');
+
+		$this->assertStringContainsString('alice', implode(' ', $seen));
+	}
 }
