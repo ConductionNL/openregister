@@ -137,6 +137,14 @@ class RemoveRetiredCronJobs implements IRepairStep {
 	public function run(IOutput $output): void {
 		foreach (self::RETIRED_JOB_CLASSES as $class) {
 			try {
+				// PHPStan: remove() is typed `class-string<IJob>|IJob`, and a
+				// plain string is exactly what this step must pass — the
+				// classes are GONE, which is the whole reason the row has to be
+				// removed. A class-string is unobtainable by construction, and
+				// remove() only ever uses the value as the `class` column to
+				// delete on, so the narrower type is about callers registering
+				// jobs, not callers retiring them.
+				/* @phpstan-ignore argument.type */
 				$this->jobList->remove($class);
 				$output->info('Removed retired background job registration: ' . $class);
 			} catch (Throwable $e) {
