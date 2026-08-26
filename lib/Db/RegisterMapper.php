@@ -318,38 +318,21 @@ class RegisterMapper extends QBMapper {
 					'organisation' => $testResult->getOrganisation(),
 				]
 			);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			// SAY WHICH IT WAS. This used to also catch
-			// MultipleObjectsReturnedException and report both as "does not
-			// exist (or is duplicated)" — naming an ambiguity the probe above
-			// has already made impossible.
+		} catch (\OCP\AppFramework\Db\DoesNotExistException|\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+			// SAY WHICH ONE IT WAS. This logged "does not exist (or is
+			// duplicated)" for both, hedging between two causes with entirely
+			// different fixes — one means the register was never created, the
+			// other means `openregister:registers:dedupe` has work to do. It cost
+			// learniq#620 a diagnosis.
 			//
-			// `setMaxResults(1)` means findEntity() can never see a second row,
-			// so MultipleObjectsReturnedException cannot be raised here; the
-			// comment on that cap says so in as many words. The only reachable
-			// cause is absence, and the message hedged anyway.
-			//
-			// It cost a real diagnosis: learniq#620 traced a runtime schema 404
-			// back to this line and could not tell from the log whether the
-			// register was missing or duplicated — the two have entirely
-			// different fixes. A warning that hedges between two causes is a
-			// warning that answers neither.
+			// Absence is in fact the only reachable case: the `setMaxResults(1)`
+			// above means findEntity() can never see a second row. The multiple
+			// branch is kept so "cannot happen" stays falsifiable — reaching it
+			// would be a fact about the query builder, not about the data.
 			$this->logger->warning(
-				message: '[RegisterMapper] Register does not exist before filters',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'identifier' => $id,
-				]
-			);
-		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-			// Kept, and deliberately worded as the contradiction it would be:
-			// reaching this branch means the single-row cap above did not hold,
-			// which is a fact about the query builder rather than about the
-			// data, and is worth knowing loudly rather than silently folding
-			// back into "not found".
-			$this->logger->error(
-				message: '[RegisterMapper] Register lookup returned multiple rows despite a single-row cap',
+				message: ($e instanceof \OCP\AppFramework\Db\MultipleObjectsReturnedException)
+					? '[RegisterMapper] Register lookup returned multiple rows despite a single-row cap'
+					: '[RegisterMapper] Register does not exist before filters',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
