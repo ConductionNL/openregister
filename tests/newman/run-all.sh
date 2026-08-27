@@ -111,6 +111,7 @@ DOMAIN_ORDER=(
     "referential-integrity"
     "schema-migration"
     "flow-engine"
+    "delegation"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -133,6 +134,13 @@ declare -A DOMAIN_COLLECTIONS=(
     [schema-import]="$REPO_ROOT/tests/integration/openregister-schema-import.postman_collection.json"
     [apphost-observability]="$REPO_ROOT/tests/integration/apphost-observability.postman_collection.json"
     [flow-engine]="$REPO_ROOT/tests/newman/openregister-flow-engine.postman_collection.json"
+    # ADR-099 §5 delegation grants. Registered here rather than left to the
+    # Playwright specs in tests/e2e/api-direct/, because playwright.config.ts
+    # excludes `**/api-direct/**` from every project — so those specs run only
+    # when a developer invokes the ad-hoc flow config by hand, and CI executes
+    # none of them. Three green specs and zero CI coverage look identical from
+    # the outside; this is the half CI can see.
+    [delegation]="$REPO_ROOT/tests/newman/openregister-delegation.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
