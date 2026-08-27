@@ -20,6 +20,7 @@ use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Http;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -534,5 +535,229 @@ class FlowRunControllerTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 	}//end testResumeStillAllowsAnyoneWhenNoAssigneeWasRecorded()
+
+	/**
+	 * Build a suspended run carrying the given resume slots.
+	 *
+	 * @param mixed $resumeState The resumeState value to store on the context.
+	 *
+	 * @return FlowRun The suspended run.
+	 */
+	private function suspendedRunWithResumeState(mixed $resumeState): FlowRun {
+		$run = new FlowRun();
+		$run->setUuid('run-1');
+		$run->setFlowId('flow-1');
+		$run->setStatus(FlowRun::STATUS_SUSPENDED);
+		$run->setContext(['resumeState' => $resumeState]);
+
+		return $run;
+	}//end suspendedRunWithResumeState()
+
+	/**
+	 * Build the controller with a specific session and group manager.
+	 *
+	 * @param IUserSession       $session      The session to use.
+	 * @param IGroupManager|null $groupManager The group manager, or null.
+	 *
+	 * @return FlowRunController The controller.
+	 */
+	private function controllerWith(
+		IUserSession $session,
+		?IGroupManager $groupManager = null,
+	): FlowRunController {
+		return new FlowRunController(
+			appName: 'openregister',
+			request: $this->request,
+			mapper: $this->mapper,
+			runner: $this->runner,
+			resolvers: $this->resolvers,
+			userSession: $session,
+			organisationService: $this->organisations,
+			groupManager: $groupManager,
+			flows: $this->flows
+		);
+	}//end controllerWith()
+
+	/**
+	 * An assigned step is never answerable anonymously.
+	 *
+	 * This is the fail-CLOSED half of the guard, and it is the half that is
+	 * easy to get backwards: the unassigned case deliberately allows anyone
+	 * through, so an implementation that treated "no uid" the same way would
+	 * pass every other test in this file while leaving an assigned decision
+	 * open to an unauthenticated caller.
+	 *
+	 * @return void
+	 */
+	public function testResumeRefusesAnAssignedStepWithoutASession(): void {
+		$run = $this->suspendedRunWithResumeState(
+			['approval' => ['askedAt' => '2026-08-27T00:00:00+00:00', 'assignee' => 'bob']]
+		);
+
+		$this->mapper->method('findByUuid')->with('run-1')->willReturn($run);
+		$this->flows->method('find')->with('flow-1');
+		$this->runner->expects($this->never())->method('signal');
+
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn(null);
+
+		$response = $this->controllerWith(session: $session)->resume('run-1');
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		$this->assertStringContainsString('sign in', $response->getData()['error']);
+	}//end testResumeRefusesAnAssignedStepWithoutASession()
+
+	/**
+	 * An assignee may be a GROUP, and a member of it may answer.
+	 *
+	 * AwaitSignalNode records a single `assignee` string without saying whether
+	 * it names a person or a group, so the guard has to try both. Without this
+	 * every group-assigned step would refuse its own intended audience — a
+	 * regression that reads as "the guard works" because refusing is what a
+	 * guard does.
+	 *
+	 * @return void
+	 */
+	public function testResumeAllowsAMemberOfAnAssignedGroup(): void {
+		$run = $this->suspendedRunWithResumeState(
+			['approval' => ['askedAt' => '2026-08-27T00:00:00+00:00', 'assignee' => 'reviewers']]
+		);
+
+		$signalled = new FlowRun();
+		$signalled->setUuid('run-1');
+		$signalled->setStatus(FlowRun::STATUS_SUSPENDED);
+
+		$this->mapper->method('findByUuid')->with('run-1')->willReturn($run);
+		$this->flows->method('find')->with('flow-1');
+		$this->request->method('getParams')->willReturn(['decision' => 'approved']);
+		$this->runner->expects($this->once())->method('signal')->willReturn($signalled);
+
+		$groups = $this->createMock(IGroupManager::class);
+		$groups->expects($this->once())
+			->method('isInGroup')
+			->with('alice', 'reviewers')
+			->willReturn(true);
+
+		$response = $this->controllerWith(
+			session: $this->userSession,
+			groupManager: $groups
+		)->resume('run-1');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+	}//end testResumeAllowsAMemberOfAnAssignedGroup()
+
+	/**
+	 * A non-member of an assigned group is still refused.
+	 *
+	 * The companion to the test above: it is what makes the group lookup a
+	 * check rather than a rubber stamp.
+	 *
+	 * @return void
+	 */
+	public function testResumeRefusesANonMemberOfAnAssignedGroup(): void {
+		$run = $this->suspendedRunWithResumeState(
+			['approval' => ['askedAt' => '2026-08-27T00:00:00+00:00', 'assignee' => 'reviewers']]
+		);
+
+		$this->mapper->method('findByUuid')->with('run-1')->willReturn($run);
+		$this->flows->method('find')->with('flow-1');
+		$this->runner->expects($this->never())->method('signal');
+
+		$groups = $this->createMock(IGroupManager::class);
+		$groups->method('isInGroup')->with('alice', 'reviewers')->willReturn(false);
+
+		$response = $this->controllerWith(
+			session: $this->userSession,
+			groupManager: $groups
+		)->resume('run-1');
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		$this->assertStringContainsString('someone else', $response->getData()['error']);
+	}//end testResumeRefusesANonMemberOfAnAssignedGroup()
+
+	/**
+	 * A slot that has not asked yet does not assign anybody.
+	 *
+	 * A run accumulates a slot per node across its life. Only a slot that
+	 * actually asked (`askedAt`) is awaiting an answer, so an assignee sitting
+	 * on a not-yet-asked slot must not gate the step that IS asking — that
+	 * would refuse the right person on the strength of a future step.
+	 *
+	 * @return void
+	 */
+	public function testAnAssigneeOnASlotThatHasNotAskedDoesNotGate(): void {
+		$run = $this->suspendedRunWithResumeState(
+			[
+				'webhook' => ['askedAt' => '2026-08-27T00:00:00+00:00'],
+				'later'   => ['assignee' => 'bob'],
+			]
+		);
+
+		$signalled = new FlowRun();
+		$signalled->setUuid('run-1');
+		$signalled->setStatus(FlowRun::STATUS_SUSPENDED);
+
+		$this->mapper->method('findByUuid')->with('run-1')->willReturn($run);
+		$this->flows->method('find')->with('flow-1');
+		$this->request->method('getParams')->willReturn(['ok' => true]);
+		$this->runner->expects($this->once())->method('signal')->willReturn($signalled);
+
+		$response = $this->controller->resume('run-1');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+	}//end testAnAssigneeOnASlotThatHasNotAskedDoesNotGate()
+
+	/**
+	 * A malformed resumeState is read as unassigned, not as a crash.
+	 *
+	 * The context is stored JSON that older runs wrote under earlier shapes, so
+	 * the guard must survive a scalar or a non-array slot where it expects a
+	 * map. Refusing here would strand in-flight runs; throwing would 500 them.
+	 *
+	 * @return void
+	 */
+	public function testAMalformedResumeStateIsTreatedAsUnassigned(): void {
+		$run = $this->suspendedRunWithResumeState('not-a-map');
+
+		$signalled = new FlowRun();
+		$signalled->setUuid('run-1');
+		$signalled->setStatus(FlowRun::STATUS_SUSPENDED);
+
+		$this->mapper->method('findByUuid')->with('run-1')->willReturn($run);
+		$this->flows->method('find')->with('flow-1');
+		$this->request->method('getParams')->willReturn(['ok' => true]);
+		$this->runner->expects($this->once())->method('signal')->willReturn($signalled);
+
+		$response = $this->controller->resume('run-1');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+	}//end testAMalformedResumeStateIsTreatedAsUnassigned()
+
+	/**
+	 * A non-array slot inside a well-formed map is skipped, not read.
+	 *
+	 * @return void
+	 */
+	public function testANonArraySlotIsSkipped(): void {
+		$run = $this->suspendedRunWithResumeState(
+			[
+				'legacy'   => 'a bare string a previous shape wrote',
+				'approval' => ['askedAt' => '2026-08-27T00:00:00+00:00', 'assignee' => 'alice'],
+			]
+		);
+
+		$signalled = new FlowRun();
+		$signalled->setUuid('run-1');
+		$signalled->setStatus(FlowRun::STATUS_SUSPENDED);
+
+		$this->mapper->method('findByUuid')->with('run-1')->willReturn($run);
+		$this->flows->method('find')->with('flow-1');
+		$this->request->method('getParams')->willReturn(['ok' => true]);
+		$this->runner->expects($this->once())->method('signal')->willReturn($signalled);
+
+		$response = $this->controller->resume('run-1');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+	}//end testANonArraySlotIsSkipped()
 
 }//end class
