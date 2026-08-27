@@ -69,20 +69,6 @@
       <code><![CDATA[Factory]]></code>
     </UndefinedClass>
   </file>
-  <file src="lib/Controller/TmloController.php">
-    <InvalidNamedArgument>
-      <code><![CDATA[filters]]></code>
-      <code><![CDATA[filters]]></code>
-      <code><![CDATA[identifier]]></code>
-      <code><![CDATA[register]]></code>
-      <code><![CDATA[register]]></code>
-      <code><![CDATA[schema]]></code>
-      <code><![CDATA[schema]]></code>
-    </InvalidNamedArgument>
-    <TooFewArguments>
-      <code><![CDATA[find]]></code>
-    </TooFewArguments>
-  </file>
   <file src="lib/Controller/Trait/HandlesExceptionsTrait.php">
     <UndefinedThisPropertyFetch>
       <code><![CDATA[$this->logger]]></code>
