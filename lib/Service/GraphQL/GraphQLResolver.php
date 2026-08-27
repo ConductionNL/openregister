@@ -305,6 +305,60 @@ class GraphQLResolver {
 	}//end resolveList()
 
 	/**
+	 * Map engine buckets onto the GraphQL `GroupBucket` shape.
+	 *
+	 * PRESERVES WHAT THE ENGINE SAID rather than flattening it. This used to be
+	 * two coercions — `(string)($bucket['key'] ?? '')` and
+	 * `(float)($bucket['value'] ?? 0)` — and each lost something real:
+	 *
+	 *  - a NULL group key became `''`, so rows whose grouped field is null were
+	 *    indistinguishable from rows whose value is genuinely the empty string;
+	 *  - a multi-metric bucket carries `values` and no `value`, so the float
+	 *    cast reported **0.0 for every bucket** — a plausible zero rather than
+	 *    an admission that the figures live under another key.
+	 *
+	 * The second was unreachable while GraphQL could not request `metrics[]`.
+	 * It must not become reachable by widening the input without widening this.
+	 *
+	 * @param array<int, array<string, mixed>> $groups Engine buckets.
+	 *
+	 * @return array<int, array<string, mixed>> Buckets in GroupBucket shape.
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	private function normaliseBuckets(array $groups): array {
+		$normalised = [];
+		foreach ($groups as $bucket) {
+			if (is_array($bucket) === false) {
+				continue;
+			}
+
+			// A bucket whose key IS null must stay null rather than fall
+			// through to a default, so this tests presence and nullness
+			// separately instead of using `??`.
+			$key = null;
+			if (array_key_exists('key', $bucket) === true && $bucket['key'] !== null) {
+				$key = (string)$bucket['key'];
+			}
+
+			$value = ($bucket['value'] ?? null);
+			if ($value !== null) {
+				$value = (float)$value;
+			}
+
+			$normalised[] = [
+				'key' => $key,
+				'value' => $value,
+				'keys' => ($bucket['keys'] ?? null),
+				'values' => ($bucket['values'] ?? null),
+				'joined' => ($bucket['joined'] ?? null),
+			];
+		}
+
+		return $normalised;
+	}//end normaliseBuckets()
+
+	/**
 	 * Resolve a DECLARED aggregation by name.
 	 *
 	 * `groupBy` is ad-hoc — the caller describes the aggregation. This runs one
@@ -404,6 +458,11 @@ class GraphQLResolver {
 			'to' => ($rawArgs['to'] ?? null),
 			'metric' => strtolower((string)($rawArgs['metric'] ?? 'count')),
 			'metricField' => ($rawArgs['metricField'] ?? null),
+			// Composite grouping and multi-metric. Both are validated by
+			// TimeseriesRequestValidator — the same validator the REST endpoint
+			// uses — so the two surfaces cannot accept different things.
+			'fields' => ($rawArgs['fields'] ?? null),
+			'metrics' => ($rawArgs['metrics'] ?? null),
 			// THE QUERY'S OWN FILTER, not an empty array.
 			//
 			// This was hardcoded `[]`, so a filtered list returned group totals
@@ -431,16 +490,7 @@ class GraphQLResolver {
 		}
 
 		$groups = ($result['groups'] ?? []);
-		// Coerce values to float to match the GraphQL `value: Float!` type.
-		$normalised = [];
-		foreach ($groups as $bucket) {
-			$normalised[] = [
-				'key' => (string)($bucket['key'] ?? ''),
-				'value' => (float)($bucket['value'] ?? 0),
-			];
-		}
-
-		return $normalised;
+		return $this->normaliseBuckets(groups: $groups);
 	}//end resolveGroupBy()
 
 	/**

@@ -212,7 +212,30 @@ class TimeseriesRequestValidator {
 		$groupBy = null;
 		if ($dateBucket === null) {
 			$groupBy = ['field' => $field];
+
+			// COMPOSITE grouping. `fields` groups on several columns and each
+			// bucket then carries `keys` instead of `key`. `field` stays
+			// required and is validated above, so a caller supplying `fields`
+			// must still name one — deliberately, because it keeps the
+			// single-field spelling the canonical one and gives the
+			// time-bucket branch above a field to bucket on.
+			$extraFields = ($input['fields'] ?? null);
+			if (is_array($extraFields) === true && $extraFields !== []) {
+				$groupBy = ['fields' => $this->validatedFields(
+					fields: $extraFields,
+					allowed: $allowed
+				)];
+			}
 		}
+
+		// MULTI-METRIC. Validated by the SAME class the annotation path uses,
+		// so an ad-hoc request and a declared aggregation cannot drift in what
+		// they accept — a validator and an executor each owning a copy of the
+		// grammar is how this engine acquired specs it could not run.
+		$metrics = $this->validatedMetrics(
+			raw: ($input['metrics'] ?? null),
+			allowed: $allowed
+		);
 
 		$filter = (array)($input['filter'] ?? []);
 
@@ -229,10 +252,101 @@ class TimeseriesRequestValidator {
 			filter: $filter,
 			groupBy: $groupBy,
 			dateBucket: $dateBucket,
+			metrics: $metrics,
 			cumulative: $cumulative
 		);
 
 	}//end validate()
+
+	/**
+	 * Validate a composite `fields` list against the schema.
+	 *
+	 * Every member must be a declared property. A field the schema does not
+	 * declare is not a runtime error in this stack — it groups everything into
+	 * a single null bucket, or filters to nothing — so it is refused here,
+	 * where the caller can still be told which one was wrong.
+	 *
+	 * @param array<mixed>       $fields  The requested group fields.
+	 * @param array<int, string> $allowed Property names the schema declares.
+	 *
+	 * @return array<int, string> The validated field list.
+	 *
+	 * @throws InvalidArgumentException When a member is not a declared property.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function validatedFields(array $fields, array $allowed): array {
+		$out = [];
+		foreach ($fields as $candidate) {
+			if (is_string($candidate) === false || $candidate === '') {
+				throw new InvalidArgumentException('`fields` members MUST be non-empty strings');
+			}
+
+			if (in_array($candidate, $allowed, true) === false) {
+				throw new InvalidArgumentException(
+					sprintf('`fields` member "%s" is not a declared property of the schema', $candidate)
+				);
+			}
+
+			if (in_array($candidate, $out, true) === false) {
+				$out[] = $candidate;
+			}
+		}
+
+		if ($out === []) {
+			throw new InvalidArgumentException('`fields` MUST name at least one property');
+		}
+
+		return $out;
+	}//end validatedFields()
+
+	/**
+	 * Validate an ad-hoc `metrics` list, or null when none was requested.
+	 *
+	 * Delegates to {@see AggregationMetricsAnnotationValidator} — the SAME class
+	 * the annotation path uses — so an ad-hoc request and a declared aggregation
+	 * cannot diverge in what they accept. Two copies of one grammar drifting
+	 * apart is how this engine ended up with declarations it could not execute.
+	 *
+	 * @param mixed              $raw     The requested metrics list.
+	 * @param array<int, string> $allowed Property names the schema declares.
+	 *
+	 * @return array<int, array<string, mixed>>|null The metrics list, or null.
+	 *
+	 * @throws InvalidArgumentException When an entry is unusable.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function validatedMetrics(mixed $raw, array $allowed): ?array {
+		if (is_array($raw) === false || $raw === []) {
+			return null;
+		}
+
+		$normalised = [];
+		foreach ($raw as $entry) {
+			if (is_array($entry) === false) {
+				throw new InvalidArgumentException('`metrics` entries MUST be objects');
+			}
+
+			// GraphQL's enum arrives upper-case (SUM); the engine's vocabulary
+			// is lower-case. Normalise before validating so the error message
+			// names the metric the caller wrote.
+			$entry['metric'] = strtolower((string)($entry['metric'] ?? ''));
+			$normalised[] = $entry;
+		}
+
+		$errors = (new AggregationMetricsAnnotationValidator())->validate(
+			name: 'ad-hoc',
+			metrics: $normalised,
+			propKeys: $allowed
+		);
+
+		if ($errors !== []) {
+			throw new InvalidArgumentException((string)$errors[0]['message']);
+		}
+
+		return $normalised;
+	}//end validatedMetrics()
 
 	/**
 	 * Normalise a raw `cumulative` query-param value to a strict bool.

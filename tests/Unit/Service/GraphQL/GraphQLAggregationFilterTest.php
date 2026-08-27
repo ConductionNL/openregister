@@ -255,6 +255,77 @@ final class GraphQLAggregationFilterTest extends TestCase {
 	}//end testNoDeclaredAggregationWithoutTheArgument()
 
 	/**
+	 * A NULL group key stays null instead of becoming an empty string.
+	 *
+	 * `GroupBucket.key` was `String!`, so the resolver coerced null to `''` and
+	 * rows whose grouped field is null became indistinguishable from rows whose
+	 * value is genuinely the empty string. The engine returns null and means it.
+	 *
+	 * @return void
+	 */
+	public function testNullGroupKeyIsPreserved(): void {
+		$runner = $this->createMock(AggregationRunner::class);
+		$runner->method('runAdhoc')->willReturn(
+			['groups' => [['key' => null, 'value' => 7], ['key' => '', 'value' => 3]]]
+		);
+
+		$result = $this->makeResolver(runner: $runner)->resolveList(
+			schema: $this->makeSchema(),
+			root: null,
+			args: ['groupBy' => ['field' => 'accountNumber']]
+		);
+
+		self::assertNull($result['groups'][0]['key'], 'a null group key must not become ""');
+		self::assertSame('', $result['groups'][1]['key'], 'a genuinely empty key stays empty');
+
+	}//end testNullGroupKeyIsPreserved()
+
+	/**
+	 * A multi-metric bucket carries `values`, and `value` stays null.
+	 *
+	 * `GroupBucket.value` was `Float!`, so a bucket with no scalar `value` was
+	 * cast to 0.0 — reporting zero for every bucket rather than admitting the
+	 * figures live under another key. Unreachable while GraphQL could not ask
+	 * for `metrics[]`; this pins that widening the input did not re-open it.
+	 *
+	 * @return void
+	 */
+	public function testMultiMetricBucketCarriesValuesNotAZeroValue(): void {
+		$runner = $this->createMock(AggregationRunner::class);
+		$runner->method('runAdhoc')->willReturn(
+			[
+				'groups' => [
+					[
+						'keys' => ['accountNumber' => '4400'],
+						'values' => ['totalDebit' => 15000, 'totalCredit' => 6000],
+						'joined' => ['Account.name' => 'Rent'],
+					],
+				],
+			]
+		);
+
+		$result = $this->makeResolver(runner: $runner)->resolveList(
+			schema: $this->makeSchema(),
+			root: null,
+			args: [
+				'groupBy' => [
+					'field' => 'accountNumber',
+					'metrics' => [
+						['metric' => 'SUM', 'field' => 'amount', 'as' => 'totalDebit'],
+					],
+				],
+			]
+		);
+
+		$bucket = $result['groups'][0];
+		self::assertNull($bucket['value'], 'a multi-metric bucket has no scalar value — 0.0 would be a lie');
+		self::assertSame(['totalDebit' => 15000, 'totalCredit' => 6000], $bucket['values']);
+		self::assertSame(['accountNumber' => '4400'], $bucket['keys']);
+		self::assertSame(['Account.name' => 'Rent'], $bucket['joined']);
+
+	}//end testMultiMetricBucketCarriesValuesNotAZeroValue()
+
+	/**
 	 * Paging and free-text search MUST NOT reach the aggregation.
 	 *
 	 * A group total over "the first 20 rows" is not a total, and it would change
