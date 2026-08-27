@@ -2704,7 +2704,26 @@ OC.L10N.register(
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} gouf aus {app} importéiert.",
+        "%n are out of date": "%n sinn net méi aktuell",
+        "%n declared in total": "%n am Ganzen deklaréiert",
+        "%n is out of date": "%n ass net méi aktuell",
+        "%n register is missing": "%n Register feelt",
+        "%n registers are missing": "%n Registeren feelen",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Apps liwweren hir Registeren als Deskriptoren, déi beim Installéieren oder Aktualiséiere vun der App importéiert ginn. Soubal d’Versioun vun enger App sech net méi ännert, leeft dësen Import ni méi, an en importe deen net klappt gëtt nëmmen an de Log geschriwwen — e Register kann dofir op enger Instanz feelen, déi soss gesond ausgesäit. Hei gesitt Dir wéi eng ukomm sinn.",
+        "Could not read the descriptor inventory: {reason}": "D’Deskriptor-Iwwersiicht konnt net gelies ginn: {reason}",
+        "Every declared register is present and current.": "All deklaréierte Register ass do an aktuell.",
+        "Import failed: {reason}": "Import net geklappt: {reason}",
+        "Missing": "Feelt",
+        "Out of date": "Net méi aktuell",
+        "Present": "Do",
+        "Re-import": "Nei importéieren",
+        "Reading descriptors …": "Deskriptore ginn gelies …",
+        "Register descriptors": "Register-Deskriptoren",
+        "ships v{shipped}": "liwwert v{shipped}",
+        "State": "Status",
+        "v{installed} → ships v{shipped}": "v{installed} → liwwert v{shipped}"
     },
     "nplurals=2; plural=(n != 1);"
 )

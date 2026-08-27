@@ -2704,7 +2704,26 @@ OC.L10N.register(
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} importuotas iš {app}.",
+        "%n are out of date": "%n yra pasenę",
+        "%n declared in total": "%n deklaruota iš viso",
+        "%n is out of date": "%n yra pasenęs",
+        "%n register is missing": "trūksta %n registro",
+        "%n registers are missing": "trūksta %n registrų",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Programos pateikia savo registrus kaip deskriptorius, kurie importuojami diegiant arba atnaujinant programą. Vos tik programos versija nustoja keistis, šis importas daugiau niekada nevykdomas, o nepavykęs importas įrašomas tik į žurnalą — todėl registro gali trūkti egzemplioriuje, kuris kitu atveju atrodo sveikas. Čia matote, kurie pasiekė tikslą.",
+        "Could not read the descriptor inventory: {reason}": "Nepavyko perskaityti deskriptorių sąrašo: {reason}",
+        "Every declared register is present and current.": "Kiekvienas deklaruotas registras yra ir yra aktualus.",
+        "Import failed: {reason}": "Importas nepavyko: {reason}",
+        "Missing": "Trūksta",
+        "Out of date": "Pasenęs",
+        "Present": "Yra",
+        "Re-import": "Importuoti iš naujo",
+        "Reading descriptors …": "Skaitomi deskriptoriai …",
+        "Register descriptors": "Registrų deskriptoriai",
+        "ships v{shipped}": "pateikia v{shipped}",
+        "State": "Būsena",
+        "v{installed} → ships v{shipped}": "v{installed} → pateikia v{shipped}"
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -8,30 +8,75 @@
   "auth": {
     "type": "basic",
     "basic": [
-      { "key": "username", "value": "{{username}}", "type": "string" },
-      { "key": "password", "value": "{{password}}", "type": "string" }
+      {
+        "key": "username",
+        "value": "{{username}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{password}}",
+        "type": "string"
+      }
     ]
   },
   "protocolProfileBehavior": {
     "disableCookies": true
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost", "type": "string" },
-    { "key": "username", "value": "admin", "type": "string" },
-    { "key": "password", "value": "admin", "type": "string" },
-    { "key": "grantUuid", "value": "", "type": "string" },
-    { "key": "actingAs", "value": "", "type": "string" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "grantUuid",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "actingAs",
+      "value": "",
+      "type": "string"
+    }
   ],
   "item": [
     {
       "name": "GET /api/delegations → both sides of the question",
       "request": {
         "method": "GET",
-        "header": [{ "key": "Accept", "value": "application/json" }],
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
         "url": {
           "raw": "{{baseUrl}}/index.php/apps/openregister/api/delegations",
-          "host": ["{{baseUrl}}"],
-          "path": ["index.php", "apps", "openregister", "api", "delegations"]
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "delegations"
+          ]
         }
       },
       "event": [
@@ -60,8 +105,18 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "Accept", "value": "application/json" },
-          { "key": "Content-Type", "value": "application/json" }
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
         ],
         "body": {
           "mode": "raw",
@@ -69,8 +124,16 @@
         },
         "url": {
           "raw": "{{baseUrl}}/index.php/apps/openregister/api/delegations",
-          "host": ["{{baseUrl}}"],
-          "path": ["index.php", "apps", "openregister", "api", "delegations"]
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "delegations"
+          ]
         }
       },
       "event": [
@@ -96,8 +159,18 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "Accept", "value": "application/json" },
-          { "key": "Content-Type", "value": "application/json" }
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
         ],
         "body": {
           "mode": "raw",
@@ -105,8 +178,16 @@
         },
         "url": {
           "raw": "{{baseUrl}}/index.php/apps/openregister/api/delegations",
-          "host": ["{{baseUrl}}"],
-          "path": ["index.php", "apps", "openregister", "api", "delegations"]
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "delegations"
+          ]
         }
       },
       "event": [
@@ -138,12 +219,33 @@
       "name": "Find a second real account (or skip the round-trip)",
       "request": {
         "method": "GET",
-        "header": [{ "key": "Accept", "value": "application/json" }],
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
         "url": {
           "raw": "{{baseUrl}}/ocs/v2.php/cloud/users?format=json",
-          "host": ["{{baseUrl}}"],
-          "path": ["ocs", "v2.php", "cloud", "users"],
-          "query": [{ "key": "format", "value": "json" }]
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "ocs",
+            "v2.php",
+            "cloud",
+            "users"
+          ],
+          "query": [
+            {
+              "key": "format",
+              "value": "json"
+            }
+          ]
         }
       },
       "event": [
@@ -192,8 +294,18 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "Accept", "value": "application/json" },
-          { "key": "Content-Type", "value": "application/json" }
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
         ],
         "body": {
           "mode": "raw",
@@ -201,8 +313,16 @@
         },
         "url": {
           "raw": "{{baseUrl}}/index.php/apps/openregister/api/delegations",
-          "host": ["{{baseUrl}}"],
-          "path": ["index.php", "apps", "openregister", "api", "delegations"]
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "delegations"
+          ]
         }
       },
       "event": [
@@ -243,8 +363,18 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "Accept", "value": "application/json" },
-          { "key": "Content-Type", "value": "application/json" }
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
         ],
         "body": {
           "mode": "raw",
@@ -252,8 +382,16 @@
         },
         "url": {
           "raw": "{{baseUrl}}/index.php/apps/openregister/api/delegations",
-          "host": ["{{baseUrl}}"],
-          "path": ["index.php", "apps", "openregister", "api", "delegations"]
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "delegations"
+          ]
         }
       },
       "event": [
@@ -284,13 +422,28 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "Accept", "value": "application/json" },
-          { "key": "Content-Type", "value": "application/json" }
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
         ],
-        "body": { "mode": "raw", "raw": "{\"allow\": true}" },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"allow\": true}"
+        },
         "url": {
           "raw": "{{baseUrl}}/index.php/apps/openregister/api/delegations/{{grantUuid}}/answer",
-          "host": ["{{baseUrl}}"],
+          "host": [
+            "{{baseUrl}}"
+          ],
           "path": [
             "index.php",
             "apps",
@@ -326,13 +479,28 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "Accept", "value": "application/json" },
-          { "key": "Content-Type", "value": "application/json" }
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
         ],
-        "body": { "mode": "raw", "raw": "{\"allow\": true}" },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"allow\": true}"
+        },
         "url": {
           "raw": "{{baseUrl}}/index.php/apps/openregister/api/delegations/__no_such_grant__/answer",
-          "host": ["{{baseUrl}}"],
+          "host": [
+            "{{baseUrl}}"
+          ],
           "path": [
             "index.php",
             "apps",
@@ -362,10 +530,21 @@
       "name": "POST /api/delegations/{uuid}/revoke → revoked (and leaves nothing live)",
       "request": {
         "method": "POST",
-        "header": [{ "key": "Accept", "value": "application/json" }],
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
         "url": {
           "raw": "{{baseUrl}}/index.php/apps/openregister/api/delegations/{{grantUuid}}/revoke",
-          "host": ["{{baseUrl}}"],
+          "host": [
+            "{{baseUrl}}"
+          ],
           "path": [
             "index.php",
             "apps",

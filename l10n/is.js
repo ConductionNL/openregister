@@ -2704,7 +2704,26 @@ OC.L10N.register(
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} var flutt inn frá {app}.",
+        "%n are out of date": "%n eru úrelt",
+        "%n declared in total": "%n skráð alls",
+        "%n is out of date": "%n er úrelt",
+        "%n register is missing": "%n skrá vantar",
+        "%n registers are missing": "%n skrár vantar",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Forrit skila skrám sínum sem lýsingum sem eru fluttar inn þegar forritið er sett upp eða uppfært. Um leið og útgáfa forrits hættir að breytast keyrir sá innflutningur aldrei aftur, og misheppnaður innflutningur er aðeins skrifaður í annálinn — skrá getur því vantað á tilviki sem lítur annars heilbrigt út. Hér sérðu hverjar hafa skilað sér.",
+        "Could not read the descriptor inventory: {reason}": "Ekki tókst að lesa lýsingaryfirlitið: {reason}",
+        "Every declared register is present and current.": "Allar skráðar skrár eru til staðar og uppfærðar.",
+        "Import failed: {reason}": "Innflutningur mistókst: {reason}",
+        "Missing": "Vantar",
+        "Out of date": "Úrelt",
+        "Present": "Til staðar",
+        "Re-import": "Flytja inn aftur",
+        "Reading descriptors …": "Les lýsingar …",
+        "Register descriptors": "Skrárlýsingar",
+        "ships v{shipped}": "skilar v{shipped}",
+        "State": "Staða",
+        "v{installed} → ships v{shipped}": "v{installed} → skilar v{shipped}"
     },
     "nplurals=2; plural=(n != 1);"
 )

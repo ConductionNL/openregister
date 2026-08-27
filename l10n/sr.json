@@ -2707,7 +2707,26 @@
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} је увезен из {app}.",
+        "%n are out of date": "%n су застарели",
+        "%n declared in total": "%n укупно декларисано",
+        "%n is out of date": "%n је застарео",
+        "%n register is missing": "недостаје %n регистар",
+        "%n registers are missing": "недостаје %n регистара",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Апликације испоручују своје регистре као дескрипторе који се увозе при инсталацији или надоградњи апликације. Чим верзија апликације престане да се мења, тај увоз се више никада не покреће, а неуспели увоз се уписује само у дневник — регистар стога може недостајати на инстанци која иначе изгледа здраво. Овде видите који су стигли.",
+        "Could not read the descriptor inventory: {reason}": "Није могуће прочитати попис дескриптора: {reason}",
+        "Every declared register is present and current.": "Сваки декларисани регистар постоји и ажуран је.",
+        "Import failed: {reason}": "Увоз није успео: {reason}",
+        "Missing": "Недостаје",
+        "Out of date": "Застарело",
+        "Present": "Постоји",
+        "Re-import": "Поново увези",
+        "Reading descriptors …": "Читање дескриптора …",
+        "Register descriptors": "Дескриптори регистара",
+        "ships v{shipped}": "испоручује v{shipped}",
+        "State": "Стање",
+        "v{installed} → ships v{shipped}": "v{installed} → испоручује v{shipped}"
     },
     "plurals": {
         "{count} email": [

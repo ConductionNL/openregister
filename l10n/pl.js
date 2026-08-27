@@ -2704,7 +2704,26 @@ OC.L10N.register(
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} został zaimportowany z {app}.",
+        "%n are out of date": "%n są nieaktualne",
+        "%n declared in total": "%n zadeklarowanych łącznie",
+        "%n is out of date": "%n jest nieaktualny",
+        "%n register is missing": "brakuje %n rejestru",
+        "%n registers are missing": "brakuje %n rejestrów",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Aplikacje dostarczają swoje rejestry jako deskryptory, importowane podczas instalacji lub aktualizacji aplikacji. Gdy tylko wersja aplikacji przestaje się zmieniać, ten import nigdy więcej się nie uruchamia, a nieudany import jest zapisywany wyłącznie do dziennika — rejestr może więc brakować na instancji, która poza tym wygląda zdrowo. Tutaj widzisz, które dotarły.",
+        "Could not read the descriptor inventory: {reason}": "Nie udało się odczytać inwentarza deskryptorów: {reason}",
+        "Every declared register is present and current.": "Każdy zadeklarowany rejestr jest obecny i aktualny.",
+        "Import failed: {reason}": "Import nie powiódł się: {reason}",
+        "Missing": "Brakuje",
+        "Out of date": "Nieaktualny",
+        "Present": "Obecny",
+        "Re-import": "Importuj ponownie",
+        "Reading descriptors …": "Odczytywanie deskryptorów …",
+        "Register descriptors": "Deskryptory rejestrów",
+        "ships v{shipped}": "dostarcza v{shipped}",
+        "State": "Stan",
+        "v{installed} → ships v{shipped}": "v{installed} → dostarcza v{shipped}"
     },
     "nplurals=2; plural=(n != 1);"
 )

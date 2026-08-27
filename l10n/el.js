@@ -2704,7 +2704,26 @@ OC.L10N.register(
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "Το {register} εισήχθη από την {app}.",
+        "%n are out of date": "%n είναι παρωχημένα",
+        "%n declared in total": "%n δηλωμένα συνολικά",
+        "%n is out of date": "%n είναι παρωχημένο",
+        "%n register is missing": "λείπει %n μητρώο",
+        "%n registers are missing": "λείπουν %n μητρώα",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Οι εφαρμογές παρέχουν τα μητρώα τους ως περιγραφείς, οι οποίοι εισάγονται κατά την εγκατάσταση ή την αναβάθμιση της εφαρμογής. Μόλις η έκδοση μιας εφαρμογής πάψει να αλλάζει, αυτή η εισαγωγή δεν εκτελείται ποτέ ξανά, και μια αποτυχημένη εισαγωγή γράφεται μόνο στο αρχείο καταγραφής — έτσι ένα μητρώο μπορεί να λείπει από μια εγκατάσταση που κατά τα άλλα φαίνεται υγιής. Εδώ βλέπετε ποια έφτασαν.",
+        "Could not read the descriptor inventory: {reason}": "Δεν ήταν δυνατή η ανάγνωση του καταλόγου περιγραφέων: {reason}",
+        "Every declared register is present and current.": "Κάθε δηλωμένο μητρώο υπάρχει και είναι ενημερωμένο.",
+        "Import failed: {reason}": "Η εισαγωγή απέτυχε: {reason}",
+        "Missing": "Λείπει",
+        "Out of date": "Παρωχημένο",
+        "Present": "Υπάρχει",
+        "Re-import": "Επανεισαγωγή",
+        "Reading descriptors …": "Ανάγνωση περιγραφέων …",
+        "Register descriptors": "Περιγραφείς μητρώων",
+        "ships v{shipped}": "παρέχει v{shipped}",
+        "State": "Κατάσταση",
+        "v{installed} → ships v{shipped}": "v{installed} → παρέχει v{shipped}"
     },
     "nplurals=2; plural=(n != 1);"
 )

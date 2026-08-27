@@ -2707,7 +2707,26 @@
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} je uvezen iz {app}.",
+        "%n are out of date": "%n su zastarjeli",
+        "%n declared in total": "%n ukupno deklarisano",
+        "%n is out of date": "%n je zastario",
+        "%n register is missing": "nedostaje %n registar",
+        "%n registers are missing": "nedostaje %n registara",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Aplikacije isporučuju svoje registre kao deskriptore koji se uvoze pri instalaciji ili nadogradnji aplikacije. Čim se verzija aplikacije prestane mijenjati, taj uvoz se više nikada ne pokreće, a neuspjeli uvoz se upisuje samo u dnevnik — registar stoga može nedostajati na instanci koja inače izgleda zdravo. Ovdje vidite koji su stigli.",
+        "Could not read the descriptor inventory: {reason}": "Nije moguće pročitati popis deskriptora: {reason}",
+        "Every declared register is present and current.": "Svaki deklarisani registar postoji i ažuran je.",
+        "Import failed: {reason}": "Uvoz nije uspio: {reason}",
+        "Missing": "Nedostaje",
+        "Out of date": "Zastarjelo",
+        "Present": "Postoji",
+        "Re-import": "Ponovo uvezi",
+        "Reading descriptors …": "Čitanje deskriptora …",
+        "Register descriptors": "Deskriptori registara",
+        "ships v{shipped}": "isporučuje v{shipped}",
+        "State": "Stanje",
+        "v{installed} → ships v{shipped}": "v{installed} → isporučuje v{shipped}"
     },
     "plurals": {
         "{count} email": [
