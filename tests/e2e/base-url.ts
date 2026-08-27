@@ -54,42 +54,53 @@ export function resolveBaseUrl(): string {
 	return url.replace(/\/+$/, '')
 }
 
+/** The shared dev container these suites run against by default. */
+export const SHARED_CONTAINER = 'nextcloud'
+
 /**
- * Resolve the name of the Nextcloud CONTAINER the suite may run `occ` in.
+ * Resolve the name of the Nextcloud CONTAINER the suite may act on.
  *
  * Several api-direct specs shell out to `docker exec -u www-data <c> php occ …`
- * and one to `docker restart <c>`. Every one of them defaulted to the literal
- * `'nextcloud'` — the SHARED dev container, which bind-mounts several
- * developers' real working trees. A spec run without `NC_CONTAINER` set
- * therefore wrote appconfig into, and restarted, somebody else's environment.
+ * and one to `docker restart <c>`. This used to refuse the shared `nextcloud`
+ * container outright, which was too blunt in both directions.
  *
- * Returning `null` rather than throwing keeps the existing `try/catch → skip`
- * behaviour those specs already have: with no container configured they now
- * skip instead of silently retargeting.
+ * 🔑 THE TWO ACTIONS ARE NOT THE SAME RISK, so they no longer share a rule.
  *
- * `NC_ALLOW_SHARED_CONTAINER=1` opts back in DELIBERATELY. The guard exists to
- * stop an accidental default, not to make the shared box untestable: some paths
- * — a run parked on `awaiting_consent` and released by a cron sweep — only exist
- * once a real TimedJob ticks, and skipping them leaves the headline behaviour of
- * that subsystem unverified by anything but a unit test. Setting the flag is a
- * person saying they know whose environment they are ticking. It does not make
- * `docker restart` safe there, so keep it to the narrow
- * `background-job:execute <id> --force-execute` shape.
+ * `'exec'` (the default) DEFAULTS TO the shared container. Running one named
+ * `occ` command in it is how the dev box is meant to be exercised, and refusing
+ * to do so bought nothing: it made the specs that need a real TimedJob tick —
+ * a run parked on `awaiting_consent` and released by a cron sweep — skip
+ * everywhere, so the headline behaviour of that subsystem was verified by
+ * nothing but a unit test. A skip and a pass look identical in a summary.
  *
- * @return {string|null} The container name, or null when none is configured.
+ * `'restart'` still REFUSES the shared container without an explicit
+ * `NC_ALLOW_SHARED_RESTART=1`. That is the action the original guard was really
+ * about: `docker restart nextcloud` bounces an environment that bind-mounts
+ * several developers' working trees, mid-session, with no warning to them. A
+ * default that runs one job is recoverable; a default that restarts somebody
+ * else's instance is not.
+ *
+ * Returning `null` rather than throwing keeps the `try/catch → skip` behaviour
+ * the callers already have.
+ *
+ * @param  {string} purpose What the caller intends to do with the container.
+ * @return {string|null}    The container name, or null when none may be used.
  */
-export function resolveContainer(): string | null {
-	const name = process.env.NC_CONTAINER
-	if (!name) {
+export function resolveContainer(
+	purpose: 'exec' | 'restart' = 'exec',
+): string | null {
+	const name = process.env.NC_CONTAINER || SHARED_CONTAINER
+
+	if (
+		purpose === 'restart'
+		&& name === SHARED_CONTAINER
+		&& process.env.NC_ALLOW_SHARED_RESTART !== '1'
+	) {
+		// Not an exception: the callers restart opportunistically and a throw
+		// here would fail specs that are otherwise perfectly able to run.
 		return null
 	}
-	if (name === 'nextcloud' && process.env.NC_ALLOW_SHARED_CONTAINER !== '1') {
-		throw new Error(
-			'Refusing to target the shared dev container "nextcloud". Point '
-				+ 'NC_CONTAINER at a disposable instance, or set '
-				+ 'NC_ALLOW_SHARED_CONTAINER=1 to say you meant it.',
-		)
-	}
+
 	return name
 }
 

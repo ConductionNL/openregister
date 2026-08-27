@@ -47,9 +47,9 @@ const RUN_ID = `e2e-park-${Date.now().toString(36)}`
 // makes a dead fixture look like a working control.
 let OTHER = ''
 
-// ⚠️ No localhost default — see resolveContainer(). Executing background jobs
-// inside a guessed container runs them against somebody else's bind-mounted
-// checkout.
+// Defaults to the shared dev container — see resolveContainer(). This suite's
+// whole point is a real TimedJob tick, and it cannot happen anywhere no job
+// runs; NC_CONTAINER points it elsewhere.
 const CONTAINER = resolveContainer()
 
 function occ(args: string): string {
