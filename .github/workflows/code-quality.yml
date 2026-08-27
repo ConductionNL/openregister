@@ -2,32 +2,47 @@ name: Code Quality
 
 on:
   push:
-    # An ALLOW-LIST of prefixes is a gate with a hole in it, and the hole is
-    # silent: a branch matching nothing gets no CI, and its last visible status
-    # is whatever it inherited. Two live examples, both on 2026-08-14:
-    # `perf/**` was uncovered in openconnector (a merge with conflict markers and
-    # 84 red tests sailed through), and `feat/**` is uncovered HERE — note the
-    # list says `feature/**`, so every branch anyone named `feat/...` has been
-    # running without checks.
+    # DEFAULT BRANCHES ONLY. `pull_request` below carries every other branch.
     #
-    # Prefixes added rather than `**` because this workflow is expensive. The
-    # fast structural checks DO run on `**` — see merge-hygiene.yml.
+    # This was an allow-list of branch prefixes, and that was a gate with a
+    # SILENT hole: a branch matching nothing got no CI at all, and its last
+    # visible status was whatever it inherited — indistinguishable, on every
+    # dashboard, from a branch that passed. Two live examples, both found
+    # 2026-08-14: `perf/**` was uncovered in openconnector, where a merge
+    # carrying unresolved conflict markers and 84 failing tests was pushed and
+    # nothing ran; and `feat/**` was uncovered in openregister, because the
+    # list said `feature/**`.
     #
-    # ⚠️ Adding prefixes is not the durable fix; the next invented one is
-    # uncovered again. The durable fix is branch protection requiring a PR into
-    # development, which the pull_request trigger below already gates properly.
+    # The comment that stood here said adding prefixes was not the durable fix,
+    # and that the durable fix was to let the pull_request trigger gate it.
+    # THIS IS THAT CHANGE.
+    #
+    # What forced it now: a push to a branch with an open PR ran the SAME 34
+    # jobs TWICE on the same commit. `concurrency` cannot dedupe them — the
+    # group is suffixed by event name deliberately (.github#540: a
+    # default-branch push carries jobs a PR run does not, and a dispatch must
+    # not be cancellable by a standing release PR), so the two events sit in
+    # different lanes BY DESIGN and both run to completion. Measured fleet-wide
+    # 2026-08-25..27, 659 of 2,106 Code Quality runs were that duplicate — 31%
+    # of the fleet's most expensive workflow, re-deciding a commit another run
+    # was already deciding. The account ceiling is 60 concurrent jobs (Team
+    # plan); the fleet was measured at 53 running with 1,528 jobs queued behind
+    # them, the oldest run 7 hours old and not yet started.
+    #
+    # NO BRANCH LOSES ITS FLOOR. merge-hygiene.yml runs on `'**'` — every
+    # branch anyone pushes, no prefix list to forget — and it is the check
+    # `development` actually requires. That is the smoke alarm; this workflow
+    # is the fire brigade and belongs on the PR. Of 668 feature-branch push
+    # runs in that window, only NINE were on a branch with no PR run beside
+    # them.
+    #
+    # The default branches STAY: their push runs are not duplicates, they are
+    # the only carrier of Coverage Baseline Check, SBOM and Features Extract,
+    # none of which run on a pull_request event.
     branches:
       - main
       - beta
       - development
-      - feature/**
-      - feat/**
-      - bugfix/**
-      - hotfix/**
-      - perf/**
-      - refactor/**
-      - chore/**
-      - fix/**
   pull_request:
     # `synchronize` — a push to an open PR — is what was missing. Without it the
     # quality suite runs ONCE, when the PR is opened, and every commit after
