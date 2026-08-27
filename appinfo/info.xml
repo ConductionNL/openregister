@@ -183,7 +183,13 @@ Vrij en open source onder de EUPL-licentie.
 			<!-- The flows register must EXIST before any step reads flows.
 			     ImportFlowRegister was written, and named here zero times, so
 			     the `flows` register was never created and every flow step
-			     below it silently operated on nothing. -->
+			     below it silently operated on nothing.
+
+			     Surfaced by `occ openregister:descriptors:list`, which reported
+			     `flows` ABSENT on an instance where `occ upgrade` had just
+			     reported complete success — 8 of 15 declared registers missing.
+			     Before that command existed the only evidence was two unrelated
+			     e2e suites dying on `registers slug=flows`. -->
 			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
 			<!-- Rewrite before the index is derived: the index is built FROM node
 			     types, so the types should already be the current ones. -->
@@ -197,17 +203,6 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
-			<!-- 🔴 WAS MISSING. ImportFlowRegister existed, fully written and
-			     documented, and was named in NEITHER block — so Nextcloud never
-			     ran it and the `flows` register never appeared. ADR-005 Rule 1
-			     is exactly this ("shipping the JSON alone does nothing at
-			     runtime"), and the class complied; the registration did not.
-
-			     Found by `occ openregister:descriptors:list`, which reported it
-			     absent on an instance where `occ upgrade` had just reported
-			     complete success. Before that command existed the only evidence
-			     was two e2e suites dying on `registers slug=flows`. -->
-			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
 			<step>OCA\OpenRegister\Repair\SeedVocabularyRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
@@ -240,9 +235,6 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
-			<!-- See the note in <post-migration>: this step was written and never
-			     registered, so a fresh install got no `flows` register either. -->
-			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
 			<step>OCA\OpenRegister\Repair\SeedVocabularyRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
