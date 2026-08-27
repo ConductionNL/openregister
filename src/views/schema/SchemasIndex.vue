@@ -253,6 +253,36 @@ export default {
 		},
 
 		/**
+		 * The full schema list in a DETERMINISTIC order, newest first.
+		 *
+		 * The list is sliced client-side to one page, so whatever order the API
+		 * happened to return decides what page 1 shows. Left as-is, a
+		 * just-created schema sorts LAST and is therefore invisible on any
+		 * instance holding more schemas than fit on a page — the plain
+		 * "I just made this, where is it?" failure. It is not an error and not
+		 * an empty list: the page renders perfectly, simply without the row the
+		 * user is looking for.
+		 *
+		 * `schema-crud.spec.ts` asserts exactly that ("schema lists as a real
+		 * row") and had been passing only because the seeded instance held fewer
+		 * schemas than one page. It began failing the moment a 21st schema
+		 * existed, which is the honest report of a defect that was already there.
+		 *
+		 * Highest id first, because id is the only monotonic field every schema
+		 * carries. There is no user-facing sort control on this view to conflict
+		 * with — CnIndexPage is in prop mode here and this component handles no
+		 * `@sort` — so this replaces an undefined order, not a chosen one.
+		 *
+		 * @spec exclude UI plumbing — derived display ordering
+		 * @return {Array<object>}
+		 */
+		orderedSchemas() {
+			return [...schemaStore.schemaList].sort(
+				(a, b) => Number(b?.id ?? 0) - Number(a?.id ?? 0),
+			)
+		},
+
+		/**
 		 * The schemas for the current page. The full list is loaded client-side,
 		 * so CnIndexPage (prop mode) does not slice — we slice here so paging works.
 		 *
@@ -262,7 +292,7 @@ export default {
 		paginatedSchemas() {
 			const { page, limit } = this.paginationData
 			const start = (page - 1) * limit
-			return schemaStore.schemaList.slice(start, start + limit)
+			return this.orderedSchemas.slice(start, start + limit)
 		},
 
 		/**
