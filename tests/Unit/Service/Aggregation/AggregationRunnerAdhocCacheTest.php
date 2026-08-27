@@ -43,7 +43,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
- * No `@covers` metadata, deliberately — `beStrictAboutCoverageMetadata="true"`
+ * No `covers` metadata, deliberately — `beStrictAboutCoverageMetadata="true"`
  * discards the coverage of any test that touches a collaborator it did not
  * name. See {@see AggregationJoinAndCompositeGroupByTest} and #2847.
  */

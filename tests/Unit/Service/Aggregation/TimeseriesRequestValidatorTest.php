@@ -31,11 +31,17 @@ use OCA\OpenRegister\Service\Aggregation\TimeseriesRequestValidator;
 use PHPUnit\Framework\TestCase;
 
 /**
- * No coverage metadata, deliberately. `@coversDefaultClass` was here without a
- * single `@covers ::method` to pair with it, so it named a default nothing
+ * No coverage metadata, deliberately. `coversDefaultClass` was here without a
+ * single per-method `covers` to pair with it, so it named a default nothing
  * used — and under `beStrictAboutCoverageMetadata="true"` it still restricted
  * recording, discarding this file's coverage. See
  * {@see AggregationJoinAndCompositeGroupByTest} and #2847.
+ *
+ * THE ANNOTATION NAMES HERE CARRY NO LEADING AT-SIGN, ON PURPOSE. PHPUnit
+ * parses this class docblock, so spelling one out re-declares the very metadata
+ * the file exists to remove. Written literally, the method-scoped form was read
+ * as a real annotation and CI failed all six PHPUnit cells with "is invalid" —
+ * a comment about the bug becoming the bug.
  */
 class TimeseriesRequestValidatorTest extends TestCase {
 

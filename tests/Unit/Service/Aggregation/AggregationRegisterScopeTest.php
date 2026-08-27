@@ -60,7 +60,7 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 /**
- * No `@covers` metadata, deliberately — `beStrictAboutCoverageMetadata="true"`
+ * No `covers` metadata, deliberately — `beStrictAboutCoverageMetadata="true"`
  * discards the coverage of any test that touches a collaborator it did not
  * name. Naming two classes here did not help: the tests also run
  * AggregationQuery and the Db entities. See

@@ -48,7 +48,7 @@ use ReflectionMethod;
 use RuntimeException;
 
 /**
- * No `@covers` metadata, deliberately — see
+ * No `covers` metadata, deliberately — see
  * {@see AggregationJoinAndCompositeGroupByTest} for the measurement.
  *
  * Under `beStrictAboutCoverageMetadata="true"`, naming the class under test
