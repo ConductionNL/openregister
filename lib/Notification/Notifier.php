@@ -85,6 +85,7 @@ class Notifier implements INotifier {
 		}
 
 		$name = trim($user->getDisplayName());
+
 		if ($name === '') {
 			return $uid;
 		}
