@@ -119,11 +119,8 @@ export async function revokeGrantsOver(
 		throw new Error(`cannot list delegations (HTTP ${resp.status()})`)
 	}
 
-	const held: Array<Record<string, unknown>> =
-		(await resp.json())?.heldByMe ?? []
-	const live = held.filter(
-		(g) => g.actingAs === actingAs && g.revokedAt === null,
-	)
+	const held: Array<Record<string, unknown>> = (await resp.json())?.heldByMe ?? []
+	const live = held.filter((g) => g.actingAs === actingAs && g.revokedAt === null)
 
 	for (const grant of live) {
 		await request.post(`${DELEGATIONS_API}/${String(grant.uuid)}/revoke`)
