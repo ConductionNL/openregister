@@ -186,6 +186,29 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\BackfillFlowTriggerIndex</step>
 			<step>OCA\OpenRegister\Repair\InitializeFlowActions</step>
 			<step>OCA\OpenRegister\Repair\MigrateNotificationSubscriptionsToUserConfig</step>
+			<!--
+				A WRITTEN REPAIR STEP THAT NOTHING NAMES HERE NEVER RUNS.
+
+				RenameDutchColumns was fully implemented and registered nowhere, so
+				it had never executed on any instance. What it does is move stored
+				data out of the Dutch columns into the English ones the register now
+				declares — and OpenRegister stores each schema property as a real
+				column, with no RENAME COLUMN anywhere in the codebase. MagicMapper
+				ADDS the English column on schema sync and leaves the Dutch one
+				populated, so every read looks at the new column and finds null.
+
+				For the owning app those columns are money: invoice, subsidy,
+				payroll and tax amounts. The failure is silent — no error, no data
+				loss, and invisible to a suite that asserts against fixtures rather
+				than migrated rows.
+
+				post-migration only, matching the sibling steps above and the same
+				decision taken for opencatalogi's RenameDutchPublicationColumns: on
+				a fresh install there is nothing to rename. The step is idempotent
+				and non-destructive (it refuses two sources targeting one
+				destination, and never deletes), so a re-run is a no-op.
+			-->
+			<step>OCA\OpenRegister\Repair\RenameDutchColumns</step>
 			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedTablesVirtualSchemas</step>
