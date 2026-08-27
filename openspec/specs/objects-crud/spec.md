@@ -5,15 +5,52 @@ TBD - created by archiving change clamp-list-limit-and-optional-count. Update Pu
 ## Requirements
 ### Requirement: List page size is bounded by a hard maximum
 
-Every object list/search endpoint SHALL clamp the effective page size to a hard
-maximum. A client-supplied `_limit` above the maximum SHALL be reduced to the
-maximum; it SHALL NOT cause the server to load an arbitrarily large result set.
+Every object list/search endpoint SHALL clamp a client-supplied NUMERIC `_limit`
+to a hard maximum. A number above the maximum SHALL be reduced to the maximum;
+it SHALL NOT cause the server to load an arbitrarily large result set.
+
+The bound SHALL be escapable only by an EXPLICIT unlimited request (see "`_limit`
+supports an explicit unlimited value"). An oversized number is not such a
+request: it is a caller who has not considered the size of the result set, and
+the clamp exists for exactly that caller.
 
 #### Scenario: Oversized limit is clamped
 
 - **WHEN** a client requests a list with `_limit` far above the maximum (e.g.
   `_limit=1000000`)
 - **THEN** at most `MAX_PAGE_SIZE` rows are loaded and returned
+
+#### Scenario: An explicit unlimited is not clamped
+
+- **WHEN** a client requests a list with `_limit=false`
+- **THEN** no `LIMIT` is applied and every matching row is returned
+
+### Requirement: `_limit` supports an explicit unlimited value
+
+`_limit` SHALL accept `false`, `null`, `0`, `all`, `unlimited` and `none` (any
+case) to mean "no limit", and every read path SHALL agree on that meaning.
+
+A value that is not a usable row count — a non-numeric string, or a negative
+number — SHALL be treated as unlimited rather than as zero. It SHALL NOT
+produce an empty result set.
+
+Rationale: before this requirement the same `_limit=0` meant three different
+things depending on which path served the request (no rows on the single-schema
+path, one row on the cross-schema path, the provider default against an
+external database), and `(int)"abc"` was `0`, so a typo returned a confidently
+empty list with HTTP 200.
+
+#### Scenario: Explicit unlimited returns every row
+
+- **WHEN** a client requests a list with `_limit=false` (or `0`, or `all`)
+- **THEN** the query carries no `LIMIT` clause
+- **AND** every matching row is returned
+
+#### Scenario: An unusable limit does not empty the result set
+
+- **WHEN** a client requests a list with `_limit=abc` or `_limit=-5`
+- **THEN** the value is treated as unlimited
+- **AND** the response is NOT an empty list
 
 ### Requirement: The total-count query is optional
 
