@@ -63,6 +63,7 @@ use OCP\IDBConnection;
 use OCP\IUserSession;
 use PDO;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Aggregation\AggregationRunner
@@ -236,6 +237,60 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 		$this->assertSame(3, $result['value']);
 
 	}//end testPhpFallbackWrappedInOperatorCountsAnyOf()
+
+	/**
+	 * An unrecognised filter operator is REFUSED, not ignored.
+	 *
+	 * This arm used to be `default => true`, so an unknown operator matched
+	 * every row — the filter silently WIDENED instead of narrowing. Measured in
+	 * a consuming app: `{"not-in": ["paid","written-off"]}` (the implemented
+	 * spelling is `notIn`) meant an AR-ageing report quietly included settled
+	 * invoices. A wrong total in a finance report is worse than an exception.
+	 *
+	 * `not-in` is the real misspelling that motivated this; `equals`, `not`,
+	 * `between`, `gteOrNull` and `notStartsWith` are all present in
+	 * declarations too and none of them do anything.
+	 *
+	 * @return void
+	 */
+	public function testUnknownFilterOperatorIsRefusedRatherThanMatchingEverything(): void {
+		$runner = $this->makePhpFallbackRunner(dataset: $this->statusDataset());
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessageMatches('/not-in/');
+
+		$runner->runAdhoc(
+			register: $this->makeRegister(),
+			schema: $this->makeStatusSchema(),
+			query: AggregationQuery::create(
+				metric: 'count',
+				filter: ['status' => ['not-in' => ['closed']]]
+			)
+		);
+
+	}//end testUnknownFilterOperatorIsRefusedRatherThanMatchingEverything()
+
+	/**
+	 * The correctly-spelled `notIn` still works — the refusal above is about
+	 * unknown operators, not a regression in the implemented ones.
+	 *
+	 * @return void
+	 */
+	public function testNotInStillExcludes(): void {
+		$runner = $this->makePhpFallbackRunner(dataset: $this->statusDataset());
+
+		$result = $runner->runAdhoc(
+			register: $this->makeRegister(),
+			schema: $this->makeStatusSchema(),
+			query: AggregationQuery::create(
+				metric: 'count',
+				filter: ['status' => ['notIn' => ['open', 'in-progress']]]
+			)
+		);
+
+		$this->assertSame(2, $result['value'], '5 rows minus 2 open minus 1 in-progress');
+
+	}//end testNotInStillExcludes()
 
 	public function testPhpFallbackScalarEqualityIsUnaffected(): void {
 		// Regression: plain scalar equality (the pre-existing, most common
