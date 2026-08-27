@@ -119,9 +119,15 @@ class MagicRbacHandler
      * 5. Conditional rules grant access if user qualifies for group AND object matches conditions
      * 6. Object owner always has access to their own objects
      *
-     * @param IQueryBuilder $qb     Query builder to modify
-     * @param Schema        $schema Schema with authorization configuration
-     * @param string        $action CRUD action to check (default: 'read')
+     * @param IQueryBuilder $qb       Query builder to modify
+     * @param Schema        $schema   Schema with authorization configuration
+     * @param string        $action   CRUD action to check (default: 'read')
+     * @param bool          $asPublic When true (default false), force an
+     *                                anonymous RBAC context regardless of the
+     *                                caller's session: `$userId = null`,
+     *                                `$userGroups = []`, admin bypass skipped,
+     *                                `_owner` OR-in suppressed. See RBA-PUBLIC-001
+     *                                and ADR-023 (action-authorization).
      *
      * @return void
      *
@@ -132,21 +138,30 @@ class MagicRbacHandler
     public function applyRbacFilters(
         IQueryBuilder $qb,
         Schema $schema,
-        string $action='read'
+        string $action='read',
+        bool $asPublic=false
     ): void {
-        $user   = $this->userSession->getUser();
-        $userId = $user?->getUID();
+        if ($asPublic === true) {
+            // Endpoint-level anonymous context (RBA-PUBLIC-001): ignore the caller
+            // session so admin group membership and _owner OR-in do not widen the
+            // result set on a public endpoint.
+            $userId     = null;
+            $userGroups = [];
+        } else {
+            $user   = $this->userSession->getUser();
+            $userId = $user?->getUID();
 
-        // Get user groups.
-        $userGroups = [];
-        if ($user !== null) {
-            $userGroups = $this->groupManager->getUserGroupIds($user);
-        }
+            // Get user groups.
+            $userGroups = [];
+            if ($user !== null) {
+                $userGroups = $this->groupManager->getUserGroupIds($user);
+            }
 
-        // Admin users bypass all RBAC checks.
-        if (in_array('admin', $userGroups, true) === true) {
-            return;
-        }
+            // Admin users bypass all RBAC checks.
+            if (in_array('admin', $userGroups, true) === true) {
+                return;
+            }
+        }//end if
 
         // Get effective authorization (schema-level, or register cascade).
         $authorization = $this->resolveSchemaAuthorization(schema: $schema);
@@ -801,28 +816,43 @@ class MagicRbacHandler
      * This is the raw SQL equivalent of applyRbacFilters() for use in UNION-based
      * queries where QueryBuilder cannot be used directly.
      *
-     * @param Schema $schema Schema with authorization configuration.
-     * @param string $action CRUD action to check (default: 'read').
+     * @param Schema $schema   Schema with authorization configuration.
+     * @param string $action   CRUD action to check (default: 'read').
+     * @param bool   $asPublic When true (default false), force an anonymous RBAC
+     *                         context regardless of the caller's session:
+     *                         `$userId = null`, `$userGroups = []`, admin bypass
+     *                         skipped, `_owner` OR-in suppressed. Consumed by
+     *                         public endpoints whose contract mandates uniform
+     *                         results for all callers (WOO-536 / SCH-PFTS-001).
+     *                         See ADR-023 (action-authorization).
      *
      * @return array{bypass: bool, conditions: string[]} Result with:
      *               - 'bypass' => true means no filtering needed (user has full access)
      *               - 'conditions' => SQL conditions to OR together, empty array means deny all
      */
-    public function buildRbacConditionsSql(Schema $schema, string $action='read'): array
+    public function buildRbacConditionsSql(Schema $schema, string $action='read', bool $asPublic=false): array
     {
-        $user   = $this->userSession->getUser();
-        $userId = $user?->getUID();
+        if ($asPublic === true) {
+            // Endpoint-level anonymous context (RBA-PUBLIC-001): ignore the caller
+            // session so admin group membership and _owner OR-in do not widen the
+            // result set on a public endpoint.
+            $userId     = null;
+            $userGroups = [];
+        } else {
+            $user   = $this->userSession->getUser();
+            $userId = $user?->getUID();
 
-        // Get user groups.
-        $userGroups = [];
-        if ($user !== null) {
-            $userGroups = $this->groupManager->getUserGroupIds($user);
-        }
+            // Get user groups.
+            $userGroups = [];
+            if ($user !== null) {
+                $userGroups = $this->groupManager->getUserGroupIds($user);
+            }
 
-        // Admin users bypass all RBAC checks.
-        if (in_array('admin', $userGroups, true) === true) {
-            return ['bypass' => true, 'conditions' => []];
-        }
+            // Admin users bypass all RBAC checks.
+            if (in_array('admin', $userGroups, true) === true) {
+                return ['bypass' => true, 'conditions' => []];
+            }
+        }//end if
 
         // Get effective authorization (schema-level, or register cascade).
         $authorization = $this->resolveSchemaAuthorization(schema: $schema);
