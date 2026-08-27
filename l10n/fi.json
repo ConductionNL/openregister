@@ -2706,7 +2706,26 @@
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} tuotiin sovelluksesta {app}.",
+        "%n are out of date": "%n ovat vanhentuneita",
+        "%n declared in total": "%n ilmoitettu yhteensä",
+        "%n is out of date": "%n on vanhentunut",
+        "%n register is missing": "%n rekisteri puuttuu",
+        "%n registers are missing": "%n rekisteriä puuttuu",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Sovellukset toimittavat rekisterinsä kuvauksina, jotka tuodaan sovelluksen asennuksen tai päivityksen yhteydessä. Heti kun sovelluksen versio lakkaa muuttumasta, tuonti ei enää koskaan suoritu, ja epäonnistunut tuonti kirjoitetaan vain lokiin — rekisteri voi siis puuttua instanssista, joka muuten näyttää terveeltä. Täältä näet, mitkä ovat tulleet perille.",
+        "Could not read the descriptor inventory: {reason}": "Kuvausluetteloa ei voitu lukea: {reason}",
+        "Every declared register is present and current.": "Jokainen ilmoitettu rekisteri on olemassa ja ajan tasalla.",
+        "Import failed: {reason}": "Tuonti epäonnistui: {reason}",
+        "Missing": "Puuttuu",
+        "Out of date": "Vanhentunut",
+        "Present": "Olemassa",
+        "Re-import": "Tuo uudelleen",
+        "Reading descriptors …": "Luetaan kuvauksia …",
+        "Register descriptors": "Rekisterikuvaukset",
+        "ships v{shipped}": "toimittaa v{shipped}",
+        "State": "Tila",
+        "v{installed} → ships v{shipped}": "v{installed} → toimittaa v{shipped}"
     },
     "plurals": {
         "{count} email": [

@@ -2704,7 +2704,26 @@ OC.L10N.register(
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "A(z) {register} importálva lett innen: {app}.",
+        "%n are out of date": "%n elavult",
+        "%n declared in total": "összesen %n deklarálva",
+        "%n is out of date": "%n elavult",
+        "%n register is missing": "%n regiszter hiányzik",
+        "%n registers are missing": "%n regiszter hiányzik",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Az alkalmazások leíróként szállítják a regisztereiket, amelyek az alkalmazás telepítésekor vagy frissítésekor kerülnek importálásra. Amint egy alkalmazás verziója már nem változik, ez az import soha többé nem fut le, és a sikertelen import csak a naplóba kerül — így egy regiszter hiányozhat egy egyébként egészségesnek tűnő példányról. Itt láthatja, melyek érkeztek meg.",
+        "Could not read the descriptor inventory: {reason}": "A leíró-leltár nem olvasható: {reason}",
+        "Every declared register is present and current.": "Minden deklarált regiszter jelen van és naprakész.",
+        "Import failed: {reason}": "Az import sikertelen: {reason}",
+        "Missing": "Hiányzik",
+        "Out of date": "Elavult",
+        "Present": "Jelen van",
+        "Re-import": "Újraimportálás",
+        "Reading descriptors …": "Leírók olvasása …",
+        "Register descriptors": "Regiszterleírók",
+        "ships v{shipped}": "szállítja: v{shipped}",
+        "State": "Állapot",
+        "v{installed} → ships v{shipped}": "v{installed} → szállítja: v{shipped}"
     },
     "nplurals=2; plural=(n != 1);"
 )

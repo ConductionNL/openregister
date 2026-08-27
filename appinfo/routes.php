@@ -123,6 +123,11 @@ return [
         ['name' => 'endpoints#allLogs', 'url' => '/api/endpoints/logs', 'verb' => 'GET'],
 
         // Settings - Legacy endpoints (kept for compatibility).
+        // Register descriptors — which app-declared registers landed, and a
+        // forced re-import for the ones that did not. Admin-only, enforced in
+        // the controller.
+        ['name' => 'registerDescriptor#index', 'url' => '/api/register-descriptors', 'verb' => 'GET'],
+        ['name' => 'registerDescriptor#import', 'url' => '/api/register-descriptors/{appId}/{slug}/import', 'verb' => 'POST'],
         ['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
         ['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
         ['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
