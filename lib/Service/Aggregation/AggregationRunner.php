@@ -118,6 +118,18 @@ class AggregationRunner {
 	private readonly RegisterScopedSchemaResolver $scopedResolver;
 
 	/**
+	 * Evaluates derived (`metric: expression`) metrics over the aliases of the
+	 * metrics computed alongside them.
+	 *
+	 * Constructed here rather than injected: it is a pure evaluator with no
+	 * collaborators, and adding a required constructor argument would change
+	 * the signature every existing caller and test already builds.
+	 *
+	 * @var MetricExpressionEvaluator
+	 */
+	private readonly MetricExpressionEvaluator $expressions;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param MagicMapper $magicMapper Magic-table mapper used for the PHP fallback path.
@@ -161,6 +173,7 @@ class AggregationRunner {
 			registerMapper: $registerMapper,
 			schemaMapper: $schemaMapper
 		);
+		$this->expressions = new MetricExpressionEvaluator();
 	}//end __construct()
 
 
@@ -1763,6 +1776,16 @@ class AggregationRunner {
 				continue;
 			}
 
+			// A DERIVED metric has no SQL form at all: it is arithmetic over the
+			// other metrics' results, which do not exist until they have been
+			// computed. Stated explicitly rather than relying on the `as` check
+			// below to catch it, so removing `as` could never route an
+			// expression at the native path and have it silently compute
+			// nothing.
+			if (($entry['metric'] ?? null) === 'expression') {
+				return true;
+			}
+
 			$condition = ($entry['condition'] ?? null);
 			if (is_array($condition) === true && $condition !== []) {
 				return true;
@@ -1794,6 +1817,33 @@ class AggregationRunner {
 	private function computeMetrics(array $rows, array $metrics): array {
 		$values = [];
 		foreach ($metrics as $entry) {
+			// A DERIVED metric reads the figures this aggregation has already
+			// produced, rather than the rows. `vatBalance = totalVATPaid -
+			// totalVATCollected` is arithmetic between two sums just computed;
+			// declaring a second aggregation to subtract them scans the table
+			// again, and the two results can disagree if a row is written
+			// between the calls — which a trial balance must never do.
+			//
+			// It reads only aliases computed BEFORE it, so the order of the
+			// `metrics` list is the dependency order. An alias that is not there
+			// yet raises and names what IS available, because resolving it to 0
+			// would turn a typo into a plausible number.
+			if (($entry['metric'] ?? null) === 'expression') {
+				$derivedAlias = ($entry['as'] ?? null);
+				if (is_string($derivedAlias) === false || $derivedAlias === '') {
+					throw new RuntimeException(
+						'A derived metric must declare `as`: it has no field or metric name to '
+						.'derive a response key from.'
+					);
+				}
+
+				$values[$derivedAlias] = $this->expressions->evaluate(
+					expression: (string)($entry['expression'] ?? ''),
+					scope: $values
+				);
+				continue;
+			}
+
 			// `condition` — a per-metric filter, so one grouping can carry
 			// several figures over DIFFERENT row subsets.
 			//

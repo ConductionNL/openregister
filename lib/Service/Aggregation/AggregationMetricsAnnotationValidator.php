@@ -56,7 +56,19 @@ class AggregationMetricsAnnotationValidator {
 	 *
 	 * @var array<int, string>
 	 */
-	private const VALID_METRICS = ['count', 'sum', 'avg', 'min', 'max', 'count_distinct'];
+	private const VALID_METRICS = ['count', 'sum', 'avg', 'min', 'max', 'count_distinct', 'expression'];
+
+	/**
+	 * The DERIVED metric: arithmetic over the aliases of the metrics beside it,
+	 * rather than an aggregate over rows.
+	 *
+	 * It takes no `field` — there is nothing to aggregate — and it MUST carry
+	 * both an `expression` and an `as`, because its value has no metric+field
+	 * pair to derive a response key from.
+	 *
+	 * @var string
+	 */
+	private const METRIC_EXPRESSION = 'expression';
 
 	/**
 	 * Metrics that are meaningless without a field to aggregate.
@@ -142,6 +154,57 @@ class AggregationMetricsAnnotationValidator {
 					),
 				],
 			];
+		}
+
+		if ($metric === self::METRIC_EXPRESSION) {
+			// A derived metric is validated on different terms: it reads the
+			// figures beside it, so it has no field, and without `as` its value
+			// has no response key at all.
+			$expression = $this->asString(value: ($entry['expression'] ?? ''));
+			if (trim($expression) === '') {
+				return [
+					[
+						'code' => 'aggregation-metrics-expression-empty',
+						'message' => sprintf(
+							'Aggregation "%s" metrics[%d] declares metric "expression" with no '
+							.'`expression` to evaluate.',
+							$name,
+							$index
+						),
+					],
+				];
+			}
+
+			$alias = $this->asString(value: ($entry['as'] ?? ''));
+			if (trim($alias) === '') {
+				return [
+					[
+						'code' => 'aggregation-metrics-expression-unnamed',
+						'message' => sprintf(
+							'Aggregation "%s" metrics[%d] is a derived metric and must declare `as`: '
+							.'it has no field or metric name to derive a response key from.',
+							$name,
+							$index
+						),
+					],
+				];
+			}
+
+			if (isset($entry['field']) === true) {
+				return [
+					[
+						'code' => 'aggregation-metrics-expression-has-field',
+						'message' => sprintf(
+							'Aggregation "%s" metrics[%d] is a derived metric and takes no `field`: '
+							.'it reads the aliases of the metrics beside it, not the rows.',
+							$name,
+							$index
+						),
+					],
+				];
+			}
+
+			return [];
 		}
 
 		$extra = $this->validateConditionAndAlias(

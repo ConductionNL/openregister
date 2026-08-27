@@ -732,4 +732,132 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 		$this->assertSame(1, $result['value']);
 	}//end testCrossSchemaAtSelfPresentButNullStillResolves()
 
+	/**
+	 * @test
+	 * A DERIVED metric computes from the aliases beside it, end to end.
+	 *
+	 * This is the shape 41 declarations across the shillinq registers carried in
+	 * an `expression` key the engine never read: a debit/credit split plus the
+	 * balance between them. The balance is arithmetic over two figures this
+	 * aggregation already produced, so it cannot disagree with them — which a
+	 * second aggregation doing the subtraction could, if a row were written
+	 * between the two calls.
+	 */
+	public function testDerivedMetricComputesFromItsSiblings(): void {
+		$parentSchema = $this->makeSchema('vat-return', 10, [
+			'totalsByReturn' => [
+				'from' => 'vat-line',
+				'metrics' => [
+					[
+						'metric' => 'sum',
+						'field' => 'vatAmount',
+						'condition' => ['type' => 'collected'],
+						'as' => 'totalVATCollected',
+					],
+					[
+						'metric' => 'sum',
+						'field' => 'vatAmount',
+						'condition' => ['type' => 'paid'],
+						'as' => 'totalVATPaid',
+					],
+					[
+						'metric' => 'expression',
+						'expression' => 'totalVATPaid - totalVATCollected',
+						'as' => 'vatBalance',
+					],
+				],
+			],
+		]);
+		$targetSchema = $this->makeSchema('vat-line', 20);
+		$parentRegister = $this->makeRegister('shillinq', [10]);
+		$targetRegister = $this->makeRegister('shillinq', [20]);
+
+		$this->registerMapper->method('find')->willReturn($parentRegister);
+		$this->schemaMapper->method('find')
+			->willReturnMap([
+				['vat-return', [], true, false, $parentSchema],
+				['vat-line', [], true, false, $targetSchema],
+			]);
+		$this->registerMapper->method('findAll')->willReturn([$parentRegister, $targetRegister]);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->usePhpFallback();
+
+		// Asymmetric on purpose: a swapped condition, or a balance computed the
+		// other way round, cannot produce 55 by accident.
+		$this->magicMapper->method('findAllInRegisterSchemaTable')
+			->willReturn([
+				$this->makeEntityStub(['type' => 'collected', 'vatAmount' => 100]),
+				$this->makeEntityStub(['type' => 'collected', 'vatAmount' => 25]),
+				$this->makeEntityStub(['type' => 'paid', 'vatAmount' => 180]),
+			]);
+
+		$result = $this->runner->run(
+			registerRef: 'shillinq',
+			schemaRef: 'vat-return',
+			name: 'totalsByReturn',
+			bypassRbac: true
+		);
+
+		$values = ($result['values'] ?? null);
+		$this->assertIsArray($values, 'a `metrics` spec must yield `values`');
+		$this->assertEqualsWithDelta(125.0, (float)$values['totalVATCollected'], 0.001);
+		$this->assertEqualsWithDelta(180.0, (float)$values['totalVATPaid'], 0.001);
+
+		// 180 - 125. Not 55 by coincidence: reversing the subtraction gives -55,
+		// and dropping either condition changes both operands.
+		$this->assertEqualsWithDelta(55.0, (float)$values['vatBalance'], 0.001);
+	}//end testDerivedMetricComputesFromItsSiblings()
+
+	/**
+	 * @test
+	 * A derived metric that reads an alias defined AFTER it is refused.
+	 *
+	 * The `metrics` list is the dependency order. Returning null here would look
+	 * like "no data" for a figure that is simply declared in the wrong order.
+	 */
+	public function testDerivedMetricCannotReadALaterAlias(): void {
+		$parentSchema = $this->makeSchema('vat-return', 10, [
+			'badOrder' => [
+				'from' => 'vat-line',
+				'metrics' => [
+					[
+						'metric' => 'expression',
+						'expression' => 'later - 1',
+						'as' => 'tooEarly',
+					],
+					[
+						'metric' => 'sum',
+						'field' => 'vatAmount',
+						'as' => 'later',
+					],
+				],
+			],
+		]);
+		$targetSchema = $this->makeSchema('vat-line', 20);
+		$parentRegister = $this->makeRegister('shillinq', [10]);
+		$targetRegister = $this->makeRegister('shillinq', [20]);
+
+		$this->registerMapper->method('find')->willReturn($parentRegister);
+		$this->schemaMapper->method('find')
+			->willReturnMap([
+				['vat-return', [], true, false, $parentSchema],
+				['vat-line', [], true, false, $targetSchema],
+			]);
+		$this->registerMapper->method('findAll')->willReturn([$parentRegister, $targetRegister]);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->usePhpFallback();
+		$this->magicMapper->method('findAllInRegisterSchemaTable')
+			->willReturn([$this->makeEntityStub(['vatAmount' => 10])]);
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessageMatches('/later/');
+
+		$this->runner->run(
+			registerRef: 'shillinq',
+			schemaRef: 'vat-return',
+			name: 'badOrder',
+			bypassRbac: true
+		);
+	}//end testDerivedMetricCannotReadALaterAlias()
+
 }//end class
