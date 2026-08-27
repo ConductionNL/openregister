@@ -459,10 +459,29 @@ class AggregationQuery {
 					$entryField = null;
 				}
 
-				$out[] = [
+				$normalised = [
 					'metric' => (string)$entry['metric'],
 					'field' => $entryField,
 				];
+
+				// Carry `condition` and `as` through.
+				//
+				// This method used to rebuild each entry as exactly
+				// {metric, field}, which silently DROPPED both before the
+				// runner ever saw them: a conditional metric came back as the
+				// unconditioned figure, and two aliased entries collided on one
+				// derived key. Neither failed — they just answered wrongly.
+				$condition = ($entry['condition'] ?? null);
+				if (is_array($condition) === true && $condition !== []) {
+					$normalised['condition'] = $condition;
+				}
+
+				$alias = ($entry['as'] ?? null);
+				if (is_string($alias) === true && $alias !== '') {
+					$normalised['as'] = $alias;
+				}
+
+				$out[] = $normalised;
 			}
 
 			return $out;

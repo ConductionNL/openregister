@@ -144,6 +144,16 @@ class AggregationMetricsAnnotationValidator {
 			];
 		}
 
+		$extra = $this->validateConditionAndAlias(
+			name: $name,
+			index: $index,
+			entry: $entry,
+			propKeys: $propKeys
+		);
+		if ($extra !== []) {
+			return $extra;
+		}
+
 		if (in_array($metric, self::REQUIRES_FIELD, true) === false) {
 			return [];
 		}
@@ -156,6 +166,91 @@ class AggregationMetricsAnnotationValidator {
 			propKeys: $propKeys
 		);
 	}//end validateEntry()
+
+	/**
+	 * Validate a metric entry's optional `condition` and `as`.
+	 *
+	 * `condition` scopes ONE metric to a subset of the grouped rows — the
+	 * debit/credit split. It is a filter object, the same shape as the
+	 * aggregation's own `filter`, and its keys are checked against the schema
+	 * here for the reason every filter needs checking in this stack: a filter
+	 * naming a property the schema does not declare is not an error at run
+	 * time, it matches nothing and returns an empty set with HTTP 200. Caught
+	 * at declaration time it is a typo; caught at run time it is a page showing
+	 * "no data" over live rows.
+	 *
+	 * `as` names the response key. It is required in practice whenever two
+	 * entries share a metric+field pair — two conditional sums over `amount`
+	 * both derive `sum_amount`, and the second would overwrite the first.
+	 *
+	 * @param string             $name     The aggregation name, for messages.
+	 * @param int                $index    The entry's position in the list.
+	 * @param array<mixed>       $entry    The metric entry.
+	 * @param array<int, string> $propKeys Property names the schema declares.
+	 *
+	 * @return array<int, array{code: string, message: string}> Validation errors.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function validateConditionAndAlias(
+		string $name,
+		int $index,
+		array $entry,
+		array $propKeys,
+	): array {
+		$alias = ($entry['as'] ?? null);
+		if ($alias !== null && (is_string($alias) === false || $alias === '')) {
+			return [
+				[
+					'code' => 'aggregation-metrics-alias-malformed',
+					'message' => sprintf(
+						'Aggregation "%s" metrics[%d] "as" must be a non-empty string.',
+						$name,
+						$index
+					),
+				],
+			];
+		}
+
+		$condition = ($entry['condition'] ?? null);
+		if ($condition === null) {
+			return [];
+		}
+
+		if (is_array($condition) === false || $condition === []) {
+			return [
+				[
+					'code' => 'aggregation-metrics-condition-malformed',
+					'message' => sprintf(
+						'Aggregation "%s" metrics[%d] "condition" must be a non-empty filter object, '
+						. 'the same shape as the aggregation\'s own filter — not a string expression.',
+						$name,
+						$index
+					),
+				],
+			];
+		}
+
+		foreach (array_keys($condition) as $prop) {
+			if (in_array((string)$prop, $propKeys, true) === false) {
+				return [
+					[
+						'code' => 'aggregation-metrics-condition-not-in-schema',
+						'message' => sprintf(
+							'Aggregation "%s" metrics[%d] condition property "%s" is not declared in the '
+							. 'schema properties. A filter on an undeclared property matches nothing and '
+							. 'returns an empty result rather than an error.',
+							$name,
+							$index,
+							(string)$prop
+						),
+					],
+				];
+			}
+		}
+
+		return [];
+	}//end validateConditionAndAlias()
 
 	/**
 	 * Validate the field of a metric that requires one.

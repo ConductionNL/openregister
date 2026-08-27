@@ -1439,11 +1439,101 @@ class AggregationRunner {
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
+	/**
+	 * Whether a metrics list uses anything the native SQL path cannot express.
+	 *
+	 * `condition` and `as` are both honoured only by {@see computeMetrics()}.
+	 * The native path aggregates every entry over the same filtered row set and
+	 * derives its response key from metric+field, so it would drop a condition
+	 * silently and collide two aliases into one key. Both failures return a
+	 * plausible number rather than an error, which is why this is a hard
+	 * bail-out rather than a best-effort.
+	 *
+	 * @param array<int, array<string, mixed>> $metrics The metrics list.
+	 *
+	 * @return bool True when the PHP path must be used.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function metricsNeedPhpPath(array $metrics): bool {
+		foreach ($metrics as $entry) {
+			if (is_array($entry) === false) {
+				continue;
+			}
+
+			$condition = ($entry['condition'] ?? null);
+			if (is_array($condition) === true && $condition !== []) {
+				return true;
+			}
+
+			$alias = ($entry['as'] ?? null);
+			if (is_string($alias) === true && $alias !== '') {
+				return true;
+			}
+		}
+
+		return false;
+	}//end metricsNeedPhpPath()
+
+	/**
+	 * Compute every requested metric over one row set.
+	 *
+	 * Each entry may carry an optional `condition` (a filter object scoping
+	 * that figure to a subset of the rows) and an optional `as` (its response
+	 * key). See the inline notes for why both exist.
+	 *
+	 * @param array<int, array<string, mixed>> $rows    The rows to reduce.
+	 * @param array<int, array<string, mixed>> $metrics The metrics list.
+	 *
+	 * @return array<string, int|float|null> Value per response key.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
 	private function computeMetrics(array $rows, array $metrics): array {
 		$values = [];
 		foreach ($metrics as $entry) {
-			$key = AggregationQuery::metricResponseKey(metric: $entry['metric'], field: $entry['field']);
-			$values[$key] = $this->computeMetric(rows: $rows, metric: $entry['metric'], field: $entry['field']);
+			// `condition` — a per-metric filter, so one grouping can carry
+			// several figures over DIFFERENT row subsets.
+			//
+			// This is what a debit/credit split needs, and without it no
+			// accounting report in a consuming app can be declarative:
+			// `totalDebit` and `totalCredit` are the same SUM over the same
+			// field, separated only by `side`. Declaring two aggregations
+			// instead is not equivalent — it groups and scans the table twice,
+			// and the two results can disagree if a row is written between the
+			// calls, which is exactly what a trial balance must never do.
+			//
+			// It is a FILTER OBJECT, deliberately, not a SQL string. The same
+			// shape as `filter`, run through the same applyFilter(), so there
+			// is one grammar to learn and one implementation to keep correct.
+			// A second, string-shaped grammar is how the consuming app ended up
+			// with 265 declarations the engine could not read.
+			$scoped = $rows;
+			$condition = ($entry['condition'] ?? null);
+			if (is_array($condition) === true && $condition !== []) {
+				$scoped = $this->applyFilter(rows: $rows, filter: $condition);
+			}
+
+			// `as` — an explicit response key.
+			//
+			// Required once `condition` exists: two conditional sums over the
+			// same field both derive `sum_amount` and the second would
+			// overwrite the first, silently returning one figure where the
+			// caller asked for two.
+			$alias = ($entry['as'] ?? null);
+			$key = AggregationQuery::metricResponseKey(
+				metric: $entry['metric'],
+				field: $entry['field']
+			);
+			if (is_string($alias) === true && $alias !== '') {
+				$key = $alias;
+			}
+
+			$values[$key] = $this->computeMetric(
+				rows: $scoped,
+				metric: $entry['metric'],
+				field: $entry['field']
+			);
 		}
 
 		return $values;
@@ -1713,6 +1803,10 @@ class AggregationRunner {
 	 *
 	 * @return bool True when the value satisfies the operator.
 	 *
+	 * @throws RuntimeException When the operator is not one of the eight implemented
+	 *                          spellings. It previously matched every row instead,
+	 *                          silently widening the filter.
+	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
@@ -1738,13 +1832,41 @@ class AggregationRunner {
 
 		$cmp = $this->normaliseForCompare(v: $value);
 		$rhs = $this->normaliseForCompare(v: $onValue);
-		return match ($op) {
+		$known = match ($op) {
 			'gt' => $cmp !== null && $rhs !== null && $cmp > $rhs,
 			'gte' => $cmp !== null && $rhs !== null && $cmp >= $rhs,
 			'lt' => $cmp !== null && $rhs !== null && $cmp < $rhs,
 			'lte' => $cmp !== null && $rhs !== null && $cmp <= $rhs,
-			default => true,
+			default => null,
 		};
+
+		if ($known !== null) {
+			return $known;
+		}
+
+		// AN UNRECOGNISED OPERATOR IS REFUSED, NOT IGNORED.
+		//
+		// This arm used to be `default => true`, which let an unknown operator
+		// match EVERY row. The filter then silently widened instead of
+		// narrowing, and the caller got a bigger answer rather than an error.
+		//
+		// Measured in shillinq: `"lifecycleState": {"not-in": ["paid",
+		// "written-off"]}` — the implemented spelling is `notIn`, so `not-in`
+		// fell through here and the AR-ageing figures silently INCLUDED settled
+		// invoices. A wrong total in a finance report is far worse than a 500,
+		// and it is the same failure family as a string `groupBy` quietly
+		// collapsing a breakdown into a grand total.
+		//
+		// Refusing also makes the unimplemented operators visible rather than
+		// inert: `equals`, `not`, `between`, `gteOrNull`, `notStartsWith` and
+		// `not_in` all appear in declarations today and none of them do
+		// anything. They should fail loudly until they are either implemented
+		// or rewritten.
+		throw new RuntimeException(
+			'Unsupported aggregation filter operator "' . $op . '". Supported: '
+			. 'eq, ne, gt, gte, lt, lte, in, notIn. An unknown operator used to match every '
+			. 'row, which silently widened the filter instead of narrowing it.'
+		);
 	}//end checkOp()
 
 	/**
@@ -1913,6 +2035,17 @@ class AggregationRunner {
 		?array $metrics = null,
 		bool $cumulative = false,
 	): ?array {
+		// A per-metric `condition` (or an `as` alias) is NOT expressible on the
+		// native path — tryNativeMultiMetric() emits one SQL aggregate per
+		// entry against the SAME filtered row set and keys the result from
+		// metric+field. Letting it run a conditional spec would silently ignore
+		// the condition and return the unconditioned figure: a debit total
+		// reported as a credit total, with nothing to indicate it. Bail to the
+		// PHP path, which honours both, rather than answer wrongly and fast.
+		if (is_array($metrics) === true && $this->metricsNeedPhpPath(metrics: $metrics) === true) {
+			return null;
+		}
+
 		if (is_array($metrics) === true && count($metrics) > 1) {
 			return $this->tryNativeMultiMetric(
 				register: $register,
