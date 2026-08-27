@@ -85,19 +85,92 @@ class RegisterDescriptorServiceTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	private function writeDescriptor(string $file, string $slug, string $version): void {
-		file_put_contents(
-			$this->appRoot . '/lib/Settings/' . $file,
-			json_encode(
-				[
-					'openapi'    => '3.0.0',
-					'info'       => ['title' => 'Fixture', 'version' => $version],
-					'components' => [
-						'registers' => [$slug => ['slug' => $slug, 'title' => ucfirst($slug), 'version' => $version]],
-					],
-				]
-			)
+	private function writeDescriptor(
+		string $file,
+		string $slug,
+		string $version,
+		?string $type = null,
+		?string $app = null
+	): void {
+		$descriptor = [
+			'openapi'    => '3.0.0',
+			'info'       => ['title' => 'Fixture', 'version' => $version],
+			'components' => [
+				'registers' => [$slug => ['slug' => $slug, 'title' => ucfirst($slug), 'version' => $version]],
+			],
+		];
+
+		$marker = [];
+		if ($type !== null) {
+			$marker['type'] = $type;
+		}
+
+		if ($app !== null) {
+			$marker['app'] = $app;
+		}
+
+		if ($marker !== []) {
+			$descriptor['x-openregister'] = $marker;
+		}
+
+		file_put_contents($this->appRoot . '/lib/Settings/' . $file, json_encode($descriptor));
+	}
+
+	/**
+	 * 🔴 A MOCK IS NOT A MISSING REGISTER.
+	 *
+	 * `type: mock` marks sample data imported on demand, not something an
+	 * instance is expected to carry. Across OpenRegister's own descriptors the
+	 * correlation is exact — all five mocks ship without a Repair step, and every
+	 * non-mock but one has one. Listing them as ABSENT put five permanent red
+	 * rows in front of every administrator, and acting on those rows would have
+	 * seeded five mock registers onto every instance in the fleet.
+	 */
+	public function testAMockDescriptorIsNotReportedAsAbsent(): void {
+		$this->writeDescriptor(file: 'mock_register.json', slug: 'bag', version: '1.0.0', type: 'mock');
+		$this->expectApp();
+		$this->registerMapper->method('findAll')->willReturn([]);
+
+		$this->assertSame([], $this->service->inventory());
+	}
+
+	/**
+	 * Control for the test above: the SAME descriptor without the mock marker is
+	 * still reported. Without this, a bug that dropped every row would pass.
+	 */
+	public function testANonMockDescriptorIsStillReported(): void {
+		$this->writeDescriptor(file: 'real_register.json', slug: 'bag', version: '1.0.0', type: 'core');
+		$this->expectApp();
+		$this->registerMapper->method('findAll')->willReturn([]);
+
+		$rows = $this->service->inventory();
+
+		$this->assertCount(1, $rows);
+		$this->assertSame(RegisterDescriptorService::STATE_ABSENT, $rows[0]['state']);
+	}
+
+	/**
+	 * A row names the app that DECLARES the register, not the directory the file
+	 * was found in. `n8n_workflows.openregister.json` ships in OpenRegister's
+	 * lib/Settings and declares `app: n8n`; filing it under `openregister` tells
+	 * the reader the wrong owner, and an inventory exists to say whose problem a
+	 * row is.
+	 */
+	public function testARowIsAttributedToTheAppThatDeclaresIt(): void {
+		$this->writeDescriptor(
+			file: 'foreign_register.json',
+			slug: 'workflows',
+			version: '1.0.0',
+			type: 'integration',
+			app: 'n8n'
 		);
+		$this->expectApp('openregister');
+		$this->registerMapper->method('findAll')->willReturn([]);
+
+		$rows = $this->service->inventory();
+
+		$this->assertCount(1, $rows);
+		$this->assertSame('n8n', $rows[0]['appId'], 'the declaring app owns the row');
 	}
 
 	/**
@@ -282,6 +355,15 @@ class RegisterDescriptorServiceTest extends TestCase {
 				continue;
 			}
 
+			// Mocks are excluded HERE TOO, by reading the marker directly rather
+			// than by asking the service — a count derived from the code under
+			// test could only ever agree with itself. This test's job is to catch
+			// a discovery rule that silently SHRINKS, so its own count has to be
+			// computed independently and by the same stated rule.
+			if (($data['x-openregister']['type'] ?? '') === 'mock') {
+				continue;
+			}
+
 			$registers = ($data['components']['registers'] ?? null);
 			if (is_array($registers) === true && $registers !== []) {
 				$declaring[basename((string)$file)] = count($registers);
@@ -299,7 +381,7 @@ class RegisterDescriptorServiceTest extends TestCase {
 		$this->assertSame(
 			array_sum($declaring),
 			count($rows),
-			'the inventory must report every register every shipped descriptor declares — '
+			'the inventory must report every register every shipped NON-MOCK descriptor declares — '
 			. 'a narrower discovery rule shrinks the list instead of failing'
 		);
 

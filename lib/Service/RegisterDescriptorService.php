@@ -114,6 +114,33 @@ class RegisterDescriptorService {
 
 		foreach ($this->appManager->getInstalledApps() as $appId) {
 			foreach ($this->descriptorsFor(appId: $appId) as $descriptor) {
+				// 🔴 A MOCK IS NOT A MISSING REGISTER. `x-openregister.type: mock`
+				// marks a descriptor that exists to be imported ON DEMAND — sample
+				// data for a demo or a test — not one an instance is expected to
+				// carry. Measured across OpenRegister's own 14 descriptors, the
+				// correlation is exact: all five mocks ship without a Repair step
+				// and every non-mock but one has one. Reporting them as ABSENT put
+				// five permanent red rows in front of every administrator, and the
+				// obvious response — write the missing importers — would have
+				// seeded five mock registers onto every instance in the fleet.
+				//
+				// A panel whose loudest signal is noise is one people stop reading,
+				// which is the same silence it was built to break.
+				if (($descriptor['data']['x-openregister']['type'] ?? '') === 'mock') {
+					continue;
+				}
+
+				// ATTRIBUTED TO THE APP THAT DECLARES IT, not to the directory it
+				// was found in. `n8n_workflows.openregister.json` lives in
+				// OpenRegister's lib/Settings and declares `app: n8n` — it is n8n's
+				// register, shipped alongside. Filing it under `openregister` names
+				// the wrong owner, and an inventory exists to tell somebody whose
+				// problem a row is.
+				$owner = (string)($descriptor['data']['x-openregister']['app'] ?? $appId);
+				if ($owner === '') {
+					$owner = $appId;
+				}
+
 				foreach ($descriptor['registers'] as $slug => $register) {
 					$shipped = (string)($register['version'] ?? '0.0.1');
 					$key     = strtolower($slug);
@@ -133,7 +160,7 @@ class RegisterDescriptorService {
 					}
 
 					$rows[] = [
-						'appId'            => $appId,
+						'appId'            => $owner,
 						'slug'             => (string)$slug,
 						'title'            => (string)($register['title'] ?? $slug),
 						'state'            => $state,
