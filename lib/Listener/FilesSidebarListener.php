@@ -23,9 +23,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Service\ScriptManifestLoader;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use OCP\Util;
 
 /**
  * FilesSidebarListener
@@ -63,6 +63,6 @@ class FilesSidebarListener implements IEventListener
             return;
         }
 
-        Util::addScript('openregister', 'openregister-filesSidebar');
+        ScriptManifestLoader::addEntryScripts('openregister', 'filesSidebar', 'openregister-filesSidebar');
     }//end handle()
 }//end class
