@@ -524,6 +524,26 @@ class AggregationRunner {
 		];
 
 		$runGroupFields = $this->resolveGroupFields(groupBy: $groupBy);
+
+		// GROUPING BY A FIELD THAT LIVES ON THE JOINED SCHEMA.
+		//
+		// `groupBy: ["AnalyticalDimension.parentCode"]` asks to roll the parent
+		// rows up to a column the parent does not have — it exists only after
+		// the join resolves. applyJoin() runs AFTER grouping and attaches
+		// figures to groups that already exist, so it cannot produce this: by
+		// then the rows are gone.
+		//
+		// Resolving it means projecting the value onto each parent row FIRST,
+		// through the join key, and then grouping normally. Anything else
+		// groups on a column every row lacks, which yields one null bucket
+		// holding everything — a plausible-looking total, not an error.
+		[$rows, $runGroupFields, $joinConsumed] = $this->projectJoinedGroupFields(
+			rows: $rows,
+			groupFields: $runGroupFields,
+			join: $joinArg,
+			bypassRbac: $bypassRbac
+		);
+
 		if (count($runGroupFields) > 0) {
 			$result['groups'] = $this->computeGrouped(
 				rows: $rows,
@@ -546,13 +566,33 @@ class AggregationRunner {
 			}
 		}
 
-		$result = $this->applyJoin(
-			envelope: $result,
-			join: $joinArg,
-			groupFields: $runGroupFields,
-			bypassRbac: $bypassRbac,
-			extraFilter: $appliedExtraFilter
-		);
+		if ($joinConsumed === true) {
+			// The join was SPENT on the grouping, so there is no per-group
+			// `joined` map to attach.
+			//
+			// mergeJoinedValues() reads the join key out of each group row, but
+			// after projection the group key IS the joined dimension — the
+			// original key is not in the row any more. Running it anyway would
+			// look up a tuple that cannot match and hang a map of nulls on every
+			// group, which reads as "the joined schema had nothing" rather than
+			// "this question was already answered by the grouping".
+			//
+			// Attaching figures here would mean re-aggregating the joined schema
+			// BY the projected dimension — a second, different join. That is a
+			// feature, not a detail, and it is not invented silently here.
+			$result['join'] = [
+				'through' => (string)($joinArg['through'] ?? ''),
+				'consumedForGrouping' => true,
+			];
+		} else {
+			$result = $this->applyJoin(
+				envelope: $result,
+				join: $joinArg,
+				groupFields: $runGroupFields,
+				bypassRbac: $bypassRbac,
+				extraFilter: $appliedExtraFilter
+			);
+		}
 
 		$this->cache->set(
 			registerSlug: (string)$register->getSlug(),
@@ -1455,6 +1495,268 @@ class AggregationRunner {
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
+	/**
+	 * Project joined-schema group fields onto the parent rows.
+	 *
+	 * A `groupBy` entry spelled `<JoinedSchema>.<field>` names a column the
+	 * parent rows do not carry — it exists only on the other side of the join.
+	 * Grouping on it directly puts every row in one null bucket, which reads as
+	 * a working total rather than a mistake.
+	 *
+	 * This resolves it the only way the semantics allow: build a
+	 * joinKey => value map from the joined schema, stamp each parent row with
+	 * the value its join key maps to, and hand back a rewritten group-field
+	 * list that points at the stamped column. Grouping then proceeds normally,
+	 * and the result is a roll-up to the joined dimension — a cost-centre
+	 * hierarchy summing its children, which is the shape this exists for.
+	 *
+	 * A parent row whose join key matches nothing keeps a NULL group value
+	 * rather than being dropped. Dropping it would quietly shrink the totals;
+	 * a null bucket is visible and is the honest answer for "belongs to no
+	 * dimension".
+	 *
+	 * Leaves everything untouched when no group field is join-qualified, so the
+	 * ordinary path pays only an array scan.
+	 *
+	 * @param array<int, array<string, mixed>> $rows        The parent rows.
+	 * @param array<int, string>               $groupFields The requested group fields.
+	 * @param array<string, mixed>|null        $join        The join spec, if any.
+	 * @param bool                             $bypassRbac  Internal-system mode.
+	 *
+	 * @return array{0: array<int, array<string, mixed>>, 1: array<int, string>, 2: bool} Rows, group
+	 *         fields, and whether the join was consumed by the grouping.
+	 *
+	 * @throws RuntimeException When a join-qualified group field has no usable join spec.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function projectJoinedGroupFields(
+		array $rows,
+		array $groupFields,
+		?array $join,
+		bool $bypassRbac,
+	): array {
+		$joinSpec = [];
+		$through = '';
+		if (is_array($join) === true) {
+			$joinSpec = $join;
+			$through = (string)($joinSpec['through'] ?? '');
+		}
+
+		$qualified = [];
+		foreach ($groupFields as $groupField) {
+			if ($through !== '' && str_starts_with($groupField, $through . '.') === true) {
+				$qualified[] = $groupField;
+			}
+		}
+
+		if ($qualified === []) {
+			return [$rows, $groupFields, false];
+		}
+
+		$onMap = $this->joinedProjectionKeyMap(joinSpec: $joinSpec, qualified: $qualified[0]);
+
+		$parentKey = (string)array_key_first($onMap);
+		$joinedRows = $this->loadJoinedRowsForProjection(
+			joinSpec: $joinSpec,
+			through: $through,
+			bypassRbac: $bypassRbac
+		);
+
+		foreach ($qualified as $groupField) {
+			$rows = $this->stampProjectedColumn(
+				rows: $rows,
+				joinedRows: $joinedRows,
+				parentKey: $parentKey,
+				joinedKey: (string)$onMap[$parentKey],
+				sourceField: substr($groupField, (strlen($through) + 1)),
+				column: $groupField
+			);
+		}
+
+		return [$rows, $groupFields, true];
+	}//end projectJoinedGroupFields()
+
+	/**
+	 * Resolve the parent=>joined key map for a group-field projection.
+	 *
+	 * THE `on` SHORTHAND CANNOT BE USED HERE, and saying so is the point.
+	 * `"on": "Schema.column"` infers the parent-side field FROM THE GROUP
+	 * FIELDS — the same-named one if present, otherwise the first. When the
+	 * group field is the join-qualified one, that inference picks the JOINED
+	 * field as the parent key, reads it off parent rows that do not have it,
+	 * and lands every row in a single null bucket reported as a working total.
+	 * Measured on the shorthand: a fixture summing 350 + 7 came back as one
+	 * bucket of 357 keyed ''. The explicit map names both sides, so nothing is
+	 * inferred.
+	 *
+	 * The map is read DIRECTLY rather than through resolveJoinKey(). That
+	 * helper enforces "every parent-side field must be one of the groupBy
+	 * fields", which is right for the post-grouping merge — it reads the key
+	 * out of a group row — but false here by construction: before projection
+	 * the group field is the joined one and the parent key is not grouped.
+	 *
+	 * @param array<string, mixed> $joinSpec  The join spec.
+	 * @param string               $qualified The join-qualified group field, for messages.
+	 *
+	 * @return array<string, string> Single-entry parentField => joinedField map.
+	 *
+	 * @throws RuntimeException When `on` is the shorthand, absent, or composite.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function joinedProjectionKeyMap(array $joinSpec, string $qualified): array {
+		if (is_string($joinSpec['on'] ?? null) === true) {
+			throw new RuntimeException(
+				'Grouping by "' . $qualified . '" requires the explicit join.on map '
+				. '({parentField: joinedField}); the "Schema.column" shorthand infers the parent key '
+				. 'from the group fields, which are the joined ones here.'
+			);
+		}
+
+		$onMap = [];
+		$onClause = ($joinSpec['on'] ?? null);
+		if (is_array($onClause) === true) {
+			foreach ($onClause as $parentField => $joinedField) {
+				if (is_string($parentField) === true && is_string($joinedField) === true) {
+					$onMap[$parentField] = $this->stripSchemaPrefix(ref: $joinedField);
+				}
+			}
+		}
+
+		if ($onMap === []) {
+			throw new RuntimeException(
+				'Grouping by "' . $qualified . '" needs the join\'s `on` mapping to locate the parent key.'
+			);
+		}
+
+		// Single-key joins only. A composite key would need a tuple lookup per
+		// row, and no declaration uses one — refusing beats silently matching
+		// on the first key alone, which would over-merge groups and inflate
+		// every total.
+		if (count($onMap) > 1) {
+			throw new RuntimeException(
+				'Grouping by a joined field is supported for single-key joins only; "'
+				. $qualified . '" joins on ' . count($onMap) . ' keys.'
+			);
+		}
+
+		return $onMap;
+	}//end joinedProjectionKeyMap()
+
+	/**
+	 * Hydrate and filter the joined schema's rows for a group-field projection.
+	 *
+	 * The declared `join.filter` applies here too: if the join only considers
+	 * active dimensions, the projection must not map a parent row onto a
+	 * retired one, or the roll-up would credit amounts to a dimension the join
+	 * itself excludes.
+	 *
+	 * @param array<string, mixed> $joinSpec   The join spec.
+	 * @param string               $through    The joined schema ref.
+	 * @param bool                 $bypassRbac Internal-system mode.
+	 *
+	 * @return array<int, array<string, mixed>> The joined rows.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function loadJoinedRowsForProjection(
+		array $joinSpec,
+		string $through,
+		bool $bypassRbac,
+	): array {
+		[$joinedSchema, $joinedRegister] = $this->resolveJoinTarget(
+			through: $through,
+			bypassRbac: $bypassRbac
+		);
+
+		$joinedRows = [];
+		foreach ($this->magicMapper->findAllInRegisterSchemaTable(
+			register: $joinedRegister,
+			schema: $joinedSchema,
+			limit: self::PHP_FALLBACK_ROW_CAP
+		) as $object) {
+			$joinedRows[] = $object->getObject();
+		}
+
+		$joinedFilter = $this->placeholders->resolveArray(
+			(array)($joinSpec['filter'] ?? $joinSpec['where'] ?? [])
+		);
+		if ($joinedFilter === []) {
+			return $joinedRows;
+		}
+
+		return $this->applyFilter(rows: $joinedRows, filter: $joinedFilter);
+	}//end loadJoinedRowsForProjection()
+
+	/**
+	 * Stamp each parent row with the joined value its join key maps to.
+	 *
+	 * The synthetic column is named after the QUALIFIED field, so a caller
+	 * reading `keys` sees the name it asked for rather than an internal alias.
+	 *
+	 * A parent row whose key matches nothing gets NULL rather than being
+	 * dropped: dropping it would quietly shrink every total, while a null
+	 * bucket is visible and is the honest answer for "belongs to no dimension".
+	 *
+	 * @param array<int, array<string, mixed>> $rows        Parent rows.
+	 * @param array<int, array<string, mixed>> $joinedRows  Joined rows.
+	 * @param string                           $parentKey   Parent-side join field.
+	 * @param string                           $joinedKey   Joined-side join field.
+	 * @param string                           $sourceField Joined field to project.
+	 * @param string                           $column      Synthetic column name.
+	 *
+	 * @return array<int, array<string, mixed>> Rows carrying the projected column.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function stampProjectedColumn(
+		array $rows,
+		array $joinedRows,
+		string $parentKey,
+		string $joinedKey,
+		string $sourceField,
+		string $column,
+	): array {
+		$lookup = [];
+		foreach ($joinedRows as $joinedRow) {
+			$key = ($joinedRow[$joinedKey] ?? null);
+			if ($key === null) {
+				continue;
+			}
+
+			$lookup[(string)$key] = ($joinedRow[$sourceField] ?? null);
+		}
+
+		foreach ($rows as $index => $row) {
+			$parentValue = ($row[$parentKey] ?? null);
+			$projected = null;
+			if ($parentValue !== null) {
+				$projected = ($lookup[(string)$parentValue] ?? null);
+			}
+
+			$rows[$index][$column] = $projected;
+		}
+
+		return $rows;
+	}//end stampProjectedColumn()
+
+	/**
+	 * Whether a metrics list uses anything the native SQL path cannot express.
+	 *
+	 * `condition` and `as` are honoured only by {@see computeMetrics()}. The
+	 * native path aggregates every entry over the same filtered row set and
+	 * derives its response key from metric+field, so it would drop a condition
+	 * silently and collide two aliases into one key. Both failures return a
+	 * plausible number rather than an error, which is why this is a hard
+	 * bail-out rather than a best-effort.
+	 *
+	 * @param array<int, array<string, mixed>> $metrics The metrics list.
+	 *
+	 * @return bool True when the PHP path must be used.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
 	private function metricsNeedPhpPath(array $metrics): bool {
 		foreach ($metrics as $entry) {
 			if (is_array($entry) === false) {
@@ -2044,6 +2346,17 @@ class AggregationRunner {
 		// PHP path, which honours both, rather than answer wrongly and fast.
 		if (is_array($metrics) === true && $this->metricsNeedPhpPath(metrics: $metrics) === true) {
 			return null;
+		}
+
+		// A join-qualified group field cannot run natively either. The SQL is
+		// emitted against the parent table alone, so `AnalyticalDimension.
+		// parentCode` would be a column no row has — every row landing in one
+		// null bucket, reported as a working total. The PHP path projects the
+		// value through the join first; bail to it.
+		foreach ($this->resolveGroupFields(groupBy: $groupBy) as $groupField) {
+			if (str_contains($groupField, '.') === true) {
+				return null;
+			}
 		}
 
 		if (is_array($metrics) === true && count($metrics) > 1) {
