@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCP\IDBConnection;
 
 /**
@@ -34,6 +35,20 @@ use OCP\IDBConnection;
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  */
 class MigrationService {
+
+	/**
+	 * The shared register-scoped schema resolver.
+	 *
+	 * Built here rather than injected: it is a stateless collaborator over the
+	 * `RegisterMapper` + `SchemaMapper` this class already holds, so constructing
+	 * it directly keeps every existing unit test — all of which mock those two
+	 * mappers — exercising the REAL resolution path instead of a mock of the very
+	 * thing under test.
+	 *
+	 * @var RegisterScopedSchemaResolver
+	 */
+	private readonly RegisterScopedSchemaResolver $scopedSchemaResolver;
+
 	/**
 	 * Constructor.
 	 *
@@ -44,30 +59,40 @@ class MigrationService {
 	 */
 	public function __construct(
 		private readonly MagicMapper $magicMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		RegisterMapper $registerMapper,
+		SchemaMapper $schemaMapper,
 		private readonly IDBConnection $db,
 	) {
+		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
+			registerMapper: $registerMapper,
+			schemaMapper: $schemaMapper
+		);
 	}//end __construct()
 
 	/**
-	 * Resolve register and schema from IDs or slugs.
+	 * Resolve register and schema from IDs or slugs, with the register as the boundary.
 	 *
-	 * @param string|int $registerId Register ID or slug.
-	 * @param string|int $schemaId Schema ID or slug.
+	 * The two used to be resolved INDEPENDENTLY — the schema by a global
+	 * `SchemaMapper::find()` that matches `LOWER(slug)` across every register and
+	 * every app on the instance. `GET /api/migration/status/{register}/{schema}`
+	 * then reported the storage status of whichever same-slug schema the tie-break
+	 * ordered first, and `MigrateStorageCommand` would have migrated it. A status
+	 * or a migration aimed at the wrong table is worse than an error.
+	 *
+	 * @param string|int $registerId Register ID, uuid, or slug — the boundary.
+	 * @param string|int $schemaId   Schema ID, uuid, or slug, resolved within that register.
 	 *
 	 * @return array{register: Register, schema: Schema}
 	 *
-	 * @throws \Exception If register or schema not found.
+	 * @throws \OCA\OpenRegister\Exception\RegisterNotFoundException If the register does not resolve.
+	 * @throws \OCA\OpenRegister\Exception\SchemaNotInRegisterException If the register does not carry the schema.
 	 *
-	 * @spec exclude Two-line mapper lookup resolving register/schema by id or slug; no orchestration.
+	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
 	public function resolveRegisterAndSchema(string|int $registerId, string|int $schemaId): array {
-		$register = $this->registerMapper->find(id: $registerId, _rbac: false, _multitenancy: false);
-		$schema = $this->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false);
-
-		return ['register' => $register, 'schema' => $schema];
+		return $this->scopedSchemaResolver->resolvePair(registerRef: $registerId, schemaRef: $schemaId);
 	}//end resolveRegisterAndSchema()
+
 
 	/**
 	 * Get storage status for a register/schema combination.

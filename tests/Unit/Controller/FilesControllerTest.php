@@ -7,6 +7,7 @@ namespace Unit\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\FilesController;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -75,6 +76,202 @@ class FilesControllerTest extends TestCase {
 		$this->objectService->method('setObject')->willReturnSelf();
 		$this->objectService->method('getObject')->willReturn($object);
 	}
+
+	// =====================================================================
+	// Register/schema context ordering — openregister#2779
+	//
+	// ObjectService::setSchema() resolves a schema SLUG register-scoped only
+	// when a register is ALREADY set; with no register context it falls back
+	// to a global LOWER(slug) match across every register on the instance.
+	// The controller called setSchema() first, so an upload addressed to
+	// planix/task resolved to openbuild's `task` schema and 500'd with a
+	// message naming a register the caller never mentioned.
+	//
+	// TWO LAYERS NOW GUARD THIS, DELIBERATELY.
+	//   1. ObjectService, since #2774 (merged after this branch was cut):
+	//      setRegister() re-resolves a pending schema ref, so the boundary
+	//      holds whichever order the two setters are called in. That is the
+	//      backstop for the ~24 call sites nobody has reordered yet.
+	//   2. This controller: it asks for the context in the correct order in
+	//      the first place, through one helper.
+	//
+	// Layer 2 is not redundant. #2774's own comment names FilesController as
+	// the shape of the problem, and a backstop that silently repairs a wrong
+	// call order leaves the call order wrong — every future reader still has
+	// to know that setSchema-then-setRegister only works by rescue. These
+	// tests pin the controller's ordering contract directly, which is why the
+	// fake below reproduces the resolution semantics AS THEY WERE when #2779
+	// was filed: that is the behaviour layer 2 has to be correct against, and
+	// it is what makes these tests fail if the ordering ever regresses.
+	// =====================================================================
+
+	/**
+	 * Two registers sharing the schema slug `task`. `openbuild` is listed
+	 * first so it is what a GLOBAL (unscoped) slug lookup returns — the
+	 * tie-break that produced the reported defect.
+	 *
+	 * @var array<string, array{id: int, schemas: array<string, int>}>
+	 */
+	private const SLUG_FIXTURE = [
+		'openbuild' => ['id' => 206, 'schemas' => ['task' => 5301, 'issue' => 5302]],
+		'planix' => ['id' => 19, 'schemas' => ['task' => 74, 'project' => 75]],
+	];
+
+	/**
+	 * Wire the ObjectService mock to emulate real slug resolution.
+	 *
+	 * @param array<string, mixed> $resolved Receives the resolved register/schema by reference.
+	 * @param list<string> $callOrder Receives the setter call order by reference.
+	 *
+	 * @return void
+	 */
+	private function setupSlugResolvingObjectService(array &$resolved, array &$callOrder): void {
+		$resolved = ['register' => null, 'schema' => null];
+
+		$this->objectService->method('setRegister')
+			->willReturnCallback(function ($register) use (&$resolved, &$callOrder) {
+				$callOrder[] = 'setRegister';
+				if (isset(self::SLUG_FIXTURE[$register]) === false) {
+					throw new DoesNotExistException("No register {$register}");
+				}
+
+				$resolved['register'] = $register;
+
+				return $this->objectService;
+			});
+
+		$this->objectService->method('setSchema')
+			->willReturnCallback(function ($schema) use (&$resolved, &$callOrder) {
+				$callOrder[] = 'setSchema';
+				$current = $resolved['register'];
+
+				if ($current !== null) {
+					// Register-scoped resolution: naming a register is a boundary.
+					$schemas = self::SLUG_FIXTURE[$current]['schemas'];
+					if (isset($schemas[$schema]) === true) {
+						$resolved['schema'] = $schemas[$schema];
+
+						return $this->objectService;
+					}
+
+					$candidates = 0;
+					foreach (self::SLUG_FIXTURE as $entry) {
+						$candidates += (int)isset($entry['schemas'][$schema]);
+					}
+
+					throw new SchemaNotInRegisterException(
+						schemaSlug: (string)$schema,
+						registerId: self::SLUG_FIXTURE[$current]['id'],
+						registerSlug: $current,
+						candidatesElsewhere: $candidates,
+						registerSchemaCount: count($schemas)
+					);
+				}//end if
+
+				// No register context: global resolution, first match wins.
+				foreach (self::SLUG_FIXTURE as $entry) {
+					if (isset($entry['schemas'][$schema]) === true) {
+						$resolved['schema'] = $entry['schemas'][$schema];
+
+						return $this->objectService;
+					}
+				}
+
+				throw new DoesNotExistException("No schema {$schema}");
+			});
+
+		$this->objectService->method('setObject')->willReturnSelf();
+		$this->objectService->method('getObject')->willReturn($this->createMock(ObjectEntity::class));
+	}//end setupSlugResolvingObjectService()
+
+	public function testSetObjectContextSetsRegisterBeforeSchema(): void {
+		$resolved = [];
+		$callOrder = [];
+		$this->setupSlugResolvingObjectService($resolved, $callOrder);
+
+		$this->invokePrivateMethod('setObjectContext', ['planix', 'task']);
+
+		$this->assertSame(['setRegister', 'setSchema'], $callOrder);
+	}//end testSetObjectContextSetsRegisterBeforeSchema()
+
+	public function testSharedSchemaSlugResolvesToTheRegisterNamedInTheUrl(): void {
+		$resolved = [];
+		$callOrder = [];
+		$this->setupSlugResolvingObjectService($resolved, $callOrder);
+
+		$this->invokePrivateMethod('setObjectContext', ['planix', 'task']);
+
+		$this->assertSame('planix', $resolved['register']);
+		$this->assertSame(74, $resolved['schema'], 'must resolve to planix/task (74), not openbuild/task (5301)');
+	}//end testSharedSchemaSlugResolvesToTheRegisterNamedInTheUrl()
+
+	public function testCreateWithSharedSchemaSlugNoLongerLandsInTheWrongRegister(): void {
+		$resolved = [];
+		$callOrder = [];
+		$this->setupSlugResolvingObjectService($resolved, $callOrder);
+
+		$this->request->method('getParams')->willReturn([
+			'name' => 'attachment.png',
+			'content' => 'x',
+			'tags' => [],
+		]);
+		$this->fileService->method('addFile')->willReturn($this->createMock(File::class));
+		$this->fileService->method('formatFile')->willReturn(['id' => 1]);
+
+		$result = $this->controller->create('planix', 'task', 'obj1');
+
+		$this->assertEquals(200, $result->getStatus());
+		$this->assertSame(74, $resolved['schema']);
+	}//end testCreateWithSharedSchemaSlugNoLongerLandsInTheWrongRegister()
+
+	/**
+	 * MUST-FAIL direction: the fix reorders resolution, it does NOT make it
+	 * permissive. A slug that is genuinely absent from the named register
+	 * must still be refused rather than silently served from elsewhere.
+	 *
+	 * `issue` exists only under openbuild, so addressing it via planix has to
+	 * error even though the slug resolves fine globally.
+	 */
+	public function testSchemaSlugAbsentFromTheNamedRegisterStillErrors(): void {
+		$resolved = [];
+		$callOrder = [];
+		$this->setupSlugResolvingObjectService($resolved, $callOrder);
+
+		$this->expectException(SchemaNotInRegisterException::class);
+
+		$this->invokePrivateMethod('setObjectContext', ['planix', 'issue']);
+	}//end testSchemaSlugAbsentFromTheNamedRegisterStillErrors()
+
+	public function testSchemaSlugAbsentEverywhereStillErrors(): void {
+		$resolved = [];
+		$callOrder = [];
+		$this->setupSlugResolvingObjectService($resolved, $callOrder);
+
+		$this->expectException(SchemaNotInRegisterException::class);
+
+		$this->invokePrivateMethod('setObjectContext', ['planix', 'no-such-slug']);
+	}//end testSchemaSlugAbsentEverywhereStillErrors()
+
+	/**
+	 * Guard the fix at the file level: every method in FilesController must go
+	 * through setObjectContext(), so the ordering cannot regress one endpoint
+	 * at a time. Issue #2779 was reported against create(), but the same two
+	 * lines were duplicated in 18 places in this controller.
+	 */
+	public function testNoMethodSetsSchemaOrRegisterDirectlyOutsideTheHelper(): void {
+		$source = (string)file_get_contents((string)$this->reflection->getFileName());
+
+		$this->assertSame(
+			1,
+			substr_count($source, '$this->objectService->setSchema('),
+			'setSchema() must only be called from setObjectContext()'
+		);
+		$this->assertSame(
+			1,
+			substr_count($source, '$this->objectService->setRegister('),
+			'setRegister() must only be called from setObjectContext()'
+		);
+	}//end testNoMethodSetsSchemaOrRegisterDirectlyOutsideTheHelper()
 
 	// ==================== page() Tests ====================
 
@@ -892,6 +1089,169 @@ class FilesControllerTest extends TestCase {
 		@unlink($tmpFile2);
 	}
 
+	// ---------------------------------------------------------------------
+	// Batch survivability — openregister#2776
+	//
+	// One rejected file used to abort the whole request: the throw escaped
+	// processUploadedFiles() and became a hard 400 with nothing stored. On
+	// the Jira attachment migration that cost 284 storable files because of
+	// a single false-positive PNG.
+	// ---------------------------------------------------------------------
+
+	/**
+	 * Build a real temp file and the normalized upload entry pointing at it.
+	 *
+	 * @param string $name Filename to present.
+	 * @param string $content Bytes to write.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function makeUpload(string $name, string $content): array {
+		$tmp = (string)tempnam(sys_get_temp_dir(), 'ormp_');
+		file_put_contents($tmp, $content);
+
+		return [
+			'name' => $name,
+			'type' => 'application/octet-stream',
+			'tmp_name' => $tmp,
+			'error' => UPLOAD_ERR_OK,
+			'size' => strlen($content),
+			'share' => false,
+			'tags' => [],
+		];
+	}//end makeUpload()
+
+	public function testCreateMultipartOneRejectionDoesNotAbortTheBatch(): void {
+		$object = $this->createMock(ObjectEntity::class);
+		$this->setupObjectServiceMocks($object);
+
+		$good1 = $this->makeUpload('keep-1.txt', 'one');
+		$bad = $this->makeUpload('rejected.png', 'two');
+		$good2 = $this->makeUpload('keep-2.txt', 'three');
+
+		$multi = [
+			'name' => [$good1['name'], $bad['name'], $good2['name']],
+			'type' => ['text/plain', 'image/png', 'text/plain'],
+			'tmp_name' => [$good1['tmp_name'], $bad['tmp_name'], $good2['tmp_name']],
+			'error' => [UPLOAD_ERR_OK, UPLOAD_ERR_OK, UPLOAD_ERR_OK],
+			'size' => [3, 3, 5],
+		];
+
+		$this->request->method('getUploadedFile')
+			->willReturnCallback(fn ($key) => $key === 'files' ? $multi : null);
+		$this->request->method('getParams')->willReturn([]);
+
+		$storedNames = [];
+		$this->fileService->method('addFile')
+			->willReturnCallback(function (...$args) use (&$storedNames) {
+				$named = func_get_args();
+				$fileName = $named[1] ?? '';
+				if ($fileName === 'rejected.png') {
+					throw new Exception("File 'rejected.png' contains PHP code. PHP files are blocked for security reasons.");
+				}
+
+				$storedNames[] = $fileName;
+
+				return $this->createMock(File::class);
+			});
+		$this->fileService->method('formatFiles')->willReturnCallback(
+			fn (array $files) => ['results' => array_fill(0, count($files), ['id' => 1])]
+		);
+
+		$result = $this->controller->createMultipart('reg1', 'schema1', 'obj1');
+		$data = $result->getData();
+
+		// Partial success is its own outcome, not a failure.
+		$this->assertEquals(207, $result->getStatus());
+		$this->assertSame(['keep-1.txt', 'keep-2.txt'], $storedNames, 'the good files must still be stored');
+		$this->assertCount(2, $data['results']);
+
+		// The rejection is named, not silently dropped.
+		$this->assertCount(1, $data['rejected']);
+		$this->assertSame('rejected.png', $data['rejected'][0]['name']);
+		$this->assertStringContainsString('PHP code', $data['rejected'][0]['error']);
+		$this->assertSame(['total' => 3, 'stored' => 2, 'rejected' => 1], $data['summary']);
+
+		foreach ([$good1, $bad, $good2] as $upload) {
+			@unlink($upload['tmp_name']);
+		}
+	}//end testCreateMultipartOneRejectionDoesNotAbortTheBatch()
+
+	public function testCreateMultipartAllFilesRejectedStillReturns400(): void {
+		$object = $this->createMock(ObjectEntity::class);
+		$this->setupObjectServiceMocks($object);
+
+		$bad = $this->makeUpload('shell.php', '<?php echo 1;');
+
+		$this->request->method('getUploadedFile')
+			->willReturnCallback(fn ($key) => $key === 'file' ? $bad : null);
+		$this->request->method('getParams')->willReturn([]);
+
+		$this->fileService->method('addFile')
+			->willThrowException(new Exception("File 'shell.php' is an executable file (.php)."));
+
+		$result = $this->controller->createMultipart('reg1', 'schema1', 'obj1');
+		$data = $result->getData();
+
+		$this->assertEquals(400, $result->getStatus());
+		$this->assertStringContainsString('executable file', $data['error']);
+		$this->assertCount(1, $data['rejected']);
+		$this->assertSame('shell.php', $data['rejected'][0]['name']);
+
+		@unlink($bad['tmp_name']);
+	}//end testCreateMultipartAllFilesRejectedStillReturns400()
+
+	public function testCreateMultipartFullSuccessKeepsTheHistoricalBareListShape(): void {
+		$object = $this->createMock(ObjectEntity::class);
+		$this->setupObjectServiceMocks($object);
+
+		$good = $this->makeUpload('ok.txt', 'fine');
+
+		$this->request->method('getUploadedFile')
+			->willReturnCallback(fn ($key) => $key === 'file' ? $good : null);
+		$this->request->method('getParams')->willReturn([]);
+
+		$this->fileService->method('addFile')->willReturn($this->createMock(File::class));
+		$this->fileService->method('formatFiles')->willReturn(['results' => [['id' => 1, 'name' => 'ok.txt']]]);
+
+		$result = $this->controller->createMultipart('reg1', 'schema1', 'obj1');
+
+		$this->assertEquals(200, $result->getStatus());
+		$this->assertSame([['id' => 1, 'name' => 'ok.txt']], $result->getData());
+
+		@unlink($good['tmp_name']);
+	}//end testCreateMultipartFullSuccessKeepsTheHistoricalBareListShape()
+
+	public function testCreateMultipartUnreadableTempFileIsReportedNotThrown(): void {
+		$object = $this->createMock(ObjectEntity::class);
+		$this->setupObjectServiceMocks($object);
+
+		$good = $this->makeUpload('ok.txt', 'fine');
+
+		$multi = [
+			'name' => ['ok.txt', 'gone.txt'],
+			'type' => ['text/plain', 'text/plain'],
+			'tmp_name' => [$good['tmp_name'], '/nonexistent/openregister-test-tmp'],
+			'error' => [UPLOAD_ERR_OK, UPLOAD_ERR_OK],
+			'size' => [4, 4],
+		];
+
+		$this->request->method('getUploadedFile')
+			->willReturnCallback(fn ($key) => $key === 'files' ? $multi : null);
+		$this->request->method('getParams')->willReturn([]);
+		$this->fileService->method('addFile')->willReturn($this->createMock(File::class));
+		$this->fileService->method('formatFiles')->willReturn(['results' => [['id' => 1]]]);
+
+		$result = $this->controller->createMultipart('reg1', 'schema1', 'obj1');
+		$data = $result->getData();
+
+		$this->assertEquals(207, $result->getStatus());
+		$this->assertCount(1, $data['rejected']);
+		$this->assertSame('gone.txt', $data['rejected'][0]['name']);
+
+		@unlink($good['tmp_name']);
+	}//end testCreateMultipartUnreadableTempFileIsReportedNotThrown()
+
 	public function testCreateMultipartGeneralException(): void {
 		$this->objectService->method('setSchema')->willReturnSelf();
 		$this->objectService->method('setRegister')->willReturnSelf();
@@ -1558,7 +1918,8 @@ class FilesControllerTest extends TestCase {
 
 		$result = $this->invokePrivateMethod('processUploadedFiles', [$object, []]);
 		$this->assertIsArray($result);
-		$this->assertEmpty($result);
+		$this->assertEmpty($result['stored']);
+		$this->assertEmpty($result['rejected']);
 	}
 
 	public function testProcessUploadedFilesSuccess(): void {
@@ -1583,7 +1944,8 @@ class FilesControllerTest extends TestCase {
 		$this->fileService->method('addFile')->willReturn($file);
 
 		$result = $this->invokePrivateMethod('processUploadedFiles', [$object, $uploadedFiles]);
-		$this->assertCount(1, $result);
+		$this->assertCount(1, $result['stored']);
+		$this->assertEmpty($result['rejected']);
 
 		@unlink($tmpFile);
 	}
@@ -1608,9 +1970,14 @@ class FilesControllerTest extends TestCase {
 			],
 		];
 
-		$this->expectException(Exception::class);
-		$this->expectExceptionMessageMatches('/File upload error/');
-		$this->invokePrivateMethod('processUploadedFiles', [$object, $uploadedFiles]);
+		// openregister#2776: a per-file failure is now REPORTED, not thrown —
+		// otherwise it would abort every other file in the same batch.
+		$result = $this->invokePrivateMethod('processUploadedFiles', [$object, $uploadedFiles]);
+
+		$this->assertEmpty($result['stored']);
+		$this->assertCount(1, $result['rejected']);
+		$this->assertSame('test.txt', $result['rejected'][0]['name']);
+		$this->assertMatchesRegularExpression('/File upload error/', $result['rejected'][0]['error']);
 
 		@unlink($tmpFile);
 	}

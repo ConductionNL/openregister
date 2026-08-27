@@ -17,7 +17,7 @@ Branch layout on the fork:
 - `work/text-replacement` — long-lived integration branch. OpenRegister `composer.json` points here.
 - `feat/<feature-name>` — one branch per upstream-bound feature. Off `main`. Squashed into `work/text-replacement` as features mature.
 
-Issue / PR drafts for each upstream-bound feature live in the fork itself under [`docs/upstream-prs/`](https://codeberg.org/Conduction/sapp/tree/work/text-replacement/docs/upstream-prs). They're written in "we have this working" framing, posted only after the corresponding code is on `work/text-replacement` and a fixture demonstrates it works. The fork's `README.conduction.md` carries the PR-series index + workflow.
+Issue / PR drafts for each upstream-bound feature live in the fork itself under [`docs/upstream-prs/`](https://github.com/ConductionNL/sapp/tree/work/text-replacement/docs/upstream-prs). They're written in "we have this working" framing, posted only after the corresponding code is on `work/text-replacement` and a fixture demonstrates it works. The fork's `README.conduction.md` carries the PR-series index + workflow.
 
 ### D2. Composer wiring
 
@@ -27,7 +27,7 @@ Issue / PR drafts for each upstream-bound feature live in the fork itself under 
 "repositories": [
     {
         "type": "vcs",
-        "url": "https://codeberg.org/Conduction/sapp"
+        "url": "https://github.com/ConductionNL/sapp"
     }
 ],
 "require": {
@@ -38,7 +38,7 @@ Issue / PR drafts for each upstream-bound feature live in the fork itself under 
 
 When upstream merges the work (release tagged `1.x`), the `repositories` entry is removed and the constraint becomes a normal version range. The diff at that point is two lines.
 
-> **Current pin (2026-06):** `composer.json`/`composer.lock` pin `ddn/sapp` to the bug-fix branch `dev-fix/rebuild-strip-prev-classic-xref#b1c411d` (a commit-SHA pin for reproducibility), not the long-lived `work/text-replacement` integration branch named above. This branch carries the `rebuild`/`strip-prev`/`classic-xref` fixes the byte-replace pipeline depends on. **Tracking:** it must fold back into `work/text-replacement` (and eventually upstream `dealfonso/sapp`) before the pin can be relaxed — see <https://codeberg.org/Conduction/sapp/branches>. Until then the SHA pin is the source of truth.
+> **Current pin (2026-06):** `composer.json`/`composer.lock` pin `ddn/sapp` to the bug-fix branch `dev-fix/rebuild-strip-prev-classic-xref#b1c411d` (a commit-SHA pin for reproducibility), not the long-lived `work/text-replacement` integration branch named above. This branch carries the `rebuild`/`strip-prev`/`classic-xref` fixes the byte-replace pipeline depends on. **Tracking:** it must fold back into `work/text-replacement` (and eventually upstream `dealfonso/sapp`) before the pin can be relaxed — see <https://github.com/ConductionNL/sapp/branches>. Until then the SHA pin is the source of truth.
 
 ### D3. Path A pipeline
 
@@ -193,6 +193,6 @@ PoC measurements update this doc.
 
 - Discovery doc: `openspec/changes/pdf-anonymisation-discovery/discovery.md`
 - Upstream issue drafts: `upstream-issues/` (this directory)
-- SAPP fork: `https://codeberg.org/Conduction/sapp` (branch `work/text-replacement`)
+- SAPP fork: `https://github.com/ConductionNL/sapp` (branch `work/text-replacement`)
 - SAPP upstream: `https://github.com/dealfonso/sapp` (LGPL-3.0-or-later)
 - PDF 1.7 reference: §3.3 (filters), §5.3 (text-show operators), §5.5 (font encodings), §7.4.2 (ASCIIHexDecode), §7.4.3 (ASCII85Decode), §7.4.4 (LZWDecode), §7.4.5 (FlateDecode), §7.4.6 (RunLengthDecode)

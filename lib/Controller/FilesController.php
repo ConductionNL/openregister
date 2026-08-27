@@ -191,6 +191,42 @@ class FilesController extends Controller {
 	}//end translate()
 
 	/**
+	 * Establish the register/schema context on ObjectService, REGISTER FIRST.
+	 *
+	 * The order is load-bearing and is the whole reason this helper exists.
+	 * `ObjectService::setSchema()` resolves a schema SLUG register-scoped via
+	 * `SchemaMapper::findBySlugInIds()` — but only when a register is already
+	 * set. With no register context it falls through to the global resolver,
+	 * which matches `LOWER(slug)` across every register on the instance and
+	 * returns whichever row the tie-break orders first. Generic slugs are
+	 * exactly the ones that collide (`task`, `project`, `document`, `contact`),
+	 * so the schema landed in a foreign register and the subsequent
+	 * `setRegister()` then contradicted it, surfacing as a 500 that named a
+	 * register the caller never mentioned. See openregister#2779: an upload to
+	 * `planix`/`task` was rejected as "not carried by register openbuild".
+	 *
+	 * Every method in this controller MUST route its context setup through
+	 * here rather than calling the two setters inline, so the ordering cannot
+	 * regress one endpoint at a time.
+	 *
+	 * @param string $register The register slug, uuid or numeric id from the route.
+	 * @param string $schema The schema slug, uuid or numeric id from the route.
+	 *
+	 * @return void
+	 *
+	 * @throws DoesNotExistException When the register or schema cannot be resolved.
+	 * @throws \OCA\OpenRegister\Exception\SchemaNotInRegisterException When the schema
+	 *                                                                  slug is genuinely absent from the named register.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function setObjectContext(string $register, string $schema): void {
+		// REGISTER FIRST — see the docblock above. Do not reorder.
+		$this->objectService->setRegister($register);
+		$this->objectService->setSchema($schema);
+	}//end setObjectContext()
+
+	/**
 	 * Enforce object-level RBAC before a file action runs (ADR-005 / gate-7).
 	 *
 	 * The file-action endpoints carry `@NoAdminRequired`, so without an explicit
@@ -367,8 +403,7 @@ class FilesController extends Controller {
 		int $fileId,
 	): JSONResponse|StreamResponse {
 		// Set the schema and register to the object service (forces a check if they are valid).
-		$this->objectService->setSchema($schema);
-		$this->objectService->setRegister($register);
+		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
 			$this->objectService->setObject($id);
@@ -526,7 +561,7 @@ class FilesController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @psalm-return JSONResponse<200|400|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
+	 * @psalm-return JSONResponse<200|400|403|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 *
@@ -539,8 +574,7 @@ class FilesController extends Controller {
 		string $id,
 	): JSONResponse {
 		// Set the schema and register to the object service (forces a check if the are valid).
-		$this->objectService->setSchema($schema);
-		$this->objectService->setRegister($register);
+		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before adding files.
@@ -612,11 +646,11 @@ class FilesController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @psalm-return JSONResponse<200|400|404,
+	 * @psalm-return JSONResponse<200|400|403|404,
 	 *     array{error?: mixed|string, labels?: list<string>,...},
 	 *     array<never, never>>
 	 *
-	 * @suppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
 	 *
@@ -629,8 +663,7 @@ class FilesController extends Controller {
 		string $id,
 	): JSONResponse {
 		// Set the schema and register to the object service (forces a check if the are valid).
-		$this->objectService->setSchema($schema);
-		$this->objectService->setRegister($register);
+		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before saving files.
@@ -712,6 +745,12 @@ class FilesController extends Controller {
 	/**
 	 * Add a new file to an object via multipart form upload
 	 *
+	 * Batch semantics (openregister#2776): a file the security checks refuse no
+	 * longer aborts the request. Outcomes are
+	 *  - 200 + bare list of formatted files — every file stored (unchanged shape);
+	 *  - 207 + {results, rejected, summary} — some stored, the refused ones named;
+	 *  - 400 + {error, rejected} — nothing could be stored.
+	 *
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
 	 * @param string $id The ID of the object to retrieve files for
@@ -722,7 +761,10 @@ class FilesController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @psalm-return JSONResponse<200|400|404, array{error?: string, 0?: array<string, mixed>,...}, array<never, never>>
+	 * @psalm-return JSONResponse<200|207|400|403|404,
+	 *     array{error?: string, rejected?: list<array{name: string, error: string}>,
+	 *     results?: mixed, summary?: array<string, int>, 0?: array<string, mixed>,...},
+	 *     array<never, never>>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
 	 *
@@ -759,17 +801,52 @@ class FilesController extends Controller {
 				throw new Exception('No file(s) uploaded');
 			}
 
-			// Process all uploaded files.
-			$results = $this->processUploadedFiles(
+			// Process all uploaded files. A per-file rejection is collected, not
+			// thrown — see processUploadedFiles() and openregister#2776.
+			$outcome = $this->processUploadedFiles(
 				object: $object,
 				uploadedFiles: $uploadedFiles
 			);
 
+			$rejected = $outcome['rejected'];
+
+			// Every file was refused — there is nothing to report as stored, so
+			// keep the existing 400 shape and name each rejection.
+			if (empty($outcome['stored']) === true && empty($rejected) === false) {
+				return new JSONResponse(
+					data: [
+						'error' => $rejected[0]['error'],
+						'rejected' => $rejected,
+					],
+					statusCode: 400
+				);
+			}
+
 			// Format and return results.
 			$formattedFiles = $this->fileService->formatFiles(
-				files: $results,
+				files: $outcome['stored'],
 				requestParams: $this->request->getParams()
 			);
+
+			// Fully successful batch keeps the historical bare-list body and 200,
+			// so existing clients are untouched. A PARTIAL batch is a different
+			// outcome and gets a different status (207 Multi-Status) plus an
+			// envelope naming what was refused — previously this case was a 400
+			// with nothing stored at all.
+			if (empty($rejected) === false) {
+				return new JSONResponse(
+					data: [
+						'results' => $formattedFiles['results'],
+						'rejected' => $rejected,
+						'summary' => [
+							'total' => (count($outcome['stored']) + count($rejected)),
+							'stored' => count($outcome['stored']),
+							'rejected' => count($rejected),
+						],
+					],
+					statusCode: 207
+				);
+			}
 
 			return new JSONResponse($formattedFiles['results']);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
@@ -795,8 +872,7 @@ class FilesController extends Controller {
 	 */
 	private function validateAndGetObject(string $register, string $schema, string $id): ?ObjectEntity {
 		// Set the schema and register to the object service (forces a check if they are valid).
-		$this->objectService->setSchema($schema);
-		$this->objectService->setRegister($register);
+		$this->setObjectContext(register: $register, schema: $schema);
 		$this->objectService->setObject($id);
 
 		return $this->objectService->getObject();
@@ -859,7 +935,7 @@ class FilesController extends Controller {
 		}
 
 		// Multiple file upload.
-		if ($fileName !== null && is_array($fileName) === true) {
+		if ($fileName !== null) {
 			$uploadedFiles = $this->normalizeMultipleFiles(files: $files, data: $data, fileNames: $fileName);
 		}
 
@@ -967,42 +1043,59 @@ class FilesController extends Controller {
 	/**
 	 * Process all uploaded files and create file entities.
 	 *
+	 * PER-FILE ISOLATION (openregister#2776). Each file is stored inside its own
+	 * try/catch, so one rejected file no longer takes the rest of the batch down
+	 * with it. The previous implementation let the first exception propagate out
+	 * of the loop, which turned a single unstorable attachment into a hard 400
+	 * for the whole request: measured on the Jira attachment migration, ONE
+	 * false-positive PNG cost 284 perfectly storable files.
+	 *
+	 * Rejections are returned rather than swallowed — the caller reports them by
+	 * name alongside the successes, so a partial batch is still auditable.
+	 *
 	 * @param ObjectEntity $object Object entity to attach files to
 	 * @param array $uploadedFiles Normalized uploaded files array
 	 *
-	 * @return \OCP\Files\File[]
+	 * @return array{stored: list<\OCP\Files\File>, rejected: list<array{name: string, error: string}>}
+	 *         The successfully stored file nodes, and the rejected files with the reason each was refused.
 	 *
-	 * @throws Exception If file validation or processing fails
-	 *
-	 * @psalm-return list<OCP\Files\File>
+	 * @psalm-return array{stored: list<\OCP\Files\File>, rejected: list<array{name: string, error: string}>}
 	 */
 	private function processUploadedFiles(ObjectEntity $object, array $uploadedFiles): array {
-		$results = [];
+		$stored = [];
+		$rejected = [];
 
 		foreach ($uploadedFiles as $file) {
-			// Validate file upload.
-			$this->validateUploadedFile(file: $file);
+			$fileName = (string)($file['name'] ?? 'unknown');
 
-			// Read file content.
-			$content = file_get_contents($file['tmp_name']);
+			try {
+				// Validate file upload.
+				$this->validateUploadedFile(file: $file);
 
-			if ($content === false) {
-				throw new Exception(
-					'Failed to read uploaded file content for: ' . $file['name']
+				// Read file content.
+				$content = file_get_contents($file['tmp_name']);
+
+				if ($content === false) {
+					throw new Exception(
+						'Failed to read uploaded file content for: ' . $fileName
+					);
+				}
+
+				// Create file entity.
+				$stored[] = $this->fileService->addFile(
+					objectEntity: $object,
+					fileName: $fileName,
+					content: $content,
+					share: $file['share'],
+					tags: $file['tags']
 				);
-			}
-
-			// Create file entity.
-			$results[] = $this->fileService->addFile(
-				objectEntity: $object,
-				fileName: $file['name'],
-				content: $content,
-				share: $file['share'],
-				tags: $file['tags']
-			);
+			} catch (\Throwable $e) {
+				// One bad file must not abort the batch — record it and continue.
+				$rejected[] = ['name' => $fileName, 'error' => $e->getMessage()];
+			}//end try
 		}//end foreach
 
-		return $results;
+		return ['stored' => $stored, 'rejected' => $rejected];
 	}//end processUploadedFiles()
 
 	/**
@@ -1059,8 +1152,7 @@ class FilesController extends Controller {
 		int $fileId,
 	): JSONResponse {
 		// Set the schema and register to the object service (forces a check if the are valid).
-		$this->objectService->setSchema($schema);
-		$this->objectService->setRegister($register);
+		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating files.
@@ -1123,8 +1215,7 @@ class FilesController extends Controller {
 		int $fileId,
 	): JSONResponse {
 		// Set the schema and register to the object service (forces a check if the are valid).
-		$this->objectService->setSchema($schema);
-		$this->objectService->setRegister($register);
+		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before deleting files.
@@ -1390,8 +1481,7 @@ class FilesController extends Controller {
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function rename(string $register, string $schema, string $id, int $fileId): JSONResponse {
-		$this->objectService->setSchema($schema);
-		$this->objectService->setRegister($register);
+		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating files.
@@ -1460,8 +1550,7 @@ class FilesController extends Controller {
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function copy(string $register, string $schema, string $id, int $fileId): JSONResponse {
-		$this->objectService->setSchema($schema);
-		$this->objectService->setRegister($register);
+		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC on the source object.
@@ -1486,8 +1575,7 @@ class FilesController extends Controller {
 			$this->ensureObjectAccess(register: $targetRegister, schema: $targetSchema, id: $targetObjectId);
 
 			// Load target object.
-			$this->objectService->setSchema($targetSchema);
-			$this->objectService->setRegister($targetRegister);
+			$this->setObjectContext(register: $targetRegister, schema: $targetSchema);
 			$this->objectService->setObject($targetObjectId);
 			$targetObject = $this->objectService->getObject();
 			if ($targetObject === null) {
@@ -1562,8 +1650,7 @@ class FilesController extends Controller {
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function move(string $register, string $schema, string $id, int $fileId): JSONResponse {
-		$this->objectService->setSchema($schema);
-		$this->objectService->setRegister($register);
+		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC on the source object.
@@ -1587,8 +1674,7 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: the caller must also have access to the target object.
 			$this->ensureObjectAccess(register: $targetRegister, schema: $targetSchema, id: $targetObjectId);
 
-			$this->objectService->setSchema($targetSchema);
-			$this->objectService->setRegister($targetRegister);
+			$this->setObjectContext(register: $targetRegister, schema: $targetSchema);
 			$this->objectService->setObject($targetObjectId);
 			$targetObject = $this->objectService->getObject();
 			if ($targetObject === null) {
@@ -1664,8 +1750,7 @@ class FilesController extends Controller {
 	 */
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function listVersions(string $register, string $schema, string $id, int $fileId): JSONResponse {
-		$this->objectService->setSchema($schema);
-		$this->objectService->setRegister($register);
+		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
 			// ADR-005 / gate-7: object read access required to list versions.
@@ -1718,8 +1803,7 @@ class FilesController extends Controller {
 		int $fileId,
 		string $versionId,
 	): JSONResponse {
-		$this->objectService->setSchema($schema);
-		$this->objectService->setRegister($register);
+		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before restoring.
@@ -1786,8 +1870,7 @@ class FilesController extends Controller {
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function lock(string $register, string $schema, string $id, int $fileId): JSONResponse {
-		$this->objectService->setSchema($schema);
-		$this->objectService->setRegister($register);
+		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before locking.
@@ -1849,8 +1932,7 @@ class FilesController extends Controller {
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function unlock(string $register, string $schema, string $id, int $fileId): JSONResponse {
-		$this->objectService->setSchema($schema);
-		$this->objectService->setRegister($register);
+		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before unlocking.
@@ -1920,8 +2002,7 @@ class FilesController extends Controller {
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function batch(string $register, string $schema, string $id): JSONResponse {
-		$this->objectService->setSchema($schema);
-		$this->objectService->setRegister($register);
+		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before batch mutation.
@@ -1978,12 +2059,11 @@ class FilesController extends Controller {
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function preview(string $register, string $schema, string $id, int $fileId): JSONResponse|StreamResponse {
 		try {
-			// SetSchema/setRegister throw DoesNotExistException for an unknown
-			// register/schema slug. Keep them inside the try so anonymous/missing-
+			// The setObjectContext() call throws DoesNotExistException for an unknown
+			// register/schema slug. Keep it inside the try so anonymous/missing-
 			// resource probes return a clean 404, not a 500 HTML page. See the
 			// newman files-domain triage and openregister#1962 follow-up.
-			$this->objectService->setSchema($schema);
-			$this->objectService->setRegister($register);
+			$this->setObjectContext(register: $register, schema: $schema);
 
 			// Gate anonymous callers on the file being publicly published.
 			// Authenticated callers fall through to the existing object-level
@@ -2055,8 +2135,7 @@ class FilesController extends Controller {
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function updateLabels(string $register, string $schema, string $id, int $fileId): JSONResponse {
-		$this->objectService->setSchema($schema);
-		$this->objectService->setRegister($register);
+		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating labels.

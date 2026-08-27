@@ -84,10 +84,8 @@ class ApprovalChainAdvanceListener implements IEventListener {
 			return;
 		}
 
-		if (($schema instanceof Schema) === false) {
-			return;
-		}
-
+		// No instanceof re-check: the lookup above is declared to return Schema
+		// and throws otherwise, which the catch already handles.
 		$config = ($schema->getConfiguration() ?? []);
 		$chains = ($config['x-openregister-approval-chains'] ?? null);
 		if (is_array($chains) === false) {

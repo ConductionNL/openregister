@@ -126,3 +126,11 @@ tests/e2e/test-results/
 tests/e2e/test-results-ci/
 tests/e2e/.mdm-seed.json
 .hydra
+
+# Agent/test scratch and tool caches — generated, never source.
+# Added by the 2026-08-25 fleet hygiene sweep (ADR-100 Decision 2).
+.stale/
+/.e2e-state/
+.phpunit.result.cache
+test-results/
+playwright-report/

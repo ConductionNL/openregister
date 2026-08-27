@@ -330,7 +330,14 @@ class SubFlowNode implements IFlowNode, IFlowNodeConfigKeys {
 				subject: $subject,
 				trigger: 'sub-flow',
 				context: $childCtx,
-				user: ($context['triggeredBy'] ?? null)
+				// The child inherits the parent's ACTING identity, not its
+			// provenance. Identity narrows along an invocation chain and never
+			// widens (ADR-099): a sub-flow may do what its caller could do, and
+			// nothing more. Passing `triggeredBy` here would hand the child the
+			// identity that CAUSED the parent, which for a scheduled run is a
+			// different — and possibly more privileged — user than the one the
+			// parent was actually executing as.
+			user: ($context['runAs'] ?? null)
 			);
 
 			return $items;
@@ -344,7 +351,14 @@ class SubFlowNode implements IFlowNode, IFlowNodeConfigKeys {
 			subject: $subject,
 			trigger: 'sub-flow',
 			context: $childCtx,
-			user: ($context['triggeredBy'] ?? null)
+			// The child inherits the parent's ACTING identity, not its
+			// provenance. Identity narrows along an invocation chain and never
+			// widens (ADR-099): a sub-flow may do what its caller could do, and
+			// nothing more. Passing `triggeredBy` here would hand the child the
+			// identity that CAUSED the parent, which for a scheduled run is a
+			// different — and possibly more privileged — user than the one the
+			// parent was actually executing as.
+			user: ($context['runAs'] ?? null)
 		);
 
 		$run = $this->runs->execute(

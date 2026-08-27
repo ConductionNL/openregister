@@ -52,6 +52,21 @@ class TablesControllerTest extends TestCase {
 		);
 	}
 
+	/**
+	 * Stub the register-scoped schema lookup the controller now performs.
+	 *
+	 * `sync()`/`syncAll()` no longer resolve a schema ref with a global
+	 * `find()`/`findBySlug()`: the register is the boundary, so the ref is matched
+	 * only among the ids that register carries (SchemaMapper::findInIds()).
+	 *
+	 * @param Schema|null $schema The schema the scoped lookup should resolve to, or null for a miss.
+	 *
+	 * @return void
+	 */
+	private function stubScopedSchema(?Schema $schema): void {
+		$this->schemaMapper->method('findInIds')->willReturn($schema);
+	}//end stubScopedSchema()
+
 	private function createRegister(int $id = 1, ?array $schemas = null): Register {
 		$register = new Register();
 		$ref = new \ReflectionClass($register);
@@ -80,11 +95,13 @@ class TablesControllerTest extends TestCase {
 	}
 
 	public function testSyncReturnsSuccessForNumericIds(): void {
-		$register = $this->createRegister();
+		// The register must CARRY schema 1: the lookup is register-scoped now, so
+		// a register with an empty schemas list can no longer resolve anything.
+		$register = $this->createRegister(1, [1]);
 		$schema = $this->createSchema();
 
 		$this->registerMapper->method('find')->willReturn($register);
-		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->stubScopedSchema($schema);
 		$this->magicMapper->method('syncTableForRegisterSchema')
 			->willReturn([
 				'metadataProperties' => 5,
@@ -120,17 +137,28 @@ class TablesControllerTest extends TestCase {
 		$this->assertSame('Failed to sync magic table', $data['error']);
 	}
 
-	public function testSyncReturns500WhenSchemaNotFound(): void {
-		$register = $this->createRegister();
+	public function testSyncRefusesASlugTheRegisterDoesNotCarry(): void {
+		// Previously a global `find()` miss surfaced as a generic 500 'Failed to
+		// sync magic table'. A SLUG is now register-scoped, so one the register
+		// does not carry is a 404 naming the register, the count of same-slug
+		// schemas elsewhere, and the relink-schemas repair command — and a slug
+		// that resolves ELSEWHERE on the instance no longer reshapes this
+		// register's table. The boundary is deliberately slug-only: a numeric id
+		// or uuid is unique by construction, so scoping it would protect nothing
+		// and would refuse callers whose register carries a stale schemas list.
+		$register = $this->createRegister(1, [1]);
 		$this->registerMapper->method('find')->willReturn($register);
-		$this->schemaMapper->method('find')
-			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Schema not found'));
+		$this->stubScopedSchema(null);
+		$this->schemaMapper->method('countBySlug')->willReturn(3);
+		$this->schemaMapper->expects($this->never())->method('find');
+		$this->magicMapper->expects($this->never())->method('syncTableForRegisterSchema');
 
-		$result = $this->controller->sync(1, 999);
+		$result = $this->controller->sync(1, 'timeEntry');
 
-		$this->assertSame(500, $result->getStatus());
-		$data = $result->getData();
-		$this->assertSame('Failed to sync magic table', $data['error']);
+		$this->assertSame(404, $result->getStatus());
+		$error = $result->getData()['error'];
+		$this->assertStringContainsString('is not carried by', $error);
+		$this->assertStringContainsString('occ openregister:registers:relink-schemas', $error);
 	}
 
 	public function testSyncReturns500OnException(): void {
@@ -145,15 +173,17 @@ class TablesControllerTest extends TestCase {
 	}
 
 	public function testSyncWithStringNumericIds(): void {
-		$register = $this->createRegister();
+		// The register must CARRY schema 1: the lookup is register-scoped now, so
+		// a register with an empty schemas list can no longer resolve anything.
+		$register = $this->createRegister(1, [1]);
 		$schema = $this->createSchema();
 
 		$this->registerMapper->method('find')->willReturn($register);
-		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->stubScopedSchema($schema);
 		$this->magicMapper->method('syncTableForRegisterSchema')
 			->willReturn([]);
 
-		// Numeric strings still use find() via is_numeric() check.
+		// A numeric-string ref resolves through the same scoped lookup.
 		$result = $this->controller->sync('1', '1');
 
 		$this->assertSame(200, $result->getStatus());

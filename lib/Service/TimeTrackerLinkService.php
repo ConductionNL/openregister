@@ -932,7 +932,7 @@ class TimeTrackerLinkService {
 		}
 
 		$duration = null;
-		if (isset($row->duration) === true && $row->duration !== '' && $row->duration !== null) {
+		if (isset($row->duration) === true && $row->duration !== '') {
 			$duration = (int)$row->duration;
 		}
 

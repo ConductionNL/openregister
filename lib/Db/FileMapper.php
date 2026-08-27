@@ -483,10 +483,12 @@ class FileMapper extends QBMapper {
 	 *
 	 * @param array $fileIds List of file ids (int|string) to load
 	 *
-	 * @return array<string, array> Map of (string) fileid => file record
+	 * @return array<int|string, array> Map of fileid => file record. The key type
+	 *         is int|string, not string: a stringified fileid is a canonical
+	 *         numeric string, which PHP coerces to an int array key.
 	 *
 	 * @phpstan-param  array<int, int|string> $fileIds
-	 * @phpstan-return array<string, File>
+	 * @phpstan-return array<int|string, File>
 	 */
 	public function getFilesByIds(array $fileIds): array {
 		// Normalise to unique positive integers; ignore non-numeric entries.

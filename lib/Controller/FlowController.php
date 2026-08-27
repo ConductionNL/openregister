@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
@@ -74,6 +75,19 @@ use OCP\WorkflowEngine\IManager;
  * which costs more than it buys.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * Overall complexity is 53 against a threshold of 50, for the third instance of
+ * the same reason. The class sat exactly AT 50 before `saveOrRefuse()` was added,
+ * so any endpoint gaining a branch trips it — and the branch in question turns an
+ * author's malformed trigger config from an HTML 500 into a 400 that names the
+ * key, which is worth more than the number. Extracting the helper did not help:
+ * a private method moves complexity within the class rather than out of it, and
+ * the only real remedy is splitting the controller — which the two suppressions
+ * above already argue against, because it puts two controllers behind one
+ * `/api/flows` prefix and makes the routes file the only place the API's shape is
+ * visible. Revisit if this class gains a genuinely separable second concern.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
@@ -570,10 +584,39 @@ class FlowController extends Controller {
 			return new JSONResponse(['error' => 'A flow needs a name.'], Http::STATUS_BAD_REQUEST);
 		}
 
-		$flow = $this->flows->save(data: $data);
+		$flow = $this->saveOrRefuse(data: $data);
+		if ($flow instanceof JSONResponse) {
+			return $flow;
+		}
 
 		return new JSONResponse($this->savedBody(flow: $flow), Http::STATUS_CREATED);
 	}//end create()
+
+	/**
+	 * Save a flow, turning an author's mistake into a 400 rather than a 500.
+	 *
+	 * A trigger node rejecting its own config is the AUTHOR's error, not the
+	 * server's. Letting `InvalidArgumentException` escape produced an HTML 500,
+	 * which reads as "the instance is broken" and sends the reader to the logs —
+	 * when the node's message already names the key and says what to do about it.
+	 *
+	 * Shared by create() and update() so the two cannot drift into answering the
+	 * same mistake with different statuses.
+	 *
+	 * @param array       $data The flow payload.
+	 * @param string|null $uuid The flow to update, or null to create.
+	 *
+	 * @return Flow|JSONResponse The stored flow, or the refusal to return.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function saveOrRefuse(array $data, ?string $uuid = null): Flow|JSONResponse {
+		try {
+			return $this->flows->save(data: $data, uuid: $uuid);
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		}
+	}//end saveOrRefuse()
 
 	/**
 	 * The stored flow, plus any warning the author should see about it.
@@ -634,9 +677,13 @@ class FlowController extends Controller {
 		}
 
 		try {
-			$flow = $this->flows->save(data: $this->flowPayload(), uuid: $id);
+			$flow = $this->saveOrRefuse(data: $this->flowPayload(), uuid: $id);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+		}
+
+		if ($flow instanceof JSONResponse) {
+			return $flow;
 		}
 
 		return new JSONResponse($this->savedBody(flow: $flow));

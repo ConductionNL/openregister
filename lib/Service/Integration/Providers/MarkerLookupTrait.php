@@ -84,10 +84,23 @@ trait MarkerLookupTrait {
 
 			return $rows;
 		} catch (Throwable $e) {
-			\OCP\Server::get(\Psr\Log\LoggerInterface::class)->debug(
-				'[MarkerLookupTrait] ' . $table . '.' . $markerColumn . ' query failed: ' . $e->getMessage(),
-				['exception' => $e]
-			);
+			// Log defensively. This catch exists to DEGRADE gracefully (AD-23),
+			// so the logging must not be able to fail louder than the thing it
+			// reports. `\OCP\Server::get()` yields null when no server container
+			// is up — under unit tests, for instance — and calling ->debug() on
+			// that turned every handled query failure into a fatal
+			// "Call to a member function debug() on null". Seven provider tests
+			// died in the error handler rather than in the code under test.
+			try {
+				\OCP\Server::get(\Psr\Log\LoggerInterface::class)?->debug(
+					'[MarkerLookupTrait] ' . $table . '.' . $markerColumn . ' query failed: ' . $e->getMessage(),
+					['exception' => $e]
+				);
+			} catch (Throwable $loggingFailure) {
+				// No logger reachable at all — the degraded return below is
+				// still the correct outcome, so swallow and carry on.
+			}
+
 			// Schema mismatch / app uninstalled / column missing — empty list (AD-23).
 			return [];
 		}//end try

@@ -46,8 +46,10 @@ namespace OCA\OpenRegister\Service\Quality;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -92,10 +94,24 @@ class QualityStatisticsService {
 	private const DEFAULT_LIMIT = 20;
 
 	/**
+	 * The shared register-scoped schema resolver.
+	 *
+	 * Built here rather than injected: it is a stateless collaborator over the
+	 * `RegisterMapper` + `SchemaMapper` this class already holds, so constructing
+	 * it directly keeps every existing unit test — all of which mock those two
+	 * mappers — exercising the REAL resolution path instead of a mock of the very
+	 * thing under test.
+	 *
+	 * @var RegisterScopedSchemaResolver
+	 */
+	private readonly RegisterScopedSchemaResolver $scopedSchemaResolver;
+
+	/**
 	 * Wire collaborators.
 	 *
 	 * @param ObjectService $objectService Object query path (RBAC + tenant scoped).
 	 * @param SchemaMapper $schemaMapper Schema lookup for the quality annotation.
+	 * @param RegisterMapper $registerMapper Register lookup — the boundary the schema resolves inside.
 	 * @param QualityScorer $scorer Reused for status() bucketing — never reimplemented.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
@@ -105,11 +121,17 @@ class QualityStatisticsService {
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
-		private readonly SchemaMapper $schemaMapper,
+		SchemaMapper $schemaMapper,
+		RegisterMapper $registerMapper,
 		private readonly QualityScorer $scorer,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
+			registerMapper: $registerMapper,
+			schemaMapper: $schemaMapper
+		);
 	}//end __construct()
+
 
 	/**
 	 * Compute quality statistics for a register/schema.
@@ -128,7 +150,7 @@ class QualityStatisticsService {
 	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-1
 	 */
 	public function statisticsFor($register, $schema): array {
-		$quality = $this->loadAnnotation(schema: $schema);
+		$quality = $this->loadAnnotation(register: $register, schema: $schema);
 		$field = $this->scoreField(quality: $quality);
 		$thresholds = $this->thresholds(quality: $quality);
 
@@ -204,7 +226,7 @@ class QualityStatisticsService {
 		int $limit = self::DEFAULT_LIMIT,
 		int $offset = 0,
 	): array {
-		$quality = $this->loadAnnotation(schema: $schema);
+		$quality = $this->loadAnnotation(register: $register, schema: $schema);
 		$field = $this->scoreField(quality: $quality);
 		$thresholds = $this->thresholds(quality: $quality);
 
@@ -329,21 +351,36 @@ class QualityStatisticsService {
 	 *
 	 * Mirrors {@see DuplicateDetectionService::loadAnnotation()}.
 	 *
-	 * @param int|string $schema Schema reference.
+	 * REGISTER-SCOPED. `GET /api/objects/quality/{register}/{schema}` has always
+	 * carried a register, and this lookup used to ignore it and resolve the slug
+	 * globally — so on any instance where two apps share a schema slug the quality
+	 * thresholds of ANOTHER app's schema were applied to this register's rows,
+	 * silently changing every good/fair/poor verdict. The object set itself is
+	 * loaded with both refs, so the annotation was the only half that drifted.
+	 *
+	 * A miss still degrades to `[]` (defaults) rather than throwing, matching the
+	 * pre-existing contract of this method: the statistics endpoint reports on
+	 * whatever rows it finds and an absent annotation is a normal state.
+	 *
+	 * @param int|string $register Register reference — the boundary.
+	 * @param int|string $schema   Schema reference.
 	 *
 	 * @return array<string, mixed> Annotation (empty array when absent / unresolvable).
+	 *
+	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
-	private function loadAnnotation($schema): array {
+	private function loadAnnotation($register, $schema): array {
 		try {
-			$entity = $this->schemaMapper->find($schema, _multitenancy: false);
+			$entity = $this->scopedSchemaResolver->resolvePair(
+				registerRef: $register,
+				schemaRef: $schema
+			)['schema'];
 		} catch (Throwable $e) {
 			return [];
 		}
 
-		if ($entity instanceof Schema === false) {
-			return [];
-		}
-
+		// No instanceof re-check: the lookup above is declared to return Schema
+		// and throws otherwise, which the catch already handles.
 		$config = ($entity->getConfiguration() ?? []);
 		$annotation = ($config['x-openregister-quality'] ?? null);
 		if (is_array($annotation) === true) {

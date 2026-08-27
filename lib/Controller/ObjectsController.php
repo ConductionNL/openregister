@@ -42,6 +42,7 @@ use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
+use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
@@ -76,13 +77,13 @@ use Symfony\Component\Uid\Uuid;
  *
  * @psalm-suppress UnusedClass
  *
- * @suppressWarnings(PHPMD.ExcessiveClassLength)
- * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @suppressWarnings(PHPMD.TooManyMethods)
- * @suppressWarnings(PHPMD.TooManyPublicMethods)
- * @suppressWarnings(PHPMD.CouplingBetweenObjects)
- * @suppressWarnings(PHPMD.ElseExpression)           File upload extraction requires conditional branching
- * @suppressWarnings(PHPMD.ExcessiveMethodLength)    Complex file upload handling with multiple formats
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ElseExpression)           File upload extraction requires conditional branching
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    Complex file upload handling with multiple formats
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  *
@@ -90,6 +91,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class ObjectsController extends Controller {
 	use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
+	use ResolvesRegisterAndSchemaTrait;
 
 	/**
 	 * Export service for handling data exports
@@ -134,7 +136,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return void
 	 *
-	 * @suppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
 		string $appName,
@@ -637,7 +639,7 @@ class ObjectsController extends Controller {
 	 *     ids: array|null
 	 * }
 	 *
-	 * @suppressWarnings(PHPMD.UnusedFormalParameter)
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
 	private function getConfig(?string $_register = null, ?string $_schema = null, ?array $ids = null): array {
 		$params = $this->request->getParams();
@@ -826,7 +828,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @psalm-suppress UnusedParam Params are used in foreach loops and method calls.
 	 *
-	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 */
 	private function crossTableSearch(array $registers, array $schemas, ObjectService $objectService): JSONResponse {
 		$magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
@@ -929,8 +931,16 @@ class ObjectsController extends Controller {
 		// `_rbac` is forwarded only to gate the property `authorization.read` strip. It does
 		// NOT gate the writeOnly strip (#460): `$query['_rbac']` is false for an ADMIN here,
 		// and an admin is not exempt from the writeOnly render boundary (#389).
+		// No `?? true` fallback: this method sets $query['_rbac'] unconditionally
+		// a few lines above, so the key is always present here.
 		$renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
-		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac'] ?? true);
+		// No `?? true` on THIS path: `_rbac` is assigned unconditionally above and
+		// the unset() in between does not remove it, so the fallback was dead --
+		// and had it ever fired it would have forced the RBAC strip on exactly the
+		// admin case the comment above says is false. The sibling call further down
+		// keeps its `??` because there `$query` comes straight from
+		// buildSearchQuery() with no `_rbac` assignment.
+		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac']);
 
 		// Serialize results.
 		$serializedResults = [];
@@ -1004,46 +1014,31 @@ class ObjectsController extends Controller {
 	}//end crossTableSearch()
 
 	/**
-	 * Resolve register and schema IDs from slugs or IDs.
+	 * Resolve a register/schema path pair to numeric ids.
 	 *
-	 * @param string $register Register ID or slug.
-	 * @param string $schema Schema ID or slug.
-	 * @param ObjectService $objectService Object service for resolution.
+	 * Delegates to ResolvesRegisterAndSchemaTrait so this controller and
+	 * BulkController share ONE implementation. They previously each held a
+	 * private copy; #2858 and #2860 fixed this one and the bulk copy kept the
+	 * bug, so `GET /api/objects/19/9476` worked while
+	 * `POST /api/bulk/19/9475/save` still 404'd on the same register.
 	 *
-	 * @return array Resolved register and schema information.
+	 * @param string        $register      Register slug, uuid or numeric id.
+	 * @param string        $schema        Schema slug, uuid or numeric id.
+	 * @param ObjectService $objectService The request's object service.
 	 *
-	 * @throws RegisterNotFoundException When register is not found.
-	 * @throws SchemaNotFoundException When schema is not found.
+	 * @return array The resolved ids and entities.
+	 *
+	 * @throws RegisterNotFoundException When the register does not resolve.
+	 * @throws SchemaNotFoundException   When the schema does not resolve.
+	 *
+	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
 	private function resolveRegisterSchemaIds(string $register, string $schema, ObjectService $objectService): array {
-		try {
-			// STEP 1: Initial resolution - convert slugs/IDs to numeric IDs.
-			$objectService->setRegister(register: $register);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			// If register not found, throw custom exception.
-			throw new RegisterNotFoundException(registerSlugOrId: $register, code: 404, previous: $e);
-		}
-
-		try {
-			$objectService->setSchema(schema: $schema);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			// If schema not found, throw custom exception.
-			throw new SchemaNotFoundException(schemaSlugOrId: $schema, code: 404, previous: $e);
-		}
-
-		// STEP 2: Get resolved numeric IDs.
-		$resolvedRegisterId = $objectService->getRegister();
-		$resolvedSchemaId = $objectService->getSchema();
-
-		// STEP 3: Reuse the entities already resolved by setRegister()/setSchema()
-		// above — re-fetching them via the mappers would resolve the same
-		// register and schema twice per request.
-		return [
-			'register' => $resolvedRegisterId,
-			'schema' => $resolvedSchemaId,
-			'registerEntity' => $objectService->getCurrentRegisterEntity(),
-			'schemaEntity' => $objectService->getCurrentSchemaEntity(),
-		];
+		return $this->resolveRegisterAndSchema(
+			register: $register,
+			schema: $schema,
+			objectService: $objectService
+		);
 	}//end resolveRegisterSchemaIds()
 
 	/**
@@ -1081,8 +1076,8 @@ class ObjectsController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200|404, array<string, mixed>, array<never, never>>
 	 *
-	 * @suppressWarnings(PHPMD.NPathComplexity)       Complex request parameter handling for flexible API
-	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)       Complex request parameter handling for flexible API
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-schema search + pagination + filtering requires branching
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -1415,7 +1410,7 @@ class ObjectsController extends Controller {
 
 				// Content negotiation: JSON-LD @graph for magic-mapped results
 				// (json-ld-output).
-				if ($this->wantsJsonLd() === true && $registerEntity !== null && $schemaEntity !== null) {
+				if ($this->wantsJsonLd() === true) {
 					return $this->jsonLdCollectionResponse(
 						result: $responseData,
 						register: $registerEntity,
@@ -2138,10 +2133,10 @@ class ObjectsController extends Controller {
 	 *
 	 * @PublicPage
 	 *
-	 * @psalm-return JSONResponse<200, array<string, mixed>, array<never, never>>
+	 * @psalm-return JSONResponse<200|404, array<string, mixed>, array<never, never>>
 	 *
-	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @suppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Cross-table search + multi-schema routing requires branching
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -2362,7 +2357,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with the object or error
 	 *
-	 * @suppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Object retrieval with slug resolution + access checks requires branching
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -2569,7 +2564,7 @@ class ObjectsController extends Controller {
 	 * @psalm-suppress TypeDoesNotContainType
 	 * @psalm-suppress NoValue
 	 *
-	 * @suppressWarnings(PHPMD.NPathComplexity) Object creation requires many validation and processing steps
+	 * @SuppressWarnings(PHPMD.NPathComplexity) Object creation requires many validation and processing steps
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 *
@@ -2769,8 +2764,8 @@ class ObjectsController extends Controller {
 	 * @psalm-suppress TypeDoesNotContainType
 	 * @psalm-suppress NoValue
 	 *
-	 * @suppressWarnings(PHPMD.NPathComplexity)       Object update requires many validation and processing steps
-	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)       Object update requires many validation and processing steps
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Object update requires many validation and processing steps
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -2993,8 +2988,8 @@ class ObjectsController extends Controller {
 	 *
 	 * @PublicPage
 	 *
-	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @suppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
@@ -3804,7 +3799,7 @@ class ObjectsController extends Controller {
 	 *     message?: 'Object does not belong to specified register/schema'|'Object not found'},
 	 *     array<never, never>>
 	 *
-	 * @suppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Audit log retrieval with pagination + access checks requires branching
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -4032,10 +4027,23 @@ class ObjectsController extends Controller {
 		$type = $this->request->getParam(key: 'format') ?? $this->request->getParam(key: 'type', default: 'excel');
 
 		// Get register and schema entities.
-		// Bypass multi-tenancy since the user already has access via setRegister/setSchema above,
-		// and this lookup is only needed for the export filename and metadata.
-		$registerEntity = $this->registerMapper->find($register, _multitenancy: false);
-		$schemaEntity = $this->schemaMapper->find($schema, _multitenancy: false);
+		//
+		// Reuse what setRegister()/setSchema() already resolved instead of
+		// re-resolving. The re-resolution was GLOBAL — `$this->schemaMapper->find()`
+		// matches `LOWER(slug)` across the whole instance — so on an instance where
+		// two apps share a schema slug the export was named after ANOTHER app's
+		// schema while its rows came from this register's. A filename is exactly
+		// where that goes unnoticed: the file downloads, opens, and lies about its
+		// own provenance.
+		$registerEntity = $objectService->getCurrentRegisterEntity();
+		$schemaEntity = $objectService->getCurrentSchemaEntity();
+		if ($registerEntity === null || $schemaEntity === null) {
+			// Unreachable in practice — setRegister()/setSchema() above either
+			// resolve or throw. Refusing here rather than re-resolving keeps the
+			// register a boundary: a fallback lookup would be a second, unscoped
+			// chance to find *a* schema with this slug, which is the whole defect.
+			return new JSONResponse(data: ['error' => 'Register or schema not found'], statusCode: 404);
+		}
 
 		// Generate filename base.
 		$filenameBase = sprintf(

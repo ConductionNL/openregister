@@ -71,6 +71,28 @@ class UploadService {
 	private readonly Client $client;
 
 	/**
+	 * Constructor.
+	 *
+	 * WHY THIS EXISTS. `$client` was declared `readonly` and never assigned —
+	 * this class had no constructor — so `getUploadedJson()` died with
+	 *
+	 *   Typed property UploadService::$client must not be accessed before
+	 *   initialization
+	 *
+	 * the moment an upload used the `url` branch. A fatal, not a degraded path.
+	 * Same defect as NotificationService and EndpointService in this repo.
+	 *
+	 * Guzzle's Client is not a Nextcloud service, so it is constructed here with
+	 * a default rather than injected; the parameter stays optional so a test can
+	 * pass a mock handler.
+	 *
+	 * @param Client|null $client HTTP client; a default Guzzle client when null.
+	 */
+	public function __construct(?Client $client = null) {
+		$this->client = ($client ?? new Client());
+	}//end __construct()
+
+	/**
 	 * Gets the uploaded JSON from the request data and returns it as a PHP array
 	 *
 	 * Processes uploaded JSON data from multiple sources in priority order:

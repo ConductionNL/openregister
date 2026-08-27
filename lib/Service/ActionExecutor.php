@@ -88,7 +88,7 @@ class ActionExecutor {
 	public function executeActions(array $actions, Event $event, array $payload, string $eventType): void {
 		foreach ($actions as $action) {
 			// Check if propagation was stopped by a previous action or inline hook.
-			if (method_exists($event, 'isPropagationStopped') === true && $event->isPropagationStopped() === true) {
+			if ($event->isPropagationStopped() === true) {
 				$this->logger->debug(
 					message: '[ActionExecutor] Propagation stopped, skipping remaining actions',
 					context: ['skippedAction' => $action->getName()]
@@ -251,10 +251,10 @@ class ActionExecutor {
 				context: ['actionName' => $action->getName()]
 			);
 
-			// Stop propagation for pre-mutation events.
-			if (method_exists($event, 'stopPropagation') === true) {
-				$event->stopPropagation();
-			}
+			// Stop propagation for pre-mutation events. OCP\EventDispatcher\Event
+			// declares stopPropagation(), so no method_exists() probe is needed —
+			// unlike setErrors() below, which is not on the base class.
+			$event->stopPropagation();
 
 			if (method_exists($event, 'setErrors') === true) {
 				$event->setErrors($result->getErrors());

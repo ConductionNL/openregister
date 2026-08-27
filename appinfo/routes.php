@@ -1312,6 +1312,18 @@ return [
 		['name' => 'flowRun#resume', 'url' => '/api/flow-runs/{uuid}/resume', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		// Interactive test run (or-flow-partial-run): run synchronously with optional startAt + pins + seed.
 		['name' => 'flowRun#test', 'url' => '/api/flow-runs/test', 'verb' => 'POST'],
+		// Delegation grants (or-delegation-grants): the consent surface. A grant
+		// store with no way to answer is a store that only ever says no, so these
+		// are what make every delegation refusal recoverable.
+		//
+		// `principal` is NEVER read from a body on any of these — it is the
+		// session user. An endpoint that accepted it would let anyone raise a
+		// request in somebody else's name, and the prompt a real person then saw
+		// would read as that other party asking.
+		['name' => 'delegation#index', 'url' => '/api/delegations', 'verb' => 'GET'],
+		['name' => 'delegation#request', 'url' => '/api/delegations', 'verb' => 'POST'],
+		['name' => 'delegation#answer', 'url' => '/api/delegations/{uuid}/answer', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'delegation#revoke', 'url' => '/api/delegations/{uuid}/revoke', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		// Federated configuration sharing (federated-config-sharing): declare types, bundle a selection, install/publish/discover a bundle.
 		['name' => 'federatedConfig#types', 'url' => '/api/federated-config/types', 'verb' => 'GET'],
 		['name' => 'federatedConfig#bundle', 'url' => '/api/federated-config/bundle', 'verb' => 'POST'],

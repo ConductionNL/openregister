@@ -4,7 +4,7 @@ Verified at OpenRegister HEAD (`development` @ 12a52c7fc):
 
 - **PDF manipulation library:** `ddn/sapp` — the Conduction fork of
   dealfonso/sapp ("Simple and Agnostic PDF Parser"), pinned to
-  `dev-feat/chained-filter-text-replace` from `codeberg.org/Conduction/sapp`
+  `dev-feat/chained-filter-text-replace` from `github.com/ConductionNL/sapp`
   (composer.json:99, composer.lock:308). Pure PHP, operates on raw PDF objects
   and content streams. `PDFDoc::replace_text_in_document()` byte-replaces the
   text shown by `Tj`/`TJ` operators; `to_pdf_file_s(rebuild: true)`

@@ -49,7 +49,7 @@ class ObjectWriteNodeTest extends TestCase {
 	private Schema $schema;
 
 	/** @var array<int, string> */
-	private array $registerContext = ['triggeredBy' => 'alice'];
+	private array $registerContext = ['runAs' => 'alice'];
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -81,12 +81,16 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->userManager = $this->createMock(IUserManager::class);
 		$this->userManager->method('get')->willReturnCallback(
 			function (string $uid): ?IUser {
-				if ($uid !== 'alice') {
+				// `dormant` exists but is disabled — an offboarded account. It
+				// must be told apart from `alice` (enabled) and from an unknown
+				// uid (null); all three reach the resolver and only one may write.
+				if (in_array($uid, ['alice', 'dormant'], true) === false) {
 					return null;
 				}
 
 				$user = $this->createMock(IUser::class);
-				$user->method('getUID')->willReturn('alice');
+				$user->method('getUID')->willReturn($uid);
+				$user->method('isEnabled')->willReturn($uid === 'alice');
 
 				return $user;
 			}
@@ -258,9 +262,9 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->objects->expects($this->never())->method('deleteObject');
 
 		$this->expectException(RuntimeException::class);
-		$this->expectExceptionMessageMatches('/triggeredBy/');
+		$this->expectExceptionMessageMatches('/runAs/');
 
-		$this->node->execute($this->items([['id' => 'a']]), $this->config(), ['triggeredBy' => null]);
+		$this->node->execute($this->items([['id' => 'a']]), $this->config(), ['runAs' => null]);
 
 	}//end testARunWithNoOwnerWritesNothing()
 
@@ -282,9 +286,32 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 
-		$this->node->execute($this->items([['id' => 'a']]), $this->config(), ['triggeredBy' => 'nobody']);
+		$this->node->execute($this->items([['id' => 'a']]), $this->config(), ['runAs' => 'nobody']);
 
 	}//end testAnUnknownOwnerAccountAlsoFailsClosed()
+
+	/**
+	 * A DISABLED account is refused, even though it resolves.
+	 *
+	 * The write side matters more than the read side here: a run resumed weeks
+	 * after its acting identity was offboarded would otherwise CREATE records
+	 * attributed to that person. Disabling an account is how a departure is
+	 * normally processed, and `IUserManager::get()` returns a disabled user
+	 * happily, so an existence check alone misses the ordinary case.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegated-identity/spec.md
+	 */
+	public function testADisabledActingIdentityFailsClosed(): void {
+		$this->objects->expects($this->never())->method('saveObject');
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessageMatches('/disabled/');
+
+		$this->node->execute($this->items([['id' => 'a']]), $this->config(), ['runAs' => 'dormant']);
+
+	}//end testADisabledActingIdentityFailsClosed()
 
 	// ── Create, attribution and output shape (REQ-OWN-002/003/007) ──────
 
@@ -1208,6 +1235,10 @@ class ObjectWriteNodeTest extends TestCase {
 				'schema',
 				'operation',
 				'fields',
+				// `payloadFrom` writes the object at a path WHOLE, for the case where
+				// the properties are not known up front — a synchronization with no
+				// mapping. It is an alternative to `fields`, never a companion.
+				'payloadFrom',
 				'match',
 				'replace',
 				'bulk',

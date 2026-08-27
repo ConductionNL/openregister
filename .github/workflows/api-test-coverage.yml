@@ -98,6 +98,39 @@ jobs:
           docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ app:enable openregister"
           docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ app:list" | grep openregister
 
+      - name: Provide composer inside the container
+        # The unit-suite step below runs INSIDE the nextcloud container, which
+        # ships no composer — which is why this repo used to carry a committed
+        # `composer.phar` at its root and invoke `php composer.phar install`.
+        #
+        # A checked-in package-manager binary is exactly the supply-chain shape
+        # ADR-100 Decision 2 forbids: it is never reviewed, never updated with
+        # the lockfile, and its provenance is a git history nobody reads.
+        #
+        # The runner already has composer (see the `composer install` step
+        # above, which uses it), so hand that one to the container instead of
+        # shipping a second copy in the repository. `command -v` fails loudly
+        # if it is ever absent, rather than falling through to a missing binary.
+        #
+        # Copied to a plain path and invoked as `php /usr/local/bin/composer`,
+        # exactly as the old committed phar was invoked. `docker cp` does not
+        # carry the executable bit reliably, and the first attempt at this step
+        # failed with "composer: executable file not found in $PATH" for that
+        # reason. Running the phar through `php` sidesteps both the exec bit and
+        # the shebang, and needs nothing on the container's PATH.
+        run: |
+          set -e
+          # readlink -f, not `command -v` alone: setup-php puts a SYMLINK on
+          # PATH, and `docker cp` copies the link itself rather than its target
+          # — which lands a dangling symlink in the container and fails at use
+          # time with "Could not open input file: /usr/local/bin/composer".
+          COMPOSER_BIN="$(readlink -f "$(command -v composer)")"
+          echo "Copying composer from ${COMPOSER_BIN} ($(stat -c%s "${COMPOSER_BIN}") bytes)"
+          docker cp "${COMPOSER_BIN}" nextcloud:/usr/local/bin/composer
+          # Prove it is usable HERE, where the message names the cause, rather
+          # than 40 lines later where it reads as a dependency-install failure.
+          docker exec nextcloud php /usr/local/bin/composer --version
+
       - name: PHPUnit unit suite (in-container, HARD GATE)
         # The unit suite requires the full Nextcloud runtime — the OCP stubs
         # reference Doctrine\DBAL\* and OC\* internals that only resolve once
@@ -127,7 +160,7 @@ jobs:
             # ext-gd is ignored too as a belt-and-suspenders no-op (phpspreadsheet
             # requires it; the NC image does ship gd, so this is harmless there).
             php -r "\$j=json_decode(file_get_contents(\"composer.json\"),true); \$j[\"config\"][\"autoloader-suffix\"]=\"OrTestCI\"; file_put_contents(\"composer.json\", json_encode(\$j, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES));"
-            php composer.phar install --no-interaction --no-progress --prefer-dist --ignore-platform-req=ext-xsl --ignore-platform-req=ext-gd
+            php /usr/local/bin/composer install --no-interaction --no-progress --prefer-dist --ignore-platform-req=ext-xsl --ignore-platform-req=ext-gd
             OPENREGISTER_TEST_NC_ROOT=/var/www/html php vendor/bin/phpunit -c phpunit.xml --no-coverage --colors=never tests/Unit
           '
 

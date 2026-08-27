@@ -160,10 +160,10 @@ class RetentionController extends Controller {
 							false,
 							false
 						);
-						if ($exclObject !== null) {
-							$this->retentionService->extendArchiveActionDate($exclObject);
-							$this->objectMapper->update($exclObject);
-						}
+						// The find() call throws rather than returning null; the catch below
+						// is what handles a missing object.
+						$this->retentionService->extendArchiveActionDate($exclObject);
+						$this->objectMapper->update($exclObject);
 					} catch (Exception $e) {
 						$this->logger->warning(
 							'[RetentionController] Failed to extend excluded object: ' . $e->getMessage()
@@ -311,10 +311,10 @@ class RetentionController extends Controller {
 
 				try {
 					$object = $this->objectMapper->find($uuid, null, null, false, false, false);
-					if ($object !== null) {
-						$this->retentionService->extendArchiveActionDate($object);
-						$this->objectMapper->update($object);
-					}
+					// The find() call throws rather than returning null; the catch below is
+					// what handles a missing object.
+					$this->retentionService->extendArchiveActionDate($object);
+					$this->objectMapper->update($object);
 				} catch (Exception $e) {
 					$this->logger->warning(
 						'[RetentionController] Failed to extend rejected object: ' . $e->getMessage()

@@ -34,11 +34,13 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
+use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
@@ -86,6 +88,8 @@ use Symfony\Component\Uid\Uuid;
  * into sub-controllers would break the route registration.
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)     REST controllers have many endpoints; extraction
  * into sub-controllers would break the route registration.
+ * @SuppressWarnings(PHPMD.TooManyMethods)           REST controllers have many endpoints; extraction
+ * into sub-controllers would break the route registration.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   NC AppFramework controller DI requires injecting
  * framework + RBAC + audit + domain services, each used in separate endpoint groups.
  *
@@ -93,6 +97,19 @@ use Symfony\Component\Uid\Uuid;
  */
 class SchemasController extends Controller {
 	use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
+
+	/**
+	 * The shared register-scoped schema resolver.
+	 *
+	 * Built here rather than injected: it is a stateless collaborator over the
+	 * `RegisterMapper` + `SchemaMapper` this class already holds, so constructing
+	 * it directly keeps every existing unit test — all of which mock those two
+	 * mappers — exercising the REAL resolution path instead of a mock of the very
+	 * thing under test.
+	 *
+	 * @var RegisterScopedSchemaResolver
+	 */
+	private readonly RegisterScopedSchemaResolver $scopedSchemaResolver;
 
 	/**
 	 * Constructor
@@ -145,6 +162,10 @@ class SchemasController extends Controller {
 	) {
 		// Call parent constructor to initialize base controller.
 		parent::__construct(appName: $appName, request: $request);
+		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
+			registerMapper: $registerMapper,
+			schemaMapper: $schemaMapper
+		);
 	}//end __construct()
 
 	/**
@@ -162,20 +183,14 @@ class SchemasController extends Controller {
 	 * @return JSONResponse JSON response with array of schemas
 	 *
 	 * @psalm-return JSONResponse<200,
-	 *     array{results: array<array{id: int, uuid: null|string,
-	 *     uri: null|string, slug: null|string, title: null|string,
-	 *     description: null|string, version: null|string,
-	 *     summary: null|string, icon: null|string, required: array,
-	 *     properties: array, archive: array|null, source: null|string,
-	 *     hardValidation: bool, immutable: bool, searchable: bool,
-	 *     updated: null|string, created: null|string, maxDepth: int,
-	 *     owner: null|string, application: null|string,
-	 *     organisation: null|string,
-	 *     groups: array<string, list<string>>|null,
-	 *     authorization: array|null, deleted: null|string,
-	 *     published: null|string, depublished: null|string,
-	 *     configuration: array|null|string, allOf: array|null,
-	 *     oneOf: array|null, anyOf: array|null}>}, array<never, never>>
+	 *     array{results: list<array<string, mixed>>}, array<never, never>>
+	 *
+	 * Each result is deliberately `array<string, mixed>` and not a spelled-out
+	 * shape. The previous annotation restated Schema::jsonSerialize() field by
+	 * field and was already wrong: it omitted the four keys (`objects`, `logs`,
+	 * `files`, `registers`) that the `_stats` block appends to every entry. The
+	 * entity's serializer owns that contract; copying it here only guarantees
+	 * the copy drifts.
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple optional extend/pagination/filter parameters each add one branch.
 	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple optional extend/pagination/filter parameters each add one branch.
@@ -297,7 +312,7 @@ class SchemasController extends Controller {
 	}//end index()
 
 	/**
-	 * Resolve the {id} route parameter to a Schema, register-scoped when possible.
+	 * Resolve the {id} route parameter to a Schema, register-scoped when the caller names one.
 	 *
 	 * WHY this exists. Schema slugs are unique WITHIN a register, never across the
 	 * instance, but `SchemaMapper::find()` matches `LOWER(slug)` globally and returns
@@ -320,52 +335,15 @@ class SchemasController extends Controller {
 	 * @return Schema The resolved schema.
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When nothing matches.
+	 * @throws RegisterNotFoundException When a named register does not resolve.
+	 *
+	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
 	private function resolveSchema(int|string $id): Schema {
 		$registerParam = $this->request->getParam(key: 'register', default: null);
 
-		// Register-scoped resolution. A numeric id is resolved globally below;
-		// scoping applies to slugs only.
-		//
-		// The two failures below are deliberately NOT handled together, and the
-		// separation is load-bearing. An *unresolvable register parameter* is not a
-		// reason to fail the schema read — the caller gets what they would have got
-		// without the parameter. But a register that resolves and does not carry the
-		// slug is a refusal, because naming a register makes it a boundary.
-		//
-		// Both used to sit inside one try/catch. Throwing the refusal from in there
-		// would have been caught by that same catch and logged as "scope could not
-		// be applied", restoring the exact fallback this change removes — a silent
-		// no-op that looks like a fix.
-		if ($registerParam !== null && $registerParam !== '' && is_string($id) === true && is_numeric($id) === false) {
-			$register = null;
-			try {
-				$register = $this->registerMapper->find(id: $registerParam, _rbac: false, _multitenancy: false);
-			} catch (Exception $e) {
-				$this->logger->debug(
-					'[SchemasController] register scope could not be applied: ' . $e->getMessage(),
-					['register' => $registerParam, 'schema' => $id]
-				);
-			}
-
-			if ($register !== null) {
-				$registerSchemaIds = ($register->getSchemas() ?? []);
-				$scoped            = $this->schemaMapper->findBySlugInIds(
-					slug: $id,
-					schemaIds: $registerSchemaIds
-				);
-				if ($scoped !== null) {
-					return $scoped;
-				}
-
-				throw new SchemaNotInRegisterException(
-					schemaSlug: $id,
-					registerId: $register->getId(),
-					registerSlug: $register->getSlug(),
-					candidatesElsewhere: $this->schemaMapper->countBySlug(slug: $id),
-					registerSchemaCount: count($registerSchemaIds)
-				);
-			}
+		if (is_scalar($registerParam) === true && (string)$registerParam !== '') {
+			return $this->resolveSchemaInRegister(id: $id, registerParam: (string)$registerParam);
 		}
 
 		$schema = $this->schemaMapper->find(id: $id, _extend: [], _multitenancy: false);
@@ -379,6 +357,54 @@ class SchemasController extends Controller {
 
 		return $schema;
 	}//end resolveSchema()
+
+
+	/**
+	 * Resolve the {id} route parameter inside the register the caller named.
+	 *
+	 * Naming a register makes it a BOUNDARY, and the boundary holds for every
+	 * identifier form — numeric id, uuid, and slug alike. Earlier this scoping
+	 * applied to slugs only and an unresolvable `?register=` fell back to global
+	 * resolution "so the caller gets what they would have got without the
+	 * parameter". Both softenings put the silent cross-app read back: measured on
+	 * the shared dev instance 2026-08-21, three schemas carried the slug
+	 * `timeEntry` and hrmq's form dialog was served ANOTHER app's schema (id 161
+	 * instead of hrmq's 9466) — precisely the read a caller passes `?register=`
+	 * to rule out. A mistyped register name that silently widens the scope back
+	 * to the whole instance is indistinguishable, from the caller's side, from a
+	 * correct scoped hit; refusing it loudly is the only observable behaviour.
+	 *
+	 * The register lookup runs with `_rbac: false, _multitenancy: false`,
+	 * matching the schema metadata-read it scopes: this resolves WHICH schema is
+	 * meant, it grants nothing — the read-visibility guard in {@see show()}
+	 * still runs on the result.
+	 *
+	 * @param int|string $id            The {id} route parameter — a numeric id, a uuid, or a slug.
+	 * @param string     $registerParam The `?register=` parameter — a register id, uuid, or slug.
+	 *
+	 * @return Schema The schema, resolved among the register's carried schemas only.
+	 *
+	 * @throws RegisterNotFoundException    When the named register does not resolve (→ 404).
+	 * @throws SchemaNotInRegisterException When the register does not carry the identifier (→ 404).
+	 *
+	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
+	 */
+	private function resolveSchemaInRegister(int|string $id, string $registerParam): Schema {
+		// Delegated to the shared resolver rather than kept inline. This method was
+		// the FIRST implementation of the boundary and, being private, could not be
+		// reused — so the aggregation endpoints, which carry a `{register}` path
+		// segment, went on resolving globally and served another app's rows
+		// (measured 2026-08-21: `TimeEntry` → planix schema 161 instead of hrmq's
+		// 9466). One implementation is the only way the wording, the identifier
+		// forms and the refusal stay identical across every surface.
+		return $this->scopedSchemaResolver->resolvePair(
+			registerRef: $registerParam,
+			schemaRef: $id
+		)['schema'];
+	}//end resolveSchemaInRegister()
+
+
+
 
 	/**
 	 * Log a debug line naming every schema a slug could have resolved to.
@@ -486,6 +512,12 @@ class SchemasController extends Controller {
 			}
 
 			return new JSONResponse(data: $schemaArr);
+		} catch (SchemaNotInRegisterException | RegisterNotFoundException $e) {
+			// Register-scoped refusals carry a diagnosis — which register, how many
+			// same-slug schemas exist elsewhere, the repair command. Flattening them
+			// to a bare "Schema not found" reads as "your slug is wrong", which is
+			// the one conclusion that is certainly false when duplicates exist.
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 404);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
 		} catch (\OCA\OpenRegister\Exception\ValidationException $e) {

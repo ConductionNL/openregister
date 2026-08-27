@@ -1131,7 +1131,7 @@ class SettingsService {
 					// Schema|string|int|null $schema, ?string $uuid, ...).
 					$objectData = $object->getObject();
 					// Get the object business data.
-					$savedObject = $objectService->saveObject(
+					$objectService->saveObject(
 						object: $objectData,
 						extend: [],
 						register: $object->getRegister(),
@@ -1141,22 +1141,13 @@ class SettingsService {
 						uuid: $object->getUuid()
 					);
 
-					if ($savedObject !== null) {
-						$batchSuccesses++;
-						$results['stats']['successful_saves']++;
-					}
-
-					if ($savedObject === null) {
-						$results['stats']['failed_saves']++;
-						$batchErrors[] = [
-							'object_id' => $object->getUuid(),
-							'object_name' => $object->getName() ?? $object->getUuid(),
-							'register' => $object->getRegister(),
-							'schema' => $object->getSchema(),
-							'error' => 'Save operation returned null',
-							'batch_mode' => 'serial_optimized',
-						];
-					}
+					// The saveObject() call is declared non-nullable and signals failure by
+					// throwing, so reaching this line IS the success case. The
+					// "Save operation returned null" branch that used to sit here
+					// could never run; the catch below is the real failure path
+					// and already counts it.
+					$batchSuccesses++;
+					$results['stats']['successful_saves']++;
 				} catch (Exception $e) {
 					$results['stats']['failed_saves']++;
 					$batchErrors[] = [
@@ -1353,7 +1344,7 @@ class SettingsService {
 				// Schema|string|int|null $schema, ?string $uuid, ...).
 				$objectData = $object->getObject();
 				// Get the object business data.
-				$savedObject = $objectService->saveObject(
+				$objectService->saveObject(
 					object: $objectData,
 					extend: [],
 					register: $object->getRegister(),
@@ -1363,20 +1354,10 @@ class SettingsService {
 					uuid: $object->getUuid()
 				);
 
-				if ($savedObject !== null) {
-					$batchSuccesses++;
-				}
-
-				if ($savedObject === null) {
-					$batchErrors[] = [
-						'object_id' => $object->getUuid(),
-						'object_name' => $object->getName() ?? $object->getUuid(),
-						'register' => $object->getRegister(),
-						'schema' => $object->getSchema(),
-						'error' => 'Save operation returned null',
-						'batch_mode' => 'parallel_optimized',
-					];
-				}
+				// See the serial path above: saveObject() cannot return null, so
+				// reaching this line IS the success case and the "returned null"
+				// branch was dead. The catch below is the real failure path.
+				$batchSuccesses++;
 			} catch (Exception $e) {
 				$batchErrors[] = [
 					'object_id' => $object->getUuid(),

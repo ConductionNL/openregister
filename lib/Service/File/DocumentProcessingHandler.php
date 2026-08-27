@@ -142,7 +142,10 @@ class DocumentProcessingHandler {
 	 * `[<TYPE>: <entity_id>]` from the global id. Empty when the last run
 	 * matched no catalogue entity.
 	 *
-	 * @var array<string, string>
+	 * Keys are int|string, not string: entity ids are canonical numeric strings,
+	 * which PHP coerces to int array keys.
+	 *
+	 * @var array<int|string, string>
 	 */
 	private array $lastPlaceholderMap = [];
 
@@ -373,11 +376,10 @@ class DocumentProcessingHandler {
 		// Resolve the source file id once — the substitution placeholder
 		// format and the post-redaction audit flag both key off it.
 		$fileId = 0;
-		if (method_exists($node, 'getId') === true) {
-			$candidate = $node->getId();
-			if (is_int($candidate) === true && $candidate > 0) {
-				$fileId = $candidate;
-			}
+		// OCP\Files\Node declares getId(): int, so no method_exists() probe.
+		$candidate = $node->getId();
+		if ($candidate > 0) {
+			$fileId = $candidate;
 		}
 
 		// Defensive filter — per the `entity-relation-grondslagen` change,
@@ -1148,7 +1150,7 @@ class DocumentProcessingHandler {
 			return $newFile;
 		} catch (Exception $e) {
 			// Clean up temp file if it exists.
-			if (isset($tempFile) === true && file_exists($tempFile) === true) {
+			if (file_exists($tempFile) === true) {
 				unlink($tempFile);
 			}
 

@@ -304,8 +304,7 @@ class VectorizationService {
 						$embeddingData = $embeddings[$index] ?? null;
 
 						$hasEmbedding = $embeddingData !== null
-							&& (($embeddingData['embedding'] ?? null) !== null)
-							&& $embeddingData['embedding'] !== null;
+							&& (($embeddingData['embedding'] ?? null) !== null);
 						if ($hasEmbedding === true) {
 							$this->storeVector(
 								entity: $entity,

@@ -95,7 +95,10 @@ class CacheHandler {
 	 * Provides ultra-fast name lookups for frontend rendering without
 	 * requiring full object data retrieval.
 	 *
-	 * @var array<string, string>
+	 * Keys are int|string, not string: the cache is written under BOTH the uuid
+	 * and the numeric id, and PHP coerces a canonical numeric string key to int.
+	 *
+	 * @var array<int|string, string>
 	 */
 	private array $nameCache = [];
 
@@ -107,7 +110,8 @@ class CacheHandler {
 	 * $nameCache; an identifier missing from this map has an unknown owner and is
 	 * therefore never served (fail closed).
 	 *
-	 * @var array<string, string|null>
+	 * @var array<int|string, string|null> Keyed identically to $nameCache — see
+	 *      the key-coercion note there.
 	 */
 	private array $nameOrganisations = [];
 
@@ -1370,26 +1374,27 @@ class CacheHandler {
 		try {
 			// STEP 1: Try to find as organisation first (they take priority).
 			try {
+				// The findByUuid() call throws rather than returning null; the catch below
+				// is the "no such organisation" path.
 				$organisation = $this->organisationMapper->findByUuid((string)$identifier);
-				if ($organisation !== null) {
-					$name = $organisation->getName() ?? $organisation->getUuid();
-					// An organisation's own tenancy is itself. A row with neither a
-					// name nor a uuid has nothing to cache — setObjectName() takes a
-					// non-nullable string, so guard rather than fatal.
-					if ($name !== null) {
-						$this->setObjectName(
-							identifier: $identifier,
-							name: $name,
-							organisation: $organisation->getUuid()
-						);
-					}
+				$name = $organisation->getName() ?? $organisation->getUuid();
 
-					if ($this->hasOrganisationAccess(organisation: $organisation->getUuid()) === false) {
-						return null;
-					}
-
-					return $name;
+				// An organisation's own tenancy is itself. A row with neither a
+				// name nor a uuid has nothing to cache — setObjectName() takes a
+				// non-nullable string, so guard rather than fatal.
+				if ($name !== null) {
+					$this->setObjectName(
+						identifier: $identifier,
+						name: $name,
+						organisation: $organisation->getUuid()
+					);
 				}
+
+				if ($this->hasOrganisationAccess(organisation: $organisation->getUuid()) === false) {
+					return null;
+				}
+
+				return $name;
 			} catch (\Exception $e) {
 				// Organisation not found, continue to objects.
 			}

@@ -55,9 +55,9 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  *
- * @suppressWarnings(PHPMD.ExcessiveClassLength)
- * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @suppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  *
  * @spec openspec/specs/webhook-payload-mapping/spec.md
@@ -199,8 +199,8 @@ class WebhooksController extends Controller {
 	 *     array<never, never>
 	 * >
 	 *
-	 * @suppressWarnings(PHPMD.NPathComplexity)      Complex request parameter handling for flexible API
-	 * @suppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)      Complex request parameter handling for flexible API
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
@@ -719,7 +719,7 @@ class WebhooksController extends Controller {
 	 * @no-admin-idor-exempt No per-object resource: returns the static catalogue of available webhook event-type definitions
 	 *   (identical for every install); no tenant data.
 	 *
-	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
@@ -1193,7 +1193,7 @@ class WebhooksController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @suppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
@@ -1313,9 +1313,9 @@ class WebhooksController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @suppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @suppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */

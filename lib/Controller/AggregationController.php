@@ -96,7 +96,26 @@ class AggregationController extends Controller {
 	 */
 	public function aggregate(string $register, string $schema, string $name): JSONResponse {
 		try {
-			$result = $this->runner->run(registerRef: $register, schemaRef: $schema, name: $name);
+			// `filter[...]` NARROWS a declared aggregation; it can never relax
+			// it. The runner refuses any key the declaration already
+			// constrains, so this cannot be used to widen a scoping filter —
+			// see AggregationRunner::mergeNarrowingFilter().
+			//
+			// It exists because an annotation has no way to name the caller's
+			// context: `$currentUser` is the only placeholder the resolver
+			// knows, so a per-tenant figure declared once could not be asked
+			// for per tenant.
+			$extraFilter = $this->request->getParam('filter', []);
+			if (is_array($extraFilter) === false) {
+				$extraFilter = [];
+			}
+
+			$result = $this->runner->run(
+				registerRef: $register,
+				schemaRef: $schema,
+				name: $name,
+				extraFilter: $extraFilter
+			);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
 		} catch (RuntimeException $e) {
@@ -413,8 +432,14 @@ class AggregationController extends Controller {
 		// Resolve schema first so the validator can consult the
 		// declared property list. A missing schema is a 404; a bad
 		// query-param shape is a 400.
+		//
+		// The `{register}` path segment is passed through: this lookup must
+		// resolve the SAME schema that runAdhocByRef() resolves below, and the
+		// register is what disambiguates a slug several apps share. Without it
+		// the validator would police one app's property list while the
+		// aggregate ran over another's rows.
 		try {
-			$schemaEntity = $this->runner->findSchema(schemaRef: $schema);
+			$schemaEntity = $this->runner->findSchema(schemaRef: $schema, registerRef: $register);
 		} catch (RuntimeException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		}

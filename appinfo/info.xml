@@ -52,13 +52,13 @@ Vrij en open source onder de EUPL-licentie.
     <category>organization</category>
     <category>tools</category>
     <category>search</category>
-    <website>https://codeberg.org/Conduction/openregister</website>
-    <bugs>https://codeberg.org/Conduction/openregister/issues</bugs>
-    <repository>https://codeberg.org/Conduction/openregister</repository>
+    <website>https://github.com/ConductionNL/openregister</website>
+    <bugs>https://github.com/ConductionNL/openregister/issues</bugs>
+    <repository>https://github.com/ConductionNL/openregister</repository>
 
-    <screenshot>https://codeberg.org/Conduction/openregister/raw/branch/main/img/screenshot-dashboard.png</screenshot>
-    <screenshot>https://codeberg.org/Conduction/openregister/raw/branch/main/img/screenshot-registers.png</screenshot>
-    <screenshot>https://codeberg.org/Conduction/openregister/raw/branch/main/img/screenshot-objects.png</screenshot>
+    <screenshot>https://raw.githubusercontent.com/ConductionNL/openregister/main/img/screenshot-dashboard.png</screenshot>
+    <screenshot>https://raw.githubusercontent.com/ConductionNL/openregister/main/img/screenshot-registers.png</screenshot>
+    <screenshot>https://raw.githubusercontent.com/ConductionNL/openregister/main/img/screenshot-objects.png</screenshot>
 
     <dependencies>
         <php min-version="8.3" min-int-size="64"/>
@@ -118,17 +118,17 @@ Vrij en open source onder de EUPL-licentie.
     </dependencies>
 
 	<background-jobs>
-		<job>OCA\OpenRegister\Cron\LogCleanUpTask</job>
-		<job>OCA\OpenRegister\Cron\ConfigurationCheckJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\LogCleanUpTask</job>
+		<job>OCA\OpenRegister\BackgroundJob\ConfigurationCheckJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ChunkVectorizationJob</job>
-		<job>OCA\OpenRegister\Cron\WebhookRetryJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\WebhookRetryJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\BlobMigrationJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DestructionCheckJob</job>
-		<job>OCA\OpenRegister\Cron\TransferCheckJob</job>
-		<job>OCA\OpenRegister\Cron\SyncConfigurationsJob</job>
-		<job>OCA\OpenRegister\Cron\SyncDataJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\TransferCheckJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\SyncConfigurationsJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\SyncDataJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledWorkflowJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledNotificationJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ActionScheduleJob</job>
@@ -142,21 +142,42 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\DsarRetentionSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ReportRenderJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\NotificationQueueFlushJob</job>
-		<job>OCA\OpenRegister\Cron\ArchivalRetentionTask</job>
-		<job>OCA\OpenRegister\Cron\FlowRunWorker</job>
-		<job>OCA\OpenRegister\Cron\FlowScheduleWorker</job>
-		<job>OCA\OpenRegister\Cron\HandoffQueueDrainJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ArchivalRetentionTask</job>
+		<job>OCA\OpenRegister\BackgroundJob\FlowRunWorker</job>
+		<job>OCA\OpenRegister\BackgroundJob\FlowScheduleWorker</job>
+		<job>OCA\OpenRegister\BackgroundJob\HandoffQueueDrainJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TemporalCalculationSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DsarDpiaDetectionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduleReconcilerJob</job>
-		<job>OCA\OpenRegister\Cron\DbalIntrospectionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\DbalIntrospectionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledReportJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\GroupReconcilerJob</job>
 	</background-jobs>
 
 	<repair-steps>
 		<post-migration>
+			<!--
+				The two job-list steps are a pair and run together.
+
+				ReconcileDeclaredBackgroundJobs works FORWARDS from info.xml: it
+				adds a <job> Nextcloud never registered. RemoveRetiredCronJobs
+				works backwards — it removes a row naming a class that no longer
+				exists, which reconciliation cannot see, because such a row is
+				not in the declaration list at all.
+
+				The second is needed because the jobs moved from
+				OCA\OpenRegister\Cron to OCA\OpenRegister\BackgroundJob, and
+				Nextcloud never removes a registration whose class disappeared:
+				it cannot tell a renamed class from one merely unavailable this
+				boot. Measured on a live instance carrying the equivalent
+				opencatalogi move — oc_jobs still held the Cron rows beside
+				their replacements.
+
+				post-migration only. On a fresh install there are no old rows,
+				and the step is idempotent either way.
+			-->
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
+			<step>OCA\OpenRegister\Repair\RemoveRetiredCronJobs</step>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
 			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
 			<!-- Rewrite before the index is derived: the index is built FROM node
@@ -205,6 +226,9 @@ Vrij en open source onder de EUPL-licentie.
 		<!-- Annotation-related commands have light DI graphs (mappers + evaluator). -->
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
+		<!-- App-rename repair: re-points registers and schemas at a new owning
+		     app id. Only a DB connection, so the DI graph stays light. -->
+		<command>OCA\OpenRegister\Command\MigrateSchemaApplicationCommand</command>
 		<command>OCA\OpenRegister\Command\RechainAuditTrailCommand</command>
 		<!-- Read-only report: which RBAC groups this instance declares, and whether
 		     anyone belongs to them. Provisioning guarantees a declared group EXISTS;

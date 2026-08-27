@@ -9,7 +9,7 @@
 For each cluster: fix errors, remove the phpcs.xml `<exclude-pattern>` entries for that bucket, verify gate stays green, ship one PR.
 
 - [x] 2.1 Buckets 1-4 — Controllers (`lib/Controller/`); Services — core (`lib/Service/`); Services — object-graph (`lib/Service/ObjectHandlers/`); Db mappers (`lib/Db/*Mapper.php`). Fixed inline-IF (ternary) violations in EntityRelationMapper, EntityRelationsController, FileTextController. phpcs.xml had no legacy-debt excludes on `development`; gate already clean.
-- [x] 2.2 Buckets 5-8 — Db entities (`lib/Db/*.php` excl. mappers); Migrations (`lib/Migration/`); Cron / background jobs (`lib/Cron/`, `lib/BackgroundJob/`); Repair steps (`lib/Repair/`). Fixed block-comment spacing in MagicMapper. Gate clean.
+- [x] 2.2 Buckets 5-8 — Db entities (`lib/Db/*.php` excl. mappers); Migrations (`lib/Migration/`); Cron / background jobs (`lib/BackgroundJob/`, `lib/BackgroundJob/`); Repair steps (`lib/Repair/`). Fixed block-comment spacing in MagicMapper. Gate clean.
 - [x] 2.3 Buckets 9-12 — Settings (`lib/Settings/`); Util / helpers (`lib/Service/`, `lib/Helper/`); Tests (`tests/`); Bootstrap / appinfo (`lib/AppInfo/`, `appinfo/`). Gate clean across all 12 buckets. phpcs.xml legacy-debt block was already absent on `development`; confirmed 0 errors post-fix.
 
 ## Phase 3 — PHPMD burn-down

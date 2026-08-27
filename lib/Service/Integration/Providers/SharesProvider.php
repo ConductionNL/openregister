@@ -634,16 +634,11 @@ class SharesProvider extends AbstractIntegrationProvider {
 			}
 
 			$owner = (string)($share->getSharedBy() ?? '');
+			// IShare::getNode() is declared to return Node and throws when the
+			// node is gone, so the null guards here were unreachable.
 			$node = $share->getNode();
-			$nodeName = '';
-			if ($node !== null) {
-				$nodeName = (string)$node->getName();
-			}
-
-			$nodeId = 0;
-			if ($node !== null) {
-				$nodeId = (int)$node->getId();
-			}
+			$nodeName = (string)$node->getName();
+			$nodeId = (int)$node->getId();
 
 			$nodeUrl = '/index.php/apps/files';
 			if ($nodeId > 0) {

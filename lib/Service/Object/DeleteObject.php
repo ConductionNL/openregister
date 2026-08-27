@@ -339,50 +339,56 @@ class DeleteObject {
 		// Update the object in database (soft delete - keeps record with deleted metadata).
 		// Pass register/schema context for magic mapper routing.
 		// @psalm-suppress InvalidArgument - ObjectEntity extends Entity.
-		$result = $this->objectEntityMapper->update(
+		// update() is declared non-nullable and throws on failure, so the old
+		// `!== null` test and the `if ($result === true)` guard below it were
+		// both always true: reaching the next line IS the success case.
+		$this->objectEntityMapper->update(
 			entity: $objectEntity,
 			register: $registerEntity,
 			schema: $schemaEntity,
 			oldEntity: $preDeleteState
-		) !== null;
+		);
+		$result = true;
 
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.update');
 
-		// **CACHE INVALIDATION**: Clear collection and facet caches so soft-deleted objects disappear from regular queries.
-		if ($result === true) {
-			/*
-			 * ObjectEntity has getRegister() and getSchema() methods that return string|null.
-			 * Convert to int|null for invalidateForObjectChange which expects ?int.
-			 * @var ObjectEntity $objectEntity
-			 */
+		/*
+		 * **CACHE INVALIDATION**: Clear collection and facet caches so
+		 * soft-deleted objects disappear from regular queries.
+		 *
+		 * ObjectEntity has getRegister() and getSchema() methods that return
+		 * string|null. Convert to int|null for invalidateForObjectChange which
+		 * expects ?int.
+		 *
+		 * @var ObjectEntity $objectEntity
+		 */
 
-			$registerId = $objectEntity->getRegister();
-			$schemaId = $objectEntity->getSchema();
+		$registerId = $objectEntity->getRegister();
+		$schemaId = $objectEntity->getSchema();
 
-			// Convert register ID to int if numeric.
-			$registerIdInt = null;
-			if ($registerId !== null && is_numeric($registerId) === true) {
-				$registerIdInt = (int)$registerId;
-			}
+		// Convert register ID to int if numeric.
+		$registerIdInt = null;
+		if ($registerId !== null && is_numeric($registerId) === true) {
+			$registerIdInt = (int)$registerId;
+		}
 
-			// Convert schema ID to int if numeric.
-			$schemaIdInt = null;
-			if ($schemaId !== null && is_numeric($schemaId) === true) {
-				$schemaIdInt = (int)$schemaId;
-			}
+		// Convert schema ID to int if numeric.
+		$schemaIdInt = null;
+		if ($schemaId !== null && is_numeric($schemaId) === true) {
+			$schemaIdInt = (int)$schemaId;
+		}
 
-			try {
-				$this->cacheHandler->invalidateForObjectChange(
-					object: $objectEntity,
-					operation: 'soft_delete',
-					registerId: $registerIdInt,
-					schemaId: $schemaIdInt
-				);
-			} catch (\Exception $e) {
-				// Gracefully handle cache invalidation errors (e.g., Solr not configured).
-				// Soft deletion should succeed even if cache invalidation fails.
-			}
-		}//end if
+		try {
+			$this->cacheHandler->invalidateForObjectChange(
+				object: $objectEntity,
+				operation: 'soft_delete',
+				registerId: $registerIdInt,
+				schemaId: $schemaIdInt
+			);
+		} catch (\Exception $e) {
+			// Gracefully handle cache invalidation errors (e.g., Solr not configured).
+			// Soft deletion should succeed even if cache invalidation fails.
+		}
 
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.cache');
 

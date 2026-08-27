@@ -1011,6 +1011,16 @@ class RenderObject {
 
 		// Batch-load all file tags in 2 queries instead of 2*N queries.
 		$allFileIds = array_map(fn ($f) => (string)$f['fileid'], $fileRecords);
+
+		// OCP declares this `array<string, list<string>>`, but file ids are
+		// canonical numeric strings, so PHP coerces every key to INT on the way
+		// in. Without the annotation below PHPStan concludes a numeric-string
+		// offset can never match an `array<string, ...>` and reports the
+		// per-file tag loop as iterating an always-empty array. It is not: PHP
+		// applies the same coercion on lookup, so `$allTagIdsPerFile["123"]`
+		// finds the row stored under 123.
+		// phpcs:ignore Squiz.Commenting.InlineComment.DocBlock -- PHPStan only reads @var from a /** */ block.
+		/** @var array<int|string, list<string>> $allTagIdsPerFile */
 		$allTagIdsPerFile = $this->systemTagMapper->getTagIdsForObjects(
 			objIds: $allFileIds,
 			objectType: 'files'
@@ -4091,6 +4101,11 @@ class RenderObject {
 
 			// 3) Batch-load all tag ids for all files in one query.
 			$stringFileIds = array_map(static fn ($id) => (string)$id, $fileIds);
+
+			// Numeric-string keys are coerced to int by PHP — see the longer
+			// note on the other getTagIdsForObjects() call in this class.
+			// phpcs:ignore Squiz.Commenting.InlineComment.DocBlock -- PHPStan only reads @var from a /** */ block.
+			/** @var array<int|string, list<string>> $allTagIdsPerFile */
 			$allTagIdsPerFile = $this->systemTagMapper->getTagIdsForObjects(
 				objIds: $stringFileIds,
 				objectType: 'files'

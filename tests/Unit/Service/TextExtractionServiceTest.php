@@ -3335,28 +3335,27 @@ class TextExtractionServiceTest extends TestCase {
 
 		$this->objectMapper->method('find')->willReturn($object);
 
-		// Mock isSourceUpToDate to return true.
-		$chunkMock = $this->getMockBuilder(Chunk::class)
-			->disableOriginalConstructor()
-			->addMethods(['getChecksum', 'getSourceTimestamp'])
-			->getMock();
-		$chunkMock->method('getChecksum')->willReturn('existing-checksum');
-		$chunkMock->method('getSourceTimestamp')->willReturn($updated->getTimestamp());
-		$this->chunkMapper->method('findBySource')->willReturn([$chunkMock]);
+		// isSourceUpToDate() reads getLatestUpdatedTimestamp(), NOT findBySource().
+		//
+		// This test used to stub findBySource() and wrap the call in
+		// `try { … } catch (\Throwable) {}` with a bare assertTrue(true). Both
+		// together made it unfalsifiable: the unstubbed getLatestUpdatedTimestamp()
+		// returned null, so isSourceUpToDate() was FALSE and the skip path under
+		// test never ran — extraction proceeded and then threw on the
+		// getOrganization() bug (openregister#2700), the catch swallowed it, and
+		// `expects($this->never())->method('insert')` passed because the exception
+		// had aborted the run before insert was reached. Fixing that bug is what
+		// exposed this: the method suddenly worked, extraction ran to completion,
+		// and insert WAS called.
+		//
+		// A chunk at least as new as the object means up-to-date, so nothing is
+		// re-extracted and nothing is inserted.
+		$this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn($updated->getTimestamp());
 
-		// Should not call chunkMapper->insert (no new chunks).
 		$this->chunkMapper->expects($this->never())->method('insert');
 
-		// This may or may not skip depending on checksum logic;
-		// the key is verifying it doesn't throw.
-		try {
-			$this->service->extractObject(objectId: 1);
-		} catch (\Throwable $e) {
-			// Some branches may throw due to ObjectHandler instantiation.
-			// That's acceptable — we're testing the skip path.
-		}
-
-		$this->assertTrue(true);
+		// NOT wrapped in try/catch: a throw here is a failure, not "acceptable".
+		$this->service->extractObject(objectId: 1);
 	}
 
 	// ────────────────────────────────────────────────────────

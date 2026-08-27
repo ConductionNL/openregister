@@ -163,7 +163,10 @@ class FlowRunServiceTest extends TestCase {
 	}
 
 	public function testAQueuedRunIsNotExecuted(): void {
-		$run = $this->service->queue('f1', ['uuid' => 'u1'], 'object.created');
+		// An object event carries the user whose action raised it — the real
+		// listener reads it off the session and passes it here — so the fixture
+		// names one rather than dispatching anonymously.
+		$run = $this->service->queue('f1', ['uuid' => 'u1'], 'object.created', user: 'alice');
 
 		$this->assertSame(FlowRun::STATUS_QUEUED, $run->getStatus());
 		$this->assertSame(0, $this->waiter->calls);
@@ -174,7 +177,7 @@ class FlowRunServiceTest extends TestCase {
 	 * The property the whole issue exists for: a step can pause the run.
 	 */
 	public function testAStepThatSuspendsLeavesTheRunResumable(): void {
-		$run = $this->service->queue('f1');
+		$run = $this->service->queue('f1', user: 'alice');
 		$run = $this->service->execute($run, $this->waitFlow(), new RunSubject());
 
 		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
@@ -187,7 +190,7 @@ class FlowRunServiceTest extends TestCase {
 	 * would skip the very step that asked to wait.
 	 */
 	public function testASuspendedRunKeepsItsPlaceInTheGraph(): void {
-		$run = $this->service->queue('f1');
+		$run = $this->service->queue('f1', user: 'alice');
 		$run = $this->service->execute($run, $this->waitFlow(), new RunSubject());
 
 		// The marking names the NODE the run is paused on. A suspending step
@@ -197,7 +200,7 @@ class FlowRunServiceTest extends TestCase {
 	}
 
 	public function testResumingCarriesTheStoredItemsRatherThanReseeding(): void {
-		$run = $this->service->queue('f1');
+		$run = $this->service->queue('f1', user: 'alice');
 		$run = $this->service->execute($run, $this->waitFlow(), new RunSubject());
 
 		// Something the subject could never produce — proves the items came
@@ -212,7 +215,7 @@ class FlowRunServiceTest extends TestCase {
 	}
 
 	public function testResumeAtIsClearedOnceTheRunIsNoLongerSuspended(): void {
-		$run = $this->service->queue('f1');
+		$run = $this->service->queue('f1', user: 'alice');
 		$run = $this->service->execute($run, $this->waitFlow(), new RunSubject());
 		$this->assertNotNull($run->getResumeAt());
 
@@ -223,7 +226,7 @@ class FlowRunServiceTest extends TestCase {
 	}
 
 	public function testTheLogAccumulatesAcrossASuspension(): void {
-		$run = $this->service->queue('f1');
+		$run = $this->service->queue('f1', user: 'alice');
 		$run = $this->service->execute($run, $this->waitFlow(), new RunSubject());
 		$afterSuspend = count($run->getLog());
 
@@ -237,7 +240,7 @@ class FlowRunServiceTest extends TestCase {
 	 * Re-executing a finished run would repeat every side effect it performed.
 	 */
 	public function testATerminalRunIsNeverReExecuted(): void {
-		$run = $this->service->queue('f1');
+		$run = $this->service->queue('f1', user: 'alice');
 		$run->setStatus(FlowRun::STATUS_COMPLETED);
 
 		$this->service->execute($run, $this->waitFlow(), new RunSubject());
@@ -246,7 +249,7 @@ class FlowRunServiceTest extends TestCase {
 	}
 
 	public function testAMalformedFlowFailsTheRunRatherThanLeavingItRunning(): void {
-		$run = $this->service->queue('f1');
+		$run = $this->service->queue('f1', user: 'alice');
 		$run = $this->service->execute($run, ['nodes' => []], new RunSubject());
 
 		$this->assertSame(FlowRun::STATUS_FAILED, $run->getStatus());
@@ -296,6 +299,41 @@ class FlowRunServiceTest extends TestCase {
 		$this->service->execute($run, $this->captureFlow(), new RunSubject());
 
 		$this->assertSame('bob', ($this->capturer->seenContext['triggeredBy'] ?? null));
+	}
+
+	/**
+	 * A context-supplied `runAs` is IGNORED — the run's own value wins.
+	 *
+	 * The asymmetry with `triggeredBy` above is deliberate and is the security
+	 * property. Provenance is a claim about the past and a caller may legitimately
+	 * record "I did this on Bob's behalf". Authorization is a claim about what may
+	 * happen next, and context is caller-supplied at queue time — so honouring it
+	 * would let anyone who can start a flow choose the identity its steps execute
+	 * as. That is the widening ADR-099 forbids: identity narrows along an
+	 * invocation chain, and widening needs a grant checked against the caller,
+	 * never a key in a payload.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegated-identity/spec.md
+	 */
+	public function testAContextSuppliedActingIdentityIsIgnored(): void {
+		$run = $this->service->queue(
+			'f1',
+			['uuid' => 'u1'],
+			'object.created',
+			['runAs' => 'mallory'],
+			'alice'
+		);
+
+		$this->service->execute($run, $this->captureFlow(), new RunSubject());
+
+		$this->assertSame(
+			'alice',
+			($this->capturer->seenContext['runAs'] ?? null),
+			'the run decides who it acts as; a caller-supplied context must not'
+		);
+		$this->assertNotSame('mallory', ($this->capturer->seenContext['runAs'] ?? null));
 	}
 }
 

@@ -50,7 +50,7 @@ generalises those existing per-app duplications.
   onto the job; an `interval` schedule maps straight to the job's `interval`.
 - **Execution reuses the proven OpenConnector data-driven scheduler.** The
   reconciled `job` objects are executed by the existing
-  `openconnector/lib/Cron/JobTask.php:63,91` → `JobService::run()`
+  `openconnector/lib/BackgroundJob/JobTask.php:63,91` → `JobService::run()`
   (`openconnector/lib/Service/JobService.php:638-665`) path, which advances
   `lastRun`/`nextRun` and logs. No new execution/logging engine is written.
 - **Owner-scoping + allow-list guardrails.** The reconciler sets the job's
