@@ -49,31 +49,35 @@ use Psr\Log\LoggerInterface;
 class NotificationService {
 
 	/**
-	 * Notification manager instance
+	 * Constructor.
 	 *
-	 * Handles Nextcloud notification system integration.
+	 * WHY THIS EXISTS. The three properties below were declared `readonly` and
+	 * never assigned — this class had NO constructor at all. Every method that
+	 * touched one therefore died with
 	 *
-	 * @var IManager Notification manager instance
+	 *   Typed property NotificationService::$notificationManager must not be
+	 *   accessed before initialization
+	 *
+	 * which is a fatal, not a degraded path. So the whole configuration-update
+	 * notification route was dead: `notifyConfigurationUpdate()`,
+	 * `sendUpdateNotification()` and `markConfigurationUpdated()` could not run,
+	 * and neither could ConfigurationController's import or ConfigurationCheckJob's
+	 * cron tick, both of which inject this service.
+	 *
+	 * Surfaced 2026-08-26 in learniq's e2e server log, on
+	 * `POST /apps/openregister/api/configurations/8/import` — a repository whose
+	 * own suite never reached the call.
+	 *
+	 * @param IManager        $notificationManager Nextcloud notification manager.
+	 * @param IGroupManager   $groupManager        Group manager, to expand notification groups.
+	 * @param LoggerInterface $logger              Logger.
 	 */
-	private readonly IManager $notificationManager;
-
-	/**
-	 * Group manager instance
-	 *
-	 * Used to retrieve users from notification groups.
-	 *
-	 * @var IGroupManager Group manager instance
-	 */
-	private readonly IGroupManager $groupManager;
-
-	/**
-	 * Logger instance
-	 *
-	 * Used for logging notification operations and errors.
-	 *
-	 * @var LoggerInterface Logger instance
-	 */
-	private readonly LoggerInterface $logger;
+	public function __construct(
+		private readonly IManager $notificationManager,
+		private readonly IGroupManager $groupManager,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
 	/**
 	 * Send notification about configuration update availability
