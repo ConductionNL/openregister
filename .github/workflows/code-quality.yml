@@ -82,7 +82,52 @@ on:
 # Proven in openconnector#1158: its first-ever completed `development` push run
 # (31048998594) executed Coverage Baseline Check, SBOM and Features Extract.
 concurrency:
-  group: quality-${{ github.head_ref || github.ref_name }}${{ (github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'development')) && '-push' || '' }}
+  # SUFFIXED BY EVENT NAME, not just by `-push`.
+  #
+  # The previous expression gave a push on `development` its own lane
+  # (`-push`) but left EVERYTHING ELSE sharing `quality-development` — and
+  # that is not a quiet lane: `Sync to Beta` keeps a PR open whose head_ref
+  # IS `development`, so its run computes the same group and is re-triggered
+  # on every merge.
+  #
+  # A `workflow_dispatch` therefore shared a group with that PR and was
+  # cancelled by it. Measured on shillinq 2026-08-21: dispatch 32487948678
+  # cancelled by pull_request run 32490160836 (head_branch `development`).
+  # A run someone deliberately asked for could essentially never complete.
+  #
+  # That reaches past ad-hoc verification: the fleet gate-drift sweep
+  # (.github#523) dispatches per app with `--ref development`, because
+  # `schedule:` cannot choose a branch. Under the old group those runs are
+  # cancelled and report neither pass nor fail — and a routine that produces
+  # no verdict is indistinguishable from one that never ran.
+  #
+  # This is hermiq's form, already live there. Pull requests keep the bare
+  # group (so a PR still supersedes its own earlier run); push, dispatch and
+  # schedule each get their own lane.
+  #
+  # THE BRANCH RESTRICTION IS GONE, because it contradicted the sentence above.
+  #
+  # The suffix used to apply only when `ref_name` was `main` or `development`,
+  # so on every OTHER branch push and pull_request still computed the SAME
+  # group — and `cancel-in-progress` made them kill each other. That became
+  # reachable when the push allow-list widened on 2026-08-14 to include
+  # `feat/**`, `fix/**`, `perf/**`, `refactor/**` and `chore/**`: those branches
+  # now get both a push run and a pull_request run for one commit.
+  #
+  # Measured on openregister#2821, sha 4cad83d, branch
+  # `fix/userservice-execute-removed-in-nc34`:
+  #
+  #   07:51:57  event=push          queued     <- never started
+  #   07:52:15  event=pull_request  cancelled
+  #
+  # Both runs gone, and `quality / Quality Report` — a `needs:`-gated
+  # aggregator — reports FAILURE when its dependencies are cancelled. So the PR
+  # showed a red gate having never been evaluated, and re-running collided the
+  # same way: three PRs sat in that loop for hours. See .github#563.
+  #
+  # A branch name is not a unique lane when two event types can each produce a
+  # run for it, so the event is now always part of the key.
+  group: quality-${{ github.head_ref || github.ref_name }}${{ github.event_name != 'pull_request' && format('-{0}', github.event_name) || '' }}
   cancel-in-progress: true
 
 # Permission CEILING for the called quality pipeline. GitHub statically
@@ -246,4 +291,9 @@ jobs:
       # Measured on this tree before enabling: PASSES, 428 of 478 tracked
       # frontend files in scope (l10n/, docs/ and js/ excluded via
       # .prettierignore / .gitignore, which prettier 3 also reads).
-      frontend-checks: '["check:specs", "test:l10n", "format"]'
+      # `check:schema-l10n` is a RATCHET, not a gate. Every string inside a form
+      # comes from the schema and is a key in THIS app's catalogue; an absent key
+      # renders the English source inside an otherwise translated form, silently.
+      # The fleet had 30,459 such strings, so this records the current count and
+      # fails only when it GROWS — burning it down stays an ordinary PR.
+      frontend-checks: '["check:specs", "test:l10n", "format", "check:schema-l10n", "check:l10n-js"]'

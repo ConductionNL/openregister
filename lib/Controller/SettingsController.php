@@ -127,14 +127,12 @@ use RuntimeException;
  */
 class SettingsController extends Controller {
 
-	/**
-	 * The OpenRegister object service
-	 *
-	 * Lazily loaded from container when needed.
-	 *
-	 * @var \OCA\OpenRegister\Service\ObjectService|null OpenRegister object service or null
+	/*
+	 * There is no $objectService property: getObjectService() below assigned it
+	 * null and returned that (the "CIRCULAR FIX"), so it was never anything but
+	 * null. Code that needs the service resolves it from the container at the
+	 * point of use instead — see the $objectService locals further down.
 	 */
-	private ?\OCA\OpenRegister\Service\ObjectService $objectService = null;
 
 	/**
 	 * SettingsController constructor.
@@ -178,9 +176,9 @@ class SettingsController extends Controller {
 	 */
 	public function getObjectService() {
 		if (in_array(needle: 'openregister', haystack: $this->appManager->getInstalledApps()) === true) {
-			$this->objectService = null;
-			// CIRCULAR FIX.
-			return $this->objectService;
+			// CIRCULAR FIX: returning the service here would close a container
+			// cycle, so callers resolve it themselves.
+			return null;
 		}
 
 		throw new RuntimeException('OpenRegister service is not available.');
@@ -391,9 +389,9 @@ class SettingsController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with database info
 	 *
-	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @suppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @suppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
 	 * @spec openspec/specs/production-observability/spec.md
 	 */
@@ -750,7 +748,7 @@ class SettingsController extends Controller {
 	 *     type: 'NO TYPE'|mixed, object_json: mixed}>}},
 	 *     array<never, never>>
 	 *
-	 * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 *
 	 * @spec exclude Debug/test scaffolding endpoint ("Debug endpoint for type filtering issue"): dumps
 	 *              organisation/object data; not a product contract (see proposal Notes — routed debug surface,
@@ -1012,11 +1010,9 @@ class SettingsController extends Controller {
 				weights: $weights,
 				provider: $provider
 			);
-			// Ensure result is an array for the spread operator.
-			$resultArray = [];
-			if (is_array($result) === true) {
-				$resultArray = $result;
-			}
+			// The service already returns an array, so the old is_array() guard
+			// (and the [] fallback it protected) could never fire.
+			$resultArray = $result;
 
 			return new JSONResponse(
 				data: [

@@ -260,7 +260,7 @@ class SpreadsheetReportWriter {
 		}
 
 		$valueField = $widget['options']['valueField'] ?? 'value';
-		if (isset($data[$valueField]) === true && $data[$valueField] !== null) {
+		if (isset($data[$valueField]) === true) {
 			return (string)$data[$valueField];
 		}
 

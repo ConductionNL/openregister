@@ -581,7 +581,6 @@ class ResponseGenerationHandler {
 
 		if ($channel !== null
 			&& $ollamaWithTools === false
-			&& method_exists($chat, 'generateStreamOfText') === true
 		) {
 			try {
 				return $this->streamChat(chat: $chat, messageHistory: $messageHistory, channel: $channel);

@@ -95,6 +95,34 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 		// Default: no active organisation.
 		$this->organisationService->method('getActiveOrganisation')->willReturn(null);
 
+		// REGISTER-SCOPED RESOLUTION. `run()`/`runAdhocByRef()` no longer resolve
+		// the schema ref globally and then load the register — they resolve the
+		// register FIRST and match the schema ref among the ids it carries, via
+		// SchemaMapper::findInIds(). Rather than restate every test's schema
+		// fixtures a second time, delegate the scoped lookup to whatever the test
+		// already stubbed on find() and then apply the boundary the production
+		// resolver applies: a schema the register does not carry does not resolve.
+		$this->schemaMapper->method('findInIds')->willReturnCallback(
+			function (string|int $id, array $schemaIds): ?Schema {
+				try {
+					$schema = $this->schemaMapper->find($id, [], true, false);
+				} catch (\Throwable $e) {
+					return null;
+				}
+
+				if (($schema instanceof Schema) === false) {
+					return null;
+				}
+
+				$normalised = array_map(static fn ($sid) => (int)$sid, $schemaIds);
+				if (in_array((int)$schema->getId(), $normalised, true) === false) {
+					return null;
+				}
+
+				return $schema;
+			}
+		);
+
 		$this->runner = new AggregationRunner(
 			magicMapper: $this->magicMapper,
 			registerMapper: $this->registerMapper,

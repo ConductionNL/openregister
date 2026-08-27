@@ -138,7 +138,7 @@ class ReadFileHandler {
 		$folder = $this->folderMgmtHandler->getObjectFolder($object);
 
 		// If $file is an integer or a string that is an integer, treat as file ID.
-		if (is_int($file) === true || (is_string($file) === true && ctype_digit($file) === true) === true) {
+		if (is_int($file) === true || ctype_digit($file) === true) {
 			// Try to get the file by ID.
 			try {
 				$nodes = $folder->getById((int)$file);

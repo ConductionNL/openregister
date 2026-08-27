@@ -383,7 +383,7 @@ class CalendarLinkService {
 			// Already present from link-table; mark as both and refresh free-text fields.
 			$merged[$key]['source'] = 'both';
 			foreach (['summary', 'dtstart', 'dtend', 'location', 'description', 'attendees', 'status'] as $field) {
-				if (isset($event[$field]) === true && $event[$field] !== null && $event[$field] !== '') {
+				if (isset($event[$field]) === true && $event[$field] !== '') {
 					$merged[$key][$field] = $event[$field];
 				}
 			}

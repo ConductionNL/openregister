@@ -60,6 +60,7 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Support\QueryLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -151,6 +152,22 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.LongVariable)
  */
 class MagicMapper extends AbstractObjectMapper {
+	/**
+	 * Hard ceiling on a NUMERIC page size, per the objects-crud requirement
+	 * "List page size is bounded by a hard maximum".
+	 *
+	 * A client asking for `_limit=1000000` is not making a considered request,
+	 * so it is reduced to this. A client asking for `_limit=false` IS making
+	 * one, and that path skips the clause entirely — see the LIMIT/OFFSET block
+	 * in the UNION query and {@see \OCA\OpenRegister\Support\QueryLimit}.
+	 *
+	 * Previously spelled as the literal `1000` inside `min()`, which made it
+	 * invisible to anything that wanted to state or test the bound.
+	 *
+	 * @var int
+	 */
+	private const MAX_PAGE_SIZE = 1000;
+
 	/**
 	 * Table name prefix for register+schema-specific tables.
 	 *
@@ -777,7 +794,7 @@ class MagicMapper extends AbstractObjectMapper {
 					schema: $schema,
 					tableName: $tableName
 				);
-				if ($uuid !== null && $uuid !== '') {
+				if ($uuid !== '') {
 					$savedUuids[] = $uuid;
 				}
 			}
@@ -1401,9 +1418,37 @@ class MagicMapper extends AbstractObjectMapper {
 		// Apply LIMIT/OFFSET to final UNION result.
 		// Cast + clamp at the boundary so raw user input cannot reach the
 		// interpolated SQL string (SQL injection via _limit / _offset).
-		$limit = max(1, min(1000, (int)($query['_limit'] ?? 100)));
+		//
+		// UNLIMITED OMITS THE CLAUSE, it does not interpolate a large number.
+		// This SQL is built by string concatenation rather than bound
+		// parameters, so "unlimited" must never become a value that travels
+		// into the string — there is nothing to bind it to, and a sentinel like
+		// PHP_INT_MAX would be both a lie and a number some databases reject.
+		//
+		// The previous clamp answered `_limit=0` with ONE row (max(1, …)) and
+		// `_limit=5000` with a silent 1000. Both are gone; the offset clamp
+		// stays exactly as it was, because it is still interpolated.
+		$normalisedLimit = QueryLimit::normalise($query['_limit'] ?? null);
 		$offset = max(0, (int)($query['_offset'] ?? 0));
-		$unionSql .= " LIMIT {$limit} OFFSET {$offset}";
+		if ($normalisedLimit === null) {
+			// MySQL and MariaDB reject a bare OFFSET without a LIMIT, so an
+			// offset with no limit still needs the clause. The upper bound is
+			// the largest value the syntax accepts, which is the documented
+			// idiom for "everything from here on".
+			if ($offset > 0) {
+				$unionSql .= ' LIMIT 18446744073709551615 OFFSET ' . $offset;
+			}
+		} else {
+			// A NUMERIC limit is still clamped to the documented maximum. That
+			// clamp is a deliberate protection (objects-crud: "List page size is
+			// bounded by a hard maximum") against a client loading an
+			// arbitrarily large result set by accident, and asking for
+			// `_limit=1000000` is an accident. Saying `_limit=false` is not —
+			// that is the explicit opt-in this change adds, and it is the only
+			// way past the bound.
+			$limit = min($normalisedLimit, self::MAX_PAGE_SIZE);
+			$unionSql .= " LIMIT {$limit} OFFSET {$offset}";
+		}
 
 		// Execute the combined query.
 		$stmt = $qb->getConnection()->prepare($unionSql);
@@ -2169,34 +2214,35 @@ class MagicMapper extends AbstractObjectMapper {
 				// Note: Schema properties do NOT conflict with metadata columns.
 				// Metadata columns have '_' prefix, schema properties don't.
 				// Both '_name' (metadata) and 'name' (schema property) can coexist.
+				// mapSchemaPropertyToColumn() returns a non-nullable array, so the
+				// emptiness guard that used to wrap this block was always true.
 				$column = $this->mapSchemaPropertyToColumn(propertyName: $propertyName, propertyConfig: $propertyConfig);
-				if ($column !== null && $column !== '') {
-					// BUG-DB-8: disambiguate column-name collisions deterministically.
-					if (isset($usedColumnNames[$column['name']]) === true) {
-						$base = $column['name'];
-						$suffix = 1;
+
+				// BUG-DB-8: disambiguate column-name collisions deterministically.
+				if (isset($usedColumnNames[$column['name']]) === true) {
+					$base = $column['name'];
+					$suffix = 1;
+					$candidate = $base . '_' . $suffix;
+					while (isset($usedColumnNames[$candidate]) === true) {
+						$suffix++;
 						$candidate = $base . '_' . $suffix;
-						while (isset($usedColumnNames[$candidate]) === true) {
-							$suffix++;
-							$candidate = $base . '_' . $suffix;
-						}
+					}
 
-						$this->logger->warning(
-							message: '[MagicMapper] Column name collision after sanitisation; disambiguating',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'propertyName' => $propertyName,
-								'collidingColumn' => $base,
-								'resolvedColumn' => $candidate,
-							]
-						);
-						$column['name'] = $candidate;
-					}//end if
-
-					$usedColumnNames[$column['name']] = true;
-					$columns[$propertyName] = $column;
+					$this->logger->warning(
+						message: '[MagicMapper] Column name collision after sanitisation; disambiguating',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'propertyName' => $propertyName,
+							'collidingColumn' => $base,
+							'resolvedColumn' => $candidate,
+						]
+					);
+					$column['name'] = $candidate;
 				}//end if
+
+				$usedColumnNames[$column['name']] = true;
+				$columns[$propertyName] = $column;
 			}//end foreach
 		}//end if
 
@@ -2522,7 +2568,7 @@ class MagicMapper extends AbstractObjectMapper {
 			case 'boolean':
 				// Determine default value.
 				$defaultValue = null;
-				if (is_array($propertyConfig) === true && array_key_exists('default', $propertyConfig) === true) {
+				if (array_key_exists('default', $propertyConfig) === true) {
 					$defaultValue = $propertyConfig['default'];
 				}
 
@@ -2788,7 +2834,7 @@ class MagicMapper extends AbstractObjectMapper {
 
 		// Determine default value.
 		$defaultValue = null;
-		if (is_array($propertyConfig) === true && array_key_exists('default', $propertyConfig) === true) {
+		if (array_key_exists('default', $propertyConfig) === true) {
 			$defaultValue = $propertyConfig['default'];
 		}
 
@@ -2827,7 +2873,7 @@ class MagicMapper extends AbstractObjectMapper {
 
 		// Determine default value.
 		$defaultValue = null;
-		if (is_array($propertyConfig) === true && array_key_exists('default', $propertyConfig) === true) {
+		if (array_key_exists('default', $propertyConfig) === true) {
 			$defaultValue = $propertyConfig['default'];
 		}
 
@@ -3657,7 +3703,7 @@ class MagicMapper extends AbstractObjectMapper {
 		// LINKED_TYPE_COLUMN_MAP values are column names with _ prefix (e.g., '_mail'),
 		// but the metadata loop adds its own prefix, so we use the linkedType key directly.
 		foreach ($schema->getLinkedTypes() as $linkedType) {
-			if (isset(self::LINKED_TYPE_COLUMN_MAP[$linkedType]) === true && $linkedType !== 'files') {
+			if (isset(self::LINKED_TYPE_COLUMN_MAP[$linkedType]) === true) {
 				$metadataFields[] = $linkedType;
 			}
 		}
@@ -3698,7 +3744,7 @@ class MagicMapper extends AbstractObjectMapper {
 			];
 			// Add active linked type fields as JSON fields.
 			foreach ($schema->getLinkedTypes() as $linkedType) {
-				if (isset(self::LINKED_TYPE_COLUMN_MAP[$linkedType]) === true && $linkedType !== 'files') {
+				if (isset(self::LINKED_TYPE_COLUMN_MAP[$linkedType]) === true) {
 					$jsonFields[] = $linkedType;
 				}
 			}
@@ -8383,21 +8429,22 @@ class MagicMapper extends AbstractObjectMapper {
 				$columnToPropertyMap = $this->rowColumnToPropertyCache[$schemaIdForMap];
 			} else {
 				try {
+					// The find() call throws when the schema is missing; the catch below is
+					// the "not found" path, so no null test is needed here.
 					$schema = $this->schemaMapper->find($schemaIdForMap);
-					if ($schema !== null) {
-						// BUG-DB-8: use the same disambiguated column names the write
-						// path produces (buildTableColumnsFromSchema), keyed by
-						// property name, so collision-resolved columns round-trip
-						// back to their original property instead of being lost.
-						foreach ($this->buildTableColumnsFromSchema(schema: $schema) as $propertyName => $columnDef) {
-							// Skip metadata columns (handled separately above).
-							if (str_starts_with($propertyName, '_') === true) {
-								continue;
-							}
 
-							$physicalColumn = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
-							$columnToPropertyMap[$physicalColumn] = $propertyName;
+					// BUG-DB-8: use the same disambiguated column names the write
+					// path produces (buildTableColumnsFromSchema), keyed by
+					// property name, so collision-resolved columns round-trip
+					// back to their original property instead of being lost.
+					foreach ($this->buildTableColumnsFromSchema(schema: $schema) as $propertyName => $columnDef) {
+						// Skip metadata columns (handled separately above).
+						if (str_starts_with($propertyName, '_') === true) {
+							continue;
 						}
+
+						$physicalColumn = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
+						$columnToPropertyMap[$physicalColumn] = $propertyName;
 					}
 
 					$this->rowColumnToPropertyCache[$schemaIdForMap] = $columnToPropertyMap;
@@ -9258,7 +9305,7 @@ class MagicMapper extends AbstractObjectMapper {
 					$groupRegister = $register;
 					$groupSchema = null;
 
-					if ($groupRegister === null && $groupRegisterId !== null) {
+					if ($groupRegister === null) {
 						try {
 							$groupRegister = $this->registerMapper->find(id: (int)$groupRegisterId, _multitenancy: false);
 						} catch (\Exception $e) {
@@ -9269,15 +9316,15 @@ class MagicMapper extends AbstractObjectMapper {
 						}
 					}
 
-					if ($groupSchemaId !== null) {
-						try {
-							$groupSchema = $this->schemaMapper->find(id: (int)$groupSchemaId, _multitenancy: false);
-						} catch (\Exception $e) {
-							$this->logger->warning(
-								message: '[MagicMapper] Failed to resolve schema for group',
-								context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $groupSchemaId]
-							);
-						}
+					// $groupSchemaId comes from explode() on the group key, so it is
+					// always a string — the null guard here could never skip.
+					try {
+						$groupSchema = $this->schemaMapper->find(id: (int)$groupSchemaId, _multitenancy: false);
+					} catch (\Exception $e) {
+						$this->logger->warning(
+							message: '[MagicMapper] Failed to resolve schema for group',
+							context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $groupSchemaId]
+						);
 					}
 
 					$groupResults = $this->ultraFastBulkSaveSingleSchema(

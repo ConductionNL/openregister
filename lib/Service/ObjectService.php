@@ -63,6 +63,7 @@ use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
@@ -182,6 +183,31 @@ class ObjectService implements ObjectServiceInterface
      * @var Schema|null
      */
     private ?Schema $currentSchema = null;
+
+    /**
+     * The raw schema identifier the last {@see setSchema()} call was given.
+     *
+     * Kept so a LATER {@see setRegister()} can re-resolve it inside the register
+     * the caller named. Null whenever the current schema came from an entity or a
+     * context restore, both of which are already resolved and must not be
+     * re-matched.
+     *
+     * @var int|string|null
+     */
+    private int | string | null $currentSchemaRef = null;
+
+    /**
+     * The shared register-scoped schema resolver.
+     *
+     * Built here rather than injected: it is a stateless collaborator over the
+     * `RegisterMapper` + `SchemaMapper` this class already holds, so constructing
+     * it directly keeps every existing unit test — all of which mock those two
+     * mappers — exercising the REAL resolution path instead of a mock of the very
+     * thing under test.
+     *
+     * @var RegisterScopedSchemaResolver
+     */
+    private readonly RegisterScopedSchemaResolver $scopedSchemaResolver;
 
     /**
      * The current object context.
@@ -317,6 +343,11 @@ class ObjectService implements ObjectServiceInterface
         // REFACTORED: Removed ExportHandler and VectorizationHandler to break circular deps.
         // Handlers should not depend on services - using ExportService, ImportService, VectorizationService.
         // **REMOVED**: Cache initialization removed since SOLR is now our index.
+        $this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
+            registerMapper: $registerMapper,
+            schemaMapper: $schemaMapper
+        );
+
         $this->logger->debug(
             message: '[ObjectService] ObjectService constructor completed.',
             context: ['file' => __FILE__, 'line' => __LINE__]
@@ -372,12 +403,37 @@ class ObjectService implements ObjectServiceInterface
      * Only pass operations whose inputs originate from code or the app's own
      * shipped data — never wrap handling of user-supplied request data.
      *
+     * 🔴 REACHABILITY BOUNDARY (ADR-099). This is code-initiated only. It MUST
+     * NOT be reachable from:
+     *
+     *  - a flow node,
+     *  - a tool invoked by an agent,
+     *  - the handling of an inbound request.
+     *
+     * The reason is not that those callers are untrusted in principle — it is
+     * that all three carry user-authored definitions or user-supplied input, and
+     * that this method is sitting right next to every place a missing identity
+     * makes something fail. An escape hatch that turns a refusal into a success
+     * gets taken. Where an identity cannot be resolved the correct outcome is a
+     * refusal naming what is missing; escalating to a userless principal instead
+     * answers a different question than the one that was asked.
+     *
+     * The legitimate callers are installation, migration, repair, and seeding of
+     * the application's own shipped data — work that genuinely has no user to
+     * act for, because a schema migration runs on nobody's behalf.
+     *
+     * Enforcement is structural first (the service is not injected into node,
+     * tool or endpoint classes) and a gate second. `SystemOperationContextBoundaryTest`
+     * pins the current call-site set so that adding one is a deliberate act with
+     * a visible diff rather than an accident.
+     *
      * @param callable $operation The trusted operation to execute.
      *
      * @return mixed Whatever the callable returns.
      *
      * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::run is the canonical scoped-elevation API
      *
+     * @spec openspec/specs/delegated-identity/spec.md
      * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function runAsSystem(callable $operation)
@@ -412,24 +468,44 @@ class ObjectService implements ObjectServiceInterface
      * This does not grant anything. If the named user cannot see a row, neither
      * can the callable.
      *
+     * 🔴 `setVolatileActiveUser()`, NOT `setUser()`. The two differ in one way
+     * that matters here: `setUser()` also writes `user_id` into the PHP session,
+     * and `lib/base.php` starts a real session on every request but
+     * `status.php`. A `finally` covers a throw, but not a fatal and not an
+     * `exit()` — so with `setUser()` a dying request leaves the acting identity
+     * written into the caller's session, and the response carries a session
+     * cookie for it. `setVolatileActiveUser()` (Nextcloud 29.0+; every fleet app
+     * declares `min-version="32"`) sets the active user and nothing else, so
+     * there is no persisted state to leak in the first place. The restore below
+     * is then a correctness measure for the rest of THIS request rather than the
+     * only thing standing between a scope and a hijacked session.
+     *
+     * This is a workaround for a missing parameter, not the end state. ADR-099
+     * keeps threading an acting user through the query layer as the target and
+     * records why it is not reachable in one change.
+     *
      * @param IUser    $user      The user to act as.
      * @param callable $operation The operation to execute as that user.
      *
      * @return mixed Whatever the callable returns.
      *
+     * @spec openspec/specs/delegated-identity/spec.md
      * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function runAs(IUser $user, callable $operation)
     {
         $previousUser = $this->userSession->getUser();
-        $this->userSession->setUser($user);
+        $this->userSession->setVolatileActiveUser($user);
 
         try {
             return $operation();
         } finally {
             // ALWAYS restore, including on a throw, so a long-lived process
             // (cron worker, queue runner) never leaks this identity forward.
-            $this->userSession->setUser($previousUser);
+            // Restore the PREVIOUS user rather than clearing, so that a nested
+            // scope returns control to its immediate caller's identity and not
+            // to nobody.
+            $this->userSession->setVolatileActiveUser($previousUser);
         }
     }//end runAs()
 
@@ -458,8 +534,42 @@ class ObjectService implements ObjectServiceInterface
         }
 
         $this->currentRegister = $register;
+
+        // ORDER-INDEPENDENCE. `setSchema()` can only scope when a register is
+        // already set, so the chain `setSchema($s)->setRegister($r)` resolved the
+        // schema against the WHOLE INSTANCE and the register never functioned as a
+        // boundary — while reading exactly like the correct order. That inversion
+        // is not rare: it is the shape of the copy-pasted `validateObject()` helper
+        // in ~24 link controllers and of every resolution in FilesController, i.e.
+        // most of the endpoints that take a `{register}/{schema}` path.
+        //
+        // Re-resolving the pending ref here makes the boundary hold whichever way
+        // round the two setters are called, in ONE place, instead of requiring
+        // every call site to remember an ordering nothing enforces.
+        if ($this->currentSchemaRef !== null) {
+            // SINGLE USE. The pending ref belongs to the setSchema() call that
+            // created it, and is consumed by the FIRST setRegister() that
+            // follows. Clearing it here is what keeps this instance-level state
+            // from leaking across unrelated operations: ObjectService is reused
+            // for many calls in one process, so a ref left behind by an
+            // operation that set a schema and never set a register would be
+            // re-resolved against the NEXT caller's register and refuse it.
+            // Measured on the shared instance after this scoping landed: a
+            // pipelinq repair step seeding `trustConfiguration` was told
+            // `posJournalEntryOutbound` is not carried by its register — a slug
+            // from an entirely different operation.
+            $pendingRef             = $this->currentSchemaRef;
+            $this->currentSchemaRef = null;
+
+            $this->currentSchema = $this->scopedSchemaResolver->resolveSchemaWithin(
+                register: $register,
+                schemaRef: $pendingRef
+            );
+        }
+
         return $this;
     }//end setRegister()
+
 
     /**
      * Set the current schema context.
@@ -472,7 +582,13 @@ class ObjectService implements ObjectServiceInterface
      */
     public function setSchema(Schema | string | int $schema): static
     {
+        // Remember the raw ref so a LATER setRegister() can re-resolve it inside
+        // the register the caller names — see setRegister(). An entity argument is
+        // already resolved and clears the pending ref.
+        $this->currentSchemaRef = null;
+
         if (is_string($schema) === true || is_int($schema) === true) {
+            $this->currentSchemaRef = $schema;
             // REGISTER-SCOPED SLUG RESOLUTION.
             // SchemaMapper::find() resolves a slug by LOWER(slug) GLOBALLY across
             // every register and every app on the instance, returning whichever row
@@ -489,32 +605,20 @@ class ObjectService implements ObjectServiceInterface
             // indistinguishable from "this register has no objects", which is how
             // the defect survived unnoticed.
             //
-            // Scoping applies to SLUGS only. Numeric ids and uuids are resolved
-            // directly below, and callers with no register keep global resolution.
-            if (is_string($schema) === true
-                && is_numeric($schema) === false
-                && $this->currentRegister !== null
-            ) {
-                $registerSchemaIds = ($this->currentRegister->getSchemas() ?? []);
-                $scoped            = $this->schemaMapper->findBySlugInIds(
-                    slug: $schema,
-                    schemaIds: $registerSchemaIds
+            // The boundary now holds for EVERY identifier form, via the shared
+            // RegisterScopedSchemaResolver. It used to apply to SLUGS only, letting
+            // a numeric id or a uuid resolve globally — the same silent cross-app
+            // read wearing a different identifier. Measured 2026-08-21 on the
+            // aggregation endpoints: `TimeEntry` resolved to planix's schema 161
+            // instead of hrmq's 9466. Callers with no register still resolve
+            // globally, below.
+            if ($this->currentRegister !== null) {
+                $this->currentSchema = $this->scopedSchemaResolver->resolveSchemaWithin(
+                    register: $this->currentRegister,
+                    schemaRef: $schema
                 );
-                if ($scoped !== null) {
-                    $this->currentSchema = $scoped;
-                    return $this;
-                }
 
-                // A uuid is not a slug and must still reach the global resolver.
-                if ($this->isUuidFormat(value: $schema) === false) {
-                    throw new SchemaNotInRegisterException(
-                        schemaSlug: $schema,
-                        registerId: $this->currentRegister->getId(),
-                        registerSlug: $this->currentRegister->getSlug(),
-                        candidatesElsewhere: $this->schemaMapper->countBySlug(slug: $schema),
-                        registerSchemaCount: count($registerSchemaIds)
-                    );
-                }
+                return $this;
             }
 
             // Resolve the identifier through the mapper. SchemaMapper::find()
@@ -548,6 +652,39 @@ class ObjectService implements ObjectServiceInterface
         $this->currentSchema = $schema;
         return $this;
     }//end setSchema()
+
+    /**
+     * Drop any schema ref still pending from an earlier, unrelated call.
+     *
+     * WHY EVERY OPERATION MUST DO THIS FIRST.
+     *
+     * `setSchema()` leaves a raw ref so a LATER `setRegister()` can re-resolve
+     * it inside the register the caller names. That makes the two setters
+     * order-independent, which is the point — but the ref is instance state on
+     * a service reused for many calls in one process, so it outlives the chain
+     * that created it.
+     *
+     * Making it SINGLE-USE (#2792) bounded the damage to one victim instead of
+     * many; it did not remove the victim. The ref is still handed to the FIRST
+     * `setRegister()` that follows, whoever that turns out to be. Measured on
+     * development 2026-08-22: a leaked `synchronization_contract` ref was
+     * re-resolved inside a flow's own target register — a register that had
+     * never heard of it — and failed `object-write` mid-run.
+     *
+     * A pending ref belongs to the fluent chain that created it. An operation
+     * that supplies its own scope through its arguments is by definition a new
+     * chain, so it starts by discarding whatever was left behind. Callers that
+     * really do chain (`setSchema($s)->setRegister($r)`) are unaffected: no
+     * operation runs between the two setters.
+     *
+     * @return void
+     *
+     * @spec exclude Context hygiene shared by every entry point; no business rule of its own.
+     */
+    private function discardPendingSchemaRef(): void
+    {
+        $this->currentSchemaRef = null;
+    }//end discardPendingSchemaRef()
 
     /**
      * Get the register entity resolved by the last setRegister() call.
@@ -686,6 +823,27 @@ class ObjectService implements ObjectServiceInterface
         $previousRegister = $this->currentRegister;
         $previousSchema   = $this->currentSchema;
 
+        // ...AND THE PENDING REF, WHICH IS THE OTHER HALF OF THAT ISOLATION.
+        //
+        // `setSchema()` remembers its RAW ref so a later `setRegister()` can
+        // re-resolve it inside the register the caller names — that is what
+        // makes the two setters order-independent. But the ref is instance
+        // state on a SHARED service, and the very next thing this method does
+        // is call `setRegister()`. A ref left behind by an unrelated earlier
+        // caller therefore gets re-resolved inside THIS call's register, and
+        // the call dies on a schema it never mentioned.
+        //
+        // Measured on the dev instance: every `openconnector` object read
+        // failed with `Schema slug "application" is not carried by register
+        // "openconnector"` while the caller had asked for `synchronization`.
+        // The name in that error belonged to a previous caller.
+        //
+        // The `finally` below already clears this on the way OUT. Clearing it
+        // on the way IN is the same rule applied at the other end: find()
+        // supplies its own scope through its arguments and must never inherit
+        // a pending one.
+        $this->discardPendingSchemaRef();
+
         try {
             $callRegister = null;
             $callSchema   = null;
@@ -790,14 +948,32 @@ class ObjectService implements ObjectServiceInterface
             // RBAC code points at the right context — never at the stale
             // leftover from a previous call. This mutation is undone by the
             // `finally` block before returning to the caller.
+            //
+            // These ids come off the OBJECT ROW, which is ground truth: the row
+            // physically lives in `oc_openregister_table_<register>_<schema>`, so
+            // the pair is consistent by construction. They must therefore NOT be
+            // re-scoped against `register->getSchemas()` the way a caller-supplied
+            // route ref is — a register whose linkage list has gone stale would
+            // otherwise make an object that demonstrably exists unreadable, which
+            // is a worse failure than the cross-app read the scoping prevents.
+            // Hence the direct assignment instead of setSchema()/setRegister().
             if ($callSchema === null) {
-                $this->setSchema(schema: $object->getSchema());
+                $this->currentSchema    = $this->schemaMapper->find(
+                    id: $object->getSchema(),
+                    _rbac: false,
+                    _multitenancy: false
+                );
+                $this->currentSchemaRef = null;
             }
 
             if ($callRegister === null) {
                 $registerRef = $object->getRegister();
                 if ($registerRef !== null && $registerRef !== '') {
-                    $this->setRegister(register: $registerRef);
+                    $this->currentRegister = $this->registerMapper->find(
+                        id: $registerRef,
+                        _rbac: false,
+                        _multitenancy: false
+                    );
                 }
             }
 
@@ -866,8 +1042,12 @@ class ObjectService implements ObjectServiceInterface
         } finally {
             // BUG-OBJ-13: restore the caller's context so find() has no
             // observable side-effect on shared instance state.
-            $this->currentRegister = $previousRegister;
-            $this->currentSchema   = $previousSchema;
+            $this->currentRegister  = $previousRegister;
+            $this->currentSchema    = $previousSchema;
+            // A restored schema is an ENTITY, already resolved. Leaving a stale
+            // pending ref behind would make the next setRegister() re-resolve the
+            // restored context against a register that has nothing to do with it.
+            $this->currentSchemaRef = null;
         }//end try
     }//end find()
 
@@ -934,6 +1114,7 @@ class ObjectService implements ObjectServiceInterface
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
+        $this->discardPendingSchemaRef();
         // Check if a register is provided and set the current register context.
         if ($register !== null) {
             $this->setRegister(register: $register);
@@ -990,6 +1171,7 @@ class ObjectService implements ObjectServiceInterface
      */
     public function findAll(array $config=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
+        $this->discardPendingSchemaRef();
         // Prepare configuration and set context.
         $config = $this->prepareFindAllConfig(config: $config);
 
@@ -1089,6 +1271,7 @@ class ObjectService implements ObjectServiceInterface
     public function count(
         array $config=[]
     ): int {
+        $this->discardPendingSchemaRef();
         // Scope the count to the current register/schema context (set via
         // setRegister()/setSchema()) by passing them to the mapper as typed
         // params. Without them MagicMapper::countAll() sums EVERY register/schema
@@ -1239,6 +1422,7 @@ class ObjectService implements ObjectServiceInterface
         bool $failIfExists=false,
         bool $_unowned=false
     ): ObjectEntity {
+        $this->discardPendingSchemaRef();
         // Bound the folder-access revalidation cache to this single save call
         // (not the whole FileService/request lifetime), so a cascade save that
         // moves or trashes a folder mid-request can't be waved through on a
@@ -1297,7 +1481,7 @@ class ObjectService implements ObjectServiceInterface
         // If UUID was null and is now set, mark it as auto-generated in object data.
         // This allows SaveObject to distinguish between user-provided UUIDs (UPDATE)
         // and auto-generated UUIDs (CREATE).
-        if ($uuidWasNull === true && $uuid !== null && is_array($object) === true) {
+        if ($uuidWasNull === true && $uuid !== null) {
             // Store flag in @self to indicate this is a CREATE operation.
             if (isset($object['@self']) === false || is_array($object['@self']) === false) {
                 $object['@self'] = [];
@@ -1347,7 +1531,7 @@ class ObjectService implements ObjectServiceInterface
         // carry a UUID); the seed itself is empty-field-only and fail-soft, so
         // it never overwrites a client-supplied value. See the object-lifecycle
         // spec: fk-graph-lifecycle-transitions.
-        if ($uuidWasNull === true && is_array($object) === true) {
+        if ($uuidWasNull === true) {
             $object = $this->saveHandler->seedLifecycleFieldOnCreate(
                 schema: $this->currentSchema,
                 data: $object
@@ -1541,6 +1725,38 @@ class ObjectService implements ObjectServiceInterface
         Register | string | int | null $register,
         Schema | string | int | null $schema
     ): void {
+        // A CALLER THAT NAMES BOTH CANNOT INHERIT A PENDING REF FROM ANYWHERE.
+        //
+        // `setRegister()` re-resolves `$currentSchemaRef` so the chain
+        // `setSchema($s)->setRegister($r)` still scopes. That ref is instance
+        // state, and ObjectService is reused for many operations in one process,
+        // so an operation that set a schema and never set a register leaves one
+        // behind. The NEXT caller's `setRegister()` then consumes it — and is
+        // refused with a slug it never asked for.
+        //
+        // #2792 made the ref single-use, which stops it being consumed twice. It
+        // does not stop it being consumed ONCE by the wrong operation, and that
+        // is the failure still live on `development`:
+        //
+        //   POST /apps/docudesk/api/templates
+        //   Failed to create template: Schema slug "application" is not carried
+        //   by register "docudesk" (id 19) …
+        //
+        // Docudesk asked for register 19 / schema 18 (`template`). `application`
+        // is openbuild's schema, from an unrelated earlier call on the same
+        // instance. Measured on buildiq E2E 2026-08-22 12:26 UTC, which is after
+        // #2792 landed at 11:09.
+        //
+        // When BOTH are supplied there is nothing to inherit: the caller has
+        // named the pair outright, so any pending ref is by definition stale.
+        // Dropping it here leaves the setSchema()/setRegister() order-independence
+        // intact for callers that genuinely use that chain, and keeps the register
+        // boundary exactly as strict — the schema below is still resolved inside
+        // the register named here.
+        if ($register !== null && $schema !== null) {
+            $this->clearPendingSchemaRef();
+        }
+
         // Set the current register context if provided.
         if ($register !== null) {
             $this->setRegister(register: $register);
@@ -1551,6 +1767,21 @@ class ObjectService implements ObjectServiceInterface
             $this->setSchema(schema: $schema);
         }
     }//end setContextFromParameters()
+
+    /**
+     * Drop a pending schema ref left behind by an earlier operation.
+     *
+     * Named rather than inlined so the one place that owns this state is
+     * greppable: `$currentSchemaRef` is written by setSchema(), consumed by
+     * setRegister(), and discarded here.
+     *
+     * @return void
+     */
+    private function clearPendingSchemaRef(): void
+    {
+        $this->currentSchemaRef = null;
+
+    }//end clearPendingSchemaRef()
 
     /**
      * Extract UUID and normalize object to array format.
@@ -1689,8 +1920,11 @@ class ObjectService implements ObjectServiceInterface
         $uuid   = ($cascadeResult[1] ?? $uuid);
 
         // Restore the parent object's register and schema context after cascading.
-        $this->currentRegister = $parentRegister;
-        $this->currentSchema   = $parentSchema;
+        // Entities, already resolved — clear the pending ref for the same reason
+        // as the restore in find().
+        $this->currentRegister  = $parentRegister;
+        $this->currentSchema    = $parentSchema;
+        $this->currentSchemaRef = null;
 
         return [$object, $uuid];
     }//end handleCascadingWithContextPreservation()
@@ -2057,6 +2291,7 @@ class ObjectService implements ObjectServiceInterface
         ?IUser $currentUser=null,
         bool $permanent=false
     ): bool {
+        $this->discardPendingSchemaRef();
         // Explicit acting user for the permission check; null keeps today's
         // session-resolved behaviour for every existing caller.
         $actingUserId = $currentUser?->getUID();
@@ -3491,10 +3726,9 @@ class ObjectService implements ObjectServiceInterface
             }
         }//end if
 
-        // Collect UUIDs from object properties.
-        if (is_array($objectData) === true) {
-            $this->collectUuidsFromObjectData(data: $objectData, uuids: $uuids);
-        }
+        // Collect UUIDs from object properties. $objectData is always an array
+        // by this point, so the old is_array() guard could never skip the call.
+        $this->collectUuidsFromObjectData(data: $objectData, uuids: $uuids);
     }//end collectUuidsFromArrayResult()
 
     /**
@@ -3727,6 +3961,7 @@ class ObjectService implements ObjectServiceInterface
         bool $enrich=true,
         bool $_audit=true
     ): array {
+        $this->discardPendingSchemaRef();
 
         // Bound the folder-access revalidation cache to this bulk-save call
         // (see saveObject) so mid-request folder mutations are re-validated.
@@ -3925,6 +4160,7 @@ class ObjectService implements ObjectServiceInterface
      */
     public function deleteObjects(array $uuids=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
+        $this->discardPendingSchemaRef();
         if (empty($uuids) === true) {
             return ['deleted_uuids' => [], 'skipped_uuids' => [], 'cascade_count' => 0];
         }
@@ -4767,9 +5003,10 @@ class ObjectService implements ObjectServiceInterface
      */
     public function clearCurrents(): void
     {
-        $this->currentRegister = null;
-        $this->currentSchema   = null;
-        $this->currentObject   = null;
+        $this->currentRegister  = null;
+        $this->currentSchema    = null;
+        $this->currentSchemaRef = null;
+        $this->currentObject    = null;
     }//end clearCurrents()
 
     /**

@@ -164,7 +164,7 @@ class WebhookMapper extends QBMapper {
 	 *
 	 * @return Webhook[]
 	 *
-	 * @psalm-return list<OCA\OpenRegister\Db\Webhook>
+	 * @psalm-return list<\OCA\OpenRegister\Db\Webhook>
 	 */
 	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = []): array {
 		// Check if table exists before querying (migrations might not have run yet).

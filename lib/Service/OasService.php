@@ -263,7 +263,7 @@ class OasService {
 			$sanitizedSchemaName = $this->sanitizeSchemaName(title: $schemaTitle);
 
 			// Step 8c: Validate schema definition before adding to components.
-			if (empty($schemaDefinition) === false && is_array($schemaDefinition) === true) {
+			if (empty($schemaDefinition) === false) {
 				$this->oas['components']['schemas'][$sanitizedSchemaName] = $schemaDefinition;
 
 				// Add tag for the schema (keep original title for display).

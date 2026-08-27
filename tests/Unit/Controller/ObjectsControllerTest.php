@@ -5366,6 +5366,12 @@ class ObjectsControllerTest extends TestCase {
 
 		$this->objectService->method('setRegister')->willReturnSelf();
 		$this->objectService->method('setSchema')->willReturnSelf();
+		// export() reuses the entities setRegister()/setSchema() already resolved
+		// rather than re-resolving the refs globally for the filename — the
+		// re-resolution ignored the register and could name the file after another
+		// app's same-slug schema.
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
 
 		$result = $this->controller->export('1', '2', $this->objectService);
 
@@ -5408,6 +5414,12 @@ class ObjectsControllerTest extends TestCase {
 
 		$this->objectService->method('setRegister')->willReturnSelf();
 		$this->objectService->method('setSchema')->willReturnSelf();
+		// export() reuses the entities setRegister()/setSchema() already resolved
+		// rather than re-resolving the refs globally for the filename — the
+		// re-resolution ignored the register and could name the file after another
+		// app's same-slug schema.
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
 
 		$result = $this->controller->export('1', '2', $this->objectService);
 
@@ -5447,6 +5459,12 @@ class ObjectsControllerTest extends TestCase {
 
 		$this->objectService->method('setRegister')->willReturnSelf();
 		$this->objectService->method('setSchema')->willReturnSelf();
+		// export() reuses the entities setRegister()/setSchema() already resolved
+		// rather than re-resolving the refs globally for the filename — the
+		// re-resolution ignored the register and could name the file after another
+		// app's same-slug schema.
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
 
 		$result = $this->controller->export('1', '2', $this->objectService);
 
@@ -5489,6 +5507,12 @@ class ObjectsControllerTest extends TestCase {
 
 		$this->objectService->method('setRegister')->willReturnSelf();
 		$this->objectService->method('setSchema')->willReturnSelf();
+		// export() reuses the entities setRegister()/setSchema() already resolved
+		// rather than re-resolving the refs globally for the filename — the
+		// re-resolution ignored the register and could name the file after another
+		// app's same-slug schema.
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
 
 		$result = $this->controller->export('1', '2', $this->objectService);
 
@@ -5528,6 +5552,12 @@ class ObjectsControllerTest extends TestCase {
 
 		$this->objectService->method('setRegister')->willReturnSelf();
 		$this->objectService->method('setSchema')->willReturnSelf();
+		// export() reuses the entities setRegister()/setSchema() already resolved
+		// rather than re-resolving the refs globally for the filename — the
+		// re-resolution ignored the register and could name the file after another
+		// app's same-slug schema.
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
 
 		$result = $this->controller->export('1', '2', $this->objectService);
 
@@ -5567,6 +5597,12 @@ class ObjectsControllerTest extends TestCase {
 
 		$this->objectService->method('setRegister')->willReturnSelf();
 		$this->objectService->method('setSchema')->willReturnSelf();
+		// export() reuses the entities setRegister()/setSchema() already resolved
+		// rather than re-resolving the refs globally for the filename — the
+		// re-resolution ignored the register and could name the file after another
+		// app's same-slug schema.
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
 
 		$result = $this->controller->export('1', '2', $this->objectService);
 

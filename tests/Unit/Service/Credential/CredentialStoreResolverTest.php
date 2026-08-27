@@ -118,6 +118,123 @@ class CredentialStoreResolverTest extends TestCase {
 		$this->assertSame($this->vaultStore, $resolver->resolve());
 	}
 
+
+	/**
+	 * The probed class list never mixes namespaces.
+	 *
+	 * This is the invariant the namespace resolution exists for. Eligibility
+	 * requires ALL FOUR services, so a per-class fallback could assemble a set
+	 * spanning both spellings — a credential store that exists on paper and
+	 * fails on the first call. The set must come from ONE namespace.
+	 */
+	public function testProbedClassesAllShareOneNamespace(): void {
+		$resolver = new CredentialStoreResolver(
+			$this->createMock(IAppManager::class),
+			$this->createMock(IAppConfig::class),
+			$this->doriathStore,
+			$this->vaultStore,
+			$this->createMock(LoggerInterface::class),
+		);
+
+		$classes = $this->readProbedClasses($resolver);
+
+		$this->assertCount(4, $classes);
+		$namespaces = array_unique(
+			array_map(static fn (string $fqcn): string => substr($fqcn, 0, (int)strrpos($fqcn, '\\')), $classes)
+		);
+		$this->assertCount(1, $namespaces, 'A half-resolved set spanning both spellings would fail on first use.');
+	}
+
+	/**
+	 * The secret-service probe uses the SAME namespace as the class list.
+	 *
+	 * Aimed at a different namespace, the seam-method probe would be asking
+	 * about a class the eligibility check never approved.
+	 */
+	public function testSecretServiceShareTheResolvedNamespace(): void {
+		$resolver = new CredentialStoreResolver(
+			$this->createMock(IAppManager::class),
+			$this->createMock(IAppConfig::class),
+			$this->doriathStore,
+			$this->vaultStore,
+			$this->createMock(LoggerInterface::class),
+		);
+
+		$classes = $this->readProbedClasses($resolver);
+		$secret = $this->readSecretServiceClass($resolver);
+
+		$this->assertContains($secret, $classes);
+	}
+
+	/**
+	 * The resolved namespace is one of the declared candidates, newest first.
+	 *
+	 * The unit runtime loads DoriathStubs.php, which defines a COMPLETE
+	 * `OCA\Doriath\Service\*` set — so the resolver legitimately selects it here,
+	 * and that is the behaviour under test: pick the first candidate whose whole
+	 * set is present. What must hold regardless of which app is installed is
+	 * that the choice comes from the declared list and that the current
+	 * namespace is tried BEFORE the legacy one.
+	 */
+	public function testTheResolvedNamespaceComesFromTheDeclaredCandidates(): void {
+		$resolver = new CredentialStoreResolver(
+			$this->createMock(IAppManager::class),
+			$this->createMock(IAppConfig::class),
+			$this->doriathStore,
+			$this->vaultStore,
+			$this->createMock(LoggerInterface::class),
+		);
+
+		// getReflectionConstant(), not getConstant(): the candidate list is
+		// PRIVATE, and getConstant() answers null for a private constant — a null
+		// that reads exactly like "the constant does not exist".
+		$constant = (new \ReflectionClass(CredentialStoreResolver::class))
+			->getReflectionConstant('CREDENTIAL_APP_NAMESPACES');
+		$this->assertNotFalse($constant, 'CREDENTIAL_APP_NAMESPACES must exist.');
+		$candidates = $constant->getValue();
+
+		$this->assertStringContainsString('Keepiq', $candidates[0], 'The current namespace must be tried first.');
+		$this->assertStringContainsString('Doriath', implode(' ', $candidates), 'The legacy namespace must stay listed.');
+
+		$chosen = $this->readProbedClasses($resolver)[0];
+		$this->assertTrue(
+			array_reduce(
+				$candidates,
+				static fn (bool $carry, string $ns): bool => ($carry || str_starts_with($chosen, $ns)),
+				false
+			),
+			'The resolved namespace must be one of the declared candidates, not an invented one.'
+		);
+	}
+
+	/**
+	 * Read the protected class-list accessor.
+	 *
+	 * @param CredentialStoreResolver $resolver The resolver.
+	 *
+	 * @return array<int, string> The probed FQCNs.
+	 */
+	private function readProbedClasses(CredentialStoreResolver $resolver): array {
+		$method = new \ReflectionMethod($resolver, 'doriathServiceClasses');
+		$method->setAccessible(true);
+
+		return $method->invoke($resolver);
+	}
+
+	/**
+	 * Read the protected secret-service accessor.
+	 *
+	 * @param CredentialStoreResolver $resolver The resolver.
+	 *
+	 * @return string The probed FQCN.
+	 */
+	private function readSecretServiceClass(CredentialStoreResolver $resolver): string {
+		$method = new \ReflectionMethod($resolver, 'secretServiceClass');
+		$method->setAccessible(true);
+
+		return $method->invoke($resolver);
+	}
+
 	/**
 	 * Build a resolver whose class probes point at the test fixtures.
 	 *

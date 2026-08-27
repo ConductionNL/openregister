@@ -206,7 +206,7 @@ class FlowNodeRunsAsOwnerTest extends TestCase {
 				'register' => 'example-hydra-cache',
 				'schema' => 'example-cache-entry',
 			],
-			['triggeredBy' => 'alice']
+			['runAs' => 'alice']
 		);
 
 		$this->assertTrue($this->readWasScoped, 'the read must run inside an owner scope');
@@ -256,7 +256,7 @@ class FlowNodeRunsAsOwnerTest extends TestCase {
 				'fields' => ['status' => 'seen'],
 				'match' => [['property' => 'sourceId', 'value' => 's-1']],
 			],
-			['triggeredBy' => 'alice']
+			['runAs' => 'alice']
 		);
 
 		$this->assertTrue($this->readWasScoped, 'the match lookup must run inside an owner scope');
@@ -288,7 +288,7 @@ class FlowNodeRunsAsOwnerTest extends TestCase {
 				'register' => 'example-hydra-cache',
 				'schema' => 'example-cache-entry',
 			],
-			['triggeredBy' => 'alice']
+			['runAs' => 'alice']
 		);
 
 		// A second read with no owner must fail closed rather than inheriting

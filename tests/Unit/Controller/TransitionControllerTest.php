@@ -25,6 +25,7 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\TransitionController;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\InvalidTransitionInputException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\AppFramework\Http;
@@ -58,12 +59,27 @@ class TransitionControllerTest extends TestCase {
 	}//end setUp()
 
 	/**
+	 * Stub the request body params (the controller reads `action` and `data`).
+	 *
+	 * @param array<string, mixed> $params Body params by name.
+	 *
+	 * @return void
+	 */
+	private function stubParams(array $params): void {
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key) use ($params) {
+				return $params[$key] ?? null;
+			}
+		);
+	}//end stubParams()
+
+	/**
 	 * Happy path — engine returns the saved object, controller returns 200.
 	 *
 	 * @return void
 	 */
 	public function testTransitionReturnsOk(): void {
-		$this->request->method('getParam')->with('action')->willReturn('open');
+		$this->stubParams(['action' => 'open']);
 		$object = $this->createMock(ObjectEntity::class);
 		$object->method('jsonSerialize')->willReturn(['uuid' => 'u-1', 'state' => 'open']);
 		$this->engine->method('transition')->willReturn($object);
@@ -79,7 +95,7 @@ class TransitionControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testTransitionReturns400WhenActionMissing(): void {
-		$this->request->method('getParam')->with('action')->willReturn(null);
+		$this->stubParams([]);
 
 		$response = $this->controller->transition('obj-1');
 
@@ -92,7 +108,7 @@ class TransitionControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testTransitionReturnsForbiddenOnPermissionDenied(): void {
-		$this->request->method('getParam')->with('action')->willReturn('open');
+		$this->stubParams(['action' => 'open']);
 		$this->engine->method('transition')->willThrowException(
 			new NotAuthorizedException(message: 'You do not have permission to transition object "obj-1".')
 		);
@@ -114,7 +130,7 @@ class TransitionControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testTransitionReturns422OnRuntimeError(): void {
-		$this->request->method('getParam')->with('action')->willReturn('open');
+		$this->stubParams(['action' => 'open']);
 		$this->engine->method('transition')->willThrowException(
 			new RuntimeException('Transition "open" is not allowed from current state "closed".')
 		);
@@ -123,6 +139,68 @@ class TransitionControllerTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
 	}//end testTransitionReturns422OnRuntimeError()
+
+	/**
+	 * The optional `data` body param is forwarded to the engine untouched.
+	 *
+	 * @return void
+	 */
+	public function testTransitionForwardsDataToEngine(): void {
+		$this->stubParams(['action' => 'submit', 'data' => ['hours' => 8]]);
+		$object = $this->createMock(ObjectEntity::class);
+		$object->method('jsonSerialize')->willReturn(['uuid' => 'u-1']);
+		$this->engine->expects($this->once())
+			->method('transition')
+			->with('obj-1', 'submit', ['hours' => 8])
+			->willReturn($object);
+
+		$response = $this->controller->transition('obj-1');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+	}//end testTransitionForwardsDataToEngine()
+
+	/**
+	 * A `data` value that is not an object/array is a client error, rejected
+	 * before the engine is ever consulted.
+	 *
+	 * @return void
+	 */
+	public function testTransitionReturns400WhenDataIsNotAnObject(): void {
+		$this->stubParams(['action' => 'submit', 'data' => 'not-an-object']);
+		$this->engine->expects($this->never())->method('transition');
+
+		$response = $this->controller->transition('obj-1');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+	}//end testTransitionReturns400WhenDataIsNotAnObject()
+
+	/**
+	 * Engine rejecting the payload against the transition's `inputs`
+	 * allowlist maps to 400 with the offending fields machine-readable,
+	 * distinct from the 422 used for a refused transition.
+	 *
+	 * @return void
+	 */
+	public function testTransitionReturns400OnInvalidTransitionInput(): void {
+		$this->stubParams(['action' => 'submit', 'data' => ['bogus' => 1]]);
+		$this->engine->method('transition')->willThrowException(
+			new InvalidTransitionInputException(
+				message: 'Transition "submit" does not accept input field(s): "bogus".',
+				fields: ['bogus']
+			)
+		);
+
+		$response = $this->controller->transition('obj-1');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$body = $response->getData();
+		$this->assertIsArray($body);
+		$this->assertSame(
+			'Transition "submit" does not accept input field(s): "bogus".',
+			$body['error'] ?? null
+		);
+		$this->assertSame(['bogus'], $body['fields'] ?? null);
+	}//end testTransitionReturns400OnInvalidTransitionInput()
 
 	/**
 	 * R08 / F03 contract: availableActions also surfaces 403 on denial.

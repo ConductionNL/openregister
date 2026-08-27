@@ -631,7 +631,7 @@ class EmailLinkService {
 		foreach ($rows as $row) {
 			$id = (int)($row['id'] ?? 0);
 			$sentAt = null;
-			if (isset($row['sent_at']) === true && $row['sent_at'] !== null) {
+			if (isset($row['sent_at']) === true) {
 				$sentAt = date('c', (int)$row['sent_at']);
 			}
 
@@ -793,7 +793,7 @@ class EmailLinkService {
 		}
 
 		$sentAt = null;
-		if (isset($row['sent_at']) === true && $row['sent_at'] !== null) {
+		if (isset($row['sent_at']) === true) {
 			$sentAt = date('c', (int)$row['sent_at']);
 		}
 

@@ -147,10 +147,14 @@ class NotificationSubscriptionMapper extends QBMapper {
 			)
 			->orderBy('created', 'DESC');
 
-		/*
-		 * @var NotificationSubscription[] $rows
-		 */
-
+		// The findEntities() helper is typed Entity[] on the parent; this mapper's
+		// generic binding narrows it to NotificationSubscription at runtime. The
+		// annotation has to be a `/** */` docblock for PHPStan to honour it — the
+		// `/* */` one that used to sit here was inert — which is why the inline
+		// doc-block sniff is silenced for this single line rather than the type
+		// being left wrong.
+		// phpcs:ignore Squiz.Commenting.InlineComment.DocBlock -- PHPStan only reads @var from a /** */ block.
+		/** @var NotificationSubscription[] $rows */
 		$rows = $this->findEntities(query: $qb);
 		return $rows;
 	}//end findByUser()

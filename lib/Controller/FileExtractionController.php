@@ -51,7 +51,7 @@ use OCP\IUserSession;
  *
  * @psalm-suppress UnusedClass
  *
- * @suppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
@@ -331,7 +331,7 @@ class FileExtractionController extends Controller {
 	 *     array<never, never>
 	 * >
 	 *
-	 * @suppressWarnings(PHPMD.BooleanArgumentFlag) Force flag allows re-extraction bypass
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag allows re-extraction bypass
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -395,8 +395,8 @@ class FileExtractionController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<
-	 *     200|500,
-	 *     array{
+	 *     200|403|500,
+	 *     array{success: false, error: string}|array{
 	 *         success: bool,
 	 *         error?: 'File discovery failed',
 	 *         message: string,
@@ -454,8 +454,8 @@ class FileExtractionController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<
-	 *     200|500,
-	 *     array{
+	 *     200|403|500,
+	 *     array{success: false, error: string}|array{
 	 *         success: bool,
 	 *         error?: 'Batch extraction failed',
 	 *         message: string,
@@ -505,8 +505,8 @@ class FileExtractionController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<
-	 *     200|500,
-	 *     array{
+	 *     200|403|500,
+	 *     array{success: false, error: string}|array{
 	 *         success: bool,
 	 *         error?: 'Retry failed',
 	 *         message: string,
@@ -610,8 +610,8 @@ class FileExtractionController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<
-	 *     200|500,
-	 *     array{
+	 *     200|403|500,
+	 *     array{success: false, error: string}|array{
 	 *         success: bool,
 	 *         error?: 'Cleanup failed',
 	 *         message: string,

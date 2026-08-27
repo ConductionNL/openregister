@@ -24,7 +24,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Notification;
 
-use DateInterval;
 use DateTimeZone;
 
 /**
@@ -66,6 +65,102 @@ final class NotificationAnnotationValidator {
 	 * @var int
 	 */
 	private const MAX_ACTIONS = 2;
+
+	/**
+	 * Parses scheduled-trigger filters; the sole authority on what one may say.
+	 *
+	 * @var ScheduledFilterParser
+	 */
+	private ScheduledFilterParser $filterParser;
+
+	/**
+	 * Construct a validator.
+	 *
+	 * The parser is injectable but defaulted, because this class is constructed
+	 * directly (`new NotificationAnnotationValidator()`) in several call sites
+	 * that predate any container wiring.
+	 *
+	 * @param ScheduledFilterParser|null $filterParser Parser for scheduled filters.
+	 */
+	public function __construct(?ScheduledFilterParser $filterParser = null) {
+		$this->filterParser = ($filterParser ?? new ScheduledFilterParser());
+
+	}//end __construct()
+
+	/**
+	 * Validate an app-defined trigger event name.
+	 *
+	 * An app event is namespaced with a dot — `booking.confirmed`,
+	 * `generation.draft`, `lifecycle.optIn`. The dot is the whole safeguard, and
+	 * the only part of the name this rule polices: it is required so an app event
+	 * can never
+	 * collide with a reserved trigger type, present or future: `created` is
+	 * always the engine's, `booking.created` is always the app's. Without that
+	 * rule, adding a trigger type later would silently capture somebody's
+	 * event.
+	 *
+	 * @param string $ruleKey The notification rule key, for diagnostics.
+	 * @param mixed  $event   The declared event name.
+	 *
+	 * @return array<int, array<string, mixed>> Errors, empty when the name is well-formed.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function validateAppEvent(string $ruleKey, $event): array {
+		if (is_string($event) === false || $event === '') {
+			return [
+				[
+					'code' => 'notification-bad-app-event',
+					'ruleKey' => $ruleKey,
+					'field' => 'trigger',
+					'value' => $event,
+					'message' => sprintf(
+						'Notification "%s" declares an app event that is not a non-empty string.',
+						$ruleKey
+					),
+				],
+			];
+		}
+
+		if (in_array($event, self::VALID_TRIGGERS, true) === true) {
+			return [
+				[
+					'code' => 'notification-app-event-reserved',
+					'ruleKey' => $ruleKey,
+					'field' => 'trigger',
+					'value' => $event,
+					'message' => sprintf(
+						'Notification "%s" names "%s" as an app event, but that is a reserved trigger type; '
+						. 'use the object form {"type": "%s"} instead.',
+						$ruleKey,
+						$event,
+						$event
+					),
+				],
+			];
+		}
+
+		if (preg_match('/^[a-z][A-Za-z0-9-]*(\.[A-Za-z0-9-]+)+$/', $event) !== 1) {
+			return [
+				[
+					'code' => 'notification-bad-app-event',
+					'ruleKey' => $ruleKey,
+					'field' => 'trigger',
+					'value' => $event,
+					'message' => sprintf(
+						'Notification "%s" app event "%s" must be namespaced with a dot and start lowercase '
+						. '(e.g. "booking.confirmed", "lifecycle.optIn"), so it can never collide with a '
+						. 'reserved trigger type.',
+						$ruleKey,
+						$event
+					),
+				],
+			];
+		}
+
+		return [];
+
+	}//end validateAppEvent()
 
 	/**
 	 * Validate the `x-openregister-notifications` annotation.
@@ -122,15 +217,27 @@ final class NotificationAnnotationValidator {
 
 			$trigger = ($spec['trigger'] ?? null);
 			$triggerType = '';
+			$appEvent = null;
 			if (is_array($trigger) === true) {
 				$triggerType = (string)($trigger['type'] ?? '');
+				if (isset($trigger['event']) === true) {
+					$appEvent = $trigger['event'];
+				}
+			} elseif (is_string($trigger) === true) {
+				// Bare-string shorthand for an app-defined event.
+				$appEvent = $trigger;
 			}
 
-			if (in_array($triggerType, self::VALID_TRIGGERS, true) === false) {
+			if ($appEvent !== null) {
+				foreach ($this->validateAppEvent(ruleKey: (string)$name, event: $appEvent) as $eventError) {
+					$errors[] = $eventError;
+				}
+			} elseif (in_array($triggerType, self::VALID_TRIGGERS, true) === false) {
 				$errors[] = [
 					'code' => 'notification-bad-trigger',
 					'message' => sprintf(
-						'Notification "%s" trigger.type must be one of [%s].',
+						'Notification "%s" trigger.type must be one of [%s], or the trigger must name an '
+						. 'app-defined event as a namespaced string (e.g. "booking.confirmed").',
 						$name,
 						implode(', ', self::VALID_TRIGGERS)
 					),
@@ -153,10 +260,11 @@ final class NotificationAnnotationValidator {
 					];
 				}
 
-				// Validate filter operator grammar (Phase 2 — save-time grammar validation).
-				// Scalar entries always pass; operator objects must declare a known operator,
-				// a present `value`, and an ISO-8601 DateInterval-parseable duration for
-				// withinNext / olderThan. See notification-engine-scheduled-conditions.
+				// Validate the filter by parsing it with the same parser the
+				// evaluator runs. This class enumerates no operators of its own:
+				// while it did, it accepted "any array without an `operator` key"
+				// as a scalar shortcut, which let 24 unexecutable filter entries
+				// across three apps save cleanly and then match nothing.
 				if (is_array($trigger) === true && isset($trigger['filter']) === true) {
 					$filter = $trigger['filter'];
 					if (is_array($filter) === false) {
@@ -171,16 +279,14 @@ final class NotificationAnnotationValidator {
 							),
 						];
 					} else {
-						foreach ($filter as $fieldKey => $filterSpec) {
-							$entryErrors = $this->validateScheduledFilterEntry(
-								ruleKey: $name,
-								field: (string)$fieldKey,
-								spec: $filterSpec
-							);
-							foreach ($entryErrors as $entryError) {
-								$errors[] = $entryError;
-							}
-						}//end foreach
+						// One parse of the whole map, not one call per entry:
+						// `all` / `any` are whole-filter constructs, and parsing
+						// here is what guarantees the shapes this validator
+						// accepts are exactly the shapes the evaluator executes.
+						$parsed = $this->filterParser->parse(filter: $filter, ruleKey: $name);
+						foreach ($parsed['errors'] as $entryError) {
+							$errors[] = $entryError;
+						}
 					}//end if
 				}//end if
 
@@ -457,7 +563,7 @@ final class NotificationAnnotationValidator {
 			}
 
 			// When the `webhook` channel is declared, the spec MUST include a `webhook.url` value.
-			if (is_array($channels) === true && in_array('webhook', $channels, true) === true) {
+			if (in_array('webhook', $channels, true) === true) {
 				$hook = ($spec['webhook'] ?? null);
 				$hookBad = is_array($hook) === false;
 				if ($hookBad === false) {
@@ -477,7 +583,7 @@ final class NotificationAnnotationValidator {
 			}
 
 			// When the `talk` channel is declared, the spec MUST include a `talk.token`.
-			if (is_array($channels) === true && in_array('talk', $channels, true) === true) {
+			if (in_array('talk', $channels, true) === true) {
 				$talk = ($spec['talk'] ?? null);
 				$talkBad = is_array($talk) === false;
 				if ($talkBad === false) {
@@ -1000,104 +1106,4 @@ final class NotificationAnnotationValidator {
 		];
 	}//end validateOrganisationGate()
 
-	/**
-	 * Validate a single scheduled-trigger filter entry.
-	 *
-	 * Scalar entries always pass (legacy v1 byte-for-byte equality).
-	 * Operator-object entries must declare:
-	 *   - a recognised operator (equals | notEquals | withinNext | olderThan);
-	 *   - a `value` key (even if null) — for equals/notEquals;
-	 *   - an ISO-8601 DateInterval-parseable string `value` for withinNext / olderThan.
-	 *
-	 * @param string $ruleKey The notification rule key for diagnostics.
-	 * @param string $field The filter field name being inspected.
-	 * @param mixed $spec The raw filter entry value (scalar or operator object).
-	 *
-	 * @return array<int, array{code: string, ruleKey: string, field: string, value: mixed, message: string}>
-	 */
-	private function validateScheduledFilterEntry(string $ruleKey, string $field, $spec): array {
-		// Scalar shortcut: always accepted (legacy v1 strict equality).
-		if (is_array($spec) === false || array_key_exists('operator', $spec) === false) {
-			return [];
-		}
-
-		$validOperators = ['equals', 'notEquals', 'withinNext', 'olderThan'];
-		$operator = (string)($spec['operator'] ?? '');
-
-		if (in_array($operator, $validOperators, true) === false) {
-			return [
-				[
-					'code' => 'notification-scheduled-bad-filter-operator',
-					'ruleKey' => $ruleKey,
-					'field' => sprintf('trigger.filter.%s.operator', $field),
-					'value' => $operator,
-					'message' => sprintf(
-						'Notification "%s" trigger.filter.%s.operator must be one of [%s]; got "%s".',
-						$ruleKey,
-						$field,
-						implode(', ', $validOperators),
-						$operator
-					),
-				],
-			];
-		}
-
-		if (array_key_exists('value', $spec) === false) {
-			return [
-				[
-					'code' => 'notification-scheduled-bad-filter-missing-value',
-					'ruleKey' => $ruleKey,
-					'field' => sprintf('trigger.filter.%s.value', $field),
-					'value' => null,
-					'message' => sprintf(
-						'Notification "%s" trigger.filter.%s requires a "value" key.',
-						$ruleKey,
-						$field
-					),
-				],
-			];
-		}
-
-		if ($operator === 'withinNext' || $operator === 'olderThan') {
-			$duration = $spec['value'];
-			if (is_string($duration) === false || $duration === '') {
-				return [
-					[
-						'code' => 'notification-scheduled-bad-filter-duration',
-						'ruleKey' => $ruleKey,
-						'field' => sprintf('trigger.filter.%s.value', $field),
-						'value' => $duration,
-						'message' => sprintf(
-							'Notification "%s" trigger.filter.%s.value must be an ISO-8601 DateInterval string for "%s".',
-							$ruleKey,
-							$field,
-							$operator
-						),
-					],
-				];
-			}
-
-			try {
-				new DateInterval($duration);
-			} catch (\Exception $e) {
-				return [
-					[
-						'code' => 'notification-scheduled-bad-filter-duration',
-						'ruleKey' => $ruleKey,
-						'field' => sprintf('trigger.filter.%s.value', $field),
-						'value' => $duration,
-						'message' => sprintf(
-							'Notification "%s" trigger.filter.%s.value "%s" is not a valid ISO-8601 DateInterval for "%s".',
-							$ruleKey,
-							$field,
-							$duration,
-							$operator
-						),
-					],
-				];
-			}//end try
-		}//end if
-
-		return [];
-	}//end validateScheduledFilterEntry()
 }//end class

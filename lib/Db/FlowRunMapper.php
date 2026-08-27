@@ -574,7 +574,7 @@ class FlowRunMapper extends QBMapper {
 	 * missed signal silently retires the flow.
 	 *
 	 * These are FAILED rather than resumed, for the same reason
-	 * {@see \OCA\OpenRegister\Cron\FlowRunWorker::reapStale()} fails rather than
+	 * {@see \OCA\OpenRegister\BackgroundJob\FlowRunWorker::reapStale()} fails rather than
 	 * requeues: the run is mid-graph and resuming it would run the awaiting node
 	 * as though its answer had arrived, when what actually happened is that
 	 * nobody answered. Failing says that, and leaves retry to a person.
@@ -603,6 +603,40 @@ class FlowRunMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findAbandonedSignals()
+
+	/**
+	 * Runs parked waiting for somebody to allow a delegation.
+	 *
+	 * NO time predicate, unlike every other sweep here. A consent is not waiting
+	 * on a clock: re-asking in five minutes is not how a person decides, and a
+	 * parked run must be released the moment the answer lands rather than on the
+	 * next tick of a timer that has nothing to do with it. The sweep re-resolves
+	 * each run's delegation instead — the grant record IS the signal.
+	 *
+	 * Oldest first, so a run that has been waiting longest is released first when
+	 * one answer frees several.
+	 *
+	 * @param integer $limit Maximum runs to claim in one pass.
+	 *
+	 * @return array<int, FlowRun> The parked runs.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	public function findAwaitingConsent(int $limit = 25): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->eq(
+					'status',
+					$qb->createNamedParameter(FlowRun::STATUS_AWAITING_CONSENT)
+				)
+			)
+			->orderBy('id', 'ASC')
+			->setMaxResults($limit);
+
+		return $this->findEntities(query: $qb);
+	}//end findAwaitingConsent()
 
 	/**
 	 * Runs waiting to start, shared FAIRLY between the flows that are waiting.

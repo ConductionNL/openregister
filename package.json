@@ -27,12 +27,15 @@
     "test:e2e:install": "playwright install chromium",
     "test:l10n": "node tests/l10n/check-l10n.js",
     "test:l10n:write": "node tests/l10n/check-l10n.js --write",
+    "check:schema-l10n": "node scripts/check-schema-l10n.js",
     "check:json-strict": "node tests/validate-json-strict.js",
     "check:manifest": "node tests/validate-manifest.js",
     "check:register": "node tests/validate-register.js",
     "check:specs": "npm run check:json-strict && npm run check:manifest && npm run check:register",
     "format": "prettier --check \"**/*.{js,ts,vue,css,scss}\"",
-    "format:fix": "prettier --write \"**/*.{js,ts,vue,css,scss}\""
+    "format:fix": "prettier --write \"**/*.{js,ts,vue,css,scss}\"",
+    "l10n:build": "node scripts/build-l10n-js.js",
+    "check:l10n-js": "node scripts/build-l10n-js.js --check"
   },
   "browserslist": [
     "extends @nextcloud/browserslist-config"
@@ -43,7 +46,7 @@
   },
   "dependencies": {
     "@codemirror/lang-json": "^6.0.1",
-    "@conduction/nextcloud-vue": "^2.8.0",
+    "@conduction/nextcloud-vue": "^2.16.0",
     "@nextcloud/auth": "^2.6.0",
     "@nextcloud/axios": "^2.6.0",
     "@nextcloud/capabilities": "^1.2.1",

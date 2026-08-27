@@ -245,11 +245,9 @@ class ContextRetrievalHandler {
 				$results = [];
 			}
 
-			// Determine raw results count for logging.
-			$rawResultsCount = gettype($results);
-			if (is_array($results) === true) {
-				$rawResultsCount = count($results);
-			}
+			// Determine raw results count for logging. $results is always an
+			// array here, so the old gettype() fallback was unreachable.
+			$rawResultsCount = count($results);
 
 			// Filter and build context - track file and object counts separately.
 			$fileSourceCount = 0;

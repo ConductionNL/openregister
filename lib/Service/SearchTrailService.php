@@ -666,11 +666,10 @@ class SearchTrailService {
 		];
 
 		foreach ($config as $key => $value) {
-			// Ensure key is a string or integer to avoid "Illegal offset type" error.
-			if (is_string($key) === true || is_int($key) === true) {
-				if (in_array($key, $excludeKeys, true) === false && str_starts_with((string)$key, '_') === false) {
-					$processed['filters'][$key] = $value;
-				}
+			// No string-or-integer guard: an array key is always one of those,
+			// so it could never reject a key.
+			if (in_array($key, $excludeKeys, true) === false && str_starts_with((string)$key, '_') === false) {
+				$processed['filters'][$key] = $value;
 			}
 		}
 
@@ -807,7 +806,9 @@ class SearchTrailService {
 			if (preg_match($pattern, $userAgent, $matches) === 1) {
 				return [
 					'browser' => $browser,
-					'version' => $matches[1] ?? 'unknown',
+					// Every pattern above has exactly one capturing group and we
+					// only get here when preg_match returned 1, so group 1 is set.
+					'version' => $matches[1],
 					'full_string' => $userAgent,
 				];
 			}

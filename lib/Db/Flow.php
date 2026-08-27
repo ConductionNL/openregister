@@ -86,6 +86,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setOrganisation(?string $organisation)
  * @method string|null getNotes()
  * @method void setNotes(?string $notes)
+ * @method string|null getComment()
+ * @method void setComment(?string $comment)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
@@ -445,11 +447,20 @@ class Flow extends Entity implements JsonSerializable {
 	/**
 	 * Whether a trigger or schedule may dispatch this flow.
 	 *
-	 * Enabled alone is not enough. A trigger fires with no acting user, so a
-	 * run needs an owner to be attributed to and to execute as; dispatching an
-	 * ownerless flow would mean picking an identity for it, and every available
-	 * choice (empty, system, admin) is a privilege decision nobody made.
-	 * Refusing is the only safe answer.
+	 * Enabled alone is not enough: an ownerless flow is an orphan. `owner` is
+	 * ownership of the DEFINITION — who may edit it — and `flowToSave()` now
+	 * refuses to create one without it, so a row lacking one predates that rule
+	 * or was written around it. `belongsTo()` is fail-closed on the same field,
+	 * meaning such a flow cannot be listed, found or edited either; dispatching
+	 * the one thing it can still do would be inconsistent.
+	 *
+	 * 🔴 This is NOT the identity check. It used to be — the reasoning was that
+	 * a trigger fires with no acting user, so the run had to execute as the
+	 * owner — and ADR-099 removed exactly that, because it turned authoring a
+	 * flow into standing consent to unattended execution as the author. Whose
+	 * rights a run uses is decided at the queue from the TRIGGER NODE's `runAs`,
+	 * and a flow that names nobody is refused and switched off there, with a
+	 * reason attached. Do not re-read this method as an authorization gate.
 	 *
 	 * @return boolean True when the flow may be dispatched.
 	 *

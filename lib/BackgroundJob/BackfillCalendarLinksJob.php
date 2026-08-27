@@ -237,11 +237,11 @@ class BackfillCalendarLinksJob extends QueuedJob {
 	 * @return void
 	 */
 	private function applyEventDates(CalendarLink $link, array $event): void {
-		if (isset($event['dtstart']) === true && $event['dtstart'] !== null) {
+		if (isset($event['dtstart']) === true) {
 			$link->setDtstart(new DateTime((string)$event['dtstart']));
 		}
 
-		if (isset($event['dtend']) === true && $event['dtend'] !== null) {
+		if (isset($event['dtend']) === true) {
 			$link->setDtend(new DateTime((string)$event['dtend']));
 		}
 	}//end applyEventDates()

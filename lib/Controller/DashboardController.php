@@ -187,7 +187,7 @@ class DashboardController extends Controller {
 	 * @return JSONResponse The JSON response containing registers with schemas
 	 *
 	 * @psalm-return JSONResponse<
-	 *     200|500,
+	 *     200|403|500,
 	 *     array{
 	 *         error?: string,
 	 *         registers?: list<array{
@@ -337,8 +337,8 @@ class DashboardController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with calculation results
 	 *
-	 * @psalm-return JSONResponse<200|500,
-	 *     array{status: 'error'|'success', message?: string, timestamp: string,
+	 * @psalm-return JSONResponse<200|403|500,
+	 *     array{error: string}|array{status: 'error'|'success', message?: string, timestamp: string,
 	 *     scope?: array{register: array{id: int, title: null|string}|null,
 	 *     schema: array{id: int, title: null|string}|null},
 	 *     results?: array{objects: array, logs: array,
@@ -387,7 +387,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with chart data or error
 	 *
-	 * @psalm-return JSONResponse<200|500,
+	 * @psalm-return JSONResponse<200|403|500,
 	 *     array{error?: string, labels?: list<array-key>,
 	 *     series?: list<array{data: list<int>, name: string}>},
 	 *     array<never, never>>
@@ -439,7 +439,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with chart data or error
 	 *
-	 * @psalm-return JSONResponse<200|500,
+	 * @psalm-return JSONResponse<200|403|500,
 	 *     array{error?: string, labels?: array<'Unknown'|mixed>, series?: array<int>},
 	 *     array<never, never>>
 	 *
@@ -470,7 +470,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with chart data or error
 	 *
-	 * @psalm-return JSONResponse<200|500,
+	 * @psalm-return JSONResponse<200|403|500,
 	 *     array{error?: string, labels?: array<'Unknown'|mixed>, series?: array<int>},
 	 *     array<never, never>>
 	 *
@@ -501,7 +501,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with chart data or error
 	 *
-	 * @psalm-return JSONResponse<200|500,
+	 * @psalm-return JSONResponse<200|403|500,
 	 *     array{error?: string,
 	 *     labels?: list<'0-1 KB'|'1-10 KB'|'10-100 KB'|'100 KB-1 MB'|'> 1 MB'>,
 	 *     series?: list<int>},
@@ -535,7 +535,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with statistics or error
 	 *
-	 * @psalm-return JSONResponse<200|500,
+	 * @psalm-return JSONResponse<200|403|500,
 	 *     array{error?: string, total?: int, creates?: int,
 	 *     updates?: int, deletes?: int, reads?: int},
 	 *     array<never, never>>
@@ -572,7 +572,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with action distribution or error
 	 *
-	 * @psalm-return JSONResponse<200|500,
+	 * @psalm-return JSONResponse<200|403|500,
 	 *     array{error?: string, actions?: list<array{count: int, name: mixed}>},
 	 *     array<never, never>>
 	 *
@@ -609,7 +609,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with most active objects or error
 	 *
-	 * @psalm-return JSONResponse<200|500,
+	 * @psalm-return JSONResponse<200|403|500,
 	 *     array{error?: string, objects?: list<array{count: int, id: mixed, name: string}>},
 	 *     array<never, never>>
 	 *

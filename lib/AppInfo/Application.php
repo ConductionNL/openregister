@@ -143,6 +143,7 @@ use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Mcp\RegisterMcpToolProvidersEvent;
 use OCA\OpenRegister\Middleware\LanguageMiddleware;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
+use OCA\OpenRegister\Notification\Notifier;
 use OCA\OpenRegister\Repair\LogDanglingLinkedTypes;
 use OCA\OpenRegister\Search\ObjectsProvider;
 use OCA\OpenRegister\Service\ActivityFilterService;
@@ -641,6 +642,21 @@ class Application extends App implements IBootstrap {
 		// this Nextcloud silently drops the notification.
 		$context->registerNotifierService(AnnotationNotifier::class);
 
+		// 🔴 AND the hand-written one, which was NEVER REGISTERED.
+		//
+		// `AnnotationNotifier::prepare()` deliberately re-throws
+		// UnknownNotificationException for the subjects it does not own, and its
+		// comment says they are "rendered by Notifier" — but nothing ever
+		// registered Notifier, so nothing rendered them. Nextcloud drops a
+		// notification no notifier claims, silently. Every
+		// `configuration_update_available`, `handoff_drain_failed`,
+		// `scheduled_report_delivered` and `scheduled_report_failed` this app has
+		// ever dispatched was written to the store and then discarded at parse
+		// time, and the class rendering them was written, complete, and
+		// unreachable — the same orphaned-capability shape as
+		// TriggerScheduleNode::validateConfig().
+		$context->registerNotifierService(Notifier::class);
+
 		// Surface URN identifier surface via Nextcloud capabilities API so
 		// clients can discover URN endpoints + the instance slug without
 		// probing routes.
@@ -750,7 +766,12 @@ class Application extends App implements IBootstrap {
 					organisationMapper: $container->get(OrganisationMapper::class),
 					userSession: $container->get('OCP\IUserSession'),
 					groupManager: $container->get('OCP\IGroupManager'),
-					appConfig: $container->get('OCP\IAppConfig')
+					appConfig: $container->get('OCP\IAppConfig'),
+					// Explicitly wired: this factory overrides autowiring, so an
+					// argument omitted here is never supplied at all. That is how
+					// RegisterMapper ran with four dead logging branches
+					// (openregister#2820).
+					logger: $container->get('Psr\Log\LoggerInterface')
 				);
 			}
 		);

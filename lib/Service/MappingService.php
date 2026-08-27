@@ -348,9 +348,8 @@ class MappingService {
 				$cast = explode(',', (string)$cast);
 			}
 
-			if ($cast === false) {
-				continue;
-			}
+			// No `$cast === false` bail-out: after the branch above $cast is
+			// always an array (explode() cannot return false), so it never fired.
 
 			foreach ($cast as $singleCast) {
 				$this->handleCast(dotArray: $dotArray, key: $key, cast: $singleCast);
@@ -382,10 +381,8 @@ class MappingService {
 			$output = [];
 		}
 
-		if (is_array($output) === false) {
-			$output = [$output];
-		}
-
+		// No scalar-wrapping branch: after the null default above, $output is
+		// always an array, so `is_array() === false` could never be entered.
 		return $output;
 	}//end executeMapping()
 

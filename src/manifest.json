@@ -666,5 +666,124 @@
         }
       }
     ]
+  },
+  "walkthrough": {
+    "enabled": true,
+    "version": 1,
+    "completionConfigKey": "walkthrough_seen_version",
+    "tours": [
+      {
+        "id": "openregister:getting-started",
+        "title": "Getting started",
+        "trigger": "first-visit",
+        "minAppVersion": "1.1.5",
+        "steps": [
+          {
+            "id": "welcome",
+            "sinceVersion": "1.1.5",
+            "placement": "center",
+            "title": "Welcome to OpenRegister",
+            "body": "OpenRegister is the data foundation the other apps build on. Everything they store lives here, in registers you define. This tour walks the three ideas that make it work: a register, a schema, and the objects that result.",
+            "target": {
+              "kind": "page",
+              "ref": "dashboard"
+            },
+            "advanceOn": {
+              "type": "manual"
+            }
+          },
+          {
+            "id": "open-registers",
+            "sinceVersion": "1.1.5",
+            "placement": "right",
+            "body": "A register is a container with a purpose, like a filing cabinet for one domain. Apps address one by its slug, so the slug is a contract other apps depend on.",
+            "task": "Open Registers",
+            "target": {
+              "kind": "nav-item",
+              "ref": "Registers"
+            },
+            "advanceOn": {
+              "type": "route-match",
+              "route": "registers"
+            }
+          },
+          {
+            "id": "create-register",
+            "sinceVersion": "1.1.5",
+            "placement": "center",
+            "body": "Create one and give it a slug you will not want to change later. Renaming a register slug breaks every app that addresses it by name, so it is worth a moment of thought now.",
+            "task": "Create a register",
+            "allowManualNext": true,
+            "target": {
+              "kind": "page",
+              "ref": "registers"
+            },
+            "advanceOn": {
+              "type": "manual"
+            }
+          },
+          {
+            "id": "open-schemas",
+            "sinceVersion": "1.1.5",
+            "placement": "right",
+            "body": "A schema is the shape of one kind of thing inside a register. It is JSON Schema, so validation, defaults and required fields all come from the same definition.",
+            "task": "Open Schemas",
+            "target": {
+              "kind": "nav-item",
+              "ref": "Schemas"
+            },
+            "advanceOn": {
+              "type": "route-match",
+              "route": "schemas"
+            }
+          },
+          {
+            "id": "create-schema",
+            "sinceVersion": "1.1.5",
+            "placement": "center",
+            "body": "Add a schema to the register you just made. Once it exists, every object stored against it is validated on write, which is why bad data tends not to reach the other apps.",
+            "task": "Create a schema",
+            "allowManualNext": true,
+            "target": {
+              "kind": "page",
+              "ref": "schemas"
+            },
+            "advanceOn": {
+              "type": "manual"
+            }
+          },
+          {
+            "id": "open-tables",
+            "sinceVersion": "1.1.5",
+            "placement": "right",
+            "body": "Search and views read across registers and schemas at once. This is where the objects your apps write actually surface, and where you check that a write landed the way you expected.",
+            "task": "Open Search / views",
+            "target": {
+              "kind": "nav-item",
+              "ref": "Tables"
+            },
+            "advanceOn": {
+              "type": "route-match",
+              "route": "tables"
+            }
+          },
+          {
+            "id": "done",
+            "sinceVersion": "1.1.5",
+            "placement": "center",
+            "title": "That is the foundation",
+            "body": "Register, schema, objects: define the container, define the shape, and every app on the stack can read and write it through the same API. The rest of OpenRegister, from audit trails to data quality, hangs off those three.",
+            "task": "Open the documentation to keep going",
+            "target": {
+              "kind": "nav-item",
+              "ref": "Documentation"
+            },
+            "advanceOn": {
+              "type": "manual"
+            }
+          }
+        ]
+      }
+    ]
   }
 }

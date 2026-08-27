@@ -85,6 +85,8 @@ use Symfony\Component\Uid\Uuid;
  * handling for batch object operations. Reduced from 2,717 to 1,815 lines via
  * dead code removal and extract-method decomposition (21 focused helpers).
  *
+ * @spec openspec/specs/object-lifecycle/spec.md
+ *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Bulk save coordination requires many steps
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Inherent complexity of bulk operations
  * @SuppressWarnings(PHPMD.TooManyMethods)           Methods are small focused helpers extracted from complex methods
@@ -108,6 +110,45 @@ class SaveObjects {
 	 * @var int
 	 */
 	private const AUDIT_INSERT_CHUNK_SIZE = 100;
+
+	/**
+	 * Envelope keys that are never business data, whatever a schema declares.
+	 *
+	 * These identify or locate the object rather than describe it, so a schema
+	 * property of the same name would be a collision with the storage envelope
+	 * itself and is not something this method can honour.
+	 *
+	 * @var string[]
+	 */
+	private const STRUCTURAL_METADATA_FIELDS = [
+		'@self',
+		'register',
+		'schema',
+		'organisation',
+		'uuid',
+		'owner',
+		'created',
+		'updated',
+		'id',
+	];
+
+	/**
+	 * Magic-table display columns that are ALSO legal schema property names.
+	 *
+	 * `name`, `description`, `summary`, `image` and `slug` each have a column on
+	 * the magic table, and are among the most ordinary property names a schema
+	 * can declare. When the schema declares one, the incoming value is business
+	 * data and must survive; only an undeclared one is metadata.
+	 *
+	 * @var string[]
+	 */
+	private const OVERLAPPING_METADATA_FIELDS = [
+		'name',
+		'description',
+		'summary',
+		'image',
+		'slug',
+	];
 
 	/**
 	 * Static schema cache to avoid repeated database lookups
@@ -707,7 +748,14 @@ class SaveObjects {
 			// defence; phpstan flagged it as dead because the typed shape
 			// contracts on the public method. Callers passing non-array
 			// rows would be a programmer error, not a runtime concern.
-			unset($index);
+			//
+			// The key is the caller's own array position and travels with every
+			// rejection below (issue #2778) — it used to be discarded here, and
+			// a refused row then had no way of naming itself in the response.
+			$rowIndex = null;
+			if (is_int($index) === true) {
+				$rowIndex = $index;
+			}
 
 			// Step 1: strip dangerous @self fields for non-admins.
 			$sanitised = $this->stripSelfInjectionFields(object: $object, isAdmin: $isAdmin);
@@ -733,7 +781,8 @@ class SaveObjects {
 					$this->recordSafeguardRejection(
 						object: $sanitised,
 						reason: 'Schema could not be resolved; refusing to write a row whose permissions cannot be checked.',
-						result: $result
+						result: $result,
+						index: $rowIndex
 					);
 					continue;
 				}
@@ -758,7 +807,8 @@ class SaveObjects {
 				$this->recordSafeguardRejection(
 					object: $sanitised,
 					reason: 'Schema is appendOnly; UPDATE rejected for row UUID ' . ((string)($uuid ?? '?')),
-					result: $result
+					result: $result,
+					index: $rowIndex
 				);
 				continue;
 			}
@@ -778,7 +828,8 @@ class SaveObjects {
 					$this->recordSafeguardRejection(
 						object: $sanitised,
 						reason: 'Permission denied for action ' . $action . ' on schema ' . $rowSchema->getSlug(),
-						result: $result
+						result: $result,
+						index: $rowIndex
 					);
 					continue;
 				}
@@ -798,7 +849,8 @@ class SaveObjects {
 						$this->recordSafeguardRejection(
 							object: $sanitised,
 							reason: 'Schema validation failed: ' . $errorMessage,
-							result: $result
+							result: $result,
+							index: $rowIndex
 						);
 						continue;
 					}
@@ -806,7 +858,8 @@ class SaveObjects {
 					$this->recordSafeguardRejection(
 						object: $sanitised,
 						reason: 'Schema validation threw: ' . $e->getMessage(),
-						result: $result
+						result: $result,
+						index: $rowIndex
 					);
 					continue;
 				}//end try
@@ -1127,20 +1180,31 @@ class SaveObjects {
 	/**
 	 * Record a rejection from `applyBulkSafeguards` into the result accumulator.
 	 *
+	 * The row's position in the submitted batch is recorded alongside the
+	 * reason (issue #2778). Without it a caller reading the response cannot say
+	 * WHICH of its objects was refused: a rejected row often carries no uuid
+	 * yet (it is a create), and the reason alone does not identify it. The
+	 * index is the caller's own array key, so it maps straight back onto the
+	 * payload they sent.
+	 *
 	 * @param array $object Sanitised row (post-strip — safe to log shape).
 	 * @param string $reason Human-readable rejection reason.
 	 * @param array $result Result accumulator (mutated in place).
+	 * @param int|null $index Position of the row in the submitted batch, when known.
 	 *
 	 * @return void
 	 */
-	private function recordSafeguardRejection(array $object, string $reason, array &$result): void {
+	private function recordSafeguardRejection(array $object, string $reason, array &$result, ?int $index = null): void {
 		$result['invalid'][] = [
 			'object' => $object,
 			'error' => $reason,
+			'index' => $index,
+			'type' => 'BulkSafeguardException',
 		];
 		$result['errors'][] = [
 			'error' => $reason,
 			'type' => 'BulkSafeguardException',
+			'index' => $index,
 		];
 		$result['statistics']['invalid']++;
 		$result['statistics']['errors']++;
@@ -1149,7 +1213,12 @@ class SaveObjects {
 		// kind of thing someone comes to the log to find.
 		$this->logger->info(
 			message: '[SaveObjects] Wave-12 bulk safeguard rejected row',
-			context: ['file' => __FILE__, 'line' => __LINE__, 'reason' => $reason]
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'reason' => $reason,
+				'index' => $index,
+			]
 		);
 	}//end recordSafeguardRejection()
 
@@ -1554,8 +1623,10 @@ class SaveObjects {
 			]
 		);
 
-		// Extract business data.
-		$businessData = $this->extractBusinessData(object: $object);
+		// Extract business data. The schema is passed so a declared `name` /
+		// `description` / `summary` / `image` / `slug` property is not mistaken
+		// for the magic-table column of the same name (openregister#2781).
+		$businessData = $this->extractBusinessData(object: $object, schema: $schemaObj);
 
 		// RELATIONS EXTRACTION: Scan the business data for relations (UUIDs and URLs).
 		$relations = $this->scanForRelations(data: $businessData, prefix: '', schema: $schemaObj);
@@ -2662,8 +2733,12 @@ class SaveObjects {
 				]
 			);
 
-			// Extract business data and scan for relations.
-			$businessData = $this->extractBusinessData(object: $object);
+			// Extract business data and scan for relations. The cache entry is
+			// handed over as-is: extractBusinessData() decides what counts as a
+			// usable schema, so a cache miss or an unexpected value is judged in
+			// ONE place instead of at every call site (openregister#2781).
+			$objectSchema = ($schemaCache[$selfData['schema']] ?? null);
+			$businessData = $this->extractBusinessData(object: $object, schema: $objectSchema);
 
 			// RELATIONS EXTRACTION: Scan the business data for relations (UUIDs and URLs).
 			// ONLY scan if relations weren't already set during preparation phase.
@@ -2839,12 +2914,20 @@ class SaveObjects {
 	 * legacy structure (metadata fields mixed with business data).
 	 *
 	 * @param array $object The full object data
+	 * @param mixed $schema The schema this object is saved against, used to tell
+	 *                      a declared property from a metadata column of the same
+	 *                      name. Deliberately untyped: callers pass a schema-cache
+	 *                      lookup straight through, and anything that is not a
+	 *                      Schema — a miss, a null, a stale entry — means "no
+	 *                      declaration information", which is the pre-existing
+	 *                      behaviour. Judging that here keeps one rule in one
+	 *                      place rather than an `instanceof` at every call site.
 	 *
 	 * @return array The extracted business data
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function extractBusinessData(array $object): array {
+	private function extractBusinessData(array $object, mixed $schema = null): array {
 		if (isset($object['object']) === true && is_array($object['object']) === true) {
 			// NEW STRUCTURE: object property contains business data.
 			$this->logger->debug('[SaveObjects] Using object property for business data (mixed)');
@@ -2853,24 +2936,35 @@ class SaveObjects {
 
 		// LEGACY STRUCTURE: Remove metadata fields to isolate business data.
 		$businessData = $object;
-		$metadataFields = [
-			'@self',
-			'name',
-			'description',
-			'summary',
-			'image',
-			'slug',
-			'register',
-			'schema',
-			'organisation',
-			'uuid',
-			'owner',
-			'created',
-			'updated',
-			'id',
-		];
+		$metadataFields = array_merge(self::STRUCTURAL_METADATA_FIELDS, self::OVERLAPPING_METADATA_FIELDS);
 
+		// The five OVERLAPPING names are magic-table columns AND perfectly legal
+		// schema property names. Stripping them unconditionally silently threw
+		// away the caller's value, and when the property was `required` the
+		// object then failed validation for "the required property (name) is
+		// missing" -- refusing the whole batch over a field that WAS supplied.
+		// The single-object path never stripped them, so the same payload
+		// behaved differently depending on which endpoint received it
+		// (openregister#2781).
+		//
+		// A declared property wins: it stays in the business data. The metadata
+		// column is still populated separately from objectNameField and friends,
+		// so the value ends up in both places, which is what the magic table is
+		// for.
+		$declared = [];
+		if ($schema instanceof Schema) {
+			$declared = array_keys($schema->getProperties() ?? []);
+		}
+
+		$kept = [];
 		foreach ($metadataFields as $field) {
+			if (
+				in_array($field, self::OVERLAPPING_METADATA_FIELDS, true) === true
+				&& in_array($field, $declared, true) === true
+			) {
+				$kept[] = $field;
+				continue;
+			}
 			unset($businessData[$field]);
 		}
 
@@ -2878,7 +2972,10 @@ class SaveObjects {
 		$this->logger->debug(
 			'[SaveObjects] Metadata removal applied (mixed)',
 			[
-				'removed_fields' => array_intersect($metadataFields, array_keys($object)),
+				'removed_fields' => array_values(
+					array_diff(array_intersect($metadataFields, array_keys($object)), $kept)
+				),
+				'kept_as_schema_properties' => array_values(array_intersect($kept, array_keys($object))),
 				'remaining_keys' => array_keys($businessData),
 				'business_data_sample' => array_slice($businessData, 0, 3, true),
 			]

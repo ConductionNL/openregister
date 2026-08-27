@@ -93,7 +93,7 @@ them in code here would be an ADR-031 (gate-18/gate-31) violation.
 
 ### Reuse before build (ADR-011)
 
-Searched `lib/Formats/`, `lib/Service/`, `lib/Service/Gdpr/`, `lib/BackgroundJob/`, `lib/Cron/`,
+Searched `lib/Formats/`, `lib/Service/`, `lib/Service/Gdpr/`, `lib/BackgroundJob/`, `lib/BackgroundJob/`,
 and `appinfo/routes.php` before proposing anything. Reuse, do not duplicate:
 
 - **`DataSubjectRequestService::assembleAccessExport(subjectId, type?)`** — the export-bundle

@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Service\Integration;
 
 use LogicException;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -356,8 +357,11 @@ class ExternalIntegrationRouter {
 	 */
 	private function isOpenConnectorAvailable(): bool {
 		if ($this->connectorAvailable === null) {
-			$this->connectorAvailable = $this->appManager->isInstalled('openconnector')
-				&& $this->appManager->isEnabledForUser('openconnector');
+			// Resolved through FleetAppId because the app answers to `integriq`
+			// on development and `openconnector` on beta/main. Asking for one
+			// name returns false against the other — silently, with no error.
+			$this->connectorAvailable = FleetAppId::isInstalled($this->appManager, 'integriq')
+				&& FleetAppId::isEnabledForUser($this->appManager, 'integriq');
 		}
 
 		return $this->connectorAvailable;

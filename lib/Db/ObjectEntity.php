@@ -129,7 +129,6 @@ use OCP\IUserSession;
  * @method void setUpdated(?DateTime $updated)
  * @method DateTime|null getModified()
  * @method void setModified(?DateTime $modified)
- * @method string|null getOrganization()
  * @method float|null getRelevance()
  * @method void setRelevance(?float $relevance)
  * @method array|null getGroups()
