@@ -209,6 +209,13 @@ Vrij en open source onder de EUPL-licentie.
 			     register never existed: a merge history that is not recorded,
 			     and a reversal that has nothing to read. -->
 			<step>OCA\OpenRegister\Repair\ImportMergeOperationRegister</step>
+			<!-- ONE STORE PER FLOW. Flows lived in two places — this table and
+			     objects in the `flows` register — and every subsystem reads the
+			     table. Measured with controls: the same definition fires and
+			     bundles from the table and does neither from the register.
+			     Copies the register-authored ones across, disabled, leaving the
+			     register rows in place so the step stays reversible. -->
+			<step>OCA\OpenRegister\Repair\MigrateRegisterFlowsToTable</step>
 			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
 			<step>OCA\OpenRegister\Repair\SeedVocabularyRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
@@ -247,6 +254,13 @@ Vrij en open source onder de EUPL-licentie.
 			     register never existed: a merge history that is not recorded,
 			     and a reversal that has nothing to read. -->
 			<step>OCA\OpenRegister\Repair\ImportMergeOperationRegister</step>
+			<!-- ONE STORE PER FLOW. Flows lived in two places — this table and
+			     objects in the `flows` register — and every subsystem reads the
+			     table. Measured with controls: the same definition fires and
+			     bundles from the table and does neither from the register.
+			     Copies the register-authored ones across, disabled, leaving the
+			     register rows in place so the step stays reversible. -->
+			<step>OCA\OpenRegister\Repair\MigrateRegisterFlowsToTable</step>
 			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
 			<step>OCA\OpenRegister\Repair\SeedVocabularyRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
