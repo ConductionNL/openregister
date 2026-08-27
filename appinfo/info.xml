@@ -203,6 +203,12 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
+			<!-- `merge-operation` is where MergeService writes the audit row for
+			     every merge, and where reverseMerge reads the preMergeSnapshot
+			     back from. Its descriptor shipped with no Repair step, so the
+			     register never existed: a merge history that is not recorded,
+			     and a reversal that has nothing to read. -->
+			<step>OCA\OpenRegister\Repair\ImportMergeOperationRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
 			<step>OCA\OpenRegister\Repair\SeedVocabularyRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
@@ -235,6 +241,12 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
+			<!-- `merge-operation` is where MergeService writes the audit row for
+			     every merge, and where reverseMerge reads the preMergeSnapshot
+			     back from. Its descriptor shipped with no Repair step, so the
+			     register never existed: a merge history that is not recorded,
+			     and a reversal that has nothing to read. -->
+			<step>OCA\OpenRegister\Repair\ImportMergeOperationRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
 			<step>OCA\OpenRegister\Repair\SeedVocabularyRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
