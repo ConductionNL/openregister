@@ -212,6 +212,20 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedTablesVirtualSchemas</step>
+			<!--
+				ImportFlowRegister creates the `flows` register that the flow engine
+				reads. It was implemented and named in NEITHER phase, so the register
+				it exists to create has never been created by an install or an
+				upgrade — gate-98 flags it alongside RenameDutchColumns.
+
+				Registered in BOTH phases because it is baseline-CREATING, exactly
+				like the sibling Import*/Seed* steps around it: <install> is the only
+				hook a first install runs (Nextcloud runs migrateSchemaOnly() then,
+				so neither pre- nor post-migration fire), while <post-migration>
+				covers instances that already exist. The import is idempotent, so
+				appearing in both is a no-op on the second pass.
+			-->
+			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
@@ -232,6 +246,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedTablesVirtualSchemas</step>
+			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
