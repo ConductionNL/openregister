@@ -400,4 +400,96 @@ class NotifierTest extends TestCase {
 		$this->assertSame('Jan de Vries', $rich[0]['requester']['name']);
 		$this->assertSame('j.devries3', $rich[0]['requester']['id'], 'the uid is still how a client resolves the avatar');
 	}
+
+	/**
+	 * A BLANK display name falls back to the uid rather than rendering nothing.
+	 *
+	 * An account can exist and still carry an empty — or whitespace-only —
+	 * display name. Without the fallback the prompt asks the reader to grant
+	 * rights to nobody at all: the sentence renders with a hole where the
+	 * person should be, which is worse than showing a bare uid, because a uid
+	 * is at least resolvable by the human being asked to make the decision.
+	 *
+	 * `trim()` is what makes whitespace-only count as blank, so this asserts
+	 * with a whitespace-only name rather than the empty string — the empty
+	 * string alone would still pass if the trim were dropped.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	public function testABlankDisplayNameFallsBackToTheUid(): void {
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getDisplayName')->willReturn('   ');
+
+		$userManager = $this->createMock(\OCP\IUserManager::class);
+		$userManager->method('get')->willReturn($user);
+
+		$notifier = new Notifier($this->factory, $this->urlGenerator, $userManager);
+
+		$seen = [];
+		$rich = [];
+
+		$action = $this->createMock(IAction::class);
+		$action->method('setLabel')->willReturnSelf();
+		$action->method('setParsedLabel')->willReturnSelf();
+		$action->method('setPrimary')->willReturnSelf();
+		$action->method('setLink')->willReturnSelf();
+
+		$notification = $this->createMock(INotification::class);
+		$notification->method('getApp')->willReturn('openregister');
+		$notification->method('getSubject')->willReturn('delegation_consent_requested');
+		$notification->method('getSubjectParameters')->willReturn([
+			'principal' => 'j.devries3',
+			'actingAs' => 'mayor',
+			'grantUuid' => 'grant-1',
+		]);
+		$notification->method('createAction')->willReturn($action);
+		$notification->method('addAction')->willReturnSelf();
+		$notification->method('setIcon')->willReturnSelf();
+		$notification->method('setParsedSubject')->willReturnCallback(
+			static function (string $text) use ($notification, &$seen): INotification {
+				$seen[] = $text;
+
+				return $notification;
+			}
+		);
+		$notification->method('setParsedMessage')->willReturnCallback(
+			static function (string $text) use ($notification, &$seen): INotification {
+				$seen[] = $text;
+
+				return $notification;
+			}
+		);
+		$notification->method('setRichSubject')->willReturnCallback(
+			static function (string $text, array $params = []) use ($notification, &$rich): INotification {
+				$rich[] = $params;
+
+				return $notification;
+			}
+		);
+		$notification->method('setRichMessage')->willReturnCallback(
+			static function (string $text, array $params = []) use ($notification, &$rich): INotification {
+				$rich[] = $params;
+
+				return $notification;
+			}
+		);
+
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(
+			static fn (string $text, array $args = []): string => vsprintf($text, $args)
+		);
+		$this->factory->method('get')->willReturn($l10n);
+		$this->urlGenerator->method('imagePath')->willReturn('/icon.svg');
+		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.test/answer');
+
+		$notifier->prepare($notification, 'en');
+
+		$rendered = implode(' | ', $seen);
+		$this->assertStringContainsString('j.devries3', $rendered, 'a blank display name must not leave a hole in the sentence');
+
+		$this->assertSame('j.devries3', $rich[0]['requester']['name']);
+		$this->assertSame('j.devries3', $rich[0]['requester']['id']);
+	}
 }
