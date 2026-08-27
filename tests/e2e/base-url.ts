@@ -67,6 +67,15 @@ export function resolveBaseUrl(): string {
  * behaviour those specs already have: with no container configured they now
  * skip instead of silently retargeting.
  *
+ * `NC_ALLOW_SHARED_CONTAINER=1` opts back in DELIBERATELY. The guard exists to
+ * stop an accidental default, not to make the shared box untestable: some paths
+ * — a run parked on `awaiting_consent` and released by a cron sweep — only exist
+ * once a real TimedJob ticks, and skipping them leaves the headline behaviour of
+ * that subsystem unverified by anything but a unit test. Setting the flag is a
+ * person saying they know whose environment they are ticking. It does not make
+ * `docker restart` safe there, so keep it to the narrow
+ * `background-job:execute <id> --force-execute` shape.
+ *
  * @return {string|null} The container name, or null when none is configured.
  */
 export function resolveContainer(): string | null {
@@ -74,10 +83,11 @@ export function resolveContainer(): string | null {
 	if (!name) {
 		return null
 	}
-	if (name === 'nextcloud') {
+	if (name === 'nextcloud' && process.env.NC_ALLOW_SHARED_CONTAINER !== '1') {
 		throw new Error(
 			'Refusing to target the shared dev container "nextcloud". Point '
-				+ 'NC_CONTAINER at a disposable instance.',
+				+ 'NC_CONTAINER at a disposable instance, or set '
+				+ 'NC_ALLOW_SHARED_CONTAINER=1 to say you meant it.',
 		)
 	}
 	return name
