@@ -31,19 +31,25 @@
 import { test, expect, type APIRequestContext } from '@playwright/test'
 import { execSync } from 'node:child_process'
 import { resolveContainer } from '../base-url'
+import {
+	ADMIN,
+	findSecondAccount,
+	NO_SECOND_ACCOUNT,
+	revokeGrantsOver,
+} from './delegation-fixtures'
 
 const API = '/index.php/apps/openregister/api'
 const RUN_ID = `e2e-park-${Date.now().toString(36)}`
 
-/** The uid every fixture runs as. */
-const ADMIN = process.env.NEXTCLOUD_ADMIN_USER || 'admin'
+// 🔴 DISCOVERED, never hardcoded — see ./delegation-fixtures.ts. A fixture uid that
+// stopped existing when the instance was rebuilt made a sibling spec fail with
+// the delegation guard's own refusal message, which is the one sentence that
+// makes a dead fixture look like a working control.
+let OTHER = ''
 
-/** A real account that is NOT the caller — the delegation has to be to someone. */
-const OTHER = process.env.NEXTCLOUD_OTHER_USER || 'ddauth-alice'
-
-// ⚠️ No localhost default — see resolveContainer(). Executing background jobs
-// inside a guessed container runs them against somebody else's bind-mounted
-// checkout.
+// Defaults to the shared dev container — see resolveContainer(). This suite's
+// whole point is a real TimedJob tick, and it cannot happen anywhere no job
+// runs; NC_CONTAINER points it elsewhere.
 const CONTAINER = resolveContainer()
 
 function occ(args: string): string {
@@ -124,9 +130,17 @@ test.describe('delegation-parking — a run waits for a person, not a clock', ()
 	let flowId = ''
 	let grantUuid = ''
 
-	test.beforeAll(() => {
+	test.beforeAll(async ({ request }) => {
 		scheduleJob = jobId('FlowScheduleWorker')
 		runJob = jobId('FlowRunWorker')
+		OTHER = (await findSecondAccount(request)) ?? ''
+		// Start from no live grant: this suite drives the grant state itself, and
+		// a leftover one would decide its first transition — see revokeGrantsOver().
+		await revokeGrantsOver(request, OTHER)
+	})
+
+	test.beforeEach(() => {
+		test.skip(OTHER === '', NO_SECOND_ACCOUNT)
 	})
 
 	test.afterAll(async ({ request }) => {

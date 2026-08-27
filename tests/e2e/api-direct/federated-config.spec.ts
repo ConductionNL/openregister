@@ -22,10 +22,9 @@ const JSON_HEADERS = {
 	'Content-Type': 'application/json',
 	Accept: 'application/json',
 }
-// ⚠️ No `|| 'nextcloud'` default — see resolveContainer(). The old default
-// ran `occ` inside the SHARED dev container, which bind-mounts real host
-// checkouts. With no NC_CONTAINER set these tests now skip (occ returns null)
-// rather than mutating somebody else's instance.
+// Defaults to the shared dev container — see resolveContainer(). Running one
+// named `occ` command there is how this box is meant to be exercised; NC_CONTAINER
+// points it elsewhere. Only `docker restart` still needs an explicit opt-in.
 const CONTAINER = resolveContainer()
 const runId = `e2e-fed-${Date.now()}`
 
