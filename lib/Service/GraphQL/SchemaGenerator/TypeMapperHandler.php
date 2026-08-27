@@ -534,6 +534,24 @@ class TypeMapperHandler {
 						'type' => Type::listOf(Type::nonNull($this->getGroupBucketType())),
 						'description' => 'Ad-hoc bucket aggregation result; null unless `groupBy` was supplied.',
 					],
+					// JSON rather than a typed shape, deliberately.
+					//
+					// A declared aggregation's envelope varies with what it
+					// declares: a scalar `value`, a `values` map for `metrics`,
+					// `groups[].keys` for a composite groupBy, `joined` when it
+					// joins. Typing that today would either flatten it — the
+					// mistake GroupBucket already makes, where `value: Float!`
+					// cannot carry a values map and a null key coerces to "" —
+					// or invent a union per declaration shape.
+					//
+					// JSON keeps the envelope identical to the REST one, which
+					// every existing consumer already parses. A typed
+					// AggregationResult is the right next step once a consumer
+					// needs introspection over it.
+					'aggregation' => [
+						'type' => $this->scalars['JSON'],
+						'description' => 'Declared-aggregation result envelope; null unless `aggregation` was supplied.',
+					],
 				],
 			]
 		);
@@ -762,6 +780,24 @@ class TypeMapperHandler {
 			'groupBy' => [
 				'type' => $this->getGroupByInputType(),
 				'description' => 'Optional ad-hoc aggregation; when supplied, the connection emits a `groups` field.',
+			],
+			// A DECLARED aggregation, by name.
+			//
+			// `groupBy` above is ad-hoc: the caller describes the aggregation.
+			// This one names one the SCHEMA declares in
+			// `x-openregister-aggregations`, which until now was reachable only
+			// over REST — so a page wanting a declared figure had to hand-build
+			// a URL alongside its GraphQL query.
+			//
+			// The name is the whole input: the declaration already carries the
+			// metric, grouping, filter and join, and has been validated at save
+			// time. The query's own `filter` is applied on top as a NARROWING
+			// constraint, which the engine accepts but can never use to relax
+			// what the declaration pins.
+			'aggregation' => [
+				'type' => Type::string(),
+				'description' => 'Name of a declared aggregation on this schema '
+					. '(x-openregister-aggregations); emits an `aggregation` field on the connection.',
 			],
 		];
 

@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Service\GraphQL;
 use GraphQL\Deferred;
 use GraphQL\Error\Error;
 use InvalidArgumentException;
+use RuntimeException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -284,12 +285,80 @@ class GraphQLResolver {
 			$connection['groups'] = $this->resolveGroupBy(
 				schema: $schema,
 				register: $register,
-				rawArgs: $groupBy
+				rawArgs: $groupBy,
+				filter: $this->propertyFilterFromArgs(args: $args)
+			);
+		}
+
+		// Optional DECLARED aggregation, by name.
+		$aggregationName = ($args['aggregation'] ?? null);
+		if (is_string($aggregationName) === true && $aggregationName !== '') {
+			$connection['aggregation'] = $this->resolveNamedAggregation(
+				schema: $schema,
+				register: $register,
+				name: $aggregationName,
+				filter: $this->propertyFilterFromArgs(args: $args)
 			);
 		}
 
 		return $connection;
 	}//end resolveList()
+
+	/**
+	 * Resolve a DECLARED aggregation by name.
+	 *
+	 * `groupBy` is ad-hoc — the caller describes the aggregation. This runs one
+	 * the schema declares in `x-openregister-aggregations`, which was reachable
+	 * only over REST, so a page wanting a declared figure had to hand-build a
+	 * URL alongside its GraphQL query.
+	 *
+	 * The query's own property filter is passed as a NARROWING constraint. That
+	 * is safe by construction: the engine refuses any request key the
+	 * declaration already pins, so a caller can add a constraint and can never
+	 * relax a declared scoping one.
+	 *
+	 * The envelope is returned as-is — the same JSON the REST endpoint emits —
+	 * because its shape varies with what the aggregation declares (a scalar
+	 * `value`, a `values` map, `groups[].keys`, `joined`).
+	 *
+	 * @param Schema                $schema   The schema being aggregated.
+	 * @param Register|null         $register The register; null when the schema is unbound.
+	 * @param string                $name     The declared aggregation's name.
+	 * @param array<string, mixed>  $filter   The query's property filter, as a narrowing constraint.
+	 *
+	 * @return array<string, mixed>|null The result envelope, or null when unbound.
+	 *
+	 * @throws Error When the aggregation is unknown, malformed, or RBAC denies it.
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	private function resolveNamedAggregation(
+		Schema $schema,
+		?Register $register,
+		string $name,
+		array $filter = [],
+	): ?array {
+		if ($register === null) {
+			return null;
+		}
+
+		try {
+			return $this->aggregationRunner->run(
+				registerRef: (string)$register->getSlug(),
+				schemaRef: (string)$schema->getSlug(),
+				name: $name,
+				extraFilter: $filter
+			);
+		} catch (NotAuthorizedException $e) {
+			throw new Error($e->getMessage());
+		} catch (RuntimeException $e) {
+			// An unknown name, an unusable spec, or an unsupported filter
+			// operator. Surfaced as a GraphQL field error so the rest of the
+			// connection still resolves — the caller gets its rows and a named
+			// error, rather than a failed query with no data.
+			throw new Error($e->getMessage());
+		}
+	}//end resolveNamedAggregation()
 
 	/**
 	 * Resolve the optional `groupBy` argument by dispatching to
@@ -302,6 +371,9 @@ class GraphQLResolver {
 	 * @param Schema $schema The schema being aggregated.
 	 * @param Register|null $register The register (may be null if the schema isn't bound — defensive).
 	 * @param array $rawArgs The raw groupBy arg map from the GraphQL request.
+	 * @param array<string, mixed> $filter The list query's property filter, so the groups
+	 *                                     describe the same rows the edges do. Was hardcoded
+	 *                                     empty, which reported totals over the whole schema.
 	 *
 	 * @return array<int, array{key: string, value: int|float}>|null Bucket array, or null when register/runner missing.
 	 *
@@ -309,7 +381,12 @@ class GraphQLResolver {
 	 *
 	 * @spec openspec/specs/graphql-api/spec.md
 	 */
-	private function resolveGroupBy(Schema $schema, ?Register $register, array $rawArgs): ?array {
+	private function resolveGroupBy(
+		Schema $schema,
+		?Register $register,
+		array $rawArgs,
+		array $filter = [],
+	): ?array {
 		if ($register === null) {
 			// Defensive: a schema without a register has nothing to
 			// aggregate against. Return null so the field stays
@@ -327,7 +404,14 @@ class GraphQLResolver {
 			'to' => ($rawArgs['to'] ?? null),
 			'metric' => strtolower((string)($rawArgs['metric'] ?? 'count')),
 			'metricField' => ($rawArgs['metricField'] ?? null),
-			'filter' => [],
+			// THE QUERY'S OWN FILTER, not an empty array.
+			//
+			// This was hardcoded `[]`, so a filtered list returned group totals
+			// computed over the WHOLE schema: the edges honoured the filter and
+			// the groups silently did not. Nothing errored — the caller simply
+			// got a bigger number than the rows it was shown, which is the
+			// hardest kind of wrong answer to notice on a dashboard.
+			'filter' => $filter,
 		];
 
 		try {
@@ -692,6 +776,48 @@ class GraphQLResolver {
 	 *
 	 * @return array<string, mixed> The query array
 	 */
+
+	/**
+	 * The PROPERTY filter a list query carried, for reuse by its aggregation.
+	 *
+	 * Only `filter` — the property-value map. Deliberately NOT `search`,
+	 * `sort`, `first`/`offset` or `selfFilter`:
+	 *
+	 *  - paging must not reach the aggregation. A group total over "the first
+	 *    20 rows" is not a total, and it would change as the user paged;
+	 *  - `search` is a free-text relevance query the aggregation engine does
+	 *    not implement, so forwarding it would filter on a property named
+	 *    `_search` and match nothing — an empty result, not an error;
+	 *  - `selfFilter` addresses `@self` metadata columns, a different
+	 *    namespace from the schema properties the aggregation filters on.
+	 *
+	 * Anything omitted here means the groups describe a WIDER population than
+	 * the rows. That is the defect this method exists to fix, so each omission
+	 * above is a deliberate call and not an oversight.
+	 *
+	 * @param array<string, mixed> $args The GraphQL arguments.
+	 *
+	 * @return array<string, mixed> Property filters, or an empty array.
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	private function propertyFilterFromArgs(array $args): array {
+		$filter = ($args['filter'] ?? null);
+		if (is_array($filter) === false) {
+			return [];
+		}
+
+		$out = [];
+		foreach ($filter as $field => $value) {
+			if (is_string($field) === false || $field === '') {
+				continue;
+			}
+
+			$out[$field] = $value;
+		}
+
+		return $out;
+	}//end propertyFilterFromArgs()
 
 	/**
 	 * Convert GraphQL args to HTTP request params format for ObjectService.buildSearchQuery().
