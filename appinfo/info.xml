@@ -196,6 +196,20 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedVocabularyRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
 			<step>OCA\OpenRegister\Repair\SeedZgwZakenMigrationPack</step>
+			<!-- ⚠️ WRITTEN AND NEVER REGISTERED, so it never ran. ImportFlowRegister
+			     materialises the `flows` register and its `flow` schema —
+			     OpenRegister owns the flow engine but shipped no store to author a
+			     flow in, so without this step there was nowhere to put one. Its own
+			     docblock names ImportCredentialBrokerRegister above as the
+			     convention it follows; that one was registered and this one was
+			     not. A repair step absent from info.xml is not a slow step or a
+			     broken step — it is a step Nextcloud never learns about. -->
+			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
+			<!-- Same omission, never registered. Moves stored data from the Dutch
+			     columns to the English ones the register now declares; unregistered,
+			     the rows simply stayed where they were. post-migration only: a fresh
+			     install has no old columns to move. -->
+			<step>OCA\OpenRegister\Repair\RenameDutchColumns</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
@@ -216,6 +230,15 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedVocabularyRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
 			<step>OCA\OpenRegister\Repair\SeedZgwZakenMigrationPack</step>
+			<!-- ⚠️ WRITTEN AND NEVER REGISTERED, so it never ran. ImportFlowRegister
+			     materialises the `flows` register and its `flow` schema —
+			     OpenRegister owns the flow engine but shipped no store to author a
+			     flow in, so without this step there was nowhere to put one. Its own
+			     docblock names ImportCredentialBrokerRegister above as the
+			     convention it follows; that one was registered and this one was
+			     not. A repair step absent from info.xml is not a slow step or a
+			     broken step — it is a step Nextcloud never learns about. -->
+			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
 		</install>
 	</repair-steps>
 
