@@ -443,4 +443,96 @@ class FlowRunControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
 		$this->assertStringContainsString('running', $response->getData()['error']);
 	}//end testResumeConflictsWhenTheRunIsNotSuspended()
+
+	/**
+	 * A step assigned to someone else must not be answerable by the caller.
+	 *
+	 * THE POINT OF THE WHOLE GUARD. AwaitSignalNode has always recorded an
+	 * `assignee` and nothing read it back, so the recorded assignment looked
+	 * like authorization and was not: everyone who could run the flow could
+	 * approve a step assigned to another person. ADR-098 names this gap.
+	 *
+	 * @return void
+	 */
+	public function testResumeRefusesWhenTheStepIsAssignedToSomebodyElse(): void {
+		$run = new FlowRun();
+		$run->setUuid('run-1');
+		$run->setFlowId('flow-1');
+		$run->setStatus(FlowRun::STATUS_SUSPENDED);
+		$run->setContext([
+			'resumeState' => ['approval' => ['askedAt' => '2026-08-27T00:00:00+00:00', 'assignee' => 'bob']],
+		]);
+
+		$this->mapper->method('findByUuid')->with('run-1')->willReturn($run);
+		$this->flows->method('find')->with('flow-1');
+
+		// It must refuse BEFORE signalling — a 403 that still woke the run
+		// would be a refusal in name only.
+		$this->runner->expects($this->never())->method('signal');
+
+		$response = $this->controller->resume('run-1');
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}//end testResumeRefusesWhenTheStepIsAssignedToSomebodyElse()
+
+	/**
+	 * The assignee themselves may answer.
+	 *
+	 * @return void
+	 */
+	public function testResumeAllowsTheNamedAssignee(): void {
+		$run = new FlowRun();
+		$run->setUuid('run-1');
+		$run->setFlowId('flow-1');
+		$run->setStatus(FlowRun::STATUS_SUSPENDED);
+		$run->setContext([
+			'resumeState' => ['approval' => ['askedAt' => '2026-08-27T00:00:00+00:00', 'assignee' => 'alice']],
+		]);
+
+		$signalled = new FlowRun();
+		$signalled->setUuid('run-1');
+		$signalled->setStatus(FlowRun::STATUS_SUSPENDED);
+
+		$this->mapper->method('findByUuid')->with('run-1')->willReturn($run);
+		$this->flows->method('find')->with('flow-1');
+		$this->request->method('getParams')->willReturn(['decision' => 'approved']);
+		$this->runner->expects($this->once())->method('signal')->willReturn($signalled);
+
+		$response = $this->controller->resume('run-1');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+	}//end testResumeAllowsTheNamedAssignee()
+
+	/**
+	 * An unassigned step is unchanged — silence still means anyone.
+	 *
+	 * Deliberate: a webhook or a child-run signal is not a human decision, and
+	 * tightening the unassigned case would break every one of them. Asserted so
+	 * that the scope of the guard is visible rather than assumed.
+	 *
+	 * @return void
+	 */
+	public function testResumeStillAllowsAnyoneWhenNoAssigneeWasRecorded(): void {
+		$run = new FlowRun();
+		$run->setUuid('run-1');
+		$run->setFlowId('flow-1');
+		$run->setStatus(FlowRun::STATUS_SUSPENDED);
+		$run->setContext([
+			'resumeState' => ['webhook' => ['askedAt' => '2026-08-27T00:00:00+00:00']],
+		]);
+
+		$signalled = new FlowRun();
+		$signalled->setUuid('run-1');
+		$signalled->setStatus(FlowRun::STATUS_SUSPENDED);
+
+		$this->mapper->method('findByUuid')->with('run-1')->willReturn($run);
+		$this->flows->method('find')->with('flow-1');
+		$this->request->method('getParams')->willReturn(['ok' => true]);
+		$this->runner->expects($this->once())->method('signal')->willReturn($signalled);
+
+		$response = $this->controller->resume('run-1');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+	}//end testResumeStillAllowsAnyoneWhenNoAssigneeWasRecorded()
+
 }//end class
