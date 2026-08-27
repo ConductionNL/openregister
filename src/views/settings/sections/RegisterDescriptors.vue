@@ -11,7 +11,7 @@
 		<div class="descriptors">
 			<div v-if="loading" class="descriptors__hint">
 				<NcLoadingIcon :size="20" />
-				{{ t('openregister', 'Reading descriptors\u00a0…') }}
+				{{ t('openregister', 'Reading descriptors …') }}
 			</div>
 
 			<div v-else-if="error" class="descriptors__hint descriptors__hint--bad">

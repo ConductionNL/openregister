@@ -2706,7 +2706,26 @@
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register}, {app} uygulamasından içe aktarıldı.",
+        "%n are out of date": "%n güncel değil",
+        "%n declared in total": "toplam %n bildirildi",
+        "%n is out of date": "%n güncel değil",
+        "%n register is missing": "%n kayıt eksik",
+        "%n registers are missing": "%n kayıt eksik",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Uygulamalar kayıtlarını, uygulama kurulduğunda veya yükseltildiğinde içe aktarılan tanımlayıcılar olarak sunar. Bir uygulamanın sürümü değişmeyi bıraktığı anda bu içe aktarma bir daha asla çalışmaz ve başarısız bir içe aktarma yalnızca günlüğe yazılır — bu nedenle bir kayıt, aksi hâlde sağlıklı görünen bir örnekte eksik olabilir. Hangilerinin ulaştığını burada görürsünüz.",
+        "Could not read the descriptor inventory: {reason}": "Tanımlayıcı envanteri okunamadı: {reason}",
+        "Every declared register is present and current.": "Bildirilen her kayıt mevcut ve güncel.",
+        "Import failed: {reason}": "İçe aktarma başarısız: {reason}",
+        "Missing": "Eksik",
+        "Out of date": "Güncel değil",
+        "Present": "Mevcut",
+        "Re-import": "Yeniden içe aktar",
+        "Reading descriptors …": "Tanımlayıcılar okunuyor …",
+        "Register descriptors": "Kayıt tanımlayıcıları",
+        "ships v{shipped}": "v{shipped} sunuyor",
+        "State": "Durum",
+        "v{installed} → ships v{shipped}": "v{installed} → v{shipped} sunuyor"
     },
     "plurals": {
         "{count} email": [

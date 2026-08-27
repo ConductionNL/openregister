@@ -2707,7 +2707,26 @@
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} a fost importat din {app}.",
+        "%n are out of date": "%n sunt învechite",
+        "%n declared in total": "%n declarate în total",
+        "%n is out of date": "%n este învechit",
+        "%n register is missing": "lipsește %n registru",
+        "%n registers are missing": "lipsesc %n registre",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Aplicațiile își livrează registrele ca descriptori, importați la instalarea sau actualizarea aplicației. De îndată ce versiunea unei aplicații încetează să se schimbe, acel import nu mai rulează niciodată, iar un import eșuat este scris doar în jurnal — un registru poate lipsi așadar de pe o instanță care altfel pare sănătoasă. Aici vedeți care au ajuns.",
+        "Could not read the descriptor inventory: {reason}": "Nu s-a putut citi inventarul descriptorilor: {reason}",
+        "Every declared register is present and current.": "Fiecare registru declarat este prezent și actualizat.",
+        "Import failed: {reason}": "Importul a eșuat: {reason}",
+        "Missing": "Lipsește",
+        "Out of date": "Învechit",
+        "Present": "Prezent",
+        "Re-import": "Reimportă",
+        "Reading descriptors …": "Se citesc descriptorii …",
+        "Register descriptors": "Descriptori de registru",
+        "ships v{shipped}": "livrează v{shipped}",
+        "State": "Stare",
+        "v{installed} → ships v{shipped}": "v{installed} → livrează v{shipped}"
     },
     "plurals": {
         "{count} email": [
