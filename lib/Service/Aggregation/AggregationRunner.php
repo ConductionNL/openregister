@@ -3918,6 +3918,19 @@ class AggregationRunner {
 
 		// Resolve `select` / `metric` alias.
 		$metric = (string)($spec['metric'] ?? $spec['select'] ?? 'count');
+
+		// `metrics` — several figures over ONE grouping. This path read only
+		// the SINGULAR key, so a cross-schema spec asking for a debit/credit
+		// split silently degraded to the default `count`. The intra-schema
+		// path has honoured `metrics` since #2917; two paths reading different
+		// halves of the same declaration is drift that answers wrongly rather
+		// than erroring, so both now read the same keys.
+		$crossSpecMetrics = ($spec['metrics'] ?? null);
+		$metrics = null;
+		if (is_array($crossSpecMetrics) === true && $crossSpecMetrics !== []) {
+			$metrics = $crossSpecMetrics;
+		}
+
 		$field = ($spec['field'] ?? null);
 		// Resolve `where` / `filter` alias.
 		$rawWhere = (array)($spec['where'] ?? $spec['filter'] ?? []);
@@ -3980,6 +3993,7 @@ class AggregationRunner {
 			'cross' => true,
 			'from' => $fromRef,
 			'metric' => $metric,
+			'metrics' => $metrics,
 			'field' => $field,
 			'where' => $resolvedWhere,
 			'groupBy' => $groupBy,
@@ -4009,14 +4023,22 @@ class AggregationRunner {
 			$crossGroupByArg = $groupBy;
 		}
 
-		$native = $this->tryNativeAggregation(
-			register: $targetRegister,
-			schema: $targetSchema,
-			metric: $metric,
-			field: $crossFieldArg,
-			filter: $resolvedWhere,
-			groupBy: $crossGroupByArg
-		);
+		// A `metrics` spec is computed in PHP so that per-entry `condition`
+		// and `as` are honoured — tryNativeAggregation() takes a single
+		// metric/field pair and has nowhere to put them. Letting it run would
+		// return one unconditioned figure for a spec that asked for several.
+		// The row cap still applies and is reported through `truncated`.
+		$native = null;
+		if ($metrics === null) {
+			$native = $this->tryNativeAggregation(
+				register: $targetRegister,
+				schema: $targetSchema,
+				metric: $metric,
+				field: $crossFieldArg,
+				filter: $resolvedWhere,
+				groupBy: $crossGroupByArg
+			);
+		}
 
 		if ($native !== null) {
 			$crossNativeField = null;
@@ -4074,18 +4096,32 @@ class AggregationRunner {
 			'truncated' => $truncated,
 		];
 
+		if ($metrics !== null) {
+			$result['metrics'] = $metrics;
+		}
+
 		$crossGroupFields = $this->resolveGroupFields(groupBy: $groupBy);
 		if (count($crossGroupFields) > 0) {
 			$result['groups'] = $this->computeGrouped(
 				rows: $rows,
 				metric: $metric,
 				field: $field,
-				groupFields: $crossGroupFields
+				groupFields: $crossGroupFields,
+				metrics: $metrics
 			);
 		}
 
 		if (isset($result['groups']) === false) {
-			$result['value'] = $this->computeMetric(rows: $rows, metric: $metric, field: $field);
+			// Ungrouped: a `metrics` spec yields `values` (a map keyed by alias).
+			// Falling through to computeMetric() here would hand back a single
+			// figure derived from $metric — which is the DEFAULT 'count' when
+			// the spec declared only `metrics` — for a request that named
+			// several conditioned sums.
+			if ($metrics !== null) {
+				$result['values'] = $this->computeMetrics(rows: $rows, metrics: $metrics);
+			} else {
+				$result['value'] = $this->computeMetric(rows: $rows, metric: $metric, field: $field);
+			}
 		}
 
 		$this->cache->set(
@@ -4130,7 +4166,38 @@ class AggregationRunner {
 			if (is_string($value) === true && str_starts_with($value, '@self.') === true) {
 				// Strip the leading '@self.' prefix (6 characters) to get the field name.
 				$fieldName = substr($value, 6);
-				$resolved[$key] = ($parentRow[$fieldName] ?? null);
+
+				// AN UNANSWERABLE CORRELATION IS AN ERROR, NOT AN EMPTY FILTER.
+				//
+				// This used to resolve to null and was described as failing
+				// closed. It does not: the null is applied as a real filter
+				// VALUE, so the aggregation returns the target rows whose own
+				// field is null. For a segment P&L keyed on `@self.code` that
+				// is the unassigned-cost-centre total — returned confidently,
+				// under HTTP 200, identically for every parent record, with
+				// nothing in the envelope naming what went wrong.
+				//
+				// No production caller supplies a parent row today (the REST
+				// controller, ReportRenderService and ThresholdEvaluationService
+				// all call run() without one), so silence here means every such
+				// declaration answers wrongly rather than visibly.
+				//
+				// A key PRESENT but null is left alone: correlating on null is a
+				// legitimate query. It is the ABSENT key — no parent row, or a
+				// typo in the field name — that is refused.
+				if (array_key_exists($fieldName, $parentRow) === false) {
+					throw new RuntimeException(
+						sprintf(
+							'Cannot resolve "%s": the parent row supplies no "%s" field. '
+							.'A cross-schema aggregation correlating on @self requires the '
+							.'caller to pass the parent object as parentRow.',
+							$value,
+							$fieldName
+						)
+					);
+				}
+
+				$resolved[$key] = $parentRow[$fieldName];
 				continue;
 			}
 

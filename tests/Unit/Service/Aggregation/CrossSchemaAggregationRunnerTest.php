@@ -268,10 +268,19 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 
 	/**
 	 * @test
-	 * An `@self.<field>` reference to a field absent in the parent row
-	 * resolves to null — the filter matches nothing (fail-closed).
+	 * An `@self.<field>` reference to a field absent in the parent row is
+	 * REFUSED.
+	 *
+	 * This test previously asserted that the reference resolved to null and
+	 * called that fail-closed. It is not: the null is applied as a real filter
+	 * value, so the aggregation returns the target rows whose own field is
+	 * null. The single row here happens to have `parentId => 'something'`, so
+	 * the count came back 0 and the fixture agreed with the claim — a
+	 * different fixture, one row with a null parentId, would have returned 1
+	 * under exactly the same code. The assertion was pinning the fixture, not
+	 * the behaviour.
 	 */
-	public function testAtSelfMissingFieldResolvesToNull(): void {
+	public function testAtSelfMissingFieldIsRefused(): void {
 		$parentSchema = $this->makeSchema('regulation', 10, [
 			'orphanCount' => [
 				'from' => 'scholiq-enrolment',
@@ -292,11 +301,16 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 		$this->permissionHandler->method('hasPermission')->willReturn(true);
 		$this->usePhpFallback();
 
-		// Row whose parentId is 'something' — null !== 'something' → filtered out.
+		// A row whose parentId IS null — the case the old null-resolution
+		// behaviour would have counted as a match, turning an unanswerable
+		// correlation into a confident wrong number.
 		$this->magicMapper->method('findAllInRegisterSchemaTable')
-			->willReturn([$this->makeEntityStub(['parentId' => 'something'])]);
+			->willReturn([$this->makeEntityStub(['parentId' => null])]);
 
-		$result = $this->runner->run(
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessageMatches('/@self\.nonExistentField/');
+
+		$this->runner->run(
 			registerRef: 'scholiq',
 			schemaRef: 'regulation',
 			name: 'orphanCount',
@@ -304,9 +318,7 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 			parentRow: []
 		);
 
-		$this->assertSame(0, $result['value']);
-
-	}//end testAtSelfMissingFieldResolvesToNull()
+	}//end testAtSelfMissingFieldIsRefused()
 
 	// -----------------------------------------------------------------------
 	// Tests: select/where aliases
@@ -542,5 +554,182 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 		$this->runner->run('scholiq', 'regulation', 'enrolCount', bypassRbac: false);
 
 	}//end testCrossSchemaRbacGateOnTargetSchema()
+
+	// -----------------------------------------------------------------------
+	// Tests: the cross-schema path must read the same spec keys as the
+	// intra-schema one
+	// -----------------------------------------------------------------------
+
+	/**
+	 * @test
+	 * A cross-schema aggregation declaring `metrics` must compute them.
+	 *
+	 * runCrossSchema() resolved only `metric`/`select`, so a spec asking for
+	 * several conditioned figures fell back to the default `count`. That is
+	 * the worst failure shape available: a debit/credit split came back as a
+	 * ROW COUNT under an HTTP 200, with no key in the response naming what had
+	 * been dropped. The intra-schema path has honoured `metrics` since #2917;
+	 * the two paths reading different halves of the same declaration is the
+	 * drift this pins shut.
+	 */
+	public function testCrossSchemaHonoursMetricsArray(): void {
+		$parentSchema = $this->makeSchema('project', 10, [
+			'segmentPnl' => [
+				'from' => 'gl-line',
+				'where' => ['eliminationFlag' => false],
+				'groupBy' => ['accountNumber'],
+				'metrics' => [
+					[
+						'metric' => 'sum',
+						'field' => 'amount',
+						'condition' => ['side' => 'debit'],
+						'as' => 'totalDebit',
+					],
+					[
+						'metric' => 'sum',
+						'field' => 'amount',
+						'condition' => ['side' => 'credit'],
+						'as' => 'totalCredit',
+					],
+				],
+			],
+		]);
+		$targetSchema = $this->makeSchema('gl-line', 20);
+		$parentRegister = $this->makeRegister('shillinq', [10]);
+		$targetRegister = $this->makeRegister('shillinq', [20]);
+
+		$this->registerMapper->method('find')->willReturn($parentRegister);
+		$this->schemaMapper->method('find')
+			->willReturnMap([
+				['project', [], true, false, $parentSchema],
+				['gl-line', [], true, false, $targetSchema],
+			]);
+		$this->registerMapper->method('findAll')->willReturn([$parentRegister, $targetRegister]);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->usePhpFallback();
+
+		// One account, one eliminated row that must not count toward either
+		// figure, and an asymmetric debit/credit split so a swapped or shared
+		// condition cannot produce the expected pair by accident.
+		$this->magicMapper->method('findAllInRegisterSchemaTable')
+			->willReturn([
+				$this->makeEntityStub(['accountNumber' => '4000', 'side' => 'debit', 'amount' => 100, 'eliminationFlag' => false]),
+				$this->makeEntityStub(['accountNumber' => '4000', 'side' => 'debit', 'amount' => 25, 'eliminationFlag' => false]),
+				$this->makeEntityStub(['accountNumber' => '4000', 'side' => 'credit', 'amount' => 40, 'eliminationFlag' => false]),
+				$this->makeEntityStub(['accountNumber' => '4000', 'side' => 'debit', 'amount' => 999, 'eliminationFlag' => true]),
+			]);
+
+		$result = $this->runner->run(
+			registerRef: 'shillinq',
+			schemaRef: 'project',
+			name: 'segmentPnl',
+			bypassRbac: true
+		);
+
+		$groups = ($result['groups'] ?? []);
+		$this->assertCount(1, $groups, 'One accountNumber bucket expected');
+
+		$bucket = $groups[0];
+		$this->assertSame('4000', (string)($bucket['key'] ?? null));
+
+		$values = ($bucket['values'] ?? null);
+		$this->assertIsArray($values, 'A `metrics` spec must yield per-group `values`');
+
+		// 100 + 25 = 125 debit; 40 credit. The eliminated 999 is excluded by
+		// `where`, so a totalDebit of 1124 would mean the where clause was
+		// dropped, and 4 would mean the whole spec degraded to `count`.
+		$this->assertEqualsWithDelta(125.0, (float)$values['totalDebit'], 0.001);
+		$this->assertEqualsWithDelta(40.0, (float)$values['totalCredit'], 0.001);
+	}//end testCrossSchemaHonoursMetricsArray()
+
+	/**
+	 * @test
+	 * An `@self.<field>` reference the parent row cannot answer must throw.
+	 *
+	 * Resolving it to null did not fail closed as intended: the null was then
+	 * applied as a real filter value, so the aggregation returned the rows
+	 * whose own field is null. For a segment P&L keyed on `@self.code` that is
+	 * the unassigned-cost-centre total, returned confidently for EVERY parent
+	 * record. Nothing in the envelope distinguishes it from a real answer.
+	 *
+	 * A field PRESENT but null stays legitimate (correlating on null is a real
+	 * query); it is the ABSENT key — no parent row supplied, or a typo in the
+	 * field name — that is refused.
+	 */
+	public function testCrossSchemaUnresolvableAtSelfThrows(): void {
+		$parentSchema = $this->makeSchema('project', 10, [
+			'segmentPnl' => [
+				'from' => 'gl-line',
+				'where' => ['projectCode' => '@self.code'],
+			],
+		]);
+		$targetSchema = $this->makeSchema('gl-line', 20);
+		$parentRegister = $this->makeRegister('shillinq', [10]);
+		$targetRegister = $this->makeRegister('shillinq', [20]);
+
+		$this->registerMapper->method('find')->willReturn($parentRegister);
+		$this->schemaMapper->method('find')
+			->willReturnMap([
+				['project', [], true, false, $parentSchema],
+				['gl-line', [], true, false, $targetSchema],
+			]);
+		$this->registerMapper->method('findAll')->willReturn([$parentRegister, $targetRegister]);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->usePhpFallback();
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessageMatches('/@self\.code/');
+
+		// No parentRow — exactly what every production caller supplies today.
+		$this->runner->run(
+			registerRef: 'shillinq',
+			schemaRef: 'project',
+			name: 'segmentPnl',
+			bypassRbac: true
+		);
+	}//end testCrossSchemaUnresolvableAtSelfThrows()
+
+	/**
+	 * @test
+	 * A parent row that HAS the field with a null value still correlates on
+	 * null, rather than being swept up by the guard above.
+	 */
+	public function testCrossSchemaAtSelfPresentButNullStillResolves(): void {
+		$parentSchema = $this->makeSchema('project', 10, [
+			'orphanCount' => [
+				'from' => 'gl-line',
+				'where' => ['projectCode' => '@self.code'],
+			],
+		]);
+		$targetSchema = $this->makeSchema('gl-line', 20);
+		$parentRegister = $this->makeRegister('shillinq', [10]);
+		$targetRegister = $this->makeRegister('shillinq', [20]);
+
+		$this->registerMapper->method('find')->willReturn($parentRegister);
+		$this->schemaMapper->method('find')
+			->willReturnMap([
+				['project', [], true, false, $parentSchema],
+				['gl-line', [], true, false, $targetSchema],
+			]);
+		$this->registerMapper->method('findAll')->willReturn([$parentRegister, $targetRegister]);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->usePhpFallback();
+
+		$this->magicMapper->method('findAllInRegisterSchemaTable')
+			->willReturn([
+				$this->makeEntityStub(['projectCode' => null]),
+				$this->makeEntityStub(['projectCode' => 'P-1']),
+			]);
+
+		$result = $this->runner->run(
+			registerRef: 'shillinq',
+			schemaRef: 'project',
+			name: 'orphanCount',
+			bypassRbac: true,
+			parentRow: ['code' => null]
+		);
+
+		$this->assertSame(1, $result['value']);
+	}//end testCrossSchemaAtSelfPresentButNullStillResolves()
 
 }//end class
