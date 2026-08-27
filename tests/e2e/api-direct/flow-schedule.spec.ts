@@ -44,7 +44,14 @@ function scheduleWorkerJobId(): string | null {
 		const list = occ('background-job:list')
 		const line = list
 			.split('\n')
-			.find((l) => l.includes('Cron\\FlowScheduleWorker'))
+			// 🔴 THE CLASS BASENAME, not the namespace. #2870 moved the job from
+			// `OCA\OpenRegister\Cron\` to `OCA\OpenRegister\BackgroundJob\`, and a
+			// matcher pinned to the old namespace stops finding it — which does not
+			// fail this spec, it SKIPS it. A skip and a pass look the same in the
+			// summary, so the whole scheduled-trigger path would have gone
+			// unverified with nothing red to say so. The basename survives a
+			// namespace move; the namespace is the part that does not.
+			.find((l) => l.includes('FlowScheduleWorker'))
 		return line ? (line.match(/\|\s*(\d+)\s*\|/)?.[1] ?? null) : null
 	} catch {
 		return null
