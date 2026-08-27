@@ -20,14 +20,21 @@
  * @spec openspec/specs/delegation-grants/spec.md
  */
 import { test, expect, type APIRequestContext } from '@playwright/test'
+import {
+	ADMIN,
+	findSecondAccount,
+	NO_SECOND_ACCOUNT,
+	revokeGrantsOver,
+} from './delegation-fixtures'
 
 const RUN_ID = `e2e-consent-${Date.now().toString(36)}`
 
-/** The uid every fixture runs as. Present on any dev instance. */
-const ADMIN = process.env.NEXTCLOUD_ADMIN_USER || 'admin'
-
-/** A real account that is NOT the caller — the delegation has to be to someone. */
-const OTHER = process.env.NEXTCLOUD_OTHER_USER || 'ddauth-alice'
+// 🔴 DISCOVERED, never hardcoded. This was `NEXTCLOUD_OTHER_USER ||
+// 'ddauth-alice'`; the instance was rebuilt and that uid stopped existing, so
+// the suite failed with `"ddauth-alice" resolves to no account you may ask` —
+// which reads exactly like the delegation guard refusing a real person and is in
+// fact a rotted fixture. See ./delegation-fixtures.ts.
+let OTHER = ''
 
 interface Grant {
 	uuid: string
@@ -70,6 +77,18 @@ test.describe.configure({ mode: 'serial' })
 
 test.describe('delegation-consent — a refusal becomes recoverable', () => {
 	let grantUuid = ''
+
+	test.beforeAll(async ({ request }) => {
+		OTHER = (await findSecondAccount(request)) ?? ''
+		// The BASELINE below asserts a REFUSAL, which only means anything on an
+		// instance holding no live grant. A run killed mid-way leaves one — see
+		// revokeGrantsOver().
+		await revokeGrantsOver(request, OTHER)
+	})
+
+	test.beforeEach(() => {
+		test.skip(OTHER === '', NO_SECOND_ACCOUNT)
+	})
 
 	test.afterAll(async ({ request }) => {
 		// Leave the instance as we found it. A live grant left behind would make

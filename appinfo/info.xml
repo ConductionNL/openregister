@@ -180,6 +180,11 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\RemoveRetiredCronJobs</step>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
 			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
+			<!-- The flows register must EXIST before any step reads flows.
+			     ImportFlowRegister was written, and named here zero times, so
+			     the `flows` register was never created and every flow step
+			     below it silently operated on nothing. -->
+			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
 			<!-- Rewrite before the index is derived: the index is built FROM node
 			     types, so the types should already be the current ones. -->
 			<step>OCA\OpenRegister\Repair\MigrateRenamedFlowNodeTypes</step>
@@ -189,7 +194,6 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedTablesVirtualSchemas</step>
-			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
@@ -197,17 +201,23 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedVocabularyRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
 			<step>OCA\OpenRegister\Repair\SeedZgwZakenMigrationPack</step>
-			<!-- Data migration over EXISTING tables, so post-migration only: a
-			     fresh install has no Dutch-named columns to rename. Renames only
-			     where the old column exists and the new one does not, copies
-			     rather than deletes when MagicMapper already added the new one,
-			     and refuses two sources targeting one destination. -->
+			<!-- Post-migration ONLY: a fresh install has no Dutch columns to
+			     move, so listing this under <install> would be a guaranteed
+			     no-op. MagicMapper ADDS a column for a renamed property and
+			     never renames, so without this step the data stays in the old
+			     column while every read looks at the new one and finds null —
+			     no error, no data loss, invisible to the suite. -->
 			<step>OCA\OpenRegister\Repair\RenameDutchColumns</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
 			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
+			<!-- The flows register must EXIST before any step reads flows.
+			     ImportFlowRegister was written, and named here zero times, so
+			     the `flows` register was never created and every flow step
+			     below it silently operated on nothing. -->
+			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
 			<!-- Rewrite before the index is derived: the index is built FROM node
 			     types, so the types should already be the current ones. -->
 			<step>OCA\OpenRegister\Repair\MigrateRenamedFlowNodeTypes</step>
@@ -216,7 +226,6 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedTablesVirtualSchemas</step>
-			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
