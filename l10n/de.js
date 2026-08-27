@@ -2704,7 +2704,26 @@ OC.L10N.register(
         "Legal basis": "Rechtsgrundlage",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Finden Sie jedes Objekt, das sich auf eine betroffene Person bezieht (Art. 15), sehen Sie eine Löschvorschau (Art. 17), oder exportieren Sie ihre Daten (Art. 20).",
         "Portability (Art 20)": "Übertragbarkeit (Art. 20)",
-        "Retention period": "Aufbewahrungsfrist"
+        "Retention period": "Aufbewahrungsfrist",
+        "{register} was imported from {app}.": "{register} wurde aus {app} importiert.",
+        "%n are out of date": "%n sind veraltet",
+        "%n declared in total": "%n insgesamt deklariert",
+        "%n is out of date": "%n ist veraltet",
+        "%n register is missing": "%n Register fehlt",
+        "%n registers are missing": "%n Register fehlen",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Apps liefern ihre Register als Deskriptoren aus, die beim Installieren oder Aktualisieren der App importiert werden. Sobald sich die Version einer App nicht mehr ändert, läuft dieser Import nie wieder, und ein fehlgeschlagener Import wird nur ins Protokoll geschrieben — ein Register kann also auf einer Instanz fehlen, die ansonsten gesund aussieht. Hier sehen Sie, welche angekommen sind.",
+        "Could not read the descriptor inventory: {reason}": "Die Deskriptor-Übersicht konnte nicht gelesen werden: {reason}",
+        "Every declared register is present and current.": "Jedes deklarierte Register ist vorhanden und aktuell.",
+        "Import failed: {reason}": "Import fehlgeschlagen: {reason}",
+        "Missing": "Fehlt",
+        "Out of date": "Veraltet",
+        "Present": "Vorhanden",
+        "Re-import": "Erneut importieren",
+        "Reading descriptors …": "Deskriptoren werden gelesen …",
+        "Register descriptors": "Register-Deskriptoren",
+        "ships v{shipped}": "liefert v{shipped}",
+        "State": "Status",
+        "v{installed} → ships v{shipped}": "v{installed} → liefert v{shipped}"
     },
     "nplurals=2; plural=(n != 1);"
 )

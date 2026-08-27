@@ -2704,7 +2704,26 @@ OC.L10N.register(
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} importerades från {app}.",
+        "%n are out of date": "%n är föråldrade",
+        "%n declared in total": "%n deklarerade totalt",
+        "%n is out of date": "%n är föråldrad",
+        "%n register is missing": "%n register saknas",
+        "%n registers are missing": "%n register saknas",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Appar levererar sina register som deskriptorer, som importeras när appen installeras eller uppgraderas. Så snart en apps version slutar ändras körs den importen aldrig igen, och en misslyckad import skrivs bara till loggen — ett register kan därför saknas på en instans som annars ser frisk ut. Här ser du vilka som har landat.",
+        "Could not read the descriptor inventory: {reason}": "Kunde inte läsa deskriptorinventeringen: {reason}",
+        "Every declared register is present and current.": "Alla deklarerade register finns och är aktuella.",
+        "Import failed: {reason}": "Importen misslyckades: {reason}",
+        "Missing": "Saknas",
+        "Out of date": "Föråldrad",
+        "Present": "Finns",
+        "Re-import": "Importera igen",
+        "Reading descriptors …": "Läser deskriptorer …",
+        "Register descriptors": "Registerdeskriptorer",
+        "ships v{shipped}": "levererar v{shipped}",
+        "State": "Status",
+        "v{installed} → ships v{shipped}": "v{installed} → levererar v{shipped}"
     },
     "nplurals=2; plural=(n != 1);"
 )
