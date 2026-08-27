@@ -56,7 +56,9 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 /**
- * @covers \OCA\OpenRegister\Service\Aggregation\AggregationRunner
+ * No `covers` metadata, deliberately — `beStrictAboutCoverageMetadata="true"`
+ * discards the coverage of any test that touches a collaborator it did not
+ * name. See {@see AggregationJoinAndCompositeGroupByTest} and #2847.
  */
 class CrossSchemaAggregationRunnerTest extends TestCase {
 
