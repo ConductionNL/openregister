@@ -305,8 +305,7 @@ class FlowService {
 			return $this->find(uuid: $uuid);
 		}
 
-		$owner = $this->actingUser();
-		$organisation = $this->activeOrganisation();
+		['owner' => $owner, 'organisation' => $organisation] = $this->callerOwnership();
 
 		// REFUSE rather than stamp nulls. `Flow::belongsTo()` is fail-closed on
 		// both sides, so a flow with no organisation belongs to nobody: it does
@@ -547,6 +546,28 @@ class FlowService {
 		// swallows for the opposite reason — one bad run must not stop a queue.
 		return $this->advancer->advance(run: $run, rethrow: true);
 	}//end run()
+
+	/**
+	 * The owner and organisation a flow written by THIS caller must carry.
+	 *
+	 * 🔴 PUBLIC BECAUSE IT HAS A SECOND WRITER. `flowToSave()` is not the only
+	 * path that inserts a Flow: `FlowShareableConfigType::deserialise()` writes
+	 * one when a federated bundle is installed, and it used to stamp nulls —
+	 * reproducing, on that path, the permanent orphan the refusal below exists
+	 * to prevent. Two writers each deriving ownership their own way is how the
+	 * rule came to hold on one of them and not the other; this is the one place
+	 * that decides it.
+	 *
+	 * @return array{owner: string|null, organisation: string|null} The caller's ownership, either field null when it does not resolve.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	public function callerOwnership(): array {
+		return [
+			'owner'        => $this->actingUser(),
+			'organisation' => $this->activeOrganisation(),
+		];
+	}//end callerOwnership()
 
 	/**
 	 * The acting user's uid, or null when there is no session.
