@@ -31,7 +31,11 @@ use OCA\OpenRegister\Service\Aggregation\TimeseriesRequestValidator;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @coversDefaultClass \OCA\OpenRegister\Service\Aggregation\TimeseriesRequestValidator
+ * No coverage metadata, deliberately. `@coversDefaultClass` was here without a
+ * single `@covers ::method` to pair with it, so it named a default nothing
+ * used — and under `beStrictAboutCoverageMetadata="true"` it still restricted
+ * recording, discarding this file's coverage. See
+ * {@see AggregationJoinAndCompositeGroupByTest} and #2847.
  */
 class TimeseriesRequestValidatorTest extends TestCase {
 

@@ -60,8 +60,11 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 /**
- * @covers \OCA\OpenRegister\Service\Aggregation\AggregationRunner
- * @covers \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
+ * No `@covers` metadata, deliberately — `beStrictAboutCoverageMetadata="true"`
+ * discards the coverage of any test that touches a collaborator it did not
+ * name. Naming two classes here did not help: the tests also run
+ * AggregationQuery and the Db entities. See
+ * {@see AggregationJoinAndCompositeGroupByTest} and #2847.
  */
 class AggregationRegisterScopeTest extends TestCase {
 

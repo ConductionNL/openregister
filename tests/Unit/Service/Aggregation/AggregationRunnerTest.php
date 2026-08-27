@@ -48,7 +48,15 @@ use ReflectionMethod;
 use RuntimeException;
 
 /**
- * @covers \OCA\OpenRegister\Service\Aggregation\AggregationRunner
+ * No `@covers` metadata, deliberately — see
+ * {@see AggregationJoinAndCompositeGroupByTest} for the measurement.
+ *
+ * Under `beStrictAboutCoverageMetadata="true"`, naming the class under test
+ * makes PHPUnit mark every test that also touches a collaborator RISKY and
+ * DISCARD that test's coverage wholesale. Almost every test here legitimately
+ * runs one — AggregationQuery, PlaceholderResolver, the Db entities — so the
+ * annotation threw the measurement away instead of focusing it, and the
+ * subject reported 0%. #2847
  */
 class AggregationRunnerTest extends TestCase {
 

@@ -51,8 +51,10 @@ use PDO;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OCA\OpenRegister\Service\Aggregation\AggregationRunner
- * @covers \OCA\OpenRegister\Service\Aggregation\AggregationQuery
+ * No `@covers` metadata, deliberately — `beStrictAboutCoverageMetadata="true"`
+ * discards the coverage of any test that touches a collaborator it did not
+ * name, and naming two was still not enough. See
+ * {@see AggregationJoinAndCompositeGroupByTest} and #2847.
  */
 class AggregationRunnerMultiMetricTest extends TestCase {
 
