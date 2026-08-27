@@ -130,6 +130,12 @@ class CronFormat implements Format {
 	/**
 	 * Whether a single comma-free term is legal.
 	 *
+	 * Split from the BODY check below on a real seam rather than to satisfy a
+	 * counter: this method answers "is the step legal", the other answers "is
+	 * the value or range legal", and they share nothing but the term they came
+	 * from. Together they were cyclomatic 14 / NPath 1344, which is the shape
+	 * of a method doing two jobs.
+	 *
 	 * @param string          $term  The term.
 	 * @param array{int, int} $range Its inclusive bounds.
 	 *
@@ -147,15 +153,30 @@ class CronFormat implements Format {
 			return false;
 		}
 
-		if (count($parts) === 2) {
-			// A step of 0 would never advance, so the expression names no time
-			// at all rather than every time.
-			if (preg_match('/^\d+$/', $parts[1]) !== 1 || (int)$parts[1] < 1) {
-				return false;
-			}
+		// A step of 0 would never advance, so the expression names no time at
+		// all rather than every time.
+		if (count($parts) === 2
+			&& (preg_match('/^\d+$/', $parts[1]) !== 1 || (int)$parts[1] < 1)
+		) {
+			return false;
 		}
 
-		$body = $parts[0];
+		return $this->isValidBody(body: $parts[0], range: $range);
+	}//end isValidTerm()
+
+	/**
+	 * Whether a term's body — the part before any step — is legal.
+	 *
+	 * Either `*`, a single number in range, or an ascending `a-b` range.
+	 *
+	 * @param string          $body  The body.
+	 * @param array{int, int} $range Its inclusive bounds.
+	 *
+	 * @return bool True when the body is legal.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function isValidBody(string $body, array $range): bool {
 		if ($body === '*') {
 			return true;
 		}
@@ -179,10 +200,12 @@ class CronFormat implements Format {
 			$numbers[] = $value;
 		}
 
+		// A backwards range names no values at all.
 		if (count($numbers) === 2 && $numbers[0] > $numbers[1]) {
 			return false;
 		}
 
 		return true;
-	}//end isValidTerm()
+	}//end isValidBody()
+
 }//end class
