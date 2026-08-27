@@ -2,7 +2,7 @@
     "openapi": "3.0.3",
     "info": {
         "title": "openregister",
-        "version": "0.0.1",
+        "version": "1.1.6",
         "description": "Open Register",
         "license": {
             "name": "agpl"
