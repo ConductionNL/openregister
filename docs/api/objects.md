@@ -29,9 +29,45 @@ Retrieves a paginated list of objects that match the specified register and sche
 - **deleted**: Filter by deletion date
 
 ##### Pagination
-- **`_limit`**: Number of items per page (default: 20)
+- **`_limit`**: Number of items per page. Also accepts an explicit **unlimited**
+  value — see below.
 - **`_offset`**: Number of items to skip
 - **`_page`**: Current page number (alternative to `_offset`)
+
+###### Asking for every row
+
+`_limit` accepts `false`, `null`, `0`, `all`, `unlimited` or `none` (any case)
+to mean **no limit at all**. The query then carries no `LIMIT` clause and every
+matching row is returned.
+
+```
+GET /api/objects/myregister/myschema?_limit=false
+GET /api/objects/myregister/myschema?_limit=0
+```
+
+Prefer `_limit=false`: it says what it means. `0` is accepted because callers
+already wrote it expecting exactly this.
+
+**Use it deliberately.** An unlimited read is a full scan of the matching set,
+and the whole result is materialised in PHP before it is serialised. It exists
+so that a caller who genuinely needs the complete set can ask for it *and know
+they got it*, rather than filtering a silently truncated page in the browser
+and presenting the count as a total. If you only need a number, ask for the
+number: `_count=true` returns the total without the rows.
+
+**Values that are not row counts are read as unlimited, not as zero.** A
+non-numeric `_limit` (`?_limit=abc`) and a negative one both mean "no usable
+limit given". This matters because `(int)"abc"` is `0` in PHP, and a `LIMIT 0`
+returns an empty list with HTTP 200 — a typo in a query string used to produce
+a confidently empty result.
+
+> **Changed in this release.** `_limit=0` previously behaved three different
+> ways depending on which read path served the request: no rows on the
+> single-schema path, one row on the cross-schema path, and 200 rows against an
+> external database. A hard cap of 1000 rows also applied on the latter two
+> paths, silently — a caller asking for 5000 received 1000 and was told
+> nothing. Both are gone. If you were relying on `_limit=0` to return an empty
+> page, request `_count=true` instead.
 
 ##### Search
 - **`_search`**: Full-text search term
