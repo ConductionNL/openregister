@@ -58,6 +58,8 @@ class DescriptorListCommand extends Command {
 	 * Configure the command.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:descriptors:list')
@@ -96,6 +98,8 @@ class DescriptorListCommand extends Command {
 	 * @param OutputInterface $output Console output.
 	 *
 	 * @return int 0 on success, 1 on a failed re-import.
+	 *
+	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$slug = $input->getOption('import');

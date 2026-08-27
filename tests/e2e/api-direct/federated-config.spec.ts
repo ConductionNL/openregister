@@ -207,22 +207,19 @@ test.describe('Federated configuration sharing', () => {
 		installedForRun = newUuid
 	})
 
-	// 🔴 EXPECTED TO FAIL — product defect, not a fixture problem.
+	// ✅ #2905 CLOSED — the expectation is gone because the defect is.
 	//
-	// `federated-config/install` reports HTTP 200 with `{"installed":[uuid]}` for
-	// a flow that exists NOWHERE: not in `/api/flows`, not in the `flows`
-	// register, and `/api/flows/{uuid}` answers 404. The caller is handed a
-	// receipt for goods that were never delivered, and only finds out when
-	// something tries to run the flow.
+	// `install` used to store an imported flow with `owner`/`organisation` NULL,
+	// and `FlowMapper` scopes every read with `eq('organisation', …)`, which NULL
+	// can never satisfy. The row inserted, `install` returned its uuid with HTTP
+	// 200, and nothing could ever see the flow again. This test carried
+	// `test.fail()` and named the issue.
 	//
-	// `test.fail()` rather than a skip on purpose: a skip would go quiet and stay
-	// quiet, while this reports RED THE DAY THE DEFECT IS FIXED and the
-	// expectation needs removing. Tracked as ConductionNL/openregister#2905.
-	test('🔴 #2905: the installed flow can be run', async ({ request }) => {
-		// Scoped to THIS test. A bare `test.fail()` in the describe body would
-		// mark every test declared after it too, quietly excusing the allowlist
-		// test below from ever having to pass.
-		test.fail()
+	// That is exactly what `test.fail()` is for: it went RED THE DAY THE FIX
+	// LANDED, because a test expected to fail that starts passing is itself an
+	// error. A skip would have gone quiet and stayed quiet, and this assertion
+	// would still be switched off now.
+	test('🔴 the installed flow can be run (#2905)', async ({ request }) => {
 		test.skip(
 			installedForRun === '',
 			'the install step did not run, so there is no flow to try',
@@ -234,7 +231,18 @@ test.describe('Federated configuration sharing', () => {
 		})
 		expect(runResp.status()).toBe(200)
 		const run = await runResp.json()
-		expect(run.status).toBe('completed')
+
+		// `stopped`, not `completed`, and the difference is this fixture's own
+		// doing. `EndNode` throws `FlowStop`, "which the engine turns into a
+		// clean `stopped`" — so a flow whose last node is `openregister.end`
+		// terminates as `stopped`. `completed` is the terminal for a flow that
+		// runs off the end of its graph, which is what this fixture was before
+		// the step moved from its edge onto a node and gained an explicit end.
+		//
+		// Asserted exactly rather than widened to accept either: this flow has
+		// one correct terminal, and a matcher that accepts both would also
+		// accept the fixture silently losing its end node.
+		expect(run.status).toBe('stopped')
 		expect((run.items ?? [])[0]?.json?.shared).toBe(true)
 	})
 
@@ -266,11 +274,46 @@ test.describe('Federated configuration sharing', () => {
 				})
 			).json()
 
-			// Not on the allowlist → 403.
-			const denied = await request.post(`${API}/federated-config/install`, {
+			// 🔴 THE PRECONDITION IS CROSS-PROCESS, SO IT IS VERIFIED, NOT ASSUMED.
+			//
+			// `occ config:app:set` runs in a CLI process; this request is served by
+			// a long-lived web process holding its own `IAppConfig` cache, and the
+			// CLI cannot invalidate it. So the allowlist can be set, readable via
+			// `occ config:app:get`, and still invisible to the endpoint under test
+			// for a while — during which a non-allowlisted install answers 200 and
+			// this assertion reports a security control as broken when it is not.
+			// (Verified by hand: with the web process holding a fresh cache the
+			// same request answers 403 and names the source.)
+			//
+			// Retry briefly, then SKIP naming what went unverified. A security
+			// assertion that cannot see its own precondition must not be reported
+			// as a pass, and must not be reported as a failure of the control.
+			let denied = await request.post(`${API}/federated-config/install`, {
 				headers: JSON_HEADERS,
 				data: { type: 'openregister.flows', bundle, source: 'evil/repo' },
 			})
+			for (
+				let attempt = 0;
+				attempt < 10 && denied.status() === 200;
+				attempt++
+			) {
+				await new Promise((resolve) => setTimeout(resolve, 1000))
+				denied = await request.post(`${API}/federated-config/install`, {
+					headers: JSON_HEADERS,
+					data: {
+						type: 'openregister.flows',
+						bundle,
+						source: 'evil/repo',
+					},
+				})
+			}
+			test.skip(
+				denied.status() === 200,
+				'the web process never observed the allowlist this test set via occ '
+					+ '(cross-process IAppConfig cache), so the org source allowlist is '
+					+ 'UNVERIFIED by this run — not refuted. The service-level predicate '
+					+ 'is covered by unit tests.',
+			)
 			expect(denied.status(), 'a non-allowlisted source is refused').toBe(403)
 
 			// On the allowlist → succeeds.

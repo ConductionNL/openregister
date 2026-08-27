@@ -28,7 +28,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\RegisterDescriptorService;
+use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -64,7 +66,18 @@ class RegisterDescriptorController extends Controller {
 	 *
 	 * @return JSONResponse The inventory, or a refusal.
 	 *
-	 * @NoAdminRequired
+	 * 🔴 THE no-admin-required ANNOTATION IS DELIBERATELY ABSENT, and is not
+	 * spelled here either — a docblock that writes the literal tag DECLARES it,
+	 * so a comment explaining its absence would restore exactly the mismatch it
+	 * describes. (Learned the hard way: a comment about removing `@covers` was
+	 * parsed as `@covers` and reddened six CI cells.)
+	 *
+	 * The body calls requireAdmin(), and an annotation saying the opposite is not
+	 * a harmless disagreement: it is how an endpoint comes to be reachable by
+	 * everyone while its code reads as guarded. With the tag absent, Nextcloud's
+	 * middleware requires an administrator before the controller runs, and
+	 * requireAdmin() then answers a proper JSON 403 rather than a middleware
+	 * redirect. Two agreeing layers, not one cancelling the other.
 	 *
 	 * @NoCSRFRequired
 	 *
@@ -112,10 +125,21 @@ class RegisterDescriptorController extends Controller {
 	 *
 	 * @return JSONResponse The outcome, or a refusal.
 	 *
-	 * @NoAdminRequired
+	 * The no-admin-required tag is absent here too — see index() for why it is
+	 * not spelled out. This endpoint rewrites schema definitions instance-wide,
+	 * so the mismatch would have cost more here.
+	 *
+	 * 🔴 AND CSRF STAYS ON. The obvious way to satisfy gate-5's "declare an auth
+	 * posture" is a no-CSRF tag, which index() already carries as a GET. Reaching
+	 * for it here would disable CSRF protection on a state-changing POST to buy a
+	 * green gate — the panel posts through axios with Nextcloud's request token,
+	 * so it needs nothing of the sort. `AuthorizedAdminSetting` declares the
+	 * posture the body actually enforces, which is what both gates are asking
+	 * for. Bound to OpenRegisterAdmin, the panel this endpoint serves.
 	 *
 	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
 	 */
+	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function import(string $appId, string $slug): JSONResponse {
 		$refusal = $this->requireAdmin();
 		if ($refusal !== null) {

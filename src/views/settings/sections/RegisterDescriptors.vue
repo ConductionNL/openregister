@@ -201,14 +201,39 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Stable identity for a row — an app may declare several registers.
+		 *
+		 * @param {object} row One inventory row.
+		 * @return {string} The key.
+		 *
+		 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+		 */
 		rowKey(row) {
 			return `${row.appId}/${row.slug}`
 		},
 
+		/**
+		 * Highlight anything that is not `current`.
+		 *
+		 * @param {object} row One inventory row.
+		 * @return {string} The class, or empty.
+		 *
+		 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+		 */
 		rowClass(row) {
 			return row.state === 'current' ? '' : 'descriptors__row--attention'
 		},
 
+		/**
+		 * The reader-facing name of a state. `absent` and `behind` stay distinct —
+		 * they call for different actions and carry different risk.
+		 *
+		 * @param {string} state One of current/behind/absent.
+		 * @return {string} The translated label.
+		 *
+		 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+		 */
 		stateLabel(state) {
 			if (state === 'absent') {
 				return this.t('openregister', 'Missing')
@@ -219,6 +244,14 @@ export default {
 			return this.t('openregister', 'Present')
 		},
 
+		/**
+		 * Installed-vs-shipped, rendered so the size of the gap is visible.
+		 *
+		 * @param {object} row One inventory row.
+		 * @return {string} The translated version summary.
+		 *
+		 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+		 */
 		versionLabel(row) {
 			if (row.installedVersion === null) {
 				return this.t('openregister', 'ships v{shipped}', {
@@ -234,6 +267,13 @@ export default {
 			return `v${row.installedVersion}`
 		},
 
+		/**
+		 * Read the inventory.
+		 *
+		 * @return {Promise<void>} Resolves once rows and counts are set.
+		 *
+		 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+		 */
 		async load() {
 			this.loading = true
 			this.error = ''
@@ -256,6 +296,15 @@ export default {
 			}
 		},
 
+		/**
+		 * Force a re-import and SHOW the outcome — a button that reports nothing
+		 * is indistinguishable from one that did nothing.
+		 *
+		 * @param {object} row The row whose descriptor to re-import.
+		 * @return {Promise<void>} Resolves once the outcome is rendered.
+		 *
+		 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+		 */
 		async reimport(row) {
 			this.busy = this.rowKey(row)
 			this.outcome = null
