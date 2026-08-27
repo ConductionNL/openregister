@@ -107,16 +107,19 @@ test.describe('Scheduled flow trigger', () => {
 				enabled: true,
 				trigger: 'schedule',
 				cron: '* * * * *',
-				nodes: [{ id: 'a' }, { id: 'b' }],
-				edges: [
+				// 🔴 THE STEP IS ON A NODE, NOT AN EDGE — the save validator refuses
+				// a `type` + `config` hung off an edge, because an edge is sequence
+				// and nothing would read the step. This fixture predates that
+				// grammar, so the flow was never created at all.
+				nodes: [
 					{
-						id: 's1',
-						from: 'a',
-						to: 'b',
+						id: 'a',
 						type: 'openregister.set-fields',
 						config: { set: { ran: true } },
 					},
+					{ id: 'b', type: 'openregister.end', config: {} },
 				],
+				edges: [{ id: 's1', from: 'a', to: 'b' }],
 			},
 		})
 		expect(resp.status()).toBeLessThanOrEqual(201)
@@ -147,16 +150,19 @@ test.describe('Scheduled flow trigger', () => {
 				enabled: true,
 				trigger: 'manual',
 				cron: '* * * * *',
-				nodes: [{ id: 'a' }, { id: 'b' }],
-				edges: [
+				// 🔴 THE STEP IS ON A NODE, NOT AN EDGE — the save validator refuses
+				// a `type` + `config` hung off an edge, because an edge is sequence
+				// and nothing would read the step. This fixture predates that
+				// grammar, so the flow was never created at all.
+				nodes: [
 					{
-						id: 's1',
-						from: 'a',
-						to: 'b',
+						id: 'a',
 						type: 'openregister.set-fields',
 						config: { set: { ran: true } },
 					},
+					{ id: 'b', type: 'openregister.end', config: {} },
 				],
+				edges: [{ id: 's1', from: 'a', to: 'b' }],
 			},
 		})
 		const uuid = (await resp.json())?.['@self']?.id

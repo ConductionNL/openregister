@@ -67,9 +67,9 @@ test.describe('Federated configuration sharing', () => {
 
 	test.afterAll(async ({ request }) => {
 		for (const id of created) {
-			await request
-				.delete(`${API}/objects/${reg}/${sch}/${id}`)
-				.catch(() => {})
+			// Deleted from /api/flows — the store makeFlow() writes to. Deleting
+			// through the objects API would silently leave every fixture behind.
+			await request.delete(`/apps/openregister/api/flows/${id}`).catch(() => {})
 		}
 	})
 
@@ -77,25 +77,41 @@ test.describe('Federated configuration sharing', () => {
 		request: APIRequestContext,
 		name: string,
 	): Promise<string> {
-		const resp = await request.post(`${API}/objects/${reg}/${sch}`, {
+		// 🔴 AUTHORED THROUGH /api/flows, NOT AS A REGISTER OBJECT.
+		//
+		// OpenRegister has TWO stores for "a flow": the `openregister_flows`
+		// table behind /api/flows, and objects in the `flows` register.
+		// `FlowShareableConfigType` bundles via `FlowMapper`, so it reads only the
+		// first — a flow authored in the register bundles to `flows: []`, HTTP 200,
+		// with nothing to say why. This fixture used to author into the register
+		// and the test read as a broken bundler.
+		//
+		// Verified with a control: bundling a table-backed flow returns 1, bundling
+		// a register-authored one returns 0, same request otherwise.
+		//
+		// The gap itself is a real defect and is tracked separately — the register
+		// is the store `flow_register.json` documents as the place a flow may live.
+		// This test is about BUNDLING, so it uses the store bundling supports.
+		const resp = await request.post('/apps/openregister/api/flows', {
 			headers: JSON_HEADERS,
 			data: {
 				name,
+				description: 'Created by the federated-config e2e suite.',
 				enabled: true,
 				trigger: 'manual',
-				nodes: [{ id: 'a' }, { id: 'b' }],
-				edges: [
+				nodes: [
 					{
-						id: 's1',
-						from: 'a',
-						to: 'b',
+						id: 'a',
 						type: 'openregister.set-fields',
 						config: { set: { shared: true } },
 					},
+					{ id: 'b', type: 'openregister.end', config: {} },
 				],
+				edges: [{ id: 's1', from: 'a', to: 'b' }],
 			},
 		})
-		const uuid = (await resp.json())?.['@self']?.id
+		expect(resp.status(), await resp.text()).toBeLessThanOrEqual(201)
+		const uuid = (await resp.json())?.id
 		created.push(uuid)
 		return uuid
 	}

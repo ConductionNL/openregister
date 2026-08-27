@@ -51,6 +51,7 @@
 
 		<!-- Audit hash-chain health: seal coverage + on-demand verification -->
 		<LogIntegrity />
+		<RegisterDescriptors />
 
 		<!-- Push Notifications Status Section -->
 		<PushNotificationsConfiguration :pushStatus="pushStatus" />
@@ -90,6 +91,7 @@ import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
 import PermissionMatrix from './sections/PermissionMatrix.vue'
 import PushNotificationsConfiguration from './sections/PushNotificationsConfiguration.vue'
 import RbacConfiguration from './sections/RbacConfiguration.vue'
+import RegisterDescriptors from './sections/RegisterDescriptors.vue'
 import RetentionConfiguration from './sections/RetentionConfiguration.vue'
 import StatisticsOverview from './sections/StatisticsOverview.vue'
 import { useSettingsStore } from '../../store/settings.js'
@@ -113,6 +115,7 @@ export default {
 		OrganisationConfiguration,
 		MultitenancyConfiguration,
 		FlowConfiguration,
+		RegisterDescriptors,
 		RetentionConfiguration,
 		LogIntegrity,
 		PushNotificationsConfiguration,
