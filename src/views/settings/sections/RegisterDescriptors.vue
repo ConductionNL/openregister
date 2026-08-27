@@ -23,17 +23,49 @@
 				     "15 declared" and buries the absent ones reproduces the
 				     silence it exists to break. -->
 				<p class="descriptors__summary">
-					<span v-if="absent > 0" class="descriptors__count descriptors__count--absent">
-						{{ n('openregister', '%n register is missing', '%n registers are missing', absent) }}
+					<span
+						v-if="absent > 0"
+						class="descriptors__count descriptors__count--absent">
+						{{
+							n(
+								'openregister',
+								'%n register is missing',
+								'%n registers are missing',
+								absent,
+							)
+						}}
 					</span>
-					<span v-if="behind > 0" class="descriptors__count descriptors__count--behind">
-						{{ n('openregister', '%n is out of date', '%n are out of date', behind) }}
+					<span
+						v-if="behind > 0"
+						class="descriptors__count descriptors__count--behind">
+						{{
+							n(
+								'openregister',
+								'%n is out of date',
+								'%n are out of date',
+								behind,
+							)
+						}}
 					</span>
-					<span v-if="absent === 0 && behind === 0" class="descriptors__count">
-						{{ t('openregister', 'Every declared register is present and current.') }}
+					<span
+						v-if="absent === 0 && behind === 0"
+						class="descriptors__count">
+						{{
+							t(
+								'openregister',
+								'Every declared register is present and current.',
+							)
+						}}
 					</span>
 					<span class="descriptors__count descriptors__count--muted">
-						{{ n('openregister', '%n declared in total', '%n declared in total', total) }}
+						{{
+							n(
+								'openregister',
+								'%n declared in total',
+								'%n declared in total',
+								total,
+							)
+						}}
 					</span>
 				</p>
 
@@ -44,32 +76,49 @@
 							<th scope="col">{{ t('openregister', 'Register') }}</th>
 							<th scope="col">{{ t('openregister', 'State') }}</th>
 							<th scope="col">{{ t('openregister', 'Version') }}</th>
-							<th scope="col"><span class="descriptors__sr">{{ t('openregister', 'Actions') }}</span></th>
+							<th scope="col">
+								<span class="descriptors__sr">{{
+									t('openregister', 'Actions')
+								}}</span>
+							</th>
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="row in rows" :key="row.appId + '/' + row.slug" :class="rowClass(row)">
+						<tr
+							v-for="row in rows"
+							:key="row.appId + '/' + row.slug"
+							:class="rowClass(row)">
 							<td>{{ row.appId }}</td>
 							<td>
 								{{ row.title }}
 								<span class="descriptors__slug">{{ row.slug }}</span>
 							</td>
 							<td>
-								<span class="descriptors__state" :class="'descriptors__state--' + row.state">
+								<span
+									class="descriptors__state"
+									:class="'descriptors__state--' + row.state">
 									{{ stateLabel(row.state) }}
 								</span>
 							</td>
-							<td class="descriptors__versions">{{ versionLabel(row) }}</td>
+							<td class="descriptors__versions">
+								{{ versionLabel(row) }}
+							</td>
 							<td>
 								<NcButton
 									:disabled="busy === rowKey(row)"
 									variant="secondary"
 									@click="reimport(row)">
 									<template #icon>
-										<NcLoadingIcon v-if="busy === rowKey(row)" :size="20" />
+										<NcLoadingIcon
+											v-if="busy === rowKey(row)"
+											:size="20" />
 										<Download v-else :size="20" />
 									</template>
-									{{ row.state === 'absent' ? t('openregister', 'Import') : t('openregister', 'Re-import') }}
+									{{
+										row.state === 'absent'
+											? t('openregister', 'Import')
+											: t('openregister', 'Re-import')
+									}}
 								</NcButton>
 							</td>
 						</tr>
@@ -82,7 +131,11 @@
 				<p
 					v-if="outcome"
 					class="descriptors__hint"
-					:class="outcome.ok ? 'descriptors__hint--good' : 'descriptors__hint--bad'"
+					:class="
+						outcome.ok
+							? 'descriptors__hint--good'
+							: 'descriptors__hint--bad'
+					"
 					role="status">
 					{{ outcome.message }}
 				</p>
@@ -168,7 +221,9 @@ export default {
 
 		versionLabel(row) {
 			if (row.installedVersion === null) {
-				return this.t('openregister', 'ships v{shipped}', { shipped: row.shippedVersion })
+				return this.t('openregister', 'ships v{shipped}', {
+					shipped: row.shippedVersion,
+				})
 			}
 			if (row.state === 'behind') {
 				return this.t('openregister', 'v{installed} → ships v{shipped}', {
@@ -212,10 +267,14 @@ export default {
 				)
 				this.outcome = {
 					ok: true,
-					message: this.t('openregister', '{register} was imported from {app}.', {
-						register: row.title,
-						app: row.appId,
-					}),
+					message: this.t(
+						'openregister',
+						'{register} was imported from {app}.',
+						{
+							register: row.title,
+							app: row.appId,
+						},
+					),
 				}
 				// Re-read rather than patch the row locally: the inventory is
 				// the authority on what is now present, and a locally-optimistic
@@ -225,7 +284,10 @@ export default {
 				this.outcome = {
 					ok: false,
 					message: this.t('openregister', 'Import failed: {reason}', {
-						reason: e?.response?.data?.reason ?? e?.response?.data?.error ?? e.message,
+						reason:
+							e?.response?.data?.reason
+							?? e?.response?.data?.error
+							?? e.message,
 					}),
 				}
 			} finally {

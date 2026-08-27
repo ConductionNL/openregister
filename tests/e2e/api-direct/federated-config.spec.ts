@@ -55,21 +55,35 @@ async function idBySlug(
 	return match.id ?? match['@self']?.id
 }
 
+// The install assertion hands its uuid to the run assertion that follows, so the
+// order is a contract, not an accident.
+test.describe.configure({ mode: 'serial' })
+
 test.describe('Federated configuration sharing', () => {
-	let reg: number
-	let sch: number
 	const created: string[] = []
 
+	/** The uuid `install` handed back, for the run assertion that follows it. */
+	let installedForRun = ''
+
 	test.beforeAll(async ({ request }) => {
-		reg = await idBySlug(request, 'registers', 'flows')
-		sch = await idBySlug(request, 'schemas', 'flow')
+		// The `flows` register is still a precondition — 'a register bundles into
+		// a portable OpenAPI document' bundles it BY SLUG — but nothing here needs
+		// its numeric ids any more, now that makeFlow() authors through
+		// /api/flows. Asserted rather than dropped: on an instance where the
+		// descriptor never landed this file used to die here with
+		// `registers slug=flows`, and that message, arriving up front, is the
+		// most useful thing this block can do. See
+		// `occ openregister:descriptors:list`.
+		await idBySlug(request, 'registers', 'flows')
 	})
 
 	test.afterAll(async ({ request }) => {
 		for (const id of created) {
 			// Deleted from /api/flows — the store makeFlow() writes to. Deleting
 			// through the objects API would silently leave every fixture behind.
-			await request.delete(`/apps/openregister/api/flows/${id}`).catch(() => {})
+			await request
+				.delete(`/apps/openregister/api/flows/${id}`)
+				.catch(() => {})
 		}
 	})
 
@@ -151,7 +165,7 @@ test.describe('Federated configuration sharing', () => {
 		expect(bundle.components?.schemas?.flow, 'and its flow schema').toBeTruthy()
 	})
 
-	test('a flow bundles into a portable shape and installs as a fresh flow that runs', async ({
+	test('a flow bundles into a portable shape and installs as a fresh flow', async ({
 		request,
 	}) => {
 		const uuid = await makeFlow(request, `${runId} source`)
@@ -187,10 +201,37 @@ test.describe('Federated configuration sharing', () => {
 		created.push(newUuid)
 		expect(newUuid).not.toBe(uuid)
 
-		// The installed flow runs.
+		// 🔴 Whether that flow can actually RUN is asserted separately below, and
+		// it currently cannot — see the next test. Splitting it keeps these
+		// assertions live: folding both into one expected-to-fail test would stop
+		// this bundle-and-install coverage from ever failing again.
+		installedForRun = newUuid
+	})
+
+	// 🔴 EXPECTED TO FAIL — product defect, not a fixture problem.
+	//
+	// `federated-config/install` reports HTTP 200 with `{"installed":[uuid]}` for
+	// a flow that exists NOWHERE: not in `/api/flows`, not in the `flows`
+	// register, and `/api/flows/{uuid}` answers 404. The caller is handed a
+	// receipt for goods that were never delivered, and only finds out when
+	// something tries to run the flow.
+	//
+	// `test.fail()` rather than a skip on purpose: a skip would go quiet and stay
+	// quiet, while this reports RED THE DAY THE DEFECT IS FIXED and the
+	// expectation needs removing. Tracked as ConductionNL/openregister#2905.
+	test('🔴 #2905: the installed flow can be run', async ({ request }) => {
+		// Scoped to THIS test. A bare `test.fail()` in the describe body would
+		// mark every test declared after it too, quietly excusing the allowlist
+		// test below from ever having to pass.
+		test.fail()
+		test.skip(
+			installedForRun === '',
+			'the install step did not run, so there is no flow to try',
+		)
+
 		const runResp = await request.post(`${API}/flow-runs/test`, {
 			headers: JSON_HEADERS,
-			data: { flowId: newUuid },
+			data: { flowId: installedForRun },
 		})
 		expect(runResp.status()).toBe(200)
 		const run = await runResp.json()

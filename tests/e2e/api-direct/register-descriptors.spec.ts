@@ -54,7 +54,10 @@ test.describe('register-descriptors — what landed, and what a re-import costs'
 	}) => {
 		const rows = await inventory(request)
 
-		expect(rows.length, 'this instance has openregister installed').toBeGreaterThan(0)
+		expect(
+			rows.length,
+			'this instance has openregister installed',
+		).toBeGreaterThan(0)
 
 		for (const row of rows) {
 			expect(['current', 'behind', 'absent']).toContain(row.state)
@@ -111,8 +114,9 @@ test.describe('register-descriptors — what landed, and what a re-import costs'
 
 		// Find a schema the target register owns — the thing a re-import rewrites.
 		const registers = await request.get(`${API}/registers?limit=1000`)
-		const register = ((await registers.json()).results as Array<Record<string, unknown>>)
-			.find((r) => r.slug === target.slug)
+		const register = (
+			(await registers.json()).results as Array<Record<string, unknown>>
+		).find((r) => r.slug === target.slug)
 		const baseId = ((register?.schemas ?? []) as number[])[0]
 		test.skip(
 			baseId === undefined,
@@ -125,7 +129,10 @@ test.describe('register-descriptors — what landed, and what a re-import costs'
 				slug: `${RUN_ID}-extension`,
 				allOf: [baseId],
 				properties: {
-					customField: { type: 'string', description: 'added by the extension' },
+					customField: {
+						type: 'string',
+						description: 'added by the extension',
+					},
 				},
 			},
 		})
