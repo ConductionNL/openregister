@@ -2706,7 +2706,26 @@
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} s’ha importat des de {app}.",
+        "%n are out of date": "%n estan desactualitzats",
+        "%n declared in total": "%n declarats en total",
+        "%n is out of date": "%n està desactualitzat",
+        "%n register is missing": "falta %n registre",
+        "%n registers are missing": "falten %n registres",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Les aplicacions lliuren els seus registres com a descriptors, que s’importen en instal·lar o actualitzar l’aplicació. Tan bon punt la versió d’una aplicació deixa de canviar, aquesta importació no s’executa mai més, i una importació fallida només s’escriu al registre d’esdeveniments — per tant, pot faltar un registre en una instància que altrament sembla sana. Aquí veieu quins han arribat.",
+        "Could not read the descriptor inventory: {reason}": "No s’ha pogut llegir l’inventari de descriptors: {reason}",
+        "Every declared register is present and current.": "Tots els registres declarats hi són i estan actualitzats.",
+        "Import failed: {reason}": "La importació ha fallat: {reason}",
+        "Missing": "Falta",
+        "Out of date": "Desactualitzat",
+        "Present": "Present",
+        "Re-import": "Reimporta",
+        "Reading descriptors …": "S’estan llegint els descriptors …",
+        "Register descriptors": "Descriptors de registre",
+        "ships v{shipped}": "lliura v{shipped}",
+        "State": "Estat",
+        "v{installed} → ships v{shipped}": "v{installed} → lliura v{shipped}"
     },
     "plurals": {
         "{count} email": [

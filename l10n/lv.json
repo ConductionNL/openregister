@@ -2707,7 +2707,26 @@
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} tika importēts no {app}.",
+        "%n are out of date": "%n ir novecojuši",
+        "%n declared in total": "%n deklarēti kopā",
+        "%n is out of date": "%n ir novecojis",
+        "%n register is missing": "trūkst %n reģistra",
+        "%n registers are missing": "trūkst %n reģistru",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Lietotnes piegādā savus reģistrus kā deskriptorus, kas tiek importēti, instalējot vai jauninot lietotni. Tiklīdz lietotnes versija pārstāj mainīties, šis imports vairs nekad netiek izpildīts, un neizdevies imports tiek ierakstīts tikai žurnālā — tāpēc reģistrs var trūkt instancē, kas citādi izskatās vesela. Šeit redzams, kuri ir nonākuši.",
+        "Could not read the descriptor inventory: {reason}": "Neizdevās nolasīt deskriptoru sarakstu: {reason}",
+        "Every declared register is present and current.": "Katrs deklarētais reģistrs ir klātesošs un aktuāls.",
+        "Import failed: {reason}": "Imports neizdevās: {reason}",
+        "Missing": "Trūkst",
+        "Out of date": "Novecojis",
+        "Present": "Klātesošs",
+        "Re-import": "Importēt atkārtoti",
+        "Reading descriptors …": "Notiek deskriptoru lasīšana …",
+        "Register descriptors": "Reģistru deskriptori",
+        "ships v{shipped}": "piegādā v{shipped}",
+        "State": "Stāvoklis",
+        "v{installed} → ships v{shipped}": "v{installed} → piegādā v{shipped}"
     },
     "plurals": {
         "{count} email": [

@@ -2704,7 +2704,26 @@ OC.L10N.register(
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} беше импортиран от {app}.",
+        "%n are out of date": "%n са остарели",
+        "%n declared in total": "%n декларирани общо",
+        "%n is out of date": "%n е остарял",
+        "%n register is missing": "липсва %n регистър",
+        "%n registers are missing": "липсват %n регистъра",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Приложенията доставят своите регистри като дескриптори, които се импортират при инсталиране или обновяване на приложението. Щом версията на дадено приложение спре да се променя, този импорт вече никога не се изпълнява, а неуспешен импорт се записва само в дневника — така че регистър може да липсва на инстанция, която иначе изглежда здрава. Тук виждате кои са пристигнали.",
+        "Could not read the descriptor inventory: {reason}": "Инвентарът на дескрипторите не можа да бъде прочетен: {reason}",
+        "Every declared register is present and current.": "Всеки деклариран регистър е наличен и актуален.",
+        "Import failed: {reason}": "Импортирането е неуспешно: {reason}",
+        "Missing": "Липсва",
+        "Out of date": "Остарял",
+        "Present": "Наличен",
+        "Re-import": "Импортирай отново",
+        "Reading descriptors …": "Четене на дескриптори …",
+        "Register descriptors": "Дескриптори на регистри",
+        "ships v{shipped}": "доставя v{shipped}",
+        "State": "Състояние",
+        "v{installed} → ships v{shipped}": "v{installed} → доставя v{shipped}"
     },
     "nplurals=2; plural=(n != 1);"
 )

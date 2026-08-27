@@ -2,14 +2,14 @@
   "openapi": "3.0.0",
   "info": {
     "title": "Flows",
-    "description": "OpenRegister-native flow definitions. A flow is an object with nodes and edges the flow engine walks (ADR-022, ADR-065). Storing flows as ordinary OpenRegister objects is what lets OpenRegister author and run its own flows — the OpenRegisterFlowResolver resolves this register/schema by default (flow_register / flow_schema app-config), so triggers, sub-flows and the /test endpoint all work with a flow authored here. Materialised by the ImportFlowRegister Repair step (OR does not self-import its own register JSON at boot — ADR-037).",
+    "description": "OpenRegister-native flow definitions. A flow is an object with nodes and edges the flow engine walks (ADR-022, ADR-065). ⚠️ This register is NOT the runtime store — the scheduler and the federation bundler read the `openregister_flows` table, not this. See x-openregister.description.",
     "version": "1.4.0"
   },
   "x-openregister": {
     "type": "core",
     "app": "openregister",
     "openregister": "^v0.2.10",
-    "description": "Foundational flow-definition register shipped by OpenRegister so a flow can live in OpenRegister itself and not only in a consuming app. The engine, nodes and resolver live in code (lib/Service/Flow); this descriptor is only the store the resolver reads by default."
+    "description": "Store for OpenRegister-native flow DEFINITIONS. ⚠️ The canonical runtime store is the `openregister_flows` table behind /api/flows: the scheduler (FlowLocator::scheduledFlows) and the federation bundler (FlowShareableConfigType) read that table and NOT this register, so a flow authored here neither fires nor bundles. Measured with controls — the same definition queued 1 run from the table and 0 from the register. MigrateRegisterFlowsToTable copies register-authored flows across on upgrade. Author flows through /api/flows."
   },
   "paths": {},
   "components": {

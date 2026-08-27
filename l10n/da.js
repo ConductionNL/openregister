@@ -2704,7 +2704,26 @@ OC.L10N.register(
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} blev importeret fra {app}.",
+        "%n are out of date": "%n er forældede",
+        "%n declared in total": "%n erklæret i alt",
+        "%n is out of date": "%n er forældet",
+        "%n register is missing": "%n register mangler",
+        "%n registers are missing": "%n registre mangler",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Apps leverer deres registre som deskriptorer, der importeres, når appen installeres eller opgraderes. Så snart en apps version holder op med at ændre sig, kører den import aldrig igen, og en mislykket import skrives kun til loggen — et register kan derfor mangle på en instans, der ellers ser sund ud. Her kan du se, hvilke der er landet.",
+        "Could not read the descriptor inventory: {reason}": "Kunne ikke læse deskriptor-oversigten: {reason}",
+        "Every declared register is present and current.": "Alle erklærede registre er til stede og aktuelle.",
+        "Import failed: {reason}": "Import mislykkedes: {reason}",
+        "Missing": "Mangler",
+        "Out of date": "Forældet",
+        "Present": "Til stede",
+        "Re-import": "Genimportér",
+        "Reading descriptors …": "Læser deskriptorer …",
+        "Register descriptors": "Register-deskriptorer",
+        "ships v{shipped}": "leverer v{shipped}",
+        "State": "Status",
+        "v{installed} → ships v{shipped}": "v{installed} → leverer v{shipped}"
     },
     "nplurals=2; plural=(n != 1);"
 )

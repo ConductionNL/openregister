@@ -2704,7 +2704,26 @@ OC.L10N.register(
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} was imported from {app}.",
+        "%n are out of date": "%n are out of date",
+        "%n declared in total": "%n declared in total",
+        "%n is out of date": "%n is out of date",
+        "%n register is missing": "%n register is missing",
+        "%n registers are missing": "%n registers are missing",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.",
+        "Could not read the descriptor inventory: {reason}": "Could not read the descriptor inventory: {reason}",
+        "Every declared register is present and current.": "Every declared register is present and current.",
+        "Import failed: {reason}": "Import failed: {reason}",
+        "Missing": "Missing",
+        "Out of date": "Out of date",
+        "Present": "Present",
+        "Re-import": "Re-import",
+        "Reading descriptors …": "Reading descriptors …",
+        "Register descriptors": "Register descriptors",
+        "ships v{shipped}": "ships v{shipped}",
+        "State": "State",
+        "v{installed} → ships v{shipped}": "v{installed} → ships v{shipped}"
     },
     "nplurals=2; plural=(n != 1);"
 )

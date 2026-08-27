@@ -66,6 +66,8 @@ use RuntimeException;
 
 /**
  * Evaluates arithmetic over the aliases of already-computed metrics.
+ *
+ * @spec openspec/specs/aggregation-api/spec.md
  */
 class MetricExpressionEvaluator {
 
@@ -173,7 +175,11 @@ class MetricExpressionEvaluator {
 				continue;
 			}
 
-			$value = ($op === '+') ? ($value + $rhs) : ($value - $rhs);
+			if ($op === '+') {
+				$value = ($value + $rhs);
+			} else {
+				$value = ($value - $rhs);
+			}
 		}
 
 		return $value;
@@ -235,7 +241,11 @@ class MetricExpressionEvaluator {
 		if ($token['type'] === '-') {
 			$this->pos++;
 			$inner = $this->parseFactor();
-			return ($inner === null) ? null : (0 - $inner);
+			if ($inner === null) {
+				return null;
+			}
+
+			return (0 - $inner);
 		}
 
 		if ($token['type'] === 'number') {
@@ -246,7 +256,7 @@ class MetricExpressionEvaluator {
 		if ($token['type'] === '(') {
 			$this->pos++;
 			$inner = $this->parseExpression();
-			$this->expect(')');
+			$this->expect(type: ')');
 			return $inner;
 		}
 
@@ -275,17 +285,21 @@ class MetricExpressionEvaluator {
 	 */
 	private function parseMinMax(string $name): ?float {
 		$this->pos++;
-		$this->expect('(');
+		$this->expect(type: '(');
 		$left = $this->parseExpression();
-		$this->expect(',');
+		$this->expect(type: ',');
 		$right = $this->parseExpression();
-		$this->expect(')');
+		$this->expect(type: ')');
 
 		if ($left === null || $right === null) {
 			return null;
 		}
 
-		return ($name === 'min') ? min($left, $right) : max($left, $right);
+		if ($name === 'min') {
+			return min($left, $right);
+		}
+
+		return max($left, $right);
 	}//end parseMinMax()
 
 	/**
@@ -304,13 +318,17 @@ class MetricExpressionEvaluator {
 		if (array_key_exists($name, $this->scope) === false) {
 			$known = array_keys($this->scope);
 			sort($known);
+			$available = '(none)';
+			if ($known !== []) {
+				$available = implode(', ', $known);
+			}
 			throw new RuntimeException(
 				sprintf(
 					'Metric expression references "%s", which is not a metric in this aggregation. '
 					.'Available: %s. A derived metric can only read figures computed BEFORE it, so '
 					.'order the `metrics` list accordingly.',
 					$name,
-					($known === [] ? '(none)' : implode(', ', $known))
+					$available
 				)
 			);
 		}
@@ -345,7 +363,10 @@ class MetricExpressionEvaluator {
 	 */
 	private function expect(string $type): void {
 		if ($this->pos >= $this->count || $this->tokens[$this->pos]['type'] !== $type) {
-			$found = ($this->pos < $this->count) ? $this->tokens[$this->pos]['value'] : 'end of expression';
+			$found = 'end of expression';
+			if ($this->pos < $this->count) {
+				$found = $this->tokens[$this->pos]['value'];
+			}
 			throw new RuntimeException(
 				sprintf('Expected "%s" in a metric expression, found "%s".', $type, $found)
 			);

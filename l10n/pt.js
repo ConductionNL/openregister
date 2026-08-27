@@ -2704,7 +2704,26 @@ OC.L10N.register(
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} foi importado de {app}.",
+        "%n are out of date": "%n estão desatualizados",
+        "%n declared in total": "%n declarados no total",
+        "%n is out of date": "%n está desatualizado",
+        "%n register is missing": "falta %n registo",
+        "%n registers are missing": "faltam %n registos",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "As aplicações fornecem os seus registos como descritores, importados quando a aplicação é instalada ou atualizada. Assim que a versão de uma aplicação deixa de mudar, essa importação nunca mais é executada, e uma importação falhada é apenas escrita no registo de eventos — por isso um registo pode faltar numa instância que de resto parece saudável. Aqui vê quais chegaram.",
+        "Could not read the descriptor inventory: {reason}": "Não foi possível ler o inventário de descritores: {reason}",
+        "Every declared register is present and current.": "Todos os registos declarados estão presentes e atualizados.",
+        "Import failed: {reason}": "Falha na importação: {reason}",
+        "Missing": "Em falta",
+        "Out of date": "Desatualizado",
+        "Present": "Presente",
+        "Re-import": "Reimportar",
+        "Reading descriptors …": "A ler descritores …",
+        "Register descriptors": "Descritores de registo",
+        "ships v{shipped}": "fornece v{shipped}",
+        "State": "Estado",
+        "v{installed} → ships v{shipped}": "v{installed} → fornece v{shipped}"
     },
     "nplurals=2; plural=(n != 1);"
 )
