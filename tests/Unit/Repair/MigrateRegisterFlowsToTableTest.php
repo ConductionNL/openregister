@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Repair;
 
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Repair\MigrateRegisterFlowsToTable;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -202,6 +203,65 @@ class MigrateRegisterFlowsToTableTest extends TestCase {
 		$this->step->run($this->output);
 
 		$this->assertStringContainsString('0 migrated', $this->summary());
+	}
+
+	/**
+	 * 🔴 THE ONE THE ARRAY FIXTURES COULD NOT CATCH.
+	 *
+	 * `ObjectService::findAll()` returns `ObjectEntity` OBJECTS. Every other
+	 * test here hands the step arrays, because that is the shape the step's
+	 * author assumed — so they exercised a code path production never takes.
+	 * They stayed green while enabling the app died outright:
+	 *
+	 *   Error: Cannot use object of type OCA\OpenRegister\Db\ObjectEntity as
+	 *   array in lib/Repair/MigrateRegisterFlowsToTable.php:173
+	 *
+	 * A fatal during `occ app:enable` means the app does not install at all.
+	 * Only CI, which actually enables it, disagreed with the unit tests — the
+	 * fixture had validated the query its author wrote rather than the one the
+	 * service answers.
+	 *
+	 * This test therefore builds a REAL entity. Revert the `normalise()` call
+	 * in the step and it fails with that same fatal, which is the property the
+	 * array fixtures lack.
+	 */
+	public function testItReadsRealObjectEntitiesNotArrays(): void {
+		$entity = new ObjectEntity();
+		$entity->setUuid('uuid-entity');
+		$entity->setOwner('admin');
+		$entity->setOrganisation('org-1');
+		$entity->setObject(
+			[
+				'name' => 'Nightly sweep',
+				'trigger' => 'schedule',
+				'cron' => '* * * * *',
+				'nodes' => [['id' => 'a']],
+				'edges' => [],
+			]
+		);
+
+		$this->objectService->method('findAll')->willReturn([$entity]);
+		$this->flowMapper->method('findByUuid')->willThrowException(new DoesNotExistException('nope'));
+
+		$captured = null;
+		$this->flowMapper->expects($this->once())->method('insert')
+			->willReturnCallback(function (Flow $f) use (&$captured): Flow {
+				$captured = $f;
+				return $f;
+			});
+
+		$this->step->run($this->output);
+
+		$this->assertNotNull($captured, 'an ObjectEntity row must be migrated, not skipped');
+		$this->assertSame('uuid-entity', $captured->getUuid());
+		// The payload lives behind getObject(), not behind array access.
+		$this->assertSame('Nightly sweep', $captured->getName());
+		$this->assertSame('schedule', $captured->getTrigger());
+		// Ownership comes off the ENTITY's own accessors, not an `@self` key
+		// that an ObjectEntity does not have.
+		$this->assertSame('admin', $captured->getOwner());
+		$this->assertSame('org-1', $captured->getOrganisation());
+		$this->assertStringContainsString('1 migrated', $this->summary());
 	}
 
 	public function testNoFlowsRegisterAtAllIsNotAFailure(): void {

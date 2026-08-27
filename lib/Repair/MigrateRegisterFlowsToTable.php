@@ -69,6 +69,7 @@ namespace OCA\OpenRegister\Repair;
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Migration\IOutput;
@@ -78,6 +79,8 @@ use Throwable;
 
 /**
  * Copies register-authored flows into the table every subsystem reads.
+ *
+ * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
  *
  * @psalm-suppress UnusedClass Instantiated by the NC repair framework (appinfo/info.xml).
  */
@@ -138,6 +141,8 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 	 * Get the name of this repair step.
 	 *
 	 * @return string The step name.
+	 *
+	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
 	 */
 	public function getName(): string {
 		return 'Migrate register-authored flows into the flow table (one store per flow)';
@@ -153,6 +158,8 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 	 * @param IOutput $output Output interface for status messages.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
 	 */
 	public function run(IOutput $output): void {
 		try {
@@ -170,7 +177,8 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 		$failed = 0;
 
 		foreach ($objects as $object) {
-			$uuid = (string)(($object['@self']['id'] ?? $object['id'] ?? ''));
+			$row  = $this->normalise(row: $object);
+			$uuid = $row['uuid'];
 			if ($uuid === '') {
 				$failed++;
 				continue;
@@ -190,7 +198,7 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 			}
 
 			try {
-				$this->flowMapper->insert($this->toFlow(uuid: $uuid, object: $object));
+				$this->flowMapper->insert($this->toFlow(row: $row));
 				$moved++;
 			} catch (Throwable $e) {
 				$this->logger->warning('[MigrateRegisterFlowsToTable] could not migrate ' . $uuid . ': ' . $e->getMessage());
@@ -214,7 +222,7 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 	/**
 	 * Every object in the flows register.
 	 *
-	 * @return array<int, array<string, mixed>> The flow objects.
+	 * @return array<int, mixed> The rows, each an ObjectEntity (see normalise()).
 	 */
 	private function registerFlows(): array {
 		$result = $this->objectService->findAll(
@@ -237,16 +245,72 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 	}//end registerFlows()
 
 	/**
-	 * Map a register object onto a Flow entity.
+	 * Reduce one row from `findAll()` to the four things this step needs.
 	 *
-	 * @param string               $uuid   The flow's uuid, preserved from the object.
-	 * @param array<string, mixed> $object The register object.
+	 * 🔴 `ObjectService::findAll()` RETURNS `ObjectEntity` OBJECTS, NOT ARRAYS.
+	 * This step read them as arrays, and PHP does not forgive that: enabling
+	 * the app died with "Cannot use object of type ObjectEntity as array",
+	 * which is a fatal during `occ app:enable` — the app will not install.
+	 *
+	 * The unit tests did not catch it because they mocked `findAll()` to return
+	 * the array shape the code expected. A fake built from the caller's
+	 * assumption validates the assumption, so the tests stayed green over a
+	 * step that could not run once. Only CI, which actually enables the app,
+	 * disagreed. `testItReadsRealObjectEntitiesNotArrays()` now uses a real
+	 * `ObjectEntity` so the test can fail the way production did.
+	 *
+	 * Both shapes are accepted: the entity is what this caller gets, and the
+	 * array form keeps the step correct if a future read path returns
+	 * serialised objects instead.
+	 *
+	 * @param mixed $row One element of the findAll() result.
+	 *
+	 * @return array{uuid: string, data: array<string, mixed>, owner: ?string, organisation: ?string}
+	 */
+	private function normalise(mixed $row): array {
+		if ($row instanceof ObjectEntity) {
+			return [
+				'uuid'         => (string)($row->getUuid() ?? ''),
+				'data'         => $row->getObject(),
+				'owner'        => $row->getOwner(),
+				'organisation' => $row->getOrganisation(),
+			];
+		}
+
+		if (is_array($row) === false) {
+			return [
+				'uuid'         => '',
+				'data'         => [],
+				'owner'        => null,
+				'organisation' => null,
+			];
+		}
+
+		$self = ($row['@self'] ?? []);
+		if (is_array($self) === false) {
+			$self = [];
+		}
+
+		return [
+			'uuid'         => (string)(($self['id'] ?? $row['id'] ?? '')),
+			'data'         => $row,
+			'owner'        => ($self['owner'] ?? $row['owner'] ?? null),
+			'organisation' => ($self['organisation'] ?? $row['organisation'] ?? null),
+		];
+	}//end normalise()
+
+	/**
+	 * Map a normalised register object onto a Flow entity.
+	 *
+	 * @param array{uuid: string, data: array<string, mixed>, owner: ?string, organisation: ?string} $row The normalised row.
 	 *
 	 * @return Flow The entity to insert.
 	 */
-	private function toFlow(string $uuid, array $object): Flow {
+	private function toFlow(array $row): Flow {
+		$object = $row['data'];
+
 		$flow = new Flow();
-		$flow->setUuid($uuid);
+		$flow->setUuid($row['uuid']);
 		$flow->setApp('openregister');
 		$flow->setCreated(new DateTime());
 		$flow->setUpdated(new DateTime());
@@ -273,9 +337,8 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 		// stamps on every write. A flow with no organisation is invisible to
 		// every scoped read — the defect fixed in #2915 — so a migration that
 		// dropped it would move the flow into the right store and out of sight.
-		$self = ($object['@self'] ?? []);
-		$flow->setOwner(($self['owner'] ?? $object['owner'] ?? null));
-		$flow->setOrganisation(($self['organisation'] ?? $object['organisation'] ?? null));
+		$flow->setOwner($row['owner']);
+		$flow->setOrganisation($row['organisation']);
 
 		// Disabled on arrival — see the class docblock.
 		$flow->setEnabled(false);
