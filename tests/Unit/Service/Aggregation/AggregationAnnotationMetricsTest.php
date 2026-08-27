@@ -90,6 +90,99 @@ final class AggregationAnnotationMetricsTest extends TestCase {
 	}//end testTwoSumsOverOneGroupingValidate()
 
 	/**
+	 * A conditional metric with an alias validates — the debit/credit shape.
+	 *
+	 * @return void
+	 */
+	public function testConditionalMetricsWithAliasesValidate(): void {
+		self::assertSame([], $this->codesFor([
+			'metrics' => [
+				[
+					'metric' => 'sum',
+					'field' => 'amount_a',
+					'condition' => ['programme' => 'P1'],
+					'as' => 'totalP1',
+				],
+				[
+					'metric' => 'sum',
+					'field' => 'amount_a',
+					'condition' => ['programme' => 'P2'],
+					'as' => 'totalP2',
+				],
+			],
+			'groupBy' => ['programme'],
+		]));
+
+	}//end testConditionalMetricsWithAliasesValidate()
+
+	/**
+	 * A condition naming a property the schema does not declare is refused.
+	 *
+	 * At run time that filter is not an error — it matches nothing and returns
+	 * an empty result with HTTP 200, which a page renders as "no data" over
+	 * live rows. Catching it here turns a silent empty into a typo.
+	 *
+	 * @return void
+	 */
+	public function testConditionOnAnUndeclaredPropertyIsRefused(): void {
+		self::assertContains(
+			'aggregation-metrics-condition-not-in-schema',
+			$this->codesFor([
+				'metrics' => [
+					[
+						'metric' => 'sum',
+						'field' => 'amount_a',
+						'condition' => ['nope' => 'x'],
+						'as' => 'total',
+					],
+				],
+			])
+		);
+
+	}//end testConditionOnAnUndeclaredPropertyIsRefused()
+
+	/**
+	 * A string `condition` is refused rather than quietly ignored.
+	 *
+	 * Declarations in the wild carry `"condition": "GLLine.side = 'debit'"`.
+	 * Accepting that shape and dropping it is how a debit total gets reported
+	 * as an unconditioned one.
+	 *
+	 * @return void
+	 */
+	public function testStringConditionIsRefused(): void {
+		self::assertContains(
+			'aggregation-metrics-condition-malformed',
+			$this->codesFor([
+				'metrics' => [
+					[
+						'metric' => 'sum',
+						'field' => 'amount_a',
+						'condition' => "side = 'debit'",
+					],
+				],
+			])
+		);
+
+	}//end testStringConditionIsRefused()
+
+	/**
+	 * An empty-string `as` is refused — it would silently fall back to the
+	 * derived key and collide with a sibling entry.
+	 *
+	 * @return void
+	 */
+	public function testEmptyAliasIsRefused(): void {
+		self::assertContains(
+			'aggregation-metrics-alias-malformed',
+			$this->codesFor([
+				'metrics' => [['metric' => 'sum', 'field' => 'amount_a', 'as' => '']],
+			])
+		);
+
+	}//end testEmptyAliasIsRefused()
+
+	/**
 	 * A `metrics` spec needs no `metric`, and is not failed for lacking one.
 	 *
 	 * Without the early branch this reports `aggregation-bad-metric` for a

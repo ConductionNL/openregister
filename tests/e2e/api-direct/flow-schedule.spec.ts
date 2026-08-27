@@ -23,9 +23,9 @@ const JSON_HEADERS = {
 	'Content-Type': 'application/json',
 	Accept: 'application/json',
 }
-// ⚠️ No `|| 'nextcloud'` default — see resolveContainer(). The old default
-// executed background jobs inside the SHARED dev container, which bind-mounts
-// real host checkouts.
+// Defaults to the shared dev container — see resolveContainer(). Executing one
+// named background job there is the point of a dev box; NC_CONTAINER points it
+// elsewhere. Only `docker restart` still needs an explicit opt-in.
 const CONTAINER = resolveContainer()
 const runId = `e2e-sched-${Date.now()}`
 
