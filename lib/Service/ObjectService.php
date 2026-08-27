@@ -618,6 +618,37 @@ class ObjectService implements ObjectServiceInterface
                     schemaRef: $schema
                 );
 
+                // THE PENDING REF HAS ALREADY DONE ITS JOB — DROP IT HERE.
+                //
+                // It exists for exactly one case: `setSchema($s)` called before any
+                // register is known, so that the LATER `setRegister($r)` can
+                // re-resolve $s inside $r. On this branch a register was already
+                // set, the resolution above was scoped by it, and there is nothing
+                // left for a later setRegister() to consume.
+                //
+                // Leaving it set is what makes this instance-level state leak
+                // across unrelated operations. ObjectService is shared for the
+                // whole request, so the ref outlives the chain that created it and
+                // the NEXT caller's setRegister() re-resolves a finished
+                // operation's slug inside a register that has never heard of it —
+                // and refuses that caller.
+                //
+                // Measured 2026-08-27 on a fresh instance: buildiq registers its
+                // navigation entries from Application::boot(), which runs on EVERY
+                // request and calls findAll() -> prepareFindAllConfig(), which calls
+                // setRegister() and then setSchema('application'). Every request
+                // therefore ended with `application` pending. Portaliq's
+                // PortalResolver — typically the first caller afterwards to name its
+                // own register — was told `Schema slug "application" is not carried
+                // by register "portaliq"`. It fails closed by design, so every
+                // public portal page 404'd with no error attributable to portaliq
+                // at all. The same leak reached buildiq (`automation`) and hermiq
+                // (`job_log`) on the cron path.
+                //
+                // #2803 cleared the ref on the save path. This is the read path,
+                // which it did not cover.
+                $this->currentSchemaRef = null;
+
                 return $this;
             }
 
