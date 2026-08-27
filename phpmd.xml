@@ -29,9 +29,28 @@
          a baseline entry. The distinction matters: the rule stays fully active
          for every other class, and the exception is one named class, visible in
          config, with the reason attached. -->
+    <!-- StaticAccess: a second exception, on the same terms.
+
+         `\OCA\OpenRegister\Support\QueryLimit` answers one question about one
+         argument — "how many rows does this `_limit` ask for?" — and returns a
+         positive int or null. It holds no state, has no collaborators, and
+         takes the only thing it needs as an argument, so there is nothing here
+         that could be injected either.
+
+         It is deliberately NOT a service. Its whole purpose is that three read
+         paths reach the SAME answer; a service would let one of them be
+         constructed with a different implementation, which is exactly the
+         drift it was written to end. A pure function reachable by name from all
+         three is the property being bought.
+
+         Unlike FleetAppId this one is not temporary — the `_limit` grammar is
+         permanent — so it earns its place on the merit of the first paragraph
+         alone rather than on being short-lived. -->
     <rule ref="rulesets/cleancode.xml/StaticAccess">
         <properties>
-            <property name="exceptions" value="\OCA\OpenRegister\Support\FleetAppId"/>
+            <property
+                name="exceptions"
+                value="\OCA\OpenRegister\Support\FleetAppId,\OCA\OpenRegister\Support\QueryLimit"/>
         </properties>
     </rule>
 </ruleset>
