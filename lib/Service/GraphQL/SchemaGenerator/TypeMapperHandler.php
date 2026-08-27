@@ -103,14 +103,6 @@ class TypeMapperHandler {
 	private ?InputObjectType $groupByInputType = null;
 
 	/**
-	 * Shared AggregationMetricInput type. One entry of an ad-hoc `metrics`
-	 * list inside GroupByInput.
-	 *
-	 * @var InputObjectType|null
-	 */
-	private ?InputObjectType $aggregationMetricInputType = null;
-
-	/**
 	 * Shared TimeInterval enum (MINUTE..YEAR). Used inside GroupByInput.
 	 *
 	 * @var EnumType|null
@@ -770,11 +762,17 @@ class TypeMapperHandler {
 	 * @spec openspec/specs/graphql-api/spec.md
 	 */
 	private function getAggregationMetricInputType(): InputObjectType {
-		if ($this->aggregationMetricInputType !== null) {
-			return $this->aggregationMetricInputType;
+		// Cached in the shared $inputTypes map rather than a field of its
+		// own: a dedicated property took the class to 16 fields, one over the
+		// phpmd TooManyFields threshold, and its name was past the
+		// LongVariable limit. The map already exists for exactly this — one
+		// shared input type cached by purpose.
+		$cacheKey = 'shared:AggregationMetricInput';
+		if (isset($this->inputTypes[$cacheKey]) === true) {
+			return $this->inputTypes[$cacheKey];
 		}
 
-		$this->aggregationMetricInputType = new InputObjectType(
+		$this->inputTypes[$cacheKey] = new InputObjectType(
 			[
 				'name' => 'AggregationMetricInput',
 				'description' => 'One figure in a multi-metric aggregation.',
@@ -801,7 +799,7 @@ class TypeMapperHandler {
 			]
 		);
 
-		return $this->aggregationMetricInputType;
+		return $this->inputTypes[$cacheKey];
 	}//end getAggregationMetricInputType()
 
 	/**
