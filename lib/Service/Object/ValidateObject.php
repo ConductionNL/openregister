@@ -43,6 +43,7 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
 use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
 use OCA\OpenRegister\Formats\Iso8601DateTimeFormat;
+use OCA\OpenRegister\Formats\CronFormat;
 use OCA\OpenRegister\Formats\SemVerFormat;
 use OCA\OpenRegister\Formats\UserFormat;
 use OCP\AppFramework\Http\JSONResponse;
@@ -1833,6 +1834,7 @@ class ValidateObject {
 		// Register custom format validators using our helper method that supports named parameters.
 		$this->registerCustomFormat(validator: $validator, type: 'string', format: 'bsn', resolver: new BsnFormat());
 		$this->registerCustomFormat(validator: $validator, type: 'string', format: 'semver', resolver: new SemVerFormat());
+		$this->registerCustomFormat(validator: $validator, type: 'string', format: 'cron', resolver: new CronFormat());
 		$this->registerCustomFormat(
 			validator: $validator,
 			type: 'string',
