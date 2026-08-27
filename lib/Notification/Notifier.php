@@ -86,7 +86,11 @@ class Notifier implements INotifier {
 
 		$name = trim($user->getDisplayName());
 
-		return ($name === '' ? $uid : $name);
+		if ($name === '') {
+			return $uid;
+		}
+
+		return $name;
 	}//end displayName()
 
 	/**
@@ -278,7 +282,7 @@ class Notifier implements INotifier {
 
 		$principal = (string)($parameters['principal'] ?? '');
 		$grantUuid = (string)($parameters['grantUuid'] ?? '');
-		$who = $this->displayName($principal);
+		$who = $this->displayName(uid: $principal);
 
 		// RICH FIRST, PARSED ALWAYS — both, and neither is optional.
 		//
