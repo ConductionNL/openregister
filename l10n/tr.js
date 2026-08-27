@@ -2704,7 +2704,13 @@ OC.L10N.register(
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "_Delete {count} object_::_Delete {count} objects_": ["{count} nesneyi sil","{count} nesneyi sil"],
+        "_Object successfully deleted_::_Objects successfully deleted_": ["Nesne başarıyla silindi","Nesneler başarıyla silindi"],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": ["Veritabanından {count} nesneyi temizle","Veritabanından {count} nesneyi temizle"],
+        "_Restore {count} object_::_Restore {count} objects_": ["{count} nesneyi geri yükle","{count} nesneyi geri yükle"],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": ["{count} nesne başarıyla geri yüklendi","{count} nesne başarıyla geri yüklendi"],
+        "_{count} email_::_{count} emails_": ["{count} e-posta","{count} e-posta"]
     },
     "nplurals=2; plural=(n != 1);"
 )

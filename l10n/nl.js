@@ -2756,7 +2756,16 @@ OC.L10N.register(
         "Open Search / views": "Open Zoeken / weergaven",
         "That is the foundation": "Dat is de fundering",
         "Register, schema, objects: define the container, define the shape, and every app on the stack can read and write it through the same API. The rest of OpenRegister, from audit trails to data quality, hangs off those three.": "Register, schema, objecten: bepaal de houder, bepaal de vorm, en elke app op het platform kan die via dezelfde API lezen en schrijven. De rest van OpenRegister, van audittrails tot datakwaliteit, hangt aan die drie.",
-        "Open the documentation to keep going": "Open de documentatie om verder te gaan"
+        "Open the documentation to keep going": "Open de documentatie om verder te gaan",
+        "Object \"%1$s\" created in register \"%2$s\"": "Object \"%1$s\" aangemaakt in register \"%2$s\"",
+        "Object \"%1$s\" updated in register \"%2$s\"": "Object \"%1$s\" bijgewerkt in register \"%2$s\"",
+        "Object \"%1$s\" assigned to you in register \"%2$s\"": "Object \"%1$s\" aan je toegewezen in register \"%2$s\"",
+        "_Delete {count} object_::_Delete {count} objects_": ["Verwijder {count} object","Verwijder {count} objecten"],
+        "_Object successfully deleted_::_Objects successfully deleted_": ["Object succesvol verwijderd","Objecten succesvol verwijderd"],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": ["{count} object uit database opruimen","{count} objecten uit database opruimen"],
+        "_Restore {count} object_::_Restore {count} objects_": ["{count} object herstellen","{count} objecten herstellen"],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": ["{count} object succesvol hersteld","{count} objecten succesvol hersteld"],
+        "_{count} email_::_{count} emails_": ["{count} e-mail","{count} e-mails"]
     },
     "nplurals=2; plural=(n != 1);"
 )
