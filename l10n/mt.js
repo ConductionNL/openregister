@@ -2720,5 +2720,5 @@ OC.L10N.register(
     "🚀 Auto-scaling can dynamically add or remove nodes based on load..." : "🚀 L-iskalar awtomatiku jista' jżid jew ineħħi nodi b'mod dinamiku skont it-tagħbija...",
     "🛡️ Security features include authentication, authorization, and SSL encryption..." : "🛡️ Il-funzjonijiet tas-sigurtà jinkludu awtentikazzjoni, awtorizzazzjoni, u kriptaġġ SSL..."
 },
-"nplurals=2; plural=(n != 1);"
+"nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);"
 );

@@ -2720,5 +2720,5 @@ OC.L10N.register(
     "🚀 Auto-scaling can dynamically add or remove nodes based on load..." : "🚀 Automatinis mastelis gali dinamiškai pridėti arba pašalinti mazgus pagal apkrovą...",
     "🛡️ Security features include authentication, authorization, and SSL encryption..." : "🛡️ Saugumo funkcijos apima autentifikavimą, įgaliojimą ir SSL šifravimą..."
 },
-"nplurals=2; plural=(n != 1);"
+"nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2);"
 );
