@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -94,6 +95,7 @@ class SetupController extends Controller {
 	 *
 	 * @spec exclude Setup status document; ADR-042 contract, no per-app behavioural spec.
 	 */
+	#[AuthorizedAdminSetting(Application::APP_ID)]
 	public function status(): JSONResponse {
 		$demoDecided = $this->appConfig->getValueString(Application::APP_ID, self::DEMO_DECIDED_KEY, '') !== '';
 
@@ -120,6 +122,7 @@ class SetupController extends Controller {
 	 *
 	 * @spec exclude Setup action dispatch; ADR-042 contract, no per-app behavioural spec.
 	 */
+	#[AuthorizedAdminSetting(Application::APP_ID)]
 	public function runAction(string $actionId): JSONResponse {
 		if ($actionId === 'install-demo-data') {
 			return $this->installDemoData();
