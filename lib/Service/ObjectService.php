@@ -594,10 +594,12 @@ class ObjectService implements ObjectServiceInterface
             } catch (\Throwable $e) {
                 $this->currentSchema = null;
 
-                $refForLog = gettype($pendingRef);
-                if (is_scalar($pendingRef) === true) {
-                    $refForLog = (string) $pendingRef;
-                }
+                // `$pendingRef` is `int|string` here — `$currentSchemaRef` is
+                // `int|string|null` and the null is already excluded above — so
+                // the scalar test could only ever be true and the gettype()
+                // fallback was unreachable. A defaulted read that can never
+                // default reads as a handled edge case that does not exist.
+                $refForLog = (string) $pendingRef;
 
                 $this->logger->warning(
                     message: '[ObjectService] Discarded a pending schema ref that this register does not carry',
