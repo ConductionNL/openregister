@@ -1,4 +1,4 @@
-import {defineConfig} from '@playwright/test';
+import { defineConfig } from "@playwright/test";
 
 /**
  * Validates a generated per-app demo environment against the steps its own
@@ -9,12 +9,12 @@ import {defineConfig} from '@playwright/test';
  * works; this one has to prove the documented instructions work.
  */
 export default defineConfig({
-  testDir: '.',
+  testDir: ".",
   timeout: 60_000,
-  expect: {timeout: 15_000},
-  reporter: [['list']],
+  expect: { timeout: 15_000 },
+  reporter: [["list"]],
   use: {
-    baseURL: process.env.DEMO_BASE_URL || 'http://localhost:8613',
+    baseURL: process.env.DEMO_BASE_URL || "http://localhost:8613",
     ignoreHTTPSErrors: true,
   },
 });
