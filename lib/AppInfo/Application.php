@@ -168,6 +168,7 @@ use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
 use OCA\OpenRegister\Service\FlowLinkService;
 use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry;
@@ -419,9 +420,9 @@ class Application extends App implements IBootstrap {
 		// instance and the audit mapper would read an empty stack on another —
 		// attributing nothing at all, silently and with no error anywhere.
 		$context->registerService(
-			\OCA\OpenRegister\Service\Flow\FlowRunContext::class,
+			FlowRunContext::class,
 			function () {
-				return new \OCA\OpenRegister\Service\Flow\FlowRunContext();
+				return new FlowRunContext();
 			}
 		);
 
