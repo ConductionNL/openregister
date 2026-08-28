@@ -19,8 +19,24 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * Test-only subclass to inject dependencies since EndpointService has no constructor.
- * Also exposes private methods for thorough testing.
+ * Test-only subclass that exposes private methods for thorough testing.
+ *
+ * It used to exist for a second reason, and its docblock said so:
+ *
+ *     Test-only subclass to inject dependencies since EndpointService has
+ *     no constructor.
+ *
+ * That was accurate, and it is why this suite stayed green over a class that
+ * could not run anywhere else. `EndpointService` genuinely had no constructor,
+ * so nothing assigned its four readonly properties in production and every
+ * method that read one died with "must not be accessed before initialization".
+ * The `Closure::bind` below wrote them from outside the class, which no caller
+ * in `lib/` can do — so all 78 tests here exercised a wiring that existed only
+ * in this file.
+ *
+ * The class now has a real constructor, so the subclass calls it. That is the
+ * point: these tests now exercise the SAME construction path production uses,
+ * and would fail loudly if it went missing again.
  */
 class TestableEndpointService extends EndpointService {
 	public function __construct(
@@ -29,13 +45,12 @@ class TestableEndpointService extends EndpointService {
 		IUserSession $userSession,
 		IGroupManager $groupManager,
 	) {
-		$setter = \Closure::bind(function () use ($endpointLogMapper, $logger, $userSession, $groupManager) {
-			$this->endpointLogMapper = $endpointLogMapper;
-			$this->logger = $logger;
-			$this->userSession = $userSession;
-			$this->groupManager = $groupManager;
-		}, $this, EndpointService::class);
-		$setter();
+		parent::__construct(
+			endpointLogMapper: $endpointLogMapper,
+			logger: $logger,
+			userSession: $userSession,
+			groupManager: $groupManager
+		);
 	}
 
 	/**

@@ -13,6 +13,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Unit tests for RegisterMapper
@@ -31,6 +32,7 @@ class RegisterMapperTest extends TestCase {
 	private IUserSession&MockObject $userSession;
 	private IGroupManager&MockObject $groupManager;
 	private IAppConfig&MockObject $appConfig;
+	private LoggerInterface&MockObject $logger;
 	private RegisterMapper $mapper;
 
 	protected function setUp(): void {
@@ -42,6 +44,7 @@ class RegisterMapperTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->appConfig = $this->createMock(IAppConfig::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->mapper = new RegisterMapper(
 			$this->db,
@@ -51,7 +54,8 @@ class RegisterMapperTest extends TestCase {
 			$this->organisationMapper,
 			$this->userSession,
 			$this->groupManager,
-			$this->appConfig
+			$this->appConfig,
+			$this->logger
 		);
 	}
 

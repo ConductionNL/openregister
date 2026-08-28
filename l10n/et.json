@@ -2706,7 +2706,26 @@
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} imporditi rakendusest {app}.",
+        "%n are out of date": "%n on aegunud",
+        "%n declared in total": "%n deklareeritud kokku",
+        "%n is out of date": "%n on aegunud",
+        "%n register is missing": "puudub %n register",
+        "%n registers are missing": "puudub %n registrit",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Rakendused tarnivad oma registrid kirjeldajatena, mis imporditakse rakenduse paigaldamisel või uuendamisel. Niipea kui rakenduse versioon lakkab muutumast, ei käivitu see import enam kunagi, ja ebaõnnestunud import kirjutatakse ainult logisse — register võib seega puududa instantsist, mis muidu näib terve. Siin näed, millised on kohale jõudnud.",
+        "Could not read the descriptor inventory: {reason}": "Kirjeldajate loendit ei õnnestunud lugeda: {reason}",
+        "Every declared register is present and current.": "Iga deklareeritud register on olemas ja ajakohane.",
+        "Import failed: {reason}": "Import ebaõnnestus: {reason}",
+        "Missing": "Puudub",
+        "Out of date": "Aegunud",
+        "Present": "Olemas",
+        "Re-import": "Impordi uuesti",
+        "Reading descriptors …": "Kirjeldajate lugemine …",
+        "Register descriptors": "Registrikirjeldajad",
+        "ships v{shipped}": "tarnib v{shipped}",
+        "State": "Olek",
+        "v{installed} → ships v{shipped}": "v{installed} → tarnib v{shipped}"
     },
     "plurals": {
         "{count} email": [

@@ -148,7 +148,7 @@ class ObjectWritePayloadFromTest extends TestCase {
 			$urls
 		);
 
-		$this->registerContext = ['triggeredBy' => 'admin'];
+		$this->registerContext = ['runAs' => 'admin'];
 
 	}//end setUp()
 

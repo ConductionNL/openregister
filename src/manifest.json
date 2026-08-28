@@ -144,19 +144,47 @@
     {
       "id": "flows",
       "route": "/flows",
-      "type": "custom",
-      "component": "FlowsIndex",
+      "type": "index",
       "title": "Flows",
-      "_note": "Custom page rather than type:index. A flow lives in OpenRegister's own native flow table, not in a register/schema, so the manifest's object-backed index cannot address it — index pages resolve rows through register+schema. The body is CnFlowIndexPage from the shared library, so the list, its app scoping and its status semantics stay identical across every app that shows flows."
+      "_note": "Ordinary index over a NAMED SOURCE, not a custom page. A flow lives in OpenRegister's own native flow table rather than a register/schema pair, so an object-backed index had nothing to address and this used to be type:custom over FlowsIndex.vue. Named index sources (nextcloud-vue 2.20.0) close that: config.entitySource names the collection and the index loads it. Columns are stated here rather than left to the source's defaults because this is the ENGINE's cross-app surface — it passes no app filter and so needs the `app` column, which a leaf app's own flow list does not. Migrating also fixes a dead listener: FlowsIndex bound @rowClick while CnIndexPage emits row-click, so opening a flow by clicking its row never worked here.",
+      "config": {
+        "entitySource": "flows",
+        "columns": [
+          {
+            "key": "name",
+            "label": "Name"
+          },
+          {
+            "key": "description",
+            "label": "Description"
+          },
+          {
+            "key": "trigger",
+            "label": "Trigger"
+          },
+          {
+            "key": "cron",
+            "label": "Schedule"
+          },
+          {
+            "key": "app",
+            "label": "App"
+          },
+          {
+            "key": "statusLabel",
+            "label": "Status"
+          }
+        ]
+      }
     },
     {
       "id": "flowDetail",
       "route": "/flows/:id",
-      "type": "custom",
-      "component": "FlowDetailPage",
+      "type": "flow",
       "title": "Flow",
       "sidebarComponent": "FlowDetailSidebar",
-      "_note": "Custom page: a direct-manipulation canvas over a node/edge document is not expressible as a widget grid, and the built-in detail type is record-shaped. Controls live in the NcAppSidebar (sidebarComponent) so the canvas gets the full width; the two halves share useFlowStore because they render in different parts of the tree."
+      "_note": "The shared `flow` page type: a direct-manipulation canvas over a node/edge document is not expressible as a widget grid, and the built-in detail type is record-shaped — but that no longer requires a custom page. CnFlowEditorPage mounts the same CnFlowDetail canvas this app wrapped by hand, including the router.replace that lets a newly created flow pick up its server-assigned id. Controls live in the sidebar so the canvas gets full width, and both halves share useFlowStore.",
+      "config": {}
     },
     {
       "id": "webhooks",
@@ -664,6 +692,125 @@
             "success": "failure"
           }
         }
+      }
+    ]
+  },
+  "walkthrough": {
+    "enabled": true,
+    "version": 1,
+    "completionConfigKey": "walkthrough_seen_version",
+    "tours": [
+      {
+        "id": "openregister:getting-started",
+        "title": "Getting started",
+        "trigger": "first-visit",
+        "minAppVersion": "1.1.5",
+        "steps": [
+          {
+            "id": "welcome",
+            "sinceVersion": "1.1.5",
+            "placement": "center",
+            "title": "Welcome to OpenRegister",
+            "body": "OpenRegister is the data foundation the other apps build on. Everything they store lives here, in registers you define. This tour walks the three ideas that make it work: a register, a schema, and the objects that result.",
+            "target": {
+              "kind": "page",
+              "ref": "dashboard"
+            },
+            "advanceOn": {
+              "type": "manual"
+            }
+          },
+          {
+            "id": "open-registers",
+            "sinceVersion": "1.1.5",
+            "placement": "right",
+            "body": "A register is a container with a purpose, like a filing cabinet for one domain. Apps address one by its slug, so the slug is a contract other apps depend on.",
+            "task": "Open Registers",
+            "target": {
+              "kind": "nav-item",
+              "ref": "Registers"
+            },
+            "advanceOn": {
+              "type": "route-match",
+              "route": "registers"
+            }
+          },
+          {
+            "id": "create-register",
+            "sinceVersion": "1.1.5",
+            "placement": "center",
+            "body": "Create one and give it a slug you will not want to change later. Renaming a register slug breaks every app that addresses it by name, so it is worth a moment of thought now.",
+            "task": "Create a register",
+            "allowManualNext": true,
+            "target": {
+              "kind": "page",
+              "ref": "registers"
+            },
+            "advanceOn": {
+              "type": "manual"
+            }
+          },
+          {
+            "id": "open-schemas",
+            "sinceVersion": "1.1.5",
+            "placement": "right",
+            "body": "A schema is the shape of one kind of thing inside a register. It is JSON Schema, so validation, defaults and required fields all come from the same definition.",
+            "task": "Open Schemas",
+            "target": {
+              "kind": "nav-item",
+              "ref": "Schemas"
+            },
+            "advanceOn": {
+              "type": "route-match",
+              "route": "schemas"
+            }
+          },
+          {
+            "id": "create-schema",
+            "sinceVersion": "1.1.5",
+            "placement": "center",
+            "body": "Add a schema to the register you just made. Once it exists, every object stored against it is validated on write, which is why bad data tends not to reach the other apps.",
+            "task": "Create a schema",
+            "allowManualNext": true,
+            "target": {
+              "kind": "page",
+              "ref": "schemas"
+            },
+            "advanceOn": {
+              "type": "manual"
+            }
+          },
+          {
+            "id": "open-tables",
+            "sinceVersion": "1.1.5",
+            "placement": "right",
+            "body": "Search and views read across registers and schemas at once. This is where the objects your apps write actually surface, and where you check that a write landed the way you expected.",
+            "task": "Open Search / views",
+            "target": {
+              "kind": "nav-item",
+              "ref": "Tables"
+            },
+            "advanceOn": {
+              "type": "route-match",
+              "route": "tables"
+            }
+          },
+          {
+            "id": "done",
+            "sinceVersion": "1.1.5",
+            "placement": "center",
+            "title": "That is the foundation",
+            "body": "Register, schema, objects: define the container, define the shape, and every app on the stack can read and write it through the same API. The rest of OpenRegister, from audit trails to data quality, hangs off those three.",
+            "task": "Open the documentation to keep going",
+            "target": {
+              "kind": "nav-item",
+              "ref": "Documentation"
+            },
+            "advanceOn": {
+              "type": "manual"
+            }
+          }
+        ]
       }
     ]
   }

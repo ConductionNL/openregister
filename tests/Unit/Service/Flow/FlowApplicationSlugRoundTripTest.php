@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowTriggerIndex;
+use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -129,12 +130,34 @@ final class FlowApplicationSlugRoundTripTest extends TestCase {
 			$this->createMock(FlowRunMapper::class),
 			$this->createMock(FlowRunStepMapper::class),
 			$this->createMock(FlowStateMapper::class),
-			$this->createMock(IUserSession::class),
+			$this->signedInSession(),
 			$this->createMock(LoggerInterface::class),
 			($container ?? $this->createMock(ContainerInterface::class))
 		);
 
 	}//end serviceWith()
+
+	/**
+	 * A session with somebody actually signed in.
+	 *
+	 * A bare IUserSession double returns no user, and creating a flow that way
+	 * used to succeed: `save()` stamped a null owner and a null organisation.
+	 * `Flow::belongsTo()` is fail-closed on both sides, so such a flow belongs
+	 * to nobody — never listed, never found, never runnable again. The fixture
+	 * described a caller the API is not supposed to serve.
+	 *
+	 * @return IUserSession The session double.
+	 */
+	private function signedInSession(): IUserSession {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('author');
+
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+
+		return $session;
+
+	}//end signedInSession()
 
 	/**
 	 * Save a payload through a real FlowService and return the stored flow.
@@ -155,7 +178,7 @@ final class FlowApplicationSlugRoundTripTest extends TestCase {
 			}
 		);
 
-		$this->serviceWith($mapper)->save(data: $data);
+		$this->serviceWith($mapper, $this->organisationContainer())->save(data: $data);
 
 		$this->assertInstanceOf(Flow::class, $this->inserted, 'the service should have inserted a flow');
 

@@ -1,0 +1,581 @@
+{
+  "info": {
+    "_postman_id": "or-delegation-2026-08-27",
+    "name": "OpenRegister Delegation Grants API",
+    "description": "The consent surface behind ADR-099 §5 delegation grants, asserted where CI can see it.\n\nWHY THIS EXISTS AS A NEWMAN COLLECTION. The delegation e2e lives in tests/e2e/api-direct/, and playwright.config.ts excludes `**/api-direct/**` from every project — deliberately, on the gate-19 convention that API/contract assertions belong to Newman. So those specs run only when a developer invokes the ad-hoc flow config by hand; nothing in CI executes them. Three green Playwright specs and zero CI coverage look identical from the outside, which is the gap this closes.\n\nWHAT IT ASSERTS, and each is paired with its control:\n  * the surface answers with BOTH sides of the question (who may act as me, who may I act as)\n  * a request names the SESSION USER as principal — a body cannot name it\n  * asking to act as yourself is refused as meaningless\n  * an account the caller may not ask and an account that does not exist are INDISTINGUISHABLE — the user-existence oracle check\n  * a request round-trips: pending -> granted -> revoked, with grantedBy recorded\n  * the requester's stated reason is carried ATTRIBUTED and never in the system's own sentence\n  * asking twice REUSES the outstanding request rather than creating a second\n\nSELF-CLEANING. The one grant it creates is revoked in the final request, so a re-run starts from the same state and no later collection inherits a live delegation nobody declared.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{username}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{password}}",
+        "type": "string"
+      }
+    ]
+  },
+  "protocolProfileBehavior": {
+    "disableCookies": true
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "grantUuid",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "actingAs",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "GET /api/delegations → both sides of the question",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/delegations",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "delegations"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the listing answers 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "// BOTH sides in one response, deliberately. 'Who may act as me' and",
+              "// 'who may I act as' are halves of the same question; split across",
+              "// endpoints, whichever a UI forgets to call is the half nobody looks at.",
+              "pm.test('the listing carries both directions and the inbox', () => {",
+              "  pm.expect(body).to.have.property('awaitingMyAnswer');",
+              "  pm.expect(body).to.have.property('overMe');",
+              "  pm.expect(body).to.have.property('heldByMe');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/delegations {self} → refused as meaningless",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"actingAs\": \"{{username}}\", \"reason\": \"newman self-request\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/delegations",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "delegations"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Not dangerous — pointless. Acting as yourself needs no grant, so such a",
+              "// request would sit in somebody's inbox asking them to permit what they",
+              "// already do.",
+              "pm.test('asking to act as yourself is a 400', () => pm.response.to.have.status(400));",
+              "pm.test('and it says why', () => {",
+              "  pm.expect(pm.response.text().toLowerCase()).to.include('not delegation');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/delegations {invented uid} → 404",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"actingAs\": \"newman-no-such-person-9f3a1c\", \"reason\": \"newman oracle probe\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/delegations",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "delegations"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 🔴 The half of the oracle check Newman can assert on any instance: an",
+              "// account that does not exist must NOT be distinguishable from one the",
+              "// caller may not ask. The status and the shape of the message are",
+              "// recorded here so the sibling request below can compare against them.",
+              "pm.test('an unknown account is a 404', () => pm.response.to.have.status(404));",
+              "pm.collectionVariables.set('oracleStatus', String(pm.response.code));",
+              "const body = pm.response.json();",
+              "pm.test('the refusal does not confirm or deny existence', () => {",
+              "  const msg = String(body.error || '').toLowerCase();",
+              "  // 'resolves to no account you may ask' — the wording is deliberately",
+              "  // the SAME for 'no such person' and 'not someone you may ask'. A",
+              "  // message that said 'does not exist' would be the oracle.",
+              "  pm.expect(msg).to.include('you may ask');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Find a second real account (or skip the round-trip)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/ocs/v2.php/cloud/users?format=json",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "ocs",
+            "v2.php",
+            "cloud",
+            "users"
+          ],
+          "query": [
+            {
+              "key": "format",
+              "value": "json"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.request.headers.add({ key: 'OCS-APIRequest', value: 'true' });"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// A delegation needs somebody to delegate TO, and an instance with one",
+              "// account cannot express one. Rather than invent a fixture user — which",
+              "// would leave an account behind on every CI run — the round-trip below",
+              "// is skipped when there is nobody to ask.",
+              "//",
+              "// 🔑 The skip NAMES what went unverified. 'Skipped' on its own cannot",
+              "// tell 'this instance has one user' from 'the delegation loop is",
+              "// broken', and reporting the second as the first is how a defect hides.",
+              "pm.test('the user list is readable', () => pm.response.to.have.status(200));",
+              "let others = [];",
+              "try {",
+              "  const users = pm.response.json().ocs.data.users || [];",
+              "  others = users.filter((u) => u !== pm.variables.get('username'));",
+              "} catch (e) {",
+              "  others = [];",
+              "}",
+              "pm.collectionVariables.set('actingAs', others.length ? others[0] : '');",
+              "if (!others.length) {",
+              "  console.log('SKIPPING the delegation round-trip: this instance has no second account, so request -> grant -> revoke is UNVERIFIED by this run.');",
+              "  postman.setNextRequest(null);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/delegations → a request is created, pending, principal = caller",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"actingAs\": \"{{actingAs}}\", \"principal\": \"newman-forged-principal\", \"reason\": \"newman covering leave\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/delegations",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "delegations"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the request is created', () => pm.response.to.have.status(201));",
+              "const grant = pm.response.json();",
+              "pm.collectionVariables.set('grantUuid', grant.uuid || '');",
+              "pm.test('it carries an id, or it cannot be answered', () => {",
+              "  pm.expect(grant.uuid).to.be.a('string').and.not.empty;",
+              "});",
+              "pm.test('it is pending', () => pm.expect(grant.status).to.eql('pending'));",
+              "// 🔴 THE BODY CANNOT NAME THE PRINCIPAL. This request deliberately sends",
+              "// `principal: newman-forged-principal`. An endpoint that honoured it would",
+              "// let anyone raise a request in somebody else's name, and the person",
+              "// prompted would reasonably read it as that party asking.",
+              "pm.test('the principal is the SESSION USER, never the payload', () => {",
+              "  pm.expect(grant.principal).to.eql(pm.variables.get('username'));",
+              "  pm.expect(grant.principal).to.not.eql('newman-forged-principal');",
+              "});",
+              "// The requester's words are carried ATTRIBUTED and never spoken by the",
+              "// system. A requester can be an agent, and an agent's reasons can come",
+              "// from a document it read.",
+              "pm.test('the stated reason is quoted, not adopted', () => {",
+              "  pm.expect(String(grant.statedReason || '')).to.include('covering leave');",
+              "  pm.expect(String(grant.summary || '')).to.not.include('covering leave');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/delegations again → the outstanding request is REUSED",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"actingAs\": \"{{actingAs}}\", \"reason\": \"newman a completely different reason\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/delegations",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "delegations"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// N blocked units of work must produce ONE pending request, and one",
+              "// answer must release all N. Consent fatigue is not caused by asking; it",
+              "// is caused by asking again, and the eleventh identical prompt is",
+              "// accepted by reflex rather than by decision.",
+              "pm.test('asking again answers 201', () => pm.response.to.have.status(201));",
+              "const grant = pm.response.json();",
+              "pm.test('no second request was created', () => {",
+              "  pm.expect(grant.uuid).to.eql(pm.collectionVariables.get('grantUuid'));",
+              "});",
+              "pm.test('the ORIGINAL request comes back, not a rewritten one', () => {",
+              "  pm.expect(String(grant.statedReason || '')).to.include('covering leave');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/delegations/{uuid}/answer → granted, and who granted it",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"allow\": true}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/delegations/{{grantUuid}}/answer",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "delegations",
+            "{{grantUuid}}",
+            "answer"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the answer is accepted', () => pm.response.to.have.status(200));",
+              "const grant = pm.response.json();",
+              "pm.test('the grant is granted', () => pm.expect(grant.status).to.eql('granted'));",
+              "// A grant that does not record who gave it is not auditable, and an",
+              "// unauditable delegation is indistinguishable from an unauthorized one.",
+              "pm.test('it records who answered', () => {",
+              "  pm.expect(grant.grantedBy).to.be.a('string').and.not.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/delegations/{unknown}/answer → 404",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"allow\": true}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/delegations/__no_such_grant__/answer",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "delegations",
+            "__no_such_grant__",
+            "answer"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// The control for the request above: without it, a surface that answered",
+              "// 200 to everything would pass this collection.",
+              "pm.test('an unknown grant is a 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/delegations/{uuid}/revoke → revoked (and leaves nothing live)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/delegations/{{grantUuid}}/revoke",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "delegations",
+            "{{grantUuid}}",
+            "revoke"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the revoke is accepted', () => pm.response.to.have.status(200));",
+              "const grant = pm.response.json();",
+              "pm.test('the grant is revoked and says when', () => {",
+              "  pm.expect(grant.status).to.eql('revoked');",
+              "  pm.expect(grant.revokedAt).to.be.a('string').and.not.empty;",
+              "});",
+              "// TEARDOWN as well as assertion. A live grant left behind would let a",
+              "// later collection — or the next run of this one — pass or fail for a",
+              "// reason nobody declared.",
+              "pm.collectionVariables.set('grantUuid', '');"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

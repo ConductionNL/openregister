@@ -30,6 +30,7 @@ use OCP\AppFramework\Services\IInitialState;
 use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IL10N;
+use OCP\Settings\IDelegatedSettings;
 use OCP\Settings\ISettings;
 
 /**
@@ -40,7 +41,7 @@ use OCP\Settings\ISettings;
  * @category Settings
  * @package  OCA\OpenRegister\Settings
  */
-class OpenRegisterAdmin implements ISettings {
+class OpenRegisterAdmin implements IDelegatedSettings {
 
 	/**
 	 * Localization helper
@@ -189,4 +190,36 @@ class OpenRegisterAdmin implements ISettings {
 	public function getPriority() {
 		return 11;
 	}//end getPriority()
+
+	/**
+	 * The delegation group name, or null for "not separately delegatable".
+	 *
+	 * 🔴 WHY THIS PANEL BECAME DELEGATABLE AT ALL. `AuthorizedAdminSetting`
+	 * — the only auth attribute that declares "administrator" WITHOUT also
+	 * disabling CSRF — takes a `class-string<IDelegatedSettings>`, and this
+	 * class implemented plain `ISettings`. The register-descriptor endpoints
+	 * needed to declare the posture their bodies enforce, and binding them to
+	 * the AppHost panel instead would have named a panel they are not part of.
+	 *
+	 * `IDelegatedSettings` does not delegate anything by itself: it makes the
+	 * panel ELIGIBLE for delegation, which an administrator must then configure.
+	 * Returning null here and an empty allowlist below keeps today's behaviour
+	 * exactly — full administrators only — while giving the attribute a real
+	 * settings class to bind to.
+	 *
+	 * @return string|null The delegation name.
+	 */
+	public function getName(): ?string {
+		return null;
+	}//end getName()
+
+	/**
+	 * App-config keys a delegated admin may manage. Empty = full-admin only.
+	 *
+	 * @return array<string, array<int, string>> The allowlist.
+	 */
+	public function getAuthorizedAppConfig(): array {
+		return [];
+	}//end getAuthorizedAppConfig()
+
 }//end class

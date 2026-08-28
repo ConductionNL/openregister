@@ -134,3 +134,10 @@ tests/e2e/.mdm-seed.json
 # harvest.js writes its candidate list next to itself, one file per locale. It is
 # scratch input for a translation pass, not something a locale commit should carry.
 scripts/l10n/harvest-*.json
+# Agent/test scratch and tool caches — generated, never source.
+# Added by the 2026-08-25 fleet hygiene sweep (ADR-100 Decision 2).
+.stale/
+/.e2e-state/
+.phpunit.result.cache
+test-results/
+playwright-report/

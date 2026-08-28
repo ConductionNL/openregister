@@ -1,8 +1,13 @@
 ---
-status: done
+status: in-progress
 ---
 
 # flow-engine Specification
+
+**OpenSpec changes**
+- `or-delegated-identity` (active) — a run records the identity it EXECUTES AS (`runAs`) separately from what CAUSED it (`triggeredBy`); a run's identity comes from its trigger node rather than from the flow definition, so a schedule trigger must declare a resolvable user or fail to save; and identity is re-resolved at every fire and resume rather than snapshotted (ADR-099).
+
+- `or-delegation-grants` (active) — turns a DECLARED acting identity into an AUTHORIZED one: a delegation grant record with a consent lifecycle, refusal at save and at every fire when the author holds no grant for the user they named, and an `awaiting_consent` run state deduped on (principal, actingAs, scope) (ADR-099).
 
 ## Purpose
 Defines how OpenRegister reads a flow document and turns it into a run: what carries behaviour (the node), what carries sequence (the edge), when converging paths merge versus synchronise, how a path is allowed to end, and what a flow records about its own runnability and its last run. This is the fleet's single flow engine (ADR-065) — openconnector and hermiq contribute node types to it and do not implement their own.

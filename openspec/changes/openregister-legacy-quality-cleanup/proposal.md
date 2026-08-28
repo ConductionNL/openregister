@@ -70,7 +70,7 @@ File-by-file cleanup phased by directory cluster, following the
 4. Db mappers (`lib/Db/`)
 5. Db entities (`lib/Db/`)
 6. Migrations (`lib/Migration/`)
-7. Cron / background jobs (`lib/Cron/`, `lib/BackgroundJob/`)
+7. Cron / background jobs (`lib/BackgroundJob/`, `lib/BackgroundJob/`)
 8. Repair steps (`lib/Repair/`)
 9. Settings (`lib/Settings/`)
 10. Util / helpers (`lib/Service/`, `lib/Helper/`)

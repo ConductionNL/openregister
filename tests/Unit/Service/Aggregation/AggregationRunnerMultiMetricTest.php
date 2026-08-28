@@ -51,8 +51,10 @@ use PDO;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OCA\OpenRegister\Service\Aggregation\AggregationRunner
- * @covers \OCA\OpenRegister\Service\Aggregation\AggregationQuery
+ * No `covers` metadata, deliberately — `beStrictAboutCoverageMetadata="true"`
+ * discards the coverage of any test that touches a collaborator it did not
+ * name, and naming two was still not enough. See
+ * {@see AggregationJoinAndCompositeGroupByTest} and #2847.
  */
 class AggregationRunnerMultiMetricTest extends TestCase {
 
@@ -165,6 +167,88 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 		$this->assertEqualsWithDelta(35.0 / 3.0, $result['values']['avg_amount'], 0.0001);
 
 	}//end testPhpFallbackUngroupedMultiMetric()
+
+	/**
+	 * A per-metric `condition` scopes ONE figure to a subset of the rows.
+	 *
+	 * This is the debit/credit split: two sums over the SAME field, separated
+	 * only by another column. Dataset is open:[10,20] and in-progress:[5], so
+	 * an unconditioned sum is 35 and the two conditioned ones are 30 and 5.
+	 *
+	 * Without the feature both entries derive `sum_amount`, the second
+	 * overwrites the first, and the caller gets ONE unconditioned 35 where it
+	 * asked for two figures — a plausible number, not an error.
+	 *
+	 * @return void
+	 */
+	public function testConditionalMetricsSplitTheRows(): void {
+		$result = $this->makePhpFallbackRunner()->runAdhoc(
+			register: $this->makeRegister(),
+			schema: $this->makeSchema(),
+			query: AggregationQuery::create(
+				metric: 'sum',
+				field: 'amount',
+				metrics: [
+					[
+						'metric' => 'sum',
+						'field' => 'amount',
+						'condition' => ['status' => 'open'],
+						'as' => 'openTotal',
+					],
+					[
+						'metric' => 'sum',
+						'field' => 'amount',
+						'condition' => ['status' => 'in-progress'],
+						'as' => 'wipTotal',
+					],
+					['metric' => 'sum', 'field' => 'amount'],
+				]
+			)
+		);
+
+		$this->assertSame('php-fallback', $result['backend']);
+		$this->assertSame(30.0, $result['values']['openTotal'], 'open: 10 + 20');
+		$this->assertSame(5.0, $result['values']['wipTotal'], 'in-progress: 5');
+		$this->assertSame(35.0, $result['values']['sum_amount'], 'unconditioned total');
+
+	}//end testConditionalMetricsSplitTheRows()
+
+	/**
+	 * A conditional spec never takes the native path.
+	 *
+	 * The native path aggregates every entry over the same filtered row set and
+	 * keys from metric+field, so it would drop the condition and collide the
+	 * aliases — answering wrongly and fast. It must bail to PHP instead.
+	 *
+	 * @return void
+	 */
+	public function testConditionalMetricsRefuseTheNativePath(): void {
+		$result = $this->makeNativeRunner()->runAdhoc(
+			register: $this->makeRegister(),
+			schema: $this->makeSchema(),
+			query: AggregationQuery::create(
+				metric: 'sum',
+				field: 'amount',
+				groupBy: ['status'],
+				metrics: [
+					[
+						'metric' => 'sum',
+						'field' => 'amount',
+						'condition' => ['status' => 'open'],
+						'as' => 'openTotal',
+					],
+					['metric' => 'count'],
+				]
+			)
+		);
+
+		$this->assertSame(
+			'php-fallback',
+			$result['backend'],
+			'a conditional metric MUST fall back to PHP, not run natively and drop the condition'
+		);
+
+	}//end testConditionalMetricsRefuseTheNativePath()
 
 	public function testPhpFallbackGroupedMultiMetric(): void {
 		$runner = $this->makePhpFallbackRunner();

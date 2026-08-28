@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowTriggerNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
+use OCP\IUserManager;
 use OCP\WorkflowEngine\IManager;
 
 /**
@@ -49,12 +50,15 @@ class TriggerScheduleNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTrigge
 	 *
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urls For the palette icon.
+	 * @param IUserManager $userManager Resolves the declared `runAs` to prove the
+	 *                                  account exists before the flow is stored.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
 	 */
 	public function __construct(
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urls,
+		private readonly IUserManager $userManager,
 	) {
 
 	}//end __construct()
@@ -124,7 +128,7 @@ class TriggerScheduleNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTrigge
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
 	 */
 	public function configKeys(): array {
-		return ['cron'];
+		return ['cron', 'runAs'];
 	}//end configKeys()
 
 	/**
@@ -169,7 +173,59 @@ class TriggerScheduleNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTrigge
 			);
 		}
 
+		$this->validateActingIdentity(config: $config);
+
 	}//end validateConfig()
+
+	/**
+	 * A schedule trigger must name the user its runs execute as.
+	 *
+	 * Every other entry point is handed an identity by its caller — a manual run
+	 * has the session user, an object event has the user whose action raised it,
+	 * a sub-flow has its parent's. A schedule has nobody by construction, which
+	 * is exactly why it is the one trigger that has to say.
+	 *
+	 * 🔴 Refusing at SAVE is a convenience, not the control. The identity is
+	 * re-resolved at every firing, so a user disabled after this passed still
+	 * fails the run closed. What saving-time refusal buys is that the author
+	 * learns now, in the editor, instead of at 03:00 in cron — where the failure
+	 * is someone else's pager and reads as a permissions problem.
+	 *
+	 * The previous behaviour was to resolve `flow.owner` implicitly at fire time.
+	 * That turned authoring a flow into standing consent to unattended execution
+	 * as the author, under whatever triggers anyone later added (ADR-099).
+	 *
+	 * @param array $config The node configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When `runAs` is absent or names nobody.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function validateActingIdentity(array $config): void {
+		$runAs = trim((string)($config['runAs'] ?? ''));
+
+		if ($runAs === '') {
+			throw new InvalidArgumentException(
+				'A schedule trigger must carry a "runAs" naming the user its runs act as. '
+				. 'Nobody is present when a schedule fires, so there is no session to take an identity from, '
+				. 'and the flow\'s owner is not used as a fallback — authoring a flow is not consent to '
+				. 'unattended execution as its author.'
+			);
+		}
+
+		if ($this->userManager->get($runAs) === null) {
+			throw new InvalidArgumentException(
+				sprintf(
+					'The schedule trigger\'s "runAs" names "%s", which is not an existing user account. '
+					. 'A run that cannot resolve its acting identity is refused rather than started.',
+					$runAs
+				)
+			);
+		}
+
+	}//end validateActingIdentity()
 
 	/**
 	 * A trigger is an entry point, not work.

@@ -2158,17 +2158,17 @@ parameters:
 		-
 			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
 			count: 2
-			path: lib/Cron/ArchivalRetentionTask.php
+			path: lib/BackgroundJob/ArchivalRetentionTask.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Cron\\\\TransferCheckJob\\:\\:\\$objectMapper is never read, only written\\.$#"
+			message: "#^Property OCA\\\\OpenRegister\\\\BackgroundJob\\\\TransferCheckJob\\:\\:\\$objectMapper is never read, only written\\.$#"
 			count: 1
-			path: lib/Cron/TransferCheckJob.php
+			path: lib/BackgroundJob/TransferCheckJob.php
 
 		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\WebhookLog\\:\\:getWebhookId\\(\\)\\.$#"
 			count: 1
-			path: lib/Cron/WebhookRetryJob.php
+			path: lib/BackgroundJob/WebhookRetryJob.php
 
 		-
 			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\ActionLog\\>\\:\\:insert\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\ActionLog, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"

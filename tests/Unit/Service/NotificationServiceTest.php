@@ -24,21 +24,24 @@ class NotificationServiceTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		// NotificationService has no constructor, so we use reflection to set readonly props
-		$this->service = new NotificationService();
-		$ref = new \ReflectionClass($this->service);
-
-		$prop = $ref->getProperty('notificationManager');
-		$prop->setAccessible(true);
-		$prop->setValue($this->service, $this->notificationManager);
-
-		$prop = $ref->getProperty('groupManager');
-		$prop->setAccessible(true);
-		$prop->setValue($this->service, $this->groupManager);
-
-		$prop = $ref->getProperty('logger');
-		$prop->setAccessible(true);
-		$prop->setValue($this->service, $this->logger);
+		// This used to read:
+		//
+		//   // NotificationService has no constructor, so we use reflection to
+		//   // set readonly props
+		//   $this->service = new NotificationService();
+		//   ...three ReflectionProperty::setValue() calls...
+		//
+		// The comment was accurate and that is the problem: the class genuinely
+		// had no constructor, so in production nothing ever assigned those
+		// properties and every method died with "must not be accessed before
+		// initialization". The reflection workaround made this suite green over
+		// a class that could not run outside it. Injecting normally is both the
+		// simpler setup and the one that would have failed loudly.
+		$this->service = new NotificationService(
+			$this->notificationManager,
+			$this->groupManager,
+			$this->logger
+		);
 	}
 
 	private function createConfiguration(int $id, string $title, array $groups = [], ?string $localVersion = '1.0', ?string $remoteVersion = '2.0'): Configuration {

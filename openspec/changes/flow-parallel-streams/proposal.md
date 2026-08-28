@@ -113,7 +113,7 @@ concrete counterexample in the file it names.
   per-item fan-out would have refused.
 - **Crashed claims are reaped like stale runs.** `FlowRunWorker`'s existing
   cutoff — `max(flow_run_stale_minutes, flow_max_runtime_minutes + 5)`,
-  `lib/Cron/FlowRunWorker.php:251-261` — also releases abandoned claims, and
+  `lib/BackgroundJob/FlowRunWorker.php:251-261` — also releases abandoned claims, and
   keeps that pass's posture: a reaped stream FAILS rather than silently
   re-running side effects it may already have performed
   (`FlowRunWorker.php:208-218`).

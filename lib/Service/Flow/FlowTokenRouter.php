@@ -40,6 +40,30 @@ namespace OCA\OpenRegister\Service\Flow;
  */
 class FlowTokenRouter {
 	/**
+	 * Reads edge endpoints the one way the document defines them.
+	 *
+	 * ⚠️ THIS CLASS READ `to` AS A LIST AND `from` AS A SCALAR, IN THE SAME
+	 * METHOD. `placesForExit()` unwrapped `to` by hand and then matched `from`
+	 * with `(string)($edge['from'] ?? '')` — and `(string)["a"]` is `"Array"`,
+	 * so no edge ever matched its source node and a token that fired had
+	 * nowhere to go. Every endpoint now goes through the one normaliser, so
+	 * the two ends of an edge cannot drift apart again.
+	 *
+	 * @var FlowGraph
+	 */
+	private FlowGraph $graph;
+
+	/**
+	 * Constructor.
+	 *
+	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 */
+	public function __construct() {
+		$this->graph = new FlowGraph();
+
+	}//end __construct()
+
+	/**
 	 * Find the step configuration attached to a transition.
 	 *
 	 * A transition IS a node: `FlowDefinitionBuilder` names each transition
@@ -156,7 +180,12 @@ class FlowTokenRouter {
 	public function placesForExit(array $flow, string $nodeId, string $exitId, array $candidates): array {
 		$places = [];
 		foreach (($flow['edges'] ?? []) as $edge) {
-			if (is_array($edge) === false || (string)($edge['from'] ?? '') !== $nodeId) {
+			if (is_array($edge) === false) {
+				continue;
+			}
+
+			$from = $this->graph->normaliseEndpoints(value: ($edge['from'] ?? null));
+			if (in_array($nodeId, $from, true) === false) {
 				continue;
 			}
 
@@ -164,13 +193,7 @@ class FlowTokenRouter {
 				continue;
 			}
 
-			$to = ($edge['to'] ?? null);
-			if (is_array($to) === false) {
-				$to = [$to];
-			}
-
-			foreach ($to as $target) {
-				$target = (string)$target;
+			foreach ($this->graph->normaliseEndpoints(value: ($edge['to'] ?? null)) as $target) {
 				if (in_array($target, $candidates, true) === true) {
 					$places[] = $target;
 				}
@@ -201,12 +224,7 @@ class FlowTokenRouter {
 				continue;
 			}
 
-			$to = ($edge['to'] ?? null);
-			if (is_array($to) === false) {
-				$to = [$to];
-			}
-
-			$targets = array_map(static fn ($t): string => (string)$t, $to);
+			$targets = $this->graph->normaliseEndpoints(value: ($edge['to'] ?? null));
 			if (in_array($nodeId, $targets, true) === false) {
 				continue;
 			}
@@ -236,22 +254,29 @@ class FlowTokenRouter {
 	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
 	 */
 	private function exitCondition(array $flow, array $edge, string $exitId): ?array {
-		$source = $this->stepFor(flow: $flow, transitionName: (string)($edge['from'] ?? ''));
-		foreach (($source['exits'] ?? []) as $exit) {
-			if (is_array($exit) === false || (string)($exit['id'] ?? '') !== $exitId) {
-				continue;
+		// The edge may leave several nodes at once, so the one that owns this
+		// exit is the one that declares it — not simply "the source". Reading
+		// `from` as a scalar named no node at all, which resolved to an empty
+		// step, which made every guarded branch look unconditional: the token
+		// took a path whose condition was false and the run looked fine.
+		foreach ($this->graph->normaliseEndpoints(value: ($edge['from'] ?? null)) as $sourceId) {
+			$source = $this->stepFor(flow: $flow, transitionName: $sourceId);
+			foreach (($source['exits'] ?? []) as $exit) {
+				if (is_array($exit) === false || (string)($exit['id'] ?? '') !== $exitId) {
+					continue;
+				}
+
+				$condition = ($exit['condition'] ?? null);
+
+				// An exit that exists but declares no condition is the default
+				// branch — reported as unconditional so it becomes the fallback
+				// rather than being treated as a failed match.
+				if (is_array($condition) === true && $condition !== []) {
+					return $condition;
+				}
+
+				return null;
 			}
-
-			$condition = ($exit['condition'] ?? null);
-
-			// An exit that exists but declares no condition is the default
-			// branch — reported as unconditional so it becomes the fallback
-			// rather than being treated as a failed match.
-			if (is_array($condition) === true && $condition !== []) {
-				return $condition;
-			}
-
-			return null;
 		}
 
 		// The edge names an exit the node does not declare. Treated as

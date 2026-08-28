@@ -111,6 +111,8 @@ DOMAIN_ORDER=(
     "referential-integrity"
     "schema-migration"
     "flow-engine"
+    "delegation"
+    "register-descriptors"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -133,6 +135,23 @@ declare -A DOMAIN_COLLECTIONS=(
     [schema-import]="$REPO_ROOT/tests/integration/openregister-schema-import.postman_collection.json"
     [apphost-observability]="$REPO_ROOT/tests/integration/apphost-observability.postman_collection.json"
     [flow-engine]="$REPO_ROOT/tests/newman/openregister-flow-engine.postman_collection.json"
+    # ADR-099 §5 delegation grants. Registered here rather than left to the
+    # Playwright specs in tests/e2e/api-direct/, because playwright.config.ts
+    # excludes `**/api-direct/**` from every project — so those specs run only
+    # when a developer invokes the ad-hoc flow config by hand, and CI executes
+    # none of them. Three green specs and zero CI coverage look identical from
+    # the outside; this is the half CI can see.
+    [delegation]="$REPO_ROOT/tests/newman/openregister-delegation.postman_collection.json"
+    # Register descriptors — the inventory and the forced re-import. Registered
+    # for the same reason as `delegation` above: its Playwright spec lives in
+    # tests/e2e/api-direct/, which playwright.config.ts excludes from every
+    # project, so CI runs none of it. Four green specs and zero CI coverage look
+    # identical from the outside.
+    #
+    # It earns the CI slot on its own: an `occ upgrade` that reported complete
+    # success left 8 of 15 declared registers absent on a dev instance, and the
+    # only symptom was two unrelated e2e suites dying on a register lookup.
+    [register-descriptors]="$REPO_ROOT/tests/newman/openregister-register-descriptors.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -234,7 +253,12 @@ for domain in "${DOMAINS_TO_RUN[@]}"; do
             " < "$collection" || rc=$?
             ;;
         host)
-            newman run "$collection" \
+            # `npx --yes newman`, not a bare `newman`: the host branch was the
+            # only one of the three that required a GLOBAL install, and without
+            # it every domain failed with rc=127 — "command not found" reported
+            # in the same red as a real assertion failure. The `exec` branch
+            # above already invokes it this way.
+            npx --yes newman run "$collection" \
                 --env-var baseUrl="$BASE_URL" \
                 --env-var base_url="$BASE_URL" \
                 --env-var username="$ADMIN_USER" \

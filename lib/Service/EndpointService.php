@@ -91,6 +91,37 @@ class EndpointService {
 	private readonly IGroupManager $groupManager;
 
 	/**
+	 * Constructor.
+	 *
+	 * WHY THIS EXISTS. All four properties above were declared `readonly` and
+	 * never assigned — this class had no constructor — so every method that
+	 * touched one died with
+	 *
+	 *   Typed property EndpointService::$userSession must not be accessed
+	 *   before initialization
+	 *
+	 * That is a fatal, not a degraded path, and it covers the permission checks
+	 * at lines 402/410/457 and the audit-log write at 487. Same defect as
+	 * NotificationService and UploadService in this repo.
+	 *
+	 * @param EndpointLogMapper $endpointLogMapper Endpoint execution log mapper.
+	 * @param LoggerInterface   $logger            Logger.
+	 * @param IUserSession      $userSession       Current user context.
+	 * @param IGroupManager     $groupManager      Group membership lookups.
+	 */
+	public function __construct(
+		EndpointLogMapper $endpointLogMapper,
+		LoggerInterface $logger,
+		IUserSession $userSession,
+		IGroupManager $groupManager,
+	) {
+		$this->endpointLogMapper = $endpointLogMapper;
+		$this->logger = $logger;
+		$this->userSession = $userSession;
+		$this->groupManager = $groupManager;
+	}//end __construct()
+
+	/**
 	 * Test an endpoint by executing it with test data
 	 *
 	 * Executes endpoint with optional test data to verify endpoint configuration

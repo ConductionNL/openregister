@@ -24,6 +24,7 @@ import * as path from 'path'
 import * as fs from 'fs'
 import { seedMdm } from './mdm-seed'
 import { resolveBaseUrl } from './base-url'
+import { seedFirstVisitOverlaysSeen } from '@conduction/nextcloud-vue/testing/playwright'
 
 const AUTH_DIR = path.resolve(__dirname, '.auth')
 const STORAGE_STATE = path.join(AUTH_DIR, 'admin.json')
@@ -203,6 +204,26 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	await expect(page.locator('#header, header.header').first()).toBeVisible({
 		timeout: 20_000,
 	})
+
+	// Suppress the product walkthrough this PR adds. On first visit it mounts a
+	// modal spotlight tour whose full dim layer intercepts pointer events, so
+	// every left-navigation click times out. A fresh Playwright context has no
+	// "seen" marker, so the tour re-triggers on every run.
+	//
+	// Uses the library helper rather than writing localStorage by hand. The key
+	// name and the sentinel version are the library's to define, and
+	// `seedWalkthroughSeen` already writes exactly the pair `useWalkthrough`
+	// reads. Hand-rolling it duplicates a contract that can move underneath us,
+	// and both halves fail SILENTLY when wrong: a mistyped key reads back as
+	// "never seen", so the tour mounts and the suppression looks present while
+	// doing nothing.
+	//
+	// The `/index.php/` prefix is deliberate. CI serves Nextcloud with `php -S`
+	// and no router script, where `/apps/openregister/` is a directory with no
+	// index.php and 404s. A 404 shares the origin, so a seed written there
+	// would appear to succeed.
+	await page.goto('/index.php/apps/openregister/')
+	await seedFirstVisitOverlaysSeen(page, 'openregister')
 
 	await context.storageState({ path: STORAGE_STATE })
 	await browser.close()

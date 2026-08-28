@@ -403,12 +403,37 @@ class ObjectService implements ObjectServiceInterface
      * Only pass operations whose inputs originate from code or the app's own
      * shipped data — never wrap handling of user-supplied request data.
      *
+     * 🔴 REACHABILITY BOUNDARY (ADR-099). This is code-initiated only. It MUST
+     * NOT be reachable from:
+     *
+     *  - a flow node,
+     *  - a tool invoked by an agent,
+     *  - the handling of an inbound request.
+     *
+     * The reason is not that those callers are untrusted in principle — it is
+     * that all three carry user-authored definitions or user-supplied input, and
+     * that this method is sitting right next to every place a missing identity
+     * makes something fail. An escape hatch that turns a refusal into a success
+     * gets taken. Where an identity cannot be resolved the correct outcome is a
+     * refusal naming what is missing; escalating to a userless principal instead
+     * answers a different question than the one that was asked.
+     *
+     * The legitimate callers are installation, migration, repair, and seeding of
+     * the application's own shipped data — work that genuinely has no user to
+     * act for, because a schema migration runs on nobody's behalf.
+     *
+     * Enforcement is structural first (the service is not injected into node,
+     * tool or endpoint classes) and a gate second. `SystemOperationContextBoundaryTest`
+     * pins the current call-site set so that adding one is a deliberate act with
+     * a visible diff rather than an accident.
+     *
      * @param callable $operation The trusted operation to execute.
      *
      * @return mixed Whatever the callable returns.
      *
      * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::run is the canonical scoped-elevation API
      *
+     * @spec openspec/specs/delegated-identity/spec.md
      * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function runAsSystem(callable $operation)
@@ -443,24 +468,44 @@ class ObjectService implements ObjectServiceInterface
      * This does not grant anything. If the named user cannot see a row, neither
      * can the callable.
      *
+     * 🔴 `setVolatileActiveUser()`, NOT `setUser()`. The two differ in one way
+     * that matters here: `setUser()` also writes `user_id` into the PHP session,
+     * and `lib/base.php` starts a real session on every request but
+     * `status.php`. A `finally` covers a throw, but not a fatal and not an
+     * `exit()` — so with `setUser()` a dying request leaves the acting identity
+     * written into the caller's session, and the response carries a session
+     * cookie for it. `setVolatileActiveUser()` (Nextcloud 29.0+; every fleet app
+     * declares `min-version="32"`) sets the active user and nothing else, so
+     * there is no persisted state to leak in the first place. The restore below
+     * is then a correctness measure for the rest of THIS request rather than the
+     * only thing standing between a scope and a hijacked session.
+     *
+     * This is a workaround for a missing parameter, not the end state. ADR-099
+     * keeps threading an acting user through the query layer as the target and
+     * records why it is not reachable in one change.
+     *
      * @param IUser    $user      The user to act as.
      * @param callable $operation The operation to execute as that user.
      *
      * @return mixed Whatever the callable returns.
      *
+     * @spec openspec/specs/delegated-identity/spec.md
      * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function runAs(IUser $user, callable $operation)
     {
         $previousUser = $this->userSession->getUser();
-        $this->userSession->setUser($user);
+        $this->userSession->setVolatileActiveUser($user);
 
         try {
             return $operation();
         } finally {
             // ALWAYS restore, including on a throw, so a long-lived process
             // (cron worker, queue runner) never leaks this identity forward.
-            $this->userSession->setUser($previousUser);
+            // Restore the PREVIOUS user rather than clearing, so that a nested
+            // scope returns control to its immediate caller's identity and not
+            // to nobody.
+            $this->userSession->setVolatileActiveUser($previousUser);
         }
     }//end runAs()
 
@@ -516,10 +561,56 @@ class ObjectService implements ObjectServiceInterface
             $pendingRef             = $this->currentSchemaRef;
             $this->currentSchemaRef = null;
 
-            $this->currentSchema = $this->scopedSchemaResolver->resolveSchemaWithin(
-                register: $register,
-                schemaRef: $pendingRef
-            );
+            // A REF THAT DOES NOT BELONG HERE MUST NOT TAKE THIS CALLER DOWN.
+            //
+            // Single use bounded the damage to ONE victim. It did not stop the
+            // victim being an app that never touched the ref: the pending slug
+            // is handed to the first setRegister() that follows, whoever that
+            // is, and re-resolving it inside a register that has never heard of
+            // it THREW — out of a method whose caller only asked to name its own
+            // register.
+            //
+            // Measured on the development instance 2026-08-27: every public
+            // read of a portaliq portal failed with `Schema slug "application"
+            // is not carried by register "portaliq"`. The portal served its
+            // shell and answered 404 for its own site, menus, pages and
+            // glossary — a whole app's public surface down, over a slug it does
+            // not own and never asked for. The same failure is recorded above
+            // for openconnector and for a pipelinq repair step, so this is the
+            // third app to be taken out by a fourth app's leftovers.
+            //
+            // So a ref that cannot be resolved inside THIS register is dropped
+            // rather than thrown on. What is NOT dropped is the consequence: the
+            // schema context is cleared with it, so a caller that really did
+            // chain `setSchema('typo')->setRegister($r)` still fails — at its
+            // operation, with "no schema context", instead of silently reading
+            // whichever table a stale context last pointed at. Substituting a
+            // wrong-but-plausible schema is the one outcome worse than throwing.
+            try {
+                $this->currentSchema = $this->scopedSchemaResolver->resolveSchemaWithin(
+                    register: $register,
+                    schemaRef: $pendingRef
+                );
+            } catch (\Throwable $e) {
+                $this->currentSchema = null;
+
+                $refForLog = gettype($pendingRef);
+                if (is_scalar($pendingRef) === true) {
+                    $refForLog = (string) $pendingRef;
+                }
+
+                $this->logger->warning(
+                    message: '[ObjectService] Discarded a pending schema ref that this register does not carry',
+                    context: [
+                        'pendingSchemaRef' => $refForLog,
+                        'register'         => ($register->getSlug() ?? (string) $register->getId()),
+                        'reason'           => $e->getMessage(),
+                        'note'             => 'The ref was left on this shared service by an earlier, unrelated call. '
+                            .'If YOUR call chained setSchema()->setRegister(), the schema is now unset and your '
+                            .'operation will fail with a missing schema context rather than read the wrong table.',
+                    ]
+                );
+            }//end try
         }
 
         return $this;
@@ -572,6 +663,37 @@ class ObjectService implements ObjectServiceInterface
                     register: $this->currentRegister,
                     schemaRef: $schema
                 );
+
+                // THE PENDING REF HAS ALREADY DONE ITS JOB — DROP IT HERE.
+                //
+                // It exists for exactly one case: `setSchema($s)` called before any
+                // register is known, so that the LATER `setRegister($r)` can
+                // re-resolve $s inside $r. On this branch a register was already
+                // set, the resolution above was scoped by it, and there is nothing
+                // left for a later setRegister() to consume.
+                //
+                // Leaving it set is what makes this instance-level state leak
+                // across unrelated operations. ObjectService is shared for the
+                // whole request, so the ref outlives the chain that created it and
+                // the NEXT caller's setRegister() re-resolves a finished
+                // operation's slug inside a register that has never heard of it —
+                // and refuses that caller.
+                //
+                // Measured 2026-08-27 on a fresh instance: buildiq registers its
+                // navigation entries from Application::boot(), which runs on EVERY
+                // request and calls findAll() -> prepareFindAllConfig(), which calls
+                // setRegister() and then setSchema('application'). Every request
+                // therefore ended with `application` pending. Portaliq's
+                // PortalResolver — typically the first caller afterwards to name its
+                // own register — was told `Schema slug "application" is not carried
+                // by register "portaliq"`. It fails closed by design, so every
+                // public portal page 404'd with no error attributable to portaliq
+                // at all. The same leak reached buildiq (`automation`) and hermiq
+                // (`job_log`) on the cron path.
+                //
+                // #2803 cleared the ref on the save path. This is the read path,
+                // which it did not cover.
+                $this->currentSchemaRef = null;
 
                 return $this;
             }

@@ -2706,7 +2706,26 @@
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} е увезен од {app}.",
+        "%n are out of date": "%n се застарени",
+        "%n declared in total": "%n вкупно декларирани",
+        "%n is out of date": "%n е застарен",
+        "%n register is missing": "недостасува %n регистар",
+        "%n registers are missing": "недостасуваат %n регистри",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Апликациите ги испорачуваат своите регистри како дескриптори, кои се увезуваат при инсталација или надградба на апликацијата. Штом верзијата на некоја апликација престане да се менува, тој увоз повеќе никогаш не се извршува, а неуспешниот увоз се запишува само во дневникот — затоа регистар може да недостасува на инстанца која инаку изгледа здраво. Овде гледате кои пристигнале.",
+        "Could not read the descriptor inventory: {reason}": "Не можеше да се прочита пописот на дескриптори: {reason}",
+        "Every declared register is present and current.": "Секој деклариран регистар постои и е ажурен.",
+        "Import failed: {reason}": "Увозот не успеа: {reason}",
+        "Missing": "Недостасува",
+        "Out of date": "Застарен",
+        "Present": "Постои",
+        "Re-import": "Увези повторно",
+        "Reading descriptors …": "Читање дескриптори …",
+        "Register descriptors": "Дескриптори на регистри",
+        "ships v{shipped}": "испорачува v{shipped}",
+        "State": "Состојба",
+        "v{installed} → ships v{shipped}": "v{installed} → испорачува v{shipped}"
     },
     "plurals": {
         "{count} email": [

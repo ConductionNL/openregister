@@ -4,8 +4,8 @@
 
 
 ## D. change uses non-annotate tasks.md (no task-N: cap#REQ line) — needs spec delta read (874)
-- `lib/Cron/ArchivalRetentionTask.php` → `openspec/changes/add-archival-annotation-support/tasks.md#task-5`
-- `lib/Cron/ArchivalRetentionTask.php` → `openspec/changes/add-archival-annotation-support/tasks.md#task-5`
+- `lib/BackgroundJob/ArchivalRetentionTask.php` → `openspec/changes/add-archival-annotation-support/tasks.md#task-5`
+- `lib/BackgroundJob/ArchivalRetentionTask.php` → `openspec/changes/add-archival-annotation-support/tasks.md#task-5`
 - `lib/Controller/PollLinksController.php` → `openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1`
 - `lib/Controller/PollLinksController.php` → `openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1`
 - `lib/Controller/PollLinksController.php` → `openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1`

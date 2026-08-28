@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Geo;
 
+use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -98,7 +99,10 @@ class PdokGeocoder {
 		}
 
 		try {
-			return $this->appManager->isInstalled('openconnector');
+			// Resolved through FleetAppId: the app is `integriq` on development
+			// and `openconnector` on beta/main, and asking for the wrong one
+			// reports "not installed" rather than failing.
+			return FleetAppId::isInstalled($this->appManager, 'integriq');
 		} catch (Throwable $e) {
 			return false;
 		}

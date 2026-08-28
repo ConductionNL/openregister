@@ -222,6 +222,17 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 	})
 
 	try {
+		// Collected for the failure message below; the resolver's own warning
+		// about an unknown named source is the single fact this spec has been
+		// unable to report.
+		const consoleLines: string[] = []
+		page.on('console', (msg) => {
+			const type = msg.type()
+			if (type === 'warning' || type === 'error') {
+				consoleLines.push(`[${type}] ${msg.text()}`)
+			}
+		})
+
 		await page.goto(FLOWS_ROUTE, { waitUntil: 'domcontentloaded' })
 
 		// Belt and braces: if the dialog still made it through (a server-backed
@@ -235,7 +246,38 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 
 		// Reach the editor the way a user does. Direct navigation to
 		// `#/flows/new` does not always hydrate the canvas.
-		await clickThemed(page.getByRole('button', { name: 'New flow' }))
+		//
+		// If the button is absent, say WHY rather than just that it is missing.
+		// This assertion has been failing on development (#2957) and the bare
+		// "element(s) not found" told us nothing: the label is correct, the
+		// package ships the registry, and showAdd defaults true — all verified.
+		// What could not be seen from outside a failing run is whether
+		// `resolveIndexSource('flows')` returned the source or null, and the
+		// resolver announces that on the console. So capture it and put it in
+		// the failure.
+		const addButton = page.getByRole('button', { name: 'New flow' })
+		if (!(await addButton.isVisible().catch(() => false))) {
+			const primary = page.locator('[data-testid="cn-cta-primary"]')
+			const primaryText = (await primary.count())
+				? await primary
+						.first()
+						.innerText()
+						.catch(() => '<unreadable>')
+				: '<no cn-cta-primary button on the page>'
+			throw new Error(
+				'The "New flow" button never rendered on the flows index.\n'
+					+ `  primary CTA present: ${await primary.count()} `
+					+ `(text: ${primaryText})\n`
+					+ '  A named source supplies this label; an unresolved one degrades to\n'
+					+ '  an ordinary index whose CTA reads "Add {type}". The text above\n'
+					+ '  distinguishes those two cases.\n'
+					+ '  console (warn/error):\n'
+					+ (consoleLines.length
+						? consoleLines.map((l) => `    ${l}`).join('\n')
+						: '    <nothing captured>'),
+			)
+		}
+		await clickThemed(addButton)
 
 		// 1. THE CONTROLS EXIST. This is the assertion the original defect
 		//    would have failed: before the fix `.cn-flow-sidebar` was absent
@@ -349,13 +391,27 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// documents as unreliable.
 		// DRIVE THE ELEMENT THAT OWNS THE HANDLER, NOT THE CARD INSIDE IT.
 		//
-		// `onNodeKeydown` is bound to CnGraphCanvas's `.cn-graph-canvas__node`
-		// wrapper — the element carrying `tabindex="0"`. `.cn-flow-detail__node`
-		// is the card CnFlowDetail renders into that wrapper's slot, and it is
-		// not focusable. Clicking the card and then pressing a key globally
-		// relies on the browser walking up to focus the ancestor, which is
-		// exactly the ambiguity that made this fail: the click landed, the
-		// keydown went to the body, and no edge appeared.
+		// `onNodeKeydown` is bound to the node wrapper — the element carrying
+		// `tabindex="0"`. `.cn-flow-detail__node` is the card CnFlowDetail
+		// renders into that wrapper's slot, and it is not focusable. Clicking
+		// the card and then pressing a key globally relies on the browser
+		// walking up to focus the ancestor, which is exactly the ambiguity that
+		// made this fail: the click landed, the keydown went to the body, and
+		// no edge appeared.
+		//
+		// THE WRAPPER'S CLASS MOVED IN nextcloud-vue 2.15.0.
+		//
+		// Up to 2.11.1 the canvas was a bespoke SVG implementation and the
+		// wrapper was `.cn-graph-canvas__node`. 2.15.0 rewrote it on Vue Flow
+		// and the wrapper became `CnFlowNode.vue`'s `.cn-flow-node`. Nothing
+		// announced it, and the old class survives in the shipped CSS and
+		// source maps, so from outside the contract looked untouched — this
+		// locator simply matched nothing and the canvas assertions failed while
+		// the canvas itself rendered fine.
+		//
+		// `.cn-flow-node` is the honest selector: it is what 2.15.0 emits, and
+		// nextcloud-vue#752 keeps `.cn-graph-canvas__node` on the same element
+		// as a compatibility alias, so this holds before and after that lands.
 		//
 		// `locator.press()` focuses its element and dispatches the key there,
 		// so the interaction under test is the one the component implements.
@@ -367,11 +423,11 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// it sat behind a `NEW_EDITOR` feature-detect that read the INSTALLED
 		// library for a 2.4+ marker — false on every 2.3.x — so it never ran
 		// and reported green by not executing.
-		const startNode = page.locator('.cn-graph-canvas__node', {
+		const startNode = page.locator('.cn-flow-node', {
 			hasText: 'When someone runs it',
 		})
 		await expect(startNode, 'the seeded start node is missing').toBeVisible()
-		const endNode = page.locator('.cn-graph-canvas__node', {
+		const endNode = page.locator('.cn-flow-node', {
 			hasText: 'End',
 		})
 		await expect(endNode, 'the End step is missing').toBeVisible()
@@ -382,14 +438,29 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// COUNT THE EDGE, DO NOT ASK WHETHER IT IS "VISIBLE".
 		//
 		// The edge is an SVG <path>. Auto-layout stacks these two steps in one
-		// column, so the orthogonal route between them is a STRAIGHT VERTICAL
-		// LINE — a bounding box of zero width. Playwright treats a zero-area
-		// element as not visible, so `toBeVisible()` fails on an edge that is
-		// on screen and plainly drawn (the failure screenshot shows the arrow).
-		// Presence is the honest assertion here, and it is the one that fails
-		// if the connection genuinely never happened.
+		// column, so the route between them can be a STRAIGHT VERTICAL LINE — a
+		// bounding box of zero width. Playwright treats a zero-area element as
+		// not visible, so `toBeVisible()` fails on an edge that is on screen and
+		// plainly drawn (the failure screenshot shows the arrow). Presence is
+		// the honest assertion here, and it is the one that fails if the
+		// connection genuinely never happened.
+		//
+		// THE EDGE STOPPED BEING OURS IN nextcloud-vue 2.15.0.
+		//
+		// CnFlowDetail used to hand-draw edges into a `#edge` slot with its own
+		// `edgePath()`, classed `.cn-flow-detail__edge`. 2.15.0 hands routing to
+		// Vue Flow, whose own comment says it plainly: "Edges are Vue Flow's
+		// now. The hand-drawn `#edge` slot and its orthogonal `edgePath()` are
+		// gone." So the class is no longer rendered by anything and this
+		// locator counted zero — the connection was being made, nothing was
+		// counting it.
+		//
+		// `.vue-flow__edge` is what actually carries an edge now. Same trap as
+		// the node wrapper above, and the same tell: the old class still has a
+		// live style rule in CnFlowDetail, so grepping the library for it finds
+		// it and the contract looks intact.
 		await expect(
-			page.locator('.cn-flow-detail__edge'),
+			page.locator('.vue-flow__edge'),
 			'the connection did not reach the canvas',
 		).toHaveCount(1)
 

@@ -13,22 +13,22 @@ PoC-first per the design's D4. Build the smallest possible working PDF anonymisa
 
 ## 2. Upstream issue + PR sequence (filter decoders)
 
-Posted AFTER the PoC works. The drafts live in the SAPP fork at [`Conduction/sapp:docs/upstream-prs/`](https://codeberg.org/Conduction/sapp/tree/work/text-replacement/docs/upstream-prs); each gets posted from a Conduction account, then a PR opens off upstream `main` and merges to `work/text-replacement`.
+Posted AFTER the PoC works. The drafts live in the SAPP fork at [`ConductionNL/sapp:docs/upstream-prs/`](https://github.com/ConductionNL/sapp/tree/work/text-replacement/docs/upstream-prs); each gets posted from a Conduction account, then a PR opens off upstream `main` and merges to `work/text-replacement`.
 
-- [x] 2.1 Issue + PR: `/ASCIIHexDecode` filter (draft: [`01-asciihex-decode.md`](https://codeberg.org/Conduction/sapp/blob/work/text-replacement/docs/upstream-prs/01-asciihex-decode.md)). Smallest first — proves the contribution flow. **Tracked at `Conduction/sapp:docs/upstream-prs/` — the upstream posting flow lives on the SAPP repository, not on the OpenRegister consumer side.**
-- [x] 2.2 Issue + PR: `/RunLengthDecode` filter (draft: [`02-runlength-decode.md`](https://codeberg.org/Conduction/sapp/blob/work/text-replacement/docs/upstream-prs/02-runlength-decode.md)). **Tracked at `Conduction/sapp:docs/upstream-prs/`.**
-- [x] 2.3 Issue + PR: `/ASCII85Decode` filter (draft: [`03-ascii85-decode.md`](https://codeberg.org/Conduction/sapp/blob/work/text-replacement/docs/upstream-prs/03-ascii85-decode.md)). **Tracked at `Conduction/sapp:docs/upstream-prs/`.**
-- [x] 2.4 Issue + PR: `/LZWDecode` filter (draft: [`04-lzw-decode.md`](https://codeberg.org/Conduction/sapp/blob/work/text-replacement/docs/upstream-prs/04-lzw-decode.md)). **Tracked at `Conduction/sapp:docs/upstream-prs/`.**
-- [x] 2.5 Issue + PR: filter chaining (`/Filter [/X /Y]` array form) — implementation lives on top of 2.1–2.4 (draft: [`05-filter-chaining.md`](https://codeberg.org/Conduction/sapp/blob/work/text-replacement/docs/upstream-prs/05-filter-chaining.md)). **Tracked at `Conduction/sapp:docs/upstream-prs/`.**
+- [x] 2.1 Issue + PR: `/ASCIIHexDecode` filter (draft: [`01-asciihex-decode/`](https://github.com/ConductionNL/sapp/tree/work/text-replacement/docs/upstream-prs/01-asciihex-decode)). Smallest first — proves the contribution flow. **Tracked at `Conduction/sapp:docs/upstream-prs/` — the upstream posting flow lives on the SAPP repository, not on the OpenRegister consumer side.**
+- [x] 2.2 Issue + PR: `/RunLengthDecode` filter (draft: [`02-runlength-decode/`](https://github.com/ConductionNL/sapp/tree/work/text-replacement/docs/upstream-prs/02-runlength-decode)). **Tracked at `Conduction/sapp:docs/upstream-prs/`.**
+- [x] 2.3 Issue + PR: `/ASCII85Decode` filter (draft: [`03-ascii85-decode/`](https://github.com/ConductionNL/sapp/tree/work/text-replacement/docs/upstream-prs/03-ascii85-decode)). **Tracked at `Conduction/sapp:docs/upstream-prs/`.**
+- [x] 2.4 Issue + PR: `/LZWDecode` filter (draft: [`04-lzw-decode/`](https://github.com/ConductionNL/sapp/tree/work/text-replacement/docs/upstream-prs/04-lzw-decode)). **Tracked at `Conduction/sapp:docs/upstream-prs/`.**
+- [x] 2.5 Issue + PR: filter chaining (`/Filter [/X /Y]` array form) — implementation lives on top of 2.1–2.4 (draft: [`05-filter-chaining/`](https://github.com/ConductionNL/sapp/tree/work/text-replacement/docs/upstream-prs/05-filter-chaining)). **Tracked at `Conduction/sapp:docs/upstream-prs/`.**
 
 ## 3. Upstream issue + PR sequence (encoding resolver)
 
-- [x] 3.1 Issue + PR: ToUnicode CMap parser + per-font encoding resolver (`Identity-H`/`Identity-V` + `/Differences`-aware Standard / WinAnsi / MacRoman) (draft: [`06-tounicode-cmap.md`](https://codeberg.org/Conduction/sapp/blob/work/text-replacement/docs/upstream-prs/06-tounicode-cmap.md)). **Tracked at `Conduction/sapp:docs/upstream-prs/` — lives on the SAPP repository.**
+- [x] 3.1 Issue + PR: ToUnicode CMap parser + per-font encoding resolver (`Identity-H`/`Identity-V` + `/Differences`-aware Standard / WinAnsi / MacRoman) (draft: [`06-tounicode-cmap/`](https://github.com/ConductionNL/sapp/tree/work/text-replacement/docs/upstream-prs/06-tounicode-cmap)). **Tracked at `Conduction/sapp:docs/upstream-prs/` — lives on the SAPP repository.**
 
 ## 4. Upstream issue + PR sequence (text replacement flagship)
 
-- [x] 4.1 Issue + PR: TJ-kerning-array flattening pre-pass (draft: [`07-tj-flattening.md`](https://codeberg.org/Conduction/sapp/blob/work/text-replacement/docs/upstream-prs/07-tj-flattening.md)). **Tracked at `Conduction/sapp:docs/upstream-prs/`.**
-- [x] 4.2 Issue + PR: `replaceTextInDocument(array $substitutions, array $options)` flagship API including the Helvetica base-font-fallback helper (draft: [`08-text-replacement-api.md`](https://codeberg.org/Conduction/sapp/blob/work/text-replacement/docs/upstream-prs/08-text-replacement-api.md)). Depends on 2.x + 3.x + 4.1 being merged upstream. **Tracked at `Conduction/sapp:docs/upstream-prs/`; live in the fork's `work/text-replacement` branch and consumed via composer SHA pin — the upstream posting flow lives on the SAPP repository.**
+- [x] 4.1 Issue + PR: TJ-kerning-array flattening pre-pass (draft: [`07-tj-flattening/`](https://github.com/ConductionNL/sapp/tree/work/text-replacement/docs/upstream-prs/07-tj-flattening)). **Tracked at `Conduction/sapp:docs/upstream-prs/`.**
+- [x] 4.2 Issue + PR: `replaceTextInDocument(array $substitutions, array $options)` flagship API including the Helvetica base-font-fallback helper (draft: [`08-text-replacement-api/`](https://github.com/ConductionNL/sapp/tree/work/text-replacement/docs/upstream-prs/08-text-replacement-api)). Depends on 2.x + 3.x + 4.1 being merged upstream. **Tracked at `Conduction/sapp:docs/upstream-prs/`; live in the fork's `work/text-replacement` branch and consumed via composer SHA pin — the upstream posting flow lives on the SAPP repository.**
 
 ## 5. OpenRegister implementation (post-PoC, iterative)
 
@@ -69,7 +69,7 @@ Each item expands what the PoC handles. The PoC's narrow scope grows feature-by-
 
 ## 10. Composer wiring + dependency tracking
 
-- [x] 10.1 `composer.json`: add `repositories` entry for `https://codeberg.org/Conduction/sapp`; constrain `ddn/sapp` to `dev-work/text-replacement as 1.x-dev`. (Current pin is the SHA-pinned cross-line-matching commit — see CHANGELOG entry and design D2 amendment; the SHA pin is the source of truth until the work folds back to `work/text-replacement` and upstream tags a release.)
+- [x] 10.1 `composer.json`: add `repositories` entry for `https://github.com/ConductionNL/sapp`; constrain `ddn/sapp` to `dev-work/text-replacement as 1.x-dev`. (Current pin is the SHA-pinned cross-line-matching commit — see CHANGELOG entry and design D2 amendment; the SHA pin is the source of truth until the work folds back to `work/text-replacement` and upstream tags a release.)
 - [x] 10.2 `composer update ddn/sapp` lands the fork branch in `vendor/`. Verify autoload-classmap picks up the new SAPP classes.
 - [x] 10.3 As upstream PRs merge (2.x, 3.x, 4.x), point composer at the resulting upstream commit SHAs (still via the fork until full upstream release). When upstream tags a release including the work, remove the `repositories` entry + switch to the upstream version range. Document the transition in CHANGELOG. **Open: awaits upstream `dealfonso/sapp` merging the work and tagging a release. Tracked in #69.**
 
