@@ -2707,6 +2707,25 @@
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} bol importovaný z {app}.",
+        "%n are out of date": "%n sú zastarané",
+        "%n declared in total": "%n deklarovaných celkovo",
+        "%n is out of date": "%n je zastaraný",
+        "%n register is missing": "chýba %n register",
+        "%n registers are missing": "chýba %n registrov",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Aplikácie dodávajú svoje registre ako deskriptory, ktoré sa importujú pri inštalácii alebo aktualizácii aplikácie. Len čo sa verzia aplikácie prestane meniť, tento import sa už nikdy nespustí a neúspešný import sa zapíše iba do protokolu — register teda môže chýbať na inštancii, ktorá inak vyzerá zdravo. Tu vidíte, ktoré dorazili.",
+        "Could not read the descriptor inventory: {reason}": "Nepodarilo sa načítať prehľad deskriptorov: {reason}",
+        "Every declared register is present and current.": "Každý deklarovaný register je prítomný a aktuálny.",
+        "Import failed: {reason}": "Import zlyhal: {reason}",
+        "Missing": "Chýba",
+        "Out of date": "Zastaraný",
+        "Present": "Prítomný",
+        "Re-import": "Znovu importovať",
+        "Reading descriptors …": "Načítavanie deskriptorov …",
+        "Register descriptors": "Deskriptory registrov",
+        "ships v{shipped}": "dodáva v{shipped}",
+        "State": "Stav",
+        "v{installed} → ships v{shipped}": "v{installed} → dodáva v{shipped}"
     }
 }

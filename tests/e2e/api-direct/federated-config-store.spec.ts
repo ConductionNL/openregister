@@ -23,12 +23,13 @@ const JSON_HEADERS = {
 	'Content-Type': 'application/json',
 	Accept: 'application/json',
 }
-// ⚠️ There is deliberately NO default here. This spec calls
-// `docker restart ${CONTAINER}`, and the previous default was the literal
-// string `'nextcloud'` — the SHARED dev container, which bind-mounts several
-// developers' real working trees. Running this spec without NC_CONTAINER set
-// therefore restarted somebody else's environment mid-session.
-const CONTAINER = resolveContainer()
+// ⚠️ 'restart', not the default 'exec'. This spec calls
+// `docker restart ${CONTAINER}`, which bounces an environment that bind-mounts
+// several developers' real working trees — mid-session, with no warning to
+// them. Sibling specs may `occ` in the shared container by default because one
+// named command is recoverable; a restart is not. So this one resolves to null
+// there, and skips, unless NC_ALLOW_SHARED_RESTART=1 says otherwise.
+const CONTAINER = resolveContainer('restart')
 const runId = `e2e-store-${Date.now()}`
 
 function occ(args: string): string | null {

@@ -23,6 +23,11 @@
  * @spec openspec/specs/flow-engine/spec.md
  */
 import { test, expect, type APIRequestContext } from '@playwright/test'
+import {
+	findSecondAccount,
+	NO_SECOND_ACCOUNT,
+	revokeGrantsOver,
+} from './delegation-fixtures'
 
 const RUN_ID = `e2e-ident-${Date.now().toString(36)}`
 
@@ -40,7 +45,13 @@ const GHOST = 'e2e-no-such-user-9f3a1c'
  * assertions. A uid that resolves and is not you is the only shape that isolates
  * the delegation rule.
  */
-const OTHER = process.env.NEXTCLOUD_OTHER_USER || 'ddauth-alice'
+// 🔴 DISCOVERED, never hardcoded. This read `NEXTCLOUD_OTHER_USER ||
+// 'ddauth-alice'`; the dev instance was rebuilt, that uid stopped existing, and
+// the spec below failed with `"ddauth-alice" resolves to no account you may
+// ask` — a sentence indistinguishable from the delegation guard correctly
+// refusing a real colleague. The failure was a rotted fixture, and it cost a
+// diagnosis. See ./delegation-fixtures.ts.
+let OTHER = ''
 
 interface FlowResponse {
 	id: string
@@ -190,9 +201,19 @@ test.describe('delegated-identity — a schedule trigger must name who it acts a
 })
 
 test.describe('delegated-identity — naming somebody else needs a grant', () => {
+	test.beforeAll(async ({ request }) => {
+		OTHER = (await findSecondAccount(request)) ?? ''
+		// This block asserts that naming a colleague is REFUSED. A grant left live
+		// by an aborted sibling run makes that save succeed, and the assertion
+		// then reports a working guard as broken — see revokeGrantsOver().
+		await revokeGrantsOver(request, OTHER)
+	})
+
 	test('a schedule trigger naming another real user is refused without a grant', async ({
 		request,
 	}) => {
+		test.skip(OTHER === '', NO_SECOND_ACCOUNT)
+
 		// 🔴 The delegation rule, end to end. The account EXISTS — that is the
 		// point. Refusing an unknown uid is an account check and was already
 		// true; refusing a real colleague you hold no grant for is the rule this
@@ -250,7 +271,11 @@ test.describe('delegated-identity — naming somebody else needs a grant', () =>
 					config: {
 						cron: '*/5 * * * *',
 						runAs: ADMIN,
-						runAsDeclaredBy: OTHER,
+						// Any uid but the caller's; it need not resolve, because a
+						// stamp on a self-named trigger must be stripped whoever it
+						// names. GHOST keeps this test running on a single-account
+						// instance, where OTHER is empty.
+						runAsDeclaredBy: OTHER || GHOST,
 					},
 					position: { x: 0, y: 0 },
 				},

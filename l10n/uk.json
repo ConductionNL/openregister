@@ -2707,7 +2707,26 @@
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} імпортовано з {app}.",
+        "%n are out of date": "%n застаріли",
+        "%n declared in total": "%n оголошено загалом",
+        "%n is out of date": "%n застарів",
+        "%n register is missing": "відсутній %n реєстр",
+        "%n registers are missing": "відсутньо %n реєстрів",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Застосунки постачають свої реєстри як дескриптори, що імпортуються під час встановлення або оновлення застосунку. Щойно версія застосунку перестає змінюватися, цей імпорт більше ніколи не виконується, а невдалий імпорт записується лише до журналу — тож реєстр може бути відсутнім на екземплярі, який в іншому вигляді здається справним. Тут видно, які з них надійшли.",
+        "Could not read the descriptor inventory: {reason}": "Не вдалося прочитати перелік дескрипторів: {reason}",
+        "Every declared register is present and current.": "Кожен оголошений реєстр наявний і актуальний.",
+        "Import failed: {reason}": "Імпорт не вдався: {reason}",
+        "Missing": "Відсутній",
+        "Out of date": "Застарілий",
+        "Present": "Наявний",
+        "Re-import": "Імпортувати знову",
+        "Reading descriptors …": "Читання дескрипторів …",
+        "Register descriptors": "Дескриптори реєстрів",
+        "ships v{shipped}": "постачає v{shipped}",
+        "State": "Стан",
+        "v{installed} → ships v{shipped}": "v{installed} → постачає v{shipped}"
     },
     "plurals": {
         "{count} email": [

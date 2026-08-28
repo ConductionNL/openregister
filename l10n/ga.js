@@ -2704,7 +2704,26 @@ OC.L10N.register(
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "Iompórtáladh {register} ó {app}.",
+        "%n are out of date": "tá %n as dáta",
+        "%n declared in total": "%n dearbhaithe san iomlán",
+        "%n is out of date": "tá %n as dáta",
+        "%n register is missing": "tá %n chlár ar iarraidh",
+        "%n registers are missing": "tá %n chlár ar iarraidh",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Seachadann feidhmchláir a gcláir mar thuairisceoirí a iompórtáiltear nuair a shuiteáiltear nó a nuashonraítear an feidhmchlár. Chomh luath is a stopann leagan feidhmchláir ag athrú, ní ritheann an t-iompórtáil sin arís go deo, agus ní scríobhtar iompórtáil theipthe ach chuig an logchomhad — mar sin féadfaidh clár a bheith ar iarraidh ar chás a bhfuil cuma fholláin air ar shlí eile. Seo an áit a bhfeiceann tú cé acu a tháinig i dtír.",
+        "Could not read the descriptor inventory: {reason}": "Níorbh fhéidir fardal na dtuairisceoirí a léamh: {reason}",
+        "Every declared register is present and current.": "Tá gach clár dearbhaithe i láthair agus cothrom le dáta.",
+        "Import failed: {reason}": "Theip ar an iompórtáil: {reason}",
+        "Missing": "Ar iarraidh",
+        "Out of date": "As dáta",
+        "Present": "I láthair",
+        "Re-import": "Athiompórtáil",
+        "Reading descriptors …": "Tuairisceoirí á léamh …",
+        "Register descriptors": "Tuairisceoirí clár",
+        "ships v{shipped}": "soláthraíonn sé v{shipped}",
+        "State": "Staid",
+        "v{installed} → ships v{shipped}": "v{installed} → soláthraíonn sé v{shipped}"
     },
     "nplurals=2; plural=(n != 1);"
 )

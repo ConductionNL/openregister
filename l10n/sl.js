@@ -2704,7 +2704,26 @@ OC.L10N.register(
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} je bil uvožen iz {app}.",
+        "%n are out of date": "%n so zastareli",
+        "%n declared in total": "%n skupaj deklariranih",
+        "%n is out of date": "%n je zastarel",
+        "%n register is missing": "manjka %n register",
+        "%n registers are missing": "manjka %n registrov",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Aplikacije svoje registre dobavljajo kot deskriptorje, ki se uvozijo ob namestitvi ali nadgradnji aplikacije. Takoj ko se različica aplikacije neha spreminjati, se ta uvoz nikoli več ne izvede, neuspešen uvoz pa se zapiše samo v dnevnik — register torej lahko manjka na instanci, ki sicer izgleda zdrava. Tu vidite, kateri so prispeli.",
+        "Could not read the descriptor inventory: {reason}": "Popisa deskriptorjev ni bilo mogoče prebrati: {reason}",
+        "Every declared register is present and current.": "Vsak deklariran register je prisoten in ažuren.",
+        "Import failed: {reason}": "Uvoz ni uspel: {reason}",
+        "Missing": "Manjka",
+        "Out of date": "Zastarel",
+        "Present": "Prisoten",
+        "Re-import": "Ponovno uvozi",
+        "Reading descriptors …": "Branje deskriptorjev …",
+        "Register descriptors": "Deskriptorji registrov",
+        "ships v{shipped}": "dobavlja v{shipped}",
+        "State": "Stanje",
+        "v{installed} → ships v{shipped}": "v{installed} → dobavlja v{shipped}"
     },
     "nplurals=2; plural=(n != 1);"
 )

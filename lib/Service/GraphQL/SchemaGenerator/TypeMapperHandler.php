@@ -534,6 +534,24 @@ class TypeMapperHandler {
 						'type' => Type::listOf(Type::nonNull($this->getGroupBucketType())),
 						'description' => 'Ad-hoc bucket aggregation result; null unless `groupBy` was supplied.',
 					],
+					// JSON rather than a typed shape, deliberately.
+					//
+					// A declared aggregation's envelope varies with what it
+					// declares: a scalar `value`, a `values` map for `metrics`,
+					// `groups[].keys` for a composite groupBy, `joined` when it
+					// joins. Typing that today would either flatten it — the
+					// mistake GroupBucket already makes, where `value: Float!`
+					// cannot carry a values map and a null key coerces to "" —
+					// or invent a union per declaration shape.
+					//
+					// JSON keeps the envelope identical to the REST one, which
+					// every existing consumer already parses. A typed
+					// AggregationResult is the right next step once a consumer
+					// needs introspection over it.
+					'aggregation' => [
+						'type' => $this->scalars['JSON'],
+						'description' => 'Declared-aggregation result envelope; null unless `aggregation` was supplied.',
+					],
 				],
 			]
 		);
@@ -557,10 +575,43 @@ class TypeMapperHandler {
 		$this->groupBucketType = new ObjectType(
 			[
 				'name' => 'GroupBucket',
-				'description' => 'A single bucket in an ad-hoc aggregation result.',
+				'description' => 'A single bucket in an aggregation result.',
 				'fields' => [
-					'key' => Type::nonNull(Type::string()),
-					'value' => Type::nonNull(Type::float()),
+					// NULLABLE, and it was not.
+					//
+					// `key: String!` forced the resolver to coerce a null group
+					// key to '' — a row whose group field is null became
+					// indistinguishable from one whose value is genuinely the
+					// empty string. The engine returns null there and means it.
+					'key' => [
+						'type' => Type::string(),
+						'description' => 'Group key for a single-field grouping. '
+							. 'NULL when the grouped field is null on those rows — which is not the '
+							. 'same as an empty string. Null for a composite grouping; use `keys`.',
+					],
+					// ALSO NULLABLE. A multi-metric result carries `values` and
+					// no `value` at all, so `Float!` would have forced 0.0 —
+					// reporting zero for every bucket rather than admitting the
+					// figure lives elsewhere.
+					'value' => [
+						'type' => Type::float(),
+						'description' => 'Single-metric value. NULL for a multi-metric grouping; use `values`.',
+					],
+					'keys' => [
+						'type' => $this->scalars['JSON'],
+						'description' => 'Composite group key as a {field: value} map. '
+							. 'Present when the aggregation groups on more than one field.',
+					],
+					'values' => [
+						'type' => $this->scalars['JSON'],
+						'description' => 'Figure per response key, for a multi-metric aggregation '
+							. '(`sum_amount`, or an `as` alias such as `totalDebit`).',
+					],
+					'joined' => [
+						'type' => $this->scalars['JSON'],
+						'description' => 'Figures pulled from a joined schema, keyed '
+							. '`<Schema>.<field>`. Present only when the aggregation declares a join.',
+					],
 				],
 			]
 		);
@@ -670,12 +721,86 @@ class TypeMapperHandler {
 						'type' => Type::string(),
 						'description' => 'Field to aggregate over. Required when metric != COUNT.',
 					],
+					// Composite grouping. `field` above stays required and
+					// remains the single-field spelling; `fields` is the
+					// multi-field one, and a bucket then carries `keys` rather
+					// than `key`.
+					'fields' => [
+						'type' => Type::listOf(Type::nonNull(Type::string())),
+						'description' => 'Group on several fields (cross-tab). Each bucket then carries '
+							. '`keys` as a {field: value} map, and `key` is null.',
+					],
+					// Several figures over one grouping. Each bucket then
+					// carries `values`, and `value` is null.
+					'metrics' => [
+						'type' => Type::listOf(Type::nonNull($this->getAggregationMetricInputType())),
+						'description' => 'Several figures over one grouping. Each bucket then carries '
+							. '`values` keyed by response key or `as` alias, and `value` is null.',
+					],
 				],
 			]
 		);
 
 		return $this->groupByInputType;
 	}//end getGroupByInputType()
+
+	/**
+	 * Get (or lazily build) the AggregationMetricInput type.
+	 *
+	 * One entry of an ad-hoc `metrics` list. `condition` scopes THIS figure to a
+	 * subset of the grouped rows — the debit/credit split — and `as` names its
+	 * response key, which a conditional metric needs: two conditional sums over
+	 * one field both derive `sum_<field>`, so without an alias the second would
+	 * overwrite the first and quietly return one figure where two were asked for.
+	 *
+	 * `condition` is JSON because it is a filter OBJECT, the same shape as the
+	 * aggregation's own filter. Deliberately not a string expression — a second,
+	 * string-shaped grammar is precisely what the engine has been unpicking.
+	 *
+	 * @return InputObjectType The metric-entry input type.
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	private function getAggregationMetricInputType(): InputObjectType {
+		// Cached in the shared $inputTypes map rather than a field of its
+		// own: a dedicated property took the class to 16 fields, one over the
+		// phpmd TooManyFields threshold, and its name was past the
+		// LongVariable limit. The map already exists for exactly this — one
+		// shared input type cached by purpose.
+		$cacheKey = 'shared:AggregationMetricInput';
+		if (isset($this->inputTypes[$cacheKey]) === true) {
+			return $this->inputTypes[$cacheKey];
+		}
+
+		$this->inputTypes[$cacheKey] = new InputObjectType(
+			[
+				'name' => 'AggregationMetricInput',
+				'description' => 'One figure in a multi-metric aggregation.',
+				'fields' => [
+					'metric' => [
+						'type' => Type::nonNull($this->getAggregationMetricType()),
+						'description' => 'The metric to compute.',
+					],
+					'field' => [
+						'type' => Type::string(),
+						'description' => 'Field to aggregate. Required for every metric except COUNT.',
+					],
+					'condition' => [
+						'type' => $this->scalars['JSON'],
+						'description' => 'Filter object scoping THIS figure to a subset of the grouped '
+							. 'rows, e.g. {"side": "debit"}. Same shape as the aggregation filter.',
+					],
+					'as' => [
+						'type' => Type::string(),
+						'description' => 'Response key for this figure. Required in practice whenever two '
+							. 'entries share a metric+field pair, since both derive the same default key.',
+					],
+				],
+			]
+		);
+
+		return $this->inputTypes[$cacheKey];
+	}//end getAggregationMetricInputType()
 
 	/**
 	 * Get the shared PageInfo type.
@@ -762,6 +887,24 @@ class TypeMapperHandler {
 			'groupBy' => [
 				'type' => $this->getGroupByInputType(),
 				'description' => 'Optional ad-hoc aggregation; when supplied, the connection emits a `groups` field.',
+			],
+			// A DECLARED aggregation, by name.
+			//
+			// `groupBy` above is ad-hoc: the caller describes the aggregation.
+			// This one names one the SCHEMA declares in
+			// `x-openregister-aggregations`, which until now was reachable only
+			// over REST — so a page wanting a declared figure had to hand-build
+			// a URL alongside its GraphQL query.
+			//
+			// The name is the whole input: the declaration already carries the
+			// metric, grouping, filter and join, and has been validated at save
+			// time. The query's own `filter` is applied on top as a NARROWING
+			// constraint, which the engine accepts but can never use to relax
+			// what the declaration pins.
+			'aggregation' => [
+				'type' => Type::string(),
+				'description' => 'Name of a declared aggregation on this schema '
+					. '(x-openregister-aggregations); emits an `aggregation` field on the connection.',
 			],
 		];
 

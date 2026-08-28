@@ -2708,7 +2708,26 @@
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} ġie impurtat minn {app}.",
+        "%n are out of date": "%n huma skaduti",
+        "%n declared in total": "%n dikjarati b’kollox",
+        "%n is out of date": "%n huwa skadut",
+        "%n register is missing": "%n reġistru nieqes",
+        "%n registers are missing": "%n reġistri neqsin",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "L-applikazzjonijiet iwasslu r-reġistri tagħhom bħala deskritturi, li jiġu impurtati meta l-applikazzjoni tiġi installata jew aġġornata. Malli l-verżjoni ta’ applikazzjoni tieqaf tinbidel, dik l-importazzjoni qatt ma terġa’ taħdem, u importazzjoni li tfalli tinkiteb biss fir-reġistru tal-ġrajjiet — għalhekk reġistru jista’ jkun nieqes fuq istanza li altrimenti tidher f’saħħitha. Hawn tara liema waslu.",
+        "Could not read the descriptor inventory: {reason}": "Ma setax jinqara l-inventarju tad-deskritturi: {reason}",
+        "Every declared register is present and current.": "Kull reġistru dikjarat huwa preżenti u aġġornat.",
+        "Import failed: {reason}": "L-importazzjoni falliet: {reason}",
+        "Missing": "Nieqes",
+        "Out of date": "Skadut",
+        "Present": "Preżenti",
+        "Re-import": "Erġa’ importa",
+        "Reading descriptors …": "Qed jinqraw id-deskritturi …",
+        "Register descriptors": "Deskritturi tar-reġistri",
+        "ships v{shipped}": "iwassal v{shipped}",
+        "State": "Stat",
+        "v{installed} → ships v{shipped}": "v{installed} → iwassal v{shipped}"
     },
     "plurals": {
         "{count} email": [

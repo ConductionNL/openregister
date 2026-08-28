@@ -124,10 +124,18 @@ class TmloController extends Controller {
 				schemaRef: $schema
 			);
 
+			// `id:`, not `identifier:` — the parameter is `$id`, and a named
+			// argument that names nothing raises `Error: Unknown named
+			// parameter`, which is not an `Exception` and so escapes every
+			// catch block below as a 500.
+			//
+			// IDs, not entities: `find()` types these `string|int|null`, so
+			// passing the Register/Schema objects is a TypeError even once the
+			// name is right.
 			$object = $this->objectService->find(
-				identifier: $id,
-				register: $registerEntity,
-				schema: $schemaEntity,
+				id: $id,
+				register: $registerEntity->getId(),
+				schema: $schemaEntity->getId(),
 			);
 
 			$xml = $this->tmloService->generateMdtoXml($object);
@@ -197,10 +205,22 @@ class TmloController extends Controller {
 				}
 			}
 
+			// `findAll(array $config, …)` takes ONE array. The previous call
+			// passed `register:`/`schema:`/`filters:` as named arguments that
+			// do not exist on it, raising the same `Error` as exportSingle.
+			//
+			// The register and schema travel INSIDE `filters` — that is where
+			// `prepareFindAllConfig()` reads them to set the service context.
 			$result = $this->objectService->findAll(
-				register: $registerEntity,
-				schema: $schemaEntity,
-				filters: $filters,
+				config: [
+					'filters' => array_merge(
+						$filters,
+						[
+							'register' => $registerEntity->getId(),
+							'schema'   => $schemaEntity->getId(),
+						]
+					),
+				]
 			);
 
 			$objects = ($result['results'] ?? $result);
@@ -273,14 +293,30 @@ class TmloController extends Controller {
 				TmloService::ARCHIEFSTATUS_VERNIETIGD => 0,
 			];
 
-			// Query objects for each status.
+			// Scope the counts to this register/schema. `count()` reads the
+			// service's CURRENT context — without these two calls
+			// MagicMapper::countAll() sums every register/schema table on the
+			// instance and each status would report the global object total.
+			$this->objectService->setRegister(register: $registerEntity);
+			$this->objectService->setSchema(schema: $schemaEntity);
+
+			// Count objects for each status.
+			//
+			// `count()`, not `findAll()`. The previous call passed named
+			// arguments — `register:`, `schema:`, `filters:` — that do not exist
+			// on `findAll(array $config, bool $_rbac, bool $_multitenancy)`, so
+			// PHP raised `Error: Unknown named parameter $register`. `Error` is
+			// not an `Exception`, so it escaped all three catch blocks below and
+			// this endpoint answered 500 on every request.
+			//
+			// It also read `$result['total']`, a key `findAll()` never returns —
+			// it returns rendered entities. So even once the call was fixed,
+			// every status would have reported 0. `count()` returns the int
+			// directly.
 			foreach (array_keys($counts) as $status) {
-				$result = $this->objectService->findAll(
-					register: $registerEntity,
-					schema: $schemaEntity,
-					filters: ['tmlo.archiefstatus' => $status, '_limit' => 0],
+				$counts[$status] = $this->objectService->count(
+					config: ['filters' => ['tmlo.archiefstatus' => $status]]
 				);
-				$counts[$status] = ($result['total'] ?? 0);
 			}
 
 			return new JSONResponse($counts, Http::STATUS_OK);

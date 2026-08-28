@@ -56,7 +56,19 @@ class AggregationMetricsAnnotationValidator {
 	 *
 	 * @var array<int, string>
 	 */
-	private const VALID_METRICS = ['count', 'sum', 'avg', 'min', 'max', 'count_distinct'];
+	private const VALID_METRICS = ['count', 'sum', 'avg', 'min', 'max', 'count_distinct', 'expression'];
+
+	/**
+	 * The DERIVED metric: arithmetic over the aliases of the metrics beside it,
+	 * rather than an aggregate over rows.
+	 *
+	 * It takes no `field` — there is nothing to aggregate — and it MUST carry
+	 * both an `expression` and an `as`, because its value has no metric+field
+	 * pair to derive a response key from.
+	 *
+	 * @var string
+	 */
+	private const METRIC_EXPRESSION = 'expression';
 
 	/**
 	 * Metrics that are meaningless without a field to aggregate.
@@ -144,6 +156,67 @@ class AggregationMetricsAnnotationValidator {
 			];
 		}
 
+		if ($metric === self::METRIC_EXPRESSION) {
+			// A derived metric is validated on different terms: it reads the
+			// figures beside it, so it has no field, and without `as` its value
+			// has no response key at all.
+			$expression = $this->asString(value: ($entry['expression'] ?? ''));
+			if (trim($expression) === '') {
+				return [
+					[
+						'code' => 'aggregation-metrics-expression-empty',
+						'message' => sprintf(
+							'Aggregation "%s" metrics[%d] declares metric "expression" with no '
+							.'`expression` to evaluate.',
+							$name,
+							$index
+						),
+					],
+				];
+			}
+
+			$alias = $this->asString(value: ($entry['as'] ?? ''));
+			if (trim($alias) === '') {
+				return [
+					[
+						'code' => 'aggregation-metrics-expression-unnamed',
+						'message' => sprintf(
+							'Aggregation "%s" metrics[%d] is a derived metric and must declare `as`: '
+							.'it has no field or metric name to derive a response key from.',
+							$name,
+							$index
+						),
+					],
+				];
+			}
+
+			if (isset($entry['field']) === true) {
+				return [
+					[
+						'code' => 'aggregation-metrics-expression-has-field',
+						'message' => sprintf(
+							'Aggregation "%s" metrics[%d] is a derived metric and takes no `field`: '
+							.'it reads the aliases of the metrics beside it, not the rows.',
+							$name,
+							$index
+						),
+					],
+				];
+			}
+
+			return [];
+		}
+
+		$extra = $this->validateConditionAndAlias(
+			name: $name,
+			index: $index,
+			entry: $entry,
+			propKeys: $propKeys
+		);
+		if ($extra !== []) {
+			return $extra;
+		}
+
 		if (in_array($metric, self::REQUIRES_FIELD, true) === false) {
 			return [];
 		}
@@ -156,6 +229,91 @@ class AggregationMetricsAnnotationValidator {
 			propKeys: $propKeys
 		);
 	}//end validateEntry()
+
+	/**
+	 * Validate a metric entry's optional `condition` and `as`.
+	 *
+	 * `condition` scopes ONE metric to a subset of the grouped rows — the
+	 * debit/credit split. It is a filter object, the same shape as the
+	 * aggregation's own `filter`, and its keys are checked against the schema
+	 * here for the reason every filter needs checking in this stack: a filter
+	 * naming a property the schema does not declare is not an error at run
+	 * time, it matches nothing and returns an empty set with HTTP 200. Caught
+	 * at declaration time it is a typo; caught at run time it is a page showing
+	 * "no data" over live rows.
+	 *
+	 * `as` names the response key. It is required in practice whenever two
+	 * entries share a metric+field pair — two conditional sums over `amount`
+	 * both derive `sum_amount`, and the second would overwrite the first.
+	 *
+	 * @param string             $name     The aggregation name, for messages.
+	 * @param int                $index    The entry's position in the list.
+	 * @param array<mixed>       $entry    The metric entry.
+	 * @param array<int, string> $propKeys Property names the schema declares.
+	 *
+	 * @return array<int, array{code: string, message: string}> Validation errors.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function validateConditionAndAlias(
+		string $name,
+		int $index,
+		array $entry,
+		array $propKeys,
+	): array {
+		$alias = ($entry['as'] ?? null);
+		if ($alias !== null && (is_string($alias) === false || $alias === '')) {
+			return [
+				[
+					'code' => 'aggregation-metrics-alias-malformed',
+					'message' => sprintf(
+						'Aggregation "%s" metrics[%d] "as" must be a non-empty string.',
+						$name,
+						$index
+					),
+				],
+			];
+		}
+
+		$condition = ($entry['condition'] ?? null);
+		if ($condition === null) {
+			return [];
+		}
+
+		if (is_array($condition) === false || $condition === []) {
+			return [
+				[
+					'code' => 'aggregation-metrics-condition-malformed',
+					'message' => sprintf(
+						'Aggregation "%s" metrics[%d] "condition" must be a non-empty filter object, '
+						. 'the same shape as the aggregation\'s own filter — not a string expression.',
+						$name,
+						$index
+					),
+				],
+			];
+		}
+
+		foreach (array_keys($condition) as $prop) {
+			if (in_array((string)$prop, $propKeys, true) === false) {
+				return [
+					[
+						'code' => 'aggregation-metrics-condition-not-in-schema',
+						'message' => sprintf(
+							'Aggregation "%s" metrics[%d] condition property "%s" is not declared in the '
+							. 'schema properties. A filter on an undeclared property matches nothing and '
+							. 'returns an empty result rather than an error.',
+							$name,
+							$index,
+							(string)$prop
+						),
+					],
+				];
+			}
+		}
+
+		return [];
+	}//end validateConditionAndAlias()
 
 	/**
 	 * Validate the field of a metric that requires one.

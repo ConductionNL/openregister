@@ -2707,7 +2707,26 @@
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} byl importován z {app}.",
+        "%n are out of date": "%n jsou zastaralé",
+        "%n declared in total": "%n deklarováno celkem",
+        "%n is out of date": "%n je zastaralý",
+        "%n register is missing": "chybí %n registr",
+        "%n registers are missing": "chybí %n registrů",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Aplikace dodávají své registry jako deskriptory, které se importují při instalaci nebo aktualizaci aplikace. Jakmile se verze aplikace přestane měnit, tento import se už nikdy nespustí a neúspěšný import se zapíše pouze do protokolu — registr tedy může chybět na instanci, která jinak vypadá zdravě. Zde vidíte, které dorazily.",
+        "Could not read the descriptor inventory: {reason}": "Nepodařilo se načíst přehled deskriptorů: {reason}",
+        "Every declared register is present and current.": "Každý deklarovaný registr je přítomen a aktuální.",
+        "Import failed: {reason}": "Import selhal: {reason}",
+        "Missing": "Chybí",
+        "Out of date": "Zastaralý",
+        "Present": "Přítomen",
+        "Re-import": "Znovu importovat",
+        "Reading descriptors …": "Načítání deskriptorů …",
+        "Register descriptors": "Deskriptory registrů",
+        "ships v{shipped}": "dodává v{shipped}",
+        "State": "Stav",
+        "v{installed} → ships v{shipped}": "v{installed} → dodává v{shipped}"
     },
     "plurals": {
         "{count} email": [

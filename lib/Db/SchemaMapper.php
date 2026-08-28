@@ -4144,8 +4144,35 @@ class SchemaMapper extends QBMapper {
 			}
 
 			// Resolve each reference to a schema ID and add to reverse map.
-			foreach ($references as $ref) {
-				$ref = (string)$ref;
+			//
+			// 🔴 THROUGH THE SHARED RESOLVER, NOT `(string)$entry`. An `allOf`
+			// entry is a SCHEMA OBJECT in standard JSON Schema — `{"$ref":
+			// "person"}` — and casting one to string yields the literal
+			// "Array", which matches no key in $schemaLookup. So this loop
+			// resolved nothing and said nothing, while emitting a PHP notice
+			// per row:
+			//
+			//   Array to string conversion at lib/Db/SchemaMapper.php#4148
+			//   GET /index.php/apps/openregister/api/schemas?_limit=1000
+			//
+			// Measured across the fleet's descriptors: 236 allOf/oneOf/anyOf
+			// entries, ALL of them objects, NOT ONE a bare string. The reverse
+			// map this function exists to build was therefore empty for every
+			// real schema — an "extended by" relationship that is never found
+			// rather than one that errors.
+			//
+			// `parentIdentifierFromAllOfEntry()` already encodes the three
+			// shapes that occur (scalar shorthand, `{"$ref": …}` with its last
+			// path segment, and everything else naming no parent). Its own
+			// docblock records that an earlier caller passed arrays through and
+			// 500'd; this one passed them through and went quiet instead.
+			foreach ($references as $entry) {
+				$identifier = $this->parentIdentifierFromAllOfEntry(entry: $entry);
+				if ($identifier === null) {
+					continue;
+				}
+
+				$ref = (string)$identifier;
 				if (isset($schemaLookup[$ref]) === true) {
 					$targetId = $schemaLookup[$ref];
 					$extendedByMap[$targetId][] = $extendingUuid;

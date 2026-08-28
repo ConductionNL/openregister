@@ -2707,7 +2707,26 @@
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} імпартаваны з {app}.",
+        "%n are out of date": "%n састарэлі",
+        "%n declared in total": "%n аб’яўлена ўсяго",
+        "%n is out of date": "%n састарэў",
+        "%n register is missing": "адсутнічае %n рэестр",
+        "%n registers are missing": "адсутнічае %n рэестраў",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Праграмы пастаўляюць свае рэестры ў выглядзе дэскрыптараў, якія імпартуюцца пры ўсталяванні або абнаўленні праграмы. Як толькі версія праграмы перастае мяняцца, гэты імпарт больш ніколі не выконваецца, а няўдалы імпарт запісваецца толькі ў журнал — таму рэестр можа адсутнічаць на экзэмпляры, які ў астатнім выглядае спраўным. Тут відаць, якія з іх паступілі.",
+        "Could not read the descriptor inventory: {reason}": "Не ўдалося прачытаць пералік дэскрыптараў: {reason}",
+        "Every declared register is present and current.": "Кожны аб’яўлены рэестр прысутнічае і актуальны.",
+        "Import failed: {reason}": "Імпарт не ўдаўся: {reason}",
+        "Missing": "Адсутнічае",
+        "Out of date": "Састарэлы",
+        "Present": "Прысутнічае",
+        "Re-import": "Імпартаваць зноў",
+        "Reading descriptors …": "Чытанне дэскрыптараў …",
+        "Register descriptors": "Дэскрыптары рэестраў",
+        "ships v{shipped}": "пастаўляе v{shipped}",
+        "State": "Стан",
+        "v{installed} → ships v{shipped}": "v{installed} → пастаўляе v{shipped}"
     },
     "plurals": {
         "{count} email": [

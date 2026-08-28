@@ -180,6 +180,17 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\RemoveRetiredCronJobs</step>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
 			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
+			<!-- The flows register must EXIST before any step reads flows.
+			     ImportFlowRegister was written, and named here zero times, so
+			     the `flows` register was never created and every flow step
+			     below it silently operated on nothing.
+
+			     Surfaced by `occ openregister:descriptors:list`, which reported
+			     `flows` ABSENT on an instance where `occ upgrade` had just
+			     reported complete success — 8 of 15 declared registers missing.
+			     Before that command existed the only evidence was two unrelated
+			     e2e suites dying on `registers slug=flows`. -->
+			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
 			<!-- Rewrite before the index is derived: the index is built FROM node
 			     types, so the types should already be the current ones. -->
 			<step>OCA\OpenRegister\Repair\MigrateRenamedFlowNodeTypes</step>
@@ -192,15 +203,40 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
+			<!-- `merge-operation` is where MergeService writes the audit row for
+			     every merge, and where reverseMerge reads the preMergeSnapshot
+			     back from. Its descriptor shipped with no Repair step, so the
+			     register never existed: a merge history that is not recorded,
+			     and a reversal that has nothing to read. -->
+			<step>OCA\OpenRegister\Repair\ImportMergeOperationRegister</step>
+			<!-- ONE STORE PER FLOW. Flows lived in two places — this table and
+			     objects in the `flows` register — and every subsystem reads the
+			     table. Measured with controls: the same definition fires and
+			     bundles from the table and does neither from the register.
+			     Copies the register-authored ones across, disabled, leaving the
+			     register rows in place so the step stays reversible. -->
+			<step>OCA\OpenRegister\Repair\MigrateRegisterFlowsToTable</step>
 			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
 			<step>OCA\OpenRegister\Repair\SeedVocabularyRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
 			<step>OCA\OpenRegister\Repair\SeedZgwZakenMigrationPack</step>
+			<!-- Post-migration ONLY: a fresh install has no Dutch columns to
+			     move, so listing this under <install> would be a guaranteed
+			     no-op. MagicMapper ADDS a column for a renamed property and
+			     never renames, so without this step the data stays in the old
+			     column while every read looks at the new one and finds null —
+			     no error, no data loss, invisible to the suite. -->
+			<step>OCA\OpenRegister\Repair\RenameDutchColumns</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
 			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
+			<!-- The flows register must EXIST before any step reads flows.
+			     ImportFlowRegister was written, and named here zero times, so
+			     the `flows` register was never created and every flow step
+			     below it silently operated on nothing. -->
+			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
 			<!-- Rewrite before the index is derived: the index is built FROM node
 			     types, so the types should already be the current ones. -->
 			<step>OCA\OpenRegister\Repair\MigrateRenamedFlowNodeTypes</step>
@@ -212,6 +248,19 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
+			<!-- `merge-operation` is where MergeService writes the audit row for
+			     every merge, and where reverseMerge reads the preMergeSnapshot
+			     back from. Its descriptor shipped with no Repair step, so the
+			     register never existed: a merge history that is not recorded,
+			     and a reversal that has nothing to read. -->
+			<step>OCA\OpenRegister\Repair\ImportMergeOperationRegister</step>
+			<!-- ONE STORE PER FLOW. Flows lived in two places — this table and
+			     objects in the `flows` register — and every subsystem reads the
+			     table. Measured with controls: the same definition fires and
+			     bundles from the table and does neither from the register.
+			     Copies the register-authored ones across, disabled, leaving the
+			     register rows in place so the step stays reversible. -->
+			<step>OCA\OpenRegister\Repair\MigrateRegisterFlowsToTable</step>
 			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
 			<step>OCA\OpenRegister\Repair\SeedVocabularyRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
@@ -240,6 +289,7 @@ Vrij en open source onder de EUPL-licentie.
 		     shared rows still need splitting. Reports only unless applied. -->
 		<command>OCA\OpenRegister\Command\DedupCollidedSchemasCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillTranslationSourceLanguageCommand</command>
+		<command>OCA\OpenRegister\Command\DescriptorListCommand</command>
 		<!-- field-level-object-encryption: encrypt existing plaintext values of a newly-flagged property. -->
 		<command>OCA\OpenRegister\Command\EncryptFieldCommand</command>
 		<command>OCA\OpenRegister\Command\DedupeRegistersCommand</command>

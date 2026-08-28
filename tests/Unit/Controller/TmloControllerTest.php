@@ -33,6 +33,8 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use OCA\OpenRegister\Controller\TmloController;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TmloService;
@@ -78,6 +80,13 @@ class TmloControllerTest extends TestCase {
 	private SchemaMapper&MockObject $schemaMapper;
 
 	/**
+	 * Object service mock — `summary()` counts through it.
+	 *
+	 * @var ObjectService&MockObject
+	 */
+	private ObjectService&MockObject $objectService;
+
+	/**
 	 * Controller under test.
 	 *
 	 * @var TmloController
@@ -91,12 +100,13 @@ class TmloControllerTest extends TestCase {
 		$this->tmloService = $this->createMock(TmloService::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->objectService = $this->createMock(ObjectService::class);
 
 		$this->controller = new TmloController(
 			'openregister',
 			$this->request,
 			$this->tmloService,
-			$this->createMock(ObjectService::class),
+			$this->objectService,
 			$this->registerMapper,
 			$this->schemaMapper,
 			new NullLogger()
@@ -171,4 +181,174 @@ class TmloControllerTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
 	}//end testExportSingleResolvesTheRegisterBeforeGeneratingXml()
+	/**
+	 * `summary()` returns a per-status count, and does so at all.
+	 *
+	 * THIS ENDPOINT ANSWERED 500 ON EVERY REQUEST. It called
+	 * `findAll(register: …, schema: …, filters: …)` — three named arguments
+	 * that do not exist on `findAll(array $config, bool $_rbac, bool
+	 * $_multitenancy)` — so PHP raised `Error: Unknown named parameter
+	 * $register`. `Error` is not an `Exception`, so it escaped all three catch
+	 * blocks in the method and surfaced as an uncaught fatal.
+	 *
+	 * There was no test on `summary()` at all, which is how a method that
+	 * cannot succeed even once got shipped and stayed shipped.
+	 *
+	 * @return void
+	 */
+	public function testSummaryCountsEachArchiefstatus(): void {
+		// REAL entities, not mocks: Nextcloud's `Entity` resolves getId()/
+		// setId() through __call, so PHPUnit cannot configure them — it refuses
+		// with "method ... does not exist".
+		$register = new Register();
+		$register->setId(1);
+		$register->setSchemas([7]);
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->tmloService->method('isTmloEnabled')->willReturn(true);
+
+		$schema = new Schema();
+		$schema->setId(7);
+		$this->schemaMapper->method('findInIds')->willReturn($schema);
+
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		// One count call per status, four distinct answers.
+		$this->objectService->expects($this->exactly(4))
+			->method('count')
+			->willReturnOnConsecutiveCalls(3, 5, 7, 11);
+
+		$response = $this->controller->summary('zaken', 'zaak');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame([3, 5, 7, 11], array_values($response->getData()));
+	}//end testSummaryCountsEachArchiefstatus()
+
+	/**
+	 * The counts are SCOPED to the requested register and schema.
+	 *
+	 * `ObjectService::count()` reads the service's current context. Without
+	 * `setRegister()`/`setSchema()` first, `MagicMapper::countAll()` sums every
+	 * register/schema table on the instance — so all four statuses would report
+	 * the same instance-wide total and look plausible while being nonsense.
+	 *
+	 * @return void
+	 */
+	public function testSummaryScopesTheCountToTheRegisterAndSchema(): void {
+		// REAL entities, not mocks: Nextcloud's `Entity` resolves getId()/
+		// setId() through __call, so PHPUnit cannot configure them — it refuses
+		// with "method ... does not exist".
+		$register = new Register();
+		$register->setId(1);
+		$register->setSchemas([7]);
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->tmloService->method('isTmloEnabled')->willReturn(true);
+
+		$schema = new Schema();
+		$schema->setId(7);
+		$this->schemaMapper->method('findInIds')->willReturn($schema);
+
+		$this->objectService->expects($this->once())
+			->method('setRegister')->with($register)->willReturnSelf();
+		$this->objectService->expects($this->once())
+			->method('setSchema')->with($schema)->willReturnSelf();
+		$this->objectService->method('count')->willReturn(0);
+
+		$this->controller->summary('zaken', 'zaak');
+	}//end testSummaryScopesTheCountToTheRegisterAndSchema()
+
+	/**
+	 * A register without TMLO enabled is refused, not counted.
+	 *
+	 * @return void
+	 */
+	public function testSummaryRefusesARegisterWithoutTmlo(): void {
+		$register = new Register();
+		$register->setId(1);
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->tmloService->method('isTmloEnabled')->willReturn(false);
+
+		$this->objectService->expects($this->never())->method('count');
+
+		$response = $this->controller->summary('zaken', 'zaak');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+	}//end testSummaryRefusesARegisterWithoutTmlo()
+	/**
+	 * `exportSingle()` reaches the XML generator instead of fatalling.
+	 *
+	 * Same defect class as `summary()`: the call named `identifier:` when the
+	 * parameter is `$id`, so PHP raised `Error: Unknown named parameter
+	 * $identifier` — not an `Exception`, so it escaped all three catch blocks
+	 * and the endpoint answered 500.
+	 *
+	 * It also handed `find()` the Register and Schema ENTITIES for parameters
+	 * typed `string|int|null`, which is a TypeError even once the name is
+	 * right. Both are asserted here: the ids reach `find()`, not the objects.
+	 *
+	 * @return void
+	 */
+	public function testExportSingleFindsTheObjectByIdAndScopeIds(): void {
+		$register = new Register();
+		$register->setId(1);
+		$register->setSchemas([7]);
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->tmloService->method('isTmloEnabled')->willReturn(true);
+
+		$schema = new Schema();
+		$schema->setId(7);
+		$this->schemaMapper->method('findInIds')->willReturn($schema);
+
+		$this->objectService->expects($this->once())
+			->method('find')
+			->with('uuid-1', [], false, 1, 7)
+			->willReturn(new ObjectEntity());
+
+		$this->tmloService->expects($this->once())
+			->method('generateMdtoXml')
+			->willReturn('<mdto/>');
+
+		$response = $this->controller->exportSingle('zaken', 'zaak', 'uuid-1');
+
+		$this->assertNotSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+	}//end testExportSingleFindsTheObjectByIdAndScopeIds()
+
+	/**
+	 * `exportBatch()` passes ONE config array, with the scope inside `filters`.
+	 *
+	 * `findAll()` is `findAll(array $config, bool $_rbac, bool $_multitenancy)`.
+	 * The previous call passed `register:`/`schema:`/`filters:` as named
+	 * arguments that do not exist on it — the third instance of this fatal in
+	 * one file.
+	 *
+	 * The register and schema must travel INSIDE `filters`, because that is
+	 * where `prepareFindAllConfig()` looks when it sets the service context. A
+	 * config that omits them would search every register on the instance.
+	 *
+	 * @return void
+	 */
+	public function testExportBatchScopesTheQueryInsideFilters(): void {
+		$register = new Register();
+		$register->setId(1);
+		$register->setSchemas([7]);
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->tmloService->method('isTmloEnabled')->willReturn(true);
+
+		$schema = new Schema();
+		$schema->setId(7);
+		$this->schemaMapper->method('findInIds')->willReturn($schema);
+
+		$captured = null;
+		$this->objectService->expects($this->once())
+			->method('findAll')
+			->willReturnCallback(function (array $config = []) use (&$captured) {
+				$captured = $config;
+				return [];
+			});
+		$this->tmloService->method('generateBatchMdtoXml')->willReturn('<mdto/>');
+
+		$this->controller->exportBatch('zaken', 'zaak');
+
+		$this->assertSame(1, $captured['filters']['register'] ?? null, 'register id must scope the query');
+		$this->assertSame(7, $captured['filters']['schema'] ?? null, 'schema id must scope the query');
+	}//end testExportBatchScopesTheQueryInsideFilters()
 }//end class

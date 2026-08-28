@@ -2756,7 +2756,26 @@ OC.L10N.register(
         "Open Search / views": "Open Zoeken / weergaven",
         "That is the foundation": "Dat is de fundering",
         "Register, schema, objects: define the container, define the shape, and every app on the stack can read and write it through the same API. The rest of OpenRegister, from audit trails to data quality, hangs off those three.": "Register, schema, objecten: bepaal de houder, bepaal de vorm, en elke app op het platform kan die via dezelfde API lezen en schrijven. De rest van OpenRegister, van audittrails tot datakwaliteit, hangt aan die drie.",
-        "Open the documentation to keep going": "Open de documentatie om verder te gaan"
+        "Open the documentation to keep going": "Open de documentatie om verder te gaan",
+        "{register} was imported from {app}.": "{register} is geïmporteerd uit {app}.",
+        "%n are out of date": "%n zijn verouderd",
+        "%n declared in total": "%n in totaal gedeclareerd",
+        "%n is out of date": "%n is verouderd",
+        "%n register is missing": "%n register ontbreekt",
+        "%n registers are missing": "%n registers ontbreken",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Apps leveren hun registers als descriptors, die worden geïmporteerd bij het installeren of bijwerken van de app. Zodra de versie van een app niet meer verandert, draait die import nooit meer, en een mislukte import wordt alleen naar het logboek geschreven — een register kan dus ontbreken op een instantie die er verder gezond uitziet. Hier zie je welke zijn geland.",
+        "Could not read the descriptor inventory: {reason}": "Kon de descriptor-inventarisatie niet lezen: {reason}",
+        "Every declared register is present and current.": "Elk gedeclareerd register is aanwezig en actueel.",
+        "Import failed: {reason}": "Importeren mislukt: {reason}",
+        "Missing": "Ontbreekt",
+        "Out of date": "Verouderd",
+        "Present": "Aanwezig",
+        "Re-import": "Opnieuw importeren",
+        "Reading descriptors …": "Descriptors lezen …",
+        "Register descriptors": "Register-descriptors",
+        "ships v{shipped}": "levert v{shipped}",
+        "State": "Status",
+        "v{installed} → ships v{shipped}": "v{installed} → levert v{shipped}"
     },
     "nplurals=2; plural=(n != 1);"
 )
