@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "nav": {
     "includePersonalSettings": false
   },
@@ -796,14 +796,14 @@
             }
           },
           {
-            "id": "open-flows",
-            "sinceVersion": "1.1.7",
+            "id": "see-flows",
+            "sinceVersion": "1.1.0",
             "placement": "right",
-            "title": "Automation lives here",
-            "body": "Flows react to what happens in a register: a trigger, a few nodes, and an action that runs when an object is created or changed. Nothing to build now — this stop only shows you where they live, so you can come back once you have something worth automating.",
-            "task": "Open Flows",
             "optional": true,
             "allowManualNext": true,
+            "title": "Where the automation lives",
+            "body": "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.",
+            "task": "Open Flows in the menu",
             "target": {
               "kind": "nav-item",
               "ref": "flows"
