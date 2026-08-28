@@ -61,9 +61,9 @@ class SchemaFlowImportListenerTest extends TestCase {
 	/**
 	 * A container whose OrganisationService answers with $uuid.
 	 *
-	 * @param string|null $uuid  The active organisation's uuid, or null for
-	 *                           "there is an OrganisationService but no active
-	 *                           organisation".
+	 * @param string|null $uuid  What `getOrganisationForNewEntity()` resolves
+	 *                           to, or null for an instance that can resolve
+	 *                           no organisation at all.
 	 * @param boolean     $blows Whether resolving it throws, which models an
 	 *                           instance where the service is not registered.
 	 *
@@ -77,24 +77,30 @@ class SchemaFlowImportListenerTest extends TestCase {
 			return $container;
 		}
 
-		$organisation = null;
-		if ($uuid !== null) {
-			$organisation = new class($uuid) {
-				public function __construct(private string $uuid) {
-				}
-
-				public function getUuid(): string {
-					return $this->uuid;
-				}
-			};
-		}
-
-		$service = new class($organisation) {
-			public function __construct(private ?object $organisation) {
+		$service = new class($uuid) {
+			public function __construct(private ?string $uuid) {
 			}
 
+			/**
+			 * The call the listener MUST make.
+			 *
+			 * Not `getActiveOrganisation()`: this one falls back to the DEFAULT
+			 * organisation when there is no session, which is the situation a
+			 * schema import actually runs in.
+			 */
+			public function getOrganisationForNewEntity(): ?string {
+				return $this->uuid;
+			}
+
+			/**
+			 * Present, and deliberately answering NOTHING.
+			 *
+			 * A session-less import is exactly where this returns null, so a
+			 * listener that reached for it would stamp no organisation — and
+			 * every test here would still pass if this returned a real value.
+			 */
 			public function getActiveOrganisation(): ?object {
-				return $this->organisation;
+				return null;
 			}
 		};
 
@@ -232,7 +238,7 @@ class SchemaFlowImportListenerTest extends TestCase {
 	 * invisible to `/api/flows`, next to two seeded flows that carried an
 	 * organisation and listed fine.
 	 */
-	public function testAnImportedFlowIsStampedWithTheActiveOrganisation(): void {
+	public function testAnImportedFlowIsStampedWithAnOrganisation(): void {
 		$listener = $this->listener([], $this->container('org-1'));
 		$this->fire($listener, $this->schema([
 			['name' => 'Triage', 'nodes' => [], 'edges' => []],
@@ -319,4 +325,29 @@ class SchemaFlowImportListenerTest extends TestCase {
 
 		$this->assertSame('org-owner', $this->updated[0]->getOrganisation());
 	}
-}
+
+	/**
+	 * 🔴 IT MUST ASK FOR "AN ORGANISATION FOR A NEW ENTITY", NOT THE ACTIVE ONE.
+	 *
+	 * A schema import runs during install and during `occ maintenance:repair`,
+	 * with no user session — so there IS no active organisation, and a listener
+	 * that asked for one stamped null and the flow was invisible again. The
+	 * double above answers null from `getActiveOrganisation()` precisely so that
+	 * regression cannot pass.
+	 *
+	 * Measured 2026-08-28: the active-organisation version went green on a dev
+	 * stack that happened to have one, and failed in CI, which does not.
+	 */
+	public function testItResolvesTheOrganisationTheWayEveryOtherNewEntityDoes(): void {
+		$listener = $this->listener([], $this->container('org-default'));
+		$this->fire($listener, $this->schema([
+			['name' => 'Triage', 'nodes' => [], 'edges' => []],
+		]));
+
+		$this->assertSame(
+			'org-default',
+			$this->inserted[0]->getOrganisation(),
+			'the default organisation is what a session-less import must fall back to'
+		);
+	}//end testItResolvesTheOrganisationTheWayEveryOtherNewEntityDoes()
+}//end class
