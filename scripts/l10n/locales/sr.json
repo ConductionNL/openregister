@@ -37,7 +37,23 @@
 		"X-Custom-Header: value\nAuthorization: Bearer token": "Literal HTTP header example; header names are protocol tokens and are never translated.",
 		"X-Custom-Header: value\\nAuthorization: Bearer token": "Literal HTTP header example with an escaped newline; header names are protocol tokens.",
 		"objectType: object\\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens.",
-		"objectType: object\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens and are never translated."
+		"objectType: object\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens and are never translated.",
+		"Driver": "Database-driver term, used unchanged in this locale's technical language.",
+		"Host *": "Networking term, used unchanged in this locale, with the required-field marker.",
+		"Id": "Abbreviation of identifier, written the same way in this locale's technical UI.",
+		"Model": "Same spelling and meaning in this locale.",
+		"myapp": "A literal example application id shown verbatim; not prose.",
+		"Test": "Same spelling and meaning in this locale.",
+		"Url": "Invariant abbreviation, written the same way in this locale.",
+		"Browser Web Push (VAPID)": "Browser and Web Push are the protocol's own names and VAPID is its acronym; the protocol name is not translated.",
+		"Bucket": "Object-storage term, used unchanged in this locale's technical language.",
+		"Golden record": "Master-data-management term with no established local equivalent; used unchanged in data-governance language.",
+		"Survivor": "Master-data-management term for the record that survives a merge; used unchanged in data-governance language.",
+		"ID": "Latin acronym kept as-is in Serbian technical UI, as Nextcloud core does.",
+		"ID:": "Latin acronym with its label colon; see ID.",
+		"ID: {id}": "Latin acronym plus a placeholder; there is no prose to translate.",
+		"Slug": "URL-slug term, used unchanged in Serbian developer language.",
+		"Webhook": "Protocol term, used unchanged in Serbian technical language."
 	},
 	"corrections": {
 		"Audit trail #{id}": "Pre-existing value was 'Revizijski trag #{id}' — wrong on THREE counts at once, which is why it is worth spelling out. It was in LATIN script inside a Cyrillic bundle; 'trag' with that adjective form is CROATIAN rather than Serbian; and 'ревизијски' contradicted the 'ревизорски' this bundle uses in its 24 other audit-trail values. Corrected to 'Ревизорски траг #{id}'. Worth noting the neighbourhood: openbuild ships one Croatian catalogue under sr.json as well as bs/cs/hr/mk/sk/sl (harvest drops it automatically, §6.6), and the identical defect appeared in the sl bundle as 'Revizijski trag' — so a Croatian string in a Serbian bundle is a known contamination path, not a coincidence.",
@@ -48,6 +64,7 @@
 		"Add Source": "Pre-existing value was 'Додај извор' with a lowercase 'извор', against 5 capitalised uses of the term elsewhere. Corrected to 'Додај Извор' for the capitalisation convention in capitalisationNote — a 1-of-6 outlier was not worth leaving in place while adding 999 values that follow the rule.",
 		"Objects already stored under this schema may no longer match it. Save anyway?": "Pre-existing value used a lowercase 'шеми' against 33 capitalised uses of Шема. Same capitalisation normalisation as above; the rest of the sentence, including the idiomatic impersonal 'Ипак сачувати?', is unchanged.",
 		"Select a repository you have write access to": "Pre-existing value was 'Изабери репозиторијум за који имаш приступ за писање' — a 2sg PRESENT ('имаш'), so informal address, in a bundle whose prose is formal 2pl throughout and against a core that produces zero informal markers in 4631 values. Corrected to full 2pl. This is not a retreat from the 2sg label convention: the bundle itself already draws the line at instruction sentences, rendering 'Please select which register and schema to use…' and 'Select which property from the event…' as 'Изаберите…', so the correction makes the Select family MORE internally consistent, not less. Same split point sl uses for this very string.",
-		"Select registers and schemas to save a view": "Same 2sg-present slip as above ('сачуваш'), corrected to 'Изаберите Регистре и Шеме да сачувате приказ'. These two were the only detectable informal values in the bundle; a third, 'Изабери модел или унеси прилагођени назив модела', LOOKS like the same defect and was deliberately left alone because 'унеси' is a 2sg imperative rather than a present — see UNDETECTABLE in detectors/sr.js."
+		"Select registers and schemas to save a view": "Same 2sg-present slip as above ('сачуваш'), corrected to 'Изаберите Регистре и Шеме да сачувате приказ'. These two were the only detectable informal values in the bundle; a third, 'Изабери модел или унеси прилагођени назив модела', LOOKS like the same defect and was deliberately left alone because 'унеси' is a 2sg imperative rather than a present — see UNDETECTABLE in detectors/sr.js.",
+		"_%n entry has no hash yet_::_%n entries have no hash yet_": "Trimmed from three plural forms to two; sr declares nplurals=2 in its own header and a longer array renders BLANK for the counts selecting the missing index. Existing wording kept, including 'хеш'."
 	}
 }
