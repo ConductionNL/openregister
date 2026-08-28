@@ -90,7 +90,8 @@ class RegisterDescriptorServiceTest extends TestCase {
 		string $slug,
 		string $version,
 		?string $type = null,
-		?string $app = null
+		?string $app = null,
+		int $objects = 0
 	): void {
 		$descriptor = [
 			'openapi'    => '3.0.0',
@@ -99,6 +100,16 @@ class RegisterDescriptorServiceTest extends TestCase {
 				'registers' => [$slug => ['slug' => $slug, 'title' => ucfirst($slug), 'version' => $version]],
 			],
 		];
+
+		if ($objects > 0) {
+			$descriptor['components']['objects'] = array_map(
+				static fn (int $i): array => [
+					'@self' => ['register' => $slug, 'schema' => 'thing', 'slug' => 'thing-' . $i],
+					'name'  => 'Voorbeeld ' . $i,
+				],
+				range(1, $objects)
+			);
+		}
 
 		$marker = [];
 		if ($type !== null) {
@@ -294,6 +305,97 @@ class RegisterDescriptorServiceTest extends TestCase {
 		$result = $this->service->reimport(appId: 'fixtureapp', slug: 'flows');
 
 		$this->assertSame('imported', $result['outcome']);
+	}
+
+	/**
+	 * 🔴 A MOCK IMPORTS UNDER ITS OWN CONFIGURATION IDENTITY.
+	 *
+	 * `importFromApp` stamps `imported_config_<appId>_version` plus a content
+	 * hash. A mock declares the SAME register slug as the app's real descriptor —
+	 * larpinq ships `larpinq_register.json` and `larpinq_mock_register.json`,
+	 * both declaring `larpinq` — so importing the mock under the plain app id
+	 * writes over the real descriptor's stamp and reads its hash.
+	 *
+	 * Measured on a live instance before this fix: the command printed
+	 * `register "larpinq" imported.` while the register ended up with the REAL
+	 * descriptor's 11 schemas and ZERO of the mock's 30 objects.
+	 */
+	public function testAMockImportsUnderItsOwnConfigurationIdentity(): void {
+		$this->writeDescriptor(
+			file: 'a_mock_register.json',
+			slug: 'flows',
+			version: '1.0.0',
+			type: 'mock',
+			objects: 3
+		);
+		$this->expectApp('fixtureapp');
+		$this->registerMapper->method('findAll')->willReturn([$this->register('flows', '1.0.0')]);
+
+		$this->configurationService->expects($this->once())
+			->method('importFromApp')
+			->with(
+				// NOT 'fixtureapp' — that identity belongs to the real descriptor.
+				$this->equalTo('fixtureapp.mock'),
+				$this->anything(),
+				$this->equalTo('1.0.0'),
+				$this->isTrue()
+			)
+			->willReturn(['objects' => [1, 2, 3], 'skipped' => []]);
+
+		$result = $this->service->reimport(appId: 'fixtureapp', slug: 'flows');
+
+		$this->assertSame('imported', $result['outcome']);
+		$this->assertSame(3, $result['counts']['imported']);
+	}
+
+	/**
+	 * 🔴 "IMPORTED" MUST NOT BE SAYABLE OVER A NO-OP.
+	 *
+	 * The old post-check asked only whether a config version existed for the
+	 * slug. For a mock that is already true — the app's own descriptor stamped it
+	 * at install — so the service returned `imported` for an import that created
+	 * nothing at all. A success message that cannot be told apart from silence is
+	 * the exact failure this command was built to surface.
+	 */
+	public function testADescriptorThatSeedsNoneOfItsObjectsIsAFailure(): void {
+		$this->writeDescriptor(
+			file: 'a_mock_register.json',
+			slug: 'flows',
+			version: '1.0.0',
+			type: 'mock',
+			objects: 30
+		);
+		$this->expectApp('fixtureapp');
+		$this->registerMapper->method('findAll')->willReturn([$this->register('flows', '1.0.0')]);
+
+		// The register lands, the data does not — exactly what was measured live.
+		$this->configurationService->method('importFromApp')
+			->willReturn(['objects' => [], 'skipped' => ['objects' => 30, 'seedObjects' => 0]]);
+
+		$result = $this->service->reimport(appId: 'fixtureapp', slug: 'flows');
+
+		$this->assertSame('failed', $result['outcome']);
+		$this->assertStringContainsString('30', (string)$result['reason']);
+		$this->assertStringContainsString('none were imported', (string)$result['reason']);
+		$this->assertSame(0, $result['counts']['imported']);
+	}
+
+	/**
+	 * A descriptor that declares NO objects — every real register descriptor —
+	 * must still report success. The rule above is about a descriptor that
+	 * promised data and delivered none, not about registers that never carried
+	 * any.
+	 */
+	public function testARegisterDescriptorWithNoObjectsStillSucceeds(): void {
+		$this->writeDescriptor(file: 'a_register.json', slug: 'flows', version: '1.3.0');
+		$this->expectApp('fixtureapp');
+		$this->registerMapper->method('findAll')->willReturn([$this->register('flows', '1.3.0')]);
+		$this->configurationService->method('importFromApp')->willReturn([]);
+
+		$result = $this->service->reimport(appId: 'fixtureapp', slug: 'flows');
+
+		$this->assertSame('imported', $result['outcome']);
+		$this->assertSame(0, $result['counts']['declared']);
 	}
 
 	/**

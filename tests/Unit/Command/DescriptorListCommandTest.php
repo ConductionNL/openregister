@@ -119,6 +119,75 @@ class DescriptorListCommandTest extends TestCase {
 	}
 
 	/**
+	 * 🔴 THE COUNTS REACH THE OPERATOR, not just the return value.
+	 *
+	 * `register "larpinq" imported.` was printed by an import that created the
+	 * register's schemas and none of its 30 demo objects. The sentence could not
+	 * be told apart from a run that seeded everything, which is why the defect
+	 * survived a live run and a green unit suite.
+	 */
+	public function testTheImportPrintsHowManyDemoObjectsLanded(): void {
+		$this->descriptors->method('reimport')
+			->willReturn(
+				[
+					'outcome' => 'imported',
+					'reason'  => null,
+					'counts'  => ['declared' => 30, 'imported' => 30, 'skipped' => 0],
+				]
+			);
+
+		$this->assertSame(0, $this->tester->execute(['--import' => 'flows', '--app' => 'openregister']));
+
+		$display = $this->tester->getDisplay();
+		$this->assertStringContainsString('30 of 30', $display);
+		$this->assertStringContainsString('0 skipped', $display);
+	}
+
+	/**
+	 * A PARTIAL seed is stated as such. 29 of 30 is not the same event as 30 of
+	 * 30, and an operator deciding whether the demo is usable needs the
+	 * difference.
+	 */
+	public function testAPartialSeedNamesBothNumbers(): void {
+		$this->descriptors->method('reimport')
+			->willReturn(
+				[
+					'outcome' => 'imported',
+					'reason'  => null,
+					'counts'  => ['declared' => 30, 'imported' => 29, 'skipped' => 1],
+				]
+			);
+
+		$this->tester->execute(['--import' => 'flows', '--app' => 'openregister']);
+
+		$display = $this->tester->getDisplay();
+		$this->assertStringContainsString('29 of 30', $display);
+		$this->assertStringContainsString('1 skipped', $display);
+	}
+
+	/**
+	 * A descriptor that declares NO objects keeps the short sentence. Every real
+	 * register descriptor is in this case, and padding them with "0 of 0 demo
+	 * object(s)" would make the common line noisier to no purpose.
+	 */
+	public function testADescriptorWithNoObjectsKeepsTheShortMessage(): void {
+		$this->descriptors->method('reimport')
+			->willReturn(
+				[
+					'outcome' => 'imported',
+					'reason'  => null,
+					'counts'  => ['declared' => 0, 'imported' => 0, 'skipped' => 0],
+				]
+			);
+
+		$this->tester->execute(['--import' => 'flows', '--app' => 'openregister']);
+
+		$display = $this->tester->getDisplay();
+		$this->assertStringContainsString('imported', $display);
+		$this->assertStringNotContainsString('demo object', $display);
+	}
+
+	/**
 	 * A FAILED re-import exits non-zero, unlike a listing: here the caller asked
 	 * for something to happen and it did not.
 	 */
