@@ -16,6 +16,9 @@ return [
         // Federation (cross-instance OCM sharing) — token-scoped serving endpoints.
         // #[PublicPage]: the caller is a remote instance authenticated by the
         // bearer share token in the URL, not a local session.
+        // First-time setup wizard (ADR-042) - the standard CnSetupWizard contract.
+        ['name' => 'setup#status',    'url' => '/api/setup/status',            'verb' => 'GET'],
+        ['name' => 'setup#runAction', 'url' => '/api/setup/action/{actionId}', 'verb' => 'POST', 'requirements' => ['actionId' => '[a-z0-9\\-]+']],
         ['name' => 'federation#objects', 'url' => '/api/federation/{shareToken}/objects',      'verb' => 'GET', 'requirements' => ['shareToken' => '[^/]+']],
         ['name' => 'federation#object',  'url' => '/api/federation/{shareToken}/objects/{id}', 'verb' => 'GET', 'requirements' => ['shareToken' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'federation#meta',    'url' => '/api/federation/{shareToken}/meta',         'verb' => 'GET', 'requirements' => ['shareToken' => '[^/]+']],
