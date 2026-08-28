@@ -1,0 +1,315 @@
+{
+  "info": {
+    "_postman_id": "a7e3c1d2-9b44-4f10-8c6e-2d5a1f0b3c88",
+    "name": "OpenRegister Register Descriptors API",
+    "description": "The register-descriptor inventory and the forced re-import.\n\nWHY THESE ARE CONTRACT TESTS\n\nEighteen fleet apps ship a register descriptor and import it from a Repair step. Repair steps run on install and `occ upgrade`, and `occ upgrade` reports \"No upgrade required\" once an app's version settles — so the import can never run again. The steps are documented never to throw: a failure logs a warning and leaves the instance looking healthy.\n\nThe consequence was measured, not imagined: an `occ upgrade` that reported complete success left 8 of 15 declared registers absent, including `flows`, and two e2e suites died on the missing register.\n\nSo the assertions here are mostly about what the API says when something is WRONG. A contract suite that only exercises the healthy row would reproduce the silence this endpoint exists to break.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "GET /api/register-descriptors → every declared register, with a state",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/register-descriptors",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "register-descriptors"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the inventory answers 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('it carries rows and the three counts', () => {",
+              "  pm.expect(body).to.have.property('results');",
+              "  pm.expect(body).to.have.property('total');",
+              "  pm.expect(body).to.have.property('absent');",
+              "  pm.expect(body).to.have.property('behind');",
+              "});",
+              "",
+              "// 🔴 THE ABSENT COUNT IS A FIRST-CLASS FIELD, not something a client has to",
+              "// derive by filtering. A consumer that has to compute 'is anything wrong'",
+              "// is one that will render a healthy-looking total and move on — which is",
+              "// the exact failure this endpoint was built to end.",
+              "pm.test('absent and behind are reported as counts, not left to the client', () => {",
+              "  pm.expect(body.absent).to.be.a('number');",
+              "  pm.expect(body.behind).to.be.a('number');",
+              "});",
+              "",
+              "const rows = body.results || [];",
+              "pm.test('every row names its app, slug, state and shipped version', () => {",
+              "  rows.forEach((r) => {",
+              "    pm.expect(r).to.have.property('appId');",
+              "    pm.expect(r).to.have.property('slug');",
+              "    pm.expect(['current', 'behind', 'absent']).to.include(r.state);",
+              "    pm.expect(r.shippedVersion, r.slug + ' ships a version').to.be.a('string');",
+              "  });",
+              "});",
+              "",
+              "// absent and present are told apart by installedVersion being NULL, not by",
+              "// a truthy check on a string. `behind` and `absent` both 'need attention'",
+              "// and need different actions, so nothing may collapse them.",
+              "pm.test('an absent row has no installed version, a present one does', () => {",
+              "  rows.forEach((r) => {",
+              "    if (r.state === 'absent') { pm.expect(r.installedVersion, r.slug).to.be.null; }",
+              "    else { pm.expect(r.installedVersion, r.slug).to.not.be.null; }",
+              "  });",
+              "});",
+              "",
+              "const current = rows.find((r) => r.state === 'current');",
+              "pm.collectionVariables.set('descApp', current ? current.appId : '');",
+              "pm.collectionVariables.set('descSlug', current ? current.slug : '');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST re-import a register whose version already matches → still writes",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/register-descriptors/{{descApp}}/{{descSlug}}/import",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "register-descriptors",
+            "{{descApp}}",
+            "{{descSlug}}",
+            "import"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Skipped only when this instance holds no current register at all — and",
+              "// the skip says so, rather than passing quietly over an untested path.",
+              "if (!pm.collectionVariables.get('descSlug')) {",
+              "  pm.test.skip('SKIPPED — no register on this instance is present and current, so the version-gate case is UNVERIFIED by this run');",
+              "} else {",
+              "  pm.test('the forced re-import answers 200', () => pm.response.to.have.status(200));",
+              "  const body = pm.response.json();",
+              "",
+              "  // 🔴 THE WHOLE POINT. ImportHandler short-circuits on",
+              "  // `version_compare(shipped, installed, '<=')` unless forced, and the",
+              "  // versions match in exactly the case an administrator presses this. An",
+              "  // unforced import would report success having written nothing.",
+              "  pm.test('a version-matched re-import reports imported, never skipped', () => {",
+              "    pm.expect(body.outcome).to.eql('imported');",
+              "  });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST re-import a register the app does not declare → 422 naming the slug",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/register-descriptors/openregister/no-such-register-9f3a1c/import",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "register-descriptors",
+            "openregister",
+            "no-such-register-9f3a1c",
+            "import"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('an undeclared register is refused with 422', () => pm.response.to.have.status(422));",
+              "const body = pm.response.json();",
+              "pm.test('the outcome is failed', () => pm.expect(body.outcome).to.eql('failed'));",
+              "",
+              "// The reason must NAME the slug. 'Import failed' leaves an administrator",
+              "// unable to tell a typo from a broken descriptor from a missing app — three",
+              "// different next steps.",
+              "pm.test('the reason names the slug that could not be found', () => {",
+              "  pm.expect(String(body.reason)).to.include('no-such-register-9f3a1c');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST re-import for an app that ships nothing → refused, and says why",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/register-descriptors/no-such-app-7c2b/flows/import",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "register-descriptors",
+            "no-such-app-7c2b",
+            "flows",
+            "import"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('an unknown app is refused with 422', () => pm.response.to.have.status(422));",
+              "const body = pm.response.json();",
+              "pm.test('and the refusal is reported, not swallowed', () => {",
+              "  pm.expect(body.outcome).to.eql('failed');",
+              "  pm.expect(body.reason, 'a reported failure carries its reason').to.be.a('string');",
+              "  pm.expect(body.reason).to.not.eql('');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "descApp",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "descSlug",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{username}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{password}}",
+        "type": "string"
+      }
+    ]
+  }
+}

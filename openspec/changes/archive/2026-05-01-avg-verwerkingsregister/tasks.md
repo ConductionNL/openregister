@@ -1,0 +1,92 @@
+# Tasks: AVG Verwerkingsregister
+
+> **Status (Phase 4):** Spec complete. Phase 4 ships the operator UI — a tabbed dashboard at `/avg` covering Activities (CRUD), Verantwoording (Art 30 §4 audit aggregation report), DSAR (inzage / preview erasure / erase / portabiliteit JSON download), and Compliance (unannotated-PII scan). All 15 spec requirements implemented. 33 backend integration tests across five suites + browser-tested end-to-end UI flows.
+
+## Implemented (Phase 1)
+
+- [x] **Verwerkingsregister modeled as a dedicated catalog table.** `lib/Migration/Version1Date20260430160000.php` adds `oc_openregister_verwerkingsactiviteiten` per AVG Art 30 §1 with all 17 catalogue columns + 4 indexes. Rationale: fixed AVG-mandated schema doesn't need OpenRegister flexibility, and the audit-trail FK is cleaner pointing at a stable table than at a register-managed object.
+
+- [x] **Article 6 GDPR legal-basis vocabulary enforced.** `Verwerkingsactiviteit::RECHTSGROND_VOCABULARY` = `[toestemming, overeenkomst, wettelijke_verplichting, vitaal_belang, publieke_taak, gerechtvaardigd_belang]`. `VerwerkingsactiviteitMapper::insert/update` reject unknown values with `InvalidArgumentException`. Closes the consent-as-legal-basis tracking primitive (Art 6(1)(a) + Art 7).
+
+- [x] **Processing activities linked to schemas containing personal data.** Per the trigger contract documented in `design.md`, schemas (and registers, as fallback) carry the `x-openregister-processing-activity: <code|uuid>` annotation in their `configuration` column. `AuditTrailMapper::resolveProcessingActivityId` reads the annotation at write time and resolves it via `VerwerkingsactiviteitMapper::resolveReference` (code first, uuid second).
+
+- [x] **All access to personal data logged with processing purpose.** `AuditTrailMapper::createAuditTrail` now writes the resolved `processing_activity_id` onto every audit row via the schema/register annotation lookup. Per-action override (`ObjectEntity::setProcessingActivityId()`) takes precedence — used by the upcoming data-subject rights endpoints to attribute reads/writes to a DSAR-specific processing activity.
+
+- [x] **Verwerkingsactiviteit lifecycle (concept / published / archived).** `Verwerkingsactiviteit::STATUS_VOCABULARY` enforces the transitions; mapper validation rejects unknown statuses. Hard-delete is preserved at the mapper level but operationally we recommend `status='archived'` to avoid orphan audit-trail FKs.
+
+- [x] **Multi-tenant privacy isolation.** `organisation_id` column on the table + filter in `VerwerkingsactiviteitMapper::findAll(?string $organisationId)`. Single-row finds bypass the filter so audit hooks can resolve cross-tenant explicit references when needed.
+
+- [x] **Privacy-specific audit trail.** Existing `oc_openregister_audit_trails` already includes `processing_activity_id`, `processing_activity_url`, `processing_id`, `confidentiality`, `retention_period`, hash-chained tamper evidence (`hash`/`previous_hash`). Phase 1 wires the missing FK target so the existing columns are populated automatically — no separate "privacy audit" table needed.
+
+- [x] **CRUD endpoints for the verwerkingsregister catalog (Phase 2a).** `lib/Controller/VerwerkingsactiviteitenController.php` exposes `GET /api/avg/verwerkingsactiviteiten` (list), `GET .../{id}` (show by id|uuid|code), `POST .../` (admin-only create returning 201), `PUT .../{id}` (admin-only update), `DELETE .../{id}` (admin-only soft-archive — flips `status='archived'` so audit-trail FKs stay resolvable, never hard-deletes). Validation errors land as 422 envelopes; unknown identifiers as 404; non-admin write attempts as 403. Read paths intentionally don't gate on admin (AVG Art 30 §4 requires the register to be available to supervisory authorities and indirectly to data subjects).
+
+- [x] **Art 30 register MUST be exportable for the Autoriteit Persoonsgegevens (Phase 2a).** `GET /api/avg/verantwoording` joins each verwerkingsactiviteit with audit-trail row counts (per action) attributed to it via `processing_activity_id`. Response carries `{count, activities: [{...activity, activity: {totalEvents, byAction: {create, update, delete, read}}}]}`. The lifetime counters give AP reviewers + the operator's annual `verantwoordingsdocument` a single-query view of "how many times has each declared processing activity actually been performed". Verified live by curl + integration test.
+
+- [x] **Inzageverzoek endpoint (Art 15 AVG, Phase 2b).** `GET /api/avg/inzage?subject={value}&type={email|bsn|name|...}&mode={exact|ilike}`. `DsarService::findObjectsForSubject` walks `oc_openregister_entities` for rows matching the subject value (case-insensitive exact by default), joins `oc_openregister_entity_relations.object_id` to dedupe, and loads each owning `ObjectEntity` via MagicMapper. Response shape: `{subject, type, count, results: [{object, gdprEntities: [{type, value, category, detectedAt}]}]}`. Admin-only.
+
+- [x] **Recht op rectificatie endpoint (Art 16 AVG, Phase 2b).** `POST /api/avg/rectificatie` body `{objectId, changes}`. `DsarService::rectifyObjectForSubject` loads the object, merges the change set into the existing payload, sets `setProcessingActivityId(<dsar uuid>)` on the entity, and calls `MagicMapper::update` — the audit-trail trigger contract (Phase 1) tags the resulting audit row with the configured DSAR processing activity. Admin-only. 422 on missing/empty payload, 404 on unknown object.
+
+- [x] **Recht op vergetelheid endpoint (Art 17 AVG, Phase 2b).** `POST /api/avg/vergetelheid?subject=...&type=...&dryRun=true|false`. `DsarService::eraseObjectsForSubject` matches every object referencing the subject, optionally returns the matched set without acting (`dryRun=true` for the operator's confirmation UX), and otherwise sets the soft-delete metadata on each match (`{deletedBy, deletedAt, reason: 'avg-vergetelheid', subject}`) plus the DSAR processing-activity tag. Admin-only. The deletion itself is audit-logged for legal defence; the configured DSAR processing activity provides the legal basis under Art 17 §3(b).
+
+- [x] **Recht op dataportabiliteit endpoint (Art 20 AVG, Phase 2b).** `GET /api/avg/portabiliteit?subject=...&type=...`. Same locator path as inzage but the response envelope is reduced to the machine-readable export shape: `{subject, generated, count, objects: [...]}` — no GdprEntity match annotations, just the canonical object payloads in the order they were found. Admin-only.
+
+- [x] **DSAR processing-activity attribution.** `DsarService::getDsarProcessingActivityUuid` reads the `dsar_processing_activity` app-config key (defaults to the literal `dsar` code), resolves it via `VerwerkingsactiviteitMapper::resolveReference` (accepts both `code` and `uuid`), and returns the canonical uuid. All write paths (vergetelheid + rectificatie) set this on `ObjectEntity::setProcessingActivityId()` before persisting so the Phase 1 audit-trail hook tags the row correctly. When unset / unresolvable, the audit row falls through to schema/register defaults — no fatal error.
+
+- [x] **Retention enforcement automatically triggers deletion or anonymization (Phase 3).** `lib/Service/AvgRetentionService.php` walks every published verwerkingsactiviteit, parses its `bewaartermijn` (ISO-8601 duration), computes the cut-off, and finds objects whose latest audit row predates it. Each erasure is soft-delete with `reason='avg-bewaartermijn'` + activityUuid; the audit ledger stays intact for forensic legibility. Activities without `bewaartermijn` (or with malformed ISO-8601) are reported under `skippedActivities` rather than crashing the pass. Driven by `AvgRetentionJob` daily TimedJob with operator overrides `avg_retention_enabled` (kill switch) + `avg_retention_dry_run` (safe-rollout mode). Verified by 5 integration tests.
+
+- [x] **Automated PII detection flags unregistered personal data processing (Phase 3).** `lib/Service/AvgComplianceService.php` aggregates `oc_openregister_entities × oc_openregister_entity_relations` by (register_id, schema_id), then filters out pairs where either layer has `x-openregister-processing-activity`. Each remaining issue is "actionable" — the operator either annotates, removes the data, or documents the gap. Exposed via `GET /api/avg/compliance` (admin-only). Verified by 4 integration tests.
+
+- [x] **Verwerker / Consent / DPIA modeled as operator-importable schemas (Phase 3).** Per the architectural pointer that object types live as schemas (not hardcoded tables), `lib/Resources/AvgSchemas/avg-bundle.json` ships a single import bundle containing the `avg` register + three schemas: `verwerker` (Art 28 third-party processor + verwerkersovereenkomst tracking + sub-verwerkers + doorgifte buiten EU), `consent` (Art 6(1)(a) + Art 7 per-subject consent ledger with subject identifier domain + grant/withdraw timestamps + capture source), `dpia` (Art 35 Data Protection Impact Assessment with identifiedRisks / mitigations / DPO consultation / prior-consultation flag). All three schemas carry `x-openregister-processing-activity` so writes are correctly tagged on the audit trail. Operators import via `POST /api/configurations/import` (multipart `file=@avg-bundle.json`); live import smoke verified end-to-end.
+
+- [x] **Foundation gap: entity_relations disambiguation (Phase 3).** `Version1Date20260430180000` adds `register_id` + `schema_id` + `object_uuid` columns + indexes to `oc_openregister_entity_relations`. `EntityRecognitionHandler::storeDetectedEntities` populates them when source is `object` (best-effort: loads the object via MagicMapper to get register/schema/uuid). `DsarService::buildObjectKey` + `loadObjectByEntry` prefer uuid lookup when present (deterministic across magic-tables), falling back to int id for legacy rows. The DsarService test fixture re-tightens its identity assertion now that lookup is deterministic.
+
+- [x] **Frontend management UI (Phase 4).** Tabbed dashboard at `/avg` with four sections backed by the REST surface:
+  - **Activities** — list + create + edit + soft-archive of catalog entries with controlled-vocabulary badges (`rechtsgrond` + `status`). Modal form (`src/dialogs/avg/EditActivityDialog.vue`) covers all AVG Art 30 §1 fields including the `categorieen_betrokkenen` / `categorieen_persoonsgegevens` arrays via line-per-item textareas.
+  - **Verantwoording** — Art 30 §4 supervisory report rendering audit-trail aggregation per processing activity (`totalEvents` + per-action breakdown table).
+  - **DSAR** — subject identifier + type filter + four action buttons (Inzage Art 15 / Preview erasure dry-run / Erase Art 17 / Portabiliteit JSON download Art 20). Erase requires the operator to run a dry-run preview first as a confirmation gate.
+  - **Compliance** — runs the unannotated-PII scan + renders flagged schemas with their PII counts and per-layer annotation status.
+
+  Navigation entry added to the side menu with `ShieldLockOutline` icon. Pinia store at `src/store/modules/avg.js` wraps the full REST surface. Browser-verified end-to-end: created an activity, generated the verantwoordingsdocument, confirmed DSAR form renders, confirmed Compliance empty state.
+
+  Verwerker / Consent / DPIA records continue to use the standard schema/object UI from the Phase 3 schema bundle import — no separate UI surface needed per the architectural pointer (object types live as schemas).
+
+## Test coverage
+
+- [x] `tests/Service/AvgVerwerkingsregisterIntegrationTest` (Phase 1) — 9 integration tests against real Postgres + the live audit-trail mapper:
+  - Mapper round-trip (insert / find / update with default-status auto-fill).
+  - Validation rejects invalid `rechtsgrond`.
+  - Validation rejects missing `naam`.
+  - Validation rejects missing `doelbinding`.
+  - `resolveReference` finds by code and by uuid; unknown reference returns null.
+  - Audit-trail hook honours schema annotation (`x-openregister-processing-activity` on schema config tags every audit row through that schema).
+  - Audit-trail hook falls back to register annotation when schema is unset.
+  - Audit-trail per-action override (`ObjectEntity::setProcessingActivityId()`) beats schema/register defaults.
+  - Audit-trail hook leaves `processing_activity_id` unset when no annotation exists (preserves existing behaviour for callers that haven't opted in).
+
+- [x] `tests/Service/VerwerkingsactiviteitenControllerIntegrationTest` (Phase 2a) — 7 integration tests covering list / show-by-id-uuid-code / admin-only create gating / 422 validation envelope / 201 create round-trip / soft-archive on DELETE / verantwoording aggregation join. Live API verified end-to-end via curl: `POST /api/avg/verwerkingsactiviteiten` returns 201 with persisted entity; `GET /api/avg/verantwoording` returns the catalog with the audit-aggregate slot populated.
+
+- [x] `tests/Service/DsarServiceIntegrationTest` (Phase 2b, refined Phase 3) — 8 integration tests covering: GdprEntity → entity_relations → MagicMapper join (inzage); per-object dedup when one object has multiple PII hits; empty-result safety on unknown subject; `getDsarProcessingActivityUuid` resolution by `code`; vergetelheid `dryRun=true` reports matches without touching objects; vergetelheid live erase tags audit rows with the DSAR activity uuid (proves the Phase 1 trigger contract composes); rectifyObjectForSubject returns the updated envelope; rectifyObjectForSubject returns null for unknown objects. Phase 3 re-tightened the identity assertion now that uuid lookup is deterministic. Live API verified end-to-end via curl.
+
+- [x] `tests/Service/AvgRetentionServiceIntegrationTest` (Phase 3) — 5 integration tests: activity without `bewaartermijn` is skipped; malformed ISO-8601 is skipped + logged; dry-run reports overdue objects without acting; recently-audited objects are preserved (clock resets on writes); live erase pass marks objects deleted AND leaves the audit ledger intact.
+
+- [x] `tests/Service/AvgComplianceServiceIntegrationTest` (Phase 3) — 4 integration tests: annotated schema is NOT flagged; unannotated schema with PII IS flagged; register-level annotation satisfies the check (schema inherits); `runAllChecks` envelope shape with totals matching issues array length.
+
+## Architecture (Phase 1 decisions taken)
+
+| Decision | Choice |
+|---|---|
+| Table shape | Dedicated `oc_openregister_verwerkingsactiviteiten` (NOT a register that eats its own dogfood). |
+| Trigger linkage precedence | Per-action override (`ObjectEntity::processingActivityId`) > per-schema annotation > per-register annotation > unset (no tag). |
+| Audit-trail FK direction | `audit_trails.processing_activity_id` is a soft FK to `verwerkingsactiviteiten.uuid`. Hash-chained tamper evidence locks the audit content; no hard FK constraint needed. |
+| Reference form | Both `code` (short readable) and `uuid` (canonical) accepted; resolver tries `code` first. |
+| Vocabulary validation | Mapper-level `InvalidArgumentException` for `rechtsgrond` and `status`; required-field check for `naam` and `doelbinding`. |
+| Multi-tenant isolation | `organisation_id` on the table + filter on listing queries; single-row lookups (audit hook resolution path) bypass the filter so cross-tenant references can be explicit. |
+| Authorization split (Phase 2a) | Read paths (list / show / verantwoording) open to any authenticated user — Art 30 §4 requires the register to be available to supervisory authorities + (indirectly via DSAR) to data subjects. Write paths (create / update / soft-delete) admin-only. |
+| Soft-delete semantics (Phase 2a) | `DELETE` flips `status='archived'`, never hard-deletes — audit-trail rows reference activities by uuid as a soft FK and forensic legibility requires the catalog row to remain resolvable indefinitely. |
+| DSAR composition layer (Phase 2b) | A dedicated `DsarService` composes GdprEntity index + MagicMapper rather than embedding the join in the controller; keeps the controller thin and testable, and makes the same composition reusable from CLI tooling or scheduled jobs. |
+| DSAR audit attribution (Phase 2b) | All DSAR write paths set `ObjectEntity::setProcessingActivityId()` before persisting so the Phase 1 audit-trail hook tags rows with the configured DSAR processing activity. The activity reference is operator-configurable via the `dsar_processing_activity` app-config key (defaults to `code='dsar'`). |
+| Vergetelheid dry-run UX (Phase 2b) | `POST /api/avg/vergetelheid?dryRun=true` returns the matched set without acting — gives the operator a confirmation surface ("you're about to erase 12 objects, proceed?") before the destructive call. |
+| Object types via schemas (Phase 3) | Verwerker / Consent / DPIA live as **operator-importable schemas** (`lib/Resources/AvgSchemas/avg-bundle.json`) rather than hardcoded tables. Operators get the standard schema/object UI for free; can extend the schemas with custom properties; can RBAC them per the existing schema-level rules. The dedicated catalog (`oc_openregister_verwerkingsactiviteiten`) stays a hardcoded table because its shape is fixed by AVG Art 30 §1 and the audit-trail FK depends on a stable `uuid` target. |
+| Retention soft-delete attribution (Phase 3) | Bewaartermijn expiry sets `deleted` metadata with `reason='avg-bewaartermijn'` + activityUuid + bewaartermijn so it's distinguishable from Art 17 vergetelheid (`reason='avg-vergetelheid'`) and manual operator deletes. The audit ledger itself is NEVER pruned — retention erases the OBJECT, not the legal record. |
+| Foundation gap fix (Phase 3) | Added `register_id` + `schema_id` + `object_uuid` columns to `oc_openregister_entity_relations`. Rationale: int `object_id` alone collides across magic-tables (per-table sequences), making DSAR composition non-deterministic. The new columns are nullable for backwards compatibility; `EntityRecognitionHandler` populates them best-effort on new writes. |
+| Single-page tabbed UI (Phase 4) | One Vue component (`AvgIndex.vue`) with four tab sections rather than separate routes. Rationale: the four AVG flows are tightly related (an operator running a DSAR often jumps to the Activities tab to verify the configured processing-activity, then back to DSAR to attribute the action), and the dataset is bounded enough that a tabbed layout keeps the operator close to the data without a router round-trip. |

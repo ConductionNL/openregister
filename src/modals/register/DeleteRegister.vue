@@ -1,19 +1,26 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { registerStore, navigationStore } from '../../store/store.js'
+import { navigationStore, registerStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'deleteRegister'"
+	<NcDialog
+		v-if="navigationStore.dialog === 'deleteRegister'"
 		name="Register verwijderen"
 		size="normal"
-		:can-close="false">
+		:canClose="false">
 		<p v-if="!success && registerStore.registerItem?.schemas.length === 0">
-			Wil je <b>{{ registerStore.registerItem?.title }}</b> definitief verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+			Wil je <b>{{ registerStore.registerItem?.title }}</b> definitief
+			verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 		</p>
 		<p v-if="!success && registerStore.registerItem?.schemas.length > 0">
-			Het register kan niet worden verwijderd omdat het nog schema's bevat. Verwijder eerst alle schema's voordat u het register verwijdert.
-			Er {{ registerStore.registerItem?.schemas.length > 1 ? 'zijn' : 'is' }} nog <b>{{ registerStore.registerItem?.schemas.length }}</b> schema{{ registerStore.registerItem?.schemas.length > 1 ? "'s" : '' }} in het register.
+			Het register kan niet worden verwijderd omdat het nog schema's bevat.
+			Verwijder eerst alle schema's voordat u het register verwijdert. Er
+			{{ registerStore.registerItem?.schemas.length > 1 ? 'zijn' : 'is' }} nog
+			<b>{{ registerStore.registerItem?.schemas.length }}</b> schema{{
+				registerStore.registerItem?.schemas.length > 1 ? "'s" : ''
+			}}
+			in het register.
 		</p>
 		<NcNoteCard v-if="success" type="success">
 			<p>Register succesvol verwijderd</p>
@@ -31,7 +38,7 @@ import { registerStore, navigationStore } from '../../store/store.js'
 			<NcButton
 				v-if="!success"
 				:disabled="loading"
-				type="error"
+				variant="error"
 				@click="deleteRegister()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -52,13 +59,7 @@ import { registerStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import {
-	NcButton,
-	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
-
+import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
@@ -73,6 +74,7 @@ export default {
 		TrashCanOutline,
 		Cancel,
 	},
+
 	data() {
 		return {
 			success: false,
@@ -81,7 +83,11 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	methods: {
+		/**
+		 * @spec exclude Modal close plumbing — closes the delete-register dialog and resets state.
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			clearTimeout(this.closeModalTimeout)
@@ -89,23 +95,37 @@ export default {
 			this.loading = false
 			this.error = false
 		},
+
+		/**
+		 * @spec exclude Modal action plumbing — delegates deletion to registerStore.deleteRegister.
+		 */
 		async deleteRegister() {
 			if (registerStore.registerItem?.schemas.length > 0) {
 				return
 			}
 			this.loading = true
-			registerStore.deleteRegister({
-				...registerStore.registerItem,
-			}).then(({ response }) => {
-				this.success = response.ok
-				this.error = false
-				response.ok && (this.closeModalTimeout = setTimeout(this.closeDialog, 2000))
-			}).catch((error) => {
-				this.success = false
-				this.error = error.message || 'Er is een fout opgetreden bij het verwijderen van het register'
-			}).finally(() => {
-				this.loading = false
-			})
+			registerStore
+				.deleteRegister({
+					...registerStore.registerItem,
+				})
+				.then(({ response }) => {
+					this.success = response.ok
+					this.error = false
+					response.ok
+						&& (this.closeModalTimeout = setTimeout(
+							this.closeDialog,
+							2000,
+						))
+				})
+				.catch((error) => {
+					this.success = false
+					this.error =
+						error.message
+						|| 'Er is een fout opgetreden bij het verwijderen van het register'
+				})
+				.finally(() => {
+					this.loading = false
+				})
 		},
 	},
 }

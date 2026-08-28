@@ -5,9 +5,12 @@
  *
  * Exception thrown when no VTODO-supporting calendar is found for a user.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Exception
  * @package   OCA\OpenRegister\Exception
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
@@ -28,7 +31,7 @@ use RuntimeException;
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -38,21 +41,19 @@ use RuntimeException;
  *
  * @phpstan-consistent-constructor
  */
-class NoVtodoCalendarException extends RuntimeException
-{
-    /**
-     * NoVtodoCalendarException constructor
-     *
-     * @param string          $userId   The user ID for whom no calendar was found
-     * @param int             $code     The exception code (default: 0)
-     * @param \Throwable|null $previous The previous exception that caused this one
-     *
-     * @return void
-     */
-    public function __construct(string $userId, int $code=0, ?\Throwable $previous=null)
-    {
-        $message = 'No VTODO-supporting calendar found for user '.$userId;
+class NoVtodoCalendarException extends RuntimeException {
+	/**
+	 * NoVtodoCalendarException constructor
+	 *
+	 * @param string $userId The user ID for whom no calendar was found
+	 * @param int $code The exception code (default: 0)
+	 * @param \Throwable|null $previous The previous exception that caused this one
+	 *
+	 * @return void
+	 */
+	public function __construct(string $userId, int $code = 0, ?\Throwable $previous = null) {
+		$message = 'No VTODO-supporting calendar found for user ' . $userId;
 
-        parent::__construct(message: $message, code: $code, previous: $previous);
-    }//end __construct()
+		parent::__construct(message: $message, code: $code, previous: $previous);
+	}//end __construct()
 }//end class

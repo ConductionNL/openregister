@@ -1,48 +1,191 @@
+# OpenRegister — Conduction PHPStan config.
+#
+# The shared base is the single source of truth. Everything here is either the
+# app's own tracked debt or an ignore naming a symbol that exists in no other
+# fleet app. Anything you are tempted to add that another app would also need
+# belongs in the base, not here.
 includes:
+    - vendor/conduction/hydra-gates/quality-config/phpstan-base.neon
+    # Per-app tracked lint debt (auto-generated via `phpstan --generate-baseline`).
     - phpstan-baseline.neon
+    # Five JSONResponse generic-invariance mismatches surfaced by removing the
+    # stale `@method` shadows from lib/Db. Kept in their own file so the reason
+    # (written at the top of it) cannot get detached from the entries.
+    # openregister#2288
+    - phpstan-baseline-jsonresponse-invariance.neon
+    # Twenty-one findings surfaced by analysing against nextcloud/ocp 34 instead
+    # of 31 — the version appinfo/info.xml already declares. Pre-existing code,
+    # newly visible; four are real NC 34 API removals. Kept separate so the
+    # reason travels with the entries. openregister#2450
+    - phpstan-baseline-nc34-ocp.neon
 
 parameters:
-    level: 5
-    paths:
-        - lib
-    bootstrapFiles:
-        - vendor/autoload.php
-    scanDirectories:
-        - vendor/nextcloud/ocp
-    reportUnmatchedIgnoredErrors: false
+    # App-specific only. The base already sets level, paths, bootstrapFiles,
+    # excludePaths, scanDirectories and every fleet-wide ignore.
+    excludePaths:
+        # ContentProvider implements OCP\ContextChat\IContentProvider, which ships
+        # with an OPTIONAL Nextcloud component and is therefore absent during
+        # analysis. phpstan refuses to let a class-level "implements unknown
+        # interface" be ignored or baselined — it prescribes excludePaths — and
+        # analysis of the file is unreliable anyway once its interface cannot be
+        # resolved: it produced a FALSE "unknown parameter $_rbac in call to
+        # SchemaMapper::findAll()" here, for a call that is byte-identical to one
+        # phpstan accepts elsewhere. Excluding it removes noise rather than
+        # hiding a finding.
+        - lib/ContextChat/ContentProvider.php
+
+        # `vendor-bin` USED to be excluded by the shared base. It left the base in
+        # conduction/hydra-gates v1.7.3, because a conditional path has no spelling
+        # that is safe on both PHPStan majors: plain aborts 2.x (it validates the
+        # entry), the `(?)` marker makes NEON parse it as an entity and aborts 2.x
+        # differently, and quoting stops 1.x stripping the marker so the exclusion
+        # silently matches nothing. openregister is the ONLY fleet app that has this
+        # directory, so it carries the path itself — where it exists, needs no
+        # marker, and behaves identically on 1.x and 2.x.
+        - vendor-bin
+
     ignoreErrors:
-        # Nextcloud internal classes not available via OCP stubs
-        - '#Call to an undefined method OC::#'
-        - '#Class OC not found#'
-        - '#Access to static property \$server on an unknown class OC#'
-        - '#unknown class OC\\\\#'
-        - '#unknown class OCA\\\\DAV\\\\#'
-        - '#unknown class OC_App#'
-        - '#not found in catched class OC\\\\#'
-        - '#Caught class OC\\\\#'
-        - '#Class OCA\\\\DAV\\\\#'
-        # Doctrine DBAL classes used in migrations and mappers but not in vendor stubs
-        - '#Class Doctrine\\\\DBAL\\\\#'
-        - '#unknown class Doctrine\\\\DBAL\\\\#'
-        - '#on an unknown class Doctrine\\\\DBAL\\\\#'
-        # SecurityException is a Nextcloud internal class
-        - '#Instantiated class OC\\\\AppFramework\\\\Middleware\\\\Security\\\\Exceptions\\\\SecurityException not found#'
-        - '#PHPDoc tag @throws with type OC\\\\AppFramework\\\\Middleware\\\\Security\\\\Exceptions\\\\SecurityException#'
-        - '#unknown class OC\\\\AppFramework\\\\Middleware\\\\Security\\\\Exceptions\\\\SecurityException#'
-        # Named parameters on mapper find/findAll - PHPStan resolves parent QBMapper signature
-        - '#Unknown parameter \$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\#'
-        - '#Unknown parameter \$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\#'
-        - '#Method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper::find\(\) invoked with \d+ parameters#'
-        - '#Method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper::find\(\) invoked with \d+ parameters#'
-        - '#Method OCA\\\\OpenRegister\\\\Db\\\\AuditTrailMapper::findAll\(\) invoked with \d+ parameters#'
-        # Named parameters on findAll - same QBMapper resolution issue
-        - '#Unknown parameter \$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper::findAll\(\)#'
-        - '#Unknown parameter \$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper::findAll\(\)#'
-        - '#Unknown parameter \$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper::findAll\(\)#'
-        - '#Unknown parameter \$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper::findAll\(\)#'
-        # Doctrine\DBAL access patterns in non-migration files
-        - '#Call to method .+ on an unknown class Doctrine\\\\DBAL\\\\#'
-        - '#Call to static method .+ on an unknown class Doctrine\\\\DBAL\\\\#'
-        - '#Access to constant .+ on an unknown class Doctrine\\\\DBAL\\\\#'
-        # Throwing OC internal SecurityException
-        - '#Throwing object of an unknown class OC\\\\#'
+        # FilesSidebarListener guards on an OPTIONAL app's event class.
+        #
+        # The listener is registered for 'OCA\Files\Event\LoadAdditionalScriptsEvent'
+        # (AppInfo/Application.php) and re-checks the class by NAME so OpenRegister
+        # carries no hard dependency on the Files app. That class ships with Files,
+        # not with nextcloud/ocp, so the analyser cannot resolve it: it types
+        # get_class($event) as class-string<Event>, decides the comparison can never
+        # match, and concludes the early return always fires — making the body dead.
+        # It is not dead at runtime, where Files is installed and dispatches it.
+        #
+        # Surfaced by hydra-gates v1.8.2's `treatPhpDocTypesAsCertain: false`.
+        # Deleting the "unreachable" body would remove the sidebar; narrowing with
+        # instanceof would reintroduce the hard dependency the string check avoids.
+        -
+            message: '#Unreachable statement - code above always terminates#'
+            path: lib/Listener/FilesSidebarListener.php
+
+        # ConductionNL/sapp fork uses lowercase pseudo-classes `obj` /
+        # `value` / `pdfentry` / `buffer` / `bytes` etc. in `@return`
+        # PHPDocs (upstream typo — fictitious classes that PHPStan can't
+        # resolve). The actual runtime types are PDFObject / PDFValue
+        # subclasses / string / Buffer respectively. Cleanup goes into
+        # an upstream PR; until then ignore PHPStan's "unknown class
+        # ddn\sapp\<lowercase>" diagnostic chain.
+        - '#on an unknown class ddn\\sapp\\(obj|value|pdfentry|buffer|bytes|str)\b#'
+        - '#unknown class ddn\\sapp\\(obj|value|pdfentry|buffer|bytes|str)\b#'
+        - '#should return [^ ]+ but returns ddn\\sapp\\(obj|value|pdfentry|buffer|bytes|str)\b#'
+        - '#Parameter \$pdf_object of method ddn\\sapp\\PDFDoc::add_object\(\) expects ddn\\sapp\\PDFObject, ddn\\sapp\\obj given#'
+        - '#Strict comparison using === between ddn\\sapp\\(obj|value|pdfentry) and false will always evaluate to false#'
+        # MultiTenancyTrait guards every log call with `isset($this->logger)`
+        # because a TRAIT cannot require a property — PHP has no abstract
+        # properties. Both classes using it today (SchemaMapper, MappingMapper)
+        # declare a non-nullable `LoggerInterface $logger`, so PHPStan resolves
+        # the guard per-using-class and calls it always-true (16 reports, 8 per
+        # class).
+        #
+        # The guard is NOT redundant in the trait's own terms: a future class
+        # using MultiTenancyTrait without declaring $logger would hit an
+        # undefined property, and isset() is what keeps that a skipped log line
+        # rather than a fatal. Scoped to the trait so it cannot mask the same
+        # shape anywhere else.
+        -
+            message: '#Property .+::\$logger \(Psr\\Log\\LoggerInterface\) in isset\(\) is not nullable#'
+            identifier: isset.property
+            path: lib/Db/MultiTenancyTrait.php
+
+        # Same shape as the isset() guard above, reached through `?? null`
+        # instead of isset(): the trait cannot require the property, both using
+        # classes declare it non-nullable, so PHPStan resolves the coalesce
+        # per-using-class and calls the left side always-set.
+        -
+            message: '#Property .+::\$logger \(Psr\\Log\\LoggerInterface\) on left side of \?\? is not nullable#'
+            identifier: nullCoalesce.property
+            path: lib/Db/MultiTenancyTrait.php
+
+        # FilesSidebarListener is registered for OCA\Files\Event\LoadAdditional-
+        # ScriptsEvent and compares get_class($event) against that class-string
+        # DELIBERATELY, so the app carries no hard dependency on the Files app
+        # (see the comment at the call site). The class ships with an optional
+        # Nextcloud app and is therefore absent during analysis, so PHPStan
+        # narrows get_class() to class-string<Event>, concludes the comparison
+        # can never match, and then reports everything after the early return as
+        # unreachable.
+        #
+        # At runtime the comparison DOES match — the listener only ever fires for
+        # that event. Replacing the string compare with an instanceof would be a
+        # compile-time reference to the absent class, i.e. exactly the dependency
+        # the string compare exists to avoid. Scoped to this one file.
+        -
+            message: '#Strict comparison using !== between class-string and .OCA\\\\Files\\\\Event\\\\LoadAdditionalScriptsEvent. will always evaluate to true#'
+            identifier: notIdentical.alwaysTrue
+            path: lib/Listener/FilesSidebarListener.php
+        -
+            message: '#Unreachable statement - code above always terminates#'
+            identifier: deadCode.unreachable
+            path: lib/Listener/FilesSidebarListener.php
+
+        # FlowNodePreflight catches BOTH UnexpectedValueException and
+        # InvalidArgumentException from a third-party node's validateConfig().
+        # The docblock at the call site sets out why: either is a defensible
+        # spelling of "this argument is wrong", and third-party nodes
+        # (openconnector, hermiq) pick whichever they like. Those node classes
+        # are not on the analysis path, so PHPStan only sees the in-tree nodes
+        # and concludes InvalidArgumentException is never thrown. Dropping the
+        # arm would reclassify a third-party node's REFUSAL as a crash.
+        -
+            message: '#Dead catch - InvalidArgumentException is never thrown in the try block#'
+            identifier: catch.neverThrown
+            path: lib/Service/Flow/FlowNodePreflight.php
+
+        # ConfigurationMapper::invalidateConfigurationCache() is an INTENTIONAL
+        # no-op: organisation lookup was pulled out of the mapper (services do
+        # not belong in mappers) and invalidation now happens in the service
+        # layer. The method and its three call sites are kept so the seam stays
+        # visible; PHPStan correctly observes the body has no side effects.
+        # Delete the method, its calls AND this ignore together if the seam is
+        # ever removed for good.
+        -
+            message: '#Method .+ConfigurationMapper::invalidateConfigurationCache\(\) returns void but does not have any side effects#'
+            identifier: void.pure
+            path: lib/Db/ConfigurationMapper.php
+
+        # SystemEntityObjectAdapter is a VIRTUAL ObjectEntity: it is only ever
+        # built by `new SystemEntityObjectAdapter(entity:, systemSlug:)` in
+        # SystemEntityNotificationListener, never hydrated from a database row.
+        # PHPStan flags its required constructor parameters because the parent
+        # (OCP Entity, via ObjectEntity) exposes fromRow()/fromParams() static
+        # factories that do `new static()` — a path this subclass never takes.
+        # Giving the parameters defaults would let a caller build a meaningless
+        # adapter with no entity and no slug, which is worse than the warning.
+        -
+            message: '#Parameter \#[12] \$(entity|systemSlug) of method .+SystemEntityObjectAdapter::__construct\(\) is not optional#'
+            identifier: parameter.notOptional
+            path: lib/Service/Notification/SystemEntityObjectAdapter.php
+
+        # OCP types IDBConnection::executeQuery()'s $params as `string[]`, but
+        # bound parameters are legitimately int/float/null too — the narrow stub
+        # does not describe the real contract. Belongs in the shared base the
+        # moment a second fleet app hits it; openregister is the only one today.
+        -
+            message: '#Parameter \#2 \$params of method OCP\\IDBConnection::executeQuery\(\) expects array<string>#'
+            identifier: argument.type
+            path: lib/Service/Vectorization/Handlers/VectorSearchHandler.php
+
+        # CredentialStoreResolver probes the credential app's service classes by
+        # name, under BOTH namespaces it has shipped (OCA\Keepiq, formerly
+        # OCA\Doriath). Neither is on this app's analysis path — that is the
+        # point of probing them as strings — so PHPStan proves class_exists()
+        # always false and reports the probe as dead code.
+        #
+        # At runtime the app is installed and the classes resolve; measured on a
+        # running instance, every OCA\Keepiq\Service\* class EXISTS. The list
+        # spans both spellings BECAUSE pinning one is what broke this: the app
+        # renamed without an alias and the credential store silently read as
+        # unavailable.
+        #
+        # An ignore rather than stubs: this app's tests override the protected
+        # probe accessors to point at contract fixtures, so there are no stub
+        # classes to scan. Scoped to the one file — an impossible class_exists
+        # anywhere else is still a real finding.
+        -
+            message: '#Call to function class_exists\(\) with .OCA..Doriath..Service…...OCA..Keepiq..Service…. will always evaluate to false#'
+            identifier: function.impossibleType
+            path: lib/Service/Credential/CredentialStoreResolver.php

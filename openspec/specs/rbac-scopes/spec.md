@@ -6,8 +6,13 @@ status: in-progress
 
 **OpenSpec changes**
 - `unify-rbac-condition-matching` (active) — collapses `PermissionHandler::evaluateMatchConditions` and `MagicRbacHandler`'s private PHP-side condition matcher onto the shared `ConditionMatcher` service, so schema-level RBAC honours the full operator set (`$eq/$ne/$gt/$gte/$lt/$lte/$in/$nin/$exists`) and dynamic variables (`$organisation/$userId/$now`) that the SQL and property layers already support. Fixes OpenCatalogi `PublicationsController::attachments` throwing on schemas with operator-based `public`-with-match rules.
+- `or-delegated-identity` (active) — states the contract for the two scoped operations on ObjectService that shipped without one (`runAs()` narrowing to a named user, `runAsSystem()` elevating to a trusted userless principal), moves the narrowing one off `IUserSession::setUser()` so an acting identity is never written into the session, gives the elevating one a reachability boundary (code-initiated only), and records that delegation is never expressed as a permission verb (ADR-010, ADR-099).
+
+- `or-delegation-grants` (active) — turns a DECLARED acting identity into an AUTHORIZED one: a delegation grant record with a consent lifecycle, refusal at save and at every fire when the author holds no grant for the user they named, and an `awaiting_consent` run state deduped on (principal, actingAs, scope) (ADR-099).
 
 ## Purpose
+
+@e2e exclude backend RBAC OAS scope builder — covered by PHPUnit
 Validate and extend OpenRegister's existing three-level RBAC system. The core RBAC is already implemented via PermissionHandler (schema-level), MagicRbacHandler (row-level SQL filtering), and PropertyRbacHandler (field-level). This spec documents the existing behavior as requirements and identifies extensions needed for scope management APIs, caching, and audit. Specifically, it maps the existing hierarchical RBAC model (register, schema, object, property) to standard OAuth2 scopes in the generated OpenAPI Specification, and validates that per-operation security requirements are correctly enforced so that API consumers can discover and request the precise group-based permissions they need. The scope system bridges Nextcloud's native group management with standardised OAuth2/OAS security semantics, enabling external API consumers, ZGW-compliant systems, and MCP clients to understand and negotiate access programmatically.
 
 **Source**: Core OpenRegister capability; 67% of tenders require SSO/identity integration; 86% require RBAC per zaaktype; ZGW Autorisaties API compliance.
@@ -22,9 +27,7 @@ This spec primarily documents and validates existing functionality, with targete
 - **Scope caching (fully implemented)**: `MagicRbacHandler.$cachedActiveOrg`, `ConditionMatcher.$cachedActiveOrg`, `OasService.$schemaRbacMap`.
 - **Consumer identity mapping (fully implemented)**: `Consumer` entity with `userId` field, `AuthorizationService` resolving all auth methods to Nextcloud users.
 - **What this spec adds as extensions**: Register-level default authorization cascade, permission matrix UI for administrators, scope migration tooling for group renames, and explicit RBAC policy change audit logging.
-
 ## Requirements
-
 ### Requirement: Scope Model Hierarchy (Register > Schema > Object > Property)
 The RBAC scope model SHALL follow a four-level hierarchy: register-level scopes govern access to an entire register and serve as defaults for schemas without their own authorization, schema-level scopes control CRUD operations per schema (zaaktype/objecttype), object-level scopes apply to individual records via conditional matching, and property-level scopes restrict visibility and mutability of specific fields. Each level MUST be independently configurable via the `authorization` JSON structure. Register-level authorization SHALL cascade to schemas that do not define their own authorization block. Named roles defined at register level SHALL be expandable in authorization blocks at any level.
 
@@ -540,6 +543,349 @@ The frontend MUST be able to determine the current user's effective permissions 
 - **WHEN** it inspects the `security` block of the POST operation for schema `meldingen`
 - **THEN** it MUST find the OAuth2 scopes required for creating objects
 - **AND** it can compare these against the current user's groups to determine if the "Create" button should be shown
+
+### Requirement: Effective-Scope Discovery API
+
+The system MUST expose an effective-scope discovery endpoint so clients
+(frontend feature gates, OAuth2 token exchange, downstream apps) can learn which
+`(register, schema, action)` tuples the current user may perform without probing
+every endpoint. `ScopesController::index()` (`GET /api/scopes`) MUST return an
+envelope `{user, isAdmin, groups, scopes}` where `scopes` is a list of
+`{register, schema, actions}` entries keyed by slug. For each in-scope
+(register, schema) pair the controller MUST probe `PermissionHandler::hasPermission()`
+for the five canonical actions (`read`, `create`, `update`, `delete`, `list`)
+and include only the granted ones, omitting pairs with no granted actions. Admin
+callers MUST short-circuit to the full action vocabulary for every pair,
+mirroring the admin-bypass in `PermissionHandler`. Unauthenticated callers MUST
+be supported with `user: null`. Optional `register` and `schema` query
+parameters (id|uuid|slug) MUST narrow the response, and resolution MUST keep the
+multitenancy filter on so the endpoint cannot enumerate across tenants.
+
+#### Scenario: Authenticated user discovers effective scopes
+- **GIVEN** an authenticated non-admin user in groups `users` and `hr`
+- **WHEN** a GET request is sent to `/api/scopes`
+- **THEN** the response MUST include `user`, `isAdmin: false`, `groups`, and a `scopes` list
+- **AND** each scope entry MUST list only the actions granted by `PermissionHandler::hasPermission()` for that (register, schema) pair
+- **AND** pairs with no granted action MUST be omitted
+
+#### Scenario: Admin receives the full action vocabulary
+- **GIVEN** a caller in the `admin` group
+- **WHEN** `index()` builds the response
+- **THEN** `isAdmin` MUST be `true`
+- **AND** `collectActionsForUser()` MUST short-circuit to `["read", "create", "update", "delete", "list"]` for every (register, schema) pair
+
+#### Scenario: Filter discovery by register and schema
+- **GIVEN** a GET request to `/api/scopes?register=decidesk&schema=meeting`
+- **WHEN** `resolveRegisters()` and `resolveSchemas()` apply the filters
+- **THEN** only the matching register/schema MUST be evaluated
+- **AND** the multitenancy filter MUST remain on so cross-tenant enumeration is not possible
+
+#### Scenario: Unauthenticated caller is supported
+- **GIVEN** no active user session
+- **WHEN** a GET request is sent to `/api/scopes`
+- **THEN** the response MUST set `user: null` and `isAdmin: false`
+- **AND** only scopes reachable by the `public` pseudo-group MUST be returned
+
+### Requirement: RBAC settings configuration API
+The system SHALL expose an admin-gated API for reading and writing the RBAC enablement and
+configuration dials that govern scope enforcement. `ConfigurationSettingsController`
+provides `getRbacSettings` (delegating to `SettingsService::getRbacSettingsOnly()`) and
+`updateRbacSettings` (delegating to `SettingsService::updateRbacSettingsOnly()`). Both
+return HTTP 500 with an `error` field on service failure.
+
+#### Scenario: Read RBAC settings
+- **WHEN** `getRbacSettings` is called
+- **THEN** it MUST return the RBAC settings document from `SettingsService::getRbacSettingsOnly()`
+
+#### Scenario: Update RBAC settings
+- **GIVEN** an admin toggles RBAC enforcement and posts the change
+- **WHEN** `updateRbacSettings` runs
+- **THEN** it MUST persist the change via `SettingsService::updateRbacSettingsOnly()` and return the updated settings
+
+### Requirement: Custom (non-canonical) action verbs MUST be resolvable via a voting event pair
+When `PermissionHandler` evaluates an action that is NOT one of the canonical five (`read`, `create`, `update`, `delete`, `list`), it MUST dispatch a `CustomScopeEvaluatingEvent` so consuming apps that declare custom action verbs on a register can contribute a verdict. The verdict is first-vote-wins: the first listener to call `allow()` OR `deny()` decides, and subsequent votes are ignored so the outcome is deterministic regardless of listener registration order. When no listener votes, the handler MUST fall through to the standard rule chain. After a listener-driven verdict, a paired telemetry `CustomScopeEvaluatedEvent` MUST be dispatched for observers (audit, dashboards, analytics) without participating in the decision.
+
+#### Scenario: Custom verb dispatches the evaluating event with full context
+- **GIVEN** a register declares a custom action verb `approve` and a user `jan` (groups `["behandelaars"]`) attempts it on schema `besluiten`
+- **WHEN** `PermissionHandler` evaluates the `approve` action
+- **THEN** a `CustomScopeEvaluatingEvent` MUST be dispatched
+- **AND** `getSchema()` MUST return the `besluiten` schema, `getAction()` MUST return `"approve"`, `getUserId()` MUST return `"jan"`, and `getUserGroups()` MUST return `["behandelaars"]`
+- **AND** `getObject()` MUST return the target `ObjectEntity` when one was supplied, otherwise `null`
+
+#### Scenario: First listener vote wins and short-circuits
+- **GIVEN** two listeners are registered for `CustomScopeEvaluatingEvent`
+- **WHEN** the first listener calls `allow()` and the second calls `deny()`
+- **THEN** `getVerdict()` MUST return `true` (the first vote)
+- **AND** `hasVerdict()` MUST return `true`
+- **AND** the second listener's `deny()` MUST be ignored
+
+#### Scenario: No listener votes falls through to the standard rule chain
+- **GIVEN** no listener casts a verdict on the `CustomScopeEvaluatingEvent`
+- **WHEN** evaluation completes
+- **THEN** `hasVerdict()` MUST return `false` and `getVerdict()` MUST return `null`
+- **AND** `PermissionHandler` MUST evaluate the action against the standard static rule chain
+- **AND** no `CustomScopeEvaluatedEvent` MUST be dispatched (the standard rule-chain audit paths capture that outcome)
+
+#### Scenario: Telemetry event reports the resolved verdict and its origin
+- **GIVEN** a listener resolved a custom-scope evaluation to `true`
+- **WHEN** the paired `CustomScopeEvaluatedEvent` is dispatched
+- **THEN** `getVerdict()` MUST return `true` and `isFromListener()` MUST return `true`
+- **AND** `getSchema()`, `getAction()`, and `getUserId()` MUST mirror the evaluating event's context
+
+### Requirement: Schema and register authorization MUST accept an optional `inheritFromPublic` boolean
+
+Schema and register authorization blocks MUST accept an optional `inheritFromPublic` field, boolean. The default value (when the field is absent or `null`) MUST be resolved via the cascade documented below. Existing schemas and registers that do not set the field MUST behave identically to before this change (default `true`).
+
+#### Scenario: Schema authorization without inheritFromPublic preserves pre-change behaviour
+
+- **GIVEN** a schema whose authorization block has no `inheritFromPublic` field
+- **AND** the register's authorization block also has no `inheritFromPublic` field
+- **AND** the tenant default IAppConfig key is unset
+- **WHEN** RBAC checks run
+- **THEN** the effective `inheritFromPublic` value is `true` (the pre-change behaviour)
+- **AND** authenticated users qualify for `public` rules as they did before
+
+#### Scenario: Schema sets inheritFromPublic explicitly
+
+- **GIVEN** a schema whose authorization block contains `"inheritFromPublic": false`
+- **WHEN** RBAC checks run
+- **THEN** the effective value is `false` for that schema
+- **AND** authenticated users do NOT qualify for `public` rules on that schema
+
+#### Scenario: Schema authorization round-trip preserves the field
+
+- **GIVEN** a schema saved with `"inheritFromPublic": false` in its authorization block
+- **WHEN** the schema is fetched and re-serialised via `Schema::getAuthorization()`
+- **THEN** the returned array contains `inheritFromPublic` with value `false`
+- **AND** the JSON serialisation includes the field
+
+### Requirement: The effective value of `inheritFromPublic` MUST be resolved via cascade
+
+The cascade order MUST be: schema's authorization → register's authorization → tenant-wide `IAppConfig` key `openregister.rbac.inherit_from_public_default` → hard-coded `true`. The first explicitly-set value wins. `null` MUST be treated as "unset" (cascade falls through to the next level).
+
+#### Scenario: Cascade falls back to register when schema has no value
+
+- **GIVEN** a schema whose authorization has NO `inheritFromPublic` field
+- **AND** the parent register's authorization has `"inheritFromPublic": false`
+- **WHEN** the resolver is called for that schema
+- **THEN** the resolved value is `false`
+
+#### Scenario: Cascade falls back to tenant default when neither schema nor register sets it
+
+- **GIVEN** schema and register without the field
+- **AND** IAppConfig `openregister.rbac.inherit_from_public_default` is set to `false`
+- **WHEN** the resolver is called
+- **THEN** the resolved value is `false`
+
+#### Scenario: Cascade falls back to hard-coded true when nothing is set
+
+- **GIVEN** no schema, register, or tenant default is set
+- **WHEN** the resolver is called
+- **THEN** the resolved value is `true`
+
+#### Scenario: Schema explicit value wins over register and tenant
+
+- **GIVEN** schema sets `"inheritFromPublic": true`
+- **AND** register sets `"inheritFromPublic": false`
+- **AND** tenant default is `false`
+- **WHEN** the resolver is called
+- **THEN** the resolved value is `true` (schema wins)
+
+#### Scenario: null is treated as "unset"
+
+- **GIVEN** schema authorization contains `"inheritFromPublic": null`
+- **AND** register sets `"inheritFromPublic": false`
+- **WHEN** the resolver is called
+- **THEN** the cascade continues past the schema; the resolved value is `false` (from register)
+
+### Requirement: When `inheritFromPublic` is `false`, authenticated users MUST NOT qualify for `public` rules
+
+When the resolved `inheritFromPublic` is `false`, the PHP-side `PermissionHandler::hasPermission` MUST NOT fall back to `hasGroupPermission(public, ...)` for authenticated users; it MUST return only the result of evaluating the user's own group memberships (plus owner / admin checks). Anonymous users see no behaviour change — the public-fallback path was never used for them in the first place.
+
+The SQL-side filter (`MagicRbacHandler::applyRbacFilters` and `buildRbacConditionsSql`) MUST equivalently exclude `public`-grouped rules from contributing conditions for authenticated users. The simple-string `'public'` rule MUST NOT grant unconditional access to authenticated users when the flag is `false`. Conditional `{group: "public", match: ...}` rules MUST NOT add their match conditions to the WHERE clause for authenticated users when the flag is `false`.
+
+#### Scenario: Authenticated user is denied when inheritance is off and only public has access
+
+- **GIVEN** a schema with `inheritFromPublic: false` and authorization `read: [{group: "public", match: <some-match>}]`
+- **AND** an authenticated user `alice` not a member of any group named in any rule
+- **AND** an object that satisfies the public match
+- **WHEN** alice attempts to read the object
+- **THEN** access is denied
+- **AND** the SQL filter excludes the object from listings for alice
+
+#### Scenario: Anonymous user is granted when public match passes (regardless of flag)
+
+- **GIVEN** the same schema as above
+- **WHEN** an anonymous (unauthenticated) request reads the object
+- **THEN** access is granted (the public match is satisfied)
+- **AND** the SQL filter includes the object
+
+#### Scenario: Authenticated user with explicit group membership is still granted
+
+- **GIVEN** a schema with `inheritFromPublic: false` and authorization `read: [{group: "public", match: ...}, "editors"]`
+- **AND** an authenticated user `bob` in the `editors` group
+- **WHEN** bob attempts to read the object
+- **THEN** access is granted (via the explicit `editors` rule)
+- **AND** the SQL filter includes the object for bob
+
+#### Scenario: Owner check is unaffected by the flag
+
+- **GIVEN** a schema with `inheritFromPublic: false` and `read: [{group: "public", match: ...}]`
+- **AND** an authenticated user `carol` who is the owner of an object
+- **WHEN** carol attempts to read the object
+- **THEN** access is granted via the owner shortcut, regardless of the flag
+
+#### Scenario: Admin user is unaffected by the flag
+
+- **GIVEN** a schema with `inheritFromPublic: false`
+- **AND** an authenticated user in the `admin` group
+- **WHEN** the admin reads any object on this schema
+- **THEN** access is granted via the admin bypass, regardless of the flag
+
+### Requirement: When `inheritFromPublic` is `true` (or unset), behaviour MUST be identical to before this change
+
+For any schema, register, or tenant where the resolved `inheritFromPublic` is `true` (the default), authenticated users MUST continue to qualify for `public` rules exactly as they did before this change. The new code paths MUST NOT introduce any behavioural drift for schemas that don't opt out.
+
+#### Scenario: Pre-change schema is unaffected
+
+- **GIVEN** a schema with no `inheritFromPublic` field anywhere in its cascade
+- **AND** an authenticated user
+- **AND** an object satisfying a public match rule
+- **WHEN** the user attempts to read the object
+- **THEN** access is granted
+- **AND** the result is identical to pre-change behaviour
+
+### Requirement: The simple-string `'authenticated'` rule MUST be unaffected by the flag
+
+The existing `'authenticated'` simple-rule string (recognised by `MagicRbacHandler::processSimpleRule` line 274-276) grants unconditional access to any logged-in user. This behaviour MUST be unchanged by `inheritFromPublic`. The flag concerns the `public` group only.
+
+#### Scenario: 'authenticated' rule still grants access when public inheritance is disabled
+
+- **GIVEN** a schema with `inheritFromPublic: false` and `read: ["authenticated"]`
+- **AND** an authenticated user
+- **WHEN** the user attempts to read
+- **THEN** access is granted (via the `authenticated` rule, independent of the flag)
+
+### Requirement: PHP-side and SQL-side enforcement MUST be identical
+
+For any combination of (user state, flag value, authorization rules, object data), the result of `PermissionHandler::hasPermission` (per-object check) MUST agree with whether the SQL filter (`MagicRbacHandler::applyRbacFilters`) would include the object in a listing. The two layers MUST NOT diverge.
+
+#### Scenario: Per-object check and listing filter agree across the four-state matrix
+
+- **GIVEN** a schema with `read: [{group: "public", match: <m>}]`
+- **AND** the four states: (anon, authenticated) × (inheritFromPublic true, false)
+- **AND** an object satisfying the public match
+- **WHEN** the per-object `hasPermission` check runs AND the listing endpoint runs
+- **THEN** for each of the four states, the per-object check's boolean result matches the listing's include/exclude decision for that object
+
+### Requirement: A declared group MUST exist as a Nextcloud group
+
+Every group id named in a register, schema or property `authorization` block, and every group id declared in a configuration's `components.securitySchemes.oauth2.flows.authorizationCode.scopes` map, SHALL be created as a Nextcloud group if it does not already exist.
+
+This closes a silent-denial gap. `PermissionHandler::hasGroupPermission()` resolves access by membership test alone, so a group that was never created and a group nobody belongs to are indistinguishable: both deny every caller, with no error raised or logged. A typo in an `authorization` block is therefore invisible and reads exactly like a working access control.
+
+Group ids are free-form and SHALL NOT be prefixed or namespaced. Two apps declaring the same id converge on one Nextcloud group by design; a declaring app therefore MUST NOT assume it owns a group it declared.
+
+Provisioning SHALL be create-only: it MUST NOT delete a group, and MUST NOT add or remove members. `admin` and `public` SHALL never be provisioned — `admin` is Nextcloud's built-in group and is short-circuited before any group test, and `public` is a pseudo-principal for anonymous access rather than a membership-bearing group.
+
+#### Scenario: A group named only in a property rule is created
+
+- **GIVEN** a schema whose property `bsn` declares `authorization.read: ["privacy-officers"]` and whose schema-level block never mentions that group
+- **AND** no Nextcloud group `privacy-officers` exists
+- **WHEN** the configuration is imported
+- **THEN** the Nextcloud group `privacy-officers` exists
+- **AND** it has no members, so the rule still denies every caller until an administrator populates it
+
+#### Scenario: Reserved principals are never created as groups
+
+- **GIVEN** an authorization block granting `read` to `public` and `delete` to `admin`
+- **WHEN** the configuration is imported
+- **THEN** no Nextcloud group named `public` is created
+- **AND** no attempt is made to create `admin`
+
+#### Scenario: Match conditions are not mistaken for principals
+
+- **GIVEN** a rule `{ "group": "behandelaars", "match": { "status": "open" } }`
+- **WHEN** declared groups are collected
+- **THEN** only `behandelaars` is provisioned
+- **AND** no group named `status` or `open` is created
+
+#### Scenario: Role assignments name groups in their values, not their keys
+
+- **GIVEN** an authorization block with `roles: { "behandelaar": "groep-a", "beheerder": ["groep-b", "groep-c"] }`
+- **WHEN** declared groups are collected
+- **THEN** `groep-a`, `groep-b` and `groep-c` are provisioned
+- **AND** no group named `behandelaar` or `beheerder` is created
+
+#### Scenario: Provisioning survives a refusing group backend
+
+- **GIVEN** three declared groups, of which the second is refused by a read-only group backend
+- **WHEN** provisioning runs
+- **THEN** the first and third groups are created
+- **AND** the refusal is logged against the declaring app rather than aborting the import
+
+### Requirement: Declared groups MUST be provisioned before the import skip check
+
+Provisioning SHALL run on every configuration import, including one that the content-hash check would skip.
+
+The skip means "importing would write exactly what is already stored" — a statement about stored data, which says nothing about whether the Nextcloud groups those authorization blocks name still exist. Provisioning after the skip would mean a group deleted by an administrator is never restored, because the very configuration that declares it is the one being skipped.
+
+#### Scenario: An unchanged re-import restores a hand-deleted group
+
+- **GIVEN** a configuration whose stored content hash matches the incoming document, so the import is skipped
+- **AND** a group it declares has since been deleted by an administrator
+- **WHEN** the configuration is imported again
+- **THEN** the declared group exists again
+- **AND** no configuration entities are re-written
+
+### Requirement: Provisioning MUST NOT depend on a leaf app's repair-step wiring
+
+Declared groups SHALL be reconciled by an OpenRegister-owned background sweep in addition to the import path, and that sweep SHALL read the live registers and schemas rather than the shipped configuration files.
+
+Import-time provisioning alone inherits each leaf app's `<repair-steps>` declaration, which is frequently wrong. Nextcloud runs `migrateSchemaOnly()` on a first install (`\OC\Installer::installAppLastSteps`): `<pre-migration>` and `<post-migration>` steps are both skipped, and `<install>` is the only unconditional hook. An app that declares its register import only under `<post-migration>` never imports on a fresh instance — precisely the case where no declared group exists yet.
+
+Reading live entities rather than files additionally covers virtual apps that ship no `register.json`, and restores a group an administrator deleted by hand.
+
+#### Scenario: A fresh install with no `<install>` hook still gets its groups
+
+- **GIVEN** an app whose register import is declared only under `<post-migration>`
+- **AND** the app is installed for the first time, so that step never runs
+- **WHEN** the reconciliation sweep next runs
+- **THEN** every group declared by the live registers and schemas exists
+
+#### Scenario: The sweep reads unfiltered rows
+
+- **GIVEN** the sweep runs from cron, with no logged-in user and no active organisation
+- **WHEN** it enumerates registers and schemas
+- **THEN** it does so with RBAC and multi-tenancy filtering disabled
+- **AND** it therefore does not report a clean pass over rows it never read
+
+### Requirement: An exported configuration MUST declare the groups it depends on
+
+`ExportHandler` SHALL emit `components.securitySchemes.oauth2.flows.authorizationCode.scopes` into the exported configuration document, covering every group named by the exported registers and schemas, at parity with the map `OasService` generates for API consumers.
+
+The scope map is derived from the definitions the document already carries, so it does not recover data the importer could not otherwise derive; what it adds is an explicit, self-describing declaration at the OAS-native location.
+
+#### Scenario: The scope map alone carries every group
+
+- **GIVEN** a configuration with a register-level group, a schema-level group and a property-level group
+- **WHEN** it is exported
+- **THEN** reading the scope map ALONE — without walking any authorization block — yields all three group ids
+- **AND** `admin` is present as a scope
+- **AND** `public` is absent unless the configuration grants anonymous access
+
+### Requirement: A declared group with no members MUST be visible
+
+The system SHALL expose, per declared group, whether it exists and how many members it has, so that a declared-but-unpopulated group is discoverable rather than silently denying every caller.
+
+Where the group backend cannot report a count, the member count SHALL be reported as UNKNOWN rather than zero. `OCP\IGroup::count()` returns `int|bool` and yields `false` on backends that cannot count; reporting that as `0` would present a fully populated group as empty and raise the exact false alarm this surface exists to prevent.
+
+#### Scenario: An uncountable backend reports unknown, not empty
+
+- **GIVEN** a declared group on a backend whose `count()` returns `false`
+- **WHEN** the declared-group inventory is read
+- **THEN** the group's member count is reported as unknown
+- **AND** it is NOT reported as having zero members
 
 ## ZGW Autorisaties Mapping Guide
 

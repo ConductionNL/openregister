@@ -5,6 +5,9 @@
  *
  * Background job for retrying schema hooks that failed due to engine unavailability.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -16,7 +19,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-72
+ * @spec openspec/specs/schema-hooks/spec.md#requirement-hook-retry-via-background-job
  */
 
 declare(strict_types=1);
@@ -28,7 +31,6 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Webhook\CloudEventFormatter;
 use OCA\OpenRegister\Service\WorkflowEngineRegistry;
-use OCA\OpenRegister\WorkflowEngine\WorkflowResult;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
 use OCP\BackgroundJob\QueuedJob;
@@ -46,168 +48,166 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
-class HookRetryJob extends QueuedJob
-{
+class HookRetryJob extends QueuedJob {
 
-    /**
-     * Maximum number of retry attempts before giving up
-     */
-    private const MAX_RETRIES = 5;
+	/**
+	 * Maximum number of retry attempts before giving up
+	 */
+	private const MAX_RETRIES = 5;
 
-    /**
-     * Constructor for HookRetryJob
-     *
-     * @param ITimeFactory           $time                Time factory
-     * @param MagicMapper            $objectEntityMapper  Object mapper
-     * @param SchemaMapper           $schemaMapper        Schema mapper
-     * @param WorkflowEngineRegistry $engineRegistry      Engine registry
-     * @param CloudEventFormatter    $cloudEventFormatter CloudEvent formatter
-     * @param IJobList               $jobList             Job list for re-queuing
-     * @param LoggerInterface        $logger              Logger
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly MagicMapper $objectEntityMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly WorkflowEngineRegistry $engineRegistry,
-        private readonly CloudEventFormatter $cloudEventFormatter,
-        private readonly IJobList $jobList,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
-    }//end __construct()
+	/**
+	 * Constructor for HookRetryJob
+	 *
+	 * @param ITimeFactory $time Time factory
+	 * @param MagicMapper $objectEntityMapper Object mapper
+	 * @param SchemaMapper $schemaMapper Schema mapper
+	 * @param WorkflowEngineRegistry $engineRegistry Engine registry
+	 * @param CloudEventFormatter $cloudEventFormatter CloudEvent formatter
+	 * @param IJobList $jobList Job list for re-queuing
+	 * @param LoggerInterface $logger Logger
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly MagicMapper $objectEntityMapper,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly WorkflowEngineRegistry $engineRegistry,
+		private readonly CloudEventFormatter $cloudEventFormatter,
+		private readonly IJobList $jobList,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
+	}//end __construct()
 
-    /**
-     * Run the retry job
-     *
-     * @param array<string, mixed> $argument Job arguments containing objectId, schemaId, and hook config
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-72
-     */
-    protected function run($argument): void
-    {
-        $objectId = ($argument['objectId'] ?? null);
-        $schemaId = ($argument['schemaId'] ?? null);
-        $hook     = ($argument['hook'] ?? []);
-        $attempt  = ($argument['attempt'] ?? 1);
-        $hookId   = ($hook['id'] ?? 'unknown');
+	/**
+	 * Run the retry job
+	 *
+	 * @param array<string, mixed> $argument Job arguments containing objectId, schemaId, and hook config
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 *
+	 * @spec openspec/specs/schema-hooks/spec.md#requirement-hook-retry-via-background-job
+	 */
+	protected function run($argument): void {
+		$objectId = ($argument['objectId'] ?? null);
+		$schemaId = ($argument['schemaId'] ?? null);
+		$hook = ($argument['hook'] ?? []);
+		$attempt = ($argument['attempt'] ?? 1);
+		$hookId = ($hook['id'] ?? 'unknown');
 
-        if ($objectId === null || $schemaId === null || empty($hook) === true) {
-            $this->logger->error(
-                message: '[HookRetryJob] Missing required arguments',
-                context: ['argument' => $argument]
-            );
-            return;
-        }
+		if ($objectId === null || $schemaId === null || empty($hook) === true) {
+			$this->logger->error(
+				message: '[HookRetryJob] Missing required arguments',
+				context: ['argument' => $argument]
+			);
+			return;
+		}
 
-        $this->logger->info(
-            message: "[HookRetryJob] Retrying hook '$hookId' for object $objectId (attempt $attempt)",
-            context: ['hookId' => $hookId, 'objectId' => $objectId, 'attempt' => $attempt]
-        );
+		$this->logger->info(
+			message: "[HookRetryJob] Retrying hook '$hookId' for object $objectId (attempt $attempt)",
+			context: ['hookId' => $hookId, 'objectId' => $objectId, 'attempt' => $attempt]
+		);
 
-        try {
-            $object = $this->objectEntityMapper->find(
-                identifier: $objectId
-            );
-            $schema = $this->schemaMapper->find(id: (int) $schemaId);
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: "[HookRetryJob] Could not load object or schema: {$e->getMessage()}",
-                context: ['objectId' => $objectId, 'schemaId' => $schemaId]
-            );
-            return;
-        }
+		try {
+			$object = $this->objectEntityMapper->find(
+				identifier: $objectId
+			);
+			$schema = $this->schemaMapper->find(id: (int)$schemaId);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: "[HookRetryJob] Could not load object or schema: {$e->getMessage()}",
+				context: ['objectId' => $objectId, 'schemaId' => $schemaId]
+			);
+			return;
+		}
 
-        $engineType = ($hook['engine'] ?? '');
-        $workflowId = ($hook['workflowId'] ?? '');
-        $timeout    = ($hook['timeout'] ?? 30);
+		$engineType = ($hook['engine'] ?? '');
+		$workflowId = ($hook['workflowId'] ?? '');
+		$timeout = ($hook['timeout'] ?? 30);
 
-        try {
-            $engines = $this->engineRegistry->getEnginesByType(engineType: $engineType);
-            if (empty($engines) === true) {
-                throw new Exception("No engine found for type '$engineType'");
-            }
+		try {
+			$engines = $this->engineRegistry->getEnginesByType(engineType: $engineType);
+			if (empty($engines) === true) {
+				throw new Exception("No engine found for type '$engineType'");
+			}
 
-            $adapter = $this->engineRegistry->resolveAdapter(engine: $engines[0]);
+			$adapter = $this->engineRegistry->resolveAdapter(engine: $engines[0]);
 
-            $payload = $this->cloudEventFormatter->formatAsCloudEvent(
-                eventType: 'nl.openregister.object.hook-retry',
-                payload: [
-                    'object'   => $object->getObject(),
-                    'schema'   => ($schema->getSlug() ?? $schema->getTitle()),
-                    'register' => $object->getRegister(),
-                    'action'   => 'retry',
-                    'hookMode' => 'sync',
-                ],
-                source: '/apps/openregister/schemas/'.$schema->getId(),
-                subject: 'object:'.($object->getUuid() ?? (string) $object->getId())
-            );
+			$payload = $this->cloudEventFormatter->formatAsCloudEvent(
+				eventType: 'nl.openregister.object.hook-retry',
+				payload: [
+					'object' => $object->getObject(),
+					'schema' => ($schema->getSlug() ?? $schema->getTitle()),
+					'register' => $object->getRegister(),
+					'action' => 'retry',
+					'hookMode' => 'sync',
+				],
+				source: '/apps/openregister/schemas/' . $schema->getId(),
+				subject: 'object:' . ($object->getUuid() ?? (string)$object->getId())
+			);
 
-            $result = $adapter->executeWorkflow(
-                workflowId: $workflowId,
-                data: $payload,
-                timeout: $timeout
-            );
+			$result = $adapter->executeWorkflow(
+				workflowId: $workflowId,
+				data: $payload,
+				timeout: $timeout
+			);
 
-            if ($result->isApproved() === true || $result->isModified() === true) {
-                $objectData = ($object->getObject() ?? []);
-                $objectData['_validationStatus'] = 'passed';
-                unset($objectData['_validationErrors']);
+			if ($result->isApproved() === true || $result->isModified() === true) {
+				$objectData = ($object->getObject() ?? []);
+				$objectData['_validationStatus'] = 'passed';
+				unset($objectData['_validationErrors']);
 
-                if ($result->isModified() === true && $result->getData() !== null) {
-                    $objectData = array_merge($objectData, $result->getData());
-                }
+				if ($result->isModified() === true && $result->getData() !== null) {
+					$objectData = array_merge($objectData, $result->getData());
+				}
 
-                $object->setObject(object: $objectData);
-                $this->objectEntityMapper->update(entity: $object);
+				$object->setObject(object: $objectData);
+				$this->objectEntityMapper->update(entity: $object);
 
-                $this->logger->info(
-                    message: "[HookRetryJob] Hook '$hookId' succeeded on retry for object $objectId",
-                    context: ['hookId' => $hookId, 'objectId' => $objectId]
-                );
-                return;
-            }
+				$this->logger->info(
+					message: "[HookRetryJob] Hook '$hookId' succeeded on retry for object $objectId",
+					context: ['hookId' => $hookId, 'objectId' => $objectId]
+				);
+				return;
+			}
 
-            // Rejected or error — keep failed status.
-            $this->logger->warning(
-                message: "[HookRetryJob] Hook '$hookId' returned status '{$result->getStatus()}' on retry",
-                context: [
-                    'hookId'   => $hookId,
-                    'objectId' => $objectId,
-                    'status'   => $result->getStatus(),
-                ]
-            );
-        } catch (Exception $e) {
-            $this->logger->warning(
-                message: "[HookRetryJob] Retry failed for hook '$hookId': {$e->getMessage()}",
-                context: ['hookId' => $hookId, 'objectId' => $objectId, 'attempt' => $attempt]
-            );
+			// Rejected or error — keep failed status.
+			$this->logger->warning(
+				message: "[HookRetryJob] Hook '$hookId' returned status '{$result->getStatus()}' on retry",
+				context: [
+					'hookId' => $hookId,
+					'objectId' => $objectId,
+					'status' => $result->getStatus(),
+				]
+			);
+		} catch (Exception $e) {
+			$this->logger->warning(
+				message: "[HookRetryJob] Retry failed for hook '$hookId': {$e->getMessage()}",
+				context: ['hookId' => $hookId, 'objectId' => $objectId, 'attempt' => $attempt]
+			);
 
-            if ($attempt >= self::MAX_RETRIES) {
-                $this->logger->error(
-                    message: "[HookRetryJob] Max retries reached for hook '$hookId' on object $objectId",
-                    context: ['hookId' => $hookId, 'objectId' => $objectId, 'maxRetries' => self::MAX_RETRIES]
-                );
-                return;
-            }
+			if ($attempt >= self::MAX_RETRIES) {
+				$this->logger->error(
+					message: "[HookRetryJob] Max retries reached for hook '$hookId' on object $objectId",
+					context: ['hookId' => $hookId, 'objectId' => $objectId, 'maxRetries' => self::MAX_RETRIES]
+				);
+				return;
+			}
 
-            $this->jobList->add(
-                job: self::class,
-                argument: [
-                    'objectId' => $objectId,
-                    'schemaId' => $schemaId,
-                    'hook'     => $hook,
-                    'attempt'  => ($attempt + 1),
-                ]
-            );
-            $this->logger->info(
-                message: "[HookRetryJob] Re-queued hook '$hookId' for attempt ".($attempt + 1),
-                context: ['hookId' => $hookId, 'objectId' => $objectId]
-            );
-        }//end try
-    }//end run()
+			$this->jobList->add(
+				job: self::class,
+				argument: [
+					'objectId' => $objectId,
+					'schemaId' => $schemaId,
+					'hook' => $hook,
+					'attempt' => ($attempt + 1),
+				]
+			);
+			$this->logger->info(
+				message: "[HookRetryJob] Re-queued hook '$hookId' for attempt " . ($attempt + 1),
+				context: ['hookId' => $hookId, 'objectId' => $objectId]
+			);
+		}//end try
+	}//end run()
 }//end class

@@ -1,8 +1,9 @@
-import { SafeParseReturnType, z } from 'zod'
-import { TAuditTrail } from './auditTrail.types'
+import type { SafeParseReturnType } from 'zod'
+import type { TAuditTrail } from './auditTrail.types'
+
+import { z } from 'zod'
 
 export class AuditTrail implements TAuditTrail {
-
 	public id: number
 	public uuid: string
 	public schema: number
@@ -12,7 +13,7 @@ export class AuditTrail implements TAuditTrail {
 	public registerUuid: string | null
 	public schemaUuid: string | null
 	public action: string
-	public changed: object | array
+	public changed: object | unknown[]
 	public user: string
 	public userName: string
 	public session: string
@@ -29,6 +30,10 @@ export class AuditTrail implements TAuditTrail {
 	public retentionPeriod: string | null
 	public size: number
 
+	/**
+	 * @param auditTrail
+	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
+	 */
 	constructor(auditTrail: TAuditTrail) {
 		this.id = auditTrail.id || 0
 		this.uuid = auditTrail.uuid || ''
@@ -88,5 +93,4 @@ export class AuditTrail implements TAuditTrail {
 
 		return schema.safeParse(this)
 	}
-
 }

@@ -1,0 +1,10 @@
+{
+  "spec_slug": "apphost-boilerplate-controllers",
+  "title": "AppHost: Boilerplate Controllers and Bootstrap",
+  "app": "openregister",
+  "repo": "https://github.com/ConductionNL/openregister",
+  "depends_on": [
+    "adr-040-declarative-observability"
+  ],
+  "issue": null
+}

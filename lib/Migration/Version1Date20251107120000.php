@@ -9,7 +9,7 @@
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -30,45 +30,41 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Migration to add default value to configurations type column
  */
-class Version1Date20251107120000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @phpstan-return ISchemaWrapper|null
-     * @psalm-return   ISchemaWrapper|null
-     * @return         ISchemaWrapper|null The modified schema
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20251107120000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @phpstan-return ISchemaWrapper|null
+	 * @psalm-return   ISchemaWrapper|null
+	 * @return ISchemaWrapper|null The modified schema
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        // Check if the configurations table exists.
-        if ($schema->hasTable('openregister_configurations') === true) {
-            $table = $schema->getTable('openregister_configurations');
+		// Check if the configurations table exists.
+		if ($schema->hasTable('openregister_configurations') === true) {
+			$table = $schema->getTable('openregister_configurations');
 
-            // Update the type column to have a default value.
-            if ($table->hasColumn('type') === true) {
-                $column = $table->getColumn('type');
+			// Update the type column to have a default value.
+			if ($table->hasColumn('type') === true) {
+				$column = $table->getColumn('type');
 
-                // Set default value for the type column.
-                $column->setDefault('default');
-                $column->setNotnull(true);
+				// Set default value for the type column.
+				$column->setDefault('default');
+				$column->setNotnull(true);
 
-                $output->info(message: 'Added default value to openregister_configurations.type column');
-            }
-        }
+				$output->info(message: 'Added default value to openregister_configurations.type column');
+			}
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

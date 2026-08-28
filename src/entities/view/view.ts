@@ -8,11 +8,12 @@
  * @version  1.0.0
  */
 
-import { SafeParseReturnType, z } from 'zod'
-import { TView } from './view.types'
+import type { SafeParseReturnType } from 'zod'
+import type { TView } from './view.types'
+
+import { z } from 'zod'
 
 export class View implements TView {
-
 	public id?: number
 	public uuid?: string
 	public name: string
@@ -27,6 +28,10 @@ export class View implements TView {
 	public created?: string
 	public updated?: string
 
+	/**
+	 * @param view
+	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
+	 */
 	constructor(view: TView) {
 		this.id = view.id
 		this.uuid = view.uuid || ''
@@ -66,25 +71,28 @@ export class View implements TView {
 			isDefault: z.boolean().optional(),
 			query: z.record(z.any()).optional(),
 			favoredBy: z.array(z.string()).optional(),
-			quota: z.object({
-				storage: z.number().nullable().optional(),
-				bandwidth: z.number().nullable().optional(),
-				requests: z.number().nullable().optional(),
-				users: z.number().nullable().optional(),
-				groups: z.number().nullable().optional(),
-			}).optional(),
-			usage: z.object({
-				storage: z.number().optional(),
-				bandwidth: z.number().optional(),
-				requests: z.number().optional(),
-				users: z.number().optional(),
-				groups: z.number().optional(),
-			}).optional(),
+			quota: z
+				.object({
+					storage: z.number().nullable().optional(),
+					bandwidth: z.number().nullable().optional(),
+					requests: z.number().nullable().optional(),
+					users: z.number().nullable().optional(),
+					groups: z.number().nullable().optional(),
+				})
+				.optional(),
+			usage: z
+				.object({
+					storage: z.number().optional(),
+					bandwidth: z.number().optional(),
+					requests: z.number().optional(),
+					users: z.number().optional(),
+					groups: z.number().optional(),
+				})
+				.optional(),
 			created: z.string().optional(),
 			updated: z.string().optional(),
 		})
 
 		return schema.safeParse(this)
 	}
-
 }

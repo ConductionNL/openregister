@@ -2,7 +2,7 @@
 	<div class="section">
 		<h2>{{ t('openregister', 'API Tokens') }}</h2>
 		<div class="tokens-section">
-			<NcButton type="primary" @click="showCreateModal = true">
+			<NcButton variant="primary" @click="showCreateModal = true">
 				{{ t('openregister', 'Create new token') }}
 			</NcButton>
 
@@ -10,15 +10,21 @@
 				{{ t('openregister', 'Loading tokens...') }}
 			</div>
 			<ul v-else class="tokens-section__list">
-				<li v-for="token in tokens" :key="token.id" class="tokens-section__item">
+				<li
+					v-for="token in tokens"
+					:key="token.id"
+					class="tokens-section__item">
 					<div class="tokens-section__info">
 						<strong>{{ token.name }}</strong>
-						<span class="tokens-section__preview">{{ token.preview }}</span>
+						<span class="tokens-section__preview">{{
+							token.preview
+						}}</span>
 						<span v-if="token.expires" class="tokens-section__expires">
-							{{ t('openregister', 'Expires') }}: {{ formatDate(token.expires) }}
+							{{ t('openregister', 'Expires') }}:
+							{{ formatDate(token.expires) }}
 						</span>
 					</div>
-					<NcButton type="error" @click="revokeToken(token.id)">
+					<NcButton variant="error" @click="revokeToken(token.id)">
 						{{ t('openregister', 'Revoke') }}
 					</NcButton>
 				</li>
@@ -28,61 +34,40 @@
 			</p>
 		</div>
 
-		<NcModal v-if="showCreateModal" @close="showCreateModal = false">
-			<div class="tokens-section__modal">
-				<h3>{{ t('openregister', 'Create API Token') }}</h3>
-				<div class="section__field">
-					<label for="token-name">{{ t('openregister', 'Token name') }}</label>
-					<NcTextField id="token-name"
-						v-model="newTokenName"
-						:label="t('openregister', 'Token name')" />
-				</div>
-				<div class="section__field">
-					<label for="token-expires">{{ t('openregister', 'Expires in (e.g., 90d)') }}</label>
-					<NcTextField id="token-expires"
-						v-model="newTokenExpires"
-						:label="t('openregister', 'Expiration')" />
-				</div>
-				<NcButton type="primary"
-					:disabled="!newTokenName"
-					@click="createToken">
-					{{ t('openregister', 'Create') }}
-				</NcButton>
-			</div>
-		</NcModal>
+		<CreateTokenModal
+			v-if="showCreateModal"
+			:tokenName="newTokenName"
+			:tokenExpires="newTokenExpires"
+			@close="showCreateModal = false"
+			@create="createToken"
+			@update:tokenName="newTokenName = $event"
+			@update:tokenExpires="newTokenExpires = $event" />
 
-		<NcModal v-if="createdToken" @close="createdToken = null">
-			<div class="tokens-section__modal">
-				<h3>{{ t('openregister', 'Token Created') }}</h3>
-				<p class="tokens-section__warning">
-					{{ t('openregister', 'This token will only be shown once. Copy it now.') }}
-				</p>
-				<div class="tokens-section__token-display">
-					<code>{{ createdToken }}</code>
-					<NcButton @click="copyToken">
-						{{ t('openregister', 'Copy to clipboard') }}
-					</NcButton>
-				</div>
-			</div>
-		</NcModal>
+		<CreatedTokenModal
+			v-if="createdToken"
+			:token="createdToken"
+			@close="createdToken = null"
+			@copy="copyToken" />
 
-		<p v-if="message" :class="{ 'section__error': isError, 'section__success': !isError }">
+		<p
+			v-if="message"
+			:class="{ section__error: isError, section__success: !isError }">
 			{{ message }}
 		</p>
 	</div>
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
-import NcTextField from '@nextcloud/vue/dist/Components/NcTextField.js'
+import { NcButton } from '@nextcloud/vue'
+import CreatedTokenModal from '../../../modals/account/CreatedTokenModal.vue'
+import CreateTokenModal from '../../../modals/account/CreateTokenModal.vue'
 
 export default {
 	name: 'TokensSection',
-	components: { NcButton, NcModal, NcTextField },
+	components: { NcButton, CreateTokenModal, CreatedTokenModal },
 	data() {
 		return {
 			tokens: [],
@@ -95,15 +80,26 @@ export default {
 			isError: false,
 		}
 	},
+
 	mounted() {
 		this.loadTokens()
 	},
+
 	methods: {
 		t,
+		/**
+		 * Load the signed-in user's personal API tokens. Errors during initial load
+		 * are swallowed because a new user legitimately has no tokens yet.
+		 *
+		 * @spec openspec/specs/account-self-service/spec.md
+		 * @return {Promise<void>}
+		 */
 		async loadTokens() {
 			this.loading = true
 			try {
-				const { data } = await axios.get(generateUrl('/apps/openregister/api/user/me/tokens'))
+				const { data } = await axios.get(
+					generateUrl('/apps/openregister/api/user/me/tokens'),
+				)
 				this.tokens = data || []
 			} catch (e) {
 				// Handle silently.
@@ -111,6 +107,13 @@ export default {
 				this.loading = false
 			}
 		},
+
+		/**
+		 * Create a personal API token and surface the one-time secret.
+		 *
+		 * @spec exclude UI plumbing — POST + reveal-modal glue around the account-self-service token list contract.
+		 * @return {Promise<void>}
+		 */
 		async createToken() {
 			try {
 				const payload = { name: this.newTokenName }
@@ -125,21 +128,42 @@ export default {
 				this.newTokenExpires = ''
 				await this.loadTokens()
 			} catch (e) {
-				this.message = e.response?.data?.error || t('openregister', 'Failed to create token')
+				this.message =
+					e.response?.data?.error
+					|| t('openregister', 'Failed to create token')
 				this.isError = true
 			}
 		},
+
+		/**
+		 * Revoke a personal API token by id.
+		 *
+		 * @spec exclude UI plumbing — thin DELETE + list refresh; token contract owned by account-self-service.
+		 * @param {string|number} id - token identifier
+		 * @return {Promise<void>}
+		 */
 		async revokeToken(id) {
 			try {
-				await axios.delete(generateUrl(`/apps/openregister/api/user/me/tokens/${id}`))
+				await axios.delete(
+					generateUrl(`/apps/openregister/api/user/me/tokens/${id}`),
+				)
 				this.message = t('openregister', 'Token revoked')
 				this.isError = false
 				await this.loadTokens()
 			} catch (e) {
-				this.message = e.response?.data?.error || t('openregister', 'Failed to revoke token')
+				this.message =
+					e.response?.data?.error
+					|| t('openregister', 'Failed to revoke token')
 				this.isError = true
 			}
 		},
+
+		/**
+		 * Copy the one-time token to the clipboard.
+		 *
+		 * @spec exclude UI plumbing — clipboard write + toast, no observable contract.
+		 * @return {Promise<void>}
+		 */
 		async copyToken() {
 			try {
 				await navigator.clipboard.writeText(this.createdToken)
@@ -150,6 +174,14 @@ export default {
 				this.isError = true
 			}
 		},
+
+		/**
+		 * Format a token expiry date for display.
+		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
+		 * @param {string} dateStr - ISO date string
+		 * @return {string} localized date
+		 */
 		formatDate(dateStr) {
 			if (!dateStr) return ''
 			return new Date(dateStr).toLocaleDateString()
@@ -159,19 +191,63 @@ export default {
 </script>
 
 <style scoped>
-.section { margin-bottom: 32px; padding: 16px; border-bottom: 1px solid var(--color-border); }
-.section__loading { color: var(--color-text-maxcontrast); }
-.section__field { margin-bottom: 12px; }
-.section__field label { display: block; margin-bottom: 4px; font-weight: bold; }
-.section__error { color: var(--color-error); margin-top: 8px; }
-.section__success { color: var(--color-success); margin-top: 8px; }
-.tokens-section__list { list-style: none; padding: 0; margin-top: 16px; }
-.tokens-section__item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--color-border-dark); }
-.tokens-section__info { display: flex; flex-direction: column; gap: 4px; }
-.tokens-section__preview { font-family: monospace; color: var(--color-text-maxcontrast); }
-.tokens-section__expires { font-size: 0.85em; color: var(--color-text-maxcontrast); }
-.tokens-section__modal { padding: 24px; }
-.tokens-section__warning { color: var(--color-warning); font-weight: bold; margin-bottom: 12px; }
-.tokens-section__token-display { display: flex; gap: 8px; align-items: center; }
-.tokens-section__token-display code { background: var(--color-background-dark); padding: 8px; border-radius: 4px; word-break: break-all; flex: 1; }
+.section {
+	margin-bottom: 32px;
+	padding: 16px;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.section__loading {
+	color: var(--color-text-maxcontrast);
+}
+
+.section__field {
+	margin-bottom: 12px;
+}
+
+.section__field label {
+	display: block;
+	margin-bottom: 4px;
+	font-weight: bold;
+}
+
+.section__error {
+	color: var(--color-error);
+	margin-top: 8px;
+}
+
+.section__success {
+	color: var(--color-success);
+	margin-top: 8px;
+}
+
+.tokens-section__list {
+	list-style: none;
+	padding: 0;
+	margin-top: 16px;
+}
+
+.tokens-section__item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 0;
+	border-bottom: 1px solid var(--color-border-dark);
+}
+
+.tokens-section__info {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.tokens-section__preview {
+	font-family: monospace;
+	color: var(--color-text-maxcontrast);
+}
+
+.tokens-section__expires {
+	font-size: 0.85em;
+	color: var(--color-text-maxcontrast);
+}
 </style>

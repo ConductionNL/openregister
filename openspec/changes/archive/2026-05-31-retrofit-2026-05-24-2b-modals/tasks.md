@@ -1,0 +1,7 @@
+# Tasks
+
+- [x] task-1: entity-management-modals#REQ-001 — Entity edit modal lifecycle (EditAgent, EditApplication, EditConfiguration, EditEndpoint, EditOrganisation, EditSource, EditView, EditWebhook) (retroactive annotation)
+- [x] task-2: entity-management-modals#REQ-002 — Entity delete + single-object action modals (DeleteAgent, DeleteApplication, DeleteConfiguration, DeleteEndpoint, DeleteOrganisation, DeleteSource, DeleteView, DeleteObject, CopyObject, DownloadObject, LockObject, PublishConfiguration, PreviewConfiguration, ViewConfiguration, ViewObject, ViewSource, ViewWebhookLog, JoinOrganisation, SwitchOrganisationModal) (retroactive annotation)
+- [x] task-3: entity-management-modals#REQ-003 — Bulk-action modals (MassDeleteObject, MassCopyObjects, MassValidateObjects, PurgeMultiple, RestoreMultiple, MigrationObject, UploadObject) (retroactive annotation)
+- [x] task-4: platform-administration-modals#REQ-001 — Settings modals (LLMConfigModal, CollectionManagementModal, ConfigSetManagementModal, ConnectionConfigModal, ObjectManagementModal, ObjectVectorizationModal, CreateConfigSetDialog, DeleteConfigSetDialog, DeleteCollectionModal) (retroactive annotation)
+- [x] task-5: platform-administration-modals#REQ-002 — Operational-task modals (ClearCacheModal, SolrWarmupModal, SolrSetupResultsModal, SolrTestResultsModal, InspectIndexModal, MassValidateModal) (retroactive annotation)

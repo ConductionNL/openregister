@@ -1,0 +1,46 @@
+#!/bin/sh
+# Committed pre-commit hook (activated via `git config core.hooksPath .githooks`,
+# which `npm install` / `composer install` set automatically — see package.json
+# "prepare" and composer.json "post-install-cmd").
+#
+# Regenerates docs/features.json whenever staged changes touch openspec/specs/
+# or the features overlay, so the commercial capability list can never go
+# stale. CI (features-check / features-extract) only VERIFIES — generation
+# happens here, before the commit, never in the pipeline.
+#
+# WHY THIS FILE ARRIVED LATE (#2491). openregister had no hook and instead ran
+# an in-tree `scripts/build-features-manifest.js` from an npm `prebuild` hook.
+# That script emitted a DIFFERENT SHAPE — `{schemaVersion, generatedAt,
+# features: [...]}` — while docs/features.json is, and is verified by CI to be,
+# a bare JSON array. So a plain `npm run build` rewrote a tracked file into a
+# form the CI check rejects, and the next PR went red for a change nobody made.
+# The extractor below is the single writer; the script and its hook are gone.
+#
+# Best-effort by design: any failure only warns and never blocks the commit —
+# the CI gate is the enforcement backstop.
+
+if git diff --cached --name-only | grep -qE "^openspec/(specs/|features\.overlay\.json)"; then
+  CACHE=".git/extract-features.py"
+  # Fetch the canonical script (single source of truth in ConductionNL/.github);
+  # fall back to a previously cached copy when offline.
+  curl -sf --max-time 10 \
+    https://raw.githubusercontent.com/ConductionNL/.github/main/scripts/extract-features.py \
+    -o "$CACHE" 2>/dev/null || true
+
+  if [ -f "$CACHE" ]; then
+    if command -v python3 >/dev/null 2>&1; then PY="python3";
+    elif command -v py >/dev/null 2>&1; then PY="py -3";
+    else PY="python"; fi
+
+    if $PY "$CACHE" --app-root . >/dev/null 2>&1; then
+      git add docs/features.json
+      echo "pre-commit: docs/features.json regenerated from openspec/specs/."
+    else
+      echo "pre-commit: WARNING — could not regenerate docs/features.json (python or pyyaml missing?). CI features-check will verify." >&2
+    fi
+  else
+    echo "pre-commit: WARNING — could not fetch extract-features.py (offline?). CI features-check will verify." >&2
+  fi
+fi
+
+exit 0

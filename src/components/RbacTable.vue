@@ -3,122 +3,162 @@
 		<table class="rbac-table">
 			<thead>
 				<tr>
-					<th>Group</th>
-					<th>Create</th>
-					<th>Read</th>
-					<th>Update</th>
-					<th>Delete</th>
+					<th scope="col">Group</th>
+					<th :id="`${uid}-col-create`" scope="col">Create</th>
+					<th :id="`${uid}-col-read`" scope="col">Read</th>
+					<th :id="`${uid}-col-update`" scope="col">Update</th>
+					<th :id="`${uid}-col-delete`" scope="col">Delete</th>
 				</tr>
 			</thead>
 			<tbody>
 				<!-- Public group at top -->
 				<tr class="public-row">
-					<td class="group-name">
+					<td :id="`${uid}-row-public`" class="group-name">
 						<span class="group-badge public">public</span>
 						<small>Unauthenticated users</small>
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission('public', 'create')"
-							@update:checked="updatePermission('public', 'create', $event)" />
+							:modelValue="hasPermission('public', 'create')"
+							:aria-labelledby="`${uid}-row-public ${uid}-col-create`"
+							@update:modelValue="
+								updatePermission('public', 'create', $event)
+							" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission('public', 'read')"
-							@update:checked="updatePermission('public', 'read', $event)" />
+							:modelValue="hasPermission('public', 'read')"
+							:aria-labelledby="`${uid}-row-public ${uid}-col-read`"
+							@update:modelValue="
+								updatePermission('public', 'read', $event)
+							" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission('public', 'update')"
-							@update:checked="updatePermission('public', 'update', $event)" />
+							:modelValue="hasPermission('public', 'update')"
+							:aria-labelledby="`${uid}-row-public ${uid}-col-update`"
+							@update:modelValue="
+								updatePermission('public', 'update', $event)
+							" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission('public', 'delete')"
-							@update:checked="updatePermission('public', 'delete', $event)" />
+							:modelValue="hasPermission('public', 'delete')"
+							:aria-labelledby="`${uid}-row-public ${uid}-col-delete`"
+							@update:modelValue="
+								updatePermission('public', 'delete', $event)
+							" />
 					</td>
 				</tr>
 
 				<!-- Authenticated users group -->
 				<tr class="user-row">
-					<td class="group-name">
+					<td :id="`${uid}-row-authenticated`" class="group-name">
 						<span class="group-badge user">authenticated</span>
 						<small>Authenticated users</small>
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission('authenticated', 'create')"
-							@update:checked="updatePermission('authenticated', 'create', $event)" />
+							:modelValue="hasPermission('authenticated', 'create')"
+							:aria-labelledby="`${uid}-row-authenticated ${uid}-col-create`"
+							@update:modelValue="
+								updatePermission('authenticated', 'create', $event)
+							" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission('authenticated', 'read')"
-							@update:checked="updatePermission('authenticated', 'read', $event)" />
+							:modelValue="hasPermission('authenticated', 'read')"
+							:aria-labelledby="`${uid}-row-authenticated ${uid}-col-read`"
+							@update:modelValue="
+								updatePermission('authenticated', 'read', $event)
+							" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission('authenticated', 'update')"
-							@update:checked="updatePermission('authenticated', 'update', $event)" />
+							:modelValue="hasPermission('authenticated', 'update')"
+							:aria-labelledby="`${uid}-row-authenticated ${uid}-col-update`"
+							@update:modelValue="
+								updatePermission('authenticated', 'update', $event)
+							" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission('authenticated', 'delete')"
-							@update:checked="updatePermission('authenticated', 'delete', $event)" />
+							:modelValue="hasPermission('authenticated', 'delete')"
+							:aria-labelledby="`${uid}-row-authenticated ${uid}-col-delete`"
+							@update:modelValue="
+								updatePermission('authenticated', 'delete', $event)
+							" />
 					</td>
 				</tr>
 
 				<!-- Regular user groups -->
 				<tr v-for="group in sortedGroups" :key="group.id" class="group-row">
-					<td class="group-name">
+					<td :id="`${uid}-row-${group.id}`" class="group-name">
 						<span class="group-badge">{{ group.name }}</span>
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission(group.id, 'create')"
-							@update:checked="updatePermission(group.id, 'create', $event)" />
+							:modelValue="hasPermission(group.id, 'create')"
+							:aria-labelledby="`${uid}-row-${group.id} ${uid}-col-create`"
+							@update:modelValue="
+								updatePermission(group.id, 'create', $event)
+							" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission(group.id, 'read')"
-							@update:checked="updatePermission(group.id, 'read', $event)" />
+							:modelValue="hasPermission(group.id, 'read')"
+							:aria-labelledby="`${uid}-row-${group.id} ${uid}-col-read`"
+							@update:modelValue="
+								updatePermission(group.id, 'read', $event)
+							" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission(group.id, 'update')"
-							@update:checked="updatePermission(group.id, 'update', $event)" />
+							:modelValue="hasPermission(group.id, 'update')"
+							:aria-labelledby="`${uid}-row-${group.id} ${uid}-col-update`"
+							@update:modelValue="
+								updatePermission(group.id, 'update', $event)
+							" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission(group.id, 'delete')"
-							@update:checked="updatePermission(group.id, 'delete', $event)" />
+							:modelValue="hasPermission(group.id, 'delete')"
+							:aria-labelledby="`${uid}-row-${group.id} ${uid}-col-delete`"
+							@update:modelValue="
+								updatePermission(group.id, 'delete', $event)
+							" />
 					</td>
 				</tr>
 
 				<!-- Admin group at bottom (disabled) -->
 				<tr class="admin-row">
-					<td class="group-name">
+					<td :id="`${uid}-row-admin`" class="group-name">
 						<span class="group-badge admin">admin</span>
 						<small>Always has full access</small>
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="true"
-							:disabled="true" />
+							:modelValue="true"
+							:disabled="true"
+							:aria-labelledby="`${uid}-row-admin ${uid}-col-create`" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="true"
-							:disabled="true" />
+							:modelValue="true"
+							:disabled="true"
+							:aria-labelledby="`${uid}-row-admin ${uid}-col-read`" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="true"
-							:disabled="true" />
+							:modelValue="true"
+							:disabled="true"
+							:aria-labelledby="`${uid}-row-admin ${uid}-col-update`" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="true"
-							:disabled="true" />
+							:modelValue="true"
+							:disabled="true"
+							:aria-labelledby="`${uid}-row-admin ${uid}-col-delete`" />
 					</td>
 				</tr>
 			</tbody>
@@ -126,10 +166,16 @@
 
 		<div class="rbac-summary">
 			<NcNoteCard v-if="!hasAnyPermissions" type="success">
-				<p><strong>Open Access:</strong> No specific permissions set - all organisation members can perform all operations.</p>
+				<p>
+					<strong>Open Access:</strong> No specific permissions set - all
+					organisation members can perform all operations.
+				</p>
 			</NcNoteCard>
 			<NcNoteCard v-else-if="isRestrictive" type="warning">
-				<p><strong>Restrictive Access:</strong> Only specified groups can perform these operations.</p>
+				<p>
+					<strong>Restrictive Access:</strong> Only specified groups can
+					perform these operations.
+				</p>
 			</NcNoteCard>
 		</div>
 	</div>
@@ -138,12 +184,20 @@
 <script>
 import { NcCheckboxRadioSwitch, NcNoteCard } from '@nextcloud/vue'
 
+/**
+ * Per-instance id seed. RbacTable is rendered up to seven times on a single
+ * page (EditOrganisation), so the ids that wire each permission checkbox to its
+ * row and column header via aria-labelledby must not collide between instances.
+ */
+let rbacTableUid = 0
+
 export default {
 	name: 'RbacTable',
 	components: {
 		NcCheckboxRadioSwitch,
 		NcNoteCard,
 	},
+
 	props: {
 		/**
 		 * The entity type (register, schema, object, view, agent)
@@ -152,6 +206,7 @@ export default {
 			type: String,
 			required: true,
 		},
+
 		/**
 		 * The authorization object from the organisation
 		 */
@@ -159,6 +214,7 @@ export default {
 			type: Object,
 			required: true,
 		},
+
 		/**
 		 * Available Nextcloud groups
 		 */
@@ -166,6 +222,7 @@ export default {
 			type: Array,
 			required: true,
 		},
+
 		/**
 		 * Groups assigned to the organisation (used to filter display)
 		 */
@@ -174,25 +231,42 @@ export default {
 			default: () => [],
 		},
 	},
+
+	data() {
+		return {
+			uid: `rbac-${++rbacTableUid}`,
+		}
+	},
+
 	computed: {
 		/**
 		 * Get sorted groups (only showing groups assigned to the organisation)
 		 *
 		 * @return {Array} Sorted array of groups
+		 * @spec exclude computed sorted/filtered group list for display, RBAC contract owned by rbac capability
 		 */
 		sortedGroups() {
 			// If no organisation groups specified, show all available groups
 			if (!this.organisationGroups || this.organisationGroups.length === 0) {
 				return this.availableGroups
-					.filter(group => group.id !== 'admin' && group.id !== 'public' && group.id !== 'authenticated')
+					.filter(
+						(group) =>
+							group.id !== 'admin'
+							&& group.id !== 'public'
+							&& group.id !== 'authenticated',
+					)
 					.sort((a, b) => a.name.localeCompare(b.name))
 			}
 
 			// Filter to only show groups that are assigned to the organisation
 			return this.availableGroups
-				.filter(group => {
+				.filter((group) => {
 					// Exclude special groups
-					if (group.id === 'admin' || group.id === 'public' || group.id === 'authenticated') {
+					if (
+						group.id === 'admin'
+						|| group.id === 'public'
+						|| group.id === 'authenticated'
+					) {
 						return false
 					}
 					// Only include groups that are in the organisation's groups list
@@ -205,23 +279,29 @@ export default {
 		 * Check if any permissions are set for this entity type
 		 *
 		 * @return {boolean} True if permissions are set
+		 * @spec exclude computed read of authorization prop presence, RBAC contract owned by rbac capability
 		 */
 		hasAnyPermissions() {
-		// For applications, authorization is flat (just {create: [], read: [], ...})
-		// For organisations, authorization is nested ({register: {create: [], ...}, ...})
+			// For applications, authorization is flat (just {create: [], read: [], ...})
+			// For organisations, authorization is nested ({register: {create: [], ...}, ...})
 			let entityAuth
 			if (this.authorization[this.entityType]) {
-			// Nested structure (organisations)
+				// Nested structure (organisations)
 				entityAuth = this.authorization[this.entityType]
-			} else if (this.entityType === 'application' && this.authorization.create !== undefined) {
-			// Flat structure (applications)
+			} else if (
+				this.entityType === 'application'
+				&& this.authorization.create !== undefined
+			) {
+				// Flat structure (applications)
 				entityAuth = this.authorization
 			} else {
 				entityAuth = {}
 			}
 
-			return Object.keys(entityAuth).some(action =>
-				Array.isArray(entityAuth[action]) && entityAuth[action].length > 0,
+			return Object.keys(entityAuth).some(
+				(action) =>
+					Array.isArray(entityAuth[action])
+					&& entityAuth[action].length > 0,
 			)
 		},
 
@@ -234,23 +314,28 @@ export default {
 			return this.hasAnyPermissions
 		},
 	},
+
 	methods: {
-	/**
-	 * Check if a group has a specific permission
-	 *
-	 * @param {string} groupId - The group ID
-	 * @param {string} action - The action (create, read, update, delete)
-	 * @return {boolean} True if group has permission
-	 */
+		/**
+		 * Check if a group has a specific permission
+		 *
+		 * @param {string} groupId - The group ID
+		 * @param {string} action - The action (create, read, update, delete)
+		 * @return {boolean} True if group has permission
+		 * @spec exclude permission-check read helper, RBAC contract owned by rbac capability
+		 */
 		hasPermission(groupId, action) {
-		// For applications, authorization is flat (just {create: [], read: [], ...})
-		// For organisations, authorization is nested ({register: {create: [], ...}, ...})
+			// For applications, authorization is flat (just {create: [], read: [], ...})
+			// For organisations, authorization is nested ({register: {create: [], ...}, ...})
 			let entityAuth
 			if (this.authorization[this.entityType]) {
-			// Nested structure (organisations)
+				// Nested structure (organisations)
 				entityAuth = this.authorization[this.entityType]
-			} else if (this.entityType === 'application' && this.authorization.create !== undefined) {
-			// Flat structure (applications)
+			} else if (
+				this.entityType === 'application'
+				&& this.authorization.create !== undefined
+			) {
+				// Flat structure (applications)
 				entityAuth = this.authorization
 			} else {
 				entityAuth = {}
@@ -269,6 +354,7 @@ export default {
 		 * @param {string} action - The action (create, read, update, delete)
 		 * @param {boolean} hasPermission - Whether to grant or revoke permission
 		 * @return {void}
+		 * @spec exclude emit update event to parent, RBAC contract owned by rbac capability
 		 */
 		updatePermission(groupId, action, hasPermission) {
 			this.$emit('update', {

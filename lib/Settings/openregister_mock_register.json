@@ -1,0 +1,2924 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "openregister demo data",
+    "version": "1.0.0",
+    "description": "Demo data covering every schema this app supplies, offered as the first step of the app's setup walkthrough. Generated from the schemas themselves, so every object satisfies the schema that will validate it."
+  },
+  "x-openregister": {
+    "type": "mock",
+    "app": "openregister",
+    "description": "Demo data for openregister. NOT installed automatically — a mock register is imported on demand, from the setup walkthrough or `occ openregister:descriptors:list --app=openregister --import=<slug>`."
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "credential-broker": {
+        "slug": "credential-broker",
+        "title": "Credential Broker (demo)",
+        "version": "1.3.0",
+        "description": "Demo data for Credential Broker. Generated from the register's own schemas — see hydra-gates/scripts/lib/generate_mock_register.py."
+      },
+      "data-subject-requests": {
+        "slug": "data-subject-requests",
+        "title": "Data-Subject Requests (demo)",
+        "version": "1.0.0",
+        "description": "Demo data for Data-Subject Requests. Generated from the register's own schemas — see hydra-gates/scripts/lib/generate_mock_register.py."
+      },
+      "dsar-policy-packs": {
+        "slug": "dsar-policy-packs",
+        "title": "AVG/DSAR Policy Packs (demo)",
+        "version": "1.0.0",
+        "description": "Demo data for AVG/DSAR Policy Packs. Generated from the register's own schemas — see hydra-gates/scripts/lib/generate_mock_register.py."
+      },
+      "edepot-transfers": {
+        "slug": "edepot-transfers",
+        "title": "e-Depot Transfers (demo)",
+        "version": "1.0.0",
+        "description": "Demo data for e-Depot Transfers. Generated from the register's own schemas — see hydra-gates/scripts/lib/generate_mock_register.py."
+      },
+      "flows": {
+        "slug": "flows",
+        "title": "Flows (demo)",
+        "version": "1.3.0",
+        "description": "Demo data for Flows. Generated from the register's own schemas — see hydra-gates/scripts/lib/generate_mock_register.py."
+      },
+      "merge-operation": {
+        "slug": "merge-operation",
+        "title": "Merge Operation (demo)",
+        "version": "1.0.0",
+        "description": "Demo data for Merge Operation. Generated from the register's own schemas — see hydra-gates/scripts/lib/generate_mock_register.py."
+      },
+      "trust-configuration": {
+        "slug": "trust-configuration",
+        "title": "Trust Configuration (demo)",
+        "version": "1.0.0",
+        "description": "Demo data for Trust Configuration. Generated from the register's own schemas — see hydra-gates/scripts/lib/generate_mock_register.py."
+      },
+      "vocabulary": {
+        "slug": "vocabulary",
+        "title": "Vocabulary (demo)",
+        "version": "1.0.0",
+        "description": "Demo data for Vocabulary. Generated from the register's own schemas — see hydra-gates/scripts/lib/generate_mock_register.py."
+      }
+    },
+    "schemas": {
+      "brokeredcredential": {
+        "slug": "brokeredcredential",
+        "title": "Credential",
+        "version": "1.3.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "Owner- and organisation-scoped metadata for a brokered credential — a handle, never the secret.",
+        "description": "Metadata for a secret the credential broker holds on a user's or organisation's behalf. Carries a name, the catalogue provider it targets, the owning user, the scope (personal|organisation), the owning organisation UUID for organisation credentials, and the app ids permitted to use it. MUST NOT contain the secret value: the token is stored in the Nextcloud credential vault (ICredentialsManager), encrypted at rest, keyed by this object's UUID — under the owning user for personal credentials and under a reserved system identity for organisation credentials. No property here is secret-bearing, so the metadata is safe to list, export, audit, and query.",
+        "required": [
+          "name",
+          "provider"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Human-readable name the owner gives the credential (e.g. \"GitHub publisher\").",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Name"
+          },
+          "provider": {
+            "type": "string",
+            "description": "Catalogue provider identifier the credential targets (e.g. \"github\", \"gitlab\") — a key in the read-only lib/Settings/credential-providers.json catalogue.",
+            "maxLength": 64,
+            "facetable": true,
+            "title": "Provider"
+          },
+          "owner": {
+            "type": "string",
+            "description": "The owning user (OR-resolved owner). For a personal credential this is the access-control key: only the owner may read, use, or manage it, and the paired secret is stored under this user in the Nextcloud vault. For an organisation credential this records the provisioning administrator for attribution ONLY — access control is membership of `organisation`, never this field.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Owner"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "personal",
+              "organisation"
+            ],
+            "default": "personal",
+            "description": "Access-control scope. `personal` (the default when absent): owner-scoped, the secret lives under the owning user in the Nextcloud vault and only the owner may use or manage it. `organisation`: shared by an organisation, the secret lives under a reserved system identity keyed by this object's UUID and any member of `organisation` may drive a broker call through an allowed app; only an organisation administrator (or a Nextcloud admin) may create, update, or delete it.",
+            "facetable": true,
+            "title": "Scope"
+          },
+          "organisation": {
+            "type": "string",
+            "description": "The owning OpenRegister organisation UUID. REQUIRED when `scope` is `organisation` (membership of this organisation is the access-control key); MUST be absent/ignored for a personal credential, where it is never an access key.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Organisation"
+          },
+          "allowedApps": {
+            "type": "array",
+            "description": "App ids the owner has permitted to use this credential via the broker (the per-app allow-list the broker enforces).",
+            "items": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "title": "Allowed Apps"
+          },
+          "sharedWith": {
+            "type": "array",
+            "description": "Principals this credential is shared with, in addition to its scope. A share grants USE of the credential through the broker — never sight of the secret, which stays in the vault (ADR-004 Rule 1). Only the owner may change this list; a recipient can neither widen it nor re-share onward. A `group` entry is an RBAC permission principal ONLY and is never a tenant discriminator (ADR-002 Rule 1): a principal outside the credential's organisation is denied even when named here. An absent, empty, or malformed list grants nothing.",
+            "items": {
+              "type": "object",
+              "required": [
+                "type",
+                "id"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "group"
+                  ],
+                  "description": "Whether `id` names a Nextcloud user or a Nextcloud group.",
+                  "title": "Principal type"
+                },
+                "id": {
+                  "type": "string",
+                  "maxLength": 255,
+                  "description": "The Nextcloud user id or group id.",
+                  "title": "User or group"
+                },
+                "permission": {
+                  "type": "string",
+                  "enum": [
+                    "use"
+                  ],
+                  "default": "use",
+                  "description": "What the share grants. `use` lets the recipient drive a brokered call with this credential.",
+                  "title": "Permission granted"
+                }
+              }
+            },
+            "title": "Shared With"
+          },
+          "sharedUsers": {
+            "type": "array",
+            "description": "DERIVED from `sharedWith` — do not set directly; the server recomputes it on every write and ignores any client-supplied value. It exists because the RBAC match operator `$contains` compares SCALARS, so it cannot test membership of the object-shaped `sharedWith` entries, and a match clause resolves whole tokens and cannot build `\"user:\" + $userId` from a prefixed list. Holding bare uids lets a rule say `{\"sharedUsers\": {\"$contains\": \"$userId\"}}`. A stale value here is an access-control bug in either direction, which is why it is never client-writable.",
+            "items": {
+              "type": "string",
+              "maxLength": 255
+            },
+            "title": "Shared Users"
+          },
+          "sharedGroups": {
+            "type": "array",
+            "description": "DERIVED from `sharedWith` — see `sharedUsers`. Holds bare group ids so a rule can say `{\"sharedGroups\": {\"$contains\": \"$user.groups\"}}`, which matches when the object lists any one of the caller's groups.",
+            "items": {
+              "type": "string",
+              "maxLength": 255
+            },
+            "title": "Shared Groups"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the credential was created.",
+            "title": "Created At"
+          }
+        }
+      },
+      "dataSubjectRequest": {
+        "slug": "dataSubjectRequest",
+        "title": "Data-Subject Request",
+        "version": "1.2.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "A single GDPR / AVG data-subject-rights request tracked as a stateful case.",
+        "description": "Jurisdiction-neutral model for a data-subject-rights request tracked as a stateful case: who the subject is, which right is exercised, the request's status in its lifecycle, the EU art-12(3) legal deadline (one month from receipt, extendable once by two months), the assigned handler, case timestamps, retention window, denial workflow, and evidence/redaction sub-collections.",
+        "required": [
+          "subjectId",
+          "type",
+          "status",
+          "receivedAt"
+        ],
+        "x-openregister-references": {
+          "pack": {
+            "mode": "lookup",
+            "schema": "dsarPolicyPack",
+            "register": "dsar-policy-packs",
+            "filters": {
+              "jurisdiction": "@self.jurisdiction"
+            }
+          }
+        },
+        "x-openregister-lifecycle": {
+          "field": "status",
+          "initial": "received",
+          "final": [
+            "fulfilled",
+            "refused",
+            "closed"
+          ],
+          "transitions": {
+            "startVerifying": {
+              "from": [
+                "received",
+                "verifying",
+                "in-progress"
+              ],
+              "to": "verifying",
+              "description": "Begin verifying the requester's identity / eligibility."
+            },
+            "startProgress": {
+              "from": [
+                "received",
+                "verifying",
+                "in-progress"
+              ],
+              "to": "in-progress",
+              "description": "Begin fulfilling the request (discovery, export, rectify, erase)."
+            },
+            "fulfil": {
+              "from": [
+                "received",
+                "verifying",
+                "in-progress"
+              ],
+              "to": "fulfilled",
+              "description": "Mark the request fulfilled (the right was honoured)."
+            },
+            "refuse": {
+              "from": [
+                "received",
+                "verifying",
+                "in-progress"
+              ],
+              "to": "refused",
+              "description": "Refuse the request (a lawful exemption applies)."
+            },
+            "close": {
+              "from": [
+                "received",
+                "verifying",
+                "in-progress"
+              ],
+              "to": "closed",
+              "description": "Close the request without a fulfil/refuse outcome (e.g. withdrawn)."
+            },
+            "assign": {
+              "from": [
+                "received",
+                "verifying",
+                "in-progress",
+                "evidence-collection",
+                "denial-drafted"
+              ],
+              "to": "verifying",
+              "description": "Assign (or reassign) the case to a handler and move it into active verification."
+            },
+            "collectEvidence": {
+              "from": [
+                "verifying",
+                "in-progress",
+                "evidence-collection"
+              ],
+              "to": "evidence-collection",
+              "description": "Enter evidence-collection: harvest source data for the case (harvesting itself is delivered by dsar-case-engine)."
+            },
+            "draftDenial": {
+              "from": [
+                "verifying",
+                "in-progress",
+                "evidence-collection",
+                "denial-drafted"
+              ],
+              "to": "denial-drafted",
+              "description": "Record a proposed denialGround as a draft denial. Does NOT require a regulatorReference (the gate applies only at finalise)."
+            },
+            "finaliseDenial": {
+              "from": [
+                "denial-drafted"
+              ],
+              "to": "refused",
+              "description": "Finalise the denial and reach the refused final state. Guarded: refused unless a regulatorReference is present on the case.",
+              "requires": "OCA\\OpenRegister\\Service\\Gdpr\\Lifecycle\\DenialFinaliseGuard"
+            },
+            "redact": {
+              "from": [
+                "in-progress",
+                "evidence-collection"
+              ],
+              "to": "in-progress",
+              "description": "Record a redaction (field before/after + ground) on the case. The redaction write path is delivered by dsar-case-engine."
+            },
+            "bundle": {
+              "from": [
+                "in-progress",
+                "evidence-collection"
+              ],
+              "to": "fulfilled",
+              "description": "Assemble and sign the export bundle and reach the fulfilled final state (bundle generation/signing is delivered by dsar-case-engine)."
+            },
+            "retain": {
+              "from": [
+                "fulfilled",
+                "refused",
+                "closed"
+              ],
+              "to": "closed",
+              "description": "Move a finalised case into its configured retention window (the retention sweep is delivered by dsar-case-engine)."
+            }
+          }
+        },
+        "x-openregister-calculations": {
+          "daysRemaining": {
+            "type": "number",
+            "materialise": true,
+            "title": "Days Remaining",
+            "description": "Whole days between now and the effective deadline (extendedUntil when set, otherwise dueAt). Negative once the deadline has passed. Reuses DataSubjectDeadline art-12 semantics (ADR-011).",
+            "expression": {
+              "diffDays": [
+                {
+                  "coalesce": [
+                    {
+                      "prop": "extendedUntil"
+                    },
+                    {
+                      "prop": "dueAt"
+                    }
+                  ]
+                },
+                {
+                  "now": []
+                }
+              ]
+            }
+          },
+          "isOverdue": {
+            "type": "boolean",
+            "materialise": true,
+            "title": "Is Overdue",
+            "description": "True when the effective deadline (extendedUntil else dueAt) has passed, i.e. daysRemaining is negative. Reuses DataSubjectDeadline::isOverdue semantics (ADR-011).",
+            "expression": {
+              "lt": [
+                {
+                  "prop": "daysRemaining"
+                },
+                0
+              ]
+            }
+          },
+          "escalationTier": {
+            "type": "string",
+            "materialise": true,
+            "title": "Escalation Tier",
+            "description": "Deadline-tracking tier (on-track, reminder, escalation, breached) derived from daysRemaining. The tier boundaries are NOT hard-coded: they resolve from the active dsarPolicyPack's escalationTiers via @ref.pack (index 0 = reminder, 1 = escalation, 2 = breach). The tier activates when the days-past-deadline value (-daysRemaining) reaches a tier's offsetDays; breach when daysRemaining < 0. When no pack resolves (@ref.pack is null) every boundary comparison yields false and the case stays on-track (fail-safe, no false escalation) — the seeded default pack ensures a pack always resolves.",
+            "expression": {
+              "if": [
+                {
+                  "gt": [
+                    {
+                      "-": [
+                        {
+                          "prop": "daysRemaining"
+                        }
+                      ]
+                    },
+                    {
+                      "prop": "@ref.pack.escalationTiers.2.offsetDays"
+                    }
+                  ]
+                },
+                "breached",
+                {
+                  "if": [
+                    {
+                      "gte": [
+                        {
+                          "-": [
+                            {
+                              "prop": "daysRemaining"
+                            }
+                          ]
+                        },
+                        {
+                          "prop": "@ref.pack.escalationTiers.1.offsetDays"
+                        }
+                      ]
+                    },
+                    "escalation",
+                    {
+                      "if": [
+                        {
+                          "gte": [
+                            {
+                              "-": [
+                                {
+                                  "prop": "daysRemaining"
+                                }
+                              ]
+                            },
+                            {
+                              "prop": "@ref.pack.escalationTiers.0.offsetDays"
+                            }
+                          ]
+                        },
+                        "reminder",
+                        "on-track"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "breachedAt": {
+            "type": "string",
+            "materialise": true,
+            "title": "Breached At",
+            "description": "Write-once breach stamp (dsar-escalation-and-dpia): the instant the case's escalationTier first crossed into 'breached'. Declared as a calculation (ADR-031: the temporal sweep job carries no DSAR-specific branch) evaluated AFTER escalationTier in declaration order: while the tier is 'breached' the value coalesces to its existing stamp (write-once) or the evaluation clock on the first crossing; otherwise the existing value (null until a breach) is kept unchanged.",
+            "expression": {
+              "if": [
+                {
+                  "eq": [
+                    {
+                      "prop": "escalationTier"
+                    },
+                    "breached"
+                  ]
+                },
+                {
+                  "coalesce": [
+                    {
+                      "prop": "breachedAt"
+                    },
+                    {
+                      "formatDate": [
+                        {
+                          "now": []
+                        },
+                        "c"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "prop": "breachedAt"
+                }
+              ]
+            }
+          }
+        },
+        "x-openregister-aggregations": {
+          "openCaseCount": {
+            "metric": "count",
+            "schema": "dataSubjectRequest",
+            "filter": {
+              "status": [
+                "received",
+                "verifying",
+                "in-progress",
+                "evidence-collection",
+                "denial-drafted"
+              ]
+            }
+          },
+          "overdueCaseCount": {
+            "metric": "count",
+            "schema": "dataSubjectRequest",
+            "filter": {
+              "status": [
+                "received",
+                "verifying",
+                "in-progress",
+                "evidence-collection",
+                "denial-drafted"
+              ],
+              "isOverdue": true
+            }
+          },
+          "breachedCaseCount": {
+            "metric": "count",
+            "schema": "dataSubjectRequest",
+            "filter": {
+              "escalationTier": "breached"
+            }
+          }
+        },
+        "x-openregister-notifications": {
+          "deadlineAdvanceReminder": {
+            "trigger": {
+              "type": "calculatedChange",
+              "field": "escalationTier",
+              "condition": {
+                "eq": "reminder"
+              },
+              "previously": {
+                "ne": "reminder"
+              }
+            },
+            "enabled": true,
+            "originApp": "openregister",
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "field",
+                "field": "handler"
+              }
+            ],
+            "subject": {
+              "nl": "Herinnering: DSAR-deadline nadert voor {{subjectId}}",
+              "en": "Reminder: DSAR deadline approaching for {{subjectId}}"
+            },
+            "message": {
+              "nl": "De wettelijke termijn voor dit verzoek nadert. Nog {{daysRemaining}} dagen tot de deadline.",
+              "en": "The legal deadline for this request is approaching. {{daysRemaining}} days remaining."
+            }
+          },
+          "deadlineEscalation": {
+            "trigger": {
+              "type": "calculatedChange",
+              "field": "escalationTier",
+              "condition": {
+                "eq": "escalation"
+              },
+              "previously": {
+                "ne": "escalation"
+              }
+            },
+            "enabled": true,
+            "originApp": "openregister",
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "field",
+                "field": "handler"
+              }
+            ],
+            "subject": {
+              "nl": "Escalatie: DSAR-deadline kritiek voor {{subjectId}}",
+              "en": "Escalation: DSAR deadline critical for {{subjectId}}"
+            },
+            "message": {
+              "nl": "Dit verzoek nadert kritiek zijn wettelijke termijn. Nog {{daysRemaining}} dagen.",
+              "en": "This request is critically close to its legal deadline. {{daysRemaining}} days remaining."
+            }
+          },
+          "deadlineBreach": {
+            "trigger": {
+              "type": "calculatedChange",
+              "field": "escalationTier",
+              "condition": {
+                "eq": "breached"
+              },
+              "previously": {
+                "ne": "breached"
+              }
+            },
+            "enabled": true,
+            "originApp": "openregister",
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "field",
+                "field": "handler"
+              },
+              {
+                "kind": "expression",
+                "resolver": "OCA\\OpenRegister\\Service\\Gdpr\\PrivacyOfficerRecipientResolver"
+              }
+            ],
+            "subject": {
+              "nl": "Overschreden: DSAR-deadline verlopen voor {{subjectId}}",
+              "en": "Breached: DSAR deadline passed for {{subjectId}}"
+            },
+            "message": {
+              "nl": "De wettelijke termijn voor dit verzoek is verstreken.",
+              "en": "The legal deadline for this request has passed."
+            }
+          },
+          "dpiaFlagged": {
+            "trigger": {
+              "type": "calculatedChange",
+              "field": "dpiaRequired",
+              "condition": {
+                "eq": true
+              },
+              "previously": {
+                "ne": true
+              }
+            },
+            "enabled": true,
+            "originApp": "openregister",
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "expression",
+                "resolver": "OCA\\OpenRegister\\Service\\Gdpr\\PrivacyOfficerRecipientResolver"
+              }
+            ],
+            "subject": {
+              "nl": "DPIA vereist: patroon gedetecteerd rond {{subjectId}}",
+              "en": "DPIA required: pattern detected around {{subjectId}}"
+            },
+            "message": {
+              "nl": "Voor dit verzoek is een Data Protection Impact Assessment (DPIA) gemarkeerd — automatisch patroon (art. 35 AVG) of handmatige markering.",
+              "en": "This request was flagged as requiring a Data Protection Impact Assessment (DPIA) — automatic pattern detection (GDPR art. 35) or a manual flag."
+            }
+          }
+        },
+        "x-openregister-seeds": [
+          {
+            "@self": {
+              "register": "data-subject-requests",
+              "schema": "dataSubjectRequest",
+              "slug": "case-municipality-access"
+            },
+            "subjectId": "j.jansen@example.org",
+            "subjectType": "email",
+            "type": "access",
+            "status": "in-progress",
+            "handler": "handler-gemeente",
+            "receivedAt": "2026-06-01T09:00:00+00:00",
+            "dueAt": "2026-07-01T09:00:00+00:00",
+            "closedAt": null,
+            "dpiaRequired": false,
+            "retentionWindow": "standard",
+            "retainUntil": "2027-07-01T00:00:00+00:00",
+            "evidence": [
+              {
+                "sourceId": "or-objects",
+                "contentHash": "sha256:PLACEHOLDER_HASH",
+                "status": "collected"
+              }
+            ],
+            "notes": "Inwoner vraagt inzage in geregistreerde persoonsgegevens."
+          },
+          {
+            "@self": {
+              "register": "data-subject-requests",
+              "schema": "dataSubjectRequest",
+              "slug": "case-consultancy-erasure"
+            },
+            "subjectId": "contact@example-consultancy.test",
+            "subjectType": "email",
+            "type": "erasure",
+            "status": "verifying",
+            "handler": "handler-privacy",
+            "receivedAt": "2026-05-20T12:00:00+00:00",
+            "dueAt": "2026-06-20T12:00:00+00:00",
+            "extendedUntil": "2026-08-20T12:00:00+00:00",
+            "extensionReason": "Complex cross-register discovery; single art-12(3) extension applied.",
+            "dpiaRequired": true,
+            "retentionWindow": "extended"
+          },
+          {
+            "@self": {
+              "register": "data-subject-requests",
+              "schema": "dataSubjectRequest",
+              "slug": "case-travel-objection-denied"
+            },
+            "subjectId": "traveler@example-travel.test",
+            "subjectType": "email",
+            "type": "objection",
+            "status": "refused",
+            "handler": "handler-dpo",
+            "receivedAt": "2026-04-10T08:30:00+00:00",
+            "dueAt": "2026-05-10T08:30:00+00:00",
+            "closedAt": "2026-05-08T16:00:00+00:00",
+            "denialGround": "overriding-legitimate-grounds",
+            "regulatorReference": "REG-REF-PLACEHOLDER-0001",
+            "outcome": "Objection refused; compelling legitimate grounds documented; regulator reference recorded.",
+            "redactions": [
+              {
+                "field": "notes",
+                "before": "[redacted-source]",
+                "after": "[erased]",
+                "ground": "third-party-data"
+              }
+            ]
+          }
+        ],
+        "properties": {
+          "subjectId": {
+            "type": "string",
+            "description": "Identifier of the data subject (e.g. email or another identifier value indexed in the PII index).",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Subject Identifier"
+          },
+          "subjectType": {
+            "type": "string",
+            "description": "Optional type hint for the subject identifier (e.g. 'email', 'phone'). Maps to a GdprEntity type when discovering data.",
+            "maxLength": 64,
+            "facetable": true,
+            "title": "Subject Type"
+          },
+          "jurisdiction": {
+            "type": "string",
+            "description": "Jurisdiction / tenant key selecting which dsarPolicyPack supplies this case's escalation-tier thresholds, denial-ground wording, and retention durations (resolved via the pack cross-object reference). Defaults to 'default', which resolves the jurisdiction-neutral default pack. Full tenant-scoped/override selection semantics are delivered by the successor dsar-integration-seams / dsar-case-ui changes.",
+            "maxLength": 128,
+            "default": "default",
+            "facetable": true,
+            "title": "Jurisdiction"
+          },
+          "type": {
+            "type": "string",
+            "description": "Which GDPR right is exercised.",
+            "enum": [
+              "access",
+              "rectification",
+              "erasure",
+              "restriction",
+              "portability",
+              "objection"
+            ],
+            "facetable": true,
+            "title": "Request Type"
+          },
+          "status": {
+            "type": "string",
+            "description": "Lifecycle state of the request (governed by x-openregister-lifecycle).",
+            "enum": [
+              "received",
+              "verifying",
+              "in-progress",
+              "evidence-collection",
+              "denial-drafted",
+              "fulfilled",
+              "refused",
+              "closed"
+            ],
+            "default": "received",
+            "facetable": true,
+            "title": "Status"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the request was received. Anchors the EU art-12 legal deadline.",
+            "title": "Received At"
+          },
+          "dueAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "EU art-12(3) base legal deadline: receivedAt + 1 month.",
+            "title": "Legal Due Date"
+          },
+          "extendedUntil": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Extended legal deadline when a single +2-month extension was granted (art-12(3)). Empty when not extended.",
+            "title": "Extended Deadline"
+          },
+          "extensionReason": {
+            "type": "string",
+            "description": "Justification recorded when the deadline was extended.",
+            "maxLength": 2000,
+            "title": "Extension Reason"
+          },
+          "outcome": {
+            "type": "string",
+            "description": "Generic outcome summary once the request reaches a final state.",
+            "maxLength": 2000,
+            "title": "Outcome"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Free-text handler notes (generic; no jurisdiction policy).",
+            "maxLength": 4000,
+            "title": "Handler Notes"
+          },
+          "handler": {
+            "type": "string",
+            "description": "Identifier (Nextcloud uid) of the handler the case is assigned to. Used as the recipient for advance-reminder, escalation, and breach notifications.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Handler"
+          },
+          "closedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the case was closed (reached a final state). Empty while the case is still open.",
+            "title": "Closed At"
+          },
+          "dpiaRequired": {
+            "type": "boolean",
+            "description": "Complexity flag: whether this case requires a Data Protection Impact Assessment (DPIA) before it can be fulfilled. Set manually by a handler or automatically by the daily DPIA pattern-detection job (dsar-escalation-and-dpia) when the active policy pack's dpiaDetection threshold is reached; the job never clears a flag (one-way ratchet).",
+            "default": false,
+            "facetable": true,
+            "title": "DPIA Required"
+          },
+          "breachedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Write-once stamp of the instant the case's escalationTier first crossed into 'breached'. Populated declaratively by the breachedAt calculation on the tier write that crosses the boundary; empty while the deadline has never been breached. Read by the regulator dossier and breach reporting.",
+            "title": "Breached At"
+          },
+          "daysRemaining": {
+            "type": "number",
+            "description": "Engine-materialised value of the daysRemaining calculation (whole days until the effective deadline; negative once passed). Declared as a property so the materialised value persists to a magic-table column — calculation outputs without a backing property are dropped at persist time. Do not edit by hand; the save path and the temporal sweep recompute it.",
+            "facetable": true,
+            "title": "Days Remaining"
+          },
+          "isOverdue": {
+            "type": "boolean",
+            "description": "Engine-materialised value of the isOverdue calculation (true when the effective deadline has passed). Declared as a property so the materialised value persists to a magic-table column and the overdueCaseCount aggregation can filter on it. Do not edit by hand.",
+            "facetable": true,
+            "title": "Is Overdue"
+          },
+          "escalationTier": {
+            "type": "string",
+            "description": "Engine-materialised value of the escalationTier calculation (on-track, reminder, escalation, breached — boundaries from the active dsarPolicyPack). Declared as a property so the materialised value persists to a magic-table column, the breachedCaseCount aggregation can filter on it, and the calculatedChange notification rules see old/new values. Do not edit by hand; the save path and the temporal sweep recompute it.",
+            "enum": [
+              "on-track",
+              "reminder",
+              "escalation",
+              "breached"
+            ],
+            "facetable": true,
+            "title": "Escalation Tier"
+          },
+          "retentionWindow": {
+            "type": "string",
+            "description": "Configured retention window key selecting how long the finalised case dossier is retained before the retention sweep (delivered by dsar-case-engine) may purge it.",
+            "maxLength": 64,
+            "facetable": true,
+            "title": "Retention Window"
+          },
+          "retainUntil": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Computed date until which the finalised case dossier must be retained. Set from receivedAt/closedAt plus the retentionWindow; the retention sweep may purge only after this date.",
+            "title": "Retain Until"
+          },
+          "purgedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the case dossier was purged by the retention sweep. Empty until the case has been purged.",
+            "title": "Purged At"
+          },
+          "denialGround": {
+            "type": "string",
+            "description": "Generic ground key recorded when a case is denied. Jurisdiction-specific statutory wording is Phase-2 policy-pack data and is NOT baked into this schema.",
+            "enum": [
+              "manifestly-unfounded",
+              "excessive-request",
+              "identity-unverified",
+              "legal-exemption",
+              "third-party-rights",
+              "overriding-legitimate-grounds",
+              "legal-claims",
+              "public-interest",
+              "professional-secrecy",
+              "not-applicable"
+            ],
+            "facetable": true,
+            "title": "Denial Ground"
+          },
+          "regulatorReference": {
+            "type": "string",
+            "description": "Reference recorded for the supervisory authority / regulator when a denial is finalised. Required by the finaliseDenial lifecycle guard before the case may reach the refused final state.",
+            "maxLength": 255,
+            "title": "Regulator Reference"
+          },
+          "evidence": {
+            "type": "array",
+            "description": "Evidence items collected for the case. The item shape is declared here; the harvesting/dedup behaviour is delivered by dsar-case-engine.",
+            "title": "Evidence",
+            "items": {
+              "type": "object",
+              "title": "Evidence Item",
+              "description": "A single piece of evidence collected for the case, keyed by content hash for downstream deduplication.",
+              "properties": {
+                "sourceId": {
+                  "type": "string",
+                  "description": "Identifier of the source system or provider the evidence was collected from.",
+                  "maxLength": 255,
+                  "title": "Source Identifier"
+                },
+                "contentHash": {
+                  "type": "string",
+                  "description": "Content hash of the evidence item (e.g. sha256:...), used downstream to deduplicate identical evidence across sources.",
+                  "maxLength": 255,
+                  "title": "Content Hash"
+                },
+                "status": {
+                  "type": "string",
+                  "description": "Per-item collection status (e.g. pending, collected, failed).",
+                  "maxLength": 64,
+                  "title": "Item Status"
+                }
+              }
+            }
+          },
+          "redactions": {
+            "type": "array",
+            "description": "Redaction entries recorded on the case. Each entry captures a before/after and the ground, distinct from the erase-time pseudonymise already performed by DataSubjectRequestService. The item shape is declared here; the redaction write path is delivered by dsar-case-engine.",
+            "title": "Redactions",
+            "items": {
+              "type": "object",
+              "title": "Redaction Entry",
+              "description": "A single redaction applied to a field of the case, with a before/after audit and the ground it was applied under.",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "description": "Name of the field that was redacted.",
+                  "maxLength": 255,
+                  "title": "Redacted Field"
+                },
+                "before": {
+                  "type": "string",
+                  "description": "Value of the field before redaction (audit of the original content).",
+                  "maxLength": 4000,
+                  "title": "Value Before"
+                },
+                "after": {
+                  "type": "string",
+                  "description": "Value of the field after redaction.",
+                  "maxLength": 4000,
+                  "title": "Value After"
+                },
+                "ground": {
+                  "type": "string",
+                  "description": "Generic ground key under which the redaction was applied (e.g. third-party-data).",
+                  "maxLength": 128,
+                  "title": "Redaction Ground"
+                }
+              }
+            }
+          }
+        }
+      },
+      "dsarPolicyPack": {
+        "slug": "dsarPolicyPack",
+        "title": "AVG/DSAR Policy Pack",
+        "version": "1.1.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "A per-jurisdiction / per-tenant AVG-DSAR policy pack supplying the values the generic data-subject-request workflow resolves from.",
+        "description": "Declarative configuration object (ADR-031) holding the jurisdiction-specific AVG/DSAR policy. The generic dataSubjectRequest case resolves its escalation-tier thresholds, denial-ground wording, and retention durations from the ACTIVE pack (selected by the case's jurisdiction, falling back to the jurisdiction-neutral default pack). Every value here is data a steward may edit without a code change. The two seam selectors name which registered provider a jurisdiction binds for identity verification and regulator escalation; an unset or unknown selector is resolved fail-closed to the OR safe-default (refusing) provider by the successor dsar-integration-seams change.",
+        "required": [
+          "jurisdiction"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Human-readable name of this policy pack (e.g. 'Default AVG/DSAR policy pack').",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Pack Name"
+          },
+          "jurisdiction": {
+            "type": "string",
+            "description": "Jurisdiction / tenant key that selects this pack for a case (e.g. 'default', 'nl-example'). The neutral fail-closed baseline uses 'default'; a dataSubjectRequest case resolves the pack whose jurisdiction matches the case's jurisdiction field, falling back to the default pack.",
+            "maxLength": 128,
+            "facetable": true,
+            "title": "Jurisdiction Key"
+          },
+          "deadlineDurationDays": {
+            "type": "integer",
+            "description": "Base statutory response deadline in days measured from receipt (EU art-12(3): one month). Conservative neutral default is 30.",
+            "minimum": 1,
+            "title": "Deadline Duration (days)"
+          },
+          "extensionDurationDays": {
+            "type": "integer",
+            "description": "Additional days granted by the single permitted deadline extension (EU art-12(3): up to two further months). Conservative neutral default is 60.",
+            "minimum": 1,
+            "title": "Extension Duration (days)"
+          },
+          "escalationTiers": {
+            "type": "array",
+            "description": "Ordered deadline-tracking escalation tiers. ORDER IS SIGNIFICANT: index 0 = reminder, index 1 = escalation, index 2 = breach. The dataSubjectRequest escalationTier calculation reads each tier's offsetDays by this position, so a jurisdiction pack MUST keep the three tiers in this order.",
+            "title": "Escalation Tiers",
+            "items": {
+              "type": "object",
+              "title": "Escalation Tier",
+              "description": "One deadline-tracking tier: a name and the day offset relative to the deadline at which the tier becomes active.",
+              "properties": {
+                "tier": {
+                  "type": "string",
+                  "description": "Tier name (reminder, escalation, or breach). Used for human display; the case calculation resolves the boundary by array position.",
+                  "maxLength": 64,
+                  "title": "Tier Name"
+                },
+                "offsetDays": {
+                  "type": "integer",
+                  "description": "Day offset relative to the deadline at which this tier activates: negative = before the deadline (e.g. -7 = seven days before), 0 = on the deadline. The case escalationTier calculation activates the tier when daysRemaining <= -offsetDays (breach when daysRemaining < 0).",
+                  "title": "Offset Days"
+                }
+              }
+            }
+          },
+          "intakeChannels": {
+            "type": "array",
+            "description": "Channels through which a data-subject request may be received in this jurisdiction (e.g. web-form, email, post).",
+            "title": "Intake Channels",
+            "items": {
+              "type": "string",
+              "title": "Intake Channel",
+              "description": "A single intake channel identifier.",
+              "maxLength": 64
+            }
+          },
+          "roleMapping": {
+            "type": "object",
+            "description": "Maps the abstract case roles to the jurisdiction's role identifiers (ADR-023). Placeholders (<role-id>) are used in seed data; a leaf app binds real Nextcloud group/role ids.",
+            "title": "Role Mapping",
+            "properties": {
+              "dpo": {
+                "type": "string",
+                "description": "Role identifier for the Data Protection Officer (used in jurisdictions with a DPO).",
+                "maxLength": 255,
+                "title": "DPO Role"
+              },
+              "fg": {
+                "type": "string",
+                "description": "Role identifier for the Functionaris Gegevensbescherming (the NL-context equivalent of a DPO).",
+                "maxLength": 255,
+                "title": "FG Role"
+              },
+              "handler": {
+                "type": "string",
+                "description": "Role identifier for the case handler who processes the request day to day.",
+                "maxLength": 255,
+                "title": "Handler Role"
+              }
+            }
+          },
+          "templates": {
+            "type": "object",
+            "description": "References to the letter / notification templates this jurisdiction uses (template: references resolved by a document leaf per ADR-022; not inline content).",
+            "title": "Template References",
+            "properties": {
+              "acknowledgement": {
+                "type": "string",
+                "description": "Template reference for the request-acknowledgement letter sent on intake.",
+                "maxLength": 255,
+                "title": "Acknowledgement Template"
+              },
+              "denial": {
+                "type": "string",
+                "description": "Template reference for the denial letter sent when a request is refused.",
+                "maxLength": 255,
+                "title": "Denial Template"
+              },
+              "extension": {
+                "type": "string",
+                "description": "Template reference for the deadline-extension notice sent when the deadline is extended.",
+                "maxLength": 255,
+                "title": "Extension Template"
+              }
+            }
+          },
+          "denialGrounds": {
+            "type": "array",
+            "description": "Maps each generic Phase-1 denial-ground key to this jurisdiction's human wording and statutory citation. The generic keys live on the dataSubjectRequest schema; the jurisdiction label + citation live here.",
+            "title": "Denial Grounds",
+            "items": {
+              "type": "object",
+              "title": "Denial Ground",
+              "description": "One denial-ground mapping: a generic key plus the jurisdiction label and statutory citation shown to handlers and data subjects.",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "description": "Generic denial-ground key matching a value of the dataSubjectRequest denialGround enum (e.g. manifestly-unfounded, third-party-rights).",
+                  "maxLength": 128,
+                  "title": "Ground Key"
+                },
+                "label": {
+                  "type": "string",
+                  "description": "Jurisdiction-specific human-readable label for this denial ground.",
+                  "maxLength": 512,
+                  "title": "Ground Label"
+                },
+                "citation": {
+                  "type": "string",
+                  "description": "Statutory citation supporting this denial ground (illustrative in the shipped example packs; authoritative wording is supplied by the leaf consumer).",
+                  "maxLength": 512,
+                  "title": "Statutory Citation"
+                }
+              }
+            }
+          },
+          "retentionWindows": {
+            "type": "array",
+            "description": "Named retention windows this jurisdiction offers. Each maps a window key (selected by the case's retentionWindow field) to a duration; the consuming retention engine computes retainUntil from the finalisation date plus this duration.",
+            "title": "Retention Windows",
+            "items": {
+              "type": "object",
+              "title": "Retention Window",
+              "description": "One named retention window: a key selectable on a case and the duration the finalised dossier is retained.",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "description": "Retention-window key matching the dataSubjectRequest retentionWindow selector (e.g. standard, extended).",
+                  "maxLength": 64,
+                  "title": "Window Key"
+                },
+                "durationMonths": {
+                  "type": "integer",
+                  "description": "Number of months a finalised case dossier is retained under this window before the retention sweep may purge it.",
+                  "minimum": 1,
+                  "title": "Duration (months)"
+                }
+              }
+            }
+          },
+          "privacyOfficerGroup": {
+            "type": "string",
+            "description": "Nextcloud group id of this jurisdiction's privacy officer (DPO/FG) team. Resolved by the declared deadlineBreach and dpiaFlagged notification recipients (PrivacyOfficerRecipientResolver) so breach and DPIA visibility reach the officer without hard-coding a group in the case schema. Unset, placeholder (<...>), or unknown groups resolve to zero officer recipients (fail-safe — the handler recipient still receives the notification).",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Privacy-Officer Group"
+          },
+          "dpiaDetection": {
+            "type": "object",
+            "description": "GDPR art-35 DPIA pattern-detection configuration read by the daily detection job (dsar-escalation-and-dpia). Absent block = detection disabled for this jurisdiction (fail-safe: no false DPIA flags). The seeded default pack carries the pipelinq-parity defaults (threshold 10, window 30 days, group by type + scope).",
+            "title": "DPIA Detection",
+            "properties": {
+              "threshold": {
+                "type": "integer",
+                "description": "Minimum number of similar cases inside the rolling window that triggers the DPIA flag on the whole group.",
+                "minimum": 1,
+                "title": "Threshold"
+              },
+              "windowDays": {
+                "type": "integer",
+                "description": "Rolling-window length in days over which similar cases are counted (receivedAt based).",
+                "minimum": 1,
+                "title": "Window (days)"
+              },
+              "groupBy": {
+                "type": "array",
+                "description": "Case fields whose normalised values (trim/lowercase/collapse-whitespace) define 'similar' — cases sharing every listed value form one group.",
+                "title": "Group By",
+                "items": {
+                  "type": "string",
+                  "title": "Grouping Field",
+                  "description": "A dataSubjectRequest field name used as a grouping characteristic.",
+                  "maxLength": 128
+                }
+              }
+            }
+          },
+          "identityVerifyProvider": {
+            "type": "string",
+            "description": "Selector naming the registered identity-verify seam provider this jurisdiction binds. Unset or unknown resolves fail-closed to the OR safe-default (refusing) provider id (never fail-open); the default pack sets this to or.default.identity-verify.null. Provider interface/registry/resolution are delivered by the successor dsar-integration-seams change.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Identity-Verify Provider"
+          },
+          "regulatorEscalateProvider": {
+            "type": "string",
+            "description": "Selector naming the registered regulator-escalate seam provider this jurisdiction binds. Unset or unknown resolves fail-closed to the OR safe-default (refusing) provider id (never fail-open); the default pack sets this to or.default.regulator-escalate.null. Provider interface/registry/resolution are delivered by the successor dsar-integration-seams change.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Regulator-Escalate Provider"
+          }
+        },
+        "x-openregister-seeds": [
+          {
+            "@self": {
+              "register": "dsar-policy-packs",
+              "schema": "dsarPolicyPack",
+              "slug": "pack-default"
+            },
+            "name": "Default AVG/DSAR policy pack",
+            "jurisdiction": "default",
+            "deadlineDurationDays": 30,
+            "extensionDurationDays": 60,
+            "escalationTiers": [
+              {
+                "tier": "reminder",
+                "offsetDays": -7
+              },
+              {
+                "tier": "escalation",
+                "offsetDays": -2
+              },
+              {
+                "tier": "breach",
+                "offsetDays": 0
+              }
+            ],
+            "intakeChannels": [
+              "web-form",
+              "email",
+              "post"
+            ],
+            "roleMapping": {
+              "dpo": "<role-id>",
+              "handler": "<role-id>"
+            },
+            "templates": {
+              "acknowledgement": "template:ack-default",
+              "denial": "template:denial-default"
+            },
+            "denialGrounds": [
+              {
+                "key": "manifestly-unfounded",
+                "label": "Manifestly unfounded or excessive request",
+                "citation": "GDPR Art 12(5)"
+              },
+              {
+                "key": "third-party-rights",
+                "label": "Would adversely affect the rights of third parties",
+                "citation": "GDPR Art 15(4)"
+              },
+              {
+                "key": "overriding-legitimate-grounds",
+                "label": "Compelling legitimate grounds override the objection",
+                "citation": "GDPR Art 21(1)"
+              }
+            ],
+            "retentionWindows": [
+              {
+                "key": "standard",
+                "durationMonths": 12
+              },
+              {
+                "key": "extended",
+                "durationMonths": 24
+              }
+            ],
+            "privacyOfficerGroup": "<privacy-officer-group>",
+            "dpiaDetection": {
+              "threshold": 10,
+              "windowDays": 30,
+              "groupBy": [
+                "type",
+                "scope"
+              ]
+            },
+            "identityVerifyProvider": "or.default.identity-verify.null",
+            "regulatorEscalateProvider": "or.default.regulator-escalate.null"
+          },
+          {
+            "@self": {
+              "register": "dsar-policy-packs",
+              "schema": "dsarPolicyPack",
+              "slug": "pack-nl-example"
+            },
+            "name": "Voorbeeld NL AVG-beleidspakket (illustratief)",
+            "jurisdiction": "nl-example",
+            "deadlineDurationDays": 30,
+            "extensionDurationDays": 60,
+            "escalationTiers": [
+              {
+                "tier": "reminder",
+                "offsetDays": -7
+              },
+              {
+                "tier": "escalation",
+                "offsetDays": -3
+              },
+              {
+                "tier": "breach",
+                "offsetDays": 0
+              }
+            ],
+            "intakeChannels": [
+              "web-form",
+              "email"
+            ],
+            "roleMapping": {
+              "fg": "<role-id>",
+              "handler": "<role-id>"
+            },
+            "templates": {
+              "denial": "template:denial-nl-example"
+            },
+            "denialGrounds": [
+              {
+                "key": "manifestly-unfounded",
+                "label": "Kennelijk ongegrond of buitensporig verzoek",
+                "citation": "AVG art. 12 lid 5 (illustratief)"
+              }
+            ],
+            "retentionWindows": [
+              {
+                "key": "boekhoudplicht",
+                "durationMonths": 84
+              }
+            ],
+            "privacyOfficerGroup": "<privacy-officer-group>",
+            "identityVerifyProvider": "<provider-id>",
+            "regulatorEscalateProvider": "<provider-id>"
+          }
+        ]
+      },
+      "edepotTransfer": {
+        "slug": "edepotTransfer",
+        "title": "e-Depot Transfer List",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "A durable e-Depot transfer list tracked through its review-approve-execute status machine.",
+        "description": "The durable record of an e-Depot transfer: which objects are pending/approved/completed, archivist approvals + exclusions, the append-only history of delivery attempts (long-horizon retry), the final transfer result, and the SIP package format/identity. Persisted through ObjectService so status transitions ride OR's audited write path (making TransferController's former placeholder responses real).",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Transfer list lifecycle state.",
+            "enum": [
+              "in_review",
+              "approved",
+              "rejected",
+              "in_progress",
+              "completed",
+              "partially_failed",
+              "failed"
+            ],
+            "default": "in_review",
+            "facetable": true,
+            "title": "Status"
+          },
+          "objectReferences": {
+            "type": "array",
+            "description": "Objects included in this transfer, each as {uuid, schema, register}.",
+            "title": "Object References",
+            "items": {
+              "type": "object",
+              "title": "Object Reference",
+              "description": "A reference to one object included in the transfer.",
+              "properties": {
+                "uuid": {
+                  "type": "string",
+                  "maxLength": 255,
+                  "title": "Object UUID",
+                  "description": "UUID of the object included in the transfer."
+                },
+                "schema": {
+                  "type": "integer",
+                  "title": "Schema Id",
+                  "description": "Identifier of the schema the referenced object belongs to."
+                },
+                "register": {
+                  "type": "integer",
+                  "title": "Register Id",
+                  "description": "Identifier of the register the referenced object belongs to."
+                }
+              }
+            }
+          },
+          "exclusions": {
+            "type": "array",
+            "description": "Objects excluded from the transfer during review, each with a reason and timestamp.",
+            "title": "Exclusions",
+            "items": {
+              "type": "object",
+              "title": "Exclusion",
+              "description": "One excluded object.",
+              "properties": {
+                "uuid": {
+                  "type": "string",
+                  "maxLength": 255,
+                  "title": "Object UUID",
+                  "description": "UUID of the object excluded from the transfer."
+                },
+                "reason": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "title": "Reason",
+                  "description": "Human-readable reason the object was excluded during review."
+                },
+                "excludedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "title": "Excluded At",
+                  "description": "Timestamp at which the object was excluded from the transfer."
+                }
+              }
+            }
+          },
+          "approvalMetadata": {
+            "type": "object",
+            "description": "Archivist approval / rejection metadata (who, when, rejection reason).",
+            "title": "Approval Metadata"
+          },
+          "attempts": {
+            "type": "array",
+            "description": "Append-only history of delivery attempts (long-horizon retry): attempt number, timestamp, transport, per-package outcome, and error. Never rewritten — the WebhookLog attempt semantics, stored on this durable aggregate.",
+            "title": "Delivery Attempts",
+            "items": {
+              "type": "object",
+              "title": "Delivery Attempt",
+              "description": "One transport attempt for the transfer.",
+              "properties": {
+                "attempt": {
+                  "type": "integer",
+                  "title": "Attempt Number",
+                  "description": "Sequential number of this delivery attempt."
+                },
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time",
+                  "title": "Attempted At",
+                  "description": "Timestamp at which this delivery attempt was made."
+                },
+                "transport": {
+                  "type": "string",
+                  "maxLength": 128,
+                  "title": "Transport",
+                  "description": "Transport channel used for this delivery attempt."
+                },
+                "outcome": {
+                  "type": "string",
+                  "maxLength": 64,
+                  "title": "Outcome",
+                  "description": "Per-package outcome of this delivery attempt."
+                },
+                "error": {
+                  "type": "string",
+                  "maxLength": 4000,
+                  "title": "Error",
+                  "description": "Error detail captured when the delivery attempt failed."
+                }
+              }
+            }
+          },
+          "transferResult": {
+            "type": "object",
+            "description": "The final transfer result (completion timestamp + per-object outcomes).",
+            "title": "Transfer Result"
+          },
+          "packageFormat": {
+            "type": "string",
+            "description": "SIP serialization format used for this transfer.",
+            "enum": [
+              "zip",
+              "bagit"
+            ],
+            "default": "zip",
+            "facetable": true,
+            "title": "Package Format"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the transfer list was created.",
+            "title": "Created At"
+          }
+        }
+      },
+      "edepotTransferProof": {
+        "slug": "edepotTransferProof",
+        "title": "e-Depot Proof of Transfer",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "immutable": true,
+        "summary": "An immutable proof-of-transfer record for one object confirmed ingested by an e-Depot.",
+        "description": "The durable, write-once ingest-confirmation artefact an archivist or auditor can produce years later (Archiefwet accountability). Created per confirmed object when the transfer completes; captures the e-Depot ingest reference/archivId + raw transport receipt, the SIP package identity (id, format, manifest SHA-256), and the per-file checksums as sent. Immutable (schema-level + service-level refusal); lives in this system register so destruction of the source object after handover never cascades to it. procest's retired archiefBewijs records migrate 1:1 onto this schema.",
+        "required": [
+          "objectUuid",
+          "transferUuid",
+          "confirmedAt"
+        ],
+        "properties": {
+          "objectUuid": {
+            "type": "string",
+            "description": "UUID of the transferred (confirmed) object this proof attests.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Object UUID"
+          },
+          "transferUuid": {
+            "type": "string",
+            "description": "UUID of the edepotTransfer list this proof belongs to.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Transfer UUID"
+          },
+          "eDepotReference": {
+            "type": "string",
+            "description": "The e-Depot ingest reference / archivId returned on confirmation.",
+            "maxLength": 512,
+            "facetable": true,
+            "title": "e-Depot Reference"
+          },
+          "transportReceipt": {
+            "type": "string",
+            "description": "Raw transport receipt / confirmation payload as returned by the e-Depot (opaque).",
+            "maxLength": 8000,
+            "title": "Transport Receipt"
+          },
+          "transportName": {
+            "type": "string",
+            "description": "Name of the transport used (sftp, rest_api, openconnector).",
+            "maxLength": 128,
+            "title": "Transport"
+          },
+          "packageId": {
+            "type": "string",
+            "description": "Identity of the SIP package the object was delivered in.",
+            "maxLength": 255,
+            "title": "Package Id"
+          },
+          "packageFormat": {
+            "type": "string",
+            "description": "SIP serialization format of the delivered package.",
+            "enum": [
+              "zip",
+              "bagit"
+            ],
+            "title": "Package Format"
+          },
+          "packageManifestSha256": {
+            "type": "string",
+            "description": "SHA-256 over the package payload manifest (the manifest-sha256.txt content for bagit, the sip-manifest.json content for zip).",
+            "maxLength": 64,
+            "title": "Package Manifest SHA-256"
+          },
+          "fileChecksums": {
+            "type": "array",
+            "description": "Per-file checksums as sent, each {name, sha256}.",
+            "title": "File Checksums",
+            "items": {
+              "type": "object",
+              "title": "File Checksum",
+              "description": "One payload file's name and SHA-256.",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "maxLength": 1024,
+                  "title": "File Name",
+                  "description": "Name of the payload file included in the transfer."
+                },
+                "sha256": {
+                  "type": "string",
+                  "maxLength": 64,
+                  "title": "SHA-256",
+                  "description": "SHA-256 checksum of the payload file as sent."
+                }
+              }
+            }
+          },
+          "confirmedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the e-Depot confirmed ingest of this object.",
+            "title": "Confirmed At"
+          }
+        }
+      },
+      "flow": {
+        "slug": "flow",
+        "title": "Flow",
+        "version": "1.4.0",
+        "published": true,
+        "summary": "A flow definition the OpenRegister flow engine walks.",
+        "description": "A flow is a graph of nodes and edges. Each edge carries the step to run (its `type` names a registered flow node such as openregister.set-fields, openregister.route or openregister.sub-flow, and `config` its options); the engine walks the graph, threading an item list from step to step. `trigger` (with optional `triggerRegister` / `triggerSchema`) wires the flow to an event so it runs automatically; `enabled` must be true for a trigger to fire it.",
+        "authorization": {
+          "scope": "private",
+          "read": [
+            "authenticated"
+          ],
+          "create": [
+            "authenticated"
+          ],
+          "update": [
+            "authenticated"
+          ],
+          "delete": [
+            "authenticated"
+          ]
+        },
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Human-readable name of the flow.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "description": "What the flow does.",
+            "title": "Description"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether the flow is active. A trigger only fires an enabled flow.",
+            "default": false,
+            "facetable": true,
+            "title": "Enabled"
+          },
+          "trigger": {
+            "type": "string",
+            "description": "The event that starts the flow (a catalog trigger id such as object.created, file.created, tag.assigned; manual for a flow run only on request; or schedule to run it on a cron).",
+            "facetable": true,
+            "title": "Trigger"
+          },
+          "cron": {
+            "type": "string",
+            "description": "For a schedule trigger: the cron expression that decides when the flow runs (e.g. \"0 9 * * 1\" = 09:00 every Monday). Ignored for other triggers.",
+            "title": "Cron schedule"
+          },
+          "executionMode": {
+            "type": "string",
+            "enum": [
+              "async",
+              "sync"
+            ],
+            "default": "async",
+            "description": "When to run the flow relative to what triggered it. async (the default) queues the run and a background worker picks it up within a minute. sync runs the flow inside the triggering action, so its effects are complete before that action returns — choose it only when a caller genuinely depends on that, because the flow then runs on someone's critical path and a slow flow means a slow save. A sync flow that hits a wait is left for the worker rather than blocking.",
+            "title": "Execution mode"
+          },
+          "sharedWith": {
+            "type": "array",
+            "description": "Principals this flow is shared with. `read` lets the recipient see the flow; `run` lets them trigger it and implies `read`. A share NEVER grants edit, so a recipient can change neither the flow's definition, nor this list, nor `credentialIdentity` — a share cannot be used to widen itself or to redirect the flow at other credentials. Only the owner manages it. A share does not carry the flow's run history: a recipient sees only the runs they triggered themselves, because a run log records the subject data the flow touched. A `group` entry is an RBAC permission principal only, never a tenant discriminator (ADR-002 Rule 1).",
+            "items": {
+              "type": "object",
+              "required": [
+                "type",
+                "id"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "group"
+                  ],
+                  "description": "Whether `id` names a Nextcloud user or a Nextcloud group.",
+                  "title": "Principal type"
+                },
+                "id": {
+                  "type": "string",
+                  "maxLength": 255,
+                  "description": "The Nextcloud user id or group id.",
+                  "title": "User or group"
+                },
+                "permission": {
+                  "type": "string",
+                  "enum": [
+                    "read",
+                    "run"
+                  ],
+                  "default": "read",
+                  "description": "What the share grants. `run` implies `read`. Enforced in TWO places by necessity: RBAC grants visibility of the object, and the trigger endpoint enforces the verb — `run` is not an object RBAC action (those are create/read/update/delete), so a read-only recipient who can see the flow must still be refused at the trigger.",
+                  "title": "Permission granted"
+                }
+              }
+            },
+            "title": "Shared With"
+          },
+          "sharedUsers": {
+            "type": "array",
+            "description": "DERIVED from `sharedWith` — do not set directly; the server recomputes it on every write and ignores any client-supplied value. The RBAC match operator `$contains` compares SCALARS, so it cannot test membership of the object-shaped `sharedWith` entries, and a match clause resolves whole tokens and cannot build `\"user:\" + $userId` from a prefixed list. Holding bare uids lets a rule say `{\"sharedUsers\": {\"$contains\": \"$userId\"}}`. A stale value here is an access-control bug in either direction, which is why it is never client-writable.",
+            "items": {
+              "type": "string",
+              "maxLength": 255
+            },
+            "title": "Shared Users"
+          },
+          "sharedGroups": {
+            "type": "array",
+            "description": "DERIVED from `sharedWith` — see `sharedUsers`. Holds bare group ids so a rule can say `{\"sharedGroups\": {\"$contains\": \"$user.groups\"}}`, which matches when the object lists any one of the caller's groups.",
+            "items": {
+              "type": "string",
+              "maxLength": 255
+            },
+            "title": "Shared Groups"
+          },
+          "credentialIdentity": {
+            "type": "string",
+            "enum": [
+              "runner",
+              "owner"
+            ],
+            "default": "runner",
+            "description": "Whose credentials a run of this flow resolves as. `runner` (the default, and what happens today when absent): credentials resolve as the user who triggered the run, so a share recipient runs it with their OWN credentials and the run fails closed if they hold none. `owner`: the flow LENDS the owner's credential — it resolves as the flow owner whatever who triggered it. `owner` is a deliberate delegation of the owner's authority, so only the owner may set it and a share recipient can never flip it. It grants USE of the credential, never sight: resolution still goes through the broker, which returns no plaintext secret on its routed path. Every run records the identity it resolved as, separately from the identity that triggered it, so a lent-credential call stays attributable.",
+            "facetable": true,
+            "title": "Credential identity"
+          },
+          "triggerRegister": {
+            "type": "string",
+            "description": "Restrict an object-event trigger to one register (empty = any).",
+            "title": "Trigger register"
+          },
+          "triggerSchema": {
+            "type": "string",
+            "description": "Restrict an object-event trigger to one schema (empty = any).",
+            "title": "Trigger schema"
+          },
+          "nodes": {
+            "type": "array",
+            "description": "The flow's nodes; each carries an id.",
+            "items": {
+              "type": "object"
+            },
+            "title": "Nodes"
+          },
+          "edges": {
+            "type": "array",
+            "description": "The flow's edges; each carries from/to plus the step type and config to run.",
+            "items": {
+              "type": "object"
+            },
+            "title": "Edges"
+          }
+        }
+      },
+      "mergeOperation": {
+        "slug": "mergeOperation",
+        "title": "Merge Operation",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "An audit row for one executed (or reversed) merge.",
+        "description": "Written exactly once by MergeService::executeMerge() and updated by MergeService::reverseMerge(). Captures the survivor, the merged-away objects, the reason, and a preMergeSnapshot sufficient to restore both objects within the reversal window.",
+        "required": [
+          "mergedIntoUuid",
+          "mergedFromUuids",
+          "mergedAt",
+          "reversible"
+        ],
+        "properties": {
+          "mergedIntoUuid": {
+            "type": "string",
+            "description": "UUID of the surviving object.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Merged Into"
+          },
+          "mergedFromUuids": {
+            "type": "array",
+            "description": "UUIDs of the losing objects merged away into the survivor.",
+            "items": {
+              "type": "string",
+              "maxLength": 255
+            },
+            "title": "Merged From"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Steward-supplied merge reason / classification.",
+            "maxLength": 1000,
+            "title": "Reason"
+          },
+          "preMergeSnapshot": {
+            "type": "object",
+            "description": "Both objects' golden record, provenance, status and linked source-record ownership, sufficient to restore them on reversal.",
+            "title": "Pre-Merge Snapshot"
+          },
+          "reversible": {
+            "type": "boolean",
+            "description": "Whether this operation can still be reversed (false once reversed or the window has elapsed).",
+            "default": true,
+            "facetable": true,
+            "title": "Reversible"
+          },
+          "mergedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp the merge was executed.",
+            "title": "Merged At"
+          },
+          "reversedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp the merge was reversed, when applicable.",
+            "title": "Reversed At"
+          },
+          "reversedBy": {
+            "type": "string",
+            "description": "Acting user uid that reversed the merge, when applicable.",
+            "maxLength": 255,
+            "title": "Reversed By"
+          }
+        }
+      },
+      "trustConfiguration": {
+        "slug": "trustConfiguration",
+        "title": "Trust Configuration",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "A trust-tier rule for one (entityType, attribute, sourceSystem) tuple.",
+        "description": "One row declares which trust tier a source system's value earns for a given entity type + attribute, optionally with a freshness-decay window and an effectiveFrom date for versioning. TrustTierResolver looks up the most recent row whose effectiveFrom is on/before the as-of date; when no row matches, the caller falls back to the annotation's defaultTier.",
+        "required": [
+          "entityType",
+          "attribute",
+          "sourceSystem",
+          "trustTier"
+        ],
+        "properties": {
+          "entityType": {
+            "type": "string",
+            "description": "The master-record entity type this rule applies to (e.g. 'organisation'). Never hardcoded by the engine.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Entity Type"
+          },
+          "attribute": {
+            "type": "string",
+            "description": "The attribute name this rule applies to (e.g. 'legalName', 'email').",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Attribute"
+          },
+          "sourceSystem": {
+            "type": "string",
+            "description": "Slug of the source system this rule applies to (e.g. 'municipal-registry').",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Source System"
+          },
+          "trustTier": {
+            "type": "string",
+            "description": "The trust tier this source earns for this attribute.",
+            "enum": [
+              "gold",
+              "silver",
+              "bronze",
+              "discard"
+            ],
+            "facetable": true,
+            "title": "Trust Tier"
+          },
+          "freshnessDecayDays": {
+            "type": "integer",
+            "description": "Days after which a source's value for this attribute steps one tier down (freshness decay). Omit/null for no decay.",
+            "minimum": 1,
+            "title": "Freshness Decay (days)"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date",
+            "description": "Date this rule takes effect. Among matching rows, the most recent effectiveFrom on/before the as-of date wins (time-versioned).",
+            "title": "Effective From"
+          }
+        }
+      },
+      "concept": {
+        "slug": "concept",
+        "title": "Concept",
+        "version": "1.0.0",
+        "published": "2026-07-23T00:00:00+00:00",
+        "x-schema-org": "schema:DefinedTerm",
+        "summary": "A SKOS concept (a single controlled-vocabulary term)",
+        "description": "A single term within a concept scheme (SKOS Concept), e.g. one Woo informatiecategorie. Identified durably by its source URI; the importer keys upserts on this URI and, on re-import, marks concepts missing from the source as deprecated rather than deleting them (leaf apps hold long-lived references).",
+        "required": [
+          "uri",
+          "prefLabel",
+          "inScheme"
+        ],
+        "properties": {
+          "uri": {
+            "type": "string",
+            "format": "uri",
+            "description": "The canonical, durable URI that identifies this concept (e.g. a TOOI kern-thesaurus concept URI such as https://identifier.overheid.nl/tooi/def/thes/kern/c_139c6280). Unique within the register: the importer's URI-keyed upsert never creates a second concept object for the same uri.",
+            "maxLength": 500,
+            "facetable": true,
+            "title": "Concept URI"
+          },
+          "prefLabel": {
+            "type": "object",
+            "description": "Preferred human-readable label for this concept, keyed by BCP-47 language tag. Dutch (\"nl\") is required; additional language tags (e.g. \"en\") are optional. Used for display and for the resolution API's cross-language label search.",
+            "required": [
+              "nl"
+            ],
+            "properties": {
+              "nl": {
+                "type": "string",
+                "description": "The Dutch (nl) preferred label of this concept.",
+                "maxLength": 500,
+                "title": "Dutch Preferred Label"
+              },
+              "en": {
+                "type": "string",
+                "description": "The English (en) preferred label of this concept, when the source publishes one.",
+                "maxLength": 500,
+                "title": "English Preferred Label"
+              }
+            },
+            "additionalProperties": {
+              "type": "string",
+              "description": "A preferred label in an additional BCP-47 language tag not listed above.",
+              "title": "Additional-Language Preferred Label"
+            },
+            "title": "Preferred Label"
+          },
+          "altLabel": {
+            "type": "object",
+            "description": "Alternative human-readable labels (synonyms) for this concept, keyed by BCP-47 language tag, matching the shape of prefLabel. Optional; used by the resolution API's label search to also match on known synonyms.",
+            "properties": {
+              "nl": {
+                "type": "string",
+                "description": "A Dutch (nl) alternative label (synonym) for this concept.",
+                "maxLength": 500,
+                "title": "Dutch Alternative Label"
+              },
+              "en": {
+                "type": "string",
+                "description": "An English (en) alternative label (synonym) for this concept.",
+                "maxLength": 500,
+                "title": "English Alternative Label"
+              }
+            },
+            "additionalProperties": {
+              "type": "string",
+              "description": "An alternative label in an additional BCP-47 language tag not listed above.",
+              "title": "Additional-Language Alternative Label"
+            },
+            "title": "Alternative Label"
+          },
+          "definition": {
+            "type": "string",
+            "description": "A statement or formal explanation of the meaning of this concept, as published by the source.",
+            "maxLength": 4000,
+            "title": "Definition"
+          },
+          "notation": {
+            "type": "string",
+            "description": "A compact, source-defined code identifying this concept within its scheme (e.g. a TOOI \"c_...\" identifier), distinct from the durable uri. Used by the resolution API's (scheme, notation) lookup.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Notation"
+          },
+          "deprecated": {
+            "type": "boolean",
+            "description": "Whether this concept has been withdrawn from the upstream source. Set by the importer when a re-imported source no longer contains this concept's uri; the concept is never deleted so existing leaf references keep resolving.",
+            "default": false,
+            "facetable": true,
+            "title": "Deprecated"
+          },
+          "inScheme": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "conceptScheme",
+            "description": "Reference to the conceptScheme this concept belongs to.",
+            "facetable": true,
+            "title": "In Scheme"
+          },
+          "broader": {
+            "type": "array",
+            "description": "References to broader (more general) sibling concepts in the hierarchy. Maintained by the importer in both directions: when concept A is broader of B, B's broader lists A and A's narrower lists B.",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "$ref": "concept"
+            },
+            "title": "Broader Concepts"
+          },
+          "narrower": {
+            "type": "array",
+            "description": "References to narrower (more specific) sibling concepts in the hierarchy. Maintained by the importer in both directions: when concept A is broader of B, B's broader lists A and A's narrower lists B.",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "$ref": "concept"
+            },
+            "title": "Narrower Concepts"
+          },
+          "related": {
+            "type": "array",
+            "description": "References to associatively related sibling concepts (SKOS skos:related) that are neither broader nor narrower.",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "$ref": "concept"
+            },
+            "title": "Related Concepts"
+          }
+        },
+        "searchable": true,
+        "hardValidation": false,
+        "authorization": {
+          "read": [
+            "public"
+          ]
+        }
+      },
+      "conceptScheme": {
+        "slug": "conceptScheme",
+        "title": "Concept Scheme",
+        "version": "1.0.0",
+        "published": "2026-07-23T00:00:00+00:00",
+        "x-schema-org": "schema:DefinedTermSet",
+        "summary": "A SKOS concept scheme (controlled vocabulary / begrippenkader)",
+        "description": "A named, published controlled vocabulary (SKOS ConceptScheme) that groups a set of concepts, e.g. the Woo informatiecategorieën or a GEMMA referentiecomponenten-lijst. Identified durably by its source URI; imported/refreshed via the VocabularyImportService.",
+        "required": [
+          "uri",
+          "title",
+          "publisher",
+          "version",
+          "source"
+        ],
+        "properties": {
+          "uri": {
+            "type": "string",
+            "format": "uri",
+            "description": "The canonical, durable URI that identifies this concept scheme (e.g. a TOOI kern-thesaurus base URI or a GEMMA scheme URI). Unique within the register: the importer's URI-keyed upsert never creates a second conceptScheme object for the same uri.",
+            "maxLength": 500,
+            "facetable": true,
+            "title": "Scheme URI"
+          },
+          "title": {
+            "type": "string",
+            "description": "Human-readable name of the concept scheme, as published by the source (e.g. \"Woo-informatiecategorieën\").",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional longer description of the concept scheme's purpose and scope, as published by the source.",
+            "maxLength": 2000,
+            "title": "Description"
+          },
+          "publisher": {
+            "type": "string",
+            "description": "The organisation responsible for publishing and maintaining this concept scheme (e.g. \"KOOP\" or a TOOI organisatie URI).",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Publisher"
+          },
+          "version": {
+            "type": "string",
+            "description": "Version identifier of the concept scheme as published upstream, used by the importer to detect an updated source release.",
+            "maxLength": 100,
+            "facetable": true,
+            "title": "Version"
+          },
+          "source": {
+            "type": "string",
+            "format": "uri",
+            "description": "URI or identifier of the upstream source this scheme was imported from (e.g. a TOOI waardelijst identifier or a SKOS/JSON-LD export URL).",
+            "maxLength": 500,
+            "title": "Source"
+          }
+        },
+        "searchable": true,
+        "hardValidation": false,
+        "authorization": {
+          "read": [
+            "public"
+          ]
+        }
+      }
+    },
+    "objects": [
+      {
+        "@self": {
+          "register": "credential-broker",
+          "schema": "brokeredcredential",
+          "slug": "brokeredcredential-voorbeeld-name-1-1"
+        },
+        "name": "Voorbeeld Name 1",
+        "provider": "Voorbeeld Provider 1",
+        "owner": "Voorbeeld Owner 1",
+        "scope": "personal",
+        "organisation": "Voorbeeld Organisation 1",
+        "allowedApps": [
+          "Voorbeeld Allowedapps 1"
+        ],
+        "sharedWith": [
+          {
+            "type": "user",
+            "id": "Voorbeeld Id 1",
+            "permission": "use"
+          }
+        ],
+        "sharedUsers": [
+          "Voorbeeld Sharedusers 1"
+        ],
+        "sharedGroups": [
+          "Voorbeeld Sharedgroups 1"
+        ],
+        "createdAt": "2026-03-01T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "credential-broker",
+          "schema": "brokeredcredential",
+          "slug": "brokeredcredential-voorbeeld-name-2-2"
+        },
+        "name": "Voorbeeld Name 2",
+        "provider": "Voorbeeld Provider 2",
+        "owner": "Voorbeeld Owner 2",
+        "scope": "organisation",
+        "organisation": "Voorbeeld Organisation 2",
+        "allowedApps": [
+          "Voorbeeld Allowedapps 2"
+        ],
+        "sharedWith": [
+          {
+            "type": "group",
+            "id": "Voorbeeld Id 2",
+            "permission": "use"
+          }
+        ],
+        "sharedUsers": [
+          "Voorbeeld Sharedusers 2"
+        ],
+        "sharedGroups": [
+          "Voorbeeld Sharedgroups 2"
+        ],
+        "createdAt": "2026-03-02T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "credential-broker",
+          "schema": "brokeredcredential",
+          "slug": "brokeredcredential-voorbeeld-name-3-3"
+        },
+        "name": "Voorbeeld Name 3",
+        "provider": "Voorbeeld Provider 3",
+        "owner": "Voorbeeld Owner 3",
+        "scope": "personal",
+        "organisation": "Voorbeeld Organisation 3",
+        "allowedApps": [
+          "Voorbeeld Allowedapps 3"
+        ],
+        "sharedWith": [
+          {
+            "type": "user",
+            "id": "Voorbeeld Id 3",
+            "permission": "use"
+          }
+        ],
+        "sharedUsers": [
+          "Voorbeeld Sharedusers 3"
+        ],
+        "sharedGroups": [
+          "Voorbeeld Sharedgroups 3"
+        ],
+        "createdAt": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "data-subject-requests",
+          "schema": "dataSubjectRequest",
+          "slug": "datasubjectrequest-datasubjectrequest-1-1"
+        },
+        "subjectId": "Voorbeeld Subjectid 1",
+        "type": "access",
+        "status": "received",
+        "receivedAt": "2026-03-01T09:00:00+00:00",
+        "subjectType": "Voorbeeld Subjecttype 1",
+        "jurisdiction": "default",
+        "dueAt": "2026-03-01T09:00:00+00:00",
+        "extendedUntil": "2026-03-01T09:00:00+00:00",
+        "extensionReason": "Voorbeeld Extensionreason 1",
+        "outcome": "Voorbeeld Outcome 1",
+        "notes": "Voorbeeld Notes 1",
+        "handler": "Voorbeeld Handler 1",
+        "closedAt": "2026-03-01T09:00:00+00:00",
+        "dpiaRequired": false,
+        "breachedAt": "2026-03-01T09:00:00+00:00",
+        "daysRemaining": 1.0,
+        "isOverdue": true,
+        "escalationTier": "on-track",
+        "retentionWindow": "Voorbeeld Retentionwindow 1",
+        "retainUntil": "2026-03-01T09:00:00+00:00",
+        "purgedAt": "2026-03-01T09:00:00+00:00",
+        "denialGround": "manifestly-unfounded",
+        "regulatorReference": "Voorbeeld Regulatorreference 1",
+        "evidence": [
+          {
+            "sourceId": "Voorbeeld Sourceid 1",
+            "contentHash": "Voorbeeld Contenthash 1",
+            "status": "Voorbeeld Status 1"
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "data-subject-requests",
+          "schema": "dataSubjectRequest",
+          "slug": "datasubjectrequest-datasubjectrequest-2-2"
+        },
+        "subjectId": "Voorbeeld Subjectid 2",
+        "type": "rectification",
+        "status": "verifying",
+        "receivedAt": "2026-03-02T09:00:00+00:00",
+        "subjectType": "Voorbeeld Subjecttype 2",
+        "jurisdiction": "default",
+        "dueAt": "2026-03-02T09:00:00+00:00",
+        "extendedUntil": "2026-03-02T09:00:00+00:00",
+        "extensionReason": "Voorbeeld Extensionreason 2",
+        "outcome": "Voorbeeld Outcome 2",
+        "notes": "Voorbeeld Notes 2",
+        "handler": "Voorbeeld Handler 2",
+        "closedAt": "2026-03-02T09:00:00+00:00",
+        "dpiaRequired": false,
+        "breachedAt": "2026-03-02T09:00:00+00:00",
+        "daysRemaining": 2.0,
+        "isOverdue": false,
+        "escalationTier": "reminder",
+        "retentionWindow": "Voorbeeld Retentionwindow 2",
+        "retainUntil": "2026-03-02T09:00:00+00:00",
+        "purgedAt": "2026-03-02T09:00:00+00:00",
+        "denialGround": "excessive-request",
+        "regulatorReference": "Voorbeeld Regulatorreference 2",
+        "evidence": [
+          {
+            "sourceId": "Voorbeeld Sourceid 2",
+            "contentHash": "Voorbeeld Contenthash 2",
+            "status": "Voorbeeld Status 2"
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "data-subject-requests",
+          "schema": "dataSubjectRequest",
+          "slug": "datasubjectrequest-datasubjectrequest-3-3"
+        },
+        "subjectId": "Voorbeeld Subjectid 3",
+        "type": "erasure",
+        "status": "in-progress",
+        "receivedAt": "2026-03-03T09:00:00+00:00",
+        "subjectType": "Voorbeeld Subjecttype 3",
+        "jurisdiction": "default",
+        "dueAt": "2026-03-03T09:00:00+00:00",
+        "extendedUntil": "2026-03-03T09:00:00+00:00",
+        "extensionReason": "Voorbeeld Extensionreason 3",
+        "outcome": "Voorbeeld Outcome 3",
+        "notes": "Voorbeeld Notes 3",
+        "handler": "Voorbeeld Handler 3",
+        "closedAt": "2026-03-03T09:00:00+00:00",
+        "dpiaRequired": false,
+        "breachedAt": "2026-03-03T09:00:00+00:00",
+        "daysRemaining": 3.0,
+        "isOverdue": true,
+        "escalationTier": "escalation",
+        "retentionWindow": "Voorbeeld Retentionwindow 3",
+        "retainUntil": "2026-03-03T09:00:00+00:00",
+        "purgedAt": "2026-03-03T09:00:00+00:00",
+        "denialGround": "identity-unverified",
+        "regulatorReference": "Voorbeeld Regulatorreference 3",
+        "evidence": [
+          {
+            "sourceId": "Voorbeeld Sourceid 3",
+            "contentHash": "Voorbeeld Contenthash 3",
+            "status": "Voorbeeld Status 3"
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "dsar-policy-packs",
+          "schema": "dsarPolicyPack",
+          "slug": "dsarpolicypack-voorbeeld-name-1-1"
+        },
+        "jurisdiction": "Voorbeeld Jurisdiction 1",
+        "name": "Voorbeeld Name 1",
+        "deadlineDurationDays": 1,
+        "extensionDurationDays": 1,
+        "escalationTiers": [
+          {
+            "tier": "Voorbeeld Tier 1",
+            "offsetDays": 1
+          }
+        ],
+        "intakeChannels": [
+          "Voorbeeld Intakechannels 1"
+        ],
+        "roleMapping": {
+          "dpo": "Voorbeeld Dpo 1",
+          "fg": "Voorbeeld Fg 1",
+          "handler": "Voorbeeld Handler 1"
+        },
+        "templates": {
+          "acknowledgement": "Voorbeeld Acknowledgement 1",
+          "denial": "Voorbeeld Denial 1",
+          "extension": "Voorbeeld Extension 1"
+        },
+        "denialGrounds": [
+          {
+            "key": "Voorbeeld Key 1",
+            "label": "Voorbeeld Label 1",
+            "citation": "Voorbeeld Citation 1"
+          }
+        ],
+        "retentionWindows": [
+          {
+            "key": "Voorbeeld Key 1",
+            "durationMonths": 1
+          }
+        ],
+        "privacyOfficerGroup": "Voorbeeld Privacyofficergroup 1",
+        "dpiaDetection": {
+          "threshold": 1,
+          "windowDays": 1,
+          "groupBy": [
+            "Voorbeeld Groupby 1"
+          ]
+        },
+        "identityVerifyProvider": "Voorbeeld Identityverifyprovider 1",
+        "regulatorEscalateProvider": "Voorbeeld Regulatorescalateprovider 1"
+      },
+      {
+        "@self": {
+          "register": "dsar-policy-packs",
+          "schema": "dsarPolicyPack",
+          "slug": "dsarpolicypack-voorbeeld-name-2-2"
+        },
+        "jurisdiction": "Voorbeeld Jurisdiction 2",
+        "name": "Voorbeeld Name 2",
+        "deadlineDurationDays": 2,
+        "extensionDurationDays": 2,
+        "escalationTiers": [
+          {
+            "tier": "Voorbeeld Tier 2",
+            "offsetDays": 2
+          }
+        ],
+        "intakeChannels": [
+          "Voorbeeld Intakechannels 2"
+        ],
+        "roleMapping": {
+          "dpo": "Voorbeeld Dpo 2",
+          "fg": "Voorbeeld Fg 2",
+          "handler": "Voorbeeld Handler 2"
+        },
+        "templates": {
+          "acknowledgement": "Voorbeeld Acknowledgement 2",
+          "denial": "Voorbeeld Denial 2",
+          "extension": "Voorbeeld Extension 2"
+        },
+        "denialGrounds": [
+          {
+            "key": "Voorbeeld Key 2",
+            "label": "Voorbeeld Label 2",
+            "citation": "Voorbeeld Citation 2"
+          }
+        ],
+        "retentionWindows": [
+          {
+            "key": "Voorbeeld Key 2",
+            "durationMonths": 2
+          }
+        ],
+        "privacyOfficerGroup": "Voorbeeld Privacyofficergroup 2",
+        "dpiaDetection": {
+          "threshold": 2,
+          "windowDays": 2,
+          "groupBy": [
+            "Voorbeeld Groupby 2"
+          ]
+        },
+        "identityVerifyProvider": "Voorbeeld Identityverifyprovider 2",
+        "regulatorEscalateProvider": "Voorbeeld Regulatorescalateprovider 2"
+      },
+      {
+        "@self": {
+          "register": "dsar-policy-packs",
+          "schema": "dsarPolicyPack",
+          "slug": "dsarpolicypack-voorbeeld-name-3-3"
+        },
+        "jurisdiction": "Voorbeeld Jurisdiction 3",
+        "name": "Voorbeeld Name 3",
+        "deadlineDurationDays": 3,
+        "extensionDurationDays": 3,
+        "escalationTiers": [
+          {
+            "tier": "Voorbeeld Tier 3",
+            "offsetDays": 3
+          }
+        ],
+        "intakeChannels": [
+          "Voorbeeld Intakechannels 3"
+        ],
+        "roleMapping": {
+          "dpo": "Voorbeeld Dpo 3",
+          "fg": "Voorbeeld Fg 3",
+          "handler": "Voorbeeld Handler 3"
+        },
+        "templates": {
+          "acknowledgement": "Voorbeeld Acknowledgement 3",
+          "denial": "Voorbeeld Denial 3",
+          "extension": "Voorbeeld Extension 3"
+        },
+        "denialGrounds": [
+          {
+            "key": "Voorbeeld Key 3",
+            "label": "Voorbeeld Label 3",
+            "citation": "Voorbeeld Citation 3"
+          }
+        ],
+        "retentionWindows": [
+          {
+            "key": "Voorbeeld Key 3",
+            "durationMonths": 3
+          }
+        ],
+        "privacyOfficerGroup": "Voorbeeld Privacyofficergroup 3",
+        "dpiaDetection": {
+          "threshold": 3,
+          "windowDays": 3,
+          "groupBy": [
+            "Voorbeeld Groupby 3"
+          ]
+        },
+        "identityVerifyProvider": "Voorbeeld Identityverifyprovider 3",
+        "regulatorEscalateProvider": "Voorbeeld Regulatorescalateprovider 3"
+      },
+      {
+        "@self": {
+          "register": "edepot-transfers",
+          "schema": "edepotTransfer",
+          "slug": "edepottransfer-edepottransfer-1-1"
+        },
+        "status": "in_review",
+        "objectReferences": [
+          {
+            "uuid": "Voorbeeld Uuid 1",
+            "schema": 1,
+            "register": 1
+          }
+        ],
+        "exclusions": [
+          {
+            "uuid": "Voorbeeld Uuid 1",
+            "reason": "Voorbeeld Reason 1",
+            "excludedAt": "2026-03-01T09:00:00+00:00"
+          }
+        ],
+        "approvalMetadata": {},
+        "attempts": [
+          {
+            "attempt": 1,
+            "timestamp": "2026-03-01T09:00:00+00:00",
+            "transport": "Voorbeeld Transport 1",
+            "outcome": "Voorbeeld Outcome 1",
+            "error": "Voorbeeld Error 1"
+          }
+        ],
+        "transferResult": {},
+        "packageFormat": "zip",
+        "createdAt": "2026-03-01T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "edepot-transfers",
+          "schema": "edepotTransfer",
+          "slug": "edepottransfer-edepottransfer-2-2"
+        },
+        "status": "approved",
+        "objectReferences": [
+          {
+            "uuid": "Voorbeeld Uuid 2",
+            "schema": 2,
+            "register": 2
+          }
+        ],
+        "exclusions": [
+          {
+            "uuid": "Voorbeeld Uuid 2",
+            "reason": "Voorbeeld Reason 2",
+            "excludedAt": "2026-03-02T09:00:00+00:00"
+          }
+        ],
+        "approvalMetadata": {},
+        "attempts": [
+          {
+            "attempt": 2,
+            "timestamp": "2026-03-02T09:00:00+00:00",
+            "transport": "Voorbeeld Transport 2",
+            "outcome": "Voorbeeld Outcome 2",
+            "error": "Voorbeeld Error 2"
+          }
+        ],
+        "transferResult": {},
+        "packageFormat": "bagit",
+        "createdAt": "2026-03-02T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "edepot-transfers",
+          "schema": "edepotTransfer",
+          "slug": "edepottransfer-edepottransfer-3-3"
+        },
+        "status": "rejected",
+        "objectReferences": [
+          {
+            "uuid": "Voorbeeld Uuid 3",
+            "schema": 3,
+            "register": 3
+          }
+        ],
+        "exclusions": [
+          {
+            "uuid": "Voorbeeld Uuid 3",
+            "reason": "Voorbeeld Reason 3",
+            "excludedAt": "2026-03-03T09:00:00+00:00"
+          }
+        ],
+        "approvalMetadata": {},
+        "attempts": [
+          {
+            "attempt": 3,
+            "timestamp": "2026-03-03T09:00:00+00:00",
+            "transport": "Voorbeeld Transport 3",
+            "outcome": "Voorbeeld Outcome 3",
+            "error": "Voorbeeld Error 3"
+          }
+        ],
+        "transferResult": {},
+        "packageFormat": "zip",
+        "createdAt": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "edepot-transfers",
+          "schema": "edepotTransferProof",
+          "slug": "edepottransferproof-edepottransferproof-1-1"
+        },
+        "objectUuid": "Voorbeeld Objectuuid 1",
+        "transferUuid": "Voorbeeld Transferuuid 1",
+        "confirmedAt": "2026-03-01T09:00:00+00:00",
+        "eDepotReference": "Voorbeeld Edepotreference 1",
+        "transportReceipt": "Voorbeeld Transportreceipt 1",
+        "transportName": "Voorbeeld Transportname 1",
+        "packageId": "Voorbeeld Packageid 1",
+        "packageFormat": "zip",
+        "packageManifestSha256": "Voorbeeld Packagemanifestsha256 1",
+        "fileChecksums": [
+          {
+            "name": "Voorbeeld Name 1",
+            "sha256": "Voorbeeld Sha256 1"
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "edepot-transfers",
+          "schema": "edepotTransferProof",
+          "slug": "edepottransferproof-edepottransferproof-2-2"
+        },
+        "objectUuid": "Voorbeeld Objectuuid 2",
+        "transferUuid": "Voorbeeld Transferuuid 2",
+        "confirmedAt": "2026-03-02T09:00:00+00:00",
+        "eDepotReference": "Voorbeeld Edepotreference 2",
+        "transportReceipt": "Voorbeeld Transportreceipt 2",
+        "transportName": "Voorbeeld Transportname 2",
+        "packageId": "Voorbeeld Packageid 2",
+        "packageFormat": "bagit",
+        "packageManifestSha256": "Voorbeeld Packagemanifestsha256 2",
+        "fileChecksums": [
+          {
+            "name": "Voorbeeld Name 2",
+            "sha256": "Voorbeeld Sha256 2"
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "edepot-transfers",
+          "schema": "edepotTransferProof",
+          "slug": "edepottransferproof-edepottransferproof-3-3"
+        },
+        "objectUuid": "Voorbeeld Objectuuid 3",
+        "transferUuid": "Voorbeeld Transferuuid 3",
+        "confirmedAt": "2026-03-03T09:00:00+00:00",
+        "eDepotReference": "Voorbeeld Edepotreference 3",
+        "transportReceipt": "Voorbeeld Transportreceipt 3",
+        "transportName": "Voorbeeld Transportname 3",
+        "packageId": "Voorbeeld Packageid 3",
+        "packageFormat": "zip",
+        "packageManifestSha256": "Voorbeeld Packagemanifestsha256 3",
+        "fileChecksums": [
+          {
+            "name": "Voorbeeld Name 3",
+            "sha256": "Voorbeeld Sha256 3"
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "flows",
+          "schema": "flow",
+          "slug": "flow-voorbeeld-name-1-1"
+        },
+        "name": "Voorbeeld Name 1",
+        "description": "Voorbeeld Description 1",
+        "enabled": false,
+        "trigger": "Voorbeeld Trigger 1",
+        "cron": "Voorbeeld Cron 1",
+        "executionMode": "async",
+        "sharedWith": [
+          {
+            "type": "user",
+            "id": "Voorbeeld Id 1",
+            "permission": "read"
+          }
+        ],
+        "sharedUsers": [
+          "Voorbeeld Sharedusers 1"
+        ],
+        "sharedGroups": [
+          "Voorbeeld Sharedgroups 1"
+        ],
+        "credentialIdentity": "runner",
+        "triggerRegister": "Voorbeeld Triggerregister 1",
+        "triggerSchema": "Voorbeeld Triggerschema 1",
+        "nodes": [
+          {}
+        ],
+        "edges": [
+          {}
+        ]
+      },
+      {
+        "@self": {
+          "register": "flows",
+          "schema": "flow",
+          "slug": "flow-voorbeeld-name-2-2"
+        },
+        "name": "Voorbeeld Name 2",
+        "description": "Voorbeeld Description 2",
+        "enabled": false,
+        "trigger": "Voorbeeld Trigger 2",
+        "cron": "Voorbeeld Cron 2",
+        "executionMode": "sync",
+        "sharedWith": [
+          {
+            "type": "group",
+            "id": "Voorbeeld Id 2",
+            "permission": "run"
+          }
+        ],
+        "sharedUsers": [
+          "Voorbeeld Sharedusers 2"
+        ],
+        "sharedGroups": [
+          "Voorbeeld Sharedgroups 2"
+        ],
+        "credentialIdentity": "owner",
+        "triggerRegister": "Voorbeeld Triggerregister 2",
+        "triggerSchema": "Voorbeeld Triggerschema 2",
+        "nodes": [
+          {}
+        ],
+        "edges": [
+          {}
+        ]
+      },
+      {
+        "@self": {
+          "register": "flows",
+          "schema": "flow",
+          "slug": "flow-voorbeeld-name-3-3"
+        },
+        "name": "Voorbeeld Name 3",
+        "description": "Voorbeeld Description 3",
+        "enabled": false,
+        "trigger": "Voorbeeld Trigger 3",
+        "cron": "Voorbeeld Cron 3",
+        "executionMode": "async",
+        "sharedWith": [
+          {
+            "type": "user",
+            "id": "Voorbeeld Id 3",
+            "permission": "read"
+          }
+        ],
+        "sharedUsers": [
+          "Voorbeeld Sharedusers 3"
+        ],
+        "sharedGroups": [
+          "Voorbeeld Sharedgroups 3"
+        ],
+        "credentialIdentity": "runner",
+        "triggerRegister": "Voorbeeld Triggerregister 3",
+        "triggerSchema": "Voorbeeld Triggerschema 3",
+        "nodes": [
+          {}
+        ],
+        "edges": [
+          {}
+        ]
+      },
+      {
+        "@self": {
+          "register": "merge-operation",
+          "schema": "mergeOperation",
+          "slug": "mergeoperation-mergeoperation-1-1"
+        },
+        "mergedIntoUuid": "Voorbeeld Mergedintouuid 1",
+        "mergedFromUuids": [
+          "Voorbeeld Mergedfromuuids 1"
+        ],
+        "mergedAt": "2026-03-01T09:00:00+00:00",
+        "reversible": true,
+        "reason": "Voorbeeld Reason 1",
+        "preMergeSnapshot": {},
+        "reversedAt": "2026-03-01T09:00:00+00:00",
+        "reversedBy": "Voorbeeld Reversedby 1"
+      },
+      {
+        "@self": {
+          "register": "merge-operation",
+          "schema": "mergeOperation",
+          "slug": "mergeoperation-mergeoperation-2-2"
+        },
+        "mergedIntoUuid": "Voorbeeld Mergedintouuid 2",
+        "mergedFromUuids": [
+          "Voorbeeld Mergedfromuuids 2"
+        ],
+        "mergedAt": "2026-03-02T09:00:00+00:00",
+        "reversible": true,
+        "reason": "Voorbeeld Reason 2",
+        "preMergeSnapshot": {},
+        "reversedAt": "2026-03-02T09:00:00+00:00",
+        "reversedBy": "Voorbeeld Reversedby 2"
+      },
+      {
+        "@self": {
+          "register": "merge-operation",
+          "schema": "mergeOperation",
+          "slug": "mergeoperation-mergeoperation-3-3"
+        },
+        "mergedIntoUuid": "Voorbeeld Mergedintouuid 3",
+        "mergedFromUuids": [
+          "Voorbeeld Mergedfromuuids 3"
+        ],
+        "mergedAt": "2026-03-03T09:00:00+00:00",
+        "reversible": true,
+        "reason": "Voorbeeld Reason 3",
+        "preMergeSnapshot": {},
+        "reversedAt": "2026-03-03T09:00:00+00:00",
+        "reversedBy": "Voorbeeld Reversedby 3"
+      },
+      {
+        "@self": {
+          "register": "trust-configuration",
+          "schema": "trustConfiguration",
+          "slug": "trustconfiguration-trustconfiguration-1-1"
+        },
+        "entityType": "Voorbeeld Entitytype 1",
+        "attribute": "Voorbeeld Attribute 1",
+        "sourceSystem": "Voorbeeld Sourcesystem 1",
+        "trustTier": "gold",
+        "freshnessDecayDays": 1,
+        "effectiveFrom": "2026-03-01"
+      },
+      {
+        "@self": {
+          "register": "trust-configuration",
+          "schema": "trustConfiguration",
+          "slug": "trustconfiguration-trustconfiguration-2-2"
+        },
+        "entityType": "Voorbeeld Entitytype 2",
+        "attribute": "Voorbeeld Attribute 2",
+        "sourceSystem": "Voorbeeld Sourcesystem 2",
+        "trustTier": "silver",
+        "freshnessDecayDays": 2,
+        "effectiveFrom": "2026-03-02"
+      },
+      {
+        "@self": {
+          "register": "trust-configuration",
+          "schema": "trustConfiguration",
+          "slug": "trustconfiguration-trustconfiguration-3-3"
+        },
+        "entityType": "Voorbeeld Entitytype 3",
+        "attribute": "Voorbeeld Attribute 3",
+        "sourceSystem": "Voorbeeld Sourcesystem 3",
+        "trustTier": "bronze",
+        "freshnessDecayDays": 3,
+        "effectiveFrom": "2026-03-03"
+      },
+      {
+        "@self": {
+          "register": "vocabulary",
+          "schema": "concept",
+          "slug": "concept-concept-1-1"
+        },
+        "uri": "https://example.invalid/resource/0",
+        "prefLabel": {
+          "nl": "Voorbeeld Nl 1",
+          "en": "Voorbeeld En 1"
+        },
+        "inScheme": "00000000-0000-4000-8000-000000000000",
+        "altLabel": {
+          "nl": "Voorbeeld Nl 1",
+          "en": "Voorbeeld En 1"
+        },
+        "definition": "Voorbeeld Definition 1",
+        "notation": "Voorbeeld Notation 1",
+        "deprecated": false,
+        "broader": [
+          "00000000-0000-4000-8000-000000000000"
+        ],
+        "narrower": [
+          "00000000-0000-4000-8000-000000000000"
+        ],
+        "related": [
+          "00000000-0000-4000-8000-000000000000"
+        ]
+      },
+      {
+        "@self": {
+          "register": "vocabulary",
+          "schema": "concept",
+          "slug": "concept-concept-2-2"
+        },
+        "uri": "https://example.invalid/resource/1",
+        "prefLabel": {
+          "nl": "Voorbeeld Nl 2",
+          "en": "Voorbeeld En 2"
+        },
+        "inScheme": "00000000-0000-4000-8000-000000000001",
+        "altLabel": {
+          "nl": "Voorbeeld Nl 2",
+          "en": "Voorbeeld En 2"
+        },
+        "definition": "Voorbeeld Definition 2",
+        "notation": "Voorbeeld Notation 2",
+        "deprecated": false,
+        "broader": [
+          "00000000-0000-4000-8000-000000000001"
+        ],
+        "narrower": [
+          "00000000-0000-4000-8000-000000000001"
+        ],
+        "related": [
+          "00000000-0000-4000-8000-000000000001"
+        ]
+      },
+      {
+        "@self": {
+          "register": "vocabulary",
+          "schema": "concept",
+          "slug": "concept-concept-3-3"
+        },
+        "uri": "https://example.invalid/resource/2",
+        "prefLabel": {
+          "nl": "Voorbeeld Nl 3",
+          "en": "Voorbeeld En 3"
+        },
+        "inScheme": "00000000-0000-4000-8000-000000000002",
+        "altLabel": {
+          "nl": "Voorbeeld Nl 3",
+          "en": "Voorbeeld En 3"
+        },
+        "definition": "Voorbeeld Definition 3",
+        "notation": "Voorbeeld Notation 3",
+        "deprecated": false,
+        "broader": [
+          "00000000-0000-4000-8000-000000000002"
+        ],
+        "narrower": [
+          "00000000-0000-4000-8000-000000000002"
+        ],
+        "related": [
+          "00000000-0000-4000-8000-000000000002"
+        ]
+      },
+      {
+        "@self": {
+          "register": "vocabulary",
+          "schema": "conceptScheme",
+          "slug": "conceptscheme-voorbeeld-title-1-1"
+        },
+        "uri": "https://example.invalid/resource/0",
+        "title": "Voorbeeld Title 1",
+        "publisher": "Voorbeeld Publisher 1",
+        "version": "Voorbeeld Version 1",
+        "source": "https://example.invalid/resource/0",
+        "description": "Voorbeeld Description 1"
+      },
+      {
+        "@self": {
+          "register": "vocabulary",
+          "schema": "conceptScheme",
+          "slug": "conceptscheme-voorbeeld-title-2-2"
+        },
+        "uri": "https://example.invalid/resource/1",
+        "title": "Voorbeeld Title 2",
+        "publisher": "Voorbeeld Publisher 2",
+        "version": "Voorbeeld Version 2",
+        "source": "https://example.invalid/resource/1",
+        "description": "Voorbeeld Description 2"
+      },
+      {
+        "@self": {
+          "register": "vocabulary",
+          "schema": "conceptScheme",
+          "slug": "conceptscheme-voorbeeld-title-3-3"
+        },
+        "uri": "https://example.invalid/resource/2",
+        "title": "Voorbeeld Title 3",
+        "publisher": "Voorbeeld Publisher 3",
+        "version": "Voorbeeld Version 3",
+        "source": "https://example.invalid/resource/2",
+        "description": "Voorbeeld Description 3"
+      }
+    ]
+  }
+}

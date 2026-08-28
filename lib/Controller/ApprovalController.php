@@ -3,16 +3,24 @@
 /**
  * OpenRegister ApprovalController
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/specs/approval-workflow/spec.md
+ * @spec openspec/specs/approval-workflow/spec.md
+ * @spec openspec/specs/approval-workflow/spec.md
+ * @spec openspec/specs/approval-workflow/spec.md
  */
 
 declare(strict_types=1);
@@ -25,6 +33,7 @@ use OCA\OpenRegister\Db\ApprovalStepMapper;
 use OCA\OpenRegister\Service\ApprovalService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -36,271 +45,317 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class ApprovalController extends Controller
-{
-    /**
-     * Constructor for ApprovalController.
-     *
-     * @param string              $appName         App name
-     * @param IRequest            $request         Request
-     * @param ApprovalChainMapper $chainMapper     Chain mapper
-     * @param ApprovalStepMapper  $stepMapper      Step mapper
-     * @param ApprovalService     $approvalService Approval service
-     * @param IUserSession        $userSession     User session
-     * @param LoggerInterface     $logger          Logger
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly ApprovalChainMapper $chainMapper,
-        private readonly ApprovalStepMapper $stepMapper,
-        private readonly ApprovalService $approvalService,
-        private readonly IUserSession $userSession,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-    }//end __construct()
+class ApprovalController extends Controller {
+	/**
+	 * Constructor for ApprovalController.
+	 *
+	 * @param string $appName App name
+	 * @param IRequest $request Request
+	 * @param ApprovalChainMapper $chainMapper Chain mapper
+	 * @param ApprovalStepMapper $stepMapper Step mapper
+	 * @param ApprovalService $approvalService Approval service
+	 * @param IUserSession $userSession User session
+	 * @param LoggerInterface $logger Logger
+	 * @param IGroupManager $groupManager Group manager for admin checks
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly ApprovalChainMapper $chainMapper,
+		private readonly ApprovalStepMapper $stepMapper,
+		private readonly ApprovalService $approvalService,
+		private readonly IUserSession $userSession,
+		private readonly LoggerInterface $logger,
+		private readonly IGroupManager $groupManager,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+	}//end __construct()
 
-    /**
-     * List all approval chains.
-     *
-     * @NoAdminRequired
-     *
-     * @return JSONResponse
-     */
-    public function index(): JSONResponse
-    {
-        $chains = $this->chainMapper->findAll();
+	/**
+	 * Determine whether the current user is a Nextcloud admin.
+	 *
+	 * @return bool True when the active session user belongs to the admin group.
+	 */
+	private function isCurrentUserAdmin(): bool {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return false;
+		}
 
-        return new JSONResponse(
-            array_map(fn ($c) => $c->jsonSerialize(), $chains)
-        );
-    }//end index()
+		return $this->groupManager->isAdmin($user->getUID());
+	}//end isCurrentUserAdmin()
 
-    /**
-     * Get a single approval chain.
-     *
-     * @param int $id Chain ID
-     *
-     * @NoAdminRequired
-     *
-     * @return JSONResponse
-     */
-    public function show(int $id): JSONResponse
-    {
-        try {
-            $chain = $this->chainMapper->find($id);
+	/**
+	 * List all approval chains.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 */
+	public function index(): JSONResponse {
+		$chains = $this->chainMapper->findAll();
 
-            return new JSONResponse($chain->jsonSerialize());
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Approval chain not found'], 404);
-        }
-    }//end show()
+		return new JSONResponse(
+			array_map(fn ($c) => $c->jsonSerialize(), $chains)
+		);
+	}//end index()
 
-    /**
-     * Create a new approval chain.
-     *
-     * @return JSONResponse
-     */
-    public function create(): JSONResponse
-    {
-        $data = $this->request->getParams();
+	/**
+	 * Get a single approval chain.
+	 *
+	 * @param int $id Chain ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 */
+	public function show(int $id): JSONResponse {
+		try {
+			$chain = $this->chainMapper->find($id);
 
-        try {
-            $chain = $this->chainMapper->createFromArray($data);
+			return new JSONResponse($chain->jsonSerialize());
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Approval chain not found'], 404);
+		}
+	}//end show()
 
-            return new JSONResponse($chain->jsonSerialize(), 201);
-        } catch (Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
-        }
-    }//end create()
+	/**
+	 * Create a new approval chain.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 *
+	 * @NoAdminRequired
+	 */
+	public function create(): JSONResponse {
+		// SECURITY (M1): approval chain writes are admin-only.
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(['error' => 'Admin privileges required'], 403);
+		}
 
-    /**
-     * Update an approval chain.
-     *
-     * @param int $id Chain ID
-     *
-     * @return JSONResponse
-     */
-    public function update(int $id): JSONResponse
-    {
-        try {
-            $data  = $this->request->getParams();
-            $chain = $this->chainMapper->updateFromArray($id, $data);
+		$data = $this->request->getParams();
 
-            return new JSONResponse($chain->jsonSerialize());
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Approval chain not found'], 404);
-        } catch (Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
-        }
-    }//end update()
+		try {
+			$chain = $this->chainMapper->createFromArray($data);
 
-    /**
-     * Delete an approval chain.
-     *
-     * @param int $id Chain ID
-     *
-     * @return JSONResponse
-     */
-    public function destroy(int $id): JSONResponse
-    {
-        try {
-            $chain = $this->chainMapper->find($id);
-            $this->chainMapper->delete($chain);
+			return new JSONResponse($chain->jsonSerialize(), 201);
+		} catch (Exception $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 500);
+		}
+	}//end create()
 
-            return new JSONResponse($chain->jsonSerialize());
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Approval chain not found'], 404);
-        }
-    }//end destroy()
+	/**
+	 * Update an approval chain.
+	 *
+	 * @param int $id Chain ID
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 *
+	 * @NoAdminRequired
+	 */
+	public function update(int $id): JSONResponse {
+		// SECURITY (M1): approval chain writes are admin-only.
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(['error' => 'Admin privileges required'], 403);
+		}
 
-    /**
-     * List objects in an approval chain with their progress.
-     *
-     * @param int $id Chain ID
-     *
-     * @NoAdminRequired
-     *
-     * @return JSONResponse
-     */
-    public function objects(int $id): JSONResponse
-    {
-        try {
-            $this->chainMapper->find($id);
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Approval chain not found'], 404);
-        }
+		try {
+			$data = $this->request->getParams();
+			$chain = $this->chainMapper->updateFromArray($id, $data);
 
-        $steps = $this->stepMapper->findByChain($id);
+			return new JSONResponse($chain->jsonSerialize());
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Approval chain not found'], 404);
+		} catch (Exception $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 500);
+		}
+	}//end update()
 
-        // Group steps by object UUID.
-        $objectProgress = [];
-        foreach ($steps as $step) {
-            $uuid = $step->getObjectUuid();
-            if (isset($objectProgress[$uuid]) === false) {
-                $objectProgress[$uuid] = [
-                    'objectUuid' => $uuid,
-                    'steps'      => [],
-                    'approved'   => 0,
-                    'total'      => 0,
-                ];
-            }
+	/**
+	 * Delete an approval chain.
+	 *
+	 * @param int $id Chain ID
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 *
+	 * @NoAdminRequired
+	 */
+	public function destroy(int $id): JSONResponse {
+		// SECURITY (M1): approval chain writes are admin-only.
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(['error' => 'Admin privileges required'], 403);
+		}
 
-            $objectProgress[$uuid]['steps'][] = $step->jsonSerialize();
-            $objectProgress[$uuid]['total']++;
-            if ($step->getStatus() === 'approved') {
-                $objectProgress[$uuid]['approved']++;
-            }
-        }
+		try {
+			$chain = $this->chainMapper->find($id);
+			$this->chainMapper->delete($chain);
 
-        return new JSONResponse(array_values($objectProgress));
-    }//end objects()
+			return new JSONResponse($chain->jsonSerialize());
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Approval chain not found'], 404);
+		}
+	}//end destroy()
 
-    /**
-     * List approval steps with optional filters.
-     *
-     * @NoAdminRequired
-     *
-     * @return JSONResponse
-     */
-    public function steps(): JSONResponse
-    {
-        $filters = [];
+	/**
+	 * List objects in an approval chain with their progress.
+	 *
+	 * @param int $id Chain ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 */
+	public function objects(int $id): JSONResponse {
+		try {
+			$this->chainMapper->find($id);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Approval chain not found'], 404);
+		}
 
-        $status = $this->request->getParam('status');
-        if ($status !== null) {
-            $filters['status'] = $status;
-        }
+		$steps = $this->stepMapper->findByChain($id);
 
-        $role = $this->request->getParam('role');
-        if ($role !== null) {
-            $filters['role'] = $role;
-        }
+		// Group steps by object UUID.
+		$objectProgress = [];
+		foreach ($steps as $step) {
+			$uuid = $step->getObjectUuid();
+			if (isset($objectProgress[$uuid]) === false) {
+				$objectProgress[$uuid] = [
+					'objectUuid' => $uuid,
+					'steps' => [],
+					'approved' => 0,
+					'total' => 0,
+				];
+			}
 
-        $chainId = $this->request->getParam('chainId');
-        if ($chainId !== null) {
-            $filters['chainId'] = (int) $chainId;
-        }
+			$objectProgress[$uuid]['steps'][] = $step->jsonSerialize();
+			$objectProgress[$uuid]['total']++;
+			if ($step->getStatus() === 'approved') {
+				$objectProgress[$uuid]['approved']++;
+			}
+		}
 
-        $objectUuid = $this->request->getParam('objectUuid');
-        if ($objectUuid !== null) {
-            $filters['objectUuid'] = $objectUuid;
-        }
+		return new JSONResponse(array_values($objectProgress));
+	}//end objects()
 
-        $steps = $this->stepMapper->findAllFiltered($filters);
+	/**
+	 * List approval steps with optional filters.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 */
+	public function steps(): JSONResponse {
+		$filters = [];
 
-        return new JSONResponse(
-            array_map(fn ($s) => $s->jsonSerialize(), $steps)
-        );
-    }//end steps()
+		$status = $this->request->getParam('status');
+		if ($status !== null) {
+			$filters['status'] = $status;
+		}
 
-    /**
-     * Approve a pending approval step.
-     *
-     * @param int $id Step ID
-     *
-     * @NoAdminRequired
-     *
-     * @return JSONResponse
-     */
-    public function approve(int $id): JSONResponse
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return new JSONResponse(['error' => 'Not authenticated'], 401);
-        }
+		$role = $this->request->getParam('role');
+		if ($role !== null) {
+			$filters['role'] = $role;
+		}
 
-        $comment = (string) ($this->request->getParam('comment', ''));
+		$chainId = $this->request->getParam('chainId');
+		if ($chainId !== null) {
+			$filters['chainId'] = (int)$chainId;
+		}
 
-        try {
-            $result = $this->approvalService->approveStep($id, $user->getUID(), $comment);
-            $step   = $result['step'];
+		$objectUuid = $this->request->getParam('objectUuid');
+		if ($objectUuid !== null) {
+			$filters['objectUuid'] = $objectUuid;
+		}
 
-            $response = $step->jsonSerialize();
-            if ($result['nextStep'] !== null) {
-                $response['nextStep'] = $result['nextStep']->jsonSerialize();
-            }
+		$steps = $this->stepMapper->findAllFiltered($filters);
 
-            return new JSONResponse($response);
-        } catch (Exception $e) {
-            if (str_contains($e->getMessage(), 'not authorised') === true) {
-                return new JSONResponse(['error' => $e->getMessage()], 403);
-            }
+		return new JSONResponse(
+			array_map(fn ($step) => $step->jsonSerialize(), $steps)
+		);
+	}//end steps()
 
-            return new JSONResponse(['error' => $e->getMessage()], 400);
-        }
-    }//end approve()
+	/**
+	 * Approve a pending approval step.
+	 *
+	 * @param int $id Step ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 */
+	public function approve(int $id): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => 'Not authenticated'], 401);
+		}
 
-    /**
-     * Reject a pending approval step.
-     *
-     * @param int $id Step ID
-     *
-     * @NoAdminRequired
-     *
-     * @return JSONResponse
-     */
-    public function reject(int $id): JSONResponse
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return new JSONResponse(['error' => 'Not authenticated'], 401);
-        }
+		$comment = (string)($this->request->getParam('comment', ''));
 
-        $comment = (string) ($this->request->getParam('comment', ''));
+		try {
+			$result = $this->approvalService->approveStep($id, $user->getUID(), $comment);
+			$step = $result['step'];
 
-        try {
-            $result = $this->approvalService->rejectStep($id, $user->getUID(), $comment);
-            $step   = $result['step'];
+			$response = $step->jsonSerialize();
+			if ($result['nextStep'] !== null) {
+				$response['nextStep'] = $result['nextStep']->jsonSerialize();
+			}
 
-            return new JSONResponse($step->jsonSerialize());
-        } catch (Exception $e) {
-            if (str_contains($e->getMessage(), 'not authorised') === true) {
-                return new JSONResponse(['error' => $e->getMessage()], 403);
-            }
+			return new JSONResponse($response);
+		} catch (Exception $e) {
+			if (str_contains($e->getMessage(), 'not authorised') === true) {
+				return new JSONResponse(['error' => $e->getMessage()], 403);
+			}
 
-            return new JSONResponse(['error' => $e->getMessage()], 400);
-        }
-    }//end reject()
+			return new JSONResponse(['error' => $e->getMessage()], 400);
+		}
+	}//end approve()
+
+	/**
+	 * Reject a pending approval step.
+	 *
+	 * @param int $id Step ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 */
+	public function reject(int $id): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => 'Not authenticated'], 401);
+		}
+
+		$comment = (string)($this->request->getParam('comment', ''));
+
+		try {
+			$result = $this->approvalService->rejectStep($id, $user->getUID(), $comment);
+			$step = $result['step'];
+
+			return new JSONResponse($step->jsonSerialize());
+		} catch (Exception $e) {
+			if (str_contains($e->getMessage(), 'not authorised') === true) {
+				return new JSONResponse(['error' => $e->getMessage()], 403);
+			}
+
+			return new JSONResponse(['error' => $e->getMessage()], 400);
+		}
+	}//end reject()
 }//end class

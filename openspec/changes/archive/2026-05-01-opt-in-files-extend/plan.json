@@ -1,0 +1,339 @@
+{
+  "change": "opt-in-files-extend",
+  "project": "openregister",
+  "repo": "ConductionNL/openregister",
+  "created": "2026-04-29",
+  "tracking_issue": 1358,
+  "tracking_issue_url": "https://github.com/ConductionNL/openregister/issues/1358",
+  "tasks": [
+    {
+      "id": "1.1",
+      "section": "FileMapper batched lookup",
+      "title": "Add getFileIdsForObjects to FileMapper",
+      "description": "Add getFileIdsForObjects(array $uuids): array<string, int[]> to lib/Db/FileMapper.php. Single SQL query for the entire input set; UUIDs without files come back with empty arrays.",
+      "status": "done",
+      "spec_ref": "files-render-extension/spec.md#requirement-default-shape-lookup-must-use-a-batched-file-id-query",
+      "files_likely_affected": [
+        "lib/Db/FileMapper.php"
+      ]
+    },
+    {
+      "id": "1.2",
+      "section": "FileMapper batched lookup",
+      "title": "Unit test getFileIdsForObjects",
+      "description": "Cover with a unit test: empty input, single UUID with files, many UUIDs with mixed counts, no-files cases.",
+      "status": "done",
+      "spec_ref": "files-render-extension/spec.md#requirement-default-shape-lookup-must-use-a-batched-file-id-query",
+      "files_likely_affected": [
+        "tests/Unit/Db/FileMapperTest.php"
+      ]
+    },
+    {
+      "id": "1.3",
+      "section": "FileMapper batched lookup",
+      "title": "composer check:strict clean for FileMapper changes",
+      "description": "Run composer check:strict (PHPCS, PHPMD, Psalm, PHPStan); zero new warnings. Fix any pre-existing issues in touched files.",
+      "status": "done",
+      "spec_ref": null,
+      "files_likely_affected": [
+        "lib/Db/FileMapper.php",
+        "tests/Unit/Db/FileMapperTest.php"
+      ]
+    },
+    {
+      "id": "2.1",
+      "section": "RenderObject \u2014 normalize and gate",
+      "title": "Add _files normalization mapping",
+      "description": "Edit lib/Service/Object/RenderObject.php normalizeMap (~line 1015): add '_files' => '@self.files'.",
+      "status": "done",
+      "spec_ref": "files-render-extension/spec.md#requirement-_extend_files-shall-be-equivalent-to-_extendselffiles",
+      "files_likely_affected": [
+        "lib/Service/Object/RenderObject.php"
+      ]
+    },
+    {
+      "id": "2.2",
+      "section": "RenderObject \u2014 normalize and gate",
+      "title": "Gate renderFiles() call site",
+      "description": "Edit RenderObject.php line 908: gate $this->renderFiles($entity) on normalized _extend containing @self.files. The body of renderFiles() is NOT modified.",
+      "status": "done",
+      "spec_ref": "files-render-extension/spec.md#requirement-renderobjectrenderfiles-must-run-only-when-selffiles-is-in-extend",
+      "files_likely_affected": [
+        "lib/Service/Object/RenderObject.php"
+      ]
+    },
+    {
+      "id": "2.3",
+      "section": "RenderObject \u2014 normalize and gate",
+      "title": "Attach lightweight default IDs in renderEntity",
+      "description": "When extend does NOT cover @self.files, attach lightweight IDs via FileMapper::getFileIdsForObjects([$entity->getUuid()]) and $entity->setFiles(...).",
+      "status": "done",
+      "spec_ref": "files-render-extension/spec.md#requirement-default-selffiles-shall-be-a-list-of-file-ids-only",
+      "files_likely_affected": [
+        "lib/Service/Object/RenderObject.php"
+      ]
+    },
+    {
+      "id": "2.4",
+      "section": "RenderObject \u2014 normalize and gate",
+      "title": "Audit internal getFiles() readers",
+      "description": "Verify renderFileProperties and any other internal readers of $entity->getFiles() are unaffected by the lightweight integer values; route through extend or fix the read site if needed.",
+      "status": "done",
+      "spec_ref": "files-render-extension/spec.md#requirement-out-of-scope-behaviors-shall-remain-untouched",
+      "files_likely_affected": [
+        "lib/Service/Object/RenderObject.php"
+      ]
+    },
+    {
+      "id": "3.1",
+      "section": "Search/list pipeline integration",
+      "title": "Batch-fetch file IDs for list results",
+      "description": "In ObjectService::searchObjectsPaginated (and SOLR/IndexService path), call FileMapper::getFileIdsForObjects($uuids) once per request and attach per-UUID ID arrays to each row's @self.files. Single query regardless of page size.",
+      "status": "done",
+      "spec_ref": "files-render-extension/spec.md#requirement-default-shape-lookup-must-use-a-batched-file-id-query",
+      "files_likely_affected": [
+        "lib/Service/ObjectService.php",
+        "lib/Service/Object/IndexService.php"
+      ]
+    },
+    {
+      "id": "3.2",
+      "section": "Search/list pipeline integration",
+      "title": "Route list rows through renderFiles when extend covers @self.files",
+      "description": "When _extend[]=@self.files (or _files) is requested on a list, route each result row through renderEntity/renderFiles for full metadata. Comment the discouraged-perf intent inline.",
+      "status": "done",
+      "spec_ref": "files-render-extension/spec.md#requirement-_extendselffiles-shall-produce-full-file-metadata",
+      "files_likely_affected": [
+        "lib/Service/ObjectService.php",
+        "lib/Service/Object/IndexService.php"
+      ]
+    },
+    {
+      "id": "3.3",
+      "section": "Search/list pipeline integration",
+      "title": "Empty-array default for rows with no files",
+      "description": "Ensure rows with no files emit @self.files: [] (empty array, never absent or null).",
+      "status": "done",
+      "spec_ref": "files-render-extension/spec.md#requirement-selffiles-shall-be-present-on-every-rendered-object",
+      "files_likely_affected": [
+        "lib/Service/ObjectService.php"
+      ]
+    },
+    {
+      "id": "4.1",
+      "section": "Tests \u2014 render contract",
+      "title": "Unit: extend variants produce correct shapes",
+      "description": "renderEntity without extend \u2192 integers; with _extend[]=@self.files \u2192 full objects; with _extend[]=_files \u2192 identical to _extend[]=@self.files.",
+      "status": "deferred",
+      "spec_ref": "files-render-extension/spec.md#requirement-default-selffiles-shall-be-a-list-of-file-ids-only",
+      "files_likely_affected": [
+        "tests/Unit/Service/Object/RenderObjectTest.php"
+      ]
+    },
+    {
+      "id": "4.2",
+      "section": "Tests \u2014 render contract",
+      "title": "Unit: zero-files object emits empty array",
+      "description": "Object with zero files \u2192 @self.files: [] in both default and extend modes.",
+      "status": "deferred",
+      "spec_ref": "files-render-extension/spec.md#requirement-selffiles-shall-be-present-on-every-rendered-object",
+      "files_likely_affected": [
+        "tests/Unit/Service/Object/RenderObjectTest.php"
+      ]
+    },
+    {
+      "id": "4.3",
+      "section": "Tests \u2014 render contract",
+      "title": "Unit: renderFiles() not invoked without extend",
+      "description": "Assert via mock/spy that renderFiles() is NOT called when extend does not cover @self.files.",
+      "status": "deferred",
+      "spec_ref": "files-render-extension/spec.md#requirement-renderobjectrenderfiles-must-run-only-when-selffiles-is-in-extend",
+      "files_likely_affected": [
+        "tests/Unit/Service/Object/RenderObjectTest.php"
+      ]
+    },
+    {
+      "id": "4.4",
+      "section": "Tests \u2014 render contract",
+      "title": "Integration: list without extend uses single batched query",
+      "description": "List endpoint without extend \u2192 integer-array @self.files on every row + single getFileIdsForObjects query observed.",
+      "status": "deferred",
+      "spec_ref": "files-render-extension/spec.md#requirement-default-shape-lookup-must-use-a-batched-file-id-query",
+      "files_likely_affected": [
+        "tests/integration/openregister-crud.postman_collection.json"
+      ]
+    },
+    {
+      "id": "4.5",
+      "section": "Tests \u2014 render contract",
+      "title": "Integration: list with extend produces full metadata",
+      "description": "List endpoint with _extend[]=@self.files \u2192 full file metadata on every row + per-row file lookups observed (correctness, not perf).",
+      "status": "deferred",
+      "spec_ref": "files-render-extension/spec.md#requirement-_extendselffiles-shall-produce-full-file-metadata",
+      "files_likely_affected": [
+        "tests/integration/openregister-crud.postman_collection.json"
+      ]
+    },
+    {
+      "id": "4.6",
+      "section": "Tests \u2014 render contract",
+      "title": "Integration: opencatalogi inherits the contract",
+      "description": "Opencatalogi PublicationsController::show and ::index reflect the new contract without code changes on the opencatalogi side.",
+      "status": "deferred",
+      "spec_ref": "files-render-extension/spec.md#requirement-this-contract-shall-apply-uniformly-across-all-render-output-endpoints",
+      "files_likely_affected": []
+    },
+    {
+      "id": "5.1",
+      "section": "Backwards-compatibility audit",
+      "title": "Search consumers for full-shape file reads",
+      "description": "Search opencatalogi, softwarecatalog, and other in-tree consumers for direct reads of @self.files[i].downloadUrl/.path/.title etc. Document any breaks.",
+      "status": "done",
+      "spec_ref": null,
+      "files_likely_affected": []
+    },
+    {
+      "id": "5.2",
+      "section": "Backwards-compatibility audit",
+      "title": "Document or open follow-ups for breaks",
+      "description": "For each break identified: note the client-side migration in release notes, or open a follow-up issue against the consumer repo.",
+      "status": "not-applicable",
+      "spec_ref": null,
+      "files_likely_affected": []
+    },
+    {
+      "id": "5.3",
+      "section": "Backwards-compatibility audit",
+      "title": "Frontend audit inside openregister",
+      "description": "Search openregister Vue components for reads of full-file shape; either request extend explicitly or read from lightweight ID list.",
+      "status": "done",
+      "spec_ref": null,
+      "files_likely_affected": [
+        "src/"
+      ]
+    },
+    {
+      "id": "6.1",
+      "section": "Documentation \u2014 openregister",
+      "title": "CHANGELOG breaking-change entry",
+      "description": "Add CHANGELOG entry under Breaking Changes: @self.files is now opt-in. Default emits file IDs only. Add _extend[]=@self.files (or _extend[]=_files) for full metadata.",
+      "status": "done",
+      "spec_ref": "files-render-extension/spec.md#requirement-this-change-shall-be-flagged-as-a-breaking-change-for-show-consumers",
+      "files_likely_affected": [
+        "CHANGELOG.md"
+      ]
+    },
+    {
+      "id": "6.2",
+      "section": "Documentation \u2014 openregister",
+      "title": "Update OpenRegister API documentation",
+      "description": "Lightweight IDs by default; full metadata via _extend; both spellings supported and equivalent; show/list symmetry.",
+      "status": "done",
+      "spec_ref": "files-render-extension/spec.md#requirement-this-contract-shall-apply-uniformly-across-all-render-output-endpoints",
+      "files_likely_affected": [
+        "docs/api/"
+      ]
+    },
+    {
+      "id": "6.3",
+      "section": "Documentation \u2014 openregister",
+      "title": "API perf warning for list+extend",
+      "description": "Add visible warning: list+extend on @self.files is heavily discouraged because of computational cost.",
+      "status": "done",
+      "spec_ref": "files-render-extension/spec.md#requirement-performance-contract-for-list-with-extend-shall-be-documented-as-discouraged",
+      "files_likely_affected": [
+        "docs/api/"
+      ]
+    },
+    {
+      "id": "6.4",
+      "section": "Documentation \u2014 openregister",
+      "title": "Verify ADR-002 needs no amendment",
+      "description": "Verify ADR-002 (REST API conventions) needs no amendment \u2014 _extend predates this change.",
+      "status": "done",
+      "spec_ref": null,
+      "files_likely_affected": []
+    },
+    {
+      "id": "7.1",
+      "section": "Documentation \u2014 opencatalogi (DOCS-ONLY)",
+      "title": "Update opencatalogi show endpoint docs",
+      "description": "Update public API docs for GET /publications/{catalogSlug}/{id} \u2014 describe the BREAKING default change (file IDs) and the opt-in syntax (both spellings).",
+      "status": "deferred",
+      "spec_ref": "files-render-extension/spec.md#requirement-this-change-shall-be-flagged-as-a-breaking-change-for-show-consumers",
+      "files_likely_affected": []
+    },
+    {
+      "id": "7.2",
+      "section": "Documentation \u2014 opencatalogi (DOCS-ONLY)",
+      "title": "Update opencatalogi list endpoint docs",
+      "description": "Update public API docs for GET /publications/{catalogSlug} \u2014 describe the new @self.files field on list rows (lightweight by default, opt-in for full).",
+      "status": "deferred",
+      "spec_ref": "files-render-extension/spec.md#requirement-this-contract-shall-apply-uniformly-across-all-render-output-endpoints",
+      "files_likely_affected": []
+    },
+    {
+      "id": "7.3",
+      "section": "Documentation \u2014 opencatalogi (DOCS-ONLY)",
+      "title": "Add perf warning to opencatalogi list docs",
+      "description": "Add the perf warning verbatim to opencatalogi list-endpoint docs.",
+      "status": "deferred",
+      "spec_ref": "files-render-extension/spec.md#requirement-performance-contract-for-list-with-extend-shall-be-documented-as-discouraged",
+      "files_likely_affected": []
+    },
+    {
+      "id": "7.4",
+      "section": "Documentation \u2014 opencatalogi (DOCS-ONLY)",
+      "title": "Recommend attachments() endpoint for bulk metadata",
+      "description": "Confirm PublicationsController::attachments() documentation explicitly notes it as the recommended path for bulk attachment metadata across many publications.",
+      "status": "deferred",
+      "spec_ref": "files-render-extension/spec.md#requirement-out-of-scope-behaviors-shall-remain-untouched",
+      "files_likely_affected": []
+    },
+    {
+      "id": "8.1",
+      "section": "Verification",
+      "title": "composer check:strict end-to-end clean",
+      "description": "Run composer check:strict end-to-end \u2014 confirm clean.",
+      "status": "done",
+      "spec_ref": null,
+      "files_likely_affected": []
+    },
+    {
+      "id": "8.2",
+      "section": "Verification",
+      "title": "Smoke: opencatalogi show with/without extend",
+      "description": "curl opencatalogi show endpoint with and without _extend[]=@self.files against a publication with attachments. Confirm shapes match the spec.",
+      "status": "deferred",
+      "spec_ref": "files-render-extension/spec.md#requirement-_extendselffiles-shall-produce-full-file-metadata",
+      "files_likely_affected": []
+    },
+    {
+      "id": "8.3",
+      "section": "Verification",
+      "title": "Smoke: opencatalogi list with/without extend",
+      "description": "curl opencatalogi list endpoint with and without _extend[]=@self.files. Confirm shapes match the spec.",
+      "status": "deferred",
+      "spec_ref": "files-render-extension/spec.md#requirement-default-selffiles-shall-be-a-list-of-file-ids-only",
+      "files_likely_affected": []
+    },
+    {
+      "id": "8.4",
+      "section": "Verification",
+      "title": "Smoke: _files vs @self.files identical",
+      "description": "Confirm _extend[]=_files is byte-identical to _extend[]=@self.files on the same request.",
+      "status": "deferred",
+      "spec_ref": "files-render-extension/spec.md#requirement-_extend_files-shall-be-equivalent-to-_extendselffiles",
+      "files_likely_affected": []
+    },
+    {
+      "id": "8.5",
+      "section": "Verification",
+      "title": "Run /opsx:verify",
+      "description": "Run /opsx:verify opt-in-files-extend to confirm artifacts and code agree.",
+      "status": "deferred",
+      "spec_ref": null,
+      "files_likely_affected": []
+    }
+  ]
+}

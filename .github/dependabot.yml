@@ -1,0 +1,40 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "development"
+    open-pull-requests-limit: 10
+    cooldown:
+      default-days: 1
+      include:
+        - "*"
+      exclude:
+        - "@conduction/*"
+
+  # Composer had NO entry at all, so PHP dependencies were updated with no
+  # cooldown whatsoever — the window in which a compromised release is still
+  # published is exactly the window an instant update walks into. `npm` above
+  # has had one for a while; composer was simply never added, which is not a
+  # decision anyone made.
+  #
+  # Two days rather than one: that is the floor gate-93 enforces, and the npm
+  # entry's single day predates it.
+  #
+  # Our own packages are excluded from the wait on purpose. A cooldown protects
+  # against a compromised upstream release; `conduction/*` comes from this
+  # fleet's own CI, and delaying it would only slow the loop between a fix
+  # being released here and arriving here.
+  - package-ecosystem: "composer"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "development"
+    open-pull-requests-limit: 10
+    cooldown:
+      default-days: 2
+      include:
+        - "*"
+      exclude:
+        - "conduction/*"

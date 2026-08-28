@@ -7,10 +7,13 @@
  * Provides functionality to retrieve audit trails related to objects within registers and schemas.
  * Includes hash chain verification, verwerkingsregister, and immutability enforcement.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\AppInfo
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -18,13 +21,13 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-12
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-15
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-17
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-81
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-82
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-83
+ * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+ * @spec openspec/specs/audit-hash-chain/spec.md
+ * @spec openspec/specs/audit-trail-immutable/spec.md
+ * @spec openspec/specs/audit-trail-immutable/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -44,542 +47,754 @@ use OCP\IRequest;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassLength)   Controller covers audit trail, verification, verwerkingsregister
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Necessary service dependencies
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Controller covers audit trail, verification, verwerkingsregister
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Necessary service dependencies
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)     One public method per audit trail route
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Audit-trail surface fans out into hash-verify,
+ *     verwerkingsregister, inzageverzoek, export, immutability + admin-gating; the controller's
+ *     overall cyclomatic complexity sits one step above the default threshold (51 vs 50) after
+ *     the wave-3 C6 admin-only gates on index()/show() were added. Splitting the controller
+ *     would force a route-table reshuffle without removing any actual branching.
  */
-class AuditTrailController extends Controller
-{
-    /**
-     * Constructor for AuditTrailController
-     *
-     * @param string           $appName          The name of the app
-     * @param IRequest         $request          The request object
-     * @param LogService       $logService       The log service
-     * @param AuditTrailMapper $auditTrailMapper The audit trail mapper
-     * @param AuditHashService $auditHashService The audit hash chain service
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly LogService $logService,
-        private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly AuditHashService $auditHashService
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-    }//end __construct()
+class AuditTrailController extends Controller {
+	/**
+	 * Constructor for AuditTrailController
+	 *
+	 * @param string $appName The name of the app
+	 * @param IRequest $request The request object
+	 * @param LogService $logService The log service
+	 * @param AuditTrailMapper $auditTrailMapper The audit trail mapper
+	 * @param AuditHashService $auditHashService The audit hash chain service
+	 * @param \OCP\IUserSession $userSession Active user session for caller identity.
+	 * @param \OCP\IGroupManager $groupManager Group manager for admin / role checks.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly LogService $logService,
+		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditHashService $auditHashService,
+		private readonly \OCP\IUserSession $userSession,
+		private readonly \OCP\IGroupManager $groupManager,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+	}//end __construct()
 
-    /**
-     * Extract pagination, filter, and search parameters from request
-     *
-     * @return array The extracted request parameters
-     *
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Request parameter extraction requires many conditional checks
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-     */
-    private function extractRequestParameters(): array
-    {
-        // Get request parameters for filtering and pagination.
-        $params = $this->request->getParams();
+	/**
+	 * Gate destructive / bulk-export / bulk-read audit operations on admin membership.
+	 *
+	 * SECURITY: `clearAll` wipes the entire audit table — a chain of
+	 * trust for AVG/GDPR Art 30 reviews. `export` dumps every row in
+	 * bulk and is an obvious recon path across tenants. `index` and
+	 * `show` expose cross-tenant audit-trail rows (per-row diffs of
+	 * every object change in every register/schema, frequently PII or
+	 * IP-heavy); without this gate any authenticated user — including
+	 * users restricted to a single app group — could enumerate every
+	 * other tenant's change history (wave-3 C6). All surfaces are
+	 * admin-only at the framework level for sensitive routes (no
+	 * `@NoAdminRequired`) and this body-level helper stays as
+	 * defence-in-depth so removing the framework gate by accident does
+	 * not silently open the surface.
+	 *
+	 * @return JSONResponse|null 401/403 response when blocked, null when allowed.
+	 */
+	private function requireAdmin(): ?JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(
+				data: ['error' => 'Authentication required'],
+				statusCode: 401
+			);
+		}
 
-        // Extract pagination parameters.
-        $limit = 20;
-        if (($params['limit'] ?? null) !== null) {
-            $limit = (int) $params['limit'];
-        } else if (($params['_limit'] ?? null) !== null) {
-            $limit = (int) $params['_limit'];
-        }
+		if ($this->groupManager->isAdmin($user->getUID()) === false) {
+			return new JSONResponse(
+				data: ['error' => 'Forbidden: this audit-trail operation is admin-only'],
+				statusCode: 403
+			);
+		}
 
-        $offset = null;
-        if (($params['offset'] ?? null) !== null) {
-            $offset = (int) $params['offset'];
-        } else if (($params['_offset'] ?? null) !== null) {
-            $offset = (int) $params['_offset'];
-        }
+		return null;
+	}//end requireAdmin()
 
-        $page = null;
-        if (($params['page'] ?? null) !== null) {
-            $page = (int) $params['page'];
-        } else if (($params['_page'] ?? null) !== null) {
-            $page = (int) $params['_page'];
-        }
+	/**
+	 * Extract pagination, filter, and search parameters from request
+	 *
+	 * @return array The extracted request parameters
+	 *
+	 * @SuppressWarnings(PHPMD.NPathComplexity)      Request parameter extraction requires many conditional checks
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each of limit/offset/page supports
+	 *   two alternative parameter names (with and without underscore prefix); the resulting
+	 *   if/else-if pairs are required to preserve backward compatibility with both formats.
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+	 */
+	private function extractRequestParameters(): array {
+		// Get request parameters for filtering and pagination.
+		$params = $this->request->getParams();
 
-        // If we have a page but no offset, calculate the offset.
-        if ($page !== null && $offset === null) {
-            $offset = ($page - 1) * $limit;
-        }
+		// Extract pagination parameters.
+		$limit = 20;
+		if (($params['limit'] ?? null) !== null) {
+			$limit = (int)$params['limit'];
+		} elseif (($params['_limit'] ?? null) !== null) {
+			$limit = (int)$params['_limit'];
+		}
 
-        // Extract search parameter.
-        $search = $params['search'] ?? $params['_search'] ?? null;
+		$offset = null;
+		if (($params['offset'] ?? null) !== null) {
+			$offset = (int)$params['offset'];
+		} elseif (($params['_offset'] ?? null) !== null) {
+			$offset = (int)$params['_offset'];
+		}
 
-        // Extract sort parameters.
-        // Supports both flat format (sort=created&order=DESC)
-        // and bracket format (_sort[created]=DESC).
-        $sort    = [];
-        $sortRaw = $params['sort'] ?? $params['_sort'] ?? null;
+		$page = null;
+		if (($params['page'] ?? null) !== null) {
+			$page = (int)$params['page'];
+		} elseif (($params['_page'] ?? null) !== null) {
+			$page = (int)$params['_page'];
+		}
 
-        if (is_array($sortRaw) === true) {
-            // Bracket format: _sort[created]=DESC.
-            foreach ($sortRaw as $field => $direction) {
-                $sort[$field] = strtoupper($direction) === 'ASC' ? 'ASC' : 'DESC';
-            }
-        } else if ($sortRaw !== null) {
-            // Flat format: sort=created&order=DESC.
-            $sortOrder      = $params['order'] ?? $params['_order'] ?? 'DESC';
-            $sort[$sortRaw] = strtoupper($sortOrder) === 'ASC' ? 'ASC' : 'DESC';
-        }
+		// If we have a page but no offset, calculate the offset.
+		if ($page !== null && $offset === null) {
+			$offset = ($page - 1) * $limit;
+		}
 
-        if (empty($sort) === true) {
-            $sort['created'] = 'DESC';
-        }
+		// Extract search parameter.
+		$search = $params['search'] ?? $params['_search'] ?? null;
 
-        // Filter out special parameters and system fields.
-        $filters = array_filter(
-            $params,
-            function ($key) {
-                return !in_array(
-                    $key,
-                    [
-                        'limit',
-                        '_limit',
-                        'offset',
-                        '_offset',
-                        'page',
-                        '_page',
-                        'search',
-                        '_search',
-                        'sort',
-                        '_sort',
-                        'order',
-                        '_order',
-                        '_route',
-                        'id',
-                        'register',
-                        'schema',
-                        'format',
-                        'from',
-                        'to',
-                        'identifier',
-                    ]
-                );
-            },
-            ARRAY_FILTER_USE_KEY
-        );
+		$sort = $this->buildSortFromParams(params: $params);
+		$filters = $this->buildFiltersFromParams(params: $params);
 
-        return [
-            'limit'   => $limit,
-            'offset'  => $offset,
-            'page'    => $page,
-            'filters' => $filters,
-            'sort'    => $sort,
-            'search'  => $search,
-        ];
-    }//end extractRequestParameters()
+		return [
+			'limit' => $limit,
+			'offset' => $offset,
+			'page' => $page,
+			'filters' => $filters,
+			'sort' => $sort,
+			'search' => $search,
+		];
+	}//end extractRequestParameters()
 
-    /**
-     * Get all audit trail logs
-     *
-     * @NoAdminRequired
-     *
-     * @return JSONResponse JSON response containing list of audit trails
-     *
-     * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200,
-     *     array{results: array<\OCA\OpenRegister\Db\AuditTrail>,
-     *     total: int<0, max>, page: int|null, pages: float, limit: int,
-     *     offset: int|null}, array<never, never>>
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-17
-     */
-    public function index(): JSONResponse
-    {
-        // Extract common parameters.
-        $params = $this->extractRequestParameters();
+	/**
+	 * Build a sort map from raw request params.
+	 *
+	 * Supports bracket format `_sort[field]=ASC|DESC` and flat format
+	 * `sort=field&order=ASC|DESC`. Defaults to `created DESC`.
+	 *
+	 * @param array<string,mixed> $params Raw request params.
+	 *
+	 * @return array<string,string>
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Sort format normalisation
+	 *     inherently branches on array vs. scalar vs. absent.
+	 */
+	private function buildSortFromParams(array $params): array {
+		$sort = [];
+		$sortRaw = $params['sort'] ?? $params['_sort'] ?? null;
 
-        // Get logs from service.
-        $logs = $this->logService->getAllLogs($params);
+		if (is_array($sortRaw) === true) {
+			// Bracket format: _sort[created]=DESC.
+			foreach ($sortRaw as $field => $direction) {
+				$sort[$field] = 'DESC';
+				if (strtoupper($direction) === 'ASC') {
+					$sort[$field] = 'ASC';
+				}
+			}
+		} elseif ($sortRaw !== null) {
+			// Flat format: sort=created&order=DESC.
+			$sortOrder = $params['order'] ?? $params['_order'] ?? 'DESC';
+			$sort[$sortRaw] = 'DESC';
+			if (strtoupper($sortOrder) === 'ASC') {
+				$sort[$sortRaw] = 'ASC';
+			}
+		}
 
-        // Get total count for pagination.
-        $total = $this->logService->countAllLogs($params['filters']);
+		if (empty($sort) === true) {
+			$sort['created'] = 'DESC';
+		}
 
-        // Return paginated results.
-        return new JSONResponse(
-            data: [
-                'results' => $logs,
-                'total'   => $total,
-                'page'    => $params['page'],
-                'pages'   => ceil($total / $params['limit']),
-                'limit'   => $params['limit'],
-                'offset'  => $params['offset'],
-            ]
-        );
-    }//end index()
+		return $sort;
+	}//end buildSortFromParams()
 
-    /**
-     * Get a specific audit trail log by ID
-     *
-     * @param int $id The audit trail ID
-     *
-     * @return JSONResponse A JSON response containing the log
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<
-     *     200,
-     *     array<array-key, mixed>,
-     *     array<never, never>
-     * >|JSONResponse<
-     *     404,
-     *     array{error: 'Audit trail not found'},
-     *     array<never, never>
-     * >
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-15
-     */
-    public function show(int $id): JSONResponse
-    {
-        try {
-            $log = $this->logService->getLog($id);
-            return new JSONResponse(data: $log);
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => 'Audit trail not found'], statusCode: 404);
-        }
-    }//end show()
+	/**
+	 * Strip pagination/system keys from raw request params to produce a
+	 * filter map for mapper queries.
+	 *
+	 * @param array<string,mixed> $params Raw request params.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function buildFiltersFromParams(array $params): array {
+		$systemKeys = [
+			'limit',
+			'_limit',
+			'offset',
+			'_offset',
+			'page',
+			'_page',
+			'search',
+			'_search',
+			'sort',
+			'_sort',
+			'order',
+			'_order',
+			'_route',
+			'id',
+			'register',
+			'schema',
+			'format',
+			'from',
+			'to',
+			'identifier',
+		];
 
-    /**
-     * Reject audit trail modification (immutability enforcement).
-     *
-     * @param int $id The audit trail ID
-     *
-     * @return JSONResponse HTTP 405 Method Not Allowed
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-     */
-    public function update(int $id): JSONResponse
-    {
-        return new JSONResponse(
-            data: ['error' => 'Audit trail entries cannot be modified'],
-            statusCode: Http::STATUS_METHOD_NOT_ALLOWED
-        );
-    }//end update()
+		return array_filter(
+			$params,
+			function ($key) use ($systemKeys) {
+				return in_array($key, $systemKeys, true) === false;
+			},
+			ARRAY_FILTER_USE_KEY
+		);
+	}//end buildFiltersFromParams()
 
-    /**
-     * Get logs for an object
-     *
-     * @param string $register The register identifier
-     * @param string $schema   The schema identifier
-     * @param string $id       The object ID
-     *
-     * @NoAdminRequired
-     *
-     * @return JSONResponse JSON response containing audit trails for specific object
-     *
-     * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200|400|404,
-     *     array{error?: string,
-     *     results?: array<\OCA\OpenRegister\Db\AuditTrail>,
-     *     total?: int<0, max>, page?: int|null, pages?: float, limit?: int,
-     *     offset?: int|null}, array<never, never>>
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-     */
-    public function objects(string $register, string $schema, string $id): JSONResponse
-    {
-        // Extract common parameters.
-        $params = $this->extractRequestParameters();
+	/**
+	 * Get all audit trail logs
+	 *
+	 * Admin-only at the framework level (no @NoAdminRequired). Body
+	 * `requireAdmin()` stays as defence-in-depth. The cross-tenant
+	 * audit-trail index leaks per-row diffs of every object change
+	 * across every register/schema — wave-3 C6. Returns 200 on
+	 * success, 401 when anonymous, 403 when non-admin.
+	 *
+	 * @return JSONResponse JSON response containing list of audit trails
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
+	 */
+	public function index(): JSONResponse {
+		$denial = $this->requireAdmin();
+		if ($denial !== null) {
+			return $denial;
+		}
 
-        try {
-            // Get logs from service.
-            $logs = $this->logService->getLogs(
-                register: $register,
-                schema: $schema,
-                id: $id,
-                config: $params
-            );
+		// Extract common parameters.
+		$params = $this->extractRequestParameters();
 
-            // Get total count for pagination.
-            $total = $this->logService->count(register: $register, schema: $schema, id: $id);
+		// Get logs from service.
+		$logs = $this->logService->getAllLogs($params);
 
-            // Return paginated results.
-            return new JSONResponse(
-                data: [
-                    'results' => $logs,
-                    'total'   => $total,
-                    'page'    => $params['page'],
-                    'pages'   => ceil($total / $params['limit']),
-                    'limit'   => $params['limit'],
-                    'offset'  => $params['offset'],
-                ]
-            );
-        } catch (\InvalidArgumentException $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-        }//end try
-    }//end objects()
+		// Get total count for pagination.
+		$total = $this->logService->countAllLogs($params['filters']);
 
-    /**
-     * Export audit trail logs in specified format
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with export data or error
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-81
-     */
-    public function export(): JSONResponse
-    {
-        // Extract request parameters.
-        $params = $this->extractRequestParameters();
+		// Return paginated results.
+		return new JSONResponse(
+			data: [
+				'results' => $logs,
+				'total' => $total,
+				'page' => $params['page'],
+				'pages' => ceil($total / $params['limit']),
+				'limit' => $params['limit'],
+				'offset' => $params['offset'],
+			]
+		);
+	}//end index()
 
-        // Get export specific parameters.
-        $format          = $this->request->getParam('format', 'csv');
-        $includeChanges  = $this->request->getParam('includeChanges', true);
-        $includeMetadata = $this->request->getParam('includeMetadata', false);
+	/**
+	 * Get lifetime audit trail counts, optionally scoped to a register/schema
+	 *
+	 * Feeds the audit-trail page's statistics panel. Counts are lifetime (not
+	 * windowed) so they line up with the audit-trail list next to them, and
+	 * the keys are singular — the windowed, plural-keyed variant lives on the
+	 * dashboard surface (`dashboard#getAuditTrailStatistics`).
+	 *
+	 * Admin-only at the framework level (no @NoAdminRequired), like the rest
+	 * of this controller: per-register/schema activity volumes are a recon
+	 * signal across tenants. Body `requireAdmin()` stays as defence-in-depth.
+	 * Returns 200 on success, 401 when anonymous, 403 when non-admin.
+	 *
+	 * @param int|null $register Optional register ID to scope the counts to
+	 * @param int|null $schema Optional schema ID to scope the counts to
+	 *
+	 * @return JSONResponse JSON response containing the counts per action
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * Written as a UNION OF CONCRETE JSONResponse TYPES rather than one
+	 * JSONResponse whose template arguments are themselves unions: the
+	 * template parameters of JSONResponse are invariant, so a single
+	 * `JSONResponse<200|401|403, array{error?: string, total?: int, ...}>`
+	 * is satisfied by no return statement at all — not even the ones it
+	 * was written to describe. One member per branch is the expressible
+	 * form, and each member is the exact type its branch produces.
+	 *
+	 * @psalm-return JSONResponse<200, array{total: int, create: int, update: int, delete: int, read: int}, array{}>
+	 *     |JSONResponse<401, array{error: string}, array{}>
+	 *     |JSONResponse<403, array{error: string}, array{}>
+	 *
+	 * @spec exclude Read-only aggregation passthrough: delegates straight to
+	 *     AuditTrailMapper::getActionCounts() behind the shared admin gate and
+	 *     adds no audit-trail behaviour of its own.
+	 */
+	public function statistics(?int $register = null, ?int $schema = null): JSONResponse {
+		$denial = $this->requireAdmin();
+		if ($denial !== null) {
+			return $denial;
+		}
 
-        try {
-            // Build export configuration.
-            $exportConfig = [
-                'filters'         => $params['filters'],
-                'search'          => $params['search'],
-                'includeChanges'  => filter_var($includeChanges, FILTER_VALIDATE_BOOLEAN),
-                'includeMetadata' => filter_var($includeMetadata, FILTER_VALIDATE_BOOLEAN),
-            ];
+		return new JSONResponse(
+			data: $this->auditTrailMapper->getActionCounts(
+				registerId: $register,
+				schemaId: $schema
+			)
+		);
+	}//end statistics()
 
-            // Export logs using service.
-            $exportResult = $this->logService->exportLogs(format: $format, config: $exportConfig);
+	/**
+	 * Get a specific audit trail log by ID
+	 *
+	 * Admin-only at the framework level (no @NoAdminRequired). Body
+	 * `requireAdmin()` stays as defence-in-depth. Without the gate,
+	 * any authed caller could fetch any audit-trail row by ID — and
+	 * IDs are sequential, so this is also a trivial enumeration path
+	 * across every tenant's change history (wave-3 C6). Returns 200
+	 * on success, 401 when anonymous, 403 when non-admin, 404 if
+	 * the row does not exist.
+	 *
+	 * @param int $id The audit trail ID
+	 *
+	 * @return JSONResponse A JSON response containing the log
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
+	 */
+	public function show(int $id): JSONResponse {
+		$denial = $this->requireAdmin();
+		if ($denial !== null) {
+			return $denial;
+		}
 
-            // Return export data.
-            $content     = $exportResult['content'];
-            $contentSize = 0;
-            if (is_string($content) === true) {
-                $contentSize = strlen($content);
-            }
+		try {
+			$log = $this->logService->getLog($id);
+			return new JSONResponse(data: $log);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Audit trail not found'], statusCode: 404);
+		}
+	}//end show()
 
-            return new JSONResponse(
-                data: [
-                    'success' => true,
-                    'data'    => [
-                        'content'     => $content,
-                        'filename'    => $exportResult['filename'],
-                        'contentType' => $exportResult['contentType'],
-                        'size'        => $contentSize,
-                    ],
-                ]
-            );
-        } catch (\InvalidArgumentException $e) {
-            return new JSONResponse(
-                data: [
-                    'error' => 'Invalid export format: '.$e->getMessage(),
-                ],
-                statusCode: 400
-            );
-        } catch (\Exception $e) {
-            return new JSONResponse(
-                data: [
-                    'error' => 'Export failed: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end export()
+	/**
+	 * Reject audit trail modification (immutability enforcement).
+	 *
+	 * @param int $id The audit trail ID
+	 *
+	 * @return JSONResponse HTTP 405 Method Not Allowed
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @no-admin-idor-exempt Immutability stub: returns HTTP 405 unconditionally and
+	 *   performs no object read or write, so there is no per-object resource to guard.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $id is required by the OCP Controller
+	 *   route contract; the method intentionally ignores it to enforce immutability.
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+	 */
+	public function update(int $id): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => 'Audit trail entries cannot be modified'],
+			statusCode: Http::STATUS_METHOD_NOT_ALLOWED
+		);
+	}//end update()
 
-    /**
-     * Reject audit trail deletion (immutability enforcement).
-     *
-     * @param int $id The audit trail ID
-     *
-     * @return JSONResponse HTTP 405 Method Not Allowed
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-     */
-    public function destroy(int $id): JSONResponse
-    {
-        return new JSONResponse(
-            data: ['error' => 'Audit trail entries cannot be deleted'],
-            statusCode: Http::STATUS_METHOD_NOT_ALLOWED
-        );
-    }//end destroy()
+	/**
+	 * Get logs for an object
+	 *
+	 * Admin-only at the framework level (no @NoAdminRequired): a per-object
+	 * audit trail records actor UID, IP address and per-field diffs. Returning
+	 * it for an arbitrary object id leaks cross-tenant PII (wave-3 C7), so it
+	 * stays admin-only like index()/show()/export(). Body `requireAdmin()` is
+	 * defence-in-depth.
+	 *
+	 * @param string $register The register identifier
+	 * @param string $schema The schema identifier
+	 * @param string $id The object ID
+	 *
+	 * @return JSONResponse JSON response containing audit trails for specific object
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @psalm-return JSONResponse<200|400|404,
+	 *     array{error?: string,
+	 *     results?: array<\OCA\OpenRegister\Db\AuditTrail>,
+	 *     total?: int<0, max>, page?: int|null, pages?: float, limit?: int,
+	 *     offset?: int|null}, array<never, never>>
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+	 */
+	public function objects(string $register, string $schema, string $id): JSONResponse {
+		$denial = $this->requireAdmin();
+		if ($denial !== null) {
+			return $denial;
+		}
 
-    /**
-     * Reject audit trail bulk deletion (immutability enforcement).
-     *
-     * @return JSONResponse HTTP 405 Method Not Allowed
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-     */
-    public function destroyMultiple(): JSONResponse
-    {
-        return new JSONResponse(
-            data: ['error' => 'Audit trail entries cannot be deleted'],
-            statusCode: Http::STATUS_METHOD_NOT_ALLOWED
-        );
-    }//end destroyMultiple()
+		// Extract common parameters.
+		$params = $this->extractRequestParameters();
 
-    /**
-     * Clear all audit trail logs
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response confirming clear or error
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-     */
-    public function clearAll(): JSONResponse
-    {
-        try {
-            // Use the clearAllLogs method from the mapper.
-            $result = $this->auditTrailMapper->clearAllLogs();
+		try {
+			// Get logs from service.
+			$logs = $this->logService->getLogs(
+				register: $register,
+				schema: $schema,
+				id: $id,
+				config: $params
+			);
 
-            if ($result === true) {
-                return new JSONResponse(
-                    data: [
-                        'success' => true,
-                        'message' => 'All audit trails cleared successfully',
-                        'deleted' => 'All expired audit trails have been deleted',
-                    ],
-                    statusCode: 200
-                );
-            }
+			// Get total count for pagination.
+			$total = $this->logService->count(register: $register, schema: $schema, id: $id);
 
-            return new JSONResponse(
-                data: [
-                    'success' => true,
-                    'message' => 'No expired audit trails found to clear',
-                    'deleted' => 0,
-                ],
-                statusCode: 200
-            );
-        } catch (\Exception $e) {
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'error'   => 'Failed to clear audit trails: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end clearAll()
+			// Return paginated results.
+			return new JSONResponse(
+				data: [
+					'results' => $logs,
+					'total' => $total,
+					'page' => $params['page'],
+					'pages' => ceil($total / $params['limit']),
+					'limit' => $params['limit'],
+					'offset' => $params['offset'],
+				]
+			);
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		}//end try
+	}//end objects()
 
-    /**
-     * Verify the integrity of the audit trail hash chain.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse Verification result with valid/invalid status
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-12
-     */
-    public function verify(): JSONResponse
-    {
-        $from = $this->request->getParam('from');
-        $to   = $this->request->getParam('to');
+	/**
+	 * Export audit trail logs in specified format
+	 *
+	 * Admin-only at the framework level (no @NoAdminRequired). Body
+	 * `requireAdmin()` stays as defence-in-depth.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with export data or error
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	public function export(): JSONResponse {
+		$denial = $this->requireAdmin();
+		if ($denial !== null) {
+			return $denial;
+		}
 
-        $fromInt = ($from !== null) ? (int) $from : null;
-        $toInt   = ($to !== null) ? (int) $to : null;
+		// Extract request parameters.
+		$params = $this->extractRequestParameters();
 
-        try {
-            $result = $this->auditHashService->verifyChain($fromInt, $toInt);
-            return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
-            return new JSONResponse(
-                data: ['error' => 'Verification failed: '.$e->getMessage()],
-                statusCode: 500
-            );
-        }
-    }//end verify()
+		// Get export specific parameters.
+		$format = $this->request->getParam('format', 'csv');
+		$includeChanges = $this->request->getParam('includeChanges', true);
+		$includeMetadata = $this->request->getParam('includeMetadata', false);
 
-    /**
-     * Get verwerkingsregister (processing register) overview.
-     *
-     * Returns distinct processing activities from the audit trail with counts
-     * and date ranges, for GDPR Art 30 compliance.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse List of processing activities
-     *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-83
-     */
-    public function verwerkingsregister(): JSONResponse
-    {
-        $organisationId = $this->request->getParam('organisationId');
+		try {
+			// Build export configuration.
+			$exportConfig = [
+				'filters' => $params['filters'],
+				'search' => $params['search'],
+				'includeChanges' => filter_var($includeChanges, FILTER_VALIDATE_BOOLEAN),
+				'includeMetadata' => filter_var($includeMetadata, FILTER_VALIDATE_BOOLEAN),
+			];
 
-        try {
-            $results = $this->auditTrailMapper->getProcessingActivities($organisationId);
-            return new JSONResponse(data: $results);
-        } catch (\Exception $e) {
-            return new JSONResponse(
-                data: ['error' => 'Failed to retrieve verwerkingsregister: '.$e->getMessage()],
-                statusCode: 500
-            );
-        }
-    }//end verwerkingsregister()
+			// Export logs using service.
+			$exportResult = $this->logService->exportLogs(format: $format, config: $exportConfig);
 
-    /**
-     * Handle a data subject access request (inzageverzoek).
-     *
-     * Searches audit trail entries by identifier in the changed JSON field,
-     * grouped by schema.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse Matching audit trail entries grouped by schema
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-82
-     */
-    public function inzageverzoek(): JSONResponse
-    {
-        $identifier = $this->request->getParam('identifier');
+			// Return export data.
+			$content = $exportResult['content'];
+			$contentSize = 0;
+			if (is_string($content) === true) {
+				$contentSize = strlen($content);
+			}
 
-        if ($identifier === null || $identifier === '') {
-            return new JSONResponse(
-                data: ['error' => 'identifier parameter is required'],
-                statusCode: 400
-            );
-        }
+			return new JSONResponse(
+				data: [
+					'success' => true,
+					'data' => [
+						'content' => $content,
+						'filename' => $exportResult['filename'],
+						'contentType' => $exportResult['contentType'],
+						'size' => $contentSize,
+					],
+				]
+			);
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(
+				data: [
+					'error' => 'Invalid export format: ' . $e->getMessage(),
+				],
+				statusCode: 400
+			);
+		} catch (\Exception $e) {
+			return new JSONResponse(
+				data: [
+					'error' => 'Export failed: ' . $e->getMessage(),
+				],
+				statusCode: 500
+			);
+		}//end try
+	}//end export()
 
-        try {
-            $results = $this->auditTrailMapper->findByIdentifier($identifier);
-            return new JSONResponse(data: $results);
-        } catch (\Exception $e) {
-            return new JSONResponse(
-                data: ['error' => 'Inzageverzoek failed: '.$e->getMessage()],
-                statusCode: 500
-            );
-        }
-    }//end inzageverzoek()
+	/**
+	 * Reject audit trail deletion (immutability enforcement).
+	 *
+	 * @param int $id The audit trail ID
+	 *
+	 * @return JSONResponse HTTP 405 Method Not Allowed
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @no-admin-idor-exempt Immutability stub: returns HTTP 405 unconditionally and
+	 *   performs no object read or write, so there is no per-object resource to guard.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $id is required by the OCP Controller
+	 *   route contract; the method intentionally ignores it to enforce immutability.
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+	 */
+	public function destroy(int $id): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => 'Audit trail entries cannot be deleted'],
+			statusCode: Http::STATUS_METHOD_NOT_ALLOWED
+		);
+	}//end destroy()
+
+	/**
+	 * Reject audit trail bulk deletion (immutability enforcement).
+	 *
+	 * @return JSONResponse HTTP 405 Method Not Allowed
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @no-admin-idor-exempt Immutability stub: returns HTTP 405 unconditionally and
+	 *   performs no object read or write, so there is no per-object resource to guard.
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+	 */
+	public function destroyMultiple(): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => 'Audit trail entries cannot be deleted'],
+			statusCode: Http::STATUS_METHOD_NOT_ALLOWED
+		);
+	}//end destroyMultiple()
+
+	/**
+	 * Clear all audit trail logs
+	 *
+	 * Admin-only at the framework level (no @NoAdminRequired). Body
+	 * `requireAdmin()` stays as defence-in-depth.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response confirming clear or error
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
+	 */
+	public function clearAll(): JSONResponse {
+		$denial = $this->requireAdmin();
+		if ($denial !== null) {
+			return $denial;
+		}
+
+		try {
+			// Use the clearAllLogs method from the mapper.
+			$result = $this->auditTrailMapper->clearAllLogs();
+
+			if ($result === true) {
+				return new JSONResponse(
+					data: [
+						'success' => true,
+						'message' => 'All audit trails cleared successfully',
+						'deleted' => 'All expired audit trails have been deleted',
+					],
+					statusCode: 200
+				);
+			}
+
+			return new JSONResponse(
+				data: [
+					'success' => true,
+					'message' => 'No expired audit trails found to clear',
+					'deleted' => 0,
+				],
+				statusCode: 200
+			);
+		} catch (\Exception $e) {
+			return new JSONResponse(
+				data: [
+					'success' => false,
+					'error' => 'Failed to clear audit trails: ' . $e->getMessage(),
+				],
+				statusCode: 500
+			);
+		}//end try
+	}//end clearAll()
+
+	/**
+	 * Report hash-chain seal coverage without verifying it.
+	 *
+	 * Backs the log-integrity card in admin settings. Separate from verify()
+	 * because they cost wildly different amounts: this is three COUNT queries,
+	 * verify() rehashes the entire table. Binding the page to verify() would
+	 * make opening settings an expensive operation, and would tempt an admin to
+	 * stop opening it.
+	 *
+	 * Admin-only at the framework level, matching verify()/export()/clearAll().
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse Seal coverage counts.
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	public function integrity(): JSONResponse {
+		$denial = $this->requireAdmin();
+		if ($denial !== null) {
+			return $denial;
+		}
+
+		try {
+			return new JSONResponse(data: $this->auditHashService->getIntegrityStatus());
+		} catch (\Exception $e) {
+			return new JSONResponse(
+				data: ['error' => 'Integrity status failed: ' . $e->getMessage()],
+				statusCode: 500
+			);
+		}
+
+	}//end integrity()
+
+	/**
+	 * Verify the integrity of the audit trail hash chain.
+	 *
+	 * Admin-only at the framework level (no @NoAdminRequired): validates the
+	 * tenant-wide audit hash chain across all registers/schemas — a GDPR
+	 * chain-of-trust management surface, like export()/clearAll(). Body
+	 * `requireAdmin()` is defence-in-depth.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse Verification result with valid/invalid status
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	public function verify(): JSONResponse {
+		$denial = $this->requireAdmin();
+		if ($denial !== null) {
+			return $denial;
+		}
+
+		$from = $this->request->getParam('from');
+		$to = $this->request->getParam('to');
+
+		$fromInt = null;
+		if ($from !== null) {
+			$fromInt = (int)$from;
+		}
+
+		$toInt = null;
+		if ($to !== null) {
+			$toInt = (int)$to;
+		}
+
+		try {
+			$result = $this->auditHashService->verifyChain($fromInt, $toInt);
+			return new JSONResponse(data: $result);
+		} catch (\Exception $e) {
+			return new JSONResponse(
+				data: ['error' => 'Verification failed: ' . $e->getMessage()],
+				statusCode: 500
+			);
+		}
+	}//end verify()
+
+	/**
+	 * Get the processing-activities (Dutch: verwerkingsregister) overview.
+	 *
+	 * Returns distinct processing activities from the audit trail with counts
+	 * and date ranges, for GDPR Art 30 compliance.
+	 *
+	 * Renamed from `verwerkingsregister()` by the `verwerkingsregister-i18n` change.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse List of processing activities
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Large OCP/NC annotation block
+	 *   (@NoAdminRequired, @NoCSRFRequired, @psalm-return) inflates the reported line
+	 *   count; the actual executable body is 12 lines.
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	public function processingActivities(): JSONResponse {
+		$organisationId = $this->request->getParam('organisationId');
+
+		try {
+			$results = $this->auditTrailMapper->getProcessingActivities($organisationId);
+			return new JSONResponse(data: $results);
+		} catch (\Exception $e) {
+			return new JSONResponse(
+				data: ['error' => 'Failed to retrieve processing activities: ' . $e->getMessage()],
+				statusCode: 500
+			);
+		}
+	}//end processingActivities()
+
+	/**
+	 * Handle a data subject access request (Dutch: inzageverzoek, Art 15 AVG).
+	 *
+	 * Searches audit trail entries by identifier in the changed JSON field,
+	 * grouped by schema. Distinct from `DsarController::access()`, which
+	 * searches the PII entity index rather than audit-trail entries.
+	 *
+	 * Renamed from `inzageverzoek()` by the `verwerkingsregister-i18n` change.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse Matching audit trail entries grouped by schema
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	public function subjectAuditTrail(): JSONResponse {
+		$identifier = $this->request->getParam('identifier');
+
+		if ($identifier === null || $identifier === '') {
+			return new JSONResponse(
+				data: ['error' => 'identifier parameter is required'],
+				statusCode: 400
+			);
+		}
+
+		try {
+			$results = $this->auditTrailMapper->findByIdentifier($identifier);
+			return new JSONResponse(data: $results);
+		} catch (\Exception $e) {
+			return new JSONResponse(
+				data: ['error' => 'Subject audit-trail lookup failed: ' . $e->getMessage()],
+				statusCode: 500
+			);
+		}
+	}//end subjectAuditTrail()
 }//end class

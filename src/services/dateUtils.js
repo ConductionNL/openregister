@@ -7,6 +7,7 @@
  * @param {string} value - The date string from the backend
  * @param {string} format - Schema format: 'date', 'time', or 'date-time'
  * @return {Date|null}
+ * @spec exclude Stateless date-format helper for the native datetime picker; pure presentation/format utility with no domain contract.
  */
 export function stringToDate(value, format) {
 	if (!value) return null
@@ -14,12 +15,12 @@ export function stringToDate(value, format) {
 
 	if (format === 'date') {
 		const parts = value.split(/[T ]/)[0].split('-').map(Number)
-		if (parts.length === 3 && parts.every(n => !isNaN(n))) {
+		if (parts.length === 3 && parts.every((n) => !isNaN(n))) {
 			return new Date(parts[0], parts[1] - 1, parts[2])
 		}
 	} else if (format === 'time') {
 		const parts = value.split(':').map(Number)
-		if (parts.length >= 2 && parts.every(n => !isNaN(n))) {
+		if (parts.length >= 2 && parts.every((n) => !isNaN(n))) {
 			const d = new Date()
 			d.setHours(parts[0], parts[1], parts[2] || 0, 0)
 			return d
@@ -40,6 +41,7 @@ export function stringToDate(value, format) {
  * @param {Date} date
  * @param {string} format - Schema format: 'date', 'time', or 'date-time'
  * @return {string}
+ * @spec exclude Stateless date-format helper for the native datetime picker; pure presentation/format utility with no domain contract.
  */
 export function dateToString(date, format) {
 	const yyyy = date.getFullYear().toString().padStart(4, '0')

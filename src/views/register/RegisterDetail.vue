@@ -1,23 +1,40 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { dashboardStore, registerStore, navigationStore, configurationStore, schemaStore } from '../../store/store.js'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import formatBytes from '../../services/formatBytes.js'
+import {
+	configurationStore,
+	dashboardStore,
+	navigationStore,
+	registerStore,
+	schemaStore,
+} from '../../store/store.js'
 </script>
 
 <template>
 	<NcAppContent>
 		<CnDetailPage
 			:title="register?.title || ''"
-			:loading="dashboardStore.loading"
-			loading-label="Loading register data..."
-			:error="!!dashboardStore.error || (!dashboardStore.loading && !register)"
-			:error-message="dashboardStore.error || t('openregister', 'Register not found')"
-			:stats-title="registerStats ? t('openregister', 'Register Statistics') : ''"
-			:stats-columns="registerStats ? [
-				{ key: 'type', label: t('openregister', 'Type') },
-				{ key: 'total', label: t('openregister', 'Total') },
-				{ key: 'size', label: t('openregister', 'Size') },
-			] : []">
+			:loading="dashboardStore.loading || hydrating"
+			:loadingLabel="t('openregister', 'Loading register data...')"
+			:error="
+				!!dashboardStore.error
+				|| (!dashboardStore.loading && !hydrating && !register)
+			"
+			:errorMessage="
+				dashboardStore.error || t('openregister', 'Register not found')
+			"
+			:statsTitle="
+				registerStats ? t('openregister', 'Register Statistics') : ''
+			"
+			:statsColumns="
+				registerStats
+					? [
+							{ key: 'type', label: t('openregister', 'Type') },
+							{ key: 'total', label: t('openregister', 'Total') },
+							{ key: 'size', label: t('openregister', 'Size') },
+						]
+					: []
+			">
 			<!-- Error actions -->
 			<template #error-actions>
 				<NcButton @click="$router.push('/registers')">
@@ -68,32 +85,45 @@ import formatBytes from '../../services/formatBytes.js'
 				<!-- Audit Trail Actions Chart -->
 				<div class="chartCard">
 					<h3>Audit Trail Actions</h3>
-					<apexchart
+					<Apexchart
 						type="line"
 						height="350"
 						:options="auditTrailChartOptions"
-						:series="dashboardStore.chartData.auditTrailActions?.series || []" />
+						:series="
+							dashboardStore.chartData.auditTrailActions?.series || []
+						" />
 				</div>
 
 				<!-- Objects by Schema Chart -->
 				<div class="chartCard">
 					<h3>Objects by Schema</h3>
-					<apexchart
+					<Apexchart
 						type="pie"
 						height="350"
 						:options="schemaChartOptions"
-						:series="dashboardStore.chartData.objectsBySchema?.series || []"
-						:labels="dashboardStore.chartData.objectsBySchema?.labels || []" />
+						:series="
+							dashboardStore.chartData.objectsBySchema?.series || []
+						"
+						:labels="
+							dashboardStore.chartData.objectsBySchema?.labels || []
+						" />
 				</div>
 
 				<!-- Objects by Size Chart -->
 				<div class="chartCard">
 					<h3>Objects by Size Distribution</h3>
-					<apexchart
+					<Apexchart
 						type="bar"
 						height="350"
 						:options="sizeChartOptions"
-						:series="[{ name: 'Objects', data: dashboardStore.chartData.objectsBySize?.series || [] }]" />
+						:series="[
+							{
+								name: 'Objects',
+								data:
+									dashboardStore.chartData.objectsBySize?.series
+									|| [],
+							},
+						]" />
 				</div>
 			</div>
 
@@ -103,13 +133,14 @@ import formatBytes from '../../services/formatBytes.js'
 				<span>Loading schemas...</span>
 			</div>
 			<div v-else-if="!loadedSchemas?.length" class="emptyContainer">
-				<NcEmptyContent
-					:name="t('openregister', 'No schemas found')">
+				<NcEmptyContent :name="t('openregister', 'No schemas found')">
 					<template #icon>
 						<FolderOutline :size="48" />
 					</template>
 					<template #action>
-						<NcButton v-if="!managingConfiguration" @click="showEditDialog = true">
+						<NcButton
+							v-if="!managingConfiguration"
+							@click="showEditDialog = true">
 							{{ t('openregister', 'Add Schema') }}
 						</NcButton>
 					</template>
@@ -121,35 +152,60 @@ import formatBytes from '../../services/formatBytes.js'
 						<h3>
 							<FileCodeOutline :size="20" />
 							{{ schema.title }}
-							<span v-if="managingConfiguration" v-tooltip.bottom="'Managed by configuration: ' + managingConfiguration.title" class="managedBadge">
+							<span
+								v-if="managingConfiguration"
+								:title="
+									'Managed by configuration: '
+									+ managingConfiguration.title
+								"
+								class="managedBadge">
 								<Database :size="16" />
 								Managed
 							</span>
 						</h3>
-						<NcActions v-if="!managingConfiguration" :primary="true" menu-name="Schema Actions">
+						<NcActions :primary="true" menuName="Schema Actions">
 							<template #icon>
 								<DotsHorizontal :size="20" />
 							</template>
-							<NcActionButton close-after-click @click="editSchema(schema)">
+							<NcActionButton
+								closeAfterClick
+								@click="viewObjects(schema)">
+								<template #icon>
+									<TableEye :size="20" />
+								</template>
+								{{ t('openregister', 'View objects') }}
+							</NcActionButton>
+							<NcActionButton
+								v-if="!managingConfiguration"
+								closeAfterClick
+								@click="editSchema(schema)">
 								<template #icon>
 									<Pencil :size="20" />
 								</template>
-								Edit Schema
+								{{ t('openregister', 'Edit Schema') }}
 							</NcActionButton>
 						</NcActions>
 					</div>
 					<div class="statGrid">
 						<div class="statItem">
-							<span class="statLabel">{{ t('openregister', 'Total Objects') }}</span>
-							<span class="statValue">{{ schema.stats?.objects?.total || 0 }}</span>
+							<span class="statLabel">{{
+								t('openregister', 'Total Objects')
+							}}</span>
+							<span class="statValue">{{
+								schema.stats?.objects?.total || 0
+							}}</span>
 						</div>
 						<div class="statItem">
-							<span class="statLabel">{{ t('openregister', 'Total Size') }}</span>
-							<span class="statValue">{{ formatBytes(schema.stats?.objects?.size || 0) }}</span>
+							<span class="statLabel">{{
+								t('openregister', 'Total Size')
+							}}</span>
+							<span class="statValue">{{
+								formatBytes(schema.stats?.objects?.size || 0)
+							}}</span>
 						</div>
 					</div>
 					<div class="schemaChart">
-						<apexchart
+						<Apexchart
 							type="pie"
 							height="200"
 							:options="getSchemaChartOptions(schema)"
@@ -169,35 +225,37 @@ import formatBytes from '../../services/formatBytes.js'
 			ref="editRegisterDialog"
 			:schema="registerSchema"
 			:item="register"
-			:dialog-title="t('openregister', 'Edit Register')"
+			:dialogTitle="t('openregister', 'Edit Register')"
 			@confirm="onSaveRegister"
 			@close="showEditDialog = false">
 			<template #form="{ formData, errors, updateField }">
 				<div class="formContainer">
 					<NcTextField
 						:label="t('openregister', 'Title') + ' *'"
-						:value="formData.title || ''"
+						:modelValue="formData.title || ''"
 						:error="!!errors.title"
-						:helper-text="errors.title"
-						@update:value="v => updateField('title', v)" />
+						:helperText="errors.title"
+						@update:modelValue="(v) => updateField('title', v)" />
 					<NcTextField
 						:label="t('openregister', 'Slug') + ' *'"
-						:value="formData.slug || ''"
+						:modelValue="formData.slug || ''"
 						:error="!!errors.slug"
-						:helper-text="errors.slug"
-						@update:value="v => updateField('slug', v)" />
+						:helperText="errors.slug"
+						@update:modelValue="(v) => updateField('slug', v)" />
 					<NcTextArea
 						:label="t('openregister', 'Description')"
-						:value="formData.description || ''"
-						@update:value="v => updateField('description', v)" />
+						:modelValue="formData.description || ''"
+						@update:modelValue="(v) => updateField('description', v)" />
 					<NcSelect
-						input-label="Schemas"
+						:inputLabel="t('openregister', 'Schemas')"
 						:options="schemaSelectOptions"
-						:value="getSchemaSelectValue(formData.schemas)"
+						:modelValue="getSchemaSelectValue(formData.schemas)"
 						:multiple="true"
-						:close-on-select="false"
+						:closeOnSelect="false"
 						:loading="schemasLoading"
-						@input="vals => updateField('schemas', vals)" />
+						@update:modelValue="
+							(vals) => updateField('schemas', vals)
+						" />
 				</div>
 			</template>
 		</CnFormDialog>
@@ -205,14 +263,25 @@ import formatBytes from '../../services/formatBytes.js'
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcButton, NcTextField, NcTextArea, NcSelect } from '@nextcloud/vue'
 import { CnDetailPage, CnFormDialog } from '@conduction/nextcloud-vue'
-import VueApexCharts from 'vue-apexcharts'
+import {
+	NcActionButton,
+	NcActions,
+	NcAppContent,
+	NcButton,
+	NcEmptyContent,
+	NcLoadingIcon,
+	NcSelect,
+	NcTextArea,
+	NcTextField,
+} from '@nextcloud/vue'
+import VueApexCharts from 'vue3-apexcharts'
+import Database from 'vue-material-design-icons/Database.vue'
+import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
-import Database from 'vue-material-design-icons/Database.vue'
+import TableEye from 'vue-material-design-icons/TableEye.vue'
 import { getTheme } from '@/services/getTheme.js'
 
 export default {
@@ -229,13 +298,15 @@ export default {
 		NcSelect,
 		CnDetailPage,
 		CnFormDialog,
-		apexchart: VueApexCharts,
+		Apexchart: VueApexCharts,
 		FileCodeOutline,
 		FolderOutline,
 		DotsHorizontal,
 		Pencil,
 		Database,
+		TableEye,
 	},
+
 	data() {
 		return {
 			registerStats: null,
@@ -247,26 +318,82 @@ export default {
 			showEditDialog: false,
 			schemaSelectOptions: [],
 			schemasLoading: false,
+			// True until mounted() has hydrated the register, so a deep link shows
+			// the loading state instead of flashing "Register not found".
+			hydrating: true,
 		}
 	},
+
 	computed: {
+		/**
+		 * Inline JSON-schema describing the register edit form.
+		 *
+		 * @spec exclude UI plumbing — static form-schema for the edit dialog, no observable contract.
+		 * @return {object}
+		 */
 		registerSchema() {
 			return {
 				title: t('openregister', 'Register'),
 				properties: {
-					title: { type: 'string', title: t('openregister', 'Title'), required: true, minLength: 1, order: 1 },
-					slug: { type: 'string', title: t('openregister', 'Slug'), required: true, minLength: 1, order: 2 },
-					description: { type: 'string', title: t('openregister', 'Description'), order: 3 },
-					schemas: { type: 'array', title: t('openregister', 'Schemas'), order: 4 },
+					title: {
+						type: 'string',
+						title: t('openregister', 'Title'),
+						required: true,
+						minLength: 1,
+						order: 1,
+					},
+
+					slug: {
+						type: 'string',
+						title: t('openregister', 'Slug'),
+						required: true,
+						minLength: 1,
+						order: 2,
+					},
+
+					description: {
+						type: 'string',
+						title: t('openregister', 'Description'),
+						order: 3,
+					},
+
+					schemas: {
+						type: 'array',
+						title: t('openregister', 'Schemas'),
+						order: 4,
+					},
 				},
+
 				required: ['title', 'slug'],
 			}
 		},
+
+		/**
+		 * Resolve the active register from the dashboard store.
+		 *
+		 * @spec exclude UI plumbing — store lookup; register dashboard contract owned by built-in-dashboards.
+		 * @return {object|undefined}
+		 */
 		register() {
-			// Find the register in the dashboard store using the ID from register store
-			const registerId = registerStore.getRegisterItem?.id
-			return dashboardStore.registers.find(r => r.id === registerId)
+			// Find the register in the dashboard store using the ID from the register
+			// store, falling back to the route param on a deep link / page refresh.
+			const registerId =
+				registerStore.getRegisterItem?.id || this.$route.params.id
+			if (!registerId) {
+				return undefined
+			}
+			// Route params are strings, the API returns numeric ids — compare as strings.
+			return dashboardStore.registers.find(
+				(r) => String(r.id) === String(registerId),
+			)
 		},
+
+		/**
+		 * ApexCharts options for the audit-trail line chart.
+		 *
+		 * @spec exclude UI plumbing — chart config computed; dashboard contract owned by built-in-dashboards.
+		 * @return {object}
+		 */
 		auditTrailChartOptions() {
 			return {
 				chart: {
@@ -274,61 +401,89 @@ export default {
 					toolbar: {
 						show: true,
 					},
+
 					zoom: {
 						enabled: true,
 					},
 				},
+
 				xaxis: {
-					categories: dashboardStore.chartData.auditTrailActions?.labels || [],
+					categories:
+						dashboardStore.chartData.auditTrailActions?.labels || [],
+
 					title: {
 						text: 'Date',
 					},
 				},
+
 				yaxis: {
 					title: {
 						text: 'Number of Actions',
 					},
 				},
+
 				colors: ['#41B883', '#E46651', '#00D8FF'],
 				stroke: {
 					curve: 'smooth',
 					width: 2,
 				},
+
 				legend: {
 					position: 'top',
 				},
+
 				theme: {
 					mode: getTheme(),
 				},
 			}
 		},
+
+		/**
+		 * ApexCharts options for the objects-by-schema pie chart.
+		 *
+		 * @spec exclude UI plumbing — chart config computed; dashboard contract owned by built-in-dashboards.
+		 * @return {object}
+		 */
 		schemaChartOptions() {
 			return {
 				chart: {
 					type: 'pie',
 				},
+
 				labels: dashboardStore.chartData.objectsBySchema?.labels || [],
 				legend: {
 					position: 'bottom',
 				},
-				responsive: [{
-					breakpoint: 480,
-					options: {
-						chart: {
-							width: 200,
-						},
-						legend: {
-							position: 'bottom',
+
+				responsive: [
+					{
+						breakpoint: 480,
+						options: {
+							chart: {
+								width: 200,
+							},
+
+							legend: {
+								position: 'bottom',
+							},
 						},
 					},
-				}],
+				],
 			}
 		},
+
+		/**
+		 * ApexCharts options for the objects-by-size bar chart.
+		 *
+		 * @spec exclude UI plumbing — chart config computed; dashboard contract owned by built-in-dashboards.
+		 * @return {object}
+		 */
 		sizeChartOptions() {
 			return {
 				chart: {
 					type: 'bar',
 				},
+
 				plotOptions: {
 					bar: {
 						horizontal: false,
@@ -336,52 +491,96 @@ export default {
 						endingShape: 'rounded',
 					},
 				},
+
 				xaxis: {
 					categories: dashboardStore.chartData.objectsBySize?.labels || [],
 					title: {
 						text: 'Size Range',
 					},
 				},
+
 				yaxis: {
 					title: {
 						text: 'Number of Objects',
 					},
 				},
+
 				fill: {
 					opacity: 1,
 				},
 			}
 		},
 	},
+
 	watch: {
 		register: {
+			/**
+			 * Reload schemas + managing configuration when the register changes.
+			 *
+			 * @spec exclude UI plumbing — watcher delegating to loaders; dashboard contract owned by built-in-dashboards.
+			 * @return {void}
+			 */
 			handler() {
 				// Reload schemas and check configuration when register changes
 				this.loadSchemas()
 				this.checkManagingConfiguration()
 			},
+
 			deep: true,
 		},
+
+		/**
+		 * Lazy-load schema options when the edit dialog opens.
+		 *
+		 * @spec exclude UI plumbing — watcher triggering option load on dialog open.
+		 * @param {boolean} val - dialog visibility
+		 * @return {void}
+		 */
 		showEditDialog(val) {
 			if (val) {
 				this.loadSchemaOptions()
 			}
 		},
 	},
+
+	/**
+	 * Fetch register/dashboard data and stats on mount.
+	 *
+	 * @spec exclude UI plumbing — lifecycle hook delegating to store loaders; dashboard contract owned by built-in-dashboards.
+	 * @return {Promise<void>}
+	 */
 	async mounted() {
+		// The active register normally reaches the store from RegistersIndex before
+		// it navigates here. A deep link or page refresh has no such hand-off, so
+		// seed the store from the `:id` route param — without this the page bounced
+		// straight back to /registers.
+		const routeId = this.$route.params.id
+		if (
+			routeId
+			&& String(registerStore.getRegisterItem?.id || '') !== String(routeId)
+		) {
+			registerStore.setRegisterItem({ id: routeId })
+		}
+
+		if (!registerStore.getRegisterItem?.id) {
+			// No id in the route and none in the store — nothing to render.
+			this.hydrating = false
+			this.$router.push('/registers')
+			return
+		}
+
 		// If we have a register ID but no data, fetch dashboard data
-		if (registerStore.getRegisterItem?.id && !this.register) {
+		if (!this.register) {
 			try {
 				await dashboardStore.fetchRegisters()
 				await dashboardStore.fetchAllChartData()
 			} catch (error) {
+				// Stay on the page: CnDetailPage surfaces dashboardStore.error with a
+				// "Back to Registers" action, which beats a silent redirect.
 				console.error('Failed to fetch register details:', error)
-				this.$router.push('/registers')
 			}
-		} else if (!registerStore.getRegisterItem?.id) {
-			// If no register ID at all, go back to list
-			this.$router.push('/registers')
 		}
+		this.hydrating = false
 
 		// Load register stats if register is available
 		if (registerStore.getRegisterItem?.id) {
@@ -392,9 +591,12 @@ export default {
 		await this.loadSchemas()
 		await this.checkManagingConfiguration()
 	},
+
 	methods: {
 		/**
 		 * Load register statistics from the dedicated stats endpoint
+		 *
+		 * @spec exclude UI plumbing — store delegation hydrating local stats; dashboard contract owned by built-in-dashboards.
 		 * @return {Promise<void>}
 		 */
 		async loadRegisterStats() {
@@ -406,7 +608,9 @@ export default {
 			this.statsError = null
 
 			try {
-				this.registerStats = await registerStore.getRegisterStats(registerStore.getRegisterItem.id)
+				this.registerStats = await registerStore.getRegisterStats(
+					registerStore.getRegisterItem.id,
+				)
 			} catch (error) {
 				console.error('Error loading register stats:', error)
 				this.statsError = error.message
@@ -414,19 +618,35 @@ export default {
 				this.statsLoading = false
 			}
 		},
+
+		/**
+		 * ApexCharts options for a per-schema validity pie chart.
+		 *
+		 * @spec exclude UI plumbing — chart config builder; dashboard contract owned by built-in-dashboards.
+		 * @return {object}
+		 */
 		getSchemaChartOptions() {
 			return {
 				chart: {
 					type: 'pie',
 				},
+
 				labels: ['Valid', 'Invalid', 'Deleted', 'Locked'],
 				legend: {
 					position: 'bottom',
 					fontSize: '14px',
 				},
+
 				colors: ['#41B883', '#E46651', '#00D8FF', '#DD6B20'],
 				tooltip: {
 					y: {
+						/**
+						 * Format a chart tooltip value as an object count.
+						 *
+						 * @spec exclude UI plumbing — inline chart tooltip formatter, no observable contract.
+						 * @param {number} val - data point value
+						 * @return {string}
+						 */
 						formatter(val) {
 							return val + ' objects'
 						},
@@ -435,30 +655,60 @@ export default {
 			}
 		},
 
+		/**
+		 * Load schema select options for the edit dialog.
+		 *
+		 * @spec exclude UI plumbing — store delegation hydrating select options.
+		 * @return {Promise<void>}
+		 */
 		async loadSchemaOptions() {
 			this.schemasLoading = true
 			try {
 				await schemaStore.refreshSchemaList()
-				this.schemaSelectOptions = schemaStore.schemaList.map(s => ({ id: s.id, label: s.title }))
+				this.schemaSelectOptions = schemaStore.schemaList.map((s) => ({
+					id: s.id,
+					label: s.title,
+				}))
 			} catch (error) {
 				console.error('Failed to load schemas:', error)
 			} finally {
 				this.schemasLoading = false
 			}
 		},
+
+		/**
+		 * Map schema ids/objects to NcSelect option values.
+		 *
+		 * @spec exclude UI plumbing — select-value normalizer for the edit form.
+		 * @param {Array} schemas - schema ids or objects
+		 * @return {Array} option objects
+		 */
 		getSchemaSelectValue(schemas) {
 			if (!Array.isArray(schemas)) return []
-			return schemas.map(s => {
+			return schemas.map((s) => {
 				const id = typeof s === 'object' ? s.id : s
-				return this.schemaSelectOptions.find(o => String(o.id) === String(id))
-					|| { id, label: String(id) }
+				return (
+					this.schemaSelectOptions.find(
+						(o) => String(o.id) === String(id),
+					) || { id, label: String(id) }
+				)
 			})
 		},
+
+		/**
+		 * Persist the register edit form and refresh dashboard data.
+		 *
+		 * @spec exclude UI plumbing — store delegation + dialog result; register CRUD contract owned elsewhere.
+		 * @param {object} formData - edited register fields
+		 * @return {Promise<void>}
+		 */
 		async onSaveRegister(formData) {
 			try {
 				await registerStore.saveRegister({
 					...formData,
-					schemas: (formData.schemas || []).map(s => typeof s === 'object' ? s.id : s),
+					schemas: (formData.schemas || []).map((s) =>
+						typeof s === 'object' ? s.id : s,
+					),
 				})
 				this.$refs.editRegisterDialog.setResult({ success: true })
 				await dashboardStore.fetchRegisters()
@@ -466,43 +716,100 @@ export default {
 				this.$refs.editRegisterDialog.setResult({ error: error.message })
 			}
 		},
+
+		/**
+		 * Open the edit-schema modal for a schema row.
+		 *
+		 * @spec exclude UI plumbing — store-set + modal dispatch.
+		 * @param {object} schema - schema row
+		 * @return {void}
+		 */
 		editSchema(schema) {
-			registerStore.setSchemaItem(schema)
+			schemaStore.setSchemaItem(schema)
 			navigationStore.setModal('editSchema')
 		},
+
 		/**
-		 * Load full schema details from schema IDs
+		 * Drill into this register's objects for the given schema by deep-linking
+		 * to the search/tables view with both ids preselected. The SearchSideBar
+		 * reads `?register=&schema=` and runs the search automatically.
+		 *
+		 * @spec exclude UI plumbing — router navigation to the pre-filtered tables view.
+		 * @param {object} schema - schema row
+		 * @return {void}
+		 */
+		viewObjects(schema) {
+			const registerId = registerStore.getRegisterItem?.id
+			if (!registerId || !schema?.id) {
+				return
+			}
+			this.$router
+				.push({
+					path: '/tables',
+					query: {
+						register: String(registerId),
+						schema: String(schema.id),
+					},
+				})
+				.catch(() => {})
+		},
+
+		/**
+		 * Normalise one schema for the cards.
+		 *
+		 * @spec exclude UI plumbing — shape fix-up for local schema cards; schema contract owned elsewhere.
+		 * @param {object} schema - schema payload, hydrated or fetched
+		 * @return {object} the schema, with `properties` guaranteed to be an object
+		 */
+		normalizeSchema(schema) {
+			// The backend returns `properties: []` instead of `{}` for a schema with
+			// none. Copy rather than mutate — hydrated entries belong to the store.
+			if (Array.isArray(schema?.properties)) {
+				return { ...schema, properties: {} }
+			}
+			return schema
+		},
+
+		/**
+		 * Load full schema details for the register's schemas.
+		 *
+		 * @spec exclude UI plumbing — parallel fetch hydrating local schema cards; schema contract owned elsewhere.
 		 * @return {Promise<void>}
 		 */
 		async loadSchemas() {
-			if (!this.register?.schemas || !Array.isArray(this.register.schemas) || this.register.schemas.length === 0) {
+			const schemas = this.register?.schemas
+			if (!Array.isArray(schemas) || schemas.length === 0) {
 				this.loadedSchemas = []
 				return
 			}
 
 			this.loadingSchemas = true
 			try {
-				// Fetch all schemas in parallel
-				const promises = this.register.schemas.map(async schemaId => {
+				// The dashboard endpoint replaces register.schemas with full schema
+				// objects that also carry the per-schema `stats` the cards render and
+				// GET /api/schemas/{id} does not return — so use those as they are.
+				// Only bare ids need fetching (stringifying an object gave us
+				// /api/schemas/[object Object]).
+				const promises = schemas.map(async (schema) => {
+					if (schema !== null && typeof schema === 'object') {
+						return this.normalizeSchema(schema)
+					}
 					try {
-						const response = await fetch(`/index.php/apps/openregister/api/schemas/${schemaId}`)
+						const response = await fetch(
+							`/index.php/apps/openregister/api/schemas/${schema}`,
+						)
 						if (response.ok) {
-							const schema = await response.json()
-							// Convert properties array to object if needed (backend sometimes returns array when empty)
-							if (schema && Array.isArray(schema.properties)) {
-								schema.properties = {}
-							}
-							return schema
+							return this.normalizeSchema(await response.json())
 						}
 						return null
 					} catch (error) {
-						console.error(`Failed to load schema ${schemaId}:`, error)
+						console.error(`Failed to load schema ${schema}:`, error)
 						return null
 					}
 				})
 
-				const schemas = await Promise.all(promises)
-				this.loadedSchemas = schemas.filter(Boolean) // Remove null entries
+				const loaded = await Promise.all(promises)
+				this.loadedSchemas = loaded.filter(Boolean) // Remove null entries
 			} catch (error) {
 				console.error('Error loading schemas:', error)
 				this.loadedSchemas = []
@@ -510,8 +817,11 @@ export default {
 				this.loadingSchemas = false
 			}
 		},
+
 		/**
 		 * Check if this register is managed by a configuration
+		 *
+		 * @spec exclude UI plumbing — scans local configuration list to set a managed badge.
 		 * @return {Promise<void>}
 		 */
 		async checkManagingConfiguration() {
@@ -524,7 +834,11 @@ export default {
 				// Check all configurations to see if any manages this register
 				const configurations = configurationStore.configurationList || []
 				for (const config of configurations) {
-					if (config.registers && Array.isArray(config.registers) && config.registers.includes(this.register.id)) {
+					if (
+						config.registers
+						&& Array.isArray(config.registers)
+						&& config.registers.includes(this.register.id)
+					) {
 						this.managingConfiguration = config
 						return
 					}
@@ -551,7 +865,7 @@ export default {
 
 .chartGrid {
 	display: grid;
-	grid-template-columns: repeat( auto-fit, minmax(330px, 1fr) );
+	grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
 	gap: 20px;
 	padding: 20px;
 }

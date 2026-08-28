@@ -5,10 +5,13 @@
  *
  * Follows the GraphQL multipart request specification for file uploads.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\GraphQL\Scalar
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
@@ -30,78 +33,72 @@ use GraphQL\Utils\Utils;
  * @SuppressWarnings(PHPMD.StaticAccess)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class UploadType extends ScalarType
-{
+class UploadType extends ScalarType {
 
-    /**
-     * The name of this scalar type.
-     *
-     * @var string
-     */
-    public string $name = 'Upload';
+	/**
+	 * The name of this scalar type.
+	 *
+	 * @var string
+	 */
+	public string $name = 'Upload';
 
-    /**
-     * The description of this scalar type.
-     *
-     * @var string|null
-     */
-    public ?string $description = 'File upload scalar (multipart request spec). Returns File object in queries.';
+	/**
+	 * The description of this scalar type.
+	 *
+	 * @var string|null
+	 */
+	public ?string $description = 'File upload scalar (multipart request spec). Returns File object in queries.';
 
-    /**
-     * Serializes an upload value.
-     *
-     * @param mixed $value The value to serialize
-     *
-     * @return mixed The serialized value
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
-     */
-    public function serialize(mixed $value): mixed
-    {
-        // Files are serialized as their metadata (handled by File output type).
-        return $value;
+	/**
+	 * Serializes an upload value.
+	 *
+	 * @param mixed $value The value to serialize
+	 *
+	 * @return mixed The serialized value
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
+	 */
+	public function serialize(mixed $value): mixed {
+		// Files are serialized as their metadata (handled by File output type).
+		return $value;
+	}//end serialize()
 
-    }//end serialize()
+	/**
+	 * Parses a value from client input.
+	 *
+	 * @param mixed $value The value to parse
+	 *
+	 * @return mixed The parsed value
+	 *
+	 * @throws Error If the value cannot be represented
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
+	 */
+	public function parseValue(mixed $value): mixed {
+		// Value comes from the multipart request processor — it's already a file reference.
+		if (is_array($value) === true || is_string($value) === true) {
+			return $value;
+		}
 
-    /**
-     * Parses a value from client input.
-     *
-     * @param mixed $value The value to parse
-     *
-     * @return mixed The parsed value
-     *
-     * @throws Error If the value cannot be represented
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
-     */
-    public function parseValue(mixed $value): mixed
-    {
-        // Value comes from the multipart request processor — it's already a file reference.
-        if (is_array($value) === true || is_string($value) === true) {
-            return $value;
-        }
+		throw new Error(
+			'Upload cannot represent value: ' . Utils::printSafe($value)
+		);
 
-        throw new Error(
-            'Upload cannot represent value: '.Utils::printSafe($value)
-        );
+	}//end parseValue()
 
-    }//end parseValue()
-
-    /**
-     * Parses a literal AST value.
-     *
-     * @param \GraphQL\Language\AST\Node $valueNode The AST node
-     * @param array|null                 $variables Variables map
-     *
-     * @return mixed The parsed value
-     *
-     * @throws Error Always, uploads must use multipart form
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
-     */
-    public function parseLiteral(\GraphQL\Language\AST\Node $valueNode, ?array $variables=null): mixed
-    {
-        throw new Error('Upload cannot be used as a literal value — use multipart form upload');
-
-    }//end parseLiteral()
+	/**
+	 * Parses a literal AST value.
+	 *
+	 * @param \GraphQL\Language\AST\Node $valueNode The AST node
+	 * @param array|null $variables Variables map
+	 *
+	 * @return mixed The parsed value
+	 *
+	 * @throws Error Always, uploads must use multipart form
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
+	 */
+	public function parseLiteral(\GraphQL\Language\AST\Node $valueNode, ?array $variables = null): mixed {
+		throw new Error('Upload cannot be used as a literal value — use multipart form upload');
+	}//end parseLiteral()
 }//end class

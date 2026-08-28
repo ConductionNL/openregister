@@ -1,0 +1,16 @@
+--- a/src/Chat/OllamaChat.php
++++ b/src/Chat/OllamaChat.php
+@@ -257,6 +257,13 @@
+      */
+     protected function sendRequest(string $method, string $path, array $json): ResponseInterface
+     {
++        // Forward `think: false` (qwen3/qwen3.5 skip the hidden reasoning trace —
++        // ~5x faster) and `keep_alive: -1` (model stays resident until the daemon
++        // restarts — avoids the 5-minute idle-unload wedge on serial requests).
++        // Both are silently ignored by models that don't recognise the field.
++        // TODO: drop once LLPhant exposes a per-call `keep_alive`/`think` model option.
++        $json = $json + ['think' => false, 'keep_alive' => -1];
++
+         $this->logger->debug('Calling '.$method.' '.$path, [
+             'chat' => self::class,
+             'params' => $json,

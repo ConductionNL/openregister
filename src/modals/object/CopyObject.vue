@@ -1,16 +1,30 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { objectStore, navigationStore } from '../../store/store.js'
+import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'copyObject'"
-		:name="'Copy ' + (objectStore.objectItem?.['@self']?.name || objectStore.objectItem?.name || objectStore.objectItem?.['@self']?.title || objectStore.objectItem?.id || 'Object')"
+	<NcDialog
+		v-if="navigationStore.dialog === 'copyObject'"
+		:name="
+			'Copy '
+			+ (objectStore.objectItem?.['@self']?.name
+				|| objectStore.objectItem?.name
+				|| objectStore.objectItem?.['@self']?.title
+				|| objectStore.objectItem?.id
+				|| 'Object')
+		"
 		size="normal"
-		:can-close="false">
+		:canClose="false">
 		<div v-if="success === null">
 			<p>
-				Create a copy of <b>{{ objectStore.objectItem?.['@self']?.name || objectStore.objectItem?.name || objectStore.objectItem?.['@self']?.title || objectStore.objectItem?.id }}</b>
+				Create a copy of
+				<b>{{
+					objectStore.objectItem?.['@self']?.name
+					|| objectStore.objectItem?.name
+					|| objectStore.objectItem?.['@self']?.title
+					|| objectStore.objectItem?.id
+				}}</b>
 			</p>
 
 			<div class="form-group">
@@ -41,7 +55,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 			<NcButton
 				v-if="success === null"
 				:disabled="loading || !copyName.trim()"
-				type="primary"
+				variant="primary"
 				@click="copyObject()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -61,7 +75,6 @@ import {
 	NcNoteCard,
 	NcTextField,
 } from '@nextcloud/vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 
@@ -77,6 +90,7 @@ export default {
 		ContentCopy,
 		Cancel,
 	},
+
 	data() {
 		return {
 			success: null,
@@ -86,9 +100,14 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	computed: {
+		/**
+		 * @spec exclude computed display helper for default copy name
+		 */
 		defaultCopyName() {
-			const originalName = objectStore.objectItem?.['@self']?.name
+			const originalName =
+				objectStore.objectItem?.['@self']?.name
 				|| objectStore.objectItem?.name
 				|| objectStore.objectItem?.['@self']?.title
 				|| `Object ${objectStore.objectItem?.['@self']?.id}`
@@ -96,8 +115,9 @@ export default {
 			return `Copy of ${originalName}`
 		},
 	},
+
 	watch: {
-		'navigationStore.dialog'(newDialog) {
+		'navigationStore.dialog': function (newDialog) {
 			if (newDialog === 'copyObject') {
 				this.copyName = this.defaultCopyName
 				this.success = null
@@ -106,7 +126,11 @@ export default {
 			}
 		},
 	},
+
 	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			clearTimeout(this.closeModalTimeout)
@@ -115,6 +139,10 @@ export default {
 			this.error = false
 			this.copyName = ''
 		},
+
+		/**
+		 * @spec exclude modal submit handler delegating to objectStore.saveObject
+		 */
 		async copyObject() {
 			if (!this.copyName.trim()) {
 				this.error = 'Please provide a name for the copy'
@@ -179,7 +207,8 @@ export default {
 				}
 			} catch (error) {
 				this.success = false
-				this.error = error.message || 'An error occurred while copying the object'
+				this.error =
+					error.message || 'An error occurred while copying the object'
 			} finally {
 				this.loading = false
 			}

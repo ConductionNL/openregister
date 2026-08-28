@@ -236,6 +236,13 @@ POST /api/bulk/{register}/{schema}/save
 
 Objects should follow the standard OpenRegister object format with `@self` section containing the object data. Objects without an `id` field will be created as new objects, while objects with an existing `id` will be updated.
 
+### Optional Request Flags
+
+| Flag | Default | Meaning |
+| --- | --- | --- |
+| `stream` | `false` | Write row-at-a-time through the standard save path instead of the bulk mapper. Slower on flat payloads, faster on heavily cross-referenced ones. |
+| `partial` | `false` | Opt into best-effort semantics: a batch with rejected objects answers `200` instead of `422`. It does **not** make `success` true — see below. |
+
 ### Example Request
 ```bash
 curl -u 'admin:admin' \
@@ -261,6 +268,10 @@ curl -u 'admin:admin' \
   "success": true,
   "message": "Bulk save operation completed successfully",
   "saved_count": 1,
+  "failed_count": 0,
+  "requested_count": 1,
+  "failures": [],
+  "partial": false,
   "saved_objects": [
     {
       "id": "550e8400-e29b-41d4-a716-446655440002",
@@ -269,10 +280,49 @@ curl -u 'admin:admin' \
       "created": "2024-01-01T12:00:00Z",
       "updated": "2024-01-01T12:00:00Z"
     }
-  ],
-  "requested_count": 1
+  ]
 }
 ```
+
+### Partial Writes
+
+`success` is `true` **only when every submitted object was written**. If any
+object is rejected, the response is `422 Unprocessable Entity` with
+`success: false` and a `failures` array naming each rejected object and the
+reason it was refused:
+
+```json
+{
+  "success": false,
+  "message": "Bulk save incomplete: 1 of 2 objects were rejected and NOT written. See \"failures\" for the reason per object.",
+  "saved_count": 1,
+  "failed_count": 1,
+  "requested_count": 2,
+  "partial": false,
+  "failures": [
+    {
+      "index": 1,
+      "uuid": "550e8400-e29b-41d4-a716-446655440000",
+      "error": "Schema validation failed: resolutiondate: The data must match the 'date-time' format",
+      "type": "BulkSafeguardException"
+    }
+  ]
+}
+```
+
+Notes:
+
+- **`index` is the object's position in the `objects` array you submitted**, and
+  `uuid` its identifier when it carried one — a rejected *create* has no uuid
+  yet, which is why the index is there.
+- **Objects that did write are not rolled back.** This endpoint has never been
+  transactional; `saved_count` is what actually persisted and is what you must
+  reconcile against.
+- `failed_count` counts objects; `failures` explains them. If objects go missing
+  without the save path recording a reason, the gap is reported as a single
+  `UnaccountedObject` entry rather than being silently dropped.
+- Sending `"partial": true` relaxes the status to `200` for callers that
+  deliberately want best-effort behaviour. `success` stays `false`.
 
 ## Error Handling
 

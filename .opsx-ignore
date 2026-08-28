@@ -1,0 +1,22 @@
+# OpenRegister .opsx-ignore
+#
+# One glob pattern per line. Lines starting with `#` are comments.
+# Honored by /opsx-coverage-scan: matching paths are dropped from
+# buckets 1 (REQ-matched), 2a / 2b (Bucket 2), and 4 (ADR conformance).
+# Bucket 3 (unimplemented REQ tracking) is REQ-level and unaffected.
+#
+# Add a path here when:
+#   - it is a worked example or demo that documents a capability
+#     rather than implementing canonical behavior;
+#   - it is internal tooling deliberately not specified;
+#   - it is generated code or vendor code copied in-tree.
+#
+# Do NOT add a path here just to silence a Bucket 4 finding —
+# fix the underlying issue or document a deliberate exception
+# in the relevant spec instead.
+
+# Faceting demos — illustrate the new vs legacy faceting API
+# via worked examples. Already classified as plumbing by the
+# scanner; pinned here so future scanner versions keep skipping them.
+lib/Service/Object/NewFacetingExample.php
+lib/Service/Object/ObjectServiceFacetExample.php

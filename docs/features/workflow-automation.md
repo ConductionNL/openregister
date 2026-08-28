@@ -160,6 +160,86 @@ GET    /api/engines/{id}/workflows/{workflowId}   Get a workflow
 DELETE /api/engines/{id}/workflows/{workflowId}   Delete a workflow from an engine
 ```
 
+## Declarative Lifecycle Transitions (`x-openregister-lifecycle`)
+
+Beyond hook-driven automation, a schema can declare a **state machine** on a
+single field via the `x-openregister-lifecycle` annotation (schema
+`configuration`). The shared `TransitionEngine` interprets it centrally, so apps
+get `/available-actions` and `/transition` without writing a controller per
+schema.
+
+```
+GET  /api/objects/{id}/available-actions   List actions allowed from the current state
+POST /api/objects/{id}/transition          Apply a named action ({ "action": "<name>" })
+```
+
+### Static mode (`transitions`)
+
+`transitions` is a fixed `action → { from: [states], to: state }` map compared
+against the object's current **literal** field value. The field must be a
+`string` with an `enum` of the allowed states.
+
+### Graph mode (`graph`)
+
+For status graphs that are **data**, not a fixed enum — e.g. a `case.status`
+that is a `$ref` UUID to a `statusType` object whose valid set differs per
+parent `caseType` — declare a `graph` block instead. The engine derives the
+available and target transitions **at runtime** from FK-scoped sibling objects.
+
+```json
+{
+  "field": "status",
+  "initial": { "from": "caseType", "field": "initialStatus" },
+  "graph": {
+    "schema": "statustype",
+    "parentField": "caseType",
+    "parentFrom": "caseType",
+    "orderField": "order",
+    "finalField": "isFinal",
+    "allowedMoves": "forward"
+  }
+}
+```
+
+| `graph` field | Description |
+|---------------|-------------|
+| `schema` | Sibling schema slug that holds the status objects |
+| `parentField` | FK property on the sibling that references the parent |
+| `parentFrom` | Property on the transitioning object holding the parent reference |
+| `orderField` | Numeric ordering property on the sibling (UUID tiebreak) |
+| `finalField` | Boolean terminal-state property on the sibling |
+| `allowedMoves` | `forward` (next only), `adjacent` (previous + next), or `any` (every other sibling) |
+
+Derivation: read the parent reference from `object.data[parentFrom]`, fetch the
+sibling objects of `schema` where `parentField` equals it (ordered by
+`orderField`), locate the object's current state, and offer candidate targets
+per `allowedMoves`. Each derived action has a stable id `move-to-<targetUuid>`,
+a `to` equal to the target UUID, and a `label` equal to the target's display
+name. A **terminal** state (`finalField` true) is a sink under `forward` /
+`adjacent`; `any` treats terminality as advisory and still offers the other
+siblings. An **orphaned** current value (not among the siblings) recovers to the
+first sibling. An object with an empty `parentFrom` yields no actions.
+
+`availableActions()` and the validation inside `transition()` share the SAME
+derivation, so a client can only apply a `move-to-<uuid>` the graph currently
+allows; a non-candidate is rejected without mutating the object.
+
+**Static precedence:** when a schema declares BOTH a non-empty `transitions` map
+and a `graph` block, the static `transitions` map is used and the `graph` block
+is ignored (no sibling fetch). Static-only schemas are unaffected.
+
+### Auto-seed on create (object-form `initial`)
+
+When `initial` is the object form `{ "from": "<property>", "field": "<property>" }`,
+the create pipeline seeds the lifecycle field from the parent BEFORE schema
+validation — so a `required` lifecycle `$ref` field passes on a seeded create.
+It runs only on the create path (never on update), only when the lifecycle field
+is absent/null/empty (a client-supplied value is never overwritten), and is a
+fail-soft no-op when the parent reference is empty, the parent cannot be loaded,
+or the parent's `field` value is empty. Seeding dispatches no
+`ObjectTransitionedEvent` — it is an initialisation, not a transition. The legacy
+literal-string `initial` keeps its static-mode semantics and is not auto-seeded.
+
 ## Standards
 
 | Standard | Role |

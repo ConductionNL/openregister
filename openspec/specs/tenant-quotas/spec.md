@@ -1,6 +1,14 @@
+---
+status: done
+retrofit_extensions:
+  - REQ-001
+---
+
 # Tenant Quotas
 
 ## Purpose
+
+@e2e exclude backend quota enforcement service — covered by PHPUnit
 Define enforcement of per-organisation resource quotas (storage, bandwidth, API requests) to prevent any single tenant from monopolizing shared resources in a SaaS deployment. The Organisation entity already has `storageQuota`, `bandwidthQuota`, and `requestQuota` fields; this spec defines their enforcement, tracking, and overage handling.
 
 **Source**: SaaS resource management; BIO availability requirements; fair-use policies for shared government platforms.
@@ -79,3 +87,36 @@ APCu-based counters MUST be flushed to the `openregister_tenant_usage` database 
 - **WHEN** the database migration runs
 - **THEN** a table `openregister_tenant_usage` MUST be created with columns: `id` (bigint, primary key), `organisation_uuid` (varchar, indexed), `period` (datetime, indexed), `request_count` (bigint, default 0), `bandwidth_bytes` (bigint, default 0), `storage_bytes` (bigint, default 0), `created` (datetime), `updated` (datetime)
 - **AND** a composite index MUST exist on (`organisation_uuid`, `period`)
+
+### REQ-001: The middleware SHALL convert tenant status and quota exceptions raised during the request lifecycle into deterministic JSON error responses
+
+The middleware SHALL convert tenant status and quota exceptions raised during the request lifecycle into deterministic JSON error responses.
+
+> Added by retrofit-2026-05-24-2b-command-repair-middleware (archived).
+
+`OCA\OpenRegister\Middleware\TenantQuotaMiddleware::afterException(controller, methodName, \Exception $exception)` is the Nextcloud controller-middleware exception hook. When the request pipeline throws — including from `beforeController()` (status / quota checks) and from controller bodies — the framework invokes `afterException`. The middleware translates two exception families into 4xx responses and re-throws everything else.
+
+`TenantStatusException` — raised by `beforeController()` when the active organisation's status is `SUSPENDED`, `DEPROVISIONING`, or `PROVISIONING` (the last only for non-admins). The middleware returns a `JSONResponse` with body `{ "error": <exception-message>, "status": <organisation-status> }` and the HTTP status taken from the exception's own `getCode()` (always `403` in current call sites). No headers beyond the JSON envelope are added.
+
+`TenantQuotaExceededException` — raised by `checkRequestQuota()` (and, structurally, by future bandwidth / storage gates). The middleware returns a `JSONResponse` with body `{ "error": <message>, "quota": <effective-quota>, "resetAt": <ISO8601-of-next-hour> }`, HTTP status hard-coded to `429`, and a `Retry-After` header containing the integer second count until the next hour boundary (`max(1, <next-hour> - <now>)`).
+
+Any other exception type is re-thrown so the upstream pipeline can apply its own handling.
+
+#### Scenario: Suspended organisation rejection
+- **GIVEN** `beforeController()` threw `TenantStatusException("Organisation is suspended", "suspended", 403)`
+- **WHEN** the controller middleware pipeline invokes `afterException()`
+- **THEN** the returned response is a `JSONResponse` with body `{ "error": "Organisation is suspended", "status": "suspended" }`
+- **AND** the HTTP status is `403`
+- **AND** no `Retry-After` header is set
+
+#### Scenario: Request quota exceeded — Retry-After header is set
+- **GIVEN** `checkRequestQuota()` threw `TenantQuotaExceededException("Request quota exceeded", 10000, "2026-05-24T15:00:00+00:00", 1234)`
+- **WHEN** `afterException()` runs
+- **THEN** the response is `JSONResponse({ "error": "Request quota exceeded", "quota": 10000, "resetAt": "2026-05-24T15:00:00+00:00" }, 429)`
+- **AND** the response carries header `Retry-After: 1234`
+
+#### Scenario: Non-tenant exception is re-thrown
+- **GIVEN** the controller body threw `\OCP\AppFramework\Http\BadRequestException("bad input")`
+- **WHEN** `afterException()` runs
+- **THEN** the middleware does NOT match either tenant family
+- **AND** the original exception is re-thrown so upstream middleware can handle it

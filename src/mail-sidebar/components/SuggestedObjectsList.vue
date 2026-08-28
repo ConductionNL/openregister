@@ -1,5 +1,7 @@
 <template>
-	<section class="or-mail-suggested-objects" aria-labelledby="or-mail-suggested-title">
+	<section
+		class="or-mail-suggested-objects"
+		aria-labelledby="or-mail-suggested-title">
 		<h3 id="or-mail-suggested-title" class="or-mail-section-title">
 			{{ t('openregister', 'Related Cases') }}
 		</h3>
@@ -15,7 +17,7 @@
 				v-for="obj in objects"
 				:key="obj.objectUuid"
 				:object="obj"
-				:show-unlink="false" />
+				:showUnlink="false" />
 		</div>
 	</section>
 </template>
@@ -32,11 +34,13 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+
 		loading: {
 			type: Boolean,
 			default: false,
 		},
 	},
+
 	methods: { t },
 }
 </script>

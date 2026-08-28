@@ -9,7 +9,7 @@
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -35,53 +35,49 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @package OCA\OpenRegister\Migration
  */
-class Version1Date20250813140000 extends SimpleMigrationStep
-{
-    /**
-     * Add slug column to objects table
-     *
-     * @param IOutput                 $output        Migration output interface
-     * @param Closure                 $schemaClosure Schema closure that returns ISchemaWrapper
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return null|ISchemaWrapper Updated schema or null
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20250813140000 extends SimpleMigrationStep {
+	/**
+	 * Add slug column to objects table
+	 *
+	 * @param IOutput $output Migration output interface
+	 * @param Closure $schemaClosure Schema closure that returns ISchemaWrapper
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return null|ISchemaWrapper Updated schema or null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        // Check if the objects table exists.
-        if ($schema->hasTable('openregister_objects') === false) {
-            return null;
-        }
+		// Check if the objects table exists.
+		if ($schema->hasTable('openregister_objects') === false) {
+			return null;
+		}
 
-        $table = $schema->getTable('openregister_objects');
+		$table = $schema->getTable('openregister_objects');
 
-        // Add slug column if it doesn't exist.
-        if ($table->hasColumn('slug') === false) {
-            $table->addColumn(
-                'slug',
-                'string',
-                [
-                    'notnull' => false,
-                    'length'  => 255,
-                    'default' => null,
-                    'comment' => 'URL-friendly identifier for the object, unique within register+schema combination',
-                ]
-            );
-            $output->info(message: 'Added slug column to openregister_objects table');
-        }
+		// Add slug column if it doesn't exist.
+		if ($table->hasColumn('slug') === false) {
+			$table->addColumn(
+				'slug',
+				'string',
+				[
+					'notnull' => false,
+					'length' => 255,
+					'default' => null,
+					'comment' => 'URL-friendly identifier for the object, unique within register+schema combination',
+				]
+			);
+			$output->info(message: 'Added slug column to openregister_objects table');
+		}
 
-        // Skip complex index creation for now to avoid MySQL key length issues.
-        // TODO: Add indexes after app is enabled.
-        $output->info(message: 'Skipping complex index creation to avoid MySQL key length issues');
+		// Skip complex index creation for now to avoid MySQL key length issues.
+		// TODO: Add indexes after app is enabled.
+		$output->info(message: 'Skipping complex index creation to avoid MySQL key length issues');
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

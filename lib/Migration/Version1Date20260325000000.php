@@ -9,8 +9,9 @@
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author  Conduction Development Team <dev@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  */
@@ -34,49 +35,45 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @package OCA\OpenRegister\Migration
  */
-class Version1Date20260325000000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput $output        Migration output
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Migration options
-     *
-     * @return ISchemaWrapper|null The updated schema or null if no changes
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        // Get the schema wrapper from the closure.
-        $schema = $schemaClosure();
+class Version1Date20260325000000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Migration output
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Migration options
+	 *
+	 * @return ISchemaWrapper|null The updated schema or null if no changes
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		// Get the schema wrapper from the closure.
+		$schema = $schemaClosure();
 
-        $tableName = 'openregister_objects';
+		$tableName = 'openregister_objects';
 
-        if ($schema->hasTable($tableName) === false) {
-            $output->info("Table {$tableName} does not exist, skipping migration");
-            return null;
-        }
+		if ($schema->hasTable($tableName) === false) {
+			$output->info("Table {$tableName} does not exist, skipping migration");
+			return null;
+		}
 
-        $table = $schema->getTable($tableName);
+		$table = $schema->getTable($tableName);
 
-        if ($table->hasColumn('tmlo') === true) {
-            $output->info("Column 'tmlo' already exists in {$tableName}, skipping");
-            return null;
-        }
+		if ($table->hasColumn('tmlo') === true) {
+			$output->info("Column 'tmlo' already exists in {$tableName}, skipping");
+			return null;
+		}
 
-        $table->addColumn(
-            'tmlo',
-            Types::TEXT,
-            [
-                'notnull' => false,
-                'default' => null,
-            ]
-        );
+		$table->addColumn(
+			'tmlo',
+			Types::TEXT,
+			[
+				'notnull' => false,
+				'default' => null,
+			]
+		);
 
-        $output->info("Added 'tmlo' column to {$tableName}");
+		$output->info("Added 'tmlo' column to {$tableName}");
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

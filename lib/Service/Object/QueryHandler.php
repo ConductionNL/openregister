@@ -5,26 +5,23 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
+ *
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
  */
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Service\IndexService;
-use OCA\OpenRegister\Service\Object\ContentSearchHandler;
-use OCA\OpenRegister\Service\Object\GetObject;
-use OCA\OpenRegister\Service\Object\RenderObject;
-use OCA\OpenRegister\Service\Object\SearchQueryHandler;
-use OCA\OpenRegister\Service\Object\FacetHandler;
-use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\IAppContainer;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
@@ -42,7 +39,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  *
@@ -55,574 +52,561 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    Query methods handle complex operations that benefit from cohesion
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class QueryHandler
-{
-    /**
-     * Constructor for QueryHandler.
-     *
-     * @param MagicMapper                    $objectMapper         Unified mapper for objects.
-     * @param GetObject                      $getHandler           Get handler.
-     * @param RenderObject                   $renderHandler        Render handler.
-     * @param SearchQueryHandler             $searchQueryHandler   Search handler.
-     * @param FacetHandler                   $facetHandler         Facet handler.
-     * @param PerformanceOptimizationHandler $performanceHandler   Performance handler.
-     * @param IAppContainer                  $container            App container.
-     * @param LoggerInterface                $logger               Logger.
-     * @param IRequest                       $request              Request object.
-     * @param ContentSearchHandler|null      $contentSearchHandler Optional content-search augmenter (WOO-517).
-     *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
-     */
-    public function __construct(
-        private readonly MagicMapper $objectMapper,
-        private readonly GetObject $getHandler,
-        private readonly RenderObject $renderHandler,
-        private readonly SearchQueryHandler $searchQueryHandler,
-        private readonly FacetHandler $facetHandler,
-        private readonly PerformanceOptimizationHandler $performanceHandler,
-        private readonly IAppContainer $container,
-        private readonly LoggerInterface $logger,
-        private readonly IRequest $request,
-        private readonly ?ContentSearchHandler $contentSearchHandler=null
-    ) {
-    }//end __construct()
+class QueryHandler {
+	/**
+	 * Hard maximum page size for list/search requests. A client-supplied
+	 * `_limit` above this is clamped down, so an oversized request (e.g.
+	 * `_limit=1000000`) cannot force an unbounded result load (DoS/OOM).
+	 */
+	public const MAX_PAGE_SIZE = 1000;
 
-    /**
-     * Count search objects matching the query.
-     *
-     * @param array       $query         The search query.
-     * @param bool        $_rbac         Whether to apply RBAC checks.
-     * @param bool        $_multitenancy Whether to apply multitenancy filtering.
-     * @param array|null  $ids           Optional array of IDs to filter by.
-     * @param string|null $uses          Optional uses parameter.
-     *
-     * @psalm-param   array<string, mixed> $query
-     * @psalm-param   array<int, string>|null $ids
-     * @phpstan-param array<string, mixed> $query
-     * @phpstan-param array<int, string>|null $ids
-     *
-     * @return int The count of matching objects.
-     *
-     * @psalm-return   int
-     * @phpstan-return int
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
-     */
-    public function countSearchObjects(
-        array $query=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        ?array $ids=null,
-        ?string $uses=null
-    ): int {
-        $activeOrgUuid = null;
-        if ($_multitenancy === true) {
-            $activeOrgUuid = $this->performanceHandler->getActiveOrganisationForContext();
-        }
+	/**
+	 * Constructor for QueryHandler.
+	 *
+	 * @param MagicMapper $objectMapper Unified mapper for objects.
+	 * @param GetObject $getHandler Get handler.
+	 * @param RenderObject $renderHandler Render handler.
+	 * @param SearchQueryHandler $searchQueryHandler Search handler.
+	 * @param FacetHandler $facetHandler Facet handler.
+	 * @param PerformanceOptimizationHandler $performanceHandler Performance handler.
+	 * @param ContentSearchHandler $contentSearchHandler Opt-in `_content_search` chunk fan-out handler.
+	 * @param IAppContainer $container App container.
+	 * @param LoggerInterface $logger Logger.
+	 * @param IRequest $request Request object.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
+	 */
+	public function __construct(
+		private readonly MagicMapper $objectMapper,
+		private readonly GetObject $getHandler,
+		private readonly RenderObject $renderHandler,
+		private readonly SearchQueryHandler $searchQueryHandler,
+		private readonly FacetHandler $facetHandler,
+		private readonly PerformanceOptimizationHandler $performanceHandler,
+		private readonly ContentSearchHandler $contentSearchHandler,
+		private readonly IAppContainer $container,
+		private readonly LoggerInterface $logger,
+		private readonly IRequest $request,
+	) {
+	}//end __construct()
 
-        // Count uses the unified mapper's countSearchObjects for proper magic mapper routing.
-        return $this->objectMapper->countSearchObjects(
-            query: $query,
-            _activeOrgUuid: $activeOrgUuid,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy,
-            ids: $ids,
-            uses: $uses
-        );
-    }//end countSearchObjects()
+	/**
+	 * Count search objects matching the query.
+	 *
+	 * @param array $query The search query.
+	 * @param bool $_rbac Whether to apply RBAC checks.
+	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
+	 * @param array|null $ids Optional array of IDs to filter by.
+	 * @param string|null $uses Optional uses parameter.
+	 *
+	 * @psalm-param   array<string, mixed> $query
+	 * @psalm-param   array<int, string>|null $ids
+	 * @phpstan-param array<string, mixed> $query
+	 * @phpstan-param array<int, string>|null $ids
+	 *
+	 * @return int The count of matching objects.
+	 *
+	 * @psalm-return   int
+	 * @phpstan-return int
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	public function countSearchObjects(
+		array $query = [],
+		bool $_rbac = true,
+		bool $_multitenancy = true,
+		?array $ids = null,
+		?string $uses = null,
+	): int {
+		$activeOrgUuid = null;
+		if ($_multitenancy === true) {
+			$activeOrgUuid = $this->performanceHandler->getActiveOrganisationForContext();
+		}
 
-    /**
-     * Search objects using clean query structure.
-     *
-     * @param array       $query         The search query.
-     * @param bool        $_rbac         Whether to apply RBAC checks.
-     * @param bool        $_multitenancy Whether to apply multitenancy filtering.
-     * @param array|null  $ids           Optional array of IDs to filter by.
-     * @param string|null $uses          Optional uses parameter.
-     * @param array|null  $views         Optional view IDs to apply.
-     *
-     * @psalm-param array<string, mixed> $query
-     * @psalm-param array<int, string>|null $ids
-     * @psalm-param array<int, string>|null $views
-     *
-     * @phpstan-param array<string, mixed> $query
-     * @phpstan-param array<int, string>|null $ids
-     * @phpstan-param array<int, string>|null $views
-     *
-     * @return ObjectEntity[]|int
-     *
-     * @psalm-return   int<0, max>|list<ObjectEntity>
-     * @phpstan-return array<int, ObjectEntity>|int
-     *
-     * @throws \OCP\DB\Exception If a database error occurs.
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
-     */
-    public function searchObjects(
-        array $query=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        ?array $ids=null,
-        ?string $uses=null,
-        ?array $views=null
-    ): array|int {
-        // Apply view filters if provided.
-        if ($views !== null && empty($views) === false) {
-            $query = $this->searchQueryHandler->applyViewsToQuery(query: $query, viewIds: $views);
-        }
+		// Count uses the unified mapper's countSearchObjects for proper magic mapper routing.
+		return $this->objectMapper->countSearchObjects(
+			query: $query,
+			_activeOrgUuid: $activeOrgUuid,
+			_rbac: $_rbac,
+			_multitenancy: $_multitenancy,
+			ids: $ids,
+			uses: $uses
+		);
+	}//end countSearchObjects()
 
-        // Detect if complex rendering is needed (extend, fields, filter, unset).
-        $hasComplexRendering = empty($query['_extend'] ?? []) === false
-            || empty($query['_fields'] ?? null) === false
-            || empty($query['_filter'] ?? null) === false
-            || empty($query['_unset'] ?? null) === false;
+	/**
+	 * Search objects using clean query structure.
+	 *
+	 * @param array $query The search query.
+	 * @param bool $_rbac Whether to apply RBAC checks.
+	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
+	 * @param array|null $ids Optional array of IDs to filter by.
+	 * @param string|null $uses Optional uses parameter.
+	 * @param array|null $views Optional view IDs to apply.
+	 *
+	 * @psalm-param array<string, mixed> $query
+	 * @psalm-param array<int, string>|null $ids
+	 * @psalm-param array<int, string>|null $views
+	 *
+	 * @phpstan-param array<string, mixed> $query
+	 * @phpstan-param array<int, string>|null $ids
+	 * @phpstan-param array<int, string>|null $views
+	 *
+	 * @return ObjectEntity[]|int
+	 *
+	 * @psalm-return   int<0, max>|list<ObjectEntity>
+	 * @phpstan-return array<int, ObjectEntity>|int
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	public function searchObjects(
+		array $query = [],
+		bool $_rbac = true,
+		bool $_multitenancy = true,
+		?array $ids = null,
+		?string $uses = null,
+		?array $views = null,
+	): array|int {
+		// Apply view filters if provided.
+		if ($views !== null && empty($views) === false) {
+			$query = $this->searchQueryHandler->applyViewsToQuery(query: $query, viewIds: $views);
+		}
 
-        // Get active organization context for multi-tenancy.
-        $activeOrgUuid = null;
-        if ($_multitenancy === true) {
-            $activeOrgUuid = $this->performanceHandler->getActiveOrganisationForContext();
-        }
+		// Detect if complex rendering is needed (extend, fields, filter, unset).
+		$hasComplexRendering = empty($query['_extend'] ?? []) === false
+			|| empty($query['_fields'] ?? null) === false
+			|| empty($query['_filter'] ?? null) === false
+			|| empty($query['_unset'] ?? null) === false;
 
-        // Execute database search.
-        $result = $this->objectMapper->searchObjects(
-            query: $query,
-            _activeOrgUuid: $activeOrgUuid,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy,
-            ids: $ids,
-            uses: $uses
-        );
+		// Get active organization context for multi-tenancy.
+		$activeOrgUuid = null;
+		if ($_multitenancy === true) {
+			$activeOrgUuid = $this->performanceHandler->getActiveOrganisationForContext();
+		}
 
-        // If _count is requested, return count instead of objects.
-        if (($query['_count'] ?? false) === true || ($query['_count'] ?? false) === 'true') {
-            return count($result);
-        }
+		// Execute database search.
+		$result = $this->objectMapper->searchObjects(
+			query: $query,
+			_activeOrgUuid: $activeOrgUuid,
+			_rbac: $_rbac,
+			_multitenancy: $_multitenancy,
+			ids: $ids,
+			uses: $uses
+		);
 
-        // Check if any result object has a schema with property-level authorization.
-        // If yes, we need to render to filter unauthorized properties.
-        if ($hasComplexRendering === false && is_array($result) === true && empty($result) === false) {
-            $schemaMapper   = $this->container->get(\OCA\OpenRegister\Db\SchemaMapper::class);
-            $checkedSchemas = [];
-            foreach ($result as $object) {
-                $schemaId = $object->getSchema();
-                if (isset($checkedSchemas[$schemaId]) === true) {
-                    if ($checkedSchemas[$schemaId] === true) {
-                        $hasComplexRendering = true;
-                        break;
-                    }
+		// If _count is requested, return count instead of objects.
+		if (($query['_count'] ?? false) === true || ($query['_count'] ?? false) === 'true') {
+			return count($result);
+		}
 
-                    continue;
-                }
+		// Check if any result object has a schema with property-level authorization.
+		// If yes, we need to render to filter unauthorized properties.
+		if ($hasComplexRendering === false && is_array($result) === true && empty($result) === false) {
+			$schemaMapper = $this->container->get(\OCA\OpenRegister\Db\SchemaMapper::class);
+			$checkedSchemas = [];
+			foreach ($result as $object) {
+				$schemaId = $object->getSchema();
+				if (isset($checkedSchemas[$schemaId]) === true) {
+					if ($checkedSchemas[$schemaId] === true) {
+						$hasComplexRendering = true;
+						break;
+					}
 
-                try {
-                    $schema = $schemaMapper->find($schemaId);
-                    $checkedSchemas[$schemaId] = $schema->hasPropertyAuthorization();
-                    if ($checkedSchemas[$schemaId] === true) {
-                        $hasComplexRendering = true;
-                        break;
-                    }
-                } catch (\Exception $e) {
-                    $checkedSchemas[$schemaId] = false;
-                }
-            }//end foreach
-        }//end if
+					continue;
+				}
 
-        // Return early if no complex rendering is needed.
-        if ($hasComplexRendering === false) {
-            return $result;
-        }
+				try {
+					$schema = $schemaMapper->find($schemaId);
+					$checkedSchemas[$schemaId] = $schema->hasPropertyAuthorization();
+					if ($checkedSchemas[$schemaId] === true) {
+						$hasComplexRendering = true;
+						break;
+					}
+				} catch (\Exception $e) {
+					$checkedSchemas[$schemaId] = false;
+				}
+			}//end foreach
+		}//end if
 
-        // Apply complex rendering (extend, fields, filter, unset).
-        return $this->renderHandler->renderEntities(
-            entities: $result,
-            _extend: $query['_extend'] ?? [],
-            _filter: $query['_filter'] ?? null,
-            _fields: $query['_fields'] ?? null,
-            _unset: $query['_unset'] ?? null,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy
-        );
-    }//end searchObjects()
+		// Return early if no complex rendering is needed.
+		if ($hasComplexRendering === false) {
+			return $result;
+		}
 
-    /**
-     * Search objects with pagination (main entry point).
-     *
-     * @param array       $query         The search query.
-     * @param bool        $_rbac         Whether to apply RBAC checks.
-     * @param bool        $_multitenancy Whether to apply multitenancy filtering.
-     * @param bool        $deleted       Whether to include deleted objects.
-     * @param array|null  $ids           Optional array of IDs to filter by.
-     * @param string|null $uses          Optional uses parameter.
-     * @param array|null  $views         Optional view IDs to apply.
-     *
-     * @psalm-param   array<string, mixed> $query
-     * @psalm-param   array<int, string>|null $ids
-     * @psalm-param   array<int, string>|null $views
-     * @phpstan-param array<string, mixed> $query
-     * @phpstan-param array<int, string>|null $ids
-     * @phpstan-param array<int, string>|null $views
-     *
-     * @return array Paginated search results.
-     *
-     * @psalm-return   array<string, mixed>
-     * @phpstan-return array<string, mixed>
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
-     */
-    public function searchObjectsPaginated(
-        array $query=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $deleted=false,
-        ?array $ids=null,
-        ?string $uses=null,
-        ?array $views=null
-    ): array {
-        // Apply view filters if provided.
-        if ($views !== null && empty($views) === false) {
-            $query = $this->searchQueryHandler->applyViewsToQuery(query: $query, viewIds: $views);
-        }
+		// Apply complex rendering (extend, fields, filter, unset).
+		return $this->renderHandler->renderEntities(
+			entities: $result,
+			_extend: $query['_extend'] ?? [],
+			_filter: $query['_filter'] ?? null,
+			_fields: $query['_fields'] ?? null,
+			_unset: $query['_unset'] ?? null,
+			_rbac: $_rbac,
+			_multitenancy: $_multitenancy
+		);
+	}//end searchObjects()
 
-        // Strip deprecated _source parameter (silently ignore for backward compatibility).
-        unset($query['_source']);
+	/**
+	 * Search objects with pagination (main entry point).
+	 *
+	 * @param array $query The search query.
+	 * @param bool $_rbac Whether to apply RBAC checks.
+	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
+	 * @param bool $deleted Whether to include deleted objects.
+	 * @param array|null $ids Optional array of IDs to filter by.
+	 * @param string|null $uses Optional uses parameter.
+	 * @param array|null $views Optional view IDs to apply.
+	 *
+	 * @psalm-param   array<string, mixed> $query
+	 * @psalm-param   array<int, string>|null $ids
+	 * @psalm-param   array<int, string>|null $views
+	 * @phpstan-param array<string, mixed> $query
+	 * @phpstan-param array<int, string>|null $ids
+	 * @phpstan-param array<int, string>|null $views
+	 *
+	 * @return array Paginated search results.
+	 *
+	 * @psalm-return   array<string, mixed>
+	 * @phpstan-return array<string, mixed>
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	public function searchObjectsPaginated(
+		array $query = [],
+		bool $_rbac = true,
+		bool $_multitenancy = true,
+		bool $deleted = false,
+		?array $ids = null,
+		?string $uses = null,
+		?array $views = null,
+	): array {
+		// Apply view filters if provided.
+		if ($views !== null && empty($views) === false) {
+			$query = $this->searchQueryHandler->applyViewsToQuery(query: $query, viewIds: $views);
+		}
 
-        // Use SOLR if enabled in config, unless relation-based search params are provided.
-        $hasIds        = isset($query['_ids']) === true;
-        $hasUses       = isset($query['_uses']) === true;
-        $hasIdsParam   = $ids !== null;
-        $hasUsesParam  = $uses !== null;
-        $isSolrEnabled = $this->searchQueryHandler->isSolrAvailable();
+		// Strip deprecated _source parameter (silently ignore for backward compatibility).
+		unset($query['_source']);
 
-        if ($isSolrEnabled === true
-            && $hasIdsParam === false && $hasUsesParam === false
-            && $hasIds === false && $hasUses === false
-        ) {
-            // Forward to Index service - let it handle availability checks and error handling.
-            $indexService = $this->container->get(IndexService::class);
-            $result       = $indexService->searchObjects(
-                query: $query,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy,
-                deleted: $deleted
-            );
-            $result['@self']['source']  = 'index';
-            $result['@self']['query']   = $query;
-            $result['@self']['rbac']    = $_rbac;
-            $result['@self']['multi']   = $_multitenancy;
-            $result['@self']['deleted'] = $deleted;
-            return $result;
-        }
+		// Use database search (the only search backend; the external Solr/index tier was removed).
+		$result = $this->searchObjectsPaginatedDatabase(
+			query: $query,
+			_rbac: $_rbac,
+			_multitenancy: $_multitenancy,
+			deleted: $deleted,
+			ids: $ids,
+			uses: $uses
+		);
+		// Use source from result if available (e.g., magic_mapper for multi-schema), otherwise default to database.
+		$result['@self']['source'] = $result['@self']['source'] ?? 'database';
+		$result['@self']['query'] = $query;
+		$result['@self']['rbac'] = $_rbac;
+		$result['@self']['multi'] = $_multitenancy;
+		$result['@self']['deleted'] = $deleted;
 
-        // Use database search.
-        $result = $this->searchObjectsPaginatedDatabase(
-            query: $query,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy,
-            deleted: $deleted,
-            ids: $ids,
-            uses: $uses
-        );
-        // Use source from result if available (e.g., magic_mapper for multi-schema), otherwise default to database.
-        $result['@self']['source']  = $result['@self']['source'] ?? 'database';
-        $result['@self']['query']   = $query;
-        $result['@self']['rbac']    = $_rbac;
-        $result['@self']['multi']   = $_multitenancy;
-        $result['@self']['deleted'] = $deleted;
+		return $result;
+	}//end searchObjectsPaginated()
 
-        return $result;
-    }//end searchObjectsPaginated()
+	/**
+	 * Database-based paginated search (extracted from main method).
+	 *
+	 * @param array $query The search query.
+	 * @param bool $_rbac Whether to apply RBAC checks.
+	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
+	 * @param bool $deleted Whether to include deleted objects.
+	 * @param array|null $ids Optional array of IDs to filter by.
+	 * @param string|null $uses Optional uses parameter.
+	 *
+	 * @psalm-param   array<string, mixed> $query
+	 * @psalm-param   array<int, string>|null $ids
+	 * @phpstan-param array<string, mixed> $query
+	 * @phpstan-param array<int, string>|null $ids
+	 *
+	 * @return array Paginated search results.
+	 *
+	 * @psalm-return   array<string, mixed>
+	 * @phpstan-return array<string, mixed>
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
+	 */
+	public function searchObjectsPaginatedDatabase(
+		array $query = [],
+		bool $_rbac = true,
+		bool $_multitenancy = true,
+		bool $deleted = false,
+		?array $ids = null,
+		?string $uses = null,
+	): array {
+		$startTime = microtime(true);
+		$metrics = [];
 
-    /**
-     * Database-based paginated search (extracted from main method).
-     *
-     * @param array       $query         The search query.
-     * @param bool        $_rbac         Whether to apply RBAC checks.
-     * @param bool        $_multitenancy Whether to apply multitenancy filtering.
-     * @param bool        $deleted       Whether to include deleted objects.
-     * @param array|null  $ids           Optional array of IDs to filter by.
-     * @param string|null $uses          Optional uses parameter.
-     *
-     * @psalm-param   array<string, mixed> $query
-     * @psalm-param   array<int, string>|null $ids
-     * @phpstan-param array<string, mixed> $query
-     * @phpstan-param array<int, string>|null $ids
-     *
-     * @return array Paginated search results.
-     *
-     * @psalm-return   array<string, mixed>
-     * @phpstan-return array<string, mixed>
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
-     */
-    public function searchObjectsPaginatedDatabase(
-        array $query=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $deleted=false,
-        ?array $ids=null,
-        ?string $uses=null
-    ): array {
-        $startTime = microtime(true);
-        $metrics   = [];
+		// Extract pagination parameters (limit=0 is valid for count/facets-only requests).
+		// Clamp to MAX_PAGE_SIZE so an oversized `_limit` cannot force an unbounded load.
+		$limit = min(max(0, (int)($query['_limit'] ?? 20)), self::MAX_PAGE_SIZE);
+		$offset = $query['_offset'] ?? null;
+		$page = $query['_page'] ?? null;
 
-        // Extract pagination parameters (limit=0 is valid for count/facets-only requests).
-        $limit  = max(0, (int) ($query['_limit'] ?? 20));
-        $offset = $query['_offset'] ?? null;
-        $page   = $query['_page'] ?? null;
+		// Calculate offset from page if provided.
+		if ($page !== null && $offset === null) {
+			$page = max(1, (int)$page);
+			$offset = ($page - 1) * $limit;
+		}
 
-        // Calculate offset from page if provided.
-        if ($page !== null && $offset === null) {
-            $page   = max(1, (int) $page);
-            $offset = ($page - 1) * $limit;
-        }
+		// Calculate page from offset if not provided (avoid division by zero).
+		if ($page === null && $offset !== null && $limit > 0) {
+			$page = (int)floor($offset / $limit) + 1;
+		}
 
-        // Calculate page from offset if not provided (avoid division by zero).
-        if ($page === null && $offset !== null && $limit > 0) {
-            $page = (int) floor($offset / $limit) + 1;
-        }
+		// Default values.
+		$page = $page ?? 1;
+		$offset = $offset ?? 0;
 
-        // Default values.
-        $page   = $page ?? 1;
-        $offset = $offset ?? 0;
+		// Prepare paginated query (remove pagination params for count query).
+		$paginatedQuery = array_merge($query, ['_limit' => $limit, '_offset' => $offset]);
+		unset($paginatedQuery['_page'], $paginatedQuery['_facetable'], $paginatedQuery['_extend']);
 
-        // Prepare paginated query (remove pagination params for count query).
-        $paginatedQuery = array_merge($query, ['_limit' => $limit, '_offset' => $offset]);
-        unset($paginatedQuery['_page'], $paginatedQuery['_facetable'], $paginatedQuery['_extend']);
+		$countQuery = $query;
+		unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page'], $countQuery['_facetable'], $countQuery['_extend']);
 
-        $countQuery = $query;
-        unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page'], $countQuery['_facetable'], $countQuery['_extend']);
+		// Get active organization context for multi-tenancy.
+		$activeOrgUuid = null;
+		if ($_multitenancy === true) {
+			$activeOrgUuid = $this->performanceHandler->getActiveOrganisationForContext();
+		}
 
-        // Get active organization context for multi-tenancy.
-        $activeOrgUuid = null;
-        if ($_multitenancy === true) {
-            $activeOrgUuid = $this->performanceHandler->getActiveOrganisationForContext();
-        }
+		// Use optimized combined search+count that loads register/schema once.
+		$searchStart = microtime(true);
+		$searchResult = $this->objectMapper->searchObjectsPaginated(
+			searchQuery: $paginatedQuery,
+			countQuery: $countQuery,
+			_activeOrgUuid: $activeOrgUuid,
+			_rbac: $_rbac,
+			_multitenancy: $_multitenancy,
+			ids: $ids,
+			uses: $uses
+		);
+		$metrics['search'] = round((microtime(true) - $searchStart) * 1000, 2);
 
-        // Use optimized combined search+count that loads register/schema once.
-        $searchStart       = microtime(true);
-        $searchResult      = $this->objectMapper->searchObjectsPaginated(
-            searchQuery: $paginatedQuery,
-            countQuery: $countQuery,
-            _activeOrgUuid: $activeOrgUuid,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy,
-            ids: $ids,
-            uses: $uses
-        );
-        $metrics['search'] = round((microtime(true) - $searchStart) * 1000, 2);
+		$results = $searchResult['results'];
+		$total = $searchResult['total'];
+		$registers = $searchResult['registers'] ?? [];
+		$schemas = $searchResult['schemas'] ?? [];
+		$ignoredFilters = $searchResult['ignoredFilters'] ?? [];
+		$source = $searchResult['source'] ?? 'database';
 
-        $results        = $searchResult['results'];
-        $total          = $searchResult['total'];
-        $registers      = $searchResult['registers'] ?? [];
-        $schemas        = $searchResult['schemas'] ?? [];
-        $ignoredFilters = $searchResult['ignoredFilters'] ?? [];
-        $source         = $searchResult['source'] ?? 'database';
+		// Include detailed metrics from mapper if available.
+		if (isset($searchResult['metrics']) === true) {
+			$metrics['db_search'] = $searchResult['metrics']['search_ms'] ?? null;
+			$metrics['db_count'] = $searchResult['metrics']['count_ms'] ?? null;
+		}
 
-        // Include detailed metrics from mapper if available.
-        if (isset($searchResult['metrics']) === true) {
-            $metrics['db_search'] = $searchResult['metrics']['search_ms'] ?? null;
-            $metrics['db_count']  = $searchResult['metrics']['count_ms'] ?? null;
-        }
+		// Opt-in `_content_search` fan-out (ZKN-CONTENT-001): widen the metadata-match
+		// result set with objects whose attached-file (or object) chunk body text
+		// matches `_search`. Absent or false is byte-identical to pre-change behaviour —
+		// no additional query is issued against openregister_chunks. Runs BEFORE the
+		// render/extend pipeline below so appended rows get the same `_extend`/`_fields`
+		// treatment as metadata-match rows (ZKN-CONTENT-003).
+		if (filter_var($query['_content_search'] ?? false, FILTER_VALIDATE_BOOLEAN) === true) {
+			$contentSearchStart = microtime(true);
+			$augmented = $this->contentSearchHandler->augmentWithChunkMatches(
+				query: $query,
+				results: $results,
+				total: $total,
+				limit: $limit,
+				_rbac: $_rbac,
+				_multitenancy: $_multitenancy
+			);
+			$results = $augmented['results'];
+			$total = $augmented['total'];
+			$metrics['content_search'] = round((microtime(true) - $contentSearchStart) * 1000, 2);
+		}
 
-        // Opt-in `_content_search` fan-out (ZKN-CONTENT-001, WOO-517 / PR #473):
-        // widen the metadata-match result set with objects whose attached-file (or
-        // object) chunk body text matches `_search`. Absent or false keeps the
-        // pre-WOO-517 behaviour byte-identical — no additional query is issued
-        // against `openregister_chunks`. HTTP-string coercion via
-        // `filter_var(FILTER_VALIDATE_BOOLEAN)` because the flag arrives as
-        // string `"true"` on the wire; strict `=== true` would silently ignore it.
-        // Handler is optional (nullable in the constructor) so any older
-        // wiring/tests that instantiate QueryHandler without it keep working.
-        $contentSearchRequested = (
-            filter_var($query['_content_search'] ?? false, FILTER_VALIDATE_BOOLEAN) === true
-        );
-        if ($this->contentSearchHandler !== null && $contentSearchRequested === true) {
-            $contentSearchStart = microtime(true);
-            $augmented          = $this->contentSearchHandler->augmentWithChunkMatches(
-                query: $query,
-                results: $results,
-                total: $total,
-                limit: $limit,
-                offset: $offset,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy
-            );
-            $results            = $augmented['results'];
-            $total = $augmented['total'];
-            $metrics['content_search'] = round((microtime(true) - $contentSearchStart) * 1000, 2);
-        } else if ($this->contentSearchHandler === null && $contentSearchRequested === true) {
-            // Fail-open: DI-nullable ContentSearchHandler is a safety net for older
-            // wiring/tests, but silent activation-failure on a real request is hard
-            // to diagnose. Warn so operators can see the mis-wire in the log.
-            $this->logger->warning('[QueryHandler] _content_search=true but ContentSearchHandler unwired — augmentation skipped.');
-        }//end if
+		// Detect if complex rendering is needed (extend, fields, filter, unset).
+		// Skip @self.register and @self.schema from extend since we include them in response @self.
+		$extend = $query['_extend'] ?? [];
+		if (is_string($extend) === true) {
+			$extend = array_filter(array_map('trim', explode(',', $extend)));
+		}
 
-        // Detect if complex rendering is needed (extend, fields, filter, unset).
-        // Skip @self.register and @self.schema from extend since we include them in response @self.
-        $extend = $query['_extend'] ?? [];
-        if (is_string($extend) === true) {
-            $extend = array_filter(array_map('trim', explode(',', $extend)));
-        }
+		// Remove schema and register extensions from extend - we provide them at response level.
+		// This prevents slow per-object extension; instead we batch-load once for all results.
+		// Supports multiple formats: @self.schema, @self.register, _schema, _register.
+		$extend = array_filter(
+			$extend,
+			function (string $item): bool {
+				return !in_array($item, ['@self.schema', '@self.register', '_schema', '_register'], true);
+			}
+		);
 
-        // Remove schema and register extensions from extend - we provide them at response level.
-        // This prevents slow per-object extension; instead we batch-load once for all results.
-        // Supports multiple formats: @self.schema, @self.register, _schema, _register.
-        $extend = array_filter(
-            $extend,
-            function (string $item): bool {
-                return !in_array($item, ['@self.schema', '@self.register', '_schema', '_register'], true);
-            }
-        );
+		// Check if any schema has property-level authorization.
+		// If yes, we need to render to filter unauthorized properties.
+		// Schemas may be Entity objects or serialized arrays from MagicMapper.
+		$hasPropAuth = false;
+		foreach ($schemas as $schema) {
+			if ($schema instanceof \OCA\OpenRegister\Db\Schema
+				&& $schema->hasPropertyAuthorization() === true
+			) {
+				$hasPropAuth = true;
+				break;
+			} elseif (is_array($schema) === true && isset($schema['properties']) === true) {
+				foreach ($schema['properties'] as $propertyConfig) {
+					if (is_array($propertyConfig) === true
+						&& isset($propertyConfig['authorization']) === true
+						&& empty($propertyConfig['authorization']) === false
+					) {
+						$hasPropAuth = true;
+						break 2;
+					}
+				}
+			}
+		}
 
-        // Check if any schema has property-level authorization.
-        // If yes, we need to render to filter unauthorized properties.
-        // Schemas may be Entity objects or serialized arrays from MagicMapper.
-        $hasPropAuth = false;
-        foreach ($schemas as $schema) {
-            if ($schema instanceof \OCA\OpenRegister\Db\Schema
-                && $schema->hasPropertyAuthorization() === true
-            ) {
-                $hasPropAuth = true;
-                break;
-            } else if (is_array($schema) === true && isset($schema['properties']) === true) {
-                foreach ($schema['properties'] as $propertyConfig) {
-                    if (is_array($propertyConfig) === true
-                        && isset($propertyConfig['authorization']) === true
-                        && empty($propertyConfig['authorization']) === false
-                    ) {
-                        $hasPropAuth = true;
-                        break 2;
-                    }
-                }
-            }
-        }
+		$hasComplexRendering = empty($extend) === false
+			|| empty($query['_fields'] ?? null) === false
+			|| empty($query['_filter'] ?? null) === false
+			|| empty($query['_unset'] ?? null) === false
+			|| $hasPropAuth === true;
 
-        $hasComplexRendering = empty($extend) === false
-            || empty($query['_fields'] ?? null) === false
-            || empty($query['_filter'] ?? null) === false
-            || empty($query['_unset'] ?? null) === false
-            || $hasPropAuth === true;
+		// Apply complex rendering if needed.
+		if ($hasComplexRendering === true && is_array($results) === true) {
+			$renderStart = microtime(true);
+			$results = $this->renderHandler->renderEntities(
+				entities: $results,
+				_extend: $extend,
+				_filter: $query['_filter'] ?? null,
+				_fields: $query['_fields'] ?? null,
+				_unset: $query['_unset'] ?? null,
+				_rbac: $_rbac,
+				_multitenancy: $_multitenancy
+			);
+			$metrics['render'] = round((microtime(true) - $renderStart) * 1000, 2);
+		} elseif ($hasComplexRendering === false && is_array($results) === true) {
+			// Cheap path: rows did not go through renderEntities, so @self.files is
+			// absent or stale. Per the files-render-extension capability, every list
+			// row MUST carry @self.files (lightweight ID list by default). Issue a
+			// single batched FileMapper lookup and attach IDs to each row.
+			$filesStart = microtime(true);
+			$this->renderHandler->attachLightweightFilesToRows(rows: $results);
+			$metrics['lightweightFiles'] = round((microtime(true) - $filesStart) * 1000, 2);
 
-        // Apply complex rendering if needed.
-        if ($hasComplexRendering === true && is_array($results) === true) {
-            $renderStart       = microtime(true);
-            $results           = $this->renderHandler->renderEntities(
-                entities: $results,
-                _extend: $extend,
-                _filter: $query['_filter'] ?? null,
-                _fields: $query['_fields'] ?? null,
-                _unset: $query['_unset'] ?? null,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy
-            );
-            $metrics['render'] = round((microtime(true) - $renderStart) * 1000, 2);
-        } else if ($hasComplexRendering === false && is_array($results) === true) {
-            // Cheap path: rows did not go through renderEntities, so @self.files is
-            // absent or stale. Per the files-render-extension capability, every list
-            // row MUST carry @self.files (lightweight ID list by default). Issue a
-            // single batched FileMapper lookup and attach IDs to each row.
-            $filesStart = microtime(true);
-            $this->renderHandler->attachLightweightFilesToRows(rows: $results);
-            $metrics['lightweightFiles'] = round((microtime(true) - $filesStart) * 1000, 2);
-        }//end if
+			// Cheap path also skips renderEntity, which is where translatable
+			// properties get projected to the negotiated language. Without this,
+			// list rows return raw language-keyed maps (e.g. {"nl":...}) while the
+			// single-object read returns a projected string. Resolve them here so
+			// both paths agree. No-op for `?_translations=all` and for schemas with
+			// no translatable properties (both early-return in the handler).
+			$translateStart = microtime(true);
+			$this->renderHandler->resolveTranslationsForRows(rows: $results);
+			$metrics['translations'] = round((microtime(true) - $translateStart) * 1000, 2);
 
-        // Calculate total pages (avoid division by zero when limit=0).
-        $pages = 0;
-        if ($limit > 0) {
-            $pages = max(1, (int) ceil($total / $limit));
-        }
+			// Cheap path also skips renderEntity, which is where write-only properties are
+			// redacted (openregister#380, ocon#147). Without this, a LIST read returns
+			// secrets that a single-object read would strip — and the OpenConnector leak
+			// was exactly a list read. Apply the same redaction to the raw rows here.
+			$redactStart = microtime(true);
+			$this->renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $_rbac);
+			$metrics['writeOnlyRedaction'] = round((microtime(true) - $redactStart) * 1000, 2);
+		}//end if
 
-        // Build result structure with registers/schemas indexed by ID at response @self level.
-        $paginatedResults = [
-            'results' => $results,
-            'total'   => $total,
-            'page'    => $page,
-            'pages'   => $pages,
-            'limit'   => $limit,
-            'offset'  => $offset,
-            'facets'  => [],
-            '@self'   => [
-                'source' => $source,
-            ],
-        ];
+		// Calculate total pages (avoid division by zero when limit=0).
+		$pages = 0;
+		if ($limit > 0) {
+			$pages = max(1, (int)ceil($total / $limit));
+		}
 
-        // Add registers and schemas indexed by ID to response @self.
-        // Only include when explicitly requested via _extend parameter.
-        // Supports both singular (_register, _schema) and plural (_registers, _schemas) forms.
-        $extend = $query['_extend'] ?? [];
-        if (is_string($extend) === true) {
-            $extend = explode(',', $extend);
-        }
+		// Build result structure with registers/schemas indexed by ID at response @self level.
+		$paginatedResults = [
+			'results' => $results,
+			'total' => $total,
+			'page' => $page,
+			'pages' => $pages,
+			'limit' => $limit,
+			'offset' => $offset,
+			'facets' => [],
+			'@self' => [
+				'source' => $source,
+			],
+		];
 
-        // Check for register extension - supports multiple formats.
-        $wantsRegisters = in_array('_registers', $extend, true) === true
-            || in_array('_register', $extend, true) === true
-            || in_array('@self.registers', $extend, true) === true
-            || in_array('@self.register', $extend, true) === true;
-        if ($wantsRegisters === true && empty($registers) === false) {
-            $paginatedResults['@self']['registers'] = $registers;
-        }
+		// Add registers and schemas indexed by ID to response @self.
+		// Only include when explicitly requested via _extend parameter.
+		// Supports both singular (_register, _schema) and plural (_registers, _schemas) forms.
+		$extend = $query['_extend'] ?? [];
+		if (is_string($extend) === true) {
+			$extend = explode(',', $extend);
+		}
 
-        // Check for schema extension - supports multiple formats.
-        $wantsSchemas = in_array('_schemas', $extend, true) === true
-            || in_array('_schema', $extend, true) === true
-            || in_array('@self.schemas', $extend, true) === true
-            || in_array('@self.schema', $extend, true) === true;
-        if ($wantsSchemas === true && empty($schemas) === false) {
-            $paginatedResults['@self']['schemas'] = $schemas;
-        }
+		// Check for register extension - supports multiple formats.
+		$wantsRegisters = in_array('_registers', $extend, true) === true
+			|| in_array('_register', $extend, true) === true
+			|| in_array('@self.registers', $extend, true) === true
+			|| in_array('@self.register', $extend, true) === true;
+		if ($wantsRegisters === true && empty($registers) === false) {
+			$paginatedResults['@self']['registers'] = $registers;
+		}
 
-        // Add ignored filters to @self if any filters were ignored.
-        // This helps clients understand why they might be getting unexpected results.
-        if (empty($ignoredFilters) === false) {
-            $paginatedResults['@self']['ignoredFilters'] = $ignoredFilters;
+		// Check for schema extension - supports multiple formats.
+		$wantsSchemas = in_array('_schemas', $extend, true) === true
+			|| in_array('_schema', $extend, true) === true
+			|| in_array('@self.schemas', $extend, true) === true
+			|| in_array('@self.schema', $extend, true) === true;
+		if ($wantsSchemas === true && empty($schemas) === false) {
+			$paginatedResults['@self']['schemas'] = $schemas;
+		}
 
-            // Check if any ignored filters look like control parameters missing the _ prefix.
-            $controlParams  = ['limit', 'offset', 'page', 'order', 'sort', 'search', 'extend', 'fields', 'filter', 'unset'];
-            $mistakenParams = array_intersect($ignoredFilters, $controlParams);
-            if (empty($mistakenParams) === false) {
-                $suggestions = array_map(fn($param) => "_{$param}", $mistakenParams);
-                $paramList   = implode(', ', $mistakenParams);
-                $sugList     = implode(', ', $suggestions);
-                $msg1        = 'Query returned 0 results because '.$paramList;
-                $msg2        = ' was treated as a property filter.';
-                $msg3        = ' Did you mean '.$sugList;
-                $hint        = $msg1.$msg2.$msg3.'? Control params require underscore prefix.';
-                $paginatedResults['@self']['hint'] = $hint;
-            }
-        }
+		// Add ignored filters to @self if any filters were ignored.
+		// This helps clients understand why they might be getting unexpected results.
+		if (empty($ignoredFilters) === false) {
+			$paginatedResults['@self']['ignoredFilters'] = $ignoredFilters;
 
-        // Add facets if requested.
-        $hasFacets    = empty($query['_facets']) === false;
-        $hasFacetable = ($query['_facetable'] ?? false) === true || ($query['_facetable'] ?? false) === 'true';
+			// Check if any ignored filters look like control parameters missing the _ prefix.
+			$controlParams = ['limit', 'offset', 'page', 'order', 'sort', 'search', 'extend', 'fields', 'filter', 'unset'];
+			$mistakenParams = array_intersect($ignoredFilters, $controlParams);
+			if (empty($mistakenParams) === false) {
+				$suggestions = array_map(fn ($param) => "_{$param}", $mistakenParams);
+				$paramList = implode(', ', $mistakenParams);
+				$sugList = implode(', ', $suggestions);
+				$msg1 = 'Query returned 0 results because ' . $paramList;
+				$msg2 = ' was treated as a property filter.';
+				$msg3 = ' Did you mean ' . $sugList;
+				$hint = $msg1 . $msg2 . $msg3 . '? Control params require underscore prefix.';
+				$paginatedResults['@self']['hint'] = $hint;
+			}
+		}
 
-        if ($hasFacets === true) {
-            $facetStart  = microtime(true);
-            $facetResult = $this->facetHandler->getFacetsForObjects($countQuery);
-            $paginatedResults['facets'] = $facetResult['facets'] ?? [];
-            $metrics['facets']          = round((microtime(true) - $facetStart) * 1000, 2);
+		// Add facets if requested.
+		$hasFacets = empty($query['_facets']) === false;
+		$hasFacetable = ($query['_facetable'] ?? false) === true || ($query['_facetable'] ?? false) === 'true';
 
-            // Include per-facet timing breakdown if available.
-            if (isset($facetResult['performance_metadata']['facet_db_ms']) === true) {
-                $metrics['facets_breakdown'] = $facetResult['performance_metadata']['facet_db_ms'];
-            }
-        }
+		if ($hasFacets === true) {
+			$facetStart = microtime(true);
+			$facetResult = $this->facetHandler->getFacetsForObjects($countQuery);
+			$paginatedResults['facets'] = $facetResult['facets'] ?? [];
+			$metrics['facets'] = round((microtime(true) - $facetStart) * 1000, 2);
 
-        if ($hasFacetable === true) {
-            $facetableStart = microtime(true);
-            $paginatedResults['facetable'] = $this->facetHandler->getFacetableFields(
-                baseQuery: $countQuery,
-                _sampleSize: 100
-            );
-            $metrics['facetable']          = round((microtime(true) - $facetableStart) * 1000, 2);
-        }
+			// Include per-facet timing breakdown if available.
+			if (isset($facetResult['performance_metadata']['facet_db_ms']) === true) {
+				$metrics['facets_breakdown'] = $facetResult['performance_metadata']['facet_db_ms'];
+			}
+		}
 
-        // Always add performance metrics to @self for debugging.
-        $metrics['total'] = round((microtime(true) - $startTime) * 1000, 2);
-        $paginatedResults['@self']['metrics'] = $metrics;
+		if ($hasFacetable === true) {
+			$facetableStart = microtime(true);
+			$paginatedResults['facetable'] = $this->facetHandler->getFacetableFields(
+				baseQuery: $countQuery,
+				_sampleSize: 100
+			);
+			$metrics['facetable'] = round((microtime(true) - $facetableStart) * 1000, 2);
+		}
 
-        return $paginatedResults;
-    }//end searchObjectsPaginatedDatabase()
+		// Always add performance metrics to @self for debugging.
+		$metrics['total'] = round((microtime(true) - $startTime) * 1000, 2);
+		$paginatedResults['@self']['metrics'] = $metrics;
+
+		return $paginatedResults;
+	}//end searchObjectsPaginatedDatabase()
 }//end class

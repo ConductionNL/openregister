@@ -19,114 +19,108 @@ use Psr\Log\LoggerInterface;
  * Branch coverage tests for SaveObjects — targets uncovered branches in
  * saveObjects (empty input, deduplication, no valid objects after prep).
  */
-class SaveObjectsBranchCoverageTest extends TestCase
-{
-    private SaveObjects $service;
-    private MagicMapper&MockObject $objectMapper;
-    private SchemaMapper&MockObject $schemaMapper;
-    private RegisterMapper&MockObject $registerMapper;
-    private SaveObject&MockObject $saveHandler;
-    private OrganisationService&MockObject $organisationService;
-    private IUserSession&MockObject $userSession;
-    private LoggerInterface&MockObject $logger;
+class SaveObjectsBranchCoverageTest extends TestCase {
+	private SaveObjects $service;
+	private MagicMapper&MockObject $objectMapper;
+	private SchemaMapper&MockObject $schemaMapper;
+	private RegisterMapper&MockObject $registerMapper;
+	private SaveObject&MockObject $saveHandler;
+	private OrganisationService&MockObject $organisationService;
+	private IUserSession&MockObject $userSession;
+	private LoggerInterface&MockObject $logger;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->objectMapper = $this->createMock(MagicMapper::class);
-        $this->schemaMapper = $this->createMock(SchemaMapper::class);
-        $this->registerMapper = $this->createMock(RegisterMapper::class);
-        $this->saveHandler = $this->createMock(SaveObject::class);
-        $this->organisationService = $this->createMock(OrganisationService::class);
-        $this->userSession = $this->createMock(IUserSession::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
+		$this->objectMapper = $this->createMock(MagicMapper::class);
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->registerMapper = $this->createMock(RegisterMapper::class);
+		$this->saveHandler = $this->createMock(SaveObject::class);
+		$this->organisationService = $this->createMock(OrganisationService::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        // Clear static caches via reflection
-        $ref = new \ReflectionClass(SaveObjects::class);
-        foreach (['schemaCache', 'schemaAnalysisCache', 'registerCache'] as $prop) {
-            $p = $ref->getProperty($prop);
-            $p->setValue(null, []);
-        }
+		// Clear static caches via reflection
+		$ref = new \ReflectionClass(SaveObjects::class);
+		foreach (['schemaCache', 'schemaAnalysisCache', 'registerCache'] as $prop) {
+			$p = $ref->getProperty($prop);
+			$p->setValue(null, []);
+		}
 
-        $this->service = new SaveObjects(
-            $this->objectMapper,
-            $this->schemaMapper,
-            $this->registerMapper,
-            $this->saveHandler,
-            $this->userSession,
-            $this->organisationService,
-            $this->logger
-        );
-    }
+		$this->service = new SaveObjects(
+			$this->objectMapper,
+			$this->schemaMapper,
+			$this->registerMapper,
+			$this->saveHandler,
+			$this->userSession,
+			$this->organisationService,
+			$this->logger
+		);
+	}
 
-    // =========================================================================
-    // saveObjects — empty input
-    // =========================================================================
+	// =========================================================================
+	// saveObjects — empty input
+	// =========================================================================
 
-    public function testSaveObjectsEmptyArray(): void
-    {
-        $result = $this->service->saveObjects([]);
+	public function testSaveObjectsEmptyArray(): void {
+		$result = $this->service->saveObjects([]);
 
-        $this->assertSame([], $result['saved']);
-        $this->assertSame([], $result['updated']);
-        $this->assertSame([], $result['unchanged']);
-        $this->assertSame([], $result['invalid']);
-        $this->assertSame([], $result['errors']);
-        $this->assertSame(0, $result['statistics']['totalProcessed']);
-    }
+		$this->assertSame([], $result['saved']);
+		$this->assertSame([], $result['updated']);
+		$this->assertSame([], $result['unchanged']);
+		$this->assertSame([], $result['invalid']);
+		$this->assertSame([], $result['errors']);
+		$this->assertSame(0, $result['statistics']['totalProcessed']);
+	}
 
-    // =========================================================================
-    // saveObjects — mixed schema with no schema in objects throws exception
-    // =========================================================================
+	// =========================================================================
+	// saveObjects — mixed schema with no schema in objects throws exception
+	// =========================================================================
 
-    public function testSaveObjectsMixedSchemaNoValidObjects(): void
-    {
-        // Objects without @self.schema cause prepareMixedSchemaObject to throw
-        // when schema is not found in cache.
-        $this->expectException(\Exception::class);
-        $this->service->saveObjects(
-            [['id' => '1', 'name' => 'test']],
-            null,
-            null
-        );
-    }
+	public function testSaveObjectsMixedSchemaNoValidObjects(): void {
+		// Objects without @self.schema cause prepareMixedSchemaObject to throw
+		// when schema is not found in cache.
+		$this->expectException(\Exception::class);
+		$this->service->saveObjects(
+			[['id' => '1', 'name' => 'test']],
+			null,
+			null
+		);
+	}
 
-    // =========================================================================
-    // saveObjects — deduplication removes duplicates
-    // =========================================================================
+	// =========================================================================
+	// saveObjects — deduplication removes duplicates
+	// =========================================================================
 
-    public function testSaveObjectsDeduplicatesById(): void
-    {
-        // Objects without schema info will throw on mixed schema path.
-        $this->expectException(\Exception::class);
+	public function testSaveObjectsDeduplicatesById(): void {
+		// Objects without schema info will throw on mixed schema path.
+		$this->expectException(\Exception::class);
 
-        $objects = [
-            ['id' => 'same-id', 'name' => 'first'],
-            ['id' => 'same-id', 'name' => 'second'],
-            ['id' => 'unique-id', 'name' => 'third'],
-        ];
+		$objects = [
+			['id' => 'same-id', 'name' => 'first'],
+			['id' => 'same-id', 'name' => 'second'],
+			['id' => 'unique-id', 'name' => 'third'],
+		];
 
-        $this->service->saveObjects($objects, null, null);
-    }
+		$this->service->saveObjects($objects, null, null);
+	}
 
-    // =========================================================================
-    // saveObjects — deduplication disabled
-    // =========================================================================
+	// =========================================================================
+	// saveObjects — deduplication disabled
+	// =========================================================================
 
-    public function testSaveObjectsWithoutDeduplication(): void
-    {
-        // Objects without schema info will throw on mixed schema path.
-        $this->expectException(\Exception::class);
+	public function testSaveObjectsWithoutDeduplication(): void {
+		// Objects without schema info will throw on mixed schema path.
+		$this->expectException(\Exception::class);
 
-        $objects = [
-            ['id' => 'same-id', 'name' => 'first'],
-            ['id' => 'same-id', 'name' => 'second'],
-        ];
+		$objects = [
+			['id' => 'same-id', 'name' => 'first'],
+			['id' => 'same-id', 'name' => 'second'],
+		];
 
-        $this->service->saveObjects(
-            $objects, null, null,
-            true, true, false, false, false
-        );
-    }
+		$this->service->saveObjects(
+			$objects, null, null,
+			true, true, false, false, false
+		);
+	}
 }

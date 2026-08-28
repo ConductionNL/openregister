@@ -2,30 +2,26 @@
 	<NcDialog
 		v-if="show"
 		name="Confirm Rebase Operation"
-		:can-close="!rebasing"
+		:canClose="!rebasing"
 		@closing="$emit('close')">
 		<div class="dialog-content">
 			<h3>⚠️ Confirm Rebase Operation</h3>
 			<p>
-				This operation will recalculate deletion times for all objects and logs based on current retention settings.
-				It will also assign default owners and organizations to objects that don't have them assigned.
+				This operation will recalculate deletion times for all objects and
+				logs based on current retention settings. It will also assign default
+				owners and organizations to objects that don't have them assigned.
 			</p>
 			<p><strong>This operation may take some time to complete.</strong></p>
 		</div>
 
 		<template #actions>
-			<NcButton
-				:disabled="rebasing"
-				@click="$emit('close')">
+			<NcButton :disabled="rebasing" @click="$emit('close')">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
 				Cancel
 			</NcButton>
-			<NcButton
-				type="error"
-				:disabled="rebasing"
-				@click="$emit('confirm')">
+			<NcButton variant="error" :disabled="rebasing" @click="$emit('confirm')">
 				<template #icon>
 					<NcLoadingIcon v-if="rebasing" :size="20" />
 					<Refresh v-else :size="20" />
@@ -37,7 +33,7 @@
 </template>
 
 <script>
-import { NcDialog, NcButton, NcLoadingIcon } from '@nextcloud/vue'
+import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 
@@ -57,6 +53,7 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+
 		rebasing: {
 			type: Boolean,
 			default: false,

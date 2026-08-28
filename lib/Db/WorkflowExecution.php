@@ -3,10 +3,13 @@
 /**
  * OpenRegister WorkflowExecution Entity
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -57,197 +60,208 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor
  */
-class WorkflowExecution extends Entity implements JsonSerializable
-{
+class WorkflowExecution extends Entity implements JsonSerializable {
 
-    /**
-     * The uuid.
-     *
-     * @var string|null
-     */
-    protected ?string $uuid = null;
+	/**
+	 * The uuid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $uuid = null;
 
-    /**
-     * The hook id.
-     *
-     * @var string|null
-     */
-    protected ?string $hookId = null;
+	/**
+	 * The hook id.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $hookId = null;
 
-    /**
-     * The event type.
-     *
-     * @var string|null
-     */
-    protected ?string $eventType = null;
+	/**
+	 * The event type.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $eventType = null;
 
-    /**
-     * The object uuid.
-     *
-     * @var string|null
-     */
-    protected ?string $objectUuid = null;
+	/**
+	 * The object uuid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $objectUuid = null;
 
-    /**
-     * The schema id.
-     *
-     * @var integer|null
-     */
-    protected ?int $schemaId = null;
+	/**
+	 * The schema id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $schemaId = null;
 
-    /**
-     * The register id.
-     *
-     * @var integer|null
-     */
-    protected ?int $registerId = null;
+	/**
+	 * The register id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $registerId = null;
 
-    /**
-     * The engine.
-     *
-     * @var string|null
-     */
-    protected ?string $engine = null;
+	/**
+	 * The engine.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $engine = null;
 
-    /**
-     * The workflow id.
-     *
-     * @var string|null
-     */
-    protected ?string $workflowId = null;
+	/**
+	 * The workflow id.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $workflowId = null;
 
-    /**
-     * The mode.
-     *
-     * @var string|null
-     */
-    protected ?string $mode = 'sync';
+	/**
+	 * The mode.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $mode = 'sync';
 
-    /**
-     * The status.
-     *
-     * @var string|null
-     */
-    protected ?string $status = null;
+	/**
+	 * The status.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $status = null;
 
-    /**
-     * The duration ms.
-     *
-     * @var integer
-     */
-    protected int $durationMs = 0;
+	/**
+	 * The duration ms.
+	 *
+	 * @var integer
+	 */
+	protected int $durationMs = 0;
 
-    /**
-     * The errors.
-     *
-     * @var string|null
-     */
-    protected ?string $errors = null;
+	/**
+	 * The errors.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $errors = null;
 
-    /**
-     * The metadata.
-     *
-     * @var string|null
-     */
-    protected ?string $metadata = null;
+	/**
+	 * The metadata.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $metadata = null;
 
-    /**
-     * The payload.
-     *
-     * @var string|null
-     */
-    protected ?string $payload = null;
+	/**
+	 * The payload.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $payload = null;
 
-    /**
-     * The executed at.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $executedAt = null;
+	/**
+	 * The executed at.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $executedAt = null;
 
-    /**
-     * Constructor for WorkflowExecution entity.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'uuid', type: 'string');
-        $this->addType(fieldName: 'hookId', type: 'string');
-        $this->addType(fieldName: 'eventType', type: 'string');
-        $this->addType(fieldName: 'objectUuid', type: 'string');
-        $this->addType(fieldName: 'schemaId', type: 'integer');
-        $this->addType(fieldName: 'registerId', type: 'integer');
-        $this->addType(fieldName: 'engine', type: 'string');
-        $this->addType(fieldName: 'workflowId', type: 'string');
-        $this->addType(fieldName: 'mode', type: 'string');
-        $this->addType(fieldName: 'status', type: 'string');
-        $this->addType(fieldName: 'durationMs', type: 'integer');
-        $this->addType(fieldName: 'errors', type: 'string');
-        $this->addType(fieldName: 'metadata', type: 'string');
-        $this->addType(fieldName: 'payload', type: 'string');
-        $this->addType(fieldName: 'executedAt', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Constructor for WorkflowExecution entity.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'uuid', type: 'string');
+		$this->addType(fieldName: 'hookId', type: 'string');
+		$this->addType(fieldName: 'eventType', type: 'string');
+		$this->addType(fieldName: 'objectUuid', type: 'string');
+		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addType(fieldName: 'registerId', type: 'integer');
+		$this->addType(fieldName: 'engine', type: 'string');
+		$this->addType(fieldName: 'workflowId', type: 'string');
+		$this->addType(fieldName: 'mode', type: 'string');
+		$this->addType(fieldName: 'status', type: 'string');
+		$this->addType(fieldName: 'durationMs', type: 'integer');
+		$this->addType(fieldName: 'errors', type: 'string');
+		$this->addType(fieldName: 'metadata', type: 'string');
+		$this->addType(fieldName: 'payload', type: 'string');
+		$this->addType(fieldName: 'executedAt', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * Hydrate entity from array.
-     *
-     * @param array<string, mixed> $object Data to hydrate from
-     *
-     * @return self
-     */
-    public function hydrate(array $object): self
-    {
-        $fields = [
-            'uuid',
-            'hookId',
-            'eventType',
-            'objectUuid',
-            'schemaId',
-            'registerId',
-            'engine',
-            'workflowId',
-            'mode',
-            'status',
-            'durationMs',
-            'errors',
-            'metadata',
-            'payload',
-            'executedAt',
-        ];
+	/**
+	 * Hydrate entity from array.
+	 *
+	 * @param array<string, mixed> $object Data to hydrate from
+	 *
+	 * @return self
+	 */
+	public function hydrate(array $object): self {
+		$fields = [
+			'uuid',
+			'hookId',
+			'eventType',
+			'objectUuid',
+			'schemaId',
+			'registerId',
+			'engine',
+			'workflowId',
+			'mode',
+			'status',
+			'durationMs',
+			'errors',
+			'metadata',
+			'payload',
+			'executedAt',
+		];
 
-        foreach ($object as $key => $value) {
-            if (in_array($key, $fields, true) === true) {
-                $setter = 'set'.ucfirst($key);
-                $this->$setter($value);
-            }
-        }
+		foreach ($object as $key => $value) {
+			if (in_array($key, $fields, true) === true) {
+				$setter = 'set' . ucfirst($key);
+				$this->$setter($value);
+			}
+		}
 
-        return $this;
-    }//end hydrate()
+		return $this;
+	}//end hydrate()
 
-    /**
-     * Serialize to JSON.
-     *
-     * @return array<string, mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'         => $this->id,
-            'uuid'       => $this->uuid,
-            'hookId'     => $this->hookId,
-            'eventType'  => $this->eventType,
-            'objectUuid' => $this->objectUuid,
-            'schemaId'   => $this->schemaId,
-            'registerId' => $this->registerId,
-            'engine'     => $this->engine,
-            'workflowId' => $this->workflowId,
-            'mode'       => $this->mode,
-            'status'     => $this->status,
-            'durationMs' => $this->durationMs,
-            'errors'     => $this->errors !== null ? json_decode($this->errors, true) : null,
-            'metadata'   => $this->metadata !== null ? json_decode($this->metadata, true) : null,
-            'payload'    => $this->payload !== null ? json_decode($this->payload, true) : null,
-            'executedAt' => $this->executedAt?->format('c'),
-        ];
-    }//end jsonSerialize()
+	/**
+	 * Serialize to JSON.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function jsonSerialize(): array {
+		$errors = null;
+		if ($this->errors !== null) {
+			$errors = json_decode(json: $this->errors, associative: true);
+		}
+
+		$metadata = null;
+		if ($this->metadata !== null) {
+			$metadata = json_decode(json: $this->metadata, associative: true);
+		}
+
+		$payload = null;
+		if ($this->payload !== null) {
+			$payload = json_decode(json: $this->payload, associative: true);
+		}
+
+		return [
+			'id' => $this->id,
+			'uuid' => $this->uuid,
+			'hookId' => $this->hookId,
+			'eventType' => $this->eventType,
+			'objectUuid' => $this->objectUuid,
+			'schemaId' => $this->schemaId,
+			'registerId' => $this->registerId,
+			'engine' => $this->engine,
+			'workflowId' => $this->workflowId,
+			'mode' => $this->mode,
+			'status' => $this->status,
+			'durationMs' => $this->durationMs,
+			'errors' => $errors,
+			'metadata' => $metadata,
+			'payload' => $payload,
+			'executedAt' => $this->executedAt?->format('c'),
+		];
+	}//end jsonSerialize()
 }//end class

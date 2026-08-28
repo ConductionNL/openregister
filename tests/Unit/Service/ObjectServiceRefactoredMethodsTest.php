@@ -21,50 +21,51 @@
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use Exception;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\SearchTrailService;
-use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
-// BulkOperationsHandler was removed from ObjectService.
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+// BulkOperationsHandler was removed from ObjectService.
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
-// PublishHandler was removed from ObjectService.
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\RevertHandler;
+// PublishHandler was removed from ObjectService.
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
+use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
+use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\SearchTrailService;
+use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\IAppContainer;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\IUserSession;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
@@ -80,8 +81,7 @@ use ReflectionClass;
  * 5. validateObjectIfRequired()
  * 6. ensureObjectFolder()
  */
-class ObjectServiceRefactoredMethodsTest extends TestCase
-{
+class ObjectServiceRefactoredMethodsTest extends TestCase {
 	private ObjectService $objectService;
 	private ReflectionClass $reflection;
 
@@ -119,8 +119,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	protected function setUp(): void
-	{
+	protected function setUp(): void {
 		parent::setUp();
 
 		// Create mocks for handlers used in test assertions.
@@ -147,7 +146,6 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->getHandler,
-			$this->createMock(PerformanceHandler::class),
 			$this->permissionHandler,
 			$this->renderHandler,
 			$this->saveHandler,
@@ -180,7 +178,9 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(CacheHandler::class),
 			$this->createMock(SettingsService::class),
-			$this->createMock(IAppContainer::class)
+			$this->createMock(DateTimeNormalizer::class),
+			$this->createMock(IAppContainer::class),
+			$this->createMock(ObjectSourceRegistry::class)
 		);
 
 		// Set up reflection for accessing private methods.
@@ -191,12 +191,11 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	 * Helper method to invoke private methods using reflection.
 	 *
 	 * @param string $methodName The name of the private method.
-	 * @param array  $parameters The parameters to pass to the method.
+	 * @param array $parameters The parameters to pass to the method.
 	 *
 	 * @return mixed The result of the method invocation.
 	 */
-	private function invokePrivateMethod(string $methodName, array $parameters = []): mixed
-	{
+	private function invokePrivateMethod(string $methodName, array $parameters = []): mixed {
 		$method = $this->reflection->getMethod($methodName);
 		$method->setAccessible(true);
 
@@ -207,12 +206,11 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	 * Helper method to set private property values using reflection.
 	 *
 	 * @param string $propertyName The name of the private property.
-	 * @param mixed  $value        The value to set.
+	 * @param mixed $value The value to set.
 	 *
 	 * @return void
 	 */
-	private function setPrivateProperty(string $propertyName, mixed $value): void
-	{
+	private function setPrivateProperty(string $propertyName, mixed $value): void {
 		$property = $this->reflection->getProperty($propertyName);
 		$property->setAccessible(true);
 		$property->setValue($this->objectService, $value);
@@ -225,8 +223,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return mixed The value of the property.
 	 */
-	private function getPrivateProperty(string $propertyName): mixed
-	{
+	private function getPrivateProperty(string $propertyName): mixed {
 		$property = $this->reflection->getProperty($propertyName);
 		$property->setAccessible(true);
 
@@ -240,8 +237,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testSetContextFromParametersWithRegisterObject(): void
-	{
+	public function testSetContextFromParametersWithRegisterObject(): void {
 		$this->invokePrivateMethod(
 			'setContextFromParameters',
 			[$this->mockRegister, $this->mockSchema]
@@ -259,8 +255,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testSetContextFromParametersWithNullValues(): void
-	{
+	public function testSetContextFromParametersWithNullValues(): void {
 		$this->invokePrivateMethod(
 			'setContextFromParameters',
 			[null, null]
@@ -280,8 +275,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testExtractUuidAndNormalizeObjectWithArray(): void
-	{
+	public function testExtractUuidAndNormalizeObjectWithArray(): void {
 		$uuid = 'test-uuid-123';
 		$object = [
 			'id' => $uuid,
@@ -304,8 +298,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testExtractUuidAndNormalizeObjectWithObjectEntity(): void
-	{
+	public function testExtractUuidAndNormalizeObjectWithObjectEntity(): void {
 		$uuid = 'entity-uuid-456';
 		$entity = new ObjectEntity();
 		$entity->setUuid($uuid);
@@ -326,8 +319,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testExtractUuidAndNormalizeObjectWithExplicitUuid(): void
-	{
+	public function testExtractUuidAndNormalizeObjectWithExplicitUuid(): void {
 		$explicitUuid = 'explicit-uuid';
 		$objectUuid = 'object-uuid';
 		$object = ['id' => $objectUuid, 'name' => 'Test'];
@@ -347,8 +339,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testCheckSavePermissionsWithRbacDisabled(): void
-	{
+	public function testCheckSavePermissionsWithRbacDisabled(): void {
 		// Should not throw exception when RBAC is disabled.
 		$this->expectNotToPerformAssertions();
 
@@ -363,8 +354,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testCheckSavePermissionsCreateScenario(): void
-	{
+	public function testCheckSavePermissionsCreateScenario(): void {
 		// UUID is null, so it's a create operation.
 		// Should check create permissions.
 		$this->expectNotToPerformAssertions();
@@ -380,8 +370,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testCheckSavePermissionsUpdateScenario(): void
-	{
+	public function testCheckSavePermissionsUpdateScenario(): void {
 		// UUID is provided, so it's an update operation.
 		// Should check update permissions.
 		$this->expectNotToPerformAssertions();
@@ -399,8 +388,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testValidateObjectIfRequiredSkipsWhenHardValidationDisabled(): void
-	{
+	public function testValidateObjectIfRequiredSkipsWhenHardValidationDisabled(): void {
 		$object = ['name' => 'Valid Object', 'email' => 'test@example.com'];
 
 		// Set schema with hard validation disabled.
@@ -427,8 +415,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testValidateObjectIfRequiredCallsValidatorWhenEnabled(): void
-	{
+	public function testValidateObjectIfRequiredCallsValidatorWhenEnabled(): void {
 		$object = ['name' => 'Valid Object'];
 
 		// Set schema with hard validation enabled.
@@ -462,8 +449,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testEnsureObjectFolderReturnsNullWhenNoUuid(): void
-	{
+	public function testEnsureObjectFolderReturnsNullWhenNoUuid(): void {
 		$result = $this->invokePrivateMethod(
 			'ensureObjectFolder',
 			[null]
@@ -477,8 +463,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testEnsureObjectFolderCreatesFolderWhenNeeded(): void
-	{
+	public function testEnsureObjectFolderCreatesFolderWhenNeeded(): void {
 		$uuid = 'folder-uuid-123';
 
 		// Note: This test would require FileService mock to be properly injected.
@@ -499,8 +484,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testHandleCascadingWithContextPreservationPreservesContext(): void
-	{
+	public function testHandleCascadingWithContextPreservationPreservesContext(): void {
 		$originalRegister = $this->mockRegister;
 		$originalSchema = $this->mockSchema;
 
@@ -538,8 +522,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testPrepareFindAllConfigPreservesExistingValues(): void
-	{
+	public function testPrepareFindAllConfigPreservesExistingValues(): void {
 		$config = [
 			'limit' => 100,
 			'offset' => 50,
@@ -558,8 +541,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testPrepareFindAllConfigConvertsExtendStringToArray(): void
-	{
+	public function testPrepareFindAllConfigConvertsExtendStringToArray(): void {
 		$config = [
 			'extend' => 'register,schema'
 		];

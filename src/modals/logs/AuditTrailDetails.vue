@@ -1,13 +1,14 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { auditTrailStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'auditTrailDetails'"
+	<NcDialog
+		v-if="navigationStore.dialog === 'auditTrailDetails'"
 		:name="t('openregister', 'Audit Trail Details')"
 		size="large"
-		:can-close="true"
+		:canClose="true"
 		@close="closeDialog">
 		<div v-if="auditTrailStore.auditTrailItem" class="audit-trail-details">
 			<!-- Header Information -->
@@ -20,33 +21,68 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 					</div>
 					<div class="detail-item">
 						<label>{{ t('openregister', 'Action') }}</label>
-						<span class="action-badge" :class="`action-${auditTrailStore.auditTrailItem.action}`">
-							<Plus v-if="auditTrailStore.auditTrailItem.action === 'create'" :size="16" />
-							<Pencil v-else-if="auditTrailStore.auditTrailItem.action === 'update'" :size="16" />
-							<Delete v-else-if="auditTrailStore.auditTrailItem.action === 'delete'" :size="16" />
-							<Eye v-else-if="auditTrailStore.auditTrailItem.action === 'read'" :size="16" />
-							{{ auditTrailStore.auditTrailItem.action?.toUpperCase() }}
+						<span
+							class="action-badge"
+							:class="`action-${auditTrailStore.auditTrailItem.action}`">
+							<Plus
+								v-if="
+									auditTrailStore.auditTrailItem.action
+									=== 'create'
+								"
+								:size="16" />
+							<Pencil
+								v-else-if="
+									auditTrailStore.auditTrailItem.action
+									=== 'update'
+								"
+								:size="16" />
+							<Delete
+								v-else-if="
+									auditTrailStore.auditTrailItem.action
+									=== 'delete'
+								"
+								:size="16" />
+							<Eye
+								v-else-if="
+									auditTrailStore.auditTrailItem.action === 'read'
+								"
+								:size="16" />
+							{{
+								auditTrailStore.auditTrailItem.action?.toUpperCase()
+							}}
 						</span>
 					</div>
 					<div class="detail-item">
 						<label>{{ t('openregister', 'Created') }}</label>
-						<span>{{ formatDate(auditTrailStore.auditTrailItem.created) }}</span>
+						<span>{{
+							formatDate(auditTrailStore.auditTrailItem.created)
+						}}</span>
 					</div>
 					<div class="detail-item">
 						<label>{{ t('openregister', 'Object ID') }}</label>
-						<span>{{ auditTrailStore.auditTrailItem.object || '-' }}</span>
+						<span>{{
+							auditTrailStore.auditTrailItem.object || '-'
+						}}</span>
 					</div>
 					<div class="detail-item">
 						<label>{{ t('openregister', 'Register ID') }}</label>
-						<span>{{ auditTrailStore.auditTrailItem.register || '-' }}</span>
+						<span>{{
+							auditTrailStore.auditTrailItem.register || '-'
+						}}</span>
 					</div>
 					<div class="detail-item">
 						<label>{{ t('openregister', 'Schema ID') }}</label>
-						<span>{{ auditTrailStore.auditTrailItem.schema || '-' }}</span>
+						<span>{{
+							auditTrailStore.auditTrailItem.schema || '-'
+						}}</span>
 					</div>
 					<div class="detail-item">
 						<label>{{ t('openregister', 'User') }}</label>
-						<span>{{ auditTrailStore.auditTrailItem.userName || auditTrailStore.auditTrailItem.user || '-' }}</span>
+						<span>{{
+							auditTrailStore.auditTrailItem.userName
+							|| auditTrailStore.auditTrailItem.user
+							|| '-'
+						}}</span>
 					</div>
 					<div class="detail-item">
 						<label>{{ t('openregister', 'Size') }}</label>
@@ -59,15 +95,21 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 			<div v-if="hasChanges" class="details-section">
 				<h3>{{ t('openregister', 'Changes') }}</h3>
 				<div class="changes-container">
-					<pre>{{ formatChanges(auditTrailStore.auditTrailItem.changed) }}</pre>
+					<pre>{{
+						formatChanges(auditTrailStore.auditTrailItem.changed)
+					}}</pre>
 				</div>
 			</div>
 
 			<!-- Request Data -->
-			<div v-if="auditTrailStore.auditTrailItem.request" class="details-section">
+			<div
+				v-if="auditTrailStore.auditTrailItem.request"
+				class="details-section">
 				<h3>{{ t('openregister', 'Request Data') }}</h3>
 				<div class="request-container">
-					<pre>{{ formatJson(auditTrailStore.auditTrailItem.request) }}</pre>
+					<pre>{{
+						formatJson(auditTrailStore.auditTrailItem.request)
+					}}</pre>
 				</div>
 			</div>
 
@@ -75,7 +117,10 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 			<div class="details-section">
 				<h3>{{ t('openregister', 'Additional Information') }}</h3>
 				<div class="additional-fields">
-					<div v-for="[key, value] in additionalFields" :key="key" class="detail-item">
+					<div
+						v-for="[key, value] in additionalFields"
+						:key="key"
+						class="detail-item">
 						<label>{{ formatFieldName(key) }}</label>
 						<span>{{ formatFieldValue(value) }}</span>
 					</div>
@@ -108,20 +153,16 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 
 <script>
 /**
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+ * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
-import {
-	NcButton,
-	NcDialog,
-} from '@nextcloud/vue'
-
+import { NcButton, NcDialog } from '@nextcloud/vue'
 import Close from 'vue-material-design-icons/Close.vue'
-import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import CompareHorizontal from 'vue-material-design-icons/CompareHorizontal.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
+import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
 
 export default {
 	name: 'AuditTrailDetails',
@@ -137,12 +178,14 @@ export default {
 		Delete,
 		Eye,
 	},
+
 	computed: {
 		/**
 		 * Check if audit trail has changes data
+		 *
 		 * @return {boolean} True if has changes
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		hasChanges() {
 			const changed = auditTrailStore.auditTrailItem?.changed
@@ -161,29 +204,44 @@ export default {
 
 		/**
 		 * Get additional fields that aren't in the main display
+		 *
 		 * @return {Array} Array of key-value pairs
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		additionalFields() {
 			if (!auditTrailStore.auditTrailItem) return []
 
 			const mainFields = [
-				'id', 'action', 'created', 'object', 'register',
-				'schema', 'user', 'userName', 'size', 'changed', 'request',
+				'id',
+				'action',
+				'created',
+				'object',
+				'register',
+				'schema',
+				'user',
+				'userName',
+				'size',
+				'changed',
+				'request',
 			]
 
 			return Object.entries(auditTrailStore.auditTrailItem)
 				.filter(([key]) => !mainFields.includes(key))
-				.filter(([, value]) => value !== null && value !== undefined && value !== '')
+				.filter(
+					([, value]) =>
+						value !== null && value !== undefined && value !== '',
+				)
 		},
 	},
+
 	methods: {
 		/**
 		 * Close the dialog
+		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
@@ -191,10 +249,11 @@ export default {
 
 		/**
 		 * Format date for display
+		 *
 		 * @param {string} dateString - Date string to format
 		 * @return {string} Formatted date
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		formatDate(dateString) {
 			if (!dateString) return '-'
@@ -207,10 +266,11 @@ export default {
 
 		/**
 		 * Format changes data for display
+		 *
 		 * @param {*} changes - Changes data
 		 * @return {string} Formatted changes
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		formatChanges(changes) {
 			if (!changes) return ''
@@ -234,10 +294,11 @@ export default {
 
 		/**
 		 * Format JSON data for display
+		 *
 		 * @param {*} data - Data to format
 		 * @return {string} Formatted JSON
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		formatJson(data) {
 			if (!data) return ''
@@ -261,24 +322,26 @@ export default {
 
 		/**
 		 * Format field name for display
+		 *
 		 * @param {string} fieldName - Field name to format
 		 * @return {string} Formatted field name
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		formatFieldName(fieldName) {
 			return fieldName
 				.replace(/([A-Z])/g, ' $1')
-				.replace(/^./, str => str.toUpperCase())
+				.replace(/^./, (str) => str.toUpperCase())
 				.trim()
 		},
 
 		/**
 		 * Format field value for display
+		 *
 		 * @param {*} value - Value to format
 		 * @return {string} Formatted value
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		formatFieldValue(value) {
 			if (value === null || value === undefined) return '-'
@@ -296,35 +359,47 @@ export default {
 
 		/**
 		 * Copy full audit trail data to clipboard
+		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async copyFullData() {
 			try {
 				const data = JSON.stringify(auditTrailStore.auditTrailItem, null, 2)
 				await navigator.clipboard.writeText(data)
-				OC.Notification.showSuccess(this.t('openregister', 'Full data copied to clipboard'))
+				OC.Notification.showSuccess(
+					this.t('openregister', 'Full data copied to clipboard'),
+				)
 			} catch (error) {
 				console.error('Error copying to clipboard:', error)
-				OC.Notification.showError(this.t('openregister', 'Failed to copy data'))
+				OC.Notification.showError(
+					this.t('openregister', 'Failed to copy data'),
+				)
 			}
 		},
 
 		/**
 		 * Copy changes data to clipboard
+		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async copyChanges() {
 			try {
-				const changes = this.formatChanges(auditTrailStore.auditTrailItem.changed)
+				const changes = this.formatChanges(
+					auditTrailStore.auditTrailItem.changed,
+				)
 				await navigator.clipboard.writeText(changes)
-				OC.Notification.showSuccess(this.t('openregister', 'Changes copied to clipboard'))
+				OC.Notification.showSuccess(
+					this.t('openregister', 'Changes copied to clipboard'),
+				)
 			} catch (error) {
 				console.error('Error copying to clipboard:', error)
-				OC.Notification.showError(this.t('openregister', 'Failed to copy changes'))
+				OC.Notification.showError(
+					this.t('openregister', 'Failed to copy changes'),
+				)
 			}
 		},
 	},

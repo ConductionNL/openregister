@@ -8,8 +8,9 @@
  * accordingly. If neither attribute is present, it defaults to 'dark'.
  *
  * @return { 'light' | 'dark' } The current theme, either 'light' or 'dark'.
+ * @spec exclude Stateless theme-detection helper reading document body attributes; pure presentation utility with no domain contract.
  */
-export const getTheme = () => {
+export function getTheme() {
 	if (document.body.hasAttribute('data-theme-light')) {
 		return 'light'
 	}
@@ -19,7 +20,9 @@ export const getTheme = () => {
 	}
 
 	if (document.body.hasAttribute('data-theme-default')) {
-		return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+		return window.matchMedia('(prefers-color-scheme: light)').matches
+			? 'light'
+			: 'dark'
 	}
 
 	return 'light'

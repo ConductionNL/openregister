@@ -34,67 +34,60 @@ use OCP\Migration\SimpleMigrationStep;
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  */
-class Version1Date20251107190000 extends SimpleMigrationStep
-{
-    /**
-     * Modify the database schema
-     *
-     * @param IOutput $output        Output handler
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Options
-     *
-     * @return ISchemaWrapper|null The modified schema or null
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20251107190000 extends SimpleMigrationStep {
+	/**
+	 * Modify the database schema
+	 *
+	 * @param IOutput $output Output handler
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Options
+	 *
+	 * @return ISchemaWrapper|null The modified schema or null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema  = $schemaClosure();
-        $updated = false;
+		$schema = $schemaClosure();
+		$updated = false;
 
-        if ($schema->hasTable('openregister_organisations') === true) {
-            $table = $schema->getTable('openregister_organisations');
+		if ($schema->hasTable('openregister_organisations') === true) {
+			$table = $schema->getTable('openregister_organisations');
 
-            // Remove is_default column if it exists.
-            if ($table->hasColumn('is_default') === false) {
-                $output->info(message: 'ℹ️  is_default column does not exist in organisations table');
-                return null;
-            }
+			// Remove is_default column if it exists.
+			if ($table->hasColumn('is_default') === false) {
+				$output->info(message: 'ℹ️  is_default column does not exist in organisations table');
+				return null;
+			}
 
-            $table->dropColumn('is_default');
-            $output->info(message: '✅ Removed is_default column from organisations table');
-            $updated = true;
-        }
+			$table->dropColumn('is_default');
+			$output->info(message: '✅ Removed is_default column from organisations table');
+			$updated = true;
+		}
 
-        if ($schema->hasTable('openregister_organisations') === false) {
-            $output->warning(message: '⚠️  openregister_organisations table does not exist');
-        }
+		if ($schema->hasTable('openregister_organisations') === false) {
+			$output->warning(message: '⚠️  openregister_organisations table does not exist');
+		}
 
-        if ($updated === false) {
-            return null;
-        }
+		if ($updated === false) {
+			return null;
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Post-schema change hook
-     *
-     * @param IOutput $output        Output handler
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Options
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-        $output->info(message: '✅ Migration complete - is_default column removed from organisations table');
-        $output->info(message: '   Default organisation is now managed via configuration');
-    }//end postSchemaChange()
+	/**
+	 * Post-schema change hook
+	 *
+	 * @param IOutput $output Output handler
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Options
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+		$output->info(message: '✅ Migration complete - is_default column removed from organisations table');
+		$output->info(message: '   Default organisation is now managed via configuration');
+	}//end postSchemaChange()
 }//end class

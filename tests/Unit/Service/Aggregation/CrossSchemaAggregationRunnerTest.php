@@ -1,0 +1,863 @@
+<?php
+
+/**
+ * Unit tests for cross-schema aggregation support in AggregationRunner.
+ *
+ * Covers:
+ * - @self.<field> reference resolution in where clauses
+ * - `select` as alias for `metric`
+ * - `where` as alias for `filter`
+ * - Delegation to runCrossSchema() when `from` is present
+ * - Schema-not-found error propagation
+ * - Malformed where-clause handling
+ * - Register-not-found error propagation
+ * - Permission gate on the target schema
+ *
+ * The Postgres-native and PHP-fallback paths are tested through the
+ * integration test (AggregationRunnerIntegrationTest). These unit tests
+ * verify the routing, aliasing, and error-handling logic.
+ *
+ * Schema and Register are Nextcloud Entity subclasses — they use `__call`
+ * magic for getters/setters and cannot be mocked directly. Tests use real
+ * entity instances populated via their setter methods.
+ *
+ * @category Test
+ * @package  OCA\OpenRegister\Tests\Unit\Service\Aggregation
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://www.OpenRegister.app
+ */
+
+declare(strict_types=1);
+
+namespace Unit\Service\Aggregation;
+
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\LanguageService;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\TranslationHandler;
+use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\IDBConnection;
+use OCP\IUserSession;
+use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
+use RuntimeException;
+
+/**
+ * No `covers` metadata, deliberately — `beStrictAboutCoverageMetadata="true"`
+ * discards the coverage of any test that touches a collaborator it did not
+ * name. See {@see AggregationJoinAndCompositeGroupByTest} and #2847.
+ */
+class CrossSchemaAggregationRunnerTest extends TestCase {
+
+	private MagicMapper&MockObject $magicMapper;
+	private RegisterMapper&MockObject $registerMapper;
+	private SchemaMapper&MockObject $schemaMapper;
+	private PlaceholderResolver $placeholderResolver;
+	private IDBConnection&MockObject $db;
+	private AggregationCache&MockObject $cache;
+	private PermissionHandler&MockObject $permissionHandler;
+	private IUserSession&MockObject $userSession;
+	private OrganisationService&MockObject $organisationService;
+	private AggregationRunner $runner;
+
+	protected function setUp(): void {
+		parent::setUp();
+
+		$this->magicMapper = $this->createMock(MagicMapper::class);
+		$this->registerMapper = $this->createMock(RegisterMapper::class);
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->db = $this->createMock(IDBConnection::class);
+		$this->cache = $this->createMock(AggregationCache::class);
+		$this->permissionHandler = $this->createMock(PermissionHandler::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->organisationService = $this->createMock(OrganisationService::class);
+
+		// PlaceholderResolver is declared `final` and cannot be mocked.
+		// We use a real instance wired to the same mock session.
+		$this->placeholderResolver = new PlaceholderResolver($this->userSession);
+
+		// Default: no active user session (unauthenticated / CLI context).
+		$this->userSession->method('getUser')->willReturn(null);
+		// Default: cache always misses.
+		$this->cache->method('get')->willReturn(null);
+		$this->cache->method('set');
+		// Default: no active organisation.
+		$this->organisationService->method('getActiveOrganisation')->willReturn(null);
+
+		// REGISTER-SCOPED RESOLUTION. `run()`/`runAdhocByRef()` no longer resolve
+		// the schema ref globally and then load the register — they resolve the
+		// register FIRST and match the schema ref among the ids it carries, via
+		// SchemaMapper::findInIds(). Rather than restate every test's schema
+		// fixtures a second time, delegate the scoped lookup to whatever the test
+		// already stubbed on find() and then apply the boundary the production
+		// resolver applies: a schema the register does not carry does not resolve.
+		$this->schemaMapper->method('findInIds')->willReturnCallback(
+			function (string|int $id, array $schemaIds): ?Schema {
+				try {
+					$schema = $this->schemaMapper->find($id, [], true, false);
+				} catch (\Throwable $e) {
+					return null;
+				}
+
+				if (($schema instanceof Schema) === false) {
+					return null;
+				}
+
+				$normalised = array_map(static fn ($sid) => (int)$sid, $schemaIds);
+				if (in_array((int)$schema->getId(), $normalised, true) === false) {
+					return null;
+				}
+
+				return $schema;
+			}
+		);
+
+		$this->runner = new AggregationRunner(
+			magicMapper: $this->magicMapper,
+			registerMapper: $this->registerMapper,
+			schemaMapper: $this->schemaMapper,
+			placeholders: $this->placeholderResolver,
+			db: $this->db,
+			cache: $this->cache,
+			permissionHandler: $this->permissionHandler,
+			userSession: $this->userSession,
+			organisationService: $this->organisationService,
+			translationHandler: $this->createMock(TranslationHandler::class),
+			languageService: $this->createMock(LanguageService::class),
+		);
+
+	}//end setUp()
+
+	// -----------------------------------------------------------------------
+	// Helper factories — use real entity instances (NC Entity __call magic
+	// prevents mocking getSlug/getId/getConfiguration on Schema/Register).
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Build a Schema entity with the given slug, id, and aggregations.
+	 *
+	 * @param string $slug Schema slug.
+	 * @param int $id Schema DB id.
+	 * @param array<string, mixed> $aggregations Aggregation annotation map.
+	 *
+	 * @return Schema
+	 */
+	private function makeSchema(string $slug, int $id, array $aggregations = []): Schema {
+		$schema = new Schema();
+		$schema->setSlug($slug);
+		$schema->setId($id);
+		if ($aggregations !== []) {
+			$schema->setConfiguration(['x-openregister-aggregations' => $aggregations]);
+		}
+
+		return $schema;
+	}//end makeSchema()
+
+	/**
+	 * Build a Register entity whose schemas list contains the given IDs.
+	 *
+	 * @param string $slug Register slug.
+	 * @param int[] $schemaIds Schema IDs in this register.
+	 *
+	 * @return Register
+	 */
+	private function makeRegister(string $slug, array $schemaIds = []): Register {
+		$register = new Register();
+		$register->setSlug($slug);
+		$register->setSchemas($schemaIds);
+		return $register;
+	}//end makeRegister()
+
+	/**
+	 * Build a stub ObjectEntity that returns a fixed object array.
+	 *
+	 * @param array<string, mixed> $data The object data.
+	 *
+	 * @return ObjectEntity&MockObject
+	 */
+	private function makeEntityStub(array $data): ObjectEntity&MockObject {
+		$e = $this->createMock(ObjectEntity::class);
+		$e->method('getObject')->willReturn($data);
+		return $e;
+	}//end makeEntityStub()
+
+	/**
+	 * Configure the IDBConnection mock to look like a non-Postgres platform
+	 * so tryNativeAggregation() returns null (forces PHP-fallback path).
+	 */
+	private function usePhpFallback(): void {
+		$platform = new class {
+			public function __toString(): string {
+				return 'OtherPlatform';
+			}
+		};
+		$this->db->method('getDatabasePlatform')->willReturn($platform);
+	}//end usePhpFallback()
+
+	// -----------------------------------------------------------------------
+	// Tests: @self reference resolution
+	// -----------------------------------------------------------------------
+
+	/**
+	 * @test
+	 * Cross-schema count uses @self.slug from the parent row when resolving
+	 * the `regulationSlug` filter in the where clause.
+	 */
+	public function testAtSelfFieldReferenceResolvedFromParentRow(): void {
+		$parentSchema = $this->makeSchema('regulation', 10, [
+			'mandatoryEnrolledCount' => [
+				'from' => 'scholiq-enrolment',
+				'where' => ['regulationSlug' => '@self.slug', 'mandatory' => true],
+				'select' => 'count',
+			],
+		]);
+		$targetSchema = $this->makeSchema('scholiq-enrolment', 20);
+		$parentRegister = $this->makeRegister('scholiq', [10]);
+		$targetRegister = $this->makeRegister('scholiq', [20]);
+
+		$this->registerMapper->method('find')
+			->with('scholiq')
+			->willReturn($parentRegister);
+
+		$this->schemaMapper->method('find')
+			->willReturnMap([
+				['regulation', [], true, false, $parentSchema],
+				['scholiq-enrolment', [], true, false, $targetSchema],
+			]);
+
+		$this->registerMapper->method('findAll')
+			->willReturn([$parentRegister, $targetRegister]);
+
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->usePhpFallback();
+
+		// Three enrolment rows: 2 match regulationSlug='adr-2026' + mandatory=true.
+		$this->magicMapper->method('findAllInRegisterSchemaTable')
+			->willReturn([
+				$this->makeEntityStub(['regulationSlug' => 'adr-2026', 'mandatory' => true]),
+				$this->makeEntityStub(['regulationSlug' => 'adr-2026', 'mandatory' => true]),
+				$this->makeEntityStub(['regulationSlug' => 'other-reg', 'mandatory' => true]),
+			]);
+
+		$result = $this->runner->run(
+			registerRef: 'scholiq',
+			schemaRef: 'regulation',
+			name: 'mandatoryEnrolledCount',
+			bypassRbac: true,
+			parentRow: ['slug' => 'adr-2026']
+		);
+
+		$this->assertSame(2, $result['value']);
+		$this->assertSame('scholiq-enrolment', $result['from'] ?? null);
+		$this->assertSame('count', $result['metric']);
+
+	}//end testAtSelfFieldReferenceResolvedFromParentRow()
+
+	/**
+	 * @test
+	 * An `@self.<field>` reference to a field absent in the parent row is
+	 * REFUSED.
+	 *
+	 * This test previously asserted that the reference resolved to null and
+	 * called that fail-closed. It is not: the null is applied as a real filter
+	 * value, so the aggregation returns the target rows whose own field is
+	 * null. The single row here happens to have `parentId => 'something'`, so
+	 * the count came back 0 and the fixture agreed with the claim — a
+	 * different fixture, one row with a null parentId, would have returned 1
+	 * under exactly the same code. The assertion was pinning the fixture, not
+	 * the behaviour.
+	 */
+	public function testAtSelfMissingFieldIsRefused(): void {
+		$parentSchema = $this->makeSchema('regulation', 10, [
+			'orphanCount' => [
+				'from' => 'scholiq-enrolment',
+				'where' => ['parentId' => '@self.nonExistentField'],
+			],
+		]);
+		$targetSchema = $this->makeSchema('scholiq-enrolment', 20);
+		$parentRegister = $this->makeRegister('scholiq', [10]);
+		$targetRegister = $this->makeRegister('scholiq', [20]);
+
+		$this->registerMapper->method('find')->willReturn($parentRegister);
+		$this->schemaMapper->method('find')
+			->willReturnMap([
+				['regulation', [], true, false, $parentSchema],
+				['scholiq-enrolment', [], true, false, $targetSchema],
+			]);
+		$this->registerMapper->method('findAll')->willReturn([$parentRegister, $targetRegister]);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->usePhpFallback();
+
+		// A row whose parentId IS null — the case the old null-resolution
+		// behaviour would have counted as a match, turning an unanswerable
+		// correlation into a confident wrong number.
+		$this->magicMapper->method('findAllInRegisterSchemaTable')
+			->willReturn([$this->makeEntityStub(['parentId' => null])]);
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessageMatches('/@self\.nonExistentField/');
+
+		$this->runner->run(
+			registerRef: 'scholiq',
+			schemaRef: 'regulation',
+			name: 'orphanCount',
+			bypassRbac: true,
+			parentRow: []
+		);
+
+	}//end testAtSelfMissingFieldIsRefused()
+
+	// -----------------------------------------------------------------------
+	// Tests: select/where aliases
+	// -----------------------------------------------------------------------
+
+	/**
+	 * @test
+	 * `select` is accepted as an alias for `metric` in an intra-schema spec.
+	 */
+	public function testSelectAliasWorksForIntraSchemaSpec(): void {
+		$schema = $this->makeSchema('task', 1, ['totalCount' => ['select' => 'count']]);
+		$register = $this->makeRegister('tasks-reg', [1]);
+
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->usePhpFallback();
+
+		$this->magicMapper->method('findAllInRegisterSchemaTable')
+			->willReturn([$this->makeEntityStub(['title' => 'Task A'])]);
+
+		$result = $this->runner->run('tasks-reg', 'task', 'totalCount', true);
+
+		$this->assertSame('count', $result['metric']);
+		$this->assertSame(1, $result['value']);
+
+	}//end testSelectAliasWorksForIntraSchemaSpec()
+
+	/**
+	 * @test
+	 * `where` is accepted as an alias for `filter` in an intra-schema spec.
+	 */
+	public function testWhereAliasWorksForIntraSchemaSpec(): void {
+		$schema = $this->makeSchema('task', 1, [
+			'openCount' => ['metric' => 'count', 'where' => ['status' => 'open']],
+		]);
+		$register = $this->makeRegister('tasks-reg', [1]);
+
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->usePhpFallback();
+
+		$this->magicMapper->method('findAllInRegisterSchemaTable')
+			->willReturn([
+				$this->makeEntityStub(['status' => 'open']),
+				$this->makeEntityStub(['status' => 'open']),
+				$this->makeEntityStub(['status' => 'closed']),
+			]);
+
+		$result = $this->runner->run('tasks-reg', 'task', 'openCount', true);
+
+		$this->assertSame(2, $result['value']);
+
+	}//end testWhereAliasWorksForIntraSchemaSpec()
+
+	// -----------------------------------------------------------------------
+	// Tests: in-operator in cross-schema where clause
+	// -----------------------------------------------------------------------
+
+	/**
+	 * @test
+	 * The `in` operator in a cross-schema `where` clause filters correctly
+	 * in the PHP-fallback path.
+	 */
+	public function testInOperatorInCrossSchemaWhere(): void {
+		$parentSchema = $this->makeSchema('regulation', 10, [
+			'activeEnrolled' => [
+				'from' => 'scholiq-enrolment',
+				'where' => ['lifecycleState' => ['in' => ['active', 'completed']]],
+			],
+		]);
+		$targetSchema = $this->makeSchema('scholiq-enrolment', 20);
+		$parentRegister = $this->makeRegister('scholiq', [10]);
+		$targetRegister = $this->makeRegister('scholiq', [20]);
+
+		$this->registerMapper->method('find')->willReturn($parentRegister);
+		$this->schemaMapper->method('find')
+			->willReturnMap([
+				['regulation', [], true, false, $parentSchema],
+				['scholiq-enrolment', [], true, false, $targetSchema],
+			]);
+		$this->registerMapper->method('findAll')->willReturn([$parentRegister, $targetRegister]);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->usePhpFallback();
+
+		$this->magicMapper->method('findAllInRegisterSchemaTable')
+			->willReturn([
+				$this->makeEntityStub(['lifecycleState' => 'active']),
+				$this->makeEntityStub(['lifecycleState' => 'pending']),
+				$this->makeEntityStub(['lifecycleState' => 'completed']),
+				$this->makeEntityStub(['lifecycleState' => 'cancelled']),
+			]);
+
+		$result = $this->runner->run('scholiq', 'regulation', 'activeEnrolled', true);
+
+		// Only 'active' and 'completed' match.
+		$this->assertSame(2, $result['value']);
+
+	}//end testInOperatorInCrossSchemaWhere()
+
+	// -----------------------------------------------------------------------
+	// Tests: error paths
+	// -----------------------------------------------------------------------
+
+	/**
+	 * @test
+	 * When the target schema named in `from` does not exist, a RuntimeException
+	 * is thrown.
+	 */
+	public function testCrossSchemaThrowsWhenTargetSchemaNotFound(): void {
+		$parentSchema = $this->makeSchema('regulation', 10, [
+			'enrolCount' => ['from' => 'nonexistent-schema'],
+		]);
+		$parentRegister = $this->makeRegister('scholiq', [10]);
+
+		$this->registerMapper->method('find')->willReturn($parentRegister);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+
+		$this->schemaMapper->method('find')
+			->willReturnCallback(function (string $ref) use ($parentSchema) {
+				if ($ref === 'regulation') {
+					return $parentSchema;
+				}
+
+				throw new DoesNotExistException('not found');
+			});
+
+		$this->expectException(RuntimeException::class);
+
+		$this->runner->run('scholiq', 'regulation', 'enrolCount', true);
+
+	}//end testCrossSchemaThrowsWhenTargetSchemaNotFound()
+
+	/**
+	 * @test
+	 * When no register contains the target schema, a RuntimeException is thrown.
+	 */
+	public function testCrossSchemaThrowsWhenNoRegisterContainsTargetSchema(): void {
+		$parentSchema = $this->makeSchema('regulation', 10, [
+			'enrolCount' => ['from' => 'orphan-schema'],
+		]);
+		$targetSchema = $this->makeSchema('orphan-schema', 99);
+		$parentRegister = $this->makeRegister('scholiq', [10]);
+
+		$this->registerMapper->method('find')->willReturn($parentRegister);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->schemaMapper->method('find')
+			->willReturnMap([
+				['regulation', [], true, false, $parentSchema],
+				['orphan-schema', [], true, false, $targetSchema],
+			]);
+		// findAll returns only registers that don't contain schema 99.
+		$this->registerMapper->method('findAll')->willReturn([$parentRegister]);
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('No register found that contains schema "orphan-schema"');
+
+		$this->runner->run('scholiq', 'regulation', 'enrolCount', true);
+
+	}//end testCrossSchemaThrowsWhenNoRegisterContainsTargetSchema()
+
+	/**
+	 * @test
+	 * When the `where` clause is a non-array scalar, the runner is defensive:
+	 * the cast to array produces an empty filter, so all rows pass through.
+	 */
+	public function testMalformedWhereClauseCastToArrayDoesNotCrash(): void {
+		$parentSchema = $this->makeSchema('regulation', 10, [
+			'enrolCount' => [
+				'from' => 'scholiq-enrolment',
+				'where' => 'this-is-not-a-map',  // invalid — (array) cast → [0 => 'this-is-not-a-map']
+			],
+		]);
+		$targetSchema = $this->makeSchema('scholiq-enrolment', 20);
+		$parentRegister = $this->makeRegister('scholiq', [10]);
+		$targetRegister = $this->makeRegister('scholiq', [20]);
+
+		$this->registerMapper->method('find')->willReturn($parentRegister);
+		$this->schemaMapper->method('find')
+			->willReturnMap([
+				['regulation', [], true, false, $parentSchema],
+				['scholiq-enrolment', [], true, false, $targetSchema],
+			]);
+		$this->registerMapper->method('findAll')->willReturn([$parentRegister, $targetRegister]);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->usePhpFallback();
+
+		$this->magicMapper->method('findAllInRegisterSchemaTable')
+			->willReturn([$this->makeEntityStub(['regulationSlug' => 'abc'])]);
+
+		// Should not crash; check a value key exists in result.
+		$result = $this->runner->run('scholiq', 'regulation', 'enrolCount', true);
+		$this->assertArrayHasKey('value', $result);
+
+	}//end testMalformedWhereClauseCastToArrayDoesNotCrash()
+
+	/**
+	 * @test
+	 * When bypassRbac=false and the caller lacks list permission on the target
+	 * schema, the runner throws a RuntimeException (forbidden).
+	 */
+	public function testCrossSchemaRbacGateOnTargetSchema(): void {
+		$parentSchema = $this->makeSchema('regulation', 10, [
+			'enrolCount' => ['from' => 'scholiq-enrolment'],
+		]);
+		$targetSchema = $this->makeSchema('scholiq-enrolment', 20);
+		$parentRegister = $this->makeRegister('scholiq', [10]);
+		$targetRegister = $this->makeRegister('scholiq', [20]);
+
+		$this->registerMapper->method('find')->willReturn($parentRegister);
+		$this->schemaMapper->method('find')
+			->willReturnMap([
+				['regulation', [], true, false, $parentSchema],
+				['scholiq-enrolment', [], true, false, $targetSchema],
+			]);
+		$this->registerMapper->method('findAll')->willReturn([$parentRegister, $targetRegister]);
+
+		// Parent schema: permitted. Target schema: forbidden.
+		$callCount = 0;
+		$this->permissionHandler->method('hasPermission')
+			->willReturnCallback(
+				function () use (&$callCount): bool {
+					$callCount++;
+					// First call = parent schema (allowed), second = target schema (denied).
+					return $callCount === 1;
+				}
+			);
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('Forbidden');
+
+		$this->runner->run('scholiq', 'regulation', 'enrolCount', bypassRbac: false);
+
+	}//end testCrossSchemaRbacGateOnTargetSchema()
+
+	// -----------------------------------------------------------------------
+	// Tests: the cross-schema path must read the same spec keys as the
+	// intra-schema one
+	// -----------------------------------------------------------------------
+
+	/**
+	 * @test
+	 * A cross-schema aggregation declaring `metrics` must compute them.
+	 *
+	 * runCrossSchema() resolved only `metric`/`select`, so a spec asking for
+	 * several conditioned figures fell back to the default `count`. That is
+	 * the worst failure shape available: a debit/credit split came back as a
+	 * ROW COUNT under an HTTP 200, with no key in the response naming what had
+	 * been dropped. The intra-schema path has honoured `metrics` since #2917;
+	 * the two paths reading different halves of the same declaration is the
+	 * drift this pins shut.
+	 */
+	public function testCrossSchemaHonoursMetricsArray(): void {
+		$parentSchema = $this->makeSchema('project', 10, [
+			'segmentPnl' => [
+				'from' => 'gl-line',
+				'where' => ['eliminationFlag' => false],
+				'groupBy' => ['accountNumber'],
+				'metrics' => [
+					[
+						'metric' => 'sum',
+						'field' => 'amount',
+						'condition' => ['side' => 'debit'],
+						'as' => 'totalDebit',
+					],
+					[
+						'metric' => 'sum',
+						'field' => 'amount',
+						'condition' => ['side' => 'credit'],
+						'as' => 'totalCredit',
+					],
+				],
+			],
+		]);
+		$targetSchema = $this->makeSchema('gl-line', 20);
+		$parentRegister = $this->makeRegister('shillinq', [10]);
+		$targetRegister = $this->makeRegister('shillinq', [20]);
+
+		$this->registerMapper->method('find')->willReturn($parentRegister);
+		$this->schemaMapper->method('find')
+			->willReturnMap([
+				['project', [], true, false, $parentSchema],
+				['gl-line', [], true, false, $targetSchema],
+			]);
+		$this->registerMapper->method('findAll')->willReturn([$parentRegister, $targetRegister]);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->usePhpFallback();
+
+		// One account, one eliminated row that must not count toward either
+		// figure, and an asymmetric debit/credit split so a swapped or shared
+		// condition cannot produce the expected pair by accident.
+		$this->magicMapper->method('findAllInRegisterSchemaTable')
+			->willReturn([
+				$this->makeEntityStub(['accountNumber' => '4000', 'side' => 'debit', 'amount' => 100, 'eliminationFlag' => false]),
+				$this->makeEntityStub(['accountNumber' => '4000', 'side' => 'debit', 'amount' => 25, 'eliminationFlag' => false]),
+				$this->makeEntityStub(['accountNumber' => '4000', 'side' => 'credit', 'amount' => 40, 'eliminationFlag' => false]),
+				$this->makeEntityStub(['accountNumber' => '4000', 'side' => 'debit', 'amount' => 999, 'eliminationFlag' => true]),
+			]);
+
+		$result = $this->runner->run(
+			registerRef: 'shillinq',
+			schemaRef: 'project',
+			name: 'segmentPnl',
+			bypassRbac: true
+		);
+
+		$groups = ($result['groups'] ?? []);
+		$this->assertCount(1, $groups, 'One accountNumber bucket expected');
+
+		$bucket = $groups[0];
+		$this->assertSame('4000', (string)($bucket['key'] ?? null));
+
+		$values = ($bucket['values'] ?? null);
+		$this->assertIsArray($values, 'A `metrics` spec must yield per-group `values`');
+
+		// 100 + 25 = 125 debit; 40 credit. The eliminated 999 is excluded by
+		// `where`, so a totalDebit of 1124 would mean the where clause was
+		// dropped, and 4 would mean the whole spec degraded to `count`.
+		$this->assertEqualsWithDelta(125.0, (float)$values['totalDebit'], 0.001);
+		$this->assertEqualsWithDelta(40.0, (float)$values['totalCredit'], 0.001);
+	}//end testCrossSchemaHonoursMetricsArray()
+
+	/**
+	 * @test
+	 * An `@self.<field>` reference the parent row cannot answer must throw.
+	 *
+	 * Resolving it to null did not fail closed as intended: the null was then
+	 * applied as a real filter value, so the aggregation returned the rows
+	 * whose own field is null. For a segment P&L keyed on `@self.code` that is
+	 * the unassigned-cost-centre total, returned confidently for EVERY parent
+	 * record. Nothing in the envelope distinguishes it from a real answer.
+	 *
+	 * A field PRESENT but null stays legitimate (correlating on null is a real
+	 * query); it is the ABSENT key — no parent row supplied, or a typo in the
+	 * field name — that is refused.
+	 */
+	public function testCrossSchemaUnresolvableAtSelfThrows(): void {
+		$parentSchema = $this->makeSchema('project', 10, [
+			'segmentPnl' => [
+				'from' => 'gl-line',
+				'where' => ['projectCode' => '@self.code'],
+			],
+		]);
+		$targetSchema = $this->makeSchema('gl-line', 20);
+		$parentRegister = $this->makeRegister('shillinq', [10]);
+		$targetRegister = $this->makeRegister('shillinq', [20]);
+
+		$this->registerMapper->method('find')->willReturn($parentRegister);
+		$this->schemaMapper->method('find')
+			->willReturnMap([
+				['project', [], true, false, $parentSchema],
+				['gl-line', [], true, false, $targetSchema],
+			]);
+		$this->registerMapper->method('findAll')->willReturn([$parentRegister, $targetRegister]);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->usePhpFallback();
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessageMatches('/@self\.code/');
+
+		// No parentRow — exactly what every production caller supplies today.
+		$this->runner->run(
+			registerRef: 'shillinq',
+			schemaRef: 'project',
+			name: 'segmentPnl',
+			bypassRbac: true
+		);
+	}//end testCrossSchemaUnresolvableAtSelfThrows()
+
+	/**
+	 * @test
+	 * A parent row that HAS the field with a null value still correlates on
+	 * null, rather than being swept up by the guard above.
+	 */
+	public function testCrossSchemaAtSelfPresentButNullStillResolves(): void {
+		$parentSchema = $this->makeSchema('project', 10, [
+			'orphanCount' => [
+				'from' => 'gl-line',
+				'where' => ['projectCode' => '@self.code'],
+			],
+		]);
+		$targetSchema = $this->makeSchema('gl-line', 20);
+		$parentRegister = $this->makeRegister('shillinq', [10]);
+		$targetRegister = $this->makeRegister('shillinq', [20]);
+
+		$this->registerMapper->method('find')->willReturn($parentRegister);
+		$this->schemaMapper->method('find')
+			->willReturnMap([
+				['project', [], true, false, $parentSchema],
+				['gl-line', [], true, false, $targetSchema],
+			]);
+		$this->registerMapper->method('findAll')->willReturn([$parentRegister, $targetRegister]);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->usePhpFallback();
+
+		$this->magicMapper->method('findAllInRegisterSchemaTable')
+			->willReturn([
+				$this->makeEntityStub(['projectCode' => null]),
+				$this->makeEntityStub(['projectCode' => 'P-1']),
+			]);
+
+		$result = $this->runner->run(
+			registerRef: 'shillinq',
+			schemaRef: 'project',
+			name: 'orphanCount',
+			bypassRbac: true,
+			parentRow: ['code' => null]
+		);
+
+		$this->assertSame(1, $result['value']);
+	}//end testCrossSchemaAtSelfPresentButNullStillResolves()
+
+	/**
+	 * @test
+	 * A DERIVED metric computes from the aliases beside it, end to end.
+	 *
+	 * This is the shape 41 declarations across the shillinq registers carried in
+	 * an `expression` key the engine never read: a debit/credit split plus the
+	 * balance between them. The balance is arithmetic over two figures this
+	 * aggregation already produced, so it cannot disagree with them — which a
+	 * second aggregation doing the subtraction could, if a row were written
+	 * between the two calls.
+	 */
+	public function testDerivedMetricComputesFromItsSiblings(): void {
+		$parentSchema = $this->makeSchema('vat-return', 10, [
+			'totalsByReturn' => [
+				'from' => 'vat-line',
+				'metrics' => [
+					[
+						'metric' => 'sum',
+						'field' => 'vatAmount',
+						'condition' => ['type' => 'collected'],
+						'as' => 'totalVATCollected',
+					],
+					[
+						'metric' => 'sum',
+						'field' => 'vatAmount',
+						'condition' => ['type' => 'paid'],
+						'as' => 'totalVATPaid',
+					],
+					[
+						'metric' => 'expression',
+						'expression' => 'totalVATPaid - totalVATCollected',
+						'as' => 'vatBalance',
+					],
+				],
+			],
+		]);
+		$targetSchema = $this->makeSchema('vat-line', 20);
+		$parentRegister = $this->makeRegister('shillinq', [10]);
+		$targetRegister = $this->makeRegister('shillinq', [20]);
+
+		$this->registerMapper->method('find')->willReturn($parentRegister);
+		$this->schemaMapper->method('find')
+			->willReturnMap([
+				['vat-return', [], true, false, $parentSchema],
+				['vat-line', [], true, false, $targetSchema],
+			]);
+		$this->registerMapper->method('findAll')->willReturn([$parentRegister, $targetRegister]);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->usePhpFallback();
+
+		// Asymmetric on purpose: a swapped condition, or a balance computed the
+		// other way round, cannot produce 55 by accident.
+		$this->magicMapper->method('findAllInRegisterSchemaTable')
+			->willReturn([
+				$this->makeEntityStub(['type' => 'collected', 'vatAmount' => 100]),
+				$this->makeEntityStub(['type' => 'collected', 'vatAmount' => 25]),
+				$this->makeEntityStub(['type' => 'paid', 'vatAmount' => 180]),
+			]);
+
+		$result = $this->runner->run(
+			registerRef: 'shillinq',
+			schemaRef: 'vat-return',
+			name: 'totalsByReturn',
+			bypassRbac: true
+		);
+
+		$values = ($result['values'] ?? null);
+		$this->assertIsArray($values, 'a `metrics` spec must yield `values`');
+		$this->assertEqualsWithDelta(125.0, (float)$values['totalVATCollected'], 0.001);
+		$this->assertEqualsWithDelta(180.0, (float)$values['totalVATPaid'], 0.001);
+
+		// 180 - 125. Not 55 by coincidence: reversing the subtraction gives -55,
+		// and dropping either condition changes both operands.
+		$this->assertEqualsWithDelta(55.0, (float)$values['vatBalance'], 0.001);
+	}//end testDerivedMetricComputesFromItsSiblings()
+
+	/**
+	 * @test
+	 * A derived metric that reads an alias defined AFTER it is refused.
+	 *
+	 * The `metrics` list is the dependency order. Returning null here would look
+	 * like "no data" for a figure that is simply declared in the wrong order.
+	 */
+	public function testDerivedMetricCannotReadALaterAlias(): void {
+		$parentSchema = $this->makeSchema('vat-return', 10, [
+			'badOrder' => [
+				'from' => 'vat-line',
+				'metrics' => [
+					[
+						'metric' => 'expression',
+						'expression' => 'later - 1',
+						'as' => 'tooEarly',
+					],
+					[
+						'metric' => 'sum',
+						'field' => 'vatAmount',
+						'as' => 'later',
+					],
+				],
+			],
+		]);
+		$targetSchema = $this->makeSchema('vat-line', 20);
+		$parentRegister = $this->makeRegister('shillinq', [10]);
+		$targetRegister = $this->makeRegister('shillinq', [20]);
+
+		$this->registerMapper->method('find')->willReturn($parentRegister);
+		$this->schemaMapper->method('find')
+			->willReturnMap([
+				['vat-return', [], true, false, $parentSchema],
+				['vat-line', [], true, false, $targetSchema],
+			]);
+		$this->registerMapper->method('findAll')->willReturn([$parentRegister, $targetRegister]);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->usePhpFallback();
+		$this->magicMapper->method('findAllInRegisterSchemaTable')
+			->willReturn([$this->makeEntityStub(['vatAmount' => 10])]);
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessageMatches('/later/');
+
+		$this->runner->run(
+			registerRef: 'shillinq',
+			schemaRef: 'vat-return',
+			name: 'badOrder',
+			bypassRbac: true
+		);
+	}//end testDerivedMetricCannotReadALaterAlias()
+
+}//end class

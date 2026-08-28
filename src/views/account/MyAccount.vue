@@ -2,7 +2,12 @@
 	<div class="my-account">
 		<h2>{{ t('openregister', 'My Account') }}</h2>
 		<p class="my-account__description">
-			{{ t('openregister', 'Manage your account settings, security, and personal data.') }}
+			{{
+				t(
+					'openregister',
+					'Manage your account settings, security, and personal data.',
+				)
+			}}
 		</p>
 
 		<PasswordSection />
@@ -17,13 +22,13 @@
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import PasswordSection from './sections/PasswordSection.vue'
-import AvatarSection from './sections/AvatarSection.vue'
-import NotificationsSection from './sections/NotificationsSection.vue'
-import ActivitySection from './sections/ActivitySection.vue'
-import TokensSection from './sections/TokensSection.vue'
-import ExportSection from './sections/ExportSection.vue'
 import AccountSection from './sections/AccountSection.vue'
+import ActivitySection from './sections/ActivitySection.vue'
+import AvatarSection from './sections/AvatarSection.vue'
+import ExportSection from './sections/ExportSection.vue'
+import NotificationsSection from './sections/NotificationsSection.vue'
+import PasswordSection from './sections/PasswordSection.vue'
+import TokensSection from './sections/TokensSection.vue'
 
 export default {
 	name: 'MyAccount',
@@ -36,6 +41,7 @@ export default {
 		ExportSection,
 		AccountSection,
 	},
+
 	methods: {
 		t,
 	},

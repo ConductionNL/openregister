@@ -24,24 +24,33 @@
 		<div v-else-if="agents.length === 0" class="empty-state">
 			<RobotOff :size="48" />
 			<h3>{{ t('openregister', 'No agents available') }}</h3>
-			<p>{{ t('openregister', 'You need an AI agent to start a conversation.') }}</p>
+			<p>
+				{{
+					t(
+						'openregister',
+						'You need an AI agent to start a conversation.',
+					)
+				}}
+			</p>
 			<div class="empty-state-help">
 				<p>
 					{{ t('openregister', 'Please create an agent in the') }}
 					<router-link to="/agents" class="agents-link">
 						{{ t('openregister', 'Agents') }}
 					</router-link>
-					{{ t('openregister', 'menu or contact someone with permission to create agents.') }}
+					{{
+						t(
+							'openregister',
+							'menu or contact someone with permission to create agents.',
+						)
+					}}
 				</p>
 			</div>
 		</div>
 
 		<!-- Agent Cards Grid -->
 		<div v-else class="agent-grid">
-			<div
-				v-for="agent in agents"
-				:key="agent.id"
-				class="agent-card">
+			<div v-for="agent in agents" :key="agent.id" class="agent-card">
 				<!-- Agent Header -->
 				<div class="agent-header">
 					<div class="agent-icon">
@@ -57,15 +66,21 @@
 					</div>
 					<!-- Start Button -->
 					<NcButton
-						type="primary"
+						variant="primary"
 						class="start-button"
 						:disabled="startingAgentId === agent.id"
 						@click="handleStartConversation(agent)">
 						<template #icon>
-							<NcLoadingIcon v-if="startingAgentId === agent.id" :size="20" />
+							<NcLoadingIcon
+								v-if="startingAgentId === agent.id"
+								:size="20" />
 							<MessagePlus v-else :size="20" />
 						</template>
-						{{ startingAgentId === agent.id ? t('openregister', 'Starting...') : t('openregister', 'Start Conversation') }}
+						{{
+							startingAgentId === agent.id
+								? t('openregister', 'Starting...')
+								: t('openregister', 'Start Conversation')
+						}}
 					</NcButton>
 				</div>
 
@@ -74,11 +89,17 @@
 					<!-- Views and Tools in a grid -->
 					<div class="capabilities-grid">
 						<!-- Views -->
-						<div v-if="agent.views && agent.views.length > 0" class="capability-section">
+						<div
+							v-if="agent.views && agent.views.length > 0"
+							class="capability-section">
 							<div class="capability-header">
 								<CubeOutline :size="16" />
-								<span class="capability-label">{{ t('openregister', 'Views') }}</span>
-								<span class="capability-count">{{ agent.views.length }}</span>
+								<span class="capability-label">{{
+									t('openregister', 'Views')
+								}}</span>
+								<span class="capability-count">{{
+									agent.views.length
+								}}</span>
 							</div>
 							<div class="capability-list">
 								<span
@@ -88,7 +109,10 @@
 									{{ getViewName(view) }}
 								</span>
 								<button
-									v-if="agent.views.length > 3 && !isExpanded(agent.id, 'views')"
+									v-if="
+										agent.views.length > 3
+										&& !isExpanded(agent.id, 'views')
+									"
 									class="capability-more"
 									@click.stop="toggleExpand(agent.id, 'views')">
 									+{{ agent.views.length - 3 }}
@@ -97,11 +121,17 @@
 						</div>
 
 						<!-- Tools -->
-						<div v-if="agent.tools && agent.tools.length > 0" class="capability-section">
+						<div
+							v-if="agent.tools && agent.tools.length > 0"
+							class="capability-section">
 							<div class="capability-header">
 								<Tools :size="16" />
-								<span class="capability-label">{{ t('openregister', 'Tools') }}</span>
-								<span class="capability-count">{{ agent.tools.length }}</span>
+								<span class="capability-label">{{
+									t('openregister', 'Tools')
+								}}</span>
+								<span class="capability-count">{{
+									agent.tools.length
+								}}</span>
 							</div>
 							<div class="capability-list">
 								<span
@@ -111,7 +141,10 @@
 									{{ getToolName(tool) }}
 								</span>
 								<button
-									v-if="agent.tools.length > 3 && !isExpanded(agent.id, 'tools')"
+									v-if="
+										agent.tools.length > 3
+										&& !isExpanded(agent.id, 'tools')
+									"
 									class="capability-more"
 									@click.stop="toggleExpand(agent.id, 'tools')">
 									+{{ agent.tools.length - 3 }}
@@ -139,13 +172,13 @@
 
 <script>
 import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
-import Robot from 'vue-material-design-icons/Robot.vue'
-import RobotOff from 'vue-material-design-icons/RobotOff.vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import Chip from 'vue-material-design-icons/Chip.vue'
+import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import Lock from 'vue-material-design-icons/Lock.vue'
 import MessagePlus from 'vue-material-design-icons/MessagePlus.vue'
-import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
+import Robot from 'vue-material-design-icons/Robot.vue'
+import RobotOff from 'vue-material-design-icons/RobotOff.vue'
 import Tools from 'vue-material-design-icons/Tools.vue'
 
 export default {
@@ -169,22 +202,27 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+
 		selectedAgent: {
 			type: Object,
 			default: null,
 		},
+
 		loading: {
 			type: Boolean,
 			default: false,
 		},
+
 		error: {
 			type: String,
 			default: null,
 		},
+
 		inline: {
 			type: Boolean,
 			default: false,
 		},
+
 		starting: {
 			type: Boolean,
 			default: false,
@@ -201,6 +239,11 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * @param app
+		 * @param text
+		 * @spec exclude translation function placeholder, no observable behaviour
+		 */
 		t(app, text) {
 			// Translation function placeholder
 			return text
@@ -213,7 +256,10 @@ export default {
 		 * @return {boolean} True if agent has views or tools
 		 */
 		hasCapabilities(agent) {
-			return (agent.views && agent.views.length > 0) || (agent.tools && agent.tools.length > 0)
+			return (
+				(agent.views && agent.views.length > 0)
+				|| (agent.tools && agent.tools.length > 0)
+			)
 		},
 
 		/**
@@ -221,6 +267,7 @@ export default {
 		 *
 		 * @param {object|string} view - The view object or string identifier
 		 * @return {string} The view name
+		 * @spec exclude computed display helper deriving view label from prop
 		 */
 		getViewName(view) {
 			if (typeof view === 'string') {
@@ -234,6 +281,7 @@ export default {
 		 *
 		 * @param {object|string} tool - The tool object or string identifier
 		 * @return {string} The tool name
+		 * @spec exclude computed display helper deriving tool label from prop
 		 */
 		getToolName(tool) {
 			if (typeof tool === 'string') {
@@ -248,6 +296,7 @@ export default {
 		 * Handle start conversation click
 		 *
 		 * @param {object} agent - The agent to start conversation with
+		 * @spec exclude emit/UI handler delegating to parent via select-agent/confirm events
 		 */
 		handleStartConversation(agent) {
 			this.startingAgentId = agent.id
@@ -261,10 +310,11 @@ export default {
 		 *
 		 * @param {string|number} agentId - The agent ID
 		 * @param {string} section - The section to toggle ('views' or 'tools')
+		 * @spec exclude local UI expand-state toggle plumbing
 		 */
 		toggleExpand(agentId, section) {
 			const key = `${agentId}-${section}`
-			this.$set(this.expandedSections, key, !this.expandedSections[key])
+			this.expandedSections[key] = !this.expandedSections[key]
 		},
 
 		/**
@@ -273,6 +323,7 @@ export default {
 		 * @param {string|number} agentId - The agent ID
 		 * @param {string} section - The section to check ('views' or 'tools')
 		 * @return {boolean} True if section is expanded
+		 * @spec exclude computed read of local UI expand state
 		 */
 		isExpanded(agentId, section) {
 			const key = `${agentId}-${section}`
@@ -284,6 +335,7 @@ export default {
 		 *
 		 * @param {object} agent - The agent object
 		 * @return {Array} Array of visible views
+		 * @spec exclude computed display slice of views by expand state
 		 */
 		getVisibleViews(agent) {
 			if (this.isExpanded(agent.id, 'views')) {
@@ -297,6 +349,7 @@ export default {
 		 *
 		 * @param {object} agent - The agent object
 		 * @return {Array} Array of visible tools
+		 * @spec exclude computed display slice of tools by expand state
 		 */
 		getVisibleTools(agent) {
 			if (this.isExpanded(agent.id, 'tools')) {
@@ -582,6 +635,19 @@ export default {
 				}
 			}
 		}
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.agent-selector .agent-grid .agent-card,
+	.agent-selector
+		.agent-grid
+		.agent-card
+		.agent-capabilities
+		.capability-section
+		.capability-list
+		.capability-more {
+		transition: none;
 	}
 }
 </style>

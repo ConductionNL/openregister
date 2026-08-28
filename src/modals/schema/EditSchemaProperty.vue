@@ -1,19 +1,40 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { navigationStore, schemaStore, registerStore } from '../../store/store.js'
+import { navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
+
 <template>
-	<NcDialog :name="schemaStore.schemaPropertyKey
-			? `Edit Property '${schemaStore.schemaPropertyKey}' of '${schemaStore.schemaItem.title}'`
-			: `Add Property to '${schemaStore.schemaItem?.title}'`"
+	<NcDialog
+		:name="
+			schemaStore.schemaPropertyKey
+				? t('openregister', 'Edit Property \'{key}\' of \'{title}\'', {
+						key: schemaStore.schemaPropertyKey,
+						title: schemaStore.schemaItem.title,
+					})
+				: t('openregister', 'Add Property to \'{title}\'', {
+						title: schemaStore.schemaItem?.title,
+					})
+		"
 		size="normal"
-		:can-close="false">
+		:canClose="false">
 		<div v-if="success !== null" class="form-group">
 			<NcNoteCard v-if="success" type="success">
-				<p>Property successfully {{ schemaStore.schemaPropertyKey ? 'updated' : 'added' }}</p>
+				<p>
+					{{
+						schemaStore.schemaPropertyKey
+							? t('openregister', 'Property successfully updated')
+							: t('openregister', 'Property successfully added')
+					}}
+				</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="!success" type="error">
-				<p>Property could not be {{ schemaStore.schemaPropertyKey ? 'updated' : 'added' }}</p>
+				<p>
+					{{
+						schemaStore.schemaPropertyKey
+							? t('openregister', 'Property could not be updated')
+							: t('openregister', 'Property could not be added')
+					}}
+				</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="error" type="error">
 				<p>{{ error }}</p>
@@ -21,83 +42,121 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 		</div>
 
 		<div v-if="success === null" class="form-group">
-			<NcTextField :disabled="loading"
-				label="Title*"
+			<NcTextField
+				v-model="propertyTitle"
+				:disabled="loading"
+				:label="t('openregister', 'Title*')"
 				:error="keyExists()"
-				:helper-text="keyExists() ? 'This key already exists on this schema' : ''"
-				:value.sync="propertyTitle" />
+				:helperText="
+					keyExists()
+						? t('openregister', 'This key already exists on this schema')
+						: ''
+				" />
 
-			<NcTextField :disabled="loading"
-				label="Description"
-				:value.sync="properties.description" />
+			<NcTextField
+				v-model="properties.description"
+				:disabled="loading"
+				:label="t('openregister', 'Description')" />
 
-			<NcTextField :disabled="loading"
-				label="Title"
-				:value.sync="properties.title" />
+			<NcTextField
+				v-model="properties.title"
+				:disabled="loading"
+				:label="t('openregister', 'Title')" />
 
 			<div class="ASP-selectContainer">
-				<NcSelect v-bind="typeOptions"
-					v-model="properties.type" />
+				<NcSelect
+					v-bind="typeOptions"
+					v-model="properties.type"
+					inputLabel="Properties Type" />
 
 				<NcSelect
 					v-bind="formatOptions"
 					v-model="properties.format"
+					inputLabel="Properties Format"
 					:disabled="properties.type !== 'string'" />
 			</div>
 			<!-- TYPE : OBJECT -->
-			<div v-if="properties.type === 'object'" class="objectConfigurationContainer">
+			<div
+				v-if="properties.type === 'object'"
+				class="objectConfigurationContainer">
 				<div class="objectConfigurationTitle">
-					Object Configuration:
+					{{ t('openregister', 'Object Configuration:') }}
 				</div>
 				<NcSelect
 					v-model="properties.objectConfiguration.handling"
+					inputLabel="Properties Object Configuration Handling"
 					v-bind="objectConfiguration.handling" />
 				<NcSelect
 					:disabled="loading"
-					input-label="Register"
-					label="Register"
-					placeholder="Select a register..."
+					:inputLabel="t('openregister', 'Register')"
+					:label="t('openregister', 'Register')"
+					:placeholder="t('openregister', 'Select a register...')"
 					:options="availableRegisters"
-					:value="properties.register"
-					@update:value="handleRegisterChange($event)" />
+					:modelValue="properties.register"
+					@update:modelValue="handleRegisterChange($event)" />
 				<NcSelect
 					:disabled="loading || !properties.register"
-					input-label="Schema reference ($ref)"
-					label="Schema reference ($ref)"
-					placeholder="Select a schema..."
+					:inputLabel="t('openregister', 'Schema reference ($ref)')"
+					:label="t('openregister', 'Schema reference ($ref)')"
+					:placeholder="t('openregister', 'Select a schema...')"
 					:options="availableSchemas"
-					:value="properties.$ref"
-					@update:value="handleSchemaChange($event)" />
+					:modelValue="properties.$ref"
+					@update:modelValue="handleSchemaChange($event)" />
 				<NcTextField
+					v-model="properties.objectConfiguration.queryParams"
 					:disabled="loading || !properties.$ref"
-					label="Extra Query Parameters"
-					:value.sync="properties.objectConfiguration.queryParams"
+					:label="t('openregister', 'Extra Query Parameters')"
 					placeholder="key1=value1&key2=value2"
-					helper-text="Optional: Add query parameters to filter the referenced schema (e.g., status=active&type=public)" />
+					:helperText="
+						t(
+							'openregister',
+							'Optional: Add query parameters to filter the referenced schema (e.g., status=active&type=public)',
+						)
+					" />
 				<NcSelect
 					:disabled="loading || !properties.$ref"
 					v-bind="inversedByOptions"
-					input-label="Property name of inversed relation"
-					label="Property name of inversed relation"
-					:model-value="properties.inversedBy"
-					@update:model-value="handleInversedByChange" />
+					:inputLabel="
+						t('openregister', 'Property name of inversed relation')
+					"
+					:label="t('openregister', 'Property name of inversed relation')"
+					:modelValue="properties.inversedBy"
+					@update:modelValue="handleInversedByChange" />
 				<NcCheckboxRadioSwitch
 					v-if="properties.inversedBy"
-					:disabled="loading"
-					:checked.sync="properties.writeBack">
-					Enable write-back to target objects
+					v-model="properties.writeBack"
+					:disabled="loading">
+					{{ t('openregister', 'Enable write-back to target objects') }}
 				</NcCheckboxRadioSwitch>
-				<div v-if="properties.inversedBy && !properties.writeBack" class="helper-text">
-					When enabled, saving this object will also update the target objects to include a reference back to this object.
+				<div
+					v-if="properties.inversedBy && !properties.writeBack"
+					class="helper-text">
+					{{
+						t(
+							'openregister',
+							'When enabled, saving this object will also update the target objects to include a reference back to this object.',
+						)
+					}}
 				</div>
 				<NcCheckboxRadioSwitch
 					v-if="properties.inversedBy && properties.writeBack"
-					:disabled="loading"
-					:checked.sync="properties.removeAfterWriteBack">
-					Remove property after write-back
+					v-model="properties.removeAfterWriteBack"
+					:disabled="loading">
+					{{ t('openregister', 'Remove property after write-back') }}
 				</NcCheckboxRadioSwitch>
-				<div v-if="properties.inversedBy && properties.writeBack && !properties.removeAfterWriteBack" class="helper-text">
-					When enabled, this property will be removed from the source object after updating the target objects.
+				<div
+					v-if="
+						properties.inversedBy
+						&& properties.writeBack
+						&& !properties.removeAfterWriteBack
+					"
+					class="helper-text">
+					{{
+						t(
+							'openregister',
+							'When enabled, this property will be removed from the source object after updating the target objects.',
+						)
+					}}
 				</div>
 			</div>
 
@@ -106,464 +165,571 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 				<NcSelect
 					v-bind="fileConfiguration.handling"
 					v-model="properties.fileConfiguration.handling"
-					label="File Handling" />
+					inputLabel="Properties File Configuration Handling"
+					:label="t('openregister', 'File Handling')" />
 				<NcSelect
 					v-model="properties.fileConfiguration.allowedMimeTypes"
 					:options="mimeTypes"
-					input-label="Allowed MIME Types"
-					label="Allowed MIME Types"
+					:inputLabel="t('openregister', 'Allowed MIME Types')"
+					:label="t('openregister', 'Allowed MIME Types')"
 					multiple />
-				<NcTextField :disabled="loading"
-					label="File Location"
-					:value.sync="properties.fileConfiguration.location" />
-				<NcInputField :disabled="loading"
+				<NcTextField
+					v-model="properties.fileConfiguration.location"
+					:disabled="loading"
+					:label="t('openregister', 'File Location')" />
+				<NcInputField
+					v-model="properties.fileConfiguration.maxSize"
+					:disabled="loading"
 					type="number"
-					label="Maximum File Size (MB)"
-					:value.sync="properties.fileConfiguration.maxSize" />
+					:label="t('openregister', 'Maximum File Size (MB)')" />
 			</div>
 
-			<template v-if="properties.type !== 'object' && properties.type !== 'file'">
-				<NcTextField :disabled="loading"
-					label="Pattern (regex)"
-					:value.sync="properties.pattern" />
+			<template
+				v-if="properties.type !== 'object' && properties.type !== 'file'">
+				<NcTextField
+					v-model="properties.pattern"
+					:disabled="loading"
+					:label="t('openregister', 'Pattern (regex)')" />
 
-				<NcTextField :disabled="loading"
-					label="Behavior"
-					:value.sync="properties.behavior" />
+				<NcTextField
+					v-model="properties.behavior"
+					:disabled="loading"
+					:label="t('openregister', 'Behavior')" />
 				<template v-if="properties.type !== 'array'">
-					<NcInputField :disabled="loading"
+					<NcInputField
+						v-model="properties.minLength"
+						:disabled="loading"
 						type="number"
-						label="Minimum length"
-						:value.sync="properties.minLength" />
+						:label="t('openregister', 'Minimum length')" />
 
-					<NcInputField :disabled="loading"
+					<NcInputField
+						v-model="properties.maxLength"
+						:disabled="loading"
 						type="number"
-						label="Maximum length"
-						:value.sync="properties.maxLength" />
+						:label="t('openregister', 'Maximum length')" />
 				</template>
 			</template>
 
 			<!-- TYPE : STRING -->
 			<div v-if="properties.type === 'string'">
-				<NcDateTimePicker v-if="properties.format === 'date'"
+				<NcDateTimePicker
+					v-if="properties.format === 'date'"
 					v-model="properties.default"
 					type="date"
-					label="Default value"
+					:label="t('openregister', 'Default value')"
 					:disabled="loading"
 					:loading="loading" />
 
-				<NcDateTimePicker v-else-if="properties.format === 'time'"
+				<NcDateTimePicker
+					v-else-if="properties.format === 'time'"
 					v-model="properties.default"
 					type="time"
-					label="Default value"
+					:label="t('openregister', 'Default value')"
 					:disabled="loading"
 					:loading="loading" />
 
-				<NcDateTimePicker v-else-if="properties.format === 'date-time'"
+				<NcDateTimePicker
+					v-else-if="properties.format === 'date-time'"
 					v-model="properties.default"
 					type="datetime"
-					label="Default value"
+					:label="t('openregister', 'Default value')"
 					:disabled="loading"
 					:loading="loading" />
 
-				<NcInputField v-else-if="properties.format === 'email'"
-					:value.sync="properties.default"
+				<NcInputField
+					v-else-if="properties.format === 'email'"
+					v-model="properties.default"
 					type="email"
-					label="Default value (Email)"
+					:label="t('openregister', 'Default value (Email)')"
 					:disabled="loading"
 					:loading="loading" />
 
-				<NcInputField v-else-if="properties.format === 'idn-email'"
-					:value.sync="properties.default"
+				<NcInputField
+					v-else-if="properties.format === 'idn-email'"
+					v-model="properties.default"
 					type="email"
-					label="Default value (Email)"
-					helper-text="email"
+					:label="t('openregister', 'Default value (Email)')"
+					helperText="email"
 					:disabled="loading"
 					:loading="loading" />
 
-				<NcTextField v-else-if="properties.format === 'regex'"
-					:value.sync="properties.default"
-					label="Default value (Regex)"
+				<NcTextField
+					v-else-if="properties.format === 'regex'"
+					v-model="properties.default"
+					:label="t('openregister', 'Default value (Regex)')"
 					:disabled="loading"
 					:loading="loading" />
 
-				<NcInputField v-else-if="properties.format === 'password'"
-					:value.sync="properties.default"
+				<NcInputField
+					v-else-if="properties.format === 'password'"
+					v-model="properties.default"
 					type="password"
-					label="Default value (Password)"
+					:label="t('openregister', 'Default value (Password)')"
 					:disabled="loading"
 					:loading="loading" />
 
-				<NcInputField v-else-if="properties.format === 'telephone'"
-					:value.sync="properties.default"
+				<NcInputField
+					v-else-if="properties.format === 'telephone'"
+					v-model="properties.default"
 					type="tel"
-					label="Default value (Phone number)"
+					:label="t('openregister', 'Default value (Phone number)')"
 					:disabled="loading"
 					:loading="loading" />
 
-				<NcTextField v-else
-					:value.sync="properties.default"
-					label="Default value"
+				<NcTextField
+					v-else
+					v-model="properties.default"
+					:label="t('openregister', 'Default value')"
 					:disabled="loading"
 					:loading="loading" />
 			</div>
 
 			<!-- TYPE : NUMBER -->
-			<NcInputField v-else-if="properties.type === 'number'"
+			<NcInputField
+				v-else-if="properties.type === 'number'"
+				v-model="properties.default"
 				:disabled="loading"
 				type="number"
 				step="any"
-				label="Default value"
-				:value.sync="properties.default"
+				:label="t('openregister', 'Default value')"
 				:loading="loading" />
 			<!-- TYPE : INTEGER -->
-			<NcInputField v-else-if="properties.type === 'integer'"
+			<NcInputField
+				v-else-if="properties.type === 'integer'"
+				v-model="properties.default"
 				:disabled="loading"
 				type="number"
 				step="1"
-				label="Default value"
-				:value.sync="properties.default"
+				:label="t('openregister', 'Default value')"
 				:loading="loading" />
 			<!-- TYPE : OBJECT -->
 			<div v-else-if="properties.type === 'object'">
 				<NcTextArea
+					v-model="properties.default"
 					:disabled="loading"
-					label="Default value"
-					:value.sync="properties.default"
+					:label="t('openregister', 'Default value')"
 					:loading="loading"
 					:error="!verifyJsonValidity(properties.default)"
-					:helper-text="!verifyJsonValidity(properties.default) ? 'This is not valid JSON' : ''" />
+					:helperText="
+						!verifyJsonValidity(properties.default)
+							? t('openregister', 'This is not valid JSON')
+							: ''
+					" />
 
 				<NcCheckboxRadioSwitch
-					:disabled="loading"
-					:checked.sync="properties.cascadeDelete">
-					Cascade delete
+					v-model="properties.cascadeDelete"
+					:disabled="loading">
+					{{ t('openregister', 'Cascade delete') }}
 				</NcCheckboxRadioSwitch>
 			</div>
 
 			<!-- TYPE : ARRAY -->
-			<NcTextArea v-else-if="properties.type === 'array'"
+			<NcTextArea
+				v-else-if="properties.type === 'array'"
+				v-model="properties.default"
 				:disabled="loading"
-				label="Value list (split on ,)"
-				:value.sync="properties.default"
+				:label="t('openregister', 'Value list (split on ,)')"
 				:loading="loading" />
 			<!-- TYPE : BOOLEAN -->
-			<NcCheckboxRadioSwitch v-else-if="properties.type === 'boolean'"
+			<NcCheckboxRadioSwitch
+				v-else-if="properties.type === 'boolean'"
+				v-model="properties.default"
 				:disabled="loading"
-				:checked.sync="properties.default"
 				:loading="loading">
-				Default value
+				{{ t('openregister', 'Default value') }}
 			</NcCheckboxRadioSwitch>
 			<!-- TYPE : dictionary -->
-			<NcTextField v-else-if="properties.type === 'dictionary'"
+			<NcTextField
+				v-else-if="properties.type === 'dictionary'"
+				v-model="properties.default"
 				:disabled="loading"
-				label="Default value"
-				:value.sync="properties.default" />
+				:label="t('openregister', 'Default value')" />
 
-			<NcInputField :disabled="loading"
+			<NcInputField
+				v-model="properties.order"
+				:disabled="loading"
 				type="number"
-				label="Order"
-				:value.sync="properties.order" />
+				:label="t('openregister', 'Order')" />
 
-			<NcCheckboxRadioSwitch
-				:disabled="loading"
-				:checked.sync="properties.required">
-				Required
+			<NcCheckboxRadioSwitch v-model="properties.required" :disabled="loading">
+				{{ t('openregister', 'Required') }}
 			</NcCheckboxRadioSwitch>
 
 			<NcCheckboxRadioSwitch
-				:disabled="loading"
-				:checked.sync="properties.immutable">
-				Immutable
+				v-model="properties.immutable"
+				:disabled="loading">
+				{{ t('openregister', 'Immutable') }}
 			</NcCheckboxRadioSwitch>
 
 			<NcCheckboxRadioSwitch
-				:disabled="loading"
-				:checked.sync="properties.deprecated">
-				Deprecated
+				v-model="properties.deprecated"
+				:disabled="loading">
+				{{ t('openregister', 'Deprecated') }}
+			</NcCheckboxRadioSwitch>
+
+			<NcCheckboxRadioSwitch v-model="properties.visible" :disabled="loading">
+				{{ t('openregister', 'Visible to end users') }}
 			</NcCheckboxRadioSwitch>
 
 			<NcCheckboxRadioSwitch
-				:disabled="loading"
-				:checked.sync="properties.visible">
-				Visible to end users
+				v-model="properties.hideOnCollection"
+				:disabled="loading">
+				{{ t('openregister', 'Hide in collection view') }}
 			</NcCheckboxRadioSwitch>
 
-			<NcCheckboxRadioSwitch
-				:disabled="loading"
-				:checked.sync="properties.hideOnCollection">
-				Hide in collection view
-			</NcCheckboxRadioSwitch>
-
-			<NcCheckboxRadioSwitch
-				:disabled="loading"
-				:checked.sync="facetableEnabled">
-				Facetable
+			<NcCheckboxRadioSwitch v-model="facetableEnabled" :disabled="loading">
+				{{ t('openregister', 'Facetable') }}
 			</NcCheckboxRadioSwitch>
 
 			<!-- Faceting configuration (shown when facetable is enabled) -->
 			<div v-if="facetableEnabled" class="facetConfigContainer">
 				<div class="facetConfigTitle">
-					Faceting Configuration:
+					{{ t('openregister', 'Faceting Configuration:') }}
 				</div>
 				<NcCheckboxRadioSwitch
-					:disabled="loading"
-					:checked.sync="facetConfig.aggregated">
-					Aggregated across schemas
+					v-model="facetConfig.aggregated"
+					:disabled="loading">
+					{{ t('openregister', 'Aggregated across schemas') }}
 				</NcCheckboxRadioSwitch>
 				<div v-if="!facetConfig.aggregated" class="helper-text">
-					When disabled, this facet will only show values from this schema and will include a schema filter when selected.
+					{{
+						t(
+							'openregister',
+							'When disabled, this facet will only show values from this schema and will include a schema filter when selected.',
+						)
+					}}
 				</div>
-				<NcTextField :disabled="loading"
-					label="Facet Title"
-					:value.sync="facetConfig.title"
-					placeholder="Custom display title for this facet" />
-				<NcTextField :disabled="loading"
-					label="Facet Description"
-					:value.sync="facetConfig.description"
-					placeholder="Description shown as tooltip" />
-				<NcInputField :disabled="loading"
+				<NcTextField
+					v-model="facetConfig.title"
+					:disabled="loading"
+					:label="t('openregister', 'Facet Title')"
+					:placeholder="
+						t('openregister', 'Custom display title for this facet')
+					" />
+				<NcTextField
+					v-model="facetConfig.description"
+					:disabled="loading"
+					:label="t('openregister', 'Facet Description')"
+					:placeholder="
+						t('openregister', 'Description shown as tooltip')
+					" />
+				<NcInputField
+					v-model="facetConfig.order"
+					:disabled="loading"
 					type="number"
-					label="Facet Order"
-					:value.sync="facetConfig.order" />
+					:label="t('openregister', 'Facet Order')" />
 				<div class="helper-text">
-					Lower numbers appear first in the filter sidebar. Leave empty for automatic ordering.
+					{{
+						t(
+							'openregister',
+							'Lower numbers appear first in the filter sidebar. Leave empty for automatic ordering.',
+						)
+					}}
 				</div>
 
 				<!-- Date faceting options (shown for date/datetime properties) -->
 				<div v-if="isDateProperty" class="facetDateConfig">
 					<div class="facetConfigTitle">
-						Date Faceting:
+						{{ t('openregister', 'Date Faceting:') }}
 					</div>
 					<NcSelect
 						:disabled="loading"
-						:value="facetTypeOption"
+						:modelValue="facetTypeOption"
 						:options="facetTypeOptions"
 						label="label"
-						track-by="value"
-						:input-label="'Facet Type'"
+						trackBy="value"
+						:inputLabel="t('openregister', 'Facet Type')"
 						:clearable="false"
-						@input="updateFacetType" />
+						@update:modelValue="updateFacetType" />
 
 					<!-- Histogram options -->
-					<div v-if="facetType === 'date_histogram'" class="facetDateOptions">
+					<div
+						v-if="facetType === 'date_histogram'"
+						class="facetDateOptions">
 						<NcSelect
 							:disabled="loading"
-							:value="facetIntervalOption"
+							:modelValue="facetIntervalOption"
 							:options="facetIntervalOptions"
 							label="label"
-							track-by="value"
-							:input-label="'Interval'"
+							trackBy="value"
+							:inputLabel="t('openregister', 'Interval')"
 							:clearable="false"
-							@input="(opt) => facetInterval = opt.value" />
-						<NcTextField :disabled="loading"
-							label="Display Format"
-							:value.sync="facetFormat"
-							placeholder="Auto (e.g. Y for year, F Y for month)" />
+							@update:modelValue="
+								(opt) => (facetInterval = opt.value)
+							" />
+						<NcTextField
+							v-model="facetFormat"
+							:disabled="loading"
+							:label="t('openregister', 'Display Format')"
+							:placeholder="
+								t(
+									'openregister',
+									'Auto (e.g. Y for year, F Y for month)',
+								)
+							" />
 					</div>
 
 					<!-- Date range options -->
 					<div v-if="facetType === 'date_range'" class="facetDateOptions">
 						<NcCheckboxRadioSwitch
-							:disabled="loading"
-							:checked.sync="facetUseDefaultRanges">
-							Use default ranges (Last 7/30/90 days, Last year, Older)
+							v-model="facetUseDefaultRanges"
+							:disabled="loading">
+							{{
+								t(
+									'openregister',
+									'Use default ranges (Last 7/30/90 days, Last year, Older)',
+								)
+							}}
 						</NcCheckboxRadioSwitch>
 
 						<!-- Custom range editor -->
 						<div v-if="!facetUseDefaultRanges" class="customRangeEditor">
 							<div class="facetConfigTitle">
-								Custom Ranges:
+								{{ t('openregister', 'Custom Ranges:') }}
 							</div>
-							<div v-for="(range, index) in facetCustomRanges"
+							<div
+								v-for="(range, index) in facetCustomRanges"
 								:key="index"
 								class="customRangeRow">
-								<NcTextField :disabled="loading"
-									label="Label"
-									:value.sync="range.label" />
-								<NcTextField :disabled="loading"
-									label="From (e.g. -7 days or 2025-01-01)"
-									:value.sync="range.from" />
-								<NcTextField :disabled="loading"
-									label="To (e.g. -1 year or 2025-12-31)"
-									:value.sync="range.to" />
-								<NcButton :disabled="loading"
-									type="tertiary-no-background"
+								<NcTextField
+									v-model="range.label"
+									:disabled="loading"
+									:label="t('openregister', 'Label')" />
+								<NcTextField
+									v-model="range.from"
+									:disabled="loading"
+									:label="
+										t(
+											'openregister',
+											'From (e.g. -7 days or 2025-01-01)',
+										)
+									" />
+								<NcTextField
+									v-model="range.to"
+									:disabled="loading"
+									:label="
+										t(
+											'openregister',
+											'To (e.g. -1 year or 2025-12-31)',
+										)
+									" />
+								<NcButton
+									:disabled="loading"
+									variant="tertiary-no-background"
+									:aria-label="t('openregister', 'Remove')"
 									@click="removeCustomRange(index)">
 									<template #icon>
 										<Cancel :size="20" />
 									</template>
 								</NcButton>
 							</div>
-							<NcButton :disabled="loading"
-								type="secondary"
+							<NcButton
+								:disabled="loading"
+								variant="secondary"
 								@click="addCustomRange">
 								<template #icon>
 									<Plus :size="20" />
 								</template>
-								Add range
+								{{ t('openregister', 'Add range') }}
 							</NcButton>
 						</div>
 					</div>
 				</div>
 			</div>
 
-			<NcTextField :disabled="loading"
-				label="Example"
-				:value.sync="properties.example" />
+			<NcTextField
+				v-model="properties.example"
+				:disabled="loading"
+				:label="t('openregister', 'Example')" />
 
 			<!-- type integer and number only -->
-			<div v-if="properties.type === 'integer' || properties.type === 'number'">
-				<h5 class="weightNormal">
-					type: number
-				</h5>
+			<div
+				v-if="properties.type === 'integer' || properties.type === 'number'">
+				<h5 class="weightNormal">type: number</h5>
 
-				<NcInputField :disabled="loading"
+				<NcInputField
+					v-model="properties.minimum"
+					:disabled="loading"
 					type="number"
-					label="Minimum value"
-					:value.sync="properties.minimum" />
+					:label="t('openregister', 'Minimum value')" />
 
-				<NcInputField :disabled="loading"
+				<NcInputField
+					v-model="properties.maximum"
+					:disabled="loading"
 					type="number"
-					label="Maximum value"
-					:value.sync="properties.maximum" />
+					:label="t('openregister', 'Maximum value')" />
 
-				<NcInputField :disabled="loading"
+				<NcInputField
+					v-model="properties.multipleOf"
+					:disabled="loading"
 					type="number"
-					label="Multiple of"
-					:value.sync="properties.multipleOf" />
+					:label="t('openregister', 'Multiple of')" />
 
 				<NcCheckboxRadioSwitch
-					:disabled="loading"
-					:checked.sync="properties.exclusiveMin">
-					Exclusive minimum
+					v-model="properties.exclusiveMin"
+					:disabled="loading">
+					{{ t('openregister', 'Exclusive minimum') }}
 				</NcCheckboxRadioSwitch>
 
 				<NcCheckboxRadioSwitch
-					:disabled="loading"
-					:checked.sync="properties.exclusiveMax">
-					Exclusive maximum
+					v-model="properties.exclusiveMax"
+					:disabled="loading">
+					{{ t('openregister', 'Exclusive maximum') }}
 				</NcCheckboxRadioSwitch>
 			</div>
 
 			<!-- type array only -->
 			<div v-if="properties.type === 'array'">
-				<h5 class="weightNormal">
-					type: array
-				</h5>
+				<h5 class="weightNormal">type: array</h5>
 
 				<div class="ASP-selectContainer">
-					<NcSelect v-bind="itemsTypeOptions"
-						v-model="properties.items.type" />
+					<NcSelect
+						v-bind="itemsTypeOptions"
+						v-model="properties.items.type"
+						inputLabel="Properties Items Type" />
 				</div>
 
 				<!-- type array and sub type object only -->
 				<div v-if="properties.items.type === 'object'">
 					<div class="objectConfigurationTitle">
-						Array Object Configuration:
+						{{ t('openregister', 'Array Object Configuration:') }}
 					</div>
 					<NcSelect
 						v-model="properties.objectConfiguration.handling"
+						inputLabel="Properties Object Configuration Handling"
 						v-bind="objectConfiguration.handling" />
 					<NcSelect
 						:disabled="loading || !properties.items.register"
-						input-label="Register"
-						label="Register"
-						placeholder="Select a register..."
+						:inputLabel="t('openregister', 'Register')"
+						:label="t('openregister', 'Register')"
+						:placeholder="t('openregister', 'Select a register...')"
 						:options="availableRegisters"
-						:value="properties.items.register"
-						@update:value="handleRegisterChange($event)" />
+						:modelValue="properties.items.register"
+						@update:modelValue="handleRegisterChange($event)" />
 					<NcSelect
 						:disabled="loading || !properties.items.register"
-						input-label="Schema reference ($ref)"
-						label="Schema reference ($ref)"
-						placeholder="Select a schema..."
+						:inputLabel="t('openregister', 'Schema reference ($ref)')"
+						:label="t('openregister', 'Schema reference ($ref)')"
+						:placeholder="t('openregister', 'Select a schema...')"
 						:options="availableSchemas"
-						:value="properties.items.$ref"
-						@update:value="handleSchemaChange($event)" />
+						:modelValue="properties.items.$ref"
+						@update:modelValue="handleSchemaChange($event)" />
 					<NcTextField
+						v-model="properties.items.objectConfiguration.queryParams"
 						:disabled="loading || !properties.items.$ref"
-						label="Extra Query Parameters"
-						:value.sync="properties.items.objectConfiguration.queryParams"
+						:label="t('openregister', 'Extra Query Parameters')"
 						placeholder="key1=value1&key2=value2"
-						helper-text="Optional: Add query parameters to filter the referenced schema (e.g., status=active&type=public)" />
+						:helperText="
+							t(
+								'openregister',
+								'Optional: Add query parameters to filter the referenced schema (e.g., status=active&type=public)',
+							)
+						" />
 					<NcSelect
 						:disabled="loading || !properties.items.$ref"
 						v-bind="inversedByOptions"
-						input-label="Property name of inversed relation"
-						label="Property name of inversed relation"
-						:model-value="properties.items.inversedBy"
-						@update:model-value="handleInversedByChange" />
+						:inputLabel="
+							t('openregister', 'Property name of inversed relation')
+						"
+						:label="
+							t('openregister', 'Property name of inversed relation')
+						"
+						:modelValue="properties.items.inversedBy"
+						@update:modelValue="handleInversedByChange" />
 					<NcCheckboxRadioSwitch
 						v-if="properties.items.inversedBy"
-						:disabled="loading"
-						:checked.sync="properties.items.writeBack">
-						Enable write-back to target objects
+						v-model="properties.items.writeBack"
+						:disabled="loading">
+						{{
+							t('openregister', 'Enable write-back to target objects')
+						}}
 					</NcCheckboxRadioSwitch>
-					<div v-if="properties.items.inversedBy && !properties.items.writeBack" class="helper-text">
-						When enabled, saving this object will also update the target objects to include a reference back to this object.
+					<div
+						v-if="
+							properties.items.inversedBy
+							&& !properties.items.writeBack
+						"
+						class="helper-text">
+						{{
+							t(
+								'openregister',
+								'When enabled, saving this object will also update the target objects to include a reference back to this object.',
+							)
+						}}
 					</div>
 					<NcCheckboxRadioSwitch
-						v-if="properties.items.inversedBy && properties.items.writeBack"
-						:disabled="loading"
-						:checked.sync="properties.items.removeAfterWriteBack">
-						Remove property after write-back
+						v-if="
+							properties.items.inversedBy && properties.items.writeBack
+						"
+						v-model="properties.items.removeAfterWriteBack"
+						:disabled="loading">
+						{{ t('openregister', 'Remove property after write-back') }}
 					</NcCheckboxRadioSwitch>
-					<div v-if="properties.items.inversedBy && properties.items.writeBack && !properties.items.removeAfterWriteBack" class="helper-text">
-						When enabled, this property will be removed from the source object after updating the target objects.
+					<div
+						v-if="
+							properties.items.inversedBy
+							&& properties.items.writeBack
+							&& !properties.items.removeAfterWriteBack
+						"
+						class="helper-text">
+						{{
+							t(
+								'openregister',
+								'When enabled, this property will be removed from the source object after updating the target objects.',
+							)
+						}}
 					</div>
 					<NcCheckboxRadioSwitch
-						:disabled="loading"
-						:checked.sync="properties.items.cascadeDelete">
-						Cascade delete
+						v-model="properties.items.cascadeDelete"
+						:disabled="loading">
+						{{ t('openregister', 'Cascade delete') }}
 					</NcCheckboxRadioSwitch>
 				</div>
 
-				<NcInputField :disabled="loading"
+				<NcInputField
+					v-model="properties.minItems"
+					:disabled="loading"
 					type="number"
-					label="Minimum number of items"
-					:value.sync="properties.minItems" />
+					:label="t('openregister', 'Minimum number of items')" />
 
-				<NcInputField :disabled="loading"
+				<NcInputField
+					v-model="properties.maxItems"
+					:disabled="loading"
 					type="number"
-					label="Maximum number of items"
-					:value.sync="properties.maxItems" />
+					:label="t('openregister', 'Maximum number of items')" />
 			</div>
 
 			<!-- type oneOf only -->
 			<div v-if="properties.type === 'oneOf'">
-				<h5 class="weightNormal">
-					type: oneOf
-				</h5>
+				<h5 class="weightNormal">type: oneOf</h5>
 
-				<div v-for="(oneOfItem, index) in properties.oneOf" :key="index" class="ASP-oneOfItem">
+				<div
+					v-for="(oneOfItem, index) in properties.oneOf"
+					:key="index"
+					class="ASP-oneOfItem">
 					<h6>oneOf entry {{ index + 1 }}</h6>
 
 					<div class="ASP-selectContainer">
 						<NcSelect
 							v-bind="itemsTypeOptions"
 							v-model="oneOfItem.type"
-							:input-label="'Type'" />
+							:inputLabel="t('openregister', 'Type')" />
 					</div>
 
 					<div class="ASP-selectContainer">
 						<NcSelect
 							v-bind="formatOptions"
 							v-model="oneOfItem.format"
-							:input-label="'Format'" />
+							:inputLabel="t('openregister', 'Format')" />
 					</div>
 
-					<NcButton
-						variant="danger"
-						@click="removeOneOfEntry(index)">
-						Remove oneOf entry
+					<NcButton variant="danger" @click="removeOneOfEntry(index)">
+						{{ t('openregister', 'Remove oneOf entry') }}
 					</NcButton>
 				</div>
 
-				<NcButton
-					variant="primary"
-					@click="addOneOfEntry">
-					Add oneOf entry
+				<NcButton variant="primary" @click="addOneOfEntry">
+					{{ t('openregister', 'Add oneOf entry') }}
 				</NcButton>
 			</div>
 		</div>
@@ -573,21 +739,36 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success !== null ? 'Close' : 'Cancel' }}
+				{{
+					success !== null
+						? t('openregister', 'Close')
+						: t('openregister', 'Cancel')
+				}}
 			</NcButton>
 
-			<NcButton v-if="success === null"
-				:disabled="!propertyTitle || !properties.type || loading || keyExists()"
-				type="primary"
+			<NcButton
+				v-if="success === null"
+				:disabled="
+					!propertyTitle || !properties.type || loading || keyExists()
+				"
+				variant="primary"
 				@click="addSchemaProperty()">
 				<template #icon>
 					<span>
 						<NcLoadingIcon v-if="loading" :size="20" />
-						<ContentSaveOutline v-if="!loading && schemaStore.schemaPropertyKey" :size="20" />
-						<Plus v-if="!loading && !schemaStore.schemaPropertyKey" :size="20" />
+						<ContentSaveOutline
+							v-if="!loading && schemaStore.schemaPropertyKey"
+							:size="20" />
+						<Plus
+							v-if="!loading && !schemaStore.schemaPropertyKey"
+							:size="20" />
 					</span>
 				</template>
-				{{ schemaStore.schemaPropertyKey ? 'Save' : 'Add' }}
+				{{
+					schemaStore.schemaPropertyKey
+						? t('openregister', 'Save')
+						: t('openregister', 'Add')
+				}}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -595,22 +776,21 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 
 <script>
 import {
-	NcDialog,
 	NcButton,
-	NcTextField,
-	NcSelect,
 	NcCheckboxRadioSwitch,
-	NcInputField,
-	NcNoteCard,
-	NcLoadingIcon,
 	NcDateTimePicker,
+	NcDialog,
+	NcInputField,
+	NcLoadingIcon,
+	NcNoteCard,
+	NcSelect,
 	NcTextArea,
+	NcTextField,
 } from '@nextcloud/vue'
-
 // icons
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
 
 export default {
 	name: 'EditSchemaProperty',
@@ -626,6 +806,7 @@ export default {
 		NcDateTimePicker,
 		NcTextArea,
 	},
+
 	data() {
 		return {
 			propertyTitle: '',
@@ -636,6 +817,7 @@ export default {
 				description: '',
 				order: '',
 			},
+
 			facetType: '',
 			facetInterval: 'month',
 			facetFormat: '',
@@ -686,34 +868,106 @@ export default {
 						queryParams: '', // Extra query parameters for items.$ref
 					},
 				},
+
 				objectConfiguration: {
 					handling: 'nested-object',
 					schema: '',
 					queryParams: '', // Extra query parameters for $ref
 				},
+
 				fileConfiguration: {
 					handling: 'ignore',
 					allowedMimeTypes: [],
 					location: '', // Initialize with empty string
 					maxSize: 0, // Initialize with 0
 				},
+
 				oneOf: [],
 			},
+
 			typeOptions: {
 				inputLabel: 'Type*',
 				multiple: false,
-				options: ['string', 'number', 'integer', 'object', 'array', 'boolean', 'dictionary', 'file', 'oneOf', 'NcFile', 'NcMail', 'NcContact', 'NcNote', 'NcTodo', 'NcCalendarEvent', 'NcTalk', 'NcDeck'],
+				options: [
+					'string',
+					'number',
+					'integer',
+					'object',
+					'array',
+					'boolean',
+					'dictionary',
+					'file',
+					'oneOf',
+					'NcFile',
+					'NcMail',
+					'NcContact',
+					'NcNote',
+					'NcTodo',
+					'NcCalendarEvent',
+					'NcTalk',
+					'NcDeck',
+				],
 			},
+
 			itemsTypeOptions: {
 				inputLabel: 'Sub type',
 				multiple: false,
-				options: ['string', 'number', 'integer', 'object', 'boolean', 'dictionary', 'file', 'NcFile', 'NcMail', 'NcContact', 'NcNote', 'NcTodo', 'NcCalendarEvent', 'NcTalk', 'NcDeck'],
+				options: [
+					'string',
+					'number',
+					'integer',
+					'object',
+					'boolean',
+					'dictionary',
+					'file',
+					'NcFile',
+					'NcMail',
+					'NcContact',
+					'NcNote',
+					'NcTodo',
+					'NcCalendarEvent',
+					'NcTalk',
+					'NcDeck',
+				],
 			},
+
 			formatOptions: {
 				inputLabel: 'Format',
 				multiple: false,
-				options: ['text', 'markdown', 'html', 'date-time', 'date', 'time', 'duration', 'email', 'idn-email', 'hostname', 'idn-hostname', 'ipv4', 'ipv6', 'uri', 'uri-reference', 'iri', 'iri-reference', 'uuid', 'uri-template', 'json-pointer', 'relative-json-pointer', 'regex', 'url', 'color', 'color-hex', 'color-hex-alpha', 'color-rgb', 'color-rgba', 'color-hsl', 'color-hsla'],
+				options: [
+					'text',
+					'markdown',
+					'html',
+					'date-time',
+					'date',
+					'time',
+					'duration',
+					'email',
+					'idn-email',
+					'hostname',
+					'idn-hostname',
+					'ipv4',
+					'ipv6',
+					'uri',
+					'uri-reference',
+					'iri',
+					'iri-reference',
+					'uuid',
+					'uri-template',
+					'json-pointer',
+					'relative-json-pointer',
+					'regex',
+					'url',
+					'color',
+					'color-hex',
+					'color-hex-alpha',
+					'color-rgb',
+					'color-rgba',
+					'color-hsl',
+					'color-hsla',
+				],
 			},
+
 			loading: false,
 			success: null,
 			error: false,
@@ -724,21 +978,46 @@ export default {
 			selectedSchema: null,
 		}
 	},
+
 	computed: {
+		/**
+		 * @spec exclude UI state helper — reports whether the property is a date/date-time type.
+		 */
 		isDateProperty() {
-			return this.properties.type === 'string'
-				&& (this.properties.format === 'date' || this.properties.format === 'date-time')
+			return (
+				this.properties.type === 'string'
+				&& (this.properties.format === 'date'
+					|| this.properties.format === 'date-time')
+			)
 		},
+
+		/**
+		 * @spec exclude UI display helper — static facet-type select options.
+		 */
 		facetTypeOptions() {
 			return [
-				{ value: 'date_histogram', label: 'Date Histogram (group by interval)' },
+				{
+					value: 'date_histogram',
+					label: 'Date Histogram (group by interval)',
+				},
 				{ value: 'date_range', label: 'Date Range (predefined ranges)' },
 				{ value: 'terms', label: 'Terms (exact values)' },
 			]
 		},
+
+		/**
+		 * @spec exclude UI display helper — resolves the selected facet-type option.
+		 */
 		facetTypeOption() {
-			return this.facetTypeOptions.find(opt => opt.value === this.facetType) || this.facetTypeOptions[0]
+			return (
+				this.facetTypeOptions.find((opt) => opt.value === this.facetType)
+				|| this.facetTypeOptions[0]
+			)
 		},
+
+		/**
+		 * @spec exclude UI display helper — static facet-interval select options.
+		 */
 		facetIntervalOptions() {
 			return [
 				{ value: 'day', label: 'Day' },
@@ -748,9 +1027,21 @@ export default {
 				{ value: 'year', label: 'Year' },
 			]
 		},
+
+		/**
+		 * @spec exclude UI display helper — resolves the selected facet-interval option.
+		 */
 		facetIntervalOption() {
-			return this.facetIntervalOptions.find(opt => opt.value === this.facetInterval) || this.facetIntervalOptions[2]
+			return (
+				this.facetIntervalOptions.find(
+					(opt) => opt.value === this.facetInterval,
+				) || this.facetIntervalOptions[2]
+			)
 		},
+
+		/**
+		 * @spec exclude UI display helper — static object-handling select configuration.
+		 */
 		objectConfiguration() {
 			return {
 				handling: {
@@ -760,17 +1051,20 @@ export default {
 						{
 							value: 'nested-object',
 							label: 'Nested Object',
-							description: 'Store object data directly within the parent object (embedded)',
+							description:
+								'Store object data directly within the parent object (embedded)',
 						},
 						{
 							value: 'nested-schema',
 							label: 'Nested Schema',
-							description: 'Store object as separate entity but nest the data in response',
+							description:
+								'Store object as separate entity but nest the data in response',
 						},
 						{
 							value: 'related-schema',
 							label: 'Related Schema',
-							description: 'Store object as separate entity and reference by UUID/ID',
+							description:
+								'Store object as separate entity and reference by UUID/ID',
 						},
 						{
 							value: 'uri',
@@ -778,27 +1072,44 @@ export default {
 							description: 'Reference external objects by URI/URL',
 						},
 					],
-					reduce: option => option.value,
+
+					reduce: (option) => option.value,
 					label: 'label',
-					getOptionLabel: option => option.label || option.value || '',
+					getOptionLabel: (option) => option.label || option.value || '',
 				},
 			}
 		},
+
+		/**
+		 * @spec exclude UI display helper — maps available schemas to select options.
+		 */
 		availableSchemas() {
-			return schemaStore.schemaList.map(schema => ({
+			return schemaStore.schemaList.map((schema) => ({
 				id: schema.id,
 				label: schema.title || schema.name || schema.id,
 			}))
 		},
+
+		/**
+		 * @spec exclude UI display helper — maps available registers to select options.
+		 */
 		availableRegisters() {
-			return registerStore.registerList.map(register => ({
+			return registerStore.registerList.map((register) => ({
 				id: register.id,
 				label: register.title || register.name || register.id,
 			}))
 		},
+
+		/**
+		 * @spec exclude UI display helper — static list of selectable MIME types.
+		 */
 		mimeTypes() {
 			return ['image/jpeg', 'image/png', 'application/pdf', 'text/plain'] // Add more MIME types as needed
 		},
+
+		/**
+		 * @spec exclude UI display helper — static file-handling select configuration.
+		 */
 		fileConfiguration() {
 			return {
 				handling: {
@@ -809,45 +1120,71 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude UI display helper — builds inversedBy property options from the selected schema.
+		 */
 		// Dynamic inversedBy options based on selected schema
 		inversedByOptions() {
-			const schema = this.selectedSchema || this.getSchemaFromRef(this.properties.$ref) || this.getSchemaFromRef(this.properties.items.$ref)
+			const schema =
+				this.selectedSchema
+				|| this.getSchemaFromRef(this.properties.$ref)
+				|| this.getSchemaFromRef(this.properties.items.$ref)
 			if (!schema || !schema.properties) {
-				return { inputLabel: 'Select Property', multiple: false, options: [], disabled: true }
+				return {
+					inputLabel: 'Select Property',
+					multiple: false,
+					options: [],
+					disabled: true,
+				}
 			}
 
-			const properties = Object.keys(schema.properties).map(key => ({
+			const properties = Object.keys(schema.properties).map((key) => ({
 				value: key,
 				label: schema.properties[key].title || key,
-				title: schema.properties[key].description || schema.properties[key].title || key,
+				title:
+					schema.properties[key].description
+					|| schema.properties[key].title
+					|| key,
 			}))
 
 			return {
 				inputLabel: 'Select Property',
 				multiple: false,
 				options: properties,
-				reduce: option => option.value,
+				reduce: (option) => option.value,
 				label: 'label',
-				getOptionLabel: option => option.label || option.value || '',
+				getOptionLabel: (option) => option.label || option.value || '',
 				disabled: !schema,
 			}
 		},
 	},
+
 	watch: {
 		schemaProperty: {
 			deep: true,
+			/**
+			 * @param newVal
+			 * @param oldVal
+			 * @spec exclude UI watcher — resets type-specific form fields when the property type changes.
+			 */
 			handler(newVal, oldVal) {
 				if (newVal.type !== oldVal.type) {
 					// switch types between boolean and non boolean, as boolean type expects a boolean, but others expect a string
 					if (newVal.type === 'boolean') this.properties.default = false
-					if (newVal.type !== 'boolean' && oldVal.type === 'boolean') this.properties.default = ''
+					if (newVal.type !== 'boolean' && oldVal.type === 'boolean')
+						this.properties.default = ''
 
 					// when number and integer are not selected anymore, set number and integer specific properties to 0
-					if (newVal.type !== 'number' && newVal.type === 'integer') this.properties.minimum = 0
-					if (newVal.type !== 'number' && newVal.type === 'integer') this.properties.maximum = 0
-					if (newVal.type !== 'number' && newVal.type === 'integer') this.properties.multipleOf = 0
-					if (newVal.type !== 'number' && newVal.type === 'integer') this.properties.exclusiveMin = 0
-					if (newVal.type !== 'number' && newVal.type === 'integer') this.properties.exclusiveMax = 0
+					if (newVal.type !== 'number' && newVal.type === 'integer')
+						this.properties.minimum = 0
+					if (newVal.type !== 'number' && newVal.type === 'integer')
+						this.properties.maximum = 0
+					if (newVal.type !== 'number' && newVal.type === 'integer')
+						this.properties.multipleOf = 0
+					if (newVal.type !== 'number' && newVal.type === 'integer')
+						this.properties.exclusiveMin = 0
+					if (newVal.type !== 'number' && newVal.type === 'integer')
+						this.properties.exclusiveMax = 0
 
 					// when array is not selected anymore, set array specific properties to 0
 					if (newVal.type !== 'array') this.properties.minItems = 0
@@ -856,64 +1193,112 @@ export default {
 			},
 		},
 	},
+
+	/**
+	 * @spec exclude Vue lifecycle hook — hydrates the property form and loads registers/schemas.
+	 */
 	mounted() {
 		this.initializeSchemaItem()
 		this.loadRegistersAndSchemas()
 	},
+
 	methods: {
+		/**
+		 * @spec exclude Form-field binding — appends a blank oneOf entry.
+		 */
 		addOneOfEntry() {
 			// Push a new default object into the oneOf array
 			this.properties.oneOf.push({ type: '', format: '' })
 		},
+
+		/**
+		 * @param index
+		 * @spec exclude Form-field binding — removes a oneOf entry by index.
+		 */
 		removeOneOfEntry(index) {
 			// Remove the entry at the specified index
 			this.properties.oneOf.splice(index, 1)
 		},
+
+		/**
+		 * @param option
+		 * @spec exclude Form-field binding — sets the active facet type.
+		 */
 		updateFacetType(option) {
 			this.facetType = option.value
 		},
+
+		/**
+		 * @spec exclude Form-field binding — appends a blank custom facet range.
+		 */
 		addCustomRange() {
 			this.facetCustomRanges.push({ label: '', from: '', to: '' })
 		},
+
+		/**
+		 * @param index
+		 * @spec exclude Form-field binding — removes a custom facet range by index.
+		 */
 		removeCustomRange(index) {
 			this.facetCustomRanges.splice(index, 1)
 		},
+
+		/**
+		 * @spec exclude Modal hydration plumbing — loads existing property values into the form.
+		 */
 		initializeSchemaItem() {
 			if (schemaStore.schemaPropertyKey) {
-				const schemaProperty = schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]
+				const schemaProperty =
+					schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]
 
 				// Initialize facetable state from property value.
 				const facetableValue = schemaProperty.facetable
 				if (facetableValue === true) {
 					this.facetableEnabled = true
-					this.facetConfig = { aggregated: true, title: '', description: '', order: '' }
+					this.facetConfig = {
+						aggregated: true,
+						title: '',
+						description: '',
+						order: '',
+					}
 				} else if (facetableValue && typeof facetableValue === 'object') {
 					this.facetableEnabled = true
 					this.facetConfig = {
 						aggregated: facetableValue.aggregated !== false,
 						title: facetableValue.title || '',
 						description: facetableValue.description || '',
-						order: facetableValue.order != null ? String(facetableValue.order) : '',
+						order:
+							facetableValue.order != null
+								? String(facetableValue.order)
+								: '',
 					}
 					// Initialize date faceting options from config
 					if (facetableValue.type) {
 						this.facetType = facetableValue.type
 					}
 					if (facetableValue.options) {
-						this.facetInterval = facetableValue.options.interval || 'month'
+						this.facetInterval =
+							facetableValue.options.interval || 'month'
 						this.facetFormat = facetableValue.options.format || ''
-						this.facetUseDefaultRanges = facetableValue.options.useDefaultRanges !== false
+						this.facetUseDefaultRanges =
+							facetableValue.options.useDefaultRanges !== false
 						if (Array.isArray(facetableValue.options.ranges)) {
-							this.facetCustomRanges = facetableValue.options.ranges.map(r => ({
-								label: r.label || '',
-								from: r.from || '',
-								to: r.to || '',
-							}))
+							this.facetCustomRanges =
+								facetableValue.options.ranges.map((r) => ({
+									label: r.label || '',
+									from: r.from || '',
+									to: r.to || '',
+								}))
 						}
 					}
 				} else {
 					this.facetableEnabled = false
-					this.facetConfig = { aggregated: true, title: '', description: '', order: '' }
+					this.facetConfig = {
+						aggregated: true,
+						title: '',
+						description: '',
+						order: '',
+					}
 				}
 
 				this.propertyTitle = schemaStore.schemaPropertyKey
@@ -933,57 +1318,91 @@ export default {
 					objectConfiguration: {
 						...this.properties.objectConfiguration,
 						...(schemaProperty.objectConfiguration || {}),
-						queryParams: (schemaProperty.objectConfiguration && schemaProperty.objectConfiguration.queryParams) ? schemaProperty.objectConfiguration.queryParams : '',
+						queryParams:
+							schemaProperty.objectConfiguration
+							&& schemaProperty.objectConfiguration.queryParams
+								? schemaProperty.objectConfiguration.queryParams
+								: '',
 					},
+
 					fileConfiguration: {
 						...this.properties.fileConfiguration,
 						...(schemaProperty.fileConfiguration || {}),
 					},
+
 					// Ensure items configuration is properly loaded
 					items: {
 						...this.properties.items,
 						...(schemaProperty.items || {}),
 						objectConfiguration: {
 							...this.properties.items.objectConfiguration,
-							...((schemaProperty.items && schemaProperty.items.objectConfiguration) || {}),
-							queryParams: (schemaProperty.items && schemaProperty.items.objectConfiguration && schemaProperty.items.objectConfiguration.queryParams) ? schemaProperty.items.objectConfiguration.queryParams : '',
+							...((schemaProperty.items
+								&& schemaProperty.items.objectConfiguration)
+								|| {}),
+
+							queryParams:
+								schemaProperty.items
+								&& schemaProperty.items.objectConfiguration
+								&& schemaProperty.items.objectConfiguration
+									.queryParams
+									? schemaProperty.items.objectConfiguration
+											.queryParams
+									: '',
 						},
 					},
 				}
 			}
 		},
+
 		/**
 		 * check if the title already exists on properties as a key.
 		 * returns true if it exists, false if it doesn't.
 		 *
 		 * When dealing with a key which is the same key as you are editing return false
+		 *
+		 * @spec exclude UI validation helper — checks for a duplicate property key.
 		 */
 		keyExists() {
 			if (this.propertyTitle === schemaStore.schemaPropertyKey) return false
-			return Object.keys(schemaStore.schemaItem.properties).includes(this.propertyTitle)
+			return Object.keys(schemaStore.schemaItem.properties).includes(
+				this.propertyTitle,
+			)
 		},
+
+		/**
+		 * @spec exclude Modal close plumbing — clears modal and property-key state.
+		 */
 		closeModal() {
 			navigationStore.setModal(null)
 			schemaStore.setSchemaPropertyKey(null)
 			clearTimeout(this.closeModalTimeout)
 		},
+
+		/**
+		 * @spec exclude Modal save plumbing — assembles the property payload and delegates to schemaStore.saveSchema.
+		 */
 		addSchemaProperty() {
 			this.loading = true
 
 			// delete the key when its an edit modal (the item will be re-created later, so don't worry about it)
 			// this is done incase you are also editing the title which acts as a key
 			if (schemaStore.schemaPropertyKey) {
-				delete schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]
+				delete schemaStore.schemaItem.properties[
+					schemaStore.schemaPropertyKey
+				]
 			}
 
 			// Compute facetable value: boolean true for defaults, config object otherwise.
 			let facetableValue = false
 			if (this.facetableEnabled) {
 				const hasDateConfig = this.isDateProperty && this.facetType
-				const hasCustomConfig = !this.facetConfig.aggregated
+				const hasCustomConfig =
+					!this.facetConfig.aggregated
 					|| (this.facetConfig.title && this.facetConfig.title.trim())
-					|| (this.facetConfig.description && this.facetConfig.description.trim())
-					|| (this.facetConfig.order !== '' && this.facetConfig.order != null)
+					|| (this.facetConfig.description
+						&& this.facetConfig.description.trim())
+					|| (this.facetConfig.order !== ''
+						&& this.facetConfig.order != null)
 					|| hasDateConfig
 
 				if (hasCustomConfig) {
@@ -991,9 +1410,11 @@ export default {
 						aggregated: this.facetConfig.aggregated,
 						title: this.facetConfig.title?.trim() || null,
 						description: this.facetConfig.description?.trim() || null,
-						order: this.facetConfig.order !== '' && this.facetConfig.order != null
-							? parseFloat(this.facetConfig.order) || null
-							: null,
+						order:
+							this.facetConfig.order !== ''
+							&& this.facetConfig.order != null
+								? parseFloat(this.facetConfig.order) || null
+								: null,
 					}
 					// Add date faceting type and options
 					if (hasDateConfig) {
@@ -1006,10 +1427,13 @@ export default {
 							}
 						} else if (this.facetType === 'date_range') {
 							options.useDefaultRanges = this.facetUseDefaultRanges
-							if (!this.facetUseDefaultRanges && this.facetCustomRanges.length > 0) {
+							if (
+								!this.facetUseDefaultRanges
+								&& this.facetCustomRanges.length > 0
+							) {
 								options.ranges = this.facetCustomRanges
-									.filter(r => r.label)
-									.map(r => {
+									.filter((r) => r.label)
+									.map((r) => {
 										const range = { label: r.label }
 										if (r.from) range.from = r.from
 										if (r.to) range.to = r.to
@@ -1030,7 +1454,8 @@ export default {
 				...schemaStore.schemaItem,
 				properties: {
 					...schemaStore.schemaItem.properties,
-					[this.propertyTitle]: { // create the new property with title as key
+					[this.propertyTitle]: {
+						// create the new property with title as key
 						...this.properties,
 						facetable: facetableValue,
 						// due to bad (no) support for number fields inside nextcloud/vue, parse the text to a number
@@ -1046,15 +1471,24 @@ export default {
 				},
 			}
 
-			if (!newSchemaItem.properties[this.propertyTitle].items.$ref && !newSchemaItem.properties[this.propertyTitle].items.type) {
+			if (
+				!newSchemaItem.properties[this.propertyTitle].items.$ref
+				&& !newSchemaItem.properties[this.propertyTitle].items.type
+			) {
 				delete newSchemaItem.properties[this.propertyTitle].items
 			}
 
 			if (this.properties.required === false) {
-				if (newSchemaItem.required && Array.isArray(newSchemaItem.required)) {
+				if (
+					newSchemaItem.required
+					&& Array.isArray(newSchemaItem.required)
+				) {
 					newSchemaItem.required = newSchemaItem.required.filter(
-						requiredProp => requiredProp !== this.propertyTitle
-						&& (schemaStore.schemaPropertyKey ? requiredProp !== schemaStore.schemaPropertyKey : true),
+						(requiredProp) =>
+							requiredProp !== this.propertyTitle
+							&& (schemaStore.schemaPropertyKey
+								? requiredProp !== schemaStore.schemaPropertyKey
+								: true),
 					)
 				}
 			}
@@ -1066,18 +1500,26 @@ export default {
 				return
 			}
 
-			schemaStore.saveSchema(newSchemaItem)
+			schemaStore
+				.saveSchema(newSchemaItem)
 				.then(({ response }) => {
 					this.success = response.ok
 
 					this.closeModalTimeout = setTimeout(this.closeModal, 2000)
-				}).catch((err) => {
+				})
+				.catch((err) => {
 					this.success = false
 					this.error = err
-				}).finally(() => {
+				})
+				.finally(() => {
 					this.loading = false
 				})
 		},
+
+		/**
+		 * @param jsonInput
+		 * @spec exclude UI validation helper — reports whether a string parses as JSON.
+		 */
 		verifyJsonValidity(jsonInput) {
 			if (jsonInput === '') return true
 			try {
@@ -1087,6 +1529,10 @@ export default {
 				return false
 			}
 		},
+
+		/**
+		 * @spec exclude Modal data-load plumbing — refreshes register/schema lists for the pickers.
+		 */
 		async loadRegistersAndSchemas() {
 			this.registerLoading = true
 			this.schemaLoading = true
@@ -1109,6 +1555,10 @@ export default {
 			}
 		},
 
+		/**
+		 * @param ref
+		 * @spec exclude UI lookup helper — resolves a schema object from a $ref string.
+		 */
 		getSchemaFromRef(ref) {
 			if (!ref) return null
 
@@ -1116,11 +1566,18 @@ export default {
 			const schemaId = ref.includes('/') ? ref.split('/').pop() : ref
 
 			// Find schema in store
-			return schemaStore.schemaList.find(schema =>
-				schema.id === schemaId || schema.title === schemaId || schema.slug === schemaId,
+			return schemaStore.schemaList.find(
+				(schema) =>
+					schema.id === schemaId
+					|| schema.title === schemaId
+					|| schema.slug === schemaId,
 			)
 		},
 
+		/**
+		 * @param register
+		 * @spec exclude Form-field binding — sets register ref and clears dependent fields.
+		 */
 		handleRegisterChange(register) {
 			// Store the register ID, not the whole object
 			const registerId = typeof register === 'object' ? register.id : register
@@ -1140,6 +1597,10 @@ export default {
 			}
 		},
 
+		/**
+		 * @param schema
+		 * @spec exclude Form-field binding — sets schema ref and clears dependent fields.
+		 */
 		handleSchemaChange(schema) {
 			// Store the schema ID, not the whole object
 			const schemaId = typeof schema === 'object' ? schema.id : schema
@@ -1157,8 +1618,15 @@ export default {
 			}
 		},
 
+		/**
+		 * @param property
+		 * @spec exclude Form-field binding — sets inversedBy and clears query params.
+		 */
 		handleInversedByChange(property) {
-			const propertyName = typeof property === 'object' ? property.value || property.id : property
+			const propertyName =
+				typeof property === 'object'
+					? property.value || property.id
+					: property
 			this.properties.inversedBy = propertyName
 			this.properties.items.inversedBy = propertyName
 			// Clear query parameters when inversedBy changes

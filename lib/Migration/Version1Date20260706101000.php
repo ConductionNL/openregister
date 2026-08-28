@@ -58,92 +58,85 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/hybrid-document-search/tasks.md#1.2
  */
-class Version1Date20260706101000 extends SimpleMigrationStep
-{
-    /**
-     * Constructor.
-     *
-     * @param IDBConnection $connection Database connection
-     * @param IConfig       $config     Nextcloud config
-     */
-    public function __construct(
-        private readonly IDBConnection $connection,
-        private readonly IConfig $config
-    ) {
-    }//end __construct()
+class Version1Date20260706101000 extends SimpleMigrationStep {
+	/**
+	 * Constructor.
+	 *
+	 * @param IDBConnection $connection Database connection
+	 * @param IConfig $config Nextcloud config
+	 */
+	public function __construct(
+		private readonly IDBConnection $connection,
+		private readonly IConfig $config,
+	) {
+	}//end __construct()
 
-    /**
-     * Add the functional tsvector GIN index after schema changes (PostgreSQL only).
-     *
-     * @param IOutput $output        Migration output
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Migration options
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/changes/hybrid-document-search/tasks.md#1.2
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-        $schema = $schemaClosure();
+	/**
+	 * Add the functional tsvector GIN index after schema changes (PostgreSQL only).
+	 *
+	 * @param IOutput $output Migration output
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Migration options
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/hybrid-document-search/tasks.md#1.2
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_chunks') === false) {
-            return;
-        }
+		if ($schema->hasTable('openregister_chunks') === false) {
+			return;
+		}
 
-        $platform = $this->connection->getDatabasePlatform();
+		$platform = $this->connection->getDatabasePlatform();
 
-        if (str_contains(get_class($platform), 'PostgreSQL') === false) {
-            $output->info('Skipping tsvector keyword-search index: unsupported database platform (PostgreSQL only)');
-            return;
-        }
+		if (str_contains(get_class($platform), 'PostgreSQL') === false) {
+			$output->info('Skipping tsvector keyword-search index: unsupported database platform (PostgreSQL only)');
+			return;
+		}
 
-        $prefix    = $this->config->getSystemValueString('dbtableprefix', 'oc_');
-        $tableName = $prefix.'openregister_chunks';
+		$prefix = $this->config->getSystemValueString('dbtableprefix', 'oc_');
+		$tableName = $prefix . 'openregister_chunks';
 
-        $this->createGinIndex(tableName: $tableName, output: $output);
-    }//end postSchemaChange()
+		$this->createGinIndex(tableName: $tableName, output: $output);
+	}//end postSchemaChange()
 
-    /**
-     * Create the functional GIN index when missing (idempotent).
-     *
-     * @param string  $tableName Full table name with prefix
-     * @param IOutput $output    Migration output
-     *
-     * @return void
-     */
-    private function createGinIndex(string $tableName, IOutput $output): void
-    {
-        $indexName = 'idx_or_chunks_text_search_gin';
+	/**
+	 * Create the functional GIN index when missing (idempotent).
+	 *
+	 * @param string $tableName Full table name with prefix
+	 * @param IOutput $output Migration output
+	 *
+	 * @return void
+	 */
+	private function createGinIndex(string $tableName, IOutput $output): void {
+		$indexName = 'idx_or_chunks_text_search_gin';
 
-        try {
-            // Scope the existence probe to the current schema — pg_indexes is
-            // cluster-wide, so an unscoped match against another schema on the
-            // same PostgreSQL cluster would falsely skip CREATE INDEX and leave
-            // ranked keyword search silently unavailable in this schema
-            // (review #476 🟢 consistency with the sibling migration).
-            $result = $this->connection->executeQuery(
-                'SELECT 1 FROM pg_indexes WHERE indexname = :idx AND schemaname = current_schema()',
-                ['idx' => $indexName]
-            );
+		try {
+			$result = $this->connection->executeQuery(
+				'SELECT 1 FROM pg_indexes WHERE indexname = :idx',
+				['idx' => $indexName]
+			);
 
-            if ($result->fetchOne() !== false) {
-                $output->info("GIN index $indexName already exists");
-                return;
-            }
+			if ($result->fetchOne() !== false) {
+				$output->info("GIN index $indexName already exists");
+				return;
+			}
 
-            $this->connection->executeStatement(
-                "CREATE INDEX $indexName ON $tableName USING gin (to_tsvector('simple', text_content))"
-            );
+			$this->connection->executeStatement(
+				"CREATE INDEX $indexName ON $tableName "
+				. "USING gin (to_tsvector('simple', text_content))"
+			);
 
-            $output->info(
-                "Created functional GIN index $indexName on $tableName (to_tsvector('simple', text_content))"
-            );
-        } catch (Exception $e) {
-            $msg = 'Failed to create functional GIN index on '.$tableName.': '.$e->getMessage();
-            $output->warning($msg.'. Ranked keyword search over chunk text stays unavailable.');
-        }//end try
-    }//end createGinIndex()
+			$output->info(
+				"Created functional GIN index $indexName on $tableName (to_tsvector('simple', text_content))"
+			);
+		} catch (Exception $e) {
+			$output->warning(
+				'Failed to create functional GIN index on ' . $tableName . ': ' . $e->getMessage()
+				. '. Ranked keyword search over chunk text stays unavailable.'
+			);
+		}//end try
+	}//end createGinIndex()
 }//end class

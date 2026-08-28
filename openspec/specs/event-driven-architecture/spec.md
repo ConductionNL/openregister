@@ -1,16 +1,20 @@
 ---
-status: implemented
+status: in-progress
 ---
 
 # Event-Driven Architecture
 
+**OpenSpec changes**
+- `actor-forwarded-listener-jobs` (active, implemented — not yet archived) — the actor-forwarding deferral contract: `ListenerDeferralService`, `DeferredListenerContext`, `DeferredEntryObjectResolver` and the abstract `ActorForwardedJob` (capture-at-dispatch, re-establish-in-job, guaranteed `finally` restore, chunk-level enqueueing, stale no-op idempotency). Defers `TranslationProjectionListener`, `AnnotationNotificationListener` and `AggregationThresholdListener`.
+- `object-event-sync-async-split` (active) — applies the ADR-078 fleet rule to OpenRegister's own 21 listener classes / 51 registrations: post-`*ed` listener work is asynchronous by default, synchronous execution is reserved for pre-`*ing` veto/mutate listeners plus four closed exception categories (`realtime`, `sapi-memory`, `cheap-bounded`, `correctness`), delete-path deferral requires an explicit payload contract, trigger/flow resolution must filter at query time (`OpenRegisterFlowResolver::flowsForTrigger()`), and the classification is mechanically enforced by hydra gate 61.
+
 ## Purpose
+
+@e2e exclude PHP event dispatcher backend — covered by PHPUnit
 OpenRegister implements a comprehensive event-driven architecture built on Nextcloud's `IEventDispatcher` (OCP\EventDispatcher\IEventDispatcher) that enables loose coupling between internal components and external systems. Every mutation across all entity types -- Objects, Registers, Schemas, Sources, Configurations, Views, Agents, Applications, Conversations, and Organisations -- dispatches a typed PHP event that can be consumed by any Nextcloud app, delivered to external systems via webhooks in CloudEvents v1.0 format, or pushed to real-time subscribers via GraphQL SSE. The architecture distinguishes between pre-mutation events (ObjectCreatingEvent, ObjectUpdatingEvent, ObjectDeletingEvent) that implement `StoppableEventInterface` to allow hooks to reject or modify operations, and post-mutation events (ObjectCreatedEvent, ObjectUpdatedEvent, ObjectDeletedEvent) that notify downstream systems after persistence is complete.
 
 **Source**: Gap identified in cross-platform analysis; four platforms implement event-driven architectures. Core implementation exists with 39+ typed event classes in `lib/Event/`, 8 event listeners in `lib/Listener/`, and webhook delivery infrastructure.
-
 ## Requirements
-
 ### Requirement: All entity mutations MUST dispatch typed PHP events via IEventDispatcher
 Every create, update, and delete operation across all entity types MUST dispatch a typed event class extending `OCP\EventDispatcher\Event` through Nextcloud's `IEventDispatcher::dispatchTyped()`. This ensures all mutations are observable by any registered listener, whether internal or from another Nextcloud app.
 
@@ -233,6 +237,37 @@ Other Nextcloud apps (opencatalogi, docudesk, zaakafhandelapp, pipelinq, procest
 - **AND** OpenRegister MUST NOT need any configuration or awareness of which external apps are listening
 - **AND** listener instantiation MUST be lazy (deferred until event dispatch)
 
+### Requirement: Filtered object-event subscriptions MUST be declared from boot() and MUST honour both slugs and ids
+A leaf app narrowing an object-event listener to specific registers/schemas MUST declare the subscription from its `Application::boot()` via `ObjectEventSubscription::subscribe()`, taking the live `IEventDispatcher` from the server container. It MUST NOT declare it from `Application::register()`.
+
+Declaration tokens MUST accept both register/schema slugs and numeric ids. A token consisting only of digits MUST be treated as an id and compared directly against the id the written `ObjectEntity` carries; any other token MUST be resolved as a slug. Neither kind may be silently dropped. An entirely numeric slug is therefore NOT supported.
+
+#### Scenario: An app that boots before OpenRegister still gets a filtered subscription
+- **GIVEN** `docudesk` is app 21 of 92 and `openregister` is app 52, and Nextcloud enables each app's autoloader immediately before calling that app's own `register()`
+- **WHEN** docudesk declares its subscription from `boot()` rather than `register()`
+- **THEN** `class_exists('\OCA\OpenRegister\Event\ObjectEventSubscription')` MUST resolve true, because `boot()` runs only after every app's `register()` has completed
+- **AND** the listener MUST appear in `ObjectEventSubscription::subscribedListeners()`
+- **AND** it MUST be invoked for a write to a register/schema it declared
+
+#### Scenario: Falling back to an unfiltered registration MUST be loud
+- **GIVEN** OpenRegister is absent or its subscription class cannot be autoloaded
+- **WHEN** a leaf app's guard falls back to a plain `addServiceListener()` registration
+- **THEN** it MUST log a warning naming the app, the listener and the event
+- **AND** the fallback MUST NOT be silent, because a silent fallback is indistinguishable from a working narrowing
+
+#### Scenario: A declaration by numeric id matches the written object
+- **GIVEN** a subscription declared as `registers: ['7'], schemas: ['228']`
+- **WHEN** an object is written whose register id is `7` and schema id is `228`
+- **THEN** the subscription MUST be invoked
+- **AND** the numeric token MUST NOT be resolved as a slug, which would match no row and silently disable the listener
+- **AND** normalisation MUST NOT coerce the token to `int`, which would make `strtolower()` a fatal `TypeError` under `strict_types`
+
+#### Scenario: The declared subscription count is observable
+- **GIVEN** an operator needs to tell a working narrowing from an inert one
+- **WHEN** they read `ObjectEventSubscription::subscriptionCount()` or the proxy trace line
+- **THEN** the number of registered subscriptions MUST be reported
+- **AND** a declared-versus-registered mismatch MUST therefore be detectable rather than invisible
+
 ### Requirement: GraphQL subscription listeners MUST push events for real-time SSE delivery
 The `GraphQLSubscriptionListener` MUST listen for `ObjectCreatedEvent`, `ObjectUpdatedEvent`, and `ObjectDeletedEvent` and push event data to the `SubscriptionService` buffer for Server-Sent Events (SSE) delivery to connected GraphQL subscription clients.
 
@@ -398,6 +433,250 @@ The `WebhookService::interceptRequest()` method MUST find webhooks configured wi
 - **GIVEN** no webhooks are configured with `interceptRequests: true`
 - **WHEN** `interceptRequest()` is called
 - **THEN** it MUST return the original request params immediately without any HTTP calls
+
+### Requirement: State-machine transitions MUST dispatch a typed ObjectTransitionedEvent
+When an object's lifecycle field is changed through a declared transition (per `x-openregister-lifecycle`), the system MUST dispatch an `ObjectTransitionedEvent` carrying the post-transition `ObjectEntity` together with the transition metadata. This lets listeners (notifications, cascades, calculation re-materialisation, audit enrichment) react to the specific transition without inferring the action from the generic `ObjectUpdatedEvent`.
+
+#### Scenario: Transition event carries object and transition metadata
+- **GIVEN** schema `besluiten` declares a lifecycle transition `publish` from state `concept` to state `vastgesteld`
+- **WHEN** the `publish` transition is applied to an object and persisted
+- **THEN** an `ObjectTransitionedEvent` MUST be dispatched after the lifecycle-field update
+- **AND** `getObject()` MUST return the `ObjectEntity` in its post-transition state
+- **AND** `getAction()` MUST return `"publish"`, `getFrom()` MUST return `"concept"`, and `getTo()` MUST return `"vastgesteld"`
+- **AND** `getRegister()` and `getSchema()` MUST return the object's register and schema slugs
+
+#### Scenario: System-applied transition reports a null caller
+- **GIVEN** a transition is applied by a background process rather than an interactive user
+- **WHEN** the `ObjectTransitionedEvent` is constructed
+- **THEN** `getUserId()` MUST return `null`
+- **AND** when the transition was applied by an authenticated user, `getUserId()` MUST return that user's uid
+
+### Requirement: Object unlock MUST dispatch a typed ObjectUnlockedEvent
+Symmetric to the lock operation, releasing a lock on an object MUST dispatch an `ObjectUnlockedEvent` carrying the affected `ObjectEntity`. This completes the lock/unlock pair so listeners can observe both halves of the locking lifecycle.
+
+#### Scenario: Unlock dispatches the unlocked object
+- **GIVEN** object `obj-1` is currently locked
+- **WHEN** the lock on `obj-1` is released
+- **THEN** an `ObjectUnlockedEvent` MUST be dispatched
+- **AND** `getObject()` MUST return the `ObjectEntity` whose lock was released
+
+### Requirement: Schemas MAY declare a state machine via `x-openregister-lifecycle`
+
+A schema MAY include a top-level `x-openregister-lifecycle` block with `field`, `initial`, and a `transitions` map (action → `{from[], to, requires?, description?}`), and when present the schema-save validator MUST verify the annotation against the schema's `properties[field]` enum and reject malformed annotations with HTTP 422.
+
+**Uniqueness constraint.** Within a single schema's `transitions`
+map, no two transitions MAY share the same `(from, to)` pair (i.e.
+for any pair `(F, T)`, at most one action has both
+`F ∈ transitions[action].from` and `transitions[action].to == T`).
+Schema-save validation MUST reject duplicates with HTTP 422 and
+`{ code: "lifecycle-duplicate-from-to", from: F, to: T, actions: [a, b] }`.
+This makes the action name uniquely resolvable when
+`ObjectTransitionedEvent` fires from a direct PATCH (where the
+client did not supply an action name) — the implementation MUST
+resolve `event.action` deterministically by looking up the unique
+transition matching `(from, to)`.
+
+#### Scenario: Duplicate (from, to) pair is rejected
+- GIVEN a schema declaring `open: {from: ["draft"], to: "opened"}` and `expedite: {from: ["draft"], to: "opened"}`
+- WHEN the schema is saved
+- THEN the save MUST fail with HTTP 422
+- AND the response body MUST include `{ code: "lifecycle-duplicate-from-to", from: "draft", to: "opened", actions: ["open", "expedite"] }`
+
+### Requirement: The pre-save validator MUST reject invalid transitions via `ObjectUpdatingEvent`
+
+The implementation MUST register an `IEventListener` against
+`ObjectUpdatingEvent`. When the event's schema has an
+`x-openregister-lifecycle` annotation AND the proposed new value
+of `field` is not equal to the existing value, the listener MUST
+verify the new value is `transitions[action].to` for some `action`
+whose `from` list includes the existing value. If not, the
+listener MUST call `Event::stopPropagation()` and attach a
+structured rejection reason via the existing
+`ObjectUpdatingEvent::setErrors(array $errors)` API.
+
+**Rejection-metadata contract.** The implementation reuses the
+existing rejection-metadata API on `ObjectUpdatingEvent`:
+`setErrors(array $errors): void` and `getErrors(): array` (already
+shipped). After `stopPropagation()` is called,
+`ObjectService::saveObject` MUST detect the stopped event, read
+`getErrors()`, and translate any non-empty value into HTTP 422
+with the array as the response body. The lifecycle listener MUST
+NOT introduce a new setter/getter pair — renaming the
+publicly-exposed event API would be a breaking change for
+third-party listeners that already call `setErrors()`.
+
+#### Scenario: An invalid transition is rejected via setErrors
+- GIVEN a meeting object with `lifecycle = "draft"` and no transition declares `from: ["draft"], to: "closed"`
+- WHEN a client PATCHes `lifecycle = "closed"`
+- THEN the lifecycle listener MUST call `event->stopPropagation()`
+- AND the listener MUST call `event->setErrors([...])` with `{ code: "invalid-transition", from: "draft", attempted: "closed" }`
+- AND `ObjectService::saveObject` MUST translate the stopped event's `getErrors()` into HTTP 422 with that body
+- AND the object's stored value MUST remain `draft`
+
+### Requirement: Initial lifecycle state MUST be enforced on object creation
+
+The implementation MUST register an `IEventListener` against
+`ObjectCreatingEvent` that, when the schema has an
+`x-openregister-lifecycle` annotation, force-sets
+`object[field] = initial` regardless of the supplied value. The
+override MUST be logged at debug level when the supplied value
+differs from `initial`.
+
+#### Scenario: Creation forces the initial state
+- **GIVEN** a schema with `x-openregister-lifecycle.initial = "draft"`
+- **WHEN** a client POSTs a new object with `lifecycle = "published"`
+- **THEN** the listener MUST overwrite the field with `"draft"` before persistence
+- **AND** the override MUST be logged at debug level with the supplied + initial values
+
+### Requirement: The system MUST expose a sugar transition endpoint
+
+The system MUST expose `POST /apps/openregister/api/objects/{id}/transition?register=<app>&schema=<type>` with body `{action: "<name>"}` as a sugar wrapper that loads the object, looks up `transitions[action]`, patches `field = transitions[action].to`, and saves through `ObjectService::saveObject` (so the existing event chain fires, audit trail records, RBAC applies).
+
+**Auth contract.** The endpoint MUST be annotated
+`#[NoAdminRequired]` — accessible to any authenticated Nextcloud
+user, NOT admin-only. Authorization MUST be enforced by (a) the
+per-object RBAC write check and (b) any registered
+`LifecycleGuardInterface`, NOT by admin status. The endpoint MUST
+NOT be annotated `#[NoCSRFRequired]` — Nextcloud's standard CSRF
+middleware MUST apply. State-mutating POSTs without a valid CSRF
+token MUST be rejected by the framework before the controller
+runs.
+
+**Response codes:** 401 for unauthenticated requests (no NC
+session) — emitted by NC's auth middleware before the controller
+runs; 403 for authenticated users lacking write permission on the
+object OR for guard denial; 404 for missing object; 422 for
+unknown action OR from-state mismatch (caught by the listener
+above) OR malformed body.
+
+#### Scenario: Missing CSRF token is rejected by the framework
+- GIVEN an authenticated user without a valid CSRF token (no `requesttoken` header / cookie)
+- WHEN they POST to the transition endpoint
+- THEN Nextcloud's CSRF middleware MUST reject before the controller runs
+- AND the controller method MUST NOT carry `@NoCSRFRequired` / `#[NoCSRFRequired]`
+
+#### Scenario: Unauthenticated request returns 401
+- GIVEN no Nextcloud session is established
+- WHEN a client POSTs to the transition endpoint
+- THEN Nextcloud's auth middleware MUST reject with HTTP 401 before the controller runs
+
+### Requirement: Apps MAY register `LifecycleGuardInterface` implementations for transition-specific authorization
+
+A transition's `requires` field MUST resolve to a Nextcloud DI
+service tag implementing
+`OCA\OpenRegister\Lifecycle\LifecycleGuardInterface`. The
+transition endpoint MUST call the guard before applying the
+transition; a `GuardResult::deny(message)` MUST short-circuit
+with HTTP 403 and the deny message.
+
+#### Scenario: A registered guard denies a transition
+- GIVEN a transition whose `requires` resolves to a registered `LifecycleGuardInterface` that returns `GuardResult::deny("not allowed")`
+- WHEN an authenticated user POSTs that action to the transition endpoint
+- THEN the endpoint MUST call the guard before applying the transition
+- AND the request MUST be short-circuited with HTTP 403 and the deny message `not allowed`
+
+### Requirement: Direct-PATCH lifecycle changes MUST resolve `ObjectTransitionedEvent.action` deterministically via the (from, to) lookup
+
+When `ObjectTransitionedEvent` is dispatched from a direct PATCH (not the sugar endpoint, where the client did not supply an action name), `event.action` MUST be resolved by looking up the unique transition matching the observed `(from, to)` pair in the schema's `transitions` map.
+Because the uniqueness constraint
+above forbids two transitions sharing the same `(from, to)`, this
+lookup is deterministic. If no transition matches `(from, to)`
+(the field was changed in violation of the lifecycle), the
+listener MUST have already rejected the save —
+`ObjectTransitionedEvent` MUST NOT fire for invalid transitions.
+
+#### Scenario: A direct lifecycle PATCH dispatches the event with the resolved action
+- **GIVEN** a schema with `open: {from: ["draft"], to: "opened"}` (the unique transition matching that pair)
+- **AND** a client PATCHes `lifecycle = "opened"` on a draft object
+- **WHEN** the save completes
+- **THEN** `ObjectTransitionedEvent` MUST fire exactly once
+- **AND** `event.action` MUST equal `"open"` (resolved deterministically by the (from, to) lookup)
+
+### Requirement: The system MUST expose `available-actions` for UI rendering
+
+The system MUST expose `GET /apps/openregister/api/objects/{id}/available-actions?register=<app>&schema=<type>`, which MUST return the current state, the list of applicable transitions (those whose `from` includes the current state), and per-transition `allowed: bool` (with optional `denyMessage` when a registered guard pre-emptively denies).
+
+#### Scenario: available-actions lists applicable transitions for the current state
+- GIVEN an object whose current lifecycle state is `draft` and a schema declaring `open: {from: ["draft"], to: "opened"}`
+- WHEN an authenticated user GETs the available-actions endpoint for that object
+- THEN the response MUST include the current state `draft`
+- AND the response MUST list the `open` transition with `allowed: true`
+- AND a transition pre-emptively denied by a registered guard MUST carry `allowed: false` with a `denyMessage`
+
+### Requirement: Initial state MUST be enforced on object creation
+
+The implementation MUST register an `IEventListener` against
+`ObjectCreatingEvent` that, when the schema has an
+`x-openregister-lifecycle` annotation, force-sets
+`object[field] = initial` regardless of the supplied value. The
+override MUST be logged at debug level when the supplied value
+differs from `initial`.
+
+#### Scenario: Initial state is forced on creation
+- GIVEN a schema with `x-openregister-lifecycle` declaring `initial: "draft"`
+- WHEN a client creates an object supplying `lifecycle = "closed"`
+- THEN the listener MUST force-set the stored `lifecycle` value to `draft`
+- AND the override MUST be logged at debug level because the supplied value differed from `initial`
+
+### Requirement: The system MUST dispatch `ObjectTransitionedEvent` after a successful transition
+
+After a transition is applied via the endpoint OR via a direct write that flips the lifecycle field, the implementation MUST dispatch `ObjectTransitionedEvent` after the successful transition via
+`IEventDispatcher::dispatchTyped()` with payload
+`{object, action, from, to, userId, register, schema}`. The event
+joins the existing event-driven-architecture catalog and is
+automatically routable through the existing
+webhook-payload-mapping infrastructure.
+
+**Action resolution for direct PATCH.** When the event is
+dispatched from a direct PATCH (not the sugar endpoint, where the
+client did not supply an action name), `event.action` MUST be
+resolved by looking up the unique transition matching the observed
+`(from, to)` pair in the schema's `transitions` map. Because the
+uniqueness constraint above forbids two transitions sharing the
+same `(from, to)`, this lookup is deterministic. If no transition
+matches `(from, to)` (the field was changed in violation of the
+lifecycle), the listener MUST have already rejected the save —
+`ObjectTransitionedEvent` MUST NOT fire for invalid transitions.
+
+#### Scenario: A direct lifecycle PATCH dispatches the event with the resolved action
+- GIVEN a schema with `open: {from: ["draft"], to: "opened"}` (the unique transition matching that pair)
+- AND a client PATCHes `lifecycle = "opened"` on a draft object
+- WHEN the save completes
+- THEN `ObjectTransitionedEvent` MUST fire exactly once
+- AND `event.action` MUST equal `"open"` (resolved deterministically by the (from, to) lookup)
+
+### Requirement: Webhook delivery does not block the object-write response
+
+Webhook delivery triggered by an object lifecycle event SHALL be performed
+asynchronously via a background job, including the first delivery attempt. The
+latency of an object create/update/delete response SHALL NOT depend on the
+availability or response time of any webhook target.
+
+#### Scenario: Slow webhook targets do not slow the write
+
+- **WHEN** an object is created and N webhooks subscribed to the event are slow
+  or unreachable
+- **THEN** the write response returns promptly after enqueuing delivery
+- **AND** its latency does not scale with N or with the webhook timeout
+
+#### Scenario: Delivery still occurs with correct semantics
+
+- **WHEN** the delivery job runs
+- **THEN** the webhook is delivered with the same payload and signature as the
+  synchronous path
+- **AND** retry/backoff behaviour is unchanged
+
+### Requirement: No webhook work when nothing subscribes
+
+An object write SHALL NOT serialize a webhook payload or query webhook
+subscriptions when no webhook matches the app/event. A cheap, cached check SHALL
+short-circuit before any payload serialization.
+
+#### Scenario: Zero-webhook instance does no webhook work per write
+
+- **WHEN** an object is written on an instance with no webhooks configured
+- **THEN** no payload is serialized for webhook purposes
+- **AND** no per-write webhook-subscription query is executed
 
 ## Current Implementation Status
 - **Implemented:**

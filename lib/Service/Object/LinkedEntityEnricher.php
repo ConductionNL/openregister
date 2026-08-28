@@ -3,17 +3,21 @@
 /**
  * LinkedEntityEnricher
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCP\IDBConnection;
 use OCP\Comments\ICommentsManager;
+use OCP\IDBConnection;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 
@@ -23,6 +27,14 @@ use Psr\Log\LoggerInterface;
  * Follows the same pattern as RenderObject::renderFiles() — resolves IDs from
  * metadata columns into display objects using Nextcloud's native APIs.
  *
+ * Raw-SQL note: each enrich*() helper queries a cross-app table (Mail,
+ * Contacts/CardDAV, Calendar/CalDAV, Talk, Deck) whose schema is owned by the
+ * other app, not openregister. Nextcloud's QueryBuilder substitutes the
+ * `*PREFIX*` placeholder for the instance's table prefix; the literal `oc_`
+ * prefix is used here because these are foreign tables read by name. All
+ * statements use parameter binding and standard SQL that is MariaDB / MySQL /
+ * PostgreSQL compatible.
+ *
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
@@ -30,448 +42,447 @@ use Psr\Log\LoggerInterface;
  * @link     https://github.com/ConductionNL/openregister
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Enrichment requires multiple NC APIs
+ * @SuppressWarnings(PHPMD.UnusedPrivateMethod)    Enricher methods dispatched via ENRICHER_MAP lookup
  */
-class LinkedEntityEnricher
-{
-    /**
-     * Map of linked type names to enricher methods.
-     */
-    private const ENRICHER_MAP = [
-        '_mail'     => 'enrichMail',
-        '_contacts' => 'enrichContacts',
-        '_notes'    => 'enrichNotes',
-        '_todos'    => 'enrichTodos',
-        '_calendar' => 'enrichCalendar',
-        '_talk'     => 'enrichTalk',
-        '_deck'     => 'enrichDeck',
-    ];
+class LinkedEntityEnricher {
+	/**
+	 * Map of linked type names to enricher methods.
+	 */
+	private const ENRICHER_MAP = [
+		'_mail' => 'enrichMail',
+		'_contacts' => 'enrichContacts',
+		'_notes' => 'enrichNotes',
+		'_todos' => 'enrichTodos',
+		'_calendar' => 'enrichCalendar',
+		'_talk' => 'enrichTalk',
+		'_deck' => 'enrichDeck',
+	];
 
-    /**
-     * Constructor for LinkedEntityEnricher.
-     *
-     * @param IDBConnection    $db              Database connection for Mail app queries
-     * @param ICommentsManager $commentsManager Comments manager for notes
-     * @param IUserManager     $userManager     User manager for resolving display names
-     * @param LoggerInterface  $logger          Logger
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
-     */
-    public function __construct(
-        private readonly IDBConnection $db,
-        private readonly ICommentsManager $commentsManager,
-        private readonly IUserManager $userManager,
-        private readonly LoggerInterface $logger,
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor for LinkedEntityEnricher.
+	 *
+	 * @param IDBConnection $db Database connection for Mail app queries
+	 * @param ICommentsManager $commentsManager Comments manager for notes
+	 * @param IUserManager $userManager User manager for resolving display names
+	 * @param LoggerInterface $logger Logger
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	public function __construct(
+		private readonly IDBConnection $db,
+		private readonly ICommentsManager $commentsManager,
+		private readonly IUserManager $userManager,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Enrich linked entity IDs for the requested _extend types.
-     *
-     * @param array $objectData The serialized object data (from jsonSerialize)
-     * @param array $extend     The _extend parameters (e.g., ['_mail' => '1', '_contacts' => '1'])
-     *
-     * @return array The object data with enriched linked entities
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
-     */
-    public function enrich(array $objectData, array $extend): array
-    {
-        foreach (self::ENRICHER_MAP as $key => $method) {
-            if (isset($extend[$key]) === false) {
-                continue;
-            }
+	/**
+	 * Enrich linked entity IDs for the requested _extend types.
+	 *
+	 * @param array $objectData The serialized object data (from jsonSerialize)
+	 * @param array $extend The _extend parameters (e.g., ['_mail' => '1', '_contacts' => '1'])
+	 *
+	 * @return array The object data with enriched linked entities
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	public function enrich(array $objectData, array $extend): array {
+		foreach (self::ENRICHER_MAP as $key => $method) {
+			if (isset($extend[$key]) === false) {
+				continue;
+			}
 
-            $ids = $objectData[$key] ?? [];
-            if (empty($ids) === true || is_array($ids) === false) {
-                continue;
-            }
+			$ids = $objectData[$key] ?? [];
+			if (empty($ids) === true || is_array($ids) === false) {
+				continue;
+			}
 
-            $objectData[$key] = $this->$method($ids);
-        }
+			$objectData[$key] = $this->$method($ids);
+		}
 
-        return $objectData;
-    }//end enrich()
+		return $objectData;
+	}//end enrich()
 
-    /**
-     * Enrich mail IDs to full mail objects.
-     *
-     * ID format: "{accountId}/{messageId}"
-     *
-     * @param array $ids Array of mail IDs
-     *
-     * @return array Array of enriched mail objects
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
-     */
-    private function enrichMail(array $ids): array
-    {
-        $results = [];
+	/**
+	 * Enrich mail IDs to full mail objects.
+	 *
+	 * ID format: "{accountId}/{messageId}"
+	 *
+	 * @param array $ids Array of mail IDs
+	 *
+	 * @return array Array of enriched mail objects
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function enrichMail(array $ids): array {
+		$results = [];
 
-        foreach ($ids as $id) {
-            $parts = explode('/', $id, 2);
-            if (count(value: $parts) !== 2) {
-                $results[] = $this->notFoundResult(id: $id);
-                continue;
-            }
+		foreach ($ids as $id) {
+			$parts = explode('/', $id, 2);
+			if (count(value: $parts) !== 2) {
+				$results[] = $this->notFoundResult(id: $id);
+				continue;
+			}
 
-            [$accountId, $messageId] = $parts;
+			[, $messageId] = $parts;
 
-            try {
-                $sql  = "SELECT subject, `from` AS sender, sent_at FROM oc_mail_messages WHERE id = ? LIMIT 1";
-                $stmt = $this->db->prepare($sql);
-                $stmt->execute([(int) $messageId]);
-                $row = $stmt->fetch();
+			try {
+				// Raw SQL: foreign Mail-app table (see class docblock).
+				$sql = 'SELECT subject, `from` AS sender, sent_at FROM oc_mail_messages WHERE id = ? LIMIT 1';
+				$stmt = $this->db->prepare($sql);
+				$stmt->execute([(int)$messageId]);
+				$row = $stmt->fetch();
 
-                if ($row === false) {
-                    $results[] = $this->notFoundResult(id: $id);
-                    continue;
-                }
+				if ($row === false) {
+					$results[] = $this->notFoundResult(id: $id);
+					continue;
+				}
 
-                $results[] = [
-                    'id'      => $id,
-                    'subject' => $row['subject'] ?? '',
-                    'sender'  => $row['sender'] ?? '',
-                    'date'    => $row['sent_at'] ?? null,
-                ];
-            } catch (\Exception $e) {
-                $this->logger->debug('[LinkedEntityEnricher] Mail enrichment failed', ['id' => $id, 'error' => $e->getMessage()]);
-                $results[] = $this->notFoundResult(id: $id);
-            }//end try
-        }//end foreach
+				$results[] = [
+					'id' => $id,
+					'subject' => $row['subject'] ?? '',
+					'sender' => $row['sender'] ?? '',
+					'date' => $row['sent_at'] ?? null,
+				];
+			} catch (\Exception $e) {
+				$this->logger->debug('[LinkedEntityEnricher] Mail enrichment failed', ['id' => $id, 'error' => $e->getMessage()]);
+				$results[] = $this->notFoundResult(id: $id);
+			}//end try
+		}//end foreach
 
-        return $results;
-    }//end enrichMail()
+		return $results;
+	}//end enrichMail()
 
-    /**
-     * Enrich contact UIDs to full contact objects.
-     *
-     * @param array $ids Array of contact UIDs
-     *
-     * @return array Array of enriched contact objects
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
-     */
-    private function enrichContacts(array $ids): array
-    {
-        $results = [];
+	/**
+	 * Enrich contact UIDs to full contact objects.
+	 *
+	 * @param array $ids Array of contact UIDs
+	 *
+	 * @return array Array of enriched contact objects
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function enrichContacts(array $ids): array {
+		$results = [];
 
-        foreach ($ids as $id) {
-            try {
-                $sql  = "SELECT carddata FROM oc_cards WHERE uid = ? LIMIT 1";
-                $stmt = $this->db->prepare($sql);
-                $stmt->execute([$id]);
-                $row = $stmt->fetch();
+		foreach ($ids as $id) {
+			try {
+				// Raw SQL: foreign DAV/Contacts table (see class docblock).
+				$sql = 'SELECT carddata FROM oc_cards WHERE uid = ? LIMIT 1';
+				$stmt = $this->db->prepare($sql);
+				$stmt->execute([$id]);
+				$row = $stmt->fetch();
 
-                if ($row === false) {
-                    $results[] = $this->notFoundResult(id: $id);
-                    continue;
-                }
+				if ($row === false) {
+					$results[] = $this->notFoundResult(id: $id);
+					continue;
+				}
 
-                // Parse minimal vCard data.
-                $carddata = $row['carddata'] ?? '';
-                $name     = $this->extractVcardField(carddata: $carddata, field: 'FN');
-                $email    = $this->extractVcardField(carddata: $carddata, field: 'EMAIL');
+				// Parse minimal vCard data.
+				$carddata = $row['carddata'] ?? '';
+				$name = $this->extractVcardField(carddata: $carddata, field: 'FN');
+				$email = $this->extractVcardField(carddata: $carddata, field: 'EMAIL');
 
-                $results[] = [
-                    'id'    => $id,
-                    'name'  => $name ?? $id,
-                    'email' => $email,
-                ];
-            } catch (\Exception $e) {
-                $this->logger->debug('[LinkedEntityEnricher] Contact enrichment failed', ['id' => $id, 'error' => $e->getMessage()]);
-                $results[] = $this->notFoundResult(id: $id);
-            }//end try
-        }//end foreach
+				$results[] = [
+					'id' => $id,
+					'name' => $name ?? $id,
+					'email' => $email,
+				];
+			} catch (\Exception $e) {
+				$this->logger->debug('[LinkedEntityEnricher] Contact enrichment failed', ['id' => $id, 'error' => $e->getMessage()]);
+				$results[] = $this->notFoundResult(id: $id);
+			}//end try
+		}//end foreach
 
-        return $results;
-    }//end enrichContacts()
+		return $results;
+	}//end enrichContacts()
 
-    /**
-     * Enrich note IDs to full note objects via ICommentsManager.
-     *
-     * @param array $ids Array of comment IDs
-     *
-     * @return array Array of enriched note objects
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
-     */
-    private function enrichNotes(array $ids): array
-    {
-        $results = [];
+	/**
+	 * Enrich note IDs to full note objects via ICommentsManager.
+	 *
+	 * @param array $ids Array of comment IDs
+	 *
+	 * @return array Array of enriched note objects
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function enrichNotes(array $ids): array {
+		$results = [];
 
-        foreach ($ids as $id) {
-            try {
-                $comment = $this->commentsManager->get($id);
-                $actor   = $this->userManager->get($comment->getActorId());
+		foreach ($ids as $id) {
+			try {
+				$comment = $this->commentsManager->get($id);
+				$actor = $this->userManager->get($comment->getActorId());
+				$authorName = $comment->getActorId();
+				if ($actor !== null) {
+					$authorName = $actor->getDisplayName();
+				}
 
-                $results[] = [
-                    'id'      => $id,
-                    'message' => $comment->getMessage(),
-                    'author'  => $actor !== null ? $actor->getDisplayName() : $comment->getActorId(),
-                    'date'    => $comment->getCreationDateTime()->format('c'),
-                ];
-            } catch (\Exception $e) {
-                $results[] = $this->notFoundResult(id: $id);
-            }
-        }
+				$results[] = [
+					'id' => $id,
+					'message' => $comment->getMessage(),
+					'author' => $authorName,
+					'date' => $comment->getCreationDateTime()->format('c'),
+				];
+			} catch (\Exception $e) {
+				$results[] = $this->notFoundResult(id: $id);
+			}
+		}
 
-        return $results;
-    }//end enrichNotes()
+		return $results;
+	}//end enrichNotes()
 
-    /**
-     * Enrich todo UIDs to full todo objects.
-     *
-     * ID format: "{calendarId}/{uid}"
-     *
-     * @param array $ids Array of todo IDs
-     *
-     * @return array Array of enriched todo objects
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
-     */
-    private function enrichTodos(array $ids): array
-    {
-        $results = [];
+	/**
+	 * Enrich todo UIDs to full todo objects.
+	 *
+	 * ID format: "{calendarId}/{uid}"
+	 *
+	 * @param array $ids Array of todo IDs
+	 *
+	 * @return array Array of enriched todo objects
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function enrichTodos(array $ids): array {
+		$results = [];
 
-        foreach ($ids as $id) {
-            $parts = explode('/', $id, 2);
-            if (count(value: $parts) !== 2) {
-                $results[] = $this->notFoundResult(id: $id);
-                continue;
-            }
+		foreach ($ids as $id) {
+			$parts = explode('/', $id, 2);
+			if (count(value: $parts) !== 2) {
+				$results[] = $this->notFoundResult(id: $id);
+				continue;
+			}
 
-            [$calendarId, $uid] = $parts;
+			[$calendarId, $uid] = $parts;
 
-            try {
-                $sql  = "SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1";
-                $stmt = $this->db->prepare($sql);
-                $stmt->execute([(int) $calendarId, $uid]);
-                $row = $stmt->fetch();
+			try {
+				// Raw SQL: foreign DAV/Calendar table (see class docblock).
+				$sql = 'SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1';
+				$stmt = $this->db->prepare($sql);
+				$stmt->execute([(int)$calendarId, $uid]);
+				$row = $stmt->fetch();
 
-                if ($row === false) {
-                    $results[] = $this->notFoundResult(id: $id);
-                    continue;
-                }
+				if ($row === false) {
+					$results[] = $this->notFoundResult(id: $id);
+					continue;
+				}
 
-                $caldata = $row['calendardata'] ?? '';
-                $summary = $this->extractIcalField(caldata: $caldata, field: 'SUMMARY');
-                $status  = $this->extractIcalField(caldata: $caldata, field: 'STATUS');
-                $due     = $this->extractIcalField(caldata: $caldata, field: 'DUE');
+				$caldata = $row['calendardata'] ?? '';
+				$summary = $this->extractIcalField(caldata: $caldata, field: 'SUMMARY');
+				$status = $this->extractIcalField(caldata: $caldata, field: 'STATUS');
+				$due = $this->extractIcalField(caldata: $caldata, field: 'DUE');
 
-                $results[] = [
-                    'id'     => $id,
-                    'title'  => $summary ?? '',
-                    'status' => $status ?? 'NEEDS-ACTION',
-                    'due'    => $due,
-                ];
-            } catch (\Exception $e) {
-                $results[] = $this->notFoundResult(id: $id);
-            }//end try
-        }//end foreach
+				$results[] = [
+					'id' => $id,
+					'title' => $summary ?? '',
+					'status' => $status ?? 'NEEDS-ACTION',
+					'due' => $due,
+				];
+			} catch (\Exception $e) {
+				$results[] = $this->notFoundResult(id: $id);
+			}//end try
+		}//end foreach
 
-        return $results;
-    }//end enrichTodos()
+		return $results;
+	}//end enrichTodos()
 
-    /**
-     * Enrich calendar event UIDs to full event objects.
-     *
-     * ID format: "{calendarId}/{uid}"
-     *
-     * @param array $ids Array of calendar event IDs
-     *
-     * @return array Array of enriched event objects
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
-     */
-    private function enrichCalendar(array $ids): array
-    {
-        $results = [];
+	/**
+	 * Enrich calendar event UIDs to full event objects.
+	 *
+	 * ID format: "{calendarId}/{uid}"
+	 *
+	 * @param array $ids Array of calendar event IDs
+	 *
+	 * @return array Array of enriched event objects
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function enrichCalendar(array $ids): array {
+		$results = [];
 
-        foreach ($ids as $id) {
-            $parts = explode('/', $id, 2);
-            if (count(value: $parts) !== 2) {
-                $results[] = $this->notFoundResult(id: $id);
-                continue;
-            }
+		foreach ($ids as $id) {
+			$parts = explode('/', $id, 2);
+			if (count(value: $parts) !== 2) {
+				$results[] = $this->notFoundResult(id: $id);
+				continue;
+			}
 
-            [$calendarId, $uid] = $parts;
+			[$calendarId, $uid] = $parts;
 
-            try {
-                $sql  = "SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1";
-                $stmt = $this->db->prepare($sql);
-                $stmt->execute([(int) $calendarId, $uid]);
-                $row = $stmt->fetch();
+			try {
+				// Raw SQL: foreign DAV/Calendar table (see class docblock).
+				$sql = 'SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1';
+				$stmt = $this->db->prepare($sql);
+				$stmt->execute([(int)$calendarId, $uid]);
+				$row = $stmt->fetch();
 
-                if ($row === false) {
-                    $results[] = $this->notFoundResult(id: $id);
-                    continue;
-                }
+				if ($row === false) {
+					$results[] = $this->notFoundResult(id: $id);
+					continue;
+				}
 
-                $caldata  = $row['calendardata'] ?? '';
-                $summary  = $this->extractIcalField(caldata: $caldata, field: 'SUMMARY');
-                $dtstart  = $this->extractIcalField(caldata: $caldata, field: 'DTSTART');
-                $dtend    = $this->extractIcalField(caldata: $caldata, field: 'DTEND');
-                $location = $this->extractIcalField(caldata: $caldata, field: 'LOCATION');
+				$caldata = $row['calendardata'] ?? '';
+				$summary = $this->extractIcalField(caldata: $caldata, field: 'SUMMARY');
+				$dtstart = $this->extractIcalField(caldata: $caldata, field: 'DTSTART');
+				$dtend = $this->extractIcalField(caldata: $caldata, field: 'DTEND');
+				$location = $this->extractIcalField(caldata: $caldata, field: 'LOCATION');
 
-                $results[] = [
-                    'id'       => $id,
-                    'title'    => $summary ?? '',
-                    'start'    => $dtstart,
-                    'end'      => $dtend,
-                    'location' => $location,
-                ];
-            } catch (\Exception $e) {
-                $results[] = $this->notFoundResult(id: $id);
-            }//end try
-        }//end foreach
+				$results[] = [
+					'id' => $id,
+					'title' => $summary ?? '',
+					'start' => $dtstart,
+					'end' => $dtend,
+					'location' => $location,
+				];
+			} catch (\Exception $e) {
+				$results[] = $this->notFoundResult(id: $id);
+			}//end try
+		}//end foreach
 
-        return $results;
-    }//end enrichCalendar()
+		return $results;
+	}//end enrichCalendar()
 
-    /**
-     * Enrich Talk conversation tokens to full conversation objects.
-     *
-     * @param array $ids Array of Talk tokens
-     *
-     * @return array Array of enriched Talk objects
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
-     */
-    private function enrichTalk(array $ids): array
-    {
-        $results = [];
+	/**
+	 * Enrich Talk conversation tokens to full conversation objects.
+	 *
+	 * @param array $ids Array of Talk tokens
+	 *
+	 * @return array Array of enriched Talk objects
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function enrichTalk(array $ids): array {
+		$results = [];
 
-        foreach ($ids as $id) {
-            try {
-                $sql  = "SELECT name, type FROM oc_talk_rooms WHERE token = ? LIMIT 1";
-                $stmt = $this->db->prepare($sql);
-                $stmt->execute([$id]);
-                $row = $stmt->fetch();
+		foreach ($ids as $id) {
+			try {
+				// Raw SQL: foreign Talk-app table (see class docblock).
+				$sql = 'SELECT name, type FROM oc_talk_rooms WHERE token = ? LIMIT 1';
+				$stmt = $this->db->prepare($sql);
+				$stmt->execute([$id]);
+				$row = $stmt->fetch();
 
-                if ($row === false) {
-                    $results[] = $this->notFoundResult(id: $id);
-                    continue;
-                }
+				if ($row === false) {
+					$results[] = $this->notFoundResult(id: $id);
+					continue;
+				}
 
-                $results[] = [
-                    'id'   => $id,
-                    'name' => $row['name'] ?? '',
-                    'type' => (int) ($row['type'] ?? 0),
-                ];
-            } catch (\Exception $e) {
-                $results[] = $this->notFoundResult(id: $id);
-            }
-        }//end foreach
+				$results[] = [
+					'id' => $id,
+					'name' => $row['name'] ?? '',
+					'type' => (int)($row['type'] ?? 0),
+				];
+			} catch (\Exception $e) {
+				$results[] = $this->notFoundResult(id: $id);
+			}
+		}//end foreach
 
-        return $results;
-    }//end enrichTalk()
+		return $results;
+	}//end enrichTalk()
 
-    /**
-     * Enrich Deck card IDs to full card objects.
-     *
-     * ID format: "{boardId}/{cardId}"
-     *
-     * @param array $ids Array of Deck card IDs
-     *
-     * @return array Array of enriched Deck objects
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
-     */
-    private function enrichDeck(array $ids): array
-    {
-        $results = [];
+	/**
+	 * Enrich Deck card IDs to full card objects.
+	 *
+	 * ID format: "{boardId}/{cardId}"
+	 *
+	 * @param array $ids Array of Deck card IDs
+	 *
+	 * @return array Array of enriched Deck objects
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function enrichDeck(array $ids): array {
+		$results = [];
 
-        foreach ($ids as $id) {
-            $parts = explode('/', $id, 2);
-            if (count(value: $parts) !== 2) {
-                $results[] = $this->notFoundResult(id: $id);
-                continue;
-            }
+		foreach ($ids as $id) {
+			$parts = explode('/', $id, 2);
+			if (count(value: $parts) !== 2) {
+				$results[] = $this->notFoundResult(id: $id);
+				continue;
+			}
 
-            [$boardId, $cardId] = $parts;
+			[$boardId, $cardId] = $parts;
 
-            try {
-                $sql  = "SELECT c.title, b.title AS board_title, s.title AS stack_title
+			try {
+				// Raw SQL: foreign Deck-app tables joined together (see class docblock).
+				$sql = 'SELECT c.title, b.title AS board_title, s.title AS stack_title
                          FROM oc_deck_cards c
                          JOIN oc_deck_stacks s ON c.stack_id = s.id
                          JOIN oc_deck_boards b ON s.board_id = b.id
                          WHERE c.id = ? AND b.id = ?
-                         LIMIT 1";
-                $stmt = $this->db->prepare($sql);
-                $stmt->execute([(int) $cardId, (int) $boardId]);
-                $row = $stmt->fetch();
+                         LIMIT 1';
+				$stmt = $this->db->prepare($sql);
+				$stmt->execute([(int)$cardId, (int)$boardId]);
+				$row = $stmt->fetch();
 
-                if ($row === false) {
-                    $results[] = $this->notFoundResult(id: $id);
-                    continue;
-                }
+				if ($row === false) {
+					$results[] = $this->notFoundResult(id: $id);
+					continue;
+				}
 
-                $results[] = [
-                    'id'    => $id,
-                    'title' => $row['title'] ?? '',
-                    'board' => $row['board_title'] ?? '',
-                    'stack' => $row['stack_title'] ?? '',
-                ];
-            } catch (\Exception $e) {
-                $results[] = $this->notFoundResult(id: $id);
-            }//end try
-        }//end foreach
+				$results[] = [
+					'id' => $id,
+					'title' => $row['title'] ?? '',
+					'board' => $row['board_title'] ?? '',
+					'stack' => $row['stack_title'] ?? '',
+				];
+			} catch (\Exception $e) {
+				$results[] = $this->notFoundResult(id: $id);
+			}//end try
+		}//end foreach
 
-        return $results;
-    }//end enrichDeck()
+		return $results;
+	}//end enrichDeck()
 
-    /**
-     * Create a "not found" fallback result for a missing entity.
-     *
-     * @param string $id The entity ID
-     *
-     * @return array The fallback result
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
-     */
-    private function notFoundResult(string $id): array
-    {
-        return [
-            'id'    => $id,
-            'label' => 'Not found',
-        ];
-    }//end notFoundResult()
+	/**
+	 * Create a "not found" fallback result for a missing entity.
+	 *
+	 * @param string $id The entity ID
+	 *
+	 * @return array The fallback result
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function notFoundResult(string $id): array {
+		return [
+			'id' => $id,
+			'label' => 'Not found',
+		];
+	}//end notFoundResult()
 
-    /**
-     * Extract a field value from vCard data.
-     *
-     * @param string $carddata The raw vCard string
-     * @param string $field    The field name (e.g., 'FN', 'EMAIL')
-     *
-     * @return string|null The field value or null
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
-     */
-    private function extractVcardField(string $carddata, string $field): ?string
-    {
-        if (preg_match('/'.preg_quote($field, '/').'[^:]*:(.+)/i', $carddata, $matches) === 1) {
-            return trim($matches[1]);
-        }
+	/**
+	 * Extract a field value from vCard data.
+	 *
+	 * @param string $carddata The raw vCard string
+	 * @param string $field The field name (e.g., 'FN', 'EMAIL')
+	 *
+	 * @return string|null The field value or null
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function extractVcardField(string $carddata, string $field): ?string {
+		if (preg_match('/' . preg_quote($field, '/') . '[^:]*:(.+)/i', $carddata, $matches) === 1) {
+			return trim($matches[1]);
+		}
 
-        return null;
-    }//end extractVcardField()
+		return null;
+	}//end extractVcardField()
 
-    /**
-     * Extract a field value from iCalendar data.
-     *
-     * @param string $caldata The raw iCalendar string
-     * @param string $field   The field name (e.g., 'SUMMARY', 'DTSTART')
-     *
-     * @return string|null The field value or null
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
-     */
-    private function extractIcalField(string $caldata, string $field): ?string
-    {
-        if (preg_match('/'.preg_quote($field, '/').'[^:]*:(.+)/i', $caldata, $matches) === 1) {
-            return trim($matches[1]);
-        }
+	/**
+	 * Extract a field value from iCalendar data.
+	 *
+	 * @param string $caldata The raw iCalendar string
+	 * @param string $field The field name (e.g., 'SUMMARY', 'DTSTART')
+	 *
+	 * @return string|null The field value or null
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function extractIcalField(string $caldata, string $field): ?string {
+		if (preg_match('/' . preg_quote($field, '/') . '[^:]*:(.+)/i', $caldata, $matches) === 1) {
+			return trim($matches[1]);
+		}
 
-        return null;
-    }//end extractIcalField()
+		return null;
+	}//end extractIcalField()
 }//end class

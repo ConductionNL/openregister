@@ -22,16 +22,14 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\FilesController;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\FileService;
-use OCP\AppFramework\Http\DataResponse;
-use OCP\Files\IRootFolder;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\Files\IRootFolder;
 use OCP\IRequest;
 use OCP\IUserManager;
-use OCP\AppFramework\Db\DoesNotExistException;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
 /**
@@ -46,8 +44,7 @@ use ReflectionClass;
  * 6. processUploadedFiles(ObjectEntity $object, array $uploadedFiles)
  * 7. validateUploadedFile(array $file)
  */
-class FilesControllerRefactoredMethodsTest extends TestCase
-{
+class FilesControllerRefactoredMethodsTest extends TestCase {
 	private FilesController $filesController;
 	private ReflectionClass $reflection;
 
@@ -71,8 +68,7 @@ class FilesControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	protected function setUp(): void
-	{
+	protected function setUp(): void {
 		parent::setUp();
 
 		// Create mocks for all dependencies.
@@ -101,12 +97,11 @@ class FilesControllerRefactoredMethodsTest extends TestCase
 	 * Helper method to invoke private methods using reflection.
 	 *
 	 * @param string $methodName The name of the private method.
-	 * @param array  $parameters The parameters to pass to the method.
+	 * @param array $parameters The parameters to pass to the method.
 	 *
 	 * @return mixed The result of the method invocation.
 	 */
-	private function invokePrivateMethod(string $methodName, array $parameters = []): mixed
-	{
+	private function invokePrivateMethod(string $methodName, array $parameters = []): mixed {
 		$method = $this->reflection->getMethod($methodName);
 		$method->setAccessible(true);
 
@@ -120,8 +115,7 @@ class FilesControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testValidateAndGetObjectReturnsExistingObject(): void
-	{
+	public function testValidateAndGetObjectReturnsExistingObject(): void {
 		$uuid = 'test-uuid-123';
 		$mockObject = new ObjectEntity();
 		$mockObject->setUuid($uuid);
@@ -160,8 +154,7 @@ class FilesControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testValidateAndGetObjectReturnsNullWhenNotFound(): void
-	{
+	public function testValidateAndGetObjectReturnsNullWhenNotFound(): void {
 		$this->objectService
 			->method('getObject')
 			->willReturn(null);
@@ -181,8 +174,7 @@ class FilesControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testValidateUploadedFileWithValidFile(): void
-	{
+	public function testValidateUploadedFileWithValidFile(): void {
 		// Create a temp file so file_exists and is_readable checks pass.
 		$tmpFile = tempnam(sys_get_temp_dir(), 'test_');
 		file_put_contents($tmpFile, 'test content');
@@ -213,8 +205,7 @@ class FilesControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testValidateUploadedFileWithUploadError(): void
-	{
+	public function testValidateUploadedFileWithUploadError(): void {
 		$file = [
 			'name' => 'test.jpg',
 			'type' => 'image/jpeg',
@@ -236,8 +227,7 @@ class FilesControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testValidateUploadedFileWithNonReadableFile(): void
-	{
+	public function testValidateUploadedFileWithNonReadableFile(): void {
 		$file = [
 			'name' => 'test.jpg',
 			'type' => 'image/jpeg',
@@ -261,8 +251,7 @@ class FilesControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testNormalizeSingleFileNormalizesStructure(): void
-	{
+	public function testNormalizeSingleFileNormalizesStructure(): void {
 		$files = [
 			'name' => 'test.jpg',
 			'type' => 'image/jpeg',
@@ -298,8 +287,7 @@ class FilesControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testNormalizeMultipleFilesWithMultipleFiles(): void
-	{
+	public function testNormalizeMultipleFilesWithMultipleFiles(): void {
 		$files = [
 			'name' => ['file1.jpg', 'file2.png'],
 			'type' => ['image/jpeg', 'image/png'],
@@ -337,8 +325,7 @@ class FilesControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testNormalizeMultipleFilesWithSingleFile(): void
-	{
+	public function testNormalizeMultipleFilesWithSingleFile(): void {
 		$files = [
 			'name' => ['file1.jpg'],
 			'type' => ['image/jpeg'],
@@ -371,8 +358,7 @@ class FilesControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testNormalizeMultipartFilesWithSingleFile(): void
-	{
+	public function testNormalizeMultipartFilesWithSingleFile(): void {
 		$files = [
 			'name' => 'profile.jpg',
 			'type' => 'image/jpeg',
@@ -401,8 +387,7 @@ class FilesControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testNormalizeMultipartFilesWithMultipleFiles(): void
-	{
+	public function testNormalizeMultipartFilesWithMultipleFiles(): void {
 		$files = [
 			'name' => ['doc1.pdf', 'doc2.pdf'],
 			'type' => ['application/pdf', 'application/pdf'],
@@ -432,8 +417,7 @@ class FilesControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testNormalizeMultipartFilesWithEmptyFiles(): void
-	{
+	public function testNormalizeMultipartFilesWithEmptyFiles(): void {
 		$files = [];
 		$data = ['share' => 'false', 'tags' => ''];
 
@@ -453,8 +437,7 @@ class FilesControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testProcessUploadedFilesWithEmptyArray(): void
-	{
+	public function testProcessUploadedFilesWithEmptyArray(): void {
 		$object = new ObjectEntity();
 		$object->setId(1);
 
@@ -468,6 +451,7 @@ class FilesControllerRefactoredMethodsTest extends TestCase
 		);
 
 		$this->assertIsArray($result, 'Result should be an array.');
-		$this->assertEmpty($result, 'Result should be empty when no files.');
+		$this->assertEmpty($result['stored'], 'Nothing should be stored when no files.');
+		$this->assertEmpty($result['rejected'], 'Nothing should be rejected when no files.');
 	}
 }

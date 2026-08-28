@@ -27,69 +27,61 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Drops deprecated file_texts and object_texts tables.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class Version1Date20251118000000 extends SimpleMigrationStep
-{
-    /**
-     * Apply schema changes.
-     *
-     * @param IOutput $output        Output helper.
-     * @param Closure $schemaClosure Schema factory.
-     * @param array   $options       Migration options.
-     *
-     * @return ISchemaWrapper Updated schema.
-     *
-     * @psalm-suppress UnusedParam $options is required by interface but not used
-     *
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        $schema = $schemaClosure();
+class Version1Date20251118000000 extends SimpleMigrationStep {
+	/**
+	 * Apply schema changes.
+	 *
+	 * @param IOutput $output Output helper.
+	 * @param Closure $schemaClosure Schema factory.
+	 * @param array $options Migration options.
+	 *
+	 * @return ISchemaWrapper Updated schema.
+	 *
+	 * @psalm-suppress UnusedParam $options is required by interface but not used
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		$schema = $schemaClosure();
 
-        $this->dropFileTextsTable(output: $output, schema: $schema);
-        $this->dropObjectTextsTable(output: $output, schema: $schema);
+		$this->dropFileTextsTable(output: $output, schema: $schema);
+		$this->dropObjectTextsTable(output: $output, schema: $schema);
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Drop the deprecated file_texts table.
-     *
-     * @param IOutput        $output Output helper.
-     * @param ISchemaWrapper $schema Database schema.
-     *
-     * @return void
-     */
-    private function dropFileTextsTable(IOutput $output, ISchemaWrapper $schema): void
-    {
-        if ($schema->hasTable('openregister_file_texts') === false) {
-            $output->info(message: 'ℹ️  Table openregister_file_texts does not exist, skipping.');
-            return;
-        }
+	/**
+	 * Drop the deprecated file_texts table.
+	 *
+	 * @param IOutput $output Output helper.
+	 * @param ISchemaWrapper $schema Database schema.
+	 *
+	 * @return void
+	 */
+	private function dropFileTextsTable(IOutput $output, ISchemaWrapper $schema): void {
+		if ($schema->hasTable('openregister_file_texts') === false) {
+			$output->info(message: 'ℹ️  Table openregister_file_texts does not exist, skipping.');
+			return;
+		}
 
-        $schema->dropTable('openregister_file_texts');
-        $output->info(message: '✅ Dropped deprecated openregister_file_texts table.');
-    }//end dropFileTextsTable()
+		$schema->dropTable('openregister_file_texts');
+		$output->info(message: '✅ Dropped deprecated openregister_file_texts table.');
+	}//end dropFileTextsTable()
 
-    /**
-     * Drop the deprecated object_texts table.
-     *
-     * @param IOutput        $output Output helper.
-     * @param ISchemaWrapper $schema Database schema.
-     *
-     * @return void
-     */
-    private function dropObjectTextsTable(IOutput $output, ISchemaWrapper $schema): void
-    {
-        if ($schema->hasTable('openregister_object_texts') === false) {
-            $output->info(message: 'ℹ️  Table openregister_object_texts does not exist, skipping.');
-            return;
-        }
+	/**
+	 * Drop the deprecated object_texts table.
+	 *
+	 * @param IOutput $output Output helper.
+	 * @param ISchemaWrapper $schema Database schema.
+	 *
+	 * @return void
+	 */
+	private function dropObjectTextsTable(IOutput $output, ISchemaWrapper $schema): void {
+		if ($schema->hasTable('openregister_object_texts') === false) {
+			$output->info(message: 'ℹ️  Table openregister_object_texts does not exist, skipping.');
+			return;
+		}
 
-        $schema->dropTable('openregister_object_texts');
-        $output->info(message: '✅ Dropped deprecated openregister_object_texts table.');
-    }//end dropObjectTextsTable()
+		$schema->dropTable('openregister_object_texts');
+		$output->info(message: '✅ Dropped deprecated openregister_object_texts table.');
+	}//end dropObjectTextsTable()
 }//end class

@@ -4,13 +4,16 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'deleteEndpoint'"
+	<NcDialog
+		v-if="navigationStore.dialog === 'deleteEndpoint'"
 		name="Delete Endpoint"
-		:can-close="true"
+		:canClose="true"
 		@update:open="navigationStore.setDialog(false)">
 		<div class="modal">
 			<p>
-				Are you sure you want to delete the endpoint <b>{{ endpointStore.endpointItem?.name }}</b>?
+				Are you sure you want to delete the endpoint
+				<b>{{ endpointStore.endpointItem?.name }}</b
+				>?
 			</p>
 			<p>This action cannot be undone.</p>
 		</div>
@@ -21,7 +24,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 				</template>
 				Cancel
 			</NcButton>
-			<NcButton type="error" @click="deleteEndpoint()">
+			<NcButton variant="error" @click="deleteEndpoint()">
 				<template #icon>
 					<TrashCanOutline :size="20" />
 				</template>
@@ -32,10 +35,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import {
-	NcDialog,
-	NcButton,
-} from '@nextcloud/vue'
+import { NcButton, NcDialog } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
@@ -47,9 +47,14 @@ export default {
 		Cancel,
 		TrashCanOutline,
 	},
+
 	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		deleteEndpoint() {
-			endpointStore.deleteEndpoint(endpointStore.endpointItem)
+			endpointStore
+				.deleteEndpoint(endpointStore.endpointItem)
 				.then(() => {
 					navigationStore.setDialog(false)
 					OCP.Toast.success('Endpoint deleted successfully')

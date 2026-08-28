@@ -1,0 +1,8 @@
+{
+	"label": "Admin track",
+	"position": 2,
+	"link": {
+		"type": "generated-index",
+		"description": "Walkthroughs for whoever runs Open Register: set up role-based access, connect external data sources, and configure instance-wide options from the Nextcloud admin settings."
+	}
+}
