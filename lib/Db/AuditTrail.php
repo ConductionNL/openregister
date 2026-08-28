@@ -384,8 +384,6 @@ class AuditTrail extends Entity implements JsonSerializable {
 	 * resolving.
 	 *
 	 * @var string|null Uuid of the attributing flow run.
-	 *
-	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
 	 */
 	protected ?string $flowRun = null;
 
@@ -393,8 +391,6 @@ class AuditTrail extends Entity implements JsonSerializable {
 	 * The id, within the flow graph, of the node that was executing.
 	 *
 	 * @var string|null Node id of the attributing step.
-	 *
-	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
 	 */
 	protected ?string $flowNode = null;
 
@@ -405,8 +401,6 @@ class AuditTrail extends Entity implements JsonSerializable {
 	 * a run's writes even when the run suspended and continued days later.
 	 *
 	 * @var integer|null Step sequence of the attributing step.
-	 *
-	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
 	 */
 	protected ?int $flowStep = null;
 

@@ -111,79 +111,8 @@ class AuditTrailMapper extends QBMapper {
 		parent::__construct(db: $db, tableName: 'openregister_audit_trails', entityClass: AuditTrail::class);
 	}//end __construct()
 
-	/**
-	 * Every audit row attributed to one flow run, oldest first.
-	 *
-	 * Ordered by id rather than by `flow_step` so a run that visited the same
-	 * node twice — a loop — reads in the order the writes actually happened
-	 * rather than collapsing both visits into one position.
-	 *
-	 * @param string  $runUuid The flow run's uuid.
-	 * @param integer $limit   Maximum rows to return.
-	 *
-	 * @return AuditTrail[] The rows this run caused.
-	 *
-	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
-	 */
-	public function findByFlowRun(string $runUuid, int $limit = 1000): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from('openregister_audit_trails')
-			->where($qb->expr()->eq('flow_run', $qb->createNamedParameter($runUuid)))
-			->orderBy('id', 'ASC')
-			->setMaxResults($limit);
 
-		return $this->findEntities(query: $qb);
-	}//end findByFlowRun()
 
-	/**
-	 * Stamp the executing flow run, node and step onto a row before it is sealed.
-	 *
-	 * Reads the ambient context rather than taking the values as arguments,
-	 * which is the entire reason this works: a write performed by another app
-	 * that a node called into is attributed identically to a write the node
-	 * performed itself, and neither has to know a flow is running.
-	 *
-	 * Resolved through the container rather than injected. Adding a constructor
-	 * argument to a mapper this widely constructed breaks positional callers —
-	 * and does so ONE SLOT LATER, so the TypeError names the wrong parameter.
-	 * {@see \OCA\OpenRegister\Service\Flow\FlowRunAttribution} resolves its own
-	 * collaborators the same way for the same reason.
-	 *
-	 * MUST be called before the row is sealed: these three fields are part of
-	 * the canonical JSON the hash covers, exactly like `expires`, so stamping
-	 * them after sealing would invalidate the hash it just computed.
-	 *
-	 * Fail-soft. If the context cannot be resolved the row is written
-	 * unattributed — an audit row is evidence and must survive a bookkeeping
-	 * problem, and an unattributed row is honest about what it does not know.
-	 *
-	 * @param AuditTrail $auditTrail The row being built.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
-	 */
-	private function applyFlowAttribution(AuditTrail $auditTrail): void {
-		try {
-			$context = $this->container->get(\OCA\OpenRegister\Service\Flow\FlowRunContext::class);
-		} catch (\Throwable $e) {
-			return;
-		}
-
-		if ($context instanceof \OCA\OpenRegister\Service\Flow\FlowRunContext === false) {
-			return;
-		}
-
-		$frame = $context->current();
-		if ($frame === null) {
-			return;
-		}
-
-		$auditTrail->setFlowRun($frame['run']);
-		$auditTrail->setFlowNode($frame['node']);
-		$auditTrail->setFlowStep($frame['step']);
-	}//end applyFlowAttribution()
 
 	/**
 	 * Insert an audit-trail entry sealed into the SHA-256 hash chain.
@@ -235,7 +164,7 @@ class AuditTrailMapper extends QBMapper {
 		// It must happen before the row is INSERTED, not merely before it is
 		// sealed: the sweep seals whatever is in the row, so a field added
 		// after insert would be outside the hash it is later given.
-		$this->applyFlowAttribution(auditTrail: $auditTrail);
+		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
 
 		return $this->insert(entity: $auditTrail);
 	}//end insertHashChained()
@@ -679,7 +608,7 @@ class AuditTrailMapper extends QBMapper {
 		// methods: `insertAuditTrails()` (the batched path) builds its rows
 		// through this same method, and stamping the inserts instead would have
 		// left every bulk write in a flow silently unattributed.
-		$this->applyFlowAttribution(auditTrail: $auditTrail);
+		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
 
 		// Set the size to the byte size of the serialized object, with a minimum default of 14 bytes.
 		$serializedSize = strlen(serialize($objectEntity->jsonSerialize()));

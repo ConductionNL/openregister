@@ -119,6 +119,10 @@ class FlowEngine {
 	 *                                              exactly as an empty registry does.
 	 * @param FlowTokenRouter|null $router Decides which exit a token takes.
 	 * @param FlowItemPlacement|null $placement Decides which items sit on which place.
+	 * @param FlowRunContext|null $runContext The ambient attribution stack. Nullable
+	 *                                       so the engine stays unit-testable without
+	 *                                       a container; absent, writes are simply
+	 *                                       unattributed rather than mis-attributed.
 	 */
 	public function __construct(
 		private readonly FlowDefinitionBuilder $builder,
@@ -130,6 +134,33 @@ class FlowEngine {
 	) {
 
 	}//end __construct()
+
+	/**
+	 * Open an attribution frame for the hop about to run.
+	 *
+	 * Split out of run() so the walk reads as the walk. The arithmetic is the
+	 * part worth keeping together: the step number is the run's sequence BASE
+	 * plus this hop's index in the segment log, and `recordSteps()` numbers the
+	 * same entries from the same base in the same order — so an attributed audit
+	 * row and its FlowRunStep row carry the same number. Deriving it from a
+	 * dispatch counter instead desynchronises the moment a step is PINNED, since
+	 * a pin logs an entry without ever reaching the dispatcher.
+	 *
+	 * @param array   $context The run context, carrying the run uuid and base.
+	 * @param string  $name    The node about to run.
+	 * @param integer $index   This hop's index within the segment's log.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/flow-engine/spec.md
+	 */
+	private function enterHop(array $context, string $name, int $index): void {
+		$this->runContext?->push(
+			runUuid: ($context[FlowRunContext::CONTEXT_RUN] ?? null),
+			nodeId: $name,
+			sequence: ((int)($context[FlowRunContext::CONTEXT_BASE] ?? 0) + $index)
+		);
+	}//end enterHop()
 
 	/**
 	 * The token router, made on demand when none was injected.
@@ -262,6 +293,16 @@ class FlowEngine {
 	 * @param string|null $startAt Node to start from; defaults to the flow's own start.
 	 *
 	 * @return array The run result: `{status, log: [], context: [], items: []}`.
+	 *
+	 * @SuppressWarnings(PHPMD.NPathComplexity) 226 against a threshold of 200, and the
+	 * 26 came from adding a `finally` to the hop. That `finally` is the attribution
+	 * safety property, not a convenience: every other exit from a hop is a `return`
+	 * inside a catch — a stop, a suspension, a terminally-failed step — so a pop on the
+	 * success path would leave the frame standing and attribute LATER writes, in a LATER
+	 * run advanced by the same worker, to a run that had already finished. That failure
+	 * is silent and produces well-formed rows. Restructuring the walk to win the metric
+	 * would trade a real correctness guarantee for a number; the branches themselves are
+	 * each one clearly-labelled outcome of a hop.
 	 *
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
@@ -433,11 +474,7 @@ class FlowEngine {
 			// pinned step is not executed at all: it produces no writes, so it
 			// needs no frame, and skipping it costs nothing since the index is
 			// read from the log rather than counted per push.
-			$this->runContext?->push(
-				runUuid: ($context[FlowRunContext::CONTEXT_RUN] ?? null),
-				nodeId: $name,
-				sequence: ((int)($context[FlowRunContext::CONTEXT_BASE] ?? 0) + count($log))
-			);
+			$this->enterHop(context: $context, name: $name, index: count($log));
 
 			try {
 				// OVERSIGHT, before the hop. A veto is raised as a FlowStop so it

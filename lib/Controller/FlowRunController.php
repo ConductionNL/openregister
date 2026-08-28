@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditFlowAttribution;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
@@ -88,6 +88,13 @@ class FlowRunController extends Controller {
 	 *                                native flow store. Nullable for the same
 	 *                                reason as $groupManager: absent yields no
 	 *                                owned ids, which scopes rather than widens.
+	 * @param AuditFlowAttribution|null $auditTrails Reads the attribution stamped on
+	 *                                           audit rows, for the objects a run
+	 *                                           touched. Nullable and LAST so
+	 *                                           adding it shifts no positional
+	 *                                           caller; absent, the endpoint
+	 *                                           reports the surface unavailable
+	 *                                           rather than an empty run.
 	 */
 	public function __construct(
 		string $appName,
@@ -102,7 +109,7 @@ class FlowRunController extends Controller {
 		// Appended LAST and nullable on purpose: a new constructor argument
 		// inserted anywhere else shifts every positional caller, and the
 		// resulting TypeError names the argument AFTER the one that moved.
-		private readonly ?AuditTrailMapper $auditTrails = null,
+		private readonly ?AuditFlowAttribution $auditTrails = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -398,7 +405,7 @@ class FlowRunController extends Controller {
 			return new JSONResponse(['error' => 'Audit trail unavailable'], Http::STATUS_SERVICE_UNAVAILABLE);
 		}
 
-		$rows = $this->auditTrails->findByFlowRun(runUuid: $uuid);
+		$rows = $this->auditTrails->findByRun(runUuid: $uuid);
 
 		$byNode = [];
 		foreach ($rows as $row) {
@@ -438,7 +445,9 @@ class FlowRunController extends Controller {
 				// nothing, and for a suspended run that has not written
 				// anything YET. Neither is an error, and neither is withheld
 				// until the run finishes.
-				'nodes' => array_values($byNode),
+				// usort() re-indexed $byNode into a list, so no array_values()
+				// here: it would be a no-op that reads as a safeguard.
+				'nodes' => $byNode,
 			]
 		);
 	}//end objects()

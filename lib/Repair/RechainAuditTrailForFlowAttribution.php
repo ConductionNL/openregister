@@ -154,28 +154,7 @@ class RechainAuditTrailForFlowAttribution implements IRepairStep {
 			return;
 		}
 
-		if ($verdict['valid'] === false) {
-			$output->warning(
-				sprintf(
-					'The audit chain did NOT verify under seed v1 before re-sealing '
-					. '(first break at row id %s, %d row(s) verified). '
-					. 'This is recorded under app-config `%s`. The re-seal below will make the '
-					. 'chain verify again — it does NOT repair the cause, and after it runs the '
-					. 'break is no longer detectable. Investigate using the stored verdict.',
-					var_export($verdict['brokenAt'], true),
-					$verdict['entriesVerified'],
-					self::VERDICT_KEY
-				)
-			);
-		} else {
-			$output->info(
-				sprintf(
-					'Audit chain verified intact under seed v1 (%d row(s), %d tombstone(s)). Re-sealing under v2.',
-					$verdict['entriesVerified'],
-					$verdict['purgedTombstones']
-				)
-			);
-		}
+		$this->reportVerdict(verdict: $verdict, output: $output);
 
 		$result = $this->hashes->rechainAll();
 
@@ -191,6 +170,48 @@ class RechainAuditTrailForFlowAttribution implements IRepairStep {
 	}//end run()
 
 	/**
+	 * Say what the pre-check found, in the register an operator will actually read.
+	 *
+	 * A broken chain is a WARNING and not a refusal: an operator whose chain is
+	 * already broken still needs their instance to upgrade, and refusing would
+	 * strand them. What must not happen is the re-seal going by unremarked,
+	 * because afterwards the break is no longer detectable.
+	 *
+	 * @param array   $verdict The pre-verification result.
+	 * @param IOutput $output  Progress output.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/audit-hash-chain/spec.md
+	 */
+	private function reportVerdict(array $verdict, IOutput $output): void {
+		if ($verdict['valid'] === true) {
+			$output->info(
+				sprintf(
+					'Audit chain verified intact under seed v1 (%d row(s), %d tombstone(s)). Re-sealing under v2.',
+					$verdict['entriesVerified'],
+					$verdict['purgedTombstones']
+				)
+			);
+
+			return;
+		}
+
+		$output->warning(
+			sprintf(
+				'The audit chain did NOT verify under seed v1 before re-sealing '
+				. '(first break at row id %s, %d row(s) verified). '
+				. 'This is recorded under app-config `%s`. The re-seal below will make the '
+				. 'chain verify again — it does NOT repair the cause, and after it runs the '
+				. 'break is no longer detectable. Investigate using the stored verdict.',
+				var_export($verdict['brokenAt'], true),
+				$verdict['entriesVerified'],
+				self::VERDICT_KEY
+			)
+		);
+	}//end reportVerdict()
+
+	/**
 	 * Walk the chain using the FROZEN v1 canonical form.
 	 *
 	 * Mirrors the live verifier's tombstone rule: a purged row's content no
@@ -203,6 +224,12 @@ class RechainAuditTrailForFlowAttribution implements IRepairStep {
 	 * smaller claim, never a false alarm.
 	 *
 	 * @return array{valid: bool, entriesVerified: int, brokenAt: int|null, skippedNullHashes: int, purgedTombstones: int}
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AuditCanonicalV1 is deliberately static and
+	 * deliberately FROZEN. Injecting it would present it as a collaborator that could be
+	 * swapped or updated, which is the one thing it must never be: it describes the audit
+	 * entity as it WAS, and a substituted implementation would silently invalidate the
+	 * only check that can still tell an intact v1 chain from a tampered one.
 	 *
 	 * @spec openspec/changes/flow-object-attribution/specs/audit-hash-chain/spec.md
 	 */
@@ -292,7 +319,7 @@ class RechainAuditTrailForFlowAttribution implements IRepairStep {
 	private function hydrate(array $row): AuditTrail {
 		$mapped = [];
 		foreach ($row as $key => $value) {
-			// snake_case → camelCase, character for character as the verifier does.
+			// Snake_case to camelCase, character for character as the verifier does.
 			$camelKey = lcfirst(str_replace('_', '', ucwords((string)$key, '_')));
 			$mapped[$camelKey] = $value;
 		}

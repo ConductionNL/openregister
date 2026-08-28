@@ -181,6 +181,44 @@ class FlowRunMapper extends QBMapper {
 	}//end scopeToVisible()
 
 	/**
+	 * The suspended runs whose subject is this object.
+	 *
+	 * "Which run is waiting on this thing" is the question a leaf app asks when
+	 * something outside the engine finishes — a decision concluded, a document
+	 * signed — and needs to wake whatever was waiting for it.
+	 *
+	 * Deliberately narrowed to SUSPENDED. A completed or failed run is not
+	 * waiting for anything, and signalling one would be a no-op at best and a
+	 * second advance of a finished run at worst.
+	 *
+	 * This does NOT scope by caller: it is an engine-side lookup used to route
+	 * an external outcome, not a user-facing read. Callers that expose anything
+	 * derived from it must apply their own visibility rule.
+	 *
+	 * @param string  $subjectUuid The subject object's uuid.
+	 * @param integer $limit       Maximum runs to return.
+	 *
+	 * @return FlowRun[] The suspended runs for that subject, oldest first.
+	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
+	 */
+	public function findSuspendedBySubject(string $subjectUuid, int $limit = 25): array {
+		if (trim($subjectUuid) === '') {
+			return [];
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('subject_uuid', $qb->createNamedParameter($subjectUuid)))
+			->andWhere($qb->expr()->eq('status', $qb->createNamedParameter(FlowRun::STATUS_SUSPENDED)))
+			->orderBy('id', 'ASC')
+			->setMaxResults($limit);
+
+		return $this->findEntities(query: $qb);
+	}//end findSuspendedBySubject()
+
+	/**
 	 * Find one run by uuid, but only if this caller may see it.
 	 *
 	 * Returns null both when the run does not exist and when it exists but is
