@@ -43,6 +43,7 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
+use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
@@ -75,6 +76,7 @@ class SchemaFlowImportListener implements IEventListener {
 	public function __construct(
 		private readonly FlowMapper $flows,
 		private readonly LoggerInterface $logger,
+		private readonly ?ContainerInterface $container = null,
 	) {
 
 	}//end __construct()
@@ -192,6 +194,17 @@ class SchemaFlowImportListener implements IEventListener {
 			// Inert until adopted. See the class docblock.
 			$flow->setEnabled(false);
 			$flow->setOwner(null);
+
+			// 🔴 AND IT MUST BELONG TO A TENANT, or it is imported into
+			// invisibility. Every flow READ is organisation-scoped
+			// (`FlowService::findAll()`), so a flow stored with no organisation
+			// is returned by nothing: it does not appear in the flows list, so
+			// it cannot be opened, so it can never be adopted — while sitting
+			// perfectly intact in the table. Measured 2026-08-28: the first
+			// shipped `x-openregister-flows` declaration imported with
+			// organisation NULL and was invisible to the API that lists it,
+			// next to two seeded flows that carried one and showed up fine.
+			$flow->setOrganisation($this->activeOrganisation());
 		}
 
 		$flow->setDescription(($declaration['description'] ?? null));
@@ -216,6 +229,42 @@ class SchemaFlowImportListener implements IEventListener {
 		$this->flows->update($flow);
 
 	}//end upsert()
+
+	/**
+	 * The organisation a newly imported flow belongs to.
+	 *
+	 * Resolved through the container rather than injected so this listener
+	 * stays constructible where OrganisationService is not registered — a
+	 * declared flow should still import on such an instance, even though a
+	 * null organisation leaves it unlisted.
+	 *
+	 * @return string|null The organisation uuid, or null when unresolvable.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function activeOrganisation(): ?string {
+		if ($this->container === null) {
+			return null;
+		}
+
+		try {
+			$uuid = $this->container
+				->get('OCA\OpenRegister\Service\OrganisationService')
+				->getActiveOrganisation()?->getUuid();
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[SchemaFlowImport] Could not resolve an organisation for a declared flow; '
+					. 'it will import but stay unlisted: ' . $e->getMessage()
+			);
+			return null;
+		}
+
+		if ($uuid === null || (string)$uuid === '') {
+			return null;
+		}
+
+		return (string)$uuid;
+	}//end activeOrganisation()
 
 	/**
 	 * Mint a v4 uuid.
