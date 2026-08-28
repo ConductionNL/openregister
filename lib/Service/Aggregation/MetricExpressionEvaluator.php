@@ -177,9 +177,10 @@ class MetricExpressionEvaluator {
 
 			if ($op === '+') {
 				$value = ($value + $rhs);
-			} else {
-				$value = ($value - $rhs);
+				continue;
 			}
+
+			$value = ($value - $rhs);
 		}
 
 		return $value;
