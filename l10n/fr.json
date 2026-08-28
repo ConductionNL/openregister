@@ -2725,7 +2725,10 @@
         "Register descriptors": "Descripteurs de registre",
         "ships v{shipped}": "fournit v{shipped}",
         "State": "État",
-        "v{installed} → ships v{shipped}": "v{installed} → fournit v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → fournit v{shipped}",
+        "Where the automation lives": "Où vit l'automatisation",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Les flux sont ce qui se produit sans que personne ne clique : un objet horodaté à l'enregistrement, une application avertie quand un enregistrement change. C'est ici que vous les consultez et les modifiez. Rien à construire maintenant.",
+        "Open Flows in the menu": "Ouvrir Flux dans le menu"
     },
     "plurals": {
         "{count} email": [

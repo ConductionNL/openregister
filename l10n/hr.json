@@ -2726,7 +2726,10 @@
         "Register descriptors": "Deskriptori registara",
         "ships v{shipped}": "isporučuje v{shipped}",
         "State": "Stanje",
-        "v{installed} → ships v{shipped}": "v{installed} → isporučuje v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → isporučuje v{shipped}",
+        "Where the automation lives": "Gdje živi automatizacija",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Tokovi su ono što se događa bez klika: objekt označen pri spremanju, aplikacija obaviještena kad se zapis promijeni. Ovdje ih čitate i uređujete. Sada nema što graditi.",
+        "Open Flows in the menu": "Otvorite Tokove u izborniku"
     },
     "plurals": {
         "{count} email": [

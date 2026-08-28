@@ -2726,7 +2726,10 @@
         "Register descriptors": "Descriptori de registru",
         "ships v{shipped}": "livrează v{shipped}",
         "State": "Stare",
-        "v{installed} → ships v{shipped}": "v{installed} → livrează v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → livrează v{shipped}",
+        "Where the automation lives": "Unde trăiește automatizarea",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Fluxurile sunt ce se întâmplă fără ca cineva să dea clic: un obiect ștampilat la salvare, o aplicație anunțată când un înregistrare se schimbă. Aici le citiți și le editați. Nu e nimic de construit acum.",
+        "Open Flows in the menu": "Deschideți Fluxuri în meniu"
     },
     "plurals": {
         "{count} email": [

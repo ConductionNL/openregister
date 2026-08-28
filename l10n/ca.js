@@ -2723,7 +2723,10 @@ OC.L10N.register(
         "Register descriptors": "Descriptors de registre",
         "ships v{shipped}": "lliura v{shipped}",
         "State": "Estat",
-        "v{installed} → ships v{shipped}": "v{installed} → lliura v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → lliura v{shipped}",
+        "Where the automation lives": "On viu l'automatització",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Els fluxos són el que passa sense que ningú faci clic: un objecte segellat en desar, una aplicació avisada quan canvia un registre. Aquí els llegiu i els editeu. Ara no cal construir res.",
+        "Open Flows in the menu": "Obriu Fluxos al menú"
     },
     "nplurals=2; plural=(n != 1);"
 )

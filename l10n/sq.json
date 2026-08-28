@@ -2725,7 +2725,10 @@
         "Register descriptors": "Përshkrues regjistrash",
         "ships v{shipped}": "jep v{shipped}",
         "State": "Gjendja",
-        "v{installed} → ships v{shipped}": "v{installed} → jep v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → jep v{shipped}",
+        "Where the automation lives": "Ku jeton automatizimi",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Rrjedhat janë ajo që ndodh pa klikuar askush: një objekt i vulosur në ruajtje, një aplikacion i njoftuar kur ndryshon një regjistrim. Këtu i lexoni dhe i redaktoni. Tani nuk ka gjë për të ndërtuar.",
+        "Open Flows in the menu": "Hapni Rrjedhat në meny"
     },
     "plurals": {
         "{count} email": [
