@@ -89,7 +89,8 @@
 		"org-...": "A literal organisation-id prefix example shown verbatim; not prose.",
 		"X-Custom-Header: value\nAuthorization: Bearer token": "Literal HTTP header example; header names are protocol tokens and are never translated.",
 		"X-Custom-Header: value\\nAuthorization: Bearer token": "Literal HTTP header example with an escaped newline; header names are protocol tokens.",
-		"objectType: object\\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens."
+		"objectType: object\\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens.",
+		"objectType: object\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens and are never translated."
 	},
 	"corrections": {
 		"_schema_::_schemas_": "Capitalised to 'Schema(s)' after first being written lowercase. translatePlural hands the form it selects back to translate(), which resolves it against the bundle again — so lowercase 'schema(s)' matched this bundle's own 'schema(s)' KEY and rendered that key's value, 'Schema(s)'. Same characters, produced by an unrelated entry. The capital makes it this array's own value, and matches how the bundle writes the noun everywhere else. check-l10n-parity now fails on the collision class.",

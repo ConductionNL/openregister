@@ -38,7 +38,8 @@
 		"org-...": "A literal organisation-id prefix example shown verbatim; not prose.",
 		"X-Custom-Header: value\nAuthorization: Bearer token": "Literal HTTP header example; header names are protocol tokens and are never translated.",
 		"X-Custom-Header: value\\nAuthorization: Bearer token": "Literal HTTP header example with an escaped newline; header names are protocol tokens.",
-		"objectType: object\\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens."
+		"objectType: object\\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens.",
+		"objectType: object\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens and are never translated."
 	},
 	"corrections": {
 		"Categories of data subjects (one per line)": "batch 1 wrote the paraphrase \"osoba čiji se podaci obrađuju\"; \"ispitanik\" is the term used by the official Croatian text of the GDPR",

@@ -38,7 +38,8 @@
 		"org-...": "A literal organisation-id prefix example shown verbatim; not prose.",
 		"X-Custom-Header: value\nAuthorization: Bearer token": "Literal HTTP header example; header names are protocol tokens and are never translated.",
 		"X-Custom-Header: value\\nAuthorization: Bearer token": "Literal HTTP header example with an escaped newline; header names are protocol tokens.",
-		"objectType: object\\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens."
+		"objectType: object\\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens.",
+		"objectType: object\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens and are never translated."
 	},
 	"corrections": {
 		"Run oversight checks before each step": "Pre-existing value was 'Изпълнявай надзорни проверки преди всяка стъпка' — a bare 2sg IMPERFECTIVE IMPERATIVE, so informal 2sg address, in a bundle whose other 1052 values are formal throughout and whose labels are verbal nouns. It is one of only two such values at HEAD, and both are settings-toggle labels the English source happens to phrase imperatively. Corrected to the verbal noun 'Изпълняване на надзорни проверки преди всяка стъпка', which matches the convention and drops the person marker entirely. Worth noting HOW it was found: this is exactly the case detectors/bg.js enumerates the а-conjugation imperative for — 'изпълнявай' cannot be anything but a 2sg imperative, so it flagged, whereas the и-conjugation form would have been invisible.",

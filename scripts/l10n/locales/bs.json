@@ -47,7 +47,20 @@
 		"org-...": "A literal organisation-id prefix example shown verbatim; not prose.",
 		"X-Custom-Header: value\nAuthorization: Bearer token": "Literal HTTP header example; header names are protocol tokens and are never translated.",
 		"X-Custom-Header: value\\nAuthorization: Bearer token": "Literal HTTP header example with an escaped newline; header names are protocol tokens.",
-		"objectType: object\\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens."
+		"Driver": "Database-driver term, used unchanged in Bosnian technical language.",
+		"Id": "Abbreviation of identifier, written the same way in Bosnian technical UI.",
+		"Model": "Same spelling and meaning in Bosnian.",
+		"myapp": "A literal example application id shown verbatim; not prose.",
+		"Ollama URL": "Product name plus the invariant abbreviation URL.",
+		"Test": "Same spelling and meaning in Bosnian.",
+		"Url": "Invariant abbreviation, written the same way in Bosnian.",
+		"{property} - {other}": "Two placeholders joined by a dash; there is no prose to translate.",
+		"Browser Web Push (VAPID)": "Browser and Web Push are the protocol's own names and VAPID is its acronym; the protocol name is not translated.",
+		"Bucket": "Object-storage term, used unchanged in this locale's technical language.",
+		"Golden record": "Master-data-management term with no established local equivalent; used unchanged in data-governance language.",
+		"Survivor": "Master-data-management term for the record that survives a merge; used unchanged in data-governance language.",
+		"objectType: object\\naction: created": "Literal CloudEvents payload example with an escaped newline; the field names are protocol tokens.",
+		"objectType: object\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens and are never translated."
 	},
 	"siblingParentheticalNote": "The sibling '(s)' keys use SLASH, LOWERCASE: register(s) -> 'registar/i', schema(s) -> 'šema/e', configuration(s) -> 'konfiguracija/e'. This family is the one place the bundle does NOT capitalise its first-class nouns, and that was left alone rather than normalised — the keys are lowercase in the source, the existing values are real translations (§3.8), and a house style spanning three keys is a decision rather than a slip. The slash was a workaround for a single string having to serve every count; the five stats labels that once needed it are real n() arrays now and take the paucal and genitive plural properly ('objekat/objekta/objekata'), so the slash survives only on these sibling keys.",
 	"correctionCodes": "TERM-HR = a Croatian-standard form in a Bosnian bundle. ORTHOGRAPHY = a spelling against the bundle's own measured convention. CONSISTENCY = a capitalisation or casing decision aligned to capitalisationNote. SENSE = the value renders a different meaning than the call site asks for. SWAP = a converse pair written the wrong way round.",
@@ -86,6 +99,7 @@
 		"📄 Object Serialization": "CONSISTENCY — the single lowercase 'objekata' in the bundle, against 29:0 in prose and 24:0 in labels once corrected. It was the lone counter-example in the capitalisation measurement.",
 		"Top Deleters": "SENSE — 'brisač' is a wiper or an eraser, an instrument, and has no reading as a person who deletes, so 'Najčešći brisači' named the wrong noun class. Rewritten as 'Korisnici s najviše brisanja' over the deletion-statistics panel.",
 		"{pct}% success rate": "CONSISTENCY — written 'stopa uspješnosti' in this pass against the pre-existing 'Success Rate' -> 'Stopa uspjeha'.",
-		"Retry upload": "CONSISTENCY — written 'Pokušaj ponovo učitati' in this pass; the bundle's pattern for this construction is 'Ponovo pokušaj X' ('Ponovo pokušaj neuspjele ekstrakcije')."
+		"Retry upload": "CONSISTENCY — written 'Pokušaj ponovo učitati' in this pass; the bundle's pattern for this construction is 'Ponovo pokušaj X' ('Ponovo pokušaj neuspjele ekstrakcije').",
+		"_%n entry has no hash yet_::_%n entries have no hash yet_": "Trimmed from three plural forms to two. bs declares nplurals=2 in its own catalogue header, and a form array longer than the locale's nplurals renders BLANK for the counts that select the missing index. The existing wording is kept verbatim, including 'heš' — forms 2 and 3 were byte-identical, so no wording is lost."
 	}
 }

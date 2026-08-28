@@ -39,7 +39,8 @@
 		"org-...": "A literal organisation-id prefix example shown verbatim; not prose.",
 		"X-Custom-Header: value\nAuthorization: Bearer token": "Literal HTTP header example; header names are protocol tokens and are never translated.",
 		"X-Custom-Header: value\\nAuthorization: Bearer token": "Literal HTTP header example with an escaped newline; header names are protocol tokens.",
-		"objectType: object\\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens."
+		"objectType: object\\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens.",
+		"objectType: object\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens and are never translated."
 	},
 	"corrections": {
 		"Audit trail #{id}": "Pre-existing value was 'Revizijski trag #{id}'. 'Trag' is CROATIAN/Serbian for a trace; the Slovenian word is 'sled', which this bundle itself uses in all 14 of its other audit-trail keys ('Revizijske sledi', 'Podrobnosti revizijske sledi'). The gender agreement was wrong as a consequence too, since 'sled' is feminine. Corrected to 'Revizijska sled #{id}'. Worth noting the neighbourhood: openbuild ships a Croatian catalogue under sl.json, so a Croatian word appearing in a Slovenian bundle is not a coincidence to shrug at.",

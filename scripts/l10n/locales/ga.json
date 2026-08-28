@@ -41,7 +41,8 @@
 		"org-...": "A literal organisation-id prefix example shown verbatim; not prose.",
 		"X-Custom-Header: value\nAuthorization: Bearer token": "Literal HTTP header example; header names are protocol tokens and are never translated.",
 		"X-Custom-Header: value\\nAuthorization: Bearer token": "Literal HTTP header example with an escaped newline; header names are protocol tokens.",
-		"objectType: object\\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens."
+		"objectType: object\\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens.",
+		"objectType: object\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens and are never translated."
 	},
 	"corrections": {
 		"Loading organisations...": "Was `Eagraíochtaí á luchtú…`, the only one of the bundle's 35 `Loading X...` keys not built as `Ag <verbal noun> <object>...` — the other 34 are, and it also carried the … glyph where the English source has three ASCII dots, against the bundle's own 41-of-42 practice of mirroring the source glyph. Normalised to `Ag luchtú eagraíochtaí...` so the progressive construction and the ellipsis convention both hold without an exception to explain."
