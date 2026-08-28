@@ -77,8 +77,10 @@ A page loading is not the same as a page working. Nextcloud serves its shell bef
 Check content instead:
 
 ```bash
-# The app answers, rather than 404 or an empty shell
-curl -s -o /dev/null -w '%{http_code}\n' "http://localhost:8601/apps/openregister/"
+# The app answers. Note the credentials: an app page requires a login, so the
+# SAME request without -u returns 401, which is not a broken demo — measured
+# on a booted demo while writing this page.
+curl -s -o /dev/null -w '%{http_code}\n' -u admin:admin -L "http://localhost:8601/apps/openregister/"
 
 # OpenRegister has registers — an empty list means the configuration
 # was never imported, which is not the same as "nothing configured yet"
