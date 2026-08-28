@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
-use OCA\OpenRegister\Service\Flow\FlowResumeState;
+use OCA\OpenRegister\Service\Flow\FlowRunAssignee;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -637,26 +637,27 @@ class FlowRunController extends Controller {
 	 * @return JSONResponse|null A 403 when the caller is not the assignee.
 	 */
 	private function refuseUnlessAssignee(FlowRun $run): ?JSONResponse {
-		$assignee = $this->recordedAssignee(run: $run);
+		// The rule itself lives in FlowRunAssignee, because HTTP is no longer
+		// the only way to answer a step: a leaf app whose object completes a
+		// task resumes the run in-process through FlowRunService::signal(),
+		// which never passes this controller. One implementation, so the two
+		// paths cannot drift into disagreeing about who may answer.
+		$assignee = $this->assignees()->recordedFor(run: $run);
 		if ($assignee === '') {
 			return null;
 		}
 
 		$uid = $this->callerUid();
+
+		if ($this->assignees()->mayAnswer(run: $run, uid: $uid) === true) {
+			return null;
+		}
+
 		if ($uid === null) {
-			// Fail CLOSED: an assigned decision is never anonymous.
 			return new JSONResponse(
 				['error' => 'This step is assigned; sign in as the assignee to answer it.'],
 				Http::STATUS_FORBIDDEN
 			);
-		}
-
-		if ($uid === $assignee) {
-			return null;
-		}
-
-		if ($this->groupManager !== null && $this->groupManager->isInGroup($uid, $assignee) === true) {
-			return null;
 		}
 
 		return new JSONResponse(
@@ -666,40 +667,19 @@ class FlowRunController extends Controller {
 	}//end refuseUnlessAssignee()
 
 	/**
-	 * The assignee recorded by whichever step is currently awaiting a signal.
+	 * The assignee rule, made on demand when none was injected.
 	 *
-	 * Reads the per-node resume slots the node wrote. A run can carry slots for
-	 * several nodes across its life, so the one that matters is a slot that
-	 * asked (`askedAt`) and has not been answered.
+	 * Built locally rather than required as a constructor argument so adding it
+	 * breaks no existing construction site; it holds no state, so a locally
+	 * made one is indistinguishable from an injected one.
 	 *
-	 * @param FlowRun $run The suspended run.
+	 * @return FlowRunAssignee The rule.
 	 *
-	 * @return string The assignee uid or group id, '' when unassigned.
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
-	private function recordedAssignee(FlowRun $run): string {
-		$context = ($run->getContext() ?? []);
-		$slots = ($context[FlowResumeState::CONTEXT_KEY] ?? []);
-		if (is_array($slots) === false) {
-			return '';
-		}
-
-		foreach ($slots as $slot) {
-			if (is_array($slot) === false) {
-				continue;
-			}
-
-			if (isset($slot['askedAt']) === false) {
-				continue;
-			}
-
-			$assignee = trim((string)($slot['assignee'] ?? ''));
-			if ($assignee !== '') {
-				return $assignee;
-			}
-		}
-
-		return '';
-	}//end recordedAssignee()
+	private function assignees(): FlowRunAssignee {
+		return new FlowRunAssignee(groupManager: $this->groupManager);
+	}//end assignees()
 
 	/**
 	 * The current caller's uid, or null when anonymous.
