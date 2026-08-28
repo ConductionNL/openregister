@@ -413,6 +413,18 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
+		// The ambient flow-attribution stack MUST be shared. Nextcloud's
+		// container builds an auto-wired class fresh at every injection point,
+		// so without this registration the engine would push frames onto one
+		// instance and the audit mapper would read an empty stack on another —
+		// attributing nothing at all, silently and with no error anywhere.
+		$context->registerService(
+			\OCA\OpenRegister\Service\Flow\FlowRunContext::class,
+			function () {
+				return new \OCA\OpenRegister\Service\Flow\FlowRunContext();
+			}
+		);
+
 		// Register the LanguageMiddleware for Accept-Language header parsing.
 		$context->registerMiddleware(LanguageMiddleware::class);
 

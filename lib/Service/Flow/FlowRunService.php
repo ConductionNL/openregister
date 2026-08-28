@@ -267,10 +267,58 @@ class FlowRunService {
 		$context[FlowResumeState::CONTEXT_KEY] = FlowResumeState::fromArray(($context[FlowResumeState::CONTEXT_KEY] ?? null));
 		$context[FlowRunGuard::CONTEXT_KEY] = $guard;
 
+		// ATTRIBUTION. The engine files every write a hop causes under this run
+		// and node; these two values are what it needs to do it.
+		//
+		// The BASE is read here, BEFORE the walk, rather than in recordSteps()
+		// after it. Both have to arrive at the same number for an attributed
+		// audit row to line up with its FlowRunStep row, and only the pre-walk
+		// value is available while the writes are actually happening. Reading it
+		// twice is safe because a run advances in one worker at a time — the
+		// guard is what makes that true — so nothing appends steps to this run
+		// in between.
+		$context[FlowRunContext::CONTEXT_RUN] = (string)$run->getUuid();
+		$context[FlowRunContext::CONTEXT_BASE] = $this->stepSequenceBase(run: $run);
+
 		$this->flowState->attach(run: $run, context: $context);
 
 		return $context;
 	}//end nodeContextFor()
+
+	/**
+	 * The sequence number this walk's first recorded step will be given.
+	 *
+	 * Mirrors the arithmetic in {@see recordSteps()} deliberately: that method
+	 * numbers a segment from `highestSequence + 1`, so a hop's number is that
+	 * base plus its index within the segment's log. Attribution has to predict
+	 * the number rather than read it, because the audit rows are written DURING
+	 * the walk and the step rows only after it.
+	 *
+	 * A failure to read the base is not a reason to fail the run: attribution
+	 * degrades to numbering from zero, which is wrong only in its offset and
+	 * still orders a run's writes correctly.
+	 *
+	 * @param FlowRun $run The run about to be walked.
+	 *
+	 * @return integer The sequence the first step of this segment will carry.
+	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
+	 */
+	private function stepSequenceBase(FlowRun $run): int {
+		if ($this->steps === null) {
+			return 0;
+		}
+
+		try {
+			return ($this->steps->highestSequence(runUuid: (string)$run->getUuid()) + 1);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[FlowRunService] Could not read the step sequence base for attribution: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return 0;
+		}
+	}//end stepSequenceBase()
 
 
 	/**

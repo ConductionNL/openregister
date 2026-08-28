@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
@@ -63,8 +64,8 @@ use Throwable;
  * deliberately unauthenticated because it runs flows as their owner with no
  * session. Moving them out would either re-open the bypass or add a second
  * indirection over four small private helpers.
- * @SuppressWarnings(PHPMD.ExcessiveParameterList)   Ten constructor parameters, the
- * last three nullable-with-default precisely so adding them broke no existing
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList)   Eleven constructor parameters, the
+ * last four nullable-with-default precisely so adding them broke no existing
  * construction site. They are collaborators of those same guards, not options.
  */
 class FlowRunController extends Controller {
@@ -98,6 +99,10 @@ class FlowRunController extends Controller {
 		private readonly OrganisationService $organisationService,
 		private readonly ?IGroupManager $groupManager = null,
 		private readonly ?FlowService $flows = null,
+		// Appended LAST and nullable on purpose: a new constructor argument
+		// inserted anywhere else shifts every positional caller, and the
+		// resulting TypeError names the argument AFTER the one that moved.
+		private readonly ?AuditTrailMapper $auditTrails = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -349,14 +354,129 @@ class FlowRunController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function show(string $uuid): JSONResponse {
-		try {
-			$run = $this->mapper->findByUuid($uuid);
-		} catch (DoesNotExistException $e) {
+		// Scoped, as `index()` has been since `shared-credentials-and-flows`
+		// D7. It was not, and the omission was the whole point of that scoping:
+		// a run's serialisation carries its log, which records the subject data
+		// the flow touched, so an unscoped read by uuid handed any authenticated
+		// caller the contents of anyone's run.
+		$run = $this->visibleRun(uuid: $uuid);
+		if ($run === null) {
 			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
 		}
 
 		return new JSONResponse($run->jsonSerialize());
 	}//end show()
+
+	/**
+	 * The objects one run touched, grouped by the node that touched them.
+	 *
+	 * A run recorded what it DID (its steps) and, of what it did it TO, only
+	 * the object that triggered it. This reads back the attribution stamped on
+	 * every audit row the run caused, which is the other half.
+	 *
+	 * @param string $uuid The run uuid.
+	 *
+	 * @return JSONResponse The touched objects grouped by node, or 404.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function objects(string $uuid): JSONResponse {
+		// Resolved through the SAME visibility rule as reading the run itself.
+		// A new endpoint that answered for runs `show()` refuses would widen
+		// access without anything looking like an access change.
+		$run = $this->visibleRun(uuid: $uuid);
+		if ($run === null) {
+			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
+		}
+
+		if ($this->auditTrails === null) {
+			return new JSONResponse(['error' => 'Audit trail unavailable'], Http::STATUS_SERVICE_UNAVAILABLE);
+		}
+
+		$rows = $this->auditTrails->findByFlowRun(runUuid: $uuid);
+
+		$byNode = [];
+		foreach ($rows as $row) {
+			$node = (string)$row->getFlowNode();
+
+			if (isset($byNode[$node]) === false) {
+				$byNode[$node] = [
+					'node' => $node,
+					'step' => $row->getFlowStep(),
+					'objects' => [],
+				];
+			}
+
+			$byNode[$node]['objects'][] = [
+				'objectUuid' => $row->getObjectUuid(),
+				'register' => $row->getRegister(),
+				'schema' => $row->getSchema(),
+				'action' => $row->getAction(),
+				'step' => $row->getFlowStep(),
+				'created' => $row->getCreated()?->format('c'),
+				'auditUuid' => $row->getUuid(),
+			];
+		}
+
+		// Step order, so a reader follows the run in the order it happened
+		// rather than in whatever order the rows came back.
+		usort(
+			$byNode,
+			static fn (array $a, array $b): int => (((int)$a['step']) <=> ((int)$b['step']))
+		);
+
+		return new JSONResponse(
+			[
+				'run' => $uuid,
+				'flowId' => $run->getFlowId(),
+				// An empty list is the honest answer for a run that wrote
+				// nothing, and for a suspended run that has not written
+				// anything YET. Neither is an error, and neither is withheld
+				// until the run finishes.
+				'nodes' => array_values($byNode),
+			]
+		);
+	}//end objects()
+
+	/**
+	 * Resolve a run by uuid, or null when this caller may not see it.
+	 *
+	 * One place, so `show()` and `objects()` cannot drift apart on who may read
+	 * a run. Delegates the predicate itself to the mapper, which is where the
+	 * list read gets it too.
+	 *
+	 * A non-admin with no session resolves to null rather than falling through:
+	 * a null uid means "no scoping" at the mapper, which is an ADMINISTRATOR's
+	 * semantics, so treating an absent caller as one would turn having no
+	 * identity into the widest possible read.
+	 *
+	 * @param string $uuid The run uuid.
+	 *
+	 * @return FlowRun|null The run, or null when absent or not visible.
+	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
+	 */
+	private function visibleRun(string $uuid): ?FlowRun {
+		if ($this->isAdmin() === true) {
+			return $this->mapper->findByUuidVisibleTo(uuid: $uuid, requesterUid: null);
+		}
+
+		$uid = $this->callerUid();
+		if ($uid === null || $uid === '') {
+			return null;
+		}
+
+		return $this->mapper->findByUuidVisibleTo(
+			uuid: $uuid,
+			requesterUid: $uid,
+			ownedFlowIds: $this->flowIdsOwnedByCaller()
+		);
+	}//end visibleRun()
 
 	/**
 	 * Retry a finished run: queue a fresh one, leave the original untouched.

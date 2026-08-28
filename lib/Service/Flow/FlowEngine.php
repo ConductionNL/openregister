@@ -126,6 +126,7 @@ class FlowEngine {
 		private readonly ?FlowOversightRegistry $oversight = null,
 		private readonly ?FlowTokenRouter $router = null,
 		private readonly ?FlowItemPlacement $placement = null,
+		private readonly ?FlowRunContext $runContext = null,
 	) {
 
 	}//end __construct()
@@ -416,6 +417,28 @@ class FlowEngine {
 				continue;
 			}//end if
 
+			// ATTRIBUTION, around the hop. Everything written from here until the
+			// matching pop is filed under this run and node — including writes
+			// made by code that has no idea a flow is running, which is the
+			// whole point (a node cannot report what it did not know it did).
+			//
+			// The step number is `base + count($log)`, and that is not an
+			// approximation: `recordSteps()` numbers this segment's entries from
+			// the same base in the same order, so an attributed audit row and
+			// its `FlowRunStep` row carry the SAME sequence. Deriving it from a
+			// dispatch counter instead would desynchronise the moment a step is
+			// PINNED — a pin logs an entry without ever reaching the dispatcher.
+			//
+			// Pushed here rather than around the pinned branch above because a
+			// pinned step is not executed at all: it produces no writes, so it
+			// needs no frame, and skipping it costs nothing since the index is
+			// read from the log rather than counted per push.
+			$this->runContext?->push(
+				runUuid: ($context[FlowRunContext::CONTEXT_RUN] ?? null),
+				nodeId: $name,
+				sequence: ((int)($context[FlowRunContext::CONTEXT_BASE] ?? 0) + count($log))
+			);
+
 			try {
 				// OVERSIGHT, before the hop. A veto is raised as a FlowStop so it
 				// travels the same path as an author's Stop step: the run ENDS.
@@ -514,6 +537,16 @@ class FlowEngine {
 				if ($outcome !== null) {
 					return $outcome;
 				}
+			} finally {
+				// 🔴 UNCONDITIONAL, and structurally so. Every other exit from
+				// this hop is a `return` inside a catch — a stop, a suspension,
+				// a failed step whose policy is terminal. A pop placed on the
+				// success path would leave the frame standing on all three, and
+				// the next write in the process — a LATER run advanced by the
+				// same worker — would be filed under a run that had already
+				// finished. Nothing about that row looks wrong, which is why it
+				// has to be impossible rather than merely remembered.
+				$this->runContext?->pop();
 			}//end try
 
 			// Which single exit this firing takes. A token is unique and

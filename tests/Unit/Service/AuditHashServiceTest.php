@@ -36,12 +36,26 @@ class AuditHashServiceTest extends TestCase {
 		);
 	}
 
+	/**
+	 * The chain's seed is v2.
+	 *
+	 * Moved from v1 when the flow-attribution fields joined the canonical JSON
+	 * (ADR-003 Rule 4: the seed and the canonical form are one identity and are
+	 * versioned together). The v1 value is asserted to be DIFFERENT rather than
+	 * simply dropped, so a revert of the seed — which would silently make every
+	 * re-sealed row unverifiable — fails here instead of in production.
+	 */
 	public function testGetGenesisHash(): void {
-		$expected = hash('sha256', 'openregister-genesis-v1');
+		$expected = hash('sha256', 'openregister-genesis-v2');
 		$result = $this->service->getGenesisHash();
 
 		$this->assertSame($expected, $result);
 		$this->assertSame(64, strlen($result));
+		$this->assertNotSame(
+			hash('sha256', 'openregister-genesis-v1'),
+			$result,
+			'The seed must not fall back to v1: rows re-sealed under v2 would stop verifying.'
+		);
 	}
 
 	public function testGetGenesisHashIsConsistent(): void {
