@@ -50,6 +50,8 @@ use Throwable;
 
 /**
  * Inventories app-shipped register descriptors and re-imports them on demand.
+ *
+ * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
  */
 class RegisterDescriptorService {
 	/**
@@ -190,7 +192,10 @@ class RegisterDescriptorService {
 	 * @param string $appId The app that ships the descriptor.
 	 * @param string $slug  The register slug within it.
 	 *
-	 * @return array{outcome: string, reason: string|null} `imported`, `unchanged` or `failed`.
+	 * `counts` reports what actually landed, so `imported` cannot be said over a
+	 * no-op.
+	 *
+	 * @return array{outcome: string, reason: string|null, counts?: array{declared: int, imported: int, skipped: int}}
 	 *
 	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
 	 */
@@ -203,9 +208,35 @@ class RegisterDescriptorService {
 			];
 		}
 
+		$declaredObjects = count(($descriptor['data']['components']['objects'] ?? []));
+
 		try {
-			$this->configurationService->importFromApp(
-				appId: $appId,
+			// 🔴 A MOCK IMPORTS UNDER ITS OWN CONFIGURATION IDENTITY.
+			//
+			// `importFromApp` stamps `imported_config_<appId>_version` and a
+			// content hash. A mock descriptor declares the SAME register slug as
+			// the app's real one — larpinq ships `larpinq_register.json` and
+			// `larpinq_mock_register.json`, both declaring `larpinq` — so
+			// importing the mock under the plain app id writes over the real
+			// descriptor's stamp and reads its hash. Measured on a live instance:
+			// the command reported `register "larpinq" imported.` and the
+			// register ended up with the REAL descriptor's 11 schemas and ZERO of
+			// the mock's 30 objects.
+			//
+			// This is the same rule ImportMergeOperationRegister already applies
+			// with its own `openregister.merge-operation` id, and for the same
+			// reason: a version gate shared between two descriptors masks one of
+			// them.
+			// Default-then-override: phpcs bans the inline ternary and phpmd bans
+			// the else, so this is the shape that satisfies both.
+			$isMock = (($descriptor['data']['x-openregister']['type'] ?? '') === 'mock');
+			$configId = $appId;
+			if ($isMock === true) {
+				$configId = $appId . '.mock';
+			}
+
+			$result = $this->configurationService->importFromApp(
+				appId: $configId,
 				data: $descriptor['data'],
 				version: (string)($descriptor['data']['info']['version'] ?? '0.0.1'),
 				force: true
@@ -228,7 +259,35 @@ class RegisterDescriptorService {
 			];
 		}
 
-		return ['outcome' => 'imported', 'reason' => null];
+		// 🔴 COUNT WHAT LANDED, and fail when a descriptor that declares objects
+		// seeded none of them.
+		//
+		// The old post-check asked only whether a config version existed for the
+		// slug. For a mock that is already true — the app's own descriptor
+		// stamped it at install — so `outcome: imported` was returned over an
+		// import that created nothing. "Imported" that cannot be told apart from
+		// "did nothing" is the failure this whole command exists to surface.
+		$imported = count(($result['objects'] ?? []));
+		$skipped = (int)(($result['skipped']['objects'] ?? 0) + ($result['skipped']['seedObjects'] ?? 0));
+
+		if ($declaredObjects > 0 && $imported === 0) {
+			return [
+				'outcome' => 'failed',
+				'reason'  => sprintf(
+					'%s declares %d demo object(s) but none were imported (%d skipped). The register and its schemas may have landed; the data did not.',
+					$descriptor['file'],
+					$declaredObjects,
+					$skipped
+				),
+				'counts'  => ['declared' => $declaredObjects, 'imported' => 0, 'skipped' => $skipped],
+			];
+		}
+
+		return [
+			'outcome' => 'imported',
+			'reason'  => null,
+			'counts'  => ['declared' => $declaredObjects, 'imported' => $imported, 'skipped' => $skipped],
+		];
 	}//end reimport()
 
 	/**
