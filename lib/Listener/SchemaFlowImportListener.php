@@ -72,6 +72,11 @@ class SchemaFlowImportListener implements IEventListener {
 	 *
 	 * @param FlowMapper $flows The flow store.
 	 * @param LoggerInterface $logger Records what was imported, and what could not be.
+	 * @param ContainerInterface|null $container Resolves the organisation a declared flow
+	 *                                           belongs to. Nullable and LAST so adding it
+	 *                                           shifts no positional caller; absent, the
+	 *                                           flow still imports but stays unlisted,
+	 *                                           which is logged rather than silent.
 	 */
 	public function __construct(
 		private readonly FlowMapper $flows,
