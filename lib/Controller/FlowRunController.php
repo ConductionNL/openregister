@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -434,6 +435,11 @@ class FlowRunController extends Controller {
 			return $refusal;
 		}
 
+		$refusal = $this->refuseUnlessAssignee(run: $run);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
 		$payload = $this->request->getParams();
 		// Routing artefacts, not part of what the signaller is telling the run.
 		unset($payload['uuid'], $payload['_route']);
@@ -488,6 +494,92 @@ class FlowRunController extends Controller {
 
 		return null;
 	}//end refuseUnlessRunnable()
+
+	/**
+	 * Refuse when the awaiting step names an assignee and the caller is not it.
+	 *
+	 * WHY THIS EXISTS. `AwaitSignalNode` has always RECORDED an `assignee` on
+	 * the suspension, and nothing ever read it back. The run-level check above
+	 * asks "may you run this flow?", which is a different question from "is
+	 * this decision yours to make": everyone who could run the flow could
+	 * approve a step assigned to someone else, and the recorded assignee made
+	 * it look otherwise. ADR-098 names this gap — "no task authz — anyone
+	 * reaching the resume endpoint can decide".
+	 *
+	 * Scope, stated honestly: this closes the WHO of an already-recorded
+	 * assignment. It is not the task entity, inbox or definition versioning
+	 * ADR-098 describes, and a step with no assignee is unchanged — silence
+	 * still means anyone, because tightening that would break every existing
+	 * webhook and child-run signal, which are not human decisions at all.
+	 *
+	 * @param FlowRun $run The suspended run.
+	 *
+	 * @return JSONResponse|null A 403 when the caller is not the assignee.
+	 */
+	private function refuseUnlessAssignee(FlowRun $run): ?JSONResponse {
+		$assignee = $this->recordedAssignee(run: $run);
+		if ($assignee === '') {
+			return null;
+		}
+
+		$uid = $this->callerUid();
+		if ($uid === null) {
+			// Fail CLOSED: an assigned decision is never anonymous.
+			return new JSONResponse(
+				['error' => 'This step is assigned; sign in as the assignee to answer it.'],
+				Http::STATUS_FORBIDDEN
+			);
+		}
+
+		if ($uid === $assignee) {
+			return null;
+		}
+
+		if ($this->groupManager !== null && $this->groupManager->isInGroup($uid, $assignee) === true) {
+			return null;
+		}
+
+		return new JSONResponse(
+			['error' => 'This step is assigned to someone else.'],
+			Http::STATUS_FORBIDDEN
+		);
+	}//end refuseUnlessAssignee()
+
+	/**
+	 * The assignee recorded by whichever step is currently awaiting a signal.
+	 *
+	 * Reads the per-node resume slots the node wrote. A run can carry slots for
+	 * several nodes across its life, so the one that matters is a slot that
+	 * asked (`askedAt`) and has not been answered.
+	 *
+	 * @param FlowRun $run The suspended run.
+	 *
+	 * @return string The assignee uid or group id, '' when unassigned.
+	 */
+	private function recordedAssignee(FlowRun $run): string {
+		$context = ($run->getContext() ?? []);
+		$slots = ($context[FlowResumeState::CONTEXT_KEY] ?? []);
+		if (is_array($slots) === false) {
+			return '';
+		}
+
+		foreach ($slots as $slot) {
+			if (is_array($slot) === false) {
+				continue;
+			}
+
+			if (isset($slot['askedAt']) === false) {
+				continue;
+			}
+
+			$assignee = trim((string)($slot['assignee'] ?? ''));
+			if ($assignee !== '') {
+				return $assignee;
+			}
+		}
+
+		return '';
+	}//end recordedAssignee()
 
 	/**
 	 * The current caller's uid, or null when anonymous.

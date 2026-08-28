@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
 use OCA\OpenRegister\Service\Flow\FlowService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use Throwable;
 
 /**
@@ -176,15 +177,37 @@ class FlowShareableConfigType implements IShareableConfigType {
 			$flow->setEdges((array)($portable['edges'] ?? []));
 			$flow->setLimits((array)($portable['limits'] ?? []));
 
-			// An imported flow lands DISABLED and OWNERLESS, whatever the
-			// bundle said. `owner` and `organisation` are not portable fields —
-			// they name an identity on the SENDING instance that means nothing
-			// here — and a flow with no owner cannot dispatch. So a bundle can
-			// never arrive and start executing against the receiving tenant's
-			// data before a local person has adopted it and switched it on.
+			// An imported flow lands DISABLED, whatever the bundle said, so a
+			// bundle can never arrive and start executing against the receiving
+			// tenant's data before a local person switches it on. `enabled`
+			// alone carries that property.
 			$flow->setEnabled(false);
-			$flow->setOwner(null);
-			$flow->setOrganisation(null);
+
+			// 🔴 OWNED BY THE INSTALLER, NOT BY NOBODY.
+			//
+			// This used to set owner and organisation to null, on the correct
+			// reasoning that the SENDER's identity means nothing here. But null
+			// is not the absence of the sender's identity — it is the absence of
+			// any, and `FlowMapper` scopes every read with
+			// `eq('organisation', …)`, which `NULL` can never satisfy. The row
+			// inserted, `install` returned its uuid, and the flow was invisible
+			// to index(), to find(), and to the run path, with no adopt route to
+			// rescue it. Five permanent orphans on one dev instance.
+			//
+			// `FlowService::flowToSave()` already refuses this exact write, in a
+			// comment describing this exact outcome — the rule was fixed on the
+			// create path and never reached this one. Both now read the same
+			// method, so there is one place that decides ownership.
+			['owner' => $owner, 'organisation' => $organisation] = $this->flows->callerOwnership();
+			if ($owner === null || $organisation === null) {
+				throw new DoesNotExistException(
+					'Installing a flow needs a signed-in owner and an active organisation; '
+					. 'refusing to store one that belongs to nobody — it could never be seen again.'
+				);
+			}
+
+			$flow->setOwner($owner);
+			$flow->setOrganisation($organisation);
 
 			$stored = $this->mapper->insert($flow);
 			$installed[] = (string)$stored->getUuid();

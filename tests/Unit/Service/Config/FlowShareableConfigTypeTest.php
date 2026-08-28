@@ -13,6 +13,7 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Service\Config\Types\FlowShareableConfigType;
 use OCA\OpenRegister\Service\Flow\FlowService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -33,6 +34,10 @@ class FlowShareableConfigTypeTest extends TestCase {
 	protected function setUp(): void {
 		$this->mapper = $this->createMock(FlowMapper::class);
 		$this->flows = $this->createMock(FlowService::class);
+		// deserialise() now REFUSES to store a flow that belongs to nobody, so
+		// every install test needs a caller. Individual tests override this.
+		$this->flows->method('callerOwnership')
+			->willReturn(['owner' => 'installer', 'organisation' => 'org-here']);
 		$this->type = new FlowShareableConfigType($this->mapper, $this->flows);
 	}//end setUp()
 
@@ -159,11 +164,22 @@ class FlowShareableConfigTypeTest extends TestCase {
 
 	/**
 	 * THE SECURITY PROPERTY. A bundle must not be able to arrive and start
-	 * executing against the receiving tenant's data. An imported flow lands
-	 * disabled and ownerless whatever the bundle claimed, and an ownerless flow
-	 * cannot dispatch.
+	 * executing against the receiving tenant's data, and it must not carry the
+	 * SENDER's identity into this instance.
+	 *
+	 * 🔴 THIS TEST USED TO REQUIRE THE DEFECT. It asserted the imported flow
+	 * landed OWNERLESS, which is how the orphan got in: `FlowMapper` scopes
+	 * every read with `eq('organisation', …)`, and NULL satisfies no equality,
+	 * so the row inserted, `install` returned its uuid, and nothing could ever
+	 * see the flow again. Five permanent orphans on one dev instance, and no
+	 * adopt route to rescue them.
+	 *
+	 * The security property survives intact, because it never depended on the
+	 * null: `canDispatch()` requires `enabled === true` AND an owner, so
+	 * `enabled = false` alone already refuses dispatch. What the null added was
+	 * not safety — it was unreachability.
 	 */
-	public function testAnImportedFlowLandsDisabledAndOwnerless(): void {
+	public function testAnImportedFlowLandsDisabledAndOwnedByTheInstaller(): void {
 		$captured = null;
 		$this->mapper->method('insert')->willReturnCallback(
 			function (Flow $flow) use (&$captured): Flow {
@@ -190,10 +206,37 @@ class FlowShareableConfigTypeTest extends TestCase {
 
 		$this->assertNotNull($captured);
 		$this->assertFalse((bool)$captured->getEnabled(), 'an imported flow must not arrive enabled');
-		$this->assertNull($captured->getOwner(), 'an imported flow must not adopt the sender\'s owner');
-		$this->assertNull($captured->getOrganisation());
 		$this->assertFalse($captured->canDispatch(), 'and it must therefore not be dispatchable');
-	}//end testAnImportedFlowLandsDisabledAndOwnerless()
+
+		// The sender's claim is rejected — that was always the point.
+		$this->assertNotSame('victim', $captured->getOwner(), 'the sender does not choose the owner');
+		$this->assertNotSame('their-org', $captured->getOrganisation());
+
+		// And the INSTALLER owns it, so it is visible to the person who
+		// installed it. Without this the flow is stored and unreachable.
+		$this->assertSame('installer', $captured->getOwner());
+		$this->assertSame('org-here', $captured->getOrganisation());
+	}//end testAnImportedFlowLandsDisabledAndOwnedByTheInstaller()
+
+	/**
+	 * 🔴 REFUSED, NOT STAMPED WITH NULLS. `FlowService::flowToSave()` already
+	 * refuses this exact write on the create path, in a comment describing this
+	 * exact outcome — "Accepting the write produced a permanent orphan and
+	 * reported success". The rule was fixed there and never reached this writer.
+	 */
+	public function testInstallRefusesWhenTheCallerHasNoOwnership(): void {
+		$flows = $this->createMock(FlowService::class);
+		$flows->method('callerOwnership')
+			->willReturn(['owner' => null, 'organisation' => null]);
+		$type = new FlowShareableConfigType($this->mapper, $flows);
+
+		$this->mapper->expects($this->never())->method('insert');
+		$this->expectException(DoesNotExistException::class);
+
+		$type->deserialise(
+			['flows' => [['name' => 'Orphan', 'trigger' => 'manual', 'nodes' => [], 'edges' => []]]]
+		);
+	}//end testInstallRefusesWhenTheCallerHasNoOwnership()
 
 	/**
 	 * A fresh id per import: two instances that both installed the same bundle

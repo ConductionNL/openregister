@@ -2706,7 +2706,26 @@
         "Legal basis": "Legal basis",
         "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).": "Locate every object referencing a data subject (Art 15), preview an erasure (Art 17), or export their data (Art 20).",
         "Portability (Art 20)": "Portability (Art 20)",
-        "Retention period": "Retention period"
+        "Retention period": "Retention period",
+        "{register} was imported from {app}.": "{register} u importua nga {app}.",
+        "%n are out of date": "%n janë të vjetruara",
+        "%n declared in total": "%n të deklaruara gjithsej",
+        "%n is out of date": "%n është i vjetruar",
+        "%n register is missing": "mungon %n regjistër",
+        "%n registers are missing": "mungojnë %n regjistra",
+        "Apps ship their registers as descriptors that are imported when the app is installed or upgraded. Once an app's version stops changing that import never runs again, and a failed one is only written to the log — so a register can be missing on a instance that otherwise looks healthy. This is where you can see which ones landed.": "Aplikacionet i japin regjistrat e tyre si përshkrues, të cilët importohen kur aplikacioni instalohet ose përditësohet. Sapo versioni i një aplikacioni pushon së ndryshuari, ai import nuk ekzekutohet më kurrë, dhe një import i dështuar shkruhet vetëm në ditar — pra një regjistër mund të mungojë në një instancë që përndryshe duket e shëndetshme. Këtu shihni cilët kanë mbërritur.",
+        "Could not read the descriptor inventory: {reason}": "Nuk u lexua dot inventari i përshkruesve: {reason}",
+        "Every declared register is present and current.": "Çdo regjistër i deklaruar është i pranishëm dhe i përditësuar.",
+        "Import failed: {reason}": "Importimi dështoi: {reason}",
+        "Missing": "Mungon",
+        "Out of date": "I vjetruar",
+        "Present": "I pranishëm",
+        "Re-import": "Riimporto",
+        "Reading descriptors …": "Po lexohen përshkruesit …",
+        "Register descriptors": "Përshkrues regjistrash",
+        "ships v{shipped}": "jep v{shipped}",
+        "State": "Gjendja",
+        "v{installed} → ships v{shipped}": "v{installed} → jep v{shipped}"
     },
     "plurals": {
         "{count} email": [

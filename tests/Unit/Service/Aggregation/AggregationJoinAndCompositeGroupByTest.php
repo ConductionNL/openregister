@@ -555,6 +555,151 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		);
 	}//end testACallerKeyTheParentDeclarationDropsDoesNotReachTheJoin()
 
+	/**
+	 * Grouping by a field that lives on the JOINED schema rolls the parent
+	 * rows up to that dimension.
+	 *
+	 * `groupBy: ["commitment-budget.parentCode"]` names a column the parent
+	 * does not have. applyJoin() runs AFTER grouping and attaches figures to
+	 * groups that already exist, so it cannot produce this — by then the rows
+	 * are gone. The value has to be projected onto each parent row through the
+	 * join key first.
+	 *
+	 * The fixture is built so a wrong answer is obvious rather than plausible:
+	 * P1 and P2 both roll up to REGION-A, P3 to REGION-B. Grouping on the
+	 * unprojected column would put all four rows in ONE null bucket (357);
+	 * failing to roll up would leave three P-keyed groups instead of two
+	 * region-keyed ones.
+	 *
+	 *   REGION-A = P1(100 + 50) + P2(200) = 350
+	 *   REGION-B = P3(7)                  =   7
+	 */
+	public function testGroupByAJoinedFieldRollsParentRowsUp(): void {
+		$annotation = $this->joinAnnotation();
+		$annotation['groupBy'] = ['commitment-budget.parentCode'];
+		// The explicit map, not the shorthand: the shorthand infers the parent
+		// key from the group fields, which are the joined ones here.
+		$annotation['join']['on'] = ['programme' => 'programmeCode'];
+
+		$result = $this->makeHierarchyRunner($annotation)->run(
+			registerRef: 'finance',
+			schemaRef: 'commitment-line',
+			name: 'committed'
+		);
+
+		$folded = [];
+		foreach ($result['groups'] as $group) {
+			$key = ($group['keys']['commitment-budget.parentCode'] ?? $group['key'] ?? null);
+			$folded[(string)$key] = $group['value'];
+		}
+
+		ksort($folded);
+		$this->assertSame(
+			['REGION-A' => 350.0, 'REGION-B' => 7.0],
+			$folded,
+			'parent rows must roll up to the joined dimension, not stay on their own key'
+		);
+
+	}//end testGroupByAJoinedFieldRollsParentRowsUp()
+
+	/**
+	 * A parent row whose join key matches nothing keeps a NULL group, and is
+	 * NOT dropped.
+	 *
+	 * Dropping it would quietly shrink the totals — the reported figure would
+	 * be smaller than the data and nothing would say so. A null bucket is
+	 * visible, and is the honest answer for "belongs to no dimension".
+	 */
+	public function testUnmatchedParentRowsLandInANullGroupRatherThanVanishing(): void {
+		$annotation = $this->joinAnnotation();
+		$annotation['groupBy'] = ['commitment-budget.parentCode'];
+		$annotation['join']['on'] = ['programme' => 'programmeCode'];
+
+		// P9 has no matching budget row.
+		$result = $this->makeHierarchyRunner($annotation, orphanRow: true)->run(
+			registerRef: 'finance',
+			schemaRef: 'commitment-line',
+			name: 'committed'
+		);
+
+		$total = 0.0;
+		$sawNull = false;
+		foreach ($result['groups'] as $group) {
+			$total += (float)$group['value'];
+			$key = ($group['keys']['commitment-budget.parentCode'] ?? $group['key'] ?? null);
+			if ($key === null) {
+				$sawNull = true;
+				$this->assertSame(11.0, (float)$group['value'], 'the orphan row keeps its own amount');
+			}
+		}
+
+		$this->assertTrue($sawNull, 'an unmatched row must surface in a null bucket');
+		$this->assertSame(368.0, $total, '350 + 7 + 11 — nothing may be dropped');
+
+	}//end testUnmatchedParentRowsLandInANullGroupRatherThanVanishing()
+
+	/**
+	 * The `on` SHORTHAND is refused when grouping by a joined field, rather
+	 * than inferring the wrong parent key.
+	 *
+	 * `"on": "Schema.column"` infers the parent side from the group fields —
+	 * same-named one if present, otherwise the first. When the group field is
+	 * the joined one, that inference picks the JOINED field as the parent key,
+	 * reads it off parent rows that do not have it, and lands every row in a
+	 * single null bucket. Measured before this guard: a fixture summing
+	 * 350 + 7 came back as one bucket of 357 keyed ''.
+	 *
+	 * A refusal naming the fix is worth more than a plausible total.
+	 */
+	public function testJoinedGroupByRefusesTheOnShorthand(): void {
+		$annotation = $this->joinAnnotation();
+		$annotation['groupBy'] = ['commitment-budget.parentCode'];
+		// joinAnnotation() ships the string shorthand; leave it.
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessageMatches('/explicit join\.on map/');
+
+		$this->makeHierarchyRunner($annotation)->run(
+			registerRef: 'finance',
+			schemaRef: 'commitment-line',
+			name: 'committed'
+		);
+
+	}//end testJoinedGroupByRefusesTheOnShorthand()
+
+	/**
+	 * Grouping by a joined field marks the join as consumed instead of hanging
+	 * a map of nulls on every group.
+	 *
+	 * mergeJoinedValues() reads the join key out of each group row, and after
+	 * projection that key is gone — the group key IS the joined dimension. Left
+	 * to run it would attach `joined` entries that are all null, which reads as
+	 * "the joined schema had nothing" rather than "the grouping already
+	 * answered this".
+	 */
+	public function testJoinedGroupByReportsTheJoinAsConsumed(): void {
+		$annotation = $this->joinAnnotation();
+		$annotation['groupBy'] = ['commitment-budget.parentCode'];
+		$annotation['join']['on'] = ['programme' => 'programmeCode'];
+
+		$result = $this->makeHierarchyRunner($annotation)->run(
+			registerRef: 'finance',
+			schemaRef: 'commitment-line',
+			name: 'committed'
+		);
+
+		$this->assertTrue($result['join']['consumedForGrouping']);
+		$this->assertSame('commitment-budget', $result['join']['through']);
+		foreach ($result['groups'] as $group) {
+			$this->assertArrayNotHasKey(
+				'joined',
+				$group,
+				'a map of nulls would read as "the joined schema had nothing"'
+			);
+		}
+
+	}//end testJoinedGroupByReportsTheJoinAsConsumed()
+
 	public function testNativeJoinAgreesWithPhpFallback(): void {
 		$php = $this->makeJoinRunner()->run(
 			registerRef: 'finance',
@@ -1220,6 +1365,82 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 
 		return $this->makeRunner();
 	}//end makeJoinRunner()
+
+	/**
+	 * A fixture where the JOINED schema carries a hierarchy column.
+	 *
+	 * Parent rows are keyed by `programme`; the joined `commitment-budget` rows
+	 * map each programme to a `parentCode`, so grouping by
+	 * `commitment-budget.parentCode` must roll P1 and P2 together under
+	 * REGION-A and leave P3 under REGION-B.
+	 *
+	 * @param array<string, mixed> $annotation The aggregation annotation.
+	 * @param bool                 $orphanRow  Add a parent row matching no budget.
+	 *
+	 * @return AggregationRunner The configured runner.
+	 */
+	private function makeHierarchyRunner(array $annotation, bool $orphanRow = false): AggregationRunner {
+		$parentSchema = $this->makeSchema(
+			'commitment-line',
+			10,
+			['committed' => $annotation],
+			[
+				'programme' => ['type' => 'string'],
+				'costCentre' => ['type' => 'string'],
+				'remainingCommitted' => ['type' => 'number'],
+			]
+		);
+		$joinedSchema = $this->makeSchema(
+			'commitment-budget',
+			20,
+			[],
+			[
+				'programmeCode' => ['type' => 'string'],
+				'parentCode' => ['type' => 'string'],
+				'authorisedAmount' => ['type' => 'number'],
+			]
+		);
+		$register = $this->makeRegister('finance', [10, 20]);
+
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->registerMapper->method('findAll')->willReturn([$register]);
+		$this->schemaMapper->method('find')->willReturnMap(
+			[
+				['commitment-line', [], true, false, $parentSchema],
+				['commitment-budget', [], true, false, $joinedSchema],
+			]
+		);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->usePhpFallback();
+
+		$parentRows = [
+			['programme' => 'P1', 'costCentre' => 'C1', 'remainingCommitted' => 100],
+			['programme' => 'P1', 'costCentre' => 'C2', 'remainingCommitted' => 50],
+			['programme' => 'P2', 'costCentre' => 'C1', 'remainingCommitted' => 200],
+			['programme' => 'P3', 'costCentre' => 'C9', 'remainingCommitted' => 7],
+		];
+		if ($orphanRow === true) {
+			$parentRows[] = ['programme' => 'P9', 'costCentre' => 'C9', 'remainingCommitted' => 11];
+		}
+
+		$joinedRows = [
+			['programmeCode' => 'P1', 'parentCode' => 'REGION-A', 'authorisedAmount' => 1000],
+			['programmeCode' => 'P2', 'parentCode' => 'REGION-A', 'authorisedAmount' => 2000],
+			['programmeCode' => 'P3', 'parentCode' => 'REGION-B', 'authorisedAmount' => 3000],
+		];
+
+		$this->magicMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
+			function (Register $register, Schema $schema) use ($parentRows, $joinedRows): array {
+				if ((string)$schema->getSlug() === 'commitment-budget') {
+					return $this->entities($joinedRows);
+				}
+
+				return $this->entities($parentRows);
+			}
+		);
+
+		return $this->makeRunner();
+	}//end makeHierarchyRunner()
 
 	/**
 	 * A `commitment-line` / `commitment-budget` fixture whose rows span two
