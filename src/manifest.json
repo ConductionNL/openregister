@@ -796,6 +796,24 @@
             }
           },
           {
+            "id": "open-flows",
+            "sinceVersion": "1.1.7",
+            "placement": "right",
+            "title": "Automation lives here",
+            "body": "Flows react to what happens in a register: a trigger, a few nodes, and an action that runs when an object is created or changed. Nothing to build now — this stop only shows you where they live, so you can come back once you have something worth automating.",
+            "task": "Open Flows",
+            "optional": true,
+            "allowManualNext": true,
+            "target": {
+              "kind": "nav-item",
+              "ref": "flows"
+            },
+            "advanceOn": {
+              "type": "route-match",
+              "route": "flows"
+            }
+          },
+          {
             "id": "done",
             "sinceVersion": "1.1.5",
             "placement": "center",
