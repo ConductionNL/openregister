@@ -2725,7 +2725,10 @@
         "Register descriptors": "Skrárlýsingar",
         "ships v{shipped}": "skilar v{shipped}",
         "State": "Staða",
-        "v{installed} → ships v{shipped}": "v{installed} → skilar v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → skilar v{shipped}",
+        "Where the automation lives": "Þar sem sjálfvirknin býr",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Flæði er það sem gerist án þess að nokkur smelli: hlutur sem er stimplaður við vistun, forrit sem fær boð þegar færsla breytist. Hér lestu og breytir þeim. Ekkert að byggja núna.",
+        "Open Flows in the menu": "Opnaðu Flæði í valmyndinni"
     },
     "plurals": {
         "{count} email": [

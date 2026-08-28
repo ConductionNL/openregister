@@ -2723,7 +2723,10 @@ OC.L10N.register(
         "Register descriptors": "Дескрипторы реестров",
         "ships v{shipped}": "поставляет v{shipped}",
         "State": "Состояние",
-        "v{installed} → ships v{shipped}": "v{installed} → поставляет v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → поставляет v{shipped}",
+        "Where the automation lives": "Где живёт автоматизация",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Потоки — это то, что происходит без нажатий: объект, помечаемый при сохранении, приложение, уведомляемое при изменении записи. Здесь вы их читаете и редактируете. Сейчас ничего строить не нужно.",
+        "Open Flows in the menu": "Откройте Потоки в меню"
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -2723,7 +2723,10 @@ OC.L10N.register(
         "Register descriptors": "Περιγραφείς μητρώων",
         "ships v{shipped}": "παρέχει v{shipped}",
         "State": "Κατάσταση",
-        "v{installed} → ships v{shipped}": "v{installed} → παρέχει v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → παρέχει v{shipped}",
+        "Where the automation lives": "Πού ζει ο αυτοματισμός",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Οι ροές είναι ό,τι συμβαίνει χωρίς να κάνει κανείς κλικ: ένα αντικείμενο που σφραγίζεται κατά την αποθήκευση, μια εφαρμογή που ειδοποιείται όταν αλλάζει μια εγγραφή. Εδώ τις διαβάζετε και τις επεξεργάζεστε. Δεν χρειάζεται να φτιάξετε τίποτα τώρα.",
+        "Open Flows in the menu": "Ανοίξτε τις Ροές στο μενού"
     },
     "nplurals=2; plural=(n != 1);"
 )

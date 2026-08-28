@@ -2725,7 +2725,10 @@
         "Register descriptors": "Kayıt tanımlayıcıları",
         "ships v{shipped}": "v{shipped} sunuyor",
         "State": "Durum",
-        "v{installed} → ships v{shipped}": "v{installed} → v{shipped} sunuyor"
+        "v{installed} → ships v{shipped}": "v{installed} → v{shipped} sunuyor",
+        "Where the automation lives": "Otomasyonun yaşadığı yer",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Akışlar kimse tıklamadan olan şeylerdir: kaydederken damgalanan bir nesne, bir kayıt değiştiğinde haber verilen bir uygulama. Bunları burada okur ve düzenlersiniz. Şimdi inşa edilecek bir şey yok.",
+        "Open Flows in the menu": "Menüden Akışlar'ı açın"
     },
     "plurals": {
         "{count} email": [
