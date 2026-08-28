@@ -594,15 +594,10 @@ class ObjectService implements ObjectServiceInterface
             } catch (\Throwable $e) {
                 $this->currentSchema = null;
 
-                $refForLog = gettype($pendingRef);
-                if (is_scalar($pendingRef) === true) {
-                    $refForLog = (string) $pendingRef;
-                }
-
                 $this->logger->warning(
                     message: '[ObjectService] Discarded a pending schema ref that this register does not carry',
                     context: [
-                        'pendingSchemaRef' => $refForLog,
+                        'pendingSchemaRef' => (string) $pendingRef,
                         'register'         => ($register->getSlug() ?? (string) $register->getId()),
                         'reason'           => $e->getMessage(),
                         'note'             => 'The ref was left on this shared service by an earlier, unrelated call. '
