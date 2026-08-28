@@ -2725,7 +2725,10 @@
         "Register descriptors": "Descritores de registo",
         "ships v{shipped}": "fornece v{shipped}",
         "State": "Estado",
-        "v{installed} → ships v{shipped}": "v{installed} → fornece v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → fornece v{shipped}",
+        "Where the automation lives": "Onde vive a automação",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Os fluxos são o que acontece sem ninguém clicar: um objeto carimbado ao guardar, uma aplicação avisada quando um registo muda. É aqui que os lê e edita. Nada a construir agora.",
+        "Open Flows in the menu": "Abrir Fluxos no menu"
     },
     "plurals": {
         "{count} email": [

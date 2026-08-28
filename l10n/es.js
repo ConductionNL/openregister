@@ -2723,7 +2723,10 @@ OC.L10N.register(
         "Register descriptors": "Descriptores de registro",
         "ships v{shipped}": "entrega v{shipped}",
         "State": "Estado",
-        "v{installed} → ships v{shipped}": "v{installed} → entrega v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → entrega v{shipped}",
+        "Where the automation lives": "Dónde vive la automatización",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Los flujos son lo que ocurre sin que nadie haga clic: un objeto que se sella al guardar, una aplicación avisada cuando cambia un registro. Aquí los lees y los editas. No hay nada que construir ahora.",
+        "Open Flows in the menu": "Abrir Flujos en el menú"
     },
     "nplurals=2; plural=(n != 1);"
 )

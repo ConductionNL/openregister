@@ -2726,7 +2726,10 @@
         "Register descriptors": "Deskriptory registrů",
         "ships v{shipped}": "dodává v{shipped}",
         "State": "Stav",
-        "v{installed} → ships v{shipped}": "v{installed} → dodává v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → dodává v{shipped}",
+        "Where the automation lives": "Kde žije automatizace",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Toky jsou to, co se děje bez kliknutí: objekt označený při uložení, aplikace informovaná při změně záznamu. Zde je čtete a upravujete. Nyní není třeba nic stavět.",
+        "Open Flows in the menu": "Otevřete Toky v nabídce"
     },
     "plurals": {
         "{count} email": [

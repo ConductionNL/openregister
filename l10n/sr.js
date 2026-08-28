@@ -2723,7 +2723,10 @@ OC.L10N.register(
         "Register descriptors": "Дескриптори регистара",
         "ships v{shipped}": "испоручује v{shipped}",
         "State": "Стање",
-        "v{installed} → ships v{shipped}": "v{installed} → испоручује v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → испоручује v{shipped}",
+        "Where the automation lives": "Где живи аутоматизација",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Токови су оно што се дешава без клика: објекат означен при чувању, апликација обавештена када се запис промени. Овде их читате и уређујете. Сада нема шта да се гради.",
+        "Open Flows in the menu": "Отворите Токове у менију"
     },
     "nplurals=2; plural=(n != 1);"
 )
