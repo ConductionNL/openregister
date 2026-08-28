@@ -2720,5 +2720,5 @@ OC.L10N.register(
     "🚀 Auto-scaling can dynamically add or remove nodes based on load..." : "🚀 Is féidir le huathscálú nóid a chur leis nó a bhaint go dinimiciúil bunaithe ar an ualach...",
     "🛡️ Security features include authentication, authorization, and SSL encryption..." : "🛡️ Áirítear le gnéithe slándála fíordheimhniú, údarú agus criptiú SSL..."
 },
-"nplurals=2; plural=(n != 1);"
+"nplurals=5; plural=(n==1 ? 0 : n==2 ? 1 : n<7 ? 2 : n<11 ? 3 : 4);"
 );

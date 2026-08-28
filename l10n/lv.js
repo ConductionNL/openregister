@@ -2720,5 +2720,5 @@ OC.L10N.register(
     "🚀 Auto-scaling can dynamically add or remove nodes based on load..." : "🚀 Automātiskā mērogošana var dinamiski pievienot vai noņemt mezglus atkarībā no slodzes...",
     "🛡️ Security features include authentication, authorization, and SSL encryption..." : "🛡️ Drošības funkcijas ietver autentifikāciju, autorizāciju un SSL šifrēšanu..."
 },
-"nplurals=2; plural=(n != 1);"
+"nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2);"
 );
