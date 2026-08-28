@@ -253,9 +253,18 @@ class SchemaFlowImportListener implements IEventListener {
 		}
 
 		try {
+			// 🔴 `getOrganisationForNewEntity()`, NOT `getActiveOrganisation()`.
+			// A schema import runs during install and during
+			// `occ maintenance:repair` — with NO user session, so there is no
+			// ACTIVE organisation to find and the flow imported ownerless and
+			// invisible all over again. This is the same call every ordinary
+			// object save makes, and it falls back to the DEFAULT organisation
+			// exactly for callers with no session. Measured 2026-08-28: the fix
+			// that resolved the active organisation passed on a dev stack that
+			// happened to have one, and failed in CI, which does not.
 			$uuid = $this->container
 				->get('OCA\OpenRegister\Service\OrganisationService')
-				->getActiveOrganisation()?->getUuid();
+				->getOrganisationForNewEntity();
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[SchemaFlowImport] Could not resolve an organisation for a declared flow; '
