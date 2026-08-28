@@ -143,7 +143,20 @@ concurrency:
   # A branch name is not a unique lane when two event types can each produce a
   # run for it, so the event is now always part of the key.
   group: quality-${{ github.head_ref || github.ref_name }}${{ github.event_name != 'pull_request' && format('-{0}', github.event_name) || '' }}
-  cancel-in-progress: true
+
+  # PUSH RUNS ARE NOT CANCELLED — and this has to be said HERE, not only in the
+  # shared workflow. .github#597 set `cancel-in-progress` on quality.yml itself,
+  # but a caller's own concurrency cancels the whole run before the called
+  # workflow's setting can apply, so that fix reached only the apps that declare
+  # no concurrency of their own. Measured 2026-08-28 over push runs on
+  # `development` since #597: 0 of 11 cancelled where the caller was silent, 7 of
+  # 13 (54%) cancelled where the caller still said `true`.
+  #
+  # An integration branch needs a verdict per commit: the run being cancelled is
+  # the only thing that would have said whether what just landed is sound, and
+  # its replacement is cancelled too. `pull_request` keeps cancelling, where
+  # superseding really is correct.
+  cancel-in-progress: ${{ github.event_name != 'push' }}
 
 # Permission CEILING for the called quality pipeline. GitHub statically
 # validates the called workflow's declared job permissions against this

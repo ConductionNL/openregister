@@ -406,6 +406,90 @@ class ObjectServiceStaleSchemaRefTest extends TestCase {
 
 
 	/**
+	 * A BARE setRegister() must survive a ref that belongs to somebody else.
+	 *
+	 * Every guard before this one protects an OPERATION — `find()`, `findAll()`,
+	 * a save — by discarding the pending ref as it enters. `setRegister()` is
+	 * not an operation, so it has no such guard: it takes whatever ref is
+	 * pending, re-resolves it inside the register the caller just named, and a
+	 * miss THROWS out of a method whose caller only asked to name its register.
+	 *
+	 * Measured on the development instance 2026-08-27, WITH #2918 (the read-path
+	 * clear) already merged and running: every public read of a portaliq portal
+	 * failed with `Schema slug "application" is not carried by register
+	 * "portaliq"`. `PortalResolver` calls `setRegister('portaliq')` first and
+	 * `setSchema('portal')` after — the correct order — and never mentions
+	 * `application` at all. The portal served its shell and answered 404 for its
+	 * own site, menus, pages and glossary: a whole app's public surface down,
+	 * over a slug it does not own.
+	 *
+	 * So the ref is DROPPED here rather than thrown on. The schema context is
+	 * cleared with it, which is the half that keeps this honest: a caller that
+	 * genuinely chained `setSchema('typo')->setRegister($r)` still fails, at its
+	 * operation, with a missing schema context — rather than quietly reading
+	 * whichever table a stale context last pointed at.
+	 *
+	 * @return void
+	 */
+	public function testABareSetRegisterSurvivesAForeignPendingRef(): void {
+		// Left behind by an unrelated caller — buildiq registers navigation from
+		// Application::boot(), so this ref is pending on EVERY request.
+		$application = new Schema();
+		$application->setId(193);
+		$application->setSlug('application');
+		$this->schemaMapper->method('find')->willReturn($application);
+		$this->service->setSchema('application');
+
+		// A different app now names its OWN register. It does not carry
+		// `application`, and it never asked for it.
+		$portaliq = new Register();
+		$portaliq->setId(35);
+		$portaliq->setSlug('portaliq');
+		$portaliq->setSchemas([501]);
+
+		$portal = new Schema();
+		$portal->setId(501);
+		$portal->setSlug('portal');
+
+		$this->registerMapper->method('find')->willReturn($portaliq);
+		$this->schemaMapper->method('findBySlugInIds')->willReturnCallback(
+			static fn (string $slug, array $ids) => ($slug === 'portal' ? $portal : null)
+		);
+		$this->schemaMapper->method('findInIds')->willReturnCallback(
+			static fn ($ref, array $ids) => (($ref === 'portal' || $ref === 501) ? $portal : null)
+		);
+
+		// BEFORE THE FIX this throws SchemaNotInRegisterException naming
+		// "application" — and took every public page of the portal with it.
+		$this->service->setRegister('portaliq');
+
+		$schema = new \ReflectionProperty(ObjectService::class, 'currentSchema');
+		$schema->setAccessible(true);
+		$this->assertNull(
+			$schema->getValue($this->service),
+			'a ref that could not be resolved must leave NO schema context — substituting a '
+			.'wrong-but-plausible schema is the one outcome worse than throwing'
+		);
+
+		// And the caller's own chain still works, which is the whole point:
+		// this is the order PortalResolver and CmsReader use.
+		$this->service->setSchema('portal');
+		$this->assertSame(
+			501,
+			$schema->getValue($this->service)?->getId(),
+			'the caller naming its own register and schema must be served its own schema'
+		);
+
+		$ref = new \ReflectionProperty(ObjectService::class, 'currentSchemaRef');
+		$ref->setAccessible(true);
+		$this->assertNull(
+			$ref->getValue($this->service),
+			'the foreign ref must be consumed, not left pending for the NEXT caller'
+		);
+	}//end testABareSetRegisterSurvivesAForeignPendingRef()
+
+
+	/**
 	 * A COMPLETED register+schema chain must not leave a ref behind at all.
 	 *
 	 * Every case above starts from `setSchema($s)` with NO register set — the

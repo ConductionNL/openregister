@@ -222,6 +222,17 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 	})
 
 	try {
+		// Collected for the failure message below; the resolver's own warning
+		// about an unknown named source is the single fact this spec has been
+		// unable to report.
+		const consoleLines: string[] = []
+		page.on('console', (msg) => {
+			const type = msg.type()
+			if (type === 'warning' || type === 'error') {
+				consoleLines.push(`[${type}] ${msg.text()}`)
+			}
+		})
+
 		await page.goto(FLOWS_ROUTE, { waitUntil: 'domcontentloaded' })
 
 		// Belt and braces: if the dialog still made it through (a server-backed
@@ -235,7 +246,38 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 
 		// Reach the editor the way a user does. Direct navigation to
 		// `#/flows/new` does not always hydrate the canvas.
-		await clickThemed(page.getByRole('button', { name: 'New flow' }))
+		//
+		// If the button is absent, say WHY rather than just that it is missing.
+		// This assertion has been failing on development (#2957) and the bare
+		// "element(s) not found" told us nothing: the label is correct, the
+		// package ships the registry, and showAdd defaults true — all verified.
+		// What could not be seen from outside a failing run is whether
+		// `resolveIndexSource('flows')` returned the source or null, and the
+		// resolver announces that on the console. So capture it and put it in
+		// the failure.
+		const addButton = page.getByRole('button', { name: 'New flow' })
+		if (!(await addButton.isVisible().catch(() => false))) {
+			const primary = page.locator('[data-testid="cn-cta-primary"]')
+			const primaryText = (await primary.count())
+				? await primary
+						.first()
+						.innerText()
+						.catch(() => '<unreadable>')
+				: '<no cn-cta-primary button on the page>'
+			throw new Error(
+				'The "New flow" button never rendered on the flows index.\n'
+					+ `  primary CTA present: ${await primary.count()} `
+					+ `(text: ${primaryText})\n`
+					+ '  A named source supplies this label; an unresolved one degrades to\n'
+					+ '  an ordinary index whose CTA reads "Add {type}". The text above\n'
+					+ '  distinguishes those two cases.\n'
+					+ '  console (warn/error):\n'
+					+ (consoleLines.length
+						? consoleLines.map((l) => `    ${l}`).join('\n')
+						: '    <nothing captured>'),
+			)
+		}
+		await clickThemed(addButton)
 
 		// 1. THE CONTROLS EXIST. This is the assertion the original defect
 		//    would have failed: before the fix `.cn-flow-sidebar` was absent
