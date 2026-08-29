@@ -75,6 +75,28 @@ use Symfony\Component\Uid\Uuid;
  * @method void setSuspendedAt(?DateTime $suspendedAt)
  * @method DateTime|null getDeprovisionedAt()
  * @method void setDeprovisionedAt(?DateTime $deprovisionedAt)
+ * @method string|null getType()
+ * @method void setType(?string $type)
+ * @method string|null getSummary()
+ * @method void setSummary(?string $summary)
+ * @method string|null getOin()
+ * @method void setOin(?string $oin)
+ * @method string|null getTooi()
+ * @method void setTooi(?string $tooi)
+ * @method string|null getRsin()
+ * @method void setRsin(?string $rsin)
+ * @method string|null getKvk()
+ * @method void setKvk(?string $kvk)
+ * @method string|null getPki()
+ * @method void setPki(?string $pki)
+ * @method string|null getImage()
+ * @method void setImage(?string $image)
+ * @method string|null getRegistrationStatus()
+ * @method void setRegistrationStatus(?string $registrationStatus)
+ * @method string|null getMergedInto()
+ * @method void setMergedInto(?string $mergedInto)
+ * @method DateTime|null getMergedAt()
+ * @method void setMergedAt(?DateTime $mergedAt)
  * @method string|null getParent()
  * @method static setParent(?string $parent)
  * @method array|null getMail()
@@ -266,6 +288,102 @@ class Organisation extends Entity implements JsonSerializable {
 	protected ?string $parent = null;
 
 	/**
+	 * Discriminator for what KIND of organisation this row describes.
+	 *
+	 * Every row is still a full organisation and still a valid tenant; this
+	 * only records which facet the operator cares about, so a UI can present a
+	 * vendor differently from a municipality. It is deliberately NOT an
+	 * authorization input — see ADR-002 Rule 1: the UUID is the only tenant key.
+	 *
+	 * One of: organisation, government, vendor, collaboration, department.
+	 *
+	 * @var string|null Organisation type discriminator
+	 */
+	protected ?string $type = 'organisation';
+
+	/**
+	 * Short summary for overview pages (OpenCatalogi `summary`).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $summary = null;
+
+	/**
+	 * Overheidsidentificatienummer (OIN).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $oin = null;
+
+	/**
+	 * TOOI identifier for this organisation.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $tooi = null;
+
+	/**
+	 * RSIN of the non-natural person (9 digits, 11-proef).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $rsin = null;
+
+	/**
+	 * Chamber-of-Commerce (KvK) number.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $kvk = null;
+
+	/**
+	 * PKIoverheid certificate reference.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $pki = null;
+
+	/**
+	 * Logo/avatar as a URL or base64 data URI.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $image = null;
+
+	/**
+	 * Registration lifecycle of this organisation as a catalogued party.
+	 *
+	 * Distinct from `status`, which is the TENANT lifecycle (provisioning,
+	 * active, suspended...). A vendor can be `registered` here while its tenant
+	 * has never been provisioned, and vice versa.
+	 *
+	 * One of: concept, submitted, registered, rejected, merged.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $registrationStatus = null;
+
+	/**
+	 * UUID of the surviving organisation when this one was merged away.
+	 *
+	 * This is an AUTHORIZATION-BEARING field, not a display hint. A merged
+	 * organisation must stop resolving as a tenant: if it kept resolving, every
+	 * query scoped to it would read the survivor's data under the old boundary.
+	 * {@see \OCA\OpenRegister\Db\OrganisationMapper::resolveMergeTarget()}
+	 * walks this to the survivor, and the tenant-resolution path calls it.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $mergedInto = null;
+
+	/**
+	 * When this organisation was merged away.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $mergedAt = null;
+
+	/**
 	 * Array of child organisation UUIDs (computed, not stored in database)
 	 *
 	 * This property is populated on-demand via OrganisationMapper::findChildrenChain()
@@ -358,9 +476,9 @@ class Organisation extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'created', type: 'datetime');
 		$this->addType(fieldName: 'updated', type: 'datetime');
 		$this->addType(fieldName: 'active', type: 'boolean');
-		$this->addType(fieldName: 'storage_quota', type: 'integer');
-		$this->addType(fieldName: 'bandwidth_quota', type: 'integer');
-		$this->addType(fieldName: 'request_quota', type: 'integer');
+		$this->addType(fieldName: 'storageQuota', type: 'integer');
+		$this->addType(fieldName: 'bandwidthQuota', type: 'integer');
+		$this->addType(fieldName: 'requestQuota', type: 'integer');
 		$this->addType(fieldName: 'authorization', type: 'json');
 		$this->addType(fieldName: 'parent', type: 'string');
 		$this->addType(fieldName: 'mail', type: 'json');
@@ -372,9 +490,23 @@ class Organisation extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'deck', type: 'json');
 		$this->addType(fieldName: 'status', type: 'string');
 		$this->addType(fieldName: 'environment', type: 'string');
-		$this->addType(fieldName: 'provisioned_at', type: 'datetime');
-		$this->addType(fieldName: 'suspended_at', type: 'datetime');
-		$this->addType(fieldName: 'deprovisioned_at', type: 'datetime');
+		$this->addType(fieldName: 'provisionedAt', type: 'datetime');
+		$this->addType(fieldName: 'suspendedAt', type: 'datetime');
+		$this->addType(fieldName: 'deprovisionedAt', type: 'datetime');
+		// Identity facet (ADR-022 §3): the statutory identifiers a leaf app
+		// used to keep in its own publisher/vendor record.
+		$this->addType(fieldName: 'type', type: 'string');
+		$this->addType(fieldName: 'summary', type: 'string');
+		$this->addType(fieldName: 'oin', type: 'string');
+		$this->addType(fieldName: 'tooi', type: 'string');
+		$this->addType(fieldName: 'rsin', type: 'string');
+		$this->addType(fieldName: 'kvk', type: 'string');
+		$this->addType(fieldName: 'pki', type: 'string');
+		$this->addType(fieldName: 'image', type: 'string');
+		// Relationship facet.
+		$this->addType(fieldName: 'registrationStatus', type: 'string');
+		$this->addType(fieldName: 'mergedInto', type: 'string');
+		$this->addType(fieldName: 'mergedAt', type: 'datetime');
 	}//end __construct()
 
 	/**
@@ -520,6 +652,20 @@ class Organisation extends Entity implements JsonSerializable {
 		$this->markFieldUpdated(attribute: 'active');
 		return $this;
 	}//end setActive()
+
+	/**
+	 * Whether this organisation has been merged into another one
+	 *
+	 * A merged organisation is NOT a usable tenant: its data now belongs to the
+	 * survivor, so anything still scoped to this UUID would be reading across
+	 * the boundary. Callers resolving a tenant MUST follow
+	 * {@see getMergedInto()} rather than using this row.
+	 *
+	 * @return bool True when this organisation was merged away
+	 */
+	public function isMerged(): bool {
+		return $this->mergedInto !== null && $this->mergedInto !== '';
+	}//end isMerged()
 
 	/**
 	 * Get default authorization structure for organisations
@@ -757,6 +903,11 @@ class Organisation extends Entity implements JsonSerializable {
 			$deprovisionedAt = $this->deprovisionedAt->format('c');
 		}
 
+		$mergedAt = null;
+		if ($this->mergedAt instanceof DateTime) {
+			$mergedAt = $this->mergedAt->format('c');
+		}
+
 		return [
 			'id' => $this->id,
 			'uuid' => $this->uuid,
@@ -791,6 +942,17 @@ class Organisation extends Entity implements JsonSerializable {
 			'authorization' => $this->authorization ?? $this->getDefaultAuthorization(),
 			'status' => $this->status ?? 'active',
 			'environment' => $this->environment ?? 'production',
+			'type' => $this->type ?? 'organisation',
+			'summary' => $this->summary,
+			'oin' => $this->oin,
+			'tooi' => $this->tooi,
+			'rsin' => $this->rsin,
+			'kvk' => $this->kvk,
+			'pki' => $this->pki,
+			'image' => $this->image,
+			'registrationStatus' => $this->registrationStatus,
+			'mergedInto' => $this->mergedInto,
+			'mergedAt' => $mergedAt,
 			'provisionedAt' => $provisionedAt,
 			'suspendedAt' => $suspendedAt,
 			'deprovisionedAt' => $deprovisionedAt,
