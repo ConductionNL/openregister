@@ -34,12 +34,28 @@
  *
  * @spec exclude ADR-042/ADR-111 setup contract; no per-app behavioural spec.
  */
-import { test, expect, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 
 const BASE = '/apps/openregister'
+
+/** The registers this app's demo descriptor creates, by slug. */
+const DEMO_REGISTER_SLUGS = [
+	'credential-broker',
+	'data-subject-requests',
+	'dsar-policy-packs',
+	'edepot-transfers',
+	'flows',
+	'merge-operation',
+	'trust-configuration',
+	'vocabulary',
+]
+
+const API = '/index.php/apps/openregister/api'
 
 /** One authenticated JSON call issued from inside the logged-in admin page. */
 async function api(
@@ -53,12 +69,12 @@ async function api(
 				method,
 				headers: {
 					'Content-Type': 'application/json',
-					// eslint-disable-next-line no-undef
+
 					requesttoken: (window as any).OC?.requestToken || '',
 					'OCS-APIREQUEST': 'true',
 				},
 			})
-			let json: any = null
+			let json: any
 			try {
 				json = await res.json()
 			} catch {
@@ -157,5 +173,42 @@ test.describe('ADR-111 demo data', () => {
 			again.json?.success,
 			`a second install must not fail: ${JSON.stringify(again.json)}`,
 		).toBe(true)
+	})
+
+	/*
+	 * 🔴 THIS SPEC WRITES, SO IT CLEANS UP. The install is a real import: it
+	 * creates this app's eight demo registers and their objects. Left behind,
+	 * they would land in the lists the other admitted specs assert on, which is
+	 * exactly why the CI seed settles the demo-data decision as SKIPPED rather
+	 * than installing it.
+	 *
+	 * Resolved by SLUG rather than by an id captured during the run, so a
+	 * mid-run failure still tears the fixtures down — the same shape as
+	 * crud/register-crud.spec.ts.
+	 *
+	 * `_limit`, not `limit`: a bare control param is read as a PROPERTY filter
+	 * by this API and comes back with zero rows and HTTP 200, which would make
+	 * this teardown silently delete nothing.
+	 */
+	test.afterAll(async ({ request }) => {
+		const resp = await request
+			.get(`${API}/registers?_limit=200`, {
+				headers: { Accept: 'application/json' },
+			})
+			.catch(() => null)
+
+		if (resp === null || !resp.ok()) {
+			return
+		}
+
+		const registers = (await resp.json()).results ?? []
+
+		for (const register of registers) {
+			if (DEMO_REGISTER_SLUGS.includes(register.slug)) {
+				await request
+					.delete(`${API}/registers/${register.id}`)
+					.catch(() => {})
+			}
+		}
 	})
 })
