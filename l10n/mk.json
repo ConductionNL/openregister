@@ -2725,8 +2725,12 @@
         "Register descriptors": "Дескриптори на регистри",
         "ships v{shipped}": "испорачува v{shipped}",
         "State": "Состојба",
-        "v{installed} → ships v{shipped}": "v{installed} → испорачува v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → испорачува v{shipped}",
+        "Where the automation lives": "Каде живее автоматизацијата",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Текови се тоа што се случува без некој да кликне: објект означен при зачувување, апликација известена кога запис ќе се промени. Тука ги читате и уредувате. Сега нема што да се гради.",
+        "Open Flows in the menu": "Отворете Текови во менито"
     },
+    "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
         "{count} email": [
             "{count} е-пошта",

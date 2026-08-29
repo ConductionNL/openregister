@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>1.1.5-unstable.20260827012918</version>
+    <version>1.1.8-unstable.20260829125656</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -227,6 +227,16 @@ Vrij en open source onder de EUPL-licentie.
 			     column while every read looks at the new one and finds null —
 			     no error, no data loss, invisible to the suite. -->
 			<step>OCA\OpenRegister\Repair\RenameDutchColumns</step>
+			<!-- AUDIT CHAIN SEED v1 → v2. The flow-attribution fields joined the
+			     canonical JSON the hash covers, so every stored hash has to be
+			     recomputed; ADR-003 Rule 4 requires that be a verify-then-reseal
+			     migration rather than an in-place edit. The step verifies the
+			     OLD chain against the frozen v1 canonicaliser and records the
+			     verdict BEFORE re-sealing — after the re-seal, the difference
+			     between an intact chain and a tampered one no longer exists.
+			     Post-migration, because it needs the flow_* columns the schema
+			     migration adds. -->
+			<step>OCA\OpenRegister\Repair\RechainAuditTrailForFlowAttribution</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>

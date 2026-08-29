@@ -39,6 +39,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Lists every app-declared register descriptor and whether it landed.
+ *
+ * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
  */
 class DescriptorListCommand extends Command {
 	/**
@@ -163,6 +165,27 @@ class DescriptorListCommand extends Command {
 		if ($result['outcome'] === 'failed') {
 			$output->writeln('<error>' . $result['reason'] . '</error>');
 			return 1;
+		}
+
+		// 🔴 THE COUNTS, ALWAYS — the same rule the repair steps follow.
+		// `register "larpinq" imported.` was returned by an import that created
+		// the register's schemas and none of its 30 demo objects, and the
+		// sentence could not be told apart from a run that seeded everything.
+		$counts = ($result['counts'] ?? null);
+		if (is_array($counts) === true && $counts['declared'] > 0) {
+			$output->writeln(
+				sprintf(
+					'<info>%s: register "%s" %s — %d of %d demo object(s) imported, %d skipped.</info>',
+					$appId,
+					$slug,
+					$result['outcome'],
+					$counts['imported'],
+					$counts['declared'],
+					$counts['skipped']
+				)
+			);
+
+			return 0;
 		}
 
 		$output->writeln(sprintf('<info>%s: register "%s" %s.</info>', $appId, $slug, $result['outcome']));

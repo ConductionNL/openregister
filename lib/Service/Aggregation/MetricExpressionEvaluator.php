@@ -175,11 +175,16 @@ class MetricExpressionEvaluator {
 				continue;
 			}
 
+			// Early-continue rather than if/else, matching parseTerm() below.
+			// phpcs bans the inline ternary this replaced and phpmd bans the
+			// `else` that replaced it, so neither shape is available; the
+			// pattern this file already uses satisfies both.
 			if ($op === '+') {
 				$value = ($value + $rhs);
-			} else {
-				$value = ($value - $rhs);
+				continue;
 			}
+
+			$value = ($value - $rhs);
 		}
 
 		return $value;

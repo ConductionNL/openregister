@@ -143,7 +143,20 @@ concurrency:
   # A branch name is not a unique lane when two event types can each produce a
   # run for it, so the event is now always part of the key.
   group: quality-${{ github.head_ref || github.ref_name }}${{ github.event_name != 'pull_request' && format('-{0}', github.event_name) || '' }}
-  cancel-in-progress: true
+
+  # PUSH RUNS ARE NOT CANCELLED — and this has to be said HERE, not only in the
+  # shared workflow. .github#597 set `cancel-in-progress` on quality.yml itself,
+  # but a caller's own concurrency cancels the whole run before the called
+  # workflow's setting can apply, so that fix reached only the apps that declare
+  # no concurrency of their own. Measured 2026-08-28 over push runs on
+  # `development` since #597: 0 of 11 cancelled where the caller was silent, 7 of
+  # 13 (54%) cancelled where the caller still said `true`.
+  #
+  # An integration branch needs a verdict per commit: the run being cancelled is
+  # the only thing that would have said whether what just landed is sound, and
+  # its replacement is cancelled too. `pull_request` keeps cancelling, where
+  # superseding really is correct.
+  cancel-in-progress: ${{ github.event_name != 'push' }}
 
 # Permission CEILING for the called quality pipeline. GitHub statically
 # validates the called workflow's declared job permissions against this
@@ -312,3 +325,23 @@ jobs:
       # The fleet had 30,459 such strings, so this records the current count and
       # fails only when it GROWS — burning it down stays an ordinary PR.
       frontend-checks: '["check:specs", "test:l10n", "format", "check:schema-l10n", "check:l10n-js"]'
+      # ── Cost controls (see ConductionNL/.github#596, #599) ───────────────
+      #
+      # The fleet's CI was not slow, it was QUEUED. A Code Quality run does
+      # ~38 job-minutes of work and its longest job is 16 minutes, but the
+      # median run took 78.5 minutes wall clock: one poll on 2026-08-27 found
+      # 53 jobs running against the account's 60-job ceiling, 1,528 queued
+      # behind them, and a run that had waited 425 minutes to start. ~96% of
+      # the wall clock was queueing, so the levers below remove DEMAND rather
+      # than making any check faster.
+      # Run PHPUnit and Playwright only when the diff could change their
+      # verdict. They are 29 of the ~38 job-minutes a run spends, and 58% of
+      # sampled fleet commits touched no .php/.js/.ts/.vue file at all. Fails
+      # safe TOWARDS running, and a filtered skip is a declared state in the
+      # Quality Report, distinct from both a pass and a missing verdict.
+      enable-path-filtering: true
+      # PR-time PHPUnit runs the primary PHP against the newest declared
+      # Nextcloud; the full matrix still runs on every push to a default
+      # branch and on the release PR into beta. Breadth moves from
+      # per-commit to per-merge, it is not dropped.
+      reduce-pr-matrix: true

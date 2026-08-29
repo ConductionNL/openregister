@@ -2557,6 +2557,7 @@
         "\\u26A0\\uFE0F PERMANENT DELETION WARNING \\u26A0\\uFE0F\n\nYou are about to PERMANENTLY delete {count} soft-deleted objects for schema \"{schema}\".\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?": "\\u26A0\\uFE0F AVVISO DI ELIMINAZIONE PERMANENTE \\u26A0\\uFE0F\n\nSta per eliminare PERMANENTEMENTE {count} oggetti eliminati provvisoriamente per lo schema \"{schema}\".\n\nQuesti oggetti saranno rimossi completamente dal database e NON potranno essere recuperati.\n\nÈ assolutamente sicuro?",
         "_%n entry has no hash yet_::_%n entries have no hash yet_": [
             "%n voce non ha ancora un hash",
+            "%n voci non hanno ancora un hash",
             "%n voci non hanno ancora un hash"
         ],
         "across {count} registers": "across {count} registers",
@@ -2725,31 +2726,41 @@
         "Register descriptors": "Descrittori di registro",
         "ships v{shipped}": "fornisce v{shipped}",
         "State": "Stato",
-        "v{installed} → ships v{shipped}": "v{installed} → fornisce v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → fornisce v{shipped}",
+        "Where the automation lives": "Dove vive l'automazione",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "I flussi sono ciò che accade senza che nessuno clicchi: un oggetto marcato al salvataggio, un'app avvisata quando un record cambia. Qui li leggi e li modifichi. Nulla da costruire ora.",
+        "Open Flows in the menu": "Apri Flussi nel menu"
     },
+    "pluralForm": "nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;",
     "plurals": {
         "{count} email": [
+            "{count} email",
             "{count} email",
             "{count} email"
         ],
         "Purge {count} object from database": [
             "Elimina definitivamente {count} oggetto dal database",
+            "Elimina definitivamente {count} oggetti dal database",
             "Elimina definitivamente {count} oggetti dal database"
         ],
         "Restore {count} object": [
             "Ripristina {count} oggetto",
+            "Ripristina {count} oggetti",
             "Ripristina {count} oggetti"
         ],
         "Successfully restored {count} object": [
             "Ripristinato correttamente {count} oggetto",
+            "Ripristinati correttamente {count} oggetti",
             "Ripristinati correttamente {count} oggetti"
         ],
         "Delete {count} object": [
             "Elimina {count} oggetto",
+            "Elimina {count} oggetti",
             "Elimina {count} oggetti"
         ],
         "Object successfully deleted": [
             "Oggetto eliminato correttamente",
+            "Oggetti eliminati correttamente",
             "Oggetti eliminati correttamente"
         ]
     }

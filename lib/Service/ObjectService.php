@@ -561,10 +561,58 @@ class ObjectService implements ObjectServiceInterface
             $pendingRef             = $this->currentSchemaRef;
             $this->currentSchemaRef = null;
 
-            $this->currentSchema = $this->scopedSchemaResolver->resolveSchemaWithin(
-                register: $register,
-                schemaRef: $pendingRef
-            );
+            // A REF THAT DOES NOT BELONG HERE MUST NOT TAKE THIS CALLER DOWN.
+            //
+            // Single use bounded the damage to ONE victim. It did not stop the
+            // victim being an app that never touched the ref: the pending slug
+            // is handed to the first setRegister() that follows, whoever that
+            // is, and re-resolving it inside a register that has never heard of
+            // it THREW — out of a method whose caller only asked to name its own
+            // register.
+            //
+            // Measured on the development instance 2026-08-27: every public
+            // read of a portaliq portal failed with `Schema slug "application"
+            // is not carried by register "portaliq"`. The portal served its
+            // shell and answered 404 for its own site, menus, pages and
+            // glossary — a whole app's public surface down, over a slug it does
+            // not own and never asked for. The same failure is recorded above
+            // for openconnector and for a pipelinq repair step, so this is the
+            // third app to be taken out by a fourth app's leftovers.
+            //
+            // So a ref that cannot be resolved inside THIS register is dropped
+            // rather than thrown on. What is NOT dropped is the consequence: the
+            // schema context is cleared with it, so a caller that really did
+            // chain `setSchema('typo')->setRegister($r)` still fails — at its
+            // operation, with "no schema context", instead of silently reading
+            // whichever table a stale context last pointed at. Substituting a
+            // wrong-but-plausible schema is the one outcome worse than throwing.
+            try {
+                $this->currentSchema = $this->scopedSchemaResolver->resolveSchemaWithin(
+                    register: $register,
+                    schemaRef: $pendingRef
+                );
+            } catch (\Throwable $e) {
+                $this->currentSchema = null;
+
+                // `$pendingRef` is `int|string` here — `$currentSchemaRef` is
+                // `int|string|null` and the null is already excluded above — so
+                // the scalar test could only ever be true and the gettype()
+                // fallback was unreachable. A defaulted read that can never
+                // default reads as a handled edge case that does not exist.
+                $refForLog = (string) $pendingRef;
+
+                $this->logger->warning(
+                    message: '[ObjectService] Discarded a pending schema ref that this register does not carry',
+                    context: [
+                        'pendingSchemaRef' => $refForLog,
+                        'register'         => ($register->getSlug() ?? (string) $register->getId()),
+                        'reason'           => $e->getMessage(),
+                        'note'             => 'The ref was left on this shared service by an earlier, unrelated call. '
+                            .'If YOUR call chained setSchema()->setRegister(), the schema is now unset and your '
+                            .'operation will fail with a missing schema context rather than read the wrong table.',
+                    ]
+                );
+            }//end try
         }
 
         return $this;
