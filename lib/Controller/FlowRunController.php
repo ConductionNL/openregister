@@ -32,6 +32,8 @@ use OCA\OpenRegister\Db\AuditFlowAttribution;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
+use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunAssignee;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
@@ -819,21 +821,43 @@ class FlowRunController extends Controller {
 		// definition, so there is no reason for it to be the one dispatch path
 		// that discards its actor. Same defect class as or#2158 in
 		// FlowMcpToolProvider::runFlow().
-		$run = $this->runner->queue(
-			flowId: $flowId,
-			subject: [],
-			trigger: 'test',
-			context: ['pins' => $pins],
-			user: $this->userSession->getUser()?->getUID()
-		);
+		// 🔴 A REFUSAL MUST NOT LEAVE HERE AS A 500. A dead end, or a flow with
+		// no published version, is the engine DECLINING to run something — an
+		// answer the author can act on. Unwrapped, both reached the editor as
+		// an HTML error page, which reads as "the server is broken" and sends
+		// the author to the wrong place entirely.
+		try {
+			$run = $this->runner->queue(
+				flowId: $flowId,
+				subject: [],
+				trigger: 'test',
+				context: ['pins' => $pins],
+				user: $this->userSession->getUser()?->getUID()
+			);
 
-		$run = $this->runner->execute(
-			run: $run,
-			flow: $flow,
-			subject: new stdClass(),
-			seedItems: $seed,
-			startAt: $startAt
-		);
+			$run = $this->runner->execute(
+				run: $run,
+				flow: $flow,
+				subject: new stdClass(),
+				seedItems: $seed,
+				startAt: $startAt
+			);
+		} catch (FlowLifecycleRefused $e) {
+			return new JSONResponse(
+				[
+					'error' => $e->getMessage(),
+					'reason' => $e->getReason(),
+					'lifecycleStatus' => $e->getState(),
+					'flowId' => $e->getFlowId(),
+				],
+				Http::STATUS_CONFLICT
+			);
+		} catch (FlowDeadEnd $e) {
+			return new JSONResponse(
+				['error' => $e->getMessage(), 'reason' => 'dead-end', 'flowId' => $flowId],
+				Http::STATUS_CONFLICT
+			);
+		}//end try
 
 		return new JSONResponse($run->jsonSerialize());
 	}//end test()

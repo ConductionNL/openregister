@@ -562,6 +562,7 @@ class FlowService {
 	 *
 	 * @throws DoesNotExistException When no such flow exists, or it is not the caller's.
 	 * @throws FlowDeadEnd When a node's token has nowhere to go, so the run is refused.
+	 * @throws FlowLifecycleRefused When the flow has no published version to run.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $sync chooses WHO advances the
 	 * run, not what running means: the same run row is queued either way, and

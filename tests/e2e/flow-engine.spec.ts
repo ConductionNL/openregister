@@ -178,7 +178,14 @@ test.describe('the version lifecycle', () => {
 	}) => {
 		const flow = await createFlow(request, {
 			name: `${RUN_ID} pinned`,
-			nodes: [{ id: 'a', type: 'openregister.trigger-manual', config: {} }],
+			nodes: [
+				{
+					id: 'a',
+					type: 'openregister.trigger-manual',
+					config: {},
+					exit: true,
+				},
+			],
 		})
 		expect(flow.version).toBe(1)
 		expect(flow.lifecycleStatus).toBe('published')
@@ -200,7 +207,12 @@ test.describe('the version lifecycle', () => {
 			data: {
 				...flow,
 				nodes: [
-					{ id: 'z', type: 'openregister.trigger-manual', config: {} },
+					{
+						id: 'z',
+						type: 'openregister.trigger-manual',
+						config: {},
+						exit: true,
+					},
 				],
 			},
 		})
@@ -297,7 +309,12 @@ test.describe('the version lifecycle', () => {
 			{
 				name: `${RUN_ID} testable draft`,
 				nodes: [
-					{ id: 'a', type: 'openregister.trigger-manual', config: {} },
+					{
+						id: 'a',
+						type: 'openregister.trigger-manual',
+						config: {},
+						exit: true,
+					},
 				],
 			},
 			{ publish: false },
@@ -368,7 +385,14 @@ test.describe('the version lifecycle', () => {
 	test('one version reads back with the graph it names', async ({ request }) => {
 		const flow = await createFlow(request, {
 			name: `${RUN_ID} readable`,
-			nodes: [{ id: 'only', type: 'openregister.trigger-manual', config: {} }],
+			nodes: [
+				{
+					id: 'only',
+					type: 'openregister.trigger-manual',
+					config: {},
+					exit: true,
+				},
+			],
 		})
 
 		const version = await request.get(

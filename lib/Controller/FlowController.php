@@ -795,6 +795,14 @@ class FlowController extends Controller {
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+		} catch (FlowLifecycleRefused $e) {
+			// 🔴 A REFUSAL, NOT A FAULT. Running a flow with no published
+			// version escaped this method as an unhandled exception and reached
+			// the client as a 500 — an error that reads as "the server is
+			// broken" for what is actually "publish this flow first". The e2e
+			// caught it; every unit test passed, because they assert on the
+			// exception rather than on the response a caller sees.
+			return $this->refusal(refusal: $e);
 		} catch (FlowDeadEnd $e) {
 			// A REFUSAL, not a fault. `FlowRunService::queue()` declines to run
 			// a flow whose token cannot leave one of its nodes, and that is a

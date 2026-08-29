@@ -230,6 +230,35 @@ class FlowLifecycleControllerTest extends TestCase {
 	}//end testALifecycleActionOnAnInvisibleFlowIs404()
 
 	/**
+	 * 🔴 RUNNING AN UNPUBLISHED FLOW IS A 409, NOT A 500.
+	 *
+	 * This escaped as an unhandled exception and reached the client as an HTML
+	 * error page — "the server is broken" for what is actually "publish this
+	 * flow first". Every unit test passed, because they all asserted on the
+	 * EXCEPTION rather than on the response a caller actually receives. The e2e
+	 * caught it; this test exists so a unit run catches it next time.
+	 *
+	 * @return void
+	 */
+	public function testRunningAnUnpublishedFlowAnswers409NotAFault(): void {
+		$this->flows->method('run')->willThrowException(
+			new FlowLifecycleRefused(
+				reason: FlowLifecycleRefused::REASON_NO_PUBLISHED_VERSION,
+				flowId: 'flow-1',
+				state: null
+			)
+		);
+
+		$response = $this->controller->run(id: 'flow-1');
+
+		$this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+		$this->assertSame(
+			FlowLifecycleRefused::REASON_NO_PUBLISHED_VERSION,
+			$response->getData()['reason']
+		);
+	}//end testRunningAnUnpublishedFlowAnswers409NotAFault()
+
+	/**
 	 * Listing versions returns them with a total, like every other list here.
 	 *
 	 * @return void
