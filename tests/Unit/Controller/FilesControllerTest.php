@@ -58,6 +58,94 @@ class FilesControllerTest extends TestCase {
 	}
 
 	/**
+	 * 🔴 THE ONLY WAY IN FOR DESCRIPTION AND CATEGORY.
+	 *
+	 * `FileMapper::setDescriptionForFile()` and `setCategoryForFile()` are
+	 * reached only through this endpoint. Labels had their own route and
+	 * worked, which is why the gap was easy to miss — the feature looked
+	 * present because a third of it was.
+	 *
+	 * @return void
+	 */
+	public function testUpdateMetadataPassesEveryFieldThrough(): void {
+		$this->request->method('getParams')->willReturn([
+			'description' => 'a scanned invoice',
+			'category' => 'finance',
+			'labels' => ['paid'],
+		]);
+		$this->objectService->method('getObject')->willReturn(new \OCA\OpenRegister\Db\ObjectEntity());
+
+		$entity = new \OCA\OpenRegister\Db\File();
+		$this->fileService->expects($this->once())
+			->method('updateFileMetadata')
+			->with(7, 'a scanned invoice', 'finance', ['paid'])
+			->willReturn($entity);
+
+		$response = $this->controller->updateMetadata(
+			register: 'reg',
+			schema: 'sch',
+			id: 'obj-1',
+			fileId: 7
+		);
+
+		$this->assertSame(200, $response->getStatus());
+	}
+
+	/**
+	 * 🔑 ABSENT IS NOT EMPTY. The handler treats null as "leave this alone" and
+	 * '' as "clear it", so a caller changing only the category must not have
+	 * its description wiped. `??` would collapse that distinction; this test is
+	 * what stops someone reintroducing it.
+	 *
+	 * @return void
+	 */
+	public function testUpdateMetadataLeavesAbsentFieldsAlone(): void {
+		$this->request->method('getParams')->willReturn(['category' => 'finance']);
+		$this->objectService->method('getObject')->willReturn(new \OCA\OpenRegister\Db\ObjectEntity());
+
+		$this->fileService->expects($this->once())
+			->method('updateFileMetadata')
+			->with(7, null, 'finance', null)
+			->willReturn(new \OCA\OpenRegister\Db\File());
+
+		$this->controller->updateMetadata(register: 'reg', schema: 'sch', id: 'obj-1', fileId: 7);
+	}
+
+	/**
+	 * An EMPTY description clears the field rather than being ignored — the
+	 * other half of the same contract.
+	 *
+	 * @return void
+	 */
+	public function testUpdateMetadataClearsOnAnEmptyString(): void {
+		$this->request->method('getParams')->willReturn(['description' => '']);
+		$this->objectService->method('getObject')->willReturn(new \OCA\OpenRegister\Db\ObjectEntity());
+
+		$this->fileService->expects($this->once())
+			->method('updateFileMetadata')
+			->with(7, '', null, null)
+			->willReturn(new \OCA\OpenRegister\Db\File());
+
+		$this->controller->updateMetadata(register: 'reg', schema: 'sch', id: 'obj-1', fileId: 7);
+	}
+
+	/**
+	 * A missing object is a 404, and must not reach the service.
+	 *
+	 * @return void
+	 */
+	public function testUpdateMetadataOnAMissingObjectIs404(): void {
+		$this->request->method('getParams')->willReturn(['category' => 'x']);
+		$this->objectService->method('getObject')->willReturn(null);
+		$this->fileService->expects($this->never())->method('updateFileMetadata');
+
+		$this->assertSame(
+			404,
+			$this->controller->updateMetadata(register: 'reg', schema: 'sch', id: 'ghost', fileId: 7)->getStatus()
+		);
+	}
+
+	/**
 	 * Helper to invoke private methods via reflection.
 	 */
 	private function invokePrivateMethod(string $methodName, array $parameters = []): mixed {

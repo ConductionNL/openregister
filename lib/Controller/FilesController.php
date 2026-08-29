@@ -2188,7 +2188,7 @@ class FilesController extends Controller {
 			);
 
 			return new JSONResponse(data: $entity->jsonSerialize());
-		} catch (NotPermittedException $e) {
+		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
 			return new JSONResponse(
 				data: ['error' => $this->translate(text: 'You do not have access to this object')],
 				statusCode: 403
