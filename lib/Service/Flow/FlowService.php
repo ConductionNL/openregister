@@ -557,12 +557,19 @@ class FlowService {
 	 * @param array<string, mixed> $subject `{uuid, register, schema}` of the object.
 	 * @param array<string, mixed> $context Run-level metadata.
 	 * @param boolean $sync Execute inline and return the finished run.
+	 * @param string $trigger The dispatch trigger recorded on the run.
+	 *
+	 * `$trigger` is what the version pin reads to decide whether this run may
+	 * walk a DRAFT. `FlowRunVersionPin::TRIGGER_TEST` is the interactive
+	 * draft test run — the one documented exception to "a draft cannot back a
+	 * run" (see `FlowPublishedGraph::overlayOnto`). Every other trigger
+	 * requires a published version, which is the point of versioning.
 	 *
 	 * @return FlowRun The queued run, or the finished run when $sync is true.
 	 *
 	 * @throws DoesNotExistException When no such flow exists, or it is not the caller's.
 	 * @throws FlowDeadEnd When a node's token has nowhere to go, so the run is refused.
-	 * @throws FlowLifecycleRefused When the flow has no published version to run.
+	 * @throws FlowLifecycleRefused When the trigger requires a published version and there is none.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $sync chooses WHO advances the
 	 * run, not what running means: the same run row is queued either way, and
@@ -571,13 +578,19 @@ class FlowService {
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
-	public function run(string $uuid, array $subject = [], array $context = [], bool $sync = false): FlowRun {
+	public function run(
+		string $uuid,
+		array $subject = [],
+		array $context = [],
+		bool $sync = false,
+		string $trigger = Flow::TRIGGER_MANUAL
+	): FlowRun {
 		$flow = $this->find(uuid: $uuid);
 
 		$run = $this->runner->queue(
 			flowId: (string)$flow->getUuid(),
 			subject: $subject,
-			trigger: Flow::TRIGGER_MANUAL,
+			trigger: $trigger,
 			context: $context,
 			user: $this->actingUser()
 		);
