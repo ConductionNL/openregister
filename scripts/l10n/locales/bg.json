@@ -39,10 +39,19 @@
 		"X-Custom-Header: value\nAuthorization: Bearer token": "Literal HTTP header example; header names are protocol tokens and are never translated.",
 		"X-Custom-Header: value\\nAuthorization: Bearer token": "Literal HTTP header example with an escaped newline; header names are protocol tokens.",
 		"objectType: object\\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens.",
-		"objectType: object\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens and are never translated."
+		"objectType: object\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens and are never translated.",
+		"Browser Web Push (VAPID)": "Browser and Web Push are the protocol's own names and VAPID is its acronym; the protocol name is not translated.",
+		"Bucket": "Object-storage term, used unchanged in this locale's technical language.",
+		"Driver": "Database-driver term, used unchanged in this locale's technical language.",
+		"Golden record": "Master-data-management term with no established local equivalent; used unchanged in data-governance language.",
+		"Host *": "Networking term, used unchanged in this locale, with the required-field marker.",
+		"Id": "Abbreviation of identifier, written the same way in this locale's technical UI.",
+		"myapp": "A literal example application id shown verbatim; not prose.",
+		"Survivor": "Master-data-management term for the record that survives a merge; used unchanged in data-governance language."
 	},
 	"corrections": {
-		"Run oversight checks before each step": "Pre-existing value was 'Изпълнявай надзорни проверки преди всяка стъпка' — a bare 2sg IMPERFECTIVE IMPERATIVE, so informal 2sg address, in a bundle whose other 1052 values are formal throughout and whose labels are verbal nouns. It is one of only two such values at HEAD, and both are settings-toggle labels the English source happens to phrase imperatively. Corrected to the verbal noun 'Изпълняване на надзорни проверки преди всяка стъпка', which matches the convention and drops the person marker entirely. Worth noting HOW it was found: this is exactly the case detectors/bg.js enumerates the а-conjugation imperative for — 'изпълнявай' cannot be anything but a 2sg imperative, so it flagged, whereas the и-conjugation form would have been invisible.",
-		"Write an audit-trail entry for every step": "Pre-existing value was 'Записвай одитен запис за всяка стъпка' — the same 2sg imperative slip as its sibling toggle above, and additionally a repetition ('Записвай ... запис'). Corrected to 'Вписване на одитен запис за всяка стъпка': 'вписване' is the verbal noun for entering something into a record, so it fixes the register and the repetition together, where the direct 'Записване на запис' would have fixed only the register."
+		"Run oversight checks before each step": "Informal 2nd-person-singular imperative replaced with the formal plural form. bg's measured register in this bundle is FORMAL and detectors/bg.js flags the singular imperative; the rest of the bundle already uses the -йте form.",
+		"Write an audit-trail entry for every step": "Informal 2nd-person-singular imperative replaced with the formal plural form. bg's measured register in this bundle is FORMAL and detectors/bg.js flags the singular imperative; the rest of the bundle already uses the -йте form.",
+		"Re-import": "Informal 2nd-person-singular imperative replaced with the formal plural form. bg's measured register in this bundle is FORMAL and detectors/bg.js flags the singular imperative; the rest of the bundle already uses the -йте form."
 	}
 }
