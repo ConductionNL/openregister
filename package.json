@@ -60,7 +60,7 @@
     "css-loader": "^7.1.1",
     "dexie": "^4.0.8",
     "dompurify": "^3.4.14",
-    "gridstack": "^12.0.0",
+    "gridstack": "^13.2.0",
     "marked": "^12.0.0",
     "path-browserify": "^1.0.1",
     "pinia": "^3.0.4",
