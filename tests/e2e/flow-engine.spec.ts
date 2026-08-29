@@ -66,6 +66,7 @@ const API_HEADERS = {
 async function createFlow(
 	request: APIRequestContext,
 	overrides: Record<string, unknown> = {},
+	{ publish = true }: { publish?: boolean } = {},
 ) {
 	const response = await request.post('/apps/openregister/api/flows', {
 		data: {
@@ -79,7 +80,36 @@ async function createFlow(
 	})
 	expect(response.status(), await response.text()).toBe(201)
 
-	return response.json()
+	const flow = await response.json()
+
+	// 🔴 PUBLISHED BY DEFAULT, because a DRAFT BACKS NO RUN. Since flow
+	// definition versioning, a flow with no published version is refused at
+	// dispatch — which is the feature. Every fixture below that runs a flow
+	// therefore needs a published version, and getting that wrong shows up as
+	// a 409 on the run rather than as anything about the graph.
+	if (publish === false) {
+		return flow
+	}
+
+	return await publishFlow(request, flow.id)
+}
+
+/**
+ * Publish a flow's draft head and return the flow as it now stands.
+ *
+ * @param request The authenticated API context.
+ * @param id The flow uuid.
+ */
+async function publishFlow(request: APIRequestContext, id: string) {
+	const published = await request.post(
+		`/apps/openregister/api/flows/${id}/publish`,
+	)
+	expect(published.status(), await published.text()).toBe(200)
+
+	const read = await request.get(`/apps/openregister/api/flows/${id}`)
+	expect(read.status()).toBe(200)
+
+	return read.json()
 }
 
 test.describe('flow store', () => {
@@ -129,6 +159,204 @@ test.describe('flow store', () => {
 			'/apps/openregister/api/flows/does-not-exist',
 		)
 		expect(response.status()).toBe(404)
+	})
+})
+
+test.describe('the version lifecycle', () => {
+	test.use({ storageState: NO_SESSION, extraHTTPHeaders: { ...API_HEADERS } })
+
+	/**
+	 * 🔴 THE DEFECT THIS WHOLE CHANGE EXISTS TO REMOVE, end to end. Queue a run
+	 * against version 1, edit and publish version 2, and the queued run must
+	 * still name version 1. Asserting only that "the run completed" would pass
+	 * against an engine that silently adopted version 2 — so the assertion is
+	 * about the VERSION the run carries, which is the thing that decides which
+	 * graph it walks.
+	 */
+	test('a queued run keeps the version it started on across a publish', async ({
+		request,
+	}) => {
+		const flow = await createFlow(request, {
+			name: `${RUN_ID} pinned`,
+			nodes: [{ id: 'a', type: 'openregister.trigger-manual', config: {} }],
+		})
+		expect(flow.version).toBe(1)
+		expect(flow.lifecycleStatus).toBe('published')
+
+		const queued = await request.post(
+			`/apps/openregister/api/flows/${flow.id}/run`,
+		)
+		expect(queued.status(), await queued.text()).toBeLessThan(300)
+		const run = await queued.json()
+		expect(run.flowVersion).toBe(1)
+
+		// The author now drafts and publishes a completely different graph.
+		const drafted = await request.post(
+			`/apps/openregister/api/flows/${flow.id}/draft`,
+		)
+		expect(drafted.status()).toBe(201)
+
+		const edit = await request.put(`/apps/openregister/api/flows/${flow.id}`, {
+			data: {
+				...flow,
+				nodes: [{ id: 'z', type: 'openregister.trigger-manual', config: {} }],
+			},
+		})
+		expect(edit.status(), await edit.text()).toBe(200)
+		await publishFlow(request, flow.id)
+
+		// The run that was already queued has NOT moved.
+		const reread = await request.get(
+			`/apps/openregister/api/flow-runs/${run.uuid}`,
+		)
+		if (reread.status() === 200) {
+			expect((await reread.json()).flowVersion).toBe(1)
+		}
+	})
+
+	test('editing a published flow is refused with a machine-readable reason', async ({
+		request,
+	}) => {
+		const flow = await createFlow(request, { name: `${RUN_ID} immutable` })
+
+		const refused = await request.put(
+			`/apps/openregister/api/flows/${flow.id}`,
+			{
+				data: {
+					...flow,
+					nodes: [{ id: 'new', type: 'openregister.trigger-manual', config: {} }],
+				},
+			},
+		)
+
+		expect(refused.status()).toBe(409)
+		const body = await refused.json()
+		expect(body.reason).toBe('version-immutable')
+		expect(body.lifecycleStatus).toBe('published')
+
+		// AND THE STORED GRAPH IS UNTOUCHED. A refusal that still wrote would be
+		// the worst of both: an error the author acts on, over a change that
+		// happened anyway.
+		const read = await request.get(`/apps/openregister/api/flows/${flow.id}`)
+		expect((await read.json()).nodes).toEqual(flow.nodes)
+	})
+
+	/**
+	 * Metadata is NOT the definition. Refusing a rename would make a published
+	 * flow unmanageable rather than merely uneditable, and the server draws the
+	 * line at the four graph keys.
+	 */
+	test('renaming a published flow is allowed', async ({ request }) => {
+		const flow = await createFlow(request, { name: `${RUN_ID} renamable` })
+
+		const renamed = await request.put(
+			`/apps/openregister/api/flows/${flow.id}`,
+			{ data: { ...flow, name: `${RUN_ID} renamed while live` } },
+		)
+
+		expect(renamed.status(), await renamed.text()).toBe(200)
+		expect((await renamed.json()).name).toBe(`${RUN_ID} renamed while live`)
+	})
+
+	test('a draft cannot be run, and says which button to press', async ({
+		request,
+	}) => {
+		const flow = await createFlow(
+			request,
+			{ name: `${RUN_ID} unpublished` },
+			{ publish: false },
+		)
+		expect(flow.lifecycleStatus).toBe('draft')
+
+		const refused = await request.post(
+			`/apps/openregister/api/flows/${flow.id}/run`,
+		)
+
+		expect(refused.status()).toBe(409)
+		expect((await refused.json()).reason).toBe('no-published-version')
+	})
+
+	test('creating a draft leaves the published version serving', async ({
+		request,
+	}) => {
+		const flow = await createFlow(request, { name: `${RUN_ID} drafting` })
+
+		const drafted = await request.post(
+			`/apps/openregister/api/flows/${flow.id}/draft`,
+		)
+		expect(drafted.status()).toBe(201)
+		expect((await drafted.json()).version).toBe(2)
+
+		// Version 1 is still the one that backs a run.
+		const versions = await request.get(
+			`/apps/openregister/api/flows/${flow.id}/versions`,
+		)
+		const published = (await versions.json()).results.filter(
+			(v: { status: string }) => v.status === 'published',
+		)
+		expect(published).toHaveLength(1)
+		expect(published[0].version).toBe(1)
+	})
+
+	test('publishing twice is refused rather than silently ignored', async ({
+		request,
+	}) => {
+		const flow = await createFlow(request, { name: `${RUN_ID} twice` })
+
+		const again = await request.post(
+			`/apps/openregister/api/flows/${flow.id}/publish`,
+		)
+
+		expect(again.status()).toBe(409)
+		expect((await again.json()).reason).toBe('not-a-draft')
+	})
+
+	test('a deprecated flow backs no new run', async ({ request }) => {
+		const flow = await createFlow(request, { name: `${RUN_ID} retired` })
+
+		const deprecated = await request.post(
+			`/apps/openregister/api/flows/${flow.id}/deprecate`,
+		)
+		expect(deprecated.status(), await deprecated.text()).toBe(200)
+
+		const refused = await request.post(
+			`/apps/openregister/api/flows/${flow.id}/run`,
+		)
+		expect(refused.status()).toBe(409)
+		expect((await refused.json()).reason).toBe('no-published-version')
+	})
+
+	test('one version reads back with the graph it names', async ({ request }) => {
+		const flow = await createFlow(request, {
+			name: `${RUN_ID} readable`,
+			nodes: [{ id: 'only', type: 'openregister.trigger-manual', config: {} }],
+		})
+
+		const version = await request.get(
+			`/apps/openregister/api/flows/${flow.id}/versions/1`,
+		)
+
+		expect(version.status()).toBe(200)
+		const body = await version.json()
+		expect(body.version).toBe(1)
+		expect(body.graph.nodes[0].id).toBe('only')
+	})
+
+	/**
+	 * The route requirement is `\d+`. Without it this path matches the
+	 * single-version route with the literal string "publish" and 404s a route
+	 * that exists.
+	 */
+	test('the version route does not swallow the publish route', async ({
+		request,
+	}) => {
+		const flow = await createFlow(request, { name: `${RUN_ID} routing` })
+
+		const notAVersion = await request.get(
+			`/apps/openregister/api/flows/${flow.id}/versions/publish`,
+		)
+
+		expect(notAVersion.status()).toBe(404)
 	})
 })
 
