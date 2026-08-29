@@ -2558,7 +2558,8 @@
         "_%n entry has no hash yet_::_%n entries have no hash yet_": [
             "%n запись ещё не имеет хеша",
             "%n записи ещё не имеют хеша",
-            "%n записей ещё не имеют хеша"
+            "%n записей ещё не имеют хеша",
+            "%n записи ещё не имеют хеша"
         ],
         "across {count} registers": "across {count} registers",
         "and accessible to all users in selected groups (or all users if no groups selected).": "и доступно всем пользователям в выбранных группах (или всем пользователям, если группы не выбраны).",
@@ -2726,38 +2727,48 @@
         "Register descriptors": "Дескрипторы реестров",
         "ships v{shipped}": "поставляет v{shipped}",
         "State": "Состояние",
-        "v{installed} → ships v{shipped}": "v{installed} → поставляет v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → поставляет v{shipped}",
+        "Where the automation lives": "Где живёт автоматизация",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Потоки — это то, что происходит без нажатий: объект, помечаемый при сохранении, приложение, уведомляемое при изменении записи. Здесь вы их читаете и редактируете. Сейчас ничего строить не нужно.",
+        "Open Flows in the menu": "Откройте Потоки в меню"
     },
+    "pluralForm": "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);",
     "plurals": {
         "{count} email": [
             "{count} письмо",
             "{count} письма",
-            "{count} писем"
+            "{count} писем",
+            "{count} письма"
         ],
         "Purge {count} object from database": [
             "Очистить {count} объект из базы данных",
             "Очистить {count} объекта из базы данных",
-            "Очистить {count} объектов из базы данных"
+            "Очистить {count} объектов из базы данных",
+            "Очистить {count} объекта из базы данных"
         ],
         "Restore {count} object": [
             "Восстановить {count} объект",
             "Восстановить {count} объекта",
-            "Восстановить {count} объектов"
+            "Восстановить {count} объектов",
+            "Восстановить {count} объекта"
         ],
         "Successfully restored {count} object": [
             "Успешно восстановлен {count} объект",
             "Успешно восстановлено {count} объекта",
-            "Успешно восстановлено {count} объектов"
+            "Успешно восстановлено {count} объектов",
+            "Успешно восстановлено {count} объекта"
         ],
         "Delete {count} object": [
             "Удалить {count} объект",
             "Удалить {count} объекта",
-            "Удалить {count} объектов"
+            "Удалить {count} объектов",
+            "Удалить {count} объекта"
         ],
         "Object successfully deleted": [
             "Объект успешно удалён",
-            "Объекта успешно удалены",
-            "Объектов успешно удалено"
+            "Объекты успешно удалены",
+            "Объекты успешно удалены",
+            "Объекты успешно удалены"
         ]
     }
 }

@@ -68,6 +68,14 @@ module.exports = {
 		'<rootDir>/\\.playwright-mcp/',
 		// Playwright suite — has its own runner via `npx playwright test`.
 		'<rootDir>/tests/e2e/',
+		// The demo-environment Playwright suite. It sits OUTSIDE tests/e2e/ on
+		// purpose: playwright.config.ts sets testDir: './tests/e2e', so a spec
+		// placed there is collected by CI, which has no booted demo to point
+		// at. Moving it out solves that and creates this: jest's ignore list
+		// named tests/e2e/ specifically, so the new directory was collected
+		// here instead and jest tried to run a Playwright spec. Two collectors
+		// with opposite exclusions — a file has to be named in both.
+		'<rootDir>/tests/demo-e2e/',
 	],
 	modulePathIgnorePatterns: [
 		'<rootDir>/custom_apps/',

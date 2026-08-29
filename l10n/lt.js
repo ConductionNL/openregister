@@ -2723,7 +2723,10 @@ OC.L10N.register(
         "Register descriptors": "Registrų deskriptoriai",
         "ships v{shipped}": "pateikia v{shipped}",
         "State": "Būsena",
-        "v{installed} → ships v{shipped}": "v{installed} → pateikia v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → pateikia v{shipped}",
+        "Where the automation lives": "Kur gyvena automatizavimas",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Srautai yra tai, kas vyksta niekam nespaudžiant: objektas, pažymimas išsaugant, programa, informuojama pasikeitus įrašui. Čia juos skaitote ir redaguojate. Dabar nieko kurti nereikia.",
+        "Open Flows in the menu": "Atidarykite Srautus meniu"
     },
-    "nplurals=2; plural=(n != 1);"
+    "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2);"
 )

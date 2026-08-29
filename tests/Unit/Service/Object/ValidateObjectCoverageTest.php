@@ -692,6 +692,31 @@ class ValidateObjectCoverageTest extends TestCase {
 		$this->assertSame('Validation failed', $data['message']);
 	}
 
+	public function testHandleValidationExceptionWithNoOpisErrorStillReturns400(): void {
+		// 🔴 THE REGRESSION THIS GUARDS. `ValidationException::getErrors()` is
+		// typed `?ValidationError` and IS null whenever the exception is thrown
+		// with a message alone — readOnly enforcement on update does exactly
+		// that, and says so where it throws. Passing that null to
+		// `ErrorFormatter::format()` is a TypeError, so the 400 this method
+		// exists to produce became a 500 with the reason nowhere in it.
+		//
+		// Measured on dossiq: every case edit answered 500, the server log
+		// carrying `ErrorFormatter::format(): Argument #1 ($error) must be of
+		// type ValidationError, null given`, and the edit silently never saved.
+		$exception = new ValidationException(message: 'Cannot modify readOnly property: reference');
+
+		$response = $this->handler->handleValidationException($exception);
+
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(400, $response->getStatus());
+		$data = $response->getData();
+		$this->assertSame('error', $data['status']);
+		// The REASON must survive into the response — that is the whole point
+		// of the 400, and what the TypeError was destroying.
+		$this->assertStringContainsString('readOnly', $data['errors'][0]['message']);
+		$this->assertSame([], $data['errors'][0]['errors']);
+	}
+
 	// =========================================================================
 	// generateErrorMessage
 	// =========================================================================

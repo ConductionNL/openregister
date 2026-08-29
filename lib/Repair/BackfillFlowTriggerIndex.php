@@ -104,7 +104,22 @@ class BackfillFlowTriggerIndex implements IRepairStep {
 		try {
 			$mapper = $this->container->get(FlowMapper::class);
 			$index = $this->container->get(FlowTriggerIndex::class);
-			$flows = $mapper->findAllFlows();
+			// 🔴 PAGED. `findAllFlows()` defaults to a limit of 100, so this
+			// derived only the first page's trigger rows and reported success —
+			// every flow past 100 was left unsubscribed, which on the trigger
+			// path is silent: the flow simply never fires.
+			$flows = [];
+			$page = 500;
+			$offset = 0;
+			while (true) {
+				$batch = $mapper->findAllFlows(limit: $page, offset: $offset);
+				$flows = array_merge($flows, $batch);
+				if (count($batch) < $page) {
+					break;
+				}
+
+				$offset += $page;
+			}
 		} catch (Throwable $e) {
 			$output->info('Flow trigger index backfill skipped: ' . $e->getMessage());
 			return;

@@ -2723,7 +2723,10 @@ OC.L10N.register(
         "Register descriptors": "Rekisterikuvaukset",
         "ships v{shipped}": "toimittaa v{shipped}",
         "State": "Tila",
-        "v{installed} → ships v{shipped}": "v{installed} → toimittaa v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → toimittaa v{shipped}",
+        "Where the automation lives": "Missä automaatio asuu",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Vuot ovat sitä, mitä tapahtuu ilman että kukaan klikkaa: tallennettaessa leimattava objekti, sovellus jolle kerrotaan kun tietue muuttuu. Täällä luet ja muokkaat niitä. Nyt ei tarvitse rakentaa mitään.",
+        "Open Flows in the menu": "Avaa Vuot valikosta"
     },
     "nplurals=2; plural=(n != 1);"
 )

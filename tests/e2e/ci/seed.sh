@@ -65,4 +65,50 @@ else
 	echo "e2e-other already in $GROUP (or could not be added) — the specs will verify"
 fi
 
+# NEXTCLOUD'S OWN FIRST-RUN WIZARD BLOCKS THE ACCOUNTS THIS SCRIPT JUST MADE.
+#
+# `firstrunwizard` opens a modal on a new account's first page load -- the
+# "A collaboration platform that puts you in control" panel. Its mask sits over
+# the app, so every click the specs make is swallowed. It is not the app's own
+# setup wizard, and the specs' Escape-based dismissal does not close it:
+# object-shares-tab reported `a modal is still covering the page after three
+# Escapes`, and flow-controls reported the connection never reaching the canvas
+# -- two unrelated-looking failures with one cause.
+#
+# The accounts above are created fresh every time, so they always meet it. The
+# app is disabled instance-wide rather than per-user because there is no
+# per-user "mark seen" that occ exposes, and a test instance has no use for it.
+if php occ app:disable firstrunwizard; then
+	echo 'disabled firstrunwizard'
+else
+	echo 'firstrunwizard already disabled (or not installed)'
+fi
+
 echo 'e2e seed complete'
+
+# ── Settle the demo-data decision ────────────────────────────────────────────
+# 🔴 OR THE SETUP WIZARD MASKS EVERY CLICK. ADR-111 added an OPTIONAL
+# `demo-data` step, and CnAppRoot opens the non-gating wizard as a full modal
+# mask while ANY optional step that is not info/summary is reported not-done —
+# in every fresh browser context, so once per spec.
+#
+# Measured on this app's development at the ADR-111 merge: clicks failed with
+# "locator resolved to <button ...> - attempting click action", the call log
+# naming <ol class="cn-wizard-dialog__progress"> as the interceptor. The element
+# was found; the click never landed.
+#
+# SKIPPED, not installed: recording the decision is what closes the wizard.
+# Installing would push the app's whole demo dataset into every list the suite
+# asserts on. `demo-data-setup-step.spec.ts` exercises the install deliberately.
+#
+# Uses the workflow's own exported credentials rather than this script's, so it
+# does not depend on where in the file it sits.
+#
+# Tolerant on purpose: an app whose wizard has no demo-data step answers 400
+# here, and that is not a seeding failure.
+DEMO_BASE="${BASE_URL:-${NEXTCLOUD_URL:-http://localhost:8080}}"
+DEMO_CODE="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 300 \
+	-u "${ADMIN_USER:-admin}:${ADMIN_PASSWORD:-admin}" -X POST \
+	-H 'Content-Type: application/json' -H 'OCS-APIRequest: true' --data '{}' \
+	"${DEMO_BASE}/index.php/apps/openregister/api/setup/action/skip-demo-data" || echo 000)"
+echo "[ci-seed] POST setup/action/skip-demo-data -> HTTP ${DEMO_CODE}"

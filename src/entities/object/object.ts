@@ -1,4 +1,4 @@
-import type { SafeParseReturnType } from 'zod'
+import type { ZodSafeParseResult } from 'zod'
 import type { TObject } from './object.types'
 
 import { z } from 'zod'
@@ -83,7 +83,7 @@ export class ObjectEntity implements TObject {
 	/**
 	 * Validates the object against a schema
 	 */
-	public validate(): SafeParseReturnType<TObject, unknown> {
+	public validate(): ZodSafeParseResult<unknown> {
 		const schema = z
 			.object({
 				'@self': z.object({

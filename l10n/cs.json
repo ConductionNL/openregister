@@ -2558,6 +2558,7 @@
         "_%n entry has no hash yet_::_%n entries have no hash yet_": [
             "%n záznam zatím nemá otisk",
             "%n záznamy zatím nemají otisk",
+            "%n záznamu zatím nemá otisk",
             "%n záznamů zatím nemá otisk"
         ],
         "across {count} registers": "across {count} registers",
@@ -2726,31 +2727,47 @@
         "Register descriptors": "Deskriptory registrů",
         "ships v{shipped}": "dodává v{shipped}",
         "State": "Stav",
-        "v{installed} → ships v{shipped}": "v{installed} → dodává v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → dodává v{shipped}",
+        "Where the automation lives": "Kde žije automatizace",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Toky jsou to, co se děje bez kliknutí: objekt označený při uložení, aplikace informovaná při změně záznamu. Zde je čtete a upravujete. Nyní není třeba nic stavět.",
+        "Open Flows in the menu": "Otevřete Toky v nabídce"
     },
+    "pluralForm": "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;",
     "plurals": {
         "{count} email": [
             "{count} e-mail",
+            "{count} e-maily",
+            "{count} e-mailu",
             "{count} e-mailů"
         ],
         "Purge {count} object from database": [
             "Vyčistit {count} objekt z databáze",
+            "Vyčistit {count} objekty z databáze",
+            "Vyčistit {count} objektu z databáze",
             "Vyčistit {count} objektů z databáze"
         ],
         "Restore {count} object": [
             "Obnovit {count} objekt",
+            "Obnovit {count} objekty",
+            "Obnovit {count} objektu",
             "Obnovit {count} objektů"
         ],
         "Successfully restored {count} object": [
             "Úspěšně obnoven {count} objekt",
+            "Úspěšně obnoveny {count} objekty",
+            "Úspěšně obnoveno {count} objektu",
             "Úspěšně obnoveno {count} objektů"
         ],
         "Delete {count} object": [
             "Smazat {count} objekt",
+            "Smazat {count} objekty",
+            "Smazat {count} objektu",
             "Smazat {count} objektů"
         ],
         "Object successfully deleted": [
             "Objekt byl úspěšně smazán",
+            "Objekty byly úspěšně smazány",
+            "Objekty byly úspěšně smazány",
             "Objekty byly úspěšně smazány"
         ]
     }

@@ -2557,6 +2557,7 @@
         "\\u26A0\\uFE0F PERMANENT DELETION WARNING \\u26A0\\uFE0F\n\nYou are about to PERMANENTLY delete {count} soft-deleted objects for schema \"{schema}\".\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?": "\\u26A0\\uFE0F AVERTISSEMENT DE SUPPRESSION DÉFINITIVE \\u26A0\\uFE0F\n\nVous êtes sur le point de supprimer DÉFINITIVEMENT {count} objets supprimés temporairement du schéma \"{schema}\".\n\nCes objets seront complètement retirés de la base de données et NE POURRONT PAS être récupérés.\n\nÊtes-vous absolument sûr ?",
         "_%n entry has no hash yet_::_%n entries have no hash yet_": [
             "%n entrée n'a pas encore de hachage",
+            "%n entrées n'ont pas encore de hachage",
             "%n entrées n'ont pas encore de hachage"
         ],
         "across {count} registers": "across {count} registers",
@@ -2725,31 +2726,41 @@
         "Register descriptors": "Descripteurs de registre",
         "ships v{shipped}": "fournit v{shipped}",
         "State": "État",
-        "v{installed} → ships v{shipped}": "v{installed} → fournit v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → fournit v{shipped}",
+        "Where the automation lives": "Où vit l'automatisation",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Les flux sont ce qui se produit sans que personne ne clique : un objet horodaté à l'enregistrement, une application avertie quand un enregistrement change. C'est ici que vous les consultez et les modifiez. Rien à construire maintenant.",
+        "Open Flows in the menu": "Ouvrir Flux dans le menu"
     },
+    "pluralForm": "nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;",
     "plurals": {
         "{count} email": [
             "{count} e-mail",
+            "{count} e-mails",
             "{count} e-mails"
         ],
         "Purge {count} object from database": [
             "Purger {count} objet de la base de données",
+            "Purger {count} objets de la base de données",
             "Purger {count} objets de la base de données"
         ],
         "Restore {count} object": [
             "Restaurer {count} objet",
+            "Restaurer {count} objets",
             "Restaurer {count} objets"
         ],
         "Successfully restored {count} object": [
             "{count} objet restauré avec succès",
+            "{count} objets restaurés avec succès",
             "{count} objets restaurés avec succès"
         ],
         "Delete {count} object": [
             "Supprimer {count} objet",
+            "Supprimer {count} objets",
             "Supprimer {count} objets"
         ],
         "Object successfully deleted": [
             "Objet supprimé avec succès",
+            "Objets supprimés avec succès",
             "Objets supprimés avec succès"
         ]
     }

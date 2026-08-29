@@ -2727,31 +2727,47 @@
         "Register descriptors": "Deskriptorji registrov",
         "ships v{shipped}": "dobavlja v{shipped}",
         "State": "Stanje",
-        "v{installed} → ships v{shipped}": "v{installed} → dobavlja v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → dobavlja v{shipped}",
+        "Where the automation lives": "Kje živi avtomatizacija",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Tokovi so tisto, kar se zgodi brez klika: predmet, žigosan ob shranjevanju, aplikacija, obveščena ob spremembi zapisa. Tu jih berete in urejate. Zdaj ni treba ničesar graditi.",
+        "Open Flows in the menu": "Odprite Tokove v meniju"
     },
+    "pluralForm": "nplurals=4; plural=(n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3);",
     "plurals": {
         "{count} email": [
             "{count} e-pošta",
-            "{count} e-pošti"
+            "{count} e-pošti",
+            "{count} e-pošte",
+            "{count} e-pošt"
         ],
         "Purge {count} object from database": [
             "Trajno odstrani {count} objekt iz baze podatkov",
+            "Trajno odstrani {count} objekta iz baze podatkov",
+            "Trajno odstrani {count} objekte iz baze podatkov",
             "Trajno odstrani {count} objektov iz baze podatkov"
         ],
         "Restore {count} object": [
             "Obnovi {count} objekt",
+            "Obnovi {count} objekta",
+            "Obnovi {count} objekte",
             "Obnovi {count} objektov"
         ],
         "Successfully restored {count} object": [
             "Uspešno obnovljen {count} objekt",
-            "Uspešno obnovljeno {count} objektov"
+            "Uspešno obnovljena {count} objekta",
+            "Uspešno obnovljeni {count} objekti",
+            "Uspešno obnovljenih {count} objektov"
         ],
         "Delete {count} object": [
             "Izbriši {count} objekt",
+            "Izbriši {count} objekta",
+            "Izbriši {count} objekte",
             "Izbriši {count} objektov"
         ],
         "Object successfully deleted": [
             "Objekt je uspešno izbrisan",
+            "Objekta sta uspešno izbrisana",
+            "Objekti so uspešno izbrisani",
             "Objekti so uspešno izbrisani"
         ]
     }

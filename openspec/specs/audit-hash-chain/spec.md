@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 ---
 
 # audit-hash-chain Specification
@@ -22,6 +22,13 @@ Cryptographic SHA-256 hash chaining on audit trail entries with genesis hash, ve
   than one per row, never re-hashing an already-sealed row. Adds a partial index
   for the backlog cursor and a cutover marker so `verifyChain()` stops reporting
   `valid: true` over rows it silently skipped.
+
+- `flow-object-attribution` (active) — the canonical form gains the three flow
+  attribution fields so a row's run/node/step is hash-covered, the genesis seed
+  moves to `openregister-genesis-v2`, and a seed change is defined as a
+  verify-then-rechain migration: the outgoing canonicaliser is frozen in the
+  codebase and used for the pre-check, whose verdict is persisted before the
+  re-seal makes the prior state underivable.
 
 ## Requirements
 ### Requirement: Every audit trail entry MUST include a SHA-256 hash chained to the previous entry

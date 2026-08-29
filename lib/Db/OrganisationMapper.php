@@ -67,6 +67,13 @@ use Symfony\Component\Uid\Uuid;
 class OrganisationMapper extends QBMapper {
 
 	/**
+	 * Maximum merge hops followed before the chain is treated as a data defect.
+	 *
+	 * @var int
+	 */
+	private const MAX_MERGE_HOPS = 16;
+
+	/**
 	 * Request-scoped memo of the active-organisation UUID per user id.
 	 *
 	 * `getActiveOrganisationUuidForUser()` is called on the hot tenant-filter path
@@ -1142,4 +1149,78 @@ class OrganisationMapper extends QBMapper {
 
 		return $hierarchy;
 	}//end getOrganisationHierarchy()
+
+	/**
+	 * Follow a merge chain to the organisation that is authoritative today
+	 *
+	 * An organisation that was merged away no longer owns its data — the
+	 * survivor does. Resolving a tenant therefore has to follow `merged_into`
+	 * before the UUID is used as a scope, or every query issued against the old
+	 * UUID reads the survivor's rows under a boundary that no longer applies.
+	 *
+	 * The walk is bounded and cycle-guarded: a merge chain is data, and data can
+	 * be wrong. On a cycle or an unresolvable link this returns the LAST UUID it
+	 * could actually load, never null and never a UUID it did not verify — a
+	 * resolver that fails open would hand the caller an unscoped identifier.
+	 *
+	 * @param string $organisationUuid The (possibly merged-away) organisation UUID
+	 *
+	 * @return string The UUID of the surviving organisation
+	 */
+	public function resolveMergeTarget(string $organisationUuid): string {
+		$seen = [$organisationUuid => true];
+		$current = $organisationUuid;
+
+		// A chain longer than this is a data defect, not a deep hierarchy.
+		for ($hop = 0; $hop < self::MAX_MERGE_HOPS; $hop++) {
+			try {
+				$organisation = $this->findByUuid(uuid: $current);
+			} catch (DoesNotExistException | MultipleObjectsReturnedException $e) {
+				// Unresolvable link: stay on the last UUID we did verify.
+				return $current;
+			}
+
+			$next = $organisation->getMergedInto();
+			if ($next === null || $next === '' || $next === $current) {
+				return $current;
+			}
+
+			// Cycle: A merged into B merged into A. Stop on the current node
+			// rather than looping; the caller gets a real, loadable tenant.
+			if (isset($seen[$next]) === true) {
+				$this->logger->warning(
+					'Organisation merge chain contains a cycle; stopping resolution',
+					['organisation' => $organisationUuid, 'at' => $current]
+				);
+				return $current;
+			}
+
+			$seen[$next] = true;
+			$current = $next;
+		}
+
+		$this->logger->warning(
+			'Organisation merge chain exceeded the hop limit; stopping resolution',
+			['organisation' => $organisationUuid, 'at' => $current]
+		);
+
+		return $current;
+	}//end resolveMergeTarget()
+
+	/**
+	 * Find an organisation, following any merge to the surviving one
+	 *
+	 * The read counterpart of {@see resolveMergeTarget()}. Use this wherever a
+	 * UUID arrives from outside (a request, a stored reference, a federation
+	 * peer) and is about to be used as a tenant scope.
+	 *
+	 * @param string $uuid The organisation UUID
+	 *
+	 * @return Organisation The surviving organisation
+	 *
+	 * @throws DoesNotExistException If no organisation resolves
+	 */
+	public function findByUuidFollowingMerge(string $uuid): Organisation {
+		return $this->findByUuid(uuid: $this->resolveMergeTarget(organisationUuid: $uuid));
+	}//end findByUuidFollowingMerge()
 }//end class

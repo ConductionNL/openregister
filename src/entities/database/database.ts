@@ -1,4 +1,4 @@
-import type { SafeParseReturnType } from 'zod'
+import type { ZodSafeParseResult } from 'zod'
 import type { TDatabase } from './database.types'
 
 import { z } from 'zod'
@@ -20,7 +20,7 @@ export class Database implements TDatabase {
 		this.tablePrefix = database.tablePrefix || ''
 	}
 
-	public validate(): SafeParseReturnType<TDatabase, unknown> {
+	public validate(): ZodSafeParseResult<unknown> {
 		const schema = z.object({
 			id: z.string().min(1),
 			name: z.string().min(1),
