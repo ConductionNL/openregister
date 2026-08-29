@@ -190,4 +190,34 @@ class FlowVersionMapper extends QBMapper {
 		return (int)$qb->executeStatement();
 
 	}//end deleteByFlow()
+
+	/**
+	 * Delete version rows whose flow no longer exists.
+	 *
+	 * 🔑 A ONE-OFF SWEEP FOR INSTANCES UPGRADED MID-FLIGHT. `FlowService::delete()`
+	 * now cascades to this table, so no NEW orphan can appear — but any
+	 * instance that deleted a flow between the version table landing and that
+	 * cascade landing kept the rows. Measured on the dev instance: 38, growing
+	 * with every flow anyone removed.
+	 *
+	 * Safe on the same terms as the cascade: `delete()` removes a flow's RUNS
+	 * as well, so a version row whose flow is gone has no run left that could
+	 * be pinned to it.
+	 *
+	 * @return integer The number of orphaned rows removed.
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 */
+	public function deleteOrphaned(): int {
+		$qb = $this->db->getQueryBuilder();
+		$sub = $this->db->getQueryBuilder();
+
+		$sub->select('uuid')->from('openregister_flows');
+
+		$qb->delete($this->getTableName())
+			->where($qb->expr()->notIn('flow_uuid', $qb->createFunction('(' . $sub->getSQL() . ')')));
+
+		return (int)$qb->executeStatement();
+
+	}//end deleteOrphaned()
 }//end class

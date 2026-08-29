@@ -91,4 +91,45 @@ class FlowVersionMapperDeleteTest extends TestCase {
 
 		$this->assertSame(0, (new FlowVersionMapper($db))->deleteByFlow(flowUuid: 'never-versioned'));
 	}//end testDeleteByFlowReportsZeroWhenThereWasNothingToRemove()
+
+	/**
+	 * The orphan sweep deletes only rows whose flow is GONE.
+	 *
+	 * 🔴 THE `notIn` IS THE WHOLE SAFETY PROPERTY. Without the predicate this
+	 * empties the table — every version of every live flow — which would strand
+	 * every in-flight run on the instance. So the test asserts the predicate is
+	 * built against the flows table, not merely that a delete ran.
+	 *
+	 * @return void
+	 */
+	public function testDeleteOrphanedOnlyRemovesRowsWhoseFlowIsGone(): void {
+		$expr = $this->createMock(IExpressionBuilder::class);
+		$expr->expects($this->once())
+			->method('notIn')
+			->with('flow_uuid', $this->anything())
+			->willReturn('flow_uuid NOT IN (...)');
+
+		$sub = $this->createMock(IQueryBuilder::class);
+		$sub->method('select')->willReturnSelf();
+		$sub->method('from')->willReturnSelf();
+		$sub->method('getSQL')->willReturn('SELECT uuid FROM oc_openregister_flows');
+
+		$qb = $this->createMock(IQueryBuilder::class);
+		$qb->method('expr')->willReturn($expr);
+		$qb->method('createFunction')->willReturnArgument(0);
+		$qb->expects($this->once())
+			->method('delete')
+			->with('openregister_flow_versions')
+			->willReturnSelf();
+		$qb->expects($this->once())
+			->method('where')
+			->with('flow_uuid NOT IN (...)')
+			->willReturnSelf();
+		$qb->expects($this->once())->method('executeStatement')->willReturn(38);
+
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getQueryBuilder')->willReturnOnConsecutiveCalls($qb, $sub);
+
+		$this->assertSame(38, (new FlowVersionMapper($db))->deleteOrphaned());
+	}//end testDeleteOrphanedOnlyRemovesRowsWhoseFlowIsGone()
 }//end class
