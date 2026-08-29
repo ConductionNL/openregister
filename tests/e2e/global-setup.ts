@@ -225,6 +225,40 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	await page.goto('/index.php/apps/openregister/')
 	await seedFirstVisitOverlaysSeen(page, 'openregister')
 
+	/*
+	 * Suppress the product walkthrough (ADR-043) for automated runs, the way
+	 * dossiq's global-setup already does.
+	 *
+	 * This became load-bearing with @conduction/nextcloud-vue 2.22.x. A
+	 * `placement: "center"` welcome step used to be parked in `_pendingAutoTour`
+	 * and never opened; the library now correctly starts it on any route, so the
+	 * tour actually appears — and its `cn-walkthrough__dim--full` layer is a
+	 * `role="dialog" aria-modal="true"` overlay that intercepts every click
+	 * behind it. Specs that had never had to account for a tour started timing
+	 * out, and `getByRole('dialog').first()` began resolving to the dim layer
+	 * instead of the modal under test.
+	 *
+	 * The marker is per USER, not per test, so without it the suite is also
+	 * order-dependent: whichever spec runs first wears the tour and the rest
+	 * inherit a dismissed one.
+	 *
+	 * The sentinel is higher than any real app version, so every step's
+	 * `sinceVersion` sorts below it and the tour composes to an empty step set
+	 * rather than merely starting dismissed. The page is already on the instance
+	 * origin after login, which is the origin storageState persists.
+	 */
+	try {
+		await page.evaluate(() => {
+			try {
+				window.localStorage.setItem('cn-walkthrough-seen:openregister', '999.0.0')
+			} catch (e) {
+				// localStorage unavailable — specs fall back to dismissing by hand.
+			}
+		})
+	} catch {
+		// Never fail setup over an optional convenience.
+	}
+
 	await context.storageState({ path: STORAGE_STATE })
 	await browser.close()
 
