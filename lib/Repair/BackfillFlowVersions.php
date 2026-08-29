@@ -102,7 +102,7 @@ class BackfillFlowVersions implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		try {
-			$flows = $this->container->get(FlowMapper::class)->findAllFlows();
+			$flows = $this->everyFlow();
 		} catch (Throwable $e) {
 			$output->info('Flow version backfill skipped: ' . $e->getMessage());
 			return;
@@ -154,6 +154,43 @@ class BackfillFlowVersions implements IRepairStep {
 		);
 
 	}//end run()
+
+	/**
+	 * Every flow, paged.
+	 *
+	 * 🔴 `findAllFlows()` DEFAULTS TO 100. Calling it bare versioned only the
+	 * first page and reported success — measured on a dev instance: 219 flows,
+	 * 100 versioned, 119 left with no published version and therefore
+	 * unrunnable. That is exactly the outage this repair step exists to
+	 * prevent, produced by the repair step itself.
+	 *
+	 * Paged rather than called with a huge limit: a limit large enough to be
+	 * "obviously safe" today is a limit that silently truncates once an
+	 * instance grows past it, and the failure would look identical.
+	 *
+	 * @return array<int, \OCA\OpenRegister\Db\Flow> Every flow on the instance.
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 */
+	private function everyFlow(): array {
+		$mapper = $this->container->get(FlowMapper::class);
+		$page = 500;
+		$offset = 0;
+		$all = [];
+
+		while (true) {
+			$batch = $mapper->findAllFlows(limit: $page, offset: $offset);
+			$all = array_merge($all, $batch);
+
+			if (count($batch) < $page) {
+				return $all;
+			}
+
+			$offset += $page;
+		}
+
+	}//end everyFlow()
+
 
 	/**
 	 * Version one flow and pin its in-flight runs.
