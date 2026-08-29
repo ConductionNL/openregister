@@ -81,7 +81,7 @@
     "@babel/preset-typescript": "^7.26.0",
     "@babel/traverse": "^7.23.9",
     "@cyclonedx/cyclonedx-npm": "^6.0.0",
-    "@nextcloud/browserslist-config": "^2.3.0",
+    "@nextcloud/browserslist-config": "^3.1.2",
     "@nextcloud/eslint-config": "^9.0.1",
     "@nextcloud/prettier-config": "^1.2.0",
     "@nextcloud/stylelint-config": "^2.4.0",
