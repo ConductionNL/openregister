@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCP\IDBConnection;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -60,6 +61,7 @@ class FlowVersionService {
 	 * @param FlowTriggerIndex   $triggers The derived trigger rows.
 	 * @param IDBConnection      $db       Wraps each transition in one transaction.
 	 * @param LoggerInterface    $logger   Diagnostics.
+	 * @param IUserSession       $session  Names who published a version.
 	 */
 	public function __construct(
 		private readonly FlowVersionMapper $versions,
@@ -69,9 +71,53 @@ class FlowVersionService {
 		private readonly FlowTriggerIndex $triggers,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
+		private readonly IUserSession $session,
 	) {
 
 	}//end __construct()
+
+	/**
+	 * Every version of a flow, newest first.
+	 *
+	 * @param string $flowUuid The flow.
+	 *
+	 * @return FlowVersion[] The versions.
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 */
+	public function versionsOf(string $flowUuid): array {
+		return $this->versions->findAllForFlow(flowUuid: $flowUuid);
+
+	}//end versionsOf()
+
+	/**
+	 * One version of a flow.
+	 *
+	 * @param string  $flowUuid The flow.
+	 * @param integer $number   The version number.
+	 *
+	 * @return FlowVersion|null The version, or null.
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 */
+	public function versionOf(string $flowUuid, int $number): ?FlowVersion {
+		return $this->versions->find(flowUuid: $flowUuid, version: $number);
+
+	}//end versionOf()
+
+	/**
+	 * The graph a version names.
+	 *
+	 * @param FlowVersion $version The version.
+	 *
+	 * @return array<string, mixed>|null The graph, or null when unresolvable.
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 */
+	public function graphOfVersion(FlowVersion $version): ?array {
+		return $this->pin->graphFor($version->getDefinitionHash());
+
+	}//end graphOfVersion()
 
 	/**
 	 * The graph of a flow's head, as a definition document.
@@ -107,6 +153,10 @@ class FlowVersionService {
 	 */
 	public function publish(Flow $flow, ?string $publishedBy = null): FlowVersion {
 		$flowId = (string)$flow->getUuid();
+		// Resolved here rather than at each caller: an install-time import has
+		// no session and passes null, a request has one and should not have to
+		// remember to pass it.
+		$publishedBy = ($publishedBy ?? $this->session->getUser()?->getUID());
 		$graph = $this->graphOf(flow: $flow);
 
 		// Guards BEFORE the transaction opens. A refusal is not a rollback —
