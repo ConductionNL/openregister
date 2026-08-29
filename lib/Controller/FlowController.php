@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCA\OpenRegister\Service\Flow\FlowRunVersionPin;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCP\AppFramework\Controller;
@@ -787,12 +788,29 @@ class FlowController extends Controller {
 		$sync = ($syncParam === true || $syncParam === 'true' || $syncParam === '1' || $syncParam === 1);
 
 		try {
+			// THIS ENDPOINT IS THE EDITOR'S "RUN NOW", and that is the
+			// interactive draft test run — the one documented exception to "a
+			// draft cannot back a run" (`FlowPublishedGraph::overlayOnto`).
+			//
+			// Versioning (#3047) made every other trigger require a published
+			// version, correctly. But this path queued as MANUAL, so pressing
+			// Run in the editor on a flow that had never been published was
+			// refused — the exception the design carves out could not be
+			// reached from the only screen that needs it. Naming the trigger
+			// here is what connects the two.
 			$flowRun = $this->flows->run(
 				uuid: $id,
 				subject: (array)$subject,
 				context: (array)$context,
-				sync: $sync
+				sync: $sync,
+				trigger: FlowRunVersionPin::TRIGGER_TEST
 			);
+		} catch (FlowLifecycleRefused $e) {
+			// A REFUSAL, not a fault. It carries `reason` and `lifecycleStatus`
+			// precisely so the editor can offer the right button; letting it
+			// escape as a 500 threw that away and told the author only that
+			// something broke.
+			return $this->refusal(refusal: $e);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
 		} catch (FlowDeadEnd $e) {
