@@ -541,6 +541,20 @@ return [
         // for the tenants it exists for. The authorisation that matters is the
         // organisation scoping and per-flow guard inside FlowService.
         ['name' => 'flow#run',     'url' => '/api/flows/{id}/run', 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+
+        // Lifecycle. Declared BEFORE the bare `{id}` routes for the same reason
+        // `{id}/run` is: `id` matches `[^/]+`, so a uuid can never swallow a
+        // trailing literal segment, but keeping the specific paths first means
+        // a future looser requirement cannot silently start capturing them.
+        //
+        // The VERSION number is `\d+`, not `[^/]+`. Without that,
+        // `/versions/publish` would match `version` with the literal string
+        // "publish" and return a 404 for a route that exists.
+        ['name' => 'flow#versions',  'url' => '/api/flows/{id}/versions',            'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+        ['name' => 'flow#version',   'url' => '/api/flows/{id}/versions/{version}',  'verb' => 'GET',  'requirements' => ['id' => '[^/]+', 'version' => '\d+']],
+        ['name' => 'flow#publish',   'url' => '/api/flows/{id}/publish',             'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'flow#draft',     'url' => '/api/flows/{id}/draft',               'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'flow#deprecate', 'url' => '/api/flows/{id}/deprecate',           'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#index',   'url' => '/api/flows',          'verb' => 'GET'],
         ['name' => 'flow#create',  'url' => '/api/flows',          'verb' => 'POST'],
         ['name' => 'flow#show',    'url' => '/api/flows/{id}',     'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],

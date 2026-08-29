@@ -42,9 +42,11 @@ use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
+use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -103,6 +105,7 @@ class FlowController extends Controller {
 	 * @param FlowNodePreflight $preflight Resolves a document's step types.
 	 * @param FlowService $flows Reads, writes and runs flow definitions.
 	 * @param FlowAccess $access Who may do what with a flow.
+	 * @param FlowVersionService $flowVersionService Reads, publishes, drafts and deprecates versions.
 	 */
 	public function __construct(
 		string $appName,
@@ -113,6 +116,7 @@ class FlowController extends Controller {
 		private readonly FlowNodePreflight $preflight,
 		private readonly FlowService $flows,
 		private readonly FlowAccess $access,
+		private readonly FlowVersionService $flowVersionService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -615,8 +619,40 @@ class FlowController extends Controller {
 			return $this->flows->save(data: $data, uuid: $uuid);
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (FlowLifecycleRefused $e) {
+			// 409, not 400. The request is well-formed; the flow's STATE is
+			// what refuses it, and that state can change — the author creates
+			// a draft and the identical request then succeeds. A 400 would
+			// tell the editor to fix the payload, which is the wrong advice.
+			return $this->refusal(refusal: $e);
 		}
 	}//end saveOrRefuse()
+
+	/**
+	 * A lifecycle refusal as a 409 the editor can act on.
+	 *
+	 * 🔑 THE REASON IS A FIELD, NOT PROSE. "This version is published, create a
+	 * draft" and "this flow has no published version, publish one" want
+	 * opposite buttons from the author; parsing an English sentence to tell
+	 * them apart is how a UI ends up offering the wrong one.
+	 *
+	 * @param FlowLifecycleRefused $refusal The refusal.
+	 *
+	 * @return JSONResponse The 409.
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 */
+	private function refusal(FlowLifecycleRefused $refusal): JSONResponse {
+		return new JSONResponse(
+			[
+				'error' => $refusal->getMessage(),
+				'reason' => $refusal->getReason(),
+				'lifecycleStatus' => $refusal->getState(),
+				'flowId' => $refusal->getFlowId(),
+			],
+			Http::STATUS_CONFLICT
+		);
+	}//end refusal()
 
 	/**
 	 * The stored flow, plus any warning the author should see about it.
@@ -787,6 +823,191 @@ class FlowController extends Controller {
 
 		return new JSONResponse($flowRun->jsonSerialize(), Http::STATUS_CREATED);
 	}//end run()
+
+	/**
+	 * List a flow's versions, newest first.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return JSONResponse The versions, or 404.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @no-admin-idor-exempt Guarded downstream: the flow is resolved through
+	 * `FlowService::find()`, which is organisation-scoped, so versions of a
+	 * flow the caller cannot see are refused as "no such flow".
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 */
+	#[NoAdminRequired]
+	public function versions(string $id): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.read');
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		try {
+			$flow = $this->flows->find(uuid: $id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+		}
+
+		$rows = $this->flowVersionService->versionsOf(flowUuid: (string)$flow->getUuid());
+
+		return new JSONResponse([
+			'results' => array_map(static fn ($row): array => $row->jsonSerialize(), $rows),
+			'total' => count($rows),
+		]);
+	}//end versions()
+
+	/**
+	 * Read one version of a flow, including the graph it names.
+	 *
+	 * @param string  $id      The flow uuid.
+	 * @param integer $version The version number.
+	 *
+	 * @return JSONResponse The version and its graph, or 404.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @no-admin-idor-exempt Guarded downstream: see versions().
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 */
+	#[NoAdminRequired]
+	public function version(string $id, int $version): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.read');
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		try {
+			$flow = $this->flows->find(uuid: $id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+		}
+
+		$row = $this->flowVersionService->versionOf(flowUuid: (string)$flow->getUuid(), number: $version);
+		if ($row === null) {
+			return new JSONResponse(['error' => 'No such version'], Http::STATUS_NOT_FOUND);
+		}
+
+		$body = $row->jsonSerialize();
+		$body['graph'] = $this->flowVersionService->graphOfVersion(version: $row);
+
+		return new JSONResponse($body);
+	}//end version()
+
+	/**
+	 * Publish the flow's draft head.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return JSONResponse The published version, 404, or 409.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @no-admin-idor-exempt Guarded downstream: see versions().
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 */
+	#[NoAdminRequired]
+	public function publish(string $id): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.update');
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		try {
+			$flow = $this->flows->find(uuid: $id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+		}
+
+		try {
+			$version = $this->flowVersionService->publish(
+				flow: $flow,
+				// From FlowAccess, which already holds the session — a second
+				// IUserSession here would push this constructor past the
+				// parameter limit for one string.
+				publishedBy: $this->access->currentUser()?->getUID()
+			);
+		} catch (FlowLifecycleRefused $e) {
+			return $this->refusal(refusal: $e);
+		}
+
+		return new JSONResponse($version->jsonSerialize());
+	}//end publish()
+
+	/**
+	 * Create a draft version from the published one.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return JSONResponse The new draft version, 404, or 409.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @no-admin-idor-exempt Guarded downstream: see versions().
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 */
+	#[NoAdminRequired]
+	public function draft(string $id): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.update');
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		try {
+			$flow = $this->flows->find(uuid: $id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+		}
+
+		try {
+			$version = $this->flowVersionService->createDraft(flow: $flow);
+		} catch (FlowLifecycleRefused $e) {
+			return $this->refusal(refusal: $e);
+		}
+
+		return new JSONResponse($version->jsonSerialize(), Http::STATUS_CREATED);
+	}//end draft()
+
+	/**
+	 * Retire the published version, so the flow backs no new runs.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return JSONResponse The deprecated version, 404, or 409.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @no-admin-idor-exempt Guarded downstream: see versions().
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 */
+	#[NoAdminRequired]
+	public function deprecate(string $id): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.update');
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		try {
+			$flow = $this->flows->find(uuid: $id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+		}
+
+		try {
+			$version = $this->flowVersionService->deprecate(flow: $flow);
+		} catch (FlowLifecycleRefused $e) {
+			return $this->refusal(refusal: $e);
+		}
+
+		return new JSONResponse($version->jsonSerialize());
+	}//end deprecate()
 
 	/**
 	 * The flow fields carried on a create or update request.

@@ -239,26 +239,76 @@ class FlowService {
 	 * @throws DoesNotExistException When updating a flow that is not the caller's,
 	 *                               or creating one with no owner / organisation.
 	 * @throws \InvalidArgumentException When a trigger node rejects its own config.
+	 * @throws FlowLifecycleRefused When the definition changes and the head is not a draft.
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	public function save(array $data, ?string $uuid = null): Flow {
 		$flow = $this->flowToSave(data: $data, uuid: $uuid);
 
+		// 🔴 THE GRAPH BEFORE THE WRITE, captured while the entity still holds
+		// what is stored. `applyEditableFields()` mutates it in place, so
+		// reading afterwards would compare the incoming graph with itself and
+		// the refusal would never fire.
+		$graphBefore = $this->graphSignature(flow: $flow);
+
 		$this->applyEditableFields(flow: $flow, data: $data);
 		(new FlowTriggerValidator($this->container, $this->logger))->validate(flow: $flow);
+
+		// A published version is immutable. Only a DEFINITION change is
+		// refused, deliberately: renaming a flow, editing its description or
+		// switching it off are not changes to the process, and refusing them
+		// would make a published flow unmanageable rather than merely
+		// uneditable.
+		if ($this->graphSignature(flow: $flow) !== $graphBefore) {
+			(new FlowLifecycleGuard(
+				$this->runs,
+				$this->container->get(FlowNodePreflight::class),
+				$this->logger
+			))->refuseEditUnlessDraft(
+				flowId: (string)$flow->getUuid(),
+				state: $flow->getLifecycleStatus()
+			);
+		}
+
 		$flow->setUpdated(new DateTime());
 
 		$stored = $this->persistFlow(flow: $flow, uuid: $uuid);
 
-		// Re-derive the trigger index from the nodes that were just saved.
-		// AFTER the write, so the index can never name a subscription the
-		// stored document does not declare — and never raising, so a failure
-		// to index cannot cost an author their work.
+		// 🔑 THE TRIGGER SET FOLLOWS THE PUBLISHED VERSION, NOT THE HEAD. This
+		// used to re-derive from whatever was just saved, which under
+		// versioning would subscribe a DRAFT's trigger nodes and unsubscribe
+		// the published version's — the opposite of both rules. Deriving from
+		// the published version is also what keeps an `enabled` toggle working
+		// while a draft is open.
 		$this->triggerIndex->reindex(flow: $stored);
 
 		return $stored;
 	}//end save()
+
+	/**
+	 * A value that changes exactly when the flow's definition changes.
+	 *
+	 * Compared, not stored. Only the four keys that make up the graph are
+	 * included — the same four `FlowDefinitionPin` pins — so that metadata
+	 * edits do not read as definition edits.
+	 *
+	 * @param Flow $flow The flow.
+	 *
+	 * @return string The signature.
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 */
+	private function graphSignature(Flow $flow): string {
+		return (string)json_encode([
+			'nodes' => ($flow->getNodes() ?? []),
+			'edges' => ($flow->getEdges() ?? []),
+			'limits' => ($flow->getLimits() ?? []),
+			'executionMode' => (string)($flow->getExecutionMode() ?? Flow::MODE_ASYNC),
+		]);
+	}//end graphSignature()
+
+
 
 	/**
 	 * Insert a new flow, or update the existing one.
