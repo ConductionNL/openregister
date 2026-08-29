@@ -124,7 +124,7 @@
 		"symfony/uid": "^6.4",
 		"symfony/workflow": "^6.4",
 		"symfony/yaml": "^6.4 || ^7.0",
-		"theodo-group/llphant": "^0.9.3",
+		"theodo-group/llphant": "^1.0",
 		"twig/twig": "^3.27.0",
 		"web-token/jwt-library": "^4.1.9",
 		"webonyx/graphql-php": "^15.0",

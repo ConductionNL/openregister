@@ -1,6 +1,6 @@
 --- a/src/Chat/OllamaChat.php
 +++ b/src/Chat/OllamaChat.php
-@@ -257,6 +257,13 @@
+@@ -269,6 +269,13 @@ class OllamaChat implements ChatInterface
       */
      protected function sendRequest(string $method, string $path, array $json): ResponseInterface
      {
