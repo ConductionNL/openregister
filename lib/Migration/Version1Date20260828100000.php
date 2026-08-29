@@ -46,11 +46,14 @@
  * ## Additive only
  *
  * Every column is nullable (or defaulted) and no existing row is rewritten.
- * Identifiers already written into stored data are FROZEN: the backfill that
- * copies the leaf apps' records in preserves their uuid/slug rather than
- * minting new ones, and lives in a repair step
- * ({@see \OCA\OpenRegister\Repair\ConsolidateLeafOrganisations}) so it can be
- * inspected and re-run independently of the schema change.
+ *
+ * This migration adds the columns ONLY. It does NOT backfill the leaf apps'
+ * records: that needs a ruling on what happens when the same legal entity
+ * exists in both OpenCatalogi and Stackiq under different UUIDs, and
+ * identifiers already written into stored data are FROZEN, so any backfill
+ * must preserve the existing uuid/slug rather than mint new ones. It will land
+ * as its own repair step so it can be inspected and re-run independently --
+ * see openspec/changes/consolidate-organisation-on-or/tasks.md task 5.1.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -92,6 +95,183 @@ class Version1Date20260828100000 extends SimpleMigrationStep {
 	private const TABLE = 'openregister_organisations';
 
 	/**
+	 * The columns this migration adds, in the order they are applied.
+	 *
+	 * Kept as data rather than as a run of `if (hasColumn)` blocks: the list is
+	 * pure description, and expressing it as control flow made changeSchema() a
+	 * 20-branch method whose every branch was identical in shape. Split by facet
+	 * because that is how the consolidation is reasoned about - see the class
+	 * docblock.
+	 *
+	 * @return array<int, array{name: string, type: string, options: array<string, mixed>}> The column specifications.
+	 *
+	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md
+	 */
+	private function columnSpecifications(): array {
+		return array_merge(
+			$this->tenancyColumnSpecifications(),
+			$this->identityColumnSpecifications(),
+			$this->relationshipColumnSpecifications()
+		);
+	}//end columnSpecifications()
+
+	/**
+	 * Tenancy facet columns - repairs, not new features.
+	 *
+	 * `groups` and the three quotas are declared by the entity but were never
+	 * created by any migration; see the class docblock for how each one escaped.
+	 *
+	 * @return array<int, array{name: string, type: string, options: array<string, mixed>}> The column specifications.
+	 *
+	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md
+	 */
+	private function tenancyColumnSpecifications(): array {
+		return [
+			[
+				'name' => 'groups',
+				'type' => Types::JSON,
+				'options' => [
+					'notnull' => false,
+					'comment' => 'Nextcloud group IDs attached to this organisation (RBAC principals, not tenancy - ADR-002 Rule 3)',
+				],
+			],
+			[
+				'name' => 'storage_quota',
+				'type' => Types::BIGINT,
+				'options' => ['notnull' => false, 'comment' => 'Storage quota in bytes (NULL = unlimited)'],
+			],
+			[
+				'name' => 'bandwidth_quota',
+				'type' => Types::BIGINT,
+				'options' => ['notnull' => false, 'comment' => 'Bandwidth quota in bytes per month (NULL = unlimited)'],
+			],
+			[
+				'name' => 'request_quota',
+				'type' => Types::INTEGER,
+				'options' => ['notnull' => false, 'comment' => 'API request quota per day (NULL = unlimited)'],
+			],
+		];
+	}//end tenancyColumnSpecifications()
+
+	/**
+	 * Identity facet columns - what OpenCatalogi's publisher record carried.
+	 *
+	 * These answer the same question `uuid` answers ("which legal entity is
+	 * this"), which is why they live on the organisation row rather than in a
+	 * second store keyed differently.
+	 *
+	 * @return array<int, array{name: string, type: string, options: array<string, mixed>}> The column specifications.
+	 *
+	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md
+	 */
+	private function identityColumnSpecifications(): array {
+		return [
+			[
+				'name' => 'type',
+				'type' => Types::STRING,
+				'options' => [
+					'notnull' => false,
+					'length' => 64,
+					'default' => 'organisation',
+					'comment' => 'Discriminator: organisation|government|vendor|collaboration|department',
+				],
+			],
+			[
+				'name' => 'summary',
+				'type' => Types::TEXT,
+				'options' => ['notnull' => false, 'comment' => 'Short summary for overview pages (OpenCatalogi `summary`)'],
+			],
+			[
+				'name' => 'oin',
+				'type' => Types::STRING,
+				'options' => ['notnull' => false, 'length' => 64, 'comment' => 'Overheidsidentificatienummer'],
+			],
+			[
+				'name' => 'tooi',
+				'type' => Types::STRING,
+				'options' => ['notnull' => false, 'length' => 64, 'comment' => 'TOOI identifier for the organisation'],
+			],
+			[
+				'name' => 'rsin',
+				'type' => Types::STRING,
+				'options' => ['notnull' => false, 'length' => 16, 'comment' => 'RSIN (9 digits, 11-proef) of the non-natural person'],
+			],
+			[
+				'name' => 'kvk',
+				'type' => Types::STRING,
+				'options' => ['notnull' => false, 'length' => 16, 'comment' => 'Chamber-of-Commerce (KvK) number'],
+			],
+			[
+				'name' => 'pki',
+				'type' => Types::TEXT,
+				'options' => ['notnull' => false, 'comment' => 'PKIoverheid certificate reference'],
+			],
+			[
+				'name' => 'image',
+				'type' => Types::TEXT,
+				'options' => ['notnull' => false, 'comment' => 'Logo/avatar as a URL or base64 data URI'],
+			],
+		];
+	}//end identityColumnSpecifications()
+
+	/**
+	 * Relationship facet columns - what Stackiq's vendor record carried.
+	 *
+	 * `merged_into` is core rather than app-specific because a merge changes
+	 * WHICH UUID IS AUTHORITATIVE. An organisation that has been merged away must
+	 * stop resolving as a tenant, or every query scoped to it is a cross-tenant
+	 * read of the survivor's data.
+	 *
+	 * @return array<int, array{name: string, type: string, options: array<string, mixed>}> The column specifications.
+	 *
+	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md
+	 */
+	private function relationshipColumnSpecifications(): array {
+		return [
+			[
+				'name' => 'registration_status',
+				'type' => Types::STRING,
+				'options' => [
+					'notnull' => false,
+					'length' => 32,
+					'comment' => 'Registration lifecycle: concept|submitted|registered|rejected|merged',
+				],
+			],
+			[
+				'name' => 'merged_into',
+				'type' => Types::STRING,
+				'options' => [
+					'notnull' => false,
+					'length' => 255,
+					'comment' => 'UUID of the surviving organisation when this one was merged away',
+				],
+			],
+			[
+				'name' => 'merged_at',
+				'type' => Types::DATETIME,
+				'options' => ['notnull' => false, 'comment' => 'When this organisation was merged away'],
+			],
+		];
+	}//end relationshipColumnSpecifications()
+
+	/**
+	 * The indexes the consolidation introduces.
+	 *
+	 * `oin` is how a publication resolves its publisher; `merged_into` is walked
+	 * on every tenant resolution to follow a merge chain to the survivor.
+	 *
+	 * @return array<string, array<int, string>> Index name mapped to its columns.
+	 *
+	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md
+	 */
+	private function indexSpecifications(): array {
+		return [
+			'openregister_org_oin_idx' => ['oin'],
+			'openregister_org_merged_idx' => ['merged_into'],
+		];
+	}//end indexSpecifications()
+
+	/**
 	 * Add the identity, relationship and repaired tenancy columns.
 	 *
 	 * @param IOutput $output The migration output.
@@ -101,7 +281,6 @@ class Version1Date20260828100000 extends SimpleMigrationStep {
 	 * @return ISchemaWrapper|null The altered schema, or null when nothing changed.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $options is part of the base signature.
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) A column list reads better unrolled than looped.
 	 *
 	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md
 	 */
@@ -120,188 +299,22 @@ class Version1Date20260828100000 extends SimpleMigrationStep {
 		$table = $schema->getTable(self::TABLE);
 		$added = [];
 
-		// ---------------------------------------------------------------
-		// Tenancy facet — repairs, not new features. See the class docblock.
-		// ---------------------------------------------------------------
+		foreach ($this->columnSpecifications() as $column) {
+			if ($table->hasColumn($column['name']) === true) {
+				continue;
+			}
 
-		if ($table->hasColumn('groups') === false) {
-			$table->addColumn(
-				'groups',
-				Types::JSON,
-				[
-					'notnull' => false,
-					'comment' => 'Nextcloud group IDs attached to this organisation (RBAC principals, not tenancy — ADR-002 Rule 3)',
-				]
-			);
-			$added[] = 'groups';
+			$table->addColumn($column['name'], $column['type'], $column['options']);
+			$added[] = $column['name'];
 		}
 
-		if ($table->hasColumn('storage_quota') === false) {
-			$table->addColumn(
-				'storage_quota',
-				Types::BIGINT,
-				['notnull' => false, 'comment' => 'Storage quota in bytes (NULL = unlimited)']
-			);
-			$added[] = 'storage_quota';
-		}
+		foreach ($this->indexSpecifications() as $indexName => $indexColumns) {
+			if ($table->hasIndex($indexName) === true) {
+				continue;
+			}
 
-		if ($table->hasColumn('bandwidth_quota') === false) {
-			$table->addColumn(
-				'bandwidth_quota',
-				Types::BIGINT,
-				['notnull' => false, 'comment' => 'Bandwidth quota in bytes per month (NULL = unlimited)']
-			);
-			$added[] = 'bandwidth_quota';
-		}
-
-		if ($table->hasColumn('request_quota') === false) {
-			$table->addColumn(
-				'request_quota',
-				Types::INTEGER,
-				['notnull' => false, 'comment' => 'API request quota per day (NULL = unlimited)']
-			);
-			$added[] = 'request_quota';
-		}
-
-		// ---------------------------------------------------------------
-		// Identity facet — what OpenCatalogi's publisher record carried.
-		// These answer the same question `uuid` answers ("which legal entity
-		// is this"), which is why they live on the organisation row rather
-		// than in a second store keyed differently.
-		// ---------------------------------------------------------------
-
-		if ($table->hasColumn('type') === false) {
-			$table->addColumn(
-				'type',
-				Types::STRING,
-				[
-					'notnull' => false,
-					'length' => 64,
-					'default' => 'organisation',
-					'comment' => 'Discriminator: organisation|government|vendor|collaboration|department',
-				]
-			);
-			$added[] = 'type';
-		}
-
-		if ($table->hasColumn('summary') === false) {
-			$table->addColumn(
-				'summary',
-				Types::TEXT,
-				['notnull' => false, 'comment' => 'Short summary for overview pages (OpenCatalogi `summary`)']
-			);
-			$added[] = 'summary';
-		}
-
-		if ($table->hasColumn('oin') === false) {
-			$table->addColumn(
-				'oin',
-				Types::STRING,
-				['notnull' => false, 'length' => 64, 'comment' => 'Overheidsidentificatienummer']
-			);
-			$added[] = 'oin';
-		}
-
-		if ($table->hasColumn('tooi') === false) {
-			$table->addColumn(
-				'tooi',
-				Types::STRING,
-				['notnull' => false, 'length' => 64, 'comment' => 'TOOI identifier for the organisation']
-			);
-			$added[] = 'tooi';
-		}
-
-		if ($table->hasColumn('rsin') === false) {
-			$table->addColumn(
-				'rsin',
-				Types::STRING,
-				['notnull' => false, 'length' => 16, 'comment' => 'RSIN (9 digits, 11-proef) of the non-natural person']
-			);
-			$added[] = 'rsin';
-		}
-
-		if ($table->hasColumn('kvk') === false) {
-			$table->addColumn(
-				'kvk',
-				Types::STRING,
-				['notnull' => false, 'length' => 16, 'comment' => 'Chamber-of-Commerce (KvK) number']
-			);
-			$added[] = 'kvk';
-		}
-
-		if ($table->hasColumn('pki') === false) {
-			$table->addColumn(
-				'pki',
-				Types::TEXT,
-				['notnull' => false, 'comment' => 'PKIoverheid certificate reference']
-			);
-			$added[] = 'pki';
-		}
-
-		if ($table->hasColumn('image') === false) {
-			$table->addColumn(
-				'image',
-				Types::TEXT,
-				['notnull' => false, 'comment' => 'Logo/avatar as a URL or base64 data URI']
-			);
-			$added[] = 'image';
-		}
-
-		// ---------------------------------------------------------------
-		// Relationship facet — what Stackiq's vendor record carried.
-		//
-		// `merged_into` is core rather than app-specific because a merge
-		// changes WHICH UUID IS AUTHORITATIVE. An organisation that has been
-		// merged away must stop resolving as a tenant, or every query scoped
-		// to it is a cross-tenant read of the survivor's data.
-		// ---------------------------------------------------------------
-
-		if ($table->hasColumn('registration_status') === false) {
-			$table->addColumn(
-				'registration_status',
-				Types::STRING,
-				[
-					'notnull' => false,
-					'length' => 32,
-					'comment' => 'Registration lifecycle: concept|submitted|registered|rejected|merged',
-				]
-			);
-			$added[] = 'registration_status';
-		}
-
-		if ($table->hasColumn('merged_into') === false) {
-			$table->addColumn(
-				'merged_into',
-				Types::STRING,
-				[
-					'notnull' => false,
-					'length' => 255,
-					'comment' => 'UUID of the surviving organisation when this one was merged away',
-				]
-			);
-			$added[] = 'merged_into';
-		}
-
-		if ($table->hasColumn('merged_at') === false) {
-			$table->addColumn(
-				'merged_at',
-				Types::DATETIME,
-				['notnull' => false, 'comment' => 'When this organisation was merged away']
-			);
-			$added[] = 'merged_at';
-		}
-
-		// Indexes for the lookups the consolidation introduces. `oin` is how a
-		// publication resolves its publisher; `merged_into` is walked on every
-		// tenant resolution to follow a merge chain to the survivor.
-		if ($table->hasIndex('openregister_org_oin_idx') === false) {
-			$table->addIndex(['oin'], 'openregister_org_oin_idx');
-			$added[] = 'index:oin';
-		}
-
-		if ($table->hasIndex('openregister_org_merged_idx') === false) {
-			$table->addIndex(['merged_into'], 'openregister_org_merged_idx');
-			$added[] = 'index:merged_into';
+			$table->addIndex($indexColumns, $indexName);
+			$added[] = 'index:' . implode(',', $indexColumns);
 		}
 
 		if ($added === []) {

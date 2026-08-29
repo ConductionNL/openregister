@@ -370,7 +370,12 @@ class Organisation extends Entity implements JsonSerializable {
 	 * organisation must stop resolving as a tenant: if it kept resolving, every
 	 * query scoped to it would read the survivor's data under the old boundary.
 	 * {@see \OCA\OpenRegister\Db\OrganisationMapper::resolveMergeTarget()}
-	 * walks this to the survivor, and the tenant-resolution path calls it.
+	 * walks this to the survivor.
+	 *
+	 * NOT YET WIRED: the live tenant-resolution path does not call the resolver
+	 * yet, so a merged organisation still resolves as itself. Doing so changes
+	 * which rows every scoped query returns and is held for its own change --
+	 * see openspec/changes/consolidate-organisation-on-or/tasks.md task 3.3.
 	 *
 	 * @var string|null
 	 */
