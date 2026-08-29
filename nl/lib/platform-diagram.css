@@ -412,7 +412,7 @@ platform-diagram .box-wrap.app-builder {
 
 /* App Builder list: when a COMING SOON-style badge is attached we treat the
    cluster as a placeholder (dashed border, faded text). When no badge is
-   set the cluster styles like every other list — OpenBuilt is a real app. */
+   set the cluster styles like every other list — OpenBuild is a real app. */
 platform-diagram .box-wrap.app-builder.has-badge .box {
   border-style: dashed;
   background: var(--c-cobalt-50);
