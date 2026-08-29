@@ -325,3 +325,23 @@ jobs:
       # The fleet had 30,459 such strings, so this records the current count and
       # fails only when it GROWS — burning it down stays an ordinary PR.
       frontend-checks: '["check:specs", "test:l10n", "format", "check:schema-l10n", "check:l10n-js"]'
+      # ── Cost controls (see ConductionNL/.github#596, #599) ───────────────
+      #
+      # The fleet's CI was not slow, it was QUEUED. A Code Quality run does
+      # ~38 job-minutes of work and its longest job is 16 minutes, but the
+      # median run took 78.5 minutes wall clock: one poll on 2026-08-27 found
+      # 53 jobs running against the account's 60-job ceiling, 1,528 queued
+      # behind them, and a run that had waited 425 minutes to start. ~96% of
+      # the wall clock was queueing, so the levers below remove DEMAND rather
+      # than making any check faster.
+      # Run PHPUnit and Playwright only when the diff could change their
+      # verdict. They are 29 of the ~38 job-minutes a run spends, and 58% of
+      # sampled fleet commits touched no .php/.js/.ts/.vue file at all. Fails
+      # safe TOWARDS running, and a filtered skip is a declared state in the
+      # Quality Report, distinct from both a pass and a missing verdict.
+      enable-path-filtering: true
+      # PR-time PHPUnit runs the primary PHP against the newest declared
+      # Nextcloud; the full matrix still runs on every push to a default
+      # branch and on the release PR into beta. Breadth moves from
+      # per-commit to per-merge, it is not dropped.
+      reduce-pr-matrix: true
