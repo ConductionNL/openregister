@@ -80,6 +80,12 @@ use OCP\AppFramework\Db\Entity;
  * @method void setParamsDigest(?string $paramsDigest)
  * @method array|null getResultSummary()
  * @method void setResultSummary(?array $resultSummary)
+ * @method string|null getFlowRun()
+ * @method void setFlowRun(?string $flowRun)
+ * @method string|null getFlowNode()
+ * @method void setFlowNode(?string $flowNode)
+ * @method integer|null getFlowStep()
+ * @method void setFlowStep(?int $flowStep)
  *
  * @psalm-suppress PossiblyUnusedMethod
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
@@ -364,6 +370,41 @@ class AuditTrail extends Entity implements JsonSerializable {
 	protected ?array $resultSummary = null;
 
 	/**
+	 * The uuid of the flow run that was executing when this row was written.
+	 *
+	 * Set from the ambient run context rather than passed by the writing code,
+	 * so a write made by an app that has never heard of flows is attributed
+	 * exactly like a write made by the node itself. Null on every row written
+	 * outside a run — and null is the ONLY way to say "no run", because a run
+	 * uuid is never an empty string.
+	 *
+	 * Stored as a plain stamp with no foreign key: flow-run retention prunes
+	 * runs, and an audit row is immutable, so a reference that could be
+	 * invalidated by retention must not be one the reader depends on
+	 * resolving.
+	 *
+	 * @var string|null Uuid of the attributing flow run.
+	 */
+	protected ?string $flowRun = null;
+
+	/**
+	 * The id, within the flow graph, of the node that was executing.
+	 *
+	 * @var string|null Node id of the attributing step.
+	 */
+	protected ?string $flowNode = null;
+
+	/**
+	 * The sequence number of the step that was executing.
+	 *
+	 * Steps are appended across a resume and never renumbered, so this orders
+	 * a run's writes even when the run suspended and continued days later.
+	 *
+	 * @var integer|null Step sequence of the attributing step.
+	 */
+	protected ?int $flowStep = null;
+
+	/**
 	 * Constructor for the AuditTrail class
 	 *
 	 * Sets up field types for all properties
@@ -401,6 +442,9 @@ class AuditTrail extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'paramsDigest', type: 'string');
 		$this->addType(fieldName: 'resultSummary', type: 'json');
 		$this->addType(fieldName: 'purgedAt', type: 'datetime');
+		$this->addType(fieldName: 'flowRun', type: 'string');
+		$this->addType(fieldName: 'flowNode', type: 'string');
+		$this->addType(fieldName: 'flowStep', type: 'integer');
 	}//end __construct()
 
 	/**
@@ -508,7 +552,10 @@ class AuditTrail extends Entity implements JsonSerializable {
 	 *     previousHash: null|string,
 	 *     toolId: null|string,
 	 *     paramsDigest: null|string,
-	 *     resultSummary: array|null
+	 *     resultSummary: array|null,
+	 *     flowRun: null|string,
+	 *     flowNode: null|string,
+	 *     flowStep: int|null
 	 * }
 	 */
 	public function jsonSerialize(): array {
@@ -554,6 +601,18 @@ class AuditTrail extends Entity implements JsonSerializable {
 			'toolId' => $this->toolId,
 			'paramsDigest' => $this->paramsDigest,
 			'resultSummary' => $this->resultSummary,
+			// ⚠️ These three are COVERED BY THE HASH CHAIN. They are part of the
+			// canonical JSON that AuditHashService seals, which is what makes
+			// re-pointing a row at a different run detectable rather than
+			// merely unlikely. That coverage is also why adding them was a
+			// genesis-seed migration (v1 → v2, ADR-003 Rule 4) rather than a
+			// column addition: any key added here changes the canonical form of
+			// every row ever written. Do not add a key to this array without
+			// reading that ADR — and note that `purgedAt` is deliberately
+			// ABSENT for exactly this reason.
+			'flowRun' => $this->flowRun,
+			'flowNode' => $this->flowNode,
+			'flowStep' => $this->flowStep,
 		];
 	}//end jsonSerialize()
 

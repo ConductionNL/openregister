@@ -2720,7 +2720,10 @@
         "Register descriptors": "Descripturs da register",
         "ships v{shipped}": "furnescha v{shipped}",
         "State": "Status",
-        "v{installed} → ships v{shipped}": "v{installed} → furnescha v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → furnescha v{shipped}",
+        "Where the automation lives": "Nua che l'automatisaziun viva",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Flussins èn quai che capita senza che insatgi cliccheschia: in object che vegn stampà cun memorisar, ina app che vegn infurmada cura ch'ina endataziun mida. Qua als legias e modifitgeschas. Uss n'è nagut da construir.",
+        "Open Flows in the menu": "Avrir Flussins en il menu"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

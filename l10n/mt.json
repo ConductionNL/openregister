@@ -2722,7 +2722,10 @@
         "Register descriptors": "Deskritturi tar-reġistri",
         "ships v{shipped}": "iwassal v{shipped}",
         "State": "Stat",
-        "v{installed} → ships v{shipped}": "v{installed} → iwassal v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → iwassal v{shipped}",
+        "Where the automation lives": "Fejn tgħix l-awtomazzjoni",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Il-flussi huma dak li jiġri mingħajr ma xi ħadd jikklikkja: oġġett ittimbrat mal-iffrankar, applikazzjoni mgħarrfa meta jinbidel rekord. Hawn taqrahom u teditjahom. M'hemm xejn x'tibni issa.",
+        "Open Flows in the menu": "Iftaħ Flussi fil-menu"
     },
     "plurals": {
         "{count} email": [
