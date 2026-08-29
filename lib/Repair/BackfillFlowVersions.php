@@ -153,6 +153,20 @@ class BackfillFlowVersions implements IRepairStep {
 			)
 		);
 
+		// Sweep version rows whose flow is gone. `FlowService::delete()` now
+		// cascades to them, so no NEW orphan can appear — but an instance that
+		// deleted a flow between the version table landing and that cascade
+		// landing kept the rows, unreachable through any read path because
+		// every version read is keyed by flow.
+		try {
+			$orphans = $this->container->get(FlowVersionMapper::class)->deleteOrphaned();
+			if ($orphans > 0) {
+				$output->info(sprintf('Flow versions: removed %d orphaned version row(s).', $orphans));
+			}
+		} catch (Throwable $e) {
+			$output->warning('Orphaned flow versions could not be swept: ' . $e->getMessage());
+		}
+
 	}//end run()
 
 	/**
