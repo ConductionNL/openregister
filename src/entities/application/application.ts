@@ -1,4 +1,4 @@
-import type { SafeParseReturnType } from 'zod'
+import type { ZodSafeParseResult } from 'zod'
 import type { TApplication } from './application.types'
 
 import { z } from 'zod'
@@ -77,7 +77,7 @@ export class Application implements TApplication {
 		this.updated = application.updated || ''
 	}
 
-	public validate(): SafeParseReturnType<TApplication, unknown> {
+	public validate(): ZodSafeParseResult<unknown> {
 		const schema = z.object({
 			id: z.number().optional(),
 			uuid: z.string().optional(),
