@@ -1,6 +1,6 @@
 --- a/src/Chat/OllamaChat.php
 +++ b/src/Chat/OllamaChat.php
-@@ -43,6 +43,14 @@
+@@ -42,6 +42,14 @@ class OllamaChat implements ChatInterface
      /** @var CalledFunction[] */
      public array $functionsCalled = [];
  
@@ -12,11 +12,11 @@
 +     */
 +    public array $lastUsage = ['promptTokens' => 0, 'completionTokens' => 0, 'totalDurationMs' => 0];
 +
-     public function __construct(protected OllamaConfig $config, ?LoggerInterface $logger = null)
+     public function __construct(protected OllamaConfig $config, private readonly LoggerInterface $logger = new NullLogger())
      {
          if (! isset($config->model)) {
-@@ -174,6 +182,13 @@
-         $contents = $response->getBody()->getContents();
+@@ -183,6 +191,13 @@ class OllamaChat implements ChatInterface
+         $this->logger->debug($contents);
          $json = Utility::decodeJson($contents);
  
 +        // Accumulate token/latency usage across the tool-call recursion so OpenRegister can

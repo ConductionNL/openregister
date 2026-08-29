@@ -196,9 +196,6 @@
       <code><![CDATA[$config->temperature]]></code>
       <code><![CDATA[$config->temperature]]></code>
     </UndefinedPropertyAssignment>
-    <UndefinedPropertyFetch>
-      <code><![CDATA[$config->apiKey]]></code>
-    </UndefinedPropertyFetch>
   </file>
   <file src="lib/Service/Chat/ResponseGenerationHandler.php">
     <UndefinedPropertyAssignment>
