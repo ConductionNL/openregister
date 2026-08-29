@@ -1,4 +1,4 @@
-import type { SafeParseReturnType } from 'zod'
+import type { ZodSafeParseResult } from 'zod'
 import type { TConfiguration } from './configuration.types'
 
 import { z } from 'zod'
@@ -69,7 +69,7 @@ export class ConfigurationEntity implements TConfiguration {
 	/**
 	 * Validates the configuration against a schema
 	 */
-	public validate(): SafeParseReturnType<TConfiguration, unknown> {
+	public validate(): ZodSafeParseResult<unknown> {
 		const schema = z.object({
 			id: z.string().min(1),
 			title: z.string().min(1),

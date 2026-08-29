@@ -1,4 +1,4 @@
-import type { SafeParseReturnType } from 'zod'
+import type { ZodSafeParseResult } from 'zod'
 import type { TSource } from './source.types'
 
 import { z } from 'zod'
@@ -28,7 +28,7 @@ export class Source implements TSource {
 		this.created = source.created || ''
 	}
 
-	public validate(): SafeParseReturnType<TSource, unknown> {
+	public validate(): ZodSafeParseResult<unknown> {
 		const schema = z.object({
 			id: z.union([z.string(), z.number()]),
 			title: z.string().min(1),
