@@ -411,17 +411,31 @@ test.describe('running a flow', () => {
 	test('a run records one step per node, naming the catalogue node type', async ({
 		request,
 	}) => {
+		// 🔴 THE ACTION IS ON THE NODE. This fixture used to hang the step type
+		// off the EDGE, which is the pre-inversion shape the engine now refuses
+		// outright ("an edge is sequence and a NODE is the action"). It had been
+		// failing on development for exactly that reason — the assertions below
+		// never ran, so the positive control this suite exists to be was not
+		// controlling anything.
+		//
+		// `exit: true` on the last node rather than a terminal `openregister.end`
+		// node: an end node stops the run, which lands it in `stopped`, while
+		// this test is asserting the `completed` path.
 		const flow = await createFlow(request, {
-			nodes: [{ id: 'start' }, { id: 'middle' }],
-			edges: [
+			nodes: [
 				{
-					id: 'first',
-					from: 'start',
-					to: 'middle',
+					id: 'start',
 					type: 'openregister.set-fields',
 					config: { fields: { touched: RUN_ID } },
 				},
+				{
+					id: 'middle',
+					type: 'openregister.set-fields',
+					config: { fields: { second: RUN_ID } },
+					exit: true,
+				},
 			],
+			edges: [{ id: 'first', from: 'start', to: 'middle' }],
 		})
 
 		// The SYNCHRONOUS test-run endpoint, deliberately. `POST /flows/{id}/run`
@@ -457,12 +471,16 @@ test.describe('running a flow', () => {
 	test('an unresolvable node fails its step instead of being skipped', async ({
 		request,
 	}) => {
+		// A BARE node type — exactly what the old builder produced — on the NODE,
+		// where the engine actually looks. Carried on the edge (as this fixture
+		// used to) the flow is refused as pre-inversion before any node runs, so
+		// the test proved nothing about unresolvable NODES.
 		const flow = await createFlow(request, {
-			nodes: [{ id: 'start' }, { id: 'middle' }],
-			// A BARE id — exactly what the old builder produced.
-			edges: [
-				{ id: 'first', from: 'start', to: 'middle', type: 'set-fields' },
+			nodes: [
+				{ id: 'start', type: 'set-fields', config: {} },
+				{ id: 'middle', type: 'openregister.end', config: {} },
 			],
+			edges: [{ id: 'first', from: 'start', to: 'middle' }],
 		})
 
 		const run = await request.post('/apps/openregister/api/flow-runs/test', {
