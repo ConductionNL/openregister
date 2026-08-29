@@ -63,7 +63,20 @@
 		"X-Custom-Header: value\nAuthorization: Bearer token": "Literal HTTP header example; header names are protocol tokens and are never translated.",
 		"X-Custom-Header: value\\nAuthorization: Bearer token": "Literal HTTP header example with an escaped newline; header names are protocol tokens.",
 		"objectType: object\\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens.",
-		"objectType: object\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens and are never translated."
+		"objectType: object\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens and are never translated.",
+		"myapp": "Literal example app id inside a code sample; an identifier rather than prose, so it is shown verbatim.",
+		"Id": "The identifier acronym in the source's own casing; ID and ID: are already recorded here, and diverging on casing alone would be inconsistent.",
+		"App": "Maltese uses 'app' unchanged for a software application, and this bundle's pre-existing value for the key is already the bare loan.",
+		"Bookmarks": "The Nextcloud Bookmarks app's own name, used as an integration label in src/integrations/builtin/bookmarks.js; product names are not translated here, as with Deck.",
+		"Link": "Kept as the English IT loan, which is this bundle's documented house style for that class of term (Path, Branch, Headers, Format, Status, Timestamp); Maltese hyperlink usage takes 'link' unchanged.",
+		"Links": "The same loan in the plural, which Maltese forms as 'links'; used here as the URL entity-type label in EntitiesTab.vue.",
+		"Metadata": "Borrowed unchanged in Maltese technical writing, and it belongs to the English-loan set this bundle keeps deliberately rather than coining an equivalent for.",
+		"Path": "Named explicitly in this locale's lexicon note as one of the English IT loans the bundle keeps; the bundle already writes 'Path fir-repository'.",
+		"Host": "Network host. The sibling key 'Host *' is already a recorded cognate here for the same reason, so the bare label follows it.",
+		"Shards": "Apache SOLR's own object name, as with the already-recorded ConfigSet; SOLR does not localise it and Maltese admin usage names the same object.",
+		"{count} email": "A count placeholder plus 'email', which is already a recorded cognate in this bundle; no other word is left to translate.",
+		"{count} emails": "The same loan in the plural, which Maltese writes 'emails'; Emails is already a recorded cognate here.",
+		"{count} widget(s)": "'widget' is kept as an English loan and its Maltese plural is 'widgets', so the source's own '(s)' parenthetical is the right form — the shape this bundle already uses in 'Qed juri {count} dashboard(s)'."
 	},
 	"corrections": {
 		"Audit trail #{id}": "Was `Audit Trail #{id}` — untranslated English, merely re-cased, and the only audit-trail value in the bundle left that way against 24 that use awditjar. Now `Traċċa tal-Awditjar #{id}`, matching Traċċi tal-Awditjar, Dettalji tat-Traċċa tal-Awditjar and the rest.",
