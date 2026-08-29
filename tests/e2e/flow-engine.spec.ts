@@ -537,6 +537,77 @@ test.describe('the Flows page', () => {
 		).toBeVisible({ timeout: 15000 })
 	})
 
+	/**
+	 * 🔴 THE BADGE AND THE BUTTON ARE THE WHOLE POINT OF THE EDITOR HALF. An
+	 * author who cannot see that a version is published, and cannot publish a
+	 * draft, is looking at a canvas that silently refuses their edits.
+	 */
+	test('a published flow shows its version and offers to draft a new one', async ({
+		page,
+		request,
+	}) => {
+		const flow = await createFlow(request, {
+			name: `${RUN_ID} published ui`,
+			nodes: [{ id: 'end1', type: 'openregister.end', config: {} }],
+		})
+
+		await page.goto(`/apps/openregister/#${FlowDetailPage(flow.id)}`, {
+			waitUntil: 'domcontentloaded',
+		})
+
+		await expect(page.locator('[data-cy="flow-version"]')).toHaveText('v1', {
+			timeout: 15000,
+		})
+		await expect(page.locator('[data-cy="flow-lifecycle"]')).toHaveText(
+			'Published',
+		)
+
+		// A published version offers a draft, and does NOT offer Publish again.
+		await expect(page.locator('[data-cy="flow-create-draft"]')).toBeVisible()
+		await expect(page.locator('[data-cy="flow-publish"]')).toHaveCount(0)
+	})
+
+	/**
+	 * The other half: a DRAFT must be publishable from the editor. Without this
+	 * button a newly created flow can never run, because a draft backs no run.
+	 */
+	test('a draft offers Publish, and publishing flips the badge', async ({
+		page,
+		request,
+	}) => {
+		const flow = await createFlow(
+			request,
+			{
+				name: `${RUN_ID} draft ui`,
+				nodes: [{ id: 'end1', type: 'openregister.end', config: {} }],
+			},
+			{ publish: false },
+		)
+
+		await page.goto(`/apps/openregister/#${FlowDetailPage(flow.id)}`, {
+			waitUntil: 'domcontentloaded',
+		})
+
+		await expect(page.locator('[data-cy="flow-lifecycle"]')).toHaveText(
+			'Draft',
+			{ timeout: 15000 },
+		)
+
+		await page.locator('[data-cy="flow-publish"]').click()
+
+		// 🔑 ASSERT THE BADGE, NOT THE CLICK. A button that posts and silently
+		// fails looks exactly like one that worked; the badge only says
+		// "Published" once the store has re-read the flow from the server.
+		await expect(page.locator('[data-cy="flow-lifecycle"]')).toHaveText(
+			'Published',
+			{ timeout: 15000 },
+		)
+
+		// And the server agrees — the UI is not showing an optimistic state.
+		const read = await request.get(`/apps/openregister/api/flows/${flow.id}`)
+		expect((await read.json()).lifecycleStatus).toBe('published')
+	})
+
 	test('the list is an ordinary index page with a New flow action (ADR-096)', async ({
 		page,
 	}) => {
