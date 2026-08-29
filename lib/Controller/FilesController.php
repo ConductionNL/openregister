@@ -2117,6 +2117,88 @@ class FilesController extends Controller {
 	}//end preview()
 
 	/**
+	 * Update a file's OpenRegister-side metadata: description, category, labels.
+	 *
+	 * 🔴 DESCRIPTION AND CATEGORY HAD NO SURFACE AT ALL.
+	 * `FileMapper::setDescriptionForFile()` and `setCategoryForFile()` are
+	 * reached only from `UpdateFileHandler::updateFileMetadata()`, and nothing
+	 * called that — so two thirds of the metadata the `file-actions` spec
+	 * describes could be stored by the data model and set by nobody. Labels had
+	 * their own route and worked; that is why the gap was easy to miss.
+	 *
+	 * Each field is nullable and SKIPPED when null, which is what lets a caller
+	 * change one without clearing the others. An empty string clears a field —
+	 * that distinction is the handler's contract and is preserved here rather
+	 * than flattened by a truthiness check.
+	 *
+	 * @param string  $register Register slug.
+	 * @param string  $schema   Schema slug.
+	 * @param string  $id       Object ID.
+	 * @param integer $fileId   File ID.
+	 *
+	 * @return JSONResponse The updated metadata, 403, or 404.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	#[AnonRateLimit(limit: 30, period: 60)]
+	public function updateMetadata(string $register, string $schema, string $id, int $fileId): JSONResponse {
+		$this->setObjectContext(register: $register, schema: $schema);
+
+		try {
+			// ADR-005 / gate-7: the same object-level RBAC updateLabels applies.
+			// Metadata is no less a mutation for being descriptive.
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
+			$this->objectService->setObject($id);
+			if ($this->objectService->getObject() === null) {
+				return new JSONResponse(
+					data: ['error' => $this->translate(text: 'Object not found')],
+					statusCode: 404
+				);
+			}
+
+			$data = $this->request->getParams();
+
+			// Presence, not truthiness: the handler treats null as "leave alone"
+			// and '' as "clear", so `??` would make an empty description
+			// impossible to send — array_key_exists keeps the two distinct.
+			$description = null;
+			if (array_key_exists('description', $data) === true) {
+				$description = (string)$data['description'];
+			}
+
+			$category = null;
+			if (array_key_exists('category', $data) === true) {
+				$category = (string)$data['category'];
+			}
+
+			$labels = null;
+			if (array_key_exists('labels', $data) === true) {
+				$labels = (array)$data['labels'];
+			}
+
+			$entity = $this->fileService->updateFileMetadata(
+				fileId: $fileId,
+				description: $description,
+				category: $category,
+				labels: $labels
+			);
+
+			return new JSONResponse(data: $entity->jsonSerialize());
+		} catch (NotPermittedException $e) {
+			return new JSONResponse(
+				data: ['error' => $this->translate(text: 'You do not have access to this object')],
+				statusCode: 403
+			);
+		} catch (Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+		}//end try
+	}//end updateMetadata()
+
+	/**
 	 * Update file labels
 	 *
 	 * @param string $register Register slug
