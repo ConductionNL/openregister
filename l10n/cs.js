@@ -2556,7 +2556,7 @@ OC.L10N.register(
         "Zookeeper port number (optional, defaults to 2181)": "Číslo portu Zookeeper (volitelné, výchozí je 2181)",
         "\\u26A0\\uFE0F PERMANENT DELETION WARNING \\u26A0\\uFE0F\n\nYou are about to PERMANENTLY delete ALL objects for schema \"{schema}\":\n\n\\u2022 Active objects: {active}\n\\u2022 Soft-deleted objects: {deleted}\n\\u2022 Total: {total}\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?": "\\u26A0\\uFE0F VAROVÁNÍ O TRVALÉM SMAZÁNÍ \\u26A0\\uFE0F\n\nChystáte se TRVALE smazat VŠECHNY objekty pro schéma \"{schema}\":\n\n\\u2022 Aktivní objekty: {active}\n\\u2022 Dočasně smazané objekty: {deleted}\n\\u2022 Celkem: {total}\n\nTyto objekty budou zcela odstraněny z databáze a NELZE je obnovit.\n\nJste si naprosto jisti?",
         "\\u26A0\\uFE0F PERMANENT DELETION WARNING \\u26A0\\uFE0F\n\nYou are about to PERMANENTLY delete {count} soft-deleted objects for schema \"{schema}\".\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?": "\\u26A0\\uFE0F VAROVÁNÍ O TRVALÉM SMAZÁNÍ \\u26A0\\uFE0F\n\nChystáte se TRVALE smazat {count} dočasně smazaných objektů pro schéma \"{schema}\".\n\nTyto objekty budou zcela odstraněny z databáze a NELZE je obnovit.\n\nJste si naprosto jisti?",
-        "_%n entry has no hash yet_::_%n entries have no hash yet_": ["%n záznam zatím nemá otisk","%n záznamy zatím nemají otisk","%n záznamů zatím nemá otisk"],
+        "_%n entry has no hash yet_::_%n entries have no hash yet_": ["%n záznam zatím nemá otisk","%n záznamy zatím nemají otisk","%n záznamu zatím nemá otisk","%n záznamů zatím nemá otisk"],
         "across {count} registers": "across {count} registers",
         "and accessible to all users in selected groups (or all users if no groups selected).": "a přístupné všem uživatelům ve vybraných skupinách (nebo všem uživatelům, pokud nejsou vybrány žádné skupiny).",
         "and add the files there.": "a přidejte soubory tam.",
@@ -2728,5 +2728,5 @@ OC.L10N.register(
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Toky jsou to, co se děje bez kliknutí: objekt označený při uložení, aplikace informovaná při změně záznamu. Zde je čtete a upravujete. Nyní není třeba nic stavět.",
         "Open Flows in the menu": "Otevřete Toky v nabídce"
     },
-    "nplurals=2; plural=(n != 1);"
+    "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 )

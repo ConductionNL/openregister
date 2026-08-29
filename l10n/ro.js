@@ -2728,5 +2728,5 @@ OC.L10N.register(
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Fluxurile sunt ce se întâmplă fără ca cineva să dea clic: un obiect ștampilat la salvare, o aplicație anunțată când un înregistrare se schimbă. Aici le citiți și le editați. Nu e nimic de construit acum.",
         "Open Flows in the menu": "Deschideți Fluxuri în meniu"
     },
-    "nplurals=2; plural=(n != 1);"
+    "nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));"
 )

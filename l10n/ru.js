@@ -2556,7 +2556,7 @@ OC.L10N.register(
         "Zookeeper port number (optional, defaults to 2181)": "Номер порта Zookeeper (необязательно, по умолчанию 2181)",
         "\\u26A0\\uFE0F PERMANENT DELETION WARNING \\u26A0\\uFE0F\n\nYou are about to PERMANENTLY delete ALL objects for schema \"{schema}\":\n\n\\u2022 Active objects: {active}\n\\u2022 Soft-deleted objects: {deleted}\n\\u2022 Total: {total}\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?": "\\u26A0\\uFE0F ПРЕДУПРЕЖДЕНИЕ О БЕЗВОЗВРАТНОМ УДАЛЕНИИ \\u26A0\\uFE0F\n\nВы собираетесь БЕЗВОЗВРАТНО удалить ВСЕ объекты схемы \"{schema}\":\n\n\\u2022 Активных объектов: {active}\n\\u2022 Программно удалённых объектов: {deleted}\n\\u2022 Итого: {total}\n\nЭти объекты будут полностью удалены из базы данных и НЕ МОГУТ быть восстановлены.\n\nВы абсолютно уверены?",
         "\\u26A0\\uFE0F PERMANENT DELETION WARNING \\u26A0\\uFE0F\n\nYou are about to PERMANENTLY delete {count} soft-deleted objects for schema \"{schema}\".\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?": "\\u26A0\\uFE0F ПРЕДУПРЕЖДЕНИЕ О БЕЗВОЗВРАТНОМ УДАЛЕНИИ \\u26A0\\uFE0F\n\nВы собираетесь БЕЗВОЗВРАТНО удалить {count} программно удалённых объектов схемы \"{schema}\".\n\nЭти объекты будут полностью удалены из базы данных и НЕ МОГУТ быть восстановлены.\n\nВы абсолютно уверены?",
-        "_%n entry has no hash yet_::_%n entries have no hash yet_": ["%n запись ещё не имеет хеша","%n записи ещё не имеют хеша","%n записей ещё не имеют хеша"],
+        "_%n entry has no hash yet_::_%n entries have no hash yet_": ["%n запись ещё не имеет хеша","%n записи ещё не имеют хеша","%n записей ещё не имеют хеша","%n записи ещё не имеют хеша"],
         "across {count} registers": "across {count} registers",
         "and accessible to all users in selected groups (or all users if no groups selected).": "и доступно всем пользователям в выбранных группах (или всем пользователям, если группы не выбраны).",
         "and add the files there.": "и добавьте файлы туда.",
@@ -2728,5 +2728,5 @@ OC.L10N.register(
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Потоки — это то, что происходит без нажатий: объект, помечаемый при сохранении, приложение, уведомляемое при изменении записи. Здесь вы их читаете и редактируете. Сейчас ничего строить не нужно.",
         "Open Flows in the menu": "Откройте Потоки в меню"
     },
-    "nplurals=2; plural=(n != 1);"
+    "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);"
 )

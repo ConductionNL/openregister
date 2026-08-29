@@ -2731,29 +2731,36 @@
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Tokovi su ono što se dešava bez klika: objekat označen pri spremanju, aplikacija obaviještena kad se zapis promijeni. Ovdje ih čitate i uređujete. Sada nema šta graditi.",
         "Open Flows in the menu": "Otvorite Tokove u meniju"
     },
+    "pluralForm": "nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;",
     "plurals": {
         "{count} email": [
             "{count} e-pošta",
-            "{count} e-pošte"
+            "{count} e-pošte",
+            "{count} e-pošta"
         ],
         "Purge {count} object from database": [
             "Trajno ukloni {count} objekt iz baze podataka",
+            "Trajno ukloni {count} objekta iz baze podataka",
             "Trajno ukloni {count} objekata iz baze podataka"
         ],
         "Restore {count} object": [
             "Vrati {count} objekt",
+            "Vrati {count} objekta",
             "Vrati {count} objekata"
         ],
         "Successfully restored {count} object": [
             "Uspješno vraćen {count} objekt",
+            "Uspješno vraćena {count} objekta",
             "Uspješno vraćeno {count} objekata"
         ],
         "Delete {count} object": [
             "Izbriši {count} objekt",
+            "Izbriši {count} objekta",
             "Izbriši {count} objekata"
         ],
         "Object successfully deleted": [
             "Objekt je uspješno izbrisan",
+            "Objekti su uspješno izbrisani",
             "Objekti su uspješno izbrisani"
         ]
     }
