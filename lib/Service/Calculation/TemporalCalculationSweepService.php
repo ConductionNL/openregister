@@ -266,7 +266,7 @@ class TemporalCalculationSweepService {
 			// A `sequence` only resolves on the create path, where a
 			// SequenceContext is active; the sweep never has one. Recomputing here
 			// would render the node as "" and report a spurious change on every
-			// pass (and, before openregister#3072, persist the truncated value).
+			// pass (and, before openregister#3075, persist the truncated value).
 			if ($this->evaluator->expressionUsesSequence($spec['expression'] ?? null) === true) {
 				continue;
 			}

@@ -214,7 +214,7 @@ class RematerialiseCalculationsCommand extends Command {
 				// SequenceContext, so re-evaluating would resolve the node to null and
 				// `concat` would render it as "", replacing every assigned number with
 				// a truncated stub ("2026-0013" -> "2026-"). Never rewrite those.
-				// openregister#3072.
+				// openregister#3075.
 				if ($this->evaluator->expressionUsesSequence($spec['expression'] ?? null) === true) {
 					continue;
 				}

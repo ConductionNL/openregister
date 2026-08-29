@@ -170,7 +170,7 @@ class CalculationOnSaveListener implements IEventListener {
 			// null — but the evaluator then resolves the `sequence` node to null and
 			// `concat` renders that as "", so re-materialising would OVERWRITE the
 			// number assigned at create ("2026-0013" -> "2026-"). Skip the field and
-			// leave the stored value untouched. openregister#3072.
+			// leave the stored value untouched. openregister#3075.
 			if ($sequenceContext === null
 				&& $this->evaluator->expressionUsesSequence($spec['expression'] ?? null) === true
 			) {

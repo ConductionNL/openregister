@@ -3,7 +3,7 @@
 /**
  * OpenRegister CalculationOnSaveListenerSequenceTest
  *
- * Regression cover for openregister#3072: a materialised calculation that
+ * Regression cover for openregister#3075: a materialised calculation that
  * contains a `sequence` node must NOT be recomputed on the update path, where
  * no SequenceContext exists. Re-evaluating there resolves the node to null,
  * `concat` renders it as an empty string, and the number assigned at create is
@@ -160,7 +160,7 @@ class CalculationOnSaveListenerSequenceTest extends TestCase {
 	}//end objectWith()
 
 	/**
-	 * openregister#3072 — on UPDATE the assigned running number survives.
+	 * openregister#3075 — on UPDATE the assigned running number survives.
 	 *
 	 * Before the fix the evaluator resolved the context-less `sequence` node to
 	 * null, `concat` rendered "2026-", and the listener wrote that over the

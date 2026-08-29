@@ -952,7 +952,7 @@ class CalculationEvaluator {
 	 *
 	 * Every caller that materialises a calculation must therefore skip a
 	 * sequence-bearing expression while no context is active, leaving the
-	 * stored value untouched. See openregister#3072.
+	 * stored value untouched. See openregister#3075.
 	 *
 	 * @param mixed $expression Expression AST (any node).
 	 *
