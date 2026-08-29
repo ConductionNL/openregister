@@ -66,3 +66,30 @@ else
 fi
 
 echo 'e2e seed complete'
+
+# ── Settle the demo-data decision ────────────────────────────────────────────
+# 🔴 OR THE SETUP WIZARD MASKS EVERY CLICK. ADR-111 added an OPTIONAL
+# `demo-data` step, and CnAppRoot opens the non-gating wizard as a full modal
+# mask while ANY optional step that is not info/summary is reported not-done —
+# in every fresh browser context, so once per spec.
+#
+# Measured on this app's development at the ADR-111 merge: clicks failed with
+# "locator resolved to <button ...> - attempting click action", the call log
+# naming <ol class="cn-wizard-dialog__progress"> as the interceptor. The element
+# was found; the click never landed.
+#
+# SKIPPED, not installed: recording the decision is what closes the wizard.
+# Installing would push the app's whole demo dataset into every list the suite
+# asserts on. `demo-data-setup-step.spec.ts` exercises the install deliberately.
+#
+# Uses the workflow's own exported credentials rather than this script's, so it
+# does not depend on where in the file it sits.
+#
+# Tolerant on purpose: an app whose wizard has no demo-data step answers 400
+# here, and that is not a seeding failure.
+DEMO_BASE="${BASE_URL:-${NEXTCLOUD_URL:-http://localhost:8080}}"
+DEMO_CODE="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 300 \
+	-u "${ADMIN_USER:-admin}:${ADMIN_PASSWORD:-admin}" -X POST \
+	-H 'Content-Type: application/json' -H 'OCS-APIRequest: true' --data '{}' \
+	"${DEMO_BASE}/index.php/apps/openregister/api/setup/action/skip-demo-data" || echo 000)"
+echo "[ci-seed] POST setup/action/skip-demo-data -> HTTP ${DEMO_CODE}"
