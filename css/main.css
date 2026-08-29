@@ -569,7 +569,7 @@
 .tableColumnTitle {
 	min-width: 120px;
 	max-width: 200px;
-	word-wrap: break-word;
+	overflow-wrap: break-word;
 	overflow: hidden;
 }
 
@@ -588,7 +588,7 @@
 
 .value-cell {
 	width: 70%;
-	word-break: break-word;
+	overflow-wrap: break-word;
 	border-radius: 4px;
 }
 
@@ -869,7 +869,7 @@
 }
 
 .detail-value {
-	word-break: break-word;
+	overflow-wrap: break-word;
 	color: var(--color-text-default);
 	line-height: 1.4;
 }

@@ -1112,7 +1112,7 @@ h4 {
 
 .grid {
 	display: grid;
-	grid-gap: 24px;
+	gap: 24px;
 	grid-template-columns: 1fr 1fr;
 	margin-block-start: var(--OR-margin-50);
 	margin-block-end: var(--OR-margin-50);
