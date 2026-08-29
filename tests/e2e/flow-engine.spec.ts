@@ -278,22 +278,42 @@ test.describe('the version lifecycle', () => {
 		expect((await renamed.json()).name).toBe(`${RUN_ID} renamed while live`)
 	})
 
-	test('a draft cannot be run, and says which button to press', async ({
+	/**
+	 * 🔑 PRESSING RUN IN THE EDITOR IS A TEST RUN, so it works on a draft.
+	 *
+	 * This spec asserted a 409 until development routed the manual-run endpoint
+	 * through `TRIGGER_TEST` — the exemption that lets an author TRY a flow
+	 * before publishing it. Requiring publication first would make publishing a
+	 * precondition of testing, which is backwards, and the editor's Run button
+	 * is the only screen that needs the carve-out.
+	 *
+	 * What must remain true is that the run is UNPINNED: it walked the draft it
+	 * was started with, and no version can be substituted for it mid-run.
+	 */
+	test('a draft can be run from the editor, and the run is unpinned', async ({
 		request,
 	}) => {
 		const flow = await createFlow(
 			request,
-			{ name: `${RUN_ID} unpublished` },
+			{
+				name: `${RUN_ID} unpublished`,
+				nodes: [
+					{
+						id: 'a',
+						type: 'openregister.trigger-manual',
+						config: {},
+						exit: true,
+					},
+				],
+			},
 			{ publish: false },
 		)
 		expect(flow.lifecycleStatus).toBe('draft')
 
-		const refused = await request.post(
-			`/apps/openregister/api/flows/${flow.id}/run`,
-		)
+		const run = await request.post(`/apps/openregister/api/flows/${flow.id}/run`)
 
-		expect(refused.status()).toBe(409)
-		expect((await refused.json()).reason).toBe('no-published-version')
+		expect(run.status(), await run.text()).toBeLessThan(300)
+		expect((await run.json()).flowVersion).toBeNull()
 	})
 
 	/**
@@ -367,19 +387,40 @@ test.describe('the version lifecycle', () => {
 		expect((await again.json()).reason).toBe('not-a-draft')
 	})
 
-	test('a deprecated flow backs no new run', async ({ request }) => {
+	/**
+	 * Deprecating retires the PUBLISHED version, which is what stops a flow
+	 * backing new TRIGGERED runs — a trigger resolves the published version and
+	 * there no longer is one.
+	 *
+	 * Asserted on the version state rather than on a 409 from `/run`: that
+	 * endpoint is the editor's Run button and queues as `TRIGGER_TEST`, which
+	 * is deliberately exempt. Asserting a refusal there would be asserting
+	 * something the product does not do.
+	 */
+	test('deprecating leaves the flow with no published version', async ({
+		request,
+	}) => {
 		const flow = await createFlow(request, { name: `${RUN_ID} retired` })
 
 		const deprecated = await request.post(
 			`/apps/openregister/api/flows/${flow.id}/deprecate`,
 		)
 		expect(deprecated.status(), await deprecated.text()).toBe(200)
+		expect((await deprecated.json()).status).toBe('deprecated')
 
-		const refused = await request.post(
-			`/apps/openregister/api/flows/${flow.id}/run`,
+		const versions = await request.get(
+			`/apps/openregister/api/flows/${flow.id}/versions`,
 		)
-		expect(refused.status()).toBe(409)
-		expect((await refused.json()).reason).toBe('no-published-version')
+		const published = (await versions.json()).results.filter(
+			(v: { status: string }) => v.status === 'published',
+		)
+		expect(
+			published,
+			'a deprecated flow must have no published version',
+		).toHaveLength(0)
+
+		const read = await request.get(`/apps/openregister/api/flows/${flow.id}`)
+		expect((await read.json()).lifecycleStatus).toBe('deprecated')
 	})
 
 	test('one version reads back with the graph it names', async ({ request }) => {
