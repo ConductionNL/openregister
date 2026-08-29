@@ -284,4 +284,66 @@ class FlowLifecycleControllerTest extends TestCase {
 			$this->controller->version(id: 'flow-1', version: 99)->getStatus()
 		);
 	}//end testAnUnknownVersionNumberIs404()
+
+	/**
+	 * 🔴 THE EDITOR'S "RUN NOW" IS THE DOCUMENTED DRAFT EXCEPTION.
+	 *
+	 * Versioning made every dispatch require a published version, with one
+	 * carve-out spelled out in `FlowPublishedGraph::overlayOnto`: "an unpinned
+	 * run is the interactive draft test run — the one documented exception to
+	 * 'a draft cannot back a run'".
+	 *
+	 * `flow#run` is the endpoint the editor's Run button posts to, so it IS
+	 * that interactive run. It queued as MANUAL, which is not exempt, so a flow
+	 * that had never been published could not be run from the only screen the
+	 * exception exists for. This pins the trigger it must pass.
+	 *
+	 * @return void
+	 */
+	public function testTheEditorRunEndpointQueuesAsTheInteractiveTestRun(): void {
+		$captured = null;
+		$this->flows->method('run')->willReturnCallback(
+			function (string $uuid, array $subject, array $context, bool $sync, string $trigger) use (&$captured) {
+				$captured = $trigger;
+				return new \OCA\OpenRegister\Db\FlowRun();
+			}
+		);
+
+		$this->controller->run(id: 'flow-1');
+
+		$this->assertSame(
+			\OCA\OpenRegister\Service\Flow\FlowRunVersionPin::TRIGGER_TEST,
+			$captured,
+			'Run now must queue as the interactive test run, or the draft exception cannot be reached.'
+		);
+	}//end testTheEditorRunEndpointQueuesAsTheInteractiveTestRun()
+
+	/**
+	 * 🔴 A LIFECYCLE REFUSAL FROM THE RUN ENDPOINT IS A 409, NOT A 500.
+	 *
+	 * The refusal carries `reason` and `lifecycleStatus` so the editor can
+	 * offer the right button. Letting it escape uncaught threw that away and
+	 * told the author only that the server broke — which is what a 500 means,
+	 * and this is not one.
+	 *
+	 * @return void
+	 */
+	public function testARefusedRunAnswers409WithAReason(): void {
+		$this->flows->method('run')->willThrowException(
+			new FlowLifecycleRefused(
+				reason: FlowLifecycleRefused::REASON_NO_PUBLISHED_VERSION,
+				flowId: 'flow-1',
+				state: FlowVersion::STATUS_DRAFT
+			)
+		);
+
+		$response = $this->controller->run(id: 'flow-1');
+
+		$this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+		$this->assertSame(
+			FlowLifecycleRefused::REASON_NO_PUBLISHED_VERSION,
+			$response->getData()['reason']
+		);
+	}//end testARefusedRunAnswers409WithAReason()
+
 }//end class
