@@ -16,6 +16,8 @@ use OCA\OpenRegister\Controller\FlowRunController;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
+use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -759,5 +761,91 @@ class FlowRunControllerTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 	}//end testANonArraySlotIsSkipped()
+
+	/**
+	 * Set the request up as a test-run POST for one flow.
+	 *
+	 * @param string $flowId The flow to test-run.
+	 *
+	 * @return void
+	 */
+	private function aTestRunOf(string $flowId): void {
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, $default = null) use ($flowId) {
+				return match ($key) {
+					'flowId' => $flowId,
+					'pins' => [],
+					default => $default,
+				};
+			}
+		);
+
+		$this->flows->method('find')->willReturn(new \OCA\OpenRegister\Db\Flow());
+		$this->resolvers->method('resolveFlow')->willReturn(['nodes' => [], 'edges' => []]);
+	}//end aTestRunOf()
+
+	/**
+	 * 🔴 A LIFECYCLE REFUSAL ON THE TEST-RUN PATH IS A 409, NOT A 500.
+	 *
+	 * `FlowRunController::test()` is the OTHER dispatch a person presses, and it
+	 * let `FlowLifecycleRefused` escape exactly as `FlowController::run()` did:
+	 * the editor got an HTML error page — "the server is broken" — for what is
+	 * actually "publish this flow first". Removing the catch turns this red with
+	 * the exception escaping, which is the defect itself.
+	 *
+	 * @return void
+	 */
+	public function testARefusedTestRunIs409WithAReason(): void {
+		$this->aTestRunOf('flow-1');
+		$this->runner->method('queue')->willThrowException(
+			new FlowLifecycleRefused(
+				reason: FlowLifecycleRefused::REASON_NO_PUBLISHED_VERSION,
+				flowId: 'flow-1',
+				state: null
+			)
+		);
+
+		$response = $this->controller->test();
+
+		$this->assertSame(
+			Http::STATUS_CONFLICT,
+			$response->getStatus(),
+			'a test run refused by the flow lifecycle must be a 409, not a fault'
+		);
+		$this->assertSame(
+			FlowLifecycleRefused::REASON_NO_PUBLISHED_VERSION,
+			$response->getData()['reason'],
+			'the refusal must name its reason as a field — "publish a version" and '
+				. '"create a draft" want opposite buttons from the editor'
+		);
+	}//end testARefusedTestRunIs409WithAReason()
+
+	/**
+	 * A dead end on the test-run path is the same kind of answer: the author
+	 * wired a node a token cannot leave, and the engine has already written the
+	 * sentence that says which one. Escaping as a 500 threw that sentence away.
+	 *
+	 * @return void
+	 */
+	public function testADeadEndTestRunIs409NamingTheDefect(): void {
+		$this->aTestRunOf('flow-2');
+		$this->runner->method('queue')->willThrowException(
+			new FlowDeadEnd(nodeIds: ['step-a'])
+		);
+
+		$response = $this->controller->test();
+
+		$this->assertSame(
+			Http::STATUS_CONFLICT,
+			$response->getStatus(),
+			'a dead end is the author\'s document, not a server fault'
+		);
+		$this->assertSame('dead-end', $response->getData()['reason']);
+		$this->assertStringContainsString(
+			'step-a',
+			(string)$response->getData()['error'],
+			'the refusal must still name the node, which is the one fact the author needs'
+		);
+	}//end testADeadEndTestRunIs409NamingTheDefect()
 
 }//end class
