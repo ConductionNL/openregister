@@ -250,7 +250,10 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	try {
 		await page.evaluate(() => {
 			try {
-				window.localStorage.setItem('cn-walkthrough-seen:openregister', '999.0.0')
+				window.localStorage.setItem(
+					'cn-walkthrough-seen:openregister',
+					'999.0.0',
+				)
 			} catch (e) {
 				// localStorage unavailable — specs fall back to dismissing by hand.
 			}
