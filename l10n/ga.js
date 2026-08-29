@@ -2723,7 +2723,10 @@ OC.L10N.register(
         "Register descriptors": "Tuairisceoirí clár",
         "ships v{shipped}": "soláthraíonn sé v{shipped}",
         "State": "Staid",
-        "v{installed} → ships v{shipped}": "v{installed} → soláthraíonn sé v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → soláthraíonn sé v{shipped}",
+        "Where the automation lives": "Áit a mhaireann an uathoibriú",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Is éard atá i sruthanna ná an rud a tharlaíonn gan aon chliceáil: réad a stampáiltear ar shábháil, aip a chuirtear ar an eolas nuair a athraíonn taifead. Is anseo a léann tú agus a chuireann tú in eagar iad. Níl aon rud le tógáil anois.",
+        "Open Flows in the menu": "Oscail Sruthanna sa roghchlár"
     },
-    "nplurals=2; plural=(n != 1);"
+    "nplurals=5; plural=(n==1 ? 0 : n==2 ? 1 : n<7 ? 2 : n<11 ? 3 : 4);"
 )

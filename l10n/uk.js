@@ -2556,7 +2556,7 @@ OC.L10N.register(
         "Zookeeper port number (optional, defaults to 2181)": "Номер порта Zookeeper (необязательно, за замовчуванням 2181)",
         "\\u26A0\\uFE0F PERMANENT DELETION WARNING \\u26A0\\uFE0F\n\nYou are about to PERMANENTLY delete ALL objects for schema \"{schema}\":\n\n\\u2022 Active objects: {active}\n\\u2022 Soft-deleted objects: {deleted}\n\\u2022 Total: {total}\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?": "\\u26A0\\uFE0F ПРЕДУПРЕЖДЕНИЕ Про БЕЗВОЗВРАТНОМ УДАЛЕНИИ \\u26A0\\uFE0F\n\nВи собираетесь БЕЗПОВОРОТНО видалити ВСІ об'єкти схеми \"{schema}\":\n\n\\u2022 Активних об'єктів: {active}\n\\u2022 Програмно видалених об'єктів: {deleted}\n\\u2022 Итого: {total}\n\nЦі об'єкти будуть полностью видалено з бази даних і НЕ МОЖУТЬ бути відновлено.\n\nВи абсолютно впевнені?",
         "\\u26A0\\uFE0F PERMANENT DELETION WARNING \\u26A0\\uFE0F\n\nYou are about to PERMANENTLY delete {count} soft-deleted objects for schema \"{schema}\".\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?": "\\u26A0\\uFE0F ПРЕДУПРЕЖДЕНИЕ Про БЕЗВОЗВРАТНОМ УДАЛЕНИИ \\u26A0\\uFE0F\n\nВи собираетесь БЕЗПОВОРОТНО видалити {count} програмно видалених об'єктів схеми \"{schema}\".\n\nЦі об'єкти будуть полностью видалено з бази даних і НЕ МОЖУТЬ бути відновлено.\n\nВи абсолютно впевнені?",
-        "_%n entry has no hash yet_::_%n entries have no hash yet_": ["%n запис ще не має хешу","%n записи ще не мають хешу","%n записів ще не мають хешу"],
+        "_%n entry has no hash yet_::_%n entries have no hash yet_": ["%n запис ще не має хешу","%n записи ще не мають хешу","%n записів ще не мають хешу","%n запису ще не має хешу"],
         "across {count} registers": "across {count} registers",
         "and accessible to all users in selected groups (or all users if no groups selected).": "і доступно всім пользователям у вибраних группах (або всім пользователям, якщо групи не вибрано).",
         "and add the files there.": "і додайте файли туда.",
@@ -2723,7 +2723,10 @@ OC.L10N.register(
         "Register descriptors": "Дескриптори реєстрів",
         "ships v{shipped}": "постачає v{shipped}",
         "State": "Стан",
-        "v{installed} → ships v{shipped}": "v{installed} → постачає v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → постачає v{shipped}",
+        "Where the automation lives": "Де живе автоматизація",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Потоки — це те, що відбувається без кліків: об'єкт, що позначається під час збереження, застосунок, сповіщений про зміну запису. Тут ви їх читаєте та редагуєте. Зараз нічого будувати не потрібно.",
+        "Open Flows in the menu": "Відкрийте Потоки в меню"
     },
-    "nplurals=2; plural=(n != 1);"
+    "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 )

@@ -59,11 +59,13 @@ class FlowTriggerIndex {
 	 * @param FlowTriggerMapper $mapper The indexed trigger set.
 	 * @param FlowTriggerDerivation $derivation Nodes to triggers.
 	 * @param LoggerInterface $logger Diagnostics.
+	 * @param FlowPublishedGraph|null $published Resolves the published graph.
 	 */
 	public function __construct(
 		private readonly FlowTriggerMapper $mapper,
 		private readonly FlowTriggerDerivation $derivation,
 		private readonly LoggerInterface $logger,
+		private readonly ?FlowPublishedGraph $published = null,
 	) {
 
 	}//end __construct()
@@ -89,7 +91,14 @@ class FlowTriggerIndex {
 		}
 
 		try {
-			$triggers = $this->derivation->objectTriggersOf(flow: $flow);
+			// 🔴 THE ROWS COME FROM THE PUBLISHED VERSION, NEVER THE HEAD. While
+			// a draft is open the head holds nodes that must NOT be subscribed,
+			// and omits the published ones that must stay subscribed — deriving
+			// from it is both rules backwards. Putting the resolution here
+			// rather than at each caller is what stops the two from drifting:
+			// the flow save path, the publish transaction and the upgrade
+			// back-fill all reach the index through this one method.
+			$triggers = $this->derivation->objectTriggersOf(flow: $this->publishedFace(flow: $flow));
 
 			// A flow that derives NO object triggers must not be left with
 			// stale rows from a previous save — deleting the flow's last
@@ -110,6 +119,48 @@ class FlowTriggerIndex {
 		}//end try
 
 	}//end reindex()
+
+	/**
+	 * The flow as its PUBLISHED version sees it.
+	 *
+	 * Returns a detached carrier holding the published graph, or a carrier
+	 * with NO nodes when the flow has no published version — which makes
+	 * `objectTriggersOf()` derive nothing and `replaceFor()` clear the flow's
+	 * rows. That is the correct reading of "a draft must not back a run": an
+	 * unpublished flow is subscribed to nothing at all.
+	 *
+	 * `enabled` always comes from the LIVE flow, because switching a flow off
+	 * must take effect at once and has nothing to do with which version is
+	 * published.
+	 *
+	 * @param Flow $flow The stored flow.
+	 *
+	 * @return Flow The carrier to derive triggers from.
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 */
+	private function publishedFace(Flow $flow): Flow {
+		$carrier = new Flow();
+		$carrier->setUuid((string)$flow->getUuid());
+		$carrier->setEnabled($flow->getEnabled());
+		$carrier->setNodes([]);
+		$carrier->setEdges([]);
+
+		if ($this->published === null) {
+			return $carrier;
+		}
+
+		$graph = $this->published->graphOf(flowId: (string)$flow->getUuid());
+		if ($graph === null) {
+			return $carrier;
+		}
+
+		$carrier->setNodes((array)($graph['nodes'] ?? []));
+		$carrier->setEdges((array)($graph['edges'] ?? []));
+
+		return $carrier;
+
+	}//end publishedFace()
 
 	/**
 	 * Drop a deleted flow's rows.

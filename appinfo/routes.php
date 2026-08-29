@@ -16,6 +16,9 @@ return [
         // Federation (cross-instance OCM sharing) — token-scoped serving endpoints.
         // #[PublicPage]: the caller is a remote instance authenticated by the
         // bearer share token in the URL, not a local session.
+        // First-time setup wizard (ADR-042) - the standard CnSetupWizard contract.
+        ['name' => 'setup#status',    'url' => '/api/setup/status',            'verb' => 'GET'],
+        ['name' => 'setup#runAction', 'url' => '/api/setup/action/{actionId}', 'verb' => 'POST', 'requirements' => ['actionId' => '[a-z0-9\\-]+']],
         ['name' => 'federation#objects', 'url' => '/api/federation/{shareToken}/objects',      'verb' => 'GET', 'requirements' => ['shareToken' => '[^/]+']],
         ['name' => 'federation#object',  'url' => '/api/federation/{shareToken}/objects/{id}', 'verb' => 'GET', 'requirements' => ['shareToken' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'federation#meta',    'url' => '/api/federation/{shareToken}/meta',         'verb' => 'GET', 'requirements' => ['shareToken' => '[^/]+']],
@@ -538,6 +541,20 @@ return [
         // for the tenants it exists for. The authorisation that matters is the
         // organisation scoping and per-flow guard inside FlowService.
         ['name' => 'flow#run',     'url' => '/api/flows/{id}/run', 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+
+        // Lifecycle. Declared BEFORE the bare `{id}` routes for the same reason
+        // `{id}/run` is: `id` matches `[^/]+`, so a uuid can never swallow a
+        // trailing literal segment, but keeping the specific paths first means
+        // a future looser requirement cannot silently start capturing them.
+        //
+        // The VERSION number is `\d+`, not `[^/]+`. Without that,
+        // `/versions/publish` would match `version` with the literal string
+        // "publish" and return a 404 for a route that exists.
+        ['name' => 'flow#versions',  'url' => '/api/flows/{id}/versions',            'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+        ['name' => 'flow#version',   'url' => '/api/flows/{id}/versions/{version}',  'verb' => 'GET',  'requirements' => ['id' => '[^/]+', 'version' => '\d+']],
+        ['name' => 'flow#publish',   'url' => '/api/flows/{id}/publish',             'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'flow#draft',     'url' => '/api/flows/{id}/draft',               'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'flow#deprecate', 'url' => '/api/flows/{id}/deprecate',           'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#index',   'url' => '/api/flows',          'verb' => 'GET'],
         ['name' => 'flow#create',  'url' => '/api/flows',          'verb' => 'POST'],
         ['name' => 'flow#show',    'url' => '/api/flows/{id}',     'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
@@ -900,6 +917,9 @@ return [
 		['name' => 'files#batch',          'url' => '/api/objects/{register}/{schema}/{id}/files/batch',                                 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'files#preview',        'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/preview',                      'verb' => 'GET',  'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		['name' => 'files#updateLabels',   'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/labels',                       'verb' => 'PUT',  'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+		// Description and category had NO surface before this: only labels did,
+		// which is why the gap was easy to miss. `file-actions` specifies all three.
+		['name' => 'files#updateMetadata', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/metadata', 'verb' => 'PUT',  'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 
         // Direct file access by ID (authenticated).
         ['name' => 'files#downloadById', 'url' => '/api/files/{fileId}/download', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
@@ -1296,6 +1316,12 @@ return [
 		['name' => 'transfer#index', 'url' => '/api/transfers', 'verb' => 'GET'],
 		['name' => 'transfer#show', 'url' => '/api/transfers/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'transfer#create', 'url' => '/api/transfers', 'verb' => 'POST'],
+		// The archivist's decision. A literal trailing segment, so `{id}` — which
+		// matches [^/]+ — can never swallow them. Without these two the whole
+		// e-Depot flow was unreachable: `transfer#create` refuses to dispatch
+		// anything that is not `approved`, and nothing could set that status.
+		['name' => 'transfer#approve', 'url' => '/api/transfers/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'transfer#reject',  'url' => '/api/transfers/{id}/reject',  'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 
 		// Features & Roadmap menu — GitHub issues proxy (add-features-roadmap-menu).
 		// GET is a cached read (NoCSRFRequired set via controller attribute, pure read).
@@ -1313,6 +1339,7 @@ return [
 		// answered by `show('active')` → 404 for every request.
 		['name' => 'flowRun#active', 'url' => '/api/flow-runs/active', 'verb' => 'GET'],
 		['name' => 'flowRun#show', 'url' => '/api/flow-runs/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'flowRun#objects', 'url' => '/api/flow-runs/{uuid}/objects', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#retry', 'url' => '/api/flow-runs/{uuid}/retry', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#resume', 'url' => '/api/flow-runs/{uuid}/resume', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		// Interactive test run (or-flow-partial-run): run synchronously with optional startAt + pins + seed.

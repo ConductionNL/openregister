@@ -940,6 +940,45 @@ class CalculationEvaluator {
 	}//end sequence()
 
 	/**
+	 * Whether an expression tree contains a `sequence` node.
+	 *
+	 * A `sequence` reserves its running number exactly once, on create, through
+	 * the per-save SequenceContext. Off that path {@see self::sequence()}
+	 * deliberately returns null — which is correct for the evaluator but
+	 * catastrophic for a caller that PERSISTS the result: `concat` renders the
+	 * null as an empty string, so a declared identifier such as
+	 * `concat(year(startDate), "-", sequence(...))` recomputes to "2026-" and
+	 * overwrites the number assigned at create.
+	 *
+	 * Every caller that materialises a calculation must therefore skip a
+	 * sequence-bearing expression while no context is active, leaving the
+	 * stored value untouched. See openregister#3075.
+	 *
+	 * @param mixed $expression Expression AST (any node).
+	 *
+	 * @return bool True when a `sequence` operator appears anywhere in the tree.
+	 *
+	 * @spec openspec/specs/computed-fields/spec.md#requirement-save-time-evaluation
+	 */
+	public function expressionUsesSequence(mixed $expression): bool {
+		if (is_array($expression) === false) {
+			return false;
+		}
+
+		foreach ($expression as $key => $value) {
+			if ($key === 'sequence') {
+				return true;
+			}
+
+			if ($this->expressionUsesSequence(expression: $value) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end expressionUsesSequence()
+
+	/**
 	 * Coerce a value to DateTimeImmutable when possible.
 	 *
 	 * @param mixed $v The value to coerce.

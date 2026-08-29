@@ -1,4 +1,4 @@
-import type { SafeParseReturnType } from 'zod'
+import type { ZodSafeParseResult } from 'zod'
 import type { TRegister } from './register.types'
 
 import { z } from 'zod'
@@ -54,7 +54,7 @@ export class Register implements TRegister {
 		this.stats = register.stats
 	}
 
-	public validate(): SafeParseReturnType<TRegister, unknown> {
+	public validate(): ZodSafeParseResult<unknown> {
 		const schema = z.object({
 			id: z.string().min(1),
 			title: z.string().min(1),

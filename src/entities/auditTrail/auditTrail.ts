@@ -1,4 +1,4 @@
-import type { SafeParseReturnType } from 'zod'
+import type { ZodSafeParseResult } from 'zod'
 import type { TAuditTrail } from './auditTrail.types'
 
 import { z } from 'zod'
@@ -62,7 +62,7 @@ export class AuditTrail implements TAuditTrail {
 		this.size = auditTrail.size || 0
 	}
 
-	public validate(): SafeParseReturnType<TAuditTrail, unknown> {
+	public validate(): ZodSafeParseResult<unknown> {
 		const schema = z.object({
 			id: z.number(),
 			uuid: z.string().uuid(),

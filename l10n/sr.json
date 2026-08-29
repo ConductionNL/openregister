@@ -2726,31 +2726,41 @@
         "Register descriptors": "Дескриптори регистара",
         "ships v{shipped}": "испоручује v{shipped}",
         "State": "Стање",
-        "v{installed} → ships v{shipped}": "v{installed} → испоручује v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → испоручује v{shipped}",
+        "Where the automation lives": "Где живи аутоматизација",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Токови су оно што се дешава без клика: објекат означен при чувању, апликација обавештена када се запис промени. Овде их читате и уређујете. Сада нема шта да се гради.",
+        "Open Flows in the menu": "Отворите Токове у менију"
     },
+    "pluralForm": "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);",
     "plurals": {
         "{count} email": [
             "{count} e-pošta",
-            "{count} e-pošte"
+            "{count} e-pošte",
+            "{count} e-pošta"
         ],
         "Purge {count} object from database": [
             "Trajno ukloni {count} objekt iz baze podataka",
+            "Trajno ukloni {count} objekta iz baze podataka",
             "Trajno ukloni {count} objekata iz baze podataka"
         ],
         "Restore {count} object": [
             "Vrati {count} objekt",
+            "Vrati {count} objekta",
             "Vrati {count} objekata"
         ],
         "Successfully restored {count} object": [
             "Uspješno vraćen {count} objekt",
+            "Uspješno vraćena {count} objekta",
             "Uspješno vraćeno {count} objekata"
         ],
         "Delete {count} object": [
             "Izbriši {count} objekt",
+            "Izbriši {count} objekta",
             "Izbriši {count} objekata"
         ],
         "Object successfully deleted": [
             "Objekt je uspješno izbrisan",
+            "Objekti su uspješno izbrisani",
             "Objekti su uspješno izbrisani"
         ]
     }

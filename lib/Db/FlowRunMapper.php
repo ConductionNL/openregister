@@ -133,25 +133,123 @@ class FlowRunMapper extends QBMapper {
 			$qb->andWhere($qb->expr()->eq('status', $qb->createNamedParameter($status)));
 		}
 
-		if ($requesterUid !== null) {
-			$visible = $qb->expr()->orX(
-				$qb->expr()->eq('triggered_by', $qb->createNamedParameter($requesterUid))
-			);
-
-			if (empty($ownedFlowIds) === false) {
-				$visible->add(
-					$qb->expr()->in(
-						'flow_id',
-						$qb->createNamedParameter($ownedFlowIds, IQueryBuilder::PARAM_STR_ARRAY)
-					)
-				);
-			}
-
-			$qb->andWhere($visible);
-		}
+		$this->scopeToVisible(qb: $qb, requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds);
 
 		return $this->findEntities(query: $qb);
 	}//end findAllRuns()
+
+	/**
+	 * Narrow a run query to what one caller may see.
+	 *
+	 * Extracted so the LIST and the SINGLE-RUN reads apply the same predicate
+	 * rather than each carrying its own copy. Two copies of one access rule do
+	 * not stay identical, and the copy that drifts is the one nobody is looking
+	 * at — a divergence here does not throw, it just answers with somebody
+	 * else's run, correctly formatted, HTTP 200.
+	 *
+	 * A null `$requesterUid` applies NO scoping. That is an administrator's
+	 * semantics and must never be reached by falling through from a missing
+	 * session; callers resolve "no identity" to a refusal before calling.
+	 *
+	 * @param IQueryBuilder      $qb           The query being built.
+	 * @param string|null        $requesterUid The caller, or null for no scoping.
+	 * @param array<int, string> $ownedFlowIds Flow ids the caller owns.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
+	 */
+	private function scopeToVisible(IQueryBuilder $qb, ?string $requesterUid, array $ownedFlowIds): void {
+		if ($requesterUid === null) {
+			return;
+		}
+
+		$visible = $qb->expr()->orX(
+			$qb->expr()->eq('triggered_by', $qb->createNamedParameter($requesterUid))
+		);
+
+		if (empty($ownedFlowIds) === false) {
+			$visible->add(
+				$qb->expr()->in(
+					'flow_id',
+					$qb->createNamedParameter($ownedFlowIds, IQueryBuilder::PARAM_STR_ARRAY)
+				)
+			);
+		}
+
+		$qb->andWhere($visible);
+	}//end scopeToVisible()
+
+	/**
+	 * The suspended runs whose subject is this object.
+	 *
+	 * "Which run is waiting on this thing" is the question a leaf app asks when
+	 * something outside the engine finishes — a decision concluded, a document
+	 * signed — and needs to wake whatever was waiting for it.
+	 *
+	 * Deliberately narrowed to SUSPENDED. A completed or failed run is not
+	 * waiting for anything, and signalling one would be a no-op at best and a
+	 * second advance of a finished run at worst.
+	 *
+	 * This does NOT scope by caller: it is an engine-side lookup used to route
+	 * an external outcome, not a user-facing read. Callers that expose anything
+	 * derived from it must apply their own visibility rule.
+	 *
+	 * @param string  $subjectUuid The subject object's uuid.
+	 * @param integer $limit       Maximum runs to return.
+	 *
+	 * @return FlowRun[] The suspended runs for that subject, oldest first.
+	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
+	 */
+	public function findSuspendedBySubject(string $subjectUuid, int $limit = 25): array {
+		if (trim($subjectUuid) === '') {
+			return [];
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('subject_uuid', $qb->createNamedParameter($subjectUuid)))
+			->andWhere($qb->expr()->eq('status', $qb->createNamedParameter(FlowRun::STATUS_SUSPENDED)))
+			->orderBy('id', 'ASC')
+			->setMaxResults($limit);
+
+		return $this->findEntities(query: $qb);
+	}//end findSuspendedBySubject()
+
+	/**
+	 * Find one run by uuid, but only if this caller may see it.
+	 *
+	 * Returns null both when the run does not exist and when it exists but is
+	 * not the caller's, so the caller cannot distinguish the two — the absence
+	 * of a run and the absence of permission look identical from outside, which
+	 * is what stops the endpoint being a probe for which runs exist.
+	 *
+	 * @param string             $uuid         The run uuid.
+	 * @param string|null        $requesterUid The caller, or null for an administrator.
+	 * @param array<int, string> $ownedFlowIds Flow ids the caller owns.
+	 *
+	 * @return FlowRun|null The run, or null when it does not exist or is not visible.
+	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
+	 */
+	public function findByUuidVisibleTo(string $uuid, ?string $requesterUid, array $ownedFlowIds = []): ?FlowRun {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)))
+			->setMaxResults(1);
+
+		$this->scopeToVisible(qb: $qb, requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds);
+
+		$found = $this->findEntities(query: $qb);
+		if ($found === []) {
+			return null;
+		}
+
+		return $found[0];
+	}//end findByUuidVisibleTo()
 
 	/**
 	 * Delete terminal runs older than a cutoff, optionally for one flow only.
@@ -871,4 +969,60 @@ class FlowRunMapper extends QBMapper {
 
 		return (int)$qb->executeStatement();
 	}//end pruneBefore()
+
+	/**
+	 * How many runs that can still move are pinned to one version of a flow.
+	 *
+	 * Asked before a version may be removed. Counts only ACTIVE runs on
+	 * purpose: a completed run's pin is history, and history keeping a version
+	 * alive forever would make the version table unprunable. A run that can
+	 * still move, though, needs its graph to still exist.
+	 *
+	 * @param string  $flowUuid The flow.
+	 * @param integer $version  The version number.
+	 *
+	 * @return integer The number of non-terminal runs pinned to that version.
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 */
+	public function countActivePinnedTo(string $flowUuid, int $version): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->createFunction('COUNT(*) AS `c`'))
+			->from($this->getTableName())
+			->where($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowUuid)))
+			->andWhere($qb->expr()->eq('flow_version', $qb->createNamedParameter($version, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->in('status', $qb->createNamedParameter(FlowRun::ACTIVE, IQueryBuilder::PARAM_STR_ARRAY)));
+
+		$result = $qb->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+
+		return (int)($row['c'] ?? 0);
+	}//end countActivePinnedTo()
+
+	/**
+	 * Pin every still-movable run of a flow that has no version yet.
+	 *
+	 * The upgrade path. Deliberately scoped to `flow_version IS NULL` so it is
+	 * idempotent — a second pass matches nothing — and to ACTIVE runs, so a
+	 * terminal run from before versioning keeps its null rather than being
+	 * told, retrospectively, that it executed version 1.
+	 *
+	 * @param string  $flowUuid The flow.
+	 * @param integer $version  The version to pin.
+	 *
+	 * @return integer The number of runs pinned.
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 */
+	public function pinUnversionedActive(string $flowUuid, int $version): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->update($this->getTableName())
+			->set('flow_version', $qb->createNamedParameter($version, IQueryBuilder::PARAM_INT))
+			->where($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowUuid)))
+			->andWhere($qb->expr()->isNull('flow_version'))
+			->andWhere($qb->expr()->in('status', $qb->createNamedParameter(FlowRun::ACTIVE, IQueryBuilder::PARAM_STR_ARRAY)));
+
+		return (int)$qb->executeStatement();
+	}//end pinUnversionedActive()
 }//end class

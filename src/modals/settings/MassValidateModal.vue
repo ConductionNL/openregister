@@ -1049,7 +1049,7 @@ export default {
 	font-size: 0.9rem;
 	line-height: 1.4;
 	white-space: pre-wrap;
-	word-break: break-word;
+	overflow-wrap: break-word;
 	max-height: 200px;
 	overflow-y: auto;
 }
@@ -1082,7 +1082,7 @@ export default {
 	font-size: 0.85rem;
 	line-height: 1.4;
 	white-space: pre-wrap;
-	word-break: break-word;
+	overflow-wrap: break-word;
 	max-height: 300px;
 	overflow-y: auto;
 }
@@ -1282,7 +1282,7 @@ export default {
 	color: var(--color-text);
 	font-size: 0.9rem;
 	line-height: 1.4;
-	word-break: break-word;
+	overflow-wrap: break-word;
 }
 
 .error-overflow {

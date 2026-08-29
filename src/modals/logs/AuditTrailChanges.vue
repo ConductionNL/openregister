@@ -526,7 +526,7 @@ export default {
 .old-value,
 .new-value {
 	max-width: 200px;
-	word-break: break-word;
+	overflow-wrap: break-word;
 }
 
 .old-value pre,
@@ -590,7 +590,7 @@ export default {
 	font-family: 'Courier New', monospace;
 	font-size: 0.85rem;
 	white-space: pre-wrap;
-	word-break: break-word;
+	overflow-wrap: break-word;
 	color: var(--color-main-text);
 	max-height: 400px;
 	overflow-y: auto;

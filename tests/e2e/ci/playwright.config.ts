@@ -194,6 +194,37 @@ export default defineConfig({
 		// and "update" audit entries EXIST unconditionally, so a broken audit
 		// trail fails loudly before this skip is ever reachable.
 		'workflows/object-lifecycle-workflows.spec.ts',
+
+		// Admitted 2026-08-29. The ADR-111 demo-data step, which had no coverage
+		// here at all: this file shipped to development with the setup wizard and
+		// never ran, because nothing runs unless it is named in this list. It is
+		// the only check that the wizard's install WRITES something — the defect
+		// this programme already shipped once was an import that reported success
+		// and seeded zero objects, which every mocked unit test passed.
+		//
+		// Checked per criterion:
+		//   1. Hermetic — it seeds nothing beforehand and depends on no
+		//      pre-seeded data. It drives the app's own documented setup
+		//      contract (`/api/setup/status`, `/api/setup/action/{id}`) from
+		//      inside the authenticated admin page, which is also the only
+		//      vantage point that can show the AuthorizedAdminSetting middleware
+		//      admitting a real session.
+		//   2. Self-cleaning — it takes this criterion's SECOND branch. The
+		//      install is real and creates the eight demo registers, so its
+		//      `afterAll` deletes them, resolved by SLUG so an aborted run still
+		//      tears down. Without that they would land in the lists the specs
+		//      above assert on, which is precisely why the CI seed settles the
+		//      demo-data decision as *skipped* rather than installing it.
+		//   3. No conditional-assert guards — zero `.catch(() => false)` in the
+		//      assertions. The only `.catch()` calls are in the teardown, where
+		//      a failed cleanup must not fail a passing run.
+		//   4. No `test.skip` at all, so nothing here is skippable on a healthy
+		//      instance.
+		//
+		// ⚠️ It carries `test.slow()` on the install arm deliberately: that arm
+		// is a REAL import, measured at 42.8s on dossiq and 49.6s on shillinq,
+		// and it exceeded the 30s default on one run before the annotation.
+		'spec-coverage/demo-data-setup-step.spec.ts',
 	],
 	globalSetup: path.resolve(__dirname, '../global-setup.ts'),
 	timeout: 45_000,

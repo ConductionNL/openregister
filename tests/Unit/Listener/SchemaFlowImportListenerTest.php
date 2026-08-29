@@ -15,6 +15,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Listener\SchemaFlowImportListener;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 
 /**
  * `x-openregister-flows` materialises into the flow store on schema save.
@@ -39,7 +40,7 @@ class SchemaFlowImportListenerTest extends TestCase {
 	 *
 	 * @return SchemaFlowImportListener The listener.
 	 */
-	private function listener(array $existing = []): SchemaFlowImportListener {
+	private function listener(array $existing = [], ?ContainerInterface $container = null): SchemaFlowImportListener {
 		$this->inserted = [];
 		$this->updated = [];
 
@@ -54,7 +55,58 @@ class SchemaFlowImportListenerTest extends TestCase {
 			return $f;
 		});
 
-		return new SchemaFlowImportListener($mapper, new \Psr\Log\NullLogger());
+		return new SchemaFlowImportListener($mapper, new \Psr\Log\NullLogger(), $container);
+	}
+
+	/**
+	 * A container whose OrganisationService answers with $uuid.
+	 *
+	 * @param string|null $uuid  What `getOrganisationForNewEntity()` resolves
+	 *                           to, or null for an instance that can resolve
+	 *                           no organisation at all.
+	 * @param boolean     $blows Whether resolving it throws, which models an
+	 *                           instance where the service is not registered.
+	 *
+	 * @return ContainerInterface The container.
+	 */
+	private function container(?string $uuid, bool $blows = false): ContainerInterface {
+		$container = $this->createMock(ContainerInterface::class);
+
+		if ($blows === true) {
+			$container->method('get')->willThrowException(new \RuntimeException('not registered'));
+			return $container;
+		}
+
+		$service = new class($uuid) {
+			public function __construct(private ?string $uuid) {
+			}
+
+			/**
+			 * The call the listener MUST make.
+			 *
+			 * Not `getActiveOrganisation()`: this one falls back to the DEFAULT
+			 * organisation when there is no session, which is the situation a
+			 * schema import actually runs in.
+			 */
+			public function getOrganisationForNewEntity(): ?string {
+				return $this->uuid;
+			}
+
+			/**
+			 * Present, and deliberately answering NOTHING.
+			 *
+			 * A session-less import is exactly where this returns null, so a
+			 * listener that reached for it would stamp no organisation — and
+			 * every test here would still pass if this returned a real value.
+			 */
+			public function getActiveOrganisation(): ?object {
+				return null;
+			}
+		};
+
+		$container->method('get')->willReturn($service);
+
+		return $container;
 	}
 
 	/**
@@ -174,4 +226,128 @@ class SchemaFlowImportListenerTest extends TestCase {
 		$this->assertCount(1, $this->inserted);
 		$this->assertSame('Good', $this->inserted[0]->getName());
 	}
-}
+
+	/**
+	 * 🔴 AN IMPORTED FLOW MUST BELONG TO A TENANT.
+	 *
+	 * Every flow READ is organisation-scoped, so a flow stored with a null
+	 * organisation is returned by nothing: it never appears in the flows list,
+	 * so it can never be opened, so it can never be adopted — while sitting
+	 * perfectly intact in the table. Measured 2026-08-28 against a live
+	 * instance: the first shipped `x-openregister-flows` declaration was
+	 * invisible to `/api/flows`, next to two seeded flows that carried an
+	 * organisation and listed fine.
+	 */
+	public function testAnImportedFlowIsStampedWithAnOrganisation(): void {
+		$listener = $this->listener([], $this->container('org-1'));
+		$this->fire($listener, $this->schema([
+			['name' => 'Triage', 'nodes' => [], 'edges' => []],
+		]));
+
+		$this->assertSame('org-1', $this->inserted[0]->getOrganisation());
+	}
+
+	/**
+	 * With no container the flow still imports.
+	 *
+	 * The listener must stay constructible on an instance where
+	 * OrganisationService is not registered: refusing the import would turn a
+	 * missing optional service into a failed schema save.
+	 */
+	public function testWithNoContainerTheFlowStillImportsWithoutAnOrganisation(): void {
+		$listener = $this->listener();
+		$this->fire($listener, $this->schema([
+			['name' => 'Triage', 'nodes' => [], 'edges' => []],
+		]));
+
+		$this->assertCount(1, $this->inserted);
+		$this->assertNull($this->inserted[0]->getOrganisation());
+	}
+
+	/**
+	 * A container that cannot resolve the service is not fatal either.
+	 */
+	public function testAnUnresolvableOrganisationServiceIsNotFatal(): void {
+		$listener = $this->listener([], $this->container(null, blows: true));
+		$this->fire($listener, $this->schema([
+			['name' => 'Triage', 'nodes' => [], 'edges' => []],
+		]));
+
+		$this->assertCount(1, $this->inserted);
+		$this->assertNull($this->inserted[0]->getOrganisation());
+	}
+
+	/**
+	 * A registered service with NO active organisation resolves to null rather
+	 * than to the empty string, which would be a real-looking tenant that owns
+	 * nothing.
+	 */
+	public function testNoActiveOrganisationResolvesToNullNotAnEmptyString(): void {
+		$listener = $this->listener([], $this->container(null));
+		$this->fire($listener, $this->schema([
+			['name' => 'Triage', 'nodes' => [], 'edges' => []],
+		]));
+
+		$this->assertNull($this->inserted[0]->getOrganisation());
+	}
+
+	/**
+	 * An empty uuid is treated as no organisation for the same reason.
+	 */
+	public function testAnEmptyUuidResolvesToNull(): void {
+		$listener = $this->listener([], $this->container(''));
+		$this->fire($listener, $this->schema([
+			['name' => 'Triage', 'nodes' => [], 'edges' => []],
+		]));
+
+		$this->assertNull($this->inserted[0]->getOrganisation());
+	}
+
+	/**
+	 * 🔴 A RE-IMPORT MUST NOT RE-STAMP THE ORGANISATION.
+	 *
+	 * The stamp sits in the create branch beside `enabled`/`owner` precisely so
+	 * an upgrade running as a different tenant cannot move an already-adopted
+	 * flow out from under the organisation using it.
+	 */
+	public function testAReimportDoesNotMoveAnExistingFlowToAnotherOrganisation(): void {
+		$existing = new Flow();
+		$existing->setUuid('u1');
+		$existing->setApp('openregister');
+		$existing->setName('Triage');
+		$existing->setTriggerSchema('case');
+		$existing->setOrganisation('org-owner');
+
+		$listener = $this->listener([$existing], $this->container('org-upgrader'));
+		$this->fire($listener, $this->schema([
+			['name' => 'Triage', 'nodes' => [], 'edges' => []],
+		]));
+
+		$this->assertSame('org-owner', $this->updated[0]->getOrganisation());
+	}
+
+	/**
+	 * 🔴 IT MUST ASK FOR "AN ORGANISATION FOR A NEW ENTITY", NOT THE ACTIVE ONE.
+	 *
+	 * A schema import runs during install and during `occ maintenance:repair`,
+	 * with no user session — so there IS no active organisation, and a listener
+	 * that asked for one stamped null and the flow was invisible again. The
+	 * double above answers null from `getActiveOrganisation()` precisely so that
+	 * regression cannot pass.
+	 *
+	 * Measured 2026-08-28: the active-organisation version went green on a dev
+	 * stack that happened to have one, and failed in CI, which does not.
+	 */
+	public function testItResolvesTheOrganisationTheWayEveryOtherNewEntityDoes(): void {
+		$listener = $this->listener([], $this->container('org-default'));
+		$this->fire($listener, $this->schema([
+			['name' => 'Triage', 'nodes' => [], 'edges' => []],
+		]));
+
+		$this->assertSame(
+			'org-default',
+			$this->inserted[0]->getOrganisation(),
+			'the default organisation is what a session-less import must fall back to'
+		);
+	}//end testItResolvesTheOrganisationTheWayEveryOtherNewEntityDoes()
+}//end class

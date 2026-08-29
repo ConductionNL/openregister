@@ -9,6 +9,8 @@ status: in-progress
 
 - `or-delegation-grants` (active) — turns a DECLARED acting identity into an AUTHORIZED one: a delegation grant record with a consent lifecycle, refusal at save and at every fire when the author holds no grant for the user they named, and an `awaiting_consent` run state deduped on (principal, actingAs, scope) (ADR-099).
 
+- `flow-object-attribution` (active) — the dispatcher establishes an ambient run context before every step and clears it unconditionally afterwards, including when the step throws or suspends, so every write caused by a step is attributed to that run and node; a sub-flow restores its parent's frame rather than clearing it; and a run can report the objects it touched alongside its step history.
+
 ## Purpose
 Defines how OpenRegister reads a flow document and turns it into a run: what carries behaviour (the node), what carries sequence (the edge), when converging paths merge versus synchronise, how a path is allowed to end, and what a flow records about its own runnability and its last run. This is the fleet's single flow engine (ADR-065) — openconnector and hermiq contribute node types to it and do not implement their own.
 

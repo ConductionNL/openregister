@@ -2558,7 +2558,8 @@
         "_%n entry has no hash yet_::_%n entries have no hash yet_": [
             "%n запіс яшчэ не мае хэша",
             "%n запісы яшчэ не маюць хэша",
-            "%n запісаў яшчэ не маюць хэша"
+            "%n запісаў яшчэ не маюць хэша",
+            "%n запіса яшчэ не мае хэша"
         ],
         "across {count} registers": "across {count} registers",
         "and accessible to all users in selected groups (or all users if no groups selected).": "и доступно всем пользователям в выбранных группах (или всем пользователям, если группы не выбраны).",
@@ -2726,38 +2727,48 @@
         "Register descriptors": "Дэскрыптары рэестраў",
         "ships v{shipped}": "пастаўляе v{shipped}",
         "State": "Стан",
-        "v{installed} → ships v{shipped}": "v{installed} → пастаўляе v{shipped}"
+        "v{installed} → ships v{shipped}": "v{installed} → пастаўляе v{shipped}",
+        "Where the automation lives": "Дзе жыве аўтаматызацыя",
+        "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Патокі — гэта тое, што адбываецца без націскаў: аб'ект, які пазначаецца пры захаванні, праграма, якую апавяшчаюць пры змене запісу. Тут вы іх чытаеце і рэдагуеце. Зараз нічога будаваць не трэба.",
+        "Open Flows in the menu": "Адкрыйце Патокі ў меню"
     },
+    "pluralForm": "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);",
     "plurals": {
         "{count} email": [
-            "{count} письмо",
-            "{count} письма",
-            "{count} писем"
+            "{count} ліст",
+            "{count} лісты",
+            "{count} лістоў",
+            "{count} ліста"
         ],
         "Purge {count} object from database": [
-            "Очистить {count} аб'ект из базы данных",
-            "Очистить {count} аб'екта из базы данных",
-            "Очистить {count} аб'ектаў из базы данных"
+            "Ачысціць {count} аб'ект з базы даных",
+            "Ачысціць {count} аб'екты з базы даных",
+            "Ачысціць {count} аб'ектаў з базы даных",
+            "Ачысціць {count} аб'екта з базы даных"
         ],
         "Restore {count} object": [
-            "Восстановить {count} аб'ект",
-            "Восстановить {count} аб'екта",
-            "Восстановить {count} аб'ектаў"
+            "Аднавіць {count} аб'ект",
+            "Аднавіць {count} аб'екты",
+            "Аднавіць {count} аб'ектаў",
+            "Аднавіць {count} аб'екта"
         ],
         "Successfully restored {count} object": [
-            "паспяхова восстановлен {count} аб'ект",
-            "паспяхова восстановлено {count} аб'екта",
-            "паспяхова восстановлено {count} аб'ектаў"
+            "Паспяхова адноўлены {count} аб'ект",
+            "Паспяхова адноўленыя {count} аб'екты",
+            "Паспяхова адноўлена {count} аб'ектаў",
+            "Паспяхова адноўлена {count} аб'екта"
         ],
         "Delete {count} object": [
-            "выдаліць {count} аб'ект",
-            "выдаліць {count} аб'екта",
-            "выдаліць {count} аб'ектаў"
+            "Выдаліць {count} аб'ект",
+            "Выдаліць {count} аб'екты",
+            "Выдаліць {count} аб'ектаў",
+            "Выдаліць {count} аб'екта"
         ],
         "Object successfully deleted": [
-            "аб'ект паспяхова выдалены",
-            "аб'екта паспяхова удалены",
-            "аб'ектаў паспяхова удалено"
+            "Аб'ект паспяхова выдалены",
+            "Аб'екты паспяхова выдаленыя",
+            "Аб'екты паспяхова выдаленыя",
+            "Аб'екты паспяхова выдаленыя"
         ]
     }
 }

@@ -56,6 +56,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setApplicationSlug(?string $applicationSlug)
  * @method boolean|null getEnabled()
  * @method void setEnabled(?bool $enabled)
+ * @method integer|null getVersion()
+ * @method void setVersion(?int $version)
+ * @method string|null getLifecycleStatus()
+ * @method void setLifecycleStatus(?string $lifecycleStatus)
  * @method string|null getTrigger()
  * @method void setTrigger(?string $trigger)
  * @method string|null getTriggerRegister()
@@ -196,6 +200,30 @@ class Flow extends Entity implements JsonSerializable {
 	 * @var boolean|null
 	 */
 	protected ?bool $enabled = false;
+
+	/**
+	 * The version number of this flow's head.
+	 *
+	 * A convenience mirror of the highest row in `openregister_flow_versions`,
+	 * kept so listing flows does not need a join. Never the source the next
+	 * version number is derived from — {@see FlowVersionMapper::highestVersion}
+	 * reads the version rows for that.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $version = 1;
+
+	/**
+	 * The lifecycle status of this flow's head version.
+	 *
+	 * 🔴 NOT $status. That field means the last RUN's outcome and changes every
+	 * time the flow executes; this one means "may this be edited" and changes
+	 * only when somebody publishes. Merging them would make a failed run look
+	 * like an unpublishable flow.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $lifecycleStatus = FlowVersion::STATUS_DRAFT;
 
 	/**
 	 * The event that starts the flow (a catalog trigger id, `manual`, or
@@ -417,6 +445,8 @@ class Flow extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'app', type: 'string');
 		$this->addType(fieldName: 'applicationSlug', type: 'string');
 		$this->addType(fieldName: 'enabled', type: 'boolean');
+		$this->addType(fieldName: 'version', type: 'integer');
+		$this->addType(fieldName: 'lifecycleStatus', type: 'string');
 		$this->addType(fieldName: 'trigger', type: 'string');
 		$this->addType(fieldName: 'triggerRegister', type: 'string');
 		$this->addType(fieldName: 'triggerSchema', type: 'string');
@@ -607,6 +637,8 @@ class Flow extends Entity implements JsonSerializable {
 			'app' => $this->app,
 			'applicationSlug' => $this->applicationSlug,
 			'enabled' => (bool)$this->enabled,
+			'version' => (int)($this->version ?? 1),
+			'lifecycleStatus' => ($this->lifecycleStatus ?? FlowVersion::STATUS_DRAFT),
 			'trigger' => $this->trigger,
 			'triggerRegister' => $this->triggerRegister,
 			'triggerSchema' => $this->triggerSchema,

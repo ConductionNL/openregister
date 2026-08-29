@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>1.1.6-beta.20260820205738</version>
+    <version>1.1.9-unstable.20260829214947</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -194,6 +194,9 @@ Vrij en open source onder de EUPL-licentie.
 			<!-- Rewrite before the index is derived: the index is built FROM node
 			     types, so the types should already be the current ones. -->
 			<step>OCA\OpenRegister\Repair\MigrateRenamedFlowNodeTypes</step>
+			<!-- Versions FIRST: the trigger index is derived from a flow's PUBLISHED
+			     version, so a flow with no version rows yet would index nothing. -->
+			<step>OCA\OpenRegister\Repair\BackfillFlowVersions</step>
 			<step>OCA\OpenRegister\Repair\BackfillFlowTriggerIndex</step>
 			<step>OCA\OpenRegister\Repair\InitializeFlowActions</step>
 			<step>OCA\OpenRegister\Repair\MigrateNotificationSubscriptionsToUserConfig</step>
@@ -227,6 +230,16 @@ Vrij en open source onder de EUPL-licentie.
 			     column while every read looks at the new one and finds null —
 			     no error, no data loss, invisible to the suite. -->
 			<step>OCA\OpenRegister\Repair\RenameDutchColumns</step>
+			<!-- AUDIT CHAIN SEED v1 → v2. The flow-attribution fields joined the
+			     canonical JSON the hash covers, so every stored hash has to be
+			     recomputed; ADR-003 Rule 4 requires that be a verify-then-reseal
+			     migration rather than an in-place edit. The step verifies the
+			     OLD chain against the frozen v1 canonicaliser and records the
+			     verdict BEFORE re-sealing — after the re-seal, the difference
+			     between an intact chain and a tampered one no longer exists.
+			     Post-migration, because it needs the flow_* columns the schema
+			     migration adds. -->
+			<step>OCA\OpenRegister\Repair\RechainAuditTrailForFlowAttribution</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
@@ -240,6 +253,9 @@ Vrij en open source onder de EUPL-licentie.
 			<!-- Rewrite before the index is derived: the index is built FROM node
 			     types, so the types should already be the current ones. -->
 			<step>OCA\OpenRegister\Repair\MigrateRenamedFlowNodeTypes</step>
+			<!-- Versions FIRST: the trigger index is derived from a flow's PUBLISHED
+			     version, so a flow with no version rows yet would index nothing. -->
+			<step>OCA\OpenRegister\Repair\BackfillFlowVersions</step>
 			<step>OCA\OpenRegister\Repair\BackfillFlowTriggerIndex</step>
 			<step>OCA\OpenRegister\Repair\InitializeFlowActions</step>
 			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
@@ -275,6 +291,7 @@ Vrij en open source onder de EUPL-licentie.
 		<!-- Annotation-related commands have light DI graphs (mappers + evaluator). -->
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
+		<command>OCA\OpenRegister\Command\ImportSkosCsvCommand</command>
 		<!-- App-rename repair: re-points registers and schemas at a new owning
 		     app id. Only a DB connection, so the DI graph stays light. -->
 		<command>OCA\OpenRegister\Command\MigrateSchemaApplicationCommand</command>
