@@ -19,7 +19,12 @@
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
  */
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import {
+	test,
+	expect,
+	request as apiRequest,
+	type APIRequestContext,
+} from '@playwright/test'
 import * as path from 'path'
 // Routes are imported by COMPONENT NAME (see tests/e2e/_page-routes.ts): the
 // binding records which page host each route mounts, which a bare path string
@@ -56,6 +61,52 @@ const API_HEADERS = {
 		`${process.env.OR_USER || 'admin'}:${process.env.OR_PASS || 'admin'}`,
 	).toString('base64')}`,
 }
+
+/**
+ * Delete every flow this run created.
+ *
+ * 🔴 THE SUITE USED TO LEAK ITS FIXTURES. Each run creates ~15 flows and
+ * removed none of them, so a shared instance accumulated them run after run:
+ * measured at 300 flows, 104 of them abandoned e2e fixtures. The flows INDEX
+ * degrades with that count until the list-page specs time out — so the suite
+ * was slowly breaking itself, and the failure looks like a product bug rather
+ * than like litter.
+ *
+ * Scoped to this run's own prefix, never to a blanket "delete the test-looking
+ * ones": a parallel run's fixtures are not ours to remove.
+ *
+ * Never fails the suite. A cleanup error is worth knowing about but is not a
+ * verdict on the code under test.
+ */
+test.afterAll(async () => {
+	let ctx: APIRequestContext | null = null
+
+	try {
+		ctx = await apiRequest.newContext({
+			baseURL: process.env.PLAYWRIGHT_BASE_URL || process.env.BASE_URL,
+			extraHTTPHeaders: { ...API_HEADERS },
+		})
+
+		const listed = await ctx.get('/apps/openregister/api/flows?limit=500')
+		if (listed.ok() === false) {
+			return
+		}
+
+		const mine = ((await listed.json()).results ?? []).filter(
+			(f: { name?: string }) => (f.name ?? '').startsWith(RUN_ID),
+		)
+
+		for (const flow of mine as Array<{ id: string }>) {
+			await ctx.delete(`/apps/openregister/api/flows/${flow.id}`)
+		}
+
+		console.log(`[flow-engine] cleaned up ${mine.length} fixture flow(s)`)
+	} catch (error) {
+		console.warn('[flow-engine] fixture cleanup failed:', error)
+	} finally {
+		await ctx?.dispose()
+	}
+})
 
 /**
  * Create a flow through the API and return it.
@@ -648,16 +699,33 @@ test.describe('the Flows page', () => {
 			waitUntil: 'domcontentloaded',
 		})
 
-		await expect(page.locator('[data-testid="flow-version"]')).toHaveText('v1', {
-			timeout: 15000,
-		})
+		// ⏱ EVERY assertion here carries the timeout, not just the first.
+		//
+		// This spec failed once in a FULL-suite run and passed in isolation and
+		// in its own describe — the classic shape of a default 5s expect running
+		// under load, where the whole file takes 5.7 minutes rather than 3.3.
+		// Only the first assertion had been given 15s, so the sidebar's later
+		// renders had no slack at all. A flaky spec costs more than it measures:
+		// it teaches everyone to re-run rather than to look.
+		const settle = { timeout: 15000 }
+
+		await expect(page.locator('[data-testid="flow-version"]')).toHaveText(
+			'v1',
+			settle,
+		)
 		await expect(page.locator('[data-testid="flow-lifecycle"]')).toHaveText(
 			'Published',
+			settle,
 		)
 
 		// A published version offers a draft, and does NOT offer Publish again.
-		await expect(page.locator('[data-testid="flow-create-draft"]')).toBeVisible()
-		await expect(page.locator('[data-testid="flow-publish"]')).toHaveCount(0)
+		await expect(page.locator('[data-testid="flow-create-draft"]')).toBeVisible(
+			settle,
+		)
+		await expect(page.locator('[data-testid="flow-publish"]')).toHaveCount(
+			0,
+			settle,
+		)
 	})
 
 	/**
@@ -686,6 +754,9 @@ test.describe('the Flows page', () => {
 			{ timeout: 15000 },
 		)
 
+		await expect(page.locator('[data-testid="flow-publish"]')).toBeVisible({
+			timeout: 15000,
+		})
 		await page.locator('[data-testid="flow-publish"]').click()
 
 		// 🔑 ASSERT THE BADGE, NOT THE CLICK. A button that posts and silently
