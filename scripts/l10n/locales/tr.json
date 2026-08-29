@@ -35,7 +35,21 @@
 		"X-Custom-Header: value\nAuthorization: Bearer token": "Literal HTTP header example; header names are protocol tokens and are never translated.",
 		"X-Custom-Header: value\\nAuthorization: Bearer token": "Literal HTTP header example with an escaped newline; header names are protocol tokens.",
 		"objectType: object\\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens.",
-		"objectType: object\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens and are never translated."
+		"objectType: object\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens and are never translated.",
+		"Browser Web Push (VAPID)": "Browser and Web Push are the protocol's own names and VAPID is its acronym; the protocol name is not translated.",
+		"Bucket": "Object-storage term, used unchanged in this locale's technical language.",
+		"Driver": "Database-driver term, used unchanged in this locale's technical language.",
+		"Golden record": "Master-data-management term with no established local equivalent; used unchanged in data-governance language.",
+		"Host *": "Networking term, used unchanged in this locale, with the required-field marker.",
+		"Model": "Same spelling and meaning in this locale.",
+		"myapp": "A literal example application id shown verbatim; not prose.",
+		"Ollama URL": "Product name plus the invariant abbreviation URL.",
+		"Survivor": "Master-data-management term for the record that survives a merge; used unchanged in data-governance language.",
+		"Test": "Same spelling and meaning in this locale.",
+		"Url": "Invariant abbreviation, written the same way in this locale.",
+		"Min ms": "Two abbreviations (minimum, milliseconds) shown as a compact column label; both are invariant in Turkish.",
+		"Port": "Networking term, used unchanged in Turkish.",
+		"Zookeeper Port": "Apache ZooKeeper product name plus the invariant term Port."
 	},
 	"corrections": {}
 }
