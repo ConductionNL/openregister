@@ -402,7 +402,7 @@ export default {
 
 .logValue {
 	color: var(--color-main-text);
-	word-break: break-word;
+	overflow-wrap: break-word;
 }
 
 .event-class {
@@ -445,7 +445,7 @@ export default {
 	margin: 0;
 	color: var(--color-main-text);
 	white-space: pre-wrap;
-	word-break: break-word;
+	overflow-wrap: break-word;
 }
 
 .codeBlock {
@@ -474,7 +474,7 @@ export default {
 	line-height: 1.5;
 	color: var(--color-main-text);
 	white-space: pre;
-	word-wrap: normal;
+	overflow-wrap: normal;
 }
 
 .loadingContainer {
