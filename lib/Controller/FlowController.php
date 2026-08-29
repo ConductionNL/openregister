@@ -925,7 +925,13 @@ class FlowController extends Controller {
 		}
 
 		try {
-			$version = $this->flowVersionService->publish(flow: $flow);
+			$version = $this->flowVersionService->publish(
+				flow: $flow,
+				// From FlowAccess, which already holds the session — a second
+				// IUserSession here would push this constructor past the
+				// parameter limit for one string.
+				publishedBy: $this->access->currentUser()?->getUID()
+			);
 		} catch (FlowLifecycleRefused $e) {
 			return $this->refusal(refusal: $e);
 		}
