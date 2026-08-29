@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStateMapper;
+use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowService;
@@ -64,6 +65,39 @@ final class FlowDeleteCascadeTest extends TestCase {
 	 *
 	 * @return FlowService The service under test.
 	 */
+	/**
+	 * @var FlowVersionMapper|null The version mapper the next service will get.
+	 */
+	private ?FlowVersionMapper $versionMapper = null;
+
+	/**
+	 * 🔴 THE CASCADE MEMBER THAT WAS MISSING. delete() already swept triggers,
+	 * runs, steps and state; the version table was added later and never joined
+	 * that list, so every deleted flow left its versions behind — 38 orphans
+	 * measured on a dev instance, unreachable because every version read is
+	 * keyed by flow.
+	 *
+	 * @return void
+	 */
+	public function testDeleteAlsoSweepsTheFlowsVersionRows(): void {
+		$uuid = 'flow-uuid-4';
+
+		$versions = $this->createMock(FlowVersionMapper::class);
+		$versions->expects($this->once())->method('deleteByFlow')->with($uuid)->willReturn(2);
+		$this->versionMapper = $versions;
+
+		$runs = $this->createMock(FlowRunMapper::class);
+		$runs->method('deleteByFlow')->willReturn([]);
+
+		$this->serviceWith(
+			$this->flowMapperFor($uuid),
+			$runs,
+			$this->createMock(FlowRunStepMapper::class),
+			$this->createMock(FlowStateMapper::class)
+		)->delete(uuid: $uuid);
+
+	}//end testDeleteAlsoSweepsTheFlowsVersionRows()
+
 	private function serviceWith(
 		FlowMapper $mapper,
 		FlowRunMapper $runs,
@@ -113,7 +147,20 @@ final class FlowDeleteCascadeTest extends TestCase {
 		};
 
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->willReturn($organisationService);
+		// 🔑 The container answers BY CLASS here. It used to return the
+		// organisation stub for every get(), which meant the version cascade
+		// ran, threw "no such method", and was swallowed by delete()'s own
+		// try/catch — the line executed and asserted nothing.
+		$versions = ($this->versionMapper ?? $this->createMock(FlowVersionMapper::class));
+		$container->method('get')->willReturnCallback(
+			static function (string $id) use ($organisationService, $versions): object {
+				if ($id === FlowVersionMapper::class) {
+					return $versions;
+				}
+
+				return $organisationService;
+			}
+		);
 
 		return new FlowService(
 			$mapper,
