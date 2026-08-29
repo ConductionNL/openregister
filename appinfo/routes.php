@@ -1313,6 +1313,12 @@ return [
 		['name' => 'transfer#index', 'url' => '/api/transfers', 'verb' => 'GET'],
 		['name' => 'transfer#show', 'url' => '/api/transfers/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'transfer#create', 'url' => '/api/transfers', 'verb' => 'POST'],
+		// The archivist's decision. A literal trailing segment, so `{id}` — which
+		// matches [^/]+ — can never swallow them. Without these two the whole
+		// e-Depot flow was unreachable: `transfer#create` refuses to dispatch
+		// anything that is not `approved`, and nothing could set that status.
+		['name' => 'transfer#approve', 'url' => '/api/transfers/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'transfer#reject',  'url' => '/api/transfers/{id}/reject',  'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 
 		// Features & Roadmap menu — GitHub issues proxy (add-features-roadmap-menu).
 		// GET is a cached read (NoCSRFRequired set via controller attribute, pure read).
