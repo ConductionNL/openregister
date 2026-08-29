@@ -167,4 +167,27 @@ class FlowVersionMapper extends QBMapper {
 		return (int)$row['version'];
 
 	}//end highestVersion()
+
+	/**
+	 * Delete every version row of one flow.
+	 *
+	 * Called when the flow itself is deleted, AFTER its runs are gone. A
+	 * version row exists so an in-flight run can resolve the graph it was
+	 * pinned to; once no run of this flow remains, nothing can reach these rows
+	 * through any read path the app has — every version read is by flow.
+	 *
+	 * @param string $flowUuid The flow being deleted.
+	 *
+	 * @return integer The number of version rows removed.
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 */
+	public function deleteByFlow(string $flowUuid): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete($this->getTableName())
+			->where($qb->expr()->eq('flow_uuid', $qb->createNamedParameter($flowUuid)));
+
+		return (int)$qb->executeStatement();
+
+	}//end deleteByFlow()
 }//end class

@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStateMapper;
+use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
@@ -532,6 +533,22 @@ class FlowService {
 			}
 
 			$this->state->deleteByFlow(flowId: $uuid);
+
+			// 🔴 AND ITS VERSION ROWS, for exactly the same reason — I added
+			// the table and did not extend this cascade, so every deleted flow
+			// left its versions behind. Measured on the dev instance: 38
+			// orphans, and no way to reach them, since every read is by flow.
+			//
+			// Safe precisely BECAUSE the runs went first: a version row exists
+			// so an in-flight run can resolve the graph it was pinned to, and
+			// this method has just deleted every run of this flow. Nothing can
+			// still be pinned to them.
+			//
+			// `openregister_flow_defs` is deliberately NOT touched. It is
+			// content-addressed and SHARED — two flows holding the same graph
+			// share one row — so deleting by flow would pull a definition out
+			// from under an unrelated flow's version.
+			$this->container->get(FlowVersionMapper::class)->deleteByFlow(flowUuid: $uuid);
 		} catch (Throwable $e) {
 			// The flow itself is already gone, so this must not turn a
 			// successful delete into an error the caller has to retry — a retry
