@@ -2227,10 +2227,22 @@ class ValidateObject {
 			$property = $exception->getProperty();
 		}
 
+		// `getErrors()` is typed `?ValidationError` and IS null for every
+		// ValidationException thrown with a message alone — readOnly enforcement
+		// on update is one such path, and says so where it throws. Formatting
+		// that null is a TypeError, so the 400 this method exists to return
+		// became a 500 with the reason nowhere in the response: the caller saw
+		// "server error" instead of "cannot modify readOnly property X".
+		$formatted = [];
+		$validationError = $exception->getErrors();
+		if ($validationError !== null) {
+			$formatted = (new ErrorFormatter())->format($validationError);
+		}
+
 		$errors[] = [
 			'property' => $property,
 			'message' => $exception->getMessage(),
-			'errors' => (new ErrorFormatter())->format($exception->getErrors()),
+			'errors' => $formatted,
 		];
 
 		return new JSONResponse(
