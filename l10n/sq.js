@@ -2721,7 +2721,24 @@ OC.L10N.register(
         "v{installed} → ships v{shipped}": "v{installed} → jep v{shipped}",
         "Where the automation lives": "Ku jeton automatizimi",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Rrjedhat janë ajo që ndodh pa klikuar askush: një objekt i vulosur në ruajtje, një aplikacion i njoftuar kur ndryshon një regjistrim. Këtu i lexoni dhe i redaktoni. Tani nuk ka gjë për të ndërtuar.",
-        "Open Flows in the menu": "Hapni Rrjedhat në meny"
+        "Open Flows in the menu": "Hapni Rrjedhat në meny",
+        "Copied": "Kopjuar",
+        "Creating…": "Duke krijuar…",
+        "_object_::_objects_": ["objekt","objekte"],
+        "_log_::_logs_": ["regjistër aktiviteti","regjistra aktiviteti"],
+        "_file_::_files_": ["skedar","skedarë"],
+        "_register_::_registers_": ["regjistër","regjistra"],
+        "_schema_::_schemas_": ["skemë","skema"],
+        "_{count} schema_::_{count} schemas_": ["{count} skemë","{count} skema"],
+        "_%n register is missing_::_%n registers are missing_": ["mungon %n regjistër","mungojnë %n regjistra"],
+        "_%n is out of date_::_%n are out of date_": ["%n është i vjetruar","%n janë të vjetruara"],
+        "_%n declared in total_::_%n declared in total_": ["%n i deklaruar gjithsej","%n të deklaruara gjithsej"],
+        "_{count} email_::_{count} emails_": ["{count} email","{count} email"],
+        "_Delete {count} object_::_Delete {count} objects_": ["Fshi {count} objekt","Fshi {count} objekte"],
+        "_Object successfully deleted_::_Objects successfully deleted_": ["Objekti u fshi me sukses","Objektet u fshinë me sukses"],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": ["Pastro {count} objekt nga baza e të dhënave","Pastro {count} objekte nga baza e të dhënave"],
+        "_Restore {count} object_::_Restore {count} objects_": ["Ripristino {count} objekti","Ripristino {count} objekte"],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": ["{count} objekt u ripristinua me sukses","{count} objekte u ripristinuan me sukses"]
     },
     "nplurals=2; plural=(n != 1);"
 )

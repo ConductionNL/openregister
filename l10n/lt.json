@@ -2724,7 +2724,84 @@
         "v{installed} → ships v{shipped}": "v{installed} → pateikia v{shipped}",
         "Where the automation lives": "Kur gyvena automatizavimas",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Srautai yra tai, kas vyksta niekam nespaudžiant: objektas, pažymimas išsaugant, programa, informuojama pasikeitus įrašui. Čia juos skaitote ir redaguojate. Dabar nieko kurti nereikia.",
-        "Open Flows in the menu": "Atidarykite Srautus meniu"
+        "Open Flows in the menu": "Atidarykite Srautus meniu",
+        "Copied": "Nukopijuota",
+        "Creating…": "Kuriama…",
+        "_object_::_objects_": [
+            "objektas",
+            "objektai",
+            "objektų"
+        ],
+        "_log_::_logs_": [
+            "žurnalas",
+            "žurnalai",
+            "žurnalų"
+        ],
+        "_file_::_files_": [
+            "failas",
+            "failai",
+            "failų"
+        ],
+        "_register_::_registers_": [
+            "registras",
+            "registrai",
+            "registrų"
+        ],
+        "_schema_::_schemas_": [
+            "schema",
+            "schemos",
+            "schemų"
+        ],
+        "_{count} schema_::_{count} schemas_": [
+            "{count} schema",
+            "{count} schemos",
+            "{count} schemų"
+        ],
+        "_%n register is missing_::_%n registers are missing_": [
+            "trūksta %n registro",
+            "trūksta %n registrų",
+            "trūksta %n registrų"
+        ],
+        "_%n is out of date_::_%n are out of date_": [
+            "%n yra pasenęs",
+            "%n yra pasenę",
+            "%n yra pasenusių"
+        ],
+        "_%n declared in total_::_%n declared in total_": [
+            "%n deklaruotas iš viso",
+            "%n deklaruoti iš viso",
+            "%n deklaruota iš viso"
+        ],
+        "_{count} email_::_{count} emails_": [
+            "{count} el. laiškas",
+            "{count} el. laiškai",
+            "{count} el. laiškų"
+        ],
+        "_Delete {count} object_::_Delete {count} objects_": [
+            "Ištrinti {count} objektą",
+            "Ištrinti {count} objektus",
+            "Ištrinti {count} objektų"
+        ],
+        "_Object successfully deleted_::_Objects successfully deleted_": [
+            "Objektas sėkmingai ištrintas",
+            "Objektai sėkmingai ištrinti",
+            "Objektai sėkmingai ištrinti"
+        ],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": [
+            "Išvalyti {count} objektą iš duomenų bazės",
+            "Išvalyti {count} objektus iš duomenų bazės",
+            "Išvalyti {count} objektų iš duomenų bazės"
+        ],
+        "_Restore {count} object_::_Restore {count} objects_": [
+            "Atkurti {count} objektą",
+            "Atkurti {count} objektus",
+            "Atkurti {count} objektų"
+        ],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": [
+            "Sėkmingai atkurtas {count} objektas",
+            "Sėkmingai atkurti {count} objektai",
+            "Sėkmingai atkurta {count} objektų"
+        ]
     },
     "pluralForm": "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2);",
     "plurals": {

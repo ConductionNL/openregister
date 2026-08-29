@@ -2725,7 +2725,137 @@
         "v{installed} → ships v{shipped}": "v{installed} → dodáva v{shipped}",
         "Where the automation lives": "Kde žije automatizácia",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Toky sú to, čo sa deje bez kliknutia: objekt označený pri uložení, aplikácia informovaná pri zmene záznamu. Tu ich čítate a upravujete. Teraz netreba nič stavať.",
-        "Open Flows in the menu": "Otvorte Toky v ponuke"
+        "Open Flows in the menu": "Otvorte Toky v ponuke",
+        "Copied": "Skopírované",
+        "Creating…": "Vytvára sa…",
+        "_object_::_objects_": [
+            "objekt",
+            "objekty",
+            "objektu",
+            "objektov"
+        ],
+        "_log_::_logs_": [
+            "protokol",
+            "protokoly",
+            "protokolu",
+            "protokolov"
+        ],
+        "_file_::_files_": [
+            "súbor",
+            "súbory",
+            "súboru",
+            "súborov"
+        ],
+        "_register_::_registers_": [
+            "register",
+            "registre",
+            "registra",
+            "registrov"
+        ],
+        "_schema_::_schemas_": [
+            "schéma",
+            "schémy",
+            "schémy",
+            "schém"
+        ],
+        "_{count} schema_::_{count} schemas_": [
+            "{count} schéma",
+            "{count} schémy",
+            "{count} schémy",
+            "{count} schém"
+        ],
+        "_%n register is missing_::_%n registers are missing_": [
+            "chýba %n register",
+            "chýbajú %n registre",
+            "chýba %n registra",
+            "chýba %n registrov"
+        ],
+        "_%n is out of date_::_%n are out of date_": [
+            "%n je zastaraný",
+            "%n sú zastarané",
+            "%n je zastaraných",
+            "%n je zastaraných"
+        ],
+        "_%n declared in total_::_%n declared in total_": [
+            "%n deklarovaný celkovo",
+            "%n deklarované celkovo",
+            "%n deklarovaných celkovo",
+            "%n deklarovaných celkovo"
+        ],
+        "_{count} email_::_{count} emails_": [
+            "{count} e-mail",
+            "{count} e-maily",
+            "{count} e-mailu",
+            "{count} e-mailov"
+        ],
+        "_Delete {count} object_::_Delete {count} objects_": [
+            "Odstrániť {count} objekt",
+            "Odstrániť {count} objekty",
+            "Odstrániť {count} objektu",
+            "Odstrániť {count} objektov"
+        ],
+        "_Object successfully deleted_::_Objects successfully deleted_": [
+            "Objekt bol úspešne odstránený",
+            "Objekty boli úspešne odstránené",
+            "Objekty boli úspešne odstránené",
+            "Objekty boli úspešne odstránené"
+        ],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": [
+            "Vymazať {count} objekt z databázy",
+            "Vymazať {count} objekty z databázy",
+            "Vymazať {count} objektu z databázy",
+            "Vymazať {count} objektov z databázy"
+        ],
+        "_Restore {count} object_::_Restore {count} objects_": [
+            "Obnoviť {count} objekt",
+            "Obnoviť {count} objekty",
+            "Obnoviť {count} objektu",
+            "Obnoviť {count} objektov"
+        ],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": [
+            "Úspešne obnovený {count} objekt",
+            "Úspešne obnovené {count} objekty",
+            "Úspešne obnovených {count} objektu",
+            "Úspešne obnovených {count} objektov"
+        ]
     },
-    "pluralForm": "nplurals=4; plural=(n % 1 == 0 && n == 1 ? 0 : n % 1 == 0 && n >= 2 && n <= 4 ? 1 : n % 1 != 0 ? 2: 3);"
+    "pluralForm": "nplurals=4; plural=(n % 1 == 0 && n == 1 ? 0 : n % 1 == 0 && n >= 2 && n <= 4 ? 1 : n % 1 != 0 ? 2: 3);",
+    "plurals": {
+        "{count} email": [
+            "{count} e-mail",
+            "{count} e-maily",
+            "{count} e-mailu",
+            "{count} e-mailov"
+        ],
+        "Delete {count} object": [
+            "Odstrániť {count} objekt",
+            "Odstrániť {count} objekty",
+            "Odstrániť {count} objektu",
+            "Odstrániť {count} objektov"
+        ],
+        "Object successfully deleted": [
+            "Objekt bol úspešne odstránený",
+            "Objekty boli úspešne odstránené",
+            "Objekty boli úspešne odstránené",
+            "Objekty boli úspešne odstránené"
+        ],
+        "Purge {count} object from database": [
+            "Vymazať {count} objekt z databázy",
+            "Vymazať {count} objekty z databázy",
+            "Vymazať {count} objektu z databázy",
+            "Vymazať {count} objektov z databázy"
+        ],
+        "Restore {count} object": [
+            "Obnoviť {count} objekt",
+            "Obnoviť {count} objekty",
+            "Obnoviť {count} objektu",
+            "Obnoviť {count} objektov"
+        ],
+        "Successfully restored {count} object": [
+            "Úspešne obnovený {count} objekt",
+            "Úspešne obnovené {count} objekty",
+            "Úspešne obnovených {count} objektu",
+            "Úspešne obnovených {count} objektov"
+        ]
+    }
 }

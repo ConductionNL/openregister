@@ -2721,7 +2721,24 @@ OC.L10N.register(
         "v{installed} → ships v{shipped}": "v{installed} → dobavlja v{shipped}",
         "Where the automation lives": "Kje živi avtomatizacija",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Tokovi so tisto, kar se zgodi brez klika: predmet, žigosan ob shranjevanju, aplikacija, obveščena ob spremembi zapisa. Tu jih berete in urejate. Zdaj ni treba ničesar graditi.",
-        "Open Flows in the menu": "Odprite Tokove v meniju"
+        "Open Flows in the menu": "Odprite Tokove v meniju",
+        "Copied": "Kopirano",
+        "Creating…": "Ustvarjanje…",
+        "_object_::_objects_": ["objekt","objekta","objekti","objektov"],
+        "_log_::_logs_": ["dnevnik","dnevnika","dnevniki","dnevnikov"],
+        "_file_::_files_": ["datoteka","datoteki","datoteke","datotek"],
+        "_register_::_registers_": ["register","registra","registri","registrov"],
+        "_schema_::_schemas_": ["shema","shemi","sheme","shem"],
+        "_{count} schema_::_{count} schemas_": ["{count} shema","{count} shemi","{count} sheme","{count} shem"],
+        "_%n register is missing_::_%n registers are missing_": ["manjka %n register","manjkata %n registra","manjkajo %n registri","manjka %n registrov"],
+        "_%n is out of date_::_%n are out of date_": ["%n je zastarel","%n sta zastarela","%n so zastareli","%n je zastarelih"],
+        "_%n declared in total_::_%n declared in total_": ["%n deklariran skupaj","%n deklarirana skupaj","%n deklarirani skupaj","%n deklariranih skupaj"],
+        "_{count} email_::_{count} emails_": ["{count} e-pošta","{count} e-pošti","{count} e-pošte","{count} e-pošt"],
+        "_Delete {count} object_::_Delete {count} objects_": ["Izbriši {count} objekt","Izbriši {count} objekta","Izbriši {count} objekte","Izbriši {count} objektov"],
+        "_Object successfully deleted_::_Objects successfully deleted_": ["Objekt je uspešno izbrisan","Objekta sta uspešno izbrisana","Objekti so uspešno izbrisani","Objekti so uspešno izbrisani"],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": ["Trajno odstrani {count} objekt iz baze podatkov","Trajno odstrani {count} objekta iz baze podatkov","Trajno odstrani {count} objekte iz baze podatkov","Trajno odstrani {count} objektov iz baze podatkov"],
+        "_Restore {count} object_::_Restore {count} objects_": ["Obnovi {count} objekt","Obnovi {count} objekta","Obnovi {count} objekte","Obnovi {count} objektov"],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": ["Uspešno obnovljen {count} objekt","Uspešno obnovljena {count} objekta","Uspešno obnovljeni {count} objekti","Uspešno obnovljenih {count} objektov"]
     },
     "nplurals=4; plural=(n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3);"
 )

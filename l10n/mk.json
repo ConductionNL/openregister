@@ -2723,7 +2723,69 @@
         "v{installed} → ships v{shipped}": "v{installed} → испорачува v{shipped}",
         "Where the automation lives": "Каде живее автоматизацијата",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Текови се тоа што се случува без некој да кликне: објект означен при зачувување, апликација известена кога запис ќе се промени. Тука ги читате и уредувате. Сега нема што да се гради.",
-        "Open Flows in the menu": "Отворете Текови во менито"
+        "Open Flows in the menu": "Отворете Текови во менито",
+        "Copied": "Копирано",
+        "Creating…": "Создавање…",
+        "_object_::_objects_": [
+            "објект",
+            "објекти"
+        ],
+        "_log_::_logs_": [
+            "лог",
+            "логови"
+        ],
+        "_file_::_files_": [
+            "датотека",
+            "датотеки"
+        ],
+        "_register_::_registers_": [
+            "регистар",
+            "регистри"
+        ],
+        "_schema_::_schemas_": [
+            "шема",
+            "шеми"
+        ],
+        "_{count} schema_::_{count} schemas_": [
+            "{count} шема",
+            "{count} шеми"
+        ],
+        "_%n register is missing_::_%n registers are missing_": [
+            "недостасува %n регистар",
+            "недостасуваат %n регистри"
+        ],
+        "_%n is out of date_::_%n are out of date_": [
+            "%n е застарен",
+            "%n се застарени"
+        ],
+        "_%n declared in total_::_%n declared in total_": [
+            "%n вкупно деклариран",
+            "%n вкупно декларирани"
+        ],
+        "_{count} email_::_{count} emails_": [
+            "{count} е-пошта",
+            "{count} е-пошти"
+        ],
+        "_Delete {count} object_::_Delete {count} objects_": [
+            "Избриши {count} објект",
+            "Избриши {count} објекти"
+        ],
+        "_Object successfully deleted_::_Objects successfully deleted_": [
+            "Објектот е успешно избришан",
+            "Објектите се успешно избришани"
+        ],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": [
+            "Исчисти {count} објект од базата на податоци",
+            "Исчисти {count} објекти од базата на податоци"
+        ],
+        "_Restore {count} object_::_Restore {count} objects_": [
+            "Врати {count} објект",
+            "Врати {count} објекти"
+        ],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": [
+            "Успешно вратен {count} објект",
+            "Успешно вратени {count} објекти"
+        ]
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

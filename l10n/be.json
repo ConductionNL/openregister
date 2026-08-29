@@ -2725,7 +2725,99 @@
         "v{installed} → ships v{shipped}": "v{installed} → пастаўляе v{shipped}",
         "Where the automation lives": "Дзе жыве аўтаматызацыя",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Патокі — гэта тое, што адбываецца без націскаў: аб'ект, які пазначаецца пры захаванні, праграма, якую апавяшчаюць пры змене запісу. Тут вы іх чытаеце і рэдагуеце. Зараз нічога будаваць не трэба.",
-        "Open Flows in the menu": "Адкрыйце Патокі ў меню"
+        "Open Flows in the menu": "Адкрыйце Патокі ў меню",
+        "Copied": "Скапіявана",
+        "Creating…": "Стварэнне…",
+        "_object_::_objects_": [
+            "аб'ект",
+            "аб'екты",
+            "аб'ектаў",
+            "аб'екта"
+        ],
+        "_log_::_logs_": [
+            "журнал",
+            "журналы",
+            "журналаў",
+            "журнала"
+        ],
+        "_file_::_files_": [
+            "файл",
+            "файлы",
+            "файлаў",
+            "файла"
+        ],
+        "_register_::_registers_": [
+            "рэестр",
+            "рэестры",
+            "рэестраў",
+            "рэестра"
+        ],
+        "_schema_::_schemas_": [
+            "схема",
+            "схемы",
+            "схем",
+            "схемы"
+        ],
+        "_{count} schema_::_{count} schemas_": [
+            "{count} схема",
+            "{count} схемы",
+            "{count} схем",
+            "{count} схемы"
+        ],
+        "_%n register is missing_::_%n registers are missing_": [
+            "адсутнічае %n рэестр",
+            "адсутнічаюць %n рэестры",
+            "адсутнічае %n рэестраў",
+            "адсутнічае %n рэестра"
+        ],
+        "_%n is out of date_::_%n are out of date_": [
+            "%n састарэў",
+            "%n састарэлі",
+            "%n састарэлі",
+            "%n састарэла"
+        ],
+        "_%n declared in total_::_%n declared in total_": [
+            "%n аб’яўлена ўсяго",
+            "%n аб’яўлена ўсяго",
+            "%n аб’яўлена ўсяго",
+            "%n аб’яўлена ўсяго"
+        ],
+        "_{count} email_::_{count} emails_": [
+            "{count} ліст",
+            "{count} лісты",
+            "{count} лістоў",
+            "{count} ліста"
+        ],
+        "_Delete {count} object_::_Delete {count} objects_": [
+            "Выдаліць {count} аб'ект",
+            "Выдаліць {count} аб'екты",
+            "Выдаліць {count} аб'ектаў",
+            "Выдаліць {count} аб'екта"
+        ],
+        "_Object successfully deleted_::_Objects successfully deleted_": [
+            "Аб'ект паспяхова выдалены",
+            "Аб'екты паспяхова выдаленыя",
+            "Аб'екты паспяхова выдаленыя",
+            "Аб'екты паспяхова выдаленыя"
+        ],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": [
+            "Ачысціць {count} аб'ект з базы даных",
+            "Ачысціць {count} аб'екты з базы даных",
+            "Ачысціць {count} аб'ектаў з базы даных",
+            "Ачысціць {count} аб'екта з базы даных"
+        ],
+        "_Restore {count} object_::_Restore {count} objects_": [
+            "Аднавіць {count} аб'ект",
+            "Аднавіць {count} аб'екты",
+            "Аднавіць {count} аб'ектаў",
+            "Аднавіць {count} аб'екта"
+        ],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": [
+            "Паспяхова адноўлены {count} аб'ект",
+            "Паспяхова адноўленыя {count} аб'екты",
+            "Паспяхова адноўлена {count} аб'ектаў",
+            "Паспяхова адноўлена {count} аб'екта"
+        ]
     },
     "pluralForm": "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);",
     "plurals": {

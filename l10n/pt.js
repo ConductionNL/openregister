@@ -2721,7 +2721,24 @@ OC.L10N.register(
         "v{installed} → ships v{shipped}": "v{installed} → fornece v{shipped}",
         "Where the automation lives": "Onde vive a automação",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Os fluxos são o que acontece sem ninguém clicar: um objeto carimbado ao guardar, uma aplicação avisada quando um registo muda. É aqui que os lê e edita. Nada a construir agora.",
-        "Open Flows in the menu": "Abrir Fluxos no menu"
+        "Open Flows in the menu": "Abrir Fluxos no menu",
+        "Copied": "Copiado",
+        "Creating…": "A criar…",
+        "_object_::_objects_": ["objeto","objetos"],
+        "_log_::_logs_": ["registo de atividade","registos de atividade"],
+        "_file_::_files_": ["ficheiro","ficheiros"],
+        "_register_::_registers_": ["registo","registos"],
+        "_schema_::_schemas_": ["esquema","esquemas"],
+        "_{count} schema_::_{count} schemas_": ["{count} esquema","{count} esquemas"],
+        "_%n register is missing_::_%n registers are missing_": ["falta %n registo","faltam %n registos"],
+        "_%n is out of date_::_%n are out of date_": ["%n está desatualizado","%n estão desatualizados"],
+        "_%n declared in total_::_%n declared in total_": ["%n declarado no total","%n declarados no total"],
+        "_{count} email_::_{count} emails_": ["{count} e-mail","{count} e-mails"],
+        "_Delete {count} object_::_Delete {count} objects_": ["Eliminar {count} objeto","Eliminar {count} objetos"],
+        "_Object successfully deleted_::_Objects successfully deleted_": ["Objeto eliminado com sucesso","Objetos eliminados com sucesso"],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": ["Expurgar {count} objeto da base de dados","Expurgar {count} objetos da base de dados"],
+        "_Restore {count} object_::_Restore {count} objects_": ["Restaurar {count} objeto","Restaurar {count} objetos"],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": ["{count} objeto restaurado com sucesso","{count} objetos restaurados com sucesso"]
     },
     "nplurals=2; plural=(n != 1);"
 )

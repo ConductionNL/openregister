@@ -2723,7 +2723,69 @@
         "v{installed} → ships v{shipped}": "v{installed} → toimittaa v{shipped}",
         "Where the automation lives": "Missä automaatio asuu",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Vuot ovat sitä, mitä tapahtuu ilman että kukaan klikkaa: tallennettaessa leimattava objekti, sovellus jolle kerrotaan kun tietue muuttuu. Täällä luet ja muokkaat niitä. Nyt ei tarvitse rakentaa mitään.",
-        "Open Flows in the menu": "Avaa Vuot valikosta"
+        "Open Flows in the menu": "Avaa Vuot valikosta",
+        "Copied": "Kopioitu",
+        "Creating…": "Luodaan…",
+        "_object_::_objects_": [
+            "objekti",
+            "objektia"
+        ],
+        "_log_::_logs_": [
+            "loki",
+            "lokia"
+        ],
+        "_file_::_files_": [
+            "tiedosto",
+            "tiedostoa"
+        ],
+        "_register_::_registers_": [
+            "rekisteri",
+            "rekisteriä"
+        ],
+        "_schema_::_schemas_": [
+            "skeema",
+            "skeemaa"
+        ],
+        "_{count} schema_::_{count} schemas_": [
+            "{count} skeema",
+            "{count} skeemaa"
+        ],
+        "_%n register is missing_::_%n registers are missing_": [
+            "%n rekisteri puuttuu",
+            "%n rekisteriä puuttuu"
+        ],
+        "_%n is out of date_::_%n are out of date_": [
+            "%n on vanhentunut",
+            "%n ovat vanhentuneita"
+        ],
+        "_%n declared in total_::_%n declared in total_": [
+            "%n ilmoitettu yhteensä",
+            "%n ilmoitettu yhteensä"
+        ],
+        "_{count} email_::_{count} emails_": [
+            "{count} sähköposti",
+            "{count} sähköpostia"
+        ],
+        "_Delete {count} object_::_Delete {count} objects_": [
+            "Poista {count} objekti",
+            "Poista {count} objektia"
+        ],
+        "_Object successfully deleted_::_Objects successfully deleted_": [
+            "Objekti poistettu onnistuneesti",
+            "Objektit poistettu onnistuneesti"
+        ],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": [
+            "Tyhjennä {count} objekti tietokannasta",
+            "Tyhjennä {count} objektia tietokannasta"
+        ],
+        "_Restore {count} object_::_Restore {count} objects_": [
+            "Palauta {count} objekti",
+            "Palauta {count} objektia"
+        ],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": [
+            "Palautettiin onnistuneesti {count} objekti",
+            "Palautettiin onnistuneesti {count} objektia"
+        ]
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

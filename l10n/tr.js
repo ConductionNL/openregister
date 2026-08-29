@@ -2721,7 +2721,24 @@ OC.L10N.register(
         "v{installed} → ships v{shipped}": "v{installed} → v{shipped} sunuyor",
         "Where the automation lives": "Otomasyonun yaşadığı yer",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Akışlar kimse tıklamadan olan şeylerdir: kaydederken damgalanan bir nesne, bir kayıt değiştiğinde haber verilen bir uygulama. Bunları burada okur ve düzenlersiniz. Şimdi inşa edilecek bir şey yok.",
-        "Open Flows in the menu": "Menüden Akışlar'ı açın"
+        "Open Flows in the menu": "Menüden Akışlar'ı açın",
+        "Copied": "Kopyalandı",
+        "Creating…": "Oluşturuluyor…",
+        "_object_::_objects_": ["nesne","nesne"],
+        "_log_::_logs_": ["günlük","günlük"],
+        "_file_::_files_": ["dosya","dosya"],
+        "_register_::_registers_": ["kayıt","kayıt"],
+        "_schema_::_schemas_": ["şema","şema"],
+        "_{count} schema_::_{count} schemas_": ["{count} şema","{count} şema"],
+        "_%n register is missing_::_%n registers are missing_": ["%n kayıt eksik","%n kayıt eksik"],
+        "_%n is out of date_::_%n are out of date_": ["%n güncel değil","%n güncel değil"],
+        "_%n declared in total_::_%n declared in total_": ["toplam %n bildirildi","toplam %n bildirildi"],
+        "_{count} email_::_{count} emails_": ["{count} e-posta","{count} e-posta"],
+        "_Delete {count} object_::_Delete {count} objects_": ["{count} nesneyi sil","{count} nesneyi sil"],
+        "_Object successfully deleted_::_Objects successfully deleted_": ["Nesne başarıyla silindi","Nesneler başarıyla silindi"],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": ["Veritabanından {count} nesneyi temizle","Veritabanından {count} nesneyi temizle"],
+        "_Restore {count} object_::_Restore {count} objects_": ["{count} nesneyi geri yükle","{count} nesneyi geri yükle"],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": ["{count} nesne başarıyla geri yüklendi","{count} nesne başarıyla geri yüklendi"]
     },
     "nplurals=2; plural=(n != 1);"
 )

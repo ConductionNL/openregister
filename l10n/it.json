@@ -2724,7 +2724,84 @@
         "v{installed} → ships v{shipped}": "v{installed} → fornisce v{shipped}",
         "Where the automation lives": "Dove vive l'automazione",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "I flussi sono ciò che accade senza che nessuno clicchi: un oggetto marcato al salvataggio, un'app avvisata quando un record cambia. Qui li leggi e li modifichi. Nulla da costruire ora.",
-        "Open Flows in the menu": "Apri Flussi nel menu"
+        "Open Flows in the menu": "Apri Flussi nel menu",
+        "Copied": "Copiato",
+        "Creating…": "Creazione…",
+        "_object_::_objects_": [
+            "oggetto",
+            "oggetti",
+            "oggetti"
+        ],
+        "_log_::_logs_": [
+            "log",
+            "log",
+            "log"
+        ],
+        "_file_::_files_": [
+            "file",
+            "file",
+            "file"
+        ],
+        "_register_::_registers_": [
+            "registro",
+            "registri",
+            "registri"
+        ],
+        "_schema_::_schemas_": [
+            "schema",
+            "schemi",
+            "schemi"
+        ],
+        "_{count} schema_::_{count} schemas_": [
+            "{count} schema",
+            "{count} schemi",
+            "{count} schemi"
+        ],
+        "_%n register is missing_::_%n registers are missing_": [
+            "manca %n registro",
+            "mancano %n registri",
+            "mancano %n registri"
+        ],
+        "_%n is out of date_::_%n are out of date_": [
+            "%n è obsoleto",
+            "%n sono obsoleti",
+            "%n sono obsoleti"
+        ],
+        "_%n declared in total_::_%n declared in total_": [
+            "%n dichiarato in totale",
+            "%n dichiarati in totale",
+            "%n dichiarati in totale"
+        ],
+        "_{count} email_::_{count} emails_": [
+            "{count} email",
+            "{count} email",
+            "{count} email"
+        ],
+        "_Delete {count} object_::_Delete {count} objects_": [
+            "Elimina {count} oggetto",
+            "Elimina {count} oggetti",
+            "Elimina {count} oggetti"
+        ],
+        "_Object successfully deleted_::_Objects successfully deleted_": [
+            "Oggetto eliminato correttamente",
+            "Oggetti eliminati correttamente",
+            "Oggetti eliminati correttamente"
+        ],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": [
+            "Elimina definitivamente {count} oggetto dal database",
+            "Elimina definitivamente {count} oggetti dal database",
+            "Elimina definitivamente {count} oggetti dal database"
+        ],
+        "_Restore {count} object_::_Restore {count} objects_": [
+            "Ripristina {count} oggetto",
+            "Ripristina {count} oggetti",
+            "Ripristina {count} oggetti"
+        ],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": [
+            "Ripristinato correttamente {count} oggetto",
+            "Ripristinati correttamente {count} oggetti",
+            "Ripristinati correttamente {count} oggetti"
+        ]
     },
     "pluralForm": "nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;",
     "plurals": {

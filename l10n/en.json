@@ -2723,7 +2723,69 @@
         "v{installed} → ships v{shipped}": "v{installed} → ships v{shipped}",
         "Where the automation lives": "Where the automation lives",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.",
-        "Open Flows in the menu": "Open Flows in the menu"
+        "Open Flows in the menu": "Open Flows in the menu",
+        "Copied": "Copied",
+        "Creating…": "Creating…",
+        "_object_::_objects_": [
+            "object",
+            "objects"
+        ],
+        "_log_::_logs_": [
+            "log",
+            "logs"
+        ],
+        "_file_::_files_": [
+            "file",
+            "files"
+        ],
+        "_register_::_registers_": [
+            "register",
+            "registers"
+        ],
+        "_schema_::_schemas_": [
+            "schema",
+            "schemas"
+        ],
+        "_{count} schema_::_{count} schemas_": [
+            "{count} schema",
+            "{count} schemas"
+        ],
+        "_%n register is missing_::_%n registers are missing_": [
+            "%n register is missing",
+            "%n registers are missing"
+        ],
+        "_%n is out of date_::_%n are out of date_": [
+            "%n is out of date",
+            "%n are out of date"
+        ],
+        "_%n declared in total_::_%n declared in total_": [
+            "%n declared in total",
+            "%n declared in total"
+        ],
+        "_{count} email_::_{count} emails_": [
+            "{count} email",
+            "{count} emails"
+        ],
+        "_Delete {count} object_::_Delete {count} objects_": [
+            "Delete {count} object",
+            "Delete {count} objects"
+        ],
+        "_Object successfully deleted_::_Objects successfully deleted_": [
+            "Object successfully deleted",
+            "Objects successfully deleted"
+        ],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": [
+            "Purge {count} object from database",
+            "Purge {count} objects from database"
+        ],
+        "_Restore {count} object_::_Restore {count} objects_": [
+            "Restore {count} object",
+            "Restore {count} objects"
+        ],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": [
+            "Successfully restored {count} object",
+            "Successfully restored {count} objects"
+        ]
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

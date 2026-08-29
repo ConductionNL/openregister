@@ -2721,7 +2721,24 @@ OC.L10N.register(
         "v{installed} → ships v{shipped}": "v{installed} → παρέχει v{shipped}",
         "Where the automation lives": "Πού ζει ο αυτοματισμός",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Οι ροές είναι ό,τι συμβαίνει χωρίς να κάνει κανείς κλικ: ένα αντικείμενο που σφραγίζεται κατά την αποθήκευση, μια εφαρμογή που ειδοποιείται όταν αλλάζει μια εγγραφή. Εδώ τις διαβάζετε και τις επεξεργάζεστε. Δεν χρειάζεται να φτιάξετε τίποτα τώρα.",
-        "Open Flows in the menu": "Ανοίξτε τις Ροές στο μενού"
+        "Open Flows in the menu": "Ανοίξτε τις Ροές στο μενού",
+        "Copied": "Αντιγράφηκε",
+        "Creating…": "Δημιουργία…",
+        "_object_::_objects_": ["αντικείμενο","αντικείμενα"],
+        "_log_::_logs_": ["αρχείο καταγραφής","αρχεία καταγραφής"],
+        "_file_::_files_": ["αρχείο","αρχεία"],
+        "_register_::_registers_": ["μητρώο","μητρώα"],
+        "_schema_::_schemas_": ["σχήμα","σχήματα"],
+        "_{count} schema_::_{count} schemas_": ["{count} σχήμα","{count} σχήματα"],
+        "_%n register is missing_::_%n registers are missing_": ["λείπει %n μητρώο","λείπουν %n μητρώα"],
+        "_%n is out of date_::_%n are out of date_": ["%n είναι παρωχημένο","%n είναι παρωχημένα"],
+        "_%n declared in total_::_%n declared in total_": ["%n δηλωμένο συνολικά","%n δηλωμένα συνολικά"],
+        "_{count} email_::_{count} emails_": ["{count} email","{count} email"],
+        "_Delete {count} object_::_Delete {count} objects_": ["Διαγραφή {count} Αντικειμένου","Διαγραφή {count} Αντικειμένων"],
+        "_Object successfully deleted_::_Objects successfully deleted_": ["Το Αντικείμενο διαγράφηκε με επιτυχία","Τα Αντικείμενα διαγράφηκαν με επιτυχία"],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": ["Εκκαθάριση {count} Αντικειμένου από τη βάση δεδομένων","Εκκαθάριση {count} Αντικειμένων από τη βάση δεδομένων"],
+        "_Restore {count} object_::_Restore {count} objects_": ["Επαναφορά {count} Αντικειμένου","Επαναφορά {count} Αντικειμένων"],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": ["Αποκαταστάθηκε με επιτυχία {count} Αντικείμενο","Αποκαταστάθηκαν με επιτυχία {count} Αντικείμενα"]
     },
     "nplurals=2; plural=(n != 1);"
 )

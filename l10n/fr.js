@@ -2721,7 +2721,24 @@ OC.L10N.register(
         "v{installed} → ships v{shipped}": "v{installed} → fournit v{shipped}",
         "Where the automation lives": "Où vit l'automatisation",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Les flux sont ce qui se produit sans que personne ne clique : un objet horodaté à l'enregistrement, une application avertie quand un enregistrement change. C'est ici que vous les consultez et les modifiez. Rien à construire maintenant.",
-        "Open Flows in the menu": "Ouvrir Flux dans le menu"
+        "Open Flows in the menu": "Ouvrir Flux dans le menu",
+        "Copied": "Copié",
+        "Creating…": "Création…",
+        "_object_::_objects_": ["objet","objets","objets"],
+        "_log_::_logs_": ["journal","journaux","journaux"],
+        "_file_::_files_": ["fichier","fichiers","fichiers"],
+        "_register_::_registers_": ["registre","registres","registres"],
+        "_schema_::_schemas_": ["schéma","schémas","schémas"],
+        "_{count} schema_::_{count} schemas_": ["{count} schéma","{count} schémas","{count} schémas"],
+        "_%n register is missing_::_%n registers are missing_": ["%n registre est manquant","%n registres sont manquants","%n registres sont manquants"],
+        "_%n is out of date_::_%n are out of date_": ["%n est obsolète","%n sont obsolètes","%n sont obsolètes"],
+        "_%n declared in total_::_%n declared in total_": ["%n déclaré au total","%n déclarés au total","%n déclarés au total"],
+        "_{count} email_::_{count} emails_": ["{count} e-mail","{count} e-mails","{count} e-mails"],
+        "_Delete {count} object_::_Delete {count} objects_": ["Supprimer {count} objet","Supprimer {count} objets","Supprimer {count} objets"],
+        "_Object successfully deleted_::_Objects successfully deleted_": ["Objet supprimé avec succès","Objets supprimés avec succès","Objets supprimés avec succès"],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": ["Purger {count} objet de la base de données","Purger {count} objets de la base de données","Purger {count} objets de la base de données"],
+        "_Restore {count} object_::_Restore {count} objects_": ["Restaurer {count} objet","Restaurer {count} objets","Restaurer {count} objets"],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": ["{count} objet restauré avec succès","{count} objets restaurés avec succès","{count} objets restaurés avec succès"]
     },
     "nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 )

@@ -93,6 +93,7 @@
     "Workflows": "Established loan; the Dutch plural is also 'workflows'.",
     "X-Custom-Header: value\nAuthorization: Bearer token": "Literal HTTP header example shown verbatim; header names are protocol tokens and are never translated.",
     "X-Custom-Header: value\\nAuthorization: Bearer token": "Literal HTTP header example with an escaped newline, shown verbatim; header names are protocol tokens.",
+    "_register_::_registers_": "Plural key for the bare 'register' / 'registers' count label. Both forms are the Dutch words, for the reasons already recorded against 'Register' and 'Registers'.",
     "chunk": "Retrieval/embedding term, used unchanged in Dutch AI language.",
     "chunks": "Retrieval/embedding term, used unchanged in Dutch AI language.",
     "e.g., lib/Settings/config.json": "A literal example file path shown verbatim; not prose.",

@@ -2721,7 +2721,24 @@ OC.L10N.register(
         "v{installed} → ships v{shipped}": "v{installed} → доставя v{shipped}",
         "Where the automation lives": "Къде живее автоматизацията",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Потоците са това, което се случва без някой да кликне: обект, подпечатан при запис, приложение, уведомено при промяна на запис. Тук ги четете и редактирате. Сега няма какво да се изгражда.",
-        "Open Flows in the menu": "Отворете Потоци в менюто"
+        "Open Flows in the menu": "Отворете Потоци в менюто",
+        "Copied": "Копирано",
+        "Creating…": "Създаване…",
+        "_object_::_objects_": ["обект","обекти"],
+        "_log_::_logs_": ["дневник","дневници"],
+        "_file_::_files_": ["файл","файлове"],
+        "_register_::_registers_": ["регистър","регистри"],
+        "_schema_::_schemas_": ["схема","схеми"],
+        "_{count} schema_::_{count} schemas_": ["{count} схема","{count} схеми"],
+        "_%n register is missing_::_%n registers are missing_": ["липсва %n регистър","липсват %n регистъра"],
+        "_%n is out of date_::_%n are out of date_": ["%n е остарял","%n са остарели"],
+        "_%n declared in total_::_%n declared in total_": ["%n деклариран общо","%n декларирани общо"],
+        "_{count} email_::_{count} emails_": ["{count} имейл","{count} имейла"],
+        "_Delete {count} object_::_Delete {count} objects_": ["Изтриване на {count} обект","Изтриване на {count} обекта"],
+        "_Object successfully deleted_::_Objects successfully deleted_": ["Обектът е изтрит успешно","Обектите са изтрити успешно"],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": ["Изчистване на {count} обект от базата данни","Изчистване на {count} обекта от базата данни"],
+        "_Restore {count} object_::_Restore {count} objects_": ["Възстановяване на {count} обект","Възстановяване на {count} обекта"],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": ["Успешно възстановен {count} обект","Успешно възстановени {count} обекта"]
     },
     "nplurals=2; plural=(n != 1);"
 )

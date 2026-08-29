@@ -2723,7 +2723,69 @@
         "v{installed} → ships v{shipped}": "v{installed} → liefert v{shipped}",
         "Where the automation lives": "Wo die Automatisierung lebt",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Flows sind das, was ohne Klick passiert: ein Objekt, das beim Speichern gestempelt wird, eine nachgelagerte App, die bei einer Änderung benachrichtigt wird. Hier lesen und bearbeiten Sie sie. Jetzt ist nichts zu bauen.",
-        "Open Flows in the menu": "Flows im Menü öffnen"
+        "Open Flows in the menu": "Flows im Menü öffnen",
+        "Copied": "Kopiert",
+        "Creating…": "Wird erstellt…",
+        "_object_::_objects_": [
+            "Objekt",
+            "Objekte"
+        ],
+        "_log_::_logs_": [
+            "Protokoll",
+            "Protokolle"
+        ],
+        "_file_::_files_": [
+            "Datei",
+            "Dateien"
+        ],
+        "_register_::_registers_": [
+            "Register",
+            "Register"
+        ],
+        "_schema_::_schemas_": [
+            "Schema",
+            "Schemas"
+        ],
+        "_{count} schema_::_{count} schemas_": [
+            "{count} Schema",
+            "{count} Schemas"
+        ],
+        "_%n register is missing_::_%n registers are missing_": [
+            "%n Register fehlt",
+            "%n Register fehlen"
+        ],
+        "_%n is out of date_::_%n are out of date_": [
+            "%n ist veraltet",
+            "%n sind veraltet"
+        ],
+        "_%n declared in total_::_%n declared in total_": [
+            "%n insgesamt deklariert",
+            "%n insgesamt deklariert"
+        ],
+        "_{count} email_::_{count} emails_": [
+            "{count} E-Mail",
+            "{count} E-Mails"
+        ],
+        "_Delete {count} object_::_Delete {count} objects_": [
+            "{count} Objekt löschen",
+            "{count} Objekte löschen"
+        ],
+        "_Object successfully deleted_::_Objects successfully deleted_": [
+            "Objekt erfolgreich gelöscht",
+            "Objekte erfolgreich gelöscht"
+        ],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": [
+            "{count} Objekt aus der Datenbank bereinigen",
+            "{count} Objekte aus der Datenbank bereinigen"
+        ],
+        "_Restore {count} object_::_Restore {count} objects_": [
+            "{count} Objekt wiederherstellen",
+            "{count} Objekte wiederherstellen"
+        ],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": [
+            "{count} Objekt erfolgreich wiederhergestellt",
+            "{count} Objekte erfolgreich wiederhergestellt"
+        ]
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

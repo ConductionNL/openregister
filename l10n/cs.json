@@ -2725,7 +2725,99 @@
         "v{installed} → ships v{shipped}": "v{installed} → dodává v{shipped}",
         "Where the automation lives": "Kde žije automatizace",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Toky jsou to, co se děje bez kliknutí: objekt označený při uložení, aplikace informovaná při změně záznamu. Zde je čtete a upravujete. Nyní není třeba nic stavět.",
-        "Open Flows in the menu": "Otevřete Toky v nabídce"
+        "Open Flows in the menu": "Otevřete Toky v nabídce",
+        "Copied": "Zkopírováno",
+        "Creating…": "Vytváření…",
+        "_object_::_objects_": [
+            "objekt",
+            "objekty",
+            "objektu",
+            "objektů"
+        ],
+        "_log_::_logs_": [
+            "protokol",
+            "protokoly",
+            "protokolu",
+            "protokolů"
+        ],
+        "_file_::_files_": [
+            "soubor",
+            "soubory",
+            "souboru",
+            "souborů"
+        ],
+        "_register_::_registers_": [
+            "registr",
+            "registry",
+            "registru",
+            "registrů"
+        ],
+        "_schema_::_schemas_": [
+            "schéma",
+            "schémata",
+            "schématu",
+            "schémat"
+        ],
+        "_{count} schema_::_{count} schemas_": [
+            "{count} schéma",
+            "{count} schémata",
+            "{count} schématu",
+            "{count} schémat"
+        ],
+        "_%n register is missing_::_%n registers are missing_": [
+            "chybí %n registr",
+            "chybí %n registry",
+            "chybí %n registru",
+            "chybí %n registrů"
+        ],
+        "_%n is out of date_::_%n are out of date_": [
+            "%n je zastaralý",
+            "%n jsou zastaralé",
+            "%n je zastaralých",
+            "%n je zastaralých"
+        ],
+        "_%n declared in total_::_%n declared in total_": [
+            "%n deklarován celkem",
+            "%n deklarovány celkem",
+            "%n deklarováno celkem",
+            "%n deklarováno celkem"
+        ],
+        "_{count} email_::_{count} emails_": [
+            "{count} e-mail",
+            "{count} e-maily",
+            "{count} e-mailu",
+            "{count} e-mailů"
+        ],
+        "_Delete {count} object_::_Delete {count} objects_": [
+            "Smazat {count} objekt",
+            "Smazat {count} objekty",
+            "Smazat {count} objektu",
+            "Smazat {count} objektů"
+        ],
+        "_Object successfully deleted_::_Objects successfully deleted_": [
+            "Objekt byl úspěšně smazán",
+            "Objekty byly úspěšně smazány",
+            "Objekty byly úspěšně smazány",
+            "Objekty byly úspěšně smazány"
+        ],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": [
+            "Vyčistit {count} objekt z databáze",
+            "Vyčistit {count} objekty z databáze",
+            "Vyčistit {count} objektu z databáze",
+            "Vyčistit {count} objektů z databáze"
+        ],
+        "_Restore {count} object_::_Restore {count} objects_": [
+            "Obnovit {count} objekt",
+            "Obnovit {count} objekty",
+            "Obnovit {count} objektu",
+            "Obnovit {count} objektů"
+        ],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": [
+            "Úspěšně obnoven {count} objekt",
+            "Úspěšně obnoveny {count} objekty",
+            "Úspěšně obnoveno {count} objektu",
+            "Úspěšně obnoveno {count} objektů"
+        ]
     },
     "pluralForm": "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;",
     "plurals": {

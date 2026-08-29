@@ -2721,7 +2721,24 @@ OC.L10N.register(
         "v{installed} → ships v{shipped}": "v{installed} → livrează v{shipped}",
         "Where the automation lives": "Unde trăiește automatizarea",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Fluxurile sunt ce se întâmplă fără ca cineva să dea clic: un obiect ștampilat la salvare, o aplicație anunțată când un înregistrare se schimbă. Aici le citiți și le editați. Nu e nimic de construit acum.",
-        "Open Flows in the menu": "Deschideți Fluxuri în meniu"
+        "Open Flows in the menu": "Deschideți Fluxuri în meniu",
+        "Copied": "Copiat",
+        "Creating…": "Se creează…",
+        "_object_::_objects_": ["obiect","obiecte","de obiecte"],
+        "_log_::_logs_": ["jurnal","jurnale","de jurnale"],
+        "_file_::_files_": ["fișier","fișiere","de fișiere"],
+        "_register_::_registers_": ["registru","registre","de registre"],
+        "_schema_::_schemas_": ["schemă","scheme","de scheme"],
+        "_{count} schema_::_{count} schemas_": ["{count} schemă","{count} scheme","{count} de scheme"],
+        "_%n register is missing_::_%n registers are missing_": ["lipsește %n registru","lipsesc %n registre","lipsesc %n de registre"],
+        "_%n is out of date_::_%n are out of date_": ["%n este învechit","%n sunt învechite","%n sunt învechite"],
+        "_%n declared in total_::_%n declared in total_": ["%n declarat în total","%n declarate în total","%n declarate în total"],
+        "_{count} email_::_{count} emails_": ["{count} e-mail","{count} e-mailuri","{count} de e-mailuri"],
+        "_Delete {count} object_::_Delete {count} objects_": ["Ștergeți {count} obiect","Ștergeți {count} obiecte","Ștergeți {count} de obiecte"],
+        "_Object successfully deleted_::_Objects successfully deleted_": ["Obiectul a fost șters cu succes","Obiectele au fost șterse cu succes","Obiectele au fost șterse cu succes"],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": ["Epurați {count} obiect din baza de date","Epurați {count} obiecte din baza de date","Epurați {count} de obiecte din baza de date"],
+        "_Restore {count} object_::_Restore {count} objects_": ["Restaurați {count} obiect","Restaurați {count} obiecte","Restaurați {count} de obiecte"],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": ["S-a restaurat cu succes {count} obiect","S-au restaurat cu succes {count} obiecte","S-au restaurat cu succes {count} de obiecte"]
     },
     "nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));"
 )

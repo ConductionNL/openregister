@@ -2723,7 +2723,69 @@
         "v{installed} → ships v{shipped}": "v{installed} → skilar v{shipped}",
         "Where the automation lives": "Þar sem sjálfvirknin býr",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Flæði er það sem gerist án þess að nokkur smelli: hlutur sem er stimplaður við vistun, forrit sem fær boð þegar færsla breytist. Hér lestu og breytir þeim. Ekkert að byggja núna.",
-        "Open Flows in the menu": "Opnaðu Flæði í valmyndinni"
+        "Open Flows in the menu": "Opnaðu Flæði í valmyndinni",
+        "Copied": "Afritað",
+        "Creating…": "Bý til…",
+        "_object_::_objects_": [
+            "hlutur",
+            "hlutir"
+        ],
+        "_log_::_logs_": [
+            "skráning",
+            "skráningar"
+        ],
+        "_file_::_files_": [
+            "skrá",
+            "skrár"
+        ],
+        "_register_::_registers_": [
+            "skrá",
+            "skrár"
+        ],
+        "_schema_::_schemas_": [
+            "skema",
+            "skemu"
+        ],
+        "_{count} schema_::_{count} schemas_": [
+            "{count} skema",
+            "{count} skemu"
+        ],
+        "_%n register is missing_::_%n registers are missing_": [
+            "%n skrá vantar",
+            "%n skrár vantar"
+        ],
+        "_%n is out of date_::_%n are out of date_": [
+            "%n er úrelt",
+            "%n eru úrelt"
+        ],
+        "_%n declared in total_::_%n declared in total_": [
+            "%n skráð alls",
+            "%n skráð alls"
+        ],
+        "_{count} email_::_{count} emails_": [
+            "{count} tölvupóstur",
+            "{count} tölvupóstar"
+        ],
+        "_Delete {count} object_::_Delete {count} objects_": [
+            "Eyða {count} hlut",
+            "Eyða {count} hlutum"
+        ],
+        "_Object successfully deleted_::_Objects successfully deleted_": [
+            "Hlutur eytt",
+            "Hlutir eyddir"
+        ],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": [
+            "Hreinsa {count} hlut úr gagnagrunni",
+            "Hreinsa {count} hluti úr gagnagrunni"
+        ],
+        "_Restore {count} object_::_Restore {count} objects_": [
+            "Endurheimta {count} hlut",
+            "Endurheimta {count} hluti"
+        ],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": [
+            "{count} hlutur endurheimtur",
+            "{count} hlutir endurheimtir"
+        ]
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

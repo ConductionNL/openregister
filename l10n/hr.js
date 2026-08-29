@@ -2721,7 +2721,24 @@ OC.L10N.register(
         "v{installed} → ships v{shipped}": "v{installed} → isporučuje v{shipped}",
         "Where the automation lives": "Gdje živi automatizacija",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Tokovi su ono što se događa bez klika: objekt označen pri spremanju, aplikacija obaviještena kad se zapis promijeni. Ovdje ih čitate i uređujete. Sada nema što graditi.",
-        "Open Flows in the menu": "Otvorite Tokove u izborniku"
+        "Open Flows in the menu": "Otvorite Tokove u izborniku",
+        "Copied": "Kopirano",
+        "Creating…": "Stvaranje…",
+        "_object_::_objects_": ["objekt","objekta","objekata"],
+        "_log_::_logs_": ["zapisnik","zapisnika","zapisnika"],
+        "_file_::_files_": ["datoteka","datoteke","datoteka"],
+        "_register_::_registers_": ["registar","registra","registara"],
+        "_schema_::_schemas_": ["shema","sheme","shema"],
+        "_{count} schema_::_{count} schemas_": ["{count} shema","{count} sheme","{count} shema"],
+        "_%n register is missing_::_%n registers are missing_": ["nedostaje %n registar","nedostaju %n registra","nedostaje %n registara"],
+        "_%n is out of date_::_%n are out of date_": ["%n je zastario","%n su zastarjela","%n je zastarjelo"],
+        "_%n declared in total_::_%n declared in total_": ["%n ukupno deklariran","%n ukupno deklarirana","%n ukupno deklarirano"],
+        "_{count} email_::_{count} emails_": ["{count} e-pošta","{count} e-pošte","{count} e-pošta"],
+        "_Delete {count} object_::_Delete {count} objects_": ["Izbriši {count} objekt","Izbriši {count} objekta","Izbriši {count} objekata"],
+        "_Object successfully deleted_::_Objects successfully deleted_": ["Objekt je uspješno izbrisan","Objekti su uspješno izbrisani","Objekti su uspješno izbrisani"],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": ["Trajno ukloni {count} objekt iz baze podataka","Trajno ukloni {count} objekta iz baze podataka","Trajno ukloni {count} objekata iz baze podataka"],
+        "_Restore {count} object_::_Restore {count} objects_": ["Vrati {count} objekt","Vrati {count} objekta","Vrati {count} objekata"],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": ["Uspješno vraćen {count} objekt","Uspješno vraćena {count} objekta","Uspješno vraćeno {count} objekata"]
     },
     "nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;"
 )

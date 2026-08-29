@@ -2778,7 +2778,24 @@ OC.L10N.register(
         "v{installed} → ships v{shipped}": "v{installed} → levert v{shipped}",
         "Where the automation lives": "Waar de automatisering zit",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Flows zijn wat er gebeurt zonder dat iemand klikt: een object dat bij opslaan wordt gestempeld, een afnemende app die bericht krijgt wanneer een record verandert. Hier leest en bewerkt u ze. U hoeft nu niets te bouwen.",
-        "Open Flows in the menu": "Open Flows in het menu"
+        "Open Flows in the menu": "Open Flows in het menu",
+        "Copied": "Gekopieerd",
+        "Creating…": "Aanmaken…",
+        "_object_::_objects_": ["object","objecten"],
+        "_log_::_logs_": ["logregel","logregels"],
+        "_file_::_files_": ["bestand","bestanden"],
+        "_register_::_registers_": ["register","registers"],
+        "_schema_::_schemas_": ["schema","schema's"],
+        "_{count} schema_::_{count} schemas_": ["{count} schema","{count} schema's"],
+        "_%n register is missing_::_%n registers are missing_": ["%n register ontbreekt","%n registers ontbreken"],
+        "_%n is out of date_::_%n are out of date_": ["%n is verouderd","%n zijn verouderd"],
+        "_%n declared in total_::_%n declared in total_": ["%n in totaal gedeclareerd","%n in totaal gedeclareerd"],
+        "_{count} email_::_{count} emails_": ["{count} e-mail","{count} e-mails"],
+        "_Delete {count} object_::_Delete {count} objects_": ["{count} object verwijderen","{count} objecten verwijderen"],
+        "_Object successfully deleted_::_Objects successfully deleted_": ["Object succesvol verwijderd","Objecten succesvol verwijderd"],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": ["{count} object uit de database wissen","{count} objecten uit de database wissen"],
+        "_Restore {count} object_::_Restore {count} objects_": ["{count} object herstellen","{count} objecten herstellen"],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": ["{count} object succesvol hersteld","{count} objecten succesvol hersteld"]
     },
     "nplurals=2; plural=(n != 1);"
 )

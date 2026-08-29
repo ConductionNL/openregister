@@ -2723,7 +2723,69 @@
         "v{installed} → ships v{shipped}": "v{installed} → liwwert v{shipped}",
         "Where the automation lives": "Wou d'Automatisatioun wunnt",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Flows sinn dat, wat ouni Klick geschitt: en Objet dee beim Späichere gestempelt gëtt, eng App déi Bescheed kritt wann e Record ännert. Hei liest an ännert Dir se. Elo ass näischt ze bauen.",
-        "Open Flows in the menu": "Flows am Menü opmaachen"
+        "Open Flows in the menu": "Flows am Menü opmaachen",
+        "Copied": "Kopéiert",
+        "Creating…": "Gëtt erstallt…",
+        "_object_::_objects_": [
+            "Objet",
+            "Objeten"
+        ],
+        "_log_::_logs_": [
+            "Protokoll",
+            "Protokoller"
+        ],
+        "_file_::_files_": [
+            "Datei",
+            "Dateien"
+        ],
+        "_register_::_registers_": [
+            "Register",
+            "Registeren"
+        ],
+        "_schema_::_schemas_": [
+            "Schema",
+            "Schemaen"
+        ],
+        "_{count} schema_::_{count} schemas_": [
+            "{count} Schema",
+            "{count} Schemaen"
+        ],
+        "_%n register is missing_::_%n registers are missing_": [
+            "%n Register feelt",
+            "%n Registeren feelen"
+        ],
+        "_%n is out of date_::_%n are out of date_": [
+            "%n ass net méi aktuell",
+            "%n sinn net méi aktuell"
+        ],
+        "_%n declared in total_::_%n declared in total_": [
+            "%n am Ganzen deklaréiert",
+            "%n am Ganzen deklaréiert"
+        ],
+        "_{count} email_::_{count} emails_": [
+            "{count} e-mail",
+            "{count} e-mails"
+        ],
+        "_Delete {count} object_::_Delete {count} objects_": [
+            "Verwijder {count} object",
+            "Verwijder {count} objecten"
+        ],
+        "_Object successfully deleted_::_Objects successfully deleted_": [
+            "Object succesvol verwijderd",
+            "Objecten succesvol verwijderd"
+        ],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": [
+            "Verwijder {count} object uit de database",
+            "Verwijder {count} objecten uit de database"
+        ],
+        "_Restore {count} object_::_Restore {count} objects_": [
+            "Herstel {count} object",
+            "Herstel {count} objecten"
+        ],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": [
+            "{count} object succesvol hersteld",
+            "{count} objecten succesvol hersteld"
+        ]
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

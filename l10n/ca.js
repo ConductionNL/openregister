@@ -2721,7 +2721,24 @@ OC.L10N.register(
         "v{installed} → ships v{shipped}": "v{installed} → lliura v{shipped}",
         "Where the automation lives": "On viu l'automatització",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Els fluxos són el que passa sense que ningú faci clic: un objecte segellat en desar, una aplicació avisada quan canvia un registre. Aquí els llegiu i els editeu. Ara no cal construir res.",
-        "Open Flows in the menu": "Obriu Fluxos al menú"
+        "Open Flows in the menu": "Obriu Fluxos al menú",
+        "Copied": "Copiat",
+        "Creating…": "S'està creant…",
+        "_object_::_objects_": ["objecte","objectes"],
+        "_log_::_logs_": ["registre d'activitat","registres d'activitat"],
+        "_file_::_files_": ["fitxer","fitxers"],
+        "_register_::_registers_": ["registre","registres"],
+        "_schema_::_schemas_": ["esquema","esquemes"],
+        "_{count} schema_::_{count} schemas_": ["{count} esquema","{count} esquemes"],
+        "_%n register is missing_::_%n registers are missing_": ["falta %n registre","falten %n registres"],
+        "_%n is out of date_::_%n are out of date_": ["%n està desactualitzat","%n estan desactualitzats"],
+        "_%n declared in total_::_%n declared in total_": ["%n declarat en total","%n declarats en total"],
+        "_{count} email_::_{count} emails_": ["{count} correu electrònic","{count} correus electrònics"],
+        "_Delete {count} object_::_Delete {count} objects_": ["Elimina {count} objecte","Elimina {count} objectes"],
+        "_Object successfully deleted_::_Objects successfully deleted_": ["Objecte eliminat correctament","Objectes eliminats correctament"],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": ["Purga {count} objecte de la base de dades","Purga {count} objectes de la base de dades"],
+        "_Restore {count} object_::_Restore {count} objects_": ["Restaura {count} objecte","Restaura {count} objectes"],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": ["{count} objecte restaurat correctament","{count} objectes restaurats correctament"]
     },
     "nplurals=2; plural=(n != 1);"
 )

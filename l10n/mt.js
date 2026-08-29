@@ -2721,7 +2721,24 @@ OC.L10N.register(
         "v{installed} → ships v{shipped}": "v{installed} → iwassal v{shipped}",
         "Where the automation lives": "Fejn tgħix l-awtomazzjoni",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Il-flussi huma dak li jiġri mingħajr ma xi ħadd jikklikkja: oġġett ittimbrat mal-iffrankar, applikazzjoni mgħarrfa meta jinbidel rekord. Hawn taqrahom u teditjahom. M'hemm xejn x'tibni issa.",
-        "Open Flows in the menu": "Iftaħ Flussi fil-menu"
+        "Open Flows in the menu": "Iftaħ Flussi fil-menu",
+        "Copied": "Ikkupjat",
+        "Creating…": "Qed jinħoloq…",
+        "_object_::_objects_": ["oġġett","oġġetti","oġġett","oġġett"],
+        "_log_::_logs_": ["log","logs","log","log"],
+        "_file_::_files_": ["fajl","fajls","fajl","fajl"],
+        "_register_::_registers_": ["reġistru","reġistri","reġistru","reġistru"],
+        "_schema_::_schemas_": ["skema","skemi","skema","skema"],
+        "_{count} schema_::_{count} schemas_": ["{count} skema","{count} skemi","{count} skema","{count} skema"],
+        "_%n register is missing_::_%n registers are missing_": ["%n reġistru nieqes","%n reġistri neqsin","%n reġistru nieqes","%n reġistru nieqes"],
+        "_%n is out of date_::_%n are out of date_": ["%n huwa skadut","%n huma skaduti","%n huwa skadut","%n huwa skadut"],
+        "_%n declared in total_::_%n declared in total_": ["%n dikjarat b’kollox","%n dikjarati b’kollox","%n dikjarat b’kollox","%n dikjarat b’kollox"],
+        "_{count} email_::_{count} emails_": ["{count} email","{count} emails","{count} email","{count} email"],
+        "_Delete {count} object_::_Delete {count} objects_": ["Ħassar {count} oġġett","Ħassar {count} oġġetti","Ħassar {count} oġġett","Ħassar {count} oġġett"],
+        "_Object successfully deleted_::_Objects successfully deleted_": ["L-oġġett tħassar b'suċċess","L-oġġetti tħassru b'suċċess","L-oġġetti tħassru b'suċċess","L-oġġetti tħassru b'suċċess"],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": ["Neħħi {count} oġġett mid-database","Neħħi {count} oġġetti mid-database","Neħħi {count} oġġett mid-database","Neħħi {count} oġġett mid-database"],
+        "_Restore {count} object_::_Restore {count} objects_": ["Irrestawra {count} oġġett","Irrestawra {count} oġġetti","Irrestawra {count} oġġett","Irrestawra {count} oġġett"],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": ["{count} oġġett ġie rrestawrat b'suċċess","{count} oġġetti ġew irrestawrati b'suċċess","{count} oġġett ġie rrestawrat b'suċċess","{count} oġġett ġie rrestawrat b'suċċess"]
     },
     "nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);"
 )

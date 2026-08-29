@@ -2723,7 +2723,69 @@
         "v{installed} → ships v{shipped}": "v{installed} → tarnib v{shipped}",
         "Where the automation lives": "Kus automatiseerimine elab",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Vood on see, mis juhtub ilma klõpsamata: salvestamisel tembeldatud objekt, rakendus, keda teavitatakse kirje muutumisel. Siin loete ja muudate neid. Praegu pole midagi ehitada.",
-        "Open Flows in the menu": "Avage Vood menüüs"
+        "Open Flows in the menu": "Avage Vood menüüs",
+        "Copied": "Kopeeritud",
+        "Creating…": "Loomine…",
+        "_object_::_objects_": [
+            "objekt",
+            "objekti"
+        ],
+        "_log_::_logs_": [
+            "logi",
+            "logi"
+        ],
+        "_file_::_files_": [
+            "fail",
+            "faili"
+        ],
+        "_register_::_registers_": [
+            "register",
+            "registrit"
+        ],
+        "_schema_::_schemas_": [
+            "skeem",
+            "skeemi"
+        ],
+        "_{count} schema_::_{count} schemas_": [
+            "{count} skeem",
+            "{count} skeemi"
+        ],
+        "_%n register is missing_::_%n registers are missing_": [
+            "puudub %n register",
+            "puudub %n registrit"
+        ],
+        "_%n is out of date_::_%n are out of date_": [
+            "%n on aegunud",
+            "%n on aegunud"
+        ],
+        "_%n declared in total_::_%n declared in total_": [
+            "%n deklareeritud kokku",
+            "%n deklareeritud kokku"
+        ],
+        "_{count} email_::_{count} emails_": [
+            "{count} e-kiri",
+            "{count} e-kirja"
+        ],
+        "_Delete {count} object_::_Delete {count} objects_": [
+            "Kustuta {count} objekt",
+            "Kustuta {count} objekti"
+        ],
+        "_Object successfully deleted_::_Objects successfully deleted_": [
+            "Objekt edukalt kustutatud",
+            "Objektid edukalt kustutatud"
+        ],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": [
+            "Kustuta {count} objekt andmebaasist jäädavalt",
+            "Kustuta {count} objekti andmebaasist jäädavalt"
+        ],
+        "_Restore {count} object_::_Restore {count} objects_": [
+            "Taasta {count} objekt",
+            "Taasta {count} objekti"
+        ],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": [
+            "{count} objekt edukalt taastatud",
+            "{count} objekti edukalt taastatud"
+        ]
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

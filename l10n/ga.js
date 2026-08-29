@@ -2721,7 +2721,24 @@ OC.L10N.register(
         "v{installed} → ships v{shipped}": "v{installed} → soláthraíonn sé v{shipped}",
         "Where the automation lives": "Áit a mhaireann an uathoibriú",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Is éard atá i sruthanna ná an rud a tharlaíonn gan aon chliceáil: réad a stampáiltear ar shábháil, aip a chuirtear ar an eolas nuair a athraíonn taifead. Is anseo a léann tú agus a chuireann tú in eagar iad. Níl aon rud le tógáil anois.",
-        "Open Flows in the menu": "Oscail Sruthanna sa roghchlár"
+        "Open Flows in the menu": "Oscail Sruthanna sa roghchlár",
+        "Copied": "Cóipeáilte",
+        "Creating…": "Á chruthú…",
+        "_object_::_objects_": ["réad","réad","réada","réad","réad"],
+        "_log_::_logs_": ["log","log","logaí","log","log"],
+        "_file_::_files_": ["comhad","chomhad","comhaid","gcomhad","comhad"],
+        "_register_::_registers_": ["clár","chlár","cláir","gclár","clár"],
+        "_schema_::_schemas_": ["scéimre","scéimre","scéimrí","scéimre","scéimre"],
+        "_{count} schema_::_{count} schemas_": ["{count} scéimre","{count} scéimre","{count} scéimrí","{count} scéimre","{count} scéimre"],
+        "_%n register is missing_::_%n registers are missing_": ["tá %n chlár ar iarraidh","tá %n chlár ar iarraidh","tá %n chláir ar iarraidh","tá %n gclár ar iarraidh","tá %n clár ar iarraidh"],
+        "_%n is out of date_::_%n are out of date_": ["tá %n as dáta","tá %n as dáta","tá %n as dáta","tá %n as dáta","tá %n as dáta"],
+        "_%n declared in total_::_%n declared in total_": ["%n dearbhaithe san iomlán","%n dearbhaithe san iomlán","%n dearbhaithe san iomlán","%n dearbhaithe san iomlán","%n dearbhaithe san iomlán"],
+        "_{count} email_::_{count} emails_": ["{count} ríomhphost","{count} ríomhphost","{count} ríomhphoist","{count} ríomhphost","{count} ríomhphost"],
+        "_Delete {count} object_::_Delete {count} objects_": ["Scrios {count} réad","Scrios {count} réad","Scrios {count} réada","Scrios {count} réad","Scrios {count} réad"],
+        "_Object successfully deleted_::_Objects successfully deleted_": ["Scriosadh an réad go rathúil","Scriosadh na réada go rathúil","Scriosadh na réada go rathúil","Scriosadh na réada go rathúil","Scriosadh na réada go rathúil"],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": ["Glan {count} réad ón mbunachar sonraí","Glan {count} réad ón mbunachar sonraí","Glan {count} réada ón mbunachar sonraí","Glan {count} réad ón mbunachar sonraí","Glan {count} réad ón mbunachar sonraí"],
+        "_Restore {count} object_::_Restore {count} objects_": ["Athchóirigh {count} réad","Athchóirigh {count} réad","Athchóirigh {count} réada","Athchóirigh {count} réad","Athchóirigh {count} réad"],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": ["Athchóiríodh {count} réad go rathúil","Athchóiríodh {count} réad go rathúil","Athchóiríodh {count} réada go rathúil","Athchóiríodh {count} réad go rathúil","Athchóiríodh {count} réad go rathúil"]
     },
     "nplurals=5; plural=(n==1 ? 0 : n==2 ? 1 : n<7 ? 2 : n<11 ? 3 : 4);"
 )
