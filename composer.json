@@ -15,6 +15,11 @@
 			"OCA\\OpenRegister\\": "lib/"
 		}
 	},
+	"autoload-dev": {
+		"psr-4": {
+			"OCA\\OpenRegister\\Tests\\": "tests/"
+		}
+	},
 	"repositories": [
 		{
 			"type": "vcs",
@@ -101,7 +106,7 @@
 		"ddn/sapp": "dev-feat/chained-filter-text-replace#5c406e91254d6936f44372db35f1cc15e5a06c56",
 		"dompdf/dompdf": "^3.1",
 		"dragonmantank/cron-expression": "^3.3",
-		"elasticsearch/elasticsearch": "^v8.14.0",
+		"elasticsearch/elasticsearch": "^v9.5.0",
 		"guzzlehttp/guzzle": "^7.0",
 		"jwadhams/json-logic-php": "^1.5",
 		"minishlink/web-push": "^9.0",
@@ -121,7 +126,7 @@
 		"symfony/yaml": "^6.4 || ^7.0",
 		"theodo-group/llphant": "^0.9.3",
 		"twig/twig": "^3.27.0",
-		"web-token/jwt-library": "^3.4.10",
+		"web-token/jwt-library": "^4.1.9",
 		"webonyx/graphql-php": "^15.0",
 		"zbateson/mail-mime-parser": "^3.0"
 	},

@@ -2723,5 +2723,5 @@ OC.L10N.register(
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Tokovi su ono što se događa bez klika: objekt označen pri spremanju, aplikacija obaviještena kad se zapis promijeni. Ovdje ih čitate i uređujete. Sada nema što graditi.",
         "Open Flows in the menu": "Otvorite Tokove u izborniku"
     },
-    "nplurals=2; plural=(n != 1);"
+    "nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;"
 )

@@ -223,7 +223,8 @@ class SchemaFlowImportListener implements IEventListener {
 		$flow->setUpdated(new DateTime());
 
 		if ($existing === null) {
-			$this->flows->insert($flow);
+			$stored = $this->flows->insert($flow);
+			$this->publishVersionOne(flow: $stored);
 			$this->logger->info(
 				message: '[SchemaFlowImport] Imported declared flow "' . $name . '" for schema "' . $schemaSlug
 					. '" (disabled until adopted).'
@@ -234,6 +235,50 @@ class SchemaFlowImportListener implements IEventListener {
 		$this->flows->update($flow);
 
 	}//end upsert()
+
+	/**
+	 * Publish version 1 of a freshly imported flow.
+	 *
+	 * 🔴 A SHIPPED FLOW MUST NOT ARRIVE AS AN UNRUNNABLE DRAFT. Since
+	 * versioning, `FlowRunService::queue()` refuses any flow with no published
+	 * version. An app that declares a flow in `x-openregister-flows` is
+	 * shipping a finished process, not a work in progress — leaving it a draft
+	 * would mean adopting it (enabling it) still ran nothing, with no error to
+	 * explain why.
+	 *
+	 * Published, but still DISABLED and unowned: publishing answers "which
+	 * graph would run", adoption answers "may it run at all". They are separate
+	 * questions and this changes only the first.
+	 *
+	 * Never raises. A failure here leaves the flow importable and unpublished,
+	 * which an operator can fix by publishing it; throwing would abort a schema
+	 * import over a flow.
+	 *
+	 * @param Flow $flow The freshly inserted flow.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 */
+	private function publishVersionOne(Flow $flow): void {
+		if ($this->container === null) {
+			return;
+		}
+
+		try {
+			$this->container->get('OCA\OpenRegister\Service\Flow\FlowVersionService')
+				->publish(flow: $flow, publishedBy: null);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[SchemaFlowImport] Imported flow "' . $flow->getUuid()
+					. '" could not be published: ' . $e->getMessage()
+					. '. It exists as a draft and will not back a run until it is published.',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow->getUuid()]
+			);
+		}
+
+	}//end publishVersionOne()
+
 
 	/**
 	 * The organisation a newly imported flow belongs to.

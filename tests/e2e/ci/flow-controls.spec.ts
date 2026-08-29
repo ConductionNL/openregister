@@ -86,6 +86,14 @@
  * the app calls VALID (one terminal node) instead of one it is obliged to
  * refuse. See step 2.
  *
+ * ⚠️ THAT TABLE IS HISTORY, NOT A LIVE REPRODUCTION. It describes the DEAD-END
+ * 500 fixed above, and it has already been read once as though it explained a
+ * later, unrelated 500 — sending the reader looking for something the run path
+ * does per NODE. It does not: the second 500 was `FlowLifecycleRefused`
+ * escaping `FlowController::run()` because a freshly created flow is a DRAFT
+ * and a draft backs no run. Node count had nothing to do with it. Read this
+ * table as a record of what step 2 fixed, and nothing else.
+ *
  * So this spec now waits for the state a save actually REQUIRES rather than for
  * a wall clock, and asserts the create and run RESPONSES rather than inferring
  * success from a route and a poll. The three 15-20s budgets it used to sit out
@@ -503,7 +511,53 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 			timeout: 5_000,
 		})
 
-		// 4. RUN NOW CREATES A RUN. Asserted against the API rather than the
+		// 4. PUBLISH. A DRAFT BACKS NO RUN — this is a step in the journey, not
+		//    a workaround for one.
+		//
+		// `flow-definition-versioning` made a flow's graph a versioned document,
+		// and a flow is CREATED as a draft: "A run SHALL be queued against the
+		// flow's `published` version. A `draft` or `deprecated` version SHALL
+		// NOT back a newly queued run." So from that change onward the author's
+		// journey is build → save → PUBLISH → run, and a spec that skipped the
+		// third step was asserting a contract the app deliberately no longer
+		// offers.
+		//
+		// It surfaced as `POST .../run` answering 500, because
+		// `FlowLifecycleRefused` escaped `FlowController::run()` unhandled. That
+		// half is a real defect and is fixed separately — the refusal is now a
+		// 409 naming `no-published-version`. But 409 is not 201 either: making
+		// this spec pass by relaxing step 5 to "409 is fine" would delete the
+		// only end-to-end proof that a flow can actually be RUN from the editor.
+		//
+		// The opposite shortcut — letting `/run` quietly fall back to a draft
+		// test run — was considered and rejected: `tests/e2e/flow-engine.spec.ts`
+		// asserts in two places that this exact endpoint refuses a draft AND a
+		// deprecated flow with `no-published-version`, and silently running a
+		// retired process is a worse defect than the one being fixed.
+		//
+		// So publish, through the editor's own control, the way an author does.
+		// Asserted on the BADGE rather than on the click, for the reason the
+		// lifecycle specs already give: a button that posts and silently fails
+		// looks exactly like one that worked, and the badge only reads
+		// "Published" once the store has re-read the flow from the server.
+		const publishButton = page.locator('[data-testid="flow-publish"]')
+		await expect(
+			publishButton,
+			'the editor offers no Publish control, so a flow built here can never '
+				+ 'be run: a draft backs no run, and publishing is the only thing '
+				+ 'that changes that. Needs @conduction/nextcloud-vue >= 2.24.0.',
+		).toBeVisible({ timeout: 10_000 })
+
+		await clickThemed(publishButton)
+
+		await expect(
+			page.locator('[data-testid="flow-lifecycle"]'),
+			'Publish was pressed but the flow never became published — the store '
+				+ 'still shows the draft it started as, so the POST was rejected or '
+				+ 'swallowed',
+		).toHaveText('Published', { timeout: 10_000 })
+
+		// 5. RUN NOW CREATES A RUN. Asserted against the API rather than the
 		//    rendered status, because the status a run is DISPLAYED with
 		//    depends on whether the worker has reached it yet.
 		const queued = page.waitForResponse(

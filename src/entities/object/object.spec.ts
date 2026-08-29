@@ -103,10 +103,16 @@ describe('Object Entity', () => {
 		expect(validation.success).toBe(false)
 
 		if (!validation.success) {
+			// zod 4 reworded the built-in `too_small` message: zod 3 emitted
+			// "String must contain at least 1 character(s)". The constraint
+			// itself (`z.string().min(1)` on `@self.id`) is unchanged, so the
+			// issue is additionally pinned by `code` to keep this assertion
+			// anchored on the rule rather than on zod's wording.
 			expect(validation.error.issues).toContainEqual(
 				expect.objectContaining({
 					path: ['@self', 'id'],
-					message: 'String must contain at least 1 character(s)',
+					code: 'too_small',
+					message: 'Too small: expected string to have >=1 characters',
 				}),
 			)
 		}

@@ -969,7 +969,6 @@ div[class='modal-container']:has(.TestMappingMainModal) {
 	justify-content: space-between;
 	text-align: unset;
 	align-items: center;
-	-webkit-box-align: end;
 	box-sizing: border-box;
 }
 

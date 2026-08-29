@@ -1334,6 +1334,38 @@ class FileService {
 	}//end updateFile()
 
 	/**
+	 * Update a file's OpenRegister-side metadata.
+	 *
+	 * Fronts `UpdateFileHandler::updateFileMetadata()` the same way this
+	 * service already fronts `updateFile()`, so the controller keeps talking to
+	 * one collaborator instead of reaching through this one to the handler.
+	 *
+	 * @param integer       $fileId      The Nextcloud filecache fileid.
+	 * @param string|null   $description New description; '' clears, null skips.
+	 * @param string|null   $category    New category; '' clears, null skips.
+	 * @param string[]|null $labels      New labels; [] clears, null skips.
+	 *
+	 * @return \OCA\OpenRegister\Db\File The persisted metadata row.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function updateFileMetadata(
+		int $fileId,
+		?string $description = null,
+		?string $category = null,
+		?array $labels = null,
+	): \OCA\OpenRegister\Db\File {
+		return $this->updateFileHandler->updateFileMetadata(
+			fileId: $fileId,
+			description: $description,
+			category: $category,
+			labels: $labels
+		);
+
+	}//end updateFileMetadata()
+
+
+	/**
 	 * Deletes a file from NextCloud.
 	 *
 	 * This method can accept either a file path string, file ID integer, or a Node object for deletion.

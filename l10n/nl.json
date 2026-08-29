@@ -2782,6 +2782,7 @@
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Flows zijn wat er gebeurt zonder dat iemand klikt: een object dat bij opslaan wordt gestempeld, een afnemende app die bericht krijgt wanneer een record verandert. Hier leest en bewerkt u ze. U hoeft nu niets te bouwen.",
         "Open Flows in the menu": "Open Flows in het menu"
     },
+    "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
         "{count} email": [
             "{count} email",

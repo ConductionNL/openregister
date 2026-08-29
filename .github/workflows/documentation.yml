@@ -1,13 +1,35 @@
 name: Documentation
 
+# Publishes the docs site to the Cloudflare Worker that serves it.
+#
+# TRIGGERS ON `development`, NOT ON A `documentation` BRANCH. This file used to
+# listen on a branch called `documentation`; nobody has pushed to one since
+# 2026-05-25, so the site simply stopped being rebuilt while every docs change
+# merged to development satisfied its review and published nothing.
 on:
   push:
-    branches: [documentation]
+    branches: [development]
   pull_request:
-    branches: [documentation]
+    branches: [development]
 
 jobs:
   deploy:
     uses: ConductionNL/.github/.github/workflows/documentation.yml@main
+    # A reusable workflow receives NO secrets by default. Without this block the
+    # callee's publish step finds CF_API_TOKEN empty, skips itself on its own
+    # `if:` guard, and the run finishes GREEN having changed nothing -- the
+    # failure that left the fleet's docs sites on May builds. The names are the
+    # same on both sides; the org secrets really are CF_API_TOKEN/CF_ACCOUNT_ID.
+    secrets:
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
     with:
-      cname: openregisters.app
+      cname: openregister.conduction.nl
+      # EVERY host this worker answers on, in FULL: wrangler reconciles the
+      # worker's triggers against this list, so a host left out is REMOVED and
+      # goes dark.
+      docs-hosts: openregister.conduction.nl
+      # PINNED. Deriving the name is how a deploy goes green and reaches
+      # nobody: wrangler creates the derived worker and publishes there while
+      # the custom domains keep routing to the real one.
+      worker-name: openregister-docs

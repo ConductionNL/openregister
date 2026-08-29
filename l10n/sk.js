@@ -2556,7 +2556,7 @@ OC.L10N.register(
         "Zookeeper port number (optional, defaults to 2181)": "Číslo portu Zookeeper (voliteľné, predvolene 2181)",
         "\\u26A0\\uFE0F PERMANENT DELETION WARNING \\u26A0\\uFE0F\n\nYou are about to PERMANENTLY delete ALL objects for schema \"{schema}\":\n\n\\u2022 Active objects: {active}\n\\u2022 Soft-deleted objects: {deleted}\n\\u2022 Total: {total}\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?": "\\u26A0\\uFE0F UPOZORNENIE NA TRVALÉ ODSTRÁNENIE \\u26A0\\uFE0F\n\nChystáte sa NATRVALO odstrániť VŠETKY objekty pre schému \"{schema}\":\n\n\\u2022 Aktívne objekty: {active}\n\\u2022 Mäkko odstránené objekty: {deleted}\n\\u2022 Celkom: {total}\n\nTieto objekty budú úplne odstránené z databázy a NEBUDE ich možné obnoviť.\n\nNaozaj ste si úplne istí?",
         "\\u26A0\\uFE0F PERMANENT DELETION WARNING \\u26A0\\uFE0F\n\nYou are about to PERMANENTLY delete {count} soft-deleted objects for schema \"{schema}\".\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?": "\\u26A0\\uFE0F UPOZORNENIE NA TRVALÉ ODSTRÁNENIE \\u26A0\\uFE0F\n\nChystáte sa NATRVALO odstrániť {count} mäkko odstránených objektov pre schému \"{schema}\".\n\nTieto objekty budú úplne odstránené z databázy a NEBUDE ich možné obnoviť.\n\nNaozaj ste si úplne istí?",
-        "_%n entry has no hash yet_::_%n entries have no hash yet_": ["%n záznam zatiaľ nemá odtlačok","%n záznamy zatiaľ nemajú odtlačok","%n záznamov zatiaľ nemá odtlačok"],
+        "_%n entry has no hash yet_::_%n entries have no hash yet_": ["%n záznam zatiaľ nemá odtlačok","%n záznamy zatiaľ nemajú odtlačok","%n záznamu zatiaľ nemá odtlačok","%n záznamov zatiaľ nemá odtlačok"],
         "across {count} registers": "across {count} registers",
         "and accessible to all users in selected groups (or all users if no groups selected).": "a prístupné všetkým používateľom vo vybraných skupinách (alebo všetkým používateľom, ak nie sú vybrané žiadne skupiny).",
         "and add the files there.": "a pridajte tam súbory.",
@@ -2723,5 +2723,5 @@ OC.L10N.register(
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Toky sú to, čo sa deje bez kliknutia: objekt označený pri uložení, aplikácia informovaná pri zmene záznamu. Tu ich čítate a upravujete. Teraz netreba nič stavať.",
         "Open Flows in the menu": "Otvorte Toky v ponuke"
     },
-    "nplurals=2; plural=(n != 1);"
+    "nplurals=4; plural=(n % 1 == 0 && n == 1 ? 0 : n % 1 == 0 && n >= 2 && n <= 4 ? 1 : n % 1 != 0 ? 2: 3);"
 )

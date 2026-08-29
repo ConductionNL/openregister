@@ -2211,7 +2211,7 @@ export default {
 
 .dsarObjectPayload {
 	white-space: pre-wrap;
-	word-break: break-word;
+	overflow-wrap: break-word;
 	background: var(--color-main-background);
 	padding: 8px;
 	border-radius: var(--border-radius);

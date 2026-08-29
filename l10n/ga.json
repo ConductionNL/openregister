@@ -2728,29 +2728,48 @@
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Is éard atá i sruthanna ná an rud a tharlaíonn gan aon chliceáil: réad a stampáiltear ar shábháil, aip a chuirtear ar an eolas nuair a athraíonn taifead. Is anseo a léann tú agus a chuireann tú in eagar iad. Níl aon rud le tógáil anois.",
         "Open Flows in the menu": "Oscail Sruthanna sa roghchlár"
     },
+    "pluralForm": "nplurals=5; plural=(n==1 ? 0 : n==2 ? 1 : n<7 ? 2 : n<11 ? 3 : 4);",
     "plurals": {
         "{count} email": [
+            "{count} ríomhphost",
+            "{count} ríomhphost",
+            "{count} ríomhphoist",
             "{count} ríomhphost",
             "{count} ríomhphost"
         ],
         "Purge {count} object from database": [
             "Glan {count} réad ón mbunachar sonraí",
+            "Glan {count} réad ón mbunachar sonraí",
+            "Glan {count} réada ón mbunachar sonraí",
+            "Glan {count} réad ón mbunachar sonraí",
             "Glan {count} réad ón mbunachar sonraí"
         ],
         "Restore {count} object": [
+            "Athchóirigh {count} réad",
+            "Athchóirigh {count} réad",
+            "Athchóirigh {count} réada",
             "Athchóirigh {count} réad",
             "Athchóirigh {count} réad"
         ],
         "Successfully restored {count} object": [
             "Athchóiríodh {count} réad go rathúil",
+            "Athchóiríodh {count} réad go rathúil",
+            "Athchóiríodh {count} réada go rathúil",
+            "Athchóiríodh {count} réad go rathúil",
             "Athchóiríodh {count} réad go rathúil"
         ],
         "Delete {count} object": [
+            "Scrios {count} réad",
+            "Scrios {count} réad",
+            "Scrios {count} réada",
             "Scrios {count} réad",
             "Scrios {count} réad"
         ],
         "Object successfully deleted": [
             "Scriosadh an réad go rathúil",
+            "Scriosadh na réada go rathúil",
+            "Scriosadh na réada go rathúil",
+            "Scriosadh na réada go rathúil",
             "Scriosadh na réada go rathúil"
         ]
     }

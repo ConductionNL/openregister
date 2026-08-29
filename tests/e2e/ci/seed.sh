@@ -65,6 +65,25 @@ else
 	echo "e2e-other already in $GROUP (or could not be added) — the specs will verify"
 fi
 
+# NEXTCLOUD'S OWN FIRST-RUN WIZARD BLOCKS THE ACCOUNTS THIS SCRIPT JUST MADE.
+#
+# `firstrunwizard` opens a modal on a new account's first page load -- the
+# "A collaboration platform that puts you in control" panel. Its mask sits over
+# the app, so every click the specs make is swallowed. It is not the app's own
+# setup wizard, and the specs' Escape-based dismissal does not close it:
+# object-shares-tab reported `a modal is still covering the page after three
+# Escapes`, and flow-controls reported the connection never reaching the canvas
+# -- two unrelated-looking failures with one cause.
+#
+# The accounts above are created fresh every time, so they always meet it. The
+# app is disabled instance-wide rather than per-user because there is no
+# per-user "mark seen" that occ exposes, and a test instance has no use for it.
+if php occ app:disable firstrunwizard; then
+	echo 'disabled firstrunwizard'
+else
+	echo 'firstrunwizard already disabled (or not installed)'
+fi
+
 echo 'e2e seed complete'
 
 # ── Settle the demo-data decision ────────────────────────────────────────────

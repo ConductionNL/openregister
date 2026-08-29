@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>1.1.7-unstable.20260828091020</version>
+    <version>1.1.8-unstable.20260829125656</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -194,6 +194,9 @@ Vrij en open source onder de EUPL-licentie.
 			<!-- Rewrite before the index is derived: the index is built FROM node
 			     types, so the types should already be the current ones. -->
 			<step>OCA\OpenRegister\Repair\MigrateRenamedFlowNodeTypes</step>
+			<!-- Versions FIRST: the trigger index is derived from a flow's PUBLISHED
+			     version, so a flow with no version rows yet would index nothing. -->
+			<step>OCA\OpenRegister\Repair\BackfillFlowVersions</step>
 			<step>OCA\OpenRegister\Repair\BackfillFlowTriggerIndex</step>
 			<step>OCA\OpenRegister\Repair\InitializeFlowActions</step>
 			<step>OCA\OpenRegister\Repair\MigrateNotificationSubscriptionsToUserConfig</step>
@@ -250,6 +253,9 @@ Vrij en open source onder de EUPL-licentie.
 			<!-- Rewrite before the index is derived: the index is built FROM node
 			     types, so the types should already be the current ones. -->
 			<step>OCA\OpenRegister\Repair\MigrateRenamedFlowNodeTypes</step>
+			<!-- Versions FIRST: the trigger index is derived from a flow's PUBLISHED
+			     version, so a flow with no version rows yet would index nothing. -->
+			<step>OCA\OpenRegister\Repair\BackfillFlowVersions</step>
 			<step>OCA\OpenRegister\Repair\BackfillFlowTriggerIndex</step>
 			<step>OCA\OpenRegister\Repair\InitializeFlowActions</step>
 			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
@@ -285,6 +291,7 @@ Vrij en open source onder de EUPL-licentie.
 		<!-- Annotation-related commands have light DI graphs (mappers + evaluator). -->
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
+		<command>OCA\OpenRegister\Command\ImportSkosCsvCommand</command>
 		<!-- App-rename repair: re-points registers and schemas at a new owning
 		     app id. Only a DB connection, so the DI graph stays light. -->
 		<command>OCA\OpenRegister\Command\MigrateSchemaApplicationCommand</command>

@@ -400,7 +400,13 @@ class FlowRunService {
 		// one place a refusal covers all of them. Guarding `FlowService::run()`
 		// instead would leave cron-fired flows unguarded, and those are most of
 		// them.
-		$this->refuseDeadEnd(flowId: $flowId);
+		// 🔴 WHICH GRAPH WILL THIS RUN, AND IS IT SOUND — both answered here,
+		// before anything else is decided. A run that cannot name the graph it
+		// will execute must not exist, and the soundness check must judge THAT
+		// graph rather than the flow's editable head. Both refusals cover all
+		// six dispatch paths because all six funnel through this method.
+		$version = (new FlowRunVersionPin($this->container, $this->logger))
+			->requirePublishedAndSound(flowId: $flowId, trigger: $trigger);
 
 		// A run is only runnable if it names WHOSE RIGHTS it executes with, and
 		// only listable if it names WHICH tenant it belongs to.
@@ -459,26 +465,14 @@ class FlowRunService {
 			runAs: $attribution['user']
 		);
 
-		$run = new FlowRun();
-		$run->setUuid($this->newUuid());
-		$run->setFlowId($flowId);
-		$run->setStatus(FlowRun::STATUS_QUEUED);
-		$run->setTrigger($trigger);
-		$run->setContext($context);
-		$run->setLog([]);
-		$run->setSubjectUuid(($subject['uuid'] ?? null));
-		$run->setSubjectRegister(($subject['register'] ?? null));
-		$run->setSubjectSchema(($subject['schema'] ?? null));
-		// Both, deliberately. `triggeredBy` is PROVENANCE and keeps recording who
-		// caused the run; `runAs` is AUTHORIZATION and is what every access
-		// decision reads from here on. They are equal at this point for a
-		// caller-driven dispatch and differ for a scheduled one, where the cause
-		// is a schedule and the acting identity is the user its trigger names.
-		$run->setTriggeredBy($attribution['user']);
-		$run->setRunAs($attribution['user']);
-		$run->setOrganisation($attribution['organisation']);
-		$run->setCreated(new DateTime());
-		$run->setUpdated(new DateTime());
+		$run = (new FlowRunRow())->build(
+			flowId: $flowId,
+			subject: $subject,
+			trigger: $trigger,
+			context: $context,
+			attribution: $attribution,
+			version: $version?->getVersion()
+		);
 
 		return $this->parkIfAwaiting(run: $this->mapper->insert($run), park: $park);
 	}//end queue()
@@ -521,87 +515,6 @@ class FlowRunService {
 			reason: $park['reason']
 		);
 	}//end parkIfAwaiting()
-
-	/**
-	 * Refuse to queue a flow that has a node its token cannot leave.
-	 *
-	 * Writes the verdict onto the FLOW before throwing, so a refused flow is
-	 * distinguishable from one nobody has triggered without reading run
-	 * history — there is no run to read, which is the point. A run that IS
-	 * accepted clears the verdict back to `ok`, so a fixed flow stops
-	 * reporting an error it no longer has.
-	 *
-	 * Resolved lazily through the container for the same reason
-	 * {@see FlowRunAttribution} resolves its own collaborators that way: this
-	 * service is constructed on paths that do not need either collaborator, and
-	 * several tests build it by hand.
-	 *
-	 * @param string $flowId The flow uuid.
-	 *
-	 * @return void
-	 *
-	 * @throws FlowDeadEnd When a non-terminal node has no outgoing edge.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md
-	 */
-	private function refuseDeadEnd(string $flowId): void {
-		try {
-			$mapper = $this->container->get('OCA\OpenRegister\Db\FlowMapper');
-			$preflight = $this->container->get('OCA\OpenRegister\Service\Flow\FlowNodePreflight');
-			$flow = $mapper->findByUuid($flowId);
-		} catch (Throwable $e) {
-			// A flow we cannot load is not a flow we can judge — `findByUuid()`
-			// throws rather than returning null. Queueing proceeds and the
-			// existing not-found handling downstream reports it; inventing a
-			// dead-end refusal here would blame the document for a lookup
-			// failure.
-			return;
-		}
-
-		$findings = $preflight->inspect(
-			flow: [
-				'nodes' => ($flow->getNodes() ?? []),
-				'edges' => ($flow->getEdges() ?? []),
-			]
-		);
-
-		$deadEnds = [];
-		foreach ($findings['warnings'] as $warning) {
-			if (($warning['reason'] ?? '') === FlowNodePreflight::REASON_DEAD_END) {
-				$deadEnds[] = (string)($warning['step'] ?? '');
-			}
-		}
-
-		if ($deadEnds === []) {
-			// Accepted. Clear a stale refusal so a repaired flow stops
-			// reporting the error it no longer has.
-			if ($flow->getStatus() === Flow::STATUS_ERROR) {
-				$flow->setStatus(Flow::STATUS_OK);
-				$flow->setStatusMessage(null);
-				$mapper->update($flow);
-			}
-
-			return;
-		}
-
-		$refusal = new FlowDeadEnd(nodeIds: $deadEnds);
-
-		$flow->setStatus(Flow::STATUS_ERROR);
-		$flow->setStatusMessage($refusal->getMessage());
-		$mapper->update($flow);
-
-		$this->logger->warning(
-			message: '[FlowRunService] Refused to queue a flow with a dead end',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'flow' => $flowId,
-				'nodes' => $deadEnds,
-			]
-		);
-
-		throw $refusal;
-	}//end refuseDeadEnd()
 
 	/**
 	 * Whether a flow already has a run that has not finished.
@@ -735,6 +648,20 @@ class FlowRunService {
 			return $run;
 		}
 
+		// 🔴 THE RUN'S PIN OUTRANKS THE CALLER'S DOCUMENT. Four call sites hand
+		// a flow document in, and three of them resolved it LIVE — a pinned run
+		// reached the engine and then walked the current graph anyway, which is
+		// the exact defect versioning exists to remove. Enforcing it HERE covers
+		// all four, so the next caller inherits the rule instead of becoming the
+		// fifth exception.
+		$pinned = (new FlowPublishedGraph($this->container))->overlayOnto(run: $run, live: $flow);
+
+		if ($pinned === null) {
+			return $this->failUnresolvableVersion(run: $run);
+		}
+
+		$flow = $pinned;
+
 		$resuming = ($run->getStatus() === FlowRun::STATUS_SUSPENDED);
 		$run->setStatus(FlowRun::STATUS_RUNNING);
 		$run->setUpdated(new DateTime());
@@ -803,6 +730,39 @@ class FlowRunService {
 
 		return $this->persistResult(run: $run, result: $result);
 	}//end execute()
+
+	/**
+	 * Fail a run whose pinned version cannot be resolved.
+	 *
+	 * 🔴 FAIL, NEVER SUBSTITUTE. The version is gone — the flow was deleted,
+	 * its app removed, or the row is absent. Promoting the run onto the newest
+	 * published version would silently change what it does halfway through:
+	 * its marking, its taken decisions and its log all belong to the version it
+	 * started on. The message names the VERSION, which is what distinguishes it
+	 * from "no app provides this flow" — the two want different fixes, and an
+	 * operator has to be able to tell them apart.
+	 *
+	 * @param FlowRun $run The run to fail.
+	 *
+	 * @return FlowRun The failed run.
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 */
+	private function failUnresolvableVersion(FlowRun $run): FlowRun {
+		$run->setStatus(FlowRun::STATUS_FAILED);
+		$run->setError(sprintf(
+			'Version %s of flow "%s" could not be resolved, so this run cannot continue. '
+			. 'It has NOT been moved to another version.',
+			(string)($run->getFlowVersion() ?? 'unknown'),
+			(string)$run->getFlowId()
+		));
+
+		$this->mapper->update($run);
+
+		return $run;
+
+	}//end failUnresolvableVersion()
+
 
 	/**
 	 * Write a completed walk back onto the run.
@@ -971,18 +931,4 @@ class FlowRunService {
 
 	}//end recordLastRun()
 
-	/**
-	 * A v4 UUID for a new run.
-	 *
-	 * @return string The uuid.
-	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
-	 */
-	private function newUuid(): string {
-		$data = random_bytes(16);
-		$data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
-		$data[8] = chr((ord($data[8]) & 0x3f) | 0x80);
-
-		return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
-	}//end newUuid()
 }//end class

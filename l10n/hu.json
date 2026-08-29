@@ -2725,6 +2725,7 @@
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "A folyamatok azok, amik kattintás nélkül történnek: mentéskor bélyegzett objektum, értesített alkalmazás rekordváltozáskor. Itt olvashatja és szerkesztheti őket. Most nincs mit építeni.",
         "Open Flows in the menu": "Nyissa meg a Folyamatokat a menüben"
     },
+    "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
         "{count} email": [
             "{count} e-mail",
