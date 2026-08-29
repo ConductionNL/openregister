@@ -1033,7 +1033,7 @@ OC.L10N.register(
         "Go to linked Register": "Mine seotud Registri juurde",
         "Go to linked Schema": "Mine seotud Skeemi juurde",
         "Go to organisation": "Mine organisatsiooni juurde",
-        "Golden record": "Golden record",
+        "Golden record": "Kuldkirje",
         "Good": "Hea",
         "Grant additional permissions beyond standard CRUD operations": "Anna lisaõigused lisaks tavapärastele CRUD-toimingutele",
         "Ground": "Alus",
