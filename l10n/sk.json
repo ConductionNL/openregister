@@ -2558,6 +2558,7 @@
         "_%n entry has no hash yet_::_%n entries have no hash yet_": [
             "%n záznam zatiaľ nemá odtlačok",
             "%n záznamy zatiaľ nemajú odtlačok",
+            "%n záznamu zatiaľ nemá odtlačok",
             "%n záznamov zatiaľ nemá odtlačok"
         ],
         "across {count} registers": "across {count} registers",
@@ -2730,5 +2731,6 @@
         "Where the automation lives": "Kde žije automatizácia",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Toky sú to, čo sa deje bez kliknutia: objekt označený pri uložení, aplikácia informovaná pri zmene záznamu. Tu ich čítate a upravujete. Teraz netreba nič stavať.",
         "Open Flows in the menu": "Otvorte Toky v ponuke"
-    }
+    },
+    "pluralForm": "nplurals=4; plural=(n % 1 == 0 && n == 1 ? 0 : n % 1 == 0 && n >= 2 && n <= 4 ? 1 : n % 1 != 0 ? 2: 3);"
 }

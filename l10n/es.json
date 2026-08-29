@@ -2557,6 +2557,7 @@
         "\\u26A0\\uFE0F PERMANENT DELETION WARNING \\u26A0\\uFE0F\n\nYou are about to PERMANENTLY delete {count} soft-deleted objects for schema \"{schema}\".\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?": "\\u26A0\\uFE0F ADVERTENCIA DE ELIMINACIÓN PERMANENTE \\u26A0\\uFE0F\n\nEstá a punto de eliminar PERMANENTEMENTE {count} objetos eliminados temporalmente del esquema \"{schema}\".\n\nEstos objetos se eliminarán por completo de la base de datos y NO se podrán recuperar.\n\n¿Está completamente seguro?",
         "_%n entry has no hash yet_::_%n entries have no hash yet_": [
             "%n entrada aún no tiene hash",
+            "%n entradas aún no tienen hash",
             "%n entradas aún no tienen hash"
         ],
         "across {count} registers": "across {count} registers",
@@ -2730,29 +2731,36 @@
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Los flujos son lo que ocurre sin que nadie haga clic: un objeto que se sella al guardar, una aplicación avisada cuando cambia un registro. Aquí los lees y los editas. No hay nada que construir ahora.",
         "Open Flows in the menu": "Abrir Flujos en el menú"
     },
+    "pluralForm": "nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;",
     "plurals": {
         "{count} email": [
             "{count} correo electrónico",
+            "{count} correos electrónicos",
             "{count} correos electrónicos"
         ],
         "Purge {count} object from database": [
             "Purgar {count} objeto de la base de datos",
+            "Purgar {count} objetos de la base de datos",
             "Purgar {count} objetos de la base de datos"
         ],
         "Restore {count} object": [
             "Restaurar {count} objeto",
+            "Restaurar {count} objetos",
             "Restaurar {count} objetos"
         ],
         "Successfully restored {count} object": [
             "Se restauró {count} objeto correctamente",
+            "Se restauraron {count} objetos correctamente",
             "Se restauraron {count} objetos correctamente"
         ],
         "Delete {count} object": [
             "Eliminar {count} objeto",
+            "Eliminar {count} objetos",
             "Eliminar {count} objetos"
         ],
         "Object successfully deleted": [
             "Objeto eliminado correctamente",
+            "Objetos eliminados correctamente",
             "Objetos eliminados correctamente"
         ]
     }

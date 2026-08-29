@@ -2730,6 +2730,7 @@
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Os fluxos são o que acontece sem ninguém clicar: um objeto carimbado ao guardar, uma aplicação avisada quando um registo muda. É aqui que os lê e edita. Nada a construir agora.",
         "Open Flows in the menu": "Abrir Fluxos no menu"
     },
+    "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
         "{count} email": [
             "{count} e-mail",
