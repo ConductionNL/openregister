@@ -2556,7 +2556,7 @@ OC.L10N.register(
         "Zookeeper port number (optional, defaults to 2181)": "Número de puerto de Zookeeper (opcional, predeterminado 2181)",
         "\\u26A0\\uFE0F PERMANENT DELETION WARNING \\u26A0\\uFE0F\n\nYou are about to PERMANENTLY delete ALL objects for schema \"{schema}\":\n\n\\u2022 Active objects: {active}\n\\u2022 Soft-deleted objects: {deleted}\n\\u2022 Total: {total}\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?": "\\u26A0\\uFE0F ADVERTENCIA DE ELIMINACIÓN PERMANENTE \\u26A0\\uFE0F\n\nEstá a punto de eliminar PERMANENTEMENTE TODOS los objetos del esquema \"{schema}\":\n\n\\u2022 Objetos activos: {active}\n\\u2022 Objetos eliminados temporalmente: {deleted}\n\\u2022 Total: {total}\n\nEstos objetos se eliminarán por completo de la base de datos y NO se podrán recuperar.\n\n¿Está completamente seguro?",
         "\\u26A0\\uFE0F PERMANENT DELETION WARNING \\u26A0\\uFE0F\n\nYou are about to PERMANENTLY delete {count} soft-deleted objects for schema \"{schema}\".\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?": "\\u26A0\\uFE0F ADVERTENCIA DE ELIMINACIÓN PERMANENTE \\u26A0\\uFE0F\n\nEstá a punto de eliminar PERMANENTEMENTE {count} objetos eliminados temporalmente del esquema \"{schema}\".\n\nEstos objetos se eliminarán por completo de la base de datos y NO se podrán recuperar.\n\n¿Está completamente seguro?",
-        "_%n entry has no hash yet_::_%n entries have no hash yet_": ["%n entrada aún no tiene hash","%n entradas aún no tienen hash"],
+        "_%n entry has no hash yet_::_%n entries have no hash yet_": ["%n entrada aún no tiene hash","%n entradas aún no tienen hash","%n entradas aún no tienen hash"],
         "across {count} registers": "en {count} registros",
         "and accessible to all users in selected groups (or all users if no groups selected).": "y accesible para todos los usuarios de los grupos seleccionados (o todos los usuarios si no se selecciona ningún grupo).",
         "and add the files there.": "y añada los archivos allí.",
@@ -2723,5 +2723,5 @@ OC.L10N.register(
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Los flujos son lo que ocurre sin que nadie haga clic: un objeto que se sella al guardar, una aplicación avisada cuando cambia un registro. Aquí los lees y los editas. No hay nada que construir ahora.",
         "Open Flows in the menu": "Abrir Flujos en el menú"
     },
-    "nplurals=2; plural=(n != 1);"
+    "nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 )
