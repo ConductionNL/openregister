@@ -276,6 +276,35 @@ test.describe('the version lifecycle', () => {
 		expect((await refused.json()).reason).toBe('no-published-version')
 	})
 
+	/**
+	 * 🔴 THE EXEMPTION, AND ITS EDGE. An author must be able to TRY a flow
+	 * before publishing it — refusing would make publishing a precondition of
+	 * testing, which is exactly backwards. Every other trigger of an
+	 * unpublished flow stays refused, which is what stops the exemption from
+	 * becoming a way to run drafts on real data.
+	 */
+	test('a draft can still be test-run from the editor', async ({ request }) => {
+		const flow = await createFlow(
+			request,
+			{
+				name: `${RUN_ID} testable draft`,
+				nodes: [{ id: 'a', type: 'openregister.trigger-manual', config: {} }],
+			},
+			{ publish: false },
+		)
+
+		const tested = await request.post('/apps/openregister/api/flow-runs/test', {
+			data: { flowId: flow.id },
+		})
+
+		// The point is the ABSENCE of the lifecycle refusal a plain run gets.
+		expect(tested.status(), await tested.text()).toBeLessThan(400)
+		const run = await tested.json()
+		expect(run.trigger).toBe('test')
+		// Unpinned: it walked the draft it was started with.
+		expect(run.flowVersion).toBeNull()
+	})
+
 	test('creating a draft leaves the published version serving', async ({
 		request,
 	}) => {

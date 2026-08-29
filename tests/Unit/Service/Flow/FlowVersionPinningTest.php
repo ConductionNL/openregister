@@ -25,10 +25,13 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionPin;
+use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
+use OCA\OpenRegister\Service\Flow\FlowRunVersionPin;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use RuntimeException;
 
 class FlowVersionPinningTest extends TestCase {
 
@@ -117,6 +120,43 @@ class FlowVersionPinningTest extends TestCase {
 
 		return new FlowPublishedGraph($container);
 	}//end graphs()
+
+	/**
+	 * A dispatch pin over the registered versions.
+	 *
+	 * @param boolean $published Whether the flow has a published version.
+	 *
+	 * @return FlowRunVersionPin The pin.
+	 */
+	private function versionPin(bool $published): FlowRunVersionPin {
+		$mapper = $this->createMock(FlowVersionMapper::class);
+		$mapper->method('findPublished')->willReturnCallback(
+			function (string $flowUuid) use ($published): ?FlowVersion {
+				if ($published === false) {
+					return null;
+				}
+
+				return ($this->versions[$flowUuid . ':1'] ?? null);
+			}
+		);
+
+		// FlowMapper and FlowNodePreflight are deliberately absent: the
+		// dead-end preflight returns early when it cannot load them, which is
+		// the documented behaviour ("a flow we cannot load is not a flow we can
+		// judge") and keeps this fixture about VERSIONS.
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			function (string $id) use ($mapper): object {
+				if ($id === FlowVersionMapper::class) {
+					return $mapper;
+				}
+
+				throw new RuntimeException('not available');
+			}
+		);
+
+		return new FlowRunVersionPin($container, new NullLogger());
+	}//end versionPin()
 
 	/**
 	 * A run pinned to a version of a flow.
@@ -247,6 +287,52 @@ class FlowVersionPinningTest extends TestCase {
 			$this->graphs()->overlayOnto(run: $this->pinnedRun('f', null), live: $live)
 		);
 	}//end testAnUnpinnedTestRunWalksTheDocumentItWasGiven()
+
+	/**
+	 * 🔴 THE TEST-RUN EXEMPTION IS NARROW. An interactive test run may walk a
+	 * draft — publishing is what you do AFTER testing, so refusing would make a
+	 * flow untestable until it went live. Every OTHER trigger of an
+	 * unpublished flow is still refused, which is what keeps the exemption from
+	 * becoming a way to run drafts on real data.
+	 *
+	 * @return void
+	 */
+	public function testOnlyTheTestTriggerMayDispatchAnUnpublishedFlow(): void {
+		$pin = $this->versionPin(published: false);
+
+		$this->assertNull(
+			$pin->requirePublishedAndSound(flowId: 'f', trigger: 'test'),
+			'a test run of a draft is permitted, and is unpinned'
+		);
+
+		foreach (['manual', 'object.created', 'schedule', 'sub-flow', 'mcp'] as $trigger) {
+			try {
+				$pin->requirePublishedAndSound(flowId: 'f', trigger: $trigger);
+				$this->fail('"' . $trigger . '" must not dispatch an unpublished flow');
+			} catch (FlowLifecycleRefused $refused) {
+				$this->assertSame(
+					FlowLifecycleRefused::REASON_NO_PUBLISHED_VERSION,
+					$refused->getReason()
+				);
+			}
+		}
+	}//end testOnlyTheTestTriggerMayDispatchAnUnpublishedFlow()
+
+	/**
+	 * A test run of a flow that IS published still pins to it — the exemption
+	 * is about drafts, not about test runs skipping versioning.
+	 *
+	 * @return void
+	 */
+	public function testATestRunOfAPublishedFlowStillPinsToIt(): void {
+		$this->giveVersion('f', 1, ['nodes' => [], 'edges' => []]);
+
+		$version = $this->versionPin(published: true)
+			->requirePublishedAndSound(flowId: 'f', trigger: 'test');
+
+		$this->assertNotNull($version);
+		$this->assertSame(1, $version->getVersion());
+	}//end testATestRunOfAPublishedFlowStillPinsToIt()
 
 	/**
 	 * A version row whose definition row is gone is as unresolvable as a

@@ -471,7 +471,7 @@ class FlowRunService {
 			trigger: $trigger,
 			context: $context,
 			attribution: $attribution,
-			version: (int)$version->getVersion()
+			version: $version?->getVersion()
 		);
 
 		return $this->parkIfAwaiting(run: $this->mapper->insert($run), park: $park);
@@ -490,7 +490,8 @@ class FlowRunService {
 	 * @param string  $trigger     What caused the dispatch.
 	 * @param array   $context     The starting context.
 	 * @param array   $attribution The resolved user/organisation/declaredBy.
-	 * @param integer $version     The published version this run is pinned to.
+	 * @param integer|null $version The published version this run is pinned to,
+	 *                              or null for an interactive test run of a draft.
 	 *
 	 * @return FlowRun The unsaved run.
 	 *
@@ -502,7 +503,7 @@ class FlowRunService {
 		string $trigger,
 		array $context,
 		array $attribution,
-		int $version,
+		?int $version,
 	): FlowRun {
 		$run = new FlowRun();
 		$run->setUuid($this->newUuid());

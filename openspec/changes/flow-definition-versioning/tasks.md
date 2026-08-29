@@ -55,12 +55,16 @@
 - [x] 3.4 `FlowRunAdvancer.php:92` resolves the run's pinned version, and `:98`
       gains a second, distinct refusal naming flow AND version. No fallback to
       head or to the latest published version on any path.
-- [ ] 3.5 **NOT DONE.** Interactive test run of a draft carries the resolved
-      draft document on the run context; the advancer prefers that snapshot
-      when present. The mechanism is in place — `overlayOnto()` passes an
-      UNPINNED run's document straight through, which is exactly the hook — but
-      nothing yet queues a draft test run or marks one in the run list, so a
-      draft still cannot be tried from the editor. Follow-up.
+- [x] 3.5 Interactive test run of a draft carries the resolved draft document
+      and the engine walks exactly that. `FlowRunVersionPin::TRIGGER_TEST` is
+      the ONE dispatch exempt from "a draft backs no run" — publishing is what
+      you do after testing, so refusing would make a flow untestable until it
+      went live. Such a run is left UNPINNED, and `overlayOnto()` passes an
+      unpinned run's document through untouched, so it is pinned in the sense
+      that matters: nothing can substitute another graph for it mid-run. It is
+      distinguishable in the run list by `trigger: test` and a null
+      `flowVersion`. A test run of a PUBLISHED flow still pins to it — the
+      exemption is about drafts, not about test runs skipping versioning.
 
 ## 4. Callers
 

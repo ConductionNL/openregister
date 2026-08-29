@@ -46,6 +46,19 @@ use Throwable;
  */
 class FlowRunVersionPin {
 	/**
+	 * The trigger an interactive test run carries.
+	 *
+	 * 🔑 THE ONE DISPATCH THAT MAY WALK A DRAFT. Every other path is a live
+	 * process acting on real data and must run a published version. A test run
+	 * is an author pressing "try this" on the graph in front of them — refusing
+	 * it would mean a flow could not be tried until it was published, which is
+	 * exactly backwards: publishing is the thing you do AFTER testing.
+	 *
+	 * @var string
+	 */
+	public const TRIGGER_TEST = 'test';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ContainerInterface $container Resolves the version mapper.
@@ -143,15 +156,26 @@ class FlowRunVersionPin {
 	 * @param string $flowId  The flow being dispatched.
 	 * @param string $trigger What caused the dispatch, for the log.
 	 *
-	 * @return FlowVersion The published version, guaranteed sound.
+	 * @return FlowVersion|null The published version, guaranteed sound; null for
+	 *                          an interactive test run of an unpublished flow.
 	 *
-	 * @throws FlowLifecycleRefused When the flow has no published version.
+	 * @throws FlowLifecycleRefused When a non-test dispatch has no published version.
 	 * @throws FlowDeadEnd          When that version has a node a token cannot leave.
 	 *
 	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
 	 */
-	public function requirePublishedAndSound(string $flowId, string $trigger): FlowVersion {
+	public function requirePublishedAndSound(string $flowId, string $trigger): ?FlowVersion {
 		$version = $this->publishedVersionOf(flowId: $flowId);
+
+		if ($version === null && $trigger === self::TRIGGER_TEST) {
+			// Unpinned, deliberately, and this is the ONLY way a run is. The
+			// caller hands the draft document straight to the engine and
+			// `FlowPublishedGraph::overlayOnto()` passes an unpinned run's
+			// document through untouched — so a test run is pinned in the sense
+			// that matters: it walks the exact graph it was started with, and
+			// nothing can substitute another one for it mid-run.
+			return null;
+		}
 
 		if ($version === null) {
 			$this->logger->warning(
