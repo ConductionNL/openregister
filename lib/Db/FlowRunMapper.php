@@ -969,4 +969,60 @@ class FlowRunMapper extends QBMapper {
 
 		return (int)$qb->executeStatement();
 	}//end pruneBefore()
+
+	/**
+	 * How many runs that can still move are pinned to one version of a flow.
+	 *
+	 * Asked before a version may be removed. Counts only ACTIVE runs on
+	 * purpose: a completed run's pin is history, and history keeping a version
+	 * alive forever would make the version table unprunable. A run that can
+	 * still move, though, needs its graph to still exist.
+	 *
+	 * @param string  $flowUuid The flow.
+	 * @param integer $version  The version number.
+	 *
+	 * @return integer The number of non-terminal runs pinned to that version.
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 */
+	public function countActivePinnedTo(string $flowUuid, int $version): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->createFunction('COUNT(*) AS `c`'))
+			->from($this->getTableName())
+			->where($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowUuid)))
+			->andWhere($qb->expr()->eq('flow_version', $qb->createNamedParameter($version, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->in('status', $qb->createNamedParameter(FlowRun::ACTIVE, IQueryBuilder::PARAM_STR_ARRAY)));
+
+		$result = $qb->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+
+		return (int)($row['c'] ?? 0);
+	}//end countActivePinnedTo()
+
+	/**
+	 * Pin every still-movable run of a flow that has no version yet.
+	 *
+	 * The upgrade path. Deliberately scoped to `flow_version IS NULL` so it is
+	 * idempotent — a second pass matches nothing — and to ACTIVE runs, so a
+	 * terminal run from before versioning keeps its null rather than being
+	 * told, retrospectively, that it executed version 1.
+	 *
+	 * @param string  $flowUuid The flow.
+	 * @param integer $version  The version to pin.
+	 *
+	 * @return integer The number of runs pinned.
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 */
+	public function pinUnversionedActive(string $flowUuid, int $version): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->update($this->getTableName())
+			->set('flow_version', $qb->createNamedParameter($version, IQueryBuilder::PARAM_INT))
+			->where($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowUuid)))
+			->andWhere($qb->expr()->isNull('flow_version'))
+			->andWhere($qb->expr()->in('status', $qb->createNamedParameter(FlowRun::ACTIVE, IQueryBuilder::PARAM_STR_ARRAY)));
+
+		return (int)$qb->executeStatement();
+	}//end pinUnversionedActive()
 }//end class

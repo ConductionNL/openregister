@@ -46,6 +46,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUuid(?string $uuid)
  * @method string|null getFlowId()
  * @method void setFlowId(?string $flowId)
+ * @method integer|null getFlowVersion()
+ * @method void setFlowVersion(?int $flowVersion)
  * @method string|null getStatus()
  * @method void setStatus(?string $status)
  * @method array|null getMarking()
@@ -178,6 +180,23 @@ class FlowRun extends Entity implements JsonSerializable {
 	 * @var string|null
 	 */
 	protected ?string $flowId = null;
+
+	/**
+	 * The flow version this run is pinned to.
+	 *
+	 * 🔴 THIS ALONE DECIDES WHICH GRAPH THE RUN WALKS. The advancer resolves
+	 * flow + this number to a version row, and that row to an immutable
+	 * definition. It is never re-read from the flow's head and never advanced
+	 * to a newer version, because the run's marking, its taken decisions and
+	 * its log all belong to the version it started on.
+	 *
+	 * Nullable at the type level only so the column can exist before the
+	 * repair step fills it. A run that can still move and has no version is a
+	 * defect, not a supported state — the advancer fails it by name.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $flowVersion = null;
 
 	/**
 	 * Current lifecycle status.
@@ -322,6 +341,7 @@ class FlowRun extends Entity implements JsonSerializable {
 	public function __construct() {
 		$this->addType(fieldName: 'uuid', type: 'string');
 		$this->addType(fieldName: 'flowId', type: 'string');
+		$this->addType(fieldName: 'flowVersion', type: 'integer');
 		$this->addType(fieldName: 'status', type: 'string');
 		$this->addType(fieldName: 'marking', type: 'json');
 		$this->addType(fieldName: 'items', type: 'json');
@@ -380,6 +400,7 @@ class FlowRun extends Entity implements JsonSerializable {
 			'id' => $this->id,
 			'uuid' => $this->uuid,
 			'flowId' => $this->flowId,
+			'flowVersion' => $this->flowVersion,
 			'status' => $this->status,
 			'marking' => ($this->marking ?? []),
 			'items' => ($this->items ?? []),

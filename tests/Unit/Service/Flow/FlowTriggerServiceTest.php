@@ -26,6 +26,8 @@ use PHPUnit\Framework\TestCase;
  * them is FlowLocatorTest, which covers the store read directly.
  */
 class FlowTriggerServiceTest extends TestCase {
+	use \OCA\OpenRegister\Tests\Unit\Service\Flow\PublishedVersionDouble;
+
 	/**
 	 * A locator that reports the given flow ids for any trigger.
 	 *
@@ -55,7 +57,24 @@ class FlowTriggerServiceTest extends TestCase {
 		// No OrganisationService in the container — a run queued with no session
 		// is recorded unattributed rather than guessed at.
 		$container = $this->createMock(\Psr\Container\ContainerInterface::class);
-		$container->method('get')->willThrowException(new \RuntimeException('not available'));
+		// Since versioning, queue() refuses a flow with no published version.
+		// These fixtures are about what a run DOES, so they say version 1 is
+		// live; the refusal itself has its own tests.
+		$versions = $this->publishedVersionMapper();
+		$pin = $this->pinReturning();
+		$container->method('get')->willReturnCallback(
+			function (string $id) use ($versions, $pin): object {
+				if ($id === \OCA\OpenRegister\Db\FlowVersionMapper::class) {
+					return $versions;
+				}
+
+				if ($id === \OCA\OpenRegister\Service\Flow\FlowDefinitionPin::class) {
+					return $pin;
+				}
+
+				throw new \RuntimeException('not available');
+			}
+		);
 
 		$runner = new FlowRunService(
 			$mapper,
