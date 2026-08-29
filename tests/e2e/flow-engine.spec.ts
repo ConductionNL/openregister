@@ -555,16 +555,16 @@ test.describe('the Flows page', () => {
 			waitUntil: 'domcontentloaded',
 		})
 
-		await expect(page.locator('[data-cy="flow-version"]')).toHaveText('v1', {
+		await expect(page.locator('[data-testid="flow-version"]')).toHaveText('v1', {
 			timeout: 15000,
 		})
-		await expect(page.locator('[data-cy="flow-lifecycle"]')).toHaveText(
+		await expect(page.locator('[data-testid="flow-lifecycle"]')).toHaveText(
 			'Published',
 		)
 
 		// A published version offers a draft, and does NOT offer Publish again.
-		await expect(page.locator('[data-cy="flow-create-draft"]')).toBeVisible()
-		await expect(page.locator('[data-cy="flow-publish"]')).toHaveCount(0)
+		await expect(page.locator('[data-testid="flow-create-draft"]')).toBeVisible()
+		await expect(page.locator('[data-testid="flow-publish"]')).toHaveCount(0)
 	})
 
 	/**
@@ -588,17 +588,17 @@ test.describe('the Flows page', () => {
 			waitUntil: 'domcontentloaded',
 		})
 
-		await expect(page.locator('[data-cy="flow-lifecycle"]')).toHaveText(
+		await expect(page.locator('[data-testid="flow-lifecycle"]')).toHaveText(
 			'Draft',
 			{ timeout: 15000 },
 		)
 
-		await page.locator('[data-cy="flow-publish"]').click()
+		await page.locator('[data-testid="flow-publish"]').click()
 
 		// 🔑 ASSERT THE BADGE, NOT THE CLICK. A button that posts and silently
 		// fails looks exactly like one that worked; the badge only says
 		// "Published" once the store has re-read the flow from the server.
-		await expect(page.locator('[data-cy="flow-lifecycle"]')).toHaveText(
+		await expect(page.locator('[data-testid="flow-lifecycle"]')).toHaveText(
 			'Published',
 			{ timeout: 15000 },
 		)
