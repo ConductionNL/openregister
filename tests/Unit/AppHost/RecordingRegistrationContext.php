@@ -119,5 +119,7 @@ final class RecordingRegistrationContext implements IRegistrationContext {
 	}
 	public function registerConfigLexicon(string $configLexiconClass): void {
 	}
+	public function registerGlobalScaleService(string $globalScaleServiceClass): void {
+	}
 }
 // phpcs:enable
