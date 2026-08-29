@@ -2731,29 +2731,36 @@
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Plūsmas ir tas, kas notiek bez klikšķa: objekts, kas tiek zīmogots saglabājot, lietotne, kurai paziņo, kad ieraksts mainās. Šeit tās lasāt un rediģējat. Tagad nav jāveido nekas.",
         "Open Flows in the menu": "Atveriet Plūsmas izvēlnē"
     },
+    "pluralForm": "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2);",
     "plurals": {
         "{count} email": [
             "{count} e-pasts",
-            "{count} e-pasti"
+            "{count} e-pasti",
+            "{count} e-pastu"
         ],
         "Purge {count} object from database": [
             "Iztīrīt {count} objektu no datubāzes",
-            "Iztīrīt {count} objektus no datubāzes"
+            "Iztīrīt {count} objektus no datubāzes",
+            "Iztīrīt {count} objektu no datubāzes"
         ],
         "Restore {count} object": [
             "Atjaunot {count} objektu",
-            "Atjaunot {count} objektus"
+            "Atjaunot {count} objektus",
+            "Atjaunot {count} objektu"
         ],
         "Successfully restored {count} object": [
             "Veiksmīgi atjaunots {count} objekts",
+            "Veiksmīgi atjaunoti {count} objekti",
             "Veiksmīgi atjaunoti {count} objekti"
         ],
         "Delete {count} object": [
             "Dzēst {count} objektu",
-            "Dzēst {count} objektus"
+            "Dzēst {count} objektus",
+            "Dzēst {count} objektu"
         ],
         "Object successfully deleted": [
             "Objekts veiksmīgi dzēsts",
+            "Objekti veiksmīgi dzēsti",
             "Objekti veiksmīgi dzēsti"
         ]
     }

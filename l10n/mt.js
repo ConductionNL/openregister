@@ -2728,5 +2728,5 @@ OC.L10N.register(
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Il-flussi huma dak li jiġri mingħajr ma xi ħadd jikklikkja: oġġett ittimbrat mal-iffrankar, applikazzjoni mgħarrfa meta jinbidel rekord. Hawn taqrahom u teditjahom. M'hemm xejn x'tibni issa.",
         "Open Flows in the menu": "Iftaħ Flussi fil-menu"
     },
-    "nplurals=2; plural=(n != 1);"
+    "nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);"
 )

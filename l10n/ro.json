@@ -2731,29 +2731,36 @@
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Fluxurile sunt ce se întâmplă fără ca cineva să dea clic: un obiect ștampilat la salvare, o aplicație anunțată când un înregistrare se schimbă. Aici le citiți și le editați. Nu e nimic de construit acum.",
         "Open Flows in the menu": "Deschideți Fluxuri în meniu"
     },
+    "pluralForm": "nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));",
     "plurals": {
         "{count} email": [
             "{count} e-mail",
-            "{count} e-mailuri"
+            "{count} e-mailuri",
+            "{count} de e-mailuri"
         ],
         "Purge {count} object from database": [
             "Epurați {count} obiect din baza de date",
-            "Epurați {count} obiecte din baza de date"
+            "Epurați {count} obiecte din baza de date",
+            "Epurați {count} de obiecte din baza de date"
         ],
         "Restore {count} object": [
             "Restaurați {count} obiect",
-            "Restaurați {count} obiecte"
+            "Restaurați {count} obiecte",
+            "Restaurați {count} de obiecte"
         ],
         "Successfully restored {count} object": [
             "S-a restaurat cu succes {count} obiect",
-            "S-au restaurat cu succes {count} obiecte"
+            "S-au restaurat cu succes {count} obiecte",
+            "S-au restaurat cu succes {count} de obiecte"
         ],
         "Delete {count} object": [
             "Ștergeți {count} obiect",
-            "Ștergeți {count} obiecte"
+            "Ștergeți {count} obiecte",
+            "Ștergeți {count} de obiecte"
         ],
         "Object successfully deleted": [
             "Obiectul a fost șters cu succes",
+            "Obiectele au fost șterse cu succes",
             "Obiectele au fost șterse cu succes"
         ]
     }

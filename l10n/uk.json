@@ -2558,7 +2558,8 @@
         "_%n entry has no hash yet_::_%n entries have no hash yet_": [
             "%n запис ще не має хешу",
             "%n записи ще не мають хешу",
-            "%n записів ще не мають хешу"
+            "%n записів ще не мають хешу",
+            "%n запису ще не має хешу"
         ],
         "across {count} registers": "across {count} registers",
         "and accessible to all users in selected groups (or all users if no groups selected).": "і доступно всім пользователям у вибраних группах (або всім пользователям, якщо групи не вибрано).",
@@ -2731,36 +2732,43 @@
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Потоки — це те, що відбувається без кліків: об'єкт, що позначається під час збереження, застосунок, сповіщений про зміну запису. Тут ви їх читаєте та редагуєте. Зараз нічого будувати не потрібно.",
         "Open Flows in the menu": "Відкрийте Потоки в меню"
     },
+    "pluralForm": "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);",
     "plurals": {
         "{count} email": [
             "{count} лист",
             "{count} листи",
-            "{count} листів"
+            "{count} листів",
+            "{count} листа"
         ],
         "Purge {count} object from database": [
             "Очистити {count} об'єкт з бази даних",
-            "Очистити {count} об'єкта з бази даних",
-            "Очистити {count} об'єктів з бази даних"
+            "Очистити {count} об'єкти з бази даних",
+            "Очистити {count} об'єктів з бази даних",
+            "Очистити {count} об'єкта з бази даних"
         ],
         "Restore {count} object": [
             "Відновити {count} об'єкт",
-            "Відновити {count} об'єкта",
-            "Відновити {count} об'єктів"
+            "Відновити {count} об'єкти",
+            "Відновити {count} об'єктів",
+            "Відновити {count} об'єкта"
         ],
         "Successfully restored {count} object": [
             "Успішно відновлено {count} об'єкт",
-            "Успішно відновлено {count} об'єкта",
-            "Успішно відновлено {count} об'єктів"
+            "Успішно відновлено {count} об'єкти",
+            "Успішно відновлено {count} об'єктів",
+            "Успішно відновлено {count} об'єкта"
         ],
         "Delete {count} object": [
             "Видалити {count} об'єкт",
-            "Видалити {count} об'єкта",
-            "Видалити {count} об'єктів"
+            "Видалити {count} об'єкти",
+            "Видалити {count} об'єктів",
+            "Видалити {count} об'єкта"
         ],
         "Object successfully deleted": [
             "Об'єкт успішно видалено",
-            "Об'єкта успішно видалено",
-            "Об'єктів успішно видалено"
+            "Об'єкти успішно видалено",
+            "Об'єкти успішно видалено",
+            "Об'єкти успішно видалено"
         ]
     }
 }

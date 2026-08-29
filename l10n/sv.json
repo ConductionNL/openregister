@@ -2730,6 +2730,7 @@
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Flöden är det som händer utan att någon klickar: ett objekt som stämplas vid sparande, en app som meddelas när en post ändras. Här läser och redigerar du dem. Inget att bygga nu.",
         "Open Flows in the menu": "Öppna Flöden i menyn"
     },
+    "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
         "{count} email": [
             "{count} e-post",

@@ -2728,5 +2728,5 @@ OC.L10N.register(
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Plūsmas ir tas, kas notiek bez klikšķa: objekts, kas tiek zīmogots saglabājot, lietotne, kurai paziņo, kad ieraksts mainās. Šeit tās lasāt un rediģējat. Tagad nav jāveido nekas.",
         "Open Flows in the menu": "Atveriet Plūsmas izvēlnē"
     },
-    "nplurals=2; plural=(n != 1);"
+    "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2);"
 )

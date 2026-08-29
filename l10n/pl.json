@@ -2558,7 +2558,8 @@
         "_%n entry has no hash yet_::_%n entries have no hash yet_": [
             "%n wpis nie ma jeszcze skrótu",
             "%n wpisy nie mają jeszcze skrótu",
-            "%n wpisów nie ma jeszcze skrótu"
+            "%n wpisów nie ma jeszcze skrótu",
+            "%n wpisu nie ma jeszcze skrótu"
         ],
         "across {count} registers": "across {count} registers",
         "and accessible to all users in selected groups (or all users if no groups selected).": "i dostępne dla wszystkich użytkowników w wybranych grupach (lub wszystkich użytkowników, jeśli nie wybrano grup).",
@@ -2731,29 +2732,42 @@
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Przepływy to co dzieje się bez kliknięcia: obiekt stemplowany przy zapisie, aplikacja powiadamiana gdy rekord się zmienia. Tutaj je czytasz i edytujesz. Teraz nic nie trzeba budować.",
         "Open Flows in the menu": "Otwórz Przepływy w menu"
     },
+    "pluralForm": "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);",
     "plurals": {
         "{count} email": [
             "{count} e-mail",
-            "{count} e-maili"
+            "{count} e-maile",
+            "{count} e-maili",
+            "{count} e-maila"
         ],
         "Purge {count} object from database": [
             "Wyczyść {count} obiekt z bazy danych",
-            "Wyczyść {count} obiektów z bazy danych"
+            "Wyczyść {count} obiekty z bazy danych",
+            "Wyczyść {count} obiektów z bazy danych",
+            "Wyczyść {count} obiektu z bazy danych"
         ],
         "Restore {count} object": [
             "Przywróć {count} obiekt",
-            "Przywróć {count} obiektów"
+            "Przywróć {count} obiekty",
+            "Przywróć {count} obiektów",
+            "Przywróć {count} obiektu"
         ],
         "Successfully restored {count} object": [
             "Pomyślnie przywrócono {count} obiekt",
-            "Pomyślnie przywrócono {count} obiektów"
+            "Pomyślnie przywrócono {count} obiekty",
+            "Pomyślnie przywrócono {count} obiektów",
+            "Pomyślnie przywrócono {count} obiektu"
         ],
         "Delete {count} object": [
             "Usuń {count} obiekt",
-            "Usuń {count} obiektów"
+            "Usuń {count} obiekty",
+            "Usuń {count} obiektów",
+            "Usuń {count} obiektu"
         ],
         "Object successfully deleted": [
             "Obiekt został pomyślnie usunięty",
+            "Obiekty zostały pomyślnie usunięte",
+            "Obiekty zostały pomyślnie usunięte",
             "Obiekty zostały pomyślnie usunięte"
         ]
     }
