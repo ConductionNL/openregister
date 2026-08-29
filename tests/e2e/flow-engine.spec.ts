@@ -199,7 +199,9 @@ test.describe('the version lifecycle', () => {
 		const edit = await request.put(`/apps/openregister/api/flows/${flow.id}`, {
 			data: {
 				...flow,
-				nodes: [{ id: 'z', type: 'openregister.trigger-manual', config: {} }],
+				nodes: [
+					{ id: 'z', type: 'openregister.trigger-manual', config: {} },
+				],
 			},
 		})
 		expect(edit.status(), await edit.text()).toBe(200)
@@ -224,7 +226,13 @@ test.describe('the version lifecycle', () => {
 			{
 				data: {
 					...flow,
-					nodes: [{ id: 'new', type: 'openregister.trigger-manual', config: {} }],
+					nodes: [
+						{
+							id: 'new',
+							type: 'openregister.trigger-manual',
+							config: {},
+						},
+					],
 				},
 			},
 		)
@@ -288,7 +296,9 @@ test.describe('the version lifecycle', () => {
 			request,
 			{
 				name: `${RUN_ID} testable draft`,
-				nodes: [{ id: 'a', type: 'openregister.trigger-manual', config: {} }],
+				nodes: [
+					{ id: 'a', type: 'openregister.trigger-manual', config: {} },
+				],
 			},
 			{ publish: false },
 		)
