@@ -13,7 +13,9 @@
 					class="json-editor" />
 			</div>
 			<div class="form-actions">
-				<NcButton @click="isOpen = false"> Cancel </NcButton>
+				<NcButton @click="isOpen = false">
+					{{ t('openregister', 'Cancel') }}
+				</NcButton>
 				<NcButton variant="primary" :disabled="loading" @click="runTest">
 					{{ loading ? 'Running...' : 'Run Test' }}
 				</NcButton>

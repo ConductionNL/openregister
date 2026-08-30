@@ -53,7 +53,7 @@
 			</div>
 			<div class="dialog-actions">
 				<NcButton :disabled="clearing" @click="$emit('closing')">
-					Cancel
+					{{ t('openregister', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					variant="error"

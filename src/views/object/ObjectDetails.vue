@@ -7,7 +7,9 @@
 						{{ objectStore.objectItem.id }}
 					</h1>
 
-					<NcActions :primary="true" menuName="Actions">
+					<NcActions
+						:primary="true"
+						:menuName="t('openregister', 'Actions')">
 						<template #icon>
 							<LockOutline
 								v-if="objectStore.objectItem.locked"
@@ -1112,7 +1114,7 @@ h4 {
 
 .grid {
 	display: grid;
-	grid-gap: 24px;
+	gap: 24px;
 	grid-template-columns: 1fr 1fr;
 	margin-block-start: var(--OR-margin-50);
 	margin-block-end: var(--OR-margin-50);

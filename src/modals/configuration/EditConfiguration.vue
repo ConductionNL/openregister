@@ -100,7 +100,7 @@ import {
 
 						<NcTextField
 							:label="t('openregister', 'App ID')"
-							:placeholder="t('openregister', 'myapp')"
+							placeholder="myapp"
 							:modelValue="
 								configurationStore.configurationItem?.app || ''
 							"
@@ -1746,7 +1746,7 @@ export default {
 	color: var(--color-text-maxcontrast);
 	max-width: 100%;
 	white-space: normal;
-	word-break: break-word;
+	overflow-wrap: break-word;
 }
 </style>
 

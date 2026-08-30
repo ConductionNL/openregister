@@ -1,4 +1,4 @@
-import type { SafeParseReturnType } from 'zod'
+import type { ZodSafeParseResult } from 'zod'
 import type { TOrganisation } from './organisation.types'
 
 import { z } from 'zod'
@@ -84,7 +84,7 @@ export class Organisation implements TOrganisation {
 		this.updated = organisation.updated || ''
 	}
 
-	public validate(): SafeParseReturnType<TOrganisation, unknown> {
+	public validate(): ZodSafeParseResult<unknown> {
 		const crudSchema = z.object({
 			create: z.array(z.string()).optional(),
 			read: z.array(z.string()).optional(),

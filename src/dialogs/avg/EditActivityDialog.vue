@@ -51,7 +51,7 @@
 				v-model="form.status"
 				:options="statusOptions"
 				:labelOutside="false"
-				inputLabel="Status"
+				:inputLabel="t('openregister', 'Status')"
 				:reduce="(o) => o.value" />
 
 			<label class="avgField">

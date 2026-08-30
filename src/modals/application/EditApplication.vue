@@ -37,7 +37,7 @@ import {
 					<AppTab active>
 						<template #title>
 							<Cog :size="16" />
-							<span>Settings</span>
+							<span>{{ t('openregister', 'Settings') }}</span>
 						</template>
 						<div class="form-editor">
 							<NcTextField

@@ -126,6 +126,22 @@ class FlowRunService {
 	}//end __construct()
 
 	/**
+	 * The run's step history — its numbering, and its recording.
+	 *
+	 * Made on demand rather than injected: this constructor is called explicitly
+	 * by three test suites, and inserting a parameter would silently shift every
+	 * later slot for them. It holds no state beyond the collaborators this
+	 * service already has.
+	 *
+	 * @return FlowStepHistory The history recorder.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
+	 */
+	private function stepHistory(): FlowStepHistory {
+		return new FlowStepHistory(steps: $this->steps, logger: $this->logger);
+	}//end stepHistory()
+
+	/**
 	 * Make an unattributed refusal visible on the flow, and stop a dead schedule.
 	 *
 	 * A logged warning is not a control surface. `FlowDeadEnd` already learned
@@ -267,10 +283,16 @@ class FlowRunService {
 		$context[FlowResumeState::CONTEXT_KEY] = FlowResumeState::fromArray(($context[FlowResumeState::CONTEXT_KEY] ?? null));
 		$context[FlowRunGuard::CONTEXT_KEY] = $guard;
 
+		// ATTRIBUTION. Read BEFORE the walk: the audit rows are written during
+		// it, so the base has to be predicted. See {@see FlowStepHistory}.
+		$context[FlowRunContext::CONTEXT_RUN] = (string)$run->getUuid();
+		$context[FlowRunContext::CONTEXT_BASE] = $this->stepHistory()->baseFor(runUuid: (string)$run->getUuid());
+
 		$this->flowState->attach(run: $run, context: $context);
 
 		return $context;
 	}//end nodeContextFor()
+
 
 
 	/**
@@ -378,7 +400,13 @@ class FlowRunService {
 		// one place a refusal covers all of them. Guarding `FlowService::run()`
 		// instead would leave cron-fired flows unguarded, and those are most of
 		// them.
-		$this->refuseDeadEnd(flowId: $flowId);
+		// 🔴 WHICH GRAPH WILL THIS RUN, AND IS IT SOUND — both answered here,
+		// before anything else is decided. A run that cannot name the graph it
+		// will execute must not exist, and the soundness check must judge THAT
+		// graph rather than the flow's editable head. Both refusals cover all
+		// six dispatch paths because all six funnel through this method.
+		$version = (new FlowRunVersionPin($this->container, $this->logger))
+			->requirePublishedAndSound(flowId: $flowId, trigger: $trigger);
 
 		// A run is only runnable if it names WHOSE RIGHTS it executes with, and
 		// only listable if it names WHICH tenant it belongs to.
@@ -437,26 +465,14 @@ class FlowRunService {
 			runAs: $attribution['user']
 		);
 
-		$run = new FlowRun();
-		$run->setUuid($this->newUuid());
-		$run->setFlowId($flowId);
-		$run->setStatus(FlowRun::STATUS_QUEUED);
-		$run->setTrigger($trigger);
-		$run->setContext($context);
-		$run->setLog([]);
-		$run->setSubjectUuid(($subject['uuid'] ?? null));
-		$run->setSubjectRegister(($subject['register'] ?? null));
-		$run->setSubjectSchema(($subject['schema'] ?? null));
-		// Both, deliberately. `triggeredBy` is PROVENANCE and keeps recording who
-		// caused the run; `runAs` is AUTHORIZATION and is what every access
-		// decision reads from here on. They are equal at this point for a
-		// caller-driven dispatch and differ for a scheduled one, where the cause
-		// is a schedule and the acting identity is the user its trigger names.
-		$run->setTriggeredBy($attribution['user']);
-		$run->setRunAs($attribution['user']);
-		$run->setOrganisation($attribution['organisation']);
-		$run->setCreated(new DateTime());
-		$run->setUpdated(new DateTime());
+		$run = (new FlowRunRow())->build(
+			flowId: $flowId,
+			subject: $subject,
+			trigger: $trigger,
+			context: $context,
+			attribution: $attribution,
+			version: $version?->getVersion()
+		);
 
 		return $this->parkIfAwaiting(run: $this->mapper->insert($run), park: $park);
 	}//end queue()
@@ -499,87 +515,6 @@ class FlowRunService {
 			reason: $park['reason']
 		);
 	}//end parkIfAwaiting()
-
-	/**
-	 * Refuse to queue a flow that has a node its token cannot leave.
-	 *
-	 * Writes the verdict onto the FLOW before throwing, so a refused flow is
-	 * distinguishable from one nobody has triggered without reading run
-	 * history — there is no run to read, which is the point. A run that IS
-	 * accepted clears the verdict back to `ok`, so a fixed flow stops
-	 * reporting an error it no longer has.
-	 *
-	 * Resolved lazily through the container for the same reason
-	 * {@see FlowRunAttribution} resolves its own collaborators that way: this
-	 * service is constructed on paths that do not need either collaborator, and
-	 * several tests build it by hand.
-	 *
-	 * @param string $flowId The flow uuid.
-	 *
-	 * @return void
-	 *
-	 * @throws FlowDeadEnd When a non-terminal node has no outgoing edge.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md
-	 */
-	private function refuseDeadEnd(string $flowId): void {
-		try {
-			$mapper = $this->container->get('OCA\OpenRegister\Db\FlowMapper');
-			$preflight = $this->container->get('OCA\OpenRegister\Service\Flow\FlowNodePreflight');
-			$flow = $mapper->findByUuid($flowId);
-		} catch (Throwable $e) {
-			// A flow we cannot load is not a flow we can judge — `findByUuid()`
-			// throws rather than returning null. Queueing proceeds and the
-			// existing not-found handling downstream reports it; inventing a
-			// dead-end refusal here would blame the document for a lookup
-			// failure.
-			return;
-		}
-
-		$findings = $preflight->inspect(
-			flow: [
-				'nodes' => ($flow->getNodes() ?? []),
-				'edges' => ($flow->getEdges() ?? []),
-			]
-		);
-
-		$deadEnds = [];
-		foreach ($findings['warnings'] as $warning) {
-			if (($warning['reason'] ?? '') === FlowNodePreflight::REASON_DEAD_END) {
-				$deadEnds[] = (string)($warning['step'] ?? '');
-			}
-		}
-
-		if ($deadEnds === []) {
-			// Accepted. Clear a stale refusal so a repaired flow stops
-			// reporting the error it no longer has.
-			if ($flow->getStatus() === Flow::STATUS_ERROR) {
-				$flow->setStatus(Flow::STATUS_OK);
-				$flow->setStatusMessage(null);
-				$mapper->update($flow);
-			}
-
-			return;
-		}
-
-		$refusal = new FlowDeadEnd(nodeIds: $deadEnds);
-
-		$flow->setStatus(Flow::STATUS_ERROR);
-		$flow->setStatusMessage($refusal->getMessage());
-		$mapper->update($flow);
-
-		$this->logger->warning(
-			message: '[FlowRunService] Refused to queue a flow with a dead end',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'flow' => $flowId,
-				'nodes' => $deadEnds,
-			]
-		);
-
-		throw $refusal;
-	}//end refuseDeadEnd()
 
 	/**
 	 * Whether a flow already has a run that has not finished.
@@ -713,6 +648,20 @@ class FlowRunService {
 			return $run;
 		}
 
+		// 🔴 THE RUN'S PIN OUTRANKS THE CALLER'S DOCUMENT. Four call sites hand
+		// a flow document in, and three of them resolved it LIVE — a pinned run
+		// reached the engine and then walked the current graph anyway, which is
+		// the exact defect versioning exists to remove. Enforcing it HERE covers
+		// all four, so the next caller inherits the rule instead of becoming the
+		// fifth exception.
+		$pinned = (new FlowPublishedGraph($this->container))->overlayOnto(run: $run, live: $flow);
+
+		if ($pinned === null) {
+			return $this->failUnresolvableVersion(run: $run);
+		}
+
+		$flow = $pinned;
+
 		$resuming = ($run->getStatus() === FlowRun::STATUS_SUSPENDED);
 		$run->setStatus(FlowRun::STATUS_RUNNING);
 		$run->setUpdated(new DateTime());
@@ -783,6 +732,39 @@ class FlowRunService {
 	}//end execute()
 
 	/**
+	 * Fail a run whose pinned version cannot be resolved.
+	 *
+	 * 🔴 FAIL, NEVER SUBSTITUTE. The version is gone — the flow was deleted,
+	 * its app removed, or the row is absent. Promoting the run onto the newest
+	 * published version would silently change what it does halfway through:
+	 * its marking, its taken decisions and its log all belong to the version it
+	 * started on. The message names the VERSION, which is what distinguishes it
+	 * from "no app provides this flow" — the two want different fixes, and an
+	 * operator has to be able to tell them apart.
+	 *
+	 * @param FlowRun $run The run to fail.
+	 *
+	 * @return FlowRun The failed run.
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 */
+	private function failUnresolvableVersion(FlowRun $run): FlowRun {
+		$run->setStatus(FlowRun::STATUS_FAILED);
+		$run->setError(sprintf(
+			'Version %s of flow "%s" could not be resolved, so this run cannot continue. '
+			. 'It has NOT been moved to another version.',
+			(string)($run->getFlowVersion() ?? 'unknown'),
+			(string)$run->getFlowId()
+		));
+
+		$this->mapper->update($run);
+
+		return $run;
+
+	}//end failUnresolvableVersion()
+
+
+	/**
 	 * Write a completed walk back onto the run.
 	 *
 	 * @param FlowRun $run The run.
@@ -793,93 +775,6 @@ class FlowRunService {
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
 	 */
 
-	/**
-	 * Write one step row per node execution in this segment.
-	 *
-	 * The aggregate `log` column answers "what happened in this run" and
-	 * nothing else — "which node type fails", "every failed step for this
-	 * flow", "what did node X output" all require loading and walking every
-	 * run's blob. One row per hop makes those queryable, and gives retention
-	 * something it can prune per flow.
-	 *
-	 * Sequence CONTINUES from the highest already recorded rather than
-	 * restarting at zero, so a run that suspends on a wait node and resumes
-	 * later reads as one ordered history instead of two interleaved ones.
-	 *
-	 * Failing to record history must never fail the run itself: the run is the
-	 * work, the rows are the account of it.
-	 *
-	 * @param FlowRun $run The run these steps belong to.
-	 * @param array<int, mixed> $entries The engine log entries for this segment.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
-	 */
-	private function recordSteps(FlowRun $run, array $entries): void {
-		if ($this->steps === null || empty($entries) === true) {
-			return;
-		}
-
-		$runUuid = (string)$run->getUuid();
-
-		try {
-			$sequence = ($this->steps->highestSequence(runUuid: $runUuid) + 1);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[FlowRunService] Could not read the step sequence for run ' . $runUuid . ': ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return;
-		}
-
-		foreach ($entries as $entry) {
-			if (is_array($entry) === false) {
-				continue;
-			}
-
-			$step = new FlowRunStep();
-			$step->setRunUuid($runUuid);
-			$step->setFlowId((string)$run->getFlowId());
-			$step->setNodeId((string)($entry['transition'] ?? ''));
-			$step->setNodeType(($entry['type'] ?? null));
-			$step->setSequence($sequence);
-			$step->setStatus((string)($entry['status'] ?? 'unknown'));
-			$step->setDurationMs(($entry['durationMs'] ?? null));
-			$step->setCreated(new DateTime());
-			$step->setFinished(new DateTime());
-
-			// `error` and `reason` are distinct outcomes that both belong in
-			// the error column: a thrown step and a deliberately stopped one
-			// are each something a person needs to read back.
-			$step->setError(($entry['error'] ?? ($entry['reason'] ?? null)));
-
-			// What the node produced, minus the items themselves — a step row
-			// is an index into the run, not a second copy of its data.
-			$step->setOutput(
-				array_filter(
-					[
-						'itemsIn' => ($entry['itemsIn'] ?? null),
-						'itemsOut' => ($entry['itemsOut'] ?? null),
-						'checkId' => ($entry['checkId'] ?? null),
-					],
-					static fn ($v): bool => $v !== null
-				)
-			);
-
-			try {
-				$this->steps->insert($step);
-			} catch (Throwable $e) {
-				$this->logger->warning(
-					message: '[FlowRunService] Could not record a step row for run ' . $runUuid . ': ' . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
-
-			$sequence++;
-		}//end foreach
-
-	}//end recordSteps()
 
 	/**
 	 * Write back what a walk produced.
@@ -901,7 +796,7 @@ class FlowRunService {
 		// Promote THIS segment's entries to step rows. Only the new entries —
 		// `$result['log']`, not the merged `$log` — or every resume would
 		// re-record the whole history it had already written.
-		$this->recordSteps(run: $run, entries: (array)($result['log'] ?? []));
+		$this->stepHistory()->record(run: $run, entries: (array)($result['log'] ?? []));
 
 		// The token travels as an object so steps can write to it; the column
 		// holds JSON. Serialising here — on the suspended path as much as the
@@ -1036,18 +931,4 @@ class FlowRunService {
 
 	}//end recordLastRun()
 
-	/**
-	 * A v4 UUID for a new run.
-	 *
-	 * @return string The uuid.
-	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
-	 */
-	private function newUuid(): string {
-		$data = random_bytes(16);
-		$data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
-		$data[8] = chr((ord($data[8]) & 0x3f) | 0x80);
-
-		return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
-	}//end newUuid()
 }//end class

@@ -73,9 +73,23 @@ class AuditHashService {
 	/**
 	 * The genesis seed used for the first entry in the hash chain.
 	 *
+	 * ⚠️ VERSIONED, and versioned TOGETHER WITH the canonical form. The seed and
+	 * the set of fields {@see getCanonicalJson()} covers are jointly the chain's
+	 * identity: change either and every previously stored hash stops being
+	 * re-derivable. ADR-003 Rule 4 therefore treats a change to either as a
+	 * migration event — verify under the outgoing form, record the verdict,
+	 * then re-seal — never an in-place edit.
+	 *
+	 * v1 → v2 (2026-08-28): the flow attribution fields joined the canonical
+	 * form so that re-pointing an audit row at a different flow run breaks
+	 * verification instead of going unnoticed. The v1 form is preserved in
+	 * {@see AuditCanonicalV1} solely so the migration could verify what it was
+	 * about to overwrite; see
+	 * {@see \OCA\OpenRegister\Migration\RechainAuditTrailForFlowAttribution}.
+	 *
 	 * @var string
 	 */
-	private const GENESIS_SEED = 'openregister-genesis-v1';
+	private const GENESIS_SEED = 'openregister-genesis-v2';
 
 	/**
 	 * Well-known advisory lock key serializing ALL seal passes.

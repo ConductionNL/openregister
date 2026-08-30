@@ -8,7 +8,7 @@
  * @version  1.0.0
  */
 
-import type { SafeParseReturnType } from 'zod'
+import type { ZodSafeParseResult } from 'zod'
 import type { TView } from './view.types'
 
 import { z } from 'zod'
@@ -60,7 +60,7 @@ export class View implements TView {
 		this.updated = view.updated || ''
 	}
 
-	public validate(): SafeParseReturnType<TView, unknown> {
+	public validate(): ZodSafeParseResult<unknown> {
 		const schema = z.object({
 			id: z.number().optional(),
 			uuid: z.string().optional(),
@@ -69,7 +69,7 @@ export class View implements TView {
 			owner: z.string().optional(),
 			isPublic: z.boolean().optional(),
 			isDefault: z.boolean().optional(),
-			query: z.record(z.any()).optional(),
+			query: z.record(z.string(), z.any()).optional(),
 			favoredBy: z.array(z.string()).optional(),
 			quota: z
 				.object({

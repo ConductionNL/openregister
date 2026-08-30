@@ -495,7 +495,7 @@ export default {
 	font-family: 'Courier New', monospace;
 	font-size: 0.85rem;
 	white-space: pre-wrap;
-	word-break: break-word;
+	overflow-wrap: break-word;
 	color: var(--color-main-text);
 }
 

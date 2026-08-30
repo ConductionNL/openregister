@@ -28,11 +28,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\AuditFlowAttribution;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
+use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
-use OCA\OpenRegister\Service\Flow\FlowResumeState;
+use OCA\OpenRegister\Service\Flow\FlowRunAssignee;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -63,8 +66,8 @@ use Throwable;
  * deliberately unauthenticated because it runs flows as their owner with no
  * session. Moving them out would either re-open the bypass or add a second
  * indirection over four small private helpers.
- * @SuppressWarnings(PHPMD.ExcessiveParameterList)   Ten constructor parameters, the
- * last three nullable-with-default precisely so adding them broke no existing
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList)   Eleven constructor parameters, the
+ * last four nullable-with-default precisely so adding them broke no existing
  * construction site. They are collaborators of those same guards, not options.
  */
 class FlowRunController extends Controller {
@@ -87,6 +90,13 @@ class FlowRunController extends Controller {
 	 *                                native flow store. Nullable for the same
 	 *                                reason as $groupManager: absent yields no
 	 *                                owned ids, which scopes rather than widens.
+	 * @param AuditFlowAttribution|null $auditTrails Reads the attribution stamped on
+	 *                                           audit rows, for the objects a run
+	 *                                           touched. Nullable and LAST so
+	 *                                           adding it shifts no positional
+	 *                                           caller; absent, the endpoint
+	 *                                           reports the surface unavailable
+	 *                                           rather than an empty run.
 	 */
 	public function __construct(
 		string $appName,
@@ -98,6 +108,10 @@ class FlowRunController extends Controller {
 		private readonly OrganisationService $organisationService,
 		private readonly ?IGroupManager $groupManager = null,
 		private readonly ?FlowService $flows = null,
+		// Appended LAST and nullable on purpose: a new constructor argument
+		// inserted anywhere else shifts every positional caller, and the
+		// resulting TypeError names the argument AFTER the one that moved.
+		private readonly ?AuditFlowAttribution $auditTrails = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -349,14 +363,131 @@ class FlowRunController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function show(string $uuid): JSONResponse {
-		try {
-			$run = $this->mapper->findByUuid($uuid);
-		} catch (DoesNotExistException $e) {
+		// Scoped, as `index()` has been since `shared-credentials-and-flows`
+		// D7. It was not, and the omission was the whole point of that scoping:
+		// a run's serialisation carries its log, which records the subject data
+		// the flow touched, so an unscoped read by uuid handed any authenticated
+		// caller the contents of anyone's run.
+		$run = $this->visibleRun(uuid: $uuid);
+		if ($run === null) {
 			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
 		}
 
 		return new JSONResponse($run->jsonSerialize());
 	}//end show()
+
+	/**
+	 * The objects one run touched, grouped by the node that touched them.
+	 *
+	 * A run recorded what it DID (its steps) and, of what it did it TO, only
+	 * the object that triggered it. This reads back the attribution stamped on
+	 * every audit row the run caused, which is the other half.
+	 *
+	 * @param string $uuid The run uuid.
+	 *
+	 * @return JSONResponse The touched objects grouped by node, or 404.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function objects(string $uuid): JSONResponse {
+		// Resolved through the SAME visibility rule as reading the run itself.
+		// A new endpoint that answered for runs `show()` refuses would widen
+		// access without anything looking like an access change.
+		$run = $this->visibleRun(uuid: $uuid);
+		if ($run === null) {
+			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
+		}
+
+		if ($this->auditTrails === null) {
+			return new JSONResponse(['error' => 'Audit trail unavailable'], Http::STATUS_SERVICE_UNAVAILABLE);
+		}
+
+		$rows = $this->auditTrails->findByRun(runUuid: $uuid);
+
+		$byNode = [];
+		foreach ($rows as $row) {
+			$node = (string)$row->getFlowNode();
+
+			if (isset($byNode[$node]) === false) {
+				$byNode[$node] = [
+					'node' => $node,
+					'step' => $row->getFlowStep(),
+					'objects' => [],
+				];
+			}
+
+			$byNode[$node]['objects'][] = [
+				'objectUuid' => $row->getObjectUuid(),
+				'register' => $row->getRegister(),
+				'schema' => $row->getSchema(),
+				'action' => $row->getAction(),
+				'step' => $row->getFlowStep(),
+				'created' => $row->getCreated()?->format('c'),
+				'auditUuid' => $row->getUuid(),
+			];
+		}
+
+		// Step order, so a reader follows the run in the order it happened
+		// rather than in whatever order the rows came back.
+		usort(
+			$byNode,
+			static fn (array $a, array $b): int => (((int)$a['step']) <=> ((int)$b['step']))
+		);
+
+		return new JSONResponse(
+			[
+				'run' => $uuid,
+				'flowId' => $run->getFlowId(),
+				// An empty list is the honest answer for a run that wrote
+				// nothing, and for a suspended run that has not written
+				// anything YET. Neither is an error, and neither is withheld
+				// until the run finishes.
+				// usort() re-indexed $byNode into a list, so no array_values()
+				// here: it would be a no-op that reads as a safeguard.
+				'nodes' => $byNode,
+			]
+		);
+	}//end objects()
+
+	/**
+	 * Resolve a run by uuid, or null when this caller may not see it.
+	 *
+	 * One place, so `show()` and `objects()` cannot drift apart on who may read
+	 * a run. Delegates the predicate itself to the mapper, which is where the
+	 * list read gets it too.
+	 *
+	 * A non-admin with no session resolves to null rather than falling through:
+	 * a null uid means "no scoping" at the mapper, which is an ADMINISTRATOR's
+	 * semantics, so treating an absent caller as one would turn having no
+	 * identity into the widest possible read.
+	 *
+	 * @param string $uuid The run uuid.
+	 *
+	 * @return FlowRun|null The run, or null when absent or not visible.
+	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
+	 */
+	private function visibleRun(string $uuid): ?FlowRun {
+		if ($this->isAdmin() === true) {
+			return $this->mapper->findByUuidVisibleTo(uuid: $uuid, requesterUid: null);
+		}
+
+		$uid = $this->callerUid();
+		if ($uid === null || $uid === '') {
+			return null;
+		}
+
+		return $this->mapper->findByUuidVisibleTo(
+			uuid: $uuid,
+			requesterUid: $uid,
+			ownedFlowIds: $this->flowIdsOwnedByCaller()
+		);
+	}//end visibleRun()
 
 	/**
 	 * Retry a finished run: queue a fresh one, leave the original untouched.
@@ -517,26 +648,27 @@ class FlowRunController extends Controller {
 	 * @return JSONResponse|null A 403 when the caller is not the assignee.
 	 */
 	private function refuseUnlessAssignee(FlowRun $run): ?JSONResponse {
-		$assignee = $this->recordedAssignee(run: $run);
+		// The rule itself lives in FlowRunAssignee, because HTTP is no longer
+		// the only way to answer a step: a leaf app whose object completes a
+		// task resumes the run in-process through FlowRunService::signal(),
+		// which never passes this controller. One implementation, so the two
+		// paths cannot drift into disagreeing about who may answer.
+		$assignee = $this->assignees()->recordedFor(run: $run);
 		if ($assignee === '') {
 			return null;
 		}
 
 		$uid = $this->callerUid();
+
+		if ($this->assignees()->mayAnswer(run: $run, uid: $uid) === true) {
+			return null;
+		}
+
 		if ($uid === null) {
-			// Fail CLOSED: an assigned decision is never anonymous.
 			return new JSONResponse(
 				['error' => 'This step is assigned; sign in as the assignee to answer it.'],
 				Http::STATUS_FORBIDDEN
 			);
-		}
-
-		if ($uid === $assignee) {
-			return null;
-		}
-
-		if ($this->groupManager !== null && $this->groupManager->isInGroup($uid, $assignee) === true) {
-			return null;
 		}
 
 		return new JSONResponse(
@@ -546,40 +678,19 @@ class FlowRunController extends Controller {
 	}//end refuseUnlessAssignee()
 
 	/**
-	 * The assignee recorded by whichever step is currently awaiting a signal.
+	 * The assignee rule, made on demand when none was injected.
 	 *
-	 * Reads the per-node resume slots the node wrote. A run can carry slots for
-	 * several nodes across its life, so the one that matters is a slot that
-	 * asked (`askedAt`) and has not been answered.
+	 * Built locally rather than required as a constructor argument so adding it
+	 * breaks no existing construction site; it holds no state, so a locally
+	 * made one is indistinguishable from an injected one.
 	 *
-	 * @param FlowRun $run The suspended run.
+	 * @return FlowRunAssignee The rule.
 	 *
-	 * @return string The assignee uid or group id, '' when unassigned.
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
-	private function recordedAssignee(FlowRun $run): string {
-		$context = ($run->getContext() ?? []);
-		$slots = ($context[FlowResumeState::CONTEXT_KEY] ?? []);
-		if (is_array($slots) === false) {
-			return '';
-		}
-
-		foreach ($slots as $slot) {
-			if (is_array($slot) === false) {
-				continue;
-			}
-
-			if (isset($slot['askedAt']) === false) {
-				continue;
-			}
-
-			$assignee = trim((string)($slot['assignee'] ?? ''));
-			if ($assignee !== '') {
-				return $assignee;
-			}
-		}
-
-		return '';
-	}//end recordedAssignee()
+	private function assignees(): FlowRunAssignee {
+		return new FlowRunAssignee(groupManager: $this->groupManager);
+	}//end assignees()
 
 	/**
 	 * The current caller's uid, or null when anonymous.
@@ -710,21 +821,43 @@ class FlowRunController extends Controller {
 		// definition, so there is no reason for it to be the one dispatch path
 		// that discards its actor. Same defect class as or#2158 in
 		// FlowMcpToolProvider::runFlow().
-		$run = $this->runner->queue(
-			flowId: $flowId,
-			subject: [],
-			trigger: 'test',
-			context: ['pins' => $pins],
-			user: $this->userSession->getUser()?->getUID()
-		);
+		// 🔴 A REFUSAL MUST NOT LEAVE HERE AS A 500. A dead end, or a flow with
+		// no published version, is the engine DECLINING to run something — an
+		// answer the author can act on. Unwrapped, both reached the editor as
+		// an HTML error page, which reads as "the server is broken" and sends
+		// the author to the wrong place entirely.
+		try {
+			$run = $this->runner->queue(
+				flowId: $flowId,
+				subject: [],
+				trigger: 'test',
+				context: ['pins' => $pins],
+				user: $this->userSession->getUser()?->getUID()
+			);
 
-		$run = $this->runner->execute(
-			run: $run,
-			flow: $flow,
-			subject: new stdClass(),
-			seedItems: $seed,
-			startAt: $startAt
-		);
+			$run = $this->runner->execute(
+				run: $run,
+				flow: $flow,
+				subject: new stdClass(),
+				seedItems: $seed,
+				startAt: $startAt
+			);
+		} catch (FlowLifecycleRefused $e) {
+			return new JSONResponse(
+				[
+					'error' => $e->getMessage(),
+					'reason' => $e->getReason(),
+					'lifecycleStatus' => $e->getState(),
+					'flowId' => $e->getFlowId(),
+				],
+				Http::STATUS_CONFLICT
+			);
+		} catch (FlowDeadEnd $e) {
+			return new JSONResponse(
+				['error' => $e->getMessage(), 'reason' => 'dead-end', 'flowId' => $flowId],
+				Http::STATUS_CONFLICT
+			);
+		}//end try
 
 		return new JSONResponse($run->jsonSerialize());
 	}//end test()

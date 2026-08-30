@@ -147,7 +147,8 @@ class FlowControllerTest extends TestCase {
 			// asserting what they were written to assert. The rights themselves
 			// are covered in ActionAuthEveryoneTest, and the refusal path below
 			// overrides this.
-			$this->access($this->userSession, $this->groupManager, $this->actionAuth)
+			$this->access($this->userSession, $this->groupManager, $this->actionAuth),
+			$this->createMock(\OCA\OpenRegister\Service\Flow\FlowVersionService::class)
 		);
 
 	}//end setUp()
@@ -300,7 +301,8 @@ class FlowControllerTest extends TestCase {
 			$mapper,
 			$this->preflight,
 			$this->flows,
-			$this->access($this->userSession, $this->groupManager, $this->actionAuth)
+			$this->access($this->userSession, $this->groupManager, $this->actionAuth),
+			$this->createMock(\OCA\OpenRegister\Service\Flow\FlowVersionService::class)
 		);
 
 		$data = $controller->state(flowId: 'flow-1')->getData();
@@ -350,7 +352,8 @@ class FlowControllerTest extends TestCase {
 			$mapper,
 			$this->preflight,
 			$this->flows,
-			$this->access($this->userSession, $this->groupManager, $this->actionAuth)
+			$this->access($this->userSession, $this->groupManager, $this->actionAuth),
+			$this->createMock(\OCA\OpenRegister\Service\Flow\FlowVersionService::class)
 		);
 
 		$response = $controller->state(flowId: 'someone-elses-flow');
@@ -386,7 +389,8 @@ class FlowControllerTest extends TestCase {
 			$mapper,
 			$this->preflight,
 			$this->flows,
-			$this->access($this->userSession, $this->groupManager, $this->actionAuth)
+			$this->access($this->userSession, $this->groupManager, $this->actionAuth),
+			$this->createMock(\OCA\OpenRegister\Service\Flow\FlowVersionService::class)
 		);
 
 		$response = $controller->state(flowId: 'flow-1');
@@ -415,7 +419,8 @@ class FlowControllerTest extends TestCase {
 			$mapper,
 			$this->preflight,
 			$this->flows,
-			$this->access($this->userSession, $this->groupManager, $this->actionAuth)
+			$this->access($this->userSession, $this->groupManager, $this->actionAuth),
+			$this->createMock(\OCA\OpenRegister\Service\Flow\FlowVersionService::class)
 		);
 
 		$data = $controller->state(flowId: 'flow-1')->getData();
@@ -549,7 +554,8 @@ class FlowControllerTest extends TestCase {
 			$this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
 			$this->preflight,
 			$this->flows,
-			$this->access($userSession, $groupManager, $this->actionAuth)
+			$this->access($userSession, $groupManager, $this->actionAuth),
+			$this->createMock(\OCA\OpenRegister\Service\Flow\FlowVersionService::class)
 		);
 
 		$controller->nodeCatalog();
@@ -583,7 +589,8 @@ class FlowControllerTest extends TestCase {
 			$this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
 			$this->preflight,
 			$this->flows,
-			$this->access($userSession, $groupManager, $this->actionAuth)
+			$this->access($userSession, $groupManager, $this->actionAuth),
+			$this->createMock(\OCA\OpenRegister\Service\Flow\FlowVersionService::class)
 		);
 
 		$controller->nodeCatalog();
@@ -615,7 +622,8 @@ class FlowControllerTest extends TestCase {
 			$this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
 			$this->preflight,
 			$this->flows,
-			$this->access($userSession, $groupManager, $this->actionAuth)
+			$this->access($userSession, $groupManager, $this->actionAuth),
+			$this->createMock(\OCA\OpenRegister\Service\Flow\FlowVersionService::class)
 		);
 
 		$controller->nodeCatalog();
@@ -647,7 +655,8 @@ class FlowControllerTest extends TestCase {
 			$this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class),
 			$this->preflight,
 			$this->flows,
-			$this->access($this->userSession, $this->groupManager, $denying)
+			$this->access($this->userSession, $this->groupManager, $denying),
+			$this->createMock(\OCA\OpenRegister\Service\Flow\FlowVersionService::class)
 		);
 
 		// The flow service must never be reached: a refusal that still wrote

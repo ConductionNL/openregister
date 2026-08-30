@@ -93,7 +93,7 @@
 						id="openai-api-key"
 						v-model="openaiConfig.apiKey"
 						type="password"
-						:placeholder="t('openregister', 'sk-...')"
+						placeholder="sk-..."
 						class="input-field" />
 					<small
 						>{{ t('openregister', 'Your OpenAI API key. Get one at') }}
@@ -136,7 +136,7 @@
 						v-model="openaiConfig.organizationId"
 						type="text"
 						autocomplete="off"
-						:placeholder="t('openregister', 'org-...')"
+						placeholder="org-..."
 						class="input-field" />
 				</div>
 			</div>
@@ -214,7 +214,7 @@
 						id="fireworks-api-key"
 						v-model="fireworksConfig.apiKey"
 						type="password"
-						:placeholder="t('openregister', 'fw_...')"
+						placeholder="fw_..."
 						class="input-field" />
 					<small
 						>{{
@@ -287,7 +287,7 @@
 						id="openai-chat-api-key"
 						v-model="openaiConfig.apiKey"
 						type="password"
-						:placeholder="t('openregister', 'sk-...')"
+						placeholder="sk-..."
 						class="input-field" />
 					<small
 						>{{ t('openregister', 'Your OpenAI API key. Get one at') }}
@@ -341,7 +341,7 @@
 						id="fireworks-chat-api-key"
 						v-model="fireworksConfig.apiKey"
 						type="password"
-						:placeholder="t('openregister', 'fw_...')"
+						placeholder="fw_..."
 						class="input-field" />
 					<small
 						>{{

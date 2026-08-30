@@ -113,9 +113,12 @@ export default {
 			</div>
 
 			<div v-else>
-				<h1 class="integrations-view__title">Integrations</h1>
+				<h1 class="integrations-view__title">
+					{{ t('openregister', 'Integrations') }}
+				</h1>
 				<p class="integrations-view__subtitle">
-					Register <code>{{ register }}</code> &middot; Schema
+					{{ t('openregister', 'Register') }}
+					<code>{{ register }}</code> &middot; Schema
 					<code>{{ schema }}</code> &middot; Object
 					<code>{{ objectId }}</code> &middot;
 					{{ providers.length }} providers

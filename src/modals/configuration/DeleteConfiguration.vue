@@ -14,7 +14,7 @@
 					configurationStore.configurationItem?.title
 				}}"?
 			</p>
-			<p>This action cannot be undone.</p>
+			<p>{{ t('openregister', 'This action cannot be undone.') }}</p>
 		</div>
 
 		<template #actions>

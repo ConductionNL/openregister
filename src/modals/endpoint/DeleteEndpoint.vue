@@ -15,7 +15,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 				<b>{{ endpointStore.endpointItem?.name }}</b
 				>?
 			</p>
-			<p>This action cannot be undone.</p>
+			<p>{{ t('openregister', 'This action cannot be undone.') }}</p>
 		</div>
 		<template #actions>
 			<NcButton @click="navigationStore.setDialog(false)">

@@ -2558,7 +2558,8 @@
         "_%n entry has no hash yet_::_%n entries have no hash yet_": [
             "%n запись ещё не имеет хеша",
             "%n записи ещё не имеют хеша",
-            "%n записей ещё не имеют хеша"
+            "%n записей ещё не имеют хеша",
+            "%n записи ещё не имеют хеша"
         ],
         "across {count} registers": "across {count} registers",
         "and accessible to all users in selected groups (or all users if no groups selected).": "и доступно всем пользователям в выбранных группах (или всем пользователям, если группы не выбраны).",
@@ -2584,7 +2585,6 @@
         "falling back": "falling back",
         "file": "файл",
         "files": "файлы",
-        "file{plural}": "файл(ов)",
         "folder": "папка",
         "fw_...": "fw_...",
         "http://localhost:11434": "http://localhost:11434",
@@ -2595,7 +2595,6 @@
         "in_progress": "в процессе",
         "inherited": "унаследовано",
         "list": "список",
-        "log{plural}": "журнал(ов)",
         "manage": "управлять",
         "members": "участники",
         "menu or contact someone with permission to create agents.": "меню или обратитесь к кому-то с разрешением на создание агентов.",
@@ -2622,7 +2621,6 @@
         "objectType: object\\naction: created": "objectType: object\\naction: created",
         "objects": "объекты",
         "objects processed": "объектов обработано",
-        "object{plural}": "объект(ов)",
         "or pick a range": "или выберите диапазон",
         "org-...": "org-...",
         "pending": "ожидает",
@@ -2632,13 +2630,11 @@
         "read": "чтение",
         "register(s)": "реестр(ов)",
         "register(s) selected": "реестр(ов) выбрано",
-        "register{plural}": "реестр(ов)",
         "rejected": "отклонено",
         "required": "обязательно",
         "results": "результаты",
         "schema(s)": "схема(ем)",
         "schema(s) selected": "схема(ем) выбрано",
-        "schema{plural}": "схема(ем)",
         "selected objects": "выбранные объекты",
         "set": "установить",
         "sk-...": "sk-...",
@@ -2729,38 +2725,137 @@
         "v{installed} → ships v{shipped}": "v{installed} → поставляет v{shipped}",
         "Where the automation lives": "Где живёт автоматизация",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Потоки — это то, что происходит без нажатий: объект, помечаемый при сохранении, приложение, уведомляемое при изменении записи. Здесь вы их читаете и редактируете. Сейчас ничего строить не нужно.",
-        "Open Flows in the menu": "Откройте Потоки в меню"
+        "Open Flows in the menu": "Откройте Потоки в меню",
+        "Copied": "Скопировано",
+        "Creating…": "Создание…",
+        "_object_::_objects_": [
+            "объект",
+            "объекта",
+            "объектов",
+            "объекта"
+        ],
+        "_log_::_logs_": [
+            "журнал",
+            "журнала",
+            "журналов",
+            "журнала"
+        ],
+        "_file_::_files_": [
+            "файл",
+            "файла",
+            "файлов",
+            "файла"
+        ],
+        "_register_::_registers_": [
+            "реестр",
+            "реестра",
+            "реестров",
+            "реестра"
+        ],
+        "_schema_::_schemas_": [
+            "схема",
+            "схемы",
+            "схем",
+            "схемы"
+        ],
+        "_{count} schema_::_{count} schemas_": [
+            "{count} схема",
+            "{count} схемы",
+            "{count} схем",
+            "{count} схемы"
+        ],
+        "_%n register is missing_::_%n registers are missing_": [
+            "отсутствует %n реестр",
+            "отсутствуют %n реестра",
+            "отсутствует %n реестров",
+            "отсутствует %n реестра"
+        ],
+        "_%n is out of date_::_%n are out of date_": [
+            "%n устарел",
+            "%n устарели",
+            "%n устарели",
+            "%n устарел"
+        ],
+        "_%n declared in total_::_%n declared in total_": [
+            "%n объявлен всего",
+            "%n объявлено всего",
+            "%n объявлено всего",
+            "%n объявлено всего"
+        ],
+        "_{count} email_::_{count} emails_": [
+            "{count} письмо",
+            "{count} письма",
+            "{count} писем",
+            "{count} письма"
+        ],
+        "_Delete {count} object_::_Delete {count} objects_": [
+            "Удалить {count} объект",
+            "Удалить {count} объекта",
+            "Удалить {count} объектов",
+            "Удалить {count} объекта"
+        ],
+        "_Object successfully deleted_::_Objects successfully deleted_": [
+            "Объект успешно удалён",
+            "Объекты успешно удалены",
+            "Объекты успешно удалены",
+            "Объекты успешно удалены"
+        ],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": [
+            "Очистить {count} объект из базы данных",
+            "Очистить {count} объекта из базы данных",
+            "Очистить {count} объектов из базы данных",
+            "Очистить {count} объекта из базы данных"
+        ],
+        "_Restore {count} object_::_Restore {count} objects_": [
+            "Восстановить {count} объект",
+            "Восстановить {count} объекта",
+            "Восстановить {count} объектов",
+            "Восстановить {count} объекта"
+        ],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": [
+            "Успешно восстановлен {count} объект",
+            "Успешно восстановлено {count} объекта",
+            "Успешно восстановлено {count} объектов",
+            "Успешно восстановлено {count} объекта"
+        ]
     },
+    "pluralForm": "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);",
     "plurals": {
         "{count} email": [
             "{count} письмо",
             "{count} письма",
-            "{count} писем"
+            "{count} писем",
+            "{count} письма"
         ],
         "Purge {count} object from database": [
             "Очистить {count} объект из базы данных",
             "Очистить {count} объекта из базы данных",
-            "Очистить {count} объектов из базы данных"
+            "Очистить {count} объектов из базы данных",
+            "Очистить {count} объекта из базы данных"
         ],
         "Restore {count} object": [
             "Восстановить {count} объект",
             "Восстановить {count} объекта",
-            "Восстановить {count} объектов"
+            "Восстановить {count} объектов",
+            "Восстановить {count} объекта"
         ],
         "Successfully restored {count} object": [
             "Успешно восстановлен {count} объект",
             "Успешно восстановлено {count} объекта",
-            "Успешно восстановлено {count} объектов"
+            "Успешно восстановлено {count} объектов",
+            "Успешно восстановлено {count} объекта"
         ],
         "Delete {count} object": [
             "Удалить {count} объект",
             "Удалить {count} объекта",
-            "Удалить {count} объектов"
+            "Удалить {count} объектов",
+            "Удалить {count} объекта"
         ],
         "Object successfully deleted": [
             "Объект успешно удалён",
-            "Объекта успешно удалены",
-            "Объектов успешно удалено"
+            "Объекты успешно удалены",
+            "Объекты успешно удалены",
+            "Объекты успешно удалены"
         ]
     }
 }
