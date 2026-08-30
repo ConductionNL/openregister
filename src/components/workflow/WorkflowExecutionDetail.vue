@@ -1,7 +1,9 @@
 <template>
 	<div class="execution-detail">
 		<h4>Execution Detail</h4>
-		<NcButton variant="tertiary" @click="$emit('close')"> Close </NcButton>
+		<NcButton variant="tertiary" @click="$emit('close')">
+			{{ t('openregister', 'Close') }}
+		</NcButton>
 		<dl class="detail-list">
 			<dt>Hook ID</dt>
 			<dd>{{ execution.hookId }}</dd>
@@ -15,7 +17,7 @@
 			<dd>{{ execution.workflowId }}</dd>
 			<dt>Mode</dt>
 			<dd>{{ execution.mode }}</dd>
-			<dt>Status</dt>
+			<dt>{{ t('openregister', 'Status') }}</dt>
 			<dd>
 				<span class="status-badge" :class="[`status-${execution.status}`]">{{
 					execution.status
@@ -31,7 +33,7 @@
 			<pre>{{ JSON.stringify(execution.errors, null, 2) }}</pre>
 		</div>
 		<div v-if="execution.metadata" class="section">
-			<h5>Metadata</h5>
+			<h5>{{ t('openregister', 'Metadata') }}</h5>
 			<pre>{{ JSON.stringify(execution.metadata, null, 2) }}</pre>
 		</div>
 		<div v-if="execution.payload" class="section">

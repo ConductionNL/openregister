@@ -69,7 +69,11 @@ const GENERIC_INTEGRATION_DESCRIPTORS = [
 	},
 	{
 		id: 'opencorporates',
-		label: t('openregister', 'OpenCorporates'),
+		// Not wrapped in t(): the label is the bare product name. No locale has ever
+		// carried a value differing from it — the app's own backend catalogue leaves
+		// it English in all 37 — whereas "KvK Company Register" above is real prose
+		// and is translated in twelve of them.
+		label: 'OpenCorporates',
 		icon: 'OfficeBuildingOutline',
 		order: 33,
 		referenceType: 'opencorporates',

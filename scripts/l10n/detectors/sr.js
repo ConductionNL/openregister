@@ -13,11 +13,18 @@
 //      The -ати/-овати classes do differ (`додај` vs `додаје`, `копирај` vs
 //      `копира`), but the collision class is too large to carve out.
 //
-// Serbian is written in both alphabets in the wild. THIS bundle is Cyrillic —
-// 945 of its 1055 pre-existing values are Cyrillic-only and the 20 Latin-only
-// ones are all untranslated English plus two defects — so every word list below
-// is Cyrillic. A Latin-script Serbian value is a finding, not a variant; see
-// scripts/l10n/script-coverage.js.
+// Serbian is written in both alphabets in the wild. THIS bundle is LATIN, and
+// the paragraph that used to stand here said Cyrillic — it described the 1055-value
+// bundle of an earlier pass, not the 2721-value one this detector now runs over.
+// Measured 2026-08-30 over l10n/sr.json: 0 Cyrillic values, 2721 Latin.
+//
+// Both alphabet's word lists are kept and both are live. That is not indecision:
+// with only the Cyrillic lists, `score()` returned f=0 i=0 for every value in a
+// Latin bundle, so selfcheck's "zero informal forms" check PASSED over a sample
+// of nothing — a gate that cannot fail. The Latin lists are the mechanical
+// transliteration of the Cyrillic ones and, measured over this bundle, score 218
+// values formal and 0 informal. Keeping the Cyrillic lists costs nothing and
+// keeps the detector correct if the bundle is ever switched back.
 //
 // Why closed word lists and NOT suffix patterns, specifically for Serbian:
 //   • "-ш" looks like the 2sg present ending, but "ваш" (your-FORMAL) and "наш"
@@ -57,6 +64,13 @@ const FORMAL_RES = [
 	// present alike for most verbs and both are formal, so the split from the list
 	// above is for readability only.
 	/(?<!\p{L})(?:изаберите|унесите|проверите|сачекајте|кликните|притисните|сачувајте|обришите|додајте|уклоните|отворите|затворите|копирајте|пошаљите|потврдите|наставите|покушајте|конфигуришите|поставите|управљајте|контролишите|инсталирајте|оставите|прочитајте|укључите|искључите|креирајте|куцајте|прегледајте|филтрирајте|учитајте|упоредите|анализирајте|извезите|увезите|векторизујте|активирајте|деактивирајте|омогућите|онемогућите|ажурирајте|освежите|вратите|изведите|покрените|зауставите|тестирајте|валидирајте|објавите|делите|синхронизујте|започните|идите|будите|имајте|погледајте|обавестите|означите|попуните|пријавите|одјавите|обезбедите|смањите|повећајте|замените|доделите|ограничите|поделите|спојите|одобрите|одбијте|преузмите|отпремите|преименујте|преместите|поновите|довршите|архивирајте|очистите|откријте|издвојите|проширите|примените|прикажите|сакријте|претражите|напишите|наведите|уредите|подесите|пратите|изаберете)(?!\p{L})/gu,
+	// The same four lists in Serbian Latin, which is what this bundle actually
+	// writes. Transliterated one-for-one from the Cyrillic above, so the two
+	// alphabets cannot drift apart in what they consider formal.
+	/(?<!\p{L})(?:vi|vas|vam|vama)(?!\p{L})/gu,
+	/(?<!\p{L})vaš(?:a|e|i|eg|em|im|ih|oj|u|om|ega|emu)?(?!\p{L})/gu,
+	/(?<!\p{L})(?:morate|nemate|imate|želite|znate|vidite|možete|trebate|koristite|izaberete|sačuvate|dobijete|uradite|napravite|obradite|suzite|precizirate|navedete|uđete|izađete|ostvarite)(?!\p{L})/gu,
+	/(?<!\p{L})(?:izaberite|unesite|proverite|sačekajte|kliknite|pritisnite|sačuvajte|obrišite|dodajte|uklonite|otvorite|zatvorite|kopirajte|pošaljite|potvrdite|nastavite|pokušajte|konfigurišite|postavite|upravljajte|kontrolišite|instalirajte|ostavite|pročitajte|uključite|isključite|kreirajte|kucajte|pregledajte|filtrirajte|učitajte|uporedite|analizirajte|izvezite|uvezite|vektorizujte|aktivirajte|deaktivirajte|omogućite|onemogućite|ažurirajte|osvežite|vratite|izvedite|pokrenite|zaustavite|testirajte|validirajte|objavite|delite|sinhronizujte|započnite|idite|budite|imajte|pogledajte|obavestite|označite|popunite|prijavite|odjavite|obezbedite|smanjite|povećajte|zamenite|dodelite|ograničite|podelite|spojite|odobrite|odbijte|preuzmite|otpremite|preimenujte|premestite|ponovite|dovršite|arhivirajte|očistite|otkrijte|izdvojite|proširite|primenite|prikažite|sakrijte|pretražite|napišite|navedite|uredite|podesite|pratite)(?!\p{L})/gu,
 ]
 
 // ти / informal 2sg — the DEVIATION this gate looks for
@@ -70,6 +84,13 @@ const INFORMAL_RES = [
 	// where the 2sg IMPERATIVE is not, because the present keeps the -ш that the
 	// 3sg drops — `сачуваш` vs `сачува`.
 	/(?<!\p{L})(?:мораш|немаш|имаш|желиш|знаш|видиш|можеш|требаш|користиш|изабереш|сачуваш|унесеш|провериш|обришеш|додаш|уклониш|отвориш|затвориш|копираш|пошаљеш|потврдиш|наставиш|покушаш|конфигуришеш|поставиш|управљаш|контролишеш|инсталираш|оставиш|прочиташ|укључиш|искључиш|креираш|куцаш|прегледаш|филтрираш|учиташ|упоредиш|анализираш|извезеш|увезеш|обрадиш|сузиш|активираш|ажурираш|освежиш|вратиш|покренеш|зауставиш|тестираш|валидираш|објавиш|делиш|синхронизујеш|започнеш|идеш|будеш|погледаш|добијеш|урадиш|направиш|наведеш|попуниш|пријавиш|одјавиш|замениш|доделиш|ограничиш|поделиш|спојиш|одобриш|одбијеш|преузмеш|отпремиш|преименујеш|преместиш|поновиш|довршиш|уђеш|изађеш|ниси)(?!\p{L})/gu,
+	// Serbian Latin, transliterated one-for-one from the three lists above. Bare
+	// "ti", "te" and "si" stay absent for the same reasons they are absent in
+	// Cyrillic — the collision is with the demonstrative and the reflexive clitic,
+	// which the change of alphabet does not remove.
+	/(?<!\p{L})(?:tebe|tebi|tobom)(?!\p{L})/gu,
+	/(?<!\p{L})tvo(?:j|ja|je|ji|ga|jeg|jem|jim|jih|joj|ju|jom)(?!\p{L})/gu,
+	/(?<!\p{L})(?:moraš|nemaš|imaš|želiš|znaš|vidiš|možeš|trebaš|koristiš|izabereš|sačuvaš|uneseš|proveriš|obrišeš|dodaš|ukloniš|otvoriš|zatvoriš|kopiraš|pošalješ|potvrdiš|nastaviš|pokušaš|konfigurišeš|postaviš|upravljaš|kontrolišeš|instaliraš|ostaviš|pročitaš|uključiš|isključiš|kreiraš|kucaš|pregledaš|filtriraš|učitaš|uporediš|analiziraš|izvezeš|uvezeš|obradiš|suziš|aktiviraš|ažuriraš|osvežiš|vratiš|pokreneš|zaustaviš|testiraš|validiraš|objaviš|deliš|sinhronizuješ|započneš|ideš|budeš|pogledaš|dobiješ|uradiš|napraviš|navedeš|popuniš|prijaviš|odjaviš|zameniš|dodeliš|ograničiš|podeliš|spojiš|odobriš|odbiješ|preuzmeš|otpremiš|preimenuješ|premestiš|ponoviš|dovršiš|uđeš|izađeš|nisi)(?!\p{L})/gu,
 ]
 
 const CONTROLS = [
@@ -141,6 +162,25 @@ const CONTROLS = [
 	['Обрађује Објекте секвенцијално (најбезбедније).', 'neither'],
 	// mixed sanity: one informal marker inside otherwise formal prose wins
 	['Изаберите Регистар и онда сачуваш измене', 'informal'],
+	// The same controls in Serbian Latin, which is the script this bundle ships.
+	// Without these the Latin lists above would be unexercised, and an unexercised
+	// list is exactly the hole the Cyrillic-only detector left behind.
+	['Izaberite registar', 'formal'],
+	['Unesite opis (opciono)...', 'formal'],
+	['Koristite filtere da suzite unose revizijskog traga', 'formal'],
+	['Vaš OpenAI API ključ.', 'formal'],
+	['Pokušajte ponovo kasnije.', 'formal'],
+	['Da li ste sigurni da želite da obrišete', 'formal'],
+	['Ovo možeš kasnije da promeniš', 'informal'],
+	['Tvoj registar', 'informal'],
+	['Poslato tebi', 'informal'],
+	['Nisi prijavljen', 'informal'],
+	['Sačuvaj', 'neither'],
+	['Obriši', 'neither'],
+	['Kreiraj', 'neither'],
+	['Naš registar', 'neither'],
+	['Izaberi sebi drugi registar', 'neither'],
+	['Izaberite registar i onda sačuvaš izmene', 'informal'],
 ]
 
 // Informal styling this detector cannot see, and why. Recorded rather than left

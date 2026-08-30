@@ -20,7 +20,9 @@
 		</NcButton>
 		<div v-if="showCreateForm" class="create-form">
 			<div class="form-group">
-				<label for="approval-chain-name">Name</label>
+				<label for="approval-chain-name">{{
+					t('openregister', 'Name')
+				}}</label>
 				<input
 					id="approval-chain-name"
 					v-model="newChain.name"

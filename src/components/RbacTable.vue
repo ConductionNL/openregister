@@ -4,10 +4,18 @@
 			<thead>
 				<tr>
 					<th scope="col">Group</th>
-					<th :id="`${uid}-col-create`" scope="col">Create</th>
-					<th :id="`${uid}-col-read`" scope="col">Read</th>
-					<th :id="`${uid}-col-update`" scope="col">Update</th>
-					<th :id="`${uid}-col-delete`" scope="col">Delete</th>
+					<th :id="`${uid}-col-create`" scope="col">
+						{{ t('openregister', 'Create') }}
+					</th>
+					<th :id="`${uid}-col-read`" scope="col">
+						{{ t('openregister', 'Read') }}
+					</th>
+					<th :id="`${uid}-col-update`" scope="col">
+						{{ t('openregister', 'Update') }}
+					</th>
+					<th :id="`${uid}-col-delete`" scope="col">
+						{{ t('openregister', 'Delete') }}
+					</th>
 				</tr>
 			</thead>
 			<tbody>

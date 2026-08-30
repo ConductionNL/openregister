@@ -2583,7 +2583,6 @@
         "falling back": "falling back",
         "file": "fájl",
         "files": "fájlok",
-        "file{plural}": "fájl{plural}",
         "folder": "mappa",
         "fw_...": "fw_...",
         "http://localhost:11434": "http://localhost:11434",
@@ -2594,7 +2593,6 @@
         "in_progress": "folyamatban",
         "inherited": "örökölt",
         "list": "lista",
-        "log{plural}": "napló{plural}",
         "manage": "kezelés",
         "members": "tagok",
         "menu or contact someone with permission to create agents.": "menüt, vagy forduljon valakihez, aki jogosult Ügynökök létrehozására.",
@@ -2621,7 +2619,6 @@
         "objectType: object\\naction: created": "objectType: object\\naction: created",
         "objects": "objektumok",
         "objects processed": "objektum feldolgozva",
-        "object{plural}": "objektum{plural}",
         "or pick a range": "vagy válasszon tartományt",
         "org-...": "org-...",
         "pending": "függőben",
@@ -2631,13 +2628,11 @@
         "read": "olvasás",
         "register(s)": "Nyilvántartás",
         "register(s) selected": "Nyilvántartás kiválasztva",
-        "register{plural}": "Nyilvántartás{plural}",
         "rejected": "elutasítva",
         "required": "kötelező",
         "results": "eredmények",
         "schema(s)": "Séma",
         "schema(s) selected": "Séma kiválasztva",
-        "schema{plural}": "Séma{plural}",
         "selected objects": "kiválasztott objektumok",
         "set": "beállítás",
         "sk-...": "sk-...",
@@ -2728,7 +2723,69 @@
         "v{installed} → ships v{shipped}": "v{installed} → szállítja: v{shipped}",
         "Where the automation lives": "Ahol az automatizálás lakik",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "A folyamatok azok, amik kattintás nélkül történnek: mentéskor bélyegzett objektum, értesített alkalmazás rekordváltozáskor. Itt olvashatja és szerkesztheti őket. Most nincs mit építeni.",
-        "Open Flows in the menu": "Nyissa meg a Folyamatokat a menüben"
+        "Open Flows in the menu": "Nyissa meg a Folyamatokat a menüben",
+        "Copied": "Másolva",
+        "Creating…": "Létrehozás…",
+        "_object_::_objects_": [
+            "objektum",
+            "objektum"
+        ],
+        "_log_::_logs_": [
+            "napló",
+            "napló"
+        ],
+        "_file_::_files_": [
+            "fájl",
+            "fájl"
+        ],
+        "_register_::_registers_": [
+            "nyilvántartás",
+            "nyilvántartás"
+        ],
+        "_schema_::_schemas_": [
+            "séma",
+            "séma"
+        ],
+        "_{count} schema_::_{count} schemas_": [
+            "{count} séma",
+            "{count} séma"
+        ],
+        "_%n register is missing_::_%n registers are missing_": [
+            "%n nyilvántartás hiányzik",
+            "%n nyilvántartás hiányzik"
+        ],
+        "_%n is out of date_::_%n are out of date_": [
+            "%n elavult",
+            "%n elavult"
+        ],
+        "_%n declared in total_::_%n declared in total_": [
+            "összesen %n deklarálva",
+            "összesen %n deklarálva"
+        ],
+        "_{count} email_::_{count} emails_": [
+            "{count} e-mail",
+            "{count} e-mail"
+        ],
+        "_Delete {count} object_::_Delete {count} objects_": [
+            "{count} objektum törlése",
+            "{count} objektum törlése"
+        ],
+        "_Object successfully deleted_::_Objects successfully deleted_": [
+            "Az objektum sikeresen törölve",
+            "Az objektumok sikeresen törölve"
+        ],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": [
+            "{count} objektum végleges törlése az adatbázisból",
+            "{count} objektum végleges törlése az adatbázisból"
+        ],
+        "_Restore {count} object_::_Restore {count} objects_": [
+            "{count} objektum visszaállítása",
+            "{count} objektum visszaállítása"
+        ],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": [
+            "{count} objektum sikeresen visszaállítva",
+            "{count} objektum sikeresen visszaállítva"
+        ]
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

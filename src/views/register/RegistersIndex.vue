@@ -146,11 +146,14 @@ import {
 
 			<!-- Custom column: schemas count -->
 			<template #column-schemas="{ row }">
-				{{ row.schemas?.length || 0 }}
 				{{
-					t('openregister', 'schema{plural}', {
-						plural: row.schemas?.length !== 1 ? 's' : '',
-					})
+					n(
+						'openregister',
+						'{count} schema',
+						'{count} schemas',
+						row.schemas?.length || 0,
+						{ count: row.schemas?.length || 0 },
+					)
 				}}
 			</template>
 

@@ -302,10 +302,23 @@ jobs:
       # `check:specs` is the aggregate (json-strict + manifest + register),
       # listed as ONE leg rather than three.
       # Measured on this tree before enabling: `check:specs` PASSES (with
-      # warnings), `test:l10n` FAILS on source strings missing from
-      # l10n/en.json, e.g. "Write an audit-trail entry for every step"
-      # (src/views/settings/sections/FlowConfiguration.vue:29). A real
-      # pre-existing defect; the gate is what makes it visible.
+      # warnings), `test:l10n` FAILED on source strings missing from the English
+      # catalogue. That defect is now fixed and the leg PASSES: the gate was
+      # asserting frontend t() calls against l10n/en.json, a file no frontend
+      # code path reads, and now targets l10n/en.js.
+      #
+      # `test:l10n:parity` is listed as a SEPARATE leg from `test:l10n` because
+      # they answer different questions and fail for different reasons:
+      #   test:l10n         -> does en.js cover every t()/n() call in src/?
+      #   test:l10n:parity  -> does every FINISHED locale cover every en.js key?
+      # Without the second one, adding an English string silently leaves 17
+      # finished locales one key short and nothing notices — which is how en.js
+      # came to sit ~700 keys ahead of the locales in the first place. Locales
+      # still being translated are reported as a backlog and do not fail the
+      # build; empty values and wrong plural arity fail for every locale, because
+      # those render blank at runtime.
+      # Measured on this tree before enabling: PASSES — 17 locales at full
+      # key-for-key parity (2051 keys each), 19 in progress.
       # `test` is NOT listed: "Frontend Tests (unit)" already runs it.
       #
       # `format` (prettier --check) is listed because the shared workflow has NO
@@ -324,7 +337,16 @@ jobs:
       # renders the English source inside an otherwise translated form, silently.
       # The fleet had 30,459 such strings, so this records the current count and
       # fails only when it GROWS — burning it down stays an ordinary PR.
-      frontend-checks: '["check:specs", "test:l10n", "format", "check:schema-l10n", "check:l10n-js"]'
+      #
+      # `test:l10n:parity` is a SEPARATE leg from `test:l10n` because they answer
+      # different questions: `test:l10n` asks whether en.js covers every t()/n()
+      # call in src/, while `test:l10n:parity` asks whether every locale matches
+      # en.js key-for-key. One passing tells you nothing about the other.
+      #
+      # `check:l10n-js` is a THIRD question again: whether the generated browser
+      # catalogues (l10n/*.js) are in step with their .json sources. Both sides
+      # of this merge added one of these; neither replaces the other.
+      frontend-checks: '["check:specs", "test:l10n", "test:l10n:parity", "format", "check:schema-l10n", "check:l10n-js"]'
       # ── Cost controls (see ConductionNL/.github#596, #599) ───────────────
       #
       # The fleet's CI was not slow, it was QUEUED. A Code Quality run does

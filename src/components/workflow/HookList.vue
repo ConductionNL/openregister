@@ -7,13 +7,13 @@
 		<table v-else class="hook-table">
 			<thead>
 				<tr>
-					<th scope="col">Event</th>
+					<th scope="col">{{ t('openregister', 'Event') }}</th>
 					<th scope="col">Engine</th>
 					<th scope="col">Workflow</th>
 					<th scope="col">Mode</th>
-					<th scope="col">Order</th>
-					<th scope="col">Enabled</th>
-					<th scope="col">Actions</th>
+					<th scope="col">{{ t('openregister', 'Order') }}</th>
+					<th scope="col">{{ t('openregister', 'Enabled') }}</th>
+					<th scope="col">{{ t('openregister', 'Actions') }}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -26,13 +26,13 @@
 					<td>{{ hook.enabled !== false ? 'Yes' : 'No' }}</td>
 					<td>
 						<NcButton variant="tertiary" @click="$emit('edit', index)">
-							Edit
+							{{ t('openregister', 'Edit') }}
 						</NcButton>
 						<NcButton variant="tertiary" @click="$emit('test', hook)">
-							Test
+							{{ t('openregister', 'Test') }}
 						</NcButton>
 						<NcButton variant="error" @click="$emit('delete', index)">
-							Delete
+							{{ t('openregister', 'Delete') }}
 						</NcButton>
 					</td>
 				</tr>

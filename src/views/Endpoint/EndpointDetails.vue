@@ -12,7 +12,9 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 						{{ endpointStore.endpointItem.name }}
 					</h1>
 
-					<NcActions :primary="true" menuName="Actions">
+					<NcActions
+						:primary="true"
+						:menuName="t('openregister', 'Actions')">
 						<template #icon>
 							<DotsHorizontal :size="20" />
 						</template>

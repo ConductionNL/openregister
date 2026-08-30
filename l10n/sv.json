@@ -2583,7 +2583,6 @@
         "falling back": "falling back",
         "file": "fil",
         "files": "filer",
-        "file{plural}": "fil{plural}",
         "folder": "mapp",
         "fw_...": "fw_...",
         "http://localhost:11434": "http://localhost:11434",
@@ -2594,7 +2593,6 @@
         "in_progress": "pågår",
         "inherited": "ärvd",
         "list": "lista",
-        "log{plural}": "log{plural}",
         "manage": "hantera",
         "members": "medlemmar",
         "menu or contact someone with permission to create agents.": "menyn eller kontakta någon med behörighet att skapa agenter.",
@@ -2621,7 +2619,6 @@
         "objectType: object\\naction: created": "objectType: object\\naction: created",
         "objects": "objekt",
         "objects processed": "objekt bearbetade",
-        "object{plural}": "objekt{plural}",
         "or pick a range": "eller välj ett intervall",
         "org-...": "org-...",
         "pending": "väntar",
@@ -2631,13 +2628,11 @@
         "read": "läs",
         "register(s)": "register",
         "register(s) selected": "register valda",
-        "register{plural}": "register{plural}",
         "rejected": "avvisad",
         "required": "obligatorisk",
         "results": "resultat",
         "schema(s)": "schema(n)",
         "schema(s) selected": "schema(n) valda",
-        "schema{plural}": "schema{plural}",
         "selected objects": "valda objekt",
         "set": "ange",
         "sk-...": "sk-...",
@@ -2728,7 +2723,69 @@
         "v{installed} → ships v{shipped}": "v{installed} → levererar v{shipped}",
         "Where the automation lives": "Där automatiseringen bor",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Flöden är det som händer utan att någon klickar: ett objekt som stämplas vid sparande, en app som meddelas när en post ändras. Här läser och redigerar du dem. Inget att bygga nu.",
-        "Open Flows in the menu": "Öppna Flöden i menyn"
+        "Open Flows in the menu": "Öppna Flöden i menyn",
+        "Copied": "Kopierat",
+        "Creating…": "Skapar…",
+        "_object_::_objects_": [
+            "objekt",
+            "objekt"
+        ],
+        "_log_::_logs_": [
+            "logg",
+            "loggar"
+        ],
+        "_file_::_files_": [
+            "fil",
+            "filer"
+        ],
+        "_register_::_registers_": [
+            "register",
+            "register"
+        ],
+        "_schema_::_schemas_": [
+            "schema",
+            "scheman"
+        ],
+        "_{count} schema_::_{count} schemas_": [
+            "{count} schema",
+            "{count} scheman"
+        ],
+        "_%n register is missing_::_%n registers are missing_": [
+            "%n register saknas",
+            "%n register saknas"
+        ],
+        "_%n is out of date_::_%n are out of date_": [
+            "%n är föråldrad",
+            "%n är föråldrade"
+        ],
+        "_%n declared in total_::_%n declared in total_": [
+            "%n deklarerat totalt",
+            "%n deklarerade totalt"
+        ],
+        "_{count} email_::_{count} emails_": [
+            "{count} e-post",
+            "{count} e-postmeddelanden"
+        ],
+        "_Delete {count} object_::_Delete {count} objects_": [
+            "Ta bort {count} objekt",
+            "Ta bort {count} objekt"
+        ],
+        "_Object successfully deleted_::_Objects successfully deleted_": [
+            "Objekt togs bort",
+            "Objekt togs bort"
+        ],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": [
+            "Rensa {count} objekt från databasen",
+            "Rensa {count} objekt från databasen"
+        ],
+        "_Restore {count} object_::_Restore {count} objects_": [
+            "Återställ {count} objekt",
+            "Återställ {count} objekt"
+        ],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": [
+            "{count} objekt återställdes",
+            "{count} objekt återställdes"
+        ]
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

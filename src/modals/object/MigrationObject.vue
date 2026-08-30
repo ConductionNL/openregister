@@ -16,12 +16,14 @@ import {
 		<!-- Source and Target Information -->
 		<div class="migration-overview">
 			<div class="source-info">
-				<h4>Source</h4>
+				<h4>{{ t('openregister', 'Source') }}</h4>
 				<div class="info-card">
 					<div class="card-item">
 						<div class="card-label-with-icon">
 							<DatabaseOutline :size="16" />
-							<span class="card-label">Register:</span>
+							<span class="card-label">{{
+								t('openregister', 'Register:')
+							}}</span>
 						</div>
 						<span class="card-value">{{
 							registerStore.registerItem?.title
@@ -31,7 +33,9 @@ import {
 					<div class="card-item">
 						<div class="card-label-with-icon">
 							<FileTreeOutline :size="16" />
-							<span class="card-label">Schema:</span>
+							<span class="card-label">{{
+								t('openregister', 'Schema:')
+							}}</span>
 						</div>
 						<span class="card-value">{{
 							schemaStore.schemaItem?.title
@@ -49,7 +53,9 @@ import {
 					<div class="card-item">
 						<div class="card-label-with-icon">
 							<DatabaseOutline :size="16" />
-							<span class="card-label">Register:</span>
+							<span class="card-label">{{
+								t('openregister', 'Register:')
+							}}</span>
 						</div>
 						<span class="card-value">{{
 							targetRegister?.title || 'Not selected'
@@ -58,7 +64,9 @@ import {
 					<div class="card-item">
 						<div class="card-label-with-icon">
 							<FileTreeOutline :size="16" />
-							<span class="card-label">Schema:</span>
+							<span class="card-label">{{
+								t('openregister', 'Schema:')
+							}}</span>
 						</div>
 						<span class="card-value">{{
 							targetSchema?.title || 'Not selected'

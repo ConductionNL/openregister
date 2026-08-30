@@ -2583,7 +2583,6 @@
         "falling back": "falling back",
         "file": "fil",
         "files": "filer",
-        "file{plural}": "fil{plural}",
         "folder": "mappe",
         "fw_...": "fw_...",
         "http://localhost:11434": "http://localhost:11434",
@@ -2594,7 +2593,6 @@
         "in_progress": "pågår",
         "inherited": "arvet",
         "list": "liste",
-        "log{plural}": "logg{plural}",
         "manage": "administrer",
         "members": "medlemmer",
         "menu or contact someone with permission to create agents.": "meny eller kontakt noen med tillatelse til å opprette agenter.",
@@ -2621,7 +2619,6 @@
         "objectType: object\\naction: created": "objectType: object\\naction: created",
         "objects": "objekter",
         "objects processed": "objekter behandlet",
-        "object{plural}": "objekt{plural}",
         "or pick a range": "eller velg et område",
         "org-...": "org-...",
         "pending": "venter",
@@ -2631,13 +2628,11 @@
         "read": "les",
         "register(s)": "register(e)",
         "register(s) selected": "register(e) valgt",
-        "register{plural}": "register{plural}",
         "rejected": "avvist",
         "required": "påkrevd",
         "results": "resultater",
         "schema(s)": "skjema(er)",
         "schema(s) selected": "skjema(er) valgt",
-        "schema{plural}": "skjema{plural}",
         "selected objects": "valgte objekter",
         "set": "angi",
         "sk-...": "sk-...",
@@ -2728,7 +2723,69 @@
         "v{installed} → ships v{shipped}": "v{installed} → leverer v{shipped}",
         "Where the automation lives": "Der automatiseringen bor",
         "Flows are what happens without anyone clicking: an object that gets stamped on save, a downstream app told when a record changes. This is where you read and edit them. Nothing to build now.": "Flyter er det som skjer uten at noen klikker: et objekt som stemples ved lagring, en app som varsles når en post endres. Her leser og redigerer du dem. Ingenting å bygge nå.",
-        "Open Flows in the menu": "Åpne Flyter i menyen"
+        "Open Flows in the menu": "Åpne Flyter i menyen",
+        "Copied": "Kopiert",
+        "Creating…": "Oppretter…",
+        "_object_::_objects_": [
+            "objekt",
+            "objekter"
+        ],
+        "_log_::_logs_": [
+            "logg",
+            "logger"
+        ],
+        "_file_::_files_": [
+            "fil",
+            "filer"
+        ],
+        "_register_::_registers_": [
+            "register",
+            "registre"
+        ],
+        "_schema_::_schemas_": [
+            "skjema",
+            "skjemaer"
+        ],
+        "_{count} schema_::_{count} schemas_": [
+            "{count} skjema",
+            "{count} skjemaer"
+        ],
+        "_%n register is missing_::_%n registers are missing_": [
+            "%n register mangler",
+            "%n registre mangler"
+        ],
+        "_%n is out of date_::_%n are out of date_": [
+            "%n er utdatert",
+            "%n er utdaterte"
+        ],
+        "_%n declared in total_::_%n declared in total_": [
+            "%n erklært totalt",
+            "%n erklært totalt"
+        ],
+        "_{count} email_::_{count} emails_": [
+            "{count} e-post",
+            "{count} e-poster"
+        ],
+        "_Delete {count} object_::_Delete {count} objects_": [
+            "Slett {count} objekt",
+            "Slett {count} objekter"
+        ],
+        "_Object successfully deleted_::_Objects successfully deleted_": [
+            "Objekt vellykket slettet",
+            "Objekter vellykket slettet"
+        ],
+        "_Purge {count} object from database_::_Purge {count} objects from database_": [
+            "Tøm {count} objekt fra database",
+            "Tøm {count} objekter fra database"
+        ],
+        "_Restore {count} object_::_Restore {count} objects_": [
+            "Gjenopprett {count} objekt",
+            "Gjenopprett {count} objekter"
+        ],
+        "_Successfully restored {count} object_::_Successfully restored {count} objects_": [
+            "Vellykket gjenopprettet {count} objekt",
+            "Vellykket gjenopprettet {count} objekter"
+        ]
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

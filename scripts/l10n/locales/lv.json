@@ -37,7 +37,10 @@
 		"X-Custom-Header: value\nAuthorization: Bearer token": "Literal HTTP header example; header names are protocol tokens and are never translated.",
 		"X-Custom-Header: value\\nAuthorization: Bearer token": "Literal HTTP header example with an escaped newline; header names are protocol tokens.",
 		"objectType: object\\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens.",
-		"objectType: object\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens and are never translated."
+		"objectType: object\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens and are never translated.",
+		"myapp": "Literal example app id shown inside a code sample; an identifier, not prose, so Latvian leaves it as written.",
+		"{property} - {other}": "Two placeholders joined by a hyphen; there is no translatable text in this value at all.",
+		"Id": "Identifier acronym in the casing the source uses; invariant in Latvian, and every finished locale keeps this casing rather than diverging on it alone."
 	},
 	"corrections": {
 		"Add schema titles, descriptions, and register information to provide richer context for search": "Pre-existing formal (jūs) value; corrected to the informal register measured from core lv — see registerEvidence.",

@@ -526,8 +526,14 @@ import {
 														</template>
 														{{
 															isCopied
-																? 'Copied'
-																: 'Copy'
+																? t(
+																		'openregister',
+																		'Copied',
+																	)
+																: t(
+																		'openregister',
+																		'Copy',
+																	)
 														}}
 													</NcButton>
 												</td>
@@ -1160,11 +1166,11 @@ import {
 					{{
 						isSaving
 							? isNewObject
-								? 'Creating...'
-								: 'Saving...'
+								? t('openregister', 'Creating…')
+								: t('openregister', 'Saving…')
 							: isNewObject
-								? 'Create'
-								: 'Save'
+								? t('openregister', 'Create')
+								: t('openregister', 'Save')
 					}}
 				</NcButton>
 			</template>

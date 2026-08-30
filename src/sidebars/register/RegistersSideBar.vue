@@ -77,9 +77,12 @@ import {
 						:title="t('openregister', 'Registers')"
 						:count="filteredRegisters.length"
 						:countLabel="
-							t('openregister', 'register{plural}', {
-								plural: filteredRegisters.length !== 1 ? 's' : '',
-							})
+							n(
+								'openregister',
+								'register',
+								'registers',
+								filteredRegisters.length,
+							)
 						"
 						:icon="DatabaseOutline"
 						variant="primary"
@@ -89,9 +92,7 @@ import {
 						:title="t('openregister', 'Schemas')"
 						:count="totalSchemas"
 						:countLabel="
-							t('openregister', 'schema{plural}', {
-								plural: totalSchemas !== 1 ? 's' : '',
-							})
+							n('openregister', 'schema', 'schemas', totalSchemas)
 						"
 						:icon="TableIcon"
 						variant="primary"
@@ -101,12 +102,12 @@ import {
 						:title="t('openregister', 'Objects')"
 						:count="systemTotals.stats?.objects?.total || 0"
 						:countLabel="
-							t('openregister', 'object{plural}', {
-								plural:
-									systemTotals.stats?.objects?.total !== 1
-										? 's'
-										: '',
-							})
+							n(
+								'openregister',
+								'object',
+								'objects',
+								systemTotals.stats?.objects?.total || 0,
+							)
 						"
 						:icon="PackageVariantClosed"
 						variant="primary"
@@ -117,10 +118,12 @@ import {
 						:title="t('openregister', 'Logs')"
 						:count="systemTotals.stats?.logs?.total || 0"
 						:countLabel="
-							t('openregister', 'log{plural}', {
-								plural:
-									systemTotals.stats?.logs?.total !== 1 ? 's' : '',
-							})
+							n(
+								'openregister',
+								'log',
+								'logs',
+								systemTotals.stats?.logs?.total || 0,
+							)
 						"
 						:icon="TextBoxOutline"
 						horizontal
@@ -130,12 +133,12 @@ import {
 						:title="t('openregister', 'Files')"
 						:count="systemTotals.stats?.files?.total || 0"
 						:countLabel="
-							t('openregister', 'file{plural}', {
-								plural:
-									systemTotals.stats?.files?.total !== 1
-										? 's'
-										: '',
-							})
+							n(
+								'openregister',
+								'file',
+								'files',
+								systemTotals.stats?.files?.total || 0,
+							)
 						"
 						:icon="FileDocumentOutline"
 						horizontal
@@ -160,12 +163,12 @@ import {
 						:title="t('openregister', 'Objects')"
 						:count="orphanedItems.stats?.objects?.total || 0"
 						:countLabel="
-							t('openregister', 'object{plural}', {
-								plural:
-									systemTotals.stats?.objects?.total !== 1
-										? 's'
-										: '',
-							})
+							n(
+								'openregister',
+								'object',
+								'objects',
+								orphanedItems.stats?.objects?.total || 0,
+							)
 						"
 						:icon="PackageVariantClosed"
 						variant="warning"
@@ -176,10 +179,12 @@ import {
 						:title="t('openregister', 'Logs')"
 						:count="orphanedItems.stats?.logs?.total || 0"
 						:countLabel="
-							t('openregister', 'log{plural}', {
-								plural:
-									systemTotals.stats?.logs?.total !== 1 ? 's' : '',
-							})
+							n(
+								'openregister',
+								'log',
+								'logs',
+								orphanedItems.stats?.logs?.total || 0,
+							)
 						"
 						:icon="TextBoxOutline"
 						variant="warning"
@@ -192,12 +197,12 @@ import {
 						:title="t('openregister', 'Files')"
 						:count="orphanedItems.stats?.files?.total || 0"
 						:countLabel="
-							t('openregister', 'file{plural}', {
-								plural:
-									systemTotals.stats?.files?.total !== 1
-										? 's'
-										: '',
-							})
+							n(
+								'openregister',
+								'file',
+								'files',
+								orphanedItems.stats?.files?.total || 0,
+							)
 						"
 						:icon="FileDocumentOutline"
 						variant="warning"
