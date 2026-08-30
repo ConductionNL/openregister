@@ -36,7 +36,8 @@
 		"X-Custom-Header: value\nAuthorization: Bearer token": "Literal HTTP header example; header names are protocol tokens and are never translated.",
 		"X-Custom-Header: value\\nAuthorization: Bearer token": "Literal HTTP header example with an escaped newline; header names are protocol tokens.",
 		"objectType: object\\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens.",
-		"objectType: object\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens and are never translated."
+		"objectType: object\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens and are never translated.",
+		"myapp": "a literal example application id shown in an occ command and a config sample, not prose — it is typed verbatim by the user, so any Belarusian rendering would make the instruction wrong. Kept Latin deliberately; this is one of the recorded Latin values in an otherwise fully Cyrillic bundle."
 	},
 	"corrections": {
 		"Audit trail #{id}": "GARBLED-OR-FOREIGN — the value was RUSSIAN, not Belarusian: 'Запись журнала аудита #{id}'. Belarusian has no 'и', so the letter scan finds this deterministically. Note this is the same key that has twice reached a committed bundle carrying another language (Croatian under bs/sr); check it first in any pass.",

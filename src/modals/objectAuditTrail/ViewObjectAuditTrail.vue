@@ -15,7 +15,10 @@ import {
 				<h3>Audit Trail ID: {{ auditTrail.id }}</h3>
 
 				<div class="audit-item-details">
-					<p><strong>Action:</strong> {{ auditTrail.action }}</p>
+					<p>
+						<strong>{{ t('openregister', 'Action:') }}</strong>
+						{{ auditTrail.action }}
+					</p>
 					<p>
 						<strong>User:</strong> {{ auditTrail.userName }} ({{
 							auditTrail.user
@@ -24,7 +27,7 @@ import {
 					<p><strong>Session:</strong> {{ auditTrail.session }}</p>
 					<p><strong>IP Address:</strong> {{ auditTrail.ipAddress }}</p>
 					<p>
-						<strong>Created:</strong>
+						<strong>{{ t('openregister', 'Created:') }}</strong>
 						{{ new Date(auditTrail.created).toLocaleString() }}
 					</p>
 				</div>
@@ -35,9 +38,15 @@ import {
 						<table class="audit-trail-table">
 							<thead>
 								<tr>
-									<th scope="col">Field</th>
-									<th scope="col">Old Value</th>
-									<th scope="col">New Value</th>
+									<th scope="col">
+										{{ t('openregister', 'Field') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Old Value') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'New Value') }}
+									</th>
 								</tr>
 							</thead>
 							<tbody>

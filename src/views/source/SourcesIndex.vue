@@ -52,7 +52,9 @@ import { navigationStore, sourceStore } from '../../store/store.js'
 							<DatabaseArrowRightOutline :size="20" />
 							{{ object.title }}
 						</h2>
-						<NcActions :primary="true" menuName="Actions">
+						<NcActions
+							:primary="true"
+							:menuName="t('openregister', 'Actions')">
 							<template #icon>
 								<DotsHorizontal :size="20" />
 							</template>

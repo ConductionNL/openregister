@@ -42,7 +42,14 @@
 		"X-Custom-Header: value\nAuthorization: Bearer token": "Literal HTTP header example; header names are protocol tokens and are never translated.",
 		"X-Custom-Header: value\\nAuthorization: Bearer token": "Literal HTTP header example with an escaped newline; header names are protocol tokens.",
 		"objectType: object\\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens.",
-		"objectType: object\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens and are never translated."
+		"objectType: object\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens and are never translated.",
+		"ID": "Identifier acronym, borrowed unchanged in Irish; the bundle already writes ID an chláir and ID an scéimre with the acronym intact.",
+		"ID:": "The same acronym plus its label colon; Irish puts no space before a colon, so nothing in the value changes.",
+		"ID: {id}": "The acronym, a colon and a placeholder — no translatable word remains in the value.",
+		"Id": "The same identifier acronym in the casing the source uses; kept rather than diverging from the ID record on casing alone.",
+		"myapp": "Literal example app id inside a code sample; an identifier rather than prose, so it is shown verbatim.",
+		"e.g., lib/settings/config.json": "A literal example file path shown verbatim; not prose. The lowercase sibling of the already-recorded lib/Settings/config.json.",
+		"e.g., lib/settings/register.json": "A literal example file path shown verbatim; not prose. The lowercase sibling of the already-recorded lib/Settings/register.json."
 	},
 	"corrections": {
 		"Loading organisations...": "Was `Eagraíochtaí á luchtú…`, the only one of the bundle's 35 `Loading X...` keys not built as `Ag <verbal noun> <object>...` — the other 34 are, and it also carried the … glyph where the English source has three ASCII dots, against the bundle's own 41-of-42 practice of mirroring the source glyph. Normalised to `Ag luchtú eagraíochtaí...` so the progressive construction and the ellipsis convention both hold without an exception to explain."

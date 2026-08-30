@@ -18,7 +18,7 @@
 					<template v-if="isLocalConfiguration">
 						<span class="configBadge configBadge--local">
 							<CheckCircle :size="16" />
-							Local
+							{{ t('openregister', 'Local') }}
 						</span>
 						<span
 							v-if="displayConfiguration.app"

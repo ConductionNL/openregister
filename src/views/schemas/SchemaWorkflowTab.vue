@@ -1,7 +1,7 @@
 <template>
 	<div class="schema-workflow-tab">
 		<NcAppContentDetails>
-			<h2>Workflows</h2>
+			<h2>{{ t('openregister', 'Workflows') }}</h2>
 
 			<section class="tab-section">
 				<HookList

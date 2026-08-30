@@ -31,7 +31,7 @@
 				:options="['sync', 'async']" />
 		</div>
 		<div class="form-group">
-			<label for="hook-form-order">Order</label>
+			<label for="hook-form-order">{{ t('openregister', 'Order') }}</label>
 			<input
 				id="hook-form-order"
 				v-model.number="form.order"
@@ -39,7 +39,9 @@
 				class="input-field" />
 		</div>
 		<div class="form-group">
-			<label for="hook-form-timeout">Timeout (seconds)</label>
+			<label for="hook-form-timeout">{{
+				t('openregister', 'Timeout (seconds)')
+			}}</label>
 			<input
 				id="hook-form-timeout"
 				v-model.number="form.timeout"
@@ -69,11 +71,13 @@
 		</div>
 		<div class="form-group">
 			<NcCheckboxRadioSwitch v-model="form.enabled">
-				Enabled
+				{{ t('openregister', 'Enabled') }}
 			</NcCheckboxRadioSwitch>
 		</div>
 		<div class="form-actions">
-			<NcButton @click="$emit('cancel')"> Cancel </NcButton>
+			<NcButton @click="$emit('cancel')">
+				{{ t('openregister', 'Cancel') }}
+			</NcButton>
 			<NcButton variant="primary" @click="save">
 				{{ isEdit ? 'Update' : 'Create' }}
 			</NcButton>

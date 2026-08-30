@@ -1,6 +1,6 @@
 <template>
 	<SettingsSection
-		name="LLM Configuration"
+		:name="t('openregister', 'LLM Configuration')"
 		description="Configure Large Language Model settings for AI features"
 		:loading="loadingStats"
 		:loadingMessage="t('openregister', 'Loading LLM configuration...')">

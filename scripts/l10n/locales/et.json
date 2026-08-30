@@ -44,7 +44,6 @@
 		"Browser Web Push (VAPID)": "Browser and Web Push are the protocol's own names and VAPID is its acronym; the protocol name is not translated.",
 		"Bucket": "Object-storage term, used unchanged in this locale's technical language.",
 		"Driver": "Database-driver term, used unchanged in this locale's technical language.",
-		"Golden record": "Master-data-management term with no established local equivalent; used unchanged in data-governance language.",
 		"Host": "Networking term, used unchanged in this locale.",
 		"myapp": "A literal example application id shown verbatim; not prose.",
 		"Survivor": "Master-data-management term for the record that survives a merge; used unchanged in data-governance language.",

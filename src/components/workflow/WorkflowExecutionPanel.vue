@@ -1,14 +1,16 @@
 <template>
 	<div class="workflow-execution-panel">
 		<h3>Execution History</h3>
-		<div v-if="loading" class="loading">Loading...</div>
+		<div v-if="loading" class="loading">
+			{{ t('openregister', 'Loading…') }}
+		</div>
 		<table v-else-if="executions.length" class="execution-table">
 			<thead>
 				<tr>
-					<th scope="col">Timestamp</th>
+					<th scope="col">{{ t('openregister', 'Timestamp') }}</th>
 					<th scope="col">Hook</th>
-					<th scope="col">Object</th>
-					<th scope="col">Status</th>
+					<th scope="col">{{ t('openregister', 'Object') }}</th>
+					<th scope="col">{{ t('openregister', 'Status') }}</th>
 					<th scope="col">Duration</th>
 				</tr>
 			</thead>
@@ -34,14 +36,14 @@
 		<p v-else>No executions found.</p>
 		<div v-if="total > limit" class="pagination">
 			<NcButton :disabled="offset === 0" @click="prevPage">
-				Previous
+				{{ t('openregister', 'Previous') }}
 			</NcButton>
 			<span
 				>{{ offset + 1 }} - {{ Math.min(offset + limit, total) }} of
 				{{ total }}</span
 			>
 			<NcButton :disabled="offset + limit >= total" @click="nextPage">
-				Next
+				{{ t('openregister', 'Next') }}
 			</NcButton>
 		</div>
 		<WorkflowExecutionDetail

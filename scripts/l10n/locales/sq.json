@@ -50,7 +50,13 @@
 		"https://example.com/webhook": "A literal example URL shown verbatim; not prose.",
 		"fw_...": "A literal API-key prefix example shown verbatim; not prose.",
 		"sk-...": "A literal API-key prefix example shown verbatim; not prose.",
-		"org-...": "A literal organisation-id prefix example shown verbatim; not prose."
+		"org-...": "A literal organisation-id prefix example shown verbatim; not prose.",
+		"myapp": "Literal example app id inside a code sample; an identifier rather than prose, so it is shown verbatim.",
+		"Id": "The identifier acronym in the source's own casing; ID and ID: are already recorded here, and diverging on casing alone would be inconsistent.",
+		"Multitenancy": "Architecture term with no settled Albanian rendering; Albanian technical writing uses it untranslated, and a descriptive paraphrase would not read as the section heading it is.",
+		"Shards": "Apache SOLR's own object name, as with the already-recorded ConfigSet; SOLR does not localise it and Albanian admin usage names the same object.",
+		"{count} email": "A count placeholder plus 'email', which is already a recorded cognate in this bundle; no other word is left to translate.",
+		"Driver": "Database driver. Albanian technical writing borrows 'driver' unchanged and there is no settled native term — unlike Port, which core sq does render as Portë and which is therefore translated in this pass rather than recorded."
 	},
 	"spellAllowNote": "Three classes: product and app names, literal code/example tokens that survive the tokeniser, and this locale's domain coinages (the fasetë and vektoriz- families, Shumëqiramarrje, Transferueshmëri, Vendmbajtës, rebazim, renderoh-). Tokeniser artefacts (`et`, `eve`, `it`, `t`, `S`, `Gjeneruara`) are left OUT on purpose: they are splits of `p.sh.`, `t'u` and `S'aplikohet`, and allowlisting them would hide a real word that happens to split the same way.",
 	"spellAllow": [

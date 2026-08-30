@@ -13,7 +13,9 @@
 			<p><strong>This operation may take some time to complete.</strong></p>
 
 			<div class="dialog-actions">
-				<NcButton @click="$emit('closing')"> Cancel </NcButton>
+				<NcButton @click="$emit('closing')">
+					{{ t('openregister', 'Cancel') }}
+				</NcButton>
 				<NcButton
 					variant="error"
 					:disabled="rebasing"

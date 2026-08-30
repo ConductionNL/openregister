@@ -70,7 +70,14 @@
 		"org-...": "A literal organisation-id prefix example shown verbatim; not prose.",
 		"X-Custom-Header: value\nAuthorization: Bearer token": "Literal HTTP header example; header names are protocol tokens and are never translated.",
 		"X-Custom-Header: value\\nAuthorization: Bearer token": "Literal HTTP header example with an escaped newline; header names are protocol tokens.",
-		"objectType: object\\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens."
+		"objectType: object\\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens.",
+		"Host": "borrowed from English unchanged in Luxembourgish IT usage, the same class as the bundle's Token, Webhook and Login. No native form exists and the German Wirt is not used in this sense.",
+		"Index": "Index is an ordinary Luxembourgish noun (plural Indexen) and, like every noun in this locale, is capitalised — so the value coincides with the English source rather than being untranslated.",
+		"Provider": "borrowed unchanged; Luxembourgish uses Provider for a service provider in IT contexts, and the bundle already carries it in the Provider-prefixed compound keys.",
+		"Register #{id}": "Register is the Luxembourgish word for a register and is capitalised as every noun is, and the rest of the value is a literal # plus a placeholder — so nothing in it is translatable. The sibling key Object #{id} does differ, because Object becomes Objet.",
+		"Shards": "a SOLR-specific English term with no Luxembourgish equivalent, borrowed unchanged alongside the bundle's other search-engine vocabulary.",
+		"Uptime:": "borrowed unchanged; Luxembourgish IT usage takes Uptime from English and the trailing colon is part of the label, so the whole value coincides with the source.",
+		"App": "App is the ordinary Luxembourgish noun for an application (plural Appen) and is capitalised as every noun is, so the value coincides with the English source."
 	},
 	"correctionCodes": "EIFELER-DEL = a word-final -n that must be DELETED before the following consonant and was not. EIFELER-KEEP = a word-final -n that must be KEPT (before a vowel, or n/d/t/z/h) and was wrongly dropped; the bundle got the rule wrong in BOTH directions, which is why there are two codes. CAPITAL-POLITE = the polite possessive Är-/Ären written lowercase, against the sibling bundles' 50:0. AGREEMENT = wrong gender agreement. TYPO. GERMANISM = a German form where this bundle's own vocabulary is Luxembourgish. TERM-AUDIT = Auditprotokoll for *audit trail*, against 24 uses of Audit-Trail. CONSISTENCY = breaks a pattern the bundle otherwise holds unanimously. GRAMMAR = a malformed clause. 77 corrections over 1011 pre-existing translated values (7.6%), which sits between cs (5.5%) and ca (6.2%) rather than near is (22%) — this is a healthy locale whose single systematic weakness is the Eifeler Regel.",
 	"corrections": {

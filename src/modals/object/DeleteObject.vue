@@ -34,7 +34,16 @@ import { navigationStore, objectStore } from '../../store/store.js'
 		</p>
 
 		<NcNoteCard v-if="success" type="success">
-			<p>Object successfully deleted</p>
+			<p>
+				{{
+					n(
+						'openregister',
+						'Object successfully deleted',
+						'Objects successfully deleted',
+						1,
+					)
+				}}
+			</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
