@@ -25,7 +25,7 @@
 			path: it reads OCA.OpenRegister.integrations and renders one inner
 			tab per provider (built-ins + xwiki + the bespoke leaves). See ADR-019.
 		-->
-		<template #sidebar>
+		<template #sidebar="{ pageSidebarComponent }">
 			<SideBars />
 			<CnObjectSidebar
 				v-if="objectSidebarState.active"
@@ -39,6 +39,12 @@
 				:hiddenTabs="objectSidebarState.hiddenTabs"
 				:open="objectSidebarState.open"
 				@update:open="objectSidebarState.open = $event" />
+			<!-- The manifest page's own sidebar (pages[].sidebarComponent). Passed in
+			     as a slot prop because filling this slot suppresses CnAppRoot's
+			     fallback, which is what hid the flow sidebar. -->
+			<component
+				:is="pageSidebarComponent"
+				v-if="pageSidebarComponent" />
 		</template>
 		<!-- Global modal and dialog hosts, mounted below the router-view. -->
 		<template #footer>
