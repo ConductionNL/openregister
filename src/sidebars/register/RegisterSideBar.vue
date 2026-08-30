@@ -63,10 +63,12 @@ import {
 						:title="t('openregister', 'Objects')"
 						:count="register.stats?.objects?.total || 0"
 						:countLabel="
-							t('openregister', 'object{plural}', {
-								plural:
-									register.stats?.objects?.total !== 1 ? 's' : '',
-							})
+							n(
+								'openregister',
+								'object',
+								'objects',
+								register.stats?.objects?.total || 0,
+							)
 						"
 						:icon="PackageVariantClosed"
 						variant="primary"
@@ -77,9 +79,12 @@ import {
 						:title="t('openregister', 'Logs')"
 						:count="register.stats?.logs?.total || 0"
 						:countLabel="
-							t('openregister', 'log{plural}', {
-								plural: register.stats?.logs?.total !== 1 ? 's' : '',
-							})
+							n(
+								'openregister',
+								'log',
+								'logs',
+								register.stats?.logs?.total || 0,
+							)
 						"
 						:icon="TextBoxOutline"
 						horizontal
@@ -89,10 +94,12 @@ import {
 						:title="t('openregister', 'Files')"
 						:count="register.stats?.files?.total || 0"
 						:countLabel="
-							t('openregister', 'file{plural}', {
-								plural:
-									register.stats?.files?.total !== 1 ? 's' : '',
-							})
+							n(
+								'openregister',
+								'file',
+								'files',
+								register.stats?.files?.total || 0,
+							)
 						"
 						:icon="FileDocumentOutline"
 						horizontal
@@ -102,9 +109,12 @@ import {
 						:title="t('openregister', 'Schemas')"
 						:count="register.schemas?.length || 0"
 						:countLabel="
-							t('openregister', 'schema{plural}', {
-								plural: register.schemas?.length !== 1 ? 's' : '',
-							})
+							n(
+								'openregister',
+								'schema',
+								'schemas',
+								register.schemas?.length || 0,
+							)
 						"
 						:icon="FileCodeOutline"
 						horizontal

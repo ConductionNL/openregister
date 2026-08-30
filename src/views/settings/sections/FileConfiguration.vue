@@ -1,6 +1,6 @@
 <template>
 	<SettingsSection
-		name="Text Extraction"
+		:name="t('openregister', 'Text Extraction')"
 		description="Configure extraction pipelines for files, objects, and detected entities"
 		:loading="settingsStore.loadingFileSettings"
 		:loadingMessage="t('openregister', 'Loading text extraction settings...')">
@@ -137,12 +137,7 @@
 							<NcTextField
 								id="dolphin-endpoint"
 								v-model="fileSettings.dolphinApiEndpoint"
-								:placeholder="
-									t(
-										'openregister',
-										'https://api.your-dolphin-instance.com',
-									)
-								"
+								placeholder="https://api.your-dolphin-instance.com"
 								@update:modelValue="saveSettings">
 								<template #trailing-button-icon>
 									<InformationIcon :size="20" />

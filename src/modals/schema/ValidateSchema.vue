@@ -46,7 +46,11 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 			<div class="steps-section">
 				<h4>Validation steps:</h4>
 				<ol class="steps-list">
-					<li>Retrieve all objects for this schema</li>
+					<li>
+						{{
+							t('openregister', 'Retrieve all objects for this schema')
+						}}
+					</li>
 					<li>Validate each object against the schema definition</li>
 					<li>Check required fields and data types</li>
 					<li>Verify format constraints and patterns</li>
@@ -107,12 +111,18 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 					<table class="validation-table">
 						<thead>
 							<tr>
-								<th scope="col">Status</th>
-								<th scope="col">ID</th>
-								<th scope="col">Name</th>
+								<th scope="col">
+									{{ t('openregister', 'Status') }}
+								</th>
+								<th scope="col">{{ t('openregister', 'ID') }}</th>
+								<th scope="col">
+									{{ t('openregister', 'Name') }}
+								</th>
 								<th scope="col">UUID</th>
 								<th scope="col">Errors</th>
-								<th scope="col">Actions</th>
+								<th scope="col">
+									{{ t('openregister', 'Actions') }}
+								</th>
 							</tr>
 						</thead>
 						<tbody>

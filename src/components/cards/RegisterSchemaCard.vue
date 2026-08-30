@@ -30,7 +30,7 @@ import {
 						<span class="cardTitleText">{{ item.title }}</span>
 					</h2>
 				</div>
-				<NcActions :primary="true" menuName="Actions">
+				<NcActions :primary="true" :menuName="t('openregister', 'Actions')">
 					<template #icon>
 						<DotsHorizontal :size="20" />
 					</template>

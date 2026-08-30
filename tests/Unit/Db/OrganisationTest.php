@@ -28,11 +28,66 @@ class OrganisationTest extends TestCase {
 		$this->assertSame('datetime', $fieldTypes['created']);
 		$this->assertSame('datetime', $fieldTypes['updated']);
 		$this->assertSame('boolean', $fieldTypes['active']);
-		$this->assertSame('integer', $fieldTypes['storage_quota']);
-		$this->assertSame('integer', $fieldTypes['bandwidth_quota']);
-		$this->assertSame('integer', $fieldTypes['request_quota']);
+		// Field types are keyed by the PROPERTY name, not the column name.
+		// Entity::__call() resolves a setter to lcfirst(substr($method, 3)) and
+		// looks that up in _fieldTypes, so a snake_case registration matches
+		// nothing and the cast silently never runs.
+		$this->assertSame('integer', $fieldTypes['storageQuota']);
+		$this->assertSame('integer', $fieldTypes['bandwidthQuota']);
+		$this->assertSame('integer', $fieldTypes['requestQuota']);
 		$this->assertSame('json', $fieldTypes['authorization']);
 		$this->assertSame('string', $fieldTypes['parent']);
+
+		// Identity facet (consolidated from OpenCatalogi's publisher record).
+		$this->assertSame('string', $fieldTypes['type']);
+		$this->assertSame('string', $fieldTypes['summary']);
+		$this->assertSame('string', $fieldTypes['oin']);
+		$this->assertSame('string', $fieldTypes['tooi']);
+		$this->assertSame('string', $fieldTypes['rsin']);
+		$this->assertSame('string', $fieldTypes['kvk']);
+		$this->assertSame('string', $fieldTypes['pki']);
+		$this->assertSame('string', $fieldTypes['image']);
+
+		// Relationship facet (consolidated from Stackiq's vendor record).
+		$this->assertSame('string', $fieldTypes['registrationStatus']);
+		$this->assertSame('string', $fieldTypes['mergedInto']);
+		$this->assertSame('datetime', $fieldTypes['mergedAt']);
+
+		// Tenant lifecycle timestamps, likewise keyed by property name.
+		$this->assertSame('datetime', $fieldTypes['provisionedAt']);
+		$this->assertSame('datetime', $fieldTypes['suspendedAt']);
+		$this->assertSame('datetime', $fieldTypes['deprovisionedAt']);
+	}
+
+	/**
+	 * A database row must hydrate into the entity.
+	 *
+	 * `_fieldTypes` is keyed by PROPERTY name: Entity::fromRow() maps the column
+	 * `provisioned_at` to the property `provisionedAt` and then looks THAT up to
+	 * decide the cast. While the types were registered under the column names
+	 * the datetime cast was unreachable, so fromRow() assigned the raw string
+	 * straight onto a `?DateTime` typed property and threw a TypeError - every
+	 * read of an organisation row carrying a lifecycle timestamp was a 500.
+	 */
+	public function testFromRowCastsDatetimeColumnsToDateTimeObjects(): void {
+		$organisation = Organisation::fromRow(
+			[
+				'id' => 1,
+				'uuid' => '550e8400-e29b-41d4-a716-446655440000',
+				'provisioned_at' => '2026-01-02 10:00:00',
+				'suspended_at' => '2026-01-03 11:00:00',
+				'deprovisioned_at' => '2026-01-04 12:00:00',
+				'merged_at' => '2026-01-05 13:00:00',
+			]
+		);
+
+		$this->assertInstanceOf(DateTime::class, $organisation->getProvisionedAt());
+		$this->assertInstanceOf(DateTime::class, $organisation->getSuspendedAt());
+		$this->assertInstanceOf(DateTime::class, $organisation->getDeprovisionedAt());
+		$this->assertInstanceOf(DateTime::class, $organisation->getMergedAt());
+
+		$this->assertSame('2026-01-02 10:00:00', $organisation->getProvisionedAt()->format('Y-m-d H:i:s'));
+		$this->assertSame('2026-01-05 13:00:00', $organisation->getMergedAt()->format('Y-m-d H:i:s'));
 	}
 
 	public function testConstructorDefaultValues(): void {

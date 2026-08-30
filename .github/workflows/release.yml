@@ -3,6 +3,13 @@ name: Release
 on:
   push:
     branches: [main, beta, development]
+  # Lets a human force a release without pushing — the shared workflow already
+  # expects this: its skip guard is written `github.event_name != 'push' || …`
+  # precisely so a dispatch is "deliberately never skipped … including of a
+  # commit this guard would refuse". 18 of the 21 fleet apps already declare it;
+  # this repo was one of the three that did not, so the only way to trigger a
+  # release here was to push.
+  workflow_dispatch:
 
 jobs:
   unstable:

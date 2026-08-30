@@ -100,6 +100,16 @@ class FlowRunAdvancer {
 				return $run;
 			}
 
+			// 🔴 THE PIN. Up to here `$flow` is the LIVE definition — which is
+			// correct for authorization (a revoked owner must stop the next
+			// hop) and wrong for the graph. A run parked on a human step for a
+			// week must finish the flow it started, not the one its author has
+			// since edited. So the graph, and only the graph, comes from the
+			// version this run was pinned to at queue time.
+			// The pin itself is enforced inside FlowRunService::execute(), which
+			// every path into the engine goes through. Checking it here as well
+			// would be a second copy of the rule — and the two would drift.
+
 			// A run may legitimately have no subject (a manual or webhook run
 			// seeded from its payload). Only resolve one when the run names it.
 			$subject = null;
@@ -154,4 +164,5 @@ class FlowRunAdvancer {
 		}//end try
 
 	}//end advance()
+
 }//end class

@@ -1,4 +1,4 @@
-import type { SafeParseReturnType } from 'zod'
+import type { ZodSafeParseResult } from 'zod'
 import type { TSchema } from './schema.types'
 
 import { z } from 'zod'
@@ -74,7 +74,7 @@ export class Schema implements TSchema {
 		this.stats = schema.stats
 	}
 
-	public validate(): SafeParseReturnType<TSchema, unknown> {
+	public validate(): ZodSafeParseResult<unknown> {
 		const schema = z.object({
 			id: z.string().min(1),
 			title: z.string().min(1),
@@ -97,7 +97,7 @@ export class Schema implements TSchema {
 				.optional(),
 			hardValidation: z.boolean(),
 			maxDepth: z.number().int().min(0),
-			authorization: z.record(z.array(z.string())).optional(),
+			authorization: z.record(z.string(), z.array(z.string())).optional(),
 		})
 
 		return schema.safeParse(this)

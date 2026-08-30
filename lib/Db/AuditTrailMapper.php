@@ -111,6 +111,9 @@ class AuditTrailMapper extends QBMapper {
 		parent::__construct(db: $db, tableName: 'openregister_audit_trails', entityClass: AuditTrail::class);
 	}//end __construct()
 
+
+
+
 	/**
 	 * Insert an audit-trail entry sealed into the SHA-256 hash chain.
 	 *
@@ -150,6 +153,19 @@ class AuditTrailMapper extends QBMapper {
 		// minutes). verifyChain() skips unsealed rows and carries the last
 		// sealed hash forward, so a tail of them is a smaller claim, never a
 		// false alarm.
+		//
+		// Attribution is applied here as well as in buildAuditTrail(), which
+		// covers the entry points that do NOT build their row there —
+		// createAuditTrailEntry() (archival/retention) and
+		// createToolInvocationEntry() (MCP). Both can be reached from inside a
+		// flow. Re-applying to a row the builder already stamped is idempotent:
+		// it reads the same ambient frame and writes the same three values.
+		//
+		// It must happen before the row is INSERTED, not merely before it is
+		// sealed: the sweep seals whatever is in the row, so a field added
+		// after insert would be outside the hash it is later given.
+		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
+
 		return $this->insert(entity: $auditTrail);
 	}//end insertHashChained()
 
@@ -288,6 +304,14 @@ class AuditTrailMapper extends QBMapper {
 					'ip_address',
 					'version',
 					'created',
+					// Flow attribution. Absent from this allowlist a filter is
+					// not rejected — it is silently DROPPED by the `continue`
+					// below, so `?flow_run=<uuid>` would return the whole
+					// unfiltered audit trail with a 200 and read as a run that
+					// had touched everything on the instance.
+					'flow_run',
+					'flow_node',
+					'flow_step',
 				]
 			) === false
 			) {
@@ -344,6 +368,11 @@ class AuditTrailMapper extends QBMapper {
 					'ip_address',
 					'version',
 					'created',
+					// Sortable for the same reason they are filterable: a run's
+					// writes are read in step order.
+					'flow_run',
+					'flow_node',
+					'flow_step',
 				]
 			) === false
 			) {
@@ -573,6 +602,13 @@ class AuditTrailMapper extends QBMapper {
 		if ($importJobId !== null) {
 			$auditTrail->setImportJobId($importJobId);
 		}
+
+		// Flow attribution — which run, node and step caused this write.
+		// Applied HERE, in the shared builder, and not in the two insert
+		// methods: `insertAuditTrails()` (the batched path) builds its rows
+		// through this same method, and stamping the inserts instead would have
+		// left every bulk write in a flow silently unattributed.
+		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
 
 		// Set the size to the byte size of the serialized object, with a minimum default of 14 bytes.
 		$serializedSize = strlen(serialize($objectEntity->jsonSerialize()));

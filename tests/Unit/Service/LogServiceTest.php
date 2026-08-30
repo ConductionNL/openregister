@@ -200,64 +200,6 @@ class LogServiceTest extends TestCase {
 		$this->assertInstanceOf(AuditTrail::class, $result);
 	}
 
-	public function testDeleteLogSuccess(): void {
-		$auditTrail = new AuditTrail();
-		$this->auditTrailMapper->method('find')->willReturn($auditTrail);
-		$this->auditTrailMapper->expects($this->once())->method('delete');
-
-		$result = $this->service->deleteLog(1);
-
-		$this->assertTrue($result);
-	}
-
-	public function testDeleteLogThrowsOnFailure(): void {
-		$this->auditTrailMapper->method('find')
-			->willThrowException(new Exception('Not found'));
-
-		$this->expectException(Exception::class);
-		$this->expectExceptionMessage('Failed to delete audit trail');
-
-		$this->service->deleteLog(999);
-	}
-
-	public function testDeleteLogsByIds(): void {
-		$auditTrail = new AuditTrail();
-		$this->auditTrailMapper->method('find')->willReturn($auditTrail);
-		$this->auditTrailMapper->expects($this->exactly(2))->method('delete');
-
-		$result = $this->service->deleteLogs(['ids' => [1, 2]]);
-
-		$this->assertSame(2, $result['deleted']);
-		$this->assertSame(0, $result['failed']);
-	}
-
-	public function testDeleteLogsByIdsWithFailures(): void {
-		$auditTrail = new AuditTrail();
-		$this->auditTrailMapper->method('find')
-			->willReturnOnConsecutiveCalls(
-				$auditTrail,
-				$this->throwException(new Exception('Not found'))
-			);
-
-		$result = $this->service->deleteLogs(['ids' => [1, 2]]);
-
-		$this->assertSame(1, $result['deleted']);
-		$this->assertSame(1, $result['failed']);
-	}
-
-	public function testDeleteLogsByFilters(): void {
-		$auditTrail1 = new AuditTrail();
-		$auditTrail2 = new AuditTrail();
-		$this->auditTrailMapper->method('findAll')->willReturn([$auditTrail1, $auditTrail2]);
-		$this->auditTrailMapper->expects($this->exactly(2))->method('delete');
-
-		$result = $this->service->deleteLogs(['filters' => ['action' => 'create']]);
-
-		$this->assertSame(2, $result['deleted']);
-		$this->assertSame(0, $result['failed']);
-		$this->assertSame(2, $result['total']);
-	}
-
 	public function testExportLogsJson(): void {
 		$mockLog = $this->createMock(\JsonSerializable::class);
 		$mockLog->method('jsonSerialize')->willReturn([

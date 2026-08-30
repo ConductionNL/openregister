@@ -65,6 +65,25 @@ final class FlowNodeResumeState {
 	}//end __construct()
 
 	/**
+	 * Which node this slot belongs to.
+	 *
+	 * A node is handed its own slot but was never told its own NAME, which is
+	 * fine while the only thing it does with the slot is read and write it.
+	 * It stops being fine as soon as a node has to hand its identity to
+	 * something OUTSIDE the run — a task record that must later resume this
+	 * exact node, for instance. A run accumulates one awaiting slot per node,
+	 * so "resume this run" is not an answer: the resumer has to name the node,
+	 * and it can only do that if the node could name itself.
+	 *
+	 * @return string This node's id within the flow graph.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
+	 */
+	public function nodeId(): string {
+		return $this->nodeId;
+	}//end nodeId()
+
+	/**
 	 * Whether this node has progress stored from an earlier pass.
 	 *
 	 * The question a resumed node should ask INSTEAD of `$context['resuming']`.

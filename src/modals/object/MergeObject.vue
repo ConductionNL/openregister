@@ -13,14 +13,16 @@ import {
 		<!-- Register and Schema Information -->
 		<div class="detail-grid">
 			<div class="detail-item">
-				<span class="detail-label">Register:</span>
+				<span class="detail-label">{{
+					t('openregister', 'Register:')
+				}}</span>
 				<span class="detail-value">{{
 					registerStore.registerItem?.title
 					|| registerStore.registerItem?.id
 				}}</span>
 			</div>
 			<div class="detail-item">
-				<span class="detail-label">Schema:</span>
+				<span class="detail-label">{{ t('openregister', 'Schema:') }}</span>
 				<span class="detail-value">{{
 					schemaStore.schemaItem?.title || schemaStore.schemaItem?.id
 				}}</span>
@@ -91,7 +93,9 @@ import {
 				</div>
 			</div>
 
-			<NcEmptyContent v-else-if="!loading" name="No objects found">
+			<NcEmptyContent
+				v-else-if="!loading"
+				:name="t('openregister', 'No objects found')">
 				<template #description>
 					{{
 						searchTerm

@@ -6,9 +6,9 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 <template>
 	<NcDialog name="Delete Organisation" size="normal" :canClose="false">
 		<p v-if="!success && canDelete">
-			Are you sure you want to permanently delete
+			{{ t('openregister', 'Are you sure you want to permanently delete') }}
 			<b>{{ organisationStore.organisationItem?.name }}</b
-			>? This action cannot be undone.
+			>? {{ t('openregister', 'This action cannot be undone.') }}
 		</p>
 		<p
 			v-if="
@@ -34,7 +34,10 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 		</p>
 
 		<NcNoteCard v-if="!success && canDelete" type="warning">
-			<p><strong>Warning:</strong> This will permanently delete:</p>
+			<p>
+				<strong>{{ t('openregister', 'Warning:') }}</strong>
+				{{ t('openregister', 'This will permanently delete:') }}
+			</p>
 			<ul>
 				<li>The organisation and all its metadata</li>
 				<li>

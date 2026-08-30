@@ -885,6 +885,39 @@ class ImportHandler {
 					return $existingRegister;
 				}
 
+				// NEVER DROP A SCHEMA LINK THIS IMPORT COULD NOT RE-ESTABLISH.
+				//
+				// The caller builds `$data['schemas']` purely from `schemasMap`,
+				// which holds only the schemas THIS run processed — the schema
+				// pass does `if ($schema === null) { continue; }` before
+				// populating it, so a schema that already existed and was skipped
+				// or rejected never enters the map. The id list arriving here is
+				// then missing it, and this update REPLACES the register's list,
+				// unlinking a schema the register still owns.
+				//
+				// Nothing fails when that happens. The schema keeps its table and
+				// its rows; the register simply stops listing it. Every
+				// register-scoped read then returns an empty collection for data
+				// that is present — indistinguishable from a working-but-empty
+				// install, which is exactly how #2935 presented: 60 of dossiq's
+				// schemas unlinked, 11 of them holding rows, reported as "the
+				// config import silently writes zero objects".
+				//
+				// Union rather than replace: a link this run can prove stays, and
+				// a link it merely cannot see is left alone. The failure direction
+				// becomes a STALE link, which `occ
+				// openregister:registers:relink-schemas` already reports and
+				// repairs; the opposite direction loses reachable data with no
+				// error anywhere.
+				if (isset($data['schemas']) === true && is_array($data['schemas']) === true) {
+					$existingSchemaIds = $existingRegister->getSchemas();
+					if (is_array($existingSchemaIds) === true && $existingSchemaIds !== []) {
+						$data['schemas'] = array_values(
+							array_unique(array_merge($existingSchemaIds, $data['schemas']))
+						);
+					}
+				}
+
 				// Update existing register.
 				$existingRegister = $this->registerMapper->updateFromArray(id: $existingRegister->getId(), object: $data);
 				if ($owner !== null) {

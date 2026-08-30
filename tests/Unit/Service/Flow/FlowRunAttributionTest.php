@@ -48,6 +48,8 @@ use Psr\Log\LoggerInterface;
  * tests pin the behaviour at the one place they all pass through.
  */
 class FlowRunAttributionTest extends TestCase {
+	use PublishedVersionDouble;
+
 	/**
 	 * Build the service with a flow the mapper will return.
 	 *
@@ -76,11 +78,19 @@ class FlowRunAttributionTest extends TestCase {
 			$delegation->method('verdictFor')->willReturn($verdict);
 		}
 
+		$versions = $this->publishedVersionMapper();
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			function (string $id) use ($flowMapper, $activeOrg, $delegation): object {
+			function (string $id) use ($flowMapper, $activeOrg, $delegation, $versions): object {
 				if ($id === 'OCA\OpenRegister\Db\FlowMapper') {
 					return $flowMapper;
+				}
+
+				// Version 1 is live. These fixtures are about ATTRIBUTION, so
+				// they must reach the attribution code rather than stopping at
+				// the unpublished-flow refusal that now precedes it.
+				if ($id === \OCA\OpenRegister\Db\FlowVersionMapper::class) {
+					return $versions;
 				}
 
 				if ($id === DelegationService::class && $delegation !== null) {

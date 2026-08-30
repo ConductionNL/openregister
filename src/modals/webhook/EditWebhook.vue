@@ -33,9 +33,7 @@
 
 						<NcTextField
 							:label="t('openregister', 'URL') + ' *'"
-							:placeholder="
-								t('openregister', 'https://example.com/webhook')
-							"
+							placeholder="https://example.com/webhook"
 							:modelValue="webhookItem?.url || ''"
 							type="url"
 							:error="!webhookItem?.url?.trim?.()"
@@ -617,17 +615,14 @@ export default {
 		 * @spec exclude UI display helper — placeholder text for the headers field.
 		 */
 		headersPlaceholder() {
-			return this.t(
-				'openregister',
-				'X-Custom-Header: value\nAuthorization: Bearer token',
-			)
+			return 'X-Custom-Header: value\nAuthorization: Bearer token'
 		},
 
 		/**
 		 * @spec exclude UI display helper — placeholder text for the filters field.
 		 */
 		filtersPlaceholder() {
-			return this.t('openregister', 'objectType: object\naction: created')
+			return 'objectType: object\naction: created'
 		},
 
 		/**
@@ -1143,7 +1138,7 @@ export default {
 	color: var(--color-text-maxcontrast);
 	max-width: 100%;
 	white-space: normal;
-	word-break: break-word;
+	overflow-wrap: break-word;
 }
 
 .option-meta {
