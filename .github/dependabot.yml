@@ -6,6 +6,32 @@ updates:
       interval: "weekly"
     target-branch: "development"
     open-pull-requests-limit: 10
+    # HELD BACK DELIBERATELY, not out of caution. Each of these is blocked by a
+    # package we do not control, and dependabot cannot see that, so it proposes
+    # them on every run and each one takes `npm ci` or `npm run build` from
+    # green to red with no code change that can fix it.
+    #
+    # typescript 7:  typescript-eslint hard-throws on TS >= 7 (a `versionMajor
+    #                >= 7` guard in its dist/index.js) and every published
+    #                version still peers `typescript: ">=4.8.4 <6.1.0"`.
+    # webpack-cli 7: @nextcloud/webpack-vue-config 7.0.4, the latest, peers
+    #                `webpack-cli: ^6.0.1`.
+    # @babel/core 8: the same package peers `@babel/core: ^7.22.9`, and
+    #                preset-env 8 requires core 8, so the pair moves together
+    #                or not at all.
+    #
+    # Lift each the moment its blocker ships support. These are compatibility
+    # limits, not security ones: `npm audit` reports no advisory against any of
+    # the versions pinned here.
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "webpack-cli"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@babel/core"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@babel/preset-env"
+        update-types: ["version-update:semver-major"]
     cooldown:
       default-days: 1
       include:
