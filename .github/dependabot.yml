@@ -26,6 +26,13 @@ updates:
     ignore:
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
+      # vue-router 5 peers `vite: ^7.3.0 || ^8.0.0` and expects a Vite
+      # toolchain. These apps build with webpack, which cannot resolve it at
+      # all: the build dies on `Can't resolve 'vue-router'`. Adopting it is a
+      # Vite migration, not a bump. versioniq is already on Vite and is the
+      # natural pilot.
+      - dependency-name: "vue-router"
+        update-types: ["version-update:semver-major"]
       - dependency-name: "webpack-cli"
         update-types: ["version-update:semver-major"]
       - dependency-name: "@babel/core"
