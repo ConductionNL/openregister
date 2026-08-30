@@ -128,7 +128,7 @@
 		"twig/twig": "^3.27.0",
 		"web-token/jwt-library": "^4.1.9",
 		"webonyx/graphql-php": "^15.0",
-		"zbateson/mail-mime-parser": "^3.0"
+		"zbateson/mail-mime-parser": "^4.0"
 	},
 	"require-dev": {
 		"conduction/coding-standard": "^1.0",
