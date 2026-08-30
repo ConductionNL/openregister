@@ -145,7 +145,7 @@
 		"roave/security-advisories": "dev-latest",
 		"sabre/vobject": "^4.5",
 		"sabre/xml": "^2.2",
-		"squizlabs/php_codesniffer": "^3.9",
+		"squizlabs/php_codesniffer": "^4.0",
 		"vimeo/psalm": "^5.26"
 	},
 	"config": {
