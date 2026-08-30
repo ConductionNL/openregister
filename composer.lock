@@ -3513,20 +3513,20 @@
         },
         {
             "name": "spomky-labs/pki-framework",
-            "version": "1.6.0",
+            "version": "1.6.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Spomky-Labs/pki-framework.git",
-                "reference": "80778a25426288acd2e3a7cde2def41a3d59cddf"
+                "reference": "5d630ec371652229ad568337519f16e539e5f79d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Spomky-Labs/pki-framework/zipball/80778a25426288acd2e3a7cde2def41a3d59cddf",
-                "reference": "80778a25426288acd2e3a7cde2def41a3d59cddf",
+                "url": "https://api.github.com/repos/Spomky-Labs/pki-framework/zipball/5d630ec371652229ad568337519f16e539e5f79d",
+                "reference": "5d630ec371652229ad568337519f16e539e5f79d",
                 "shasum": ""
             },
             "require": {
-                "brick/math": "^0.10|^0.11|^0.12|^0.13|^0.14|^0.15|^0.16|^0.17|^0.18|^0.19",
+                "brick/math": "^0.10|^0.11|^0.12|^0.13|^0.14|^0.15|^0.16|^0.17|^0.18|^0.19|^0.20",
                 "ext-mbstring": "*",
                 "php": ">=8.1"
             },
@@ -3606,7 +3606,7 @@
             ],
             "support": {
                 "issues": "https://github.com/Spomky-Labs/pki-framework/issues",
-                "source": "https://github.com/Spomky-Labs/pki-framework/tree/1.6.0"
+                "source": "https://github.com/Spomky-Labs/pki-framework/tree/1.6.1"
             },
             "funding": [
                 {
@@ -3618,7 +3618,7 @@
                     "type": "patreon"
                 }
             ],
-            "time": "2026-08-06T16:21:11+00:00"
+            "time": "2026-08-30T13:53:49+00:00"
         },
         {
             "name": "symfony/console",
@@ -6002,23 +6002,24 @@
         },
         {
             "name": "web-token/jwt-library",
-            "version": "4.1.9",
+            "version": "4.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/web-token/jwt-library.git",
-                "reference": "cbd52c8e96b835498f0f9c3a70a94d9f0e9e6c69"
+                "reference": "43f7c7dd6799e3bfeb05276af180be3f9362759e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/web-token/jwt-library/zipball/cbd52c8e96b835498f0f9c3a70a94d9f0e9e6c69",
-                "reference": "cbd52c8e96b835498f0f9c3a70a94d9f0e9e6c69",
+                "url": "https://api.github.com/repos/web-token/jwt-library/zipball/43f7c7dd6799e3bfeb05276af180be3f9362759e",
+                "reference": "43f7c7dd6799e3bfeb05276af180be3f9362759e",
                 "shasum": ""
             },
             "require": {
                 "brick/math": "^0.12|^0.13|^0.14|^0.15|^0.16|^0.17|^0.18|^0.19",
                 "php": ">=8.2",
                 "psr/clock": "^1.0",
-                "spomky-labs/pki-framework": "^1.2.1"
+                "spomky-labs/pki-framework": "^1.2.1",
+                "symfony/deprecation-contracts": "^2.5|^3.0"
             },
             "conflict": {
                 "spomky-labs/jose": "*"
@@ -6075,7 +6076,7 @@
             ],
             "support": {
                 "issues": "https://github.com/web-token/jwt-library/issues",
-                "source": "https://github.com/web-token/jwt-library/tree/4.1.9"
+                "source": "https://github.com/web-token/jwt-library/tree/4.2.1"
             },
             "funding": [
                 {
@@ -6087,7 +6088,7 @@
                     "type": "patreon"
                 }
             ],
-            "time": "2026-08-26T09:47:42+00:00"
+            "time": "2026-08-28T12:44:34+00:00"
         },
         {
             "name": "webonyx/graphql-php",
