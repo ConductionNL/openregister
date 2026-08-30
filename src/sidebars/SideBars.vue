@@ -8,23 +8,24 @@
 	<AuditTrailSideBar v-else-if="$route.path.startsWith('/audit-trails')" />
 	<SearchTrailSideBar v-else-if="$route.path.startsWith('/search-trails')" />
 	<!--
-		The flow canvas's controls — step palette, Save, Run, run history.
+		The flow canvas's controls are NOT listed here. They are declared on the
+		manifest page as `sidebarComponent: FlowDetailSidebar`, and #3103 made
+		CnAppRoot hand that component to this app through the #sidebar slot
+		prop, so App.vue renders it directly.
 
-		These are declared on the manifest page as `sidebarComponent:
-		FlowDetailSidebar`, and CnAppRoot does resolve that key. It could never
-		render here, though: CnAppRoot only falls back to it as the DEFAULT
-		content of its #sidebar slot, and this app fills that slot itself, so
-		consumer content wins by Vue's ordinary slot mechanic. The manifest key
-		was live config that rendered nothing.
+		A hardcoded <FlowDetailSidebar> used to sit here as a workaround from
+		when the manifest key rendered nothing. Once #3103 made the manifest
+		route work, BOTH rendered, and the e2e caught it exactly as it should:
 
-		The symptom was a flow page with no way to save, run, or add a step —
-		while its own empty state said "Add a step from the sidebar".
+		  strict mode violation: locator('.cn-flow-sidebar') resolved to 2 elements
+
+		The manifest is the single source of truth for a page's sidebar. Adding
+		a route here for a page that declares `sidebarComponent` will duplicate
+		it again.
 	-->
-	<FlowDetailSidebar v-else-if="/^\/flows\/.+/.test($route.path)" />
 </template>
 
 <script>
-import FlowDetailSidebar from '../views/flows/FlowDetailSidebar.vue'
 import DashboardSideBar from './dashboard/DashboardSideBar.vue'
 import DeletedSideBar from './deleted/DeletedSideBar.vue'
 import EntitiesSideBar from './entities/EntitiesSideBar.vue'
@@ -45,7 +46,6 @@ export default {
 		EntitiesSideBar,
 		AuditTrailSideBar,
 		SearchTrailSideBar,
-		FlowDetailSidebar,
 	},
 }
 </script>
