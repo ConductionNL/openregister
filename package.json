@@ -75,7 +75,7 @@
     "@nextcloud/vue": "^9.9.0",
     "@vueuse/core": "^14.3.0",
     "apexcharts": "^7.0.0",
-    "css-loader": "^7.1.1",
+    "css-loader": "^7.1.5",
     "dexie": "^4.4.5",
     "dompurify": "^3.4.14",
     "gridstack": "^13.2.0",
