@@ -441,6 +441,66 @@ class OrganisationMapper extends QBMapper {
 	 */
 
 	/**
+	 * Find organisations that are tenants OF THIS INSTALLATION.
+	 *
+	 * A named method rather than one more filter every caller must remember,
+	 * because forgetting it is destructive: the tenant background jobs select on
+	 * `status` alone and TenantPurgeJob PERMANENTLY DELETES what it selects, so
+	 * a federated counterparty that happens to be archived would be deleted as
+	 * though it were a spent tenant. The name is the guarantee, and it is
+	 * greppable.
+	 *
+	 * 🔴 A NULL counts as a tenant. `is_local_tenant` was added by migration and
+	 * every row written before it holds NULL, so a plain `= true` would make
+	 * every pre-existing tenant invisible to all three jobs at once — tenants
+	 * would stop being deprovisioned, purged and metered, and nothing would
+	 * report it. Only a row explicitly marked false is excluded.
+	 *
+	 * @param int   $limit   Maximum number of results.
+	 * @param int   $offset  Number of results to skip.
+	 * @param array $filters Column => value equality filters.
+	 *
+	 * @return Organisation[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
+	 *
+	 * @spec openspec/changes/organisation-as-federated-counterparty/specs/organisation-tenancy-scope/spec.md
+	 */
+	public function findLocalTenants(int $limit = 50, int $offset = 0, ?array $filters = []): array {
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('*')
+			->from($this->getTableName())
+			->orderBy('name', 'ASC')
+			->setMaxResults($limit)
+			->setFirstResult($offset);
+
+		$qb->andWhere(
+			$qb->expr()->orX(
+				$qb->expr()->isNull('is_local_tenant'),
+				$qb->expr()->eq('is_local_tenant', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL))
+			)
+		);
+
+		foreach ($filters ?? [] as $filter => $value) {
+			if ($value === 'IS NOT NULL') {
+				$qb->andWhere($qb->expr()->isNotNull($filter));
+				continue;
+			}
+
+			if ($value === 'IS NULL') {
+				$qb->andWhere($qb->expr()->isNull($filter));
+				continue;
+			}
+
+			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+		}
+
+		return $this->findEntities(query: $qb);
+
+	}//end findLocalTenants()
+
+	/**
 	 * Find all organisations with pagination and optional column filters
 	 *
 	 * The `$filters` parameter is NOT optional sugar: three tenant-lifecycle
