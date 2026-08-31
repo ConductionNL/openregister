@@ -2,13 +2,13 @@
 
 ## 1. Storage
 
-- [ ] 1.1 Migration creating `openregister_tasks`,
+- [x] 1.1 Migration creating `openregister_tasks`,
       `openregister_task_candidates`, `openregister_task_relations` and
       `openregister_task_audit` with the columns and indexes in design.md —
       Data model. Additive only: no existing table altered, no data
       backfilled. Verify `openregister_tasks` has NO `overdue`,
       `days_until_due` or `days_overdue` column.
-- [ ] 1.2 Entities + mappers under `lib/Db/`: `Task`/`TaskMapper`,
+- [x] 1.2 Entities + mappers under `lib/Db/`: `Task`/`TaskMapper`,
       `TaskCandidate`/`TaskCandidateMapper`,
       `TaskRelation`/`TaskRelationMapper`, `TaskAudit`/`TaskAuditMapper`.
       Follow `lib/Db/FlowRun.php` conventions (docblock `@method` block,
