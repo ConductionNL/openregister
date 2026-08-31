@@ -82,7 +82,10 @@ class TenantUsageSyncJob extends TimedJob {
 		$this->logger->debug('[TenantUsageSyncJob] Starting usage sync');
 
 		try {
-			$organisations = $this->organisationMapper->findAll(
+			// Tenant-scoped read, not findAll: a federated counterparty is an
+			// organisation in this table but NOT a tenant of this installation, and
+			// selecting on status alone would sweep it up with the tenants.
+			$organisations = $this->organisationMapper->findLocalTenants(
 				filters: ['status' => TenantLifecycleService::STATUS_ACTIVE]
 			);
 		} catch (\Exception $e) {
