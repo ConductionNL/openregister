@@ -38,15 +38,6 @@
       <code><![CDATA[array]]></code>
     </LessSpecificImplementedReturnType>
   </file>
-  <file src="lib/Controller/ArchivalController.php">
-    <UndefinedMethod>
-      <code><![CDATA[findByUuid]]></code>
-      <code><![CDATA[findByUuid]]></code>
-      <code><![CDATA[findByUuid]]></code>
-      <code><![CDATA[findByUuid]]></code>
-      <code><![CDATA[findByUuid]]></code>
-    </UndefinedMethod>
-  </file>
   <file src="lib/Controller/GraphQLController.php">
     <UndefinedClass>
       <code><![CDATA[$this->csrfManager]]></code>
@@ -131,11 +122,6 @@
   <file src="lib/Service/ActionExecutor.php">
     <UndefinedMethod>
       <code><![CDATA[getModifiedData]]></code>
-    </UndefinedMethod>
-  </file>
-  <file src="lib/Service/Archival/DestructionService.php">
-    <UndefinedMethod>
-      <code><![CDATA[findByUuid]]></code>
     </UndefinedMethod>
   </file>
   <file src="lib/Service/AuthorizationService.php">
@@ -305,11 +291,6 @@
     <UnusedParam>
       <code><![CDATA[$schemaType]]></code>
     </UnusedParam>
-  </file>
-  <file src="lib/Service/ObjectService.php">
-    <InvalidThrow>
-      <code><![CDATA[\OCP\AppFramework\Http\ContentSecurityPolicy]]></code>
-    </InvalidThrow>
   </file>
   <file src="lib/Service/ObjectSource/DbalObjectSourceProvider.php">
     <TooManyArguments>
