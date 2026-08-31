@@ -327,4 +327,75 @@ class DecisionTableEvaluatorTest extends TestCase {
 
 	}//end testNoMatchIsAnError()
 
+	/**
+	 * A `bool` column matches a real boolean.
+	 *
+	 * This is the one alias that changes an answer rather than a spelling.
+	 * Without the map `bool` falls back to `string`, PHP `true` is coerced to
+	 * `"1"`, and a cell reading `true` silently stops matching.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/shared-decision-table-evaluator/specs/shared-decision-tables/spec.md
+	 */
+	public function testABoolColumnMatchesARealBoolean(): void {
+		$table = [
+			'hitPolicy' => 'FIRST',
+			'inputs' => [['name' => 'consented', 'type' => 'bool']],
+			'outputs' => [['name' => 'decision', 'type' => 'string']],
+			'rules' => [['id' => 'yes', 'inputEntries' => ['true'], 'outputEntries' => ['proceed']]],
+		];
+
+		$result = $this->evaluator()->evaluate($table, ['consented' => true]);
+
+		$this->assertSame('proceed', $result['outputs']['decision']);
+
+	}//end testABoolColumnMatchesARealBoolean()
+
+	/**
+	 * Every numeric spelling in fleet use maps onto `number`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/shared-decision-table-evaluator/specs/shared-decision-tables/spec.md
+	 */
+	public function testEveryNumericAliasIsTreatedAsANumber(): void {
+		foreach (['int', 'integer', 'long', 'float', 'double', 'decimal', 'INTEGER'] as $declared) {
+			$table = [
+				'hitPolicy' => 'FIRST',
+				'inputs' => [['name' => 'score', 'type' => $declared]],
+				'outputs' => [['name' => 'band', 'type' => 'string']],
+				'rules' => [['id' => 'high', 'inputEntries' => ['>=600'], 'outputEntries' => ['ok']]],
+			];
+
+			$result = $this->evaluator()->evaluate($table, ['score' => 700]);
+
+			$this->assertSame('ok', $result['outputs']['band'], 'type ' . $declared . ' should compare numerically');
+		}
+
+	}//end testEveryNumericAliasIsTreatedAsANumber()
+
+	/**
+	 * A type in neither vocabulary still falls back to `string`.
+	 *
+	 * The alias map is additive; it must not turn an unknown type into an error.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/shared-decision-table-evaluator/specs/shared-decision-tables/spec.md
+	 */
+	public function testAnUnrecognisedTypeStillFallsBackToString(): void {
+		$table = [
+			'hitPolicy' => 'FIRST',
+			'inputs' => [['name' => 'severity', 'type' => 'wingdings']],
+			'outputs' => [['name' => 'intervention', 'type' => 'string']],
+			'rules' => [['id' => 'a', 'inputEntries' => ['gering'], 'outputEntries' => ['brief']]],
+		];
+
+		$result = $this->evaluator()->evaluate($table, ['severity' => 'gering']);
+
+		$this->assertSame('brief', $result['outputs']['intervention']);
+
+	}//end testAnUnrecognisedTypeStillFallsBackToString()
+
 }//end class

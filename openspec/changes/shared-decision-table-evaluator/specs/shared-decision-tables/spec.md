@@ -89,3 +89,35 @@ belongs on this engine rather than in a bespoke matrix service.
 - **GIVEN** a table over severity, behaviour and actorType
 - **WHEN** evaluated with a triple matching exactly one rule
 - **THEN** that rule's intervention is returned with its id
+
+### Requirement: REQ-SDT-005 A declared type is aliased onto the evaluator's own vocabulary
+
+Decision tables in the fleet were authored against two type vocabularies. openbuild's shipped
+credit-approval table declares `integer`; this evaluator's own vocabulary is
+`string | number | boolean | date`, and an unrecognised type falls back to `string`.
+
+Measured, that fallback is harmless for numbers and dates: the unary-test grammar parses its operand
+and compares numerically, so `>=18` against 25 matches whether the column was called `number` or
+`string`, and ISO dates compare correctly either way. It is NOT harmless for booleans. A real PHP
+`true` coerced to a string becomes `"1"`, which does not match a cell reading `true`, so a column
+declaring `bool` rather than `boolean` silently stops matching.
+
+The evaluator SHALL map the common spellings of its types onto them. The boolean alias closes the
+silent mismatch above; the numeric and date aliases align the vocabularies so a table means the same
+thing in either dialect, and are defensive rather than corrective.
+
+#### Scenario: A `bool` column matches a real boolean
+
+- **GIVEN** an input column declaring `bool` and the value `true`
+- **WHEN** it is evaluated against a cell reading `true`
+- **THEN** the rule matches, where before the value was stringified to `"1"` and did not
+
+#### Scenario: The alias set covers the spellings actually in use
+
+- **GIVEN** columns declaring `int`, `integer`, `long`, `float`, `double` or `decimal`
+- **THEN** each is evaluated as `number`
+
+#### Scenario: An unrecognised type still falls back to string
+
+- **GIVEN** a column declaring a type in neither vocabulary
+- **THEN** it is evaluated as `string`, as before this change
