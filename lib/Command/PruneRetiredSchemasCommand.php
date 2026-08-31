@@ -68,6 +68,8 @@ class PruneRetiredSchemasCommand extends Command {
 	 * @param SchemaDeletionService $deletionService Cascade teardown (objects, tables, row).
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
@@ -82,6 +84,8 @@ class PruneRetiredSchemasCommand extends Command {
 	 * Define command name, description, and options.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:schemas:prune-retired')
@@ -129,6 +133,8 @@ class PruneRetiredSchemasCommand extends Command {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$appId = (string)$input->getOption('app');
@@ -299,6 +305,8 @@ class PruneRetiredSchemasCommand extends Command {
 	 * @param Schema $schema The schema to count objects for.
 	 *
 	 * @return int Total object count across the schema's magic tables.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
 	 */
 	private function countObjectsForSchema(Schema $schema): int {
 		$total = 0;
@@ -330,6 +338,8 @@ class PruneRetiredSchemasCommand extends Command {
 	 * @param int $schemaId The schema id to look for.
 	 *
 	 * @return Register[] The referencing registers.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
 	 */
 	private function registersReferencing(int $schemaId): array {
 		$matches = [];
