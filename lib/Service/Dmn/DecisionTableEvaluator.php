@@ -56,6 +56,42 @@ class DecisionTableEvaluator {
 	private const IMPLEMENTED_HIT_POLICIES = ['UNIQUE', 'FIRST', 'COLLECT', 'PRIORITY', 'ANY'];
 
 	/**
+	 * Common spellings of the declared column types, mapped onto this
+	 * evaluator's own vocabulary.
+	 *
+	 * The fleet's tables were authored against two different vocabularies:
+	 * openbuild's shipped credit-approval table declares `integer` for
+	 * `applicantAge`, which is not one of {@see UnaryTestEvaluator::VALID_TYPES},
+	 * so it falls back to `string`.
+	 *
+	 * Measured, that fallback costs nothing for numbers or dates — the unary-test
+	 * grammar parses its operand and compares numerically, so `>=18` against 25
+	 * matches under either type, and ISO dates compare correctly as strings. The
+	 * numeric and date aliases below are therefore alignment, not a bug fix.
+	 *
+	 * The boolean alias IS a bug fix: a real PHP `true` coerced to a string
+	 * becomes `"1"`, which does not match a cell reading `true`, so a column
+	 * declaring `bool` rather than `boolean` silently stops matching. That is the
+	 * one case where the fallback changes the answer instead of the spelling.
+	 *
+	 * Aliasing is additive: a type this map does not know still falls back to
+	 * `string` exactly as before.
+	 *
+	 * @var array<string, string>
+	 */
+	private const TYPE_ALIASES = [
+		'int'       => 'number',
+		'integer'   => 'number',
+		'long'      => 'number',
+		'float'     => 'number',
+		'double'    => 'number',
+		'decimal'   => 'number',
+		'bool'      => 'boolean',
+		'datetime'  => 'date',
+		'timestamp' => 'date',
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * The evaluator is a pure, stateless collaborator; the default keeps the
@@ -384,7 +420,8 @@ class DecisionTableEvaluator {
 				continue;
 			}
 
-			$type = (string)($field['type'] ?? 'string');
+			$type = strtolower((string)($field['type'] ?? 'string'));
+			$type = (self::TYPE_ALIASES[$type] ?? $type);
 			if (in_array($type, UnaryTestEvaluator::VALID_TYPES, true) === false) {
 				$type = 'string';
 			}
