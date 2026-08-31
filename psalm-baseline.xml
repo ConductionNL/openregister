@@ -168,18 +168,7 @@
       <code><![CDATA[CalDavBackend]]></code>
     </UndefinedClass>
   </file>
-  <file src="lib/Service/Chat/ConversationManagementHandler.php">
-    <UndefinedPropertyAssignment>
-      <code><![CDATA[$config->temperature]]></code>
-      <code><![CDATA[$config->temperature]]></code>
-    </UndefinedPropertyAssignment>
-  </file>
   <file src="lib/Service/Chat/ResponseGenerationHandler.php">
-    <UndefinedPropertyAssignment>
-      <code><![CDATA[$config->organizationId]]></code>
-      <code><![CDATA[$config->temperature]]></code>
-      <code><![CDATA[$config->temperature]]></code>
-    </UndefinedPropertyAssignment>
     <UnusedMethodCall>
       <code><![CDATA[setAccessible]]></code>
     </UnusedMethodCall>
