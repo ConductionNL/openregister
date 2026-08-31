@@ -505,7 +505,7 @@ class DestructionService {
 	 */
 	private function extendArchiveActionDate(string $uuid, string $extensionPeriod, string $reason): void {
 		try {
-			$object = $this->objectMapper->findByUuid($uuid);
+			$object = $this->objectMapper->find($uuid);
 			$retention = $object->getRetention() ?? [];
 
 			$currentDate = $retention['archiefactiedatum'] ?? null;

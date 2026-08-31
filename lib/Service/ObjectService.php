@@ -2519,7 +2519,8 @@ class ObjectService implements ObjectServiceInterface
      *
      * @return void
      *
-     * @throws \OCP\AppFramework\Http\ContentSecurityPolicy
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the object has been
+     *         transferred to e-Depot and is therefore read-only.
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
