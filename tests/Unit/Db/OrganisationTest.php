@@ -614,4 +614,60 @@ class OrganisationTest extends TestCase {
 		$result2 = (string)$this->organisation;
 		$this->assertSame($result1, $result2);
 	}
+
+	/**
+	 * The chain-partner fields register their types under the PROPERTY name.
+	 *
+	 * Entity::__call() resolves a setter to lcfirst(substr($method, 3)) and
+	 * looks THAT up in _fieldTypes, so registering a snake_case column name
+	 * matches nothing and the cast silently never runs — qualityScore would
+	 * come back from the database as a string.
+	 *
+	 * @return void
+	 */
+	public function testChainPartnerFieldTypesAreRegistered(): void {
+		$fieldTypes = $this->organisation->getFieldTypes();
+
+		$this->assertSame('string', $fieldTypes['contactEmail']);
+		$this->assertSame('string', $fieldTypes['defaultPermissionLevel']);
+		$this->assertSame('integer', $fieldTypes['qualityScore']);
+		$this->assertSame('string', $fieldTypes['qualityStatus']);
+	}
+
+	/**
+	 * An unscored partner serialises as null, never as zero.
+	 *
+	 * A zero reads as "scored badly", which is a different claim from "never
+	 * assessed", and a chain-partner dashboard cannot tell them apart after
+	 * the fact.
+	 *
+	 * @return void
+	 */
+	public function testAnUnscoredPartnerSerialisesAsNullNotZero(): void {
+		$serialised = $this->organisation->jsonSerialize();
+
+		$this->assertNull($serialised['qualityScore']);
+		$this->assertNull($serialised['qualityStatus']);
+		$this->assertNull($serialised['contactEmail']);
+		$this->assertNull($serialised['defaultPermissionLevel']);
+	}
+
+	/**
+	 * The chain-partner fields round-trip through jsonSerialize.
+	 *
+	 * @return void
+	 */
+	public function testChainPartnerFieldsRoundTrip(): void {
+		$this->organisation->setContactEmail('post@gemeente.nl');
+		$this->organisation->setDefaultPermissionLevel('read');
+		$this->organisation->setQualityScore(72);
+		$this->organisation->setQualityStatus('adequate');
+
+		$serialised = $this->organisation->jsonSerialize();
+
+		$this->assertSame('post@gemeente.nl', $serialised['contactEmail']);
+		$this->assertSame('read', $serialised['defaultPermissionLevel']);
+		$this->assertSame(72, $serialised['qualityScore']);
+		$this->assertSame('adequate', $serialised['qualityStatus']);
+	}
 }
