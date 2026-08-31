@@ -1110,7 +1110,6 @@ class Application extends App implements IBootstrap {
 					searchTrailMapper: $container->get(SearchTrailMapper::class),
 					userManager: $container->get('OCP\IUserManager'),
 					db: $container->get('OCP\IDBConnection'),
-					setupHandler: null,
 					objectCacheService: null,
 					container: $container,
 					appName: 'openregister',

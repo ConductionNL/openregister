@@ -110,9 +110,6 @@
       <code><![CDATA[$this->id]]></code>
       <code><![CDATA['unknown']]></code>
     </RedundantPropertyInitializationCheck>
-    <UndefinedClass>
-      <code><![CDATA[Exception]]></code>
-    </UndefinedClass>
   </file>
   <file src="lib/Db/Schema.php">
     <RedundantPropertyInitializationCheck>
@@ -357,12 +354,6 @@
     <UnusedParam>
       <code><![CDATA[$hasOtherChange]]></code>
     </UnusedParam>
-  </file>
-  <file src="lib/Service/SettingsService.php">
-    <UndefinedClass>
-      <code><![CDATA[?SetupHandler]]></code>
-      <code><![CDATA[SetupHandler|null]]></code>
-    </UndefinedClass>
   </file>
   <file src="lib/Service/TaskService.php">
     <UndefinedClass>
