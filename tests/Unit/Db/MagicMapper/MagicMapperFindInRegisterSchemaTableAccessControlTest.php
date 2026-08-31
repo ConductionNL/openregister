@@ -223,7 +223,7 @@ class MagicMapperFindInRegisterSchemaTableAccessControlTest extends TestCase {
 				_multitenancy: true
 			);
 			$this->fail('empty DB result should have raised DoesNotExistException');
-		} catch (DoesNotExistException $e) {
+		} catch (DoesNotExistException) {
 			// Expected — assertion is about the seam call, not the return.
 		}
 
@@ -250,7 +250,7 @@ class MagicMapperFindInRegisterSchemaTableAccessControlTest extends TestCase {
 				_multitenancy: true
 			);
 			$this->fail('empty DB result should have raised DoesNotExistException');
-		} catch (DoesNotExistException $e) {
+		} catch (DoesNotExistException) {
 			// Expected.
 		}
 
@@ -277,7 +277,7 @@ class MagicMapperFindInRegisterSchemaTableAccessControlTest extends TestCase {
 				_multitenancy: false
 			);
 			$this->fail('empty DB result should have raised DoesNotExistException');
-		} catch (DoesNotExistException $e) {
+		} catch (DoesNotExistException) {
 			// Expected.
 		}
 
@@ -299,7 +299,7 @@ class MagicMapperFindInRegisterSchemaTableAccessControlTest extends TestCase {
 				schema: $this->makeSchema(id: 5)
 			);
 			$this->fail('empty DB result should have raised DoesNotExistException');
-		} catch (DoesNotExistException $e) {
+		} catch (DoesNotExistException) {
 			// Expected.
 		}
 
