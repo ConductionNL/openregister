@@ -208,13 +208,6 @@ class SettingsService {
 	private ?ConfigurationSettingsHandler $configurationSettingsHandler = null;
 
 	/**
-	 * Setup handler (optional, lazy-loaded to break circular dependency).
-	 *
-	 * @var SetupHandler|null
-	 */
-	private ?SetupHandler $setupHandler = null;
-
-	/**
 	 * Logger
 	 *
 	 * @var LoggerInterface
@@ -309,7 +302,6 @@ class SettingsService {
 	 * @param SearchTrailMapper $searchTrailMapper Search trail mapper
 	 * @param IUserManager $userManager User manager
 	 * @param IDBConnection $db Database connection
-	 * @param SetupHandler|null $setupHandler Setup handler (optional)
 	 * @param CacheHandler|null $objectCacheService Object cache service (optional)
 	 * @param IAppContainer|null $container Container for lazy loading (optional)
 	 * @param string $appName Application name
@@ -338,7 +330,6 @@ class SettingsService {
 		SearchTrailMapper $searchTrailMapper,
 		IUserManager $userManager,
 		IDBConnection $db,
-		?SetupHandler $setupHandler = null,
 		?CacheHandler $objectCacheService = null,
 		?IAppContainer $container = null,
 		string $appName = 'openregister',
@@ -362,7 +353,6 @@ class SettingsService {
 		$this->searchTrailMapper = $searchTrailMapper;
 		$this->userManager = $userManager;
 		$this->db = $db;
-		$this->setupHandler = $setupHandler;
 		$this->objectCacheService = $objectCacheService;
 		$this->container = $container;
 		$this->appName = $appName;
