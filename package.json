@@ -104,7 +104,7 @@
     "@nextcloud/prettier-config": "^1.2.0",
     "@nextcloud/stylelint-config": "^3.2.2",
     "@nextcloud/webpack-vue-config": "^7.0.1",
-    "@pinia/testing": "^1.0.3",
+    "@pinia/testing": "^2.0.1",
     "@playwright/test": "^1.49.0",
     "@stoplight/spectral-cli": "^6.15.0",
     "@types/jest": "^29.5.12",
