@@ -127,7 +127,7 @@
       non-member including in the total; datastore pagination returning 25
       of 120 with a correct total; `run_uuid`-null task surviving
       unrelated run terminations.
-- [ ] 9.4 Playwright coverage for the two `@e2e`-marked scenarios in
+- [x] 9.4 Playwright coverage for the two `@e2e`-marked scenarios in
       `specs/flow-tasks/spec.md`: a stranger refused on the task detail
       route, and the inbox route returning tasks with subject context.
 
