@@ -270,14 +270,14 @@ class ResponseGenerationHandler {
 					$config->model = $agentModel;
 				}
 
-				// organizationId is NOT set here. LLPhant has no organization
+				// OrganizationId is NOT set here. LLPhant has no organization
 				// support of any kind, so the previous assignment created a
 				// dynamic property nothing ever read. Dropping it removes the
 				// pretence rather than the behaviour: there was none.
 
 				// Set temperature from agent or default (OpenAI).
 				if ($agent?->getTemperature() !== null) {
-					// modelOptions, NOT a property. OpenAIChat reads
+					// Through modelOptions, NOT a property. OpenAIChat reads
 					// $config->modelOptions and sends it as the API arguments;
 					// nothing in LLPhant ever reads a temperature property, so
 					// the old assignment created a dynamic property that was
@@ -312,7 +312,7 @@ class ResponseGenerationHandler {
 
 				// Set temperature from agent or default (Fireworks).
 				if ($agent?->getTemperature() !== null) {
-					// modelOptions, NOT a property. OpenAIChat reads
+					// Through modelOptions, NOT a property. OpenAIChat reads
 					// $config->modelOptions and sends it as the API arguments;
 					// nothing in LLPhant ever reads a temperature property, so
 					// the old assignment created a dynamic property that was

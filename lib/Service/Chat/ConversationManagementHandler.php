@@ -190,7 +190,7 @@ class ConversationManagementHandler {
 				$config->apiKey = $openaiConfig['apiKey'];
 				$config->model = 'gpt-4o-mini';
 
-				// modelOptions, NOT a property: OpenAIChat reads
+				// Through modelOptions, NOT a property: OpenAIChat reads
 				// $config->modelOptions and nothing in LLPhant reads a
 				// temperature property, so the old form was discarded silently.
 				$config->modelOptions['temperature'] = 0.7;
@@ -211,7 +211,7 @@ class ConversationManagementHandler {
 
 				$config->url = $baseUrl;
 
-				// modelOptions, NOT a property: OpenAIChat reads
+				// Through modelOptions, NOT a property: OpenAIChat reads
 				// $config->modelOptions and nothing in LLPhant reads a
 				// temperature property, so the old form was discarded silently.
 				$config->modelOptions['temperature'] = 0.7;
