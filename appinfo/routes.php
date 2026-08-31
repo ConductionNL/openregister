@@ -1344,6 +1344,27 @@ return [
 		['name' => 'flowRun#resume', 'url' => '/api/flow-runs/{uuid}/resume', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		// Interactive test run (or-flow-partial-run): run synchronously with optional startAt + pins + seed.
 		['name' => 'flowRun#test', 'url' => '/api/flow-runs/test', 'verb' => 'POST'],
+		// The fleet-generic task (flow-task-entity): the inbox and the
+		// lifecycle verbs. Named for the `flow-tasks` CAPABILITY, not for a
+		// flow requirement — a standalone task with run_uuid null is served
+		// here identically. `/api/tasks` itself belongs to the older CalDAV
+		// VTODO leaf (tasks#allUserTasks above), which is a different thing.
+		// Every verb's real authorization is TaskAuthorizationService inside
+		// the service; the route attribute is never the whole check.
+		['name' => 'task#index', 'url' => '/api/flow-tasks', 'verb' => 'GET'],
+		['name' => 'task#create', 'url' => '/api/flow-tasks', 'verb' => 'POST'],
+		['name' => 'task#show', 'url' => '/api/flow-tasks/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#audit', 'url' => '/api/flow-tasks/{uuid}/audit', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#offer', 'url' => '/api/flow-tasks/{uuid}/offer', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#claim', 'url' => '/api/flow-tasks/{uuid}/claim', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#unclaim', 'url' => '/api/flow-tasks/{uuid}/unclaim', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#assign', 'url' => '/api/flow-tasks/{uuid}/assign', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#reassign', 'url' => '/api/flow-tasks/{uuid}/reassign', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#delegate', 'url' => '/api/flow-tasks/{uuid}/delegate', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#resolve', 'url' => '/api/flow-tasks/{uuid}/resolve', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#complete', 'url' => '/api/flow-tasks/{uuid}/complete', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#cancel', 'url' => '/api/flow-tasks/{uuid}/cancel', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#checkItem', 'url' => '/api/flow-tasks/{uuid}/checklist/{itemId}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+', 'itemId' => '[^/]+']],
 		// Delegation grants (or-delegation-grants): the consent surface. A grant
 		// store with no way to answer is a store that only ever says no, so these
 		// are what make every delegation refusal recoverable.

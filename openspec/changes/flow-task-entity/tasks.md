@@ -94,7 +94,7 @@
 
 ## 7. API
 
-- [ ] 7.1 `lib/Controller/TaskController.php` + `appinfo/routes.php`
+- [x] 7.1 `lib/Controller/TaskController.php` + `appinfo/routes.php`
       entries for the lifecycle verbs and the inbox queries. Every method
       declares its auth posture attribute, and every method's actual
       authorization is `TaskAuthorizationService` — the attribute is never
@@ -103,7 +103,7 @@
 
 ## 8. Seed data
 
-- [ ] 8.1 Install the five seed groups from design.md — Seed Data
+- [x] 8.1 Install the five seed groups from design.md — Seed Data
       (municipal pooled permit check with no run; consultancy delegated
       approval with enforcing expiry on a run; travel-agency agent task
       with a typed checklist; two terminal tasks including one terminated
