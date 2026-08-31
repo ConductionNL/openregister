@@ -94,7 +94,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.23.9",
-    "@babel/plugin-transform-typescript": "^7.26.8",
+    "@babel/plugin-transform-typescript": "^8.0.1",
     "@babel/preset-env": "^7.23.9",
     "@babel/preset-typescript": "^7.26.0",
     "@babel/traverse": "^7.23.9",
