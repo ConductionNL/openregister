@@ -26,6 +26,16 @@ updates:
     ignore:
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
+      # vue-router 5 peers `vite: ^7.3.0 || ^8.0.0` and expects a Vite
+      # toolchain. Measured, not assumed, and the result is SPLIT: integriq and
+      # zaakafhandelapp fail their build on `Can't resolve 'vue-router'`, while
+      # openregister and learniq build clean on 5.3.0. Held because a bump that
+      # breaks some apps and not others cannot be merged unattended, and the
+      # difference is not yet understood. Adopting it fleet-wide is a
+      # Vite migration, not a bump. versioniq is already on Vite and is the
+      # natural pilot.
+      - dependency-name: "vue-router"
+        update-types: ["version-update:semver-major"]
       - dependency-name: "webpack-cli"
         update-types: ["version-update:semver-major"]
       - dependency-name: "@babel/core"
