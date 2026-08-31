@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Aggregation;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -414,6 +415,7 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 			permissionHandler: $permissionHandler,
 			userSession: $userSession,
 			organisationService: $organisationService,
+			organizationHandler: $this->orgHandlerScopedTo('__no_active_org__'),
 			translationHandler: $translationHandler,
 			languageService: $languageService,
 		);
@@ -439,4 +441,24 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 		);
 		return $schema;
 	}//end makeSchema()
+
+	/**
+	 * A MagicOrganizationHandler that reports the caller scoped to exactly one
+	 * organisation. The fixtures in these tests seed rows carrying that same
+	 * value in `_organisation`, so the rendered predicate matches them — which
+	 * is what the old hard-coded `_organisation = :activeOrg` did implicitly.
+	 *
+	 * @param string $orgUuid The organisation the caller is scoped to.
+	 *
+	 * @return MagicOrganizationHandler
+	 */
+	private function orgHandlerScopedTo(string $orgUuid): MagicOrganizationHandler {
+		$handler = $this->createMock(MagicOrganizationHandler::class);
+		$handler->method('resolveOrganizationScope')->willReturn(
+			['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => [$orgUuid]]
+		);
+
+		return $handler;
+	}//end orgHandlerScopedTo()
+
 }//end class

@@ -39,6 +39,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -141,6 +142,7 @@ class AggregationRunner {
 	 * @param PermissionHandler $permissionHandler RBAC verdict on the schema's `list` action.
 	 * @param IUserSession $userSession Active session, for the RBAC + cache-key user scope.
 	 * @param OrganisationService $organisationService Active-organisation lookup for the cache key.
+	 * @param MagicOrganizationHandler $organizationHandler Owns the organisation-boundary decision the native SQL renders.
 	 * @param TranslationHandler $translationHandler Resolves translatable group keys to the negotiated language.
 	 * @param LanguageService $languageService Request-scoped language negotiation (Accept-Language / _lang).
 	 * @param LoggerInterface|null $logger Optional logger for diagnostics.
@@ -164,6 +166,7 @@ class AggregationRunner {
 		private readonly PermissionHandler $permissionHandler,
 		private readonly IUserSession $userSession,
 		private readonly OrganisationService $organisationService,
+		private readonly MagicOrganizationHandler $organizationHandler,
 		private readonly TranslationHandler $translationHandler,
 		private readonly LanguageService $languageService,
 		private readonly ?LoggerInterface $logger = null,
@@ -2511,15 +2514,53 @@ class AggregationRunner {
 			$whereParts[] = "(_deleted IS NULL OR _deleted = 'null' OR _deleted = '')";
 		}
 
-		// SECURITY: mirror MagicRbacHandler's multi-tenancy predicate. The
-		// native fast path bypasses MagicMapper entirely, so without this
-		// filter any authed caller could compute aggregates over rows in
-		// other tenants. Active org of `null` ⇒ no rows (fail-closed).
-		// Column is `_organisation` — magic tables prefix metadata cols
-		// with `_` (see MagicMapper::METADATA_PREFIX).
-		$activeOrg = $this->organisationService->getActiveOrganisation();
-		$whereParts[] = $quote . '_organisation' . $quote . ' = ?';
-		$bindings[] = $activeOrg?->getUuid() ?? '__no_active_org__';
+		// SECURITY: the organisation boundary. This fast path bypasses
+		// MagicMapper entirely, so it must reproduce the SAME rule the list
+		// path applies — no wider, and no narrower.
+		//
+		// It used to carry its own flattened copy: a bare
+		// `_organisation = :activeOrg`. That was narrower in a way nobody saw,
+		// because SQL `=` never matches NULL: every object with no
+		// organisation was invisible here while the list API returned it.
+		// Measured 2026-08-30 on decidiq/meeting — four meetings listed, one
+		// org-less, `count` answered 3, and `filter[lifecycle]=closed`
+		// answered 0 for a meeting that plainly exists. Every KPI tile in the
+		// fleet reads this endpoint, so every one of them under-reported.
+		//
+		// The rule now has one home: MagicOrganizationHandler decides, and
+		// both paths render that decision. A mode this SQL cannot express is
+		// a refusal (`return null` ⇒ the PHP fallback, which goes through
+		// MagicMapper), never an approximation.
+		// Column is `_organisation` — magic tables prefix metadata cols with
+		// `_` (see MagicMapper::METADATA_PREFIX).
+		$orgScope = $this->organizationHandler->resolveOrganizationScope();
+		$orgColumn = $quote . '_organisation' . $quote;
+		switch ($orgScope['mode']) {
+			case MagicOrganizationHandler::SCOPE_ALL:
+				break;
+			case MagicOrganizationHandler::SCOPE_NONE:
+				$whereParts[] = '1 = 0';
+				break;
+			case MagicOrganizationHandler::SCOPE_NULL_ONLY:
+				$whereParts[] = $orgColumn . ' IS NULL';
+				break;
+			case MagicOrganizationHandler::SCOPE_IN:
+			case MagicOrganizationHandler::SCOPE_IN_OR_NULL:
+				$placeholders = implode(', ', array_fill(0, count($orgScope['uuids']), '?'));
+				$inClause = $orgColumn . ' IN (' . $placeholders . ')';
+				if ($orgScope['mode'] === MagicOrganizationHandler::SCOPE_IN_OR_NULL) {
+					$inClause = '(' . $inClause . ' OR ' . $orgColumn . ' IS NULL)';
+				}
+
+				$whereParts[] = $inClause;
+				foreach ($orgScope['uuids'] as $orgUuid) {
+					$bindings[] = $orgUuid;
+				}
+				break;
+			default:
+				// An unknown mode is not something to guess at.
+				return null;
+		}//end switch
 
 		foreach ($filter as $f => $v) {
 			$col = $this->sanitizeColumnName(name: (string)$f);
