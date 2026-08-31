@@ -182,12 +182,6 @@
       <code><![CDATA[CalDavBackend]]></code>
     </UndefinedClass>
   </file>
-  <file src="lib/Service/CaseTokenService.php">
-    <TooFewArguments>
-      <code><![CDATA[$row->getToken()]]></code>
-      <code><![CDATA[$row->getToken()]]></code>
-    </TooFewArguments>
-  </file>
   <file src="lib/Service/Chat/ConversationManagementHandler.php">
     <UndefinedPropertyAssignment>
       <code><![CDATA[$config->temperature]]></code>
@@ -336,12 +330,6 @@
       <code><![CDATA[$e]]></code>
       <code><![CDATA[\OC\DB\Exceptions\DbalException]]></code>
     </UndefinedClass>
-  </file>
-  <file src="lib/Service/PollLinkService.php">
-    <TooFewArguments>
-      <code><![CDATA[lastInsertId]]></code>
-      <code><![CDATA[lastInsertId]]></code>
-    </TooFewArguments>
   </file>
   <file src="lib/Service/RegisterResolverService.php">
     <UnusedParam>
