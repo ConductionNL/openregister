@@ -112,17 +112,17 @@
 
 ## 9. Tests
 
-- [ ] 9.1 Table-driven unit tests for the legacy status mapping and the
+- [x] 9.1 Table-driven unit tests for the legacy status mapping and the
       priority normalisation, each including the live fleet defects as
       cases: `'open'`
       (`procest/lib/Service/Transitions/CreateTaskHandler.php:76`) and
       `"normaal"` (pipelinq `task.priority`) MUST both be refused.
-- [ ] 9.2 Authorization and concurrency tests: a stranger denied on every
+- [x] 9.2 Authorization and concurrency tests: a stranger denied on every
       verb; the two-claim race producing one assignee and one conflict; an
       unresolvable role denying rather than passing; a rejection without a
       comment refused; an injected audit-write failure leaving the task
       NOT completed.
-- [ ] 9.3 Inbox and derivation tests: clock-controlled overdue with a
+- [x] 9.3 Inbox and derivation tests: clock-controlled overdue with a
       byte-identical row before and after; a pooled task invisible to a
       non-member including in the total; datastore pagination returning 25
       of 120 with a correct total; `run_uuid`-null task surviving
