@@ -305,6 +305,10 @@ class MagicSearchHandlerTest extends TestCase {
 	 * @param string $search Free-text search term.
 	 * @param array $properties Schema properties (field => ['type' => ...]).
 	 * @param bool $isPostgres Whether to render the PostgreSQL or MySQL flavour.
+	 * @param array $query Optional query dict (e.g. `['_fuzzy' => true]`) — the
+	 *                     production method reads `_fuzzy` from this dict, so
+	 *                     tests that exercise the fuzzy branch pass it here
+	 *                     instead of re-inlining the reflection call.
 	 *
 	 * @return string|null Generated SQL condition string (or null when empty).
 	 */
@@ -312,6 +316,7 @@ class MagicSearchHandlerTest extends TestCase {
 		string $search,
 		array $properties,
 		bool $isPostgres,
+		array $query = [],
 	): ?string {
 		$schema = $this->createMock(Schema::class);
 		$schema->method('getProperties')->willReturn($properties);
@@ -323,7 +328,7 @@ class MagicSearchHandlerTest extends TestCase {
 			$this->handler,
 			$search,
 			$schema,
-			[],
+			$query,
 			$this->makeConnection(),
 			$isPostgres,
 			null
@@ -439,20 +444,11 @@ class MagicSearchHandlerTest extends TestCase {
 		$hasPgTrgmProp->setAccessible(true);
 		$hasPgTrgmProp->setValue($this->handler, false);
 
-		$schema = $this->createMock(Schema::class);
-		$schema->method('getProperties')->willReturn(['title' => ['type' => 'string']]);
-
-		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildSearchConditionSql');
-		$method->setAccessible(true);
-
-		$sql = $method->invoke(
-			$this->handler,
-			'foo',
-			$schema,
-			['_fuzzy' => true],
-			$this->makeConnection(),
-			false,
-			null
+		$sql = $this->invokeBuildSearchConditionSql(
+			search: 'foo',
+			properties: ['title' => ['type' => 'string']],
+			isPostgres: false,
+			query: ['_fuzzy' => true]
 		);
 
 		$this->assertNotNull($sql);
