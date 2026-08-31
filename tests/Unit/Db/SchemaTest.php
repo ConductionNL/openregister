@@ -565,6 +565,12 @@ class SchemaTest extends TestCase {
 		$this->assertTrue($this->schema->isAppendOnly());
 	}
 
+	public function testSetAppendOnlyFalse(): void {
+		$this->schema->setAppendOnly(true);
+		$this->schema->setAppendOnly(false);
+		$this->assertFalse($this->schema->isAppendOnly());
+	}
+
 	// --- SmartPickerEnabled ---
 	// Guards WOO-546 — the migration Version1Date20260817120000 introduced
 	// the `smart_picker_enabled` DB column; same round-trip contract.
@@ -576,6 +582,12 @@ class SchemaTest extends TestCase {
 	public function testSetSmartPickerEnabledTrue(): void {
 		$this->schema->setSmartPickerEnabled(true);
 		$this->assertTrue($this->schema->isSmartPickerEnabled());
+	}
+
+	public function testSetSmartPickerEnabledFalse(): void {
+		$this->schema->setSmartPickerEnabled(true);
+		$this->schema->setSmartPickerEnabled(false);
+		$this->assertFalse($this->schema->isSmartPickerEnabled());
 	}
 
 	// --- __toString ---
