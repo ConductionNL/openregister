@@ -109,7 +109,7 @@
 		"elasticsearch/elasticsearch": "^v9.5.0",
 		"guzzlehttp/guzzle": "^7.0",
 		"jwadhams/json-logic-php": "^1.5",
-		"minishlink/web-push": "^9.0",
+		"minishlink/web-push": "^11.0",
 		"opis/json-schema": "^2.3",
 		"phpoffice/phpspreadsheet": "^5.0",
 		"phpoffice/phpword": "^1.2",
