@@ -77,6 +77,10 @@ use Symfony\Component\Uid\Uuid;
  * @method void setDeprovisionedAt(?DateTime $deprovisionedAt)
  * @method string|null getType()
  * @method void setType(?string $type)
+ * @method bool|null getIsLocalTenant()
+ * @method void setIsLocalTenant(?bool $isLocalTenant)
+ * @method string|null getRemoteInstanceUrl()
+ * @method void setRemoteInstanceUrl(?string $remoteInstanceUrl)
  * @method string|null getSummary()
  * @method void setSummary(?string $summary)
  * @method string|null getOin()
@@ -302,6 +306,40 @@ class Organisation extends Entity implements JsonSerializable {
 	protected ?string $type = 'organisation';
 
 	/**
+	 * Whether this organisation is a tenant OF THIS INSTALLATION.
+	 *
+	 * 🔴 THIS ONE IS AN AUTHORIZATION AND LIFECYCLE INPUT, unlike `type` above,
+	 * which is deliberately not. It answers a question `type` cannot: a row may
+	 * be a perfectly real organisation — a ketenpartner, a supplier, a
+	 * municipality we exchange cases with — and still not be a tenant here.
+	 *
+	 * It exists because the tenant BACKGROUND JOBS select on `status` alone,
+	 * and one of them (TenantPurgeJob) permanently DELETES what it selects.
+	 * Without this flag an archived counterparty is indistinguishable from an
+	 * archived tenant, and is deleted with it. Every tenant enumeration filters
+	 * on this; see TenantJobsScopeTest.
+	 *
+	 * Defaults to TRUE so every existing row keeps its present meaning.
+	 *
+	 * @var boolean|null True for a tenant of this installation.
+	 */
+	protected ?bool $isLocalTenant = true;
+
+	/**
+	 * Base URL of the OpenRegister instance this organisation is a tenant of.
+	 *
+	 * Set only on a counterparty — an organisation that is a tenant somewhere
+	 * ELSE and interacts with us across the federation. It is the same value
+	 * `FederatedShare.remoteInstanceUrl` carries, which is what lets a share
+	 * and the organisation it is with be resolved to each other.
+	 *
+	 * Empty for a local tenant, which is the ordinary case.
+	 *
+	 * @var string|null The peer instance base URL.
+	 */
+	protected ?string $remoteInstanceUrl = null;
+
+	/**
 	 * Short summary for overview pages (OpenCatalogi `summary`).
 	 *
 	 * @var string|null
@@ -501,6 +539,8 @@ class Organisation extends Entity implements JsonSerializable {
 		// Identity facet (ADR-022 §3): the statutory identifiers a leaf app
 		// used to keep in its own publisher/vendor record.
 		$this->addType(fieldName: 'type', type: 'string');
+		$this->addType(fieldName: 'isLocalTenant', type: 'boolean');
+		$this->addType(fieldName: 'remoteInstanceUrl', type: 'string');
 		$this->addType(fieldName: 'summary', type: 'string');
 		$this->addType(fieldName: 'oin', type: 'string');
 		$this->addType(fieldName: 'tooi', type: 'string');
@@ -948,6 +988,8 @@ class Organisation extends Entity implements JsonSerializable {
 			'status' => $this->status ?? 'active',
 			'environment' => $this->environment ?? 'production',
 			'type' => $this->type ?? 'organisation',
+			'isLocalTenant' => ($this->isLocalTenant ?? true),
+			'remoteInstanceUrl' => $this->remoteInstanceUrl,
 			'summary' => $this->summary,
 			'oin' => $this->oin,
 			'tooi' => $this->tooi,

@@ -56,6 +56,36 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class MagicOrganizationHandler {
+
+	/**
+	 * Every row is visible — a trusted system context, or an admin with the
+	 * bypass enabled outside SaaS mode.
+	 */
+	public const SCOPE_ALL = 'all';
+
+	/**
+	 * No row is visible — a non-admin with no active organisation.
+	 */
+	public const SCOPE_NONE = 'none';
+
+	/**
+	 * Only rows with NO organisation — an admin with no active organisation.
+	 */
+	public const SCOPE_NULL_ONLY = 'null-only';
+
+	/**
+	 * Rows in the caller's active organisation(s).
+	 */
+	public const SCOPE_IN = 'in';
+
+	/**
+	 * Rows in the caller's active organisation(s), PLUS rows with no
+	 * organisation at all. Admins only. This is the mode the aggregation API
+	 * used to get wrong: it rendered only the `IN` half, and SQL `=` / `IN`
+	 * never match NULL, so org-less rows vanished from every KPI.
+	 */
+	public const SCOPE_IN_OR_NULL = 'in-or-null';
+
 	/**
 	 * Constructor for MagicOrganizationHandler.
 	 *
@@ -96,25 +126,96 @@ class MagicOrganizationHandler {
 		IQueryBuilder $qb,
 		bool $adminBypassEnabled = false,
 	): void {
+		$scope = $this->resolveOrganizationScope(adminBypassEnabled: $adminBypassEnabled);
+
+		if ($scope['mode'] === self::SCOPE_ALL) {
+			return;
+		}
+
+		if ($scope['mode'] === self::SCOPE_NONE) {
+			$qb->andWhere('1 = 0');
+			return;
+		}
+
+		if ($scope['mode'] === self::SCOPE_NULL_ONLY) {
+			$qb->andWhere($qb->expr()->isNull('t._organisation'));
+			return;
+		}
+
+		// Condition 1: objects belonging to the caller's active organisation(s).
+		$conditions = [];
+		$conditions[] = $qb->expr()->in(
+			't._organisation',
+			$qb->createNamedParameter($scope['uuids'], IQueryBuilder::PARAM_STR_ARRAY)
+		);
+		if (count($scope['uuids']) === 1) {
+			array_pop($conditions);
+			$conditions[] = $qb->expr()->eq(
+				't._organisation',
+				$qb->createNamedParameter($scope['uuids'][0])
+			);
+		}
+
+		// Condition 2: objects with no organisation — ONLY for admin users.
+		if ($scope['mode'] === self::SCOPE_IN_OR_NULL) {
+			$conditions[] = $qb->expr()->isNull('t._organisation');
+		}
+
+		$qb->andWhere($qb->expr()->orX(...$conditions));
+
+	}//end applyOrganizationFilter()
+
+	/**
+	 * Decide WHICH rows the current caller may see, without building any SQL.
+	 *
+	 * This is the single source of truth for the organisation boundary. It was
+	 * extracted from {@see applyOrganizationFilter()} because a SECOND
+	 * implementation had grown in `AggregationRunner::tryNativeAggregation()`,
+	 * where the whole rule had been flattened to a bare
+	 * `_organisation = :activeOrg`. SQL `=` never matches NULL, so every object
+	 * with no organisation was invisible to the aggregation API while the list
+	 * API returned it — measured 2026-08-30 on decidiq/meeting: four meetings
+	 * listed, one of them org-less, `count` answered 3, and
+	 * `filter[lifecycle]=closed` answered 0 for a meeting that plainly exists.
+	 * Every KPI tile in the fleet reads that endpoint, so each one silently
+	 * under-reported.
+	 *
+	 * Returning a DECISION rather than a query fragment is the point: a caller
+	 * that cannot render one of these modes must refuse to run rather than
+	 * approximate it, and the rule itself now lives in exactly one place.
+	 *
+	 * @param bool $adminBypassEnabled Whether the caller honours the admin bypass (disabled in SaaS mode).
+	 *
+	 * @return array{mode: string, uuids: array<int, string>} `mode` is one of the SCOPE_* constants.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 *   Moved here with the code they were written for: this method IS the
+	 *   branchy decision that used to sit inline in applyOrganizationFilter,
+	 *   which has carried these three suppressions since it was written. The
+	 *   branches are the tenancy rule itself (system context, admin, bypass,
+	 *   SaaS, active-org set) and collapsing them would hide it.
+	 */
+	public function resolveOrganizationScope(bool $adminBypassEnabled = false): array {
 		$user = $this->userSession->getUser();
 
 		// CLI / no-session system context (occ commands, repair steps, cron
 		// jobs, background calculations, system listeners) is a trusted system
 		// operation and must see all org-owned rows. See isSystemContext().
 		if ($this->isSystemContext(user: $user) === true) {
-			return;
+			return ['mode' => self::SCOPE_ALL, 'uuids' => []];
 		}
 
-		// Check if user is admin - admins can see all objects including those with null organization.
+		// Admins can see all objects, including those with no organisation.
 		$isAdmin = false;
 		if ($user !== null) {
 			$userGroups = $this->groupManager->getUserGroupIds($user);
 			$isAdmin = in_array('admin', $userGroups, true);
 		}
 
-		// Check if admin bypass is enabled (disabled in SaaS mode).
 		if ($adminBypassEnabled === true && $isAdmin === true) {
-			// In SaaS mode, never bypass organisation boundary.
+			// In SaaS mode, never bypass the organisation boundary.
 			$saasMode = $this->isSaasModeEnabled();
 			if ($saasMode === true) {
 				$this->logger->debug(
@@ -124,49 +225,33 @@ class MagicOrganizationHandler {
 			}
 
 			if ($saasMode !== true) {
-				return;
+				return ['mode' => self::SCOPE_ALL, 'uuids' => []];
 			}
 		}
 
-		// Get the active organization UUID(s) for the current user.
 		$activeOrgUuids = $this->getActiveOrganizationUuids();
 
 		if (empty($activeOrgUuids) === true) {
-			// No active organization - admins can see null-org objects, others get no results.
-			if ($isAdmin !== true) {
-				$qb->andWhere('1 = 0');
-				return;
+			// No active organisation: admins still see org-less rows, others see nothing.
+			$emptyMode = self::SCOPE_NONE;
+			if ($isAdmin === true) {
+				$emptyMode = self::SCOPE_NULL_ONLY;
 			}
 
-			$qb->andWhere($qb->expr()->isNull('t._organisation'));
-			return;
-		}//end if
-
-		// Build conditions for organization filtering.
-		$conditions = [];
-
-		// Condition 1: Objects belonging to the user's active organization(s).
-		$conditions[] = $qb->expr()->in(
-			't._organisation',
-			$qb->createNamedParameter($activeOrgUuids, IQueryBuilder::PARAM_STR_ARRAY)
-		);
-		if (count($activeOrgUuids) === 1) {
-			array_pop($conditions);
-			$conditions[] = $qb->expr()->eq(
-				't._organisation',
-				$qb->createNamedParameter($activeOrgUuids[0])
-			);
+			return ['mode' => $emptyMode, 'uuids' => []];
 		}
 
-		// Condition 2: Objects with null organization - ONLY for admin users.
+		$scopedMode = self::SCOPE_IN;
 		if ($isAdmin === true) {
-			$conditions[] = $qb->expr()->isNull('t._organisation');
+			$scopedMode = self::SCOPE_IN_OR_NULL;
 		}
 
-		// Apply OR of all conditions.
-		$qb->andWhere($qb->expr()->orX(...$conditions));
+		return [
+			'mode' => $scopedMode,
+			'uuids' => array_values($activeOrgUuids),
+		];
 
-	}//end applyOrganizationFilter()
+	}//end resolveOrganizationScope()
 
 	/**
 	 * Determine whether the current call is a trusted system (CLI/no-session)
