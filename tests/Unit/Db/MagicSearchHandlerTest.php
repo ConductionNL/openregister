@@ -305,6 +305,10 @@ class MagicSearchHandlerTest extends TestCase {
 	 * @param string $search Free-text search term.
 	 * @param array $properties Schema properties (field => ['type' => ...]).
 	 * @param bool $isPostgres Whether to render the PostgreSQL or MySQL flavour.
+	 * @param array $query Optional query dict (e.g. `['_fuzzy' => true]`) — the
+	 *                     production method reads `_fuzzy` from this dict, so
+	 *                     tests that exercise the fuzzy branch pass it here
+	 *                     instead of re-inlining the reflection call.
 	 *
 	 * @return string|null Generated SQL condition string (or null when empty).
 	 */
@@ -312,6 +316,7 @@ class MagicSearchHandlerTest extends TestCase {
 		string $search,
 		array $properties,
 		bool $isPostgres,
+		array $query = [],
 	): ?string {
 		$schema = $this->createMock(Schema::class);
 		$schema->method('getProperties')->willReturn($properties);
@@ -323,7 +328,7 @@ class MagicSearchHandlerTest extends TestCase {
 			$this->handler,
 			$search,
 			$schema,
-			[],
+			$query,
 			$this->makeConnection(),
 			$isPostgres,
 			null
@@ -372,6 +377,84 @@ class MagicSearchHandlerTest extends TestCase {
 		// Non-string properties must not appear in the LIKE chain.
 		$this->assertStringNotContainsString('"numeric"', $sql);
 	}//end testBuildSearchConditionSqlQuotesEveryStringPropertyOnPostgres()
+
+	// -------------------------------------------------------------------------
+	// WOO-544 regression guards: buildSearchConditionSql() must never emit
+	// PostgreSQL-specific syntax (`::text ILIKE`, `similarity()`) on the MariaDB
+	// / MySQL flavour, or the entire arm of a multi-schema search silently
+	// swallows a syntax error and returns an empty resultset.
+	// -------------------------------------------------------------------------
+
+	public function testBuildSearchConditionSqlNeverEmitsPgTextCastOnMySql(): void {
+		$sql = $this->invokeBuildSearchConditionSql(
+			search: 'foo',
+			properties: [
+				'title' => ['type' => 'string'],
+				'description' => ['type' => 'string'],
+			],
+			isPostgres: false
+		);
+
+		$this->assertNotNull($sql);
+		// Neither the schema-property casts nor the metadata-field casts may use
+		// PostgreSQL's `::text` syntax on the MariaDB path — that is the exact
+		// silent-empty-resultset defect WOO-544 was filed to catch.
+		$this->assertStringNotContainsString('::text', $sql);
+		$this->assertStringNotContainsString('ILIKE', $sql);
+	}//end testBuildSearchConditionSqlNeverEmitsPgTextCastOnMySql()
+
+	public function testBuildSearchConditionSqlEmitsLowerCastForMetadataOnMySql(): void {
+		$sql = $this->invokeBuildSearchConditionSql(
+			search: 'foo',
+			properties: [],
+			isPostgres: false
+		);
+
+		$this->assertNotNull($sql);
+		// MariaDB path wraps each metadata column and the pattern in LOWER()
+		// so it stays case-insensitive regardless of collation.
+		$this->assertStringContainsString('LOWER(CAST(_name AS CHAR)) LIKE LOWER(', $sql);
+		$this->assertStringContainsString('LOWER(CAST(_description AS CHAR)) LIKE LOWER(', $sql);
+		$this->assertStringContainsString('LOWER(CAST(_summary AS CHAR)) LIKE LOWER(', $sql);
+	}//end testBuildSearchConditionSqlEmitsLowerCastForMetadataOnMySql()
+
+	public function testBuildSearchConditionSqlEmitsPgTextCastForMetadataOnPostgres(): void {
+		$sql = $this->invokeBuildSearchConditionSql(
+			search: 'foo',
+			properties: [],
+			isPostgres: true
+		);
+
+		$this->assertNotNull($sql);
+		// PostgreSQL path keeps `_name::text ILIKE` because ILIKE is
+		// case-insensitive natively; the platform-branch must not regress.
+		$this->assertStringContainsString('_name::text ILIKE', $sql);
+		$this->assertStringContainsString('_description::text ILIKE', $sql);
+		$this->assertStringContainsString('_summary::text ILIKE', $sql);
+	}//end testBuildSearchConditionSqlEmitsPgTextCastForMetadataOnPostgres()
+
+	public function testBuildSearchConditionSqlWithFuzzyOnMySqlDoesNotEmitSimilarity(): void {
+		// The `_fuzzy=true` param is honoured only when pg_trgm is available.
+		// hasPgTrgmExtension() short-circuits to false on non-PostgreSQL, so
+		// even a client-supplied _fuzzy MUST NOT emit similarity() on MariaDB.
+		// We prime the cached hasPgTrgm=false directly so the test doesn't need
+		// a full IDBConnection platform mock — the platform-branch semantics in
+		// buildSearchConditionSql are the SUT here, not the pg_trgm probe.
+		$hasPgTrgmProp = new \ReflectionProperty(MagicSearchHandler::class, 'hasPgTrgm');
+		$hasPgTrgmProp->setAccessible(true);
+		$hasPgTrgmProp->setValue($this->handler, false);
+
+		$sql = $this->invokeBuildSearchConditionSql(
+			search: 'foo',
+			properties: ['title' => ['type' => 'string']],
+			isPostgres: false,
+			query: ['_fuzzy' => true]
+		);
+
+		$this->assertNotNull($sql);
+		$this->assertStringNotContainsString('similarity(', $sql);
+		$this->assertStringNotContainsString('::text', $sql);
+	}//end testBuildSearchConditionSqlWithFuzzyOnMySqlDoesNotEmitSimilarity()
 
 	// -------------------------------------------------------------------------
 	// Regression: `format: date-time` must round-trip as ISO-8601.
