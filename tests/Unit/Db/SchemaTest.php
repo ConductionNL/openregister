@@ -34,7 +34,9 @@ class SchemaTest extends TestCase {
 		$this->assertSame('string', $types['source']);
 		$this->assertSame('boolean', $types['hardValidation']);
 		$this->assertSame('boolean', $types['immutable']);
+		$this->assertSame('boolean', $types['appendOnly']);
 		$this->assertSame('boolean', $types['searchable']);
+		$this->assertSame('boolean', $types['smartPickerEnabled']);
 		$this->assertSame('datetime', $types['updated']);
 		$this->assertSame('datetime', $types['created']);
 		$this->assertSame('integer', $types['maxDepth']);
@@ -547,6 +549,33 @@ class SchemaTest extends TestCase {
 	public function testSetSearchableFalse(): void {
 		$this->schema->setSearchable(false);
 		$this->assertFalse($this->schema->isSearchable());
+	}
+
+	// --- AppendOnly ---
+	// Guards WOO-546 — the migration Version1Date20260511110000 introduced
+	// the `append_only` DB column; the Entity property + addType must exist
+	// or SchemaMapper row hydration throws "not a valid attribute".
+
+	public function testIsAppendOnlyDefaultFalse(): void {
+		$this->assertFalse($this->schema->isAppendOnly());
+	}
+
+	public function testSetAppendOnlyTrue(): void {
+		$this->schema->setAppendOnly(true);
+		$this->assertTrue($this->schema->isAppendOnly());
+	}
+
+	// --- SmartPickerEnabled ---
+	// Guards WOO-546 — the migration Version1Date20260817120000 introduced
+	// the `smart_picker_enabled` DB column; same round-trip contract.
+
+	public function testIsSmartPickerEnabledDefaultFalse(): void {
+		$this->assertFalse($this->schema->isSmartPickerEnabled());
+	}
+
+	public function testSetSmartPickerEnabledTrue(): void {
+		$this->schema->setSmartPickerEnabled(true);
+		$this->assertTrue($this->schema->isSmartPickerEnabled());
 	}
 
 	// --- __toString ---
