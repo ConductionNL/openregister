@@ -24,11 +24,12 @@
  * been scored, and writing a zero onto it would read as "scored badly" rather
  * than "not scored".
  *
- * @category Migration
- * @package  OCA\OpenRegister\Migration
- * @author   Conduction Development Team <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://github.com/ConductionNL/openregister
+ * @category  Migration
+ * @package   OCA\OpenRegister\Migration
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 declare(strict_types=1);
