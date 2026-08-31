@@ -39,6 +39,10 @@ class RegisterTest extends TestCase {
 		$this->assertSame('json', $fieldTypes['groups']);
 		$this->assertSame('datetime', $fieldTypes['deleted']);
 		$this->assertSame('json', $fieldTypes['configuration']);
+		// Guards WOO-546 — the migration in beta introduced the `type` DB
+		// column; the Entity property + addType must be present or
+		// RegisterMapper row hydration throws "not a valid attribute".
+		$this->assertSame('string', $fieldTypes['type']);
 	}
 
 	public function testConstructorDefaultValues(): void {
@@ -102,6 +106,15 @@ class RegisterTest extends TestCase {
 	public function testSetAndGetFolder(): void {
 		$this->register->setFolder('/Documents/Registers');
 		$this->assertSame('/Documents/Registers', $this->register->getFolder());
+	}
+
+	public function testSetAndGetType(): void {
+		$this->register->setType('mock');
+		$this->assertSame('mock', $this->register->getType());
+	}
+
+	public function testTypeDefaultNull(): void {
+		$this->assertNull($this->register->getType());
 	}
 
 	public function testSetAndGetOwner(): void {
