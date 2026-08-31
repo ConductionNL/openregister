@@ -90,7 +90,7 @@
     "vue-material-design-icons": "^5.2.0",
     "vue-router": "^5.3.0",
     "vue3-apexcharts": "~1.8.0",
-    "zod": "^4.4.3"
+    "zod": "^4.5.2"
   },
   "devDependencies": {
     "@babel/core": "^7.23.9",
