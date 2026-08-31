@@ -18,13 +18,13 @@
 
 ## 2. Normalisation at the boundary
 
-- [ ] 2.1 Lifecycle: the six CMMN states, the published legacy→state
+- [x] 2.1 Lifecycle: the six CMMN states, the published legacy→state
       mapping covering at minimum the 18 values named in the spec,
       `is_terminal` written in the same statement as `state`, and the
       collapsed distinctions (`done`/`approved`, `cancelled`/`terminated`)
       preserved on `outcome`. An unmapped value is REFUSED naming the
       value — never coerced to a default.
-- [ ] 2.2 Field normalisation and validation: priority across the four
+- [x] 2.2 Field normalisation and validation: priority across the four
       fleet scales onto `low|normal|high|urgent` (off-scale refused,
       naming the value); `expires_at` earlier than `due_at` refused;
       `title` synthesis from action + subject computed on read and NEVER
@@ -32,12 +32,12 @@
 
 ## 3. Authorization (before any mutation)
 
-- [ ] 3.1 `lib/Service/Task/TaskAuthorizationService.php` — per-verb
+- [x] 3.1 `lib/Service/Task/TaskAuthorizationService.php` — per-verb
       decisions per the spec, evaluated before mutation, DENYING on
       indeterminate (unresolvable role, unavailable group backend, unknown
       performer type). No nullable "service unavailable" return that a
       caller can read as "check skipped".
-- [ ] 3.2 Performer resolution: `user|group|agent|worker`, candidate pool
+- [x] 3.2 Performer resolution: `user|group|agent|worker`, candidate pool
       (users / groups / role), and the five routing strategies
       `single-role|or-set|hierarchical|round-robin|least-loaded` plus
       `routing_fallback`. A strategy resolving to nobody with no fallback
