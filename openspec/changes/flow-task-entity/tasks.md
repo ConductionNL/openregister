@@ -49,29 +49,29 @@
 
 ## 4. TaskService
 
-- [ ] 4.1 `lib/Service/Task/TaskService.php` skeleton + `create`, `offer`,
+- [x] 4.1 `lib/Service/Task/TaskService.php` skeleton + `create`, `offer`,
       `assign`, `reassign`. One write path maintains the
       `candidate_users`/`candidate_groups` JSON and the
       `openregister_task_candidates` index rows inside one transaction.
-- [ ] 4.2 `claim` / `unclaim` — `claim` is a conditional update (assign IF
+- [x] 4.2 `claim` / `unclaim` — `claim` is a conditional update (assign IF
       unassigned) so concurrent claims yield exactly one assignee and a
       conflict for the loser, never a silent overwrite.
-- [ ] 4.3 `resolve` / `complete` / `cancel` — a non-empty `comment` is
+- [x] 4.3 `resolve` / `complete` / `cancel` — a non-empty `comment` is
       MANDATORY on a rejecting or returning outcome; any verb against an
       already-terminal task is refused with a conflict naming the current
       state.
-- [ ] 4.4 Template freeze and checklist: `template_id` +
+- [x] 4.4 Template freeze and checklist: `template_id` +
       `template_version` + `template_snapshot` written at creation, all
       later evaluation reading the snapshot; checklist as a typed
       `{id,label,description,checked}` array with per-item addressing by
       id.
-- [ ] 4.5 Audit append written in the SAME transaction as the mutation it
+- [x] 4.5 Audit append written in the SAME transaction as the mutation it
       records, for successes AND denials (`authorized: false`), carrying
       actor, `performer_type`, `on_behalf_of`, `mandate` and reason.
 
 ## 5. Cancellation propagation
 
-- [ ] 5.1 Listener terminating every non-terminal task carrying a
+- [x] 5.1 Listener terminating every non-terminal task carrying a
       `run_uuid` when that run reaches a terminal status (`completed`,
       `stopped`, `dead_letter`, `failed` — `lib/Db/FlowRun.php` STATUS
       constants), plus an explicit service call for a task made moot by a
@@ -82,12 +82,12 @@
 
 ## 6. Inbox
 
-- [ ] 6.1 `lib/Service/Task/TaskInboxService.php` — assigned-to-me,
+- [x] 6.1 `lib/Service/Task/TaskInboxService.php` — assigned-to-me,
       unclaimed-in-my-pools, watched-by-me, and by-object queries joined to
       the subject object for register/schema/uuid/title. Filtering,
       sorting, pagination AND the total run in the datastore; visibility is
       part of the WHERE clause, never a post-filter over a wider result.
-- [ ] 6.2 Derived-only temporal projection: `overdue`, `days_until_due`,
+- [x] 6.2 Derived-only temporal projection: `overdue`, `days_until_due`,
       `days_overdue` computed from `due_at`/`expires_at` against the clock
       by ONE function that backs the API projection and the inbox filter
       alike. Nothing writes them anywhere.
