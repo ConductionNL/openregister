@@ -258,11 +258,6 @@
       <code><![CDATA[$operation = &$this->oas['paths'][$pathName][$method]]]></code>
     </UnsupportedPropertyReferenceUsage>
   </file>
-  <file src="lib/Service/Object/CacheHandler.php">
-    <InvalidPropertyAssignmentValue>
-      <code><![CDATA[$this->stats]]></code>
-    </InvalidPropertyAssignmentValue>
-  </file>
   <file src="lib/Service/Object/LockHandler.php">
     <UnusedReturnValue>
       <code><![CDATA[bool]]></code>
