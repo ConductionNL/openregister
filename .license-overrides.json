@@ -1,6 +1,6 @@
 {
 	"@fortawesome/free-solid-svg-icons": "License is (CC-BY-4.0 AND MIT) — both are approved open-source licenses, compound AND expression not parsed by checker",
 	"smalot/pdfparser": "License is LGPL-3.0 — equivalent to LGPL-3.0-only which is on the allowlist, SPDX identifier variation not recognized by checker",
-	"apexcharts": "License is MIT — license-checker misreads logo URL as custom license, see https://github.com/apexcharts/apexcharts.js/blob/main/LICENSE",
+	"apexcharts": "License is NOT MIT from 6.0.0 onward and this override is a deliberate acceptance, not a checker correction. 4.7.0 and 5.0.0 are MIT; 6.0.0+ ship a dual-license (SEE LICENSE IN LICENSE): free under a Community License for organisations below USD 2M annual revenue, paid above it, and sublicensing under different terms is not permitted. Conduction confirmed 2026-08-31 that it is below that threshold and so qualifies. NOTE for redistribution: the Community License binds the ORGANISATION USING the software, so an installing tenant above USD 2M needs its own commercial license -- this app is distributed via the Nextcloud App Store. Revisit if that becomes a problem; apexcharts 5.x is the last MIT release.",
 	"dompdf/dompdf": "License is LGPL-2.1 — equivalent to LGPL-2.1-or-later which is on the allowlist; configured hermetically (isRemoteEnabled=false / isPhpEnabled=false) at the single instantiation site PdfReportWriter:69"
 }
