@@ -85,6 +85,11 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
  * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields) One property per column of the
+ * sequence table, the same rule Task itself carries: an Entity mirrors its
+ * row, and hiding columns in a JSON bag would trade a countable shape for
+ * an invisible one.
  */
 class TaskSequence extends Entity implements JsonSerializable {
 

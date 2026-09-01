@@ -28,9 +28,6 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
- *
- * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is the codebase's uuid
- * idiom and TaskState is the published, stateless state vocabulary.
  */
 
 declare(strict_types=1);
@@ -52,6 +49,9 @@ use Throwable;
  * Provisions and progresses ordered task sequences.
  *
  * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is the codebase's uuid
+ * idiom and TaskState is the published, stateless state vocabulary.
  */
 class TaskSequenceService {
 
@@ -124,7 +124,12 @@ class TaskSequenceService {
 		$sequence->setTemplateSnapshot($template);
 		$sequence->setAnchorObjectUuid($anchorObjectUuid);
 		$sequence->setRegisterId($registerId);
-		$sequence->setSchemaId(($template['schemaId'] ?? null) === null ? null : (int)$template['schemaId']);
+		$schemaId = ($template['schemaId'] ?? null);
+		if ($schemaId !== null) {
+			$schemaId = (int)$schemaId;
+		}
+
+		$sequence->setSchemaId($schemaId);
 		$sequence->setChainKey((string)($template['name'] ?? ''));
 		$sequence->setRequesterId($requesterId);
 		if ($tierPositions !== null) {
@@ -138,12 +143,18 @@ class TaskSequenceService {
 		$sequence->setOpenedAt(new DateTime());
 		$sequence = $this->sequences->insert($sequence);
 
+		$creator = ($requesterId ?? self::ACTOR_PREFIX . (string)$sequence->getUuid());
 		$count = count($positions);
 		$index = 0;
 		foreach ($positions as $position) {
 			$index++;
 			$order = (int)($position['order'] ?? $index);
 			$role = trim((string)($position['role'] ?? ''));
+			$state = Task::STATE_AVAILABLE;
+			if ($index === 1) {
+				$state = Task::STATE_ENABLED;
+			}
+
 			$this->tasks->import(
 				data: [
 					'title' => sprintf('Approve %s (step %d of %d)', (string)$sequence->getChainKey(), $order, $count),
@@ -154,7 +165,7 @@ class TaskSequenceService {
 						(string)$sequence->getChainKey(),
 						$anchorObjectUuid
 					),
-					'state' => ($index === 1) ? Task::STATE_ENABLED : Task::STATE_AVAILABLE,
+					'state' => $state,
 					'performerType' => Task::PERFORMER_GROUP,
 					'candidateGroups' => [$role],
 					'routingStrategy' => 'single-role',
@@ -170,7 +181,7 @@ class TaskSequenceService {
 					'runUuid' => $runUuid,
 					'nodeId' => $nodeId,
 				],
-				actor: ($requesterId ?? self::ACTOR_PREFIX . (string)$sequence->getUuid())
+				actor: $creator
 			);
 		}//end foreach
 

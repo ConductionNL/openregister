@@ -170,7 +170,7 @@ class TaskMapper extends QBMapper {
 			->where($qb->expr()->eq('sequence_uuid', $qb->createNamedParameter($sequenceUuid)))
 			->orderBy('sequence_position', 'ASC');
 
-		return $this->findEntities($qb);
+		return $this->findEntities(query: $qb);
 	}//end findBySequence()
 
 	/**

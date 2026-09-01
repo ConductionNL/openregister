@@ -39,13 +39,6 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
- *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The migration touches both
- * worlds by definition: the legacy tables it reads and every store a task is
- * made of.
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The branching IS the
- * contract: per-status mapping, per-stage idempotency guards and a five-part
- * verification, each required by the spec to exist separately.
  */
 
 declare(strict_types=1);
@@ -74,6 +67,12 @@ use Throwable;
  * Converts chains to templates, step sets to sequences and steps to tasks.
  *
  * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is the codebase's uuid idiom.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The migration touches both
+ * worlds by definition: the legacy tables it reads and every store a task is
+ * made of.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The branching IS the
+ * contract: per-status mapping, per-stage idempotency guards and a five-part
+ * verification, each required by the spec to exist separately.
  */
 class MigrateApprovalChainsToTasks implements IRepairStep {
 
@@ -218,8 +217,8 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	 * @return int How many steps were migrated this run.
 	 */
 	private function migrateStepSet(array $chain, array $template, string $objectUuid, array $steps): int {
-		$pending = array_filter($steps, static fn (array $s): bool => (string)$s['status'] === 'pending');
-		$unmigrated = array_filter($steps, static fn (array $s): bool => trim((string)($s['migrated_task_uuid'] ?? '')) === '');
+		$pending = array_filter($steps, static fn (array $step): bool => (string)$step['status'] === 'pending');
+		$unmigrated = array_filter($steps, static fn (array $step): bool => trim((string)($step['migrated_task_uuid'] ?? '')) === '');
 		if ($unmigrated === []) {
 			return 0;
 		}
@@ -272,34 +271,8 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 			}
 		}
 
-		$statuses = array_map(static fn (array $s): string => (string)$s['status'], $steps);
-		$anyRejected = in_array('rejected', $statuses, true);
-		$anyOpen = (in_array('pending', $statuses, true) || in_array('waiting', $statuses, true));
-		$allApproved = ($statuses !== [] && array_diff($statuses, ['approved']) === []);
-
-		$status = TaskSequence::STATUS_RUNNING;
-		$outcome = null;
-		if ($anyRejected === true) {
-			$status = TaskSequence::STATUS_REJECTED;
-			$outcome = 'rejected';
-		} elseif ($allApproved === true) {
-			$status = TaskSequence::STATUS_COMPLETED;
-			$outcome = 'approved';
-		} elseif ($anyOpen === false) {
-			// No pending, no waiting, and not approved: closed as terminated,
-			// never left running (Migration Plan step 5).
-			$status = TaskSequence::STATUS_TERMINATED;
-			$outcome = 'terminated';
-		}
-
-		$requester = null;
-		foreach ($steps as $step) {
-			$candidate = trim((string)($step['requester_id'] ?? ''));
-			if ($candidate !== '') {
-				$requester = $candidate;
-				break;
-			}
-		}
+		[$status, $outcome] = $this->sequenceOutcome(steps: $steps);
+		$requester = $this->firstRequester(steps: $steps);
 
 		$sequence = new TaskSequence();
 		$sequence->setUuid(Uuid::v4()->toRfc4122());
@@ -307,7 +280,12 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 		$sequence->setTemplateVersion((int)$template['templateVersion']);
 		$sequence->setTemplateSnapshot($template);
 		$sequence->setAnchorObjectUuid($objectUuid);
-		$sequence->setSchemaId(($chain['schema_id'] ?? null) === null ? null : (int)$chain['schema_id']);
+		$schemaId = ($chain['schema_id'] ?? null);
+		if ($schemaId !== null) {
+			$schemaId = (int)$schemaId;
+		}
+
+		$sequence->setSchemaId($schemaId);
 		$sequence->setChainKey((string)$chain['name']);
 		$sequence->setRequesterId($requester);
 		$sequence->setPositionCursor($pendingOrdinal ?? (int)($steps[0]['step_order'] ?? 1));
@@ -320,6 +298,52 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 
 		return $this->sequences->insert($sequence);
 	}//end sequenceFor()
+
+	/**
+	 * The (status, outcome) a migrated step set closes with.
+	 *
+	 * Rejected wins, then fully approved, then running while anything is
+	 * open; a set with nothing open and nothing approved is closed as
+	 * terminated, never left running (Migration Plan step 5).
+	 *
+	 * @param array<int, array<string, mixed>> $steps The set's step rows.
+	 *
+	 * @return array{0: string, 1: string|null} Status and outcome.
+	 */
+	private function sequenceOutcome(array $steps): array {
+		$statuses = array_map(static fn (array $step): string => (string)$step['status'], $steps);
+		if (in_array('rejected', $statuses, true) === true) {
+			return [TaskSequence::STATUS_REJECTED, 'rejected'];
+		}
+
+		if ($statuses !== [] && array_diff($statuses, ['approved']) === []) {
+			return [TaskSequence::STATUS_COMPLETED, 'approved'];
+		}
+
+		if (in_array('pending', $statuses, true) === false && in_array('waiting', $statuses, true) === false) {
+			return [TaskSequence::STATUS_TERMINATED, 'terminated'];
+		}
+
+		return [TaskSequence::STATUS_RUNNING, null];
+	}//end sequenceOutcome()
+
+	/**
+	 * The first recorded requester in a step set, or null.
+	 *
+	 * @param array<int, array<string, mixed>> $steps The set's step rows.
+	 *
+	 * @return string|null The requester uid.
+	 */
+	private function firstRequester(array $steps): ?string {
+		foreach ($steps as $step) {
+			$candidate = trim((string)($step['requester_id'] ?? ''));
+			if ($candidate !== '') {
+				return $candidate;
+			}
+		}
+
+		return null;
+	}//end firstRequester()
 
 	/**
 	 * Convert ONE step row into a task, its candidates and its audit.
@@ -335,6 +359,11 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	private function migrateStep(TaskSequence $sequence, array $step, string $chainName): void {
 		$status = (string)$step['status'];
 		$role = trim((string)$step['role']);
+		$candidateGroups = null;
+		if ($role !== '') {
+			$candidateGroups = [$role];
+		}
+
 		$stateByStatus = [
 			'pending' => Task::STATE_ENABLED,
 			'waiting' => Task::STATE_AVAILABLE,
@@ -353,7 +382,7 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 				),
 				'state' => ($stateByStatus[$status] ?? Task::STATE_AVAILABLE),
 				'performerType' => Task::PERFORMER_GROUP,
-				'candidateGroups' => ($role === '') ? null : [$role],
+				'candidateGroups' => $candidateGroups,
 				'routingStrategy' => 'single-role',
 				'requester' => $sequence->getRequesterId(),
 				'objectUuid' => (string)$step['object_uuid'],
@@ -389,11 +418,16 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 		);
 
 		if ($persisted->isInTerminalState() === true) {
+			$decisionActor = self::ACTOR;
+			if ((string)($step['decided_by'] ?? '') !== '') {
+				$decisionActor = (string)$step['decided_by'];
+			}
+
 			$this->appendAudit(
 				task: $persisted,
 				action: 'complete',
 				stateAfter: (string)$persisted->getState(),
-				actor: ((string)($step['decided_by'] ?? '') !== '') ? (string)$step['decided_by'] : self::ACTOR,
+				actor: $decisionActor,
 				reason: trim(sprintf('[migrated decision] %s', (string)($step['comment'] ?? ''))),
 				created: $this->parseDbDate(value: ($step['decided_at'] ?? null))
 			);
@@ -420,51 +454,76 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 
 		$enabledExpected = 0;
 		foreach ($steps as $step) {
-			$status = (string)$step['status'];
-			$where = sprintf(
-				'chain %d, object %s, step %d',
-				(int)$step['chain_id'],
-				(string)$step['object_uuid'],
-				(int)$step['id']
-			);
-
-			$taskUuid = trim((string)($step['migrated_task_uuid'] ?? ''));
-			if ($taskUuid === '') {
-				throw new RuntimeException('Approval migration failed: no migrated task recorded for ' . $where . '. The migration did NOT succeed.');
-			}
-
-			try {
-				$task = $this->tasks->findByUuid(uuid: $taskUuid);
-			} catch (Throwable $gone) {
-				throw new RuntimeException('Approval migration failed: migrated task ' . $taskUuid . ' for ' . $where . ' does not exist. The migration did NOT succeed.');
-			}
-
-			if ((int)$task->getSequencePosition() !== (int)$step['step_order']) {
-				throw new RuntimeException(sprintf(
-					'Approval migration failed: task %s sits at ordinal %d while its step holds %d (%s). The migration did NOT succeed.',
-					$taskUuid,
-					(int)$task->getSequencePosition(),
-					(int)$step['step_order'],
-					$where
-				));
-			}
-
-			$openStep = ($status === 'pending' || $status === 'waiting');
-			if ($openStep === true && $task->isInTerminalState() === true) {
-				throw new RuntimeException('Approval migration failed: non-terminal ' . $where . ' maps to terminal task ' . $taskUuid . '. The migration did NOT succeed.');
-			}
-
-			if ($status === 'pending') {
-				$enabledExpected++;
-				if ((string)$task->getState() !== Task::STATE_ENABLED) {
-					throw new RuntimeException('Approval migration failed: pending ' . $where . ' maps to a task that is not enabled. The migration did NOT succeed.');
-				}
-			}
-		}//end foreach
+			$enabledExpected += $this->verifyStep(step: $step);
+		}
 
 		$this->verifySingleRunningSequences();
 		$this->verifyEnabledCount(expected: $enabledExpected);
 	}//end verify()
+
+	/**
+	 * Verify ONE step's reconciliation, or STOP naming it.
+	 *
+	 * @param array<string, mixed> $step The legacy step row.
+	 *
+	 * @return int One when the step was `pending` (it must be the enabled
+	 *             task), zero otherwise.
+	 *
+	 * @throws RuntimeException Naming the chain, the object and the step.
+	 */
+	private function verifyStep(array $step): int {
+		$status = (string)$step['status'];
+		$where = sprintf(
+			'chain %d, object %s, step %d',
+			(int)$step['chain_id'],
+			(string)$step['object_uuid'],
+			(int)$step['id']
+		);
+
+		$taskUuid = trim((string)($step['migrated_task_uuid'] ?? ''));
+		if ($taskUuid === '') {
+			throw new RuntimeException(
+				'Approval migration failed: no migrated task recorded for ' . $where . '. The migration did NOT succeed.'
+			);
+		}
+
+		try {
+			$task = $this->tasks->findByUuid(uuid: $taskUuid);
+		} catch (Throwable $gone) {
+			throw new RuntimeException(
+				'Approval migration failed: migrated task ' . $taskUuid . ' for ' . $where . ' does not exist. The migration did NOT succeed.'
+			);
+		}
+
+		if ((int)$task->getSequencePosition() !== (int)$step['step_order']) {
+			throw new RuntimeException(sprintf(
+				'Approval migration failed: task %s sits at ordinal %d while its step holds %d (%s). The migration did NOT succeed.',
+				$taskUuid,
+				(int)$task->getSequencePosition(),
+				(int)$step['step_order'],
+				$where
+			));
+		}
+
+		$openStep = ($status === 'pending' || $status === 'waiting');
+		if ($openStep === true && $task->isInTerminalState() === true) {
+			throw new RuntimeException(
+				'Approval migration failed: non-terminal ' . $where . ' maps to terminal task ' . $taskUuid . '. The migration did NOT succeed.'
+			);
+		}
+
+		if ($status !== 'pending') {
+			return 0;
+		}
+
+		if ((string)$task->getState() !== Task::STATE_ENABLED) {
+			throw new RuntimeException(
+				'Approval migration failed: pending ' . $where . ' maps to a task that is not enabled. The migration did NOT succeed.'
+			);
+		}
+
+		return 1;
+	}//end verifyStep()
 
 	/**
 	 * No (anchor, template) may hold two running sequences.
@@ -545,9 +604,11 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 			}
 		}
 
+		$schemaId = ($chain['schema_id'] ?? null);
 		$schemaPart = 'legacy:' . (string)$chain['id'];
-		if (($chain['schema_id'] ?? null) !== null) {
-			$schemaPart = (string)(int)$chain['schema_id'];
+		if ($schemaId !== null) {
+			$schemaId = (int)$schemaId;
+			$schemaPart = (string)$schemaId;
 		}
 
 		$hash = md5(self::TEMPLATE_ID_NS . ':' . $schemaPart . ':' . (string)$chain['name']);
@@ -563,7 +624,7 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 			),
 			'templateVersion' => 1,
 			'name' => (string)$chain['name'],
-			'schemaId' => (($chain['schema_id'] ?? null) === null) ? null : (int)$chain['schema_id'],
+			'schemaId' => $schemaId,
 			'separationOfDuties' => false,
 			'migratedFromChainId' => (int)$chain['id'],
 			'positions' => $positions,
@@ -626,7 +687,7 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	 * @return int|null The lowest `step_order`, or null for an empty set.
 	 */
 	private function firstOrdinal(array $steps): ?int {
-		$ordinals = array_map(static fn (array $s): int => (int)$s['step_order'], $steps);
+		$ordinals = array_map(static fn (array $step): int => (int)$step['step_order'], $steps);
 		if ($ordinals === []) {
 			return null;
 		}
@@ -679,7 +740,10 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	 */
 	private function nullableString(mixed $value): ?string {
 		$text = trim((string)($value ?? ''));
+		if ($text === '') {
+			return null;
+		}
 
-		return ($text === '') ? null : $text;
+		return $text;
 	}//end nullableString()
 }//end class

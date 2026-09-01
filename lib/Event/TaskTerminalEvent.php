@@ -49,6 +49,11 @@ use OCP\EventDispatcher\Event;
  * Carries the task as it was persisted in its terminal state.
  *
  * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
+ *
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag IS the contract:
+ * one event class serves the in-transaction dispatch (timer cancellation)
+ * and the after-commit dispatch (run continuation), and listeners filter on
+ * it. Two classes would force every subscriber to know both names.
  */
 class TaskTerminalEvent extends Event {
 

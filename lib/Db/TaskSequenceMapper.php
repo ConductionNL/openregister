@@ -47,7 +47,7 @@ class TaskSequenceMapper extends QBMapper {
 	 * @param IDBConnection $db Database connection.
 	 */
 	public function __construct(IDBConnection $db) {
-		parent::__construct($db, 'openregister_task_sequences', TaskSequence::class);
+		parent::__construct(db: $db, tableName: 'openregister_task_sequences', entityClass: TaskSequence::class);
 	}//end __construct()
 
 	/**
@@ -67,7 +67,7 @@ class TaskSequenceMapper extends QBMapper {
 			->from($this->getTableName())
 			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
 
-		return $this->findEntity($qb);
+		return $this->findEntity(query: $qb);
 	}//end findByUuid()
 
 	/**
@@ -93,7 +93,7 @@ class TaskSequenceMapper extends QBMapper {
 			->orderBy('id', 'DESC')
 			->setMaxResults(1);
 
-		$rows = $this->findEntities($qb);
+		$rows = $this->findEntities(query: $qb);
 
 		return ($rows[0] ?? null);
 	}//end findRunning()
@@ -120,7 +120,7 @@ class TaskSequenceMapper extends QBMapper {
 			->orderBy('opened_at', 'DESC')
 			->addOrderBy('id', 'DESC');
 
-		return $this->findEntities($qb);
+		return $this->findEntities(query: $qb);
 	}//end findForAnchor()
 
 	/**

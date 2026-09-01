@@ -51,6 +51,9 @@ use Throwable;
  * Write migrated decisions back onto the kept approval-step rows.
  *
  * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) TaskState is the published,
+ * stateless state vocabulary; calling it statically is the point.
  */
 class RollbackApprovalMigrationCommand extends Command {
 
@@ -115,48 +118,8 @@ class RollbackApprovalMigrationCommand extends Command {
 		$written = 0;
 		$notCarriable = [];
 		foreach ($steps as $step) {
-			$taskUuid = trim((string)$step['migrated_task_uuid']);
-			try {
-				$task = $this->tasks->findByUuid(uuid: $taskUuid);
-			} catch (Throwable $gone) {
-				$output->writeln(sprintf('<comment>Step %d: migrated task %s no longer exists; row left as it is.</comment>', (int)$step['id'], $taskUuid));
-				continue;
-			}
-
-			if ($task->isInTerminalState() === false || (string)$task->getState() !== Task::STATE_COMPLETED) {
-				// No decision was taken on the task side; the step keeps
-				// whatever it already recorded.
-				continue;
-			}
-
-			$status = 'approved';
-			if (TaskState::isRejectingOutcome(outcome: $task->getOutcome()) === true) {
-				$status = 'rejected';
-			}
-
-			if ((string)$step['status'] === $status && trim((string)($step['decided_by'] ?? '')) !== '') {
-				// Already decided identically before migration; nothing new
-				// to carry back.
-				continue;
-			}
-
-			if ($dryRun === false) {
-				$update = $this->db->getQueryBuilder();
-				$update->update('openregister_approval_steps')
-					->set('status', $update->createNamedParameter($status))
-					->set('decided_by', $update->createNamedParameter((string)($task->getCompletedBy() ?? '')))
-					->set('comment', $update->createNamedParameter((string)($task->getComment() ?? '')))
-					->set('decided_at', $update->createNamedParameter($task->getCompletedAt()?->format('Y-m-d H:i:s')))
-					->where($update->expr()->eq('id', $update->createNamedParameter((int)$step['id'])));
-				$update->executeStatement();
-			}
-
-			$written++;
-
-			foreach ($this->lostFacts(task: $task) as $lost) {
-				$notCarriable[] = sprintf('step %d (task %s): %s', (int)$step['id'], $taskUuid, $lost);
-			}
-		}//end foreach
+			$written += $this->carryBack(step: $step, dryRun: $dryRun, output: $output, notCarriable: $notCarriable);
+		}
 
 		$mode = 'written back';
 		if ($dryRun === true) {
@@ -176,6 +139,74 @@ class RollbackApprovalMigrationCommand extends Command {
 
 		return Command::SUCCESS;
 	}//end execute()
+
+	/**
+	 * Carry ONE step's task-side decision back, when there is one.
+	 *
+	 * @param array<string, mixed> $step The legacy step row.
+	 * @param bool $dryRun Whether to report without writing.
+	 * @param OutputInterface $output Command output.
+	 * @param array<int, string> $notCarriable Collects the facts left behind.
+	 *
+	 * @return int One when a decision was carried back, zero otherwise.
+	 */
+	private function carryBack(array $step, bool $dryRun, OutputInterface $output, array &$notCarriable): int {
+		$taskUuid = trim((string)$step['migrated_task_uuid']);
+		try {
+			$task = $this->tasks->findByUuid(uuid: $taskUuid);
+		} catch (Throwable $gone) {
+			$output->writeln(sprintf('<comment>Step %d: migrated task %s no longer exists; row left as it is.</comment>', (int)$step['id'], $taskUuid));
+
+			return 0;
+		}
+
+		if ($task->isInTerminalState() === false || (string)$task->getState() !== Task::STATE_COMPLETED) {
+			// No decision was taken on the task side; the step keeps
+			// whatever it already recorded.
+			return 0;
+		}
+
+		$status = 'approved';
+		if (TaskState::isRejectingOutcome(outcome: $task->getOutcome()) === true) {
+			$status = 'rejected';
+		}
+
+		if ((string)$step['status'] === $status && trim((string)($step['decided_by'] ?? '')) !== '') {
+			// Already decided identically before migration; nothing new to
+			// carry back.
+			return 0;
+		}
+
+		if ($dryRun === false) {
+			$this->writeDecision(step: $step, task: $task, status: $status);
+		}
+
+		foreach ($this->lostFacts(task: $task) as $lost) {
+			$notCarriable[] = sprintf('step %d (task %s): %s', (int)$step['id'], $taskUuid, $lost);
+		}
+
+		return 1;
+	}//end carryBack()
+
+	/**
+	 * Write one decision onto its legacy step row.
+	 *
+	 * @param array<string, mixed> $step The legacy step row.
+	 * @param Task $task The decided task.
+	 * @param string $status The legacy status to record.
+	 *
+	 * @return void
+	 */
+	private function writeDecision(array $step, Task $task, string $status): void {
+		$update = $this->db->getQueryBuilder();
+		$update->update('openregister_approval_steps')
+			->set('status', $update->createNamedParameter($status))
+			->set('decided_by', $update->createNamedParameter((string)($task->getCompletedBy() ?? '')))
+			->set('comment', $update->createNamedParameter((string)($task->getComment() ?? '')))
+			->set('decided_at', $update->createNamedParameter($task->getCompletedAt()?->format('Y-m-d H:i:s')))
+			->where($update->expr()->eq('id', $update->createNamedParameter((int)$step['id'])));
+		$update->executeStatement();
+	}//end writeDecision()
 
 	/**
 	 * The facts about a decision the legacy step schema cannot express.

@@ -158,9 +158,35 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 			return null;
 		}
 
+		$positions = $this->compilePositions(approvers: (array)($spec['approvers'] ?? []));
+		if ($positions === []) {
+			return null;
+		}
+
+		return [
+			'templateId' => $this->templateIdFor(schemaId: (int)$schemaId, chainKey: $chainKey),
+			'templateVersion' => self::TEMPLATE_VERSION,
+			'name' => $chainKey,
+			'schemaId' => (int)$schemaId,
+			'transition' => (string)($spec['transition'] ?? ''),
+			'separationOfDuties' => (($spec['separationOfDuties'] ?? true) !== false),
+			'onApprove' => (string)($spec['onApprove'] ?? ''),
+			'amountField' => (string)($spec['amountField'] ?? ''),
+			'positions' => $positions,
+		];
+	}//end compile()
+
+	/**
+	 * One ordered position per usable `approvers` entry.
+	 *
+	 * @param array<int, mixed> $approvers The declared approver tiers.
+	 *
+	 * @return array<int, array<string, mixed>> The ordered positions.
+	 */
+	private function compilePositions(array $approvers): array {
 		$positions = [];
 		$order = 1;
-		foreach ((array)($spec['approvers'] ?? []) as $tier) {
+		foreach ($approvers as $tier) {
 			if (is_array($tier) === false) {
 				continue;
 			}
@@ -184,22 +210,8 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 			$order++;
 		}//end foreach
 
-		if ($positions === []) {
-			return null;
-		}
-
-		return [
-			'templateId' => $this->templateIdFor(schemaId: (int)$schemaId, chainKey: $chainKey),
-			'templateVersion' => self::TEMPLATE_VERSION,
-			'name' => $chainKey,
-			'schemaId' => (int)$schemaId,
-			'transition' => (string)($spec['transition'] ?? ''),
-			'separationOfDuties' => (($spec['separationOfDuties'] ?? true) !== false),
-			'onApprove' => (string)($spec['onApprove'] ?? ''),
-			'amountField' => (string)($spec['amountField'] ?? ''),
-			'positions' => $positions,
-		];
-	}//end compile()
+		return $positions;
+	}//end compilePositions()
 
 	/**
 	 * The deterministic template id for a (schema, chain key) pair.

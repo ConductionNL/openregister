@@ -114,7 +114,8 @@ class TaskSequenceDecisionGuard {
 		if ($actedFor !== '' && $actedFor === $requester) {
 			throw new TaskSeparationOfDutiesException(
 				message: sprintf(
-					"Separation of duties: this decision acts on behalf of '%s', who requested the approval. A delegated self-decision is refused on the same grounds.",
+					"Separation of duties: this decision acts on behalf of '%s', who requested the approval."
+					. ' A delegated self-decision is refused on the same grounds.',
 					$requester
 				)
 			);

@@ -232,12 +232,17 @@ class ApprovalChainGateListener implements IEventListener {
 		// sequence beside it rather than deleting the record of who refused.
 		$requesterId = $this->userSession->getUser()?->getUID();
 		$register = (string)$object->getRegister();
+		$registerId = null;
+		if (is_numeric($register) === true) {
+			$registerId = (int)$register;
+		}
+
 		$this->sequenceService->provision(
 			template: $template,
 			anchorObjectUuid: $objectUuid,
 			requesterId: $requesterId,
 			tierPositions: $this->resolveTierPositions(template: $template, newData: $newData),
-			registerId: (is_numeric($register) === true) ? (int)$register : null
+			registerId: $registerId
 		);
 
 		$this->reject(

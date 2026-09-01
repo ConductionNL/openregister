@@ -226,7 +226,9 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 				'key' => 'correlationKey',
 				'label' => $this->l10n->t('Business key for the answer'),
 				'type' => 'text',
-				'help' => $this->l10n->t('Lets the caller answer by key instead of run id, like "vote:{{ proposalId }}". Fields of the item can be used. Leave empty to keep run-id addressing only.'),
+				'help' => $this->l10n->t(
+					'Lets the caller answer by key instead of run id, like "vote:{{ proposalId }}". Leave empty to keep run-id addressing only.'
+				),
 			],
 		];
 	}//end configForm()
@@ -356,6 +358,7 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 *
 	 * @param array $config The step configuration.
 	 * @param array $context Run-level metadata.
+	 * @param array $items The input items, for correlation-key resolution.
 	 *
 	 * @return void
 	 *
