@@ -89,7 +89,12 @@ class CaseAnchorReader {
 			return [];
 		}
 
-		return $entity->getObject();
+		$data = $entity->getObject();
+		if (is_array($data) === false) {
+			return [];
+		}
+
+		return $data;
 	}//end read()
 
 	/**
