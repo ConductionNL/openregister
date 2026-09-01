@@ -34,11 +34,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
+use OCA\OpenRegister\Db\FlowClaimMapper;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCA\OpenRegister\Service\Flow\FlowConsentParking;
+use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
+use OCA\OpenRegister\Service\Flow\FlowTokenRouter;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
@@ -50,6 +54,9 @@ use Throwable;
  *
  * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
  * @spec openspec/changes/or-flow-queue-fairness/specs/flow-queue-fairness/spec.md
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The pass owns recovery for runs, claims and
+ * streams alike; each mapper is one table the reaper has to read.
  */
 class FlowRunWorker extends TimedJob {
 
@@ -61,7 +68,7 @@ class FlowRunWorker extends TimedJob {
 	 *
 	 * @var int
 	 */
-	private const BATCH = 25;
+	public const BATCH = 25;
 
 	/**
 	 * Default retention for terminal runs, in days.
@@ -165,6 +172,9 @@ class FlowRunWorker extends TimedJob {
 	 *                                           runs are actually parked, because
 	 *                                           a sweep that skips looks exactly
 	 *                                           like one that found nothing.
+	 * @param FlowClaimMapper|null $claims Place claims, for the abandoned-claim reaper.
+	 * @param FlowStreamMapper|null $streams Run streams, for failing an abandoned branch.
+	 * @param FlowLocator|null $flows Resolves the run's flow, for the abandoned step's `onError` policy.
 	 */
 	public function __construct(
 		ITimeFactory $time,
@@ -173,6 +183,9 @@ class FlowRunWorker extends TimedJob {
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 		private readonly ?DelegationService $delegation = null,
+		private readonly ?FlowClaimMapper $claims = null,
+		private readonly ?FlowStreamMapper $streams = null,
+		private readonly ?FlowLocator $flows = null,
 	) {
 		parent::__construct(time: $time);
 		// A FLOOR, not a schedule. `setInterval` says "not more often than
@@ -276,6 +289,8 @@ class FlowRunWorker extends TimedJob {
 
 		$cutoff = (clone $now)->modify('-' . $minutes . ' minutes');
 
+		$this->reapAbandonedClaims(cutoff: $cutoff, now: $now, minutes: $minutes);
+
 		foreach ($this->mapper->findStale(before: $cutoff, limit: self::BATCH) as $run) {
 			$run->setStatus(FlowRun::STATUS_FAILED);
 			$run->setError(
@@ -301,6 +316,139 @@ class FlowRunWorker extends TimedJob {
 		}//end foreach
 
 	}//end reapStale()
+
+	/**
+	 * Release claims a dead worker left behind, and FAIL the branch they held.
+	 *
+	 * Uses the SAME cutoff as the run reaper — one expression, not a second
+	 * constant — so the two can never contradict each other. A reaped branch
+	 * is failed, never re-dispatched: it may already have written an object,
+	 * sent a message or called a remote system, and re-running it would repeat
+	 * those without saying so. The run's error policy for the abandoned step
+	 * decides the siblings' fate: `continue` keeps them (the run is re-armed
+	 * as queued), anything else stops the run.
+	 *
+	 * @param DateTime $cutoff Claims taken before this moment are abandoned.
+	 * @param DateTime $now Now.
+	 * @param int $minutes The cutoff in minutes, for the message.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-branch-abandoned-by-a-crashed-worker-must-be-recovered-and-must-not-be-silently-re-run
+	 */
+	private function reapAbandonedClaims(DateTime $cutoff, DateTime $now, int $minutes): void {
+		if ($this->claims === null || $this->streams === null) {
+			return;
+		}
+
+		foreach ($this->claims->findOlderThan(before: $cutoff, limit: self::BATCH) as $claim) {
+			$runUuid = (string)$claim->getRunUuid();
+			$branch = (string)($claim->getStreamId() ?? '');
+			$transition = (string)($claim->getTransition() ?? '');
+
+			try {
+				$this->claims->releaseByOwner(runUuid: $runUuid, owner: (string)$claim->getOwner());
+
+				$error = sprintf(
+					'Abandoned branch: worker pass "%s" took stream "%s" at step "%s" and never finished it '
+					. '(no commit for over %d minutes). The step may have performed its side effect; '
+					. 'it was NOT re-run.',
+					(string)$claim->getOwner(),
+					$branch,
+					$transition,
+					$minutes
+				);
+
+				$stream = $this->streams->findByRunAndStream(runUuid: $runUuid, streamId: $branch);
+				if ($stream !== null) {
+					$stream->setStatus(FlowRun::STATUS_FAILED);
+					$stream->setError($error);
+					$stream->setUpdated($now);
+					$this->streams->update($stream);
+				}
+
+				$run = $this->mapper->findByUuid(uuid: $runUuid);
+				// The abandoned step's policy decides the siblings' fate: the
+				// default fails the run; `continue` with a live sibling re-arms
+				// the run for the next pass instead.
+				$run->setStatus(FlowRun::STATUS_FAILED);
+				$run->setError($error);
+				$run->setResumeAt(null);
+				$continues = $this->abandonedStepContinues(run: $run, transition: $transition);
+				if ($continues === true && $this->hasLiveSibling(runUuid: $runUuid, failed: $branch) === true) {
+					$run->setStatus(FlowRun::STATUS_QUEUED);
+					$run->setError(null);
+				}
+
+				$run->setUpdated($now);
+				$this->mapper->update($run);
+
+				$this->logger->warning(
+					message: '[FlowRunWorker] Released an abandoned place claim and failed its branch',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'run' => $runUuid,
+						'stream' => $branch,
+						'transition' => $transition,
+						'owner' => $claim->getOwner(),
+					]
+				);
+			} catch (Throwable $e) {
+				$this->logger->error(
+					message: '[FlowRunWorker] Could not reap an abandoned claim',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $runUuid, 'error' => $e->getMessage()]
+				);
+			}//end try
+		}//end foreach
+	}//end reapAbandonedClaims()
+
+	/**
+	 * Whether the abandoned step's `onError` policy lets the run's siblings
+	 * continue. Unknown flow or step reads as the default policy, `stop`.
+	 *
+	 * @param FlowRun $run The run.
+	 * @param string $transition The abandoned transition.
+	 *
+	 * @return bool True when the policy is `continue`.
+	 */
+	private function abandonedStepContinues(FlowRun $run, string $transition): bool {
+		if ($this->flows === null || $transition === '') {
+			return false;
+		}
+
+		try {
+			$flow = $this->flows->resolveFlow((string)$run->getFlowId());
+		} catch (Throwable $e) {
+			return false;
+		}
+
+		if ($flow === null) {
+			return false;
+		}
+
+		$step = (new FlowTokenRouter())->stepFor(flow: $flow, transitionName: $transition);
+
+		return ((string)($step['onError'] ?? 'stop')) === 'continue';
+	}//end abandonedStepContinues()
+
+	/**
+	 * Whether any stream of the run other than the failed one is still live.
+	 *
+	 * @param string $runUuid The run.
+	 * @param string $failed The failed stream id.
+	 *
+	 * @return bool True when a sibling can still advance.
+	 */
+	private function hasLiveSibling(string $runUuid, string $failed): bool {
+		foreach ($this->streams->findByRun(runUuid: $runUuid) as $stream) {
+			if ((string)$stream->getStreamId() !== $failed && $stream->isTerminal() === false) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end hasLiveSibling()
 
 	/**
 	 * Fail runs suspended on a signal that never arrived.
@@ -552,6 +700,9 @@ class FlowRunWorker extends TimedJob {
 		try {
 			$before = (clone $now)->modify(sprintf('-%d days', $days));
 			$deleted = $this->mapper->pruneBefore(before: $before);
+			// Stream and claim rows go with their runs.
+			$this->streams?->deleteOrphans();
+			$this->claims?->deleteOrphans();
 			if ($deleted > 0) {
 				$this->logger->info(
 					message: '[FlowRunWorker] Pruned old flow runs',
