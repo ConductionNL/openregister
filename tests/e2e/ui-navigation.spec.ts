@@ -45,7 +45,7 @@ test.describe('frontend-app-bootstrap — navigation routes load', () => {
 				)
 			}
 			// Use domcontentloaded — the NC SPA keeps background XHR alive so networkidle never fires.
-			await page.goto(`/index.php/apps/openregister/#${route.hash}`, {
+			await page.goto(`/index.php/apps/openregister${route.hash}`, {
 				waitUntil: 'domcontentloaded',
 			})
 
@@ -75,7 +75,7 @@ test.describe('built-in-dashboards — dashboard renders', () => {
 			test.skip(true, 'storageState not present')
 		}
 
-		await page.goto('/index.php/apps/openregister/#/', {
+		await page.goto('/index.php/apps/openregister/', {
 			waitUntil: 'domcontentloaded',
 		})
 
@@ -106,7 +106,7 @@ test.describe('features-roadmap — roadmap view renders', () => {
 			test.skip(true, 'storageState not present')
 		}
 
-		await page.goto('/index.php/apps/openregister/#/features-roadmap', {
+		await page.goto('/index.php/apps/openregister/features-roadmap', {
 			waitUntil: 'domcontentloaded',
 		})
 
@@ -127,7 +127,7 @@ test.describe('no-code-app-builder — applications view', () => {
 			test.skip(true, 'storageState not present')
 		}
 
-		await page.goto('/index.php/apps/openregister/#/applications', {
+		await page.goto('/index.php/apps/openregister/applications', {
 			waitUntil: 'domcontentloaded',
 		})
 

@@ -106,7 +106,7 @@ async function gotoPage(page: Page, route: string): Promise<void> {
 	// deep-link (`/apps/openregister/registers`) is rewritten by the hash
 	// router to `/registers#/` and renders the DASHBOARD, not the target page
 	// (verified empirically 2026-07-27).
-	await page.goto(`/index.php/apps/openregister/#${route}`, {
+	await page.goto(`/index.php/apps/openregister${route}`, {
 		waitUntil: 'domcontentloaded',
 	})
 	await page.waitForSelector('#header, header.header-appcontainer', {

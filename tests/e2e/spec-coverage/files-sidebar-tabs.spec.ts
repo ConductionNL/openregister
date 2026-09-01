@@ -45,7 +45,7 @@ const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 async function gotoApp(page: Page, subpath: string): Promise<void> {
 	// HASH form — the router runs in hash mode (src/main.js); path-form
 	// deep-links render the dashboard instead of the target page.
-	await page.goto(`/index.php/apps/openregister/#${subpath}`, {
+	await page.goto(`/index.php/apps/openregister${subpath}`, {
 		waitUntil: 'domcontentloaded',
 	})
 	await page.waitForSelector('#header, header.header-appcontainer', {
@@ -440,7 +440,7 @@ test.describe('files-sidebar-tabs — applyfilters-writes-filter-state-to-the-ur
 		page,
 	}) => {
 		// Start from clean /deleted (hash form — router runs in hash mode).
-		await page.goto('/index.php/apps/openregister/#/deleted', {
+		await page.goto('/index.php/apps/openregister/deleted', {
 			waitUntil: 'domcontentloaded',
 		})
 		await page.waitForSelector('#header, header.header-appcontainer', {
