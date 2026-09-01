@@ -219,4 +219,33 @@ class FlowStepHistoryTest extends TestCase {
 
 		$this->assertSame(['it threw', 'author stopped it'], $errors);
 	}//end testAStopReasonIsRecordedAsTheStepsError()
+
+	public function testAFiringTheCommitAlreadyRecordedIsNotWrittenTwice(): void {
+		$steps = $this->createMock(FlowRunStepMapper::class);
+		$steps->method('highestSequence')->willReturn(0);
+		$written = [];
+		$steps->method('insert')->willReturnCallback(function (FlowRunStep $step) use (&$written): FlowRunStep {
+			$written[] = $step;
+			return $step;
+		});
+
+		(new FlowStepHistory(steps: $steps))->record(
+			run: $this->aRun(),
+			entries: [
+				['transition' => 'fired', 'status' => 'completed', 'recorded' => true, 'streamId' => 's1', 'ordinalPath' => '0001.0001'],
+				['transition' => 'waited', 'status' => 'suspended', 'streamId' => 's2', 'ordinalPath' => '0001.0002'],
+				['transition' => 'legacy', 'status' => 'completed'],
+			]
+		);
+
+		// The committed firing is skipped; the suspension carries its branch;
+		// a pre-stream entry sits on the root path, the single implicit stream.
+		$this->assertCount(2, $written);
+		$this->assertSame('waited', $written[0]->getNodeId());
+		$this->assertSame('s2', $written[0]->getStreamId());
+		$this->assertSame('0001.0002', $written[0]->getOrdinalPath());
+		$this->assertSame('legacy', $written[1]->getNodeId());
+		$this->assertNull($written[1]->getStreamId());
+		$this->assertSame('0001', $written[1]->getOrdinalPath());
+	}//end testAFiringTheCommitAlreadyRecordedIsNotWrittenTwice()
 }//end class

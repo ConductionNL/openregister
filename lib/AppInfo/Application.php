@@ -2531,6 +2531,7 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Listener\TaskRunTerminalListener::class
 		);
 
+<<<<<<< HEAD
 		// The other direction (flow-user-task-node): a task the graph raised
 		// reached a terminal state, so its suspended run is woken and, per the
 		// node's `advance` budget, continued in-request. Fires AFTER the task's
@@ -2541,6 +2542,8 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Listener\UserTaskTerminalListener::class
 		);
 
+=======
+>>>>>>> origin/development
 		// Lifecycle annotation listeners — see x-openregister-lifecycle.
 		// Order matters: initial state runs on creating; validation runs on updating.
 		$context->registerEventListener(ObjectCreatingEvent::class, LifecycleInitialStateListener::class);

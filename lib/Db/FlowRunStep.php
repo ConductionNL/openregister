@@ -49,6 +49,10 @@ use OCP\AppFramework\Db\Entity;
  * @method string|null getNodeType()
  * @method void setNodeType(?string $nodeType)
  * @method integer|null getSequence()
+ * @method string|null getStreamId()
+ * @method void setStreamId(?string $streamId)
+ * @method string|null getOrdinalPath()
+ * @method void setOrdinalPath(?string $ordinalPath)
  * @method void setSequence(?int $sequence)
  * @method string|null getStatus()
  * @method void setStatus(?string $status)
@@ -134,6 +138,22 @@ class FlowRunStep extends Entity implements JsonSerializable {
 	protected ?int $sequence = 0;
 
 	/**
+	 * The stream that produced this step; null for a row written before
+	 * streams existed (the single implicit stream).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $streamId = null;
+
+	/**
+	 * The stream's declaration-derived ordinal path, the first key of the
+	 * canonical run-log order.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $ordinalPath = null;
+
+	/**
 	 * Outcome of this hop.
 	 *
 	 * @var string|null
@@ -191,6 +211,8 @@ class FlowRunStep extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'nodeId', type: 'string');
 		$this->addType(fieldName: 'nodeType', type: 'string');
 		$this->addType(fieldName: 'sequence', type: 'integer');
+		$this->addType(fieldName: 'streamId', type: 'string');
+		$this->addType(fieldName: 'ordinalPath', type: 'string');
 		$this->addType(fieldName: 'status', type: 'string');
 		$this->addType(fieldName: 'started', type: 'datetime');
 		$this->addType(fieldName: 'finished', type: 'datetime');
@@ -231,6 +253,8 @@ class FlowRunStep extends Entity implements JsonSerializable {
 			'nodeId' => $this->nodeId,
 			'nodeType' => $this->nodeType,
 			'sequence' => (int)$this->sequence,
+			'streamId' => $this->streamId,
+			'ordinalPath' => $this->ordinalPath,
 			'status' => $this->status,
 			'started' => $started,
 			'finished' => $finished,

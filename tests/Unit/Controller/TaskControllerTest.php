@@ -32,12 +32,17 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
+<<<<<<< HEAD
 use OCA\OpenRegister\Exception\TaskFormRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskFormCompletion;
 use OCA\OpenRegister\Service\Task\TaskFormResolver;
+=======
+use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
+>>>>>>> origin/development
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
@@ -93,10 +98,13 @@ class TaskControllerTest extends TestCase {
 	 */
 	private LoggerInterface&MockObject $logger;
 
+<<<<<<< HEAD
 	private TaskFormResolver&MockObject $forms;
 
 	private TaskFormCompletion&MockObject $completion;
 
+=======
+>>>>>>> origin/development
 	/**
 	 * The controller under test.
 	 *
@@ -114,9 +122,12 @@ class TaskControllerTest extends TestCase {
 		$this->inbox = $this->createMock(originalClassName: TaskInboxService::class);
 		$this->authorization = $this->createMock(originalClassName: TaskAuthorizationService::class);
 		$this->logger = $this->createMock(originalClassName: LoggerInterface::class);
+<<<<<<< HEAD
 		$this->forms = $this->createMock(originalClassName: TaskFormResolver::class);
 		$this->forms->method('describe')->willReturn(['form' => null, 'requireChecklist' => false]);
 		$this->completion = $this->createMock(originalClassName: TaskFormCompletion::class);
+=======
+>>>>>>> origin/development
 
 		$user = $this->createMock(originalClassName: IUser::class);
 		$user->method('getUID')->willReturn('alice');
@@ -143,8 +154,11 @@ class TaskControllerTest extends TestCase {
 			authorization: $this->authorization,
 			temporal: new TaskTemporalProjection(),
 			userSession: $session,
+<<<<<<< HEAD
 			forms: $this->forms,
 			completion: $this->completion,
+=======
+>>>>>>> origin/development
 			logger: $this->logger,
 			groupManager: $groups
 		);
@@ -207,6 +221,7 @@ class TaskControllerTest extends TestCase {
 	}//end testShowIs404ForAnInvisibleTaskAnd200ForAVisibleOne()
 
 	/**
+<<<<<<< HEAD
 	 * GET /api/flow-tasks/{uuid} carries the resolved form and the checklist
 	 * rule, so the completion surface needs no second round-trip.
 	 *
@@ -311,6 +326,8 @@ class TaskControllerTest extends TestCase {
 	}//end testASubjectWriteRefusalIs422()
 
 	/**
+=======
+>>>>>>> origin/development
 	 * GET /api/flow-tasks/{uuid}: an absent uuid reads exactly like an
 	 * invisible one.
 	 *
@@ -384,7 +401,11 @@ class TaskControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testADeniedVerbIs404WhenTheCallerMayNotReadTheTask(): void {
+<<<<<<< HEAD
 		$this->completion->method('complete')->willThrowException(new TaskAccessDeniedException('denied'));
+=======
+		$this->tasks->method('complete')->willThrowException(new TaskAccessDeniedException('denied'));
+>>>>>>> origin/development
 		$this->tasks->method('get')->willReturn($this->task());
 		$this->authorization->method('mayRead')->willReturn(false);
 
@@ -401,7 +422,11 @@ class TaskControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testADeniedVerbIs403WhenTheCallerMayReadTheTask(): void {
+<<<<<<< HEAD
 		$this->completion->method('complete')->willThrowException(new TaskAccessDeniedException("Verb 'complete' denied: only the current assignee may perform it."));
+=======
+		$this->tasks->method('complete')->willThrowException(new TaskAccessDeniedException("Verb 'complete' denied: only the current assignee may perform it."));
+>>>>>>> origin/development
 		$this->tasks->method('get')->willReturn($this->task());
 		$this->authorization->method('mayRead')->willReturn(true);
 
@@ -455,6 +480,7 @@ class TaskControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testEveryVerbRouteReachesItsServiceVerb(): void {
+<<<<<<< HEAD
 		foreach (['offer', 'claim', 'unclaim', 'assign', 'reassign', 'delegate', 'resolve', 'cancel', 'checkChecklistItem'] as $verb) {
 			$this->tasks->expects($this->once())->method($verb)->willReturn($this->task());
 		}
@@ -463,6 +489,12 @@ class TaskControllerTest extends TestCase {
 		// write-then-complete order and delegates the verb to the service.
 		$this->completion->expects($this->once())->method('complete')->willReturn($this->task());
 
+=======
+		foreach (['offer', 'claim', 'unclaim', 'assign', 'reassign', 'delegate', 'resolve', 'complete', 'cancel', 'checkChecklistItem'] as $verb) {
+			$this->tasks->expects($this->once())->method($verb)->willReturn($this->task());
+		}
+
+>>>>>>> origin/development
 		$responses = [
 			$this->controller->offer(uuid: 't-1'),
 			$this->controller->claim(uuid: 't-1'),
@@ -617,8 +649,11 @@ class TaskControllerTest extends TestCase {
 			authorization: $this->authorization,
 			temporal: new TaskTemporalProjection(),
 			userSession: $session,
+<<<<<<< HEAD
 			forms: $this->forms,
 			completion: $this->completion,
+=======
+>>>>>>> origin/development
 			logger: $this->logger,
 			groupManager: $groups
 		);
@@ -641,9 +676,13 @@ class TaskControllerTest extends TestCase {
 			inbox: $this->inbox,
 			authorization: $this->authorization,
 			temporal: new TaskTemporalProjection(),
+<<<<<<< HEAD
 			userSession: $session,
 			forms: $this->forms,
 			completion: $this->completion
+=======
+			userSession: $session
+>>>>>>> origin/development
 		);
 
 		$this->assertSame(Http::STATUS_UNAUTHORIZED, $controller->index()->getStatus());
