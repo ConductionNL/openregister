@@ -3,11 +3,14 @@
 /**
  * WOO-548 regression: `_relations.<field>` VALUE-filtering on MariaDB/MySQL.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Db
  *
- * @author    Conduction Development Team <info@conduction.nl>
- * @copyright 2024 Conduction B.V.
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @version GIT: <git-id>
@@ -145,5 +148,34 @@ class MagicSearchHandlerRelationsFilterMariaDbTest extends TestCase {
 			$this->assertStringNotContainsString('@>', $sql);
 		}
 	}//end testMariaDbBranchDropsPostgresJsonbSyntaxAcrossAllConditions()
+
+	/**
+	 * `applyRelationsContainsFilter` is the direct consumer of the
+	 * `_relations_contains` public query filter (WOO-536 Stap 5a). Lock its
+	 * MariaDB shape so a future refactor can't silently regress the two-line
+	 * fallback back into PG syntax.
+	 */
+	public function testRelationsContainsFilterEmitsPortableJsonSearchOnMariaDb(): void {
+		$qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+		$captured = '';
+		$qb->method('createNamedParameter')->willReturnCallback(
+			fn ($v) => "'{$v}'"
+		);
+		$qb->method('andWhere')->willReturnCallback(
+			function (string $sql) use (&$captured) {
+				$captured = $sql;
+			}
+		);
+
+		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyRelationsContainsFilter');
+		$method->setAccessible(true);
+		$method->invoke($this->handler, $qb, 'uuid-abc');
+
+		$this->assertStringNotContainsString('jsonb_typeof', $captured);
+		$this->assertStringNotContainsString('to_jsonb', $captured);
+		$this->assertStringNotContainsString('@>', $captured);
+		$this->assertStringContainsString("JSON_SEARCH(t._relations, 'one', 'uuid-abc')", $captured);
+		$this->assertStringContainsString('IS NOT NULL', $captured);
+	}//end testRelationsContainsFilterEmitsPortableJsonSearchOnMariaDb()
 
 }//end class

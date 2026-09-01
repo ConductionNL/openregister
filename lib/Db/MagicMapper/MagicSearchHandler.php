@@ -1934,6 +1934,19 @@ class MagicSearchHandler {
 		//   2. Object with array-indexed key: JSON_SEARCH restricted to path $.<field>.%
 		//   3. Legacy array shape:            JSON_CONTAINS on the whole array
 		// JSON path arg composed via CONCAT so the field-name parameter binds through.
+		//
+		// Divergence with the Postgres branch: PG matches a flat top-level key
+		// literally named `<field>.<n>` via `kv.key LIKE '<field>.%'` (SQL LIKE
+		// on the flat key string). MariaDB's `$.<field>.%` here is a JSON path
+		// *navigator* — it descends into the member named `<field>` and
+		// wildcard-matches its children. No writer in this repo currently
+		// persists the flat dot-in-key shape (grep -rn '\\.[0-9]' lib/ against
+		// _relations writers — empty), so the two branches are semantically
+		// equivalent for every shape produced in practice. If a writer for the
+		// flat-dot-in-key shape is ever added, this branch has to grow a
+		// `JSON_SEARCH(JSON_KEYS(t._relations), 'one', {$prefixParam})`-based
+		// key-scan too (or, cleaner, the writer switches to the nested-object
+		// shape both branches already handle).
 		$qb->andWhere(
 			"(
                 JSON_UNQUOTE(JSON_EXTRACT(t._relations, CONCAT('$.', {$exactKey}))) = {$valueParam}
