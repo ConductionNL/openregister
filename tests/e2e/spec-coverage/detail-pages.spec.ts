@@ -1,3 +1,6 @@
+import type { APIRequestContext, Page } from '@playwright/test'
+import type { SeededObject, SeededRegister, SeededSchema } from '../_fixtures.ts'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -70,12 +73,9 @@
  * @e2e openspec/specs/flow-engine/spec.md
  * @e2e openspec/specs/rapportage-bi-export/spec.md
  */
-import { test, expect, type APIRequestContext, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
 import {
-	type SeededObject,
-	type SeededRegister,
-	type SeededSchema,
 	createObject,
 	createSchema,
 	deleteObject,
@@ -84,7 +84,7 @@ import {
 	linkSchemaToRegister,
 	makeRunId,
 	twoPropertySchema,
-} from '../_fixtures'
+} from '../_fixtures.ts'
 // Routes are imported by COMPONENT NAME (see tests/e2e/_page-routes.ts): the
 // binding records which page host each route mounts, which a bare path string
 // cannot say. Also what makes this suite legible to gate-26.
@@ -93,7 +93,7 @@ import {
 	FlowDetailPage,
 	ReportView,
 	SchemaDetails,
-} from '../_page-routes'
+} from '../_page-routes.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 const API = '/index.php/apps/openregister/api'

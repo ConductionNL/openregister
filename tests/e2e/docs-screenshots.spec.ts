@@ -37,13 +37,15 @@
  * Pattern reference: ADR-030 (hydra/openspec/architecture/).
  */
 
-import { test, expect, type Page } from '@playwright/test'
-import * as path from 'path'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 import * as fs from 'fs'
+import * as path from 'path'
 // Routes are imported by COMPONENT NAME (see tests/e2e/_page-routes.ts): the
 // binding records which page host each route mounts, which a bare path string
 // cannot say. Also what makes this suite legible to gate-26.
-import { AuditTrailIndex } from './_page-routes'
+import { AuditTrailIndex } from './_page-routes.ts'
 
 const SHOT_ROOT = path.resolve(
 	__dirname,

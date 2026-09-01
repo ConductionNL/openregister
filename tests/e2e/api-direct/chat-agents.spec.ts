@@ -13,7 +13,7 @@
  * (correct HTTP status, JSON envelope) without requiring a configured
  * LLM backend. Most will skip if no agent/LLM is configured.
  */
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const RUN_ID = `e2e-${Date.now()}`
 

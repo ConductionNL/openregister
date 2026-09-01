@@ -27,9 +27,11 @@
  *
  * Uses storageState from global-setup.
  */
-import { test, expect, Page } from '@playwright/test'
-import * as path from 'path'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 import * as fs from 'fs'
+import * as path from 'path'
 
 const STORAGE_STATE = path.resolve(__dirname, '.auth/admin.json')
 const APP_BASE = '/index.php/apps/openregister/#'
