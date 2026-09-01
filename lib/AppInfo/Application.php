@@ -2531,16 +2531,16 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Listener\TaskRunTerminalListener::class
 		);
 
-<<<<<<< HEAD
-		// The other direction (flow-user-task-node): a task the graph raised
+// The other direction (flow-user-task-node): a task the graph raised
 		// reached a terminal state, so its suspended run is woken and, per the
 		// node's `advance` budget, continued in-request. Fires AFTER the task's
-		// own transaction committed; a failure here costs latency, never the
-		// completion.
+		// own transaction committed (the listener skips uncommitted dispatches);
+		// a failure here costs latency, never the completion.
 		$context->registerEventListener(
 			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
 			\OCA\OpenRegister\Listener\UserTaskTerminalListener::class
-=======
+		);
+
 		// Business-timer cancellation propagation (flow-business-timers, design
 		// D-9): a terminal task (TaskMapper, both write paths) or a terminal run
 		// (FlowRunMapper) cancels its open timers INSIDE the write that made the
@@ -2553,7 +2553,6 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(
 			\OCA\OpenRegister\Event\FlowRunTerminalEvent::class,
 			\OCA\OpenRegister\Listener\FlowTimerSubjectTerminalListener::class
->>>>>>> origin/feature/flow-business-timers
 		);
 
 		// Lifecycle annotation listeners — see x-openregister-lifecycle.

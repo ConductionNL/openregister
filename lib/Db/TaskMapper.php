@@ -147,11 +147,7 @@ class TaskMapper extends QBMapper {
 		}
 
 		$this->dispatcher->dispatchTyped(
-			new TaskTerminalEvent(
-				taskUuid: (string)$task->getUuid(),
-				state: (string)$task->getState(),
-				outcome: $task->getOutcome()
-			)
+			new TaskTerminalEvent(task: $task, committed: false)
 		);
 	}//end announceTerminality()
 

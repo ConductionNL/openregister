@@ -69,7 +69,7 @@ class UserTaskTerminalListener implements IEventListener {
 	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
 	 */
 	public function handle(Event $event): void {
-		if ($event instanceof TaskTerminalEvent === false) {
+		if ($event instanceof TaskTerminalEvent === false || $event->isCommitted() === false) {
 			return;
 		}
 

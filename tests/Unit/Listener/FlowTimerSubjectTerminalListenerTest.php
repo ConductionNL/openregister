@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Event\FlowRunTerminalEvent;
+use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Listener\FlowTimerSubjectTerminalListener;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
@@ -50,8 +51,17 @@ class FlowTimerSubjectTerminalListenerTest extends TestCase {
 		$this->listener = new FlowTimerSubjectTerminalListener(timers: $this->timers, logger: $this->logger);
 	}//end setUp()
 
+	private function terminalTask(string $uuid, string $state, ?string $outcome): Task {
+		$task = new Task();
+		$task->setUuid($uuid);
+		$task->setState($state);
+		$task->setOutcome($outcome);
+
+		return $task;
+	}//end terminalTask()
+
 	public function testATerminalTaskCancelsItsTimersWithTheReasonRecorded(): void {
-		$event = new TaskTerminalEvent(taskUuid: 'task-1', state: 'completed', outcome: 'approved');
+		$event = new TaskTerminalEvent(task: $this->terminalTask('task-1', 'completed', 'approved'), committed: false);
 		self::assertSame('task-1', $event->getTaskUuid());
 		self::assertSame('completed', $event->getState());
 		self::assertSame('approved', $event->getOutcome());
@@ -80,6 +90,6 @@ class FlowTimerSubjectTerminalListenerTest extends TestCase {
 	public function testAFailureIsLoggedNotRethrown(): void {
 		$this->timers->method('cancelForSubject')->willThrowException(new RuntimeException('boom'));
 		$this->logger->expects(self::once())->method('error')->with(self::stringContains('boom'), self::anything());
-		$this->listener->handle(new TaskTerminalEvent(taskUuid: 'task-1', state: 'terminated', outcome: null));
+		$this->listener->handle(new TaskTerminalEvent(task: $this->terminalTask('task-1', 'terminated', null), committed: false));
 	}//end testAFailureIsLoggedNotRethrown()
 }//end class
