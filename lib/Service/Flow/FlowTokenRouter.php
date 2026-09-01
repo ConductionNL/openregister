@@ -130,6 +130,18 @@ class FlowTokenRouter {
 			itemCount: count($items),
 			context: $context
 		);
+
+		// 🔴 THE STEP'S OWN ROUTING DECISION COUNTS. A routing node (the
+		// `openregister.route` step) declares UNCONDITIONED exits and tags its
+		// items with the output it matched — that tag IS the decision. Reading
+		// only edge conditions here meant every routed firing fell through to
+		// the first declared exit: the token took a branch by declaration
+		// order while the node's log said it had routed the other way.
+		// A conditioned exit that holds still wins (a Switch is unchanged);
+		// among unconditioned exits, one an item is tagged for — by exit id or
+		// by target place — beats the plain declaration-order else.
+		$tags = $this->routedTags(items: $items);
+		$tagged = null;
 		$fallback = null;
 
 		foreach ($node['exits'] as $exit) {
@@ -137,10 +149,11 @@ class FlowTokenRouter {
 				continue;
 			}
 
+			$exitId = (string)($exit['id'] ?? '');
 			$targets = $this->placesForExit(
 				flow: $flow,
 				nodeId: $transition->getName(),
-				exitId: (string)($exit['id'] ?? ''),
+				exitId: $exitId,
 				candidates: $all
 			);
 			if (empty($targets) === true) {
@@ -149,6 +162,10 @@ class FlowTokenRouter {
 
 			$condition = ($exit['condition'] ?? null);
 			if (is_array($condition) === false || $condition === []) {
+				if ($this->exitIsTagged(exitId: $exitId, targets: $targets, tags: $tags) === true) {
+					$tagged = ($tagged ?? $targets);
+				}
+
 				$fallback = ($fallback ?? $targets);
 				continue;
 			}
@@ -158,12 +175,105 @@ class FlowTokenRouter {
 			}
 		}//end foreach
 
-		// Nothing matched. The else takes it; a branching node is required to
-		// have one, so reaching null here means the document got past the
-		// builder's guard and the token would vanish — return nothing rather
-		// than silently broadcasting to every branch.
-		return ($fallback ?? []);
+		// Nothing matched a condition. An exit the items are routed to beats
+		// the declaration-order else; the else takes it otherwise. A branching
+		// node is required to have one, so reaching null here means the
+		// document got past the builder's guard and the token would vanish —
+		// return nothing rather than silently broadcasting to every branch.
+		return ($tagged ?? $fallback ?? []);
 	}//end takenExits()
+
+	/**
+	 * The set of output tags the produced items carry, keyed for lookup.
+	 *
+	 * @param array<int, mixed> $items What the step produced.
+	 *
+	 * @return array<string, true> The tags.
+	 *
+	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 */
+	private function routedTags(array $items): array {
+		$tags = [];
+		foreach ($items as $item) {
+			$tag = FlowItems::outputOf(member: (array)$item);
+			if ($tag !== null) {
+				$tags[$tag] = true;
+			}
+		}
+
+		return $tags;
+	}//end routedTags()
+
+	/**
+	 * Whether any produced item is routed to this exit, by id or by place.
+	 *
+	 * @param string $exitId The exit's id.
+	 * @param array<string> $targets The exit's places.
+	 * @param array<string, true> $tags The items' output tags.
+	 *
+	 * @return bool True when an item names the exit or one of its places.
+	 *
+	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 */
+	private function exitIsTagged(string $exitId, array $targets, array $tags): bool {
+		return array_intersect(array_merge([$exitId], $targets), array_keys($tags)) !== [];
+	}//end exitIsTagged()
+
+	/**
+	 * Resolve item output tags that name an EXIT into the exit's place.
+	 *
+	 * The two halves of per-item routing speak different vocabularies unless
+	 * this runs: a routing node tags items with the exit id its rule named
+	 * (`output: "no"`), while `FlowItemPlacement::itemsForOutput()` matches
+	 * tags against PLACE names (`onRejected`). Left unresolved, every routed
+	 * item was silently discarded when the token landed — the branch fired
+	 * with zero items and the run persisted `items: []`, losing the seed and
+	 * everything the earlier steps produced.
+	 *
+	 * A tag that already names one of the transition's places is left alone.
+	 * A tag naming an exit with exactly one place becomes that place; one
+	 * naming an exit with several places is removed, because the whole exit
+	 * was taken and an untagged item is broadcast to every taken place. A tag
+	 * naming neither is left as-is, keeping the existing drop semantics for a
+	 * genuinely unroutable tag.
+	 *
+	 * @param array<string, mixed> $flow The flow document.
+	 * @param object $transition The fired transition (a node).
+	 * @param array<int, mixed> $items What the step produced.
+	 *
+	 * @return array<int, mixed> The items, exit-id tags resolved to places.
+	 *
+	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 */
+	public function resolveOutputTags(array $flow, object $transition, array $items): array {
+		$all = array_map(static fn ($t): string => (string)$t, $transition->getTos());
+
+		foreach ($items as $index => $item) {
+			if (is_array($item) === false) {
+				continue;
+			}
+
+			$tag = FlowItems::outputOf(member: $item);
+			if ($tag === null || in_array($tag, $all, true) === true) {
+				continue;
+			}
+
+			$places = $this->placesForExit(
+				flow: $flow,
+				nodeId: $transition->getName(),
+				exitId: $tag,
+				candidates: $all
+			);
+
+			if (count($places) === 1) {
+				$items[$index][FlowItems::OUTPUT] = $places[0];
+			} elseif (count($places) > 1) {
+				unset($items[$index][FlowItems::OUTPUT]);
+			}
+		}
+
+		return $items;
+	}//end resolveOutputTags()
 
 	/**
 	 * The output places reached through one named exit.

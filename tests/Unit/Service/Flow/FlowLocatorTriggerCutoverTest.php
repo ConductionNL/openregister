@@ -33,6 +33,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
+use OCA\OpenRegister\Db\FlowVersion;
+use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -42,6 +44,8 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowLocator
+ * @uses \OCA\OpenRegister\Db\Flow
+ * @uses \OCA\OpenRegister\Db\FlowVersion
  */
 class FlowLocatorTriggerCutoverTest extends TestCase {
 
@@ -65,10 +69,28 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 			mapper: $this->mapper,
 			triggerMapper: $this->triggerMapper,
 			objectService: $this->createMock(ObjectService::class),
-			logger: $this->logger
+			logger: $this->logger,
+			versions: $this->publishedVersions()
 		);
 
 	}//end setUp()
+
+	/**
+	 * A version store where every flow has a published version — the shape a
+	 * backfilled instance has, so these tests stay about the cutover.
+	 *
+	 * @return FlowVersionMapper The mapped double.
+	 */
+	private function publishedVersions(): FlowVersionMapper {
+		$published = new FlowVersion();
+		$published->setStatus(FlowVersion::STATUS_PUBLISHED);
+		$published->setVersion(1);
+
+		$versions = $this->createMock(FlowVersionMapper::class);
+		$versions->method('findPublished')->willReturn($published);
+
+		return $versions;
+	}//end publishedVersions()
 
 	/**
 	 * A dispatchable flow with the given uuid.
@@ -86,6 +108,81 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 
 		return $flow;
 	}//end flow()
+
+	/**
+	 * 🔴 A DRAFT MATCHES NOTHING, on the fallback path too. An enabled flow
+	 * that was never published has zero index rows, so it used to slip through
+	 * the column fallback as "unconverted" — and the queue's refusal of it
+	 * then aborted the whole fan-out for every healthy flow on the event. The
+	 * locator must offer only flows a published version can back; the sibling
+	 * with one still fires.
+	 *
+	 * @return void
+	 */
+	public function testAnUnpublishedFlowIsFilteredFromTheColumnFallback(): void {
+		$this->triggerMapper->method('flowUuidsFor')->willReturn([]);
+		$this->triggerMapper->method('representedFlowUuids')->willReturn([]);
+		$this->mapper->method('findByTrigger')->willReturn([$this->flow('never-published'), $this->flow('published-1')]);
+
+		$published = new FlowVersion();
+		$published->setStatus(FlowVersion::STATUS_PUBLISHED);
+		$published->setVersion(1);
+
+		$versions = $this->createMock(FlowVersionMapper::class);
+		$versions->method('findPublished')->willReturnCallback(
+			static function (string $flowUuid) use ($published): ?FlowVersion {
+				if ($flowUuid === 'never-published') {
+					return null;
+				}
+
+				return $published;
+			}
+		);
+
+		$locator = new FlowLocator(
+			mapper: $this->mapper,
+			triggerMapper: $this->triggerMapper,
+			objectService: $this->createMock(ObjectService::class),
+			logger: $this->logger,
+			versions: $versions
+		);
+
+		$this->assertSame(
+			['published-1'],
+			$locator->flowsForTrigger('object.created', 'dossiq', 'case'),
+			'an enabled-but-unpublished flow must not be offered to the queue; its published sibling must be'
+		);
+	}//end testAnUnpublishedFlowIsFilteredFromTheColumnFallback()
+
+	/**
+	 * An unreadable version table FAILS OPEN: the fallback flow stays in the
+	 * match and the queue path decides. Silencing every fallback flow because
+	 * one lookup failed would stop the engine without a word.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableVersionTableFailsOpen(): void {
+		$this->triggerMapper->method('flowUuidsFor')->willReturn([]);
+		$this->triggerMapper->method('representedFlowUuids')->willReturn([]);
+		$this->mapper->method('findByTrigger')->willReturn([$this->flow('legacy-1')]);
+
+		$versions = $this->createMock(FlowVersionMapper::class);
+		$versions->method('findPublished')->willThrowException(new RuntimeException('table gone'));
+
+		$locator = new FlowLocator(
+			mapper: $this->mapper,
+			triggerMapper: $this->triggerMapper,
+			objectService: $this->createMock(ObjectService::class),
+			logger: $this->logger,
+			versions: $versions
+		);
+
+		$this->assertSame(
+			['legacy-1'],
+			$locator->flowsForTrigger('object.created', 'dossiq', 'case'),
+			'an unreadable version table must not silence the engine'
+		);
+	}//end testAnUnreadableVersionTableFailsOpen()
 
 	/**
 	 * An UNCONVERTED flow keeps firing through its columns.

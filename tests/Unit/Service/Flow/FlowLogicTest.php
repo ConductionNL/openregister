@@ -47,6 +47,35 @@ class TrackingDispatcher implements FlowStepDispatcher {
 	}
 }
 
+/** Tags every item leaving the `route` step with one output, like RouterNode does. */
+class RouteTaggingDispatcher implements FlowStepDispatcher {
+	public array $ran = [];
+
+	public array $itemsSeen = [];
+
+	public function __construct(
+		private readonly string $tag,
+	) {
+	}
+
+	public function dispatch(array $step, array $items, array $context): array {
+		$type = (string)($step['type'] ?? '');
+		if ($type !== '') {
+			$this->ran[] = $type;
+			$this->itemsSeen[$type] = $items;
+		}
+
+		if ($type === 'route') {
+			return array_map(
+				fn (array $item): array => FlowItems::item(json: (array)($item['json'] ?? []), output: $this->tag),
+				$items
+			);
+		}
+
+		return $items;
+	}
+}
+
 class FlowLogicTest extends TestCase {
 	private FlowEngine $engine;
 
@@ -236,6 +265,81 @@ class FlowLogicTest extends TestCase {
 		$this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
 		$this->assertSame(['switch', 'fallback'], $d->ran);
 	}
+
+	/**
+	 * 🔴 D3 REGRESSION, the item loss: a routing step tags its items with the
+	 * EXIT ID its rule named (`output: "no"`), while the per-place delivery
+	 * compares tags against PLACE names (`onRejected`). Unresolved, the taken
+	 * branch fired with ZERO items — the run persisted `items: []`, losing the
+	 * seed and every earlier step's output, exactly the sync task-completion
+	 * repro (transitions all correct, items empty afterwards).
+	 *
+	 * @return void
+	 */
+	public function testAnItemTaggedWithAnExitIdLandsOnTheExitsPlace(): void {
+		$flow = [
+			'id' => 'route-items',
+			'nodes' => [
+				['id' => 'route', 'type' => 'route', 'exits' => [['id' => 'no'], ['id' => 'yes']]],
+				['id' => 'onRejected', 'type' => 'rejected'],
+				['id' => 'onApproved', 'type' => 'approved'],
+			],
+			'edges' => [
+				['id' => 'e2', 'from' => 'route', 'fromExit' => 'no', 'to' => 'onRejected'],
+				['id' => 'e3', 'from' => 'route', 'fromExit' => 'yes', 'to' => 'onApproved'],
+			],
+		];
+
+		$d = new RouteTaggingDispatcher(tag: 'no');
+		$result = $this->engine->run(
+			flow: $flow,
+			store: new MethodMarkingStore(false, 'marking'),
+			subject: new LogicSubject(),
+			dispatcher: $d,
+			context: [],
+			items: [FlowItems::item(json: ['name' => 'Case 7'])]
+		);
+
+		$this->assertSame(['route', 'rejected'], $d->ran, 'the rejection branch, and only it, fires');
+		$this->assertCount(1, $d->itemsSeen['rejected'], 'the routed item must ARRIVE on the taken branch');
+		$this->assertSame('Case 7', $d->itemsSeen['rejected'][0]['json']['name']);
+		$this->assertSame('Case 7', ($result['items'][0]['json']['name'] ?? null), 'the run must not persist empty items');
+	}//end testAnItemTaggedWithAnExitIdLandsOnTheExitsPlace()
+
+	/**
+	 * 🔴 D3 REGRESSION, the exit choice: among UNCONDITIONED exits the item's
+	 * routing tag decides, not declaration order. The tagged exit is declared
+	 * SECOND here — before the fix the token fell through to the first
+	 * declared exit while the node's own log said it routed the other way.
+	 *
+	 * @return void
+	 */
+	public function testTheTaggedExitBeatsDeclarationOrder(): void {
+		$flow = [
+			'id' => 'route-order',
+			'nodes' => [
+				['id' => 'route', 'type' => 'route', 'exits' => [['id' => 'yes'], ['id' => 'no']]],
+				['id' => 'onRejected', 'type' => 'rejected'],
+				['id' => 'onApproved', 'type' => 'approved'],
+			],
+			'edges' => [
+				['id' => 'e2', 'from' => 'route', 'fromExit' => 'no', 'to' => 'onRejected'],
+				['id' => 'e3', 'from' => 'route', 'fromExit' => 'yes', 'to' => 'onApproved'],
+			],
+		];
+
+		$d = new RouteTaggingDispatcher(tag: 'no');
+		$this->engine->run(
+			flow: $flow,
+			store: new MethodMarkingStore(false, 'marking'),
+			subject: new LogicSubject(),
+			dispatcher: $d,
+			context: [],
+			items: [FlowItems::item(json: ['name' => 'Case 7'])]
+		);
+
+		$this->assertSame(['route', 'rejected'], $d->ran, 'the token follows the routing decision, not declaration order');
+	}//end testTheTaggedExitBeatsDeclarationOrder()
 
 	/**
 	 * A Stop step ends the run as `stopped`, with its message in the log.

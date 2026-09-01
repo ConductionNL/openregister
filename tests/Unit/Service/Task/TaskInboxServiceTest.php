@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
 use DateTime;
 use OCA\OpenRegister\Db\AbstractObjectMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Db\TaskMapper;
@@ -43,6 +44,7 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\Task\TaskTemporalProjection
  * @covers \OCA\OpenRegister\Db\TaskInboxCriteria
  * @covers \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class TaskInboxServiceTest extends TestCase {
 
@@ -209,11 +211,18 @@ class TaskInboxServiceTest extends TestCase {
 		$objects->expects($this->once())->method('findMultiple')->willReturnCallback(
 			function (array $ids): array {
 				$this->assertEqualsCanonicalizing(['obj-1', 'obj-2'], $ids);
-				$one = new class () implements \JsonSerializable {
-					public function jsonSerialize(): array {
-						return ['uuid' => 'obj-1', 'register' => 'zaken', 'schema' => 'zaak', 'name' => 'Zaak 42'];
-					}
-				};
+				// 🔴 THE REAL SHAPE, not a hand-rolled flat one: ObjectEntity
+				// serialises identity under `@self` (uuid keyed `id`) with the
+				// object's own data at top level. The previous stub returned
+				// flat `uuid`/`register`/`schema`/`name` keys the entity never
+				// emits, so this test agreed with the exact bug it should have
+				// caught — every portal and inbox row shipped `subject: null`.
+				$one = new ObjectEntity();
+				$one->setUuid('obj-1');
+				$one->setName('Zaak 42');
+				$one->setRegister('zaken');
+				$one->setSchema('zaak');
+				$one->setObject(['status' => 'open']);
 				$noUuid = new class () implements \JsonSerializable {
 					public function jsonSerialize(): array {
 						return ['name' => 'orphan'];
@@ -246,6 +255,38 @@ class TaskInboxServiceTest extends TestCase {
 		$this->assertSame('Task: obj-2', $result['results'][1]['displayTitle']);
 		$this->assertSame('Task', $result['results'][2]['displayTitle']);
 	}//end testSubjectContextIsBatchedForThePage()
+
+	/**
+	 * A store that serialises FLAT (uuid/register/schema/name at top level)
+	 * still resolves: the flat keys are the documented fallback for stores
+	 * that are not ObjectEntity.
+	 *
+	 * @return void
+	 */
+	public function testAFlatSerialisingStoreStillResolvesThroughTheFallbacks(): void {
+		$objects = $this->createMock(originalClassName: AbstractObjectMapper::class);
+		$objects->method('findMultiple')->willReturn(
+			[
+				new class () implements \JsonSerializable {
+					public function jsonSerialize(): array {
+						return ['uuid' => 'obj-1', 'register' => 'zaken', 'schema' => 'zaak', 'title' => 'Zaak 42'];
+					}
+				},
+			]
+		);
+		$inbox = new TaskInboxService(tasks: $this->tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: $objects);
+
+		$task = new Task();
+		$task->setUuid('t-1');
+		$task->setObjectUuid('obj-1');
+		$this->tasks->method('findInbox')->willReturn([$task]);
+		$this->tasks->method('countInbox')->willReturn(1);
+
+		$result = $inbox->inbox(criteria: new TaskInboxCriteria(uid: 'alice'));
+
+		$this->assertSame('zaken', $result['results'][0]['subject']['register']);
+		$this->assertSame('Zaak 42', $result['results'][0]['subject']['title'], 'the flat title fallback still answers');
+	}//end testAFlatSerialisingStoreStillResolvesThroughTheFallbacks()
 
 	/**
 	 * A failing object store never fails the inbox: context reads null.

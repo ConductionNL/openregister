@@ -94,13 +94,30 @@ class FlowTriggerService {
 
 			$queued = 0;
 			foreach ($flowIds as $flowId) {
-				$run = $this->runner->queue(
-					flowId: $flowId,
-					subject: $subject,
-					trigger: $event,
-					context: $context,
-					user: $user
-				);
+				// 🔴 PER-FLOW ISOLATION. The fan-out queues one run PER FLOW,
+				// and one flow's refusal is a fact about THAT flow — an
+				// enabled-but-unpublished flow on the event refuses with "no
+				// published version". Thrown out of the loop it aborted the
+				// whole fan-out, so the one broken flow silenced every healthy
+				// flow wired to the same event. Log it against the flow and
+				// keep queuing the rest.
+				try {
+					$run = $this->runner->queue(
+						flowId: $flowId,
+						subject: $subject,
+						trigger: $event,
+						context: $context,
+						user: $user
+					);
+				} catch (Throwable $one) {
+					$this->logger->error(
+						message: '[FlowTriggerService] Failed to queue a flow run for an event; '
+							. 'the event\'s other flows still queue: ' . $one->getMessage(),
+						context: ['file' => __FILE__, 'line' => __LINE__, 'event' => $event, 'flow' => $flowId]
+					);
+					continue;
+				}
+
 				$queued++;
 
 				// A `sync` flow runs inside the call that triggered it, so its
@@ -109,8 +126,20 @@ class FlowTriggerService {
 				// history, retry and resume treat it exactly like a drained run.
 				// A sync flow that suspends is simply left for the worker; the
 				// inline call never blocks on a wait.
-				$this->runInline(run: $run, flowId: $flowId, subject: $subject);
-			}
+				//
+				// Its OWN catch, separate from the queue's: by this point the
+				// run EXISTS and the worker will drain it, so an inline failure
+				// neither uncounts this flow's run nor skips its siblings.
+				try {
+					$this->runInline(run: $run, flowId: $flowId, subject: $subject);
+				} catch (Throwable $inline) {
+					$this->logger->error(
+						message: '[FlowTriggerService] Inline execution of a sync flow failed; '
+							. 'the run stays queued and the worker takes over: ' . $inline->getMessage(),
+						context: ['file' => __FILE__, 'line' => __LINE__, 'event' => $event, 'flow' => $flowId, 'run' => $run->getUuid()]
+					);
+				}
+			}//end foreach
 
 			$this->logger->debug(
 				message: '[FlowTriggerService] Queued flow runs for an event',
