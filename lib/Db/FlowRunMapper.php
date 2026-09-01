@@ -36,6 +36,8 @@ use OCP\IDBConnection;
  * ad-hoc query builders at each call site.
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) One query per way the queue, the recovery pass
+ * and the API read a run; the lock read for the commit path is the latest of them.
  *
  * @template-extends QBMapper<FlowRun>
  *
@@ -72,6 +74,31 @@ class FlowRunMapper extends QBMapper {
 
 		return $this->findEntity(query: $qb);
 	}//end findByUuid()
+
+	/**
+	 * Read one run FOR UPDATE — the critical section's lock.
+	 *
+	 * Must be called inside a transaction; the lock lives exactly as long as
+	 * that transaction. Everything FlowRunCommit writes is computed from the
+	 * row this returns, never from a value read before the lock was taken.
+	 *
+	 * @param string $uuid The run uuid.
+	 *
+	 * @return FlowRun The locked run.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When there is no such run.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-marking-must-be-written-as-a-delta-never-as-a-whole-overwrite
+	 */
+	public function lockByUuid(string $uuid): FlowRun {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)))
+			->forUpdate();
+
+		return $this->findEntity(query: $qb);
+	}//end lockByUuid()
 
 	/**
 	 * List runs, newest first.
