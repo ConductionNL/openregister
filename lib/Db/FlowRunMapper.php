@@ -40,10 +40,16 @@ use OCP\IDBConnection;
  * ad-hoc query builders at each call site.
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
- * @SuppressWarnings(PHPMD.ExcessiveClassLength) Thirty lines over, from the
- * update() override that announces run terminality (flow-task-entity). It
- * lives here because this is the one choke point every terminal write
- * passes; moving it out would recreate the per-site dispatch it replaces.
+ * @SuppressWarnings(PHPMD.TooManyMethods)     Over by four since the subject-scoped
+ * reads of `flow-runs-subject-scope`, for the same reason: each public method is
+ * a distinct question with its own predicate set, and the private helpers behind
+ * the new reads exist so a row read and its count cannot drift apart on what
+ * they filter. Splitting the table across two mappers would hide the count, not
+ * the vocabulary.
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) Over the line budget by the same
+ * change. Most of the length is the docblocks that record WHY each query carries
+ * the predicates it does; those predicates are tenant boundaries, and trimming
+ * the reasoning to fit a line count is the wrong trade.
  *
  * @template-extends QBMapper<FlowRun>
  *
@@ -522,14 +528,24 @@ class FlowRunMapper extends QBMapper {
 	 * every user, and guessing a tenant for an unattributed run would leak one
 	 * tenant's activity into another's dashboard.
 	 *
+	 * The subject filter only ever NARROWS. It is a second predicate on
+	 * `subject_uuid` added NEXT TO the organisation predicate, never instead of
+	 * it: a subject uuid is guessable, so a run in another organisation that
+	 * happens to carry the asked-for subject must stay as invisible as it is
+	 * without the filter. Filtering here, in the datastore, is also what keeps
+	 * the total honest: a caller that filtered a bounded page client-side would
+	 * silently drop every matching run the page did not contain.
+	 *
 	 * @param string|null $organisation Restrict to one organisation uuid.
 	 * @param integer $limit Page size.
+	 * @param string|null $subject Restrict to runs anchored to one subject object uuid.
 	 *
 	 * @return array<int, FlowRun> The non-terminal runs.
 	 *
 	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
 	 */
-	public function findActive(?string $organisation = null, int $limit = 25): array {
+	public function findActive(?string $organisation = null, int $limit = 25, ?string $subject = null): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
@@ -545,6 +561,8 @@ class FlowRunMapper extends QBMapper {
 		if ($organisation !== null && $organisation !== '') {
 			$qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation)));
 		}
+
+		$this->narrowToSubject(qb: $qb, subject: $subject);
 
 		return $this->findEntities(query: $qb);
 	}//end findActive()
@@ -611,13 +629,19 @@ class FlowRunMapper extends QBMapper {
 	 * an honest total — "3 of 47 running" needs the 47, and paging the whole
 	 * set to count it would be absurd.
 	 *
+	 * Takes the same subject filter as {@see findActive}, applied the same
+	 * way, so the total a widget states is the total of the rows it filtered
+	 * rather than of a set the caller never asked for.
+	 *
 	 * @param string|null $organisation Restrict to one organisation uuid.
+	 * @param string|null $subject Restrict to runs anchored to one subject object uuid.
 	 *
 	 * @return integer The number of non-terminal runs.
 	 *
 	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
 	 */
-	public function countActive(?string $organisation = null): int {
+	public function countActive(?string $organisation = null, ?string $subject = null): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->createFunction('COUNT(*) AS `total`'))
 			->from($this->getTableName())
@@ -632,12 +656,141 @@ class FlowRunMapper extends QBMapper {
 			$qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation)));
 		}
 
+		$this->narrowToSubject(qb: $qb, subject: $subject);
+
+		return $this->fetchTotal(qb: $qb);
+	}//end countActive()
+
+	/**
+	 * The finished runs anchored to ONE subject object, newest first.
+	 *
+	 * A case page's "what already ran here". The read is deliberately narrow
+	 * in a way the history surface (`findAllRuns`) is not: the subject is
+	 * REQUIRED and the organisation is REQUIRED, and both are equality
+	 * predicates in the datastore. There is no org-wide "all finished runs"
+	 * on this path; a caller who wants that has the history endpoint, with
+	 * its own per-caller visibility rule. Widening THIS read would widen run
+	 * visibility through the back door, which `or-flow-active-runs` forbids.
+	 *
+	 * Fails CLOSED on a missing predicate: an empty organisation or subject
+	 * returns nothing without a query rather than dropping the predicate and
+	 * answering a wider question than was asked.
+	 *
+	 * @param string $organisation The caller's organisation uuid.
+	 * @param string $subject The subject object uuid.
+	 * @param integer $limit Page size.
+	 *
+	 * @return array<int, FlowRun> The terminal runs, newest first.
+	 *
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
+	 */
+	public function findCompletedForSubject(string $organisation, string $subject, int $limit = 25): array {
+		if ($organisation === '' || $subject === '') {
+			return [];
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->orderBy('id', 'DESC')
+			->setMaxResults($limit);
+
+		$this->whereTerminalForSubject(qb: $qb, organisation: $organisation, subject: $subject);
+
+		return $this->findEntities(query: $qb);
+	}//end findCompletedForSubject()
+
+	/**
+	 * How many finished runs one subject object has, for the honest total.
+	 *
+	 * Same predicates as {@see findCompletedForSubject}, so "3 of 14 earlier
+	 * runs" counts the set the rows came from.
+	 *
+	 * @param string $organisation The caller's organisation uuid.
+	 * @param string $subject The subject object uuid.
+	 *
+	 * @return integer The number of terminal runs on the subject.
+	 *
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
+	 */
+	public function countCompletedForSubject(string $organisation, string $subject): int {
+		if ($organisation === '' || $subject === '') {
+			return 0;
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->createFunction('COUNT(*) AS `total`'))
+			->from($this->getTableName());
+
+		$this->whereTerminalForSubject(qb: $qb, organisation: $organisation, subject: $subject);
+
+		return $this->fetchTotal(qb: $qb);
+	}//end countCompletedForSubject()
+
+	/**
+	 * Add the subject predicate when a subject was asked for.
+	 *
+	 * One place for both the row read and the count, so the two cannot drift
+	 * apart on what "this subject's runs" means. A null or empty subject adds
+	 * nothing, which is what makes the unfiltered read bit-identical to before.
+	 *
+	 * @param IQueryBuilder $qb The query being built.
+	 * @param string|null $subject The subject object uuid, or null for no filter.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
+	 */
+	private function narrowToSubject(IQueryBuilder $qb, ?string $subject): void {
+		if ($subject === null || $subject === '') {
+			return;
+		}
+
+		$qb->andWhere($qb->expr()->eq('subject_uuid', $qb->createNamedParameter($subject)));
+	}//end narrowToSubject()
+
+	/**
+	 * The three predicates of the completed-runs read: terminal, this organisation, this subject.
+	 *
+	 * Order is a correctness statement, not an optimisation: the organisation
+	 * predicate is unconditional, so a guessed subject uuid from another
+	 * tenant matches zero rows rather than leaking one.
+	 *
+	 * @param IQueryBuilder $qb The query being built.
+	 * @param string $organisation The caller's organisation uuid.
+	 * @param string $subject The subject object uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
+	 */
+	private function whereTerminalForSubject(IQueryBuilder $qb, string $organisation, string $subject): void {
+		$qb->where(
+			$qb->expr()->in(
+				'status',
+				$qb->createNamedParameter(FlowRun::TERMINAL, IQueryBuilder::PARAM_STR_ARRAY)
+			)
+		)
+			->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation)))
+			->andWhere($qb->expr()->eq('subject_uuid', $qb->createNamedParameter($subject)));
+	}//end whereTerminalForSubject()
+
+	/**
+	 * Run a COUNT(*) query and return its one number.
+	 *
+	 * @param IQueryBuilder $qb A query selecting `COUNT(*) AS total`.
+	 *
+	 * @return integer The count.
+	 *
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
+	 */
+	private function fetchTotal(IQueryBuilder $qb): int {
 		$result = $qb->executeQuery();
 		$total = (int)$result->fetchOne();
 		$result->closeCursor();
 
 		return $total;
-	}//end countActive()
+	}//end fetchTotal()
 
 	/**
 	 * Suspended runs that are due to resume.

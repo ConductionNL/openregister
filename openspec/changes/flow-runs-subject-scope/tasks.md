@@ -2,12 +2,12 @@
 
 ## 1. The subject filter on the live read
 
-- [ ] 1.1 `FlowRunMapper::findActive()` and `countActive()` gain an
+- [x] 1.1 `FlowRunMapper::findActive()` and `countActive()` gain an
       optional `subject` argument, added as an `AND` predicate on
       `subject_uuid` next to the unconditional organisation predicate
       (`lib/Db/FlowRunMapper.php:477`, `:565`). Rows and total share the
       predicates.
-- [ ] 1.2 `FlowRunController::active()` reads the `subject` request
+- [x] 1.2 `FlowRunController::active()` reads the `subject` request
       parameter and passes it through
       (`lib/Controller/FlowRunController.php:225`). Absent parameter is
       bit-identical to today; the no-organisation early return stays
@@ -15,18 +15,18 @@
 
 ## 2. The completed-runs read
 
-- [ ] 2.1 `FlowRunMapper::findCompletedForSubject()` +
+- [x] 2.1 `FlowRunMapper::findCompletedForSubject()` +
       `countCompletedForSubject()`: `FlowRun::TERMINAL` statuses
       (`lib/Db/FlowRun.php:142`), required subject uuid, organisation
       predicate, newest first, capped limit.
-- [ ] 2.2 `FlowRunController::completedForSubject()` + route
+- [x] 2.2 `FlowRunController::completedForSubject()` + route
       `GET /api/flow-runs/completed` in `appinfo/routes.php`, refusing a
       request without `subject` and reusing `summarise()` unchanged. The
       existing `flowRun#index` history endpoint is not touched.
 
 ## 3. The index
 
-- [ ] 3.1 Migration adding a composite index over
+- [x] 3.1 Migration adding a composite index over
       `(organisation, subject_uuid, status)` on the runs table.
 
 ## 4. Follow-up (not in this change)
@@ -38,11 +38,11 @@
 
 ## 5. Tests
 
-- [ ] 5.1 Mapper unit tests: subject narrowing with honest totals; a
+- [x] 5.1 Mapper unit tests: subject narrowing with honest totals; a
       matching subject uuid in another organisation returns and counts
       nothing; the terminal set drives the completed read (including
       `failed`); newest-first ordering.
-- [ ] 5.2 Controller unit tests: absent `subject` equals today's read;
+- [x] 5.2 Controller unit tests: absent `subject` equals today's read;
       missing subject on the completed read is refused naming the
       parameter; both reads return the summarised row (uuid, flow name,
       step, status, started at, subject block) and never marking, items
