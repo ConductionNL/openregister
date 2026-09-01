@@ -39,6 +39,11 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Task\TaskFormResolver
  * @covers \OCA\OpenRegister\Service\Task\TaskFormReader
  * @covers \OCA\OpenRegister\Service\Task\TaskForm
+ * @uses \OCA\OpenRegister\Db\Flow
+ * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\FormLink
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Task
  */
 class TaskFormResolverTest extends TestCase {
 

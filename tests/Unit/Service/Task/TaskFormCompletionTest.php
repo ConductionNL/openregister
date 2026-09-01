@@ -38,6 +38,13 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Task\TaskFormCompletion
  * @covers \OCA\OpenRegister\Exception\TaskFormRefusedException
  * @covers \OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Exception\InvalidTransitionInputException
+ * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
+ * @uses \OCA\OpenRegister\Exception\ValidationException
+ * @uses \OCA\OpenRegister\Exception\HookStoppedException
+ * @uses \OCA\OpenRegister\Exception\TaskAccessDeniedException
  */
 class TaskFormCompletionTest extends TestCase {
 

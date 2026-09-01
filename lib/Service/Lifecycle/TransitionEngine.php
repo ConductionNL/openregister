@@ -401,7 +401,7 @@ class TransitionEngine {
 	 * transition accepts no payload", which is exactly what the allowlist in
 	 * {@see resolveTransitionInputs()} enforces.
 	 *
-	 * @return array<int, array{action:string, to:string, requires:?string, description:?string, inputs:array<int,array{field:string,required:bool}>, label?:string}>
+	 * @return list<array{action:string,to:string,requires:?string,description:?string,inputs:list<array{field:string,required:bool}>,label?:string}>
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) RBAC check + missing-object guard + annotation-absent
 	 * guard + per-transition from/requires/description checks each add one branch; none can be removed
@@ -517,7 +517,7 @@ class TransitionEngine {
 	 * @param array<string, mixed> $graph The `graph` block off the annotation.
 	 * @param string $field The lifecycle field name on the object.
 	 *
-	 * @return array<int, array{action:string, to:string, label:string, requires:?string, description:?string, inputs:array<int,array{field:string,required:bool}>}>
+	 * @return list<array{action:string,to:string,label:string,requires:?string,description:?string,inputs:list<array{field:string,required:bool}>}>
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) FK read + sibling fetch + current-state
 	 * location + per-move-policy branching are each irreducible steps of the derivation.

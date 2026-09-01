@@ -30,6 +30,7 @@ use UnexpectedValueException;
  *
  * @covers \OCA\OpenRegister\Service\Task\TaskFormReader
  * @covers \OCA\OpenRegister\Service\Task\TaskForm
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class TaskFormReaderTest extends TestCase {
 

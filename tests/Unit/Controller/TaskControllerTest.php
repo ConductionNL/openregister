@@ -62,6 +62,8 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Exception\TaskValidationException
  * @covers \OCA\OpenRegister\Exception\TaskAccessDeniedException
  * @covers \OCA\OpenRegister\Exception\TaskConflictException
+ * @covers \OCA\OpenRegister\Exception\TaskFormRefusedException
+ * @covers \OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException
  */
 class TaskControllerTest extends TestCase {
 
