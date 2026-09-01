@@ -79,6 +79,8 @@ class FlowPlaceClaims {
 	 * names the pass that abandoned it and two passes can never share a token.
 	 *
 	 * @return string The owner token.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-firing-must-exclusively-claim-every-place-it-touches
 	 */
 	public static function newOwner(): string {
 		$host = gethostname();
@@ -210,6 +212,8 @@ class FlowPlaceClaims {
 	 * @param array<int, string> $places The places to release.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-firing-must-exclusively-claim-every-place-it-touches
 	 */
 	public function release(string $runUuid, array $places): void {
 		$this->claims->release(runUuid: $runUuid, places: $places);
@@ -222,6 +226,8 @@ class FlowPlaceClaims {
 	 * @param string $owner The pass token.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-firing-must-exclusively-claim-every-place-it-touches
 	 */
 	public function releaseAll(string $runUuid, string $owner): void {
 		$this->claims->releaseByOwner(runUuid: $runUuid, owner: $owner);

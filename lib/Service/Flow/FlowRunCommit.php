@@ -298,6 +298,8 @@ class FlowRunCommit {
 	 * @throws Throwable Rolls back and rethrows on any failure.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The stream's descriptor rides along so the row can be minted in the same lock.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-runs-status-must-stay-derivable-from-its-streams-with-no-new-value
 	 */
 	public function endStream(
 		FlowRun $run,
@@ -610,6 +612,8 @@ class FlowRunCommit {
 	 * @param string $path The ordinal path.
 	 *
 	 * @return string The stream id.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-the-run-log-must-be-ordered-by-branch-never-by-completion
 	 */
 	public static function streamIdFor(string $runUuid, string $path): string {
 		return substr(sha1($runUuid . '|' . $path), 0, 32);
@@ -724,6 +728,8 @@ class FlowRunCommit {
 	 * @param mixed $places The raw value.
 	 *
 	 * @return array<string, int> The normalised marking.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-marking-must-be-written-as-a-delta-never-as-a-whole-overwrite
 	 */
 	public static function normaliseMarking(mixed $places): array {
 		if (is_array($places) === false) {

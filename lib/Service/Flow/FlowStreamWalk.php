@@ -286,6 +286,8 @@ class FlowStreamWalk {
 	 * @param string $id The stream id.
 	 *
 	 * @return string The path; the root path for an unknown stream.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-the-run-log-must-be-ordered-by-branch-never-by-completion
 	 */
 	public function pathOf(string $id): string {
 		return (string)($this->streams[$id]['path'] ?? FlowStream::ROOT_PATH);
@@ -297,6 +299,8 @@ class FlowStreamWalk {
 	 * @param string $id The stream id.
 	 *
 	 * @return string|null The place.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
 	public function placeOf(string $id): ?string {
 		return ($this->streams[$id]['place'] ?? null);
@@ -310,6 +314,8 @@ class FlowStreamWalk {
 	 * @param string $except The firing stream.
 	 *
 	 * @return array<int, string> Stream ids.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
 	public function streamsOn(array $places, string $except): array {
 		$found = [];
@@ -332,6 +338,8 @@ class FlowStreamWalk {
 	 * @param string $id The stream id.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
 	public function exhaust(string $id): void {
 		$this->exhausted[$id] = true;
@@ -374,6 +382,8 @@ class FlowStreamWalk {
 	 * @param array<int, string> $places The claimed places.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-firing-must-exclusively-claim-every-place-it-touches
 	 */
 	public function release(array $places): void {
 		$this->claims->release(runUuid: (string)$this->run->getUuid(), places: $places);
@@ -511,6 +521,8 @@ class FlowStreamWalk {
 	 * @param bool $enabled Whether any transition is enabled afterwards.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-runs-status-must-stay-derivable-from-its-streams-with-no-new-value
 	 */
 	public function endStream(string $id, string $status, ?string $error, array $claimed, bool $enabled): void {
 		$stream = ($this->streams[$id] ?? ['path' => FlowStream::ROOT_PATH, 'parent' => null, 'place' => null]);
@@ -548,6 +560,8 @@ class FlowStreamWalk {
 	 * The run's durable firing count, as last committed.
 	 *
 	 * @return int Firings across all streams and passes.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-the-transition-ceiling-must-count-a-run-not-a-pass
 	 */
 	public function firings(): int {
 		return (int)($this->run->getFirings() ?? 0);
@@ -557,6 +571,8 @@ class FlowStreamWalk {
 	 * Whether this walk's own firing budget is spent (an in-request advance).
 	 *
 	 * @return bool True when no more firings may be committed by this walk.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-completions-advance-budget-must-apply-to-the-completing-branch
 	 */
 	public function budgetSpent(): bool {
 		return $this->budget !== null && $this->fired >= $this->budget;
@@ -566,6 +582,8 @@ class FlowStreamWalk {
 	 * Whether any stream was parked during this pass.
 	 *
 	 * @return bool True when a stream suspended.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
 	public function anyParked(): bool {
 		return $this->parked !== [];
@@ -575,6 +593,8 @@ class FlowStreamWalk {
 	 * Whether any stream's claim was refused during this pass.
 	 *
 	 * @return bool True when a firing was skipped on contention.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-firing-must-exclusively-claim-every-place-it-touches
 	 */
 	public function anyRefused(): bool {
 		return $this->refused !== [];
@@ -584,6 +604,8 @@ class FlowStreamWalk {
 	 * The run, refreshed by the last commit.
 	 *
 	 * @return FlowRun The run.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
 	public function run(): FlowRun {
 		return $this->run;
