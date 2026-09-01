@@ -37,6 +37,8 @@ use OCP\IDBConnection;
  * Reads and rewrites candidate index rows.
  *
  * @template-extends QBMapper<TaskCandidate>
+ *
+ * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
  */
 class TaskCandidateMapper extends QBMapper {
 

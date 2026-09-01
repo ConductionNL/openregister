@@ -41,6 +41,8 @@ use Throwable;
 
 /**
  * Decides who may run which lifecycle verb on which task.
+ *
+ * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
 class TaskAuthorizationService {
 
@@ -63,6 +65,9 @@ class TaskAuthorizationService {
 		'assign' => 'assertRequester',
 		'reassign' => 'assertRequester',
 		'cancel' => 'assertRequester',
+		// Offer rewrites the pool AND the routing fallback, which decides who
+		// ends up assigned: that is the requester's call, nobody else's.
+		'offer' => 'assertRequester',
 	];
 
 	/**
@@ -124,8 +129,9 @@ class TaskAuthorizationService {
 			return;
 		}
 
-		// Verbs carrying no per-task privilege beyond an identity.
-		if (in_array($verb, ['create', 'offer'], true) === true) {
+		// The one verb carrying no per-task privilege beyond an identity:
+		// there is no task yet to have a relationship with.
+		if ($verb === 'create') {
 			return;
 		}
 
@@ -191,6 +197,25 @@ class TaskAuthorizationService {
 			return false;
 		}
 	}//end mayRead()
+
+	/**
+	 * Whether a uid is an administrator, for callers that must branch on it.
+	 *
+	 * Fail-closed like everything here: no backend, no admin.
+	 *
+	 * @param string|null $uid The acting identity.
+	 *
+	 * @return boolean True only when the group backend affirms it.
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 */
+	public function isAdministrator(?string $uid): bool {
+		if ($uid === null || trim($uid) === '') {
+			return false;
+		}
+
+		return $this->isAdmin(uid: $uid);
+	}//end isAdministrator()
 
 	/**
 	 * Whether a uid is an administrator. Fail-closed: no backend, no admin.

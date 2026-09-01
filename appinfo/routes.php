@@ -1338,6 +1338,11 @@ return [
 		// resolves routes in declaration order, so a later registration would be
 		// answered by `show('active')` → 404 for every request.
 		['name' => 'flowRun#active', 'url' => '/api/flow-runs/active', 'verb' => 'GET'],
+		// Finished runs on ONE subject object (flow-runs-subject-scope): the case
+		// page's run history. `subject` is REQUIRED (400 without it) and the read is
+		// organisation-scoped like `active`. Same ordering rule: it MUST stay above
+		// the `{uuid}` route or `show('completed')` answers it with a 404.
+		['name' => 'flowRun#completedForSubject', 'url' => '/api/flow-runs/completed', 'verb' => 'GET'],
 		['name' => 'flowRun#show', 'url' => '/api/flow-runs/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#objects', 'url' => '/api/flow-runs/{uuid}/objects', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#retry', 'url' => '/api/flow-runs/{uuid}/retry', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],

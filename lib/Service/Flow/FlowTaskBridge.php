@@ -121,7 +121,10 @@ class FlowTaskBridge {
 	 *
 	 * When the node names a routing strategy and no direct assignee, the task
 	 * is OFFERED after creation so the strategy resolves now rather than at
-	 * the first claim; a task with a direct assignee is created active.
+	 * the first claim. Offer is the requester's verb and refuses an assigned
+	 * task, both of which hold here by construction: the requester IS the
+	 * actor, and a task with a direct assignee is created active and never
+	 * offered.
 	 *
 	 * @param array<string, mixed> $data The task fields the node assembled.
 	 * @param string $runUuid The run raising the task.
@@ -141,7 +144,12 @@ class FlowTaskBridge {
 		$data['requester'] = ($data['requester'] ?? $actor);
 		$data['definitionVersion'] = $this->definitionVersionOf(runUuid: $runUuid);
 
-		$task = $this->tasks->create(data: $data, actor: $actor);
+		// The TRUSTED intake, not the HTTP one: `create()` pins the requester
+		// to the caller and refuses anything an ordinary user may not write,
+		// because it answers a request body. This payload was assembled by a
+		// node from a saved definition and is stamped with the run's owner as
+		// requester, which is the fact the node knows and a browser does not.
+		$task = $this->tasks->import(data: $data, actor: $actor);
 
 		$strategy = trim((string)($data['routingStrategy'] ?? ''));
 		if ($strategy !== '' && trim((string)($data['assignee'] ?? '')) === '') {

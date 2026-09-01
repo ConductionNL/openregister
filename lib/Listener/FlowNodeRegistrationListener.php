@@ -40,6 +40,9 @@ use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SwitchNode;
@@ -77,6 +80,9 @@ class FlowNodeRegistrationListener implements IEventListener {
 	 * @param FlowStateNode $flowState The built-in "Flow state" node.
 	 * @param MapNode $map The built-in "Map" node.
 	 * @param IterateNode $iterate The built-in "Repeat until done" node.
+	 * @param SendNotificationNode $sendNotification The built-in "Send a notification" node.
+	 * @param SendEmailNode $sendEmail The built-in "Send an email" node.
+	 * @param SendTalkMessageNode $sendTalkMessage The built-in "Send a Talk message" node.
 	 * @param TriggerObjectNode $triggerObject The "When an object changes" entry point.
 	 * @param TriggerScheduleNode $triggerSchedule The "On a schedule" entry point.
 	 * @param TriggerManualNode $triggerManual The "When someone runs it" entry point.
@@ -99,6 +105,9 @@ class FlowNodeRegistrationListener implements IEventListener {
 		private readonly FlowStateNode $flowState,
 		private readonly MapNode $map,
 		private readonly IterateNode $iterate,
+		private readonly SendNotificationNode $sendNotification,
+		private readonly SendEmailNode $sendEmail,
+		private readonly SendTalkMessageNode $sendTalkMessage,
 		private readonly TriggerObjectNode $triggerObject,
 		private readonly TriggerScheduleNode $triggerSchedule,
 		private readonly TriggerManualNode $triggerManual,
@@ -137,6 +146,16 @@ class FlowNodeRegistrationListener implements IEventListener {
 		$event->registerNode(node: $this->flowState);
 		$event->registerNode(node: $this->map);
 		$event->registerNode(node: $this->iterate);
+
+		// Messaging. Three nodes, not one "send" with a channel picker: the
+		// three differ in config shape and failure modes, so three flat forms
+		// beat one union form. Deliberately NO send-webhook — outbound HTTP is
+		// OpenConnector's job (ADR-094), and `activity`/`web-push` are not
+		// channels here either: activity is an audit surface, web-push rides
+		// along with send-notification exactly as it does declaratively.
+		$event->registerNode(node: $this->sendNotification);
+		$event->registerNode(node: $this->sendEmail);
+		$event->registerNode(node: $this->sendTalkMessage);
 
 		// The human step (flow-user-task-node). Registered beside await-signal
 		// deliberately: the two are a pair, and their palette descriptions

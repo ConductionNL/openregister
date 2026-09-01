@@ -76,7 +76,11 @@ class TaskAuthorizationServiceTest extends TestCase {
 		$service = new TaskAuthorizationService(groupManager: $this->emptyGroupBackend());
 		$task = $this->assignedTask();
 
-		$verbs = ['claim', 'unclaim', 'assign', 'reassign', 'delegate', 'resolve', 'complete', 'cancel', 'checklist'];
+		// Every verb that touches an existing task. `offer` is in this list
+		// because it was once missing from it, which is exactly how an
+		// identity-only offer stayed green while it let anyone route a task
+		// to themselves through routingFallback.
+		$verbs = ['offer', 'claim', 'unclaim', 'assign', 'reassign', 'delegate', 'resolve', 'complete', 'cancel', 'checklist'];
 		foreach ($verbs as $verb) {
 			try {
 				$service->assertMay(verb: $verb, task: $task, uid: 'mallory');
@@ -220,6 +224,30 @@ class TaskAuthorizationServiceTest extends TestCase {
 		$this->expectException(TaskAccessDeniedException::class);
 		$service->assertMay(verb: 'cancel', task: $task, uid: 'alice');
 	}//end testRequesterOwnsCancelAndReassign()
+
+	/**
+	 * OFFER BELONGS TO THE REQUESTER: it rewrites the pool and the routing
+	 * fallback, which decide who ends up assigned. The assignee, a pool
+	 * member and a stranger are all refused.
+	 *
+	 * @return void
+	 */
+	public function testOfferBelongsToTheRequester(): void {
+		$service = new TaskAuthorizationService(groupManager: $this->emptyGroupBackend());
+		$task = $this->assignedTask();
+		$task->setCandidateUsers(['pat']);
+
+		$service->assertMay(verb: 'offer', task: $task, uid: 'rita');
+
+		foreach (['alice', 'pat', 'mallory'] as $notTheRequester) {
+			try {
+				$service->assertMay(verb: 'offer', task: $task, uid: $notTheRequester);
+				$this->fail(sprintf("'%s' may offer but is not the requester.", $notTheRequester));
+			} catch (TaskAccessDeniedException $denied) {
+				$this->assertStringContainsString('offer', $denied->getMessage());
+			}
+		}
+	}//end testOfferBelongsToTheRequester()
 
 	/**
 	 * An administrator passes every verb.

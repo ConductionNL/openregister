@@ -69,6 +69,7 @@ class UserTaskCancellationPropagationTest extends TestCase {
 			->with('run-9')
 			->willReturnOnConsecutiveCalls([$first, $second], []);
 		$tasks->method('update')->willReturnArgument(0);
+		$tasks->method('updateIfOpen')->willReturn(true);
 
 		$audits = $this->createMock(TaskAuditMapper::class);
 		$entries = [];

@@ -120,7 +120,7 @@ class FlowTaskBridgeTest extends TestCase {
 		$this->runs->method('findByUuid')->with('run-1')->willReturn($this->suspendedRun(advance: null));
 
 		$this->tasks->expects($this->once())
-			->method('create')
+			->method('import')
 			->with(
 				$this->callback(function (array $data): bool {
 					$this->assertSame('run-1', $data['runUuid']);
@@ -144,7 +144,7 @@ class FlowTaskBridgeTest extends TestCase {
 	 */
 	public function testARoutingStrategyWithoutAnAssigneeOffersTheTask(): void {
 		$this->runs->method('findByUuid')->willReturn($this->suspendedRun(advance: null));
-		$this->tasks->method('create')->willReturn($this->terminalTask());
+		$this->tasks->method('import')->willReturn($this->terminalTask());
 		$this->tasks->expects($this->once())
 			->method('offer')
 			->with('t-1', ['routingStrategy' => 'or-set', 'routingFallback' => 'carol'], 'owner')

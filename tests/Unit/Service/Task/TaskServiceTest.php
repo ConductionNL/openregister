@@ -50,6 +50,7 @@ use RuntimeException;
  * Authorization ordering, concurrency, transactionality and normalisation.
  *
  * @covers \OCA\OpenRegister\Service\Task\TaskService
+ * @covers \OCA\OpenRegister\Service\Task\TaskBuilder
  */
 class TaskServiceTest extends TestCase {
 
@@ -139,6 +140,7 @@ class TaskServiceTest extends TestCase {
 			}
 		);
 		$this->tasks->method('update')->willReturnArgument(0);
+		$this->tasks->method('updateIfOpen')->willReturn(true);
 		$this->audits->method('insert')->willReturnArgument(0);
 	}//end setUp()
 
@@ -174,7 +176,7 @@ class TaskServiceTest extends TestCase {
 		$pooled->setAssignee(null);
 		$this->tasks->method('findByUuid')->willReturn($pooled);
 		$this->tasks->expects($this->once())->method('claim')->willReturn(false);
-		$this->tasks->expects($this->never())->method('update');
+		$this->tasks->expects($this->never())->method('updateIfOpen');
 		$this->db->expects($this->once())->method('beginTransaction');
 		$this->db->expects($this->once())->method('rollBack');
 		$this->db->expects($this->never())->method('commit');
@@ -209,7 +211,7 @@ class TaskServiceTest extends TestCase {
 	public function testARejectionWithoutACommentMovesNothing(): void {
 		$this->tasks->method('findByUuid')->willReturn($this->openTask());
 		$this->db->expects($this->never())->method('beginTransaction');
-		$this->tasks->expects($this->never())->method('update');
+		$this->tasks->expects($this->never())->method('updateIfOpen');
 
 		$this->expectException(TaskValidationException::class);
 		$this->expectExceptionMessage("'rejected'");
@@ -262,7 +264,9 @@ class TaskServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testCreateMapsALegacyStatusAndPreservesTheOutcome(): void {
-		$created = $this->service()->create(data: ['state' => 'done'], actor: 'rita');
+		// A closed task is importable only on the TRUSTED path (migrations);
+		// the HTTP path refuses it, see testCreateOverHttpRefusesATerminalState.
+		$created = $this->service()->import(data: ['state' => 'done'], actor: 'rita');
 
 		$this->assertSame(Task::STATE_COMPLETED, $created->getState());
 		$this->assertTrue($created->getIsTerminal());
@@ -327,17 +331,17 @@ class TaskServiceTest extends TestCase {
 		$second = $this->openTask(runUuid: 'run-9');
 		$second->setId(8);
 		$second->setUuid('t-8');
+		$updated = [];
+		$this->tasks = $this->createMock(TaskMapper::class);
 		$this->tasks->expects($this->once())
 			->method('findOpenByRunUuid')
 			->with(runUuid: 'run-9')
 			->willReturn([$first, $second]);
-
-		$updated = [];
-		$this->tasks->method('update')->willReturnCallback(
-			static function (Task $task) use (&$updated): Task {
+		$this->tasks->method('updateIfOpen')->willReturnCallback(
+			static function (Task $task) use (&$updated): bool {
 				$updated[] = $task;
 
-				return $task;
+				return true;
 			}
 		);
 		$auditEntries = [];
@@ -415,7 +419,7 @@ class TaskServiceTest extends TestCase {
 				return $entry;
 			}
 		);
-		$this->tasks->expects($this->never())->method('update');
+		$this->tasks->expects($this->never())->method('updateIfOpen');
 
 		try {
 			$this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'mallory');
@@ -514,6 +518,191 @@ class TaskServiceTest extends TestCase {
 		$this->assertFalse($checklist[0]['checked']);
 		$this->assertTrue($checklist[1]['checked']);
 	}//end testAChecklistItemIsAddressableById()
+
+	/**
+	 * RED 1: OFFER ON AN ASSIGNED TASK IS REFUSED. Before this guard,
+	 * `offer {"routingFallback": "mallory"}` on an active, assigned task
+	 * made mallory the assignee, after which mallory's complete passed.
+	 * Now the assigned task conflicts, the pool and fallback are untouched,
+	 * and nothing is written.
+	 *
+	 * @return void
+	 */
+	public function testOfferIsRefusedOnAnAssignedTask(): void {
+		$assigned = $this->openTask();
+		$this->tasks->method('findByUuid')->willReturn($assigned);
+		$this->tasks->expects($this->never())->method('updateIfOpen');
+		$this->candidates->expects($this->never())->method('replaceForTask');
+
+		try {
+			$this->service()->offer(uuid: 't-7', pool: ['routingFallback' => 'mallory'], actor: 'rita');
+			$this->fail('An assigned task accepted an offer.');
+		} catch (TaskConflictException $conflict) {
+			$this->assertStringContainsString('already assigned', $conflict->getMessage());
+		}
+
+		$this->assertSame('alice', $assigned->getAssignee());
+		$this->assertNull($assigned->getRoutingFallback());
+	}//end testOfferIsRefusedOnAnAssignedTask()
+
+	/**
+	 * Offer on a POOLED task still works, for the requester.
+	 *
+	 * @return void
+	 */
+	public function testOfferRoutesAPooledTask(): void {
+		$pooled = $this->openTask();
+		$pooled->setAssignee(null);
+		$this->tasks->method('findByUuid')->willReturn($pooled);
+		$this->candidates->expects($this->once())->method('replaceForTask');
+
+		$offered = $this->service()->offer(uuid: 't-7', pool: ['candidateUsers' => ['pat', 'quinn']], actor: 'rita');
+
+		$this->assertSame(['pat', 'quinn'], $offered->getCandidateUsers());
+		$this->assertSame(Task::STATE_ENABLED, $offered->getState());
+	}//end testOfferRoutesAPooledTask()
+
+	/**
+	 * AUTHORIZATION RUNS BEFORE THE TERMINALITY CHECK: a stranger probing a
+	 * completed task gets the denial, never a 409 that names its state.
+	 *
+	 * @return void
+	 */
+	public function testAuthorizationRunsBeforeTheTerminalityCheck(): void {
+		$done = $this->openTask();
+		$done->setState(Task::STATE_COMPLETED);
+		$done->setIsTerminal(true);
+		$this->tasks->method('findByUuid')->willReturn($done);
+		$this->authorization->method('assertMay')->willThrowException(new TaskAccessDeniedException('denied'));
+
+		$this->expectException(TaskAccessDeniedException::class);
+		$this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'mallory');
+	}//end testAuthorizationRunsBeforeTheTerminalityCheck()
+
+	/**
+	 * TWO COMPLETIONS RACE: the second conditional update affects no row,
+	 * so it conflicts and rolls back instead of overwriting the first outcome.
+	 *
+	 * @return void
+	 */
+	public function testASecondCompletionLosesTheConditionalUpdate(): void {
+		$this->tasks->method('findByUuid')->willReturn($this->openTask());
+		$this->tasks = $this->createMock(TaskMapper::class);
+		$this->tasks->method('findByUuid')->willReturn($this->openTask());
+		$this->tasks->method('updateIfOpen')->willReturn(false);
+		$this->audits->expects($this->never())->method('insert');
+		$this->db->expects($this->once())->method('rollBack');
+		$this->db->expects($this->never())->method('commit');
+
+		$this->expectException(TaskConflictException::class);
+		$this->service()->complete(uuid: 't-7', outcome: 'rejected', resultText: null, comment: 'no', actor: 'alice');
+	}//end testASecondCompletionLosesTheConditionalUpdate()
+
+	/**
+	 * OVER HTTP, THE REQUESTER IS THE ACTOR: an ordinary caller cannot write
+	 * somebody else's name into the seat that owns cancel and reassign.
+	 *
+	 * @return void
+	 */
+	public function testCreateOverHttpPinsTheRequesterToTheActor(): void {
+		$this->authorization->method('isAdministrator')->willReturn(false);
+
+		$created = $this->service()->create(data: ['requester' => 'director'], actor: 'mallory');
+
+		$this->assertSame('mallory', $created->getRequester());
+	}//end testCreateOverHttpPinsTheRequesterToTheActor()
+
+	/**
+	 * OVER HTTP, A TASK CANNOT BE BORN CLOSED: 'approved' maps to completed
+	 * with nobody having completed it, so it is refused for non-admins.
+	 *
+	 * @return void
+	 */
+	public function testCreateOverHttpRefusesATerminalState(): void {
+		$this->authorization->method('isAdministrator')->willReturn(false);
+		$this->tasks->expects($this->never())->method('insert');
+
+		$this->expectException(TaskValidationException::class);
+		$this->expectExceptionMessage("'approved'");
+		$this->service()->create(data: ['state' => 'approved'], actor: 'mallory');
+	}//end testCreateOverHttpRefusesATerminalState()
+
+	/**
+	 * An administrator keeps the full create surface over HTTP.
+	 *
+	 * @return void
+	 */
+	public function testAnAdministratorMayNameARequesterOnCreate(): void {
+		$this->authorization->method('isAdministrator')->willReturn(true);
+
+		$created = $this->service()->create(data: ['requester' => 'director'], actor: 'root');
+
+		$this->assertSame('director', $created->getRequester());
+	}//end testAnAdministratorMayNameARequesterOnCreate()
+
+	/**
+	 * A delegation needs a delegate, not only a mandate.
+	 *
+	 * @return void
+	 */
+	public function testDelegateRefusesAnEmptyDelegate(): void {
+		$this->tasks->method('findByUuid')->willReturn($this->openTask());
+		$this->db->expects($this->never())->method('beginTransaction');
+
+		$this->expectException(TaskValidationException::class);
+		$this->expectExceptionMessage('delegate');
+		$this->service()->delegate(uuid: 't-7', delegate: '  ', mandate: 'Volmacht', actor: 'alice');
+	}//end testDelegateRefusesAnEmptyDelegate()
+
+	/**
+	 * A re-delegation keeps naming the ORIGINAL performer.
+	 *
+	 * @return void
+	 */
+	public function testReDelegationKeepsTheOriginalOnBehalfOf(): void {
+		$task = $this->openTask();
+		$this->tasks->method('findByUuid')->willReturn($task);
+
+		$this->service()->delegate(uuid: 't-7', delegate: 'dora', mandate: 'Volmacht 1', actor: 'alice');
+		$this->service()->delegate(uuid: 't-7', delegate: 'ed', mandate: 'Volmacht 2', actor: 'dora');
+
+		$this->assertSame('ed', $task->getAssignee());
+		$this->assertSame('alice', $task->getOnBehalfOf());
+	}//end testReDelegationKeepsTheOriginalOnBehalfOf()
+
+	/**
+	 * PROPAGATION CONTINUES PAST A FAILING TASK: one broken row does not
+	 * orphan the rest of the run's tasks in their assignees' inboxes.
+	 *
+	 * @return void
+	 */
+	public function testTerminateForRunContinuesPastAFailingTask(): void {
+		$first = $this->openTask(runUuid: 'run-9');
+		$second = $this->openTask(runUuid: 'run-9');
+		$second->setId(8);
+		$second->setUuid('t-8');
+		$third = $this->openTask(runUuid: 'run-9');
+		$third->setId(9);
+		$third->setUuid('t-9');
+
+		$this->tasks = $this->createMock(TaskMapper::class);
+		$this->tasks->method('findOpenByRunUuid')->willReturn([$first, $second, $third]);
+		$this->tasks->method('updateIfOpen')->willReturnCallback(
+			static function (Task $task): bool {
+				if ($task->getUuid() === 't-8') {
+					throw new RuntimeException('row locked');
+				}
+
+				return true;
+			}
+		);
+		$this->db->expects($this->exactly(3))->method('beginTransaction');
+		$this->db->expects($this->exactly(2))->method('commit');
+		$this->db->expects($this->once())->method('rollBack');
+
+		$this->assertSame(2, $this->service()->terminateForRun(runUuid: 'run-9', runStatus: 'stopped'));
+		$this->assertSame(Task::STATE_TERMINATED, $third->getState());
+	}//end testTerminateForRunContinuesPastAFailingTask()
 
 	/**
 	 * The template freeze: id, version and snapshot land at creation.

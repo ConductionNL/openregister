@@ -61,8 +61,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
-use DateTime;
-use OCA\OpenRegister\Service\Flow\FlowAdvanceBudget;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
@@ -80,9 +78,9 @@ use RuntimeException;
 /**
  * Creates one task, suspends until it is terminal, and routes on the outcome.
  *
- * @SuppressWarnings(PHPMD.StaticAccess) FlowAdvanceBudget::fromConfig and
- * FlowTaskBridge::outcomeBagFor are stateless helpers over values; a factory
- * to call them would add a dependency to say the same thing.
+ * @SuppressWarnings(PHPMD.StaticAccess) FlowTaskBridge::outcomeBagFor is a
+ * stateless helper over a value; a factory to call it would add a dependency
+ * to say the same thing.
  */
 class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm {
 
@@ -319,8 +317,6 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			throw new RuntimeException('openregister.user-task cannot create a task outside a persisted run: the task must carry the run uuid.');
 		}
 
-		$budget = FlowAdvanceBudget::fromConfig(config: $config);
-
 		$task = $this->bridge->createTask(
 			data: $this->config->taskData(config: $config, items: $items, nodeId: $resume->nodeId(), nodeType: $this->getId()),
 			runUuid: $runUuid,
@@ -332,16 +328,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 		// held, so it never reaches this line again; askedAt therefore records
 		// when somebody was first asked, not when the run last checked.
 		$resume->merge(
-			values: [
-				FlowTaskBridge::SLOT_TASK_UUID => (string)$task->getUuid(),
-				FlowTaskBridge::SLOT_ASKED_AT => (new DateTime())->format('c'),
-				FlowTaskBridge::SLOT_ADVANCE => $budget->toStored(),
-				// Read by FlowRunAssignee, so a resume POSTed at the run by
-				// somebody other than the assignee is refused at the door as
-				// well as ignored here.
-				'assignee' => $this->config->assignee(config: $config),
-				'title' => $this->config->renderedTitle(config: $config, items: $items),
-			]
+			values: $this->config->slotValues(config: $config, items: $items, taskUuid: (string)$task->getUuid())
 		);
 
 	}//end createTask()

@@ -70,6 +70,11 @@ use Throwable;
  * vocabulary collaborators; that IS its job description.
  * @SuppressWarnings(PHPMD.ExcessiveClassLength) Scales with the verb count;
  * each verb is short and single-purpose.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The sum of twelve
+ * verbs' guards. Each verb is short and its branches are the spec's own
+ * rules (authorize, then terminality, then the verb's precondition, then
+ * the conditional write); folding verbs together to lower the number would
+ * hide exactly the per-verb rules the spec enumerates.
  * @SuppressWarnings(PHPMD.StaticAccess) TaskState is a stateless published
  * vocabulary (the one status mapping); calling it statically is the point,
  * an instance would be a second copy of the same table.
@@ -78,10 +83,8 @@ use Throwable;
  * (flow-user-task-node); it is last so the hand-built test services keep
  * their order, and folding it into another collaborator would hide that a
  * lifecycle verb has an after-commit side effect.
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) 52 against 50, and the
- * two came from announceTerminal(): one guard and one swallowed listener
- * failure, both of which are the property that a listener cannot undo a
- * committed transition.
+ *
+ * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
 class TaskService {
 
@@ -135,6 +138,10 @@ class TaskService {
 	 * FROZEN: `template_snapshot` is written now and all later evaluation
 	 * reads it, never the live template.
 	 *
+	 * This is the HTTP path: unless the actor is an administrator, the
+	 * requester is pinned to the actor and a terminal creation state is
+	 * refused. In-process callers that need either use {@see import()}.
+	 *
 	 * @param array<string, mixed> $data The task fields, canonical or legacy.
 	 * @param string|null $actor The creating identity.
 	 *
@@ -146,6 +153,42 @@ class TaskService {
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function create(array $data, ?string $actor): Task {
+		if ($this->authorization->isAdministrator(uid: $actor) === false) {
+			// An ordinary caller is the requester of what they create: they
+			// may not write somebody else's name into the seat that owns
+			// cancel and reassign. And they may not create a task that is
+			// born closed (state 'approved' maps to completed with nobody
+			// having completed it): those states arrive only through the
+			// verbs, or through a trusted migration path.
+			$data['requester'] = $actor;
+			$state = (string)($data['state'] ?? Task::STATE_AVAILABLE);
+			if (TaskState::isTerminal(state: TaskState::normalise(value: $state)['state']) === true) {
+				throw new TaskValidationException(
+					message: sprintf("A task cannot be created in terminal state '%s'; it reaches that state through a lifecycle verb.", $state)
+				);
+			}
+		}
+
+		return $this->import(data: $data, actor: $actor);
+	}//end create()
+
+	/**
+	 * Create a task on the TRUSTED path: migrations and in-process callers
+	 * (the user-task node) that may name a requester and may import a task
+	 * that is already closed (a completed approval carried over from a
+	 * legacy shape). Not reachable over HTTP; the controller calls create().
+	 *
+	 * @param array<string, mixed> $data The task fields, canonical or legacy.
+	 * @param string|null $actor The creating identity.
+	 *
+	 * @return Task The created task, with candidates indexed and creation audited.
+	 *
+	 * @throws TaskValidationException On any refused value.
+	 * @throws TaskAccessDeniedException Without an acting identity.
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
+	 */
+	public function import(array $data, ?string $actor): Task {
 		$task = $this->builder->fromData(data: $data, actor: $actor);
 		$this->authorizeOrRecord(verb: 'create', task: $task, actor: $actor);
 
@@ -166,7 +209,7 @@ class TaskService {
 				return $persisted;
 			}
 		);
-	}//end create()
+	}//end import()
 
 	/**
 	 * Offer a task to a candidate pool, optionally routing it.
@@ -188,6 +231,16 @@ class TaskService {
 	 */
 	public function offer(string $uuid, array $pool, ?string $actor): Task {
 		$task = $this->openTaskFor(verb: 'offer', uuid: $uuid, actor: $actor);
+
+		// An assigned task is not offerable: offering rewrites the pool and
+		// the routing fallback, which decide who ends up assigned, so on an
+		// assigned task it would be a reassignment wearing a different name
+		// and a different authorization rule. Unclaim or reassign first.
+		if (trim((string)$task->getAssignee()) !== '') {
+			throw new TaskConflictException(
+				message: sprintf("Verb 'offer' refused: task '%s' is already assigned; unclaim or reassign it instead.", $uuid)
+			);
+		}
 
 		return $this->transactional(
 			mutation: function () use ($task, $pool, $actor): Task {
@@ -217,7 +270,7 @@ class TaskService {
 
 				$this->applyState(task: $task, state: $state, action: 'offer');
 
-				$persisted = $this->tasks->update($task);
+				$persisted = $this->persistOpen(task: $task);
 				$this->rewriteCandidateIndex(task: $persisted);
 				$this->appendAudit(task: $persisted, action: 'offer', actor: $actor, reason: null);
 
@@ -281,7 +334,7 @@ class TaskService {
 				$task->setOnBehalfOf(null);
 				$task->setMandate(null);
 				$this->applyState(task: $task, state: Task::STATE_ENABLED, action: 'unclaim');
-				$persisted = $this->tasks->update($task);
+				$persisted = $this->persistOpen(task: $task);
 				$this->appendAudit(task: $persisted, action: 'unclaim', actor: $actor, reason: null);
 
 				return $persisted;
@@ -339,17 +392,24 @@ class TaskService {
 	public function delegate(string $uuid, string $delegate, string $mandate, ?string $actor): Task {
 		$task = $this->openTaskFor(verb: 'delegate', uuid: $uuid, actor: $actor);
 
+		if (trim($delegate) === '') {
+			throw new TaskValidationException(message: 'A delegation requires a non-empty delegate.');
+		}
+
 		if (trim($mandate) === '') {
 			throw new TaskValidationException(message: 'A delegation requires a mandate naming the authority relied on.');
 		}
 
 		return $this->transactional(
 			mutation: function () use ($task, $delegate, $mandate, $actor): Task {
-				$task->setOnBehalfOf($task->getAssignee());
+				// A re-delegation keeps naming the ORIGINAL performer: the
+				// chain of delegates is in the audit, the accountable party
+				// is the one who never changes.
+				$task->setOnBehalfOf($task->getOnBehalfOf() ?? $task->getAssignee());
 				$task->setAssignee($delegate);
 				$task->setMandate($mandate);
 				$this->applyState(task: $task, state: Task::STATE_ACTIVE, action: 'delegate');
-				$persisted = $this->tasks->update($task);
+				$persisted = $this->persistOpen(task: $task);
 				$this->appendAudit(task: $persisted, action: 'delegate', actor: $actor, reason: $mandate);
 
 				return $persisted;
@@ -421,18 +481,17 @@ class TaskService {
 	public function cancel(string $uuid, ?string $reason, ?string $actor): Task {
 		$task = $this->openTaskFor(verb: 'cancel', uuid: $uuid, actor: $actor);
 
-		$cancelled = $this->transactional(
+		return $this->transactional(
 			mutation: function () use ($task, $reason, $actor): Task {
 				$task->setOutcome('cancelled');
 				$this->applyState(task: $task, state: Task::STATE_TERMINATED, action: 'cancel');
-				$persisted = $this->tasks->update($task);
+				$persisted = $this->persistOpen(task: $task);
 				$this->appendAudit(task: $persisted, action: 'cancel', actor: $actor, reason: $reason);
 
 				return $persisted;
 			}
 		);
 
-		return $this->announceTerminal(task: $cancelled);
 	}//end cancel()
 
 	/**
@@ -471,7 +530,7 @@ class TaskService {
 				}
 
 				$task->setChecklist($checklist);
-				$persisted = $this->tasks->update($task);
+				$persisted = $this->persistOpen(task: $task);
 				$this->appendAudit(
 					task: $persisted,
 					action: 'checklist',
@@ -509,25 +568,46 @@ class TaskService {
 		$open = $this->tasks->findOpenByRunUuid(runUuid: $runUuid);
 		$reason = sprintf("Run '%s' reached terminal status '%s'.", $runUuid, $runStatus);
 		$terminated = 0;
+		$failed = [];
 		foreach ($open as $task) {
-			$moot = $this->transactional(
-				mutation: function () use ($task, $reason, $runUuid): Task {
-					$task->setOutcome('terminated');
-					$task->setBlockedReason(null);
-					$this->applyState(task: $task, state: Task::STATE_TERMINATED, action: 'terminate');
-					$persisted = $this->tasks->update($task);
-					$this->appendAudit(
-						task: $persisted,
-						action: 'terminate',
-						actor: sprintf('flow-run:%s', $runUuid),
-						reason: $reason
-					);
+			// One task's failure must not orphan the rest of the run's
+			// tasks: each is its own transaction, and a failure is logged
+			// and counted, then the loop continues. A task closed
+			// concurrently (conflict) is already where propagation wanted it.
+			try {
+				$this->transactional(
+					mutation: function () use ($task, $reason, $runUuid): Task {
+						$task->setOutcome('terminated');
+						$task->setBlockedReason(null);
+						$this->applyState(task: $task, state: Task::STATE_TERMINATED, action: 'terminate');
+						$persisted = $this->persistOpen(task: $task);
+						$this->appendAudit(
+							task: $persisted,
+							action: 'terminate',
+							actor: sprintf('flow-run:%s', $runUuid),
+							reason: $reason
+						);
 
-					return $persisted;
-				}
+						return $persisted;
+					}
+				);
+				$terminated++;
+			} catch (TaskConflictException) {
+				// Closed by somebody else in the meantime: not our failure.
+				continue;
+			} catch (Throwable $failure) {
+				$failed[] = (string)$task->getUuid();
+				$this->logger->error(
+					'[TaskService] Propagation could not terminate a task: ' . $failure->getMessage(),
+					['task' => $task->getUuid(), 'run' => $runUuid, 'exception' => $failure]
+				);
+			}//end try
+		}//end foreach
+
+		if ($failed !== []) {
+			$this->logger->warning(
+				sprintf('[TaskService] Propagation for run %s left %d task(s) untouched: %s', $runUuid, count($failed), implode(', ', $failed))
 			);
-			$this->announceTerminal(task: $moot);
-			$terminated++;
 		}
 
 		return $terminated;
@@ -552,18 +632,17 @@ class TaskService {
 			return $task;
 		}
 
-		$moot = $this->transactional(
+		return $this->transactional(
 			mutation: function () use ($task, $reason, $source): Task {
 				$task->setOutcome('terminated');
 				$this->applyState(task: $task, state: Task::STATE_TERMINATED, action: 'terminate');
-				$persisted = $this->tasks->update($task);
+				$persisted = $this->persistOpen(task: $task);
 				$this->appendAudit(task: $persisted, action: 'terminate', actor: $source, reason: $reason);
 
 				return $persisted;
 			}
 		);
 
-		return $this->announceTerminal(task: $moot);
 	}//end terminateAsMoot()
 
 	/**
@@ -621,7 +700,7 @@ class TaskService {
 				$task->setOnBehalfOf(null);
 				$task->setMandate(null);
 				$this->applyState(task: $task, state: Task::STATE_ACTIVE, action: $action);
-				$persisted = $this->tasks->update($task);
+				$persisted = $this->persistOpen(task: $task);
 				$this->appendAudit(task: $persisted, action: $action, actor: $actor, reason: null);
 
 				return $persisted;
@@ -663,7 +742,7 @@ class TaskService {
 			);
 		}
 
-		$completed = $this->transactional(
+		return $this->transactional(
 			mutation: function () use ($task, $outcome, $resultText, $comment, $actor, $verb): Task {
 				$task->setOutcome($outcome);
 				$task->setResultText($resultText);
@@ -671,52 +750,18 @@ class TaskService {
 				$task->setCompletedAt(new DateTime());
 				$task->setCompletedBy($actor);
 				$this->applyState(task: $task, state: Task::STATE_COMPLETED, action: $verb);
-				$persisted = $this->tasks->update($task);
+				$persisted = $this->persistOpen(task: $task);
 				$this->appendAudit(task: $persisted, action: $verb, actor: $actor, reason: $comment);
 
 				return $persisted;
 			}
 		);
 
-		return $this->announceTerminal(task: $completed);
 	}//end completeInternal()
 
 	/**
-	 * Announce a committed terminal transition, and hand the task back.
-	 *
-	 * Called AFTER {@see self::transactional()} returned, never inside it: the
-	 * flow-side listener may continue the task's run in-request, and that walk
-	 * must see a completion that already exists on its own. A listener
-	 * failure is logged and swallowed for the same reason the propagation
-	 * listener swallows: the verb's caller has a completed task in hand and
-	 * must be told so, whatever the run did with it afterwards.
-	 *
-	 * @param Task $task The task as persisted in its terminal state.
-	 *
-	 * @return Task The same task, for the caller's return.
-	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
-	 */
-	private function announceTerminal(Task $task): Task {
-		if ($this->dispatcher === null || $task->isInTerminalState() === false) {
-			return $task;
-		}
-
-		try {
-			$this->dispatcher->dispatchTyped(new TaskTerminalEvent(task: $task));
-		} catch (Throwable $failure) {
-			$this->logger->warning(
-				'[TaskService] A terminal-task listener failed; the task itself is unaffected: ' . $failure->getMessage(),
-				['task' => $task->getUuid(), 'exception' => $failure]
-			);
-		}
-
-		return $task;
-	}//end announceTerminal()
-
-	/**
-	 * Resolve a verb's task: it must exist, be non-terminal, and the caller
-	 * must be authorized — in that order, before any mutation.
+	 * Resolve a verb's task: it must exist, the caller must be authorized,
+	 * and it must be non-terminal — in that order, before any mutation.
 	 *
 	 * @param string $verb The verb being attempted.
 	 * @param string $uuid The task uuid.
@@ -733,13 +778,16 @@ class TaskService {
 	private function openTaskFor(string $verb, string $uuid, ?string $actor): Task {
 		$task = $this->tasks->findByUuid(uuid: $uuid);
 
+		// Authorization FIRST. The terminality conflict names the current
+		// state, and a caller with no relationship to the task must not be
+		// able to read that state out of a 409.
+		$this->authorizeOrRecord(verb: $verb, task: $task, actor: $actor);
+
 		if ($task->isInTerminalState() === true) {
 			throw new TaskConflictException(
 				message: sprintf("Verb '%s' refused: task '%s' is already in terminal state '%s'.", $verb, $uuid, (string)$task->getState())
 			);
 		}
-
-		$this->authorizeOrRecord(verb: $verb, task: $task, actor: $actor);
 
 		return $task;
 	}//end openTaskFor()
@@ -789,6 +837,32 @@ class TaskService {
 			throw $denial;
 		}//end try
 	}//end authorizeOrRecord()
+
+	/**
+	 * Persist a state-changing mutation ONLY if the row is still open.
+	 *
+	 * Every verb's in-memory terminality check can be passed by two callers
+	 * at once (complete/complete, complete/cancel). The mapper's conditional
+	 * update lets exactly one through; the other gets a conflict here, so a
+	 * second outcome never overwrites a first.
+	 *
+	 * @param Task $task The mutated task.
+	 *
+	 * @return Task The task as persisted.
+	 *
+	 * @throws TaskConflictException When the row was closed by someone else.
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 */
+	private function persistOpen(Task $task): Task {
+		if ($this->tasks->updateIfOpen(task: $task) === false) {
+			throw new TaskConflictException(
+				message: sprintf("Task '%s' was closed concurrently; this change was not applied.", (string)$task->getUuid())
+			);
+		}
+
+		return $task;
+	}//end persistOpen()
 
 	/**
 	 * THE one place `state` and `is_terminal` change — in the same statement.
@@ -843,10 +917,12 @@ class TaskService {
 	}//end appendAudit()
 
 	/**
-	 * Run a mutation and its audit in ONE transaction.
+	 * Run a mutation and its audit in ONE transaction, then announce terminality.
 	 *
 	 * The rollback is what makes "a completed task without its audit entry"
 	 * unreachable: an audit-write failure unwinds the completion with it.
+	 * A mutation that leaves the task terminal is announced as
+	 * {@see TaskTerminalEvent} once the transaction has closed.
 	 *
 	 * @param callable(): Task $mutation The mutation to run.
 	 *
@@ -861,12 +937,31 @@ class TaskService {
 		try {
 			$result = $mutation();
 			$this->db->commit();
-
-			return $result;
 		} catch (Throwable $failure) {
 			$this->db->rollBack();
 			throw $failure;
 		}
+
+		// Terminality is announced HERE, after the commit and from the one
+		// place every mutation passes, so no verb can forget it (the same
+		// choke-point argument FlowRunMapper::update() makes for runs). After
+		// the commit, never inside it: the flow-side listener may continue the
+		// task's run in-request, and that walk must find a completion that
+		// already exists on its own. A listener failure is logged and
+		// swallowed: the caller has a committed task in hand and must be told
+		// so, whatever the run did with it afterwards.
+		if ($this->dispatcher !== null && $result->isInTerminalState() === true) {
+			try {
+				$this->dispatcher->dispatchTyped(new TaskTerminalEvent(task: $result));
+			} catch (Throwable $listenerFailure) {
+				$this->logger->warning(
+					'[TaskService] A terminal-task listener failed; the task itself is unaffected: ' . $listenerFailure->getMessage(),
+					['task' => $result->getUuid(), 'exception' => $listenerFailure]
+				);
+			}
+		}
+
+		return $result;
 	}//end transactional()
 
 	/**

@@ -10,7 +10,18 @@
  * change closes over `POST /api/flow-runs/{uuid}/resume`
  * (`lib/Controller/FlowRunController.php:423-436`): there, knowing a run
  * uuid was the whole check. Here, no verb is reachable by uuid alone, and
- * even READS are visibility-checked.
+ * even READS are visibility-checked. A task the caller may not see answers
+ * 404 to every route, verbs included, so neither its existence nor its
+ * state leaks through a 403 or a 409.
+ *
+ * CSRF, decided rather than inherited: every mutating verb carries
+ * `#[NoCSRFRequired]`, matching `FlowRunController::resume()`. These routes
+ * are driven by leaf apps and agents with Basic auth or app passwords, for
+ * which Nextcloud issues no CSRF token; the browser-session guard is
+ * Nextcloud's SameSite cookie middleware (`SameSiteCookieMiddleware`),
+ * which refuses a cross-site request before the controller runs. The
+ * authorization inside the service is what decides who may act; the
+ * attribute only says which anti-forgery mechanism applies.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -49,6 +60,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -60,6 +72,8 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The controller mediates
  * between HTTP and the task services plus their three exception shapes;
  * that is the whole of its job.
+ *
+ * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
 class TaskController extends Controller {
 
@@ -73,6 +87,8 @@ class TaskController extends Controller {
 	 * @param TaskAuthorizationService $authorization Read-visibility decisions.
 	 * @param TaskTemporalProjection $temporal The one overdue derivation.
 	 * @param IUserSession $userSession Names the acting identity.
+	 * @param LoggerInterface|null $logger Where an unexpected failure's
+	 *                                     detail goes, INSTEAD of the response.
 	 * @param IGroupManager|null $groupManager Resolves the caller's groups
 	 *                                         and admin status for inbox
 	 *                                         visibility. Nullable so the
@@ -89,6 +105,7 @@ class TaskController extends Controller {
 		private readonly TaskAuthorizationService $authorization,
 		private readonly TaskTemporalProjection $temporal,
 		private readonly IUserSession $userSession,
+		private readonly ?LoggerInterface $logger = null,
 		private readonly ?IGroupManager $groupManager = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -174,7 +191,7 @@ class TaskController extends Controller {
 	 *
 	 * @param string $uuid The task uuid.
 	 *
-	 * @return JSONResponse The task row, 404 when absent, 403 when invisible.
+	 * @return JSONResponse The task row; 404 when absent OR invisible.
 	 *
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
@@ -188,7 +205,9 @@ class TaskController extends Controller {
 		}
 
 		if ($this->authorization->mayRead(task: $task, uid: $this->uid()) === false) {
-			return new JSONResponse(['error' => 'You may not read this task'], Http::STATUS_FORBIDDEN);
+			// Not 403: a caller with no relationship to the task learns
+			// nothing, not even that the uuid exists.
+			return new JSONResponse(['error' => 'No such task'], Http::STATUS_NOT_FOUND);
 		}
 
 		return new JSONResponse(
@@ -215,7 +234,9 @@ class TaskController extends Controller {
 		}
 
 		if ($this->authorization->mayRead(task: $task, uid: $this->uid()) === false) {
-			return new JSONResponse(['error' => 'You may not read this task'], Http::STATUS_FORBIDDEN);
+			// Not 403: a caller with no relationship to the task learns
+			// nothing, not even that the uuid exists.
+			return new JSONResponse(['error' => 'No such task'], Http::STATUS_NOT_FOUND);
 		}
 
 		return new JSONResponse(['results' => $this->tasks->auditTrail(uuid: $uuid)]);
@@ -250,7 +271,8 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function offer(string $uuid): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->offer(uuid: $uuid, pool: $this->body(), actor: $this->uid())
+			verb: fn (): Task => $this->tasks->offer(uuid: $uuid, pool: $this->body(), actor: $this->uid()),
+			uuid: $uuid
 		);
 	}//end offer()
 
@@ -267,7 +289,8 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function claim(string $uuid): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->claim(uuid: $uuid, actor: $this->uid())
+			verb: fn (): Task => $this->tasks->claim(uuid: $uuid, actor: $this->uid()),
+			uuid: $uuid
 		);
 	}//end claim()
 
@@ -284,7 +307,8 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function unclaim(string $uuid): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->unclaim(uuid: $uuid, actor: $this->uid())
+			verb: fn (): Task => $this->tasks->unclaim(uuid: $uuid, actor: $this->uid()),
+			uuid: $uuid
 		);
 	}//end unclaim()
 
@@ -302,7 +326,8 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function assign(string $uuid, string $assignee = ''): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->assign(uuid: $uuid, assignee: $assignee, actor: $this->uid())
+			verb: fn (): Task => $this->tasks->assign(uuid: $uuid, assignee: $assignee, actor: $this->uid()),
+			uuid: $uuid
 		);
 	}//end assign()
 
@@ -320,7 +345,8 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function reassign(string $uuid, string $assignee = ''): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->reassign(uuid: $uuid, assignee: $assignee, actor: $this->uid())
+			verb: fn (): Task => $this->tasks->reassign(uuid: $uuid, assignee: $assignee, actor: $this->uid()),
+			uuid: $uuid
 		);
 	}//end reassign()
 
@@ -339,7 +365,8 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function delegate(string $uuid, string $delegate = '', string $mandate = ''): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->delegate(uuid: $uuid, delegate: $delegate, mandate: $mandate, actor: $this->uid())
+			verb: fn (): Task => $this->tasks->delegate(uuid: $uuid, delegate: $delegate, mandate: $mandate, actor: $this->uid()),
+			uuid: $uuid
 		);
 	}//end delegate()
 
@@ -358,7 +385,8 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function resolve(string $uuid, ?string $resultText = null, ?string $comment = null): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->resolve(uuid: $uuid, resultText: $resultText, comment: $comment, actor: $this->uid())
+			verb: fn (): Task => $this->tasks->resolve(uuid: $uuid, resultText: $resultText, comment: $comment, actor: $this->uid()),
+			uuid: $uuid
 		);
 	}//end resolve()
 
@@ -385,7 +413,8 @@ class TaskController extends Controller {
 				resultText: $resultText,
 				comment: $comment,
 				actor: $this->uid()
-			)
+			),
+			uuid: $uuid
 		);
 	}//end complete()
 
@@ -403,7 +432,8 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function cancel(string $uuid, ?string $reason = null): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->cancel(uuid: $uuid, reason: $reason, actor: $this->uid())
+			verb: fn (): Task => $this->tasks->cancel(uuid: $uuid, reason: $reason, actor: $this->uid()),
+			uuid: $uuid
 		);
 	}//end cancel()
 
@@ -425,25 +455,30 @@ class TaskController extends Controller {
 		$value = filter_var($checked, FILTER_VALIDATE_BOOLEAN);
 
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->checkChecklistItem(uuid: $uuid, itemId: $itemId, checked: $value, actor: $this->uid())
+			verb: fn (): Task => $this->tasks->checkChecklistItem(uuid: $uuid, itemId: $itemId, checked: $value, actor: $this->uid()),
+			uuid: $uuid
 		);
 	}//end checkItem()
 
 	/**
 	 * Run a verb and translate its refusals to HTTP, uniformly.
 	 *
-	 * One translation so no verb can drift: validation 400, denial 403,
-	 * conflict 409 (the current state in the message, per the spec), absence
-	 * 404, everything else a logged 500 with no internals leaked.
+	 * One translation so no verb can drift: validation 400; denial 403 for
+	 * a caller who may READ the task and 404 for one who may not (so a
+	 * stranger cannot confirm a uuid by probing a verb); conflict 409 (the
+	 * current state in the message, per the spec); absence 404; everything
+	 * else a LOGGED 500 with a generic message, never the exception text,
+	 * which for a database failure carries SQL and bound parameters.
 	 *
 	 * @param callable(): Task $verb The service call.
 	 * @param int $successStatus The status of the happy path.
+	 * @param string|null $uuid The task acted on, for the denial mapping.
 	 *
 	 * @return JSONResponse The task, or the refusal.
 	 *
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	private function respondWith(callable $verb, int $successStatus = Http::STATUS_OK): JSONResponse {
+	private function respondWith(callable $verb, int $successStatus = Http::STATUS_OK, ?string $uuid = null): JSONResponse {
 		try {
 			$task = $verb();
 
@@ -454,15 +489,39 @@ class TaskController extends Controller {
 		} catch (TaskValidationException $refused) {
 			return new JSONResponse(['error' => $refused->getMessage()], Http::STATUS_BAD_REQUEST);
 		} catch (TaskAccessDeniedException $denied) {
+			if ($uuid !== null && $this->mayReadUuid(uuid: $uuid) === false) {
+				return new JSONResponse(['error' => 'No such task'], Http::STATUS_NOT_FOUND);
+			}
+
 			return new JSONResponse(['error' => $denied->getMessage()], Http::STATUS_FORBIDDEN);
 		} catch (TaskConflictException $conflict) {
 			return new JSONResponse(['error' => $conflict->getMessage()], Http::STATUS_CONFLICT);
 		} catch (DoesNotExistException) {
 			return new JSONResponse(['error' => 'No such task'], Http::STATUS_NOT_FOUND);
 		} catch (Throwable $failure) {
-			return new JSONResponse(['error' => 'Task operation failed: ' . $failure->getMessage()], Http::STATUS_INTERNAL_SERVER_ERROR);
+			$this->logger?->error(
+				'[TaskController] Task operation failed: ' . $failure->getMessage(),
+				['uuid' => $uuid, 'exception' => $failure]
+			);
+
+			return new JSONResponse(['error' => 'The task operation failed. The details are in the server log.'], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}//end try
 	}//end respondWith()
+
+	/**
+	 * Whether the caller may read the task with this uuid, fail-closed.
+	 *
+	 * @param string $uuid The task uuid.
+	 *
+	 * @return boolean False when absent, invisible or undeterminable.
+	 */
+	private function mayReadUuid(string $uuid): bool {
+		try {
+			return $this->authorization->mayRead(task: $this->tasks->get(uuid: $uuid), uid: $this->uid());
+		} catch (Throwable) {
+			return false;
+		}
+	}//end mayReadUuid()
 
 	/**
 	 * The acting identity, or null without a session.

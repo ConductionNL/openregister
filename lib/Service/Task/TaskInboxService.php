@@ -44,6 +44,8 @@ use Throwable;
 
 /**
  * Lists and counts tasks for a caller, with subject context attached.
+ *
+ * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
  */
 class TaskInboxService {
 

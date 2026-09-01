@@ -34,6 +34,7 @@ use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\FlowAdvanceBudget;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCP\IL10N;
 use UnexpectedValueException;
@@ -190,6 +191,33 @@ final class UserTaskConfig {
 
 		return array_merge($data, $this->subjectAnchor(json: $json));
 	}//end taskData()
+
+	/**
+	 * What the node remembers in its resume slot once the task exists.
+	 *
+	 * Written ONCE by the node: askedAt records when somebody was first asked,
+	 * not when the run last checked; the budget is the one the node was saved
+	 * with, so the completion listener spends what the author asked for; the
+	 * assignee is read by FlowRunAssignee so a resume POSTed at the run by
+	 * anyone else is refused at the door as well as ignored by the node.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 * @param array $items The input items.
+	 * @param string $taskUuid The created task.
+	 *
+	 * @return array<string, mixed> The slot values.
+	 *
+	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-several-user-task-nodes-in-one-flow-keep-independent-state
+	 */
+	public function slotValues(array $config, array $items, string $taskUuid): array {
+		return [
+			FlowTaskBridge::SLOT_TASK_UUID => $taskUuid,
+			FlowTaskBridge::SLOT_ASKED_AT => (new DateTime())->format('c'),
+			FlowTaskBridge::SLOT_ADVANCE => FlowAdvanceBudget::fromConfig(config: $config)->toStored(),
+			'assignee' => $this->assignee(config: $config),
+			'title' => $this->renderedTitle(config: $config, items: $items),
+		];
+	}//end slotValues()
 
 	/**
 	 * The directly configured assignee, trimmed; '' when the task is pooled.

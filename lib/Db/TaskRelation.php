@@ -47,6 +47,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setSchemaId(?int $schemaId)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ *
+ * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-generic-anchor-plus-typed-relations
  */
 class TaskRelation extends Entity implements JsonSerializable {
 

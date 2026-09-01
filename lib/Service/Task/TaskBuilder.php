@@ -49,6 +49,8 @@ use Throwable;
  * @SuppressWarnings(PHPMD.NPathComplexity) Same cause: each nullable field
  * is one independent branch.
  * @SuppressWarnings(PHPMD.CyclomaticComplexity) Same cause.
+ *
+ * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
  */
 class TaskBuilder {
 

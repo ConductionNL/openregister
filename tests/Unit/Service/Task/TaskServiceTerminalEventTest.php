@@ -52,6 +52,7 @@ class TaskServiceTerminalEventTest extends TestCase {
 	protected function setUp(): void {
 		$this->tasks = $this->createMock(TaskMapper::class);
 		$this->tasks->method('update')->willReturnArgument(0);
+		$this->tasks->method('updateIfOpen')->willReturn(true);
 		$this->db = $this->createMock(IDBConnection::class);
 		$this->db->method('commit')->willReturnCallback(function (): void {
 			$this->sequence[] = 'commit';

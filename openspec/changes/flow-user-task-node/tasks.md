@@ -86,19 +86,19 @@
 
 ## 6. Tests
 
-- [ ] 6.1 Node unit tests: one task per node per run across a heartbeat wake;
+- [x] 6.1 Node unit tests: one task per node per run across a heartbeat wake;
       empty firing creates nothing and does not suspend; claim is not
       completion; terminality read from the task and never from the signal
       slot; asked-at not restamped; two nodes in one flow requiring two
       completions.
-- [ ] 6.2 Config-validation table: `advance` accepting `0`, `3`, `"all"` and
+- [x] 6.2 Config-validation table: `advance` accepting `0`, `3`, `"all"` and
       REFUSING `null`, `""`, `-1` and `"unlimited"`, each with the value in
       the message; a config with no resolvable performer refused.
-- [ ] 6.3 Budget and oversight tests: `0` leaves the run suspended-and-due;
+- [x] 6.3 Budget and oversight tests: `0` leaves the run suspended-and-due;
       `"all"` finishes the run in-request; a vetoing oversight check stops
       the in-request walk with the check id; an injected downstream throw
       leaves the task completed and the run advanceable.
-- [ ] 6.4 Propagation tests: stopping a run terminates both its tasks with a
+- [x] 6.4 Propagation tests: stopping a run terminates both its tasks with a
       reason; a losing parallel branch takes its task with it; a second
       observation of terminality records nothing; a `run_uuid`-null task is
       untouched.
