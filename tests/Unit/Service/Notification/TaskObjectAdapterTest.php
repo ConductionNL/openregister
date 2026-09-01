@@ -52,7 +52,7 @@ class TaskObjectAdapterTest extends TestCase {
 	}
 
 	public function testThePayloadCoversEveryDeclaredProperty(): void {
-		$payload = (new TaskObjectAdapter($this->task()))->getObject();
+		$payload = TaskObjectAdapter::payload($this->task());
 		$declared = array_keys((new TaskNotificationRules())->payloadProperties());
 
 		sort($declared);

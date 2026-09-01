@@ -2366,7 +2366,7 @@ class AnnotationNotificationDispatcher {
 			return 'GET';
 		}
 
-		if ($this->taskVerbNeedsForm(target: $target, data: $data) === true) {
+		if ($this->taskVerbNeedsForm(target: $target) === true) {
 			return 'GET';
 		}
 
@@ -2381,15 +2381,12 @@ class AnnotationNotificationDispatcher {
 	 * itself; it opens the surface that collects the comment.
 	 *
 	 * @param array<string, mixed> $target The task-verb target.
-	 * @param array<string, mixed> $data The triggering object's data (unused today; the outcome is on the target).
 	 *
 	 * @return bool True when the form must be opened.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Kept so a rule may later derive the outcome from the payload.
-	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-binary-decision-is-decidable-from-the-notification
 	 */
-	private function taskVerbNeedsForm(array $target, array $data): bool {
+	private function taskVerbNeedsForm(array $target): bool {
 		$outcome = ($target['outcome'] ?? null);
 		if (is_string($outcome) === false) {
 			return false;
@@ -2428,7 +2425,7 @@ class AnnotationNotificationDispatcher {
 		}
 
 		try {
-			if ($this->taskVerbNeedsForm(target: $target, data: $data) === true) {
+			if ($this->taskVerbNeedsForm(target: $target) === true) {
 				return $this->urlGenerator->linkToRouteAbsolute('openregister.task.open', ['uuid' => $uuid]);
 			}
 

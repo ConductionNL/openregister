@@ -64,6 +64,7 @@
                 <referencedClass name="OCA\OpenRegister\Db\ObjectEntity"/>
                 <!-- Sabre server classes ship with apps/dav, not with sabre/vobject; the
                      write-back plugin (lib/Dav) is loaded only inside the DAV server. -->
+                <referencedClass name="OCA\DAV\CalDAV\CalDavBackend"/>
                 <referencedClass name="Sabre\DAV\ServerPlugin"/>
                 <referencedClass name="Sabre\DAV\Server"/>
                 <referencedClass name="Sabre\DAV\INode"/>

@@ -113,7 +113,7 @@ class TaskScheduledNotificationJob extends TimedJob {
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
-		$this->setInterval(interval: 3600);
+		$this->setInterval(seconds: 3600);
 
 	}//end __construct()
 

@@ -163,7 +163,9 @@ class TaskCalendarProjector {
 		$vcalendar->remove('PRODID');
 		$vcalendar->add('PRODID', '-//OpenRegister//Tasks//EN');
 
-		$vtodo = $vcalendar->createComponent('VTODO');
+		// No defaults: VObject would otherwise stamp its own UID and DTSTAMP
+		// beside ours, and the UID is the task uuid by contract.
+		$vtodo = $vcalendar->createComponent('VTODO', [], false);
 		$vcalendar->add($vtodo);
 		$vtodo->add('UID', $uuid);
 		$vtodo->add('DTSTAMP', (new DateTime('now', $utc)));

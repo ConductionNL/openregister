@@ -145,7 +145,7 @@ class TaskVtodoWriteBackPlugin extends ServerPlugin {
 		}
 
 		$replacement = $this->guard(
-			fn (): ?string => $this->gate->handleWrite(calendarData: $body, actor: $this->actor())
+			call: fn (): ?string => $this->gate->handleWrite(calendarData: $body, actor: $this->actor())
 		);
 
 		if ($replacement !== null) {
