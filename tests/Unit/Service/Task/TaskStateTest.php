@@ -36,6 +36,8 @@ use PHPUnit\Framework\TestCase;
  * The legacy-status mapping table, and its refusals.
  *
  * @covers \OCA\OpenRegister\Service\Task\TaskState
+ * @covers \OCA\OpenRegister\Exception\TaskValidationException
+ * @covers \OCA\OpenRegister\Db\Task
  */
 class TaskStateTest extends TestCase {
 

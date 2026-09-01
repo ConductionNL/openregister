@@ -40,6 +40,8 @@ use Psr\Log\NullLogger;
  * Gate, content and idempotency of the seed step.
  *
  * @covers \OCA\OpenRegister\Repair\SeedTaskFixtures
+ * @covers \OCA\OpenRegister\Db\Task
+ * @covers \OCA\OpenRegister\Db\TaskAudit
  */
 class SeedTaskFixturesTest extends TestCase {
 
