@@ -31,12 +31,14 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\InvalidTransitionInputException;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IUserSession;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -390,4 +392,192 @@ class TransitionEngineInputsTest extends TestCase {
 			$this->assertSame(['note'], $e->getFields());
 		}
 	}//end testGraphModeRejectsAnyPayload()
+
+	/**
+	 * DISCOVERY: available-actions publishes each transition's declared inputs in
+	 * the contract's shape, so a client can present the payload without reading
+	 * the schema.
+	 *
+	 * @return void
+	 */
+	public function testAvailableActionsPublishesDeclaredInputs(): void {
+		$this->wire(
+			$this->timesheet(),
+			$this->annotation([['field' => 'reason', 'required' => true], ['field' => 'note'], 'malformed', ['required' => true]])
+		);
+
+		$actions = $this->engine->availableActions(self::OBJ);
+
+		$this->assertCount(1, $actions);
+		$this->assertSame('submit', $actions[0]['action']);
+		$this->assertSame(
+			[
+				['field' => 'reason', 'required' => true],
+				['field' => 'note', 'required' => false],
+			],
+			$actions[0]['inputs'],
+			'malformed entries are skipped by the allowlist, so they are not published either'
+		);
+	}//end testAvailableActionsPublishesDeclaredInputs()
+
+	/**
+	 * A transition declaring no inputs publishes an EMPTY list: the key is present,
+	 * because empty is the positive statement "this transition accepts no payload".
+	 *
+	 * @return void
+	 */
+	public function testANonDeclaringTransitionPublishesAnEmptyListNotAnAbsentKey(): void {
+		$this->wire($this->timesheet(), $this->annotation());
+
+		$actions = $this->engine->availableActions(self::OBJ);
+
+		$this->assertArrayHasKey('inputs', $actions[0]);
+		$this->assertSame([], $actions[0]['inputs']);
+		// The existing keys are unchanged.
+		$this->assertSame(['action', 'to', 'requires', 'description', 'inputs'], array_keys($actions[0]));
+	}//end testANonDeclaringTransitionPublishesAnEmptyListNotAnAbsentKey()
+
+	/**
+	 * Graph-derived actions carry the same key, empty, so a client need not know the mode.
+	 *
+	 * @return void
+	 */
+	public function testGraphActionsCarryAnEmptyInputsList(): void {
+		$case = $this->timesheet();
+		$case->setObject(['caseType' => 'p-1', 'status' => 's-1']);
+		$this->wire(
+			$case,
+			[
+				'field' => 'status',
+				'graph' => [
+					'schema' => 'statustype',
+					'parentField' => 'caseType',
+					'parentFrom' => 'caseType',
+					'orderField' => 'order',
+					'finalField' => 'isFinal',
+					'allowedMoves' => 'forward',
+				],
+			]
+		);
+		$siblings = [];
+		foreach ([['s-1', 1], ['s-2', 2]] as [$uuid, $order]) {
+			$sibling = new ObjectEntity();
+			$sibling->setUuid($uuid);
+			$sibling->setName('Status ' . $order);
+			$sibling->setObject(['caseType' => 'p-1', 'order' => $order, 'isFinal' => false]);
+			$siblings[] = $sibling;
+		}
+
+		$this->objectService->method('findAll')->willReturn($siblings);
+
+		$actions = $this->engine->availableActions(self::OBJ);
+
+		$this->assertSame('move-to-s-2', $actions[0]['action']);
+		$this->assertArrayHasKey('inputs', $actions[0]);
+		$this->assertSame([], $actions[0]['inputs']);
+	}//end testGraphActionsCarryAnEmptyInputsList()
+
+	/**
+	 * A caller without read permission still learns nothing: the refusal carries no field name.
+	 *
+	 * @return void
+	 */
+	public function testACallerWithoutReadPermissionLearnsNoFieldName(): void {
+		$this->wire($this->timesheet(), $this->annotation([['field' => 'secretReason', 'required' => true]]));
+		$permission = $this->createMock(PermissionHandler::class);
+		$permission->method('hasPermission')->willReturn(false);
+		$engine = new TransitionEngine(
+			$this->objectService,
+			$this->schemaMapper,
+			$this->dispatcher,
+			$this->userSession,
+			$permission,
+			$this->registerMapper,
+			$this->appConfig,
+			$this->logger
+		);
+
+		try {
+			$engine->availableActions(self::OBJ);
+			$this->fail('Expected NotAuthorizedException was not thrown.');
+		} catch (NotAuthorizedException $e) {
+			$this->assertStringNotContainsString('secretReason', $e->getMessage());
+		}
+	}//end testACallerWithoutReadPermissionLearnsNoFieldName()
+
+	/**
+	 * `declaredInputs()` answers the form's question: the list for a declared action,
+	 * empty for a declaring-nothing action, null for an unknown action or a schema
+	 * without a lifecycle.
+	 *
+	 * @return void
+	 */
+	public function testDeclaredInputsReadsTheTransitionOrAnswersNull(): void {
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getConfiguration')->willReturn(
+			['x-openregister-lifecycle' => $this->annotation([['field' => 'reason', 'required' => true]])]
+		);
+
+		$this->assertSame([['field' => 'reason', 'required' => true]], $this->engine->declaredInputs($schema, 'submit'));
+		$this->assertNull($this->engine->declaredInputs($schema, 'vanish'));
+
+		$plain = $this->createMock(Schema::class);
+		$plain->method('getConfiguration')->willReturn(['x-openregister-lifecycle' => $this->annotation()]);
+		$this->assertSame([], $this->engine->declaredInputs($plain, 'submit'), 'declared without inputs is an empty list');
+
+		$lifeless = $this->createMock(Schema::class);
+		$lifeless->method('getConfiguration')->willReturn([]);
+		$this->assertNull($this->engine->declaredInputs($lifeless, 'submit'));
+	}//end testDeclaredInputsReadsTheTransitionOrAnswersNull()
+
+	/**
+	 * The payloads both call sites must refuse identically.
+	 *
+	 * @return array<string, array{0: array<int, array<string, mixed>>, 1: array<string, mixed>}>
+	 */
+	public static function refusedPayloads(): array {
+		$declared = [['field' => 'reason', 'required' => true], ['field' => 'note']];
+
+		return [
+			'undeclared key' => [$declared, ['reason' => 'late', 'extra' => 1]],
+			'missing required' => [$declared, ['note' => 'n']],
+			'empty-string required' => [$declared, ['reason' => '']],
+			'payload against no declaration' => [[], ['reason' => 'late']],
+		];
+	}//end refusedPayloads()
+
+	/**
+	 * ONE allowlist, two callers: the write path and the task-form completion
+	 * refuse the same payloads with the same fields and the same message. Asserted
+	 * with a shared fixture rather than by reading the code.
+	 *
+	 * @param array<int, array<string, mixed>> $declared The transition's `inputs`.
+	 * @param array<string, mixed> $payload The payload both callers receive.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('refusedPayloads')]
+	public function testBothCallSitesRefuseTheSamePayloads(array $declared, array $payload): void {
+		$this->wire($this->timesheet(), $this->annotation($declared));
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$viaWrite = null;
+		try {
+			$this->engine->transition(self::OBJ, 'submit', $payload);
+		} catch (InvalidTransitionInputException $e) {
+			$viaWrite = $e;
+		}
+
+		$viaForm = null;
+		try {
+			$this->engine->resolveTransitionInputs($declared, $payload, 'submit');
+		} catch (InvalidTransitionInputException $e) {
+			$viaForm = $e;
+		}
+
+		$this->assertNotNull($viaWrite, 'the write path must refuse');
+		$this->assertNotNull($viaForm, 'the form path must refuse');
+		$this->assertSame($viaWrite->getFields(), $viaForm->getFields());
+		$this->assertSame($viaWrite->getMessage(), $viaForm->getMessage());
+	}//end testBothCallSitesRefuseTheSamePayloads()
 }//end class

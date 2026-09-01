@@ -32,8 +32,12 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
+use OCA\OpenRegister\Exception\TaskFormRefusedException;
+use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
+use OCA\OpenRegister\Service\Task\TaskFormCompletion;
+use OCA\OpenRegister\Service\Task\TaskFormResolver;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
@@ -58,6 +62,8 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Exception\TaskValidationException
  * @covers \OCA\OpenRegister\Exception\TaskAccessDeniedException
  * @covers \OCA\OpenRegister\Exception\TaskConflictException
+ * @covers \OCA\OpenRegister\Exception\TaskFormRefusedException
+ * @covers \OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException
  */
 class TaskControllerTest extends TestCase {
 
@@ -89,6 +95,10 @@ class TaskControllerTest extends TestCase {
 	 */
 	private LoggerInterface&MockObject $logger;
 
+	private TaskFormResolver&MockObject $forms;
+
+	private TaskFormCompletion&MockObject $completion;
+
 	/**
 	 * The controller under test.
 	 *
@@ -106,6 +116,9 @@ class TaskControllerTest extends TestCase {
 		$this->inbox = $this->createMock(originalClassName: TaskInboxService::class);
 		$this->authorization = $this->createMock(originalClassName: TaskAuthorizationService::class);
 		$this->logger = $this->createMock(originalClassName: LoggerInterface::class);
+		$this->forms = $this->createMock(originalClassName: TaskFormResolver::class);
+		$this->forms->method('describe')->willReturn(['form' => null, 'requireChecklist' => false]);
+		$this->completion = $this->createMock(originalClassName: TaskFormCompletion::class);
 
 		$user = $this->createMock(originalClassName: IUser::class);
 		$user->method('getUID')->willReturn('alice');
@@ -132,6 +145,8 @@ class TaskControllerTest extends TestCase {
 			authorization: $this->authorization,
 			temporal: new TaskTemporalProjection(),
 			userSession: $session,
+			forms: $this->forms,
+			completion: $this->completion,
 			logger: $this->logger,
 			groupManager: $groups
 		);
@@ -192,6 +207,110 @@ class TaskControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_OK, $shown->getStatus());
 		$this->assertSame('t-1', $shown->getData()['uuid']);
 	}//end testShowIs404ForAnInvisibleTaskAnd200ForAVisibleOne()
+
+	/**
+	 * GET /api/flow-tasks/{uuid} carries the resolved form and the checklist
+	 * rule, so the completion surface needs no second round-trip.
+	 *
+	 * @return void
+	 */
+	public function testShowCarriesTheResolvedForm(): void {
+		$this->tasks->method('get')->willReturn($this->task());
+		$this->authorization->method('mayRead')->willReturn(true);
+		$forms = $this->createMock(originalClassName: TaskFormResolver::class);
+		$forms->expects($this->once())->method('describe')->willReturn(
+			[
+				'form' => ['kind' => 'fields', 'state' => 'ready', 'fields' => [['field' => 'reason', 'required' => true, 'order' => 0, 'renderable' => true, 'reason' => null]]],
+				'requireChecklist' => true,
+			]
+		);
+		$controller = new TaskController(
+			appName: 'openregister',
+			request: $this->createMock(originalClassName: IRequest::class),
+			tasks: $this->tasks,
+			inbox: $this->inbox,
+			authorization: $this->authorization,
+			temporal: new TaskTemporalProjection(),
+			userSession: $this->createMock(originalClassName: IUserSession::class),
+			forms: $forms,
+			completion: $this->completion
+		);
+
+		$data = $controller->show(uuid: 't-1')->getData();
+
+		$this->assertSame('t-1', $data['uuid']);
+		$this->assertSame('fields', $data['form']['kind']);
+		$this->assertTrue($data['form']['fields'][0]['required']);
+		$this->assertTrue($data['requireChecklist']);
+	}//end testShowCarriesTheResolvedForm()
+
+	/**
+	 * POST complete passes the `data` object through to the form-aware completion.
+	 *
+	 * @return void
+	 */
+	public function testCompletePassesTheFieldValuesThrough(): void {
+		$this->completion->expects($this->once())->method('complete')
+			->with('t-1', 'rejected', null, 'late', ['reason' => 'late'], 'alice')
+			->willReturn($this->task());
+
+		$response = $this->controller->complete(uuid: 't-1', outcome: 'rejected', comment: 'late', data: ['reason' => 'late']);
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+	}//end testCompletePassesTheFieldValuesThrough()
+
+	/**
+	 * A `data` that is not an object is a 400 before any service is reached.
+	 *
+	 * @return void
+	 */
+	public function testANonObjectDataIs400(): void {
+		$this->completion->expects($this->never())->method('complete');
+
+		$response = $this->controller->complete(uuid: 't-1', outcome: 'approved', data: 'late');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertStringContainsString('"data"', $response->getData()['error']);
+	}//end testANonObjectDataIs400()
+
+	/**
+	 * A refused form payload is a 400 carrying the fields and the kind,
+	 * machine-readably, next to the message.
+	 *
+	 * @return void
+	 */
+	public function testAFormRefusalIs400WithFieldsAndKind(): void {
+		$this->completion->method('complete')->willThrowException(
+			new TaskFormRefusedException(
+				message: 'Transition "complete" is missing required input field(s): "reason".',
+				kind: TaskFormRefusedException::KIND_MISSING,
+				fields: ['reason']
+			)
+		);
+
+		$response = $this->controller->complete(uuid: 't-1', outcome: 'approved', data: []);
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertSame(['reason'], $response->getData()['fields']);
+		$this->assertSame('missing', $response->getData()['kind']);
+		$this->assertStringContainsString('reason', $response->getData()['error']);
+	}//end testAFormRefusalIs400WithFieldsAndKind()
+
+	/**
+	 * A write the subject refused is a 422: not malformed, not completed.
+	 *
+	 * @return void
+	 */
+	public function testASubjectWriteRefusalIs422(): void {
+		$this->completion->method('complete')->willThrowException(
+			new TaskSubjectWriteRefusedException('reason must be one of: late, incomplete')
+		);
+
+		$response = $this->controller->complete(uuid: 't-1', outcome: 'approved', data: ['reason' => 'other']);
+
+		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+		$this->assertStringContainsString('reason must be', $response->getData()['error']);
+	}//end testASubjectWriteRefusalIs422()
 
 	/**
 	 * GET /api/flow-tasks/{uuid}: an absent uuid reads exactly like an
@@ -267,7 +386,7 @@ class TaskControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testADeniedVerbIs404WhenTheCallerMayNotReadTheTask(): void {
-		$this->tasks->method('complete')->willThrowException(new TaskAccessDeniedException('denied'));
+		$this->completion->method('complete')->willThrowException(new TaskAccessDeniedException('denied'));
 		$this->tasks->method('get')->willReturn($this->task());
 		$this->authorization->method('mayRead')->willReturn(false);
 
@@ -284,7 +403,7 @@ class TaskControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testADeniedVerbIs403WhenTheCallerMayReadTheTask(): void {
-		$this->tasks->method('complete')->willThrowException(new TaskAccessDeniedException("Verb 'complete' denied: only the current assignee may perform it."));
+		$this->completion->method('complete')->willThrowException(new TaskAccessDeniedException("Verb 'complete' denied: only the current assignee may perform it."));
 		$this->tasks->method('get')->willReturn($this->task());
 		$this->authorization->method('mayRead')->willReturn(true);
 
@@ -338,9 +457,13 @@ class TaskControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testEveryVerbRouteReachesItsServiceVerb(): void {
-		foreach (['offer', 'claim', 'unclaim', 'assign', 'reassign', 'delegate', 'resolve', 'complete', 'cancel', 'checkChecklistItem'] as $verb) {
+		foreach (['offer', 'claim', 'unclaim', 'assign', 'reassign', 'delegate', 'resolve', 'cancel', 'checkChecklistItem'] as $verb) {
 			$this->tasks->expects($this->once())->method($verb)->willReturn($this->task());
 		}
+
+		// Complete goes through the form-aware completion, which owns the
+		// write-then-complete order and delegates the verb to the service.
+		$this->completion->expects($this->once())->method('complete')->willReturn($this->task());
 
 		$responses = [
 			$this->controller->offer(uuid: 't-1'),
@@ -496,6 +619,8 @@ class TaskControllerTest extends TestCase {
 			authorization: $this->authorization,
 			temporal: new TaskTemporalProjection(),
 			userSession: $session,
+			forms: $this->forms,
+			completion: $this->completion,
 			logger: $this->logger,
 			groupManager: $groups
 		);
@@ -518,7 +643,9 @@ class TaskControllerTest extends TestCase {
 			inbox: $this->inbox,
 			authorization: $this->authorization,
 			temporal: new TaskTemporalProjection(),
-			userSession: $session
+			userSession: $session,
+			forms: $this->forms,
+			completion: $this->completion
 		);
 
 		$this->assertSame(Http::STATUS_UNAUTHORIZED, $controller->index()->getStatus());
