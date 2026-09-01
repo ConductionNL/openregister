@@ -162,8 +162,8 @@ class RegisterDescriptorServiceTest extends TestCase {
 
 	/**
 	 * A row names the app that DECLARES the register, not the directory the file
-	 * was found in. `n8n_workflows.openregister.json` ships in OpenRegister's
-	 * lib/Settings and declares `app: n8n`; filing it under `openregister` tells
+	 * was found in. A descriptor shipped in OpenRegister's own lib/Settings may
+	 * declare a different `app`; filing it under `openregister` tells
 	 * the reader the wrong owner, and an inventory exists to say whose problem a
 	 * row is.
 	 */
@@ -260,7 +260,7 @@ class RegisterDescriptorServiceTest extends TestCase {
 
 	/**
 	 * A descriptor is recognised by SHAPE, not filename — the fleet's names vary
-	 * (`credential-providers.json`, `n8n_workflows.openregister.json`), and a
+	 * (`credential-providers.json`, `flow_register.json`), and a
 	 * `*_register.json` glob would silently shrink the inventory rather than
 	 * fail, which is this service's own failure mode one level up.
 	 */
@@ -439,8 +439,7 @@ class RegisterDescriptorServiceTest extends TestCase {
 	 * fleet actually ships — the failure would be a SHORTER inventory, which is
 	 * the one failure mode a fixture-only suite cannot see. This reads
 	 * OpenRegister's own `lib/Settings`, where the filenames deliberately vary
-	 * (`flow_register.json`, `credential-providers.json`,
-	 * `n8n_workflows.openregister.json`), and asserts every declaring file is
+	 * (`flow_register.json`, `credential-providers.json`), and asserts every declaring file is
 	 * found.
 	 */
 	public function testEveryDescriptorOpenRegisterShipsIsDiscovered(): void {
