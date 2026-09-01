@@ -114,12 +114,13 @@ class Version1Date20260901000000 extends SimpleMigrationStep {
 			}
 
 			$this->connection->executeStatement('CREATE EXTENSION IF NOT EXISTS pg_trgm');
-			$message = 'pg_trgm extension installed by re-run (fuzzy/substring search indexes can now be created)';
 			if ($wasAlreadyInstalled === true) {
-				$message = 'pg_trgm extension already installed (no-op re-run)';
+				$output->info('pg_trgm extension already installed (no-op re-run)');
+
+				return;
 			}
 
-			$output->info($message);
+			$output->info('pg_trgm extension installed by re-run (fuzzy/substring search indexes can now be created)');
 
 			return;
 		} catch (Exception $e) {
