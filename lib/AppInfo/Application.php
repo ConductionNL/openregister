@@ -2531,6 +2531,29 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Listener\TaskRunTerminalListener::class
 		);
 
+		// The case layer (flow-cmmn-case-semantics). A realisation ending (a task
+		// or a run) drives its plan item; an object change may satisfy a sentry;
+		// and a plan item reaching a terminal state is a catalog event fired
+		// against the anchoring object. Nothing under Service\Flow depends on
+		// Service\Case: these listeners are the only coupling, and it points one
+		// way. TaskTerminalEvent is dispatched by flow-user-task-node's
+		// TaskService; until that lands the same reconciliation runs on every
+		// case-plan evaluation, so this listener is an accelerator, not the path.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
+			\OCA\OpenRegister\Listener\CaseTaskTerminalListener::class
+		);
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\FlowRunTerminalEvent::class,
+			\OCA\OpenRegister\Listener\CaseRunTerminalListener::class
+		);
+		$context->registerEventListener(ObjectUpdatedEvent::class, \OCA\OpenRegister\Listener\CaseObjectEventListener::class);
+		$context->registerEventListener(ObjectTransitionedEvent::class, \OCA\OpenRegister\Listener\CaseObjectEventListener::class);
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\CaseItemTransitionedEvent::class,
+			\OCA\OpenRegister\Listener\EventCatalogListener::class
+		);
+
 		// Lifecycle annotation listeners — see x-openregister-lifecycle.
 		// Order matters: initial state runs on creating; validation runs on updating.
 		$context->registerEventListener(ObjectCreatingEvent::class, LifecycleInitialStateListener::class);
