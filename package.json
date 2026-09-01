@@ -9,6 +9,7 @@
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true",
     "build": "webpack --config webpack.config.js --progress --mode production",
+    "postbuild": "node scripts/check-single-dexie.js",
     "dev": "NODE_ENV=development webpack --config webpack.config.js --progress",
     "watch": "NODE_ENV=development webpack --config webpack.config.js --progress --watch",
     "lint": "eslint src tests scripts",
@@ -29,6 +30,7 @@
     "test:l10n:write": "node tests/l10n/check-l10n.js --write",
     "test:l10n:parity": "node tests/l10n/check-l10n-parity.js",
     "check:l10n": "node scripts/check-l10n.js",
+    "check:dexie": "node scripts/check-single-dexie.js",
     "clean:l10n": "node scripts/clean-l10n.js",
     "find:unwrapped": "node scripts/find-unwrapped.js",
     "l10n:status": "node scripts/l10n/batch.js status",
