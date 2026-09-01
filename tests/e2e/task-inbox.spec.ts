@@ -93,9 +93,7 @@ async function cancelQuietly(request: APIRequestContext, uuid: string) {
 }
 
 test.describe('flow-tasks — authorization at the boundary', () => {
-	test('a stranger is refused on the task detail route', async ({
-		request,
-	}) => {
+	test('a stranger is refused on the task detail route', async ({ request }) => {
 		// A second real account, created through the provisioning API. If
 		// this instance refuses to provision users the scenario cannot be
 		// exercised, and that is a FAILURE of the environment, not a skip:
@@ -134,7 +132,9 @@ test.describe('flow-tasks — authorization at the boundary', () => {
 			// The stranger's assigned inbox is empty and does not count our
 			// task; a task the admin makes them a WATCHER of does appear.
 			const strangerAssigned = await stranger.get(`${BASE}?scope=assigned`)
-			expect(strangerAssigned.status(), await strangerAssigned.text()).toBe(200)
+			expect(strangerAssigned.status(), await strangerAssigned.text()).toBe(
+				200,
+			)
 			const assignedBody = await strangerAssigned.json()
 			expect(assignedBody.total).toBe(0)
 
@@ -144,7 +144,9 @@ test.describe('flow-tasks — authorization at the boundary', () => {
 			})
 			try {
 				const strangerWatched = await stranger.get(`${BASE}?scope=watched`)
-				expect(strangerWatched.status(), await strangerWatched.text()).toBe(200)
+				expect(strangerWatched.status(), await strangerWatched.text()).toBe(
+					200,
+				)
 				const watchedBody = await strangerWatched.json()
 				expect(
 					(watchedBody.results ?? []).some(
@@ -215,7 +217,10 @@ test.describe('flow-tasks — the inbox', () => {
 			const mine = (inbox.results ?? []).find(
 				(row: { uuid?: string }) => row.uuid === task.uuid,
 			)
-			expect(mine, 'the created task must appear in its assignee inbox').toBeTruthy()
+			expect(
+				mine,
+				'the created task must appear in its assignee inbox',
+			).toBeTruthy()
 
 			// Every row carries a readable identity and the subject slot: a
 			// list usable without a second request per row.
