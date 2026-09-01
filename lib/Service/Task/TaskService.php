@@ -79,16 +79,15 @@ use Throwable;
  * @SuppressWarnings(PHPMD.TooManyMethods) One private helper per concern the
  * verbs share (open, authorize, audit, persist, announce); merging them would
  * hide which rule a verb relies on.
- * @SuppressWarnings(PHPMD.ExcessiveParameterList) One collaborator per
- * concern, injected; the tenth is the post-commit announcement.
  * @SuppressWarnings(PHPMD.StaticAccess) TaskState is a stateless published
  * vocabulary (the one status mapping); calling it statically is the point,
  * an instance would be a second copy of the same table.
  * @SuppressWarnings(PHPMD.ExcessiveParameterList) The tenth constructor
- * argument is the nullable event dispatcher that announces terminality
- * (flow-user-task-node); it is last so the hand-built test services keep
- * their order, and folding it into another collaborator would hide that a
- * lifecycle verb has an after-commit side effect.
+ * argument is the nullable event dispatcher that announces the transition
+ * to the projections and terminality to the flow side; it is last so the
+ * hand-built test services keep their order, and folding it into another
+ * collaborator would hide that a lifecycle verb has an after-commit side
+ * effect.
  *
  * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
