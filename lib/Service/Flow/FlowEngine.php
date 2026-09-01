@@ -39,6 +39,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\FlowRun;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Workflow\MarkingStore\MarkingStoreInterface;
 use Symfony\Component\Workflow\Workflow;
@@ -46,6 +47,12 @@ use Throwable;
 
 /**
  * Runs a stored flow document to completion, or until it can go no further.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) Two walks live here on purpose: the single
+ * in-memory stream every unit test and the flow tester use, and the persisted stream walk a
+ * worker pass uses. Sharing the hop body between them would make the first depend on the second.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One labelled branch per way a hop can end,
+ * in each walk; PHPMD sums them into the class total.
  *
  * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
  */
@@ -61,6 +68,14 @@ class FlowEngine {
 	public const STATUS_DEAD_LETTER = 'dead_letter';
 
 	public const STATUS_FAILED = 'failed';
+
+	/**
+	 * The run has enabled work nobody took this pass — a claim was refused, or
+	 * a join became enabled by the last commit — and the next pass drains it.
+	 * Only produced by the stream walk; a single in-memory stream never
+	 * contends with anyone.
+	 */
+	public const STATUS_QUEUED = 'queued';
 
 	/**
 	 * How many items of a step's input and output the run log keeps.
@@ -291,6 +306,10 @@ class FlowEngine {
 	 * @param array $context Run-level metadata handed to every step.
 	 * @param array|null $items Seed items; defaults to one item from the subject.
 	 * @param string|null $startAt Node to start from; defaults to the flow's own start.
+	 * @param FlowStreamWalk|null $streams The per-run stream collaborator: claims before each
+	 *                                     firing, a locked delta commit after it, stream-scoped
+	 *                                     suspension. Null walks a single in-memory stream
+	 *                                     exactly as before — a flow with one stream IS the run.
 	 *
 	 * @return array The run result: `{status, log: [], context: [], items: []}`.
 	 *
@@ -314,6 +333,7 @@ class FlowEngine {
 		array $context = [],
 		?array $items = null,
 		?string $startAt = null,
+		?FlowStreamWalk $streams = null,
 	): array {
 		$items = ($items ?? FlowItems::fromSubject(subject: $subject));
 		$flow = $this->withStartNode(flow: $flow, startAt: $startAt);
@@ -341,13 +361,35 @@ class FlowEngine {
 		$fired = 0;
 
 		// Per-place item buffers. Items belong to the PLACES a token sits on,
-		// not to the run globally ({@see self::seedPlaceItems()}).
+		// not to the run globally ({@see self::seedPlaceItems()}). With a stream
+		// walk the buffers persisted by the last commit win, so each branch
+		// resumes with the items ITS branch produced.
+		$stored = null;
+		if ($streams !== null) {
+			$stored = $streams->run()->getPlaceItems();
+		}
+
 		$placeItems = $this->placement()->seedPlaceItems(
 			workflow: $workflow,
 			subject: $subject,
 			definition: $definition,
-			items: $items
+			items: $items,
+			stored: $stored
 		);
+
+		if ($streams !== null) {
+			return $this->walkStreams(
+				flow: $flow,
+				workflow: $workflow,
+				store: $store,
+				subject: $subject,
+				dispatcher: $dispatcher,
+				context: $context,
+				items: $items,
+				placeItems: $placeItems,
+				streams: $streams
+			);
+		}
 
 		while (true) {
 			$enabled = $workflow->getEnabledTransitions(subject: $subject);
@@ -637,6 +679,393 @@ class FlowEngine {
 		}//end while
 
 	}//end run()
+
+	/**
+	 * The per-stream walk: round-robin over advanceable streams, a claim before
+	 * every firing, a locked delta commit after it, and suspension scoped to
+	 * the stream that raised it.
+	 *
+	 * Terminality is never concluded from this loop running dry. The pass ends
+	 * when no stream can advance, and `finalize()` — under the run-row lock,
+	 * from the marking it reads there — decides whether the run is queued (an
+	 * enabled firing nobody took), suspended (every live stream parked, woken
+	 * at the earliest non-null wake time) or terminal.
+	 *
+	 * @param array $flow The flow document.
+	 * @param Workflow $workflow The Petri net over the run's marking store.
+	 * @param MarkingStoreInterface $store The marking store (synced from each commit).
+	 * @param object $subject The subject holding the marking.
+	 * @param FlowStepDispatcher $dispatcher Performs each step's side effect.
+	 * @param array $context Run-level metadata handed to every step.
+	 * @param array $items The items in hand (returned with the result).
+	 * @param array<string, array> $placeItems Items per place.
+	 * @param FlowStreamWalk $streams The stream collaborator.
+	 *
+	 * @return array The run result.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One labelled branch per way a hop can
+	 * end — pinned, completed, stopped, suspended, failed-and-continuing, failed-and-terminal —
+	 * each with its stream bookkeeping; splitting them would scatter the protocol.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) The same branches, multiplied.
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The walk reads top to bottom as the walk.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
+	 */
+	private function walkStreams(
+		array $flow,
+		Workflow $workflow,
+		MarkingStoreInterface $store,
+		object $subject,
+		FlowStepDispatcher $dispatcher,
+		array $context,
+		array $items,
+		array $placeItems,
+		FlowStreamWalk $streams,
+	): array {
+		$log = [];
+		$streams->begin(marking: $workflow->getMarking(subject: $subject)->getPlaces());
+
+		while (true) {
+			if ($streams->budgetSpent() === true) {
+				break;
+			}
+
+			$streamId = $streams->nextStream();
+			if ($streamId === null) {
+				break;
+			}
+
+			// THE CEILING counts the RUN, not the pass: the durable firing
+			// count survives suspension and covers every stream together.
+			if ($streams->firings() >= self::MAX_TRANSITIONS) {
+				$this->logger->warning(
+					message: '[FlowEngine] Flow exceeded the transition ceiling; aborting',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => ($flow['id'] ?? null), 'ceiling' => self::MAX_TRANSITIONS]
+				);
+				$error = sprintf('Flow did not settle within %d transitions; it may contain an unbounded loop.', self::MAX_TRANSITIONS);
+				$streams->finalize(enabled: false, forcedTerminal: self::STATUS_FAILED);
+
+				return ['status' => self::STATUS_FAILED, 'log' => $log, 'context' => $context, 'items' => $items, 'error' => $error];
+			}
+
+			// This stream's candidates: the enabled transitions consuming from
+			// the place its token sits on, narrowed by edge conditions exactly
+			// as the single-stream walk narrows them.
+			$place = $streams->placeOf(id: $streamId);
+			$candidates = [];
+			foreach ($workflow->getEnabledTransitions(subject: $subject) as $transition) {
+				if ($place !== null && in_array($place, array_map('strval', $transition->getFroms()), true) === true) {
+					$candidates[] = $transition;
+				}
+			}
+
+			$transition = null;
+			if ($candidates !== []) {
+				$transition = $this->selectTransition(enabled: $candidates, flow: $flow, placeItems: $placeItems, context: $context);
+			}
+
+			if ($transition === null) {
+				$streams->exhaust(id: $streamId);
+				continue;
+			}
+
+			$name = $transition->getName();
+			$froms = array_map('strval', $transition->getFroms());
+			$tos = array_map('strval', $transition->getTos());
+
+			// THE CLAIM, on every place this firing touches, before anything
+			// runs. A refusal skips the candidate without waiting; the firing
+			// stays enabled and the run ends the pass `queued`.
+			$claimed = $streams->claim(id: $streamId, transition: $name, places: array_merge($froms, $tos));
+			if ($claimed === null) {
+				continue;
+			}
+
+			$step = $this->router()->stepFor(flow: $flow, transitionName: $name);
+			$itemsIn = $this->placement()->itemsForTransition(transition: $transition, placeItems: $placeItems);
+			$items = $itemsIn;
+			$stepType = (string)($step['type'] ?? '');
+			$startedAt = microtime(true);
+
+			$pinned = $this->pinnedItems(flow: $flow, context: $context, transitionName: $name);
+			if ($pinned !== null) {
+				$items = $pinned;
+				$entry = [
+					'transition' => $name,
+					'type' => $stepType,
+					'status' => 'pinned',
+					'itemsIn' => count($itemsIn),
+					'itemsOut' => count($items),
+					'durationMs' => 0,
+				];
+				[$placeItems, $log] = $this->fireOnStream(
+					flow: $flow,
+					workflow: $workflow,
+					store: $store,
+					subject: $subject,
+					transition: $transition,
+					items: $items,
+					placeItems: $placeItems,
+					context: $context,
+					streams: $streams,
+					streamId: $streamId,
+					claimed: $claimed,
+					entry: $entry,
+					log: $log
+				);
+				continue;
+			}//end if
+
+			$this->enterHop(context: $context, name: $name, index: count($log));
+
+			try {
+				// OVERSIGHT, per firing, inside the claim — never hoisted per
+				// pass, never cached. A refusal ends the RUN, not the branch.
+				$this->assertOversightAllows(context: $context, name: $name, type: $stepType);
+
+				$produced = $dispatcher->dispatch(step: $step, items: $itemsIn, context: $context);
+				$items = FlowItems::normalise(value: $produced);
+				$entry = [
+					'transition' => $name,
+					'type' => $stepType,
+					'status' => 'completed',
+					'itemsIn' => count($itemsIn),
+					'itemsOut' => count($items),
+					'input' => $this->sampleItems(items: $itemsIn),
+					'output' => $this->sampleItems(items: $items),
+					'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
+				];
+				$report = $this->stepReport(context: $context);
+				if ($report !== []) {
+					$entry['report'] = $report;
+				}
+			} catch (FlowStop $stop) {
+				$streams->release(places: $claimed);
+				$log[] = [
+					'transition' => $name,
+					'type' => $stepType,
+					'status' => 'stopped',
+					'reason' => $stop->getMessage(),
+					'checkId' => $stop->checkId(),
+					'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
+					'streamId' => $streamId,
+					'ordinalPath' => $streams->pathOf(id: $streamId),
+				];
+
+				$stopStatus = self::STATUS_STOPPED;
+				$stopError = null;
+				if ($stop->isError() === true) {
+					$stopStatus = self::STATUS_FAILED;
+					$stopError = $stop->getMessage();
+				}
+
+				// A run-level end: no stream begins another firing.
+				$streams->finalize(enabled: false, forcedTerminal: $stopStatus);
+
+				return ['status' => $stopStatus, 'log' => $log, 'context' => $context, 'items' => $items, 'error' => $stopError];
+			} catch (FlowSuspension $suspension) {
+				// A pause of THIS stream. Its marking is not advanced — it
+				// resumes ON this transition — and its siblings keep going.
+				$log[] = [
+					'transition' => $name,
+					'status' => 'suspended',
+					'reason' => $suspension->getMessage(),
+					'streamId' => $streamId,
+					'ordinalPath' => $streams->pathOf(id: $streamId),
+				];
+				$streams->park(
+					id: $streamId,
+					resumeAt: $suspension->getResumeAt(),
+					reason: $suspension->getMessage(),
+					claimed: $claimed,
+					enabled: $streams->workRemains(transitions: $workflow->getEnabledTransitions(subject: $subject))
+				);
+				continue;
+			} catch (Throwable $e) {
+				$entry = [
+					'transition' => $name,
+					'type' => $stepType,
+					'status' => 'failed',
+					'error' => $e->getMessage(),
+					'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
+				];
+				$report = $this->stepReport(context: $context);
+				if ($report !== []) {
+					$entry['report'] = $report;
+				}
+
+				$policy = (string)($step['onError'] ?? self::ON_ERROR_STOP);
+				$this->logger->warning(
+					message: '[FlowEngine] Flow step failed',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'flow' => ($flow['id'] ?? null),
+						'transition' => $name,
+						'policy' => $policy,
+						'error' => $e->getMessage(),
+					]
+				);
+
+				if ($policy !== self::ON_ERROR_CONTINUE) {
+					// Terminal for the run: the failed stream ends with the
+					// reason, every other stream ends with the run.
+					$terminal = self::STATUS_STOPPED;
+					if ($policy === self::ON_ERROR_DEAD_LETTER) {
+						$terminal = self::STATUS_DEAD_LETTER;
+					}
+
+					$entry['streamId'] = $streamId;
+					$entry['ordinalPath'] = $streams->pathOf(id: $streamId);
+					$log[] = $entry;
+					$streams->endStream(id: $streamId, status: $terminal, error: $e->getMessage(), claimed: $claimed, enabled: false);
+					$streams->finalize(enabled: false, forcedTerminal: $terminal);
+
+					return ['status' => $terminal, 'log' => $log, 'context' => $context, 'items' => $items];
+				}
+
+				// `continue`: the marking advances (leaving the token would spin
+				// this transition forever), recorded as a firing whose step failed.
+				[$placeItems, $log] = $this->fireOnStream(
+					flow: $flow,
+					workflow: $workflow,
+					store: $store,
+					subject: $subject,
+					transition: $transition,
+					items: $items,
+					placeItems: $placeItems,
+					context: $context,
+					streams: $streams,
+					streamId: $streamId,
+					claimed: $claimed,
+					entry: $entry,
+					log: $log,
+					streamError: $e->getMessage()
+				);
+				continue;
+			} finally {
+				$this->runContext?->pop();
+			}//end try
+
+			[$placeItems, $log] = $this->fireOnStream(
+				flow: $flow,
+				workflow: $workflow,
+				store: $store,
+				subject: $subject,
+				transition: $transition,
+				items: $items,
+				placeItems: $placeItems,
+				context: $context,
+				streams: $streams,
+				streamId: $streamId,
+				claimed: $claimed,
+				entry: $entry,
+				log: $log
+			);
+		}//end while
+
+		// THE PASS'S LAST WORD, under the lock, from the marking there. "Work
+		// remains" excludes the transitions parked streams keep enabled: a wait
+		// is not work, and counting it would re-queue every parked run.
+		$enabled = $streams->workRemains(transitions: $workflow->getEnabledTransitions(subject: $subject));
+		$status = $streams->finalize(enabled: $enabled);
+
+		$result = ['status' => $status, 'log' => $log, 'context' => $context, 'items' => $items];
+		if ($status === self::STATUS_SUSPENDED) {
+			$result['resumeAt'] = $streams->run()->getResumeAt();
+		}
+
+		return $result;
+	}//end walkStreams()
+
+	/**
+	 * Advance the marking for one firing and commit it on its stream.
+	 *
+	 * The in-memory apply is the same three calls the single-stream walk
+	 * makes; the commit then writes the DELTA under the run-row lock and the
+	 * store is synced from what was committed, so the next candidate is chosen
+	 * against a marking that includes every sibling's progress.
+	 *
+	 * @param array $flow The flow document.
+	 * @param Workflow $workflow The Petri net.
+	 * @param MarkingStoreInterface $store The marking store.
+	 * @param object $subject The subject.
+	 * @param object $transition The fired transition.
+	 * @param array $items The items produced.
+	 * @param array<string, array> $placeItems Items per place, before the firing.
+	 * @param array $context The run context.
+	 * @param FlowStreamWalk $streams The stream collaborator.
+	 * @param string $streamId The firing stream.
+	 * @param array<int, string> $claimed The claimed places.
+	 * @param array $entry The log entry for this hop.
+	 * @param array $log The run log so far.
+	 * @param string|null $streamError The step's error when it failed under `continue`.
+	 *
+	 * @return array{0: array<string, array>, 1: array} The place items after, and the log.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The hop's whole state, handed once.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-marking-must-be-written-as-a-delta-never-as-a-whole-overwrite
+	 */
+	private function fireOnStream(
+		array $flow,
+		Workflow $workflow,
+		MarkingStoreInterface $store,
+		object $subject,
+		object $transition,
+		array $items,
+		array $placeItems,
+		array $context,
+		FlowStreamWalk $streams,
+		string $streamId,
+		array $claimed,
+		array $entry,
+		array $log,
+		?string $streamError = null,
+	): array {
+		$name = $transition->getName();
+		$taken = $this->router()->takenExits(flow: $flow, transition: $transition, items: $items, context: $context);
+		$placeItems = $this->placement()->advanceItems(transition: $transition, placeItems: $placeItems, items: $items, taken: $taken);
+		$workflow->apply(subject: $subject, transitionName: $name);
+		$this->router()->keepOnlyTakenExits(workflow: $workflow, subject: $subject, transition: $transition, taken: $taken);
+
+		// The places actually taken, in the transition's declaration order.
+		$takenTos = [];
+		foreach ($transition->getTos() as $to) {
+			if (in_array((string)$to, array_map('strval', $taken), true) === true) {
+				$takenTos[] = (string)$to;
+			}
+		}
+
+		$result = $streams->commitFiring(
+			id: $streamId,
+			transition: $name,
+			froms: array_map('strval', $transition->getFroms()),
+			taken: $takenTos,
+			placeItems: $placeItems,
+			claimed: $claimed,
+			logEntry: $entry,
+			enabledAfter: $streams->workRemains(transitions: $workflow->getEnabledTransitions(subject: $subject)),
+			streamStatus: FlowRun::STATUS_RUNNING,
+			streamError: $streamError
+		);
+
+		// Sync from what was COMMITTED: the marking read under the lock holds
+		// every sibling's committed effect, which the in-memory apply cannot.
+		if ($store instanceof FlowRunMarkingStore) {
+			$store->syncCommitted(marking: $result->marking);
+		}
+
+		$placeItems = $result->placeItems;
+
+		$entry['recorded'] = true;
+		$entry['streamId'] = $streamId;
+		$entry['ordinalPath'] = $streams->pathOf(id: $streamId);
+		$entry['firings'] = $result->firings;
+		$log[] = $entry;
+
+		return [$placeItems, $log];
+	}//end fireOnStream()
 
 	/**
 	 * Override where a flow starts, for "run from here".

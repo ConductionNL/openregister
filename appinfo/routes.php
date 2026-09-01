@@ -1370,6 +1370,7 @@ return [
 		['name' => 'task#complete', 'url' => '/api/flow-tasks/{uuid}/complete', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#cancel', 'url' => '/api/flow-tasks/{uuid}/cancel', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#checkItem', 'url' => '/api/flow-tasks/{uuid}/checklist/{itemId}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+', 'itemId' => '[^/]+']],
+<<<<<<< HEAD
 		// The case layer (flow-cmmn-case-semantics): a plan of stages, human
 		// items and milestones anchored to an OpenRegister OBJECT. There is no
 		// case id: every plan route is keyed by the anchoring object's uuid, and
@@ -1389,6 +1390,8 @@ return [
 		['name' => 'case#enableable', 'url' => '/api/cases/{objectUuid}/enableable', 'verb' => 'GET', 'requirements' => ['objectUuid' => '[^/]+']],
 		['name' => 'case#attach', 'url' => '/api/cases/{objectUuid}/items', 'verb' => 'POST', 'requirements' => ['objectUuid' => '[^/]+']],
 		['name' => 'case#complete', 'url' => '/api/cases/{objectUuid}/complete', 'verb' => 'POST', 'requirements' => ['objectUuid' => '[^/]+']],
+=======
+>>>>>>> origin/development
 		// Delegation grants (or-delegation-grants): the consent surface. A grant
 		// store with no way to answer is a store that only ever says no, so these
 		// are what make every delegation refusal recoverable.

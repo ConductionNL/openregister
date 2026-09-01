@@ -248,7 +248,10 @@ Vrij en open source onder de EUPL-licentie.
 			     Post-migration because the step needs the openregister_tasks
 			     tables its own change's migration creates. -->
 			<step>OCA\OpenRegister\Repair\SeedTaskFixtures</step>
+<<<<<<< HEAD
 			<step>OCA\OpenRegister\Repair\SeedCaseFixtures</step>
+=======
+>>>>>>> origin/development
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
