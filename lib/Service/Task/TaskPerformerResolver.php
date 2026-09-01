@@ -36,6 +36,8 @@ use Throwable;
 
 /**
  * The five routing strategies, and the pool expansion under them.
+ *
+ * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
  */
 class TaskPerformerResolver {
 

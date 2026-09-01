@@ -32,6 +32,8 @@ use OCP\IDBConnection;
  * Reads and writes task relations.
  *
  * @template-extends QBMapper<TaskRelation>
+ *
+ * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-generic-anchor-plus-typed-relations
  */
 class TaskRelationMapper extends QBMapper {
 

@@ -97,15 +97,16 @@ test.describe('flow-tasks — authorization at the boundary', () => {
 		request,
 	}) => {
 		// A second real account, created through the provisioning API. If
-		// this instance refuses to provision users, the scenario cannot be
-		// exercised honestly — skip loudly rather than fake it.
+		// this instance refuses to provision users the scenario cannot be
+		// exercised, and that is a FAILURE of the environment, not a skip:
+		// a skip cannot tell "absent" from "broken".
 		const provisioned = await request.post('/ocs/v2.php/cloud/users', {
 			data: { userid: STRANGER, password: STRANGER_PASS },
 		})
-		test.skip(
-			provisioned.status() !== 200,
-			`cannot provision a stranger account (HTTP ${provisioned.status()})`,
-		)
+		expect(
+			provisioned.status(),
+			`cannot provision a stranger account: ${await provisioned.text()}`,
+		).toBe(200)
 
 		const task = await createTask(request)
 
@@ -115,15 +116,51 @@ test.describe('flow-tasks — authorization at the boundary', () => {
 		})
 
 		try {
-			// The detail READ is refused: knowing the uuid is not visibility.
+			// The detail READ is refused as NOT FOUND: knowing the uuid is
+			// not visibility, and a stranger learns nothing, not even that
+			// the uuid exists.
 			const read = await stranger.get(`${BASE}/${task.uuid}`)
-			expect(read.status(), await read.text()).toBe(403)
+			expect(read.status(), await read.text()).toBe(404)
 
-			// The VERB is refused too, before any mutation.
+			// The VERB is refused the same way, before any mutation.
 			const complete = await stranger.post(`${BASE}/${task.uuid}/complete`, {
 				data: { outcome: 'approved' },
 			})
-			expect(complete.status(), await complete.text()).toBe(403)
+			expect(complete.status(), await complete.text()).toBe(404)
+
+			// The NON-ADMIN inbox: this is the request that runs the
+			// visibility clause (an admin skips it), including the watchers
+			// predicate over the JSON column, which is the PostgreSQL trap.
+			// The stranger's assigned inbox is empty and does not count our
+			// task; a task the admin makes them a WATCHER of does appear.
+			const strangerAssigned = await stranger.get(`${BASE}?scope=assigned`)
+			expect(strangerAssigned.status(), await strangerAssigned.text()).toBe(200)
+			const assignedBody = await strangerAssigned.json()
+			expect(assignedBody.total).toBe(0)
+
+			const watched = await createTask(request, {
+				title: `${RUN_ID} watched`,
+				watchers: [STRANGER],
+			})
+			try {
+				const strangerWatched = await stranger.get(`${BASE}?scope=watched`)
+				expect(strangerWatched.status(), await strangerWatched.text()).toBe(200)
+				const watchedBody = await strangerWatched.json()
+				expect(
+					(watchedBody.results ?? []).some(
+						(row: { uuid?: string }) => row.uuid === watched.uuid,
+					),
+					'a watcher must see the task in their watched inbox',
+				).toBe(true)
+				// Watching confers reading, never acting.
+				const watcherCompletes = await stranger.post(
+					`${BASE}/${watched.uuid}/complete`,
+					{ data: { outcome: 'approved' } },
+				)
+				expect(watcherCompletes.status()).toBe(403)
+			} finally {
+				await cancelQuietly(request, watched.uuid)
+			}
 
 			// And the task provably did not move: same state, same assignee.
 			const after = await request.get(`${BASE}/${task.uuid}`)

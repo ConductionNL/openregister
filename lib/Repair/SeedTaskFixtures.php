@@ -15,6 +15,12 @@
  * uuid: a fixture that exists is left exactly as it is, so a re-run (every
  * upgrade) changes nothing.
  *
+ * OFF BY DEFAULT. These are demo rows; a production instance must not wake
+ * up with five Dutch tasks for people who do not exist. The step runs only
+ * when the app config `openregister` / `seed_demo_tasks` is true
+ * (`occ config:app:set openregister seed_demo_tasks --value=true --type=boolean`),
+ * which a demo instance and the test environment set and nothing else does.
+ *
  * WRITES THROUGH THE MAPPERS, NOT THE SERVICE, deliberately: repair steps
  * run without a user session, and TaskService correctly refuses actor-less
  * verbs. Fixtures are not user actions. The one service invariant that
@@ -47,6 +53,7 @@ use OCA\OpenRegister\Db\TaskAuditMapper;
 use OCA\OpenRegister\Db\TaskCandidateMapper;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -56,18 +63,27 @@ use Throwable;
  * Seeds the five task fixture groups, idempotent on uuid.
  *
  * @psalm-suppress UnusedClass Instantiated by the NC repair framework (appinfo/info.xml).
+ *
+ * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
  */
 class SeedTaskFixtures implements IRepairStep {
 
 	/**
+	 * The app config key that switches the demo seed on.
+	 */
+	public const FLAG = 'seed_demo_tasks';
+
+	/**
 	 * Constructor.
 	 *
+	 * @param IAppConfig $appConfig Holds the opt-in flag.
 	 * @param TaskMapper $tasks The task table.
 	 * @param TaskCandidateMapper $candidates The candidate index rows.
 	 * @param TaskAuditMapper $audits The append-only audit.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
+		private readonly IAppConfig $appConfig,
 		private readonly TaskMapper $tasks,
 		private readonly TaskCandidateMapper $candidates,
 		private readonly TaskAuditMapper $audits,
@@ -80,6 +96,8 @@ class SeedTaskFixtures implements IRepairStep {
 	 * The step's name in the repair log.
 	 *
 	 * @return string The name.
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function getName(): string {
 		return 'Seed the task fixtures (flow-task-entity)';
@@ -95,6 +113,11 @@ class SeedTaskFixtures implements IRepairStep {
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function run(IOutput $output): void {
+		if ($this->appConfig->getValueBool('openregister', self::FLAG, false) === false) {
+			$output->info('Task fixtures: skipped (openregister/' . self::FLAG . ' is not enabled).');
+			return;
+		}
+
 		$seeded = 0;
 		foreach ($this->fixtures() as $fixture) {
 			try {

@@ -42,6 +42,8 @@ use OCP\IDBConnection;
  * Appends and reads task audit entries. Never updates, never deletes.
  *
  * @template-extends QBMapper<TaskAudit>
+ *
+ * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
  */
 class TaskAuditMapper extends QBMapper {
 
