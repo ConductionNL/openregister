@@ -81,6 +81,14 @@ use Symfony\Component\Uid\Uuid;
  * @method void setIsLocalTenant(?bool $isLocalTenant)
  * @method string|null getRemoteInstanceUrl()
  * @method void setRemoteInstanceUrl(?string $remoteInstanceUrl)
+ * @method string|null getContactEmail()
+ * @method void setContactEmail(?string $contactEmail)
+ * @method string|null getDefaultPermissionLevel()
+ * @method void setDefaultPermissionLevel(?string $defaultPermissionLevel)
+ * @method int|null getQualityScore()
+ * @method void setQualityScore(?int $qualityScore)
+ * @method string|null getQualityStatus()
+ * @method void setQualityStatus(?string $qualityStatus)
  * @method string|null getSummary()
  * @method void setSummary(?string $summary)
  * @method string|null getOin()
@@ -119,6 +127,7 @@ use Symfony\Component\Uid\Uuid;
  * @method void setDeck(?array $deck)
  *
  * @SuppressWarnings(PHPMD.TooManyFields)
+ * @SuppressWarnings(PHPMD.LongVariable)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
@@ -340,6 +349,52 @@ class Organisation extends Entity implements JsonSerializable {
 	protected ?string $remoteInstanceUrl = null;
 
 	/**
+	 * Where to reach this organisation about the work.
+	 *
+	 * The organisation's own address, as opposed to any individual user account
+	 * inside it. A chain partner is corresponded with as a body.
+	 *
+	 * @var string|null The contact address.
+	 */
+	protected ?string $contactEmail = null;
+
+	/**
+	 * The access level a share with this organisation starts at.
+	 *
+	 * 🔴 A DEFAULT, never an authorization decision. ADR-002 Rule 1 keeps the
+	 * organisation UUID as the only tenant key, and nothing may read this to
+	 * decide whether an actor MAY act, only to decide what a new share is
+	 * proposed at. The same trap `type` was kept out of.
+	 *
+	 * The name is 22 characters and has to be: Entity maps a property to its
+	 * column BY NAME, resolving a setter to lcfirst(substr($method, 3)) and
+	 * looking that up, so this must be the camelCase of
+	 * `default_permission_level`. Shortening it to satisfy PHPMD.LongVariable
+	 * would stop the mapping silently rather than failing, which is why the
+	 * class-level suppression exists.
+	 *
+	 * @var string|null The proposed starting level.
+	 */
+	protected ?string $defaultPermissionLevel = null;
+
+	/**
+	 * Chain-partner quality score, as scored by the installation working with them.
+	 *
+	 * Null rather than zero when unscored: a zero reads as "scored badly", which
+	 * is a different claim from "never assessed".
+	 *
+	 * @var integer|null The score.
+	 */
+	protected ?int $qualityScore = null;
+
+	/**
+	 * The qualitative reading of {@see $qualityScore}.
+	 *
+	 * @var string|null The status.
+	 */
+	protected ?string $qualityStatus = null;
+
+	/**
 	 * Short summary for overview pages (OpenCatalogi `summary`).
 	 *
 	 * @var string|null
@@ -541,6 +596,10 @@ class Organisation extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'type', type: 'string');
 		$this->addType(fieldName: 'isLocalTenant', type: 'boolean');
 		$this->addType(fieldName: 'remoteInstanceUrl', type: 'string');
+		$this->addType(fieldName: 'contactEmail', type: 'string');
+		$this->addType(fieldName: 'defaultPermissionLevel', type: 'string');
+		$this->addType(fieldName: 'qualityScore', type: 'integer');
+		$this->addType(fieldName: 'qualityStatus', type: 'string');
 		$this->addType(fieldName: 'summary', type: 'string');
 		$this->addType(fieldName: 'oin', type: 'string');
 		$this->addType(fieldName: 'tooi', type: 'string');
@@ -990,6 +1049,10 @@ class Organisation extends Entity implements JsonSerializable {
 			'type' => $this->type ?? 'organisation',
 			'isLocalTenant' => ($this->isLocalTenant ?? true),
 			'remoteInstanceUrl' => $this->remoteInstanceUrl,
+			'contactEmail' => $this->contactEmail,
+			'defaultPermissionLevel' => $this->defaultPermissionLevel,
+			'qualityScore' => $this->qualityScore,
+			'qualityStatus' => $this->qualityStatus,
 			'summary' => $this->summary,
 			'oin' => $this->oin,
 			'tooi' => $this->tooi,
