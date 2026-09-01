@@ -63,6 +63,13 @@ function occ(args: string): string {
 	}
 	return execSync(`docker exec -u www-data ${CONTAINER} php occ ${args}`, {
 		encoding: 'utf8',
+		// `background-job:list` prints every job's serialized argument in one
+		// table; on a live instance that is well past Node's 1 MiB execSync
+		// default. The overflow throws ENOBUFS, the catch in runWorkerJobId()
+		// returns null, and the worker-driven scenarios self-skip as "occ not
+		// reachable" while occ is fine. Measured 1.8 MiB on a fresh proof
+		// instance, 2026-09-01.
+		maxBuffer: 32 * 1024 * 1024,
 	})
 }
 
