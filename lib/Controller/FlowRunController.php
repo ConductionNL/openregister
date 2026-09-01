@@ -213,26 +213,142 @@ class FlowRunController extends Controller {
 	 * `shared-credentials-and-flows`. Until that landed `index()` was unscoped and
 	 * returned every run on the instance to any authenticated user.
 	 *
+	 * An optional `subject` (a subject object uuid) narrows the list to the
+	 * runs anchored to that one object: a case detail page's view of the
+	 * engine. It narrows INSIDE the organisation scope and can never widen it;
+	 * the mapper applies both predicates, and the total counts the filtered
+	 * set. Without `subject` the read is bit-identical to what it was.
+	 *
 	 * @return JSONResponse `{results, total, limit}` — the live runs.
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function active(): JSONResponse {
-		$limit = min(50, max(1, (int)$this->request->getParam('limit', 10)));
+		$limit = $this->pageLimit();
+		$subject = $this->subjectFilter();
 		$organisation = $this->activeOrganisation();
 
 		if ($organisation === null) {
 			return new JSONResponse(['results' => [], 'total' => 0, 'limit' => $limit]);
 		}
 
-		$runs = $this->mapper->findActive(organisation: $organisation, limit: $limit);
-		$total = $this->mapper->countActive(organisation: $organisation);
+		$runs = $this->mapper->findActive(organisation: $organisation, limit: $limit, subject: $subject);
+		$total = $this->mapper->countActive(organisation: $organisation, subject: $subject);
 
+		return $this->page(runs: $runs, total: $total, limit: $limit);
+
+	}//end active()
+
+	/**
+	 * The finished runs on ONE subject object: a case page's run history.
+	 *
+	 * The other half of the case view. A flow that completed on a case must
+	 * not look like nothing ever happened, so this returns the terminal runs
+	 * (`FlowRun::TERMINAL`: completed, stopped, dead_letter, failed) anchored
+	 * to the given subject, newest first, bounded, with an honest total.
+	 *
+	 * The subject is REQUIRED. There is no org-wide "everything that ever
+	 * finished" here: `or-flow-active-runs` requires the history surface
+	 * (`index()`, with its per-caller visibility rule) to stay unchanged, and
+	 * this read exists beside it rather than as a loosening of it. A request
+	 * without a subject is refused, not answered widely.
+	 *
+	 * Authorization is the organisation scope, exactly as on `active()`: the
+	 * mapper's organisation predicate is unconditional, a caller with no
+	 * resolvable organisation reads nothing without a query being issued, and
+	 * a subject uuid from another tenant matches zero rows. Rows are the same
+	 * summarised shape as the live read, so a widget renders one list.
+	 *
+	 * @return JSONResponse `{results, total, limit}`, or 400 when no subject was given.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function completedForSubject(): JSONResponse {
+		$subject = $this->subjectFilter();
+		if ($subject === null) {
+			return new JSONResponse(
+				['error' => 'The completed-runs read needs a subject: pass the subject object uuid as `subject`.'],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$limit = $this->pageLimit();
+		$organisation = $this->activeOrganisation();
+
+		if ($organisation === null) {
+			return new JSONResponse(['results' => [], 'total' => 0, 'limit' => $limit]);
+		}
+
+		$runs = $this->mapper->findCompletedForSubject(organisation: $organisation, subject: $subject, limit: $limit);
+		$total = $this->mapper->countCompletedForSubject(organisation: $organisation, subject: $subject);
+
+		return $this->page(runs: $runs, total: $total, limit: $limit);
+
+	}//end completedForSubject()
+
+	/**
+	 * The bounded page size for the two case-widget reads, capped at 50.
+	 *
+	 * @return integer The limit.
+	 *
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
+	 */
+	private function pageLimit(): int {
+		return min(50, max(1, (int)$this->request->getParam('limit', 10)));
+	}//end pageLimit()
+
+	/**
+	 * The `subject` request parameter as a uuid, or null when none was given.
+	 *
+	 * Blank and non-string values count as absent: a filter that is not a
+	 * uuid cannot name a subject, and treating it as one would either match
+	 * nothing (misleading) or be coerced into something the caller did not
+	 * send (worse).
+	 *
+	 * @return string|null The subject object uuid.
+	 *
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
+	 */
+	private function subjectFilter(): ?string {
+		$subject = $this->request->getParam('subject');
+		if (is_string($subject) === false) {
+			return null;
+		}
+
+		$subject = trim($subject);
+		if ($subject === '') {
+			return null;
+		}
+
+		return $subject;
+	}//end subjectFilter()
+
+	/**
+	 * A bounded list of summarised runs plus its honest total.
+	 *
+	 * Shared by the live read and the completed read so the two cannot drift
+	 * apart on shape: the spec makes one row contract a requirement.
+	 *
+	 * @param array<int, FlowRun> $runs The page of runs.
+	 * @param integer $total How many runs matched in all.
+	 * @param integer $limit The page size that was applied.
+	 *
+	 * @return JSONResponse `{results, total, limit}`.
+	 *
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
+	 */
+	private function page(array $runs, int $total, int $limit): JSONResponse {
 		return new JSONResponse(
 			[
 				'results' => array_map(fn (FlowRun $run): array => $this->summarise(run: $run), $runs),
@@ -240,8 +356,7 @@ class FlowRunController extends Controller {
 				'limit' => $limit,
 			]
 		);
-
-	}//end active()
+	}//end page()
 
 	/**
 	 * The caller's active organisation uuid, or null when none resolves.
