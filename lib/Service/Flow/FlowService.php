@@ -408,7 +408,7 @@ class FlowService {
 	 * @return Flow The stored flow, as the mapper returned it.
 	 */
 	private function persistFlow(Flow $flow, ?string $uuid): Flow {
-		if ($uuid === null || $uuid === '') {
+		if (($uuid ?? '') === '') {
 			return $this->mapper->insert($flow);
 		}
 
@@ -430,7 +430,7 @@ class FlowService {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	private function flowToSave(array $data, ?string $uuid): Flow {
-		if ($uuid !== null && $uuid !== '') {
+		if (($uuid ?? '') !== '') {
 			// Goes through find(), so an update to a flow the caller cannot see
 			// is refused with the same "no such flow" as a missing one.
 			return $this->find(uuid: $uuid);
@@ -738,12 +738,12 @@ class FlowService {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	private function actingUser(): ?string {
-		$uid = $this->userSession->getUser()?->getUID();
-		if ($uid === null || $uid === '') {
+		$uid = (string)($this->userSession->getUser()?->getUID() ?? '');
+		if ($uid === '') {
 			return null;
 		}
 
-		return (string)$uid;
+		return $uid;
 	}//end actingUser()
 
 	/**
@@ -770,7 +770,7 @@ class FlowService {
 			return null;
 		}
 
-		if ($uuid === null || $uuid === '') {
+		if ((string)$uuid === '') {
 			return null;
 		}
 

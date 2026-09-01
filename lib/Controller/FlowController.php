@@ -93,6 +93,19 @@ use OCP\WorkflowEngine\IManager;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  *
+ * Length (1,012 lines against 1,000) and method count (26 against 25) tripped
+ * together when `adopt()` was added — the fourth and fifth instances of the
+ * same trade. Adoption is one more verb on the same `/api/flows/{id}` resource
+ * the other lifecycle verbs (publish, draft, deprecate) live on; a controller
+ * of its own would be the two-controllers-behind-one-prefix split every
+ * suppression above declines, this time for a single method. The lines are
+ * mostly documentation, and trimming the explanations to duck a line counter
+ * is the corrosive direction. Revisit alongside the complexity note above if a
+ * genuinely separable second concern appears.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
+ *
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
 class FlowController extends Controller {
