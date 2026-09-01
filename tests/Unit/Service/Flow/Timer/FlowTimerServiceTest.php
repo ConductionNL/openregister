@@ -718,6 +718,63 @@ class FlowTimerServiceTest extends TestCase {
 		self::assertSame(WorkingCalendar::DEFAULT_SLUG, $this->calendars->resolve(calendarSlug: null, organisation: null)->getSlug());
 	}//end testTheOrganisationCalendarIsResolvedWhenTheTimerNamesNone()
 
+	public function testAnchorDatesArriveAsStringsOrDateTimesAndBadOnesAreNamed(): void {
+		$this->task();
+		$timer = $this->service->arm(
+			config: $this->config([
+				'anchorEventAt' => '2026-09-01T09:00:00+02:00',
+				'title' => 'Beslistermijn',
+				'metadata' => ['basis' => 'Awb 4:13'],
+				'ladder' => null,
+			]),
+			actor: null,
+			now: $this->at('2026-09-01 09:00')
+		);
+		self::assertSame('Beslistermijn', $timer->getTitle());
+		self::assertSame(['basis' => 'Awb 4:13'], $timer->getMetadata());
+		self::assertSame('2026-09-01 09:00', $timer->getAnchorAt()->format('Y-m-d H:i'));
+
+		foreach ([['anchorEventAt' => 'not-a-date'], ['anchorEventAt' => 42], ['anchorOffset' => 'three'], ['anchorOffset' => 1, 'anchorOffsetUnit' => 'weeks']] as $bad) {
+			try {
+				$this->service->arm(config: $this->config($bad + ['ladder' => null]), actor: null, now: $this->at('2026-09-01 09:00'));
+				self::fail('accepted ' . json_encode($bad));
+			} catch (FlowTimerValidationException $refused) {
+				self::assertNotSame('', $refused->getMessage());
+			}
+		}
+	}//end testAnchorDatesArriveAsStringsOrDateTimesAndBadOnesAreNamed()
+
+	public function testATerminalTimerCannotBeSuperseded(): void {
+		$this->task();
+		$timer = $this->service->arm(config: $this->config(['ladder' => null]), actor: null, now: $this->at('2026-09-01 09:00'));
+		$this->service->cancelForSubject(subjectType: 'task', subjectUuid: 'task-1', reason: 'done', actor: null, now: $this->at('2026-09-02 09:00'));
+		$this->expectException(FlowTimerStateException::class);
+		$this->expectExceptionMessage("cannot be superseded: its state is 'cancelled'");
+		$this->service->supersede(uuid: (string)$timer->getUuid(), anchorEventAt: $this->at('2026-09-03 09:00'), reason: 'moved', actor: null, now: $this->at('2026-09-02 10:00'));
+	}//end testATerminalTimerCannotBeSuperseded()
+
+	public function testAnAbsentTaskSubjectIsLoggedNotFatal(): void {
+		// No task row exists for this subject: arming still works (the store is
+		// subject-agnostic), the projection warns, the expiry outcome warns.
+		$timer = $this->service->arm(
+			config: $this->config(['subjectUuid' => 'task-gone', 'purpose' => 'expiry', 'legalEffect' => 'wettelijk', 'onExpiry' => 'skip', 'ladder' => null]),
+			actor: null,
+			now: $this->at('2026-09-01 09:00')
+		);
+		$this->taskService->expects(self::once())->method('applyTimerOutcome')
+			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('gone'));
+		self::assertTrue($this->service->fireExpiry(timer: $timer, now: $this->at('2026-10-28 09:00')));
+		self::assertSame(FlowTimer::STATE_FIRED, $timer->getState());
+	}//end testAnAbsentTaskSubjectIsLoggedNotFatal()
+
+	public function testRungsFireOnlyOnAnArmedTimerWithAFireMoment(): void {
+		$this->task();
+		$timer = $this->service->arm(config: $this->config(), actor: null, now: $this->at('2026-09-01 09:00'));
+		$this->service->suspend(uuid: (string)$timer->getUuid(), reason: 'pauze', until: null, actor: null, now: $this->at('2026-09-02 09:00'));
+		self::assertSame(0, $this->service->fireRungs(timer: $this->store->timers[(string)$timer->getUuid()], now: $this->at('2026-12-01 09:00')), 'a suspended timer neither fires nor escalates');
+		self::assertSame([], $this->dispatched);
+	}//end testRungsFireOnlyOnAnArmedTimerWithAFireMoment()
+
 	public function testASubjectMayCarryThreeDeadlinesWithDifferentMomentsIndependently(): void {
 		$this->task();
 		$start = $this->at('2026-09-01 09:00');
