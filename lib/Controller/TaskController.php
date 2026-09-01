@@ -60,9 +60,9 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\AppFramework\Http\RedirectResponse;
-use OCP\IURLGenerator;
+use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -116,8 +116,6 @@ class TaskController extends Controller {
 	 *                                         bare; absent means no groups
 	 *                                         and not admin, which SCOPES
 	 *                                         rather than widens.
-	 * @param IURLGenerator|null $urlGenerator Builds the app link the open
-	 *                                         route redirects into.
 	 */
 	public function __construct(
 		string $appName,
@@ -131,7 +129,6 @@ class TaskController extends Controller {
 		private readonly TaskFormCompletion $completion,
 		private readonly ?LoggerInterface $logger = null,
 		private readonly ?IGroupManager $groupManager = null,
-		private readonly ?IURLGenerator $urlGenerator = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -143,30 +140,45 @@ class TaskController extends Controller {
 	 *
 	 * The notification actions, the VTODO `URL` and the route action in the
 	 * task rules all resolve to THIS route, so there is one stable address
-	 * for "open this task" however the task reached the person. It redirects
-	 * into the OpenRegister app's task route; the form itself is
-	 * `flow-task-forms`' surface, and lands under the same hash.
+	 * for "open this task" however the task reached the person. It serves
+	 * the SPA shell directly, exactly like `DashboardController::catchAll()`
+	 * serves every other deep sub-path: the router runs in HISTORY mode
+	 * (src/main.js), so the path itself is the route and the manifest's
+	 * `flow-task-detail` page (`/flow-tasks/:uuid`) renders the task. It
+	 * used to redirect to a HASH path instead, which the history-mode router
+	 * never resolved: every notification button and VTODO URL landed on the
+	 * dashboard.
 	 *
-	 * @param string $uuid The task uuid.
+	 * @param string $uuid The task uuid, consumed by the SPA route, not here.
 	 *
-	 * @return RedirectResponse Into the app.
+	 * @return TemplateResponse The SPA shell.
 	 *
-	 * @no-admin-idor-exempt Reads nothing: the uuid is only interpolated into
-	 *   a redirect to the app's task route, where the SPA performs the
-	 *   visibility-checked read (TaskController::show, 404 for the invisible).
+	 * @no-admin-idor-exempt Reads nothing: the shell is identical for every
+	 *   uuid, and the SPA performs the visibility-checked read
+	 *   (TaskController::show, 404 for the invisible).
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The route binds {uuid},
+	 *   the SPA consumes it from the URL; dropping the parameter would
+	 *   unbind the route.
 	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-an-assigned-task-appears-in-the-assignees-own-calendar
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
-	public function open(string $uuid): RedirectResponse {
-		$safeUuid = rawurlencode($uuid);
-		$base = '/index.php/apps/openregister/';
-		if ($this->urlGenerator !== null) {
-			$base = $this->urlGenerator->linkToRoute('openregister.dashboard.page');
-		}
+	public function open(string $uuid): TemplateResponse {
+		$response = new TemplateResponse(
+			appName: $this->appName,
+			templateName: 'index',
+			params: []
+		);
 
-		return new RedirectResponse(rtrim($base, '/') . '/#/flow-tasks/' . $safeUuid);
+		// The same relaxation the dashboard shell carries: the SPA calls the
+		// API from this page, so the shell's CSP must allow it.
+		$csp = new ContentSecurityPolicy();
+		$csp->addAllowedConnectDomain('*');
+		$response->setContentSecurityPolicy($csp);
+
+		return $response;
 	}//end open()
 
 	/**

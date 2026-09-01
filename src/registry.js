@@ -84,6 +84,7 @@ export default {
 	SearchTrailIndex: page(() => import('./views/logs/SearchTrailIndex.vue')),
 	WebhooksIndex: page(() => import('./views/webhooks/WebhooksIndex.vue')),
 	FlowDetailSidebar: page(() => import('./views/flows/FlowDetailSidebar.vue')),
+	FlowTaskDetail: page(() => import('./views/task/FlowTaskDetail.vue')),
 	WebhookLogsIndex: page(() => import('./views/webhooks/WebhookLogsIndex.vue')),
 	EndpointsIndex: page(() => import('./views/Endpoint/EndpointsIndex.vue')),
 	EntitiesIndex: page(() => import('./views/entities/EntitiesIndex.vue')),

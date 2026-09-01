@@ -80,6 +80,7 @@
         "{count} widget(s)": "'widget' is the French term too; the count and the optional-plural parenthesis are unchanged.",
         "{property} - {other}": "Two placeholders and a separating dash; nothing translatable.",
         "Date": "French 'date' is spelled identically; Nextcloud core fr renders it unchanged.",
-        "Message": "French 'message' is spelled identically; Nextcloud core fr renders it unchanged."
+        "Message": "French 'message' is spelled identically; Nextcloud core fr renders it unchanged.",
+        "Urgent": "Same spelling and meaning in French (urgent)."
     }
 }

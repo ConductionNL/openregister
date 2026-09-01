@@ -212,6 +212,25 @@
       "config": {}
     },
     {
+      "id": "flow-task-inbox",
+      "route": "/flow-tasks",
+      "type": "index",
+      "title": "Tasks",
+      "_note": "The fleet task inbox (flow-task-inbox-projections 5.1): an ordinary index over the NAMED `tasks` source (nextcloud-vue 2.30.0, cn-tasks-entity-source). The source supplies columns, the scope quick filters and the row click, which leaves the SPA for /apps/openregister/flow-tasks/{uuid} by full URL — served below by flow-task-detail. Like `flows`, this is the engine's cross-app surface; the source's own defaults fit it, so no columns are restated here.",
+      "config": {
+        "entitySource": "tasks"
+      }
+    },
+    {
+      "id": "flow-task-detail",
+      "route": "/flow-tasks/:uuid",
+      "type": "custom",
+      "title": "Task",
+      "component": "FlowTaskDetail",
+      "_note": "The one stable task address. `task#open` (appinfo/routes.php), the VTODO URL and every notification button resolve /apps/openregister/flow-tasks/{uuid}, the server answers the SPA shell, and this page renders the task. A custom page because a task is a native entity, not a register object: the built-in `detail` type resolves via register+schema and has nothing to bind to (same reasoning as every other native-entity page in this manifest). nc-vue's cn-tasks-entity-source change declares the detail surface a NON-goal and navigates here.",
+      "config": {}
+    },
+    {
       "id": "webhooks",
       "route": "/webhooks",
       "type": "custom",
@@ -579,6 +598,14 @@
       "route": "flows",
       "section": "main",
       "order": 45
+    },
+    {
+      "id": "Tasks",
+      "label": "Tasks",
+      "icon": "ClipboardListOutline",
+      "route": "flow-task-inbox",
+      "section": "main",
+      "order": 46
     }
   ],
   "observability": {

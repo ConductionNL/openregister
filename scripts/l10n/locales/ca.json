@@ -128,7 +128,9 @@
 		"Dates": "'Dates' is the Catalan plural of 'data' and is spelled exactly as the English word.",
 		"Documents": "Same spelling and meaning in Catalan.",
 		"IBANs": "International bank account number acronym with the plural s; invariant in Catalan.",
-		"Present": "Same spelling and meaning in Catalan."
+		"Present": "Same spelling and meaning in Catalan.",
+		"Normal": "Same spelling and meaning in Catalan (normal).",
+		"Urgent": "Same spelling and meaning in Catalan (urgent)."
 	},
 	"corrections": {
 		"Settings": "TERM-SETTINGS",

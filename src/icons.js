@@ -21,6 +21,7 @@ import BookOpenVariantOutline from 'vue-material-design-icons/BookOpenVariantOut
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
 import ClipboardPulseOutline from 'vue-material-design-icons/ClipboardPulseOutline.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
+import ClipboardListOutline from 'vue-material-design-icons/ClipboardListOutline.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import ContentDuplicate from 'vue-material-design-icons/ContentDuplicate.vue'
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
@@ -58,6 +59,7 @@ export default {
 	ChartBoxOutline,
 	ClipboardPulseOutline,
 	Cog,
+	ClipboardListOutline,
 	CogOutline,
 	ContentDuplicate,
 	DatabaseArrowRightOutline,
