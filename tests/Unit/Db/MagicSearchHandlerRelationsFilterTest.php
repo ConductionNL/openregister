@@ -19,6 +19,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use Doctrine\DBAL\Platforms\MariaDBPlatform;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
@@ -59,6 +61,10 @@ class MagicSearchHandlerRelationsFilterTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->rbacHandler = $this->createMock(MagicRbacHandler::class);
 		$this->organizationHandler = $this->createMock(MagicOrganizationHandler::class);
+		// Existing assertions here lock in the PostgreSQL SQL shape — pin the
+		// platform mock accordingly. Tests exercising the MariaDB fallback path
+		// override the platform inline (see the WOO-548 MariaDB branch below).
+		$this->db->method('getDatabasePlatform')->willReturn(new PostgreSQLPlatform());
 
 		$this->handler = new MagicSearchHandler(
 			db: $this->db,
