@@ -17,7 +17,9 @@
  *
  * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md
  */
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import type { APIRequestContext } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 
 const API = '/index.php/apps/openregister/api'
 const JSON_HEADERS = {
@@ -26,7 +28,8 @@ const JSON_HEADERS = {
 }
 const RUN_ID = `e2e-taskform-${Date.now().toString(36)}`
 const ADMIN = process.env.NEXTCLOUD_ADMIN_USER || process.env.OR_USER || 'admin'
-const ADMIN_PASS = process.env.NEXTCLOUD_ADMIN_PASSWORD || process.env.OR_PASS || 'admin'
+const ADMIN_PASS =
+	process.env.NEXTCLOUD_ADMIN_PASSWORD || process.env.OR_PASS || 'admin'
 
 // Basic auth, no session cookie, so no CSRF token is demanded.
 const NO_SESSION = { cookies: [], origins: [] }
@@ -80,11 +83,20 @@ function userTask(id: string, config: Record<string, unknown> = {}): Node {
 }
 
 function setFields(id: string, set: Record<string, unknown>): Node {
-	return { id, type: 'openregister.set-fields', config: { set }, position: { x: 0, y: 0 } }
+	return {
+		id,
+		type: 'openregister.set-fields',
+		config: { set },
+		position: { x: 0, y: 0 },
+	}
 }
 
 /** Run a flow synchronously against ONE seeded item carrying the subject anchor. */
-async function testRun(request: APIRequestContext, flowId: string, subject: Record<string, unknown>) {
+async function testRun(
+	request: APIRequestContext,
+	flowId: string,
+	subject: Record<string, unknown>,
+) {
 	const resp = await request.post(`${API}/flow-runs/test`, {
 		headers: JSON_HEADERS,
 		data: { flowId, seedItems: [{ json: subject }] },
@@ -99,13 +111,21 @@ async function readRun(request: APIRequestContext, uuid: string) {
 	return resp.json()
 }
 
-async function inboxTaskFor(request: APIRequestContext, runUuid: string, nodeId: string) {
+async function inboxTaskFor(
+	request: APIRequestContext,
+	runUuid: string,
+	nodeId: string,
+) {
 	const resp = await request.get(
 		`${API}/flow-tasks?scope=assigned&isTerminal=false&limit=100&sort=created&direction=desc`,
 	)
 	expect(resp.status(), await resp.text()).toBe(200)
-	const rows = ((await resp.json()).results ?? []) as Array<Record<string, unknown>>
-	return rows.find((row) => row.runUuid === runUuid && row.nodeId === nodeId) ?? null
+	const rows = ((await resp.json()).results ?? []) as Array<
+		Record<string, unknown>
+	>
+	return (
+		rows.find((row) => row.runUuid === runUuid && row.nodeId === nodeId) ?? null
+	)
 }
 
 async function readTask(request: APIRequestContext, uuid: string) {
@@ -119,7 +139,10 @@ async function postComplete(
 	uuid: string,
 	body: Record<string, unknown>,
 ) {
-	return request.post(`${API}/flow-tasks/${uuid}/complete`, { headers: JSON_HEADERS, data: body })
+	return request.post(`${API}/flow-tasks/${uuid}/complete`, {
+		headers: JSON_HEADERS,
+		data: body,
+	})
 }
 
 test.describe('flow-task-forms: the form a person fills to complete a task', () => {
@@ -129,7 +152,10 @@ test.describe('flow-task-forms: the form a person fills to complete a task', () 
 	let schemaSlug: string
 
 	/** A fresh subject object in `open` state; returns its record with the `@self` anchor. */
-	async function subject(request: APIRequestContext, name: string): Promise<Record<string, unknown>> {
+	async function subject(
+		request: APIRequestContext,
+		name: string,
+	): Promise<Record<string, unknown>> {
 		const resp = await request.post(`${API}/objects/${registerId}/${schemaId}`, {
 			headers: JSON_HEADERS,
 			data: { name, status: 'open' },
@@ -149,7 +175,9 @@ test.describe('flow-task-forms: the form a person fills to complete a task', () 
 	}
 
 	async function readSubject(request: APIRequestContext, uuid: string) {
-		const resp = await request.get(`${API}/objects/${registerId}/${schemaId}/${uuid}`)
+		const resp = await request.get(
+			`${API}/objects/${registerId}/${schemaId}/${uuid}`,
+		)
 		expect(resp.status(), await resp.text()).toBe(200)
 		return resp.json()
 	}
@@ -157,7 +185,10 @@ test.describe('flow-task-forms: the form a person fills to complete a task', () 
 	test.beforeAll(async ({ request }) => {
 		const register = await request.post(`${API}/registers`, {
 			headers: JSON_HEADERS,
-			data: { title: `${RUN_ID} register`, description: 'flow-task-forms e2e' },
+			data: {
+				title: `${RUN_ID} register`,
+				description: 'flow-task-forms e2e',
+			},
 		})
 		expect(register.status(), await register.text()).toBeLessThanOrEqual(201)
 		const registerBody = await register.json()
@@ -207,11 +238,17 @@ test.describe('flow-task-forms: the form a person fills to complete a task', () 
 	})
 
 	// @e2e flow-task-forms::a-step-with-no-form-still-completes
-	test('a task with no form completes with an outcome alone', async ({ request }) => {
+	test('a task with no form completes with an outcome alone', async ({
+		request,
+	}) => {
 		const flowId = await createFlow(
 			request,
 			'no form',
-			[setFields('start', { step: 1 }), userTask('ask'), setFields('done', { step: 2 })],
+			[
+				setFields('start', { step: 1 }),
+				userTask('ask'),
+				setFields('done', { step: 2 }),
+			],
 			[
 				{ id: 'e1', from: 'start', to: 'ask' },
 				{ id: 'e2', from: 'ask', to: 'done' },
@@ -227,19 +264,28 @@ test.describe('flow-task-forms: the form a person fills to complete a task', () 
 		expect(read.form, 'a step with no form describes none').toBeNull()
 		expect(read.requireChecklist).toBe(false)
 
-		const done = await postComplete(request, task!.uuid as string, { outcome: 'approved', comment: 'fine' })
+		const done = await postComplete(request, task!.uuid as string, {
+			outcome: 'approved',
+			comment: 'fine',
+		})
 		expect(done.status(), await done.text()).toBe(200)
 		expect((await done.json()).state).toBe('completed')
 	})
 
 	// @e2e flow-task-forms::a-transition-required-field-renders-as-required
-	test('the task read marks a transition-required, schema-optional field as required', async ({ request }) => {
+	test('the task read marks a transition-required, schema-optional field as required', async ({
+		request,
+	}) => {
 		const flowId = await createFlow(
 			request,
 			'reject form',
 			[
 				setFields('start', { step: 1 }),
-				userTask('ask', { formKind: 'fields', formSchema: schemaSlug, formAction: 'reject' }),
+				userTask('ask', {
+					formKind: 'fields',
+					formSchema: schemaSlug,
+					formAction: 'reject',
+				}),
 				setFields('done', { step: 2 }),
 			],
 			[
@@ -274,11 +320,20 @@ test.describe('flow-task-forms: the form a person fills to complete a task', () 
 	})
 
 	// @e2e flow-task-forms::a-missing-required-field-is-named-and-the-task-stays-open
-	test('a completion missing a required field is refused naming it, and the task stays in the inbox', async ({ request }) => {
+	test('a completion missing a required field is refused naming it, and the task stays in the inbox', async ({
+		request,
+	}) => {
 		const flowId = await createFlow(
 			request,
 			'missing required',
-			[setFields('start', { step: 1 }), userTask('ask', { formKind: 'fields', formSchema: schemaSlug, formAction: 'reject' })],
+			[
+				setFields('start', { step: 1 }),
+				userTask('ask', {
+					formKind: 'fields',
+					formSchema: schemaSlug,
+					formAction: 'reject',
+				}),
+			],
 			[{ id: 'e1', from: 'start', to: 'ask' }],
 		)
 		flows.push(flowId)
@@ -319,7 +374,9 @@ test.describe('flow-task-forms: the form a person fills to complete a task', () 
 
 		// The audit knows about the attempts, and records no completion.
 		const audit = await request.get(`${API}/flow-tasks/${task!.uuid}/audit`)
-		const actions = ((await audit.json()).results ?? []).map((row: { action: string }) => row.action)
+		const actions = ((await audit.json()).results ?? []).map(
+			(row: { action: string }) => row.action,
+		)
 		expect(actions).toContain('complete-refused')
 		expect(actions).not.toContain('complete')
 
@@ -337,7 +394,9 @@ test.describe('flow-task-forms: the form a person fills to complete a task', () 
 	})
 
 	// @e2e flow-task-forms::a-field-the-schema-dropped-later-is-visible-as-broken
-	test('a declared field the schema no longer has shows as broken, never silently omitted', async ({ request }) => {
+	test('a declared field the schema no longer has shows as broken, never silently omitted', async ({
+		request,
+	}) => {
 		const dropSlug = `${RUN_ID}-drift`
 		const created = await request.post(`${API}/schemas`, {
 			headers: JSON_HEADERS,
@@ -351,12 +410,21 @@ test.describe('flow-task-forms: the form a person fills to complete a task', () 
 			},
 		})
 		expect(created.status(), await created.text()).toBeLessThanOrEqual(201)
-		const driftId = String((await created.json()).id ?? (await created.json())['@self']?.id)
+		const driftId = String(
+			(await created.json()).id ?? (await created.json())['@self']?.id,
+		)
 
 		const flowId = await createFlow(
 			request,
 			'drift',
-			[setFields('start', { step: 1 }), userTask('ask', { formKind: 'fields', formSchema: dropSlug, formFields: 'evidence*' })],
+			[
+				setFields('start', { step: 1 }),
+				userTask('ask', {
+					formKind: 'fields',
+					formSchema: dropSlug,
+					formFields: 'evidence*',
+				}),
+			],
 			[{ id: 'e1', from: 'start', to: 'ask' }],
 		)
 		flows.push(flowId)
@@ -383,22 +451,39 @@ test.describe('flow-task-forms: the form a person fills to complete a task', () 
 		expect(String(field.reason)).toContain('no such property')
 		expect(field.required, 'the declaration is not silently narrowed').toBe(true)
 
-		await postComplete(request, task!.uuid as string, { outcome: 'approved' }).catch(() => {})
+		await postComplete(request, task!.uuid as string, {
+			outcome: 'approved',
+		}).catch(() => {})
 	})
 
 	// @e2e flow-task-forms::editing-the-flow-leaves-an-open-tasks-form-alone
-	test('editing and publishing the flow does not change an already-open task form', async ({ request }) => {
+	test('editing and publishing the flow does not change an already-open task form', async ({
+		request,
+	}) => {
 		const flowId = await createFlow(
 			request,
 			'versioned',
-			[setFields('start', { step: 1 }), userTask('ask', { formKind: 'fields', formSchema: schemaSlug, formFields: 'reason*, note' })],
+			[
+				setFields('start', { step: 1 }),
+				userTask('ask', {
+					formKind: 'fields',
+					formSchema: schemaSlug,
+					formFields: 'reason*, note',
+				}),
+			],
 			[{ id: 'e1', from: 'start', to: 'ask' }],
 		)
 		flows.push(flowId)
 
 		// Publish, so a run pins to version 1 rather than walking the draft.
-		const published = await request.post(`${API}/flows/${flowId}/publish`, { headers: JSON_HEADERS, data: {} })
-		test.skip(published.status() === 404, 'no publish endpoint on this build; versioning covered by unit tests')
+		const published = await request.post(`${API}/flows/${flowId}/publish`, {
+			headers: JSON_HEADERS,
+			data: {},
+		})
+		test.skip(
+			published.status() === 404,
+			'no publish endpoint on this build; versioning covered by unit tests',
+		)
 		expect(published.status(), await published.text()).toBeLessThanOrEqual(201)
 
 		const run = await testRun(request, flowId, await subject(request, 'Case D'))
@@ -411,7 +496,13 @@ test.describe('flow-task-forms: the form a person fills to complete a task', () 
 		const flow = await (await request.get(`${API}/flows/${flowId}`)).json()
 		const nodes = (flow.nodes as Node[]).map((node) =>
 			node.id === 'ask'
-				? { ...node, config: { ...(node.config as Record<string, unknown>), formFields: 'reason*, note, name, status' } }
+				? {
+						...node,
+						config: {
+							...(node.config as Record<string, unknown>),
+							formFields: 'reason*, note, name, status',
+						},
+					}
 				: node,
 		)
 		const edited = await request.put(`${API}/flows/${flowId}`, {
@@ -419,17 +510,30 @@ test.describe('flow-task-forms: the form a person fills to complete a task', () 
 			data: { ...flow, nodes },
 		})
 		expect(edited.status(), await edited.text()).toBeLessThanOrEqual(201)
-		const republished = await request.post(`${API}/flows/${flowId}/publish`, { headers: JSON_HEADERS, data: {} })
-		expect(republished.status(), await republished.text()).toBeLessThanOrEqual(201)
+		const republished = await request.post(`${API}/flows/${flowId}/publish`, {
+			headers: JSON_HEADERS,
+			data: {},
+		})
+		expect(republished.status(), await republished.text()).toBeLessThanOrEqual(
+			201,
+		)
 
 		const after = await readTask(request, task!.uuid as string)
-		expect((after.form.fields as unknown[]).length, 'the open task keeps the form its version declared').toBe(2)
+		expect(
+			(after.form.fields as unknown[]).length,
+			'the open task keeps the form its version declared',
+		).toBe(2)
 
-		await postComplete(request, task!.uuid as string, { outcome: 'approved', data: { reason: 'ok' } })
+		await postComplete(request, task!.uuid as string, {
+			outcome: 'approved',
+			data: { reason: 'ok' },
+		})
 	})
 
 	// @e2e flow-task-forms::an-unchecked-mandatory-item-refuses-the-completion
-	test('an unchecked mandatory checklist item refuses the completion naming the item', async ({ request }) => {
+	test('an unchecked mandatory checklist item refuses the completion naming the item', async ({
+		request,
+	}) => {
 		// A run-less task, first-class: the checklist and the rule live on the record.
 		const created = await request.post(`${API}/flow-tasks`, {
 			headers: JSON_HEADERS,
@@ -438,8 +542,18 @@ test.describe('flow-task-forms: the form a person fills to complete a task', () 
 				assignee: ADMIN,
 				state: 'active',
 				checklist: [
-					{ id: 'c1', label: 'Identity verified', description: '', checked: true },
-					{ id: 'c2', label: 'Documents scanned', description: '', checked: false },
+					{
+						id: 'c1',
+						label: 'Identity verified',
+						description: '',
+						checked: true,
+					},
+					{
+						id: 'c2',
+						label: 'Documents scanned',
+						description: '',
+						checked: false,
+					},
 				],
 				metadata: { form: { kind: null, requireChecklist: true } },
 			},
@@ -451,20 +565,27 @@ test.describe('flow-task-forms: the form a person fills to complete a task', () 
 		expect(read.requireChecklist).toBe(true)
 		expect(read.form).toBeNull()
 
-		const refused = await postComplete(request, task.uuid as string, { outcome: 'approved' })
+		const refused = await postComplete(request, task.uuid as string, {
+			outcome: 'approved',
+		})
 		expect(refused.status(), await refused.text()).toBe(400)
 		const body = await refused.json()
 		expect(body.kind).toBe('checklist')
 		expect(body.fields).toEqual(['c2'])
 
 		// Checking the item is task state, through the task's own verb.
-		const checked = await request.patch(`${API}/flow-tasks/${task.uuid}/checklist/c2`, {
-			headers: JSON_HEADERS,
-			data: { checked: true },
-		})
+		const checked = await request.patch(
+			`${API}/flow-tasks/${task.uuid}/checklist/c2`,
+			{
+				headers: JSON_HEADERS,
+				data: { checked: true },
+			},
+		)
 		expect(checked.status(), await checked.text()).toBe(200)
 
-		const done = await postComplete(request, task.uuid as string, { outcome: 'approved' })
+		const done = await postComplete(request, task.uuid as string, {
+			outcome: 'approved',
+		})
 		expect(done.status(), await done.text()).toBe(200)
 		expect((await done.json()).state).toBe('completed')
 	})
