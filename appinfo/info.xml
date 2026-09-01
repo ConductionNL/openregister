@@ -250,6 +250,7 @@ Vrij en open source onder de EUPL-licentie.
 			     Post-migration because the step needs the openregister_tasks
 			     tables its own change's migration creates. -->
 			<step>OCA\OpenRegister\Repair\SeedTaskFixtures</step>
+			<step>OCA\OpenRegister\Repair\SeedCaseFixtures</step>
 			<!-- Business timers (flow-business-timers, ADR-001): the flow-timers
 			     register with its working-calendar and escalation-ladder schemas
 			     and seeded defaults (nl-national, nl-termijn-default), idempotent

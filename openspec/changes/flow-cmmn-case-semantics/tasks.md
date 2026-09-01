@@ -2,13 +2,13 @@
 
 ## 1. Storage
 
-- [ ] 1.1 Migration creating `openregister_case_items` and
+- [x] 1.1 Migration creating `openregister_case_items` and
       `openregister_case_item_audit` with the columns and indexes in
       design.md — Data model. Additive only: no existing table altered, no
       data backfilled, and `openregister_tasks` gains NO column. Verify
       neither table has an `overdue`, `days_until_due` or `days_overdue`
       column.
-- [ ] 1.2 Entities + mappers under `lib/Db/`: `CaseItem`/`CaseItemMapper`,
+- [x] 1.2 Entities + mappers under `lib/Db/`: `CaseItem`/`CaseItemMapper`,
       `CaseItemAudit`/`CaseItemAuditMapper`, following `lib/Db/FlowRun.php`
       conventions (docblock `@method` block, `@spec` tag, `@license
       EUPL-1.2` + `@copyright 2026 Conduction B.V.`, `jsonSerialize()`).
@@ -18,14 +18,14 @@
 
 ## 2. Plan-item lifecycle
 
-- [ ] 2.1 `lib/Service/Case/CasePlanTransitions.php` — pure, stateless,
+- [x] 2.1 `lib/Service/Case/CasePlanTransitions.php` — pure, stateless,
       injected as a collaborator: the six states, the three types, the
       exhaustive per-type edge table and the explicit terminal set, ported
       from `procest/lib/Service/Cmmn/PlanItemTransitions.php:41-97`
       including the milestone asymmetry (two edges only). `assertLegal()`
       throws naming item, type, from-state and to-state; a same-state
       "transition" is illegal.
-- [ ] 2.2 `lib/Service/Case/CasePlanStateMachine.php` — one transition,
+- [x] 2.2 `lib/Service/Case/CasePlanStateMachine.php` — one transition,
       `is_terminal` written in the same statement as `state`, audit row
       appended in the SAME transaction as the mutation (successes AND
       denials, `authorized: false`), and stage-exit cascade: non-terminal
@@ -35,12 +35,12 @@
 
 ## 3. Sentries
 
-- [ ] 3.1 Append `case.item.completed`, `case.item.terminated`,
+- [x] 3.1 Append `case.item.completed`, `case.item.terminated`,
       `case.item.disabled` to `EventCatalogService::CATALOG`
       (`lib/Service/Flow/EventCatalogService.php:52-69`) and emit them from
       the state machine. Purely additive: `aliasesFor()` behaviour unchanged
       and no row enters `openregister_flow_triggers`.
-- [ ] 3.2 `lib/Service/Case/CaseSentryEvaluator.php` — AND within a sentry,
+- [x] 3.2 `lib/Service/Case/CaseSentryEvaluator.php` — AND within a sentry,
       OR across the criteria array; on-part resolved against current
       plan-item state for the monotonic terminal events and against the
       event being handled otherwise; if-part evaluated ONLY through
@@ -54,11 +54,11 @@
 
 ## 4. Item kinds and completion rules
 
-- [ ] 4.1 `lib/Service/Case/CasePlanCascade.php` — the fixpoint evaluation
+- [x] 4.1 `lib/Service/Case/CasePlanCascade.php` — the fixpoint evaluation
       loop with a named bound (reference: `PlanItemCascade.php:64`,
       `MAX_CASCADE_DEPTH = 50`), failing loudly at the bound and rolling
       back rather than leaving a half-cascaded plan.
-- [ ] 4.2 Stage semantics: nesting to arbitrary depth, a child never
+- [x] 4.2 Stage semantics: nesting to arbitrary depth, a child never
       actionable while its parent is not `active`, and auto-completion when
       every REQUIRED child is terminal AND no child is `active` — including
       the `$mandatoryFound` guard so a stage with only optional children
@@ -66,19 +66,19 @@
       (`PlanItemTree.php:98-117`). Milestones land here too: no work
       performed, completion immediate on entry, and completion emits the
       catalog event so another item's sentry can consume it.
-- [ ] 4.3 Repetition: a repeating plan item produces a new realisation per
+- [x] 4.3 Repetition: a repeating plan item produces a new realisation per
       repetition while remaining ONE plan item, each realisation
       individually addressable via `realisation_count`; the item is terminal
       only when the rule is exhausted AND every realisation is terminal.
 
 ## 5. Realisation
 
-- [ ] 5.1 A `humanTask` item entering `active` creates a task through the
+- [x] 5.1 A `humanTask` item entering `active` creates a task through the
       task capability, carrying the case anchor triple, the candidate
       users/groups/role and the deadline values. The task's terminal outcome
       drives the item's terminal state; the item writes to the task ONLY to
       terminate it on exit or cascade. Nothing else in either direction.
-- [ ] 5.2 A `stage` bound to a flow queues a run through
+- [x] 5.2 A `stage` bound to a flow queues a run through
       `FlowRunService::queue()` (`lib/Service/Flow/FlowRunService.php:321`)
       against the flow's pinned published version; the run's terminal status
       drives the item. Assert by dependency direction that nothing under
@@ -86,13 +86,13 @@
 
 ## 6. Discretionary, ad-hoc and authorization
 
-- [ ] 6.1 `lib/Service/Case/CasePlanAuthorizationService.php` — DECIDES
+- [x] 6.1 `lib/Service/Case/CasePlanAuthorizationService.php` — DECIDES
       fail-closed before any write, denying on indeterminate (unresolvable
       role, unavailable group backend). No nullable "could not determine"
       return a caller can read as "check skipped". Contrast the reference,
       which returns a list for the REST layer to compare
       (`CaseModelEngine.php:244-268`).
-- [ ] 6.2 Enable-a-discretionary-item and attach-an-ad-hoc-item verbs, plus
+- [x] 6.2 Enable-a-discretionary-item and attach-an-ad-hoc-item verbs, plus
       the enableable-items query (discretionary, entry-satisfied, parent
       `active` — `CaseModelEngine.php:269-276`). An ad-hoc item derives its
       authorization from its parent stage or the plan root and CANNOT
@@ -101,13 +101,13 @@
 
 ## 7. Write-through and API
 
-- [ ] 7.1 Business-state write-through: the anchoring object's status and
+- [x] 7.1 Business-state write-through: the anchoring object's status and
       result are mirrored via the ordinary object-write path so
       `x-openregister-lifecycle` governs them and `object.transitioned`
       fires as usual. One-directional — an object write is never read back
       as a plan-item transition, though it may satisfy a sentry. Deleting
       plan items leaves mirrored state intact.
-- [ ] 7.2 `lib/Controller/CaseController.php` + `appinfo/routes.php`: read
+- [x] 7.2 `lib/Controller/CaseController.php` + `appinfo/routes.php`: read
       the plan by object uuid, transition an item, enable a discretionary
       item, attach an ad-hoc item, list enableable items, list cases by item
       type and state. Every method declares its auth posture attribute AND
@@ -116,7 +116,7 @@
 
 ## 8. Zaaktype import
 
-- [ ] 8.1 `lib/Service/Case/ZaaktypeCaseSkeletonMapper.php` — a PURE
+- [x] 8.1 `lib/Service/Case/ZaaktypeCaseSkeletonMapper.php` — a PURE
       transformation over a supplied zaaktype document, no HTTP: ordered
       `statustypen` → milestones in sequence order; `roltypen` → candidate
       roles preserving the generic designation; `resultaattypen` → the
@@ -130,7 +130,7 @@
 
 ## 9. Seed data
 
-- [ ] 9.1 Install the six seed fixtures from design.md — Seed Data (the
+- [x] 9.1 Install the six seed fixtures from design.md — Seed Data (the
       two-stage permit case, the discretionary advice item, the ad-hoc item
       on a run-less task, the terminated stage with its cascade audit rows,
       the repeating item with two realisations, and the zaaktype fixture
@@ -140,13 +140,13 @@
 
 ## 10. Tests
 
-- [ ] 10.1 Table-driven unit tests for the transition table (every legal
+- [x] 10.1 Table-driven unit tests for the transition table (every legal
       edge, and the illegal ones naming all four facts — including
       milestone → `active` and any transition out of a terminal state) and
       for sentry evaluation (AND-within / OR-across, an unevaluable if-part
       being FALSE, an unknown event refused at save time, a malformed sentry
       never firing).
-- [ ] 10.2 Structural and authorization tests: a stage with only optional
+- [x] 10.2 Structural and authorization tests: a stage with only optional
       children staying open; the cascade bound failing loudly and rolling
       back; a non-member denied on enable and on attach with the denial
       audited; an unresolvable role denying; two overlapping transitions on
@@ -158,7 +158,7 @@
   unmappable elements; and opencatalogi + softwarecatalog suites green
   (additive-migration-only consumers — the check is that no shared service
   signature changed).
-- [ ] 10.3 Playwright coverage for the six `@e2e`-marked scenarios in
+- [x] 10.3 Playwright coverage for the six `@e2e`-marked scenarios in
       `specs/flow-cases/spec.md`: reading a case plan by object uuid, a
       milestone satisfying another item's sentry, terminating a stage
       cascading to its children, completing a task completing its plan item,

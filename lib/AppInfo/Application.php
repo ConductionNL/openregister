@@ -2590,6 +2590,30 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Listener\TaskVtodoWriteBackListener::class
 		);
 
+		// The case layer (flow-cmmn-case-semantics). A realisation ending (a task
+		// or a run) drives its plan item; an object change may satisfy a sentry;
+		// and a plan item reaching a terminal state is a catalog event fired
+		// against the anchoring object. Nothing under Service\Flow depends on
+		// Service\Case: these listeners are the only coupling, and it points one
+		// way. TaskTerminalEvent is dispatched by TaskService after the
+		// terminal transition commits (flow-user-task-node); the same
+		// reconciliation also runs on every case-plan evaluation, so a missed
+		// event costs latency, never correctness.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
+			\OCA\OpenRegister\Listener\CaseTaskTerminalListener::class
+		);
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\FlowRunTerminalEvent::class,
+			\OCA\OpenRegister\Listener\CaseRunTerminalListener::class
+		);
+		$context->registerEventListener(ObjectUpdatedEvent::class, \OCA\OpenRegister\Listener\CaseObjectEventListener::class);
+		$context->registerEventListener(ObjectTransitionedEvent::class, \OCA\OpenRegister\Listener\CaseObjectEventListener::class);
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\CaseItemTransitionedEvent::class,
+			\OCA\OpenRegister\Listener\EventCatalogListener::class
+		);
+
 		// Business-timer cancellation propagation (flow-business-timers, design
 		// D-9): the SAME terminal event, and the run-terminal one, also cancel
 		// the subject's open business timers. TaskTerminalEvent fires right
