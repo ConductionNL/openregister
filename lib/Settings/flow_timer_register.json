@@ -43,18 +43,22 @@
         ],
         "properties": {
           "slug": {
+            "title": "Slug",
             "type": "string",
             "description": "The calendar's stable name, referenced by a timer's calendar_slug."
           },
           "title": {
+            "title": "Title",
             "type": "string",
             "description": "Human-readable title."
           },
           "organisation": {
+            "title": "Organisation",
             "type": "string",
             "description": "UUID of the organisation this calendar is configured for. Empty for a shared calendar. The resolution order picks an organisation's calendar when the timer names none."
           },
           "workingWeekdays": {
+            "title": "Working weekdays",
             "type": "array",
             "description": "ISO weekdays (1 = Monday, 7 = Sunday) that are working days.",
             "items": {
@@ -64,6 +68,7 @@
             }
           },
           "hoursPerWorkingDay": {
+            "title": "Hours per working day",
             "type": "number",
             "description": "Working hours in one working day. Makes hours and businessDays commensurable.",
             "minimum": 0,
@@ -71,6 +76,7 @@
             "maximum": 24
           },
           "rules": {
+            "title": "Non-working-date rules",
             "type": "array",
             "description": "Computed non-working-date rules. kind fixed: {month, day, name, observedShift?: {whenWeekday, days}}. kind easter: {offset, name}, offset in days from Easter Sunday. kind observedShift: a fixed date with a required shift.",
             "items": {
@@ -78,6 +84,7 @@
             }
           },
           "exceptions": {
+            "title": "Exception dates",
             "type": "array",
             "description": "Enumerated one-off closures as Y-m-d strings or {date, name}. Allowed alongside rules; refused as the whole calendar.",
             "items": {
@@ -99,18 +106,22 @@
         ],
         "properties": {
           "slug": {
+            "title": "Slug",
             "type": "string",
             "description": "The ladder's stable name, referenced by a timer's ladder_slug."
           },
           "title": {
+            "title": "Title",
             "type": "string",
             "description": "Human-readable title."
           },
           "organisation": {
+            "title": "Organisation",
             "type": "string",
             "description": "UUID of the organisation this ladder is the default for. Empty for the shared default."
           },
           "rungs": {
+            "title": "Rungs",
             "type": "array",
             "description": "Ordered rungs: {key, trigger (preBreach|slaBreached), offset, offsetUnit (hours|businessDays|calendarDays), notifyRole[], escalateToRole[], priority, message, openIncident}.",
             "items": {
@@ -118,6 +129,7 @@
             }
           },
           "roleBindings": {
+            "title": "Role bindings",
             "type": "object",
             "description": "Optional map from a role name to a concrete recipient descriptor, e.g. {\"teamleader\": \"group:teamleaders\"}. Roles without a binding travel unresolved as role:<name>."
           }
@@ -134,17 +146,63 @@
         },
         "slug": "nl-national",
         "title": "Nederland, nationale feestdagen",
-        "workingWeekdays": [1, 2, 3, 4, 5],
+        "workingWeekdays": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
         "hoursPerWorkingDay": 8,
         "rules": [
-          {"kind": "fixed", "month": 1, "day": 1, "name": "Nieuwjaarsdag"},
-          {"kind": "easter", "offset": -2, "name": "Goede Vrijdag"},
-          {"kind": "easter", "offset": 1, "name": "Tweede Paasdag"},
-          {"kind": "fixed", "month": 4, "day": 27, "name": "Koningsdag", "observedShift": {"whenWeekday": "sunday", "days": -1}},
-          {"kind": "easter", "offset": 39, "name": "Hemelvaartsdag"},
-          {"kind": "easter", "offset": 50, "name": "Tweede Pinksterdag"},
-          {"kind": "fixed", "month": 12, "day": 25, "name": "Eerste Kerstdag"},
-          {"kind": "fixed", "month": 12, "day": 26, "name": "Tweede Kerstdag"}
+          {
+            "kind": "fixed",
+            "month": 1,
+            "day": 1,
+            "name": "Nieuwjaarsdag"
+          },
+          {
+            "kind": "easter",
+            "offset": -2,
+            "name": "Goede Vrijdag"
+          },
+          {
+            "kind": "easter",
+            "offset": 1,
+            "name": "Tweede Paasdag"
+          },
+          {
+            "kind": "fixed",
+            "month": 4,
+            "day": 27,
+            "name": "Koningsdag",
+            "observedShift": {
+              "whenWeekday": "sunday",
+              "days": -1
+            }
+          },
+          {
+            "kind": "easter",
+            "offset": 39,
+            "name": "Hemelvaartsdag"
+          },
+          {
+            "kind": "easter",
+            "offset": 50,
+            "name": "Tweede Pinksterdag"
+          },
+          {
+            "kind": "fixed",
+            "month": 12,
+            "day": 25,
+            "name": "Eerste Kerstdag"
+          },
+          {
+            "kind": "fixed",
+            "month": 12,
+            "day": 26,
+            "name": "Tweede Kerstdag"
+          }
         ],
         "exceptions": []
       },
@@ -158,20 +216,69 @@
         "slug": "example-organisation",
         "title": "Gemeente Example, lokale sluitingsdag",
         "organisation": "00000000-0000-0000-0000-000000000000",
-        "workingWeekdays": [1, 2, 3, 4, 5],
+        "workingWeekdays": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
         "hoursPerWorkingDay": 7,
         "rules": [
-          {"kind": "fixed", "month": 1, "day": 1, "name": "Nieuwjaarsdag"},
-          {"kind": "easter", "offset": -2, "name": "Goede Vrijdag"},
-          {"kind": "easter", "offset": 1, "name": "Tweede Paasdag"},
-          {"kind": "fixed", "month": 4, "day": 27, "name": "Koningsdag", "observedShift": {"whenWeekday": "sunday", "days": -1}},
-          {"kind": "easter", "offset": 39, "name": "Hemelvaartsdag"},
-          {"kind": "easter", "offset": 50, "name": "Tweede Pinksterdag"},
-          {"kind": "fixed", "month": 12, "day": 25, "name": "Eerste Kerstdag"},
-          {"kind": "fixed", "month": 12, "day": 26, "name": "Tweede Kerstdag"}
+          {
+            "kind": "fixed",
+            "month": 1,
+            "day": 1,
+            "name": "Nieuwjaarsdag"
+          },
+          {
+            "kind": "easter",
+            "offset": -2,
+            "name": "Goede Vrijdag"
+          },
+          {
+            "kind": "easter",
+            "offset": 1,
+            "name": "Tweede Paasdag"
+          },
+          {
+            "kind": "fixed",
+            "month": 4,
+            "day": 27,
+            "name": "Koningsdag",
+            "observedShift": {
+              "whenWeekday": "sunday",
+              "days": -1
+            }
+          },
+          {
+            "kind": "easter",
+            "offset": 39,
+            "name": "Hemelvaartsdag"
+          },
+          {
+            "kind": "easter",
+            "offset": 50,
+            "name": "Tweede Pinksterdag"
+          },
+          {
+            "kind": "fixed",
+            "month": 12,
+            "day": 25,
+            "name": "Eerste Kerstdag"
+          },
+          {
+            "kind": "fixed",
+            "month": 12,
+            "day": 26,
+            "name": "Tweede Kerstdag"
+          }
         ],
         "exceptions": [
-          {"date": "2026-10-05", "name": "Lokale sluitingsdag (voorbeeld)"}
+          {
+            "date": "2026-10-05",
+            "name": "Lokale sluitingsdag (voorbeeld)"
+          }
         ]
       },
       {
@@ -184,10 +291,69 @@
         "slug": "nl-termijn-default",
         "title": "Termijnbewaking, standaardladder 14/7/2/0",
         "rungs": [
-          {"key": "preBreach:14:calendarDays", "trigger": "preBreach", "offset": 14, "offsetUnit": "calendarDays", "notifyRole": ["handler"], "escalateToRole": [], "priority": "low", "message": "termijn-14d", "openIncident": false},
-          {"key": "preBreach:7:calendarDays", "trigger": "preBreach", "offset": 7, "offsetUnit": "calendarDays", "notifyRole": ["handler", "teamleader"], "escalateToRole": ["teamleader"], "priority": "medium", "message": "termijn-7d", "openIncident": false},
-          {"key": "preBreach:2:calendarDays", "trigger": "preBreach", "offset": 2, "offsetUnit": "calendarDays", "notifyRole": ["handler", "teamleader", "manager"], "escalateToRole": ["manager"], "priority": "high", "message": "termijn-2d", "openIncident": false},
-          {"key": "slaBreached:0", "trigger": "slaBreached", "offset": 0, "offsetUnit": "calendarDays", "notifyRole": ["handler", "teamleader", "manager"], "escalateToRole": ["manager"], "priority": "critical", "message": "termijn-overschreden", "openIncident": true}
+          {
+            "key": "preBreach:14:calendarDays",
+            "trigger": "preBreach",
+            "offset": 14,
+            "offsetUnit": "calendarDays",
+            "notifyRole": [
+              "handler"
+            ],
+            "escalateToRole": [],
+            "priority": "low",
+            "message": "termijn-14d",
+            "openIncident": false
+          },
+          {
+            "key": "preBreach:7:calendarDays",
+            "trigger": "preBreach",
+            "offset": 7,
+            "offsetUnit": "calendarDays",
+            "notifyRole": [
+              "handler",
+              "teamleader"
+            ],
+            "escalateToRole": [
+              "teamleader"
+            ],
+            "priority": "medium",
+            "message": "termijn-7d",
+            "openIncident": false
+          },
+          {
+            "key": "preBreach:2:calendarDays",
+            "trigger": "preBreach",
+            "offset": 2,
+            "offsetUnit": "calendarDays",
+            "notifyRole": [
+              "handler",
+              "teamleader",
+              "manager"
+            ],
+            "escalateToRole": [
+              "manager"
+            ],
+            "priority": "high",
+            "message": "termijn-2d",
+            "openIncident": false
+          },
+          {
+            "key": "slaBreached:0",
+            "trigger": "slaBreached",
+            "offset": 0,
+            "offsetUnit": "calendarDays",
+            "notifyRole": [
+              "handler",
+              "teamleader",
+              "manager"
+            ],
+            "escalateToRole": [
+              "manager"
+            ],
+            "priority": "critical",
+            "message": "termijn-overschreden",
+            "openIncident": true
+          }
         ],
         "roleBindings": {}
       }
