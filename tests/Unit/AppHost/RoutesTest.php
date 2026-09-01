@@ -72,8 +72,34 @@ class RoutesTest extends TestCase {
 
 		$this->assertSame('dashboard#catchAll', $last['name']);
 		$this->assertSame('/{path}', $last['url']);
-		$this->assertSame('.+', $last['requirements']['path']);
+		$this->assertSame('(?!api/).+', $last['requirements']['path']);
 	}//end testCatchAllIsLastAndHasPathRequirement()
+
+	/**
+	 * Being LAST in the `routes` array is not enough to keep the catch-all off
+	 * the API, which is the trap this guards. Nextcloud's RouteParser processes
+	 * `routes` BEFORE `resources` (RouteParser::parseDefaultRoutes) and Symfony
+	 * matches in insertion order, so the catch-all still registers ahead of
+	 * every route generated from a `resources` block. `.+` matches slashes, so
+	 * without the lookahead it answers the SPA shell for GET api/<resource> —
+	 * with HTTP 200, so a JSON caller silently receives HTML.
+	 *
+	 * Asserts the requirement as a REGEX against real paths rather than as a
+	 * string, so it keeps holding if the spelling is ever rewritten.
+	 */
+	public function testCatchAllRequirementExcludesApiPaths(): void {
+		$routes = Routes::standard()['routes'];
+		$last = end($routes);
+		$pattern = '#^' . $last['requirements']['path'] . '$#';
+
+		foreach (['api/taken', 'api/klanten', 'api/zrc/zaken', 'api/registers/1'] as $apiPath) {
+			$this->assertSame(0, preg_match($pattern, $apiPath), "catch-all must NOT match $apiPath");
+		}
+
+		foreach (['registers', 'schemas/12', 'features-roadmap', 'zaken/abc-123'] as $spaPath) {
+			$this->assertSame(1, preg_match($pattern, $spaPath), "catch-all MUST match $spaPath");
+		}
+	}//end testCatchAllRequirementExcludesApiPaths()
 
 	public function testIndexRouteIsGetSlash(): void {
 		$routes = Routes::standard()['routes'];

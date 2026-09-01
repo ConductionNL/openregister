@@ -126,7 +126,7 @@ test.describe('object-crud — create→read→update→delete with field-value 
 		test.skip(objectId === null, 'no object created')
 
 		// Deep-link to the object detail (path routing in the manifest-v2 shell).
-		await page.goto(`${APP}/#/objects/${register.id}/${schema.id}/${objectId}`, {
+		await page.goto(`${APP}/objects/${register.id}/${schema.id}/${objectId}`, {
 			waitUntil: 'domcontentloaded',
 		})
 		await expect(
@@ -172,7 +172,7 @@ test.describe('object-crud — create→read→update→delete with field-value 
 		expect(Number(fresh.count)).toBe(COUNT_UPDATED)
 
 		// The detail surface still resolves the (now-updated) object by uuid.
-		await page.goto(`${APP}/#/objects/${register.id}/${schema.id}/${objectId}`, {
+		await page.goto(`${APP}/objects/${register.id}/${schema.id}/${objectId}`, {
 			waitUntil: 'domcontentloaded',
 		})
 		await expect(

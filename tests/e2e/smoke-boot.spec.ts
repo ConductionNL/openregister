@@ -44,7 +44,7 @@ const STORAGE_STATE = path.resolve(__dirname, '.auth/admin.json')
 // shows up as a MIME refusal here and nowhere else.
 const ROUTES = [
 	{ name: 'app root', url: '/index.php/apps/openregister/' },
-	{ name: 'registers', url: '/index.php/apps/openregister/#/registers' },
+	{ name: 'registers', url: '/index.php/apps/openregister/registers' },
 ]
 
 /** Console messages that mean the bundle never booted. */
