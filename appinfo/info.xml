@@ -142,6 +142,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\DsarRetentionSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ReportRenderJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\NotificationQueueFlushJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\TaskScheduledNotificationJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ArchivalRetentionTask</job>
 		<job>OCA\OpenRegister\BackgroundJob\FlowRunWorker</job>
 		<job>OCA\OpenRegister\BackgroundJob\FlowScheduleWorker</job>
@@ -373,4 +374,14 @@ Vrij en open source onder de EUPL-licentie.
 	<contactsmenu>
 		<provider>OCA\OpenRegister\Contacts\ContactsMenuProvider</provider>
 	</contactsmenu>
+	<!-- The in-band write-back hook for projected task VTODOs
+	     (flow-task-inbox-projections, design D-6). apps/dav's PluginManager
+	     loads it into the Sabre server; it acts only on VTODOs carrying
+	     X-OPENREGISTER-TASK and refuses an unauthorized edit with a DAV 403
+	     before the client records it. -->
+	<sabre>
+		<plugins>
+			<plugin>OCA\OpenRegister\Dav\TaskVtodoWriteBackPlugin</plugin>
+		</plugins>
+	</sabre>
 </info>

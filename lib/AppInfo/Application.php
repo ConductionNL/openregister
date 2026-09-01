@@ -1180,11 +1180,24 @@ class Application extends App implements IBootstrap {
 		$context->registerService(
 			TaskService::class,
 			function (ContainerInterface $container) {
+				// The write-back gate is resolved lazily and best-effort: without
+				// it a PROJECTED VTODO's update is refused (fail closed), and
+				// standalone VTODOs are unaffected either way.
+				$gate = null;
+				try {
+					$gate = $container->get(\OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate::class);
+				} catch (\Throwable $e) {
+					$container->get('Psr\Log\LoggerInterface')->debug(
+						'[Application] TaskVtodoWriteBackGate unavailable for TaskService: ' . $e->getMessage()
+					);
+				}
+
 				return new TaskService(
 					calDavBackend: $container->get('OCA\DAV\CalDAV\CalDavBackend'),
 					userSession: $container->get('OCP\IUserSession'),
 					logger: $container->get('Psr\Log\LoggerInterface'),
-					urlGenerator: $container->get('OCP\IURLGenerator')
+					urlGenerator: $container->get('OCP\IURLGenerator'),
+					gate: $gate
 				);
 			}
 		);
@@ -2539,6 +2552,42 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(
 			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
 			\OCA\OpenRegister\Listener\UserTaskTerminalListener::class
+		);
+
+		// Task projections (flow-task-inbox-projections): a committed
+		// transition becomes a declarative notification and a VTODO in the
+		// assignee's calendar. Both run AFTER the commit and neither can fail
+		// the transition (design D-8). Withdrawal runs before delivery, so the
+		// notification listener is registered first.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTransitionedEvent::class,
+			\OCA\OpenRegister\Listener\TaskNotificationListener::class
+		);
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTransitionedEvent::class,
+			\OCA\OpenRegister\Listener\TaskCalendarProjectionListener::class
+		);
+
+		// Dismiss-on-terminality, on the same terminal-task event the
+		// user-task node listens to: no approve button and no open VTODO
+		// survives a terminal task, however it became terminal. Idempotent
+		// beside the transition listeners above: a second withdrawal finds
+		// nothing to withdraw and a second render finds nothing changed.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
+			\OCA\OpenRegister\Listener\TaskTerminalProjectionListener::class
+		);
+
+		// The safety-net write-back hook (design D-6): calendar writes that
+		// reached the backend without traversing the Sabre plugin are
+		// reverted to the engine's truth, and the actor is told why.
+		$context->registerEventListener(
+			\OCP\Calendar\Events\CalendarObjectUpdatedEvent::class,
+			\OCA\OpenRegister\Listener\TaskVtodoWriteBackListener::class
+		);
+		$context->registerEventListener(
+			\OCP\Calendar\Events\CalendarObjectDeletedEvent::class,
+			\OCA\OpenRegister\Listener\TaskVtodoWriteBackListener::class
 		);
 
 		// The case layer (flow-cmmn-case-semantics). A realisation ending (a task
