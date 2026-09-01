@@ -74,6 +74,8 @@ class EventCatalogListener implements IEventListener {
 	 *
 	 * @return void
 	 *
+	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) A dispatch table: one
 	 * instanceof branch per catalog event, each a one-liner; splitting it
 	 * would spread the catalog over several methods.

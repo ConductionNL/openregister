@@ -243,14 +243,10 @@ class CaseSentryEvaluator {
 	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	private function firingSentry(array $criteria, CasePlanTree $tree, array $object, ?string $event, array $payload): ?string {
-		$data = null;
+		$data = $this->dataFor(tree: $tree, object: $object, event: $event, payload: $payload);
 		foreach ($criteria as $index => $sentry) {
 			if (is_array($sentry) === false) {
 				continue;
-			}
-
-			if ($data === null) {
-				$data = $this->dataFor(tree: $tree, object: $object, event: $event, payload: $payload);
 			}
 
 			if ($this->fires(sentry: $sentry, tree: $tree, data: $data, event: $event) === true) {

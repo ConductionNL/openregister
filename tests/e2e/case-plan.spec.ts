@@ -31,7 +31,9 @@
  * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
  * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
  */
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import type { APIRequestContext } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 
 const RUN_ID = `e2e-case-${Date.now().toString(36)}`
 const ADMIN = process.env.OR_USER || 'admin'
@@ -68,7 +70,12 @@ type Item = {
 	realisationUuid: string | null
 	flowUuid: string | null
 }
-type Audit = { caseItemId: number; toState: string; cause: string; causeRef: string | null }
+type Audit = {
+	caseItemId: number
+	toState: string
+	cause: string
+	causeRef: string | null
+}
 type Plan = { objectUuid: string; items: Item[]; audit: Audit[] }
 
 /** The two-stage permit definition from design.md, seed 1 and 2. */
@@ -77,7 +84,10 @@ function permitDefinition() {
 		settings: {
 			authorization: [`user:${ADMIN}`],
 			results: ['verleend', 'geweigerd'],
-			writeThrough: { statusField: 'status', statusAtField: 'statusReachedAt' },
+			writeThrough: {
+				statusField: 'status',
+				statusAtField: 'statusReachedAt',
+			},
 		},
 		items: [
 			{
@@ -96,7 +106,13 @@ function permitDefinition() {
 						type: 'milestone',
 						name: 'Aanvraag volledig',
 						entryCriteria: [
-							{ id: 'complete', on: { event: 'case.item.completed', item: 'completeness-check' } },
+							{
+								id: 'complete',
+								on: {
+									event: 'case.item.completed',
+									item: 'completeness-check',
+								},
+							},
 						],
 					},
 				],
@@ -106,15 +122,31 @@ function permitDefinition() {
 				type: 'stage',
 				name: 'Beoordeling',
 				entryCriteria: [
-					{ id: 'after-intake', on: { event: 'case.item.completed', item: 'application-complete' } },
+					{
+						id: 'after-intake',
+						on: {
+							event: 'case.item.completed',
+							item: 'application-complete',
+						},
+					},
 				],
 				children: [
-					{ key: 'decide', type: 'humanTask', name: `${RUN_ID} besluit`, candidateUsers: [ADMIN] },
+					{
+						key: 'decide',
+						type: 'humanTask',
+						name: `${RUN_ID} besluit`,
+						candidateUsers: [ADMIN],
+					},
 					{
 						key: 'decided',
 						type: 'milestone',
 						name: 'Besloten',
-						entryCriteria: [{ id: 'after-decide', on: { event: 'case.item.completed', item: 'decide' } }],
+						entryCriteria: [
+							{
+								id: 'after-decide',
+								on: { event: 'case.item.completed', item: 'decide' },
+							},
+						],
 					},
 				],
 			},
@@ -133,13 +165,16 @@ async function createObject(request: APIRequestContext): Promise<string> {
 }
 
 /** Read the plan. */
-async function readPlan(request: APIRequestContext, objectUuid: string): Promise<Plan> {
+async function readPlan(
+	request: APIRequestContext,
+	objectUuid: string,
+): Promise<Plan> {
 	const response = await request.get(`${CASES}/${objectUuid}`)
 	expect(response.status(), await response.text()).toBe(200)
 	return response.json()
 }
 
-const byKey = (plan: Plan, key: string): Item => {
+function byKey(plan: Plan, key: string): Item {
 	const item = plan.items.find((candidate) => candidate.key === key)
 	expect(item, `item ${key} exists`).toBeTruthy()
 	return item as Item
@@ -174,10 +209,16 @@ test.describe('flow-cases — a case plan anchored to an object', () => {
 		objectUuid = null
 	})
 
-	test('the case plan is read by object uuid, without any run', async ({ request }) => {
+	test('the case plan is read by object uuid, without any run', async ({
+		request,
+	}) => {
 		objectUuid = await createObject(request)
 		const created = await request.post(`${CASES}/${objectUuid}`, {
-			data: { register: Number(REGISTER_ID), schema: Number(SCHEMA_ID), definition: permitDefinition() },
+			data: {
+				register: Number(REGISTER_ID),
+				schema: Number(SCHEMA_ID),
+				definition: permitDefinition(),
+			},
 		})
 		expect(created.status(), await created.text()).toBe(201)
 
@@ -199,11 +240,17 @@ test.describe('flow-cases — a case plan anchored to an object', () => {
 
 		// A definition naming an event outside the catalog is refused at save time.
 		const bad = permitDefinition()
-		bad.items[1].entryCriteria = [{ id: 'x', on: { event: 'case.item.started', item: 'y' } }]
+		bad.items[1].entryCriteria = [
+			{ id: 'x', on: { event: 'case.item.started', item: 'y' } },
+		]
 		const other = await createObject(request)
 		try {
 			const refused = await request.post(`${CASES}/${other}`, {
-				data: { register: Number(REGISTER_ID), schema: Number(SCHEMA_ID), definition: bad },
+				data: {
+					register: Number(REGISTER_ID),
+					schema: Number(SCHEMA_ID),
+					definition: bad,
+				},
 			})
 			expect(refused.status()).toBe(400)
 			expect((await refused.json()).error).toContain('case.item.started')
@@ -219,7 +266,11 @@ test.describe('flow-cases — a case plan anchored to an object', () => {
 	}) => {
 		objectUuid = await createObject(request)
 		const created = await request.post(`${CASES}/${objectUuid}`, {
-			data: { register: Number(REGISTER_ID), schema: Number(SCHEMA_ID), definition: permitDefinition() },
+			data: {
+				register: Number(REGISTER_ID),
+				schema: Number(SCHEMA_ID),
+				definition: permitDefinition(),
+			},
 		})
 		expect(created.status(), await created.text()).toBe(201)
 
@@ -237,16 +288,30 @@ test.describe('flow-cases — a case plan anchored to an object', () => {
 		const checkDone = byKey(plan, 'completeness-check')
 		expect(checkDone.state).toBe('completed')
 		const checkAudit = plan.audit.filter(
-			(entry) => entry.caseItemId === Number((check as unknown as { id: number }).id ?? -1) || entry.causeRef === check.realisationUuid,
+			(entry) =>
+				entry.caseItemId
+					=== Number((check as unknown as { id: number }).id ?? -1)
+				|| entry.causeRef === check.realisationUuid,
 		)
-		expect(checkAudit.some((entry) => entry.cause === 'realisation' && entry.causeRef === check.realisationUuid)).toBe(true)
+		expect(
+			checkAudit.some(
+				(entry) =>
+					entry.cause === 'realisation'
+					&& entry.causeRef === check.realisationUuid,
+			),
+		).toBe(true)
 
 		// Scenario 2: the milestone was reached and admitted the assessment stage in the same evaluation.
 		expect(byKey(plan, 'application-complete').state).toBe('completed')
 		expect(byKey(plan, 'intake').state).toBe('completed')
 		expect(byKey(plan, 'assessment').state).toBe('active')
 		expect(byKey(plan, 'decide').state).toBe('active')
-		expect(plan.audit.some((entry) => entry.cause === 'sentry' && entry.causeRef === 'after-intake')).toBe(true)
+		expect(
+			plan.audit.some(
+				(entry) =>
+					entry.cause === 'sentry' && entry.causeRef === 'after-intake',
+			),
+		).toBe(true)
 
 		// Scenario 6: the object carries the mirrored status, read by a consumer
 		// that knows nothing about plan items.
@@ -262,11 +327,17 @@ test.describe('flow-cases — a case plan anchored to an object', () => {
 	}) => {
 		objectUuid = await createObject(request)
 		const created = await request.post(`${CASES}/${objectUuid}`, {
-			data: { register: Number(REGISTER_ID), schema: Number(SCHEMA_ID), definition: permitDefinition() },
+			data: {
+				register: Number(REGISTER_ID),
+				schema: Number(SCHEMA_ID),
+				definition: permitDefinition(),
+			},
 		})
 		expect(created.status(), await created.text()).toBe(201)
 
-		const flowsBefore = await (await request.get('/index.php/apps/openregister/api/flows?limit=500')).json()
+		const flowsBefore = await (
+			await request.get('/index.php/apps/openregister/api/flows?limit=500')
+		).json()
 
 		// Scenario 5: attach an unplanned advice request to the active intake stage.
 		const attached = await request.post(`${CASES}/${objectUuid}/items`, {
@@ -290,12 +361,21 @@ test.describe('flow-cases — a case plan anchored to an object', () => {
 		expect((await task.json()).runUuid).toBeNull()
 
 		// No flow definition and no definition version changed.
-		const flowsAfter = await (await request.get('/index.php/apps/openregister/api/flows?limit=500')).json()
-		expect(JSON.stringify(flowsAfter.results ?? flowsAfter)).toBe(JSON.stringify(flowsBefore.results ?? flowsBefore))
+		const flowsAfter = await (
+			await request.get('/index.php/apps/openregister/api/flows?limit=500')
+		).json()
+		expect(JSON.stringify(flowsAfter.results ?? flowsAfter)).toBe(
+			JSON.stringify(flowsBefore.results ?? flowsBefore),
+		)
 
 		// An ad-hoc item may not declare itself unguarded.
 		const unguarded = await request.post(`${CASES}/${objectUuid}/items`, {
-			data: { key: 'sneaky', type: 'humanTask', parent: 'intake', authorization: [] },
+			data: {
+				key: 'sneaky',
+				type: 'humanTask',
+				parent: 'intake',
+				authorization: [],
+			},
 		})
 		expect(unguarded.status()).toBe(400)
 
@@ -304,9 +384,12 @@ test.describe('flow-cases — a case plan anchored to an object', () => {
 		// each with a cascade audit row naming the stage.
 		let plan = await readPlan(request, objectUuid)
 		const intake = byKey(plan, 'intake')
-		const terminated = await request.post(`${CASES}/items/${intake.uuid}/transition`, {
-			data: { to: 'terminated', reason: `${RUN_ID} withdrawn` },
-		})
+		const terminated = await request.post(
+			`${CASES}/items/${intake.uuid}/transition`,
+			{
+				data: { to: 'terminated', reason: `${RUN_ID} withdrawn` },
+			},
+		)
 		expect(terminated.status(), await terminated.text()).toBe(200)
 
 		plan = await readPlan(request, objectUuid)
@@ -314,7 +397,9 @@ test.describe('flow-cases — a case plan anchored to an object', () => {
 		expect(byKey(plan, 'completeness-check').state).toBe('terminated')
 		expect(byKey(plan, 'external-advice').state).toBe('terminated')
 		expect(byKey(plan, 'application-complete').state).toBe('terminated')
-		const cascaded = plan.audit.filter((entry) => entry.cause === 'cascade' && entry.causeRef === intake.uuid)
+		const cascaded = plan.audit.filter(
+			(entry) => entry.cause === 'cascade' && entry.causeRef === intake.uuid,
+		)
 		expect(cascaded.length).toBeGreaterThanOrEqual(3)
 
 		// The realising task is terminated with a reason and leaves the inbox.
@@ -322,7 +407,10 @@ test.describe('flow-cases — a case plan anchored to an object', () => {
 		expect((await adviceTask.json()).state).toBe('terminated')
 
 		// A terminal item accepts nothing further (409), and a milestone cannot become active.
-		const again = await request.post(`${CASES}/items/${intake.uuid}/transition`, { data: { to: 'completed' } })
+		const again = await request.post(
+			`${CASES}/items/${intake.uuid}/transition`,
+			{ data: { to: 'completed' } },
+		)
 		expect(again.status()).toBe(409)
 	})
 })
