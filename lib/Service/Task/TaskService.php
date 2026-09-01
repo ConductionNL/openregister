@@ -48,7 +48,6 @@ use OCA\OpenRegister\Db\TaskAuditMapper;
 use OCA\OpenRegister\Db\TaskCandidateMapper;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\TaskRelationMapper;
-<<<<<<< HEAD
 use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
@@ -58,14 +57,6 @@ use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use UnexpectedValueException;
-=======
-use OCA\OpenRegister\Exception\TaskAccessDeniedException;
-use OCA\OpenRegister\Exception\TaskConflictException;
-use OCA\OpenRegister\Exception\TaskValidationException;
-use OCP\IDBConnection;
-use Psr\Log\LoggerInterface;
-use Throwable;
->>>>>>> origin/development
 
 /**
  * Creates, routes, claims, completes, cancels and terminates tasks.
@@ -88,14 +79,11 @@ use Throwable;
  * @SuppressWarnings(PHPMD.StaticAccess) TaskState is a stateless published
  * vocabulary (the one status mapping); calling it statically is the point,
  * an instance would be a second copy of the same table.
-<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.ExcessiveParameterList) The tenth constructor
  * argument is the nullable event dispatcher that announces terminality
  * (flow-user-task-node); it is last so the hand-built test services keep
  * their order, and folding it into another collaborator would hide that a
  * lifecycle verb has an after-commit side effect.
-=======
->>>>>>> origin/development
  *
  * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
@@ -114,7 +102,6 @@ class TaskService {
 	 * @param LoggerInterface $logger Failure reporting.
 	 * @param TaskBuilder $builder Validates and builds a new task from
 	 *                             boundary data (the vocabularies live there).
-<<<<<<< HEAD
 	 * @param IEventDispatcher|null $dispatcher Announces a task reaching a
 	 *                                          terminal state
 	 *                                          ({@see TaskTerminalEvent}), AFTER
@@ -132,8 +119,6 @@ class TaskService {
 	 *                                   as the dispatcher; absent, a record
 	 *                                   declaration is stored unchecked and
 	 *                                   judged on read.
-=======
->>>>>>> origin/development
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
@@ -145,11 +130,8 @@ class TaskService {
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 		private readonly TaskBuilder $builder,
-<<<<<<< HEAD
 		private readonly ?IEventDispatcher $dispatcher = null,
 		private readonly ?TaskFormReader $forms = null,
-=======
->>>>>>> origin/development
 	) {
 
 	}//end __construct()
@@ -217,10 +199,7 @@ class TaskService {
 	 */
 	public function import(array $data, ?string $actor): Task {
 		$task = $this->builder->fromData(data: $data, actor: $actor);
-<<<<<<< HEAD
 		$this->refuseUnrenderableForm(task: $task);
-=======
->>>>>>> origin/development
 		$this->authorizeOrRecord(verb: 'create', task: $task, actor: $actor);
 
 		return $this->transactional(
@@ -522,10 +501,7 @@ class TaskService {
 				return $persisted;
 			}
 		);
-<<<<<<< HEAD
 
-=======
->>>>>>> origin/development
 	}//end cancel()
 
 	/**
@@ -676,10 +652,7 @@ class TaskService {
 				return $persisted;
 			}
 		);
-<<<<<<< HEAD
 
-=======
->>>>>>> origin/development
 	}//end terminateAsMoot()
 
 	/**
@@ -793,7 +766,6 @@ class TaskService {
 				return $persisted;
 			}
 		);
-<<<<<<< HEAD
 
 	}//end completeInternal()
 
@@ -892,11 +864,6 @@ class TaskService {
 	}//end refuseUnrenderableForm()
 
 	/**
-=======
-	}//end completeInternal()
-
-	/**
->>>>>>> origin/development
 	 * Resolve a verb's task: it must exist, the caller must be authorized,
 	 * and it must be non-terminal — in that order, before any mutation.
 	 *
@@ -1054,19 +1021,12 @@ class TaskService {
 	}//end appendAudit()
 
 	/**
-<<<<<<< HEAD
 	 * Run a mutation and its audit in ONE transaction, then announce terminality.
 	 *
 	 * The rollback is what makes "a completed task without its audit entry"
 	 * unreachable: an audit-write failure unwinds the completion with it.
 	 * A mutation that leaves the task terminal is announced as
 	 * {@see TaskTerminalEvent} once the transaction has closed.
-=======
-	 * Run a mutation and its audit in ONE transaction.
-	 *
-	 * The rollback is what makes "a completed task without its audit entry"
-	 * unreachable: an audit-write failure unwinds the completion with it.
->>>>>>> origin/development
 	 *
 	 * @param callable(): Task $mutation The mutation to run.
 	 *
@@ -1081,16 +1041,10 @@ class TaskService {
 		try {
 			$result = $mutation();
 			$this->db->commit();
-<<<<<<< HEAD
-=======
-
-			return $result;
->>>>>>> origin/development
 		} catch (Throwable $failure) {
 			$this->db->rollBack();
 			throw $failure;
 		}
-<<<<<<< HEAD
 
 		// Terminality is announced HERE, after the commit and from the one
 		// place every mutation passes, so no verb can forget it (the same
@@ -1112,8 +1066,6 @@ class TaskService {
 		}
 
 		return $result;
-=======
->>>>>>> origin/development
 	}//end transactional()
 
 	/**

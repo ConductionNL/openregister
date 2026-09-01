@@ -16,18 +16,9 @@
  * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
  */
-<<<<<<< HEAD
-import {
-	test,
-	expect,
-	request as apiRequest,
-	type APIRequestContext,
-} from '@playwright/test'
-=======
 import type { APIRequestContext } from '@playwright/test'
 
 import { request as apiRequest, expect, test } from '@playwright/test'
->>>>>>> origin/development
 
 const RUN_ID = `e2e-task-${Date.now().toString(36)}`
 const STRANGER = `${RUN_ID}-stranger`

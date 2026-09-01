@@ -38,11 +38,8 @@ use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
-<<<<<<< HEAD
 use OCA\OpenRegister\Service\Task\TaskForm;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
-=======
->>>>>>> origin/development
 use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCP\IDBConnection;
@@ -50,10 +47,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
-<<<<<<< HEAD
 use UnexpectedValueException;
-=======
->>>>>>> origin/development
 
 /**
  * Authorization ordering, concurrency, transactionality and normalisation.
@@ -616,7 +610,6 @@ class TaskServiceTest extends TestCase {
 	}//end testASecondCompletionLosesTheConditionalUpdate()
 
 	/**
-<<<<<<< HEAD
 	 * A REFUSED COMPLETION IS AUDITED, DISTINCTLY: its own action name, the
 	 * task's unchanged state, authorized (the caller was allowed to try), and
 	 * outside any transaction because nothing else changed.
@@ -725,8 +718,6 @@ class TaskServiceTest extends TestCase {
 	}//end testCreateWithoutARecordFormNeverConsultsTheReader()
 
 	/**
-=======
->>>>>>> origin/development
 	 * OVER HTTP, THE REQUESTER IS THE ACTOR: an ordinary caller cannot write
 	 * somebody else's name into the seat that owns cancel and reassign.
 	 *
