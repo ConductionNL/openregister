@@ -34,12 +34,9 @@
  * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-user-wide-task-aggregate-endpoint
  * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-task-compatibility-with-nextcloud-tasks-app
  */
-import {
-	test,
-	expect,
-	request as apiRequest,
-	type APIRequestContext,
-} from '@playwright/test'
+import type { APIRequestContext } from '@playwright/test'
+
+import { request as apiRequest, expect, test } from '@playwright/test'
 
 const RUN_ID = `e2e-proj-${Date.now().toString(36)}`
 const ADMIN = process.env.OR_USER || 'admin'
@@ -47,11 +44,13 @@ const STRANGER = `${RUN_ID}-stranger`
 const STRANGER_PASS = `Str4nger!${Date.now().toString(36)}A`
 
 const NO_SESSION = { cookies: [], origins: [] }
-const basic = (user: string, pass: string) => ({
-	'OCS-APIRequest': 'true',
-	Accept: 'application/json',
-	Authorization: `Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`,
-})
+function basic(user: string, pass: string) {
+	return {
+		'OCS-APIRequest': 'true',
+		Accept: 'application/json',
+		Authorization: `Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`,
+	}
+}
 const ADMIN_HEADERS = basic(ADMIN, process.env.OR_PASS || 'admin')
 
 const TASKS = '/index.php/apps/openregister/api/flow-tasks'
@@ -68,7 +67,10 @@ test.use({ storageState: NO_SESSION, extraHTTPHeaders: ADMIN_HEADERS })
  * @param request The admin API context.
  * @param overrides Fields to set on the task.
  */
-async function createTask(request: APIRequestContext, overrides: Record<string, unknown> = {}) {
+async function createTask(
+	request: APIRequestContext,
+	overrides: Record<string, unknown> = {},
+) {
 	const response = await request.post(TASKS, {
 		data: {
 			title: `${RUN_ID} approval`,
@@ -117,14 +119,18 @@ function unfold(ics: string): string {
  */
 async function cancelQuietly(request: APIRequestContext, uuid: string) {
 	try {
-		await request.post(`${TASKS}/${uuid}/cancel`, { data: { reason: `${RUN_ID} cleanup` } })
+		await request.post(`${TASKS}/${uuid}/cancel`, {
+			data: { reason: `${RUN_ID} cleanup` },
+		})
 	} catch (error) {
 		console.warn('[task-projections] cleanup failed:', error)
 	}
 }
 
 test.describe('flow-task-projections: the calendar projection', () => {
-	test('an assigned task appears in the assignee\'s calendar and links back', async ({ request }) => {
+	test("an assigned task appears in the assignee's calendar and links back", async ({
+		request,
+	}) => {
 		const task = await createTask(request)
 		try {
 			const vtodo = await readVtodo(request, task.uuid)
@@ -154,24 +160,37 @@ test.describe('flow-task-projections: the calendar projection', () => {
 			// Following it lands in the app (a redirect into the task route), not a 404.
 			const followed = await request.get(url!, { maxRedirects: 0 })
 			expect([302, 303]).toContain(followed.status())
-			expect(followed.headers().location).toContain(`#/flow-tasks/${task.uuid}`)
+			expect(followed.headers().location).toContain(
+				`#/flow-tasks/${task.uuid}`,
+			)
 		} finally {
 			await cancelQuietly(request, task.uuid)
 		}
 	})
 
-	test('completing the projected VTODO completes the engine task', async ({ request }) => {
+	test('completing the projected VTODO completes the engine task', async ({
+		request,
+	}) => {
 		const task = await createTask(request)
 		try {
 			const vtodo = await readVtodo(request, task.uuid)
-			test.skip(vtodo.status() === 404, 'no VTODO-capable calendar for the assignee on this instance')
-			const ticked = (await vtodo.text()).replace('STATUS:IN-PROCESS', 'STATUS:COMPLETED')
+			test.skip(
+				vtodo.status() === 404,
+				'no VTODO-capable calendar for the assignee on this instance',
+			)
+			const ticked = (await vtodo.text()).replace(
+				'STATUS:IN-PROCESS',
+				'STATUS:COMPLETED',
+			)
 
 			// The assignee ticks it off in a calendar client: a PUT of the document.
-			const put = await request.put(`${CALENDAR}/openregister-task-${task.uuid}.ics`, {
-				headers: { 'Content-Type': 'text/calendar; charset=utf-8' },
-				data: ticked,
-			})
+			const put = await request.put(
+				`${CALENDAR}/openregister-task-${task.uuid}.ics`,
+				{
+					headers: { 'Content-Type': 'text/calendar; charset=utf-8' },
+					data: ticked,
+				},
+			)
 			expect([200, 201, 204], await put.text()).toContain(put.status())
 
 			// The engine task reached its completed state, with the assignee as actor.
@@ -185,27 +204,41 @@ test.describe('flow-task-projections: the calendar projection', () => {
 			expect(audit.status()).toBe(200)
 			const entries = (await audit.json()).results ?? (await audit.json())
 			const completion = (Array.isArray(entries) ? entries : []).find(
-				(entry: { action?: string; authorized?: boolean }) => entry.action === 'complete' && entry.authorized !== false,
+				(entry: { action?: string; authorized?: boolean }) =>
+					entry.action === 'complete' && entry.authorized !== false,
 			)
-			expect(completion, 'exactly one authorized completion audit entry').toBeTruthy()
+			expect(
+				completion,
+				'exactly one authorized completion audit entry',
+			).toBeTruthy()
 			expect(completion.actor).toBe(ADMIN)
 			expect(
-				(Array.isArray(entries) ? entries : []).filter((entry: { action?: string; authorized?: boolean }) => entry.action === 'complete' && entry.authorized !== false),
+				(Array.isArray(entries) ? entries : []).filter(
+					(entry: { action?: string; authorized?: boolean }) =>
+						entry.action === 'complete' && entry.authorized !== false,
+				),
 			).toHaveLength(1)
 
 			// The calendar entry shows the engine's state: rendered COMPLETED, not echoed back.
-			const rendered = unfold(await (await readVtodo(request, task.uuid)).text())
+			const rendered = unfold(
+				await (await readVtodo(request, task.uuid)).text(),
+			)
 			expect(rendered).toContain('STATUS:COMPLETED')
 		} finally {
 			await cancelQuietly(request, task.uuid)
 		}
 	})
 
-	test('an unauthorized calendar completion is reverted and reported', async ({ request }) => {
+	test('an unauthorized calendar completion is reverted and reported', async ({
+		request,
+	}) => {
 		const provisioned = await request.post('/ocs/v2.php/cloud/users', {
 			data: { userid: STRANGER, password: STRANGER_PASS },
 		})
-		test.skip(provisioned.status() !== 200, `cannot provision a stranger account (HTTP ${provisioned.status()})`)
+		test.skip(
+			provisioned.status() !== 200,
+			`cannot provision a stranger account (HTTP ${provisioned.status()})`,
+		)
 
 		const task = await createTask(request)
 		const stranger = await apiRequest.newContext({
@@ -215,7 +248,10 @@ test.describe('flow-task-projections: the calendar projection', () => {
 
 		try {
 			const vtodo = await readVtodo(request, task.uuid)
-			test.skip(vtodo.status() === 404, 'no VTODO-capable calendar for the assignee on this instance')
+			test.skip(
+				vtodo.status() === 404,
+				'no VTODO-capable calendar for the assignee on this instance',
+			)
 
 			// Share the calendar read-write with the stranger: the single most
 			// likely real-world unauthorized path.
@@ -229,22 +265,35 @@ test.describe('flow-task-projections: the calendar projection', () => {
   </o:set>
 </o:share>`,
 			})
-			test.skip(![200, 204].includes(share.status()), `calendar sharing not available (HTTP ${share.status()})`)
+			test.skip(
+				![200, 204].includes(share.status()),
+				`calendar sharing not available (HTTP ${share.status()})`,
+			)
 
-			const ticked = (await vtodo.text()).replace('STATUS:IN-PROCESS', 'STATUS:COMPLETED')
+			const ticked = (await vtodo.text()).replace(
+				'STATUS:IN-PROCESS',
+				'STATUS:COMPLETED',
+			)
 			const strangerPut = await stranger.put(
 				`/remote.php/dav/calendars/${STRANGER}/personal_shared_by_${ADMIN}/openregister-task-${task.uuid}.ics`,
-				{ headers: { 'Content-Type': 'text/calendar; charset=utf-8' }, data: ticked },
+				{
+					headers: { 'Content-Type': 'text/calendar; charset=utf-8' },
+					data: ticked,
+				},
 			)
 			// Refused in-band: the client never records the change.
-			expect([403, 404], await strangerPut.text()).toContain(strangerPut.status())
+			expect([403, 404], await strangerPut.text()).toContain(
+				strangerPut.status(),
+			)
 
 			// The engine task did not move.
 			const after = await request.get(`${TASKS}/${task.uuid}`)
 			expect((await after.json()).state).toBe('active')
 
 			// The calendar shows the engine's state, not the stranger's edit.
-			const rendered = unfold(await (await readVtodo(request, task.uuid)).text())
+			const rendered = unfold(
+				await (await readVtodo(request, task.uuid)).text(),
+			)
 			expect(rendered).toContain('STATUS:IN-PROCESS')
 
 			if (strangerPut.status() === 403) {
@@ -252,27 +301,40 @@ test.describe('flow-task-projections: the calendar projection', () => {
 				const audit = await request.get(`${TASKS}/${task.uuid}/audit`)
 				const entries = (await audit.json()).results ?? (await audit.json())
 				const denial = (Array.isArray(entries) ? entries : []).find(
-					(entry: { actor?: string; authorized?: boolean }) => entry.actor === STRANGER && entry.authorized === false,
+					(entry: { actor?: string; authorized?: boolean }) =>
+						entry.actor === STRANGER && entry.authorized === false,
 				)
-				expect(denial, 'the refusal is recorded in the task audit').toBeTruthy()
+				expect(
+					denial,
+					'the refusal is recorded in the task audit',
+				).toBeTruthy()
 			}
 		} finally {
 			await stranger.dispose()
 			await cancelQuietly(request, task.uuid)
-			await request.delete(`/ocs/v2.php/cloud/users/${STRANGER}`).catch((error) =>
-				console.warn('[task-projections] stranger cleanup failed:', error),
-			)
+			await request
+				.delete(`/ocs/v2.php/cloud/users/${STRANGER}`)
+				.catch((error) =>
+					console.warn(
+						'[task-projections] stranger cleanup failed:',
+						error,
+					),
+				)
 		}
 	})
 })
 
 test.describe('flow-task-projections: the decision from the notification', () => {
-	test('an assignee approves a task from the notification', async ({ request }) => {
+	test('an assignee approves a task from the notification', async ({
+		request,
+	}) => {
 		const task = await createTask(request)
 		try {
 			// The approve button is a POST to the complete verb route with the
 			// approving outcome as a query parameter: this is that request.
-			const approve = await request.post(`${TASKS}/${task.uuid}/complete?outcome=approved`)
+			const approve = await request.post(
+				`${TASKS}/${task.uuid}/complete?outcome=approved`,
+			)
 			expect(approve.status(), await approve.text()).toBe(200)
 			const row = await approve.json()
 			expect(row.state).toBe('completed')
@@ -280,7 +342,9 @@ test.describe('flow-task-projections: the decision from the notification', () =>
 			expect(row.completedBy).toBe(ADMIN)
 
 			// A stale reject button loses to the recorded outcome: conflict, unchanged.
-			const stale = await request.post(`${TASKS}/${task.uuid}/complete?outcome=rejected&comment=too+late`)
+			const stale = await request.post(
+				`${TASKS}/${task.uuid}/complete?outcome=rejected&comment=too+late`,
+			)
 			expect(stale.status()).toBe(409)
 			const again = await request.get(`${TASKS}/${task.uuid}`)
 			expect((await again.json()).outcome).toBe('approved')
@@ -301,16 +365,24 @@ test.describe('object-interactions: the user-wide aggregate', () => {
 			// The total is the query's, and the rows are engine tasks, not VTODOs.
 			expect(typeof page.total).toBe('number')
 			expect(page.total).toBeGreaterThanOrEqual(1)
-			const mine = (page.results ?? []).find((row: { uuid?: string }) => row.uuid === task.uuid)
+			const mine = (page.results ?? []).find(
+				(row: { uuid?: string }) => row.uuid === task.uuid,
+			)
 			expect(mine, 'the engine task is listed').toBeTruthy()
 			expect(mine.state).toBe('active')
 			expect('overdue' in mine).toBe(true)
 			expect('displayTitle' in mine).toBe(true)
 
 			// `assignee` is not honoured as a filter: still the caller's own tasks.
-			const other = await request.get(`${AGGREGATE}?assignee=somebody-else&_limit=100&sort=-created`)
+			const other = await request.get(
+				`${AGGREGATE}?assignee=somebody-else&_limit=100&sort=-created`,
+			)
 			expect(other.status()).toBe(200)
-			expect((await other.json()).results.some((row: { uuid?: string }) => row.uuid === task.uuid)).toBe(true)
+			expect(
+				(await other.json()).results.some(
+					(row: { uuid?: string }) => row.uuid === task.uuid,
+				),
+			).toBe(true)
 
 			// The limit cap stays.
 			const capped = await request.get(`${AGGREGATE}?_limit=500`)

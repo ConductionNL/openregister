@@ -31,15 +31,25 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Sabre\DAV\Exception\Forbidden;
 use Sabre\DAV\ICollection;
+use Sabre\DAV\IFile;
 use Sabre\DAV\INode;
 use Sabre\DAV\Server;
+use Sabre\DAV\Tree;
 
 class TaskVtodoWriteBackPluginTest extends TestCase {
 	private const UUID = '00000000-0000-0000-0000-000000000002';
 
 	private TaskVtodoWriteBackGate&MockObject $gate;
 
-	private Server $server;
+	/**
+	 * The Sabre server, mocked: the real class needs a tree and an HTTP
+	 * sapi, and the suite runs both against the test stubs and, in the CI
+	 * container, against the server's real Sabre.
+	 */
+	private Server&MockObject $server;
+
+	/** @var array<string, array{0: callable, 1: int}> Hooks the plugin subscribed. */
+	private array $subscriptions = [];
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -47,26 +57,32 @@ class TaskVtodoWriteBackPluginTest extends TestCase {
 		$this->gate->method('isProjected')->willReturnCallback(
 			static fn (string $ics): bool => str_contains($ics, 'X-OPENREGISTER-TASK:')
 		);
-		$this->server = new Server();
+		$this->subscriptions = [];
+		$this->server = $this->createMock(Server::class);
+		$this->server->method('on')->willReturnCallback(
+			function (string $event, callable $callback, int $priority = 100): void {
+				$this->subscriptions[$event] = [$callback, $priority];
+			}
+		);
 	}
 
 	private function plugin(?string $principal = 'principals/users/EXAMPLE_APPROVER_USER'): TaskVtodoWriteBackPlugin {
 		$plugin = new TaskVtodoWriteBackPlugin($this->gate, new NullLogger());
+		$auth = null;
 		if ($principal !== null) {
 			$auth = new class($principal) {
 				public function __construct(private string $principal) {
-				}
-
-				public function getPluginName(): string {
-					return 'auth';
 				}
 
 				public function getCurrentPrincipal(): string {
 					return $this->principal;
 				}
 			};
-			$this->server->addPlugin($auth);
 		}
+
+		$this->server->method('getPlugin')->willReturnCallback(
+			static fn (string $name): ?object => $name === 'auth' ? $auth : null
+		);
 
 		$plugin->initialize($this->server);
 
@@ -81,10 +97,10 @@ class TaskVtodoWriteBackPluginTest extends TestCase {
 	public function testItSubscribesToTheThreeWriteHooks(): void {
 		$this->plugin();
 
-		$this->assertArrayHasKey('beforeWriteContent', $this->server->listeners);
-		$this->assertArrayHasKey('beforeCreateFile', $this->server->listeners);
-		$this->assertArrayHasKey('beforeUnbind', $this->server->listeners);
-		$this->assertSame(90, $this->server->listeners['beforeWriteContent'][0][1]);
+		$this->assertArrayHasKey('beforeWriteContent', $this->subscriptions);
+		$this->assertArrayHasKey('beforeCreateFile', $this->subscriptions);
+		$this->assertArrayHasKey('beforeUnbind', $this->subscriptions);
+		$this->assertSame(90, $this->subscriptions['beforeWriteContent'][1]);
 	}
 
 	public function testAnAcceptedTickStoresTheEnginesRendering(): void {
@@ -176,22 +192,10 @@ class TaskVtodoWriteBackPluginTest extends TestCase {
 	}
 
 	public function testDeletingAProjectedVtodoIsRefusedWithTheReason(): void {
-		$node = new class($this->projected('IN-PROCESS')) implements INode {
-			public function __construct(private string $ics) {
-			}
-
-			public function get(): string {
-				return $this->ics;
-			}
-		};
-		$tree = new class($node) {
-			public function __construct(private object $node) {
-			}
-
-			public function getNodeForPath(string $path): object {
-				return $this->node;
-			}
-		};
+		$node = $this->createMock(IFile::class);
+		$node->method('get')->willReturn($this->projected('IN-PROCESS'));
+		$tree = $this->createMock(Tree::class);
+		$tree->method('getNodeForPath')->with('calendars/approver/personal/x.ics')->willReturn($node);
 		$this->server->tree = $tree;
 
 		$this->expectException(Forbidden::class);

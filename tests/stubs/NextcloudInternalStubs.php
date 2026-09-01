@@ -581,21 +581,55 @@ if (class_exists(\Sabre\DAV\Server::class) === false) {
     class Server {
         public $tree;
         private array $plugins = [];
-        public array $listeners = [];
-        public function on(string $event, callable $callback, int $priority = 100): void { $this->listeners[$event][] = [$callback, $priority]; }
-        public function addPlugin($plugin): void { $this->plugins[$plugin->getPluginName()] = $plugin; }
-        public function getPlugin(string $name) { return $this->plugins[$name] ?? null; }
+        public function __construct($treeOrNode = null, $sapi = null) {}
+        public function on(string $eventName, callable $callBack, int $priority = 100) {}
+        public function addPlugin(ServerPlugin $plugin) { $this->plugins[$plugin->getPluginName()] = $plugin; }
+        public function getPlugin($name) { return $this->plugins[$name] ?? null; }
     }');
 }//end if
 
+if (class_exists(\Sabre\DAV\Tree::class) === false) {
+	eval('namespace Sabre\DAV;
+    class Tree {
+        public function __construct($rootNode = null) {}
+        public function getNodeForPath($path) { return null; }
+    }');
+}//end if
+
+// The interfaces carry the REAL method sets, so a test double that satisfies
+// the stub also satisfies the server\'s Sabre (the in-container suite runs
+// against the real classes; an anonymous class that fit a hollow stub
+// fataled there).
 if (interface_exists(\Sabre\DAV\INode::class) === false) {
 	eval('namespace Sabre\DAV;
-    interface INode {}');
+    interface INode {
+        public function delete();
+        public function getName();
+        public function setName($name);
+        public function getLastModified();
+    }');
+}//end if
+
+if (interface_exists(\Sabre\DAV\IFile::class) === false) {
+	eval('namespace Sabre\DAV;
+    interface IFile extends INode {
+        public function put($data);
+        public function get();
+        public function getContentType();
+        public function getETag();
+        public function getSize();
+    }');
 }//end if
 
 if (interface_exists(\Sabre\DAV\ICollection::class) === false) {
 	eval('namespace Sabre\DAV;
-    interface ICollection extends INode {}');
+    interface ICollection extends INode {
+        public function createFile($name, $data = null);
+        public function createDirectory($name);
+        public function getChild($name);
+        public function getChildren();
+        public function childExists($name);
+    }');
 }//end if
 
 if (class_exists(\Sabre\DAV\Exception\Forbidden::class) === false) {
