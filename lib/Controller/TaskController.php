@@ -143,11 +143,11 @@ class TaskController extends Controller {
 	 * for "open this task" however the task reached the person. It serves
 	 * the SPA shell directly, exactly like `DashboardController::catchAll()`
 	 * serves every other deep sub-path: the router runs in HISTORY mode
-	 * (src/main.js), so the path itself is the route and the manifest's
-	 * `flow-task-detail` page (`/flow-tasks/:uuid`) renders the task. It
-	 * used to redirect to a HASH path instead, which the history-mode router
-	 * never resolved: every notification button and VTODO URL landed on the
-	 * dashboard.
+	 * (src/main.js), so the path itself is the route and the SPA's
+	 * `flow-task-detail` route (`/flow-tasks/:uuid`, src/main.js) renders
+	 * the task. It used to redirect to a HASH path instead, which the
+	 * history-mode router never resolved: every notification button and
+	 * VTODO URL landed on the dashboard.
 	 *
 	 * @param string $uuid The task uuid, consumed by the SPA route, not here.
 	 *

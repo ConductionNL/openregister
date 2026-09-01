@@ -110,22 +110,26 @@
 
 ## 5. Inbox surfaces
 
-- [ ] 5.1 `CnTasksWidget` in nextcloud-vue modelled on
+- [x] 5.1 `CnTasksWidget` in nextcloud-vue modelled on
       `src/components/CnFlowRunsWidget/CnFlowRunsWidget.vue` (559L), reading
       the `flow-tasks` inbox API. Filter, sort, page and total come from the
       query; the badge reads the TOTAL, never the row count; no client-side
       filter is applied over a returned page.
-      > **Blocked (nextcloud-vue, 2026-09-01).** The endpoint side is done:
-      > `GET /api/flow-tasks` and `GET /api/tasks` both answer with
-      > server-side filter, sort, page and a datastore `total`. The surface
-      > is a manifest page of `type: "index"` over a NAMED entity source,
-      > not a bespoke Vue page, and the registry that resolves named sources
-      > (`nextcloud-vue/src/composables/indexSources.js`, version 2.0.5)
-      > knows exactly one source, `flows`. A `tasks` source must be added
-      > there first; declaring `entitySource: "tasks"` in a manifest before
-      > that lands renders an empty index with a console error, which is
-      > worse than no page. Ships with the nextcloud-vue change that adds
-      > the source and `CnTasksWidget`.
+      > **Unblocked and wired (2026-09-01).** nextcloud-vue#910 merged the
+      > `tasks` entity source and `CnTasksWidget` (change
+      > cn-tasks-entity-source). OpenRegister side: the manifest declares
+      > `flow-task-inbox` (`/flow-tasks`, `type: "index"`,
+      > `entitySource: "tasks"`) plus a Tasks menu entry, the dashboard
+      > carries the `tasks` widget, and the per-uuid deep link
+      > `/flow-tasks/{uuid}` renders `FlowTaskDetail`
+      > (`TaskController::open()` now serves the SPA shell instead of a
+      > hash redirect the history-mode router never resolved).
+      > ⚠️ Release gate: #910 is on nextcloud-vue `development` and NOT yet
+      > in a published npm version (latest is 2.29.0, cut before the
+      > merge). The pin is `^2.29.0`; when the next promotion publishes,
+      > refresh the lockfile so the built bundle actually carries the
+      > source and the widget — until then the inbox index is empty with a
+      > console warning and the widget cell reads unavailable.
 - [ ] 5.2 Repoint the leaf: `src/integrations/builtin/tasks.js` (64L),
       `CnObjectSidebar/CnTasksTab.vue` (500L),
       `CnTasksCard/CnTasksCard.vue` (387L) and `src/types/task.d.ts` (31L)

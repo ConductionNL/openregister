@@ -144,3 +144,19 @@ export function IntegrationsView(
 ): string {
 	return `/integrations/${register}/${schema}/${objectId}`
 }
+
+/**
+ * `src/views/task/FlowTaskDetail.vue` — one task at the fleet's one stable
+ * task address. Also the deep link every VTODO URL and notification button
+ * carries, so the FULL-PAGE load of this route is itself a scenario:
+ * `tests/e2e/task-inbox-page.spec.ts` reloads it cold and asserts the task
+ * renders (not the dashboard, which is where the old hash redirect landed).
+ */
+export const FlowTaskDetail = (uuid: string): string => `/flow-tasks/${uuid}`
+
+/**
+ * The task inbox (manifest page `flow-task-inbox`, `type: "index"` over the
+ * named `tasks` entity source — no app component of its own, so the binding
+ * here names the DETAIL component's sibling route rather than a view file).
+ */
+export const FlowTaskInbox = '/flow-tasks'

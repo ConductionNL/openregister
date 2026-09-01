@@ -99,7 +99,7 @@
 				<section v-if="canClaim || canComplete" class="taskActions">
 					<NcButton
 						v-if="canClaim"
-						type="primary"
+						variant="primary"
 						data-testid="task-claim"
 						:disabled="acting"
 						@click="claim">
@@ -108,7 +108,7 @@
 					<NcButton
 						v-for="outcome in completeOutcomes"
 						:key="outcomeId(outcome)"
-						type="primary"
+						variant="primary"
 						data-testid="task-complete"
 						:disabled="acting"
 						@click="complete(outcomeId(outcome))">
@@ -124,8 +124,8 @@
 import { getCurrentUser } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
-import { NcAppContent, NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import { generateUrl } from '@nextcloud/router'
+import { NcAppContent, NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import ClipboardListOutline from 'vue-material-design-icons/ClipboardListOutline.vue'
 
 export default {
@@ -312,7 +312,7 @@ export default {
 		 *
 		 * @spec exclude UI plumbing — param-watch reload, no contract of its own
 		 */
-		'$route.params.uuid'() {
+		'$route.params.uuid': function() {
 			this.load()
 		},
 	},
@@ -345,6 +345,9 @@ export default {
 				if (error?.response?.status === 404) {
 					this.notFound = true
 				} else {
+					// The toast carries the user wording; the console carries
+					// the actual failure for whoever debugs it.
+					// eslint-disable-next-line no-console
 					console.error('[FlowTaskDetail] task read failed', error)
 					showError(this.t('openregister', 'Could not load the task'))
 					this.notFound = true

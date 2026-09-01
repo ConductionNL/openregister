@@ -1359,7 +1359,7 @@ return [
 		// The one stable "open this task" address (flow-task-inbox-projections):
 		// the VTODO URL, the notification buttons and the rule actions all
 		// resolve here. It serves the SPA SHELL (history-mode router), and the
-		// manifest's `flow-task-detail` page renders the task; the bare
+		// SPA's `flow-task-detail` route (src/main.js) renders the task; the bare
 		// `/flow-tasks` inbox list needs no entry of its own because
 		// `dashboard#catchAll` below already shells every non-api sub-path.
 		['name' => 'task#open', 'url' => '/flow-tasks/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],

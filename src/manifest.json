@@ -171,9 +171,10 @@
       "route": "/flows",
       "type": "index",
       "title": "Flows",
-      "_note": "Ordinary index over a NAMED SOURCE, not a custom page. A flow lives in OpenRegister's own native flow table rather than a register/schema pair, so an object-backed index had nothing to address and this used to be type:custom over FlowsIndex.vue. Named index sources (nextcloud-vue 2.20.0) close that: config.entitySource names the collection and the index loads it. Columns are stated here rather than left to the source's defaults because this is the ENGINE's cross-app surface — it passes no app filter and so needs the `app` column, which a leaf app's own flow list does not. Migrating also fixes a dead listener: FlowsIndex bound @rowClick while CnIndexPage emits row-click, so opening a flow by clicking its row never worked here.",
+      "_note": "Ordinary index over a NAMED SOURCE, not a custom page. A flow lives in OpenRegister's own native flow table rather than a register/schema pair, so an object-backed index had nothing to address and this used to be type:custom over FlowsIndex.vue. Named index sources (nextcloud-vue 2.20.0) close that: config.entitySource names the collection and the index loads it. Columns are stated here rather than left to the source's defaults because this is the ENGINE's cross-app surface — it passes no app filter and so needs the `app` column, which a leaf app's own flow list does not. Migrating also fixes a dead listener: FlowsIndex bound @rowClick while CnIndexPage emits row-click, so opening a flow by clicking its row never worked here. `rowRoute` names the flowDetail page (a route NAME, not a path): without it a named-source page has no schema, so CnPageRenderer never auto-wired editOpensDetail and row Edit opened an EMPTY modal instead of the flow editor.",
       "config": {
         "entitySource": "flows",
+        "rowRoute": "flowDetail",
         "columns": [
           {
             "key": "name",
@@ -220,15 +221,6 @@
       "config": {
         "entitySource": "tasks"
       }
-    },
-    {
-      "id": "flow-task-detail",
-      "route": "/flow-tasks/:uuid",
-      "type": "custom",
-      "title": "Task",
-      "component": "FlowTaskDetail",
-      "_note": "The one stable task address. `task#open` (appinfo/routes.php), the VTODO URL and every notification button resolve /apps/openregister/flow-tasks/{uuid}, the server answers the SPA shell, and this page renders the task. A custom page because a task is a native entity, not a register object: the built-in `detail` type resolves via register+schema and has nothing to bind to (same reasoning as every other native-entity page in this manifest). nc-vue's cn-tasks-entity-source change declares the detail surface a NON-goal and navigates here.",
-      "config": {}
     },
     {
       "id": "webhooks",
