@@ -258,6 +258,15 @@ Vrij en open source onder de EUPL-licentie.
 			     both need the openregister_flow_timers tables. -->
 			<step>OCA\OpenRegister\Repair\SeedFlowTimerRegister</step>
 			<step>OCA\OpenRegister\Repair\CheckFlowTimerInvariants</step>
+			<!-- Approval consolidation (flow-approval-consolidation): moves
+			     every approval chain, step set and in-flight decision onto
+			     task sequences, verifies the reconciliation and FAILS LOUDLY
+			     on any mismatch. Idempotent on the reconciliation columns.
+			     Post-migration because it needs openregister_task_sequences
+			     and the sequence columns on openregister_tasks. The legacy
+			     tables are kept; rollback is the
+			     openregister:approval:rollback-to-steps command. -->
+			<step>OCA\OpenRegister\Repair\MigrateApprovalChainsToTasks</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
@@ -314,6 +323,9 @@ Vrij en open source onder de EUPL-licentie.
 		<!-- App-rename repair: re-points registers and schemas at a new owning
 		     app id. Only a DB connection, so the DI graph stays light. -->
 		<command>OCA\OpenRegister\Command\MigrateSchemaApplicationCommand</command>
+		<!-- The approval consolidation's reverse repair: an operator-run
+		     rollback tool, deliberately NOT a repair step. -->
+		<command>OCA\OpenRegister\Command\RollbackApprovalMigrationCommand</command>
 		<command>OCA\OpenRegister\Command\RechainAuditTrailCommand</command>
 		<!-- Read-only report: which RBAC groups this instance declares, and whether
 		     anyone belongs to them. Provisioning guarantees a declared group EXISTS;

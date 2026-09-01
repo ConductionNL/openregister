@@ -1253,16 +1253,6 @@ return [
 		['name' => 'scheduledWorkflow#update', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
 		['name' => 'scheduledWorkflow#destroy', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 
-		// Approval Chains - multi-step approval definitions and per-object progress.
-		['name' => 'approval#index', 'url' => '/api/approval-chains', 'verb' => 'GET'],
-		['name' => 'approval#show', 'url' => '/api/approval-chains/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#create', 'url' => '/api/approval-chains', 'verb' => 'POST'],
-		['name' => 'approval#update', 'url' => '/api/approval-chains/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#destroy', 'url' => '/api/approval-chains/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#objects', 'url' => '/api/approval-chains/{id}/objects', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#steps', 'url' => '/api/approval-steps', 'verb' => 'GET'],
-		['name' => 'approval#approve', 'url' => '/api/approval-steps/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#reject', 'url' => '/api/approval-steps/{id}/reject', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 
 		// MCP Discovery - Tiered API discovery for AI agents.
 		// CORS preflight (OPTIONS) is handled automatically by the @CORS annotation.
@@ -1347,6 +1337,12 @@ return [
 		['name' => 'flowRun#objects', 'url' => '/api/flow-runs/{uuid}/objects', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#retry', 'url' => '/api/flow-runs/{uuid}/retry', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#resume', 'url' => '/api/flow-runs/{uuid}/resume', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		// Correlation-addressed signal delivery (flow-approval-consolidation):
+		// same authority as resume, addressed by business key instead of run
+		// uuid, fail-closed on zero and on more than one match. Registered on
+		// a literal segment so it can never shadow, or be shadowed by, the
+		// uuid-addressed routes.
+		['name' => 'flowRun#signalByKey', 'url' => '/api/flow-run-signals/{key}', 'verb' => 'POST', 'requirements' => ['key' => '[^/]+']],
 		// Interactive test run (or-flow-partial-run): run synchronously with optional startAt + pins + seed.
 		['name' => 'flowRun#test', 'url' => '/api/flow-runs/test', 'verb' => 'POST'],
 		// The fleet-generic task (flow-task-entity): the inbox and the

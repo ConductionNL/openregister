@@ -152,6 +152,28 @@ class TaskMapper extends QBMapper {
 	}//end announceTerminality()
 
 	/**
+	 * A sequence's positions, in ordinal order.
+	 *
+	 * Ordinal order is the ONLY order that means anything to a sequence:
+	 * never creation time, never id (flow-approval-consolidation).
+	 *
+	 * @param string $sequenceUuid The sequence uuid.
+	 *
+	 * @return array<int, Task> The sequence's tasks, lowest ordinal first.
+	 *
+	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 */
+	public function findBySequence(string $sequenceUuid): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('sequence_uuid', $qb->createNamedParameter($sequenceUuid)))
+			->orderBy('sequence_position', 'ASC');
+
+		return $this->findEntities($qb);
+	}//end findBySequence()
+
+	/**
 	 * Find a task by its public uuid.
 	 *
 	 * @param string $uuid The task uuid.

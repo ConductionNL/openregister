@@ -114,6 +114,16 @@ class TaskService {
 	 *                                          terminality goes unannounced and a
 	 *                                          parked run learns of it on its
 	 *                                          heartbeat instead.
+	 * @param TaskSequenceDecisionGuard|null $sequenceGuard Refuses a
+	 *                                                      self-decision on a
+	 *                                                      sequence position
+	 *                                                      BEFORE the performer
+	 *                                                      check, so the reason
+	 *                                                      is honest. Nullable
+	 *                                                      for hand-built test
+	 *                                                      services; absent, no
+	 *                                                      sequence policy is
+	 *                                                      enforced here.
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
@@ -126,6 +136,7 @@ class TaskService {
 		private readonly LoggerInterface $logger,
 		private readonly TaskBuilder $builder,
 		private readonly ?IEventDispatcher $dispatcher = null,
+		private readonly ?TaskSequenceDecisionGuard $sequenceGuard = null,
 	) {
 
 	}//end __construct()
@@ -649,6 +660,54 @@ class TaskService {
 	}//end terminateAsMoot()
 
 	/**
+	 * Enable a position: the sequence's own promotion verb.
+	 *
+	 * The task-sequence equivalent of the twenty lines at the retired
+	 * `ApprovalService.php:193-204` — a waiting position becomes the one
+	 * position a person can act on. A TRUSTED in-process verb like
+	 * {@see terminateAsMoot()}: the actor is a system source
+	 * (`task-sequence:<uuid>`), recorded on the audit, and the caller is
+	 * {@see TaskSequenceService}, which owns WHEN a position may be enabled.
+	 * Not reachable over HTTP.
+	 *
+	 * Refused on a terminal task (the reason names its terminal state) and a
+	 * no-op on a task that is already enabled or active.
+	 *
+	 * @param string $uuid The task uuid.
+	 * @param string $source The enabling identity recorded as actor.
+	 * @param string $reason Why, recorded on the audit.
+	 *
+	 * @return Task The enabled task.
+	 *
+	 * @throws TaskConflictException When the task is terminal, or closed concurrently.
+	 *
+	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 */
+	public function enable(string $uuid, string $source, string $reason): Task {
+		$task = $this->tasks->findByUuid(uuid: $uuid);
+		if ($task->isInTerminalState() === true) {
+			throw new TaskConflictException(
+				message: sprintf("Verb 'enable' refused: task '%s' is already in terminal state '%s'.", $uuid, (string)$task->getState())
+			);
+		}
+
+		if ($task->getState() === Task::STATE_ENABLED || $task->getState() === Task::STATE_ACTIVE) {
+			// Idempotent: enabling the enabled position changes nothing.
+			return $task;
+		}
+
+		return $this->transactional(
+			mutation: function () use ($task, $source, $reason): Task {
+				$this->applyState(task: $task, state: Task::STATE_ENABLED, action: 'enable');
+				$persisted = $this->persistOpen(task: $task);
+				$this->appendAudit(task: $persisted, action: 'enable', actor: $source, reason: $reason);
+
+				return $persisted;
+			}
+		);
+	}//end enable()
+
+	/**
 	 * A business timer's ENFORCING outcome, applied as a named task action.
 	 *
 	 * The four outcomes leave the subject in four DISTINCT observable states
@@ -826,6 +885,13 @@ class TaskService {
 		?string $comment,
 		?string $actor,
 	): Task {
+		// Separation of duties FIRST (flow-approval-consolidation D-8): a
+		// requester who claimed their own approval would PASS the assignee
+		// check, and refusing after it would report the wrong reason.
+		if ($this->sequenceGuard !== null) {
+			$this->sequenceGuard->assertDecidable(task: $this->tasks->findByUuid(uuid: $uuid), actor: $actor);
+		}
+
 		$task = $this->openTaskFor(verb: $verb, uuid: $uuid, actor: $actor);
 
 		// Comment-mandatory-on-reject, BEFORE any mutation: refused means the

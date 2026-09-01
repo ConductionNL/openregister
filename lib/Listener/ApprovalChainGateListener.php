@@ -4,11 +4,18 @@
  * OpenRegister ApprovalChainGateListener
  *
  * Subscribes to ObjectUpdatingEvent and blocks a lifecycle transition named by a
- * schema's `x-openregister-approval-chains` declaration until the provisioned
- * `ApprovalChain`'s steps are all approved. Mirrors
- * `Listener\LifecycleValidationListener`'s schema-parse-off-`getConfiguration()`
- * shape exactly, re-deriving the matched transition independently rather than
- * refactoring the shipped lifecycle listener.
+ * schema's `x-openregister-approval-chains` declaration until the object's
+ * approval SEQUENCE for that chain is complete with an approving outcome
+ * (flow-approval-consolidation). The refusal contract is unchanged from the
+ * retired step-scanning implementation: the same two error codes
+ * (`approval-chain-pending`, `approval-chain-misconfigured`), the same
+ * fail-closed policy on a chain that cannot be provisioned, and the same
+ * transition matching, re-derived independently of
+ * `Listener\LifecycleValidationListener` exactly as before.
+ *
+ * One deliberate behavioural difference (design D-5): a rejected cycle is
+ * CLOSED and kept, never deleted. The next attempt opens a NEW sequence and
+ * the rejected one, its decisions and its comments stay readable.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -24,28 +31,28 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/specs/approval-workflow/spec.md
+ * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-007
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Db\ApprovalChainMapper;
-use OCA\OpenRegister\Db\ApprovalStepMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\TaskSequence;
+use OCA\OpenRegister\Db\TaskSequenceMapper;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
-use OCA\OpenRegister\Service\ApprovalService;
+use OCA\OpenRegister\Service\Task\TaskSequenceService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
- * Gates a declared lifecycle transition on approval-chain completion.
+ * Gates a declared lifecycle transition on approval-sequence completion.
  *
  * @template-implements IEventListener<ObjectUpdatingEvent>
  *
@@ -56,18 +63,16 @@ class ApprovalChainGateListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
-	 * @param ApprovalChainMapper $chainMapper Chain mapper.
-	 * @param ApprovalStepMapper $stepMapper Step mapper.
-	 * @param ApprovalService $approvalService Provisions/inspects chain steps.
-	 * @param ApprovalChainAnnotationInstaller $installer Ensures the declared chain is provisioned.
+	 * @param TaskSequenceMapper $sequenceMapper Reads the anchor's sequences.
+	 * @param TaskSequenceService $sequenceService Provisions a sequence on the first attempt.
+	 * @param ApprovalChainAnnotationInstaller $installer Compiles the declared chain into a task template.
 	 * @param IUserSession $userSession Current user session (requester identity).
 	 * @param LoggerInterface $logger Logger for gate diagnostics.
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
-		private readonly ApprovalChainMapper $chainMapper,
-		private readonly ApprovalStepMapper $stepMapper,
-		private readonly ApprovalService $approvalService,
+		private readonly TaskSequenceMapper $sequenceMapper,
+		private readonly TaskSequenceService $sequenceService,
 		private readonly ApprovalChainAnnotationInstaller $installer,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
@@ -81,7 +86,7 @@ class ApprovalChainGateListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/specs/approval-workflow/spec.md
+	 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-007
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectUpdatingEvent) === false) {
@@ -145,7 +150,6 @@ class ApprovalChainGateListener implements IEventListener {
 				event: $event,
 				schema: $schema,
 				chainKey: $chainKey,
-				spec: $spec,
 				object: $newObject,
 				newData: $newData
 			);
@@ -160,42 +164,39 @@ class ApprovalChainGateListener implements IEventListener {
 	 * transition. Returns true when the event was rejected (short-circuits the
 	 * caller's loop).
 	 *
+	 * The store consulted is the SEQUENCE, not step rows: complete releases,
+	 * running refuses without provisioning a duplicate, rejected or
+	 * terminated (or none) provisions a NEW sequence and refuses. The tier
+	 * is resolved from the attempted write ONCE, here, and frozen onto the
+	 * sequence, so a mid-cycle amount edit cannot re-route a running
+	 * approval.
+	 *
 	 * @param ObjectUpdatingEvent $event The event being evaluated.
 	 * @param Schema $schema The object's schema.
 	 * @param string $chainKey Declarative chain key.
-	 * @param array<string, mixed> $spec The chain's declared spec.
 	 * @param ObjectEntity $object The object attempting the transition.
 	 * @param array<string, mixed> $newData The object's new (attempted) data.
 	 *
 	 * @return bool True when the transition was blocked.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-007
 	 */
 	private function evaluateGate(
 		ObjectUpdatingEvent $event,
 		Schema $schema,
 		string $chainKey,
-		array $spec,
 		ObjectEntity $object,
 		array $newData,
 	): bool {
-		// Idempotent: guarantees the chain row exists even if the installer
-		// hasn't run yet for this schema revision (e.g. schema saved before
-		// this capability existed).
-		$this->installer->installSchema(schema: $schema);
+		// Compiled on demand, so the gate never depends on a save-time
+		// listener having run for the current schema revision.
+		$template = $this->installer->compile(schema: $schema, chainKey: $chainKey);
 
-		$schemaId = $schema->getId();
-		$chain = null;
-		if ($schemaId !== null) {
-			$chain = $this->chainMapper->findBySchemaAndName(schemaId: (int)$schemaId, name: $chainKey);
-		}
-
-		if ($chain === null) {
-			// Declared but couldn't be provisioned (e.g. no valid approvers) —
-			// fail closed, mirroring LifecycleGuardRegistry's missing-tag policy.
+		if ($template === null) {
+			// Declared but not compilable (e.g. no valid approvers) — fail
+			// closed, mirroring LifecycleGuardRegistry's missing-tag policy.
 			$this->logger->error(
-				sprintf('[ApprovalChainGateListener] chain "%s" could not be resolved for schema %s', $chainKey, (string)$schemaId)
+				sprintf('[ApprovalChainGateListener] chain "%s" could not be compiled for schema %s', $chainKey, (string)$schema->getId())
 			);
 			$this->reject(
 				event: $event,
@@ -206,51 +207,37 @@ class ApprovalChainGateListener implements IEventListener {
 		}
 
 		$objectUuid = (string)$object->getUuid();
-		$steps = $this->stepMapper->findByChainAndObject($chain->getId(), $objectUuid);
+		$newest = $this->sequenceMapper->findNewestForAnchor(
+			anchorObjectUuid: $objectUuid,
+			templateId: (string)$template['templateId']
+		);
 
-		if ($steps !== []) {
-			$anyRejected = false;
-			$allApproved = true;
-			foreach ($steps as $step) {
-				if ($step->getStatus() === 'rejected') {
-					$anyRejected = true;
-				}
+		if ($newest !== null && $newest->getStatus() === TaskSequence::STATUS_COMPLETED) {
+			// Release: the approval completed with an approving outcome.
+			return false;
+		}
 
-				if ($step->getStatus() !== 'approved') {
-					$allApproved = false;
-				}
-			}
+		if ($newest !== null && $newest->getStatus() === TaskSequence::STATUS_RUNNING) {
+			// Still in progress — refuse again, provision nothing.
+			$this->reject(
+				event: $event,
+				code: 'approval-chain-pending',
+				message: sprintf('Approval chain "%s" is still pending a decision.', $chainKey)
+			);
+			return true;
+		}
 
-			if ($allApproved === true) {
-				// Release: every provisioned step is approved.
-				return false;
-			}
-
-			if ($anyRejected === true) {
-				// Terminal-failed cycle — clear it so a fresh attempt opens a
-				// new cycle (resubmission), then fall through to provision.
-				$this->stepMapper->deleteByChainAndObject($chain->getId(), $objectUuid);
-			} else {
-				// Still in progress — block again, no new rows.
-				$this->reject(
-					event: $event,
-					code: 'approval-chain-pending',
-					message: sprintf('Approval chain "%s" is still pending a decision.', $chainKey)
-				);
-				return true;
-			}
-		}//end if
-
-		// No steps yet (first attempt, or a rejected cycle was just cleared):
-		// provision the applicable tier and block.
+		// No sequence yet, or the last one was rejected or terminated. The
+		// rejected cycle is KEPT (design D-5): a fresh attempt opens a NEW
+		// sequence beside it rather than deleting the record of who refused.
 		$requesterId = $this->userSession->getUser()?->getUID();
-		$stepsOverride = $this->resolveStepsOverride(spec: $spec, newData: $newData);
-
-		$this->approvalService->initializeChain(
-			chain: $chain,
-			objectUuid: $objectUuid,
+		$register = (string)$object->getRegister();
+		$this->sequenceService->provision(
+			template: $template,
+			anchorObjectUuid: $objectUuid,
 			requesterId: $requesterId,
-			stepsOverride: $stepsOverride
+			tierPositions: $this->resolveTierPositions(template: $template, newData: $newData),
+			registerId: (is_numeric($register) === true) ? (int)$register : null
 		);
 
 		$this->reject(
@@ -262,22 +249,23 @@ class ApprovalChainGateListener implements IEventListener {
 	}//end evaluateGate()
 
 	/**
-	 * Resolve the applicable step definitions for this object.
+	 * Resolve the applicable tier for this object, frozen at provisioning.
 	 *
-	 * When the spec declares `amountField`, selects the single `approvers` tier
-	 * with the highest `minAmount` that is `<=` the object's value for that
-	 * field. Otherwise returns `null` so `initializeChain()` falls back to the
-	 * chain's own static `steps` (every declared tier, unchanged behaviour).
+	 * When the declaration carries `amountField`, selects the single
+	 * position with the highest `minAmount` that is `<=` the object's value
+	 * for that field, re-based at order 1. Otherwise returns `null` so
+	 * provisioning uses every declared position in order, unchanged.
 	 *
-	 * @param array<string, mixed> $spec The chain's declared spec.
+	 * @param array<string, mixed> $template The compiled template.
 	 * @param array<string, mixed> $newData The object's new (attempted) data.
 	 *
-	 * @return array<int, array<string, mixed>>|null Step override, or null for no routing.
+	 * @return array<int, array<string, mixed>>|null The tier, or null for no routing.
+	 *
+	 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-008
 	 */
-	private function resolveStepsOverride(array $spec, array $newData): ?array {
-		$amountField = ($spec['amountField'] ?? null);
-		$approvers = ($spec['approvers'] ?? []);
-		if (is_string($amountField) === false || $amountField === '' || is_array($approvers) === false) {
+	private function resolveTierPositions(array $template, array $newData): ?array {
+		$amountField = (string)($template['amountField'] ?? '');
+		if ($amountField === '') {
 			return null;
 		}
 
@@ -285,19 +273,18 @@ class ApprovalChainGateListener implements IEventListener {
 
 		$best = null;
 		$bestMinAmount = -1.0;
-		foreach ($approvers as $tier) {
-			if (is_array($tier) === false) {
+		foreach ((array)($template['positions'] ?? []) as $position) {
+			if (is_array($position) === false) {
 				continue;
 			}
 
-			$role = (string)($tier['role'] ?? '');
-			$minAmount = (float)($tier['minAmount'] ?? 0);
-			if ($role === '' || $minAmount > $amount) {
+			$minAmount = (float)($position['minAmount'] ?? 0);
+			if ($minAmount > $amount) {
 				continue;
 			}
 
 			if ($best === null || $minAmount > $bestMinAmount) {
-				$best = $role;
+				$best = $position;
 				$bestMinAmount = $minAmount;
 			}
 		}
@@ -306,8 +293,10 @@ class ApprovalChainGateListener implements IEventListener {
 			return null;
 		}
 
-		return [['order' => 1, 'role' => $best]];
-	}//end resolveStepsOverride()
+		$best['order'] = 1;
+
+		return [$best];
+	}//end resolveTierPositions()
 
 	/**
 	 * Find the transition (action name) whose `to` matches the new value AND
