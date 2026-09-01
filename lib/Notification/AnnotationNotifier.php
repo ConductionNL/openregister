@@ -190,10 +190,15 @@ class AnnotationNotifier implements INotifier {
 	/**
 	 * Render the schema-declared action buttons via addAction().
 	 *
-	 * Each action carries a per-locale `label` map, a `primary` flag, and a
+	 * Each action carries a per-locale `label` map, a `primary` flag, a
 	 * pre-resolved absolute `url` (resolved server-side by the dispatcher
-	 * through OR RBAC). The recipient's locale label wins, falling back to
-	 * `en` then the first available locale.
+	 * through OR RBAC) and an optional `method`. The recipient's locale
+	 * label wins, falling back to `en` then the first available locale.
+	 *
+	 * A `task-verb` target arrives with `method: POST` and is rendered as a
+	 * state-changing action; everything else renders GET, as before. The
+	 * method is whitelisted here so a resolved action can never smuggle an
+	 * arbitrary verb into the client.
 	 *
 	 * @param INotification $notification Notification to attach actions to.
 	 * @param array<int, mixed> $actions Resolved actions (each element validated at runtime).
@@ -202,6 +207,7 @@ class AnnotationNotifier implements INotifier {
 	 * @return int The number of action buttons actually rendered.
 	 *
 	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-binary-decision-is-decidable-from-the-notification
 	 */
 	private function addDeclaredActions(INotification $notification, array $actions, string $languageCode): int {
 		$rendered = 0;
@@ -228,10 +234,15 @@ class AnnotationNotifier implements INotifier {
 
 			$label = (string)($labelMap[$languageCode] ?? ($labelMap['en'] ?? $fallbackLabel));
 
+			$method = strtoupper((string)($action['method'] ?? 'GET'));
+			if (in_array($method, ['GET', 'POST', 'PUT', 'DELETE'], true) === false) {
+				$method = 'GET';
+			}
+
 			$actionObject = $notification->createAction();
 			$actionObject->setLabel($label)
 				->setPrimary((bool)($action['primary'] ?? false))
-				->setLink($url, 'GET');
+				->setLink($url, $method);
 			$notification->addAction($actionObject);
 			$rendered++;
 		}//end foreach

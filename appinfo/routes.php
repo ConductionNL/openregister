@@ -1351,6 +1351,10 @@ return [
 		// VTODO leaf (tasks#allUserTasks above), which is a different thing.
 		// Every verb's real authorization is TaskAuthorizationService inside
 		// the service; the route attribute is never the whole check.
+		// The one stable "open this task" address (flow-task-inbox-projections):
+		// the VTODO URL, the notification buttons and the rule actions all
+		// resolve here, and it redirects into the app's task route.
+		['name' => 'task#open', 'url' => '/flow-tasks/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#index', 'url' => '/api/flow-tasks', 'verb' => 'GET'],
 		['name' => 'task#create', 'url' => '/api/flow-tasks', 'verb' => 'POST'],
 		['name' => 'task#show', 'url' => '/api/flow-tasks/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],

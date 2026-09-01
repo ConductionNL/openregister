@@ -56,7 +56,17 @@ final class NotificationAnnotationValidator {
 	 *
 	 * @var array<int, string>
 	 */
-	private const VALID_ACTION_TARGET_KINDS = ['object-detail', 'route', 'url'];
+	private const VALID_ACTION_TARGET_KINDS = ['object-detail', 'route', 'url', 'task-verb'];
+
+	/**
+	 * The lifecycle verbs a `task-verb` action target may name. A target
+	 * names a VERB, never an author-composed URL, so a rule cannot aim a
+	 * notification button anywhere it likes (flow-task-inbox-projections,
+	 * design D-1).
+	 *
+	 * @var array<int, string>
+	 */
+	private const VALID_TASK_VERBS = ['claim', 'unclaim', 'complete', 'resolve', 'cancel'];
 
 	/**
 	 * Hard cap on declared action buttons — the Web Notification API renders
@@ -718,8 +728,10 @@ final class NotificationAnnotationValidator {
 	 *  - `actions` MUST be an array; more than 2 entries → notification-too-many-actions.
 	 *  - each action's `label` MUST be a per-locale map with at least one
 	 *    non-empty locale value → otherwise notification-action-bad-label.
-	 *  - each action's `target.kind` MUST be one of object-detail | route | url
+	 *  - each action's `target.kind` MUST be one of object-detail | route | url | task-verb
 	 *    → otherwise notification-action-bad-target.
+	 *  - a `task-verb` target MUST name a known lifecycle verb in `verb`
+	 *    → otherwise notification-action-bad-target, naming the value.
 	 *
 	 * @param mixed $actions Raw value of the `actions` key.
 	 * @param string $name Notification name (for diagnostics).
@@ -814,6 +826,27 @@ final class NotificationAnnotationValidator {
 						implode(', ', self::VALID_ACTION_TARGET_KINDS)
 					),
 				];
+				continue;
+			}
+
+			if ($targetKind === 'task-verb') {
+				$verb = '';
+				if (is_array($target) === true) {
+					$verb = (string)($target['verb'] ?? '');
+				}
+
+				if (in_array($verb, self::VALID_TASK_VERBS, true) === false) {
+					$errors[] = [
+						'code' => 'notification-action-bad-target',
+						'message' => sprintf(
+							'Notification "%s" action[%s] target.verb "%s" is not a task lifecycle verb in [%s].',
+							$name,
+							(string)$idx,
+							$verb,
+							implode(', ', self::VALID_TASK_VERBS)
+						),
+					];
+				}
 			}
 		}//end foreach
 

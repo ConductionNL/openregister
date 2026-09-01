@@ -51,6 +51,8 @@ use OCA\OpenRegister\Db\TaskRelationMapper;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Event\TaskTransitionedEvent;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -87,6 +89,12 @@ class TaskService {
 	 * @param LoggerInterface $logger Failure reporting.
 	 * @param TaskBuilder $builder Validates and builds a new task from
 	 *                             boundary data (the vocabularies live there).
+	 * @param IEventDispatcher|null $events Announces a committed transition
+	 *                                      to the projections (notifications,
+	 *                                      calendar). Nullable so the service
+	 *                                      stays constructible bare; absent
+	 *                                      means nothing is projected, and
+	 *                                      the lifecycle is unchanged.
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
@@ -98,9 +106,23 @@ class TaskService {
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 		private readonly TaskBuilder $builder,
+		private readonly ?IEventDispatcher $events = null,
 	) {
 
 	}//end __construct()
+
+	/**
+	 * What the task looked like BEFORE the verb in flight, for the
+	 * post-commit announcement: previous assignee, previous state, actor.
+	 *
+	 * Set by {@see openTaskFor()} and {@see create()}, consumed once by
+	 * {@see transactional()}. Verbs that load their task another way
+	 * (termination by propagation) announce with no previous snapshot,
+	 * which is correct: termination changes no assignee.
+	 *
+	 * @var array{assignee: string|null, state: string|null, actor: string|null}|null
+	 */
+	private ?array $pending = null;
 
 	/**
 	 * Create a task.
@@ -126,6 +148,11 @@ class TaskService {
 	public function create(array $data, ?string $actor): Task {
 		$task = $this->builder->fromData(data: $data, actor: $actor);
 		$this->authorizeOrRecord(verb: 'create', task: $task, actor: $actor);
+		$this->pending = [
+			'assignee' => null,
+			'state' => null,
+			'actor' => $actor,
+		];
 
 		return $this->transactional(
 			mutation: function () use ($task, $data, $actor): Task {
@@ -679,6 +706,14 @@ class TaskService {
 
 		$this->authorizeOrRecord(verb: $verb, task: $task, actor: $actor);
 
+		// Snapshot BEFORE any mutation: the closures mutate this very object,
+		// so this is the last moment the previous holder is observable.
+		$this->pending = [
+			'assignee' => $task->getAssignee(),
+			'state' => $task->getState(),
+			'actor' => $actor,
+		];
+
 		return $task;
 	}//end openTaskFor()
 
@@ -799,13 +834,55 @@ class TaskService {
 		try {
 			$result = $mutation();
 			$this->db->commit();
-
-			return $result;
 		} catch (Throwable $failure) {
+			$this->pending = null;
 			$this->db->rollBack();
 			throw $failure;
 		}
+
+		$this->announce(task: $result);
+
+		return $result;
 	}//end transactional()
+
+	/**
+	 * Announce a COMMITTED transition to the projections.
+	 *
+	 * Runs after the commit and outside the transaction, so nothing a
+	 * listener does can unwind the verb (flow-task-inbox-projections,
+	 * design D-8). A listener that throws is logged naming the task; the
+	 * verb has already succeeded and its caller is told so.
+	 *
+	 * @param Task $task The committed task.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-delivery-failure-never-fails-the-task
+	 */
+	private function announce(Task $task): void {
+		$pending = $this->pending;
+		$this->pending = null;
+
+		if ($this->events === null) {
+			return;
+		}
+
+		try {
+			$this->events->dispatchTyped(
+				new TaskTransitionedEvent(
+					task: $task,
+					previousAssignee: ($pending['assignee'] ?? $task->getAssignee()),
+					previousState: ($pending['state'] ?? null),
+					actor: ($pending['actor'] ?? null)
+				)
+			);
+		} catch (Throwable $failure) {
+			$this->logger->warning(
+				'[TaskService] A projection failed after the transition committed; the task is unchanged by it: ' . $failure->getMessage(),
+				['task' => $task->getUuid(), 'action' => $task->getLastAction()]
+			);
+		}
+	}//end announce()
 
 	/**
 	 * Rewrite the candidate INDEX rows from the task's JSON record.

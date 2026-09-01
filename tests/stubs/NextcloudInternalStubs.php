@@ -562,3 +562,43 @@ if (class_exists(\OCA\DAV\CardDAV\CardDavBackend::class) === false) {
         public function getAddressBooksForPrincipal(string $principal): array { return []; }
     }');
 }//end if
+
+// -----------------------------------------------------------------
+// Sabre\DAV server classes (ship with the server's 3rdparty tree, loaded by
+// apps/dav; absent in the bare CI container). Enough surface for
+// TaskVtodoWriteBackPlugin to be constructed and its hooks invoked.
+// -----------------------------------------------------------------
+if (class_exists(\Sabre\DAV\ServerPlugin::class) === false) {
+	eval('namespace Sabre\DAV;
+    abstract class ServerPlugin {
+        abstract public function initialize(Server $server);
+        public function getPluginName() { return get_class($this); }
+    }');
+}//end if
+
+if (class_exists(\Sabre\DAV\Server::class) === false) {
+	eval('namespace Sabre\DAV;
+    class Server {
+        public $tree;
+        private array $plugins = [];
+        public array $listeners = [];
+        public function on(string $event, callable $callback, int $priority = 100): void { $this->listeners[$event][] = [$callback, $priority]; }
+        public function addPlugin($plugin): void { $this->plugins[$plugin->getPluginName()] = $plugin; }
+        public function getPlugin(string $name) { return $this->plugins[$name] ?? null; }
+    }');
+}//end if
+
+if (interface_exists(\Sabre\DAV\INode::class) === false) {
+	eval('namespace Sabre\DAV;
+    interface INode {}');
+}//end if
+
+if (interface_exists(\Sabre\DAV\ICollection::class) === false) {
+	eval('namespace Sabre\DAV;
+    interface ICollection extends INode {}');
+}//end if
+
+if (class_exists(\Sabre\DAV\Exception\Forbidden::class) === false) {
+	eval('namespace Sabre\DAV\Exception;
+    class Forbidden extends \Exception {}');
+}//end if

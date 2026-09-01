@@ -62,6 +62,13 @@
                 <referencedClass name="OCP\Share\IManager"/>
                 <!-- OpenRegister cross-app classes (loaded dynamically) -->
                 <referencedClass name="OCA\OpenRegister\Db\ObjectEntity"/>
+                <!-- Sabre server classes ship with apps/dav, not with sabre/vobject; the
+                     write-back plugin (lib/Dav) is loaded only inside the DAV server. -->
+                <referencedClass name="Sabre\DAV\ServerPlugin"/>
+                <referencedClass name="Sabre\DAV\Server"/>
+                <referencedClass name="Sabre\DAV\INode"/>
+                <referencedClass name="Sabre\DAV\ICollection"/>
+                <referencedClass name="Sabre\DAV\Exception\Forbidden"/>
                 <referencedClass name="OCA\OpenRegister\Db\RegisterMapper"/>
                 <referencedClass name="OCA\OpenRegister\Db\SchemaMapper"/>
                 <referencedClass name="OCA\OpenRegister\Event\DeepLinkRegistrationEvent"/>
