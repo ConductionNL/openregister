@@ -184,13 +184,13 @@ class Version1Date20260831120000 extends SimpleMigrationStep {
 		// Timing. due_at ADVISES, expires_at ENFORCES (design D-4). The SLA,
 		// compliance, suspension and recurrence columns are stored here and
 		// interpreted by flow-business-timers.
-		$table->addColumn('start_at', Types::DATETIME, ['notnull' => false]);
-		$table->addColumn('due_at', Types::DATETIME, ['notnull' => false]);
-		$table->addColumn('expires_at', Types::DATETIME, ['notnull' => false]);
+		$table->addColumn('start_at', Types::DATETIME_MUTABLE, ['notnull' => false]);
+		$table->addColumn('due_at', Types::DATETIME_MUTABLE, ['notnull' => false]);
+		$table->addColumn('expires_at', Types::DATETIME_MUTABLE, ['notnull' => false]);
 		$table->addColumn('sla_value', Types::INTEGER, ['notnull' => false]);
 		$table->addColumn('sla_unit', Types::STRING, ['notnull' => false, 'length' => 16]);
 		$table->addColumn('compliance_period_days', Types::INTEGER, ['notnull' => false]);
-		$table->addColumn('suspended_until', Types::DATETIME, ['notnull' => false]);
+		$table->addColumn('suspended_until', Types::DATETIME_MUTABLE, ['notnull' => false]);
 		$table->addColumn('recurrence', Types::STRING, ['notnull' => false, 'length' => 255]);
 
 		// Priority: one normalised scale.
@@ -213,7 +213,7 @@ class Version1Date20260831120000 extends SimpleMigrationStep {
 		$table->addColumn('percent_complete', Types::INTEGER, ['notnull' => false]);
 
 		// Completion metadata.
-		$table->addColumn('completed_at', Types::DATETIME, ['notnull' => false]);
+		$table->addColumn('completed_at', Types::DATETIME_MUTABLE, ['notnull' => false]);
 		$table->addColumn('completed_by', Types::STRING, ['notnull' => false, 'length' => 64]);
 		$table->addColumn('result_text', Types::TEXT, ['notnull' => false]);
 		$table->addColumn('comment', Types::TEXT, ['notnull' => false]);
@@ -225,8 +225,8 @@ class Version1Date20260831120000 extends SimpleMigrationStep {
 		$table->addColumn('epic_task_id', Types::BIGINT, ['notnull' => false]);
 
 		// Audit stamps.
-		$table->addColumn('created', Types::DATETIME, ['notnull' => true]);
-		$table->addColumn('updated', Types::DATETIME, ['notnull' => false]);
+		$table->addColumn('created', Types::DATETIME_MUTABLE, ['notnull' => true]);
+		$table->addColumn('updated', Types::DATETIME_MUTABLE, ['notnull' => false]);
 		$table->addColumn('created_by', Types::STRING, ['notnull' => false, 'length' => 64]);
 
 		$this->addTaskIndexes(table: $table);
@@ -321,7 +321,7 @@ class Version1Date20260831120000 extends SimpleMigrationStep {
 		// Denials are recorded too: authorized=false is an audit row, not an
 		// absence of one.
 		$table->addColumn('authorized', Types::BOOLEAN, ['notnull' => true, 'default' => true]);
-		$table->addColumn('created', Types::DATETIME, ['notnull' => true]);
+		$table->addColumn('created', Types::DATETIME_MUTABLE, ['notnull' => true]);
 		$table->setPrimaryKey(['id']);
 		$table->addIndex(['task_id'], 'or_task_audit_task');
 	}//end createAuditTable()

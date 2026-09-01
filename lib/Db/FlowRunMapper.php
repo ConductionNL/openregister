@@ -89,12 +89,13 @@ class FlowRunMapper extends QBMapper {
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
 	 */
 	public function update(Entity $entity): FlowRun {
-		/*
-		 * @var FlowRun $updated
-		 */
+		if ($entity instanceof FlowRun === false) {
+			throw new \InvalidArgumentException('FlowRunMapper persists FlowRun entities only.');
+		}
+
 		$updated = parent::update(entity: $entity);
 
-		if ($this->dispatcher !== null && $updated instanceof FlowRun && $updated->isTerminal() === true) {
+		if ($this->dispatcher !== null && $updated->isTerminal() === true) {
 			$this->dispatcher->dispatchTyped(
 				new FlowRunTerminalEvent(
 					runUuid: (string)$updated->getUuid(),

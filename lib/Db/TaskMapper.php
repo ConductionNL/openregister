@@ -68,13 +68,14 @@ class TaskMapper extends QBMapper {
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function insert(Entity $entity): Task {
-		if ($entity instanceof Task && $entity->getCreated() === null) {
+		if ($entity instanceof Task === false) {
+			throw new \InvalidArgumentException('TaskMapper persists Task entities only.');
+		}
+
+		if ($entity->getCreated() === null) {
 			$entity->setCreated(new DateTime());
 		}
 
-		/*
-		 * @var Task
-		 */
 		return parent::insert(entity: $entity);
 	}//end insert()
 
@@ -88,13 +89,12 @@ class TaskMapper extends QBMapper {
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function update(Entity $entity): Task {
-		if ($entity instanceof Task) {
-			$entity->setUpdated(new DateTime());
+		if ($entity instanceof Task === false) {
+			throw new \InvalidArgumentException('TaskMapper persists Task entities only.');
 		}
 
-		/*
-		 * @var Task
-		 */
+		$entity->setUpdated(new DateTime());
+
 		return parent::update(entity: $entity);
 	}//end update()
 
@@ -426,11 +426,11 @@ class TaskMapper extends QBMapper {
 	 * @param IQueryBuilder $qb The query under construction.
 	 * @param TaskInboxCriteria $criteria Carries the uid and group ids.
 	 *
-	 * @return string The EXISTS predicate.
+	 * @return \OCP\DB\QueryBuilder\IQueryFunction The EXISTS predicate.
 	 *
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
-	private function candidateMembershipPredicate(IQueryBuilder $qb, TaskInboxCriteria $criteria): string {
+	private function candidateMembershipPredicate(IQueryBuilder $qb, TaskInboxCriteria $criteria): \OCP\DB\QueryBuilder\IQueryFunction {
 		// Built as a raw EXISTS because the correlated subquery must share
 		// the OUTER query's parameter bag: parameters are therefore created
 		// on $qb, and the table names carry *PREFIX* so the connection's

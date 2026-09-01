@@ -64,13 +64,14 @@ class TaskAuditMapper extends QBMapper {
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
 	 */
 	public function insert(Entity $entity): TaskAudit {
-		if ($entity instanceof TaskAudit && $entity->getCreated() === null) {
+		if ($entity instanceof TaskAudit === false) {
+			throw new \InvalidArgumentException('TaskAuditMapper appends TaskAudit entries only.');
+		}
+
+		if ($entity->getCreated() === null) {
 			$entity->setCreated(new DateTime());
 		}
 
-		/*
-		 * @var TaskAudit
-		 */
 		return parent::insert(entity: $entity);
 	}//end insert()
 
