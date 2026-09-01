@@ -225,6 +225,8 @@ final class UserTaskConfig {
 	 * @param array<string, mixed> $config The step configuration.
 	 *
 	 * @return string The assignee uid, or ''.
+	 *
+	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
 	 */
 	public function assignee(array $config): string {
 		return trim((string)($config['assignee'] ?? ''));
@@ -236,6 +238,8 @@ final class UserTaskConfig {
 	 * @param array<string, mixed> $config The step configuration.
 	 *
 	 * @return string The key.
+	 *
+	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-outcome-is-written-onto-every-item-not-only-onto-the-run
 	 */
 	public function outcomeKey(array $config): string {
 		$key = trim((string)($config['outcomeKey'] ?? ''));
@@ -253,6 +257,8 @@ final class UserTaskConfig {
 	 * @param array $items The input items.
 	 *
 	 * @return string The rendered title.
+	 *
+	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
 	 */
 	public function renderedTitle(array $config, array $items): string {
 		return trim((string)FlowValueTemplate::render(
