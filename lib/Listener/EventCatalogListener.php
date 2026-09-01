@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Event\CaseItemTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
@@ -72,8 +73,27 @@ class EventCatalogListener implements IEventListener {
 	 * @param Event $event The dispatched event.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) A dispatch table: one
+	 * instanceof branch per catalog event, each a one-liner; splitting it
+	 * would spread the catalog over several methods.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) Same cause.
 	 */
 	public function handle(Event $event): void {
+		// A plan item reaching a terminal state (flow-cmmn-case-semantics) fires
+		// its catalog trigger against the ANCHORING object, the same shape as
+		// every object event below; no separate subject type is introduced.
+		if ($event instanceof CaseItemTransitionedEvent) {
+			$trigger = $event->getCatalogTrigger();
+			if ($trigger !== null) {
+				$this->triggers->fire(event: $trigger, subject: $event->getSubject());
+			}
+
+			return;
+		}
+
 		if ($event instanceof ObjectCreatedEvent) {
 			$this->dispatch(object: $event->getObject(), trigger: 'object.created');
 			return;
