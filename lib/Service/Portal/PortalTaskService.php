@@ -274,37 +274,47 @@ class PortalTaskService {
 			throw new TaskValidationException(message: 'This task is anchored to no case object, so a file has nowhere to land.');
 		}
 
+		$maxBytesLimit = 0;
+		if (is_numeric($maxBytes) === true) {
+			$maxBytesLimit = (int)$maxBytes;
+		}
+
 		foreach ($files as $file) {
-			$name = trim((string)($file['name'] ?? ''));
-			if ($name === '') {
-				throw new TaskValidationException(message: 'Every uploaded file needs a name.');
-			}
-
-			$size = (int)($file['size'] ?? 0);
-			if (is_numeric($maxBytes) === true && (int)$maxBytes > 0 && $size > (int)$maxBytes) {
-				throw new TaskValidationException(
-					message: sprintf(
-						"File '%s' is %d bytes, larger than the %d byte limit (uploadMaxSizeMb).",
-						$name,
-						$size,
-						(int)$maxBytes
-					)
-				);
-			}
-
-			$type = trim((string)($file['type'] ?? ''));
-			if ($accepted !== [] && $this->typeAccepted(name: $name, type: $type, accepted: $accepted) === false) {
-				throw new TaskValidationException(
-					message: sprintf(
-						"File '%s' has type '%s', which is not one of %s (uploadAcceptedTypes).",
-						$name,
-						$type,
-						implode(', ', $accepted)
-					)
-				);
-			}
-		}//end foreach
+			$this->assertFileAllowed(file: $file, maxBytes: $maxBytesLimit, accepted: $accepted);
+		}
 	}//end assertUploadConstraints()
+
+	/**
+	 * Refuse ONE file that breaks a per-file constraint, naming it.
+	 *
+	 * @param array<string, mixed> $file The upload.
+	 * @param int $maxBytes The size limit; 0 for none.
+	 * @param array<int, string> $accepted The accepted types; empty for any.
+	 *
+	 * @return void
+	 *
+	 * @throws TaskValidationException On the violated constraint.
+	 */
+	private function assertFileAllowed(array $file, int $maxBytes, array $accepted): void {
+		$name = trim((string)($file['name'] ?? ''));
+		if ($name === '') {
+			throw new TaskValidationException(message: 'Every uploaded file needs a name.');
+		}
+
+		$size = (int)($file['size'] ?? 0);
+		if ($maxBytes > 0 && $size > $maxBytes) {
+			throw new TaskValidationException(
+				message: sprintf("File '%s' is %d bytes, larger than the %d byte limit (uploadMaxSizeMb).", $name, $size, $maxBytes)
+			);
+		}
+
+		$type = trim((string)($file['type'] ?? ''));
+		if ($accepted !== [] && $this->typeAccepted(name: $name, type: $type, accepted: $accepted) === false) {
+			throw new TaskValidationException(
+				message: sprintf("File '%s' has type '%s', which is not one of %s (uploadAcceptedTypes).", $name, $type, implode(', ', $accepted))
+			);
+		}
+	}//end assertFileAllowed()
 
 	/**
 	 * Whether a file matches the accepted-type list: an exact media type, a
@@ -326,11 +336,7 @@ class PortalTaskService {
 			}
 
 			if (str_contains($entry, '/') === true) {
-				if ($entry === $type) {
-					return true;
-				}
-
-				if (str_ends_with($entry, '/*') === true && $type !== '' && str_starts_with($type, substr($entry, 0, -1)) === true) {
+				if ($this->mediaTypeMatches(entry: $entry, type: $type) === true) {
 					return true;
 				}
 
@@ -344,6 +350,23 @@ class PortalTaskService {
 
 		return false;
 	}//end typeAccepted()
+
+	/**
+	 * Whether an accepted media-type entry admits a declared type: exactly,
+	 * or as a `type/*` wildcard.
+	 *
+	 * @param string $entry The accepted entry, lower-cased.
+	 * @param string $type The declared media type, lower-cased.
+	 *
+	 * @return bool True when the entry admits the type.
+	 */
+	private function mediaTypeMatches(string $entry, string $type): bool {
+		if ($entry === $type) {
+			return true;
+		}
+
+		return str_ends_with($entry, '/*') === true && $type !== '' && str_starts_with($type, substr($entry, 0, -1)) === true;
+	}//end mediaTypeMatches()
 
 	/**
 	 * Store the uploads on the case object; return what the completion references.

@@ -46,6 +46,14 @@ use UnexpectedValueException;
  * @SuppressWarnings(PHPMD.StaticAccess) FlowValueTemplate and FlowAdvanceBudget
  * are stateless helpers over values; a factory to call them would add a
  * dependency to say the same thing.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The sum of many small
+ * readers, each a default-or-refuse over one key; the same shape and the same
+ * justification as UserTaskConfig, which sits just under the threshold only
+ * because it has no upload vocabulary.
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) One reader per config key
+ * family the node consumes (role, upload, reason, outcome, heartbeat, slot);
+ * folding them into fewer readers would put the vocabulary back into the
+ * node, which is the split this class exists to keep.
  */
 final class PortalTaskConfig {
 
@@ -138,6 +146,23 @@ final class PortalTaskConfig {
 			);
 		}
 
+		$this->refuseNonNumericLimits(config: $config);
+
+		// Throws its own message, which names the value and states the spelling.
+		FlowAdvanceBudget::fromConfig(config: $config);
+
+	}//end validate()
+
+	/**
+	 * Refuse a limit that is not a number, and a file count below one.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When a limit is unreadable.
+	 */
+	private function refuseNonNumericLimits(array $config): void {
 		foreach (['uploadMaxFiles', 'uploadMaxSizeMb', 'heartbeatMinutes'] as $numeric) {
 			$value = ($config[$numeric] ?? null);
 			if ($value !== null && $value !== '' && is_numeric($value) === false) {
@@ -152,11 +177,7 @@ final class PortalTaskConfig {
 				$this->l10n->t('uploadMaxFiles must be at least 1; turn "Upload required" off to allow a completion without a file.')
 			);
 		}
-
-		// Throws its own message, which names the value and states the spelling.
-		FlowAdvanceBudget::fromConfig(config: $config);
-
-	}//end validate()
+	}//end refuseNonNumericLimits()
 
 	/**
 	 * The party role the node matches on the case.

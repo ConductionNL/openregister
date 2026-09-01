@@ -131,6 +131,20 @@ class PortalSubjectAssertion {
 			);
 		}
 
+		return $this->subjectOf(claims: $this->verifiedClaims(token: $token, secret: $secret));
+	}//end fromToken()
+
+	/**
+	 * The claims of a structurally valid, correctly signed assertion.
+	 *
+	 * @param string $token The compact JWT.
+	 * @param string $secret The HMAC secret.
+	 *
+	 * @return array<string, mixed> The claims.
+	 *
+	 * @throws PortalSubjectException On any structural or signature defect.
+	 */
+	private function verifiedClaims(string $token, string $secret): array {
 		$parts = explode('.', $token);
 		if (count($parts) !== 3) {
 			throw new PortalSubjectException(refusal: PortalSubjectException::CODE_INVALID, message: 'Malformed assertion.');
@@ -152,6 +166,19 @@ class PortalSubjectAssertion {
 			throw new PortalSubjectException(refusal: PortalSubjectException::CODE_INVALID, message: 'Malformed assertion claims.');
 		}
 
+		return $claims;
+	}//end verifiedClaims()
+
+	/**
+	 * The subject a verified claim set asserts, refused on any wrong claim.
+	 *
+	 * @param array<string, mixed> $claims The verified claims.
+	 *
+	 * @return PortalSubject The subject.
+	 *
+	 * @throws PortalSubjectException When the issuer, use, expiry or subject is wrong.
+	 */
+	private function subjectOf(array $claims): PortalSubject {
 		if (($claims['iss'] ?? '') !== self::ISSUER) {
 			throw new PortalSubjectException(refusal: PortalSubjectException::CODE_INVALID, message: 'Unexpected assertion issuer.');
 		}
@@ -178,7 +205,7 @@ class PortalSubjectAssertion {
 			trust: trim((string)($claims['trust'] ?? '')),
 			jti: trim((string)($claims['jti'] ?? ''))
 		);
-	}//end fromToken()
+	}//end subjectOf()
 
 	/**
 	 * The shared secret: OpenRegister's own key, else portaliq's.

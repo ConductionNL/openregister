@@ -222,22 +222,13 @@ class PortalTaskDelivery extends Entity implements JsonSerializable {
 			];
 		}
 
-		// Only the latest request round counts: the newest requestedAt, and
-		// every row sharing it.
-		$latest = null;
-		foreach ($rows as $row) {
-			$at = $row->getRequestedAt();
-			if ($at !== null && ($latest === null || $at > $latest)) {
-				$latest = $at;
-			}
-		}
-
+		$latest = self::latestRequestAt(rows: $rows);
 		$channels = [];
 		$state = self::STATE_REQUESTED;
 		$deliveredAt = null;
 		foreach ($rows as $row) {
-			$at = $row->getRequestedAt();
-			if ($latest !== null && $at !== null && $at < $latest) {
+			$requestedAt = $row->getRequestedAt();
+			if ($latest !== null && $requestedAt !== null && $requestedAt < $latest) {
 				continue;
 			}
 
@@ -248,17 +239,7 @@ class PortalTaskDelivery extends Entity implements JsonSerializable {
 				'deliveredAt' => $row->getDeliveredAt()?->format('c'),
 			];
 
-			if ($row->getState() === self::STATE_FAILED) {
-				$state = self::STATE_FAILED;
-			}
-
-			if ($row->getChannel() === self::CHANNEL_PORTAL_INBOX
-				&& $row->getState() === self::STATE_DELIVERED
-				&& $state !== self::STATE_FAILED
-			) {
-				$state = self::STATE_DELIVERED;
-				$deliveredAt = $row->getDeliveredAt()?->format('c');
-			}
+			[$state, $deliveredAt] = self::foldState(state: $state, deliveredAt: $deliveredAt, row: $row);
 		}
 
 		return [
@@ -268,6 +249,51 @@ class PortalTaskDelivery extends Entity implements JsonSerializable {
 			'deliveredAt' => $deliveredAt,
 		];
 	}//end summarise()
+
+	/**
+	 * Fold one row into the summary state: any failure wins; the portal inbox
+	 * going out makes the round delivered (the mail is best-effort).
+	 *
+	 * @param string $state The state so far.
+	 * @param string|null $deliveredAt When the round was delivered, so far.
+	 * @param PortalTaskDelivery $row The row folded in.
+	 *
+	 * @return array{0: string, 1: string|null} The state and deliveredAt after.
+	 */
+	private static function foldState(string $state, ?string $deliveredAt, PortalTaskDelivery $row): array {
+		if ($row->getState() === self::STATE_FAILED) {
+			return [self::STATE_FAILED, $deliveredAt];
+		}
+
+		if ($row->getChannel() === self::CHANNEL_PORTAL_INBOX
+			&& $row->getState() === self::STATE_DELIVERED
+			&& $state !== self::STATE_FAILED
+		) {
+			return [self::STATE_DELIVERED, $row->getDeliveredAt()?->format('c')];
+		}
+
+		return [$state, $deliveredAt];
+	}//end foldState()
+
+	/**
+	 * The newest request instant: only that round counts, so a re-ask's fresh
+	 * rows are what the caseworker sees.
+	 *
+	 * @param array<int, PortalTaskDelivery> $rows The task's delivery rows.
+	 *
+	 * @return DateTime|null The newest requestedAt, or null when none carries one.
+	 */
+	private static function latestRequestAt(array $rows): ?DateTime {
+		$latest = null;
+		foreach ($rows as $row) {
+			$requestedAt = $row->getRequestedAt();
+			if ($requestedAt !== null && ($latest === null || $requestedAt > $latest)) {
+				$latest = $requestedAt;
+			}
+		}
+
+		return $latest;
+	}//end latestRequestAt()
 
 	/**
 	 * Serialise for the API.

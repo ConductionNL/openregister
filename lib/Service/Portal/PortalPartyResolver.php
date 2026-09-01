@@ -43,6 +43,10 @@ use Throwable;
 /**
  * Party matching against the subject case object.
  *
+ * @SuppressWarnings(PHPMD.StaticAccess) PortalSubject::partyReferenceFor is a
+ * stateless helper over a value; a factory to call it would add a dependency
+ * to say the same thing.
+ *
  * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-matched-party-comes-from-the-case-and-is-frozen-at-creation
  */
 class PortalPartyResolver {
@@ -237,6 +241,17 @@ class PortalPartyResolver {
 			}
 		}
 
+		return $this->nestedReferenceOf(value: $value);
+	}//end referenceOf()
+
+	/**
+	 * The reference one level down, inside the known nesting containers.
+	 *
+	 * @param array<string, mixed> $value The party value.
+	 *
+	 * @return string The raw reference, or ''.
+	 */
+	private function nestedReferenceOf(array $value): string {
 		foreach (self::NESTED_KEYS as $key) {
 			$nested = ($value[$key] ?? null);
 			if (is_array($nested) === true || is_scalar($nested) === true) {
@@ -248,5 +263,5 @@ class PortalPartyResolver {
 		}
 
 		return '';
-	}//end referenceOf()
+	}//end nestedReferenceOf()
 }//end class
