@@ -50,6 +50,7 @@ use RuntimeException;
  * Authorization ordering, concurrency, transactionality and normalisation.
  *
  * @covers \OCA\OpenRegister\Service\Task\TaskService
+ * @covers \OCA\OpenRegister\Service\Task\TaskBuilder
  */
 class TaskServiceTest extends TestCase {
 
