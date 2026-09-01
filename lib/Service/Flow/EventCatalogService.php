@@ -66,6 +66,13 @@ class EventCatalogService {
 		['id' => 'share.deleted', 'label' => 'A share is deleted', 'group' => 'Share'],
 		['id' => 'tag.assigned', 'label' => 'A tag is assigned', 'group' => 'Tag'],
 		['id' => 'tag.unassigned', 'label' => 'A tag is removed', 'group' => 'Tag'],
+		// Plan-item lifecycle (flow-cmmn-case-semantics). Dispatched by the case
+		// layer as CaseItemTransitionedEvent against the anchoring object, so one
+		// plan item's outcome can satisfy another item's sentry or start a flow.
+		// Additive: aliasesFor() is unchanged and no row enters the trigger index.
+		['id' => 'case.item.completed', 'label' => 'A plan item is completed', 'group' => 'Case'],
+		['id' => 'case.item.terminated', 'label' => 'A plan item is terminated', 'group' => 'Case'],
+		['id' => 'case.item.disabled', 'label' => 'A plan item is disabled', 'group' => 'Case'],
 	];
 
 	/**

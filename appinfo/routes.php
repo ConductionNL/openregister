@@ -1378,6 +1378,25 @@ return [
 		['name' => 'task#complete', 'url' => '/api/flow-tasks/{uuid}/complete', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#cancel', 'url' => '/api/flow-tasks/{uuid}/cancel', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#checkItem', 'url' => '/api/flow-tasks/{uuid}/checklist/{itemId}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+', 'itemId' => '[^/]+']],
+		// The case layer (flow-cmmn-case-semantics): a plan of stages, human
+		// items and milestones anchored to an OpenRegister OBJECT. There is no
+		// case id: every plan route is keyed by the anchoring object's uuid, and
+		// the item verbs by the plan item's uuid. No CMMN XML route exists; the
+		// zaaktype import takes a document that is already in a register.
+		// Every verb's real authorization is CasePlanAuthorizationService
+		// inside the service; the route attribute is never the whole check.
+		// The two literal routes stay ABOVE `{objectUuid}` or they are swallowed.
+		['name' => 'case#items', 'url' => '/api/cases/items', 'verb' => 'GET'],
+		['name' => 'case#skeletonFromZaaktype', 'url' => '/api/cases/skeleton-from-zaaktype', 'verb' => 'POST'],
+		['name' => 'case#transition', 'url' => '/api/cases/items/{uuid}/transition', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'case#enable', 'url' => '/api/cases/items/{uuid}/enable', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'case#show', 'url' => '/api/cases/{objectUuid}', 'verb' => 'GET', 'requirements' => ['objectUuid' => '[^/]+']],
+		['name' => 'case#create', 'url' => '/api/cases/{objectUuid}', 'verb' => 'POST', 'requirements' => ['objectUuid' => '[^/]+']],
+		['name' => 'case#destroy', 'url' => '/api/cases/{objectUuid}', 'verb' => 'DELETE', 'requirements' => ['objectUuid' => '[^/]+']],
+		['name' => 'case#evaluate', 'url' => '/api/cases/{objectUuid}/evaluate', 'verb' => 'POST', 'requirements' => ['objectUuid' => '[^/]+']],
+		['name' => 'case#enableable', 'url' => '/api/cases/{objectUuid}/enableable', 'verb' => 'GET', 'requirements' => ['objectUuid' => '[^/]+']],
+		['name' => 'case#attach', 'url' => '/api/cases/{objectUuid}/items', 'verb' => 'POST', 'requirements' => ['objectUuid' => '[^/]+']],
+		['name' => 'case#complete', 'url' => '/api/cases/{objectUuid}/complete', 'verb' => 'POST', 'requirements' => ['objectUuid' => '[^/]+']],
 		// Delegation grants (or-delegation-grants): the consent surface. A grant
 		// store with no way to answer is a store that only ever says no, so these
 		// are what make every delegation refusal recoverable.

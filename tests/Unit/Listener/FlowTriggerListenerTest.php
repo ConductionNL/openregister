@@ -9,7 +9,9 @@ declare(strict_types=1);
 
 namespace Unit\Listener;
 
+use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Event\CaseItemTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectRevertedEvent;
@@ -36,9 +38,11 @@ use Psr\Log\NullLogger;
  * `beStrictAboutCoverageMetadata` is on: an unlisted executed class marks the
  * test risky and PHPUnit then discards its coverage wholesale.
  *
+ * @uses \OCA\OpenRegister\Db\CaseItem
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\CaseItemTransitionedEvent
  * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
  * @uses \OCA\OpenRegister\Event\ObjectLockedEvent
  * @uses \OCA\OpenRegister\Event\ObjectUnlockedEvent
@@ -156,6 +160,51 @@ class FlowTriggerListenerTest extends TestCase {
 			->willReturn(1);
 
 		$this->listener->handle(new ObjectCreatedEvent($this->object()));
+	}
+
+	/**
+	 * A CaseItem's terminal transition (flow-cmmn-case-semantics) is fired
+	 * through the SAME seam as every object event: the item's numeric
+	 * register/schema ids arrive at the trigger service as the slugs the
+	 * index stores. This branch lived in the retired EventCatalogListener,
+	 * which fired the raw ids — the id/slug defect on the case path.
+	 */
+	public function testATerminalCaseItemFiresItsCatalogTriggerWithSlugs(): void {
+		$this->triggers->expects($this->once())->method('fire')
+			->with(
+				'case.item.completed',
+				$this->callback(
+					static fn (array $s): bool => ($s['register'] ?? null) === 'dossiq'
+						&& ($s['schema'] ?? null) === 'case'
+						&& ($s['uuid'] ?? null) === 'case-obj-1'
+				),
+				null
+			)
+			->willReturn(1);
+
+		$item = new CaseItem();
+		$item->setObjectUuid('case-obj-1');
+		$item->setRegisterId(16);
+		$item->setSchemaId(26);
+		$item->setState(CaseItem::STATE_COMPLETED);
+
+		$this->listener->handle(new CaseItemTransitionedEvent($item, 'active'));
+	}
+
+	/**
+	 * A non-terminal transition names no catalog trigger and fires nothing —
+	 * an available or active item is progress, not an event a flow starts on.
+	 */
+	public function testANonTerminalCaseItemTransitionFiresNothing(): void {
+		$this->triggers->expects($this->never())->method('fire');
+
+		$item = new CaseItem();
+		$item->setObjectUuid('case-obj-1');
+		$item->setRegisterId(16);
+		$item->setSchemaId(26);
+		$item->setState(CaseItem::STATE_ACTIVE);
+
+		$this->listener->handle(new CaseItemTransitionedEvent($item, 'available'));
 	}
 
 	/**

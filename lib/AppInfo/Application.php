@@ -2589,6 +2589,36 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Listener\TaskVtodoWriteBackListener::class
 		);
 
+		// The case layer (flow-cmmn-case-semantics). A realisation ending (a task
+		// or a run) drives its plan item; an object change may satisfy a sentry;
+		// and a plan item reaching a terminal state is a catalog event fired
+		// against the anchoring object. Nothing under Service\Flow depends on
+		// Service\Case: these listeners are the only coupling, and it points one
+		// way. TaskTerminalEvent is dispatched by TaskService after the
+		// terminal transition commits (flow-user-task-node); the same
+		// reconciliation also runs on every case-plan evaluation, so a missed
+		// event costs latency, never correctness.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
+			\OCA\OpenRegister\Listener\CaseTaskTerminalListener::class
+		);
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\FlowRunTerminalEvent::class,
+			\OCA\OpenRegister\Listener\CaseRunTerminalListener::class
+		);
+		$context->registerEventListener(ObjectUpdatedEvent::class, \OCA\OpenRegister\Listener\CaseObjectEventListener::class);
+		$context->registerEventListener(ObjectTransitionedEvent::class, \OCA\OpenRegister\Listener\CaseObjectEventListener::class);
+		// Routed through FlowTriggerListener, the ONE object-trigger path (the
+		// branch that retired EventCatalogListener as a duplicate). The case
+		// branch moved with the retirement, and gains what the one path has:
+		// the subject's register/schema resolved to the SLUGS the trigger
+		// index stores — CaseItemTransitionedEvent::getSubject() answers the
+		// item's numeric ids — and the acting user attributed to the run.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\CaseItemTransitionedEvent::class,
+			\OCA\OpenRegister\Listener\FlowTriggerListener::class
+		);
+
 		// Lifecycle annotation listeners — see x-openregister-lifecycle.
 		// Order matters: initial state runs on creating; validation runs on updating.
 		$context->registerEventListener(ObjectCreatingEvent::class, LifecycleInitialStateListener::class);
