@@ -13,7 +13,7 @@
  * All mutations use the unique RUN_ID prefix so parallel agents
  * don't collide. Cleanup runs in afterAll.
  */
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const RUN_ID = `e2e-${Date.now()}`
 

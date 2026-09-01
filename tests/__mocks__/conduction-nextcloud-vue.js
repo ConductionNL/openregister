@@ -49,12 +49,14 @@ function createObjectStore(id, options = {}) {
 	return defineStore(id, merged)
 }
 
-const noopPlugin = (name) => () => ({
-	name,
-	state: () => ({}),
-	getters: {},
-	actions: {},
-})
+function noopPlugin(name) {
+	return () => ({
+		name,
+		state: () => ({}),
+		getters: {},
+		actions: {},
+	})
+}
 
 /**
  * Mirrors the REAL liveUpdatesPlugin contract (plugin name, contributed state

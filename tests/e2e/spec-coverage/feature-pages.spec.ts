@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -21,18 +23,18 @@
  * @e2e openspec/specs/built-in-dashboards/spec.md
  * @e2e openspec/specs/account-self-service/spec.md
  */
-import { test, expect, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
 // Routes are imported by COMPONENT NAME (see tests/e2e/_page-routes.ts): the
 // binding records which page host each route mounts, which a bare path string
 // cannot say. Also what makes this suite legible to gate-26.
 import {
-	FilesIndex,
 	AvgIndex,
-	ReportsIndex,
-	MyAccount,
 	FeaturesRoadmapIndex,
-} from '../_page-routes'
+	FilesIndex,
+	MyAccount,
+	ReportsIndex,
+} from '../_page-routes.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 
@@ -57,9 +59,6 @@ const NOISE = [
 	// every route. Filtered BY URL, not by status: any other 404 still fails.
 	'/apps/hermiq/',
 ]
-function isNoise(t: string): boolean {
-	return NOISE.some((n) => t.includes(n))
-}
 
 function trackErrors(
 	page: Page,

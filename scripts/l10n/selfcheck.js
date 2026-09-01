@@ -1,7 +1,5 @@
 #!/usr/bin/env node
-/* eslint-disable n/no-process-exit */
-/* eslint-disable no-console */
-/* eslint-disable n/shebang */
+ 
 /**
  * Full verification for one locale pass. Every assertion is measured against the
  * files; nothing is assumed.
@@ -45,6 +43,12 @@ const enKeys = new Set(Object.keys(en.translations))
 const keys = Object.keys(cur.translations)
 
 let fails = 0
+/**
+ *
+ * @param name
+ * @param ok
+ * @param detail
+ */
 function check(name, ok, detail) {
 	console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ' — ' + detail : ''}`)
 	if (!ok) {
@@ -58,6 +62,12 @@ function check(name, ok, detail) {
 // FAIL would say the locale is broken when it is merely unreviewed. Everything that
 // does not depend on a record is still checked in full.
 const recorded = Boolean(cfg.register) || Object.keys(cfg.cognates).length > 0
+/**
+ *
+ * @param name
+ * @param ok
+ * @param detail
+ */
 function checkRecorded(name, ok, detail) {
 	if (recorded) {
 		check(name, ok, detail)

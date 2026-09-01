@@ -32,15 +32,13 @@
  * The test file still validates that the ImportRegister modal is
  * reachable and the objects view loads (supporting existing coverage).
  */
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
-import { resolveBaseUrl } from '../base-url'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 // ⚠️ No `|| 'http://localhost:8080'` — that is the SHARED dev container.
 // See ../base-url.ts.
-const BASE_URL = resolveBaseUrl()
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EXCLUDED scenario

@@ -1,3 +1,5 @@
+import type { APIRequestContext } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -19,13 +21,13 @@
  *
  * @spec openspec/specs/delegation-grants/spec.md
  */
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import {
 	ADMIN,
 	findSecondAccount,
 	NO_SECOND_ACCOUNT,
 	revokeGrantsOver,
-} from './delegation-fixtures'
+} from './delegation-fixtures.ts'
 
 const RUN_ID = `e2e-consent-${Date.now().toString(36)}`
 

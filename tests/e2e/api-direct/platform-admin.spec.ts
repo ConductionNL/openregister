@@ -10,7 +10,7 @@
  *   - nextcloud-api-compat (NC OCS capabilities, NC app info)
  *   - mariadb-ci-matrix (backend database adapts to DB engine)
  */
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // production-observability — health/status endpoints
