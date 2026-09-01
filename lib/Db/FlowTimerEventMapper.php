@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use InvalidArgumentException;
+use LogicException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\IDBConnection;
@@ -82,7 +83,7 @@ class FlowTimerEventMapper extends QBMapper {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
 	public function update(Entity $entity): FlowTimerEvent {
-		throw new \LogicException('The timer history is append-only; event ' . (string)$entity->getId() . ' cannot be updated.');
+		throw new LogicException('The timer history is append-only; event ' . (string)$entity->getId() . ' cannot be updated.');
 	}//end update()
 
 	/**
@@ -97,7 +98,7 @@ class FlowTimerEventMapper extends QBMapper {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
 	public function delete(Entity $entity): FlowTimerEvent {
-		throw new \LogicException('The timer history is append-only; event ' . (string)$entity->getId() . ' cannot be deleted.');
+		throw new LogicException('The timer history is append-only; event ' . (string)$entity->getId() . ' cannot be deleted.');
 	}//end delete()
 
 	/**

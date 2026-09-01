@@ -79,7 +79,12 @@ class FlowTimerSubjectTerminalListener implements IEventListener {
 				$cancelled = $this->timers->cancelForSubject(
 					subjectType: 'task',
 					subjectUuid: $event->getTaskUuid(),
-					reason: sprintf("Task '%s' reached terminal state '%s' (outcome '%s').", $event->getTaskUuid(), $event->getState(), (string)$event->getOutcome()),
+					reason: sprintf(
+						"Task '%s' reached terminal state '%s' (outcome '%s').",
+						$event->getTaskUuid(),
+						$event->getState(),
+						(string)$event->getOutcome()
+					),
 					actor: sprintf('task:%s', $event->getTaskUuid())
 				);
 				$this->report(count: $cancelled, subject: 'task ' . $event->getTaskUuid());

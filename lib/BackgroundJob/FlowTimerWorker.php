@@ -40,6 +40,9 @@ use Throwable;
 
 /**
  * Runs one bounded sweep pass per tick.
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) DateTimeImmutable::createFromInterface
+ * is PHP's own conversion of the job clock.
  */
 class FlowTimerWorker extends TimedJob {
 
@@ -87,6 +90,8 @@ class FlowTimerWorker extends TimedJob {
 	 * @param mixed $argument The job argument (unused).
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) `$argument` is TimedJob's signature.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */

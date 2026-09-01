@@ -105,7 +105,7 @@ class SeedFlowTimerRegister implements IRepairStep {
 				return;
 			}
 
-			// importFromApp() takes the DECODED descriptor; force: false keeps
+			// The importer takes the DECODED descriptor; force: false keeps
 			// the import idempotent and leaves administrator edits in place.
 			$this->configurationService->importFromApp(
 				appId: 'openregister',

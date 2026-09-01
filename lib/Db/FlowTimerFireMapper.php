@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use InvalidArgumentException;
+use LogicException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\Exception as DbException;
@@ -84,7 +85,7 @@ class FlowTimerFireMapper extends QBMapper {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function update(Entity $entity): FlowTimerFire {
-		throw new \LogicException('The rung-fire ledger is append-only; row ' . (string)$entity->getId() . ' cannot be updated.');
+		throw new LogicException('The rung-fire ledger is append-only; row ' . (string)$entity->getId() . ' cannot be updated.');
 	}//end update()
 
 	/**
@@ -99,7 +100,7 @@ class FlowTimerFireMapper extends QBMapper {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function delete(Entity $entity): FlowTimerFire {
-		throw new \LogicException('The rung-fire ledger is append-only; row ' . (string)$entity->getId() . ' cannot be deleted.');
+		throw new LogicException('The rung-fire ledger is append-only; row ' . (string)$entity->getId() . ' cannot be deleted.');
 	}//end delete()
 
 	/**

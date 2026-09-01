@@ -91,6 +91,19 @@ class SlaCalculatorTest extends TestCase {
 		self::assertSame(2.0, $this->calculator->measure(from: $from, to: $this->at('2026-09-06 17:00'), unit: 'calendarDays', calendar: $this->calendar));
 	}//end testHoursAndCalendarDaysIgnoreTheCalendar()
 
+	public function testCalendarDaysAreDatesAcrossADstChange(): void {
+		// DST ends on 25 October 2026 in Europe/Amsterdam: 60 calendar days still land at 09:00.
+		$from = $this->at('2026-09-01 09:00');
+		$to = $this->calculator->add(from: $from, value: 60, unit: 'calendarDays', calendar: $this->calendar);
+		self::assertSame('2026-10-31 09:00', $to->format('Y-m-d H:i'));
+		self::assertSame(60.0, $this->calculator->measure(from: $from, to: $to, unit: 'calendarDays', calendar: $this->calendar));
+		self::assertSame(-60.0, $this->calculator->measure(from: $to, to: $from, unit: 'calendarDays', calendar: $this->calendar));
+		self::assertSame(1441.0, $this->calculator->measure(from: $from, to: $to, unit: 'hours', calendar: $this->calendar), 'hours are elapsed time');
+		// A fractional calendar day is the fraction of a day in seconds.
+		self::assertSame('2026-09-02 21:00', $this->calculator->add(from: $from, value: 1.5, unit: 'calendarDays', calendar: $this->calendar)->format('Y-m-d H:i'));
+		self::assertSame('2026-08-30 21:00', $this->calculator->sub(from: $from, value: 1.5, unit: 'calendarDays', calendar: $this->calendar)->format('Y-m-d H:i'));
+	}//end testCalendarDaysAreDatesAcrossADstChange()
+
 	public function testConversionPivotsOnWorkingHours(): void {
 		self::assertSame(16.0, $this->calculator->convert(value: 2, fromUnit: 'businessDays', toUnit: 'hours', calendar: $this->calendar));
 		self::assertSame(1.0, $this->calculator->convert(value: 24, fromUnit: 'hours', toUnit: 'calendarDays', calendar: $this->calendar));

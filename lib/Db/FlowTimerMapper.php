@@ -43,6 +43,10 @@ use OCP\IDBConnection;
  * Mapper for `openregister_flow_timers`.
  *
  * @template-extends QBMapper<FlowTimer>
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) Eleven: each is a distinct
+ * question the sweep, the lifecycle or the invariant check asks of the table,
+ * with its own predicate set, exactly as {@see FlowRunMapper} argues.
  */
 class FlowTimerMapper extends QBMapper {
 

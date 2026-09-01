@@ -25,6 +25,27 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Db;
+
+use DateTime;
+use JsonSerializable;
+use OCP\AppFramework\Db\Entity;
+
+/**
+ * The business-timer row.
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields) One property per column, same as
+ * {@see Task} and {@see FlowRun}: the column count IS the field count.
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) The typed properties and the
+ * field-by-field constructor scale linearly with the column count.
+ * @SuppressWarnings(PHPMD.ExcessivePublicCount) Entity getters/setters are
+ * the column surface, not an API design choice.
+ * @SuppressWarnings(PHPMD.LongVariable) `suspendedTotalSeconds` IS the column
+ * `suspended_total_seconds`; the entity property name is the column mapping.
  *
  * @method string|null getUuid()
  * @method void setUuid(?string $uuid)
@@ -104,25 +125,6 @@
  * @method void setUpdated(?DateTime $updated)
  * @method string|null getCreatedBy()
  * @method void setCreatedBy(?string $createdBy)
- */
-
-declare(strict_types=1);
-
-namespace OCA\OpenRegister\Db;
-
-use DateTime;
-use JsonSerializable;
-use OCP\AppFramework\Db\Entity;
-
-/**
- * The business-timer row.
- *
- * @SuppressWarnings(PHPMD.TooManyFields) One property per column, same as
- * {@see Task} and {@see FlowRun}: the column count IS the field count.
- * @SuppressWarnings(PHPMD.ExcessiveClassLength) The typed properties and the
- * field-by-field constructor scale linearly with the column count.
- * @SuppressWarnings(PHPMD.ExcessivePublicCount) Entity getters/setters are
- * the column surface, not an API design choice.
  */
 class FlowTimer extends Entity implements JsonSerializable {
 
@@ -573,29 +575,29 @@ class FlowTimer extends Entity implements JsonSerializable {
 			'anchorEvent' => $this->anchorEvent,
 			'anchorOffset' => $this->anchorOffset,
 			'anchorOffsetUnit' => $this->anchorOffsetUnit,
-			'anchorAt' => $this->format($this->anchorAt),
+			'anchorAt' => $this->format(value: $this->anchorAt),
 			'budgetValue' => $this->budgetValue,
 			'budgetUnit' => $this->budgetUnit,
 			'consumedValue' => $this->consumedValue,
-			'runningSince' => $this->format($this->runningSince),
-			'fireAt' => $this->format($this->fireAt),
-			'nextRungAt' => $this->format($this->nextRungAt),
+			'runningSince' => $this->format(value: $this->runningSince),
+			'fireAt' => $this->format(value: $this->fireAt),
+			'nextRungAt' => $this->format(value: $this->nextRungAt),
 			'calendarSlug' => $this->calendarSlug,
 			'ladderSlug' => $this->ladderSlug,
 			'escalationRules' => $this->escalationRules,
-			'suspendedSince' => $this->format($this->suspendedSince),
+			'suspendedSince' => $this->format(value: $this->suspendedSince),
 			'suspendReason' => $this->suspendReason,
 			'suspendedTotalSeconds' => $this->suspendedTotalSeconds,
 			'extensionCount' => $this->extensionCount,
 			'extensionMax' => $this->extensionMax,
 			'state' => $this->state,
 			'supersedesUuid' => $this->supersedesUuid,
-			'firedAt' => $this->format($this->firedAt),
+			'firedAt' => $this->format(value: $this->firedAt),
 			'breached' => $this->breached,
-			'cancelledAt' => $this->format($this->cancelledAt),
+			'cancelledAt' => $this->format(value: $this->cancelledAt),
 			'cancelReason' => $this->cancelReason,
-			'created' => $this->format($this->created),
-			'updated' => $this->format($this->updated),
+			'created' => $this->format(value: $this->created),
+			'updated' => $this->format(value: $this->updated),
 			'createdBy' => $this->createdBy,
 		];
 	}//end jsonSerialize()

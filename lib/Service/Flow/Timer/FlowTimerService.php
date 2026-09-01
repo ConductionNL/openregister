@@ -80,7 +80,12 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The sum of the operations'
  * refusal branches; each method is small.
  * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is the codebase's uuid
- * factory, as in TaskBuilder.
+ * factory, as in TaskBuilder, and DateTime::createFromInterface is PHP's own.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) Eleven constructor
+ * dependencies: three timer mappers, the task table and service, the
+ * calendar, the calculator, the ladder, the connection, the dispatcher and
+ * the logger. Each is a distinct collaborator the lifecycle needs; bundling
+ * them into a holder object would hide the coupling, not remove it.
  */
 class FlowTimerService {
 
@@ -173,7 +178,7 @@ class FlowTimerService {
 					priorFireAt: null,
 					newFireAt: $persisted->getFireAt(),
 					basis: (string)($persisted->getMetadata()['basis'] ?? ''),
-					at: $now
+					moment: $now
 				);
 				$this->project(timer: $persisted);
 
@@ -214,7 +219,9 @@ class FlowTimerService {
 	): FlowTimer {
 		$now = $this->instant(now: $now);
 		if (trim($reason) === '') {
-			throw new FlowTimerValidationException(message: 'Suspending a term requires a non-empty reason: the suspension is itself a decision that has to be evidenced.');
+			throw new FlowTimerValidationException(
+				message: 'Suspending a term requires a non-empty reason: the suspension is itself a decision that has to be evidenced.'
+			);
 		}
 
 		$timer = $this->timers->findByUuid(uuid: $uuid);
@@ -237,7 +244,7 @@ class FlowTimerService {
 			mutation: function () use ($timer, $calendar, $consumed, $reason, $until, $actor, $basis, $now, $priorFireAt): FlowTimer {
 				$timer->setConsumedValue((float)$timer->getConsumedValue() + max(0.0, $consumed));
 				$timer->setRunningSince(null);
-				$timer->setSuspendedSince($this->mutable($now));
+				$timer->setSuspendedSince($this->mutable(value: $now));
 				$timer->setSuspendReason($reason);
 				$timer->setState(FlowTimer::STATE_SUSPENDED);
 				$this->recompute(timer: $timer, calendar: $calendar, firedKeys: $this->firedKeys(timerUuid: (string)$timer->getUuid()));
@@ -256,7 +263,7 @@ class FlowTimerService {
 					priorFireAt: $priorFireAt,
 					newFireAt: null,
 					basis: (string)$basis,
-					at: $now
+					moment: $now
 				);
 				$this->project(timer: $persisted, suspendedUntil: $until);
 
@@ -300,7 +307,7 @@ class FlowTimerService {
 					);
 				}
 
-				$timer->setRunningSince($this->mutable($now));
+				$timer->setRunningSince($this->mutable(value: $now));
 				$timer->setSuspendedSince(null);
 				$timer->setSuspendReason(null);
 				$timer->setState(FlowTimer::STATE_ARMED);
@@ -314,7 +321,7 @@ class FlowTimerService {
 					priorFireAt: null,
 					newFireAt: $persisted->getFireAt(),
 					basis: '',
-					at: $now
+					moment: $now
 				);
 				$this->project(timer: $persisted);
 
@@ -340,7 +347,14 @@ class FlowTimerService {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
 	 */
-	public function extend(string $uuid, int $amount, string $unit, string $rationale, ?string $actor, ?DateTimeInterface $now = null): FlowTimer {
+	public function extend(
+		string $uuid,
+		int $amount,
+		string $unit,
+		string $rationale,
+		?string $actor,
+		?DateTimeInterface $now = null,
+	): FlowTimer {
 		$now = $this->instant(now: $now);
 		$timer = $this->timers->findByUuid(uuid: $uuid);
 		$this->assertExtendable(timer: $timer, now: $now);
@@ -377,7 +391,14 @@ class FlowTimerService {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
 	 */
-	public function extendWithOverride(string $uuid, int $amount, string $unit, string $rationale, string $actor, ?DateTimeInterface $now = null): FlowTimer {
+	public function extendWithOverride(
+		string $uuid,
+		int $amount,
+		string $unit,
+		string $rationale,
+		string $actor,
+		?DateTimeInterface $now = null,
+	): FlowTimer {
 		$now = $this->instant(now: $now);
 		if (trim($actor) === '') {
 			throw new FlowTimerValidationException(message: 'An extension override requires an authorizing identity.');
@@ -407,7 +428,13 @@ class FlowTimerService {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-deadlines-anchor-is-stored-so-a-moved-anchor-re-arms-the-timer
 	 */
-	public function supersede(string $uuid, DateTimeInterface $anchorEventAt, string $reason, ?string $actor, ?DateTimeInterface $now = null): FlowTimer {
+	public function supersede(
+		string $uuid,
+		DateTimeInterface $anchorEventAt,
+		string $reason,
+		?string $actor,
+		?DateTimeInterface $now = null,
+	): FlowTimer {
 		$now = $this->instant(now: $now);
 		$prior = $this->timers->findByUuid(uuid: $uuid);
 		if ($prior->isOpen() === false) {
@@ -434,7 +461,7 @@ class FlowTimerService {
 					priorFireAt: $priorFireAt,
 					newFireAt: $successor->getFireAt(),
 					basis: '',
-					at: $now
+					moment: $now
 				);
 
 				// The successor must exist before its inherited fire rows.
@@ -450,7 +477,7 @@ class FlowTimerService {
 					priorFireAt: $priorFireAt,
 					newFireAt: $persisted->getFireAt(),
 					basis: '',
-					at: $now
+					moment: $now
 				);
 				$this->project(timer: $persisted);
 
@@ -474,7 +501,13 @@ class FlowTimerService {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
-	public function cancelForSubject(string $subjectType, string $subjectUuid, string $reason, ?string $actor, ?DateTimeInterface $now = null): int {
+	public function cancelForSubject(
+		string $subjectType,
+		string $subjectUuid,
+		string $reason,
+		?string $actor,
+		?DateTimeInterface $now = null,
+	): int {
 		$open = $this->timers->findBySubject(
 			subjectType: $subjectType,
 			subjectUuid: $subjectUuid,
@@ -502,7 +535,12 @@ class FlowTimerService {
 			return 0;
 		}
 
-		return $this->cancelAll(timers: $this->timers->findOpenByRun(runUuid: $runUuid), reason: $reason, actor: $actor, now: $this->instant(now: $now));
+		return $this->cancelAll(
+			timers: $this->timers->findOpenByRun(runUuid: $runUuid),
+			reason: $reason,
+			actor: $actor,
+			now: $this->instant(now: $now)
+		);
 	}//end cancelForRun()
 
 	/**
@@ -580,7 +618,7 @@ class FlowTimerService {
 		}
 
 		$timer->setState(FlowTimer::STATE_FIRED);
-		$timer->setFiredAt($this->mutable($now));
+		$timer->setFiredAt($this->mutable(value: $now));
 		$timer->setBreached(true);
 		$timer->setNextRungAt(null);
 		$this->timers->update($timer);
@@ -598,7 +636,7 @@ class FlowTimerService {
 			priorFireAt: $timer->getFireAt(),
 			newFireAt: null,
 			basis: '',
-			at: $now
+			moment: $now
 		);
 
 		$this->applyOutcome(timer: $timer);
@@ -642,7 +680,13 @@ class FlowTimerService {
 		$subject = $this->subjectTask(timer: $timer);
 		$fired = 0;
 
-		$due = $this->ladder->dueRungs(rungs: $ladder['rungs'], fireAt: $timer->getFireAt(), now: $now, firedKeys: $firedKeys, calendar: $calendar);
+		$due = $this->ladder->dueRungs(
+			rungs: $ladder['rungs'],
+			fireAt: $timer->getFireAt(),
+			now: $now,
+			firedKeys: $firedKeys,
+			calendar: $calendar
+		);
 		foreach ($due as $entry) {
 			$rung = $entry['rung'];
 			$recipients = $this->ladder->resolveRecipients(rung: $rung, subject: $subject, roleBindings: $ladder['roleBindings']);
@@ -651,7 +695,7 @@ class FlowTimerService {
 			$row = new FlowTimerFire();
 			$row->setTimerUuid((string)$timer->getUuid());
 			$row->setRungKey((string)$rung['key']);
-			$row->setFiredAt($this->mutable($now));
+			$row->setFiredAt($this->mutable(value: $now));
 			$row->setTransitionAction($transition);
 			$row->setRecipientRoles(array_values(array_unique(array_merge($rung['notifyRole'], $rung['escalateToRole']))));
 			$row->setPriority((string)$rung['priority']);
@@ -703,7 +747,12 @@ class FlowTimerService {
 		$subjectUuid = trim((string)($config['subjectUuid'] ?? ''));
 		if (in_array($subjectType, FlowTimer::SUBJECT_TYPES, true) === false || $subjectUuid === '') {
 			throw new FlowTimerValidationException(
-				message: sprintf("A timer requires a subjectType in [%s] and a subjectUuid; got '%s' / '%s'.", implode(', ', FlowTimer::SUBJECT_TYPES), $subjectType, $subjectUuid)
+				message: sprintf(
+					"A timer requires a subjectType in [%s] and a subjectUuid; got '%s' / '%s'.",
+					implode(', ', FlowTimer::SUBJECT_TYPES),
+					$subjectType,
+					$subjectUuid
+				)
 			);
 		}
 
@@ -714,7 +763,9 @@ class FlowTimerService {
 
 		$legalEffect = (string)($config['legalEffect'] ?? FlowTimer::LEGAL_NONE);
 		if (in_array($legalEffect, FlowTimer::LEGAL_EFFECTS, true) === false) {
-			throw new FlowTimerValidationException(message: sprintf("Timer legalEffect '%s' is refused: use none, servicenorm or wettelijk.", $legalEffect));
+			throw new FlowTimerValidationException(
+				message: sprintf("Timer legalEffect '%s' is refused: use none, servicenorm or wettelijk.", $legalEffect)
+			);
 		}
 
 		$onExpiry = $this->validOnExpiry(config: $config, purpose: $purpose, legalEffect: $legalEffect);
@@ -825,7 +876,7 @@ class FlowTimerService {
 		$timer->setAnchorEvent($this->stringOrNull(value: ($config['anchorEvent'] ?? null)));
 		$timer->setAnchorOffset($offset);
 		$timer->setAnchorOffsetUnit($offsetUnit);
-		$timer->setAnchorAt($this->mutable($anchorAt));
+		$timer->setAnchorAt($this->mutable(value: $anchorAt));
 	}//end applyAnchor()
 
 	/**
@@ -858,11 +909,11 @@ class FlowTimerService {
 			unit: (string)$timer->getBudgetUnit(),
 			calendar: $calendar
 		);
-		$timer->setFireAt($this->mutable($fireAt));
+		$timer->setFireAt($this->mutable(value: $fireAt));
 
 		$rungs = $this->ladder->resolveLadder(timer: $timer)['rungs'];
 		$next = $this->ladder->nextRungAt(rungs: $rungs, fireAt: $fireAt, firedKeys: $firedKeys, calendar: $calendar);
-		$timer->setNextRungAt($this->mutableOrNull($next));
+		$timer->setNextRungAt($this->mutableOrNull(value: $next));
 	}//end recompute()
 
 	/**
@@ -877,7 +928,12 @@ class FlowTimerService {
 	private function remaining(FlowTimer $timer, WorkingCalendar $calendar, DateTimeImmutable $now): float {
 		$running = 0.0;
 		if ($timer->getRunningSince() !== null && $timer->getState() === FlowTimer::STATE_ARMED) {
-			$running = $this->calculator->measure(from: $timer->getRunningSince(), to: $now, unit: (string)$timer->getBudgetUnit(), calendar: $calendar);
+			$running = $this->calculator->measure(
+				from: $timer->getRunningSince(),
+				to: $now,
+				unit: (string)$timer->getBudgetUnit(),
+				calendar: $calendar
+			);
 		}
 
 		return ((float)$timer->getBudgetValue() - (float)$timer->getConsumedValue() - $running);
@@ -930,7 +986,15 @@ class FlowTimerService {
 	 *
 	 * @throws FlowTimerValidationException When the rationale is empty or the amount is not positive.
 	 */
-	private function applyExtension(FlowTimer $timer, int $amount, string $unit, string $rationale, ?string $actor, DateTimeImmutable $now, string $basis): FlowTimer {
+	private function applyExtension(
+		FlowTimer $timer,
+		int $amount,
+		string $unit,
+		string $rationale,
+		?string $actor,
+		DateTimeImmutable $now,
+		string $basis,
+	): FlowTimer {
 		if (trim($rationale) === '') {
 			throw new FlowTimerValidationException(message: 'An extension requires a non-empty rationale.');
 		}
@@ -962,7 +1026,7 @@ class FlowTimerService {
 					priorFireAt: $priorFireAt,
 					newFireAt: $persisted->getFireAt(),
 					basis: $basis,
-					at: $now,
+					moment: $now,
 					impact: $added
 				);
 				$this->project(timer: $persisted);
@@ -982,7 +1046,12 @@ class FlowTimerService {
 	 *
 	 * @return FlowTimer The successor.
 	 */
-	private function cloneForSuccession(FlowTimer $prior, DateTimeInterface $anchorEventAt, WorkingCalendar $calendar, DateTimeImmutable $now): FlowTimer {
+	private function cloneForSuccession(
+		FlowTimer $prior,
+		DateTimeInterface $anchorEventAt,
+		WorkingCalendar $calendar,
+		DateTimeImmutable $now,
+	): FlowTimer {
 		$successor = new FlowTimer();
 		foreach ($prior->jsonSerialize() as $field => $value) {
 			if (in_array($field, ['id', 'uuid', 'created', 'updated'], true) === true || str_ends_with($field, 'At') === true) {
@@ -1006,22 +1075,19 @@ class FlowTimerService {
 		$successor->setUuid(Uuid::v4()->toRfc4122());
 		$successor->setSupersedesUuid((string)$prior->getUuid());
 		$successor->setState(FlowTimer::STATE_ARMED);
-		$successor->setAnchorAt($this->mutable($anchorAt));
-		$successor->setRunningSince($this->mutable($anchorAt));
+		$successor->setAnchorAt($this->mutable(value: $anchorAt));
+		$successor->setRunningSince($this->mutable(value: $anchorAt));
 		$successor->setSuspendedSince(null);
 		$successor->setSuspendReason(null);
 		$successor->setFiredAt(null);
 		$successor->setCancelledAt(null);
 		$successor->setCancelReason(null);
 		$successor->setBreached(false);
-		$successor->setCreated($this->mutable($now));
-
-		// The predecessor's consumed time carries forward; a suspended
-		// predecessor's open segment is closed as of now first.
-		if ($prior->getState() === FlowTimer::STATE_ARMED && $prior->getRunningSince() !== null) {
-			$elapsed = $this->calculator->measure(from: $prior->getRunningSince(), to: $now, unit: (string)$prior->getBudgetUnit(), calendar: $calendar);
-			$successor->setConsumedValue((float)$prior->getConsumedValue() + max(0.0, $elapsed));
-		}
+		$successor->setCreated($this->mutable(value: $now));
+		// The predecessor's CONSUMED time (its completed segments) carries
+		// forward; its running segment does not, because the term now runs
+		// from the new anchor and that segment is re-measured from there.
+		$successor->setConsumedValue((float)$prior->getConsumedValue());
 
 		return $successor;
 	}//end cloneForSuccession()
@@ -1045,7 +1111,12 @@ class FlowTimerService {
 
 		// The successor's fire moment, without the ladder (no ledger yet).
 		$remaining = max(0.0, ((float)$successor->getBudgetValue() - (float)$successor->getConsumedValue()));
-		$fireAt = $this->calculator->add(from: $successor->getRunningSince(), value: $remaining, unit: (string)$successor->getBudgetUnit(), calendar: $calendar);
+		$fireAt = $this->calculator->add(
+			from: $successor->getRunningSince(),
+			value: $remaining,
+			unit: (string)$successor->getBudgetUnit(),
+			calendar: $calendar
+		);
 		$byKey = [];
 		foreach ($this->ladder->resolveLadder(timer: $successor)['rungs'] as $rung) {
 			$byKey[(string)$rung['key']] = $rung;
@@ -1098,7 +1169,7 @@ class FlowTimerService {
 
 			$priorFireAt = $timer->getFireAt();
 			$timer->setState(FlowTimer::STATE_CANCELLED);
-			$timer->setCancelledAt($this->mutable($now));
+			$timer->setCancelledAt($this->mutable(value: $now));
 			$timer->setCancelReason($reason);
 			$timer->setRunningSince(null);
 			$timer->setFireAt(null);
@@ -1112,7 +1183,7 @@ class FlowTimerService {
 				priorFireAt: $priorFireAt,
 				newFireAt: null,
 				basis: '',
-				at: $now
+				moment: $now
 			);
 			$cancelled++;
 		}
@@ -1177,33 +1248,41 @@ class FlowTimerService {
 			return;
 		}
 
-		$dueAt = null;
-		$expiresAt = null;
+		$earliest = $this->earliestOpenDeadlines(subjectUuid: (string)$timer->getSubjectUuid());
+		$task->setDueAt($this->mutableOrNull(value: $earliest[FlowTimer::PURPOSE_DUE]));
+		$task->setExpiresAt($this->mutableOrNull(value: $earliest[FlowTimer::PURPOSE_EXPIRY]));
+		$task->setSuspendedUntil($this->mutableOrNull(value: $suspendedUntil));
+		$this->tasks->update($task);
+	}//end project()
+
+	/**
+	 * The earliest fire moment per purpose across a task's OPEN timers.
+	 *
+	 * @param string $subjectUuid The task uuid.
+	 *
+	 * @return array<string, DateTime|null> Keyed by purpose; null when no open timer of that purpose has a fire moment.
+	 */
+	private function earliestOpenDeadlines(string $subjectUuid): array {
+		$earliest = [FlowTimer::PURPOSE_DUE => null, FlowTimer::PURPOSE_EXPIRY => null];
 		$open = $this->timers->findBySubject(
 			subjectType: 'task',
-			subjectUuid: (string)$timer->getSubjectUuid(),
+			subjectUuid: $subjectUuid,
 			states: [FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED]
 		);
 		foreach ($open as $candidate) {
 			$fireAt = $candidate->getFireAt();
-			if ($fireAt === null) {
+			$purpose = (string)$candidate->getPurpose();
+			if ($fireAt === null || array_key_exists($purpose, $earliest) === false) {
 				continue;
 			}
 
-			if ($candidate->getPurpose() === FlowTimer::PURPOSE_DUE && ($dueAt === null || $fireAt < $dueAt)) {
-				$dueAt = $fireAt;
-			}
-
-			if ($candidate->getPurpose() === FlowTimer::PURPOSE_EXPIRY && ($expiresAt === null || $fireAt < $expiresAt)) {
-				$expiresAt = $fireAt;
+			if ($earliest[$purpose] === null || $fireAt < $earliest[$purpose]) {
+				$earliest[$purpose] = $fireAt;
 			}
 		}
 
-		$task->setDueAt($this->mutableOrNull($dueAt));
-		$task->setExpiresAt($this->mutableOrNull($expiresAt));
-		$task->setSuspendedUntil($this->mutableOrNull($suspendedUntil));
-		$this->tasks->update($task);
-	}//end project()
+		return $earliest;
+	}//end earliestOpenDeadlines()
 
 	/**
 	 * The subject task, when the subject is a task that exists.
@@ -1250,7 +1329,7 @@ class FlowTimerService {
 	 * @param DateTime|null $priorFireAt The fire moment before.
 	 * @param DateTime|null $newFireAt The fire moment after.
 	 * @param string $basis The legal ground.
-	 * @param DateTimeInterface $at The moment.
+	 * @param DateTimeInterface $moment The moment.
 	 * @param float|null $impact The impact in the budget unit.
 	 *
 	 * @return void
@@ -1263,7 +1342,7 @@ class FlowTimerService {
 		?DateTime $priorFireAt,
 		?DateTime $newFireAt,
 		string $basis,
-		DateTimeInterface $at,
+		DateTimeInterface $moment,
 		?float $impact = null,
 	): void {
 		$event = new FlowTimerEvent();
@@ -1275,7 +1354,7 @@ class FlowTimerService {
 		$event->setNewFireAt($newFireAt);
 		$event->setDaysImpact($impact);
 		$event->setBasis($this->stringOrNull(value: $basis));
-		$event->setCreated($this->mutable($at));
+		$event->setCreated($this->mutable(value: $moment));
 		$this->events->insert($event);
 	}//end record()
 
@@ -1339,7 +1418,7 @@ class FlowTimerService {
 			return null;
 		}
 
-		return $this->mutable($value);
+		return $this->mutable(value: $value);
 	}//end mutableOrNull()
 
 	/**
@@ -1362,7 +1441,9 @@ class FlowTimerService {
 		}
 
 		if (is_string($value) === false) {
-			throw new FlowTimerValidationException(message: sprintf("%s must be a date string or a DateTime; got %s.", $field, get_debug_type($value)));
+			throw new FlowTimerValidationException(
+				message: sprintf('%s must be a date string or a DateTime; got %s.', $field, get_debug_type($value))
+			);
 		}
 
 		try {

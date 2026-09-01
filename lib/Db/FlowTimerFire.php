@@ -22,6 +22,18 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Db;
+
+use DateTime;
+use JsonSerializable;
+use OCP\AppFramework\Db\Entity;
+
+/**
+ * The rung-fire ledger row.
  *
  * @method string|null getTimerUuid()
  * @method void setTimerUuid(?string $timerUuid)
@@ -39,18 +51,6 @@
  * @method void setInherited(?bool $inherited)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
- */
-
-declare(strict_types=1);
-
-namespace OCA\OpenRegister\Db;
-
-use DateTime;
-use JsonSerializable;
-use OCP\AppFramework\Db\Entity;
-
-/**
- * The rung-fire ledger row.
  */
 class FlowTimerFire extends Entity implements JsonSerializable {
 

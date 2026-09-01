@@ -43,6 +43,14 @@ use OCA\OpenRegister\Exception\FlowTimerValidationException;
 
 /**
  * A validated, memoising working calendar.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The sum of the definition
+ * validators' refusal branches: every malformed rule shape is named in its own
+ * message rather than absorbed, which is the point of refusing rather than
+ * downgrading.
+ * @SuppressWarnings(PHPMD.ShortVariable) {@see easterSunday()} uses the
+ * single-letter names of the published anonymous Gregorian computus so the
+ * code can be checked line by line against its reference.
  */
 final class WorkingCalendar {
 
@@ -283,7 +291,7 @@ final class WorkingCalendar {
 	 */
 	private function ruleDate(array $rule, int $year, DateTimeImmutable $easter): DateTimeImmutable {
 		if ($rule['kind'] === 'easter') {
-			return $easter->modify(sprintf('%+d days', (int)$rule['offset']));
+			return self::shift(moment: $easter, modifier: sprintf('%+d days', (int)$rule['offset']));
 		}
 
 		$date = new DateTimeImmutable(
@@ -292,7 +300,7 @@ final class WorkingCalendar {
 		);
 		$shift = ($rule['observedShift'] ?? null);
 		if (is_array($shift) === true && (int)$date->format('N') === (int)$shift['whenWeekday']) {
-			return $date->modify(sprintf('%+d days', (int)$shift['days']));
+			return self::shift(moment: $date, modifier: sprintf('%+d days', (int)$shift['days']));
 		}
 
 		return $date;
@@ -391,15 +399,45 @@ final class WorkingCalendar {
 		}
 
 		$normalised = ['kind' => $kind, 'month' => $month, 'day' => $day, 'name' => (string)($rule['name'] ?? $kind)];
-		$shift = ($rule['observedShift'] ?? null);
-		if ($kind === 'observedShift' && is_array($shift) === false) {
-			$shift = ['whenWeekday' => ($rule['whenWeekday'] ?? null), 'days' => ($rule['days'] ?? null)];
-		}
-
+		$shift = self::declaredShift(rule: $rule, kind: $kind);
 		if ($shift === null) {
 			return $normalised;
 		}
 
+		$normalised['observedShift'] = self::validShift(slug: $slug, shift: $shift);
+
+		return $normalised;
+	}//end validFixedRule()
+
+	/**
+	 * The shift a rule declares: `observedShift` on a fixed rule, or the flat
+	 * `whenWeekday`/`days` shorthand of an `observedShift` rule.
+	 *
+	 * @param array<string, mixed> $rule The rule.
+	 * @param string $kind `fixed` or `observedShift`.
+	 *
+	 * @return mixed The declared shift, or null when the rule has none.
+	 */
+	private static function declaredShift(array $rule, string $kind): mixed {
+		$shift = ($rule['observedShift'] ?? null);
+		if ($kind === 'observedShift' && is_array($shift) === false) {
+			return ['whenWeekday' => ($rule['whenWeekday'] ?? null), 'days' => ($rule['days'] ?? null)];
+		}
+
+		return $shift;
+	}//end declaredShift()
+
+	/**
+	 * Validate an observed shift: a weekday (name or ISO number) and a day delta.
+	 *
+	 * @param string $slug The calendar, for the message.
+	 * @param mixed $shift The declared shift.
+	 *
+	 * @return array{whenWeekday: int, days: int} The normalised shift.
+	 *
+	 * @throws FlowTimerValidationException On a malformed shift.
+	 */
+	private static function validShift(string $slug, mixed $shift): array {
 		if (is_array($shift) === false || is_int($shift['days'] ?? null) === false) {
 			throw new FlowTimerValidationException(
 				message: sprintf("Working calendar '%s': an observed shift requires whenWeekday and an integer days.", $slug)
@@ -417,10 +455,27 @@ final class WorkingCalendar {
 			);
 		}
 
-		$normalised['observedShift'] = ['whenWeekday' => $weekday, 'days' => (int)$shift['days']];
+		return ['whenWeekday' => $weekday, 'days' => (int)$shift['days']];
+	}//end validShift()
 
-		return $normalised;
-	}//end validFixedRule()
+	/**
+	 * Apply a relative modifier, refusing PHP's silent `false`.
+	 *
+	 * @param DateTimeImmutable $moment The instant.
+	 * @param string $modifier A relative modifier such as `+39 days`.
+	 *
+	 * @return DateTimeImmutable The shifted instant.
+	 *
+	 * @throws FlowTimerValidationException When the modifier is unparseable.
+	 */
+	private static function shift(DateTimeImmutable $moment, string $modifier): DateTimeImmutable {
+		$shifted = $moment->modify($modifier);
+		if ($shifted === false) {
+			throw new FlowTimerValidationException(message: sprintf("Date modifier '%s' is not parseable.", $modifier));
+		}
+
+		return $shifted;
+	}//end shift()
 
 	/**
 	 * Validate the enumerated exceptions.

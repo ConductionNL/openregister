@@ -34,6 +34,9 @@ use OCA\OpenRegister\Exception\FlowTimerValidationException;
 
 /**
  * Timer → organisation → seeded default, refusing rather than downgrading.
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) WorkingCalendar::fromArray() is the
+ * value object's validating named constructor.
  */
 class WorkingCalendarService {
 

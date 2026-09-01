@@ -19,7 +19,7 @@
       Mapper finders: due-by-`fire_at`, due-by-`next_rung_at`, by subject,
       by run, by lineage. The fire and event mappers expose insert and read
       only — no update, no delete path.
-- [ ] 1.3 Seed descriptor under `lib/Settings/` + a `lib/Repair/SeedFlowTimerRegister`
+- [x] 1.3 Seed descriptor under `lib/Settings/` + a `lib/Repair/SeedFlowTimerRegister`
       step registered in `appinfo/info.xml` beside the existing `Seed*` steps
       (`:159-170`), decoding the JSON and calling
       `ConfigurationService::importFromApp(force: false)` — NOT
@@ -31,7 +31,7 @@
 
 ## 2. Working calendar and SLA arithmetic
 
-- [ ] 2.1 `lib/Service/Flow/Timer/WorkingCalendarService.php` — resolution
+- [x] 2.1 `lib/Service/Flow/Timer/WorkingCalendarService.php` — resolution
       order timer → organisation → seeded default, throwing at arm time on an
       unknown name with the name in the message, and NO weekday-only fallback
       on any path. Rule kinds `fixed`, `easter` (computed, as
@@ -41,7 +41,7 @@
       `../shillinq/lib/Lifecycle/SubmissionWindowGuard.php:74-104`, which ends
       at `2027-12-26` and then degrades silently. `hoursPerWorkingDay`
       required.
-- [ ] 2.2 `lib/Service/Flow/Timer/SlaCalculator.php` — `measure(from, to, unit)`,
+- [x] 2.2 `lib/Service/Flow/Timer/SlaCalculator.php` — `measure(from, to, unit)`,
       `add(from, value, unit)`, `sub(from, value, unit)` over a resolved
       calendar for `hours`, `businessDays` and `calendarDays`; `{value, unit}`
       accepted only for integer `value` 1..10000. Non-working dates memoised
@@ -49,14 +49,14 @@
 
 ## 3. Timer lifecycle
 
-- [ ] 3.1 `FlowTimerService::arm()` — resolves `anchor_event` +
+- [x] 3.1 `FlowTimerService::arm()` — resolves `anchor_event` +
       `anchor_offset` to `anchor_at`, stores the anchor alongside the computed
       moment, validates the SLA and escalation rules, and REFUSES an
       `on_expiry` outcome on any timer whose `legal_effect` is not
       `wettelijk`. One private `recompute()` derives `fire_at` and
       `next_rung_at`; every mutating operation calls it and nothing else
       writes those two columns.
-- [ ] 3.2 `suspend(reason, until?)` / `resume()` — `consumed_value +=
+- [x] 3.2 `suspend(reason, until?)` / `resume()` — `consumed_value +=
       calendar.measure(running_since, now, budget_unit)`, `running_since` and
       `fire_at` to NULL, `suspended_since` set; resume re-projects from the
       resume instant. Both write an event row with actor, moment, reason and
@@ -64,14 +64,14 @@
       overdue. Do NOT copy procest's pre-extension model
       (`../procest/lib/Service/DeadlinePauseService.php:145-153`) — its
       `min($durationDays, $diff)` at `:148` silently eats an over-run pause.
-- [ ] 3.3 `extend(amount, unit, rationale)` — increases `budget_value`,
+- [x] 3.3 `extend(amount, unit, rationale)` — increases `budget_value`,
       requires a non-empty rationale, bounded by `extension_max` (default 1)
       with an error naming the bound, and REFUSED once `state` is `fired`,
       `cancelled` or `superseded`. The override is a separate, separately
       authorized method recorded as an override, mirroring
       `../procest/lib/Service/DeadlineExtensionService.php:126,228` — not a
       flag on `extend()`.
-- [ ] 3.4 `supersede()` on a moved anchor — the prior row goes to
+- [x] 3.4 `supersede()` on a moved anchor — the prior row goes to
       `superseded` and never fires; a successor carries `supersedes_uuid`,
       the recomputed `anchor_at`/`fire_at` and the predecessor's
       `consumed_value`, and inherits a fire row (marked `inherited`) for every
@@ -80,14 +80,14 @@
 
 ## 4. Escalation
 
-- [ ] 4.1 `lib/Service/Flow/Timer/EscalationLadderService.php` — resolves the
+- [x] 4.1 `lib/Service/Flow/Timer/EscalationLadderService.php` — resolves the
       ladder, computes each rung's instant, and CLAIMS a rung by inserting
       `(timer_uuid, rung_key)` BEFORE raising the transition; a duplicate key
       means another pass owns it. The fire row records the transition raised
       and its roles/priority, never "notified". A gap fires every passed
       unfired rung in ladder order, each once, and never collapses them into
       the most severe.
-- [ ] 4.2 Escalation-rule validation — shape `{trigger, offset, offsetUnit,
+- [x] 4.2 Escalation-rule validation — shape `{trigger, offset, offsetUnit,
       notifyRole, escalateToRole, openIncident}`, `offsetUnit` accepting
       `calendarDays` as well (`../procest/lib/Service/StepConfig/EscalationRuleValidator.php:53`
       is `['hours', 'businessDays']` today), refused without an SLA, and
@@ -99,7 +99,7 @@
 
 ## 5. Sweep and outcomes
 
-- [ ] 5.1 `lib/BackgroundJob/FlowTimerWorker.php` extending `TimedJob` at
+- [x] 5.1 `lib/BackgroundJob/FlowTimerWorker.php` extending `TimedJob` at
       `setInterval(seconds: 300)`, matching `lib/BackgroundJob/FlowScheduleWorker.php:59`.
       Two bounded range scans — `(state, fire_at)` for expiries and
       `(state, next_rung_at)` for rungs — each `LIMIT` batch (default 200),
@@ -107,7 +107,7 @@
       `../openconnector/lib/Service/ApprovalService.php:638-658` does under a
       docblock claiming the opposite (`:628-631`). Logged counts report work
       performed; a pass hitting the limit logs `truncated: true`.
-- [ ] 5.2 Expiry outcomes applied as NAMED TASK ACTIONS through the task
+- [x] 5.2 Expiry outcomes applied as NAMED TASK ACTIONS through the task
       service, claimed by a conditional `SET state='fired' WHERE uuid=? AND
       state='armed'` so zero affected rows means another pass owns it. All
       four of `skip`, `error`, `dead_letter`, `transition:<action>` produce
@@ -115,7 +115,7 @@
       `error` fails it; the collapse at `ApprovalService.php:662` is the
       defect being corrected, not the behaviour being copied. A `wettelijk`
       breach is recorded permanently and survives completion.
-- [ ] 5.3 Cancellation inside the transaction that makes the subject terminal,
+- [x] 5.3 Cancellation inside the transaction that makes the subject terminal,
       extending `flow-task-entity`'s run-terminality listener — idempotent,
       recording `cancel_reason` and `cancelled_at`, never deleting. Plus a
       repair check that COUNTS armed timers whose subject is terminal or
@@ -123,13 +123,13 @@
 
 ## 6. Projection and derivation
 
-- [ ] 6.1 `openregister_tasks.due_at` / `expires_at` maintained as a
+- [x] 6.1 `openregister_tasks.due_at` / `expires_at` maintained as a
       projection inside every timer mutation — earliest non-cancelled `due`
       timer and earliest enforcing timer — so the inbox index
       `(assignee, is_terminal, due_at)` stays an index hit. The task write
       surface REFUSES those fields once a timer owns the subject; writing them
       never creates a timer. `suspended_until` is display-only.
-- [ ] 6.2 Derived read API — overdue, time-remaining and time-overdue computed
+- [x] 6.2 Derived read API — overdue, time-remaining and time-overdue computed
       on read as `state = 'armed' AND fire_at < now`, correct with the sweep
       disabled, with no field anywhere accepting an overdue write.
       `remaining = budget_value - consumed_value - (running_since ?
@@ -138,14 +138,14 @@
 
 ## 7. Tests and verification
 
-- [ ] 7.1 Arithmetic and calendar unit tests: the 8-week / 19-days-elapsed /
+- [x] 7.1 Arithmetic and calendar unit tests: the 8-week / 19-days-elapsed /
       6-of-14-day-hersteltermijn case returning the remainder intact; a
       business-day term suspended over a weekend resuming with the same
       business days left; a 3-businessDays SLA armed on a Thursday landing on
       Tuesday; `nl-national` correct for several future years including a
       Koningsdag falling on a Sunday; both cross-unit `preBreach` scenarios;
       one case per `on_expiry` value asserting the four states differ.
-- [ ] 7.2 Sweep, concurrency and invariant tests: a due timer beyond the batch
+- [x] 7.2 Sweep, concurrency and invariant tests: a due timer beyond the batch
       size still processed; two overlapping passes firing a rung and an expiry
       exactly once each; a downtime gap firing the skipped rungs in order; a
       six-week timer surviving a restart; completion cancelling both timers

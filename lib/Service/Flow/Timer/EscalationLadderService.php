@@ -44,6 +44,11 @@ use OCA\OpenRegister\Exception\FlowTimerValidationException;
 
 /**
  * Rung resolution, timeline validation and recipient descriptors.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The sum of the rule
+ * validator's refusal branches (trigger, offset, unit, priority, role lists,
+ * each named in its own message) and the three recipient resolution paths.
+ * Each method is small; the class total is the vocabulary it guards.
  */
 class EscalationLadderService {
 
@@ -384,7 +389,7 @@ class EscalationLadderService {
 		usort(
 			$entries,
 			static function (array $left, array $right): int {
-				if ($left['at'] == $right['at']) {
+				if ($left['at']->getTimestamp() === $right['at']->getTimestamp()) {
 					return ($left['index'] <=> $right['index']);
 				}
 
@@ -423,7 +428,17 @@ class EscalationLadderService {
 			);
 		}
 
-		$unit = $this->calculator->validateUnit(unit: ($rule['offsetUnit'] ?? null));
+		$unit = ($rule['offsetUnit'] ?? null);
+		if (is_string($unit) === false || in_array($unit, SlaCalculator::UNITS, true) === false) {
+			throw new FlowTimerValidationException(
+				message: sprintf(
+					"Escalation rule #%d has offsetUnit '%s'; use one of %s (the same units the SLA accepts).",
+					$index,
+					var_export($unit, true),
+					implode(', ', SlaCalculator::UNITS)
+				)
+			);
+		}
 
 		$priority = (string)($rule['priority'] ?? 'medium');
 		if (in_array($priority, self::PRIORITIES, true) === false) {

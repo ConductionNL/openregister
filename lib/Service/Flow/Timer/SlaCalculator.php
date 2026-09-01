@@ -36,6 +36,9 @@ use OCA\OpenRegister\Exception\FlowTimerValidationException;
 
 /**
  * SLA arithmetic: measure, add and subtract in hours, business days or calendar days.
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) DateTimeImmutable::createFromInterface
+ * is PHP's own conversion; there is no instance form.
  */
 final class SlaCalculator {
 
@@ -158,11 +161,22 @@ final class SlaCalculator {
 		$this->validateUnit(unit: $unit);
 
 		if ($unit === self::UNIT_HOURS) {
-			return $start->modify(sprintf('%+d seconds', (int)round($value * 3600)));
+			return $this->shift(moment: $start, modifier: sprintf('%+d seconds', (int)round($value * 3600)));
 		}
 
 		if ($unit === self::UNIT_CALENDAR_DAYS) {
-			return $start->modify(sprintf('%+d seconds', (int)round($value * self::DAY)));
+			// Calendar days are DATES, not 86400-second spans: a term of N days
+			// lands at the same wall-clock time across a DST change.
+			$whole = (int)floor(abs($value));
+			$fraction = (abs($value) - $whole);
+			$sign = 1;
+			if ($value < 0) {
+				$sign = -1;
+			}
+
+			$landed = $this->shift(moment: $start, modifier: sprintf('%+d days', $sign * $whole));
+
+			return $this->shift(moment: $landed, modifier: sprintf('%+d seconds', $sign * (int)round($fraction * self::DAY)));
 		}
 
 		if ($value >= 0) {
@@ -209,7 +223,14 @@ final class SlaCalculator {
 		}
 
 		if ($unit === self::UNIT_CALENDAR_DAYS) {
-			return ($seconds / self::DAY);
+			// Wall-clock difference: whole dates plus the fraction of a day.
+			$diff = $from->diff($to);
+			$days = ((int)$diff->days + (($diff->h * 3600 + $diff->i * 60 + $diff->s) / self::DAY));
+			if ($diff->invert === 1) {
+				return -$days;
+			}
+
+			return $days;
 		}
 
 		if ($seconds < 0) {
@@ -224,7 +245,7 @@ final class SlaCalculator {
 				return $total;
 			}
 
-			$nextMidnight = $cursor->setTime(0, 0, 0)->modify('+1 day');
+			$nextMidnight = $this->shift(moment: $cursor->setTime(0, 0, 0), modifier: '+1 day');
 			$segmentEnd = $nextMidnight;
 			if ($end < $nextMidnight) {
 				$segmentEnd = $end;
@@ -284,11 +305,11 @@ final class SlaCalculator {
 		$cursor = $start;
 		$remaining = $days;
 		for ($walked = 0; $walked <= self::MAX_WALK_DAYS; $walked++) {
-			$nextMidnight = $cursor->setTime(0, 0, 0)->modify('+1 day');
+			$nextMidnight = $this->shift(moment: $cursor->setTime(0, 0, 0), modifier: '+1 day');
 			if ($calendar->isWorkingDay($cursor) === true) {
 				$available = (($nextMidnight->getTimestamp() - $cursor->getTimestamp()) / self::DAY);
 				if ($remaining <= ($available + self::EPSILON)) {
-					return $cursor->modify(sprintf('%+d seconds', (int)round($remaining * self::DAY)));
+					return $this->shift(moment: $cursor, modifier: sprintf('%+d seconds', (int)round($remaining * self::DAY)));
 				}
 
 				$remaining -= $available;
@@ -317,14 +338,14 @@ final class SlaCalculator {
 		for ($walked = 0; $walked <= self::MAX_WALK_DAYS; $walked++) {
 			$dayStart = $cursor->setTime(0, 0, 0);
 			// An instant exactly at midnight belongs to the END of the previous day when walking back.
-			if ($cursor == $dayStart) {
-				$dayStart = $dayStart->modify('-1 day');
+			if ($cursor->getTimestamp() === $dayStart->getTimestamp()) {
+				$dayStart = $this->shift(moment: $dayStart, modifier: '-1 day');
 			}
 
 			if ($calendar->isWorkingDay($dayStart) === true) {
 				$available = (($cursor->getTimestamp() - $dayStart->getTimestamp()) / self::DAY);
 				if ($remaining <= ($available + self::EPSILON)) {
-					return $cursor->modify(sprintf('%+d seconds', -(int)round($remaining * self::DAY)));
+					return $this->shift(moment: $cursor, modifier: sprintf('%+d seconds', -(int)round($remaining * self::DAY)));
 				}
 
 				$remaining -= $available;
@@ -337,4 +358,23 @@ final class SlaCalculator {
 			message: sprintf('Subtracting %s business days from %s exceeds %d calendar days.', (string)$days, $start->format('c'), self::MAX_WALK_DAYS)
 		);
 	}//end walkBackward()
+
+	/**
+	 * Apply a relative modifier, refusing PHP's silent `false`.
+	 *
+	 * @param DateTimeImmutable $moment The instant.
+	 * @param string $modifier A relative modifier such as `+1 day`.
+	 *
+	 * @return DateTimeImmutable The shifted instant.
+	 *
+	 * @throws FlowTimerValidationException When the modifier is unparseable.
+	 */
+	private function shift(DateTimeImmutable $moment, string $modifier): DateTimeImmutable {
+		$shifted = $moment->modify($modifier);
+		if ($shifted === false) {
+			throw new FlowTimerValidationException(message: sprintf("Date modifier '%s' is not parseable.", $modifier));
+		}
+
+		return $shifted;
+	}//end shift()
 }//end class

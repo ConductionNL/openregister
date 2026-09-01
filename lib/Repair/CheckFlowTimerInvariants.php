@@ -127,13 +127,16 @@ class CheckFlowTimerInvariants implements IRepairStep {
 
 		foreach ([FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED] as $state) {
 			$afterId = 0;
-			do {
+			$more = true;
+			while ($more === true) {
 				$page = $this->timers->findByStatePaged(state: $state, afterId: $afterId, limit: self::PAGE);
 				foreach ($page as $timer) {
 					$afterId = (int)$timer->getId();
 					$this->inspect(timer: $timer, counts: $counts);
 				}
-			} while (count($page) === self::PAGE);
+
+				$more = (count($page) === self::PAGE);
+			}
 		}
 
 		return $counts;

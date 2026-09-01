@@ -22,6 +22,18 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Db;
+
+use DateTime;
+use JsonSerializable;
+use OCP\AppFramework\Db\Entity;
+
+/**
+ * The timer history row.
  *
  * @method string|null getTimerUuid()
  * @method void setTimerUuid(?string $timerUuid)
@@ -41,18 +53,6 @@
  * @method void setBasis(?string $basis)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
- */
-
-declare(strict_types=1);
-
-namespace OCA\OpenRegister\Db;
-
-use DateTime;
-use JsonSerializable;
-use OCP\AppFramework\Db\Entity;
-
-/**
- * The timer history row.
  */
 class FlowTimerEvent extends Entity implements JsonSerializable {
 
@@ -168,11 +168,11 @@ class FlowTimerEvent extends Entity implements JsonSerializable {
 			'type' => $this->type,
 			'actor' => $this->actor,
 			'reason' => $this->reason,
-			'priorFireAt' => $this->format($this->priorFireAt),
-			'newFireAt' => $this->format($this->newFireAt),
+			'priorFireAt' => $this->format(value: $this->priorFireAt),
+			'newFireAt' => $this->format(value: $this->newFireAt),
 			'daysImpact' => $this->daysImpact,
 			'basis' => $this->basis,
-			'created' => $this->format($this->created),
+			'created' => $this->format(value: $this->created),
 		];
 	}//end jsonSerialize()
 

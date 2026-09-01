@@ -151,17 +151,17 @@ class Version1Date20260901150000 extends SimpleMigrationStep {
 		$table->addColumn('anchor_event', Types::STRING, ['notnull' => false, 'length' => 128]);
 		$table->addColumn('anchor_offset', Types::INTEGER, ['notnull' => false]);
 		$table->addColumn('anchor_offset_unit', Types::STRING, ['notnull' => false, 'length' => 16]);
-		$table->addColumn('anchor_at', Types::DATETIME_MUTABLE, ['notnull' => true]);
+		$table->addColumn('anchor_at', Types::DATETIME, ['notnull' => true]);
 
 		// Budget and the suspension ledger (design D-2).
 		$table->addColumn('budget_value', Types::DECIMAL, ['notnull' => true, 'precision' => 12, 'scale' => 4]);
 		$table->addColumn('budget_unit', Types::STRING, ['notnull' => true, 'length' => 16]);
 		$table->addColumn('consumed_value', Types::DECIMAL, ['notnull' => true, 'precision' => 12, 'scale' => 4, 'default' => 0]);
-		$table->addColumn('running_since', Types::DATETIME_MUTABLE, ['notnull' => false]);
+		$table->addColumn('running_since', Types::DATETIME, ['notnull' => false]);
 
 		// Derived, maintained by ONE private method (design D-2, D-8).
-		$table->addColumn('fire_at', Types::DATETIME_MUTABLE, ['notnull' => false]);
-		$table->addColumn('next_rung_at', Types::DATETIME_MUTABLE, ['notnull' => false]);
+		$table->addColumn('fire_at', Types::DATETIME, ['notnull' => false]);
+		$table->addColumn('next_rung_at', Types::DATETIME, ['notnull' => false]);
 
 		// Calendar and ladder.
 		$table->addColumn('calendar_slug', Types::STRING, ['notnull' => false, 'length' => 128]);
@@ -169,7 +169,7 @@ class Version1Date20260901150000 extends SimpleMigrationStep {
 		$table->addColumn('escalation_rules', Types::JSON, ['notnull' => false]);
 
 		// Suspension evidence (reporting, NOT arithmetic inputs).
-		$table->addColumn('suspended_since', Types::DATETIME_MUTABLE, ['notnull' => false]);
+		$table->addColumn('suspended_since', Types::DATETIME, ['notnull' => false]);
 		$table->addColumn('suspend_reason', Types::STRING, ['notnull' => false, 'length' => 512]);
 		$table->addColumn('suspended_total_seconds', Types::BIGINT, ['notnull' => true, 'default' => 0]);
 
@@ -180,14 +180,14 @@ class Version1Date20260901150000 extends SimpleMigrationStep {
 		// Lifecycle. No overdue column, by requirement.
 		$table->addColumn('state', Types::STRING, ['notnull' => true, 'length' => 16]);
 		$table->addColumn('supersedes_uuid', Types::STRING, ['notnull' => false, 'length' => 36]);
-		$table->addColumn('fired_at', Types::DATETIME_MUTABLE, ['notnull' => false]);
+		$table->addColumn('fired_at', Types::DATETIME, ['notnull' => false]);
 		$table->addColumn('breached', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
-		$table->addColumn('cancelled_at', Types::DATETIME_MUTABLE, ['notnull' => false]);
+		$table->addColumn('cancelled_at', Types::DATETIME, ['notnull' => false]);
 		$table->addColumn('cancel_reason', Types::STRING, ['notnull' => false, 'length' => 512]);
 
 		// Stamps.
-		$table->addColumn('created', Types::DATETIME_MUTABLE, ['notnull' => true]);
-		$table->addColumn('updated', Types::DATETIME_MUTABLE, ['notnull' => false]);
+		$table->addColumn('created', Types::DATETIME, ['notnull' => true]);
+		$table->addColumn('updated', Types::DATETIME, ['notnull' => false]);
 		$table->addColumn('created_by', Types::STRING, ['notnull' => false, 'length' => 64]);
 
 		$table->setPrimaryKey(['id']);
@@ -214,12 +214,12 @@ class Version1Date20260901150000 extends SimpleMigrationStep {
 		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
 		$table->addColumn('timer_uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
 		$table->addColumn('rung_key', Types::STRING, ['notnull' => true, 'length' => 128]);
-		$table->addColumn('fired_at', Types::DATETIME_MUTABLE, ['notnull' => true]);
+		$table->addColumn('fired_at', Types::DATETIME, ['notnull' => true]);
 		$table->addColumn('transition_action', Types::STRING, ['notnull' => false, 'length' => 128]);
 		$table->addColumn('recipient_roles', Types::JSON, ['notnull' => false]);
 		$table->addColumn('priority', Types::STRING, ['notnull' => false, 'length' => 16]);
 		$table->addColumn('inherited', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
-		$table->addColumn('created', Types::DATETIME_MUTABLE, ['notnull' => true]);
+		$table->addColumn('created', Types::DATETIME, ['notnull' => true]);
 
 		$table->setPrimaryKey(['id']);
 		// The constraint the at-most-once argument rests on.
@@ -242,11 +242,11 @@ class Version1Date20260901150000 extends SimpleMigrationStep {
 		$table->addColumn('type', Types::STRING, ['notnull' => true, 'length' => 16]);
 		$table->addColumn('actor', Types::STRING, ['notnull' => false, 'length' => 128]);
 		$table->addColumn('reason', Types::STRING, ['notnull' => false, 'length' => 1024]);
-		$table->addColumn('prior_fire_at', Types::DATETIME_MUTABLE, ['notnull' => false]);
-		$table->addColumn('new_fire_at', Types::DATETIME_MUTABLE, ['notnull' => false]);
+		$table->addColumn('prior_fire_at', Types::DATETIME, ['notnull' => false]);
+		$table->addColumn('new_fire_at', Types::DATETIME, ['notnull' => false]);
 		$table->addColumn('days_impact', Types::DECIMAL, ['notnull' => false, 'precision' => 12, 'scale' => 4]);
 		$table->addColumn('basis', Types::STRING, ['notnull' => false, 'length' => 128]);
-		$table->addColumn('created', Types::DATETIME_MUTABLE, ['notnull' => true]);
+		$table->addColumn('created', Types::DATETIME, ['notnull' => true]);
 
 		$table->setPrimaryKey(['id']);
 		$table->addIndex(['timer_uuid', 'created'], 'or_flowtimev_timer_idx');
