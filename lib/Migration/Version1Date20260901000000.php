@@ -46,6 +46,8 @@ use OCP\Migration\SimpleMigrationStep;
  * Re-runs `CREATE EXTENSION IF NOT EXISTS pg_trgm` on PostgreSQL.
  *
  * @package OCA\OpenRegister\Migration
+ *
+ * @spec openspec/changes/searchable-property-index/tasks.md#1.1
  */
 class Version1Date20260901000000 extends SimpleMigrationStep
 {
@@ -67,6 +69,8 @@ class Version1Date20260901000000 extends SimpleMigrationStep
      * @param array   $options       Migration options
      *
      * @return void
+     *
+     * @spec openspec/changes/searchable-property-index/tasks.md#1.1
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -98,8 +102,26 @@ class Version1Date20260901000000 extends SimpleMigrationStep
     private function ensurePgTrgmExtension(IOutput $output): void
     {
         try {
+            // Probe first so the log distinguishes the no-op re-run (extension was
+            // already installed by the 2026-07 bootstrap or an operator) from the
+            // actual install that this re-run migration ships to perform.
+            $wasAlreadyInstalled = false;
+            try {
+                $result              = $this->connection->executeQuery(
+                    "SELECT 1 FROM pg_extension WHERE extname = 'pg_trgm'"
+                );
+                $wasAlreadyInstalled = ($result->fetchOne() !== false);
+            } catch (Exception $probeException) {
+                // Probe failed (e.g. permissions on pg_extension); fall through to
+                // the CREATE EXTENSION attempt, which is idempotent regardless.
+            }
+
             $this->connection->executeStatement('CREATE EXTENSION IF NOT EXISTS pg_trgm');
-            $output->info('pg_trgm extension is available (fuzzy/substring search indexes can be created)');
+            if ($wasAlreadyInstalled === true) {
+                $output->info('pg_trgm extension already installed (no-op re-run)');
+            } else {
+                $output->info('pg_trgm extension installed by re-run (fuzzy/substring search indexes can now be created)');
+            }
             return;
         } catch (Exception $e) {
             try {

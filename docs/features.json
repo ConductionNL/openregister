@@ -119,6 +119,13 @@
     "docsUrl": "openspec/specs/object-interactions/spec.md"
   },
   {
+    "slug": "rbac-as-public-toggle",
+    "title": "RBAC-as-Public Toggle",
+    "summary": "Define the _rbac_as_public query-flag primitive in OpenRegister's MagicRbacHandler and MagicSearchHandler.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/rbac-as-public-toggle/spec.md"
+  },
+  {
     "slug": "rbac-scopes",
     "title": "RBAC Scopes",
     "summary": "Validate and extend OpenRegister's existing three-level RBAC system.",
