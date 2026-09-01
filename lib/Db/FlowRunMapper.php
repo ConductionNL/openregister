@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use InvalidArgumentException;
 use OCA\OpenRegister\Event\FlowRunTerminalEvent;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -90,7 +91,7 @@ class FlowRunMapper extends QBMapper {
 	 */
 	public function update(Entity $entity): FlowRun {
 		if ($entity instanceof FlowRun === false) {
-			throw new \InvalidArgumentException('FlowRunMapper persists FlowRun entities only.');
+			throw new InvalidArgumentException('FlowRunMapper persists FlowRun entities only.');
 		}
 
 		$updated = parent::update(entity: $entity);

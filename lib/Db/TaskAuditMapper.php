@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use InvalidArgumentException;
 use LogicException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -65,7 +66,7 @@ class TaskAuditMapper extends QBMapper {
 	 */
 	public function insert(Entity $entity): TaskAudit {
 		if ($entity instanceof TaskAudit === false) {
-			throw new \InvalidArgumentException('TaskAuditMapper appends TaskAudit entries only.');
+			throw new InvalidArgumentException('TaskAuditMapper appends TaskAudit entries only.');
 		}
 
 		if ($entity->getCreated() === null) {

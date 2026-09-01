@@ -36,6 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use InvalidArgumentException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -69,7 +70,7 @@ class TaskMapper extends QBMapper {
 	 */
 	public function insert(Entity $entity): Task {
 		if ($entity instanceof Task === false) {
-			throw new \InvalidArgumentException('TaskMapper persists Task entities only.');
+			throw new InvalidArgumentException('TaskMapper persists Task entities only.');
 		}
 
 		if ($entity->getCreated() === null) {
@@ -90,7 +91,7 @@ class TaskMapper extends QBMapper {
 	 */
 	public function update(Entity $entity): Task {
 		if ($entity instanceof Task === false) {
-			throw new \InvalidArgumentException('TaskMapper persists Task entities only.');
+			throw new InvalidArgumentException('TaskMapper persists Task entities only.');
 		}
 
 		$entity->setUpdated(new DateTime());
