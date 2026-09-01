@@ -3016,7 +3016,7 @@
         "workingWeekdays": [
           1
         ],
-        "hoursPerWorkingDay": 1.0,
+        "hoursPerWorkingDay": 0.25,
         "rules": [
           {
             "kind": "fixed",
@@ -3049,7 +3049,7 @@
         "workingWeekdays": [
           2
         ],
-        "hoursPerWorkingDay": 2.0,
+        "hoursPerWorkingDay": 1.25,
         "rules": [
           {
             "kind": "easter",
@@ -3082,7 +3082,7 @@
         "workingWeekdays": [
           3
         ],
-        "hoursPerWorkingDay": 3.0,
+        "hoursPerWorkingDay": 2.25,
         "rules": [
           {
             "kind": "observedShift",

@@ -82,10 +82,7 @@
               "type": "object",
               "required": [
                 "kind",
-                "name",
-                "month",
-                "day",
-                "offset"
+                "name"
               ],
               "properties": {
                 "kind": {
@@ -140,13 +137,15 @@
                         "friday",
                         "saturday",
                         "sunday"
-                      ]
+                      ],
+                      "description": "The weekday (name) on which the date shifts, e.g. sunday for Koningsdag."
                     },
                     "days": {
                       "title": "Days",
                       "type": "integer",
                       "minimum": -6,
-                      "maximum": 6
+                      "maximum": 6,
+                      "description": "How many days the observed date shifts, e.g. -1 for the Saturday before."
                     }
                   }
                 }
@@ -232,13 +231,15 @@
                   "enum": [
                     "preBreach",
                     "slaBreached"
-                  ]
+                  ],
+                  "description": "preBreach fires before the deadline, slaBreached at or after it."
                 },
                 "offset": {
                   "title": "Offset",
                   "type": "integer",
                   "minimum": 0,
-                  "maximum": 10000
+                  "maximum": 10000,
+                  "description": "Distance from the deadline, in the offset unit."
                 },
                 "offsetUnit": {
                   "title": "Offset unit",
@@ -247,7 +248,8 @@
                     "hours",
                     "businessDays",
                     "calendarDays"
-                  ]
+                  ],
+                  "description": "The unit of the offset: the same set the SLA accepts."
                 },
                 "notifyRole": {
                   "title": "Notify roles",
@@ -262,7 +264,8 @@
                   "type": "array",
                   "items": {
                     "type": "string"
-                  }
+                  },
+                  "description": "Roles the matter is escalated to at this rung."
                 },
                 "priority": {
                   "title": "Priority",
@@ -272,7 +275,8 @@
                     "medium",
                     "high",
                     "critical"
-                  ]
+                  ],
+                  "description": "The urgency the raised transition carries."
                 },
                 "message": {
                   "title": "Message",
@@ -281,7 +285,8 @@
                 },
                 "openIncident": {
                   "title": "Open incident",
-                  "type": "boolean"
+                  "type": "boolean",
+                  "description": "Whether reaching this rung opens an incident."
                 }
               }
             }
