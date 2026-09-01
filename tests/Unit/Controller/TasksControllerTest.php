@@ -9,12 +9,18 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\TasksController;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
+use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -262,128 +268,169 @@ class TasksControllerTest extends TestCase {
 	// ── GET /api/tasks — the caller's own tasks across all calendars ───────
 
 	/**
-	 * Record the arguments TaskService::getAllUserTasks() is called with.
+	 * Build a controller wired to the engine inbox for the aggregate tests.
 	 *
-	 * @param array<int, mixed> $capture Receives [status, limit, offset, assignee].
-	 * @param array<string, mixed> $result The payload the service returns.
+	 * @param string|null $uid The session user, or null for no session.
+	 * @param array<string, mixed> $params The request parameters.
+	 *
+	 * @return array{0: TasksController, 1: TaskInboxService&MockObject}
+	 */
+	private function inboxController(?string $uid, array $params = []): array {
+		$inbox = $this->createMock(TaskInboxService::class);
+		$session = $this->createMock(IUserSession::class);
+		if ($uid === null) {
+			$session->method('getUser')->willReturn(null);
+		} else {
+			$user = $this->createMock(IUser::class);
+			$user->method('getUID')->willReturn($uid);
+			$session->method('getUser')->willReturn($user);
+		}
+
+		$this->request->method('getParam')
+			->willReturnCallback(
+				static function (string $key, $default = null) use ($params) {
+					return ($params[$key] ?? $default);
+				}
+			);
+
+		$controller = new TasksController(
+			'openregister',
+			$this->request,
+			$this->taskService,
+			$this->objectService,
+			$inbox,
+			$session,
+			new TaskTemporalProjection(),
+			null
+		);
+
+		return [$controller, $inbox];
+	}
+
+	/**
+	 * The aggregate answers from the engine inbox, scoped to the session
+	 * user, and no calendar is enumerated to produce it.
 	 *
 	 * @return void
 	 */
-	private function expectAllUserTasksCall(array &$capture, array $result): void {
-		$this->taskService
-			->expects($this->once())
-			->method('getAllUserTasks')
+	public function testAllUserTasksAnswersFromTheInboxForTheSessionUser(): void {
+		[$controller, $inbox] = $this->inboxController('alice');
+		$payload = ['results' => [['uuid' => 't-1']], 'total' => 1, 'limit' => 50, 'offset' => 0];
+
+		$captured = null;
+		$inbox->expects($this->once())->method('inbox')
 			->willReturnCallback(
-				static function (?string $status, int $limit, int $offset, ?string $assignee) use (&$capture, $result) {
-					$capture = [$status, $limit, $offset, $assignee];
-					return $result;
+				static function (TaskInboxCriteria $criteria, int $limit, int $offset) use (&$captured, $payload) {
+					$captured = [$criteria, $limit, $offset];
+					return $payload;
 				}
 			);
+		$this->taskService->expects($this->never())->method('getAllUserTasks');
+
+		$result = $controller->allUserTasks();
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame($payload, $result->getData());
+		$this->assertSame('alice', $captured[0]->uid);
+		$this->assertSame(TaskInboxCriteria::SCOPE_ALL, $captured[0]->scope);
+		$this->assertSame([50, 0], [$captured[1], $captured[2]]);
 	}
 
-	public function testAllUserTasksReturnsTheServicePayload(): void {
-		$payload = [
-			'results' => [
-				['id' => 'task-1', 'summary' => 'Review permit application', 'status' => 'NEEDS-ACTION'],
-			],
-			'total' => 1,
-		];
-
-		$this->request->method('getParam')->willReturn(null);
-
-		$capture = [];
-		$this->expectAllUserTasksCall($capture, $payload);
-
-		$result = $this->controller->allUserTasks();
-
-		$this->assertInstanceOf(JSONResponse::class, $result);
-		$this->assertEquals(200, $result->getStatus());
-		$this->assertEquals($payload, $result->getData());
-		// Defaults when the caller sends no query parameters at all.
-		$this->assertEquals([null, 50, 0, null], $capture);
-	}
-
-	public function testAllUserTasksForwardsStatusPagingAndAssigneeFilters(): void {
-		$params = [
-			'status' => 'NEEDS-ACTION',
+	/**
+	 * `assignee` is no longer a filter: the aggregate is already scoped to
+	 * the caller, and no parameter names another user's tasks.
+	 *
+	 * @return void
+	 */
+	public function testAllUserTasksIgnoresTheAssigneeParameterAndNormalisesStatus(): void {
+		[$controller, $inbox] = $this->inboxController('alice', [
+			'status' => 'done',
+			'assignee' => 'bob',
 			'_limit' => '25',
 			'_offset' => '10',
-			'assignee' => 'alice',
-		];
-		$this->request->method('getParam')
+		]);
+
+		$captured = null;
+		$inbox->method('inbox')
 			->willReturnCallback(
-				static function (string $key, $default = null) use ($params) {
-					return ($params[$key] ?? $default);
+				static function (TaskInboxCriteria $criteria, int $limit, int $offset) use (&$captured) {
+					$captured = [$criteria, $limit, $offset];
+					return ['results' => [], 'total' => 0, 'limit' => $limit, 'offset' => $offset];
 				}
 			);
 
-		$capture = [];
-		$this->expectAllUserTasksCall($capture, ['results' => [], 'total' => 0]);
+		$controller->allUserTasks();
 
-		$result = $this->controller->allUserTasks();
-
-		$this->assertEquals(200, $result->getStatus());
-		$this->assertEquals(['NEEDS-ACTION', 25, 10, 'alice'], $capture);
+		$this->assertSame('alice', $captured[0]->uid, 'the caller, never the assignee parameter');
+		$this->assertSame(['completed'], $captured[0]->states, 'legacy status resolves through TaskState');
+		$this->assertSame([25, 10], [$captured[1], $captured[2]]);
 	}
 
-	/**
-	 * `limit`/`offset` are the legacy spellings of `_limit`/`_offset`; both
-	 * must reach the service or a client written against either one silently
-	 * gets the default page.
-	 *
-	 * @return void
-	 */
 	public function testAllUserTasksAcceptsTheLegacyLimitAndOffsetSpellings(): void {
-		$params = ['limit' => '15', 'offset' => '5'];
-		$this->request->method('getParam')
-			->willReturnCallback(
-				static function (string $key, $default = null) use ($params) {
-					return ($params[$key] ?? $default);
-				}
-			);
+		[$controller, $inbox] = $this->inboxController('alice', ['limit' => '15', 'offset' => '5']);
 
-		$capture = [];
-		$this->expectAllUserTasksCall($capture, ['results' => [], 'total' => 0]);
+		$inbox->expects($this->once())->method('inbox')
+			->with($this->anything(), 15, 5)
+			->willReturn(['results' => [], 'total' => 0, 'limit' => 15, 'offset' => 5]);
 
-		$this->controller->allUserTasks();
+		$controller->allUserTasks();
+	}
 
-		$this->assertEquals([null, 15, 5, null], $capture);
+	public function testAllUserTasksCapsThePageSizeAtTwoHundred(): void {
+		[$controller, $inbox] = $this->inboxController('alice', ['_limit' => '100000']);
+
+		$inbox->expects($this->once())->method('inbox')
+			->with($this->anything(), 200, 0)
+			->willReturn(['results' => [], 'total' => 0, 'limit' => 200, 'offset' => 0]);
+
+		$controller->allUserTasks();
+	}
+
+	public function testAllUserTasksRefusesAnUnmappedStatusRatherThanIgnoringIt(): void {
+		[$controller, $inbox] = $this->inboxController('alice', ['status' => 'whatever']);
+		$inbox->expects($this->never())->method('inbox');
+
+		$result = $controller->allUserTasks();
+
+		$this->assertSame(400, $result->getStatus());
+		$this->assertStringContainsString("'whatever'", $result->getData()['error']);
+	}
+
+	public function testAllUserTasksWithoutASessionIsUnauthorized(): void {
+		[$controller, $inbox] = $this->inboxController(null);
+		$inbox->expects($this->never())->method('inbox');
+
+		$result = $controller->allUserTasks();
+
+		$this->assertSame(401, $result->getStatus());
+	}
+
+	public function testAllUserTasksReturns500WhenTheInboxFails(): void {
+		[$controller, $inbox] = $this->inboxController('alice');
+		$inbox->method('inbox')->willThrowException(new \RuntimeException('database down'));
+
+		$result = $controller->allUserTasks();
+
+		$this->assertSame(500, $result->getStatus());
+		$this->assertSame('database down', $result->getData()['error']);
 	}
 
 	/**
-	 * The page size is capped server-side at 200 — an uncapped `_limit` would
-	 * let one request walk every VTODO in every calendar.
+	 * A create payload attempting to set an engine task identity is refused
+	 * by the service; the controller reports it as a 400, and no VTODO is
+	 * created.
 	 *
 	 * @return void
 	 */
-	public function testAllUserTasksCapsThePageSizeAtTwoHundred(): void {
-		$params = ['_limit' => '100000'];
-		$this->request->method('getParam')
-			->willReturnCallback(
-				static function (string $key, $default = null) use ($params) {
-					return ($params[$key] ?? $default);
-				}
-			);
+	public function testCreateRefusesAnEngineTaskIdentity(): void {
+		$this->setupObjectValidation($this->createObjectEntity());
+		$this->request->method('getParams')->willReturn(['summary' => 'Forged', 'X-OPENREGISTER-TASK' => 'some-uuid']);
+		$this->taskService->method('createTask')
+			->willThrowException(new TaskAccessDeniedException('An engine task cannot be created through the object task endpoint.'));
 
-		$capture = [];
-		$this->expectAllUserTasksCall($capture, ['results' => [], 'total' => 0]);
+		$result = $this->controller->create('1', '2', 'test-uuid');
 
-		$this->controller->allUserTasks();
-
-		$this->assertEquals(200, $capture[1]);
-	}
-
-	public function testAllUserTasksReturns500WhenTheCalendarBackendFails(): void {
-		$this->request->method('getParam')->willReturn(null);
-
-		$this->taskService
-			->method('getAllUserTasks')
-			->willThrowException(new \Exception('No user logged in'));
-
-		$result = $this->controller->allUserTasks();
-
-		$this->assertInstanceOf(JSONResponse::class, $result);
-		$this->assertEquals(500, $result->getStatus());
-		$this->assertEquals('No user logged in', $result->getData()['error']);
+		$this->assertSame(400, $result->getStatus());
+		$this->assertStringContainsString('engine task', $result->getData()['error']);
 	}
 }

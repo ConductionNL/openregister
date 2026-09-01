@@ -3538,9 +3538,12 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	public function contracts(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
-		// Set the schema and register to the object service.
-		$objectService->setSchema(schema: $schema);
+		// REGISTER FIRST. `setSchema()` scopes its slug lookup to whatever
+		// register is currently set, and ObjectService is reused across many
+		// operations in one process, so naming the schema first resolves it
+		// against a register an unrelated call left behind.
 		$objectService->setRegister(register: $register);
+		$objectService->setSchema(schema: $schema);
 
 		// Get request parameters for filtering.
 		$requestParams = $this->request->getParams();
@@ -3753,9 +3756,12 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	public function used(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
-		// Set the schema and register to the object service.
-		$objectService->setSchema(schema: $schema);
+		// REGISTER FIRST. `setSchema()` scopes its slug lookup to whatever
+		// register is currently set, and ObjectService is reused across many
+		// operations in one process, so naming the schema first resolves it
+		// against a register an unrelated call left behind.
 		$objectService->setRegister(register: $register);
+		$objectService->setSchema(schema: $schema);
 
 		// Build search query from request parameters.
 		$queryParams = $this->request->getParams();
@@ -3911,8 +3917,8 @@ class ObjectsController extends Controller {
 	public function lock(string $register, string $schema, string $id): JSONResponse {
 		try {
 			// Set the schema and register to the object service.
-			$this->objectService->setSchema(schema: $schema);
 			$this->objectService->setRegister(register: $register);
+			$this->objectService->setSchema(schema: $schema);
 
 			$data = $this->request->getParams();
 			$process = ($data['process'] ?? null);

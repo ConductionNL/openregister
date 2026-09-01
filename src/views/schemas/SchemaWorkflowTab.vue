@@ -39,7 +39,7 @@
 			</section>
 
 			<section class="tab-section">
-				<ApprovalChainPanel :schemaId="schemaId" />
+				<TaskSequencePanel :schema="schema" />
 			</section>
 		</NcAppContentDetails>
 	</div>
@@ -47,10 +47,10 @@
 
 <script>
 import { NcAppContentDetails } from '@nextcloud/vue'
-import ApprovalChainPanel from '../../components/workflow/ApprovalChainPanel.vue'
 import HookForm from '../../components/workflow/HookForm.vue'
 import HookList from '../../components/workflow/HookList.vue'
 import ScheduledWorkflowPanel from '../../components/workflow/ScheduledWorkflowPanel.vue'
+import TaskSequencePanel from '../../components/workflow/TaskSequencePanel.vue'
 import WorkflowExecutionPanel from '../../components/workflow/WorkflowExecutionPanel.vue'
 import TestHookDialog from '../../dialogs/TestHookDialog.vue'
 
@@ -63,7 +63,7 @@ export default {
 		TestHookDialog,
 		WorkflowExecutionPanel,
 		ScheduledWorkflowPanel,
-		ApprovalChainPanel,
+		TaskSequencePanel,
 	},
 
 	props: {

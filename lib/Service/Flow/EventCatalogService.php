@@ -6,8 +6,8 @@
  * Single source of truth for the triggers a declarative flow (`x-openregister-flows`)
  * may subscribe to. The visual flow builder reads this catalog (via
  * `GET /api/flow/event-catalog`) to populate its trigger palette, and
- * {@see \OCA\OpenRegister\Listener\EventCatalogListener} uses the same map to
- * route dispatched events to {@see \OCA\OpenRegister\Service\Flow\FlowActionService}.
+ * {@see \OCA\OpenRegister\Listener\FlowTriggerListener} fires the same ids
+ * into {@see \OCA\OpenRegister\Service\Flow\FlowTriggerService}.
  *
  * Every entry is a real, dispatched event that resolves to an OpenRegister
  * object (so the flow's schema selects which flows run) — there are no
@@ -66,6 +66,13 @@ class EventCatalogService {
 		['id' => 'share.deleted', 'label' => 'A share is deleted', 'group' => 'Share'],
 		['id' => 'tag.assigned', 'label' => 'A tag is assigned', 'group' => 'Tag'],
 		['id' => 'tag.unassigned', 'label' => 'A tag is removed', 'group' => 'Tag'],
+		// Plan-item lifecycle (flow-cmmn-case-semantics). Dispatched by the case
+		// layer as CaseItemTransitionedEvent against the anchoring object, so one
+		// plan item's outcome can satisfy another item's sentry or start a flow.
+		// Additive: aliasesFor() is unchanged and no row enters the trigger index.
+		['id' => 'case.item.completed', 'label' => 'A plan item is completed', 'group' => 'Case'],
+		['id' => 'case.item.terminated', 'label' => 'A plan item is terminated', 'group' => 'Case'],
+		['id' => 'case.item.disabled', 'label' => 'A plan item is disabled', 'group' => 'Case'],
 	];
 
 	/**

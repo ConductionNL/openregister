@@ -23,8 +23,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use InvalidArgumentException;
+use OCA\OpenRegister\Event\FlowRunTerminalEvent;
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 
 /**
@@ -57,11 +61,58 @@ class FlowRunMapper extends QBMapper {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db The database connection.
+	 * @param IEventDispatcher|null $dispatcher Publishes run terminality
+	 *                                          ({@see FlowRunTerminalEvent}).
+	 *                                          Nullable so the mapper stays
+	 *                                          constructible without a
+	 *                                          container; absent, terminality
+	 *                                          simply goes unannounced.
 	 */
-	public function __construct(IDBConnection $db) {
+	public function __construct(
+		IDBConnection $db,
+		private readonly ?IEventDispatcher $dispatcher = null,
+	) {
 		parent::__construct(db: $db, tableName: 'openregister_flow_runs', entityClass: FlowRun::class);
 
 	}//end __construct()
+
+	/**
+	 * Update, announcing terminality.
+	 *
+	 * This is the ONE choke point every terminal status write passes — the
+	 * engine's persist, the worker's failure paths and the stale-run reaper
+	 * all land here — so the terminal event is dispatched from it rather
+	 * than from each of those sites, where a new failure path could forget
+	 * it. The event can therefore fire more than once for one run; its
+	 * listeners are idempotent by contract (see the event's docblock).
+	 *
+	 * Dispatched AFTER the row is persisted: a listener that reads the run
+	 * back must see the terminal status it was told about.
+	 *
+	 * @param Entity $entity The run to update.
+	 *
+	 * @return FlowRun The updated run.
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
+	 */
+	public function update(Entity $entity): FlowRun {
+		if ($entity instanceof FlowRun === false) {
+			throw new InvalidArgumentException('FlowRunMapper persists FlowRun entities only.');
+		}
+
+		$updated = parent::update(entity: $entity);
+
+		if ($this->dispatcher !== null && $updated->isTerminal() === true) {
+			$this->dispatcher->dispatchTyped(
+				new FlowRunTerminalEvent(
+					runUuid: (string)$updated->getUuid(),
+					status: (string)$updated->getStatus()
+				)
+			);
+		}
+
+		return $updated;
+	}//end update()
 
 	/**
 	 * Find a run by its public uuid.
@@ -82,6 +133,58 @@ class FlowRunMapper extends QBMapper {
 
 		return $this->findEntity(query: $qb);
 	}//end findByUuid()
+
+	/**
+	 * The suspended runs carrying a correlation key, capped at two.
+	 *
+	 * Two is all a fail-closed resolution needs (flow-approval-consolidation
+	 * design D-7): zero is "not found", one is the addressee, and a second
+	 * row already proves ambiguity, which refuses without caring whether a
+	 * third exists. Only SUSPENDED runs are consulted, on the
+	 * (status, correlation_key) index.
+	 *
+	 * @param string $correlationKey The business key.
+	 *
+	 * @return array<int, FlowRun> Zero, one or two suspended runs.
+	 *
+	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
+	 */
+	public function findSuspendedByCorrelationKey(string $correlationKey): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('status', $qb->createNamedParameter(FlowRun::STATUS_SUSPENDED)))
+			->andWhere($qb->expr()->eq('correlation_key', $qb->createNamedParameter($correlationKey)))
+			->orderBy('id', 'ASC')
+			->setMaxResults(2);
+
+		return $this->findEntities(query: $qb);
+	}//end findSuspendedByCorrelationKey()
+
+	/**
+	 * Read one run FOR UPDATE — the critical section's lock.
+	 *
+	 * Must be called inside a transaction; the lock lives exactly as long as
+	 * that transaction. Everything FlowRunCommit writes is computed from the
+	 * row this returns, never from a value read before the lock was taken.
+	 *
+	 * @param string $uuid The run uuid.
+	 *
+	 * @return FlowRun The locked run.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When there is no such run.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-marking-must-be-written-as-a-delta-never-as-a-whole-overwrite
+	 */
+	public function lockByUuid(string $uuid): FlowRun {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)))
+			->forUpdate();
+
+		return $this->findEntity(query: $qb);
+	}//end lockByUuid()
 
 	/**
 	 * List runs, newest first.

@@ -550,6 +550,10 @@ return [
         // The VERSION number is `\d+`, not `[^/]+`. Without that,
         // `/versions/publish` would match `version` with the literal string
         // "publish" and return a 404 for a route that exists.
+        // Adoption: the CALLER becomes the owner of a shipped, ownerless flow.
+        // A deliberate act with its own verb — `owner` is not an editable field
+        // on PUT, so this is the only path from imported to dispatchable.
+        ['name' => 'flow#adopt',     'url' => '/api/flows/{id}/adopt',               'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#versions',  'url' => '/api/flows/{id}/versions',            'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#version',   'url' => '/api/flows/{id}/versions/{version}',  'verb' => 'GET',  'requirements' => ['id' => '[^/]+', 'version' => '\d+']],
         ['name' => 'flow#publish',   'url' => '/api/flows/{id}/publish',             'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
@@ -1253,16 +1257,6 @@ return [
 		['name' => 'scheduledWorkflow#update', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
 		['name' => 'scheduledWorkflow#destroy', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 
-		// Approval Chains - multi-step approval definitions and per-object progress.
-		['name' => 'approval#index', 'url' => '/api/approval-chains', 'verb' => 'GET'],
-		['name' => 'approval#show', 'url' => '/api/approval-chains/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#create', 'url' => '/api/approval-chains', 'verb' => 'POST'],
-		['name' => 'approval#update', 'url' => '/api/approval-chains/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#destroy', 'url' => '/api/approval-chains/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#objects', 'url' => '/api/approval-chains/{id}/objects', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#steps', 'url' => '/api/approval-steps', 'verb' => 'GET'],
-		['name' => 'approval#approve', 'url' => '/api/approval-steps/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#reject', 'url' => '/api/approval-steps/{id}/reject', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 
 		// MCP Discovery - Tiered API discovery for AI agents.
 		// CORS preflight (OPTIONS) is handled automatically by the @CORS annotation.
@@ -1347,8 +1341,73 @@ return [
 		['name' => 'flowRun#objects', 'url' => '/api/flow-runs/{uuid}/objects', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#retry', 'url' => '/api/flow-runs/{uuid}/retry', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#resume', 'url' => '/api/flow-runs/{uuid}/resume', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		// Correlation-addressed signal delivery (flow-approval-consolidation):
+		// same authority as resume, addressed by business key instead of run
+		// uuid, fail-closed on zero and on more than one match. Registered on
+		// a literal segment so it can never shadow, or be shadowed by, the
+		// uuid-addressed routes.
+		['name' => 'flowRun#signalByKey', 'url' => '/api/flow-run-signals/{key}', 'verb' => 'POST', 'requirements' => ['key' => '[^/]+']],
 		// Interactive test run (or-flow-partial-run): run synchronously with optional startAt + pins + seed.
 		['name' => 'flowRun#test', 'url' => '/api/flow-runs/test', 'verb' => 'POST'],
+		// The fleet-generic task (flow-task-entity): the inbox and the
+		// lifecycle verbs. Named for the `flow-tasks` CAPABILITY, not for a
+		// flow requirement — a standalone task with run_uuid null is served
+		// here identically. `/api/tasks` itself belongs to the older CalDAV
+		// VTODO leaf (tasks#allUserTasks above), which is a different thing.
+		// Every verb's real authorization is TaskAuthorizationService inside
+		// the service; the route attribute is never the whole check.
+		// The one stable "open this task" address (flow-task-inbox-projections):
+		// the VTODO URL, the notification buttons and the rule actions all
+		// resolve here, and it redirects into the app's task route.
+		['name' => 'task#open', 'url' => '/flow-tasks/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#index', 'url' => '/api/flow-tasks', 'verb' => 'GET'],
+		['name' => 'task#create', 'url' => '/api/flow-tasks', 'verb' => 'POST'],
+		['name' => 'task#show', 'url' => '/api/flow-tasks/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#audit', 'url' => '/api/flow-tasks/{uuid}/audit', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#offer', 'url' => '/api/flow-tasks/{uuid}/offer', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#claim', 'url' => '/api/flow-tasks/{uuid}/claim', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#unclaim', 'url' => '/api/flow-tasks/{uuid}/unclaim', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#assign', 'url' => '/api/flow-tasks/{uuid}/assign', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#reassign', 'url' => '/api/flow-tasks/{uuid}/reassign', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#delegate', 'url' => '/api/flow-tasks/{uuid}/delegate', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#resolve', 'url' => '/api/flow-tasks/{uuid}/resolve', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#complete', 'url' => '/api/flow-tasks/{uuid}/complete', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#cancel', 'url' => '/api/flow-tasks/{uuid}/cancel', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#checkItem', 'url' => '/api/flow-tasks/{uuid}/checklist/{itemId}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+', 'itemId' => '[^/]+']],
+
+		// The portal seam (flow-portal-task): a party OUTSIDE the instance,
+		// authenticated at portaliq's edge, acts here under a signed
+		// X-Portal-Subject assertion, never a Nextcloud session. The subject
+		// routes are PublicPage by design and authorized inside the service
+		// against the task's STORED party reference. The delivery routes are
+		// the operator's (administrator): portaliq settles what it sent.
+		// `deliveries` is registered before `{uuid}` so the literal wins.
+		['name' => 'portalTask#index', 'url' => '/api/portal-tasks', 'verb' => 'GET'],
+		['name' => 'portalTask#deliveries', 'url' => '/api/portal-tasks/deliveries', 'verb' => 'GET'],
+		['name' => 'portalTask#deliveryDelivered', 'url' => '/api/portal-tasks/deliveries/{uuid}/delivered', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'portalTask#deliveryFailed', 'url' => '/api/portal-tasks/deliveries/{uuid}/failed', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'portalTask#show', 'url' => '/api/portal-tasks/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'portalTask#complete', 'url' => '/api/portal-tasks/{uuid}/complete', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+
+		// The case layer (flow-cmmn-case-semantics): a plan of stages, human
+		// items and milestones anchored to an OpenRegister OBJECT. There is no
+		// case id: every plan route is keyed by the anchoring object's uuid, and
+		// the item verbs by the plan item's uuid. No CMMN XML route exists; the
+		// zaaktype import takes a document that is already in a register.
+		// Every verb's real authorization is CasePlanAuthorizationService
+		// inside the service; the route attribute is never the whole check.
+		// The two literal routes stay ABOVE `{objectUuid}` or they are swallowed.
+		['name' => 'case#items', 'url' => '/api/cases/items', 'verb' => 'GET'],
+		['name' => 'case#skeletonFromZaaktype', 'url' => '/api/cases/skeleton-from-zaaktype', 'verb' => 'POST'],
+		['name' => 'case#transition', 'url' => '/api/cases/items/{uuid}/transition', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'case#enable', 'url' => '/api/cases/items/{uuid}/enable', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'case#show', 'url' => '/api/cases/{objectUuid}', 'verb' => 'GET', 'requirements' => ['objectUuid' => '[^/]+']],
+		['name' => 'case#create', 'url' => '/api/cases/{objectUuid}', 'verb' => 'POST', 'requirements' => ['objectUuid' => '[^/]+']],
+		['name' => 'case#destroy', 'url' => '/api/cases/{objectUuid}', 'verb' => 'DELETE', 'requirements' => ['objectUuid' => '[^/]+']],
+		['name' => 'case#evaluate', 'url' => '/api/cases/{objectUuid}/evaluate', 'verb' => 'POST', 'requirements' => ['objectUuid' => '[^/]+']],
+		['name' => 'case#enableable', 'url' => '/api/cases/{objectUuid}/enableable', 'verb' => 'GET', 'requirements' => ['objectUuid' => '[^/]+']],
+		['name' => 'case#attach', 'url' => '/api/cases/{objectUuid}/items', 'verb' => 'POST', 'requirements' => ['objectUuid' => '[^/]+']],
+		['name' => 'case#complete', 'url' => '/api/cases/{objectUuid}/complete', 'verb' => 'POST', 'requirements' => ['objectUuid' => '[^/]+']],
 		// Delegation grants (or-delegation-grants): the consent surface. A grant
 		// store with no way to answer is a store that only ever says no, so these
 		// are what make every delegation refusal recoverable.

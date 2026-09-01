@@ -51,6 +51,10 @@ use OCP\AppFramework\Db\Entity;
  * @method string|null getStatus()
  * @method void setStatus(?string $status)
  * @method array|null getMarking()
+ * @method array|null getPlaceItems()
+ * @method void setPlaceItems(?array $placeItems)
+ * @method integer|null getFirings()
+ * @method void setFirings(?int $firings)
  * @method void setMarking(?array $marking)
  * @method array|null getItems()
  * @method void setItems(?array $items)
@@ -78,6 +82,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setResumeAt(?DateTime $resumeAt)
  * @method string|null getParentRunUuid()
  * @method void setParentRunUuid(?string $parentRunUuid)
+ * @method string|null getCorrelationKey()
+ * @method void setCorrelationKey(?string $correlationKey)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
@@ -213,6 +219,24 @@ class FlowRun extends Entity implements JsonSerializable {
 	protected ?array $marking = null;
 
 	/**
+	 * The items sitting on each marked place, `place => items`. Written by
+	 * the same transaction as the marking so a marking can never name a
+	 * place whose items were not written; null for a run that predates the
+	 * column, which then seeds from the flat `items` on first read.
+	 *
+	 * @var array|null
+	 */
+	protected ?array $placeItems = null;
+
+	/**
+	 * Committed firings across ALL streams and passes — the durable input to
+	 * the transition ceiling, incremented inside each firing's commit.
+	 *
+	 * @var int|null
+	 */
+	protected ?int $firings = 0;
+
+	/**
 	 * The item list as it stood when the run last stopped.
 	 *
 	 * @var array|null
@@ -322,6 +346,16 @@ class FlowRun extends Entity implements JsonSerializable {
 	protected ?string $parentRunUuid = null;
 
 	/**
+	 * The business key an await-signal step is waiting to be told about,
+	 * populated at suspension and cleared when the run leaves suspension
+	 * (flow-approval-consolidation design D-7). Indexed, so a signal
+	 * addressed by key resolves without a JSON scan.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $correlationKey = null;
+
+	/**
 	 * Creation timestamp.
 	 *
 	 * @var DateTime|null
@@ -344,6 +378,8 @@ class FlowRun extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'flowVersion', type: 'integer');
 		$this->addType(fieldName: 'status', type: 'string');
 		$this->addType(fieldName: 'marking', type: 'json');
+		$this->addType(fieldName: 'placeItems', type: 'json');
+		$this->addType(fieldName: 'firings', type: 'integer');
 		$this->addType(fieldName: 'items', type: 'json');
 		$this->addType(fieldName: 'context', type: 'json');
 		$this->addType(fieldName: 'log', type: 'json');
@@ -357,6 +393,7 @@ class FlowRun extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'error', type: 'string');
 		$this->addType(fieldName: 'resumeAt', type: 'datetime');
 		$this->addType(fieldName: 'parentRunUuid', type: 'string');
+		$this->addType(fieldName: 'correlationKey', type: 'string');
 		$this->addType(fieldName: 'created', type: 'datetime');
 		$this->addType(fieldName: 'updated', type: 'datetime');
 
@@ -403,6 +440,8 @@ class FlowRun extends Entity implements JsonSerializable {
 			'flowVersion' => $this->flowVersion,
 			'status' => $this->status,
 			'marking' => ($this->marking ?? []),
+			'placeItems' => $this->placeItems,
+			'firings' => (int)($this->firings ?? 0),
 			'items' => ($this->items ?? []),
 			'context' => ($this->context ?? []),
 			'log' => ($this->log ?? []),
@@ -416,6 +455,7 @@ class FlowRun extends Entity implements JsonSerializable {
 			'error' => $this->error,
 			'resumeAt' => $resumeAt,
 			'parentRunUuid' => $this->parentRunUuid,
+			'correlationKey' => $this->correlationKey,
 			'created' => $created,
 			'updated' => $updated,
 		];

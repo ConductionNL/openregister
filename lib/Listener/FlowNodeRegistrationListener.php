@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
+use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode;
@@ -49,6 +50,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\SwitchNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
 use OCP\EventDispatcher\Event;
@@ -85,6 +87,8 @@ class FlowNodeRegistrationListener implements IEventListener {
 	 * @param TriggerObjectNode $triggerObject The "When an object changes" entry point.
 	 * @param TriggerScheduleNode $triggerSchedule The "On a schedule" entry point.
 	 * @param TriggerManualNode $triggerManual The "When someone runs it" entry point.
+	 * @param UserTaskNode $userTask The built-in "Ask a person" node.
+	 * @param PortalTaskNode $portalTask The built-in "Ask a party outside the organisation" node.
 	 */
 	public function __construct(
 		private readonly SetFieldsNode $setFields,
@@ -109,6 +113,8 @@ class FlowNodeRegistrationListener implements IEventListener {
 		private readonly TriggerObjectNode $triggerObject,
 		private readonly TriggerScheduleNode $triggerSchedule,
 		private readonly TriggerManualNode $triggerManual,
+		private readonly UserTaskNode $userTask,
+		private readonly PortalTaskNode $portalTask,
 	) {
 
 	}//end __construct()
@@ -153,6 +159,19 @@ class FlowNodeRegistrationListener implements IEventListener {
 		$event->registerNode(node: $this->sendNotification);
 		$event->registerNode(node: $this->sendEmail);
 		$event->registerNode(node: $this->sendTalkMessage);
+
+		// The human step (flow-user-task-node). Registered beside await-signal
+		// deliberately: the two are a pair, and their palette descriptions
+		// state which is for a system that calls back and which is for a
+		// performer who has to be found, told, and allowed to say no.
+		$event->registerNode(node: $this->userTask);
+
+		// The third waiter (flow-portal-task): a party OUTSIDE the instance,
+		// matched from the case and reached through the portal seam. The three
+		// palette descriptions are written as a set: signal for a system that
+		// calls back, user task for a performer in the organisation, portal
+		// task for a party outside it.
+		$event->registerNode(node: $this->portalTask);
 
 		// Entry points. Registered like any other node so the palette can offer
 		// them and the preflight can check their config — a trigger is where a
