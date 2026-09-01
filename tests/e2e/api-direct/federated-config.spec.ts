@@ -1,3 +1,5 @@
+import type { APIRequestContext } from '@playwright/test'
+
 /**
  * Federated configuration sharing — end-to-end via the live HTTP API.
  *
@@ -13,9 +15,9 @@
  *
  * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
  */
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { execSync } from 'node:child_process'
-import { resolveContainer } from '../base-url'
+import { resolveContainer } from '../base-url.ts'
 
 const API = '/index.php/apps/openregister/api'
 const JSON_HEADERS = {

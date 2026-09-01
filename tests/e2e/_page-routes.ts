@@ -122,8 +122,9 @@ export const DeletedIndex = '/deleted'
 export const SchemaDetails = (id: string | number): string => `/schemas/${id}`
 
 /** `src/views/application/ApplicationDetails.vue` — single application, by id. */
-export const ApplicationDetails = (id: string | number): string =>
-	`/applications/${id}`
+export function ApplicationDetails(id: string | number): string {
+	return `/applications/${id}`
+}
 
 /** `src/views/flows/FlowDetailPage.vue` — single flow, by id. */
 export const FlowDetailPage = (id: string | number): string => `/flows/${id}`
@@ -136,8 +137,10 @@ export const ReportView = (id: string | number): string => `/reports/${id}`
  * host, which mounts one provider tab on its own rather than inside the
  * ObjectDetails sidebar. `tests/e2e/leaf-screenshots.spec.ts` drives it.
  */
-export const IntegrationsView = (
+export function IntegrationsView(
 	register: string | number,
 	schema: string | number,
 	objectId: string,
-): string => `/integrations/${register}/${schema}/${objectId}`
+): string {
+	return `/integrations/${register}/${schema}/${objectId}`
+}

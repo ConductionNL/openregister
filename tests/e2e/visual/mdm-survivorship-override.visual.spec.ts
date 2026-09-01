@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -13,14 +15,14 @@
  * Baselines live in tests/e2e/visual/<spec>-snapshots/ and ARE committed.
  * See _visual-helpers.ts for the platform-rendering caveat.
  */
-import { test, expect, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import {
 	dismissSupportDialog,
-	waitForContentReady,
+	dynamicMasks,
 	freezePage,
 	SHOT_OPTIONS,
-	dynamicMasks,
-} from './_visual-helpers'
+	waitForContentReady,
+} from './_visual-helpers.ts'
 
 const APP = '/index.php/apps/openregister'
 

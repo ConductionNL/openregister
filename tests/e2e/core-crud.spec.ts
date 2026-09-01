@@ -1,3 +1,5 @@
+import type { APIRequestContext } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -14,7 +16,7 @@
  * test object. Creates/modifies/deletes objects under a unique run-id
  * prefix to avoid collisions with other test agents.
  */
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
 
 const STORAGE_STATE = path.resolve(__dirname, '.auth/admin.json')

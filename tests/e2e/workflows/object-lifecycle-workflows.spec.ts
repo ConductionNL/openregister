@@ -1,3 +1,6 @@
+import type { APIRequestContext } from '@playwright/test'
+import type { SeededRegister, SeededSchema } from '../_fixtures.ts'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -35,20 +38,18 @@
  *   BUG-3  GET /api/objects/{register}/{schema}?_includeDeleted=true returns
  *          HTTP 500 (cannot list including soft-deleted objects).
  */
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
 import {
-	makeRunId,
+	createObject,
 	createRegister,
 	createSchema,
-	linkSchemaToRegister,
-	createObject,
 	deleteRegister,
 	deleteSchema,
+	linkSchemaToRegister,
+	makeRunId,
 	twoPropertySchema,
-	type SeededRegister,
-	type SeededSchema,
-} from '../_fixtures'
+} from '../_fixtures.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '..', '.auth', 'admin.json')
 const API = '/index.php/apps/openregister/api'

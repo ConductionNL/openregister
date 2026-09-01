@@ -14,7 +14,7 @@
  *
  * These are mostly API surface tests verifying HTTP contracts.
  */
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const RUN_ID = `e2e-${Date.now()}`
 

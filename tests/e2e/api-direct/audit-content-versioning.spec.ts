@@ -11,7 +11,7 @@
  * Creates a test object, verifies an audit entry is created, updates
  * it, verifies version increments, then deletes it.
  */
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const RUN_ID = `e2e-${Date.now()}`
 const REGISTER_ID = '8'

@@ -16,9 +16,9 @@
  * a baseline is committed this spec is non-gating (first run generates it).
  */
 import { test } from '@playwright/test'
-import * as path from 'path'
 import * as fs from 'fs'
-import { shootSurface } from './_visual-helpers'
+import * as path from 'path'
+import { shootSurface } from './_visual-helpers.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '..', '.auth', 'admin.json')
 const APP = '/index.php/apps/openregister'

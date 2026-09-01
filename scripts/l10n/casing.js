@@ -1,7 +1,5 @@
 #!/usr/bin/env node
-/* eslint-disable n/no-process-exit */
-/* eslint-disable no-console */
-/* eslint-disable n/shebang */
+ 
 /**
  * Mid-sentence capitalisation of domain terms, for one bundle, against a baseline.
  *
@@ -71,7 +69,12 @@ if (!loc) {
 	console.error('usage: casing.js <loc> [--min-words=6] [--top=30] [--mine] [--all-terms]')
 	process.exit(2)
 }
-const num = (flag, dflt) => {
+/**
+ *
+ * @param flag
+ * @param dflt
+ */
+function num (flag, dflt) {
 	const a = process.argv.find((x) => x.startsWith(`--${flag}=`))
 	return a ? Number(a.slice(flag.length + 3)) : dflt
 }
@@ -270,7 +273,13 @@ console.log(`casing ${loc}: mid-sentence capitalisation, conditioned on the Engl
 console.log(`(prose = key >=${MIN_WORDS} words and not Title Case; label = everything else)`)
 console.log()
 console.log('                        prose (up:down)   label (up:down)   values')
-const row = (name, m, extra) => {
+/**
+ *
+ * @param name
+ * @param m
+ * @param extra
+ */
+function row (name, m, extra) {
 	console.log(`  ${name.padEnd(20)}  ${ratio(m.tally.prose).padEnd(16)}  `
 		+ `${ratio(m.tally.label).padEnd(16)}  ${m.tally.prose.values + m.tally.label.values}`
 		+ (extra ? `   ${extra}` : ''))

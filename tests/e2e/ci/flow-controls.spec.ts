@@ -101,9 +101,12 @@
  * are 5s router and read-back assertions. If any of these defects returns, this
  * spec fails in about a second, quoting the server's own reason.
  */
-import { test, expect } from '@playwright/test'
-import * as path from 'path'
+import type { Locator } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 import * as fs from 'fs'
+import * as path from 'path'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 
@@ -138,9 +141,7 @@ test.use(fs.existsSync(STORAGE_STATE) ? { storageState: STORAGE_STATE } : {})
  * @param locator The themed control to click.
  * @return {Promise<void>}
  */
-async function clickThemed(
-	locator: import('@playwright/test').Locator,
-): Promise<void> {
+async function clickThemed(locator: Locator): Promise<void> {
 	await expect(locator).toBeVisible()
 	await expect(locator).toBeEnabled()
 	await locator.dispatchEvent('click')
@@ -156,10 +157,7 @@ async function clickThemed(
  * @param uuid The flow to delete.
  * @return {Promise<void>}
  */
-async function deleteFlow(
-	page: import('@playwright/test').Page,
-	uuid: string,
-): Promise<void> {
+async function deleteFlow(page: Page, uuid: string): Promise<void> {
 	await page.evaluate(async (id) => {
 		const meta = document.head.querySelector(
 			'meta[name=csrf-token]',
@@ -168,7 +166,6 @@ async function deleteFlow(
 			method: 'DELETE',
 			headers: {
 				requesttoken:
-					// eslint-disable-next-line @typescript-eslint/no-explicit-any
 					((window as any).OC && (window as any).OC.requestToken)
 					|| (meta && meta.content)
 					|| '',

@@ -126,7 +126,15 @@ class AnnotationNotifier implements INotifier {
 		// localised string with the object title + register name substituted.
 		$objectTitle = (string)($params['objectTitle'] ?? $l->t('object'));
 		$registerName = (string)($params['registerName'] ?? ($params['registerId'] ?? ''));
-		$parsedSubject = $l->t(self::SUBJECT_TEMPLATES[$subject], [$objectTitle, $registerName]);
+		// Only a canonical object subject has a template; a custom subject
+		// (e.g. a flow send's `flow_message`) reaches this point purely on its
+		// `_text`, and indexing SUBJECT_TEMPLATES with it would be an
+		// undefined-key error that killed the render.
+		$parsedSubject = '';
+		if ($isObject === true) {
+			$parsedSubject = $l->t(self::SUBJECT_TEMPLATES[$subject], [$objectTitle, $registerName]);
+		}
+
 		if ($hasText === true) {
 			$parsedSubject = $text;
 		}

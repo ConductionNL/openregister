@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-/* eslint-disable n/no-process-exit */
+ 
 // Catalan register detector for openregister l10n.
 //
 // Catalan software (Softcatalà style) splits by string ROLE, not by one global
@@ -19,6 +18,10 @@
 // What IS unambiguous is the possessive/pronoun choice, so that carries the
 // verdict and the verb lists only corroborate it.
 
+/**
+ *
+ * @param s
+ */
 function fold(s) {
 	return String(s).toLowerCase()
 }
@@ -75,6 +78,10 @@ const CONTROLS = [
 	['Qualitat de les dades', 'neither'],
 ]
 
+/**
+ *
+ * @param s
+ */
 function score(s) {
 	const t = fold(s)
 	let f = 0
@@ -86,6 +93,9 @@ function score(s) {
 	return { f, i }
 }
 
+/**
+ *
+ */
 function runControls() {
 	let fail = 0
 	for (const [s, want] of CONTROLS) {
