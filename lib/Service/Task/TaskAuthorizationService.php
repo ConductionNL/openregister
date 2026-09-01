@@ -71,6 +71,7 @@ class TaskAuthorizationService {
 	];
 
 	/**
+<<<<<<< HEAD
 	 * Verbs no caller may run on an external task (flow-portal-task).
 	 *
 	 * @var array<int, string>
@@ -86,6 +87,8 @@ class TaskAuthorizationService {
 	private const ANSWERING_VERBS = ['complete', 'resolve', 'checklist'];
 
 	/**
+=======
+>>>>>>> origin/development
 	 * Constructor.
 	 *
 	 * @param IGroupManager|null $groupManager Resolves group membership, role
@@ -140,6 +143,7 @@ class TaskAuthorizationService {
 			);
 		}
 
+<<<<<<< HEAD
 		// An EXTERNAL task is decided by its own rule set, BEFORE the
 		// administrator bypass: the matched party is the only identity that
 		// may answer, and "an administrator acting through the seam" is one
@@ -149,6 +153,8 @@ class TaskAuthorizationService {
 			return;
 		}
 
+=======
+>>>>>>> origin/development
 		if ($this->isAdmin(uid: $uid) === true) {
 			return;
 		}
@@ -264,6 +270,7 @@ class TaskAuthorizationService {
 	}//end isAdmin()
 
 	/**
+<<<<<<< HEAD
 	 * The rule set of an external (portal party) task.
 	 *
 	 * Three groups of verbs, decided in this order. The pooling and mandate
@@ -337,6 +344,8 @@ class TaskAuthorizationService {
 	}//end assertExternal()
 
 	/**
+=======
+>>>>>>> origin/development
 	 * The caller must be the task's current assignee.
 	 *
 	 * `on_behalf_of` does not loosen this: delegation REASSIGNS the task to

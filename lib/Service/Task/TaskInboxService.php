@@ -36,8 +36,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\AbstractObjectMapper;
+<<<<<<< HEAD
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\PortalTaskDeliveryMapper;
+=======
+>>>>>>> origin/development
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Db\TaskMapper;
@@ -57,6 +60,7 @@ class TaskInboxService {
 	 * @param TaskMapper $tasks The datastore queries.
 	 * @param TaskTemporalProjection $temporal The ONE overdue derivation.
 	 * @param LoggerInterface $logger Failure reporting.
+<<<<<<< HEAD
 	 * @param PortalTaskDeliveryMapper|null $deliveries Reads the delivery
 	 *                                                  state of an EXTERNAL
 	 *                                                  task's ask, attached
@@ -67,6 +71,8 @@ class TaskInboxService {
 	 *                                                  for the same reason as
 	 *                                                  the object store; absent,
 	 *                                                  the row says so.
+=======
+>>>>>>> origin/development
 	 * @param AbstractObjectMapper|null $objects Resolves subject objects for
 	 *                                           row context. Nullable so the
 	 *                                           service stays constructible
@@ -81,7 +87,10 @@ class TaskInboxService {
 		private readonly TaskTemporalProjection $temporal,
 		private readonly LoggerInterface $logger,
 		private readonly ?AbstractObjectMapper $objects = null,
+<<<<<<< HEAD
 		private readonly ?PortalTaskDeliveryMapper $deliveries = null,
+=======
+>>>>>>> origin/development
 	) {
 
 	}//end __construct()
@@ -165,14 +174,18 @@ class TaskInboxService {
 		$row['daysUntilDue'] = $projection['daysUntilDue'];
 		$row['daysOverdue'] = $projection['daysOverdue'];
 
+<<<<<<< HEAD
 		if ((string)$task->getPerformerType() === Task::PERFORMER_EXTERNAL) {
 			$row['delivery'] = $this->deliveryState(task: $task);
 		}
 
+=======
+>>>>>>> origin/development
 		return $row;
 	}//end row()
 
 	/**
+<<<<<<< HEAD
 	 * The delivery state of an external task's ask, for its row.
 	 *
 	 * Summarised from the delivery request records: `requested` until every
@@ -227,6 +240,8 @@ class TaskInboxService {
 	}//end subjectContextsFor()
 
 	/**
+=======
+>>>>>>> origin/development
 	 * Synthesize a display title for a titleless task — on read, never persisted.
 	 *
 	 * A stored synthesized title would go stale the moment the subject is

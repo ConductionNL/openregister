@@ -48,11 +48,17 @@ use OCA\OpenRegister\Db\TaskAuditMapper;
 use OCA\OpenRegister\Db\TaskCandidateMapper;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\TaskRelationMapper;
+<<<<<<< HEAD
 use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCP\EventDispatcher\IEventDispatcher;
+=======
+use OCA\OpenRegister\Exception\TaskAccessDeniedException;
+use OCA\OpenRegister\Exception\TaskConflictException;
+use OCA\OpenRegister\Exception\TaskValidationException;
+>>>>>>> origin/development
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -78,11 +84,14 @@ use Throwable;
  * @SuppressWarnings(PHPMD.StaticAccess) TaskState is a stateless published
  * vocabulary (the one status mapping); calling it statically is the point,
  * an instance would be a second copy of the same table.
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.ExcessiveParameterList) The tenth constructor
  * argument is the nullable event dispatcher that announces terminality
  * (flow-user-task-node); it is last so the hand-built test services keep
  * their order, and folding it into another collaborator would hide that a
  * lifecycle verb has an after-commit side effect.
+=======
+>>>>>>> origin/development
  *
  * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
@@ -101,6 +110,7 @@ class TaskService {
 	 * @param LoggerInterface $logger Failure reporting.
 	 * @param TaskBuilder $builder Validates and builds a new task from
 	 *                             boundary data (the vocabularies live there).
+<<<<<<< HEAD
 	 * @param IEventDispatcher|null $dispatcher Announces a task reaching a
 	 *                                          terminal state
 	 *                                          ({@see TaskTerminalEvent}), AFTER
@@ -111,6 +121,8 @@ class TaskService {
 	 *                                          terminality goes unannounced and a
 	 *                                          parked run learns of it on its
 	 *                                          heartbeat instead.
+=======
+>>>>>>> origin/development
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
@@ -122,7 +134,10 @@ class TaskService {
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 		private readonly TaskBuilder $builder,
+<<<<<<< HEAD
 		private readonly ?IEventDispatcher $dispatcher = null,
+=======
+>>>>>>> origin/development
 	) {
 
 	}//end __construct()
@@ -451,6 +466,7 @@ class TaskService {
 	 * @param string|null $resultText Free-text result.
 	 * @param string|null $comment Completion comment.
 	 * @param string|null $actor The completing identity — must be the assignee.
+<<<<<<< HEAD
 	 * @param array<string, mixed>|null $responses The submitted answer fields,
 	 *                                             when the completion carries
 	 *                                             any (a portal task's form).
@@ -458,11 +474,14 @@ class TaskService {
 	 *                                                       files ALREADY stored
 	 *                                                       for this completion;
 	 *                                                       never bytes.
+=======
+>>>>>>> origin/development
 	 *
 	 * @return Task The completed task.
 	 *
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
+<<<<<<< HEAD
 	public function complete(
 		string $uuid,
 		string $outcome,
@@ -472,15 +491,22 @@ class TaskService {
 		?array $responses = null,
 		?array $evidence = null,
 	): Task {
+=======
+	public function complete(string $uuid, string $outcome, ?string $resultText, ?string $comment, ?string $actor): Task {
+>>>>>>> origin/development
 		return $this->completeInternal(
 			verb: 'complete',
 			uuid: $uuid,
 			outcome: $outcome,
 			resultText: $resultText,
 			comment: $comment,
+<<<<<<< HEAD
 			actor: $actor,
 			responses: $responses,
 			evidence: $evidence
+=======
+			actor: $actor
+>>>>>>> origin/development
 		);
 	}//end complete()
 
@@ -508,7 +534,10 @@ class TaskService {
 				return $persisted;
 			}
 		);
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/development
 	}//end cancel()
 
 	/**
@@ -659,7 +688,10 @@ class TaskService {
 				return $persisted;
 			}
 		);
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/development
 	}//end terminateAsMoot()
 
 	/**
@@ -678,6 +710,7 @@ class TaskService {
 	}//end get()
 
 	/**
+<<<<<<< HEAD
 	 * Resolve, authorize and audit a verb's task WITHOUT running the verb.
 	 *
 	 * For a caller that must do work between the authorization and the
@@ -732,6 +765,8 @@ class TaskService {
 	}//end record()
 
 	/**
+=======
+>>>>>>> origin/development
 	 * The audit trail of a task, oldest first.
 	 *
 	 * @param string $uuid The task uuid.
@@ -788,8 +823,11 @@ class TaskService {
 	 * @param string|null $resultText Free-text result.
 	 * @param string|null $comment Completion comment.
 	 * @param string|null $actor The acting identity.
+<<<<<<< HEAD
 	 * @param array<string, mixed>|null $responses Submitted answer fields, when any.
 	 * @param array<int, array<string, mixed>>|null $evidence Stored file references, when any.
+=======
+>>>>>>> origin/development
 	 *
 	 * @return Task The completed task.
 	 *
@@ -804,8 +842,11 @@ class TaskService {
 		?string $resultText,
 		?string $comment,
 		?string $actor,
+<<<<<<< HEAD
 		?array $responses = null,
 		?array $evidence = null,
+=======
+>>>>>>> origin/development
 	): Task {
 		$task = $this->openTaskFor(verb: $verb, uuid: $uuid, actor: $actor);
 
@@ -818,6 +859,7 @@ class TaskService {
 		}
 
 		return $this->transactional(
+<<<<<<< HEAD
 			mutation: function () use ($task, $outcome, $resultText, $comment, $actor, $verb, $responses, $evidence): Task {
 				$task->setOutcome($outcome);
 				$task->setResultText($resultText);
@@ -830,6 +872,12 @@ class TaskService {
 					$task->setEvidence($evidence);
 				}
 
+=======
+			mutation: function () use ($task, $outcome, $resultText, $comment, $actor, $verb): Task {
+				$task->setOutcome($outcome);
+				$task->setResultText($resultText);
+				$task->setComment($comment);
+>>>>>>> origin/development
 				$task->setCompletedAt(new DateTime());
 				$task->setCompletedBy($actor);
 				$this->applyState(task: $task, state: Task::STATE_COMPLETED, action: $verb);
@@ -839,7 +887,10 @@ class TaskService {
 				return $persisted;
 			}
 		);
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/development
 	}//end completeInternal()
 
 	/**
@@ -1000,12 +1051,19 @@ class TaskService {
 	}//end appendAudit()
 
 	/**
+<<<<<<< HEAD
 	 * Run a mutation and its audit in ONE transaction, then announce terminality.
 	 *
 	 * The rollback is what makes "a completed task without its audit entry"
 	 * unreachable: an audit-write failure unwinds the completion with it.
 	 * A mutation that leaves the task terminal is announced as
 	 * {@see TaskTerminalEvent} once the transaction has closed.
+=======
+	 * Run a mutation and its audit in ONE transaction.
+	 *
+	 * The rollback is what makes "a completed task without its audit entry"
+	 * unreachable: an audit-write failure unwinds the completion with it.
+>>>>>>> origin/development
 	 *
 	 * @param callable(): Task $mutation The mutation to run.
 	 *
@@ -1020,10 +1078,16 @@ class TaskService {
 		try {
 			$result = $mutation();
 			$this->db->commit();
+<<<<<<< HEAD
+=======
+
+			return $result;
+>>>>>>> origin/development
 		} catch (Throwable $failure) {
 			$this->db->rollBack();
 			throw $failure;
 		}
+<<<<<<< HEAD
 
 		// Terminality is announced HERE, after the commit and from the one
 		// place every mutation passes, so no verb can forget it (the same
@@ -1045,6 +1109,8 @@ class TaskService {
 		}
 
 		return $result;
+=======
+>>>>>>> origin/development
 	}//end transactional()
 
 	/**
