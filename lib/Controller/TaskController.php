@@ -70,6 +70,16 @@ use Throwable;
 /**
  * REST surface for the fleet-generic task.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The sum of the verb
+ * routes and one catch per refusal shape in {@see respondWith()}; both scale
+ * with the spec, not with entanglement.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) The eleventh constructor
+ * argument is the form-aware completion; the controller is the one place the
+ * form resolver and the completion path meet HTTP, and hiding either behind
+ * a facade would add a class that only forwards.
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity) respondWith() holds ONE
+ * catch per refusal shape so no verb can drift; folding two shapes into one
+ * catch is how a 400 and a 422 end up indistinguishable.
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) One route method per
  * lifecycle verb the spec names, plus the three reads. Folding verbs into a
  * mode parameter is how per-verb authorization rules get lost.

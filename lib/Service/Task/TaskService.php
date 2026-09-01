@@ -61,6 +61,10 @@ use UnexpectedValueException;
 /**
  * Creates, routes, claims, completes, cancels and terminates tasks.
  *
+ * @SuppressWarnings(PHPMD.TooManyMethods) The same argument as below, counted
+ * differently: the verbs plus the four-step protocol each verb shares
+ * (resolve, authorize, persist-open, audit) and the two seams the task-form
+ * completion uses. Merging helpers to duck a count would hide the protocol.
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) One method per lifecycle
  * verb the spec names (create/offer/claim/unclaim/assign/reassign/delegate/
  * resolve/complete/cancel) plus the two propagation entry points. Merging

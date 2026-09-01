@@ -80,6 +80,10 @@ use RuntimeException;
 /**
  * Creates one task, suspends until it is terminal, and routes on the outcome.
  *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The thirteenth dependency
+ * is the task-form reader, which the node needs so a form declaration is
+ * refused when the step is SAVED rather than when the performer meets it;
+ * dropping a name here would move that failure onto the performer.
  * @SuppressWarnings(PHPMD.StaticAccess) FlowTaskBridge::outcomeBagFor is a
  * stateless helper over a value; a factory to call it would add a dependency
  * to say the same thing.

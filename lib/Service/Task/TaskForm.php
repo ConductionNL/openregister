@@ -37,6 +37,11 @@ namespace OCA\OpenRegister\Service\Task;
 /**
  * A step's completion declaration: its form, if any, and its checklist rule.
  *
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `requireChecklist` is a stored
+ * fact on a readonly value object, constructed with named arguments by one
+ * reader; it selects no behaviour in this class, which is what the rule is
+ * actually about.
+ *
  * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
  */
 final class TaskForm {

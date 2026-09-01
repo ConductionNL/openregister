@@ -47,6 +47,13 @@ use UnexpectedValueException;
 /**
  * Normalises and validates task form declarations against the live schema.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The complexity IS the
+ * refusal list: every branch is one named reason a declaration cannot be
+ * rendered (unknown kind, both spellings, duplicate field, absent property,
+ * read-only, invisible, undeclared action, missing app). Splitting reader
+ * from refuser would put a declaration's shape and its reasons in two files
+ * that must agree.
+ *
  * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
  */
 class TaskFormReader {
