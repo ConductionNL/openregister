@@ -116,21 +116,40 @@ class TaskMapper extends QBMapper {
 		$entity->setUpdated(new DateTime());
 
 		$updated = parent::update(entity: $entity);
-
-		// Announce terminality from the ONE choke point every terminal write
-		// passes (flow-business-timers D-9), inside the caller's transaction.
-		if ($this->dispatcher !== null && $updated->isInTerminalState() === true) {
-			$this->dispatcher->dispatchTyped(
-				new TaskTerminalEvent(
-					taskUuid: (string)$updated->getUuid(),
-					state: (string)$updated->getState(),
-					outcome: $updated->getOutcome()
-				)
-			);
-		}
+		$this->announceTerminality(task: $updated);
 
 		return $updated;
 	}//end update()
+
+	/**
+	 * Announce a terminal write (flow-business-timers D-9).
+	 *
+	 * Called from BOTH persistence paths — {@see update()} and
+	 * {@see updateIfOpen()} — so the two choke points every terminal task
+	 * write passes both dispatch, inside the caller's transaction, and a
+	 * listener cancelling the task's business timers does so in the same
+	 * operation that made the subject terminal. Idempotent listeners only:
+	 * the event can fire more than once for one task.
+	 *
+	 * @param Task $task The task as persisted.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 */
+	private function announceTerminality(Task $task): void {
+		if ($this->dispatcher === null || $task->isInTerminalState() === false) {
+			return;
+		}
+
+		$this->dispatcher->dispatchTyped(
+			new TaskTerminalEvent(
+				taskUuid: (string)$task->getUuid(),
+				state: (string)$task->getState(),
+				outcome: $task->getOutcome()
+			)
+		);
+	}//end announceTerminality()
 
 	/**
 	 * Find a task by its public uuid.
@@ -195,7 +214,12 @@ class TaskMapper extends QBMapper {
 		$qb->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
 			->andWhere($qb->expr()->eq('is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)));
 
-		return $qb->executeStatement() === 1;
+		$won = ($qb->executeStatement() === 1);
+		if ($won === true) {
+			$this->announceTerminality(task: $task);
+		}
+
+		return $won;
 	}//end updateIfOpen()
 
 	/**

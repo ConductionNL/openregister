@@ -626,6 +626,97 @@ class TaskService {
 	}//end terminateAsMoot()
 
 	/**
+	 * A business timer's ENFORCING outcome, applied as a named task action.
+	 *
+	 * The four outcomes leave the subject in four DISTINCT observable states
+	 * (flow-business-timers design D-3): `skip` completes the task with
+	 * outcome `skipped` so the process continues past the step; `error`
+	 * terminates it with outcome `failed`; `dead_letter` disables it with
+	 * outcome `dead_letter`, parked for an operator; `transition:<action>`
+	 * completes it with `<action>` as outcome and audited action. One code
+	 * path, one audit trail, and the audit names the timer as actor.
+	 *
+	 * Idempotent on an already-terminal task, and a lost race against a
+	 * concurrent completion surfaces as {@see TaskConflictException}, which
+	 * the sweep treats as "nothing to do".
+	 *
+	 * @param string $uuid The task uuid.
+	 * @param string $outcome `skip`, `error`, `dead_letter` or `transition:<action>`.
+	 * @param string $source The timer identity recorded as actor (`flow-timer:<uuid>`).
+	 * @param string $reason Why, recorded on the audit.
+	 *
+	 * @return Task The task as left by the outcome, or untouched when already terminal.
+	 *
+	 * @throws TaskValidationException On an outcome outside the vocabulary.
+	 * @throws TaskConflictException When the row was closed concurrently.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
+	 */
+	public function applyTimerOutcome(string $uuid, string $outcome, string $source, string $reason): Task {
+		[$state, $recorded, $action] = $this->timerOutcomeTarget(outcome: $outcome);
+
+		$task = $this->tasks->findByUuid(uuid: $uuid);
+		if ($task->isInTerminalState() === true) {
+			// Idempotent: already-terminal stays as it ended.
+			return $task;
+		}
+
+		return $this->transactional(
+			mutation: function () use ($task, $state, $recorded, $action, $source, $reason): Task {
+				$task->setOutcome($recorded);
+				$task->setBlockedReason(null);
+				if ($state === Task::STATE_COMPLETED) {
+					$task->setCompletedAt(new DateTime());
+					$task->setCompletedBy($source);
+				}
+
+				$this->applyState(task: $task, state: $state, action: $action);
+				$persisted = $this->persistOpen(task: $task);
+				$this->appendAudit(task: $persisted, action: $action, actor: $source, reason: $reason);
+
+				return $persisted;
+			}
+		);
+	}//end applyTimerOutcome()
+
+	/**
+	 * The (state, outcome, action) an enforcing outcome maps to.
+	 *
+	 * @param string $outcome The declared outcome.
+	 *
+	 * @return array{0: string, 1: string, 2: string} Target state, recorded outcome, audited action.
+	 *
+	 * @throws TaskValidationException On an outcome outside the vocabulary.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
+	 */
+	private function timerOutcomeTarget(string $outcome): array {
+		$reserved = [
+			'skip' => [Task::STATE_COMPLETED, 'skipped', 'skip'],
+			'error' => [Task::STATE_TERMINATED, 'failed', 'error'],
+			'dead_letter' => [Task::STATE_DISABLED, 'dead_letter', 'dead_letter'],
+		];
+		if (array_key_exists($outcome, $reserved) === true) {
+			return $reserved[$outcome];
+		}
+
+		if (str_starts_with($outcome, 'transition:') === true) {
+			$action = trim(substr($outcome, strlen('transition:')));
+			if ($action === '' || strlen($action) > 32 || array_key_exists($action, $reserved) === true) {
+				throw new TaskValidationException(
+					message: sprintf("Timer outcome '%s' names no usable action: it must be 1..32 characters and not a reserved outcome.", $outcome)
+				);
+			}
+
+			return [Task::STATE_COMPLETED, $action, $action];
+		}
+
+		throw new TaskValidationException(
+			message: sprintf("Timer outcome '%s' is refused: use skip, error, dead_letter or transition:<action>.", $outcome)
+		);
+	}//end timerOutcomeTarget()
+
+	/**
 	 * Fetch a task by uuid.
 	 *
 	 * @param string $uuid The task uuid.
