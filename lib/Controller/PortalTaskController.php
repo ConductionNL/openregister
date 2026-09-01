@@ -56,6 +56,7 @@ use OCA\OpenRegister\Service\Portal\PortalTaskService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
@@ -116,6 +117,7 @@ class PortalTaskController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function index(int $limit = 25, int $offset = 0): JSONResponse {
 		return $this->asSubject(
 			action: fn (PortalSubject $subject): JSONResponse => new JSONResponse(
@@ -135,6 +137,7 @@ class PortalTaskController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function show(string $uuid): JSONResponse {
 		return $this->asSubject(
 			action: fn (PortalSubject $subject): JSONResponse => new JSONResponse(
@@ -159,6 +162,7 @@ class PortalTaskController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function complete(string $uuid, string $outcome = PortalTaskService::DEFAULT_OUTCOME, ?string $comment = null): JSONResponse {
 		return $this->asSubject(
 			action: fn (PortalSubject $subject): JSONResponse => new JSONResponse(
