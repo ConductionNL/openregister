@@ -7,6 +7,17 @@
  * Tasks are stored as standard VTODO items in the user's Nextcloud calendar with
  * X-OPENREGISTER-* properties for linking and an RFC 9253 LINK property.
  *
+ * Two classes of VTODO pass through here, keyed on ONE property
+ * (flow-task-inbox-projections, design D-7):
+ *
+ * - STANDALONE VTODOs carry no `X-OPENREGISTER-TASK`. The VTODO is their
+ *   store and every method below behaves as it always did.
+ * - PROJECTED VTODOs carry `X-OPENREGISTER-TASK`, the engine task uuid. The
+ *   engine task row is their store; this service is a projection writer. A
+ *   projected VTODO cannot be created here, a status change on one is a
+ *   REQUEST through the write-back gate, and deleting one does not cancel
+ *   the task.
+ *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -19,6 +30,7 @@
  * @link      https://OpenRegister.app
  *
  * @spec openspec/specs/object-interactions/spec.md
+ * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-tasks-on-objects-via-caldav-vtodo
  */
 
 declare(strict_types=1);
@@ -29,6 +41,10 @@ use DateTime;
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
+use OCA\OpenRegister\Exception\TaskAccessDeniedException;
+use OCA\OpenRegister\Service\Task\TaskCalendarProjector;
+use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
+use OCA\OpenRegister\Service\Task\VtodoCalendarLocator;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -47,6 +63,8 @@ use Sabre\VObject\Reader;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The leaf now routes projected
+ * VTODOs through the write-back gate beside its own CalDAV collaborators.
  */
 class TaskService {
 
@@ -79,12 +97,29 @@ class TaskService {
 	private readonly IURLGenerator $urlGenerator;
 
 	/**
+	 * Calendar selection by uid, shared with the projector.
+	 *
+	 * @var VtodoCalendarLocator
+	 */
+	private readonly VtodoCalendarLocator $calendars;
+
+	/**
+	 * The write-back gate a PROJECTED VTODO's status change goes through.
+	 * Nullable so the service stays constructible bare; without it a
+	 * projected update is refused, never applied unchecked (fail closed).
+	 *
+	 * @var TaskVtodoWriteBackGate|null
+	 */
+	private readonly ?TaskVtodoWriteBackGate $gate;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param CalDavBackend $calDavBackend CalDAV backend for VTODO operations
 	 * @param IUserSession $userSession User session for current user context
 	 * @param LoggerInterface $logger Logger for error reporting
 	 * @param IURLGenerator $urlGenerator URL generator for deep links
+	 * @param TaskVtodoWriteBackGate|null $gate The one path from a projected VTODO into the engine
 	 *
 	 * @return void
 	 */
@@ -93,11 +128,14 @@ class TaskService {
 		IUserSession $userSession,
 		LoggerInterface $logger,
 		IURLGenerator $urlGenerator,
+		?TaskVtodoWriteBackGate $gate = null,
 	) {
 		$this->calDavBackend = $calDavBackend;
 		$this->userSession = $userSession;
 		$this->logger = $logger;
 		$this->urlGenerator = $urlGenerator;
+		$this->calendars = new VtodoCalendarLocator(calDavBackend: $calDavBackend);
+		$this->gate = $gate;
 	}//end __construct()
 
 	/**
@@ -106,22 +144,28 @@ class TaskService {
 	 * Returns all VTODOs (optionally filtered by status) from the user's calendars.
 	 * Tasks with X-OPENREGISTER-* properties include linking metadata.
 	 *
+	 * This walks every calendar and filters in PHP, which is why it no longer
+	 * backs `GET /api/tasks` (that aggregate answers from the engine inbox).
+	 * It remains the read behind the `nc-task` virtual schema and the
+	 * caldav-vtodo object source, both of which project the acting user's own
+	 * calendar read-only. No assignee filter exists: an assignee was never
+	 * carried on a VTODO as anything but description prose, and the prose is
+	 * gone.
+	 *
 	 * @param string|null $status Optional status filter (e.g. 'needs-action', 'completed')
 	 * @param int $limit Maximum number of tasks to return
 	 * @param int $offset Number of tasks to skip
-	 * @param string|null $assignee Optional assignee filter (matches ATTENDEE or description)
 	 *
 	 * @return array{results: array, total: int} Task results with total count
 	 *
 	 * @throws Exception If no user is logged in
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-10
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-the-projection-carries-a-real-assignee-not-prose
 	 */
 	public function getAllUserTasks(
 		?string $status = null,
 		int $limit = 50,
 		int $offset = 0,
-		?string $assignee = null,
 	): array {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
@@ -172,16 +216,6 @@ class TaskService {
 						continue;
 					}
 
-					// Apply assignee filter.
-					if ($assignee !== null) {
-						$taskAssignee = $this->extractAssigneeFromDescription(
-							description: $taskArray['description'] ?? ''
-						);
-						if ($taskAssignee !== $assignee) {
-							continue;
-						}
-					}
-
 					$allTasks[] = $taskArray;
 				} catch (Exception $e) {
 					$this->logger->warning(
@@ -219,49 +253,8 @@ class TaskService {
 	 * @return bool True if the calendar supports VTODO.
 	 */
 	private function calendarSupportsVtodo(mixed $components): bool {
-		if ($components === null) {
-			return false;
-		}
-
-		if (is_object($components) === true && method_exists($components, 'getValue') === true) {
-			$componentValues = $components->getValue();
-			foreach ($componentValues as $comp) {
-				if (strtoupper($comp) === 'VTODO') {
-					return true;
-				}
-			}
-		} elseif (is_string($components) === true) {
-			return stripos($components, 'VTODO') !== false;
-		} elseif (is_iterable($components) === true) {
-			foreach ($components as $comp) {
-				$compName = (string)$comp;
-				if (is_string($comp) === true) {
-					$compName = $comp;
-				}
-
-				if (strtoupper($compName) === 'VTODO') {
-					return true;
-				}
-			}
-		}//end if
-
-		return false;
+		return $this->calendars->supportsVtodo(components: $components);
 	}//end calendarSupportsVtodo()
-
-	/**
-	 * Extract assignee from the description field.
-	 *
-	 * @param string $description The task description.
-	 *
-	 * @return string|null The assignee name or null.
-	 */
-	private function extractAssigneeFromDescription(string $description): ?string {
-		if (str_starts_with($description, 'Assigned to: ') === true) {
-			return substr($description, strlen('Assigned to: '));
-		}
-
-		return null;
-	}//end extractAssigneeFromDescription()
 
 	/**
 	 * Get all tasks linked to a specific OpenRegister object.
@@ -375,11 +368,18 @@ class TaskService {
 	 * @param string $objectTitle The object title for the LINK label
 	 * @param array $data Task data: summary, description, priority, due, status
 	 *
+	 * A payload that carries an engine task identity is REFUSED: a projected
+	 * VTODO is created only by the projection, so a VTODO carrying
+	 * `X-OPENREGISTER-TASK` always corresponds to a task the engine
+	 * authorized into existence.
+	 *
 	 * @return array|null The created task in JSON-friendly format, or null if the calendar data was not a VTODO
 	 *
 	 * @throws Exception If no user is logged in or no calendar found
+	 * @throws TaskAccessDeniedException If the payload attempts to set an engine task identity
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-tasks-on-objects-via-caldav-vtodo
 	 */
 	public function createTask(
 		int $registerId,
@@ -388,6 +388,12 @@ class TaskService {
 		string $objectTitle,
 		array $data,
 	): ?array {
+		if ($this->carriesEngineIdentity(data: $data) === true) {
+			throw new TaskAccessDeniedException(
+				message: 'An engine task cannot be created through the object task endpoint; only OpenRegister projects engine tasks into a calendar.'
+			);
+		}
+
 		$calendar = $this->findUserCalendar();
 		$calendarId = $calendar['id'];
 
@@ -452,6 +458,12 @@ class TaskService {
 	 *
 	 * Loads the existing VTODO, applies changes, and saves it back.
 	 *
+	 * For a PROJECTED VTODO (one carrying `X-OPENREGISTER-TASK`) the VTODO
+	 * is not the store: the update is handed to the write-back gate as a
+	 * REQUEST against the engine task, authorized like any other caller, and
+	 * what is stored afterwards is the engine's own rendering. Without a
+	 * gate the update is refused, never applied unchecked.
+	 *
 	 * @param string $calendarId The calendar ID containing the task
 	 * @param string $taskUri The URI of the task to update
 	 * @param array $data Fields to update: summary, description, priority, due, status
@@ -459,8 +471,10 @@ class TaskService {
 	 * @return array|null The updated task in JSON-friendly format, or null if calendar data was not a VTODO
 	 *
 	 * @throws Exception If the task is not found or update fails
+	 * @throws TaskAccessDeniedException When a projected VTODO's change is refused
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-10
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-task-compatibility-with-nextcloud-tasks-app
 	 */
 	public function updateTask(string $calendarId, string $taskUri, array $data): ?array {
 		$calendarIdInt = (int)$calendarId;
@@ -468,6 +482,15 @@ class TaskService {
 
 		if ($existing === null) {
 			throw new Exception('Task not found');
+		}
+
+		if (TaskCalendarProjector::taskUuidOf(calendarData: (string)$existing['calendardata']) !== null) {
+			return $this->updateProjectedTask(
+				calendarId: $calendarIdInt,
+				taskUri: $taskUri,
+				existing: (string)$existing['calendardata'],
+				data: $data
+			);
 		}
 
 		$vcalendar = Reader::read($existing['calendardata']);
@@ -528,6 +551,11 @@ class TaskService {
 	/**
 	 * Delete a CalDAV task.
 	 *
+	 * Deleting a PROJECTED VTODO deletes the calendar entry and nothing else:
+	 * the engine task keeps its state, and the projection is restored on the
+	 * next reconciliation, because a task is not cancelled by removing the
+	 * reminder of it. Nothing here reaches the engine.
+	 *
 	 * @param string $calendarId The calendar ID containing the task
 	 * @param string $taskUri The URI of the task to delete
 	 *
@@ -536,6 +564,7 @@ class TaskService {
 	 * @throws Exception If the task is not found or deletion fails
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-10
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-tasks-on-objects-via-caldav-vtodo
 	 */
 	public function deleteTask(string $calendarId, string $taskUri): void {
 		$calendarIdInt = (int)$calendarId;
@@ -549,36 +578,114 @@ class TaskService {
 	}//end deleteTask()
 
 	/**
-	 * Find the user's first VTODO-supporting calendar.
+	 * Find a user's first VTODO-supporting calendar.
 	 *
-	 * Checks the user's calendars and returns the first one that
-	 * supports VTODO components.
+	 * Standalone tasks resolve the SESSION user (the default); a projection
+	 * passes the ASSIGNEE's uid, because the reminder belongs in the calendar
+	 * of whoever owes the work, not of whoever triggered the transition.
 	 *
-	 * @return array Calendar data with 'id' and 'uri' keys
+	 * @param string|null $uid The calendar owner; null means the session user
 	 *
-	 * @throws Exception If no user is logged in or no suitable calendar found
+	 * @return array{id: int, uri: string} Calendar data with 'id' and 'uri' keys
+	 *
+	 * @throws Exception If no user is logged in and none was named
+	 * @throws NoVtodoCalendarException If the user has no suitable calendar
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-calendar-selection-for-tasks
 	 */
-	private function findUserCalendar(): array {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in');
+	public function findUserCalendar(?string $uid = null): array {
+		if ($uid === null || trim($uid) === '') {
+			$user = $this->userSession->getUser();
+			if ($user === null) {
+				throw new Exception('No user logged in');
+			}
+
+			$uid = $user->getUID();
 		}
 
-		$principal = 'principals/users/' . $user->getUID();
-		$calendars = $this->calDavBackend->getCalendarsForUser($principal);
-
-		foreach ($calendars as $calendar) {
-			$components = $calendar['{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set'];
-			if ($this->calendarSupportsVtodo(components: $components) === true) {
-				return [
-					'id' => $calendar['id'],
-					'uri' => $calendar['uri'],
-				];
-			}
-		}//end foreach
-
-		throw new NoVtodoCalendarException(userId: $user->getUID());
+		return $this->calendars->forUser(uid: $uid);
 	}//end findUserCalendar()
+
+	/**
+	 * Whether a create payload attempts to set an engine task identity.
+	 *
+	 * @param array $data The create payload
+	 *
+	 * @return bool True when `X-OPENREGISTER-TASK` (or its camel-cased spelling) appears at any level the writer reads
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-tasks-on-objects-via-caldav-vtodo
+	 */
+	private function carriesEngineIdentity(array $data): bool {
+		$markers = [TaskCalendarProjector::PROP_TASK, 'taskUuid', 'engineTask'];
+		foreach ($markers as $marker) {
+			if (isset($data[$marker]) === true && trim((string)$data[$marker]) !== '') {
+				return true;
+			}
+		}
+
+		$fields = ($data['fields'] ?? null);
+		if (is_array($fields) === false) {
+			return false;
+		}
+
+		foreach ($markers as $marker) {
+			if (isset($fields[$marker]) === true && trim((string)$fields[$marker]) !== '') {
+				return true;
+			}
+		}
+
+		return false;
+	}//end carriesEngineIdentity()
+
+	/**
+	 * Route a projected VTODO's update through the write-back gate.
+	 *
+	 * Only `status` can name a verb; every other field is projection-owned
+	 * and the stored document is the engine's rendering regardless.
+	 *
+	 * @param int $calendarId The calendar holding the VTODO
+	 * @param string $taskUri The VTODO uri
+	 * @param string $existing The stored document
+	 * @param array $data The requested changes
+	 *
+	 * @return array|null The projected task as JSON-friendly array
+	 *
+	 * @throws TaskAccessDeniedException When no gate is available (fail closed) or the gate refuses
+	 * @throws Exception When the gate refuses for any other reason
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-task-status-mapping
+	 */
+	private function updateProjectedTask(int $calendarId, string $taskUri, string $existing, array $data): ?array {
+		if ($this->gate === null) {
+			throw new TaskAccessDeniedException(
+				message: 'This calendar entry projects an engine task and the write-back gate is unavailable, so the change was not applied.'
+			);
+		}
+
+		$requested = $existing;
+		if (isset($data['status']) === true) {
+			$vcalendar = Reader::read($existing);
+			$vtodo = ($vcalendar->select('VTODO')[0] ?? null);
+			if ($vtodo === null) {
+				throw new Exception('Calendar object is not a VTODO');
+			}
+
+			$vtodo->remove('STATUS');
+			$vtodo->add('STATUS', strtoupper((string)$data['status']));
+			$requested = $vcalendar->serialize();
+		}
+
+		$actor = $this->userSession->getUser()?->getUID();
+		$rendered = $this->gate->handleWrite(calendarData: $requested, actor: $actor);
+		if ($rendered === null) {
+			// An echo or a document that is not the engine's business: stored as is.
+			return $this->vtodoToArray(calendarData: $existing, calendarId: (string)$calendarId, uri: $taskUri);
+		}
+
+		$this->calDavBackend->updateCalendarObject($calendarId, $taskUri, $rendered);
+
+		return $this->vtodoToArray(calendarData: $rendered, calendarId: (string)$calendarId, uri: $taskUri);
+	}//end updateProjectedTask()
 
 	/**
 	 * Parse a VTODO iCalendar string into a JSON-friendly array.

@@ -130,21 +130,6 @@
     </InvalidThrow>
   </file>
   <file src="lib/Service/CalendarEventService.php">
-    <UndefinedClass>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[CalDavBackend]]></code>
-      <code><![CDATA[CalDavBackend]]></code>
-    </UndefinedClass>
     <UndefinedMethod>
       <code><![CDATA[remove]]></code>
       <code><![CDATA[select]]></code>
@@ -154,19 +139,6 @@
       <code><![CDATA[$vevent->{'X-OPENREGISTER-REGISTER'}]]></code>
       <code><![CDATA[$vevent->{'X-OPENREGISTER-SCHEMA'}]]></code>
     </UndefinedPropertyFetch>
-  </file>
-  <file src="lib/Service/CalendarLinkService.php">
-    <UndefinedClass>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[CalDavBackend]]></code>
-    </UndefinedClass>
   </file>
   <file src="lib/Service/Chat/ResponseGenerationHandler.php">
     <UnusedMethodCall>
@@ -309,21 +281,6 @@
     </UnusedParam>
   </file>
   <file src="lib/Service/TaskService.php">
-    <UndefinedClass>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[$this->calDavBackend]]></code>
-      <code><![CDATA[CalDavBackend]]></code>
-      <code><![CDATA[CalDavBackend]]></code>
-    </UndefinedClass>
     <UndefinedPropertyAssignment>
       <code><![CDATA[$vtodo->COMPLETED]]></code>
       <code><![CDATA[$vtodo->DESCRIPTION]]></code>

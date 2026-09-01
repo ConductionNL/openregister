@@ -57,6 +57,8 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\RedirectResponse;
+use OCP\IURLGenerator;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -69,6 +71,8 @@ use Throwable;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) One route method per
  * lifecycle verb the spec names, plus the three reads. Folding verbs into a
  * mode parameter is how per-verb authorization rules get lost.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) One collaborator per
+ * concern, injected; the tenth builds the deep link the projections carry.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The controller mediates
  * between HTTP and the task services plus their three exception shapes;
  * that is the whole of its job.
@@ -96,6 +100,8 @@ class TaskController extends Controller {
 	 *                                         bare; absent means no groups
 	 *                                         and not admin, which SCOPES
 	 *                                         rather than widens.
+	 * @param IURLGenerator|null $urlGenerator Builds the app link the open
+	 *                                         route redirects into.
 	 */
 	public function __construct(
 		string $appName,
@@ -107,10 +113,43 @@ class TaskController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly ?LoggerInterface $logger = null,
 		private readonly ?IGroupManager $groupManager = null,
+		private readonly ?IURLGenerator $urlGenerator = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
 	}//end __construct()
+
+	/**
+	 * The deep link every projection carries: a page route that lands a
+	 * person on the task's own surface.
+	 *
+	 * The notification actions, the VTODO `URL` and the route action in the
+	 * task rules all resolve to THIS route, so there is one stable address
+	 * for "open this task" however the task reached the person. It redirects
+	 * into the OpenRegister app's task route; the form itself is
+	 * `flow-task-forms`' surface, and lands under the same hash.
+	 *
+	 * @param string $uuid The task uuid.
+	 *
+	 * @return RedirectResponse Into the app.
+	 *
+	 * @no-admin-idor-exempt Reads nothing: the uuid is only interpolated into
+	 *   a redirect to the app's task route, where the SPA performs the
+	 *   visibility-checked read (TaskController::show, 404 for the invisible).
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-an-assigned-task-appears-in-the-assignees-own-calendar
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function open(string $uuid): RedirectResponse {
+		$safeUuid = rawurlencode($uuid);
+		$base = '/index.php/apps/openregister/';
+		if ($this->urlGenerator !== null) {
+			$base = $this->urlGenerator->linkToRoute('openregister.dashboard.page');
+		}
+
+		return new RedirectResponse(rtrim($base, '/') . '/#/flow-tasks/' . $safeUuid);
+	}//end open()
 
 	/**
 	 * The inbox: what is waiting for me, with subject context and a total.
