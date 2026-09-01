@@ -125,6 +125,49 @@ class FlowRunServiceAdvanceStreamTest extends TestCase {
 		$this->assertSame(FlowRun::STATUS_QUEUED, $run->getStatus());
 	}//end testWithoutTheStreamLayerThereIsNoBranchToScopeToSoTheQueueAdvances()
 
+	/**
+	 * 🔴 D3 REGRESSION, the persistence seam: the sync in-request advance
+	 * (task completion with `advance: "all"`) hands the engine the RUN'S
+	 * stored items and persists exactly the items the walk returns. The
+	 * worker path already did both; this pins the sync path to the same
+	 * contract, so a run can never come out of a correct walk with `items`
+	 * emptied.
+	 *
+	 * @return void
+	 */
+	public function testTheSyncAdvanceCarriesTheStoredItemsInAndPersistsTheWalkItemsOut(): void {
+		$seenItems = null;
+		$this->engine->expects($this->once())->method('run')->willReturnCallback(
+			function () use (&$seenItems): array {
+				$args = func_get_args();
+				// run(flow, store, subject, dispatcher, context, items, startAt, streams):
+				// PHPUnit hands named arguments through positionally.
+				$seenItems = $args[5];
+
+				return [
+					'status' => FlowEngine::STATUS_COMPLETED,
+					'log' => [],
+					'context' => [],
+					'items' => [\OCA\OpenRegister\Service\Flow\FlowItems::item(json: ['name' => 'Case 7', 'branch' => 'rejected'])],
+				];
+			}
+		);
+
+		$run = $this->aRun();
+		$run->setItems([\OCA\OpenRegister\Service\Flow\FlowItems::item(json: ['name' => 'Case 7'])]);
+
+		$after = $this->service(withStreams: true)->advanceStream(
+			run: $run,
+			flow: ['id' => 'flow-1'],
+			subject: new stdClass(),
+			streamId: 's1',
+			budget: 'all'
+		);
+
+		$this->assertSame('Case 7', ($seenItems[0]['json']['name'] ?? null), 'the walk resumes from the STORED items');
+		$this->assertSame('rejected', ($after->getItems()[0]['json']['branch'] ?? null), 'the walk\'s items are persisted, never dropped');
+	}//end testTheSyncAdvanceCarriesTheStoredItemsInAndPersistsTheWalkItemsOut()
+
 	public function testABudgetWalksOnlyTheCompletingStreamThroughTheEngine(): void {
 		$seen = null;
 		$this->engine->expects($this->once())->method('run')->willReturnCallback(

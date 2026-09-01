@@ -490,6 +490,9 @@ class FlowEngine {
 					'durationMs' => 0,
 				];
 
+				// An exit-id tag becomes its place BEFORE routing, so the
+				// exit choice and the per-place delivery read the same name.
+				$items = $this->router()->resolveOutputTags(flow: $flow, transition: $transition, items: $items);
 				$taken = $this->router()->takenExits(flow: $flow, transition: $transition, items: $items, context: $context);
 				$placeItems = $this->placement()->advanceItems(
 					transition: $transition,
@@ -656,6 +659,12 @@ class FlowEngine {
 				// has to be impossible rather than merely remembered.
 				$this->runContext?->pop();
 			}//end try
+
+			// A routing step tags items with the exit id its rule named;
+			// resolve those to the exit's PLACE first, so the choice below and
+			// the per-place delivery in advanceItems() read the same name —
+			// unresolved, a routed branch fired with zero items.
+			$items = $this->router()->resolveOutputTags(flow: $flow, transition: $transition, items: $items);
 
 			// Which single exit this firing takes. A token is unique and
 			// exclusive, so a branching node hands it to exactly one successor.
@@ -1075,6 +1084,10 @@ class FlowEngine {
 		?string $streamError = null,
 	): array {
 		$name = $transition->getName();
+
+		// Same tag resolution as the single-stream walk: an exit-id tag
+		// becomes its place before the exit choice and the item delivery.
+		$items = $this->router()->resolveOutputTags(flow: $flow, transition: $transition, items: $items);
 		$taken = $this->router()->takenExits(flow: $flow, transition: $transition, items: $items, context: $context);
 		$placeItems = $this->placement()->advanceItems(transition: $transition, placeItems: $placeItems, items: $items, taken: $taken);
 		$workflow->apply(subject: $subject, transitionName: $name);
