@@ -165,7 +165,18 @@ class Routes {
 			'name' => 'dashboard#catchAll',
 			'url' => '/{path}',
 			'verb' => 'GET',
-			'requirements' => ['path' => '.+'],
+			// ⚠️ `(?!api/)` is load-bearing for any adopter whose routes.php
+			// also declares a `resources` block. Nextcloud's RouteParser
+			// processes the `routes` array BEFORE the `resources` array
+			// (RouteParser::parseDefaultRoutes) and Symfony matches in
+			// insertion order, so this route registers ahead of every
+			// resource-generated route no matter that it is appended LAST
+			// here. `.+` matches slashes, so without the lookahead it
+			// swallows GET api/<resource> and answers the SPA shell with
+			// HTTP 200 — a JSON caller receives HTML and nothing errors
+			// loudly. zaakafhandelapp lost all seventeen of its ZGW resource
+			// routes that way. The SPA never needs an `api/` path.
+			'requirements' => ['path' => '(?!api/).+'],
 			'defaults' => ['path' => ''],
 		];
 	}//end catchAllRoute()

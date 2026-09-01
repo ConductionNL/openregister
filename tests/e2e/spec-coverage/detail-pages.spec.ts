@@ -165,7 +165,7 @@ async function gotoPage(page: Page, route: string): Promise<void> {
 	// HASH form — the router runs in hash mode (src/main.js). A path-form
 	// deep-link (`/apps/openregister/applications/12`) is rewritten by the hash
 	// router and renders the DASHBOARD, not the target page.
-	await page.goto(`/index.php/apps/openregister/#${route}`, {
+	await page.goto(`/index.php/apps/openregister${route}`, {
 		waitUntil: 'domcontentloaded',
 	})
 	await page.waitForSelector('#header, header.header-appcontainer', {

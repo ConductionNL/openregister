@@ -156,6 +156,24 @@ class TaskInboxService {
 	}//end row()
 
 	/**
+	 * One task as an API row, with its subject context resolved.
+	 *
+	 * The single-task form of {@see inbox()}: the projections (notification
+	 * payload, calendar VTODO) read the SAME row the inbox serves, so a
+	 * display title or a derived overdue flag cannot differ between the
+	 * inbox and the notification about it.
+	 *
+	 * @param Task $task The task.
+	 *
+	 * @return array<string, mixed> The row.
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-truth-flows-one-way-and-the-one-path-back-is-a-gate
+	 */
+	public function enrich(Task $task): array {
+		return $this->row(task: $task, subjects: $this->subjectContexts(tasks: [$task]), now: $this->temporal->now());
+	}//end enrich()
+
+	/**
 	 * Synthesize a display title for a titleless task — on read, never persisted.
 	 *
 	 * A stored synthesized title would go stale the moment the subject is

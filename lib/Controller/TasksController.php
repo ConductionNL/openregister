@@ -25,13 +25,22 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
+use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Service\Task\TaskState;
+use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
+use Throwable;
 
 /**
  * TasksController handles task operations for objects in registers.
@@ -41,6 +50,12 @@ use OCP\IRequest;
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The controller now serves
+ * two stores: the CalDAV leaf for standalone VTODOs and the engine inbox for
+ * the aggregate, plus the three refusal shapes each can produce.
+ * @SuppressWarnings(PHPMD.StaticAccess) TaskState is the stateless published
+ * status mapping.
  */
 class TasksController extends Controller {
 
@@ -65,6 +80,14 @@ class TasksController extends Controller {
 	 * @param IRequest $request HTTP request object
 	 * @param TaskService $taskService Task service for VTODO operations
 	 * @param ObjectService $objectService Object service for object validation
+	 * @param TaskInboxService|null $inbox The engine inbox the aggregate answers from;
+	 *                                     without it the aggregate refuses (401), never
+	 *                                     falls back to walking calendars
+	 * @param IUserSession|null $userSession Names the caller for the aggregate
+	 * @param TaskTemporalProjection|null $temporal The one overdue derivation's clock
+	 * @param IGroupManager|null $groupManager Resolves the caller's groups and admin
+	 *                                         status; absent means no groups and not
+	 *                                         admin, which scopes rather than widens
 	 *
 	 * @return void
 	 */
@@ -73,6 +96,10 @@ class TasksController extends Controller {
 		IRequest $request,
 		TaskService $taskService,
 		ObjectService $objectService,
+		private readonly ?TaskInboxService $inbox = null,
+		private readonly ?IUserSession $userSession = null,
+		private readonly ?TaskTemporalProjection $temporal = null,
+		private readonly ?IGroupManager $groupManager = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -81,52 +108,153 @@ class TasksController extends Controller {
 	}//end __construct()
 
 	/**
-	 * Get all tasks for the current user across all calendars.
+	 * The user-wide task aggregate: what the session user owes, from the
+	 * engine inbox.
 	 *
-	 * Returns all CalDAV VTODOs from the user's VTODO-supporting calendars,
-	 * optionally filtered by status or assignee.
+	 * Answered by TaskInboxService, never by walking calendars: visibility,
+	 * filter, sort, page and total are the query's, so the total cannot
+	 * reveal a task the caller may not see and a page cannot silently drop
+	 * rows. The caller is resolved from the session, never from a request
+	 * parameter, so no parameter can widen the read to another user.
 	 *
-	 * Authorization: this endpoint is anchored to the current session user.
-	 * TaskService::getAllUserTasks() resolves the calendar set from
-	 * IUserSession::getUser()->getUID() (principals/users/<uid>); the request
-	 * never controls which user's calendars are read. The optional `assignee`
-	 * request parameter is a free-text filter applied to each task's
-	 * description ATTENDEE field within the caller's own task list — it is
-	 * NOT an identity claim and cannot be used to read another user's tasks.
-	 * Per ADR-005 Rule 3, no per-object authorization anchor is needed beyond
-	 * the session-user binding already enforced in the service.
+	 * `assignee` is NO LONGER accepted as a filter: the aggregate is already
+	 * scoped to the caller, and the free-text description prose it used to
+	 * match no longer exists. `status` (legacy) and `state` both name a
+	 * lifecycle state through the published TaskState mapping; an unmapped
+	 * value is refused with 400 rather than silently ignored.
 	 *
-	 * @return JSONResponse JSON response with all user tasks
+	 * Authorization: session-scoped (ADR-005 Rule 3), enforced in the inbox
+	 * query's WHERE clause.
+	 *
+	 * @return JSONResponse The page: results, total, limit, offset
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
-	 * @no-admin-idor-exempt Session-scoped list: TaskService::getAllUserTasks resolves the calendar set from the IUserSession UID;
-	 *   the assignee param filters within the caller's own tasks, not an identity claim.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-2
+	 * @no-admin-idor-exempt Session-scoped list: TaskInboxService::inbox() narrows visibility to the
+	 *   IUserSession UID inside the query; no request parameter names another user.
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-user-wide-task-aggregate-endpoint
 	 */
 	public function allUserTasks(): JSONResponse {
-		try {
-			$status = $this->request->getParam('status');
-			$limit = min((int)($this->request->getParam('_limit') ?? $this->request->getParam('limit') ?? 50), 200);
-			$offset = (int)($this->request->getParam('_offset') ?? $this->request->getParam('offset') ?? 0);
-			$assignee = $this->request->getParam('assignee');
+		$uid = $this->userSession?->getUser()?->getUID();
+		if ($this->inbox === null || $uid === null || trim($uid) === '') {
+			return new JSONResponse(data: ['error' => 'No session'], statusCode: Http::STATUS_UNAUTHORIZED);
+		}
 
-			$result = $this->taskService->getAllUserTasks(
-				status: $status,
-				limit: $limit,
-				offset: $offset,
-				assignee: $assignee
+		$limit = min((int)($this->request->getParam('_limit') ?? $this->request->getParam('limit') ?? 50), 200);
+		$offset = (int)($this->request->getParam('_offset') ?? $this->request->getParam('offset') ?? 0);
+		$scope = (string)($this->request->getParam('scope') ?? TaskInboxCriteria::SCOPE_ALL);
+
+		try {
+			$states = $this->requestedStates();
+		} catch (TaskValidationException $refused) {
+			return new JSONResponse(data: ['error' => $refused->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
+		}
+
+		$overdueAt = null;
+		$overdue = $this->request->getParam('overdue');
+		if ($overdue !== null && filter_var($overdue, FILTER_VALIDATE_BOOLEAN) === true) {
+			$overdueAt = ($this->temporal ?? new TaskTemporalProjection())->now();
+		}
+
+		$sort = (string)($this->request->getParam('sort') ?? TaskInboxCriteria::SORT_DUE);
+
+		try {
+			$criteria = new TaskInboxCriteria(
+				uid: $uid,
+				groupIds: $this->groupIds(),
+				isAdmin: $this->isAdmin(uid: $uid),
+				scope: $scope,
+				states: $states,
+				isTerminal: $this->requestedTerminal(),
+				overdueAt: $overdueAt,
+				sort: ltrim($sort, '-'),
+				sortDescending: str_starts_with($sort, '-'),
 			);
 
-			return new JSONResponse(data: $result);
-		} catch (Exception $e) {
+			return new JSONResponse(data: $this->inbox->inbox(criteria: $criteria, limit: $limit, offset: $offset));
+		} catch (Throwable $failure) {
 			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: 500
+				data: ['error' => $failure->getMessage()],
+				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
 			);
 		}//end try
 	}//end allUserTasks()
+
+	/**
+	 * The lifecycle states the request filters on, through the published mapping.
+	 *
+	 * @return array<int, string> Canonical CMMN states; empty means no state filter
+	 *
+	 * @throws TaskValidationException When a value is in no known vocabulary
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-user-wide-task-aggregate-endpoint
+	 */
+	private function requestedStates(): array {
+		$raw = ($this->request->getParam('state') ?? $this->request->getParam('status'));
+		if (is_string($raw) === false || trim($raw) === '') {
+			return [];
+		}
+
+		$states = [];
+		foreach (array_filter(array_map('trim', explode(',', $raw))) as $value) {
+			$states[] = TaskState::normalise(value: $value)['state'];
+		}
+
+		return array_values(array_unique($states));
+	}//end requestedStates()
+
+	/**
+	 * The terminality filter, when the request names one.
+	 *
+	 * @return bool|null True/false to restrict; null for both
+	 */
+	private function requestedTerminal(): ?bool {
+		$raw = $this->request->getParam('isTerminal');
+		if ($raw === null) {
+			return null;
+		}
+
+		return filter_var($raw, FILTER_VALIDATE_BOOLEAN);
+	}//end requestedTerminal()
+
+	/**
+	 * The caller's group ids, or none without a backend (which scopes).
+	 *
+	 * @return array<int, string> The group ids
+	 */
+	private function groupIds(): array {
+		$user = $this->userSession?->getUser();
+		if ($this->groupManager === null || $user === null) {
+			return [];
+		}
+
+		try {
+			return $this->groupManager->getUserGroupIds($user);
+		} catch (Throwable) {
+			return [];
+		}
+	}//end groupIds()
+
+	/**
+	 * Whether the caller is an administrator; false without a backend.
+	 *
+	 * @param string $uid The caller
+	 *
+	 * @return bool True only when the backend affirms it
+	 */
+	private function isAdmin(string $uid): bool {
+		if ($this->groupManager === null) {
+			return false;
+		}
+
+		try {
+			return $this->groupManager->isAdmin($uid);
+		} catch (Throwable) {
+			return false;
+		}
+	}//end isAdmin()
 
 	/**
 	 * List all tasks linked to a specific object.

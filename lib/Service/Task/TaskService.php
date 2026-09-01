@@ -52,6 +52,7 @@ use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Event\TaskTransitionedEvent;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -80,14 +81,18 @@ use UnexpectedValueException;
  * rules (authorize, then terminality, then the verb's precondition, then
  * the conditional write); folding verbs together to lower the number would
  * hide exactly the per-verb rules the spec enumerates.
+ * @SuppressWarnings(PHPMD.TooManyMethods) One private helper per concern the
+ * verbs share (open, authorize, audit, persist, announce); merging them would
+ * hide which rule a verb relies on.
  * @SuppressWarnings(PHPMD.StaticAccess) TaskState is a stateless published
  * vocabulary (the one status mapping); calling it statically is the point,
  * an instance would be a second copy of the same table.
  * @SuppressWarnings(PHPMD.ExcessiveParameterList) The tenth constructor
- * argument is the nullable event dispatcher that announces terminality
- * (flow-user-task-node); it is last so the hand-built test services keep
- * their order, and folding it into another collaborator would hide that a
- * lifecycle verb has an after-commit side effect.
+ * argument is the nullable event dispatcher that announces the transition
+ * to the projections and terminality to the flow side; it is last so the
+ * hand-built test services keep their order, and folding it into another
+ * collaborator would hide that a lifecycle verb has an after-commit side
+ * effect.
  *
  * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
@@ -106,16 +111,20 @@ class TaskService {
 	 * @param LoggerInterface $logger Failure reporting.
 	 * @param TaskBuilder $builder Validates and builds a new task from
 	 *                             boundary data (the vocabularies live there).
-	 * @param IEventDispatcher|null $dispatcher Announces a task reaching a
-	 *                                          terminal state
-	 *                                          ({@see TaskTerminalEvent}), AFTER
-	 *                                          the transition committed. Last and
-	 *                                          nullable so the four test suites
-	 *                                          that build this service by hand
-	 *                                          keep their argument order; absent,
-	 *                                          terminality goes unannounced and a
-	 *                                          parked run learns of it on its
-	 *                                          heartbeat instead.
+	 * @param IEventDispatcher|null $dispatcher Announces the committed
+	 *                                          transition to the projections
+	 *                                          ({@see TaskTransitionedEvent})
+	 *                                          and, when the task came out
+	 *                                          terminal, its terminality to the
+	 *                                          flow side
+	 *                                          ({@see TaskTerminalEvent}) — both
+	 *                                          AFTER the commit. Last and
+	 *                                          nullable so the suites that build
+	 *                                          this service by hand keep their
+	 *                                          argument order; absent, nothing
+	 *                                          is projected, terminality goes
+	 *                                          unannounced, and the lifecycle is
+	 *                                          unchanged.
 	 * @param TaskFormReader|null $forms Refuses a run-less task's own form
 	 *                                   declaration (`metadata.form`) at
 	 *                                   creation, the way a step's is refused
@@ -139,6 +148,19 @@ class TaskService {
 	) {
 
 	}//end __construct()
+
+	/**
+	 * What the task looked like BEFORE the verb in flight, for the
+	 * post-commit announcement: previous assignee, previous state, actor.
+	 *
+	 * Set by {@see openTaskFor()} and {@see create()}, consumed once by
+	 * {@see transactional()}. Verbs that load their task another way
+	 * (termination by propagation) announce with no previous snapshot,
+	 * which is correct: termination changes no assignee.
+	 *
+	 * @var array{assignee: string|null, state: string|null, actor: string|null}|null
+	 */
+	private ?array $pending = null;
 
 	/**
 	 * Create a task.
@@ -205,6 +227,11 @@ class TaskService {
 		$task = $this->builder->fromData(data: $data, actor: $actor);
 		$this->refuseUnrenderableForm(task: $task);
 		$this->authorizeOrRecord(verb: 'create', task: $task, actor: $actor);
+		$this->pending = [
+			'assignee' => null,
+			'state' => null,
+			'actor' => $actor,
+		];
 
 		return $this->transactional(
 			mutation: function () use ($task, $data, $actor): Task {
@@ -897,6 +924,14 @@ class TaskService {
 			);
 		}
 
+		// Snapshot BEFORE any mutation: the closures mutate this very object,
+		// so this is the last moment the previous holder is observable.
+		$this->pending = [
+			'assignee' => $task->getAssignee(),
+			'state' => $task->getState(),
+			'actor' => $actor,
+		];
+
 		return $task;
 	}//end openTaskFor()
 
@@ -1046,9 +1081,15 @@ class TaskService {
 			$result = $mutation();
 			$this->db->commit();
 		} catch (Throwable $failure) {
+			$this->pending = null;
 			$this->db->rollBack();
 			throw $failure;
 		}
+
+		// The projections first: the notification and the calendar entry of
+		// THIS task reflect its committed state before the flow side walks on
+		// (that walk can complete further tasks re-entrantly).
+		$this->announce(task: $result);
 
 		// Terminality is announced HERE, after the commit and from the one
 		// place every mutation passes, so no verb can forget it (the same
@@ -1071,6 +1112,45 @@ class TaskService {
 
 		return $result;
 	}//end transactional()
+
+	/**
+	 * Announce a COMMITTED transition to the projections.
+	 *
+	 * Runs after the commit and outside the transaction, so nothing a
+	 * listener does can unwind the verb (flow-task-inbox-projections,
+	 * design D-8). A listener that throws is logged naming the task; the
+	 * verb has already succeeded and its caller is told so.
+	 *
+	 * @param Task $task The committed task.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-delivery-failure-never-fails-the-task
+	 */
+	private function announce(Task $task): void {
+		$pending = $this->pending;
+		$this->pending = null;
+
+		if ($this->dispatcher === null) {
+			return;
+		}
+
+		try {
+			$this->dispatcher->dispatchTyped(
+				new TaskTransitionedEvent(
+					task: $task,
+					previousAssignee: ($pending['assignee'] ?? $task->getAssignee()),
+					previousState: ($pending['state'] ?? null),
+					actor: ($pending['actor'] ?? null)
+				)
+			);
+		} catch (Throwable $failure) {
+			$this->logger->warning(
+				'[TaskService] A projection failed after the transition committed; the task is unchanged by it: ' . $failure->getMessage(),
+				['task' => $task->getUuid(), 'action' => $task->getLastAction()]
+			);
+		}
+	}//end announce()
 
 	/**
 	 * Rewrite the candidate INDEX rows from the task's JSON record.

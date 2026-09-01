@@ -8,7 +8,7 @@
  *   @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#<scenario-slug>
  *
  * Methodology: drive the real UI. The five MDM views live under the hash-mode
- * router (`/index.php/apps/openregister/#/<route>`); the shared
+ * router (`/index.php/apps/openregister/<route>`); the shared
  * RegisterSchemaSelector is now route-scoped, so when the self-seeding MDM
  * fixture (tests/e2e/mdm-seed.ts, run in globalSetup) has planted data, these
  * tests DEEP-LINK straight to the seeded register/schema
@@ -33,7 +33,7 @@ function scopedQuery(): string {
 
 /** Navigate to a hash-mode OR route and wait for NC header + app content. */
 async function gotoApp(page: Page, route: string): Promise<void> {
-	await page.goto(`/index.php/apps/openregister/#${route}`, {
+	await page.goto(`/index.php/apps/openregister${route}`, {
 		waitUntil: 'domcontentloaded',
 	})
 	await page.waitForSelector('#header, header.header-appcontainer', {

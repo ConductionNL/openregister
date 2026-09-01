@@ -62,7 +62,7 @@ test.describe('mdm-survivorship-override — visual baselines', () => {
 	test('MdmConflictResolutionModal', async ({ page }) => {
 		// Manifest route is kebab-case '/master-entities' (src/manifest.json);
 		// '#/masterEntities' hits the catch-all and redirects to the dashboard.
-		await page.goto(`${APP}/#/master-entities`, {
+		await page.goto(`${APP}/master-entities`, {
 			waitUntil: 'domcontentloaded',
 		})
 		await dismissSupportDialog(page)
