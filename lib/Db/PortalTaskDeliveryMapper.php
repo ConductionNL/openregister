@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use InvalidArgumentException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -68,9 +69,10 @@ class PortalTaskDeliveryMapper extends QBMapper {
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
 	 */
 	public function insert(Entity $entity): PortalTaskDelivery {
-		/**
-		 * @var PortalTaskDelivery $entity
-		 */
+		if ($entity instanceof PortalTaskDelivery === false) {
+			throw new InvalidArgumentException('PortalTaskDeliveryMapper stores PortalTaskDelivery rows only.');
+		}
+
 		if ($entity->getUuid() === null) {
 			$entity->setUuid(Uuid::v4()->toRfc4122());
 		}
@@ -86,12 +88,7 @@ class PortalTaskDeliveryMapper extends QBMapper {
 
 		$entity->setCreated($now);
 
-		/**
-		 * @var PortalTaskDelivery $inserted
-		 */
-		$inserted = parent::insert($entity);
-
-		return $inserted;
+		return parent::insert(entity: $entity);
 	}//end insert()
 
 	/**
@@ -170,12 +167,7 @@ class PortalTaskDeliveryMapper extends QBMapper {
 		$delivery->setDeliveredAt(new DateTime());
 		$delivery->setError(null);
 
-		/**
-		 * @var PortalTaskDelivery $updated
-		 */
-		$updated = parent::update($delivery);
-
-		return $updated;
+		return parent::update(entity: $delivery);
 	}//end markDelivered()
 
 	/**
@@ -192,12 +184,7 @@ class PortalTaskDeliveryMapper extends QBMapper {
 		$delivery->setState(PortalTaskDelivery::STATE_FAILED);
 		$delivery->setError(mb_substr($error, 0, 1000));
 
-		/**
-		 * @var PortalTaskDelivery $updated
-		 */
-		$updated = parent::update($delivery);
-
-		return $updated;
+		return parent::update(entity: $delivery);
 	}//end markFailed()
 
 	/**

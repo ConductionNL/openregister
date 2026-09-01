@@ -59,12 +59,8 @@ class Version1Date20260901160000 extends SimpleMigrationStep {
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
-		/**
-		 * @var ISchemaWrapper $schema
-		 */
 		$schema = $schemaClosure();
-
-		if ($schema->hasTable(self::TABLE) === true) {
+		if ($schema instanceof ISchemaWrapper === false || $schema->hasTable(self::TABLE) === true) {
 			return null;
 		}
 

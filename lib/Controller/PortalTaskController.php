@@ -118,7 +118,7 @@ class PortalTaskController extends Controller {
 	#[NoCSRFRequired]
 	public function index(int $limit = 25, int $offset = 0): JSONResponse {
 		return $this->asSubject(
-			fn (PortalSubject $subject): JSONResponse => new JSONResponse(
+			action: fn (PortalSubject $subject): JSONResponse => new JSONResponse(
 				$this->portal->listForSubject(subject: $subject, limit: $limit, offset: $offset)
 			)
 		);
@@ -137,7 +137,7 @@ class PortalTaskController extends Controller {
 	#[NoCSRFRequired]
 	public function show(string $uuid): JSONResponse {
 		return $this->asSubject(
-			fn (PortalSubject $subject): JSONResponse => new JSONResponse(
+			action: fn (PortalSubject $subject): JSONResponse => new JSONResponse(
 				$this->portal->row(task: $this->portal->show(subject: $subject, uuid: $uuid))
 			)
 		);
@@ -161,7 +161,7 @@ class PortalTaskController extends Controller {
 	#[NoCSRFRequired]
 	public function complete(string $uuid, string $outcome = PortalTaskService::DEFAULT_OUTCOME, ?string $comment = null): JSONResponse {
 		return $this->asSubject(
-			fn (PortalSubject $subject): JSONResponse => new JSONResponse(
+			action: fn (PortalSubject $subject): JSONResponse => new JSONResponse(
 				$this->portal->row(
 					task: $this->portal->complete(
 						subject: $subject,

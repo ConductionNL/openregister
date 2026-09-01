@@ -57,6 +57,14 @@ class TaskInboxService {
 	 * @param TaskMapper $tasks The datastore queries.
 	 * @param TaskTemporalProjection $temporal The ONE overdue derivation.
 	 * @param LoggerInterface $logger Failure reporting.
+	 * @param AbstractObjectMapper|null $objects Resolves subject objects for
+	 *                                           row context. Nullable so the
+	 *                                           service stays constructible
+	 *                                           without the object store; a
+	 *                                           row's subject context then
+	 *                                           reads null, which is honest —
+	 *                                           the TASK list never fails
+	 *                                           over a context lookup.
 	 * @param PortalTaskDeliveryMapper|null $deliveries Reads the delivery
 	 *                                                  state of an EXTERNAL
 	 *                                                  task's ask, attached
@@ -67,14 +75,6 @@ class TaskInboxService {
 	 *                                                  for the same reason as
 	 *                                                  the object store; absent,
 	 *                                                  the row says so.
-	 * @param AbstractObjectMapper|null $objects Resolves subject objects for
-	 *                                           row context. Nullable so the
-	 *                                           service stays constructible
-	 *                                           without the object store; a
-	 *                                           row's subject context then
-	 *                                           reads null, which is honest —
-	 *                                           the TASK list never fails
-	 *                                           over a context lookup.
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,

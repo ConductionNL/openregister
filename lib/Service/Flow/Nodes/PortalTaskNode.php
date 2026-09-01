@@ -533,7 +533,8 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 				'label' => $this->l10n->t('Party role on the case'),
 				'type' => 'text',
 				'help' => $this->l10n->t(
-					'Which party on the case is asked, by role. Defaults to "initiator". The party is matched once, when the task is created, and a case that names nobody for the role fails the step.'
+					'Which party on the case is asked, by role. Defaults to "initiator". The party is matched once, when the task is created, '
+					. 'and a case that names nobody for the role fails the step.'
 				),
 			],
 		];
@@ -562,7 +563,9 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 				'key' => 'uploadAcceptedTypes',
 				'label' => $this->l10n->t('Accepted file types'),
 				'type' => 'text',
-				'help' => $this->l10n->t('Media types or extensions, comma separated, like "application/pdf, image/*, docx". Leave empty to accept any type.'),
+				'help' => $this->l10n->t(
+					'Media types or extensions, comma separated, like "application/pdf, image/*, docx". Leave empty to accept any type.'
+				),
 			],
 			[
 				'key' => 'uploadMaxSizeMb',
@@ -585,14 +588,17 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 				'label' => $this->l10n->t('Due'),
 				'type' => 'text',
 				'help' => $this->l10n->t(
-					'When the party should have answered: a date, a field like {{ deadline }}, or a relative time like "+14 days". Reminders are business timer rungs on this date.'
+					'When the party should have answered: a date, a field like {{ deadline }}, or a relative time like "+14 days". '
+					. 'Reminders are business timer rungs on this date.'
 				),
 			],
 			[
 				'key' => 'expiresAt',
 				'label' => $this->l10n->t('Expires'),
 				'type' => 'text',
-				'help' => $this->l10n->t('When the ask stops being answerable. Same shapes as "Due". Expiry is enforced by the business timers, not by this step.'),
+				'help' => $this->l10n->t(
+					'When the ask stops being answerable. Same shapes as "Due". Expiry is enforced by the business timers, not by this step.'
+				),
 			],
 			[
 				'key' => 'heartbeatMinutes',
@@ -625,7 +631,8 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 				'label' => $this->l10n->t('Field carrying the reason to ask again'),
 				'type' => 'text',
 				'help' => $this->l10n->t(
-					'When the flow routes back into this step, the party is asked again with the reason read from this item field, like "review.comment". Without a reason the step fails rather than asking twice unexplained. Defaults to "reason".'
+					'When the flow routes back into this step, the party is asked again with the reason read from this item field, like "review.comment". '
+					. 'Without a reason the step fails rather than asking twice unexplained. Defaults to "reason".'
 				),
 			],
 			[

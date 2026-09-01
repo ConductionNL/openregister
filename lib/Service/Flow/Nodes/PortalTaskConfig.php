@@ -139,7 +139,8 @@ final class PortalTaskConfig {
 		}
 
 		foreach (['uploadMaxFiles', 'uploadMaxSizeMb', 'heartbeatMinutes'] as $numeric) {
-			if (array_key_exists($numeric, $config) === true && $config[$numeric] !== '' && $config[$numeric] !== null && is_numeric($config[$numeric]) === false) {
+			$value = ($config[$numeric] ?? null);
+			if ($value !== null && $value !== '' && is_numeric($value) === false) {
 				throw new UnexpectedValueException(
 					$this->l10n->t('%1$s must be a number.', [$numeric])
 				);

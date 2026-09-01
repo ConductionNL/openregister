@@ -56,7 +56,7 @@ class PortalSubjectException extends RuntimeException {
 		private readonly string $refusal,
 		string $message,
 	) {
-		parent::__construct($message);
+		parent::__construct(message: $message);
 
 	}//end __construct()
 

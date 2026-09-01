@@ -113,7 +113,7 @@ class PortalPartyResolver {
 	public function resolveFromObject(string $objectUuid, string $role): string {
 		if ($this->objects === null) {
 			throw new PortalPartyNotFoundException(
-				sprintf("Cannot resolve party role '%s' on case '%s': no object store is available.", $role, $objectUuid)
+				message: sprintf("Cannot resolve party role '%s' on case '%s': no object store is available.", $role, $objectUuid)
 			);
 		}
 
@@ -121,9 +121,9 @@ class PortalPartyResolver {
 			$object = $this->objects->find(identifier: $objectUuid, _rbac: false, _multitenancy: false);
 		} catch (Throwable $failure) {
 			throw new PortalPartyNotFoundException(
-				sprintf("Cannot resolve party role '%s': case '%s' could not be read (%s).", $role, $objectUuid, $failure->getMessage()),
-				0,
-				$failure
+				message: sprintf("Cannot resolve party role '%s': case '%s' could not be read (%s).", $role, $objectUuid, $failure->getMessage()),
+				code: 0,
+				previous: $failure
 			);
 		}
 
@@ -156,7 +156,7 @@ class PortalPartyResolver {
 
 		if ($reference === '') {
 			throw new PortalPartyNotFoundException(
-				sprintf("Case '%s' names no party for role '%s'; the portal task cannot be addressed.", $caseUuid, $role)
+				message: sprintf("Case '%s' names no party for role '%s'; the portal task cannot be addressed.", $caseUuid, $role)
 			);
 		}
 
