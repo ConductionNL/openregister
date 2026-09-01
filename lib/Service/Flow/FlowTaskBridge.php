@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskState;
@@ -254,10 +255,14 @@ class FlowTaskBridge {
 	 *    or already terminal. Nothing more to do.
 	 * 2. The node's stored budget decides whether to go on. Zero returns here,
 	 *    which is exactly the behaviour `signal()` had before this existed.
-	 * 3. `N` writes a per-walk ceiling onto the run context; `"all"` writes
-	 *    none. Both then call the ONE advance path with `rethrow: true`, and
-	 *    a throw is logged and swallowed: the task is committed and the run is
-	 *    due, so the worker's next pass is the unoptimised fallback (D-5).
+	 * 3. `N` and `"all"` continue THE STREAM PARKED ON THE NODE, in this
+	 *    request, through {@see FlowRunAdvancer::advanceStream()}: the budget
+	 *    follows the token (flow-parallel-streams), so siblings are untouched,
+	 *    the per-firing oversight gate and the run-wide ceiling still apply,
+	 *    and a throw is logged and swallowed. The task is committed and the
+	 *    run is due, so the worker's next pass is the unoptimised fallback
+	 *    (D-5). A run whose stream rows predate the node (no stream stands
+	 *    on it) takes the same fallback.
 	 *
 	 * @param Task $task The task as persisted in its terminal state.
 	 *
@@ -288,23 +293,37 @@ class FlowTaskBridge {
 			return null;
 		}
 
-		$budget = $this->budgetFor(run: $woken, nodeId: (string)$task->getNodeId());
+		$nodeId = (string)$task->getNodeId();
+		$budget = $this->budgetFor(run: $woken, nodeId: $nodeId);
 		if ($budget->advancesInRequest() === false) {
 			return $woken;
 		}
 
+		$streamId = $this->streamParkedOn(runUuid: $runUuid, nodeId: $nodeId);
+		if ($streamId === null) {
+			$this->logger->info(
+				message: '[FlowTaskBridge] No stream of run ' . $runUuid . ' stands on node ' . $nodeId
+					. '; the run is due and the worker continues it.',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+
+			return $woken;
+		}
+
+		// The node's own re-entry is the first firing of the resumed stream and
+		// is the completion LANDING, not the run being pushed. `N` transitions
+		// past the node is therefore N + 1 firings; "all" is passed through.
+		$firings = $budget->toStored();
 		if ($budget->isUnlimited() === false) {
-			// The node's own re-entry is the first firing of the resumed walk
-			// and is the completion LANDING, not the run being pushed. `N`
-			// transitions past the node is therefore N + 1 firings.
-			$context = ($woken->getContext() ?? []);
-			$context[FlowEngine::CONTEXT_ADVANCE_BUDGET] = ((int)$budget->transitions() + 1);
-			$woken->setContext($context);
-			$woken = $this->runs->update($woken);
+			$firings = ((int)$budget->transitions() + 1);
 		}
 
 		try {
-			return $this->container->get(FlowRunAdvancer::class)->advance(run: $woken, rethrow: true);
+			return $this->container->get(FlowRunAdvancer::class)->advanceStream(
+				run: $woken,
+				streamId: $streamId,
+				budget: $firings
+			);
 		} catch (Throwable $failure) {
 			// The budget is an optimisation. Its failure mode is the default:
 			// the completion is committed, the run is due, the worker will
@@ -318,6 +337,53 @@ class FlowTaskBridge {
 			return $woken;
 		}
 	}//end continueRun()
+
+	/**
+	 * The live stream whose token stands on a node's input place, if any.
+	 *
+	 * A node's shared input place IS its id ({@see FlowGraph::inPlace()}), and
+	 * a stream that parked on a user-task node was parked with that place. A
+	 * join's per-edge places start with the id and the join marker. Null when
+	 * no non-terminal stream stands there: a run whose streams predate the
+	 * node, or a marking the stream layer never saw.
+	 *
+	 * @param string $runUuid The run.
+	 * @param string $nodeId The node the task belongs to.
+	 *
+	 * @return string|null The stream id, or null.
+	 *
+	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+	 */
+	private function streamParkedOn(string $runUuid, string $nodeId): ?string {
+		if ($nodeId === '') {
+			return null;
+		}
+
+		try {
+			$streams = $this->container->get(FlowStreamMapper::class)->findByRun(runUuid: $runUuid);
+		} catch (Throwable $unavailable) {
+			$this->logger->debug(
+				message: '[FlowTaskBridge] The stream layer is not available: ' . $unavailable->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+
+			return null;
+		}
+
+		$joinPrefix = $nodeId . FlowGraph::PLACE_JOIN;
+		foreach ($streams as $stream) {
+			if ($stream->isTerminal() === true) {
+				continue;
+			}
+
+			$place = (string)$stream->getPlace();
+			if ($place === $nodeId || str_starts_with($place, $joinPrefix) === true) {
+				return (string)$stream->getStreamId();
+			}
+		}
+
+		return null;
+	}//end streamParkedOn()
 
 	/**
 	 * The budget the node stored when it created the task.
