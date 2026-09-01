@@ -34,6 +34,8 @@ use PHPUnit\Framework\TestCase;
  * The per-verb decisions, and their fail-closed indeterminate cases.
  *
  * @covers \OCA\OpenRegister\Service\Task\TaskAuthorizationService
+ * @covers \OCA\OpenRegister\Exception\TaskAccessDeniedException
+ * @covers \OCA\OpenRegister\Db\Task
  */
 class TaskAuthorizationServiceTest extends TestCase {
 
@@ -248,6 +250,51 @@ class TaskAuthorizationServiceTest extends TestCase {
 			}
 		}
 	}//end testOfferBelongsToTheRequester()
+
+	/**
+	 * A group backend that THROWS is undeterminable: admin, membership and
+	 * role resolution all read as false, so the decision denies and read
+	 * visibility is refused for a pool member.
+	 *
+	 * @return void
+	 */
+	public function testAThrowingBackendDenies(): void {
+		$manager = $this->createMock(IGroupManager::class);
+		$manager->method('isAdmin')->willThrowException(new \RuntimeException('ldap down'));
+		$manager->method('isInGroup')->willThrowException(new \RuntimeException('ldap down'));
+		$manager->method('groupExists')->willThrowException(new \RuntimeException('ldap down'));
+		$service = new TaskAuthorizationService(groupManager: $manager);
+
+		$task = new Task();
+		$task->setPerformerType(Task::PERFORMER_GROUP);
+		$task->setCandidateGroups(['reviewers']);
+		$task->setCandidateRole('fiatteur');
+
+		$this->assertFalse($service->mayRead(task: $task, uid: 'greta'));
+		$this->assertFalse($service->isAdministrator(uid: 'greta'));
+		$this->assertFalse($service->isAdministrator(uid: null));
+
+		$this->expectException(TaskAccessDeniedException::class);
+		$service->assertMay(verb: 'claim', task: $task, uid: 'greta');
+	}//end testAThrowingBackendDenies()
+
+	/**
+	 * A pool member with no other relationship may READ the task.
+	 *
+	 * @return void
+	 */
+	public function testAPoolMemberMayRead(): void {
+		$manager = $this->createMock(IGroupManager::class);
+		$manager->method('isAdmin')->willReturn(false);
+		$manager->method('isInGroup')->willReturn(true);
+		$service = new TaskAuthorizationService(groupManager: $manager);
+
+		$task = new Task();
+		$task->setPerformerType(Task::PERFORMER_GROUP);
+		$task->setCandidateGroups(['reviewers']);
+
+		$this->assertTrue($service->mayRead(task: $task, uid: 'greta'));
+	}//end testAPoolMemberMayRead()
 
 	/**
 	 * An administrator passes every verb.
