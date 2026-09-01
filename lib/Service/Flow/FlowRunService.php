@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunStep;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStateMapper;
+use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Exception\FlowRunExpired;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
@@ -51,6 +52,10 @@ use Throwable;
  * The durable half of flow execution.
  *
  * @spec openspec/specs/flow-engine/spec.md
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) The run lifecycle — queue, execute, resume,
+ * signal, persist — plus the stream walk's wiring and the in-request advance; each is one
+ * entry into the same engine and belongs beside the others.
  */
 class FlowRunService {
 	/**
@@ -103,6 +108,12 @@ class FlowRunService {
 	 *                                      without it; history is then simply
 	 *                                      not recorded, never faked.
 	 * @param IAppConfig|null $appConfig Reads the instance-wide runtime
+	 * @param FlowStreamMapper|null $streamMapper Stream rows; with the two below, enables the stream walk.
+	 * @param FlowPlaceClaims|null $claims The claim protocol.
+	 * @param FlowRunCommit|null $commit The locked delta commit path.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected collaborators, appended so
+	 * the three test suites that construct this service positionally keep their slots.
 	 *                                   ceiling. Nullable on the same terms
 	 *                                   as $steps; absent, the compiled-in
 	 *                                   default applies.
@@ -116,6 +127,9 @@ class FlowRunService {
 		private readonly ContainerInterface $container,
 		private readonly ?FlowRunStepMapper $steps = null,
 		private readonly ?IAppConfig $appConfig = null,
+		private readonly ?FlowStreamMapper $streamMapper = null,
+		private readonly ?FlowPlaceClaims $claims = null,
+		private readonly ?FlowRunCommit $commit = null,
 	) {
 		// Built here rather than injected, deliberately: this service's
 		// constructor is called explicitly by three test suites, and inserting or
@@ -140,6 +154,136 @@ class FlowRunService {
 	private function stepHistory(): FlowStepHistory {
 		return new FlowStepHistory(steps: $this->steps, logger: $this->logger);
 	}//end stepHistory()
+
+	/**
+	 * The stream collaborator for a persisted run, or null when the three
+	 * parts are not wired (a test-constructed service) — the engine then
+	 * walks a single in-memory stream exactly as before.
+	 *
+	 * @param FlowRun $run The run about to be walked.
+	 * @param array $flow The resolved flow document (for a per-flow stream cap).
+	 * @param string|null $onlyStream Restrict the walk to one stream (an in-request advance).
+	 * @param int|null $budget Firings the walk may commit; null for unbounded.
+	 *
+	 * @return FlowStreamWalk|null The collaborator.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FlowPlaceClaims::newOwner() mints a pass token; no instance state.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
+	 */
+	private function streamWalkFor(FlowRun $run, array $flow, ?string $onlyStream = null, ?int $budget = null): ?FlowStreamWalk {
+		if ($this->streamMapper === null || $this->claims === null || $this->commit === null) {
+			return null;
+		}
+
+		$cap = null;
+		$limits = (array)($flow['limits'] ?? []);
+		if (array_key_exists('streams', $limits) === true) {
+			$cap = (int)$limits['streams'];
+		}
+
+		return new FlowStreamWalk(
+			run: $run,
+			claims: $this->claims,
+			commit: $this->commit,
+			streamMapper: $this->streamMapper,
+			owner: FlowPlaceClaims::newOwner(),
+			runCap: $cap,
+			onlyStream: $onlyStream,
+			budget: $budget
+		);
+	}//end streamWalkFor()
+
+	/**
+	 * Release the claims a failed walk still holds, so a pass that died inside
+	 * the engine does not leave its branches locked until the reaper's cutoff.
+	 * Best-effort: the run is being failed anyway, and the reaper remains the
+	 * backstop for a release that itself fails.
+	 *
+	 * @param FlowStreamWalk|null $walk The walk, when there was one.
+	 *
+	 * @return void
+	 */
+	private function releaseWalk(?FlowStreamWalk $walk): void {
+		if ($walk === null) {
+			return;
+		}
+
+		try {
+			$walk->finalize(enabled: false, forcedTerminal: FlowRun::STATUS_FAILED);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[FlowRunService] Could not release a failed walk\'s claims; the reaper will',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $walk->run()->getUuid(), 'error' => $e->getMessage()]
+			);
+		}
+	}//end releaseWalk()
+
+	/**
+	 * Advance ONE stream of a run in the calling request, within a budget.
+	 *
+	 * ADR-098 D9's advance budget follows the token: completing a task on one
+	 * branch may advance THAT branch — taking claims exactly as a worker does,
+	 * bounded by the ceiling, per-firing oversight and the runtime budget —
+	 * while its siblings are untouched. A sibling's claim ends the advance
+	 * and returns the run as it stands; the queue does the rest.
+	 *
+	 * `$budget` is `0` (nothing; the run is left queued), a count, or `"all"`
+	 * (bounded by the same three things a worker is).
+	 *
+	 * @param FlowRun $run The run, already resolved and pinned.
+	 * @param array $flow The pinned flow document.
+	 * @param object $subject The subject.
+	 * @param string $streamId The completing branch.
+	 * @param int|string $budget `0`, `N`, or `"all"`.
+	 *
+	 * @return FlowRun The run as it stands after the advance.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-completions-advance-budget-must-apply-to-the-completing-branch
+	 */
+	public function advanceStream(FlowRun $run, array $flow, object $subject, string $streamId, int|string $budget): FlowRun {
+		$firings = null;
+		if ($budget !== 'all') {
+			$firings = max(0, (int)$budget);
+		}
+
+		if ($firings === 0) {
+			$run->setStatus(FlowRun::STATUS_QUEUED);
+			$run->setUpdated(new DateTime());
+
+			return $this->mapper->update($run);
+		}
+
+		$walk = $this->streamWalkFor(run: $run, flow: $flow, onlyStream: $streamId, budget: $firings);
+		if ($walk === null) {
+			// Without the stream layer there is no branch to scope to; the
+			// queue advances the whole run on its next pass.
+			$run->setStatus(FlowRun::STATUS_QUEUED);
+			$run->setUpdated(new DateTime());
+
+			return $this->mapper->update($run);
+		}
+
+		$run->setStatus(FlowRun::STATUS_RUNNING);
+		$run->setUpdated(new DateTime());
+		$this->mapper->update($run);
+
+		$guard = $this->guardFor(run: $run, flow: $flow);
+		$context = $this->nodeContextFor(run: $run, resuming: true, guard: $guard);
+
+		$result = $this->engine->run(
+			flow: $flow,
+			store: new FlowRunMarkingStore(run: $run),
+			subject: $subject,
+			dispatcher: new RegistryStepDispatcher(registry: $this->registry, guard: $guard),
+			context: $context,
+			items: ($run->getItems() ?? []),
+			startAt: null,
+			streams: $walk
+		);
+
+		return $this->persistResult(run: $run, result: $result);
+	}//end advanceStream()
 
 	/**
 	 * Make an unattributed refusal visible on the flow, and stop a dead schedule.
@@ -681,6 +825,7 @@ class FlowRunService {
 
 		$guard = $this->guardFor(run: $run, flow: $flow);
 		$context = $this->nodeContextFor(run: $run, resuming: $resuming, guard: $guard);
+		$walk = $this->streamWalkFor(run: $run, flow: $flow);
 
 		try {
 			$result = $this->engine->run(
@@ -690,9 +835,11 @@ class FlowRunService {
 				dispatcher: new RegistryStepDispatcher(registry: $this->registry, guard: $guard),
 				context: $context,
 				items: $items,
-				startAt: $start
+				startAt: $start,
+				streams: $walk
 			);
 		} catch (FlowRunExpired $e) {
+			$this->releaseWalk(walk: $walk);
 			// The run stopped ITSELF at a checkpoint, having used its budget.
 			// Recorded as a first-class outcome rather than folded into the crash
 			// path below: nothing went wrong with the work, and the message has to
@@ -714,6 +861,7 @@ class FlowRunService {
 
 			return $this->mapper->update($run);
 		} catch (Throwable $e) {
+			$this->releaseWalk(walk: $walk);
 			// The engine itself failing (rather than a step) is not something
 			// the run should be left `running` for — that status would make it
 			// look claimed by a worker forever.
