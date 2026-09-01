@@ -66,6 +66,7 @@ use Psr\Log\NullLogger;
  *
  * @uses \OCA\OpenRegister\Db\Flow
  * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\FlowVersion
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
