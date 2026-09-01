@@ -71,6 +71,8 @@ use Throwable;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) One route method per
  * lifecycle verb the spec names, plus the three reads. Folding verbs into a
  * mode parameter is how per-verb authorization rules get lost.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) One collaborator per
+ * concern, injected; the tenth builds the deep link the projections carry.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The controller mediates
  * between HTTP and the task services plus their three exception shapes;
  * that is the whole of its job.

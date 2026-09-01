@@ -2340,7 +2340,7 @@ class AnnotationNotificationDispatcher {
 				'url' => $url,
 				// A `task-verb` target is a state-changing REQUEST and renders
 				// POST; every navigation kind keeps rendering GET.
-				'method' => $this->resolveActionMethod(target: ($action['target'] ?? []), data: $data),
+				'method' => $this->resolveActionMethod(target: ($action['target'] ?? [])),
 			];
 		}//end foreach
 
@@ -2355,13 +2355,12 @@ class AnnotationNotificationDispatcher {
 	 * the task form instead, which is a navigation and therefore GET.
 	 *
 	 * @param mixed $target The raw target spec.
-	 * @param array<string, mixed> $data The triggering object's data.
 	 *
 	 * @return string `POST` or `GET`.
 	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-binary-decision-is-decidable-from-the-notification
 	 */
-	private function resolveActionMethod(mixed $target, array $data): string {
+	private function resolveActionMethod(mixed $target): string {
 		if (is_array($target) === false || (string)($target['kind'] ?? '') !== 'task-verb') {
 			return 'GET';
 		}
@@ -2464,6 +2463,8 @@ class AnnotationNotificationDispatcher {
 	 * @return string|null The resolved absolute URL, or null when unresolvable.
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per target kind.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) The fourth kind (task-verb)
+	 * adds one branch; each kind's resolution is a distinct contract.
 	 *
 	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
 	 */

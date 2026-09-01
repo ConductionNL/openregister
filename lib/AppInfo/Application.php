@@ -2558,6 +2558,18 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Listener\TaskCalendarProjectionListener::class
 		);
 
+		// Dismiss-on-terminality, keyed to the terminal-task event the
+		// user-task node announces (flow-user-task-node, TaskTerminalEvent).
+		// Registered by NAME: the event class ships with that change, and a
+		// listener bound to a class that never fires is inert, so the two
+		// changes may land in either order. Idempotent beside the
+		// transition listeners above: a second withdrawal finds nothing to
+		// withdraw and a second render finds nothing changed.
+		$context->registerEventListener(
+			'OCA\\OpenRegister\\Event\\TaskTerminalEvent',
+			\OCA\OpenRegister\Listener\TaskTerminalProjectionListener::class
+		);
+
 		// The safety-net write-back hook (design D-6): calendar writes that
 		// reached the backend without traversing the Sabre plugin are
 		// reverted to the engine's truth, and the actor is told why.

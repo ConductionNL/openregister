@@ -50,6 +50,12 @@ use Throwable;
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The controller now serves
+ * two stores: the CalDAV leaf for standalone VTODOs and the engine inbox for
+ * the aggregate, plus the three refusal shapes each can produce.
+ * @SuppressWarnings(PHPMD.StaticAccess) TaskState is the stateless published
+ * status mapping.
  */
 class TasksController extends Controller {
 

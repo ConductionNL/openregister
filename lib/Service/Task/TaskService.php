@@ -75,6 +75,11 @@ use Throwable;
  * rules (authorize, then terminality, then the verb's precondition, then
  * the conditional write); folding verbs together to lower the number would
  * hide exactly the per-verb rules the spec enumerates.
+ * @SuppressWarnings(PHPMD.TooManyMethods) One private helper per concern the
+ * verbs share (open, authorize, audit, persist, announce); merging them would
+ * hide which rule a verb relies on.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) One collaborator per
+ * concern, injected; the tenth is the post-commit announcement.
  * @SuppressWarnings(PHPMD.StaticAccess) TaskState is a stateless published
  * vocabulary (the one status mapping); calling it statically is the point,
  * an instance would be a second copy of the same table.
@@ -96,12 +101,15 @@ class TaskService {
 	 * @param LoggerInterface $logger Failure reporting.
 	 * @param TaskBuilder $builder Validates and builds a new task from
 	 *                             boundary data (the vocabularies live there).
-	 * @param IEventDispatcher|null $events Announces a committed transition
-	 *                                      to the projections (notifications,
-	 *                                      calendar). Nullable so the service
-	 *                                      stays constructible bare; absent
-	 *                                      means nothing is projected, and
-	 *                                      the lifecycle is unchanged.
+	 * @param IEventDispatcher|null $dispatcher Announces a committed transition
+	 *                                          ({@see TaskTransitionedEvent}) to
+	 *                                          the projections (notifications,
+	 *                                          calendar), AFTER the commit. Last
+	 *                                          and nullable so the suites that
+	 *                                          build this service by hand keep
+	 *                                          their argument order; absent,
+	 *                                          nothing is projected and the
+	 *                                          lifecycle is unchanged.
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
@@ -113,7 +121,7 @@ class TaskService {
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 		private readonly TaskBuilder $builder,
-		private readonly ?IEventDispatcher $events = null,
+		private readonly ?IEventDispatcher $dispatcher = null,
 	) {
 
 	}//end __construct()
@@ -978,12 +986,12 @@ class TaskService {
 		$pending = $this->pending;
 		$this->pending = null;
 
-		if ($this->events === null) {
+		if ($this->dispatcher === null) {
 			return;
 		}
 
 		try {
-			$this->events->dispatchTyped(
+			$this->dispatcher->dispatchTyped(
 				new TaskTransitionedEvent(
 					task: $task,
 					previousAssignee: ($pending['assignee'] ?? $task->getAssignee()),

@@ -48,6 +48,9 @@ use Throwable;
  *
  * @template-implements IEventListener<CalendarObjectUpdatedEvent|CalendarObjectDeletedEvent>
  *
+ * @SuppressWarnings(PHPMD.StaticAccess) The identity reader is a stateless
+ * parser published by the projector.
+ *
  * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-an-unauthorized-write-back-is-undone-and-explained
  */
 class TaskVtodoWriteBackListener implements IEventListener {

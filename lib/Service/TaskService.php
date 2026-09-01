@@ -63,6 +63,8 @@ use Sabre\VObject\Reader;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The leaf now routes projected
+ * VTODOs through the write-back gate beside its own CalDAV collaborators.
  */
 class TaskService {
 
@@ -676,10 +678,11 @@ class TaskService {
 		$actor = $this->userSession->getUser()?->getUID();
 		$rendered = $this->gate->handleWrite(calendarData: $requested, actor: $actor);
 		if ($rendered === null) {
-			$rendered = $existing;
-		} else {
-			$this->calDavBackend->updateCalendarObject($calendarId, $taskUri, $rendered);
+			// An echo or a document that is not the engine's business: stored as is.
+			return $this->vtodoToArray(calendarData: $existing, calendarId: (string)$calendarId, uri: $taskUri);
 		}
+
+		$this->calDavBackend->updateCalendarObject($calendarId, $taskUri, $rendered);
 
 		return $this->vtodoToArray(calendarData: $rendered, calendarId: (string)$calendarId, uri: $taskUri);
 	}//end updateProjectedTask()

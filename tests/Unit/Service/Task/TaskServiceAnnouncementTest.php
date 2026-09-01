@@ -73,7 +73,7 @@ class TaskServiceAnnouncementTest extends TestCase {
 			db: $this->db,
 			logger: new NullLogger(),
 			builder: new TaskBuilder(),
-			events: $this->events
+			dispatcher: $this->events
 		);
 	}
 

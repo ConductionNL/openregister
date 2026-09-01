@@ -830,28 +830,48 @@ final class NotificationAnnotationValidator {
 			}
 
 			if ($targetKind === 'task-verb') {
-				$verb = '';
-				if (is_array($target) === true) {
-					$verb = (string)($target['verb'] ?? '');
-				}
-
-				if (in_array($verb, self::VALID_TASK_VERBS, true) === false) {
-					$errors[] = [
-						'code' => 'notification-action-bad-target',
-						'message' => sprintf(
-							'Notification "%s" action[%s] target.verb "%s" is not a task lifecycle verb in [%s].',
-							$name,
-							(string)$idx,
-							$verb,
-							implode(', ', self::VALID_TASK_VERBS)
-						),
-					];
-				}
+				$errors = array_merge($errors, $this->validateTaskVerbTarget(target: $target, name: $name, idx: (string)$idx));
 			}
 		}//end foreach
 
 		return $errors;
 	}//end validateActions()
+
+	/**
+	 * Validate a `task-verb` action target: it MUST name a lifecycle verb from
+	 * the closed list, never an author-composed URL.
+	 *
+	 * @param mixed $target The raw target (already known to be kind task-verb).
+	 * @param string $name Notification name (for diagnostics).
+	 * @param string $idx Action index (for diagnostics).
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-binary-decision-is-decidable-from-the-notification
+	 */
+	private function validateTaskVerbTarget(mixed $target, string $name, string $idx): array {
+		$verb = '';
+		if (is_array($target) === true) {
+			$verb = (string)($target['verb'] ?? '');
+		}
+
+		if (in_array($verb, self::VALID_TASK_VERBS, true) === true) {
+			return [];
+		}
+
+		return [
+			[
+				'code' => 'notification-action-bad-target',
+				'message' => sprintf(
+					'Notification "%s" action[%s] target.verb "%s" is not a task lifecycle verb in [%s].',
+					$name,
+					$idx,
+					$verb,
+					implode(', ', self::VALID_TASK_VERBS)
+				),
+			],
+		];
+	}//end validateTaskVerbTarget()
 
 	/**
 	 * Validate the optional `critical` bypass flag and the optional

@@ -57,6 +57,11 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The projector bridges the
  * task store, the projection state, the calendar backend and iCalendar; that
  * is the whole of its job.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The sum of the sync
+ * contract's rules (design D-2), each a small branch; splitting the class
+ * would put half the contract out of sight of the other half.
+ * @SuppressWarnings(PHPMD.StaticAccess) TaskVtodoStatusMapping is the
+ * stateless published mapping; Reader is VObject's parser entry point.
  *
  * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-an-assigned-task-appears-in-the-assignees-own-calendar
  */
@@ -375,6 +380,8 @@ class TaskCalendarProjector {
 	 * between the two public entry points; both are documented on their own.
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per rule of
 	 * the sync contract (design D-2); merging them would hide which rule fired.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) Same reason: the rules are
+	 * independent, so their paths multiply, and each is one line.
 	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-an-assigned-task-appears-in-the-assignees-own-calendar
 	 */

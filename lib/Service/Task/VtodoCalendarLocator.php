@@ -92,32 +92,35 @@ class VtodoCalendarLocator {
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-calendar-selection-for-tasks
 	 */
 	public function supportsVtodo(mixed $components): bool {
-		if ($components === null) {
-			return false;
-		}
-
-		if (is_object($components) === true && method_exists($components, 'getValue') === true) {
-			foreach ((array)$components->getValue() as $component) {
-				if (strtoupper((string)$component) === 'VTODO') {
-					return true;
-				}
-			}
-
-			return false;
-		}
-
 		if (is_string($components) === true) {
 			return stripos($components, 'VTODO') !== false;
 		}
 
-		if (is_iterable($components) === true) {
-			foreach ($components as $component) {
-				if (strtoupper((string)$component) === 'VTODO') {
-					return true;
-				}
+		if (is_object($components) === true && method_exists($components, 'getValue') === true) {
+			$components = (array)$components->getValue();
+		}
+
+		if (is_iterable($components) === false) {
+			return false;
+		}
+
+		return $this->namesVtodo(components: $components);
+	}//end supportsVtodo()
+
+	/**
+	 * Whether an iterable of component names contains VTODO.
+	 *
+	 * @param iterable<mixed> $components The component names.
+	 *
+	 * @return bool True when one is VTODO, any case.
+	 */
+	private function namesVtodo(iterable $components): bool {
+		foreach ($components as $component) {
+			if (is_scalar($component) === true && strtoupper((string)$component) === 'VTODO') {
+				return true;
 			}
 		}
 
 		return false;
-	}//end supportsVtodo()
+	}//end namesVtodo()
 }//end class

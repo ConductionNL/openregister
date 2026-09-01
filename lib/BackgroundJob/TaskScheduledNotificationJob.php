@@ -7,10 +7,10 @@
  * is not an object, so it has this sweep instead. Everything else is shared:
  * the same operator-object filter grammar (ScheduledFilterEvaluator), the
  * same per-(rule, task) dedupe state, and the same dispatcher. The candidate
- * set comes from the inbox query with the derived-overdue filter, which is
- * the ONE derivation the inbox and the API also use; the rule's declared
- * filter is then evaluated over the adapter payload, so no rule filters a
- * stored `overdue` because no such field exists.
+ * set comes from the inbox query with the derived-overdue filter (the ONE
+ * predicate the inbox and the API also use, handed the job's clock instant);
+ * the rule's declared filter is then evaluated over the adapter payload, so
+ * no rule filters a stored `overdue` because no such field exists.
  *
  * The task row is never written by this job: a task becomes notifiable by
  * the clock alone.
@@ -46,7 +46,6 @@ use OCA\OpenRegister\Service\Notification\ScheduledFilterEvaluator;
 use OCA\OpenRegister\Service\Notification\TaskNotificationRules;
 use OCA\OpenRegister\Service\Notification\TaskObjectAdapter;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
-use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
@@ -59,6 +58,8 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The sweep joins the rule
  * registry, the inbox query, the filter evaluator, the dedupe state and the
  * dispatcher; each is the platform's one implementation of that concern.
+ * @SuppressWarnings(PHPMD.StaticAccess) DateTime conversions between the
+ * mutable clock the inbox takes and the immutable one the evaluator takes.
  *
  * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-deadline-notifications-filter-on-the-derived-predicate
  */
@@ -93,7 +94,6 @@ class TaskScheduledNotificationJob extends TimedJob {
 	 * @param TaskNotificationRules $rules The task rule registry.
 	 * @param TaskMapper $tasks The candidate query.
 	 * @param TaskInboxService $inbox The row the adapter is built from.
-	 * @param TaskTemporalProjection $temporal The ONE overdue derivation's clock.
 	 * @param ScheduledFilterEvaluator $filters The operator-object filter evaluator.
 	 * @param NotificationDedupeStateMapper $dedupe Per-(rule, task) fire state.
 	 * @param AnnotationNotificationDispatcher $dispatcher The one dispatcher.
@@ -105,7 +105,6 @@ class TaskScheduledNotificationJob extends TimedJob {
 		private readonly TaskNotificationRules $rules,
 		private readonly TaskMapper $tasks,
 		private readonly TaskInboxService $inbox,
-		private readonly TaskTemporalProjection $temporal,
 		private readonly ScheduledFilterEvaluator $filters,
 		private readonly NotificationDedupeStateMapper $dedupe,
 		private readonly AnnotationNotificationDispatcher $dispatcher,
@@ -164,8 +163,11 @@ class TaskScheduledNotificationJob extends TimedJob {
 	 */
 	private function fire(string $name, array $rule, array $trigger): void {
 		$filter = (array)($trigger['filter'] ?? []);
-		$nowDt = DateTimeImmutable::createFromMutable($this->temporal->now());
-		$nowMutable = DateTime::createFromImmutable($nowDt);
+		// One clock instant for the whole sweep: the candidate query's
+		// derived-overdue filter and the rule's declared filter read the same
+		// "now", so the two derivations cannot disagree within a run.
+		$nowMutable = $this->time->getDateTime();
+		$nowDt = DateTimeImmutable::createFromMutable($nowMutable);
 		$schema = $this->schemaFor(name: $name, rule: $rule);
 		$watched = $this->watchedFields(trigger: $trigger);
 

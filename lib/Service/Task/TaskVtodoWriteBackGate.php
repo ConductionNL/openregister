@@ -57,6 +57,8 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The gate is the one
  * place the calendar, the lifecycle, the audit, the projection and the
  * refusal notice meet; splitting it would create a second path back.
+ * @SuppressWarnings(PHPMD.StaticAccess) The identity and status readers are
+ * stateless parsers published by the projector and the mapping.
  *
  * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-ticking-off-the-vtodo-completes-the-engine-task-through-authorization
  */

@@ -69,9 +69,27 @@ class TaskPoolRecipientResolver implements RecipientResolverInterface {
 	 */
 	public function resolve(ObjectEntity $object, array $context): array {
 		$payload = ($object->getObject() ?? []);
-		$uids = [];
 
-		foreach ((array)($payload['candidateGroups'] ?? []) as $groupId) {
+		$uids = array_merge(
+			$this->groupMembers(groupIds: (array)($payload['candidateGroups'] ?? [])),
+			$this->existingUsers(uids: (array)($payload['candidateUsers'] ?? []))
+		);
+
+		return array_values(array_unique($uids));
+	}//end resolve()
+
+	/**
+	 * The members of the named groups; an unresolvable group adds nobody.
+	 *
+	 * @param array<int, mixed> $groupIds The candidate group ids.
+	 *
+	 * @return array<int, string> Member uids.
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-task-lifecycle-delivery-is-automatic-and-declarative
+	 */
+	private function groupMembers(array $groupIds): array {
+		$uids = [];
+		foreach ($groupIds as $groupId) {
 			if (is_string($groupId) === false || trim($groupId) === '') {
 				continue;
 			}
@@ -95,18 +113,28 @@ class TaskPoolRecipientResolver implements RecipientResolverInterface {
 			foreach ($group->getUsers() as $user) {
 				$uids[] = $user->getUID();
 			}
+		}//end foreach
+
+		return $uids;
+	}//end groupMembers()
+
+	/**
+	 * The candidate users that exist; an unknown uid is dropped.
+	 *
+	 * @param array<int, mixed> $uids The candidate uids.
+	 *
+	 * @return array<int, string> Existing uids.
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-task-lifecycle-delivery-is-automatic-and-declarative
+	 */
+	private function existingUsers(array $uids): array {
+		$existing = [];
+		foreach ($uids as $uid) {
+			if (is_string($uid) === true && trim($uid) !== '' && $this->userManager->userExists($uid) === true) {
+				$existing[] = $uid;
+			}
 		}
 
-		foreach ((array)($payload['candidateUsers'] ?? []) as $uid) {
-			if (is_string($uid) === false || trim($uid) === '') {
-				continue;
-			}
-
-			if ($this->userManager->userExists($uid) === true) {
-				$uids[] = $uid;
-			}
-		}
-
-		return array_values(array_unique($uids));
-	}//end resolve()
+		return $existing;
+	}//end existingUsers()
 }//end class
