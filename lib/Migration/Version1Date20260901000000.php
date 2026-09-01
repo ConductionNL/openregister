@@ -107,7 +107,7 @@ class Version1Date20260901000000 extends SimpleMigrationStep
             // actual install that this re-run migration ships to perform.
             $wasAlreadyInstalled = false;
             try {
-                $result              = $this->connection->executeQuery(
+                $result = $this->connection->executeQuery(
                     "SELECT 1 FROM pg_extension WHERE extname = 'pg_trgm'"
                 );
                 $wasAlreadyInstalled = ($result->fetchOne() !== false);
@@ -122,6 +122,7 @@ class Version1Date20260901000000 extends SimpleMigrationStep
             } else {
                 $output->info('pg_trgm extension installed by re-run (fuzzy/substring search indexes can now be created)');
             }
+
             return;
         } catch (Exception $e) {
             try {
