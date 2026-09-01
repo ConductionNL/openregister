@@ -64,7 +64,7 @@ test.describe('data-import-export — import dialog reachability', () => {
 
 		// The OR SPA uses Vue Router history mode with base /index.php/apps/openregister/
 		// The objects route is reached via the hash-anchor pattern used by the existing test suite
-		await page.goto('/index.php/apps/openregister/#/objects', {
+		await page.goto('/index.php/apps/openregister/objects', {
 			waitUntil: 'domcontentloaded',
 		})
 		// Nextcloud header must be visible
@@ -90,7 +90,7 @@ test.describe('data-import-export — import dialog reachability', () => {
 		if (!fs.existsSync(STORAGE_STATE)) test.skip(true, 'no auth state')
 
 		// Navigate to the registers view where the import action is available
-		await page.goto('/index.php/apps/openregister/#/registers', {
+		await page.goto('/index.php/apps/openregister/registers', {
 			waitUntil: 'domcontentloaded',
 		})
 		await expect(

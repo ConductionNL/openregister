@@ -39,7 +39,7 @@
  * ⚠️ THE ROUTER RUNS IN HASH MODE (`src/main.js`). These are hash routes: a
  * path-form deep link is rewritten by the hash router and renders the
  * DASHBOARD instead of the target page. Callers must compose them as
- * `…/apps/openregister/#${route}` — which every `gotoPage`/`gotoApp`/`go`
+ * `…/apps/openregister${route}` — which every `gotoPage`/`gotoApp`/`go`
  * helper in this suite already does.
  */
 

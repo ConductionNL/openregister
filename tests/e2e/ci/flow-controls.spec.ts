@@ -110,7 +110,7 @@ import * as path from 'path'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 
-const FLOWS_ROUTE = '/index.php/apps/openregister/#/flows'
+const FLOWS_ROUTE = '/index.php/apps/openregister/flows'
 
 test.use(fs.existsSync(STORAGE_STATE) ? { storageState: STORAGE_STATE } : {})
 

@@ -24,7 +24,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 
 const STORAGE_STATE = path.resolve(__dirname, '..', '.auth', 'admin.json')
-const AVG_URL = '/index.php/apps/openregister/#/avg'
+const AVG_URL = '/index.php/apps/openregister/avg'
 
 // Safe placeholders only (nil UUID / literal token) — never real values.
 const NIL_UUID = '00000000-0000-0000-0000-000000000000'

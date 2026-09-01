@@ -54,7 +54,7 @@ async function deleteView(request: APIRequestContext, id: number): Promise<void>
 async function gotoTablesPage(page: Page): Promise<void> {
 	// HASH form — the router runs in hash mode (src/main.js); the path-form
 	// URL renders the dashboard instead of the tables page.
-	await page.goto('/index.php/apps/openregister/#/tables', {
+	await page.goto('/index.php/apps/openregister/tables', {
 		waitUntil: 'domcontentloaded',
 	})
 	await page.waitForSelector('#header, header.header-appcontainer', {

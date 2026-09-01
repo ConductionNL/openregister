@@ -111,7 +111,7 @@ test.describe('frontend-app-bootstrap — app mount and data load', () => {
 	test('navigating to /registers renders the register list view', async ({
 		page,
 	}) => {
-		await page.goto('/index.php/apps/openregister/#/registers', {
+		await page.goto('/index.php/apps/openregister/registers', {
 			waitUntil: 'domcontentloaded',
 		})
 		// Don't wait for networkidle — NC SPA keeps background XHR alive indefinitely.
@@ -141,7 +141,7 @@ test.describe('deep-link-registry — hash routes render correct views', () => {
 	test.use({ storageState: STORAGE_STATE })
 
 	test('#/registers route renders register list', async ({ page }) => {
-		await page.goto('/index.php/apps/openregister/#/registers', {
+		await page.goto('/index.php/apps/openregister/registers', {
 			waitUntil: 'domcontentloaded',
 		})
 		// Should NOT redirect to a different page or show a 404.
@@ -152,7 +152,7 @@ test.describe('deep-link-registry — hash routes render correct views', () => {
 	})
 
 	test('#/schemas route renders schema list', async ({ page }) => {
-		await page.goto('/index.php/apps/openregister/#/schemas', {
+		await page.goto('/index.php/apps/openregister/schemas', {
 			waitUntil: 'domcontentloaded',
 		})
 		expect(page.url()).toContain('/openregister/')
@@ -162,7 +162,7 @@ test.describe('deep-link-registry — hash routes render correct views', () => {
 	})
 
 	test('#/objects route renders object list', async ({ page }) => {
-		await page.goto('/index.php/apps/openregister/#/objects', {
+		await page.goto('/index.php/apps/openregister/objects', {
 			waitUntil: 'domcontentloaded',
 		})
 		expect(page.url()).toContain('/openregister/')
@@ -179,7 +179,7 @@ test.describe('deep-link-registry — hash routes render correct views', () => {
 		test.skip(objectId === null, 'no live object found for deep-link test')
 
 		await page.goto(
-			`/index.php/apps/openregister/#/objects/${REGISTER_ID}/${SCHEMA_ID}/${objectId}`,
+			`/index.php/apps/openregister/objects/${REGISTER_ID}/${SCHEMA_ID}/${objectId}`,
 			{ waitUntil: 'domcontentloaded' },
 		)
 		expect(page.url()).toContain('/openregister/')
