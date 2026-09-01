@@ -66,6 +66,12 @@
       wins. No second walk implementation, no second oversight call site —
       `assertOversightAllows()` (`FlowEngine.php:425`) still gates every hop
       and still fails closed.
+      Landed as `FlowStreamWalk::$budget` through
+      `FlowRunService::advanceStream()` (flow-parallel-streams, merged
+      first): the ceiling is a firing budget on the completing STREAM, next
+      to the run-wide `MAX_TRANSITIONS`, and the per-firing oversight call
+      is the stream walk's own. `FlowRunAdvancer::advanceStream()` resolves
+      the run for it exactly as `advance()` does.
 - [x] 4.3 Degradation: a throw during in-request continuation leaves the task
       completed and the run due for the worker, and the completing caller is
       told the task was accepted. The budget is an optimisation; its failure

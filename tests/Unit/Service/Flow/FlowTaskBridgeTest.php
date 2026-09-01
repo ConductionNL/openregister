@@ -12,8 +12,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowStream;
+use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
@@ -41,6 +42,8 @@ class FlowTaskBridgeTest extends TestCase {
 
 	private FlowRunAdvancer&MockObject $advancer;
 
+	private FlowStreamMapper&MockObject $streams;
+
 	private FlowTaskBridge $bridge;
 
 	protected function setUp(): void {
@@ -48,6 +51,7 @@ class FlowTaskBridgeTest extends TestCase {
 		$this->runs = $this->createMock(FlowRunMapper::class);
 		$this->runService = $this->createMock(FlowRunService::class);
 		$this->advancer = $this->createMock(FlowRunAdvancer::class);
+		$this->streams = $this->createMock(FlowStreamMapper::class);
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
@@ -55,6 +59,7 @@ class FlowTaskBridgeTest extends TestCase {
 				return match ($id) {
 					FlowRunService::class => $this->runService,
 					FlowRunAdvancer::class => $this->advancer,
+					FlowStreamMapper::class => $this->streams,
 					default => throw new RuntimeException('unexpected service ' . $id),
 				};
 			}
@@ -84,6 +89,19 @@ class FlowTaskBridgeTest extends TestCase {
 
 		return $run;
 	}//end suspendedRun()
+
+	/**
+	 * A live stream row standing on the given place.
+	 */
+	private function stream(string $id, string $place, string $status = FlowRun::STATUS_SUSPENDED): FlowStream {
+		$stream = new FlowStream();
+		$stream->setRunUuid('run-1');
+		$stream->setStreamId($id);
+		$stream->setPlace($place);
+		$stream->setStatus($status);
+
+		return $stream;
+	}//end stream()
 
 	private function terminalTask(?string $runUuid = 'run-1'): Task {
 		$task = new Task();
@@ -174,7 +192,7 @@ class FlowTaskBridgeTest extends TestCase {
 		$run = $this->suspendedRun(advance: null);
 		$this->runs->method('findByUuid')->willReturn($run);
 		$this->signalParks();
-		$this->advancer->expects($this->never())->method('advance');
+		$this->advancer->expects($this->never())->method('advanceStream');
 
 		$after = $this->bridge->continueRun(task: $this->terminalTask());
 
@@ -184,45 +202,60 @@ class FlowTaskBridgeTest extends TestCase {
 	}//end testTheDefaultBudgetParksForTheWorker()
 
 	/**
-	 * A budget of N writes a ceiling of N + 1 onto the run context (the node's
-	 * own re-entry is the first firing) and advances through the ONE path,
-	 * rethrowing so a failure is seen here.
+	 * A budget of N continues THE STREAM parked on the node, for N + 1
+	 * firings (the node's own re-entry is the completion landing), through
+	 * the one stream-scoped advance path.
 	 */
-	public function testABudgetOfNWritesACeilingAndAdvancesInRequest(): void {
+	public function testABudgetOfNAdvancesTheParkedStreamInRequest(): void {
 		$run = $this->suspendedRun(advance: 3);
 		$this->runs->method('findByUuid')->willReturn($run);
 		$this->signalParks();
-		$this->runs->expects($this->once())
-			->method('update')
-			->with($this->callback(static fn (FlowRun $updated): bool => $updated->getContext()[FlowEngine::CONTEXT_ADVANCE_BUDGET] === 4))
-			->willReturnArgument(0);
+		$this->streams->method('findByRun')->with('run-1')->willReturn([
+			$this->stream('s-root', 'elsewhere'),
+			$this->stream('s-ask', 'ask'),
+		]);
 		$this->advancer->expects($this->once())
-			->method('advance')
-			->with($run, true)
+			->method('advanceStream')
+			->with($run, 's-ask', 4)
 			->willReturn($run);
 
 		$this->bridge->continueRun(task: $this->terminalTask());
-	}//end testABudgetOfNWritesACeilingAndAdvancesInRequest()
+	}//end testABudgetOfNAdvancesTheParkedStreamInRequest()
 
 	/**
-	 * "all" advances with NO ceiling: the engine's natural stopping points
-	 * (a suspension, another user task, an end) bound the walk.
+	 * "all" is passed through as "all": the stream walk's natural stopping
+	 * points (a suspension, another user task, an end) bound it.
 	 */
-	public function testABudgetOfAllAdvancesWithoutACeiling(): void {
+	public function testABudgetOfAllIsPassedThroughToTheStream(): void {
 		$run = $this->suspendedRun(advance: 'all');
 		$this->runs->method('findByUuid')->willReturn($run);
 		$this->signalParks();
-		$this->runs->expects($this->never())->method('update');
+		$this->streams->method('findByRun')->willReturn([$this->stream('s-ask', 'ask')]);
 		$this->advancer->expects($this->once())
-			->method('advance')
-			->with(
-				$this->callback(static fn (FlowRun $walked): bool => array_key_exists(FlowEngine::CONTEXT_ADVANCE_BUDGET, $walked->getContext() ?? []) === false),
-				true
-			)
+			->method('advanceStream')
+			->with($run, 's-ask', 'all')
 			->willReturn($run);
 
 		$this->bridge->continueRun(task: $this->terminalTask());
-	}//end testABudgetOfAllAdvancesWithoutACeiling()
+	}//end testABudgetOfAllIsPassedThroughToTheStream()
+
+	/**
+	 * A terminal stream is not a branch to continue, and a run whose streams
+	 * predate the node has nothing standing on it: both leave the run due
+	 * for the worker rather than guessing a stream.
+	 */
+	public function testWithoutALiveStreamOnTheNodeTheRunIsLeftDueForTheWorker(): void {
+		$run = $this->suspendedRun(advance: 'all');
+		$this->runs->method('findByUuid')->willReturn($run);
+		$this->signalParks();
+		$this->streams->method('findByRun')->willReturn([$this->stream('s-ask', 'ask', FlowRun::STATUS_COMPLETED)]);
+		$this->advancer->expects($this->never())->method('advanceStream');
+
+		$after = $this->bridge->continueRun(task: $this->terminalTask());
+
+		$this->assertNotNull($after);
+		$this->assertNotNull($after->getResumeAt());
+	}//end testWithoutALiveStreamOnTheNodeTheRunIsLeftDueForTheWorker()
 
 	/**
 	 * Design D-5: the budget is an optimisation, so its failure mode is the
@@ -232,7 +265,8 @@ class FlowTaskBridgeTest extends TestCase {
 		$run = $this->suspendedRun(advance: 'all');
 		$this->runs->method('findByUuid')->willReturn($run);
 		$this->signalParks();
-		$this->advancer->method('advance')->willThrowException(new RuntimeException('downstream step blew up'));
+		$this->streams->method('findByRun')->willReturn([$this->stream('s-ask', 'ask')]);
+		$this->advancer->method('advanceStream')->willThrowException(new RuntimeException('downstream step blew up'));
 
 		$after = $this->bridge->continueRun(task: $this->terminalTask());
 
@@ -249,7 +283,7 @@ class FlowTaskBridgeTest extends TestCase {
 		$run = $this->suspendedRun(advance: 'whenever');
 		$this->runs->method('findByUuid')->willReturn($run);
 		$this->signalParks();
-		$this->advancer->expects($this->never())->method('advance');
+		$this->advancer->expects($this->never())->method('advanceStream');
 
 		$this->bridge->continueRun(task: $this->terminalTask());
 	}//end testAnUnreadableStoredBudgetParksForTheWorker()
@@ -263,7 +297,7 @@ class FlowTaskBridgeTest extends TestCase {
 		$run->setStatus(FlowRun::STATUS_RUNNING);
 		$this->runs->method('findByUuid')->willReturn($run);
 		$this->runService->method('signal')->willReturn(null);
-		$this->advancer->expects($this->never())->method('advance');
+		$this->advancer->expects($this->never())->method('advanceStream');
 
 		$this->assertNull($this->bridge->continueRun(task: $this->terminalTask()));
 	}//end testARunThatIsNotSuspendedIsLeftAlone()
