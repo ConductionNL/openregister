@@ -814,10 +814,6 @@ class FlowEngine {
 					'output' => $this->sampleItems(items: $items),
 					'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
 				];
-				$report = $this->stepReport(context: $context);
-				if ($report !== []) {
-					$entry['report'] = $report;
-				}
 			} catch (FlowStop $stop) {
 				$streams->release(places: $claimed);
 				$log[] = [
@@ -855,7 +851,7 @@ class FlowEngine {
 					resumeAt: $suspension->getResumeAt(),
 					reason: $suspension->getMessage(),
 					claimed: $claimed,
-					enabled: ($workflow->getEnabledTransitions(subject: $subject) !== [])
+					enabled: $streams->workRemains(transitions: $workflow->getEnabledTransitions(subject: $subject))
 				);
 				continue;
 			} catch (Throwable $e) {
@@ -866,10 +862,6 @@ class FlowEngine {
 					'error' => $e->getMessage(),
 					'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
 				];
-				$report = $this->stepReport(context: $context);
-				if ($report !== []) {
-					$entry['report'] = $report;
-				}
 
 				$policy = (string)($step['onError'] ?? self::ON_ERROR_STOP);
 				$this->logger->warning(
@@ -940,8 +932,10 @@ class FlowEngine {
 			);
 		}//end while
 
-		// THE PASS'S LAST WORD, under the lock, from the marking there.
-		$enabled = ($workflow->getEnabledTransitions(subject: $subject) !== []);
+		// THE PASS'S LAST WORD, under the lock, from the marking there. "Work
+		// remains" excludes the transitions parked streams keep enabled: a wait
+		// is not work, and counting it would re-queue every parked run.
+		$enabled = $streams->workRemains(transitions: $workflow->getEnabledTransitions(subject: $subject));
 		$status = $streams->finalize(enabled: $enabled);
 
 		$result = ['status' => $status, 'log' => $log, 'context' => $context, 'items' => $items];
@@ -1019,7 +1013,7 @@ class FlowEngine {
 			placeItems: $placeItems,
 			claimed: $claimed,
 			logEntry: $entry,
-			enabledAfter: ($workflow->getEnabledTransitions(subject: $subject) !== []),
+			enabledAfter: $streams->workRemains(transitions: $workflow->getEnabledTransitions(subject: $subject)),
 			streamStatus: FlowRun::STATUS_RUNNING,
 			streamError: $streamError
 		);

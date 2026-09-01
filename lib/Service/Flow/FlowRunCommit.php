@@ -163,18 +163,21 @@ class FlowRunCommit {
 				$streams[$firing->streamId] = $stream;
 			}
 
-			// The step row, positioned WITHIN the stream. Allocation is the
-			// conditional-UPDATE shape, inside this transaction.
-			$sequence = $this->streams->allocateNextSequence(runUuid: $uuid, streamId: (string)$stream->getStreamId());
-			$stream = $this->streams->findByRunAndStream(runUuid: $uuid, streamId: (string)$stream->getStreamId()) ?? $stream;
-			$streams[$firing->streamId] = $stream;
-			$this->insertStep(run: $locked, stream: $stream, sequence: $sequence, entry: $firing->logEntry, now: $now);
+			// A join folds its input streams onto their common prefix FIRST, so
+			// the step row lands on the carrier at ITS next position — the
+			// split-and-join reads as one history with a fan-out in the middle.
+			$carrier = $this->foldCarrier(streams: $streams, firing: $firing, stream: $stream, now: $now);
+
+			// The step row, positioned WITHIN the carrier stream. Allocation is
+			// the conditional-UPDATE shape, inside this transaction.
+			$sequence = $this->streams->allocateNextSequence(runUuid: $uuid, streamId: (string)$carrier->getStreamId());
+			$carrier = $this->streams->findByRunAndStream(runUuid: $uuid, streamId: (string)$carrier->getStreamId()) ?? $carrier;
+			$this->insertStep(run: $locked, stream: $carrier, sequence: $sequence, entry: $firing->logEntry, now: $now);
 
 			$this->settleStreams(
 				uuid: $uuid,
-				streams: $streams,
 				firing: $firing,
-				stream: $stream,
+				carrier: $carrier,
 				now: $now
 			);
 
@@ -381,7 +384,9 @@ class FlowRunCommit {
 				$live = $this->streams->findByRun(runUuid: $uuid);
 			}
 
-			$this->applyDerivedStatus(run: $locked, streams: $live, enabled: $enabled, owner: $owner);
+			// A run told to end has no enabled work left to honour: the
+			// projection then reads the (now uniformly terminal) streams.
+			$this->applyDerivedStatus(run: $locked, streams: $live, enabled: ($enabled === true && $forcedTerminal === null), owner: $owner);
 			$locked->setUpdated($now);
 			$this->runs->update($locked);
 			$this->db->commit();
@@ -472,29 +477,20 @@ class FlowRunCommit {
 	}//end applyDerivedStatus()
 
 	/**
-	 * Continue, split or fold the firing's stream rows.
+	 * The stream that carries the token onward: the firing stream, or — for a
+	 * join consuming several streams — the stream at their longest common
+	 * prefix, resumed. Every other consumed stream is completed.
 	 *
-	 * K taken outputs: K == 1 continues the stream; K > 1 completes it and
-	 * mints `parent.0001 … parent.000K` in `getTos()` declaration order. A
-	 * join (several input streams) folds them onto their longest common
-	 * prefix — the stream row with that path, resumed — and completes the
-	 * others.
-	 *
-	 * @param string $uuid The run.
 	 * @param array<string, FlowStream> $streams The run's streams by id.
 	 * @param FlowFiring $firing The firing.
-	 * @param FlowStream $stream The firing stream (already positioned).
+	 * @param FlowStream $stream The firing stream.
 	 * @param DateTime $now Now.
 	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Continue, split and join are three shapes of one settlement.
-	 * @SuppressWarnings(PHPMD.NPathComplexity) The same three shapes.
+	 * @return FlowStream The carrier.
 	 *
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-the-run-log-must-be-ordered-by-branch-never-by-completion
 	 */
-	private function settleStreams(string $uuid, array $streams, FlowFiring $firing, FlowStream $stream, DateTime $now): void {
-		// A join: fold every consumed stream onto the common prefix.
+	private function foldCarrier(array $streams, FlowFiring $firing, FlowStream $stream, DateTime $now): FlowStream {
 		$consumed = [];
 		foreach ($firing->consumedStreamIds as $id) {
 			if (isset($streams[$id]) === true) {
@@ -503,30 +499,57 @@ class FlowRunCommit {
 		}
 
 		$consumed[(string)$stream->getStreamId()] = $stream;
-		$carrier = $stream;
-		if (count($consumed) > 1) {
-			$prefix = FlowStream::commonPrefix(array_map(static fn (FlowStream $s): string => (string)$s->getOrdinalPath(), array_values($consumed)));
-			$carrier = null;
-			foreach ($streams as $candidate) {
-				if ((string)$candidate->getOrdinalPath() === $prefix) {
-					$carrier = $candidate;
-					break;
-				}
-			}
+		if (count($consumed) <= 1) {
+			return $stream;
+		}
 
-			$carrier ??= $stream;
-			foreach ($consumed as $id => $ended) {
-				if ($id === (string)$carrier->getStreamId()) {
-					continue;
-				}
-
-				$ended->setStatus(FlowRun::STATUS_COMPLETED);
-				$ended->setUpdated($now);
-				$this->streams->update($ended);
+		$prefix = FlowStream::commonPrefix(paths: array_map(static fn (FlowStream $s): string => (string)$s->getOrdinalPath(), array_values($consumed)));
+		$carrier = null;
+		foreach ($streams as $candidate) {
+			if ((string)$candidate->getOrdinalPath() === $prefix) {
+				$carrier = $candidate;
+				break;
 			}
 		}
 
+		$carrier ??= $stream;
+		foreach ($consumed as $id => $ended) {
+			if ($id === (string)$carrier->getStreamId()) {
+				continue;
+			}
+
+			$ended->setStatus(FlowRun::STATUS_COMPLETED);
+			$ended->setUpdated($now);
+			$this->streams->update($ended);
+		}
+
+		return $carrier;
+	}//end foldCarrier()
+
+	/**
+	 * Continue or split the carrier stream.
+	 *
+	 * K taken outputs: K == 1 continues the carrier onto the taken place;
+	 * K == 0 completes it (the token was consumed and nothing produced);
+	 * K > 1 completes it and mints `parent.0001 … parent.000K` in `getTos()`
+	 * declaration order.
+	 *
+	 * @param string $uuid The run.
+	 * @param FlowFiring $firing The firing.
+	 * @param FlowStream $carrier The carrier stream (already positioned).
+	 * @param DateTime $now Now.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Continue, end and split are three shapes of one settlement.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-the-run-log-must-be-ordered-by-branch-never-by-completion
+	 */
+	private function settleStreams(string $uuid, FlowFiring $firing, FlowStream $carrier, DateTime $now): void {
 		$taken = array_values($firing->taken);
+		$firing->carrierStreamId = (string)$carrier->getStreamId();
+		$firing->childStreamIds = [];
+
 		if (count($taken) <= 1) {
 			$carrier->setStatus($firing->streamStatus);
 			$carrier->setError($firing->streamError);
@@ -536,10 +559,9 @@ class FlowRunCommit {
 				// Nothing produced: the token is consumed and this branch ends.
 				$carrier->setStatus(FlowRun::STATUS_COMPLETED);
 			}
+
 			$carrier->setUpdated($now);
 			$this->streams->update($carrier);
-			$firing->carrierStreamId = (string)$carrier->getStreamId();
-			$firing->childStreamIds = [];
 			return;
 		}
 
@@ -547,8 +569,6 @@ class FlowRunCommit {
 		$carrier->setStatus(FlowRun::STATUS_COMPLETED);
 		$carrier->setUpdated($now);
 		$this->streams->update($carrier);
-		$firing->carrierStreamId = (string)$carrier->getStreamId();
-		$firing->childStreamIds = [];
 		$index = 1;
 		foreach ($taken as $to) {
 			$path = FlowStream::childPath(parentPath: (string)$carrier->getOrdinalPath(), index: $index);

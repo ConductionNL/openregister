@@ -247,6 +247,38 @@ class FlowStreamWalk {
 	}//end isAdvanceable()
 
 	/**
+	 * Whether any of the given enabled transitions is work somebody could
+	 * still do: one that consumes from a place held by a stream NOT parked in
+	 * this pass. A parked stream's token keeps its transition enabled in the
+	 * Petri net, but that transition is a wait, not work — counting it would
+	 * make every parked run read as `queued` and spin the worker.
+	 *
+	 * @param array<int, object> $transitions The enabled transitions.
+	 *
+	 * @return bool True when an unparked stream has an enabled transition.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-runs-status-must-stay-derivable-from-its-streams-with-no-new-value
+	 */
+	public function workRemains(array $transitions): bool {
+		$unparked = [];
+		foreach ($this->streams as $id => $stream) {
+			if (isset($this->parked[$id]) === false && $stream['place'] !== null) {
+				$unparked[$stream['place']] = true;
+			}
+		}
+
+		foreach ($transitions as $transition) {
+			foreach ($transition->getFroms() as $from) {
+				if (isset($unparked[(string)$from]) === true) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}//end workRemains()
+
+	/**
 	 * The place holding a stream's token.
 	 *
 	 * @param string $id The stream id.
