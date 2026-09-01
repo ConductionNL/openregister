@@ -660,6 +660,78 @@ class TaskService {
 	}//end terminateAsMoot()
 
 	/**
+	 * Consume an approving decision: record that the work it authorized ran.
+	 *
+	 * The home of openconnector's `consumedAt` semantic
+	 * (flow-approval-consolidation, HITL retirement inventory): an approved
+	 * but unconsumed request must not silently re-authorize a later run. A
+	 * TRUSTED in-process verb: the actor is the consuming system
+	 * (`sync-run:<uuid>`, `flow-run:<uuid>`), recorded on the audit.
+	 *
+	 * Refused on a task that is not completed with an approving outcome, and
+	 * refused AGAIN on one already consumed — the second refusal is the
+	 * whole point.
+	 *
+	 * @param string $uuid The decided task's uuid.
+	 * @param string $source The consuming identity recorded as actor.
+	 * @param string $reason What relied on the approval.
+	 *
+	 * @return Task The task with its consumption recorded.
+	 *
+	 * @throws TaskConflictException When not an unconsumed approving decision.
+	 *
+	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
+	 */
+	public function consume(string $uuid, string $source, string $reason): Task {
+		$task = $this->tasks->findByUuid(uuid: $uuid);
+
+		$approved = ((string)$task->getState() === Task::STATE_COMPLETED
+			&& TaskState::isRejectingOutcome(outcome: $task->getOutcome()) === false);
+		if ($approved === false) {
+			throw new TaskConflictException(
+				message: sprintf(
+					"Verb 'consume' refused: task '%s' is not an approving decision (state '%s', outcome '%s').",
+					$uuid,
+					(string)$task->getState(),
+					(string)$task->getOutcome()
+				)
+			);
+		}
+
+		$metadata = ($task->getMetadata() ?? []);
+		if (trim((string)($metadata['consumedAt'] ?? '')) !== '') {
+			throw new TaskConflictException(
+				message: sprintf(
+					"Verb 'consume' refused: the approval on task '%s' was already consumed at %s by %s, and an approval authorizes exactly once.",
+					$uuid,
+					(string)$metadata['consumedAt'],
+					(string)($metadata['consumedBy'] ?? 'an unrecorded consumer')
+				)
+			);
+		}
+
+		$metadata['consumedAt'] = (new DateTime())->format('c');
+		$metadata['consumedBy'] = $source;
+		$task->setMetadata($metadata);
+
+		// A hand-rolled transaction instead of transactional(): the task was
+		// terminal long before this call, and re-announcing its terminality
+		// here would replay run continuation and sequence progression for a
+		// decision that already happened.
+		$this->db->beginTransaction();
+		try {
+			$persisted = $this->tasks->update($task);
+			$this->appendAudit(task: $persisted, action: 'consume', actor: $source, reason: $reason);
+			$this->db->commit();
+		} catch (Throwable $failure) {
+			$this->db->rollBack();
+			throw $failure;
+		}
+
+		return $persisted;
+	}//end consume()
+
+	/**
 	 * Enable a position: the sequence's own promotion verb.
 	 *
 	 * The task-sequence equivalent of the twenty lines at the retired
