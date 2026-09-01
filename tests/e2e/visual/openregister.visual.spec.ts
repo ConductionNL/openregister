@@ -17,7 +17,7 @@ const APP = '/index.php/apps/openregister'
 
 test.describe('Open Register — visual baselines', () => {
 	test('dashboard', async ({ page }) => {
-		await shootSurface(page, `${APP}/#/`, 'dashboard.png')
+		await shootSurface(page, `${APP}/`, 'dashboard.png')
 	})
 
 	// NOTE: OpenRegister's in-app sidebar routes do not switch the rendered

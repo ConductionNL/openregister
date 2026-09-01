@@ -58,7 +58,7 @@ const FLAG_PATH =
  * deep-link renders the dashboard instead of the target page.
  */
 async function gotoRoadmapRoute(page: Page): Promise<void> {
-	await page.goto('/index.php/apps/openregister/#/features-roadmap', {
+	await page.goto('/index.php/apps/openregister/features-roadmap', {
 		waitUntil: 'domcontentloaded',
 	})
 	await page

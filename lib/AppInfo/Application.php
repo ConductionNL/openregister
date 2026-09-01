@@ -2544,6 +2544,16 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Listener\TaskRunTerminalListener::class
 		);
 
+		// The other direction (flow-user-task-node): a task the graph raised
+		// reached a terminal state, so its suspended run is woken and, per the
+		// node's `advance` budget, continued in-request. Fires AFTER the task's
+		// own transaction committed; a failure here costs latency, never the
+		// completion.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
+			\OCA\OpenRegister\Listener\UserTaskTerminalListener::class
+		);
+
 		// Task projections (flow-task-inbox-projections): a committed
 		// transition becomes a declarative notification and a VTODO in the
 		// assignee's calendar. Both run AFTER the commit and neither can fail
@@ -2558,15 +2568,13 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Listener\TaskCalendarProjectionListener::class
 		);
 
-		// Dismiss-on-terminality, keyed to the terminal-task event the
-		// user-task node announces (flow-user-task-node, TaskTerminalEvent).
-		// Registered by NAME: the event class ships with that change, and a
-		// listener bound to a class that never fires is inert, so the two
-		// changes may land in either order. Idempotent beside the
-		// transition listeners above: a second withdrawal finds nothing to
-		// withdraw and a second render finds nothing changed.
+		// Dismiss-on-terminality, on the same terminal-task event the
+		// user-task node listens to: no approve button and no open VTODO
+		// survives a terminal task, however it became terminal. Idempotent
+		// beside the transition listeners above: a second withdrawal finds
+		// nothing to withdraw and a second render finds nothing changed.
 		$context->registerEventListener(
-			'OCA\\OpenRegister\\Event\\TaskTerminalEvent',
+			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
 			\OCA\OpenRegister\Listener\TaskTerminalProjectionListener::class
 		);
 

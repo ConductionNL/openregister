@@ -48,6 +48,7 @@ use OCA\OpenRegister\Db\TaskAuditMapper;
 use OCA\OpenRegister\Db\TaskCandidateMapper;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\TaskRelationMapper;
+use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
@@ -83,6 +84,11 @@ use Throwable;
  * @SuppressWarnings(PHPMD.StaticAccess) TaskState is a stateless published
  * vocabulary (the one status mapping); calling it statically is the point,
  * an instance would be a second copy of the same table.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) The tenth constructor
+ * argument is the nullable event dispatcher that announces terminality
+ * (flow-user-task-node); it is last so the hand-built test services keep
+ * their order, and folding it into another collaborator would hide that a
+ * lifecycle verb has an after-commit side effect.
  *
  * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
@@ -101,15 +107,20 @@ class TaskService {
 	 * @param LoggerInterface $logger Failure reporting.
 	 * @param TaskBuilder $builder Validates and builds a new task from
 	 *                             boundary data (the vocabularies live there).
-	 * @param IEventDispatcher|null $dispatcher Announces a committed transition
-	 *                                          ({@see TaskTransitionedEvent}) to
-	 *                                          the projections (notifications,
-	 *                                          calendar), AFTER the commit. Last
-	 *                                          and nullable so the suites that
-	 *                                          build this service by hand keep
-	 *                                          their argument order; absent,
-	 *                                          nothing is projected and the
-	 *                                          lifecycle is unchanged.
+	 * @param IEventDispatcher|null $dispatcher Announces the committed
+	 *                                          transition to the projections
+	 *                                          ({@see TaskTransitionedEvent})
+	 *                                          and, when the task came out
+	 *                                          terminal, its terminality to the
+	 *                                          flow side
+	 *                                          ({@see TaskTerminalEvent}) — both
+	 *                                          AFTER the commit. Last and
+	 *                                          nullable so the suites that build
+	 *                                          this service by hand keep their
+	 *                                          argument order; absent, nothing
+	 *                                          is projected, terminality goes
+	 *                                          unannounced, and the lifecycle is
+	 *                                          unchanged.
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
@@ -508,6 +519,7 @@ class TaskService {
 				return $persisted;
 			}
 		);
+
 	}//end cancel()
 
 	/**
@@ -658,6 +670,7 @@ class TaskService {
 				return $persisted;
 			}
 		);
+
 	}//end terminateAsMoot()
 
 	/**
@@ -771,6 +784,7 @@ class TaskService {
 				return $persisted;
 			}
 		);
+
 	}//end completeInternal()
 
 	/**
@@ -939,10 +953,12 @@ class TaskService {
 	}//end appendAudit()
 
 	/**
-	 * Run a mutation and its audit in ONE transaction.
+	 * Run a mutation and its audit in ONE transaction, then announce terminality.
 	 *
 	 * The rollback is what makes "a completed task without its audit entry"
 	 * unreachable: an audit-write failure unwinds the completion with it.
+	 * A mutation that leaves the task terminal is announced as
+	 * {@see TaskTerminalEvent} once the transaction has closed.
 	 *
 	 * @param callable(): Task $mutation The mutation to run.
 	 *
@@ -963,7 +979,29 @@ class TaskService {
 			throw $failure;
 		}
 
+		// The projections first: the notification and the calendar entry of
+		// THIS task reflect its committed state before the flow side walks on
+		// (that walk can complete further tasks re-entrantly).
 		$this->announce(task: $result);
+
+		// Terminality is announced HERE, after the commit and from the one
+		// place every mutation passes, so no verb can forget it (the same
+		// choke-point argument FlowRunMapper::update() makes for runs). After
+		// the commit, never inside it: the flow-side listener may continue the
+		// task's run in-request, and that walk must find a completion that
+		// already exists on its own. A listener failure is logged and
+		// swallowed: the caller has a committed task in hand and must be told
+		// so, whatever the run did with it afterwards.
+		if ($this->dispatcher !== null && $result->isInTerminalState() === true) {
+			try {
+				$this->dispatcher->dispatchTyped(new TaskTerminalEvent(task: $result));
+			} catch (Throwable $listenerFailure) {
+				$this->logger->warning(
+					'[TaskService] A terminal-task listener failed; the task itself is unaffected: ' . $listenerFailure->getMessage(),
+					['task' => $result->getUuid(), 'exception' => $listenerFailure]
+				);
+			}
+		}
 
 		return $result;
 	}//end transactional()
