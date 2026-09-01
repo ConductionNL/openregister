@@ -61,6 +61,7 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\Flow\Timer\EscalationLadderService
  * @covers \OCA\OpenRegister\Service\Flow\Timer\SlaCalculator
  * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
+ * @covers \OCA\OpenRegister\Db\FlowTimerFire
  */
 class FlowTimerServiceTest extends TestCase {
 
@@ -774,6 +775,129 @@ class FlowTimerServiceTest extends TestCase {
 		self::assertSame(0, $this->service->fireRungs(timer: $this->store->timers[(string)$timer->getUuid()], now: $this->at('2026-12-01 09:00')), 'a suspended timer neither fires nor escalates');
 		self::assertSame([], $this->dispatched);
 	}//end testRungsFireOnlyOnAnArmedTimerWithAFireMoment()
+
+	public function testTheRemainingBuildRefusalsAreNamed(): void {
+		$this->task();
+		$cases = [
+			['subjectType' => 'invoice'],
+			['subjectUuid' => '  '],
+			['purpose' => 'someday'],
+			['legalEffect' => 'contractueel'],
+		];
+		foreach ($cases as $bad) {
+			try {
+				$this->service->arm(config: $this->config($bad + ['ladder' => null]), actor: null, now: $this->at('2026-09-01 09:00'));
+				self::fail('accepted ' . json_encode($bad));
+			} catch (FlowTimerValidationException $refused) {
+				self::assertNotSame('', $refused->getMessage());
+			}
+		}
+
+		try {
+			$this->service->extend(uuid: 'missing', amount: 0, unit: 'hours', rationale: 'x', actor: null);
+			self::fail('accepted a zero extension');
+		} catch (\OCP\AppFramework\Db\DoesNotExistException) {
+			// The uuid is read first; the amount guard needs a real timer.
+		}
+
+		$timer = $this->service->arm(config: $this->config(['ladder' => null]), actor: null, now: $this->at('2026-09-01 09:00'));
+		try {
+			$this->service->extend(uuid: (string)$timer->getUuid(), amount: 0, unit: 'hours', rationale: 'x', actor: null, now: $this->at('2026-09-02 09:00'));
+			self::fail('accepted a zero extension');
+		} catch (FlowTimerValidationException $refused) {
+			self::assertStringContainsString('must be positive', $refused->getMessage());
+		}
+
+		try {
+			$this->service->suspend(uuid: (string)$timer->getUuid(), reason: 'twice', until: null, actor: null, now: $this->at('2026-09-02 09:00'));
+			$this->service->suspend(uuid: (string)$timer->getUuid(), reason: 'twice', until: null, actor: null, now: $this->at('2026-09-03 09:00'));
+			self::fail('suspended a suspended timer');
+		} catch (FlowTimerStateException $refused) {
+			self::assertStringContainsString("'suspended', not 'armed'", $refused->getMessage());
+		}
+	}//end testTheRemainingBuildRefusalsAreNamed()
+
+	public function testAnAnchorlessTimerRunsFromNow(): void {
+		$this->task();
+		$config = $this->config(['ladder' => null]);
+		unset($config['anchorEventAt']);
+		$timer = $this->service->arm(config: $config, actor: null, now: $this->at('2026-09-01 09:00'));
+		self::assertSame('2026-09-01 09:00', $timer->getAnchorAt()->format('Y-m-d H:i'));
+	}//end testAnAnchorlessTimerRunsFromNow()
+
+	public function testANonTaskSubjectEnforcesNothingAndEscalatesToRoles(): void {
+		// An enforcing timer on an OBJECT subject fires and records, but no
+		// task action is applied and the rung recipients stay role descriptors.
+		$timer = $this->service->arm(
+			config: $this->config(['subjectType' => 'object', 'subjectUuid' => 'o-1', 'purpose' => 'expiry', 'legalEffect' => 'wettelijk', 'onExpiry' => 'skip']),
+			actor: null,
+			now: $this->at('2026-09-01 09:00')
+		);
+		$this->taskService->expects(self::never())->method('applyTimerOutcome');
+		self::assertSame(1, $this->service->fireRungs(timer: $timer, now: $this->at('2026-10-14 09:00')), 'the 14-day rung');
+		self::assertSame([['type' => 'role', 'id' => 'handler', 'role' => 'handler']], $this->dispatched[0]->getRecipients());
+		self::assertTrue($this->service->fireExpiry(timer: $timer, now: $this->at('2026-10-28 09:00')));
+	}//end testANonTaskSubjectEnforcesNothingAndEscalatesToRoles()
+
+	public function testAFailingWriteRollsTheOperationBack(): void {
+		$db = $this->createMock(IDBConnection::class);
+		$db->expects(self::once())->method('beginTransaction');
+		$db->expects(self::once())->method('rollBack');
+		$db->expects(self::never())->method('commit');
+		$events = $this->createMock(\OCA\OpenRegister\Db\FlowTimerEventMapper::class);
+		$events->method('insert')->willThrowException(new \RuntimeException('event table gone'));
+		$definitions = $this->createMock(FlowTimerDefinitionStore::class);
+		$definitions->method('calendars')->willReturn(self::calendars());
+		$definitions->method('ladders')->willReturn([]);
+		$calendars = new WorkingCalendarService(definitions: $definitions);
+		$service = new FlowTimerService(
+			timers: $this->store->timerMapper(),
+			fires: $this->store->fireMapper(),
+			events: $events,
+			tasks: $this->store->taskMapper(),
+			taskService: $this->taskService,
+			calendars: $calendars,
+			calculator: $this->calculator,
+			ladder: new EscalationLadderService(definitions: $definitions, calculator: $this->calculator),
+			db: $db,
+			dispatcher: $this->createMock(IEventDispatcher::class),
+			logger: new NullLogger()
+		);
+		$this->expectException(\RuntimeException::class);
+		$service->arm(config: $this->config(['ladder' => null]), actor: null, now: $this->at('2026-09-01 09:00'));
+	}//end testAFailingWriteRollsTheOperationBack()
+
+	public function testAMapperHandingBackAClosedTimerIsSkippedDefensively(): void {
+		$closed = new FlowTimer();
+		$closed->setUuid('t-closed');
+		$closed->setState(FlowTimer::STATE_FIRED);
+		$timers = $this->createMock(\OCA\OpenRegister\Db\FlowTimerMapper::class);
+		$timers->method('findBySubject')->willReturn([$closed]);
+		$timers->expects(self::never())->method('update');
+		$definitions = $this->createMock(FlowTimerDefinitionStore::class);
+		$definitions->method('calendars')->willReturn(self::calendars());
+		$definitions->method('ladders')->willReturn([]);
+		$service = new FlowTimerService(
+			timers: $timers,
+			fires: $this->store->fireMapper(),
+			events: $this->store->eventMapper(),
+			tasks: $this->store->taskMapper(),
+			taskService: $this->taskService,
+			calendars: new WorkingCalendarService(definitions: $definitions),
+			calculator: $this->calculator,
+			ladder: new EscalationLadderService(definitions: $definitions, calculator: $this->calculator),
+			db: $this->createMock(IDBConnection::class),
+			dispatcher: $this->createMock(IEventDispatcher::class),
+			logger: new NullLogger()
+		);
+		self::assertSame(0, $service->cancelForSubject(subjectType: 'task', subjectUuid: 't', reason: 'r', actor: null));
+	}//end testAMapperHandingBackAClosedTimerIsSkippedDefensively()
+
+	public function testARungFireOnAnAbsentTaskFallsBackToRoleDescriptors(): void {
+		$timer = $this->service->arm(config: $this->config(['subjectUuid' => 'task-gone']), actor: null, now: $this->at('2026-09-01 09:00'));
+		self::assertSame(1, $this->service->fireRungs(timer: $timer, now: $this->at('2026-10-14 09:00')));
+		self::assertSame('role', $this->dispatched[0]->getRecipients()[0]['type'], 'no task to resolve the handler against');
+	}//end testARungFireOnAnAbsentTaskFallsBackToRoleDescriptors()
 
 	public function testASubjectMayCarryThreeDeadlinesWithDifferentMomentsIndependently(): void {
 		$this->task();

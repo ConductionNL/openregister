@@ -61,9 +61,6 @@ use Throwable;
 /**
  * Creates, routes, claims, completes, cancels and terminates tasks.
  *
- * @SuppressWarnings(PHPMD.TooManyMethods) Two over since the timer outcome
- * verb and its vocabulary map (flow-business-timers D-3) joined the lifecycle;
- * the private helpers exist so every verb shares ONE audit and ONE persist.
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) One method per lifecycle
  * verb the spec names (create/offer/claim/unclaim/assign/reassign/delegate/
  * resolve/complete/cancel) plus the two propagation entry points. Merging
