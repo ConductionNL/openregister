@@ -75,6 +75,57 @@ class WaitingNode implements IFlowNode {
 	}
 }
 
+/** A subject whose serialisation carries its identity, like ObjectEntity does. */
+class IdentifiedSubject {
+	public function __construct(
+		private readonly array $fields,
+	) {
+	}
+
+	public function jsonSerialize(): array {
+		return $this->fields;
+	}
+}
+
+/** Passes items through and counts how often it ran, so a branch can be asserted. */
+class BranchRecordingNode implements IFlowNode {
+	public int $calls = 0;
+
+	public function __construct(
+		private readonly string $id,
+	) {
+	}
+
+	public function getId(): string {
+		return $this->id;
+	}
+
+	public function getDisplayName(): string {
+		return 'Records';
+	}
+
+	public function getDescription(): string {
+		return 'Counts its runs.';
+	}
+
+	public function getIcon(): string {
+		return 'i.svg';
+	}
+
+	public function isAvailableForScope(int $scope): bool {
+		return true;
+	}
+
+	public function validateConfig(array $config): void {
+	}
+
+	public function execute(array $items, array $config, array $context): array {
+		$this->calls++;
+
+		return $items;
+	}
+}
+
 /** Records the context it was handed, so attribution can be asserted. */
 class ContextCapturingNode implements IFlowNode {
 	public array $seenContext = [];
@@ -118,6 +169,10 @@ class FlowRunServiceTest extends TestCase {
 
 	private ContextCapturingNode $capturer;
 
+	private BranchRecordingNode $doneBranch;
+
+	private BranchRecordingNode $retryBranch;
+
 	protected function setUp(): void {
 		$this->mapper = $this->createMock(FlowRunMapper::class);
 		// insert/update echo the entity back, so assertions read the real state.
@@ -126,6 +181,8 @@ class FlowRunServiceTest extends TestCase {
 
 		$this->waiter = new WaitingNode();
 		$this->capturer = new ContextCapturingNode();
+		$this->doneBranch = new BranchRecordingNode(id: 'test.done');
+		$this->retryBranch = new BranchRecordingNode(id: 'test.retry');
 
 		$dispatcher = $this->createMock(IEventDispatcher::class);
 		$dispatcher->method('dispatchTyped')->willReturnCallback(
@@ -133,6 +190,8 @@ class FlowRunServiceTest extends TestCase {
 				if ($event instanceof RegisterFlowNodesEvent) {
 					$event->registerNode($this->waiter);
 					$event->registerNode($this->capturer);
+					$event->registerNode($this->doneBranch);
+					$event->registerNode($this->retryBranch);
 				}
 			}
 		);
@@ -232,6 +291,124 @@ class FlowRunServiceTest extends TestCase {
 		$this->assertSame('through-the-pause', $run->getItems()[0]['json']['carried']);
 		$this->assertSame(2, $this->waiter->calls);
 	}
+
+	/**
+	 * 🔴 D2 REGRESSION: a suspended run whose SUBJECT changed while it waited
+	 * resumes and branches on the NEW value, not the trigger-time snapshot.
+	 *
+	 * The dossiq stranding: the applicant supplied the missing description and
+	 * completed the task, and the re-check still read `description: null` off
+	 * the frozen item — so the re-ask loop could never succeed. Items still
+	 * survive the pause (REQ-FR-003): only the subject's own fields on the
+	 * item that IS the subject are refreshed; a key the earlier steps produced
+	 * is asserted intact below.
+	 *
+	 * @return void
+	 */
+	public function testAResumedRunBranchesOnTheLiveSubjectNotTheTriggerTimeSnapshot(): void {
+		$flow = [
+			'id' => 'f1',
+			'nodes' => [
+				[
+					'id' => 'hop',
+					'type' => 'test.wait',
+					'exits' => [
+						['id' => 'filled', 'condition' => ['!=' => [['var' => 'json.description'], null]]],
+						['id' => 'missing'],
+					],
+				],
+				['id' => 'done', 'type' => 'test.done'],
+				['id' => 'again', 'type' => 'test.retry'],
+			],
+			'edges' => [
+				['id' => 'toDone', 'from' => 'hop', 'fromExit' => 'filled', 'to' => 'done'],
+				['id' => 'toAgain', 'from' => 'hop', 'fromExit' => 'missing', 'to' => 'again'],
+			],
+		];
+
+		$run = $this->service->queue('f1', ['uuid' => 'case-1'], 'object.created', user: 'alice');
+		$run = $this->service->execute(
+			$run,
+			$flow,
+			new IdentifiedSubject(fields: ['id' => 'case-1', 'description' => null])
+		);
+		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
+
+		// What the earlier steps produced must survive the refresh.
+		$items = $run->getItems();
+		$items[0]['json']['stepProduced'] = 'kept';
+		$run->setItems($items);
+
+		// The human answers: the SUBJECT changes while the run sits suspended.
+		$run = $this->service->execute(
+			$run,
+			$flow,
+			new IdentifiedSubject(fields: ['id' => 'case-1', 'description' => 'now supplied'])
+		);
+
+		$this->assertSame(FlowRun::STATUS_COMPLETED, $run->getStatus());
+		$this->assertSame(1, $this->doneBranch->calls, 'the branch decision must read the LIVE subject');
+		$this->assertSame(0, $this->retryBranch->calls, 'the stale snapshot must not re-take the re-ask branch');
+		$this->assertSame('now supplied', $run->getItems()[0]['json']['description']);
+		$this->assertSame('kept', $run->getItems()[0]['json']['stepProduced'], 'step output still survives the pause');
+	}//end testAResumedRunBranchesOnTheLiveSubjectNotTheTriggerTimeSnapshot()
+
+	/**
+	 * 🔴 D2 REGRESSION, the loop shape: a re-ask loop that RECEIVES the answer
+	 * terminates instead of stranding.
+	 *
+	 * check -> (missing) -> ask -> check again. On the stale snapshot the
+	 * resumed walk takes `missing` forever — each re-entry of the ask node
+	 * completes instantly against the already-consumed answer, so the loop
+	 * spins to the ceiling in one pass and the run strands. With the subject
+	 * refreshed at resume, the first re-check reads the supplied value and the
+	 * run completes.
+	 *
+	 * @return void
+	 */
+	public function testAReAskLoopThatReceivesTheAnswerTerminates(): void {
+		$flow = [
+			'id' => 'f1',
+			'nodes' => [
+				[
+					'id' => 'check',
+					'type' => 'test.retry',
+					'exits' => [
+						['id' => 'filled', 'condition' => ['!=' => [['var' => 'json.description'], null]]],
+						['id' => 'missing'],
+					],
+				],
+				['id' => 'ask', 'type' => 'test.wait'],
+				['id' => 'done', 'type' => 'test.done'],
+			],
+			'edges' => [
+				['id' => 'toDone', 'from' => 'check', 'fromExit' => 'filled', 'to' => 'done'],
+				['id' => 'toAsk', 'from' => 'check', 'fromExit' => 'missing', 'to' => 'ask'],
+				['id' => 'back', 'from' => 'ask', 'to' => 'check'],
+			],
+		];
+
+		$run = $this->service->queue('f1', ['uuid' => 'case-1'], 'object.created', user: 'alice');
+		$run = $this->service->execute(
+			$run,
+			$flow,
+			new IdentifiedSubject(fields: ['id' => 'case-1', 'description' => null])
+		);
+
+		// The first pass checked, found nothing, asked, and parked.
+		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
+		$this->assertSame(1, $this->retryBranch->calls);
+
+		$run = $this->service->execute(
+			$run,
+			$flow,
+			new IdentifiedSubject(fields: ['id' => 'case-1', 'description' => 'now supplied'])
+		);
+
+		$this->assertSame(FlowRun::STATUS_COMPLETED, $run->getStatus(), 'the loop must terminate, not strand at the ceiling');
+		$this->assertSame(2, $this->retryBranch->calls, 'exactly one re-check, which sees the answer');
+		$this->assertSame(1, $this->doneBranch->calls);
+	}//end testAReAskLoopThatReceivesTheAnswerTerminates()
 
 	public function testResumeAtIsClearedOnceTheRunIsNoLongerSuspended(): void {
 		$run = $this->service->queue('f1', user: 'alice');

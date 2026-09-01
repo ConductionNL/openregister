@@ -269,6 +269,11 @@ class FlowRunService {
 
 		$flow = $pinned;
 
+		// Resume-after-human-answer must see the subject as it stands: the
+		// answer the task asked for landed on the OBJECT, and the stored items
+		// still hold the trigger-time snapshot of it.
+		$this->refreshSubjectItems(run: $run, subject: $subject);
+
 		$walk = $this->streamWalkFor(run: $run, flow: $flow, onlyStream: $streamId, budget: $firings);
 		if ($walk === null) {
 			// Without the stream layer there is no branch to scope to; the
@@ -823,6 +828,14 @@ class FlowRunService {
 		$flow = $pinned;
 
 		$resuming = ($run->getStatus() === FlowRun::STATUS_SUSPENDED);
+		if ($resuming === true) {
+			// The stored items win on resume (see below), but the SUBJECT'S
+			// own fields on them are a trigger-time snapshot — refreshed here
+			// so a step that branches on what a human just changed reads the
+			// object as it stands, not as it stood when the run started.
+			$this->refreshSubjectItems(run: $run, subject: $subject);
+		}
+
 		$run->setStatus(FlowRun::STATUS_RUNNING);
 		$run->setUpdated(new DateTime());
 		$this->mapper->update($run);
@@ -894,6 +907,60 @@ class FlowRunService {
 
 		return $this->persistResult(run: $run, result: $result);
 	}//end execute()
+
+	/**
+	 * Refresh the subject's fields on a resumed run's stored items, in place.
+	 *
+	 * Both stores are refreshed because both are read on resume: the flat
+	 * `items` list feeds a legacy walk, and the per-place buffers are what
+	 * {@see FlowItemPlacement::seedPlaceItems()} prefers — the check node that
+	 * re-enters after a human answered reads ITS input place's buffer, and a
+	 * refresh that missed it would leave the stale snapshot exactly where the
+	 * branch decision is made.
+	 *
+	 * In place and before the walk's first persist, so the commit path — which
+	 * re-reads the run row under its lock — sees the refreshed buffers too.
+	 *
+	 * A subjectless run, or one whose stored items never carried the subject,
+	 * is untouched: {@see FlowItems::refreshSubjectProjection()} matches by
+	 * identity and only ever touches the item that IS the subject.
+	 *
+	 * @param FlowRun $run The resumed run, mutated in place.
+	 * @param object $subject The live subject, as the advancer just resolved it.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FlowItems::refreshSubjectProjection
+	 * is a pure function on value shapes; a factory to call it would add a
+	 * dependency to say the same thing.
+	 *
+	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md#requirement-resuming-carries-the-runs-own-items-req-fr-003
+	 */
+	private function refreshSubjectItems(FlowRun $run, object $subject): void {
+		$subjectUuid = trim((string)$run->getSubjectUuid());
+		if ($subjectUuid === '') {
+			return;
+		}
+
+		$run->setItems(FlowItems::refreshSubjectProjection(
+			items: ($run->getItems() ?? []),
+			subject: $subject,
+			subjectUuid: $subjectUuid
+		));
+
+		$stored = $run->getPlaceItems();
+		if (is_array($stored) === true && $stored !== []) {
+			foreach ($stored as $place => $bucket) {
+				$stored[$place] = FlowItems::refreshSubjectProjection(
+					items: (array)$bucket,
+					subject: $subject,
+					subjectUuid: $subjectUuid
+				);
+			}
+
+			$run->setPlaceItems($stored);
+		}
+	}//end refreshSubjectItems()
 
 	/**
 	 * Fail a run whose pinned version cannot be resolved.
