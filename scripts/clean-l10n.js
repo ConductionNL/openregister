@@ -1,8 +1,5 @@
 #!/usr/bin/env node
-/* eslint-disable jsdoc/require-param */
-/* eslint-disable n/no-process-exit */
-/* eslint-disable no-console */
-/* eslint-disable n/shebang */
+
 /**
  * l10n unused-key remover.
  *
@@ -29,7 +26,6 @@
 
 const fs = require('fs')
 const path = require('path')
-
 const {
 	loadJsTranslations,
 	serializeJs,
@@ -56,6 +52,9 @@ const apply = args.has('--apply')
 
 // ---------- Main ----------
 
+/**
+ *
+ */
 function main() {
 	if (!fs.existsSync(ENGLISH_FILE)) {
 		console.error(`English source file not found: ${ENGLISH_FILE}`)

@@ -1,7 +1,5 @@
 #!/usr/bin/env node
-/* eslint-disable n/no-process-exit */
-/* eslint-disable no-console */
-/* eslint-disable n/shebang */
+ 
 /**
  * Drive the REAL @nextcloud/l10n against a real locale bundle.
  *
@@ -36,9 +34,9 @@
  */
 
 import { readFileSync } from 'fs'
+import { createRequire } from 'module'
 import path from 'path'
 import vm from 'vm'
-import { createRequire } from 'module'
 
 const require = createRequire(import.meta.url)
 const {
@@ -52,7 +50,7 @@ if (!loc) {
 }
 
 const l10n = await import(path.join(APP_ROOT, 'node_modules/@nextcloud/l10n/dist/index.mjs'))
-const { register, unregister, translate: t, translatePlural: n, setLanguage, getPlural } = l10n
+const { register, unregister, translatePlural: n, setLanguage, getPlural } = l10n
 
 const locFile = path.join(APP_ROOT, 'l10n', `${loc}.js`)
 let translations = null
@@ -62,7 +60,13 @@ vm.createContext(sandbox)
 vm.runInContext(readFileSync(locFile, 'utf8'), sandbox, { filename: locFile })
 
 let fails = 0
-const ok = (cond, label, got) => {
+/**
+ *
+ * @param cond
+ * @param label
+ * @param got
+ */
+function ok (cond, label, got) {
 	console.log(`${cond ? 'PASS' : 'FAIL'}  ${label}${got !== undefined ? '  -> ' + JSON.stringify(got) : ''}`)
 	if (!cond) fails++
 }
@@ -78,8 +82,15 @@ const ok = (cond, label, got) => {
 // a human instead of a false accusation.
 const cognates = loadLocaleConfig(loc).cognates
 const enforced = configuredLocales().includes(loc)
-const notEnglish = (cond, key, label, got) => {
-	if (cond || Object.prototype.hasOwnProperty.call(cognates, key)) {
+/**
+ *
+ * @param cond
+ * @param key
+ * @param label
+ * @param got
+ */
+function notEnglish (cond, key, label, got) {
+	if (cond || Object.hasOwn(cognates, key)) {
 		ok(true, label, got)
 		return
 	}
@@ -209,7 +220,7 @@ if (!headerExpr) {
 				cfg.pluralBoundary === 'library' ? undefined : detail)
 			if (cfg.pluralBoundary === 'library') {
 				console.log(`      ${disagree.length} count(s) render a form the header would not choose: `
-					+ `${detail.join(', ')}${disagree.length > 6 ? ', …' : ''}. Acknowledged; see its pluralNote.`)
+					+ `${detail.join(', ')}${disagree.length > 6 ? ', …' : ''}. Acknowledged; see its pluralNote.`)
 			}
 		}
 	}

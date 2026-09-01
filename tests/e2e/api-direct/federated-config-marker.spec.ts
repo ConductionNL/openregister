@@ -1,3 +1,5 @@
+import type { APIRequestContext } from '@playwright/test'
+
 /**
  * Federated configuration sharing — the schema-marker generic path, e2e via HTTP.
  *
@@ -13,7 +15,7 @@
  *
  * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
  */
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const API = '/index.php/apps/openregister/api'
 const JSON_HEADERS = {

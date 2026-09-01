@@ -49,10 +49,10 @@
  *   reorder-languages-to-change-default
  *   language-selector-shows-native-names
  */
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
-import { resolveBaseUrl } from '../base-url'
+import { resolveBaseUrl } from '../base-url.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 // ⚠️ No `|| 'http://localhost:8080'` — that is the SHARED dev container.
@@ -310,13 +310,13 @@ test.describe('register-i18n — register language management UI', () => {
 				await ctx.dispose()
 			})
 
-		await page.goto(`/index.php/apps/openregister/#/registers`, {
-			waitUntil: 'domcontentloaded',
-		})
+		await page
+			.goto(`/index.php/apps/openregister/#/registers`, {
+				waitUntil: 'domcontentloaded',
+			})
 
-		// Open the register sidebar for the test register
-		// Look for a clickable register row that matches our id
-		const registerRow = page
+			// Open the register sidebar for the test register
+			// Look for a clickable register row that matches our id
 			.locator(
 				`[href*="/registers/${registerId}"], [data-id="${registerId}"], .list-item`,
 			)

@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -36,7 +38,7 @@
  * @e2e openspec/specs/features-roadmap-menu/spec.md#submit-requires-title-and-body
  * @e2e openspec/specs/features-roadmap-menu/spec.md#default-behavior
  */
-import { test, expect, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')

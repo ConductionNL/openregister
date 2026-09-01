@@ -1,8 +1,5 @@
 #!/usr/bin/env node
-/* eslint-disable jsdoc/require-param */
-/* eslint-disable n/no-process-exit */
-/* eslint-disable no-console */
-/* eslint-disable n/shebang */
+ 
 /**
  * l10n translation-PARITY gate.
  *
@@ -172,7 +169,7 @@ function loadJsonSet(file) {
 
 /** True when a translation value is empty (string) or has an empty plural. */
 function isEmpty(v) {
-	if (v == null) {
+	if ((v === null || v === undefined)) {
 		return true
 	}
 	if (Array.isArray(v)) {
@@ -222,8 +219,8 @@ for (const set of sets) {
 			failures.push({ set: set.kind, loc, kind: 'UNPARSEABLE', detail: e.message })
 			continue
 		}
-		const missing = enKeys.filter((k) => !Object.prototype.hasOwnProperty.call(locObj, k))
-		const empty = enKeys.filter((k) => Object.prototype.hasOwnProperty.call(locObj, k) && isEmpty(locObj[k]))
+		const missing = enKeys.filter((k) => !Object.hasOwn(locObj, k))
+		const empty = enKeys.filter((k) => Object.hasOwn(locObj, k) && isEmpty(locObj[k]))
 
 		// An entry whose value is byte-identical to the English source. Reported
 		// separately from `missing` because the two are OPPOSITES, not degrees of
@@ -244,7 +241,7 @@ for (const set of sets) {
 		//
 		// Always measured; whether it is fatal depends on --strict-identical.
 		const identical = enKeys.filter((k) =>
-			Object.prototype.hasOwnProperty.call(locObj, k)
+			Object.hasOwn(locObj, k)
 			&& !isEmpty(locObj[k])
 			&& JSON.stringify(locObj[k]) === JSON.stringify(enObj[k]),
 		)
@@ -300,7 +297,7 @@ for (const set of sets) {
 		const pluralCollision = frontend
 			? Object.entries(locObj).flatMap(([k, v]) => (Array.isArray(v) ? v : [])
 				.map((form, i) => ({ k, i, form }))
-				.filter(({ form }) => Object.prototype.hasOwnProperty.call(locObj, form)
+				.filter(({ form }) => Object.hasOwn(locObj, form)
 					&& JSON.stringify(locObj[form]) !== JSON.stringify(form)))
 			: []
 
@@ -328,7 +325,7 @@ for (const set of sets) {
 		const enforced = set.kind === 'frontend (.js)' && COGNATES_ENFORCED.has(loc)
 		const cognates = enforced ? loadLocaleConfig(loc).cognates : {}
 		const unjustified = enforced
-			? identical.filter((k) => !Object.prototype.hasOwnProperty.call(cognates, k))
+			? identical.filter((k) => !Object.hasOwn(cognates, k))
 			: []
 		// A reason recorded for a key that is no longer identical is a stale
 		// permission slip: it would silently license the next value written there.
@@ -342,7 +339,7 @@ for (const set of sets) {
 		// record simultaneously required and forbidden. See hasIdenticalForm in lib.js.
 		const staleCognates = enforced
 			? Object.keys(cognates).filter((k) => !identical.includes(k)
-				&& !(Object.prototype.hasOwnProperty.call(locObj, k)
+				&& !(Object.hasOwn(locObj, k)
 					&& hasIdenticalForm(k, locObj[k])))
 			: []
 

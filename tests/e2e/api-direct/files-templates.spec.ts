@@ -15,7 +15,7 @@
  * Uses larpingapp register (8/18) and creates test objects with file
  * attachments. Uses RUN_ID for cleanup isolation.
  */
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const RUN_ID = `e2e-${Date.now()}`
 const REGISTER_ID = '8'

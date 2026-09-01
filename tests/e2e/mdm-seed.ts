@@ -33,7 +33,8 @@
  * All requests use Playwright's APIRequestContext (Basic-auth admin/admin via
  * the caller's context), so seeding works without a browser session.
  */
-import { type APIRequestContext } from '@playwright/test'
+import type { APIRequestContext } from '@playwright/test'
+
 import * as fs from 'fs'
 import * as path from 'path'
 

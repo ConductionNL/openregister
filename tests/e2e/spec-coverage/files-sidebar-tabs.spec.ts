@@ -30,7 +30,9 @@
  * by SideBars.vue for the /entities route, controlled by navigationStore.sidebarState.entities.
  */
 
-import { test, expect, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')

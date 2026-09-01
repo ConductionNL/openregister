@@ -1,3 +1,5 @@
+import type { APIRequestContext } from '@playwright/test'
+
 /**
  * OpenConnector's flow-node leaves — end-to-end through the live engine.
  *
@@ -16,7 +18,7 @@
  *
  * @spec openspec/changes/openregister-flow-executionmode-and-token/specs/flow-execution-mode/spec.md
  */
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const API = '/index.php/apps/openregister/api'
 const JSON_HEADERS = {

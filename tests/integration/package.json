@@ -2,16 +2,6 @@
   "name": "@openregister/newman-tests",
   "version": "1.0.0",
   "description": "Newman integration tests for OpenRegister",
-  "scripts": {
-    "test": "newman run openregister-crud.postman_collection.json --env-var 'base_url=http://localhost' --env-var 'admin_user=admin' --env-var 'admin_password=admin' --reporters cli",
-    "test:clean": "./run-tests.sh --clean",
-    "test:ci": "./run-tests.sh --mode ci --clean",
-    "test:verbose": "./run-tests.sh --verbose",
-    "install-newman": "npm install -g newman"
-  },
-  "devDependencies": {
-    "newman": "^6.1.0"
-  },
   "keywords": [
     "newman",
     "postman",
@@ -19,8 +9,18 @@
     "nextcloud",
     "openregister"
   ],
+  "license": "EUPL-1.2",
   "author": "Conduction",
-  "license": "EUPL-1.2"
+  "scripts": {
+    "install-newman": "npm install -g newman",
+    "test": "newman run openregister-crud.postman_collection.json --env-var 'base_url=http://localhost' --env-var 'admin_user=admin' --env-var 'admin_password=admin' --reporters cli",
+    "test:ci": "./run-tests.sh --mode ci --clean",
+    "test:clean": "./run-tests.sh --clean",
+    "test:verbose": "./run-tests.sh --verbose"
+  },
+  "devDependencies": {
+    "newman": "^6.1.0"
+  }
 }
 
 
