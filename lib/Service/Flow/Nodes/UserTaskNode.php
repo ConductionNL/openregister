@@ -62,7 +62,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use DateTime;
-use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\FlowAdvanceBudget;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
@@ -70,7 +69,6 @@ use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
-use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -78,47 +76,22 @@ use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
 use RuntimeException;
-use UnexpectedValueException;
 
 /**
  * Creates one task, suspends until it is terminal, and routes on the outcome.
  *
- * @SuppressWarnings(PHPMD.StaticAccess) FlowValueTemplate, FlowAdvanceBudget
- * and FlowTaskBridge::outcomeBagFor are stateless helpers over values; a
- * factory to call them would add a dependency to say the same thing.
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The node touches the task
- * entity's vocabulary, the engine's three exceptions, the resume slot and the
- * bridge; that is the surface of "put a task into a run", not accidental spread.
+ * @SuppressWarnings(PHPMD.StaticAccess) FlowAdvanceBudget::fromConfig and
+ * FlowTaskBridge::outcomeBagFor are stateless helpers over values; a factory
+ * to call them would add a dependency to say the same thing.
  */
 class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm {
 
 	/**
-	 * Minutes between heartbeats when the flow does not choose.
+	 * The configuration boundary: validation and templating.
 	 *
-	 * Same reasoning as {@see AwaitSignalNode}: short enough that a lost wake
-	 * is an inconvenience, long enough that a fortnight-long approval costs a
-	 * few thousand no-op wakes. A completion wakes the run at once either way.
-	 *
-	 * @var int
+	 * @var UserTaskConfig
 	 */
-	private const DEFAULT_HEARTBEAT_MINUTES = 15;
-
-	/**
-	 * The floor a configured heartbeat is clamped to: the stock cron period.
-	 *
-	 * @var int
-	 */
-	private const MIN_HEARTBEAT_MINUTES = 5;
-
-	/**
-	 * The item key the outcome lands under when the flow does not choose.
-	 *
-	 * `task`, not `signal`: a flow holding both wait nodes must not have them
-	 * writing over each other's key by default.
-	 *
-	 * @var string
-	 */
-	private const DEFAULT_OUTCOME_KEY = 'task';
+	private readonly UserTaskConfig $config;
 
 	/**
 	 * Constructor.
@@ -134,6 +107,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urls,
 	) {
+		$this->config = new UserTaskConfig(l10n: $l10n);
 
 	}//end __construct()
 
@@ -226,170 +200,36 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	}//end configKeys()
 
 	/**
-	 * The fields this node is edited through.
+	 * The fields this node is edited through, in the order the spec names them:
+	 * what the task is, who may perform it, how urgent and when, and how the
+	 * flow continues.
 	 *
 	 * @return array<int, array<string, mixed>> The field descriptions.
 	 *
 	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
 	 */
 	public function configForm(): array {
-		return [
-			[
-				'key' => 'title',
-				'label' => $this->l10n->t('What is being asked'),
-				'type' => 'text',
-				'help' => $this->l10n->t('The task title, shown in the inbox. Fields of the item can be used, like {{ name }}.'),
-				'required' => true,
-			],
-			[
-				'key' => 'description',
-				'label' => $this->l10n->t('Details'),
-				'type' => 'textarea',
-				'help' => $this->l10n->t('What the performer needs to know to do it. Templates work here too.'),
-			],
-			[
-				'key' => 'assignee',
-				'label' => $this->l10n->t('Assign directly to'),
-				'type' => 'text',
-				'help' => $this->l10n->t('A user id. The task is created active for this person; leave empty to offer it to a pool instead.'),
-			],
-			[
-				'key' => 'candidateUsers',
-				'label' => $this->l10n->t('Candidate users'),
-				'type' => 'text',
-				'help' => $this->l10n->t('User ids, comma separated. Any of them may claim the task.'),
-			],
-			[
-				'key' => 'candidateGroups',
-				'label' => $this->l10n->t('Candidate groups'),
-				'type' => 'text',
-				'help' => $this->l10n->t('Group ids, comma separated. Any member may claim the task.'),
-			],
-			[
-				'key' => 'candidateRole',
-				'label' => $this->l10n->t('Candidate role'),
-				'type' => 'text',
-				'help' => $this->l10n->t('A role that resolves to a group of performers.'),
-			],
-			[
-				'key' => 'routingStrategy',
-				'label' => $this->l10n->t('How to pick a performer'),
-				'type' => 'text',
-				'help' => $this->l10n->t('One of single-role, or-set, hierarchical, round-robin or least-loaded. Leave empty to let the pool claim.'),
-			],
-			[
-				'key' => 'routingFallback',
-				'label' => $this->l10n->t('Fallback performer'),
-				'type' => 'text',
-				'help' => $this->l10n->t('Who gets the task when the strategy finds nobody.'),
-			],
-			[
-				'key' => 'performerType',
-				'label' => $this->l10n->t('Kind of performer'),
-				'type' => 'text',
-				'help' => $this->l10n->t('user, group, agent or worker. Defaults to user. An agent completes a task through the same verbs a person does.'),
-			],
-			[
-				'key' => 'priority',
-				'label' => $this->l10n->t('Priority'),
-				'type' => 'text',
-				'help' => $this->l10n->t('low, normal, high or urgent. Defaults to normal.'),
-			],
-			[
-				'key' => 'dueAt',
-				'label' => $this->l10n->t('Due'),
-				'type' => 'text',
-				'help' => $this->l10n->t('When the task should be done: a date, a field like {{ deadline }}, or a relative time like "+3 days". Advisory.'),
-			],
-			[
-				'key' => 'expiresAt',
-				'label' => $this->l10n->t('Expires'),
-				'type' => 'text',
-				'help' => $this->l10n->t('When the task stops being doable. Same shapes as "Due". Must not lie before it.'),
-			],
-			[
-				'key' => 'outcomes',
-				'label' => $this->l10n->t('Possible outcomes'),
-				'type' => 'text',
-				'help' => $this->l10n->t('The answers the flow will route on, comma separated, like "approved, rejected". Recorded on the task for the inbox to offer.'),
-			],
-			[
-				'key' => 'outcomeKey',
-				'label' => $this->l10n->t('Field to store the answer in'),
-				'type' => 'text',
-				'help' => $this->l10n->t('The outcome is written onto every item under this field, so later steps can route on it. Defaults to "task".'),
-			],
-			[
-				'key' => 'failOnReject',
-				'label' => $this->l10n->t('Treat a rejection as a failure'),
-				'type' => 'boolean',
-				'help' => $this->l10n->t('Off by default: being told "no" is usually the flow working, not breaking. Route on the outcome instead.'),
-			],
-			[
-				'key' => 'heartbeatMinutes',
-				'label' => $this->l10n->t('Re-check every (minutes)'),
-				'type' => 'number',
-				'help' => $this->l10n->t('Safety net for a wake that never arrives. Lower is not faster: a completed task wakes the run immediately either way.'),
-			],
-			[
-				'key' => 'advance',
-				'label' => $this->l10n->t('Continue after the answer'),
-				'type' => 'text',
-				'help' => $this->l10n->t('How far the run continues inside the request that completes the task: 0 leaves it to the background worker (default), a number runs that many steps, "all" runs to the next pause or the end.'),
-			],
-		];
+		return array_merge(
+			$this->whatFields(),
+			$this->whoFields(),
+			$this->whenFields(),
+			$this->continuationFields()
+		);
 	}//end configForm()
 
 	/**
-	 * Refuse a step that asks nothing, asks nobody, or carries an unreadable budget.
-	 *
-	 * The performer check is the one that must not be left to run time: a task
-	 * nobody can be found for is not a task, and failing at run time would bury
-	 * the mistake in a suspended run. The budget check is design D-4: `null`
-	 * is refused by name so an author who asked for unlimited never silently
-	 * gets zero.
+	 * Validate through the configuration boundary.
 	 *
 	 * @param array $config The step configuration.
 	 *
 	 * @return void
 	 *
-	 * @throws UnexpectedValueException When the config is refused.
+	 * @throws \UnexpectedValueException When the config is refused.
 	 *
 	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
 	 */
 	public function validateConfig(array $config): void {
-		if (trim((string)($config['title'] ?? '')) === '') {
-			throw new UnexpectedValueException(
-				$this->l10n->t('Say what is being asked, or nobody can do it.')
-			);
-		}
-
-		if ($this->namesAPerformer(config: $config) === false) {
-			throw new UnexpectedValueException(
-				$this->l10n->t(
-					'No performer can be resolved: name an assignee, candidate users, candidate groups, a candidate role or a routing fallback.'
-				)
-			);
-		}
-
-		$this->refuseOutsideVocabulary(config: $config, key: 'performerType', vocabulary: Task::PERFORMER_TYPES);
-		$this->refuseOutsideVocabulary(config: $config, key: 'priority', vocabulary: Task::PRIORITIES);
-		$this->refuseOutsideVocabulary(config: $config, key: 'routingStrategy', vocabulary: Task::ROUTING_STRATEGIES);
-
-		if (array_key_exists('outcomes', $config) === true && $this->listOf(value: $config['outcomes']) === []) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('Possible outcomes must be a list of names, like "approved, rejected".')
-			);
-		}
-
-		if (array_key_exists('heartbeatMinutes', $config) === true && is_numeric($config['heartbeatMinutes']) === false) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('Re-check every (minutes) must be a number.')
-			);
-		}
-
-		// Throws its own message, which names the value and states the spelling.
-		FlowAdvanceBudget::fromConfig(config: $config);
+		$this->config->validate(config: $config);
 
 	}//end validateConfig()
 
@@ -428,10 +268,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 		if ($taskUuid === '') {
 			$this->createTask(items: $items, config: $config, context: $context, resume: $resume);
 
-			throw new FlowSuspension(
-				resumeAt: $this->heartbeatAt(config: $config),
-				reason: $this->waitingReason(config: $config, items: $items)
-			);
+			throw $this->suspension(config: $config, items: $items);
 		}
 
 		$task = $this->bridge->taskOrNull(uuid: $taskUuid);
@@ -446,10 +283,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			// Claimed, reassigned, delegated, nudged: none of those is an
 			// answer. Suspend again, and do NOT touch the slot: askedAt stays
 			// what it was.
-			throw new FlowSuspension(
-				resumeAt: $this->heartbeatAt(config: $config),
-				reason: $this->waitingReason(config: $config, items: $items)
-			);
+			throw $this->suspension(config: $config, items: $items);
 		}
 
 		$bag = FlowTaskBridge::outcomeBagFor(task: $task);
@@ -458,7 +292,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			throw new FlowStop(
 				reason: sprintf(
 					'Rejected: %s',
-					trim((string)($bag['comment'] ?? $this->renderedTitle(config: $config, items: $items)))
+					trim((string)($bag['comment'] ?? $this->config->renderedTitle(config: $config, items: $items)))
 				),
 				isError: true
 			);
@@ -486,10 +320,9 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 		}
 
 		$budget = FlowAdvanceBudget::fromConfig(config: $config);
-		$assignee = trim((string)($config['assignee'] ?? ''));
 
 		$task = $this->bridge->createTask(
-			data: $this->taskData(items: $items, config: $config, resume: $resume),
+			data: $this->config->taskData(config: $config, items: $items, nodeId: $resume->nodeId(), nodeType: $this->getId()),
 			runUuid: $runUuid,
 			nodeId: $resume->nodeId(),
 			actor: $this->actingIdentity(context: $context)
@@ -506,77 +339,12 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 				// Read by FlowRunAssignee, so a resume POSTed at the run by
 				// somebody other than the assignee is refused at the door as
 				// well as ignored here.
-				'assignee' => $assignee,
-				'title' => $this->renderedTitle(config: $config, items: $items),
+				'assignee' => $this->config->assignee(config: $config),
+				'title' => $this->config->renderedTitle(config: $config, items: $items),
 			]
 		);
 
 	}//end createTask()
-
-	/**
-	 * The task fields, templated against the representative item.
-	 *
-	 * Everything here is passed THROUGH to the task builder, which validates
-	 * it. The node adds no field of its own; the outcome vocabulary and the
-	 * item key ride under `metadata`, which the task service carries and never
-	 * interprets.
-	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param FlowNodeResumeState $resume This node's slot, for its id.
-	 *
-	 * @return array<string, mixed> The creation payload.
-	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
-	 */
-	private function taskData(array $items, array $config, FlowNodeResumeState $resume): array {
-		$json = $this->representativeJson(items: $items);
-		$assignee = trim((string)($config['assignee'] ?? ''));
-
-		$state = Task::STATE_ENABLED;
-		if ($assignee !== '') {
-			$state = Task::STATE_ACTIVE;
-		}
-
-		$data = [
-			'title' => $this->renderedTitle(config: $config, items: $items),
-			'description' => $this->renderedOrNull(value: ($config['description'] ?? null), json: $json),
-			'state' => $state,
-			'performerType' => trim((string)($config['performerType'] ?? Task::PERFORMER_USER)),
-			'priority' => trim((string)($config['priority'] ?? 'normal')),
-			'assignee' => $this->nullIfEmpty(value: $assignee),
-			'candidateUsers' => $this->nullIfEmptyList(value: $this->listOf(value: ($config['candidateUsers'] ?? null))),
-			'candidateGroups' => $this->nullIfEmptyList(value: $this->listOf(value: ($config['candidateGroups'] ?? null))),
-			'candidateRole' => $this->nullIfEmpty(value: trim((string)($config['candidateRole'] ?? ''))),
-			'routingStrategy' => $this->nullIfEmpty(value: trim((string)($config['routingStrategy'] ?? ''))),
-			'routingFallback' => $this->nullIfEmpty(value: trim((string)($config['routingFallback'] ?? ''))),
-			'dueAt' => $this->renderedOrNull(value: ($config['dueAt'] ?? null), json: $json),
-			'expiresAt' => $this->renderedOrNull(value: ($config['expiresAt'] ?? null), json: $json),
-			'metadata' => [
-				'flowNodeType' => $this->getId(),
-				'flowNode' => $resume->nodeId(),
-				'outcomes' => $this->listOf(value: ($config['outcomes'] ?? null)),
-				'outcomeKey' => $this->outcomeKey(config: $config),
-			],
-		];
-
-		// Anchor the task to the object the item is about, when the item says
-		// which one that is, so the inbox can show its subject.
-		$self = (array)($json['@self'] ?? []);
-		$objectUuid = trim((string)($self['uuid'] ?? ($json['uuid'] ?? ($self['id'] ?? ''))));
-		if ($objectUuid !== '') {
-			$data['objectUuid'] = $objectUuid;
-			if (is_numeric($self['register'] ?? null) === true) {
-				$data['registerId'] = (int)$self['register'];
-			}
-
-			if (is_numeric($self['schema'] ?? null) === true) {
-				$data['schemaId'] = (int)$self['schema'];
-			}
-		}
-
-		return $data;
-	}//end taskData()
 
 	/**
 	 * Write the outcome bag onto every item, under the configured key.
@@ -595,7 +363,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-outcome-is-written-onto-every-item-not-only-onto-the-run
 	 */
 	private function placeOutcome(array $items, array $config, array $bag): array {
-		$key = $this->outcomeKey(config: $config);
+		$key = $this->config->outcomeKey(config: $config);
 
 		foreach ($items as $index => $item) {
 			if (is_array($item) === false) {
@@ -612,137 +380,27 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	}//end placeOutcome()
 
 	/**
-	 * Whether the config names anybody who could perform the task.
+	 * The suspension this node parks on: a heartbeat, and a reason that names
+	 * what is being waited for so a paused run explains itself.
 	 *
 	 * @param array $config The step configuration.
+	 * @param array $items The input items.
 	 *
-	 * @return boolean True when at least one performer source is set.
+	 * @return FlowSuspension The suspension to throw.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
+	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
 	 */
-	private function namesAPerformer(array $config): bool {
-		foreach (['assignee', 'candidateRole', 'routingFallback'] as $key) {
-			if (trim((string)($config[$key] ?? '')) !== '') {
-				return true;
-			}
+	private function suspension(array $config, array $items): FlowSuspension {
+		$title = $this->config->renderedTitle(config: $config, items: $items);
+		if ($title === '') {
+			$title = 'a task';
 		}
 
-		foreach (['candidateUsers', 'candidateGroups'] as $key) {
-			if ($this->listOf(value: ($config[$key] ?? null)) !== []) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end namesAPerformer()
-
-	/**
-	 * Refuse a set value outside a published vocabulary, naming both.
-	 *
-	 * @param array $config The step configuration.
-	 * @param string $key The config key.
-	 * @param array<int, string> $vocabulary The accepted values.
-	 *
-	 * @return void
-	 *
-	 * @throws UnexpectedValueException When the value is set and not in the vocabulary.
-	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
-	 */
-	private function refuseOutsideVocabulary(array $config, string $key, array $vocabulary): void {
-		$value = trim((string)($config[$key] ?? ''));
-		if ($value === '' || in_array($value, $vocabulary, true) === true) {
-			return;
-		}
-
-		throw new UnexpectedValueException(
-			$this->l10n->t('%1$s "%2$s" is not one of %3$s.', [$key, $value, implode(', ', $vocabulary)])
+		return new FlowSuspension(
+			resumeAt: $this->config->heartbeatAt(config: $config),
+			reason: sprintf('waiting for a person: %s', $title)
 		);
-	}//end refuseOutsideVocabulary()
-
-	/**
-	 * A list from a list or a comma-separated string; empty for anything else.
-	 *
-	 * @param mixed $value The configured value.
-	 *
-	 * @return array<int, string> Trimmed, non-empty entries.
-	 */
-	private function listOf(mixed $value): array {
-		if (is_string($value) === true) {
-			$value = explode(',', $value);
-		}
-
-		if (is_array($value) === false) {
-			return [];
-		}
-
-		$list = [];
-		foreach ($value as $entry) {
-			if (is_scalar($entry) === false) {
-				continue;
-			}
-
-			$entry = trim((string)$entry);
-			if ($entry !== '') {
-				$list[] = $entry;
-			}
-		}
-
-		return $list;
-	}//end listOf()
-
-	/**
-	 * The record of the representative item: the first array item's json.
-	 *
-	 * @param array $items The input items.
-	 *
-	 * @return array<string, mixed> The record, empty when there is none.
-	 */
-	private function representativeJson(array $items): array {
-		foreach ($items as $item) {
-			if (is_array($item) === true) {
-				return (array)($item[FlowItems::JSON] ?? []);
-			}
-		}
-
-		return [];
-	}//end representativeJson()
-
-	/**
-	 * The title, templated.
-	 *
-	 * @param array $config The step configuration.
-	 * @param array $items The input items.
-	 *
-	 * @return string The rendered title.
-	 */
-	private function renderedTitle(array $config, array $items): string {
-		return trim((string)FlowValueTemplate::render(
-			value: (string)($config['title'] ?? ''),
-			json: $this->representativeJson(items: $items)
-		));
-	}//end renderedTitle()
-
-	/**
-	 * A templated string, or null when it renders to nothing.
-	 *
-	 * @param mixed $value The configured value.
-	 * @param array $json The representative record.
-	 *
-	 * @return string|null The rendered string, or null.
-	 */
-	private function renderedOrNull(mixed $value, array $json): ?string {
-		if ($value === null) {
-			return null;
-		}
-
-		$rendered = FlowValueTemplate::render(value: $value, json: $json);
-		if (is_scalar($rendered) === false) {
-			return null;
-		}
-
-		return $this->nullIfEmpty(value: trim((string)$rendered));
-	}//end renderedOrNull()
+	}//end suspension()
 
 	/**
 	 * The run's acting identity: who the task is requested by.
@@ -767,83 +425,160 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	}//end actingIdentity()
 
 	/**
-	 * The item key the outcome is written under.
+	 * What the task is.
 	 *
-	 * @param array $config The step configuration.
-	 *
-	 * @return string The key.
+	 * @return array<int, array<string, mixed>> The field descriptions.
 	 */
-	private function outcomeKey(array $config): string {
-		$key = trim((string)($config['outcomeKey'] ?? ''));
-		if ($key === '') {
-			return self::DEFAULT_OUTCOME_KEY;
-		}
-
-		return $key;
-	}//end outcomeKey()
+	private function whatFields(): array {
+		return [
+			[
+				'key' => 'title',
+				'label' => $this->l10n->t('What is being asked'),
+				'type' => 'text',
+				'help' => $this->l10n->t('The task title, shown in the inbox. Fields of the item can be used, like {{ name }}.'),
+				'required' => true,
+			],
+			[
+				'key' => 'description',
+				'label' => $this->l10n->t('Details'),
+				'type' => 'textarea',
+				'help' => $this->l10n->t('What the performer needs to know to do it. Templates work here too.'),
+			],
+			[
+				'key' => 'outcomes',
+				'label' => $this->l10n->t('Possible outcomes'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'The answers the flow will route on, comma separated, like "approved, rejected". Recorded on the task for the inbox to offer.'
+				),
+			],
+		];
+	}//end whatFields()
 
 	/**
-	 * The suspension reason, so a paused run explains itself.
+	 * Who may perform it.
 	 *
-	 * @param array $config The step configuration.
-	 * @param array $items The input items.
-	 *
-	 * @return string The reason.
+	 * @return array<int, array<string, mixed>> The field descriptions.
 	 */
-	private function waitingReason(array $config, array $items): string {
-		$title = $this->renderedTitle(config: $config, items: $items);
-		if ($title === '') {
-			$title = 'a task';
-		}
-
-		return sprintf('waiting for a person: %s', $title);
-	}//end waitingReason()
+	private function whoFields(): array {
+		return [
+			[
+				'key' => 'assignee',
+				'label' => $this->l10n->t('Assign directly to'),
+				'type' => 'text',
+				'help' => $this->l10n->t('A user id. The task is created active for this person; leave empty to offer it to a pool instead.'),
+			],
+			[
+				'key' => 'candidateUsers',
+				'label' => $this->l10n->t('Candidate users'),
+				'type' => 'text',
+				'help' => $this->l10n->t('User ids, comma separated. Any of them may claim the task.'),
+			],
+			[
+				'key' => 'candidateGroups',
+				'label' => $this->l10n->t('Candidate groups'),
+				'type' => 'text',
+				'help' => $this->l10n->t('Group ids, comma separated. Any member may claim the task.'),
+			],
+			[
+				'key' => 'candidateRole',
+				'label' => $this->l10n->t('Candidate role'),
+				'type' => 'text',
+				'help' => $this->l10n->t('A role that resolves to a group of performers.'),
+			],
+			[
+				'key' => 'routingStrategy',
+				'label' => $this->l10n->t('How to pick a performer'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'One of single-role, or-set, hierarchical, round-robin or least-loaded. Leave empty to let the pool claim.'
+				),
+			],
+			[
+				'key' => 'routingFallback',
+				'label' => $this->l10n->t('Fallback performer'),
+				'type' => 'text',
+				'help' => $this->l10n->t('Who gets the task when the strategy finds nobody.'),
+			],
+			[
+				'key' => 'performerType',
+				'label' => $this->l10n->t('Kind of performer'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'user, group, agent or worker. Defaults to user. An agent completes a task through the same verbs a person does.'
+				),
+			],
+		];
+	}//end whoFields()
 
 	/**
-	 * When to wake up and re-ask, absent a wake.
+	 * How urgent it is, and when.
 	 *
-	 * @param array $config The step configuration.
-	 *
-	 * @return DateTime The next heartbeat. Never null.
-	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
+	 * @return array<int, array<string, mixed>> The field descriptions.
 	 */
-	private function heartbeatAt(array $config): DateTime {
-		$minutes = (int)($config['heartbeatMinutes'] ?? self::DEFAULT_HEARTBEAT_MINUTES);
-		if ($minutes < self::MIN_HEARTBEAT_MINUTES) {
-			$minutes = self::MIN_HEARTBEAT_MINUTES;
-		}
-
-		return (new DateTime())->modify('+' . $minutes . ' minutes');
-	}//end heartbeatAt()
+	private function whenFields(): array {
+		return [
+			[
+				'key' => 'priority',
+				'label' => $this->l10n->t('Priority'),
+				'type' => 'text',
+				'help' => $this->l10n->t('low, normal, high or urgent. Defaults to normal.'),
+			],
+			[
+				'key' => 'dueAt',
+				'label' => $this->l10n->t('Due'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'When the task should be done: a date, a field like {{ deadline }}, or a relative time like "+3 days". Advisory.'
+				),
+			],
+			[
+				'key' => 'expiresAt',
+				'label' => $this->l10n->t('Expires'),
+				'type' => 'text',
+				'help' => $this->l10n->t('When the task stops being doable. Same shapes as "Due". Must not lie before it.'),
+			],
+			[
+				'key' => 'heartbeatMinutes',
+				'label' => $this->l10n->t('Re-check every (minutes)'),
+				'type' => 'number',
+				'help' => $this->l10n->t(
+					'Safety net for a wake that never arrives. Lower is not faster: a completed task wakes the run immediately either way.'
+				),
+			],
+		];
+	}//end whenFields()
 
 	/**
-	 * Null for an empty string.
+	 * How the flow continues once answered.
 	 *
-	 * @param string $value The value.
-	 *
-	 * @return string|null The value, or null when empty.
+	 * @return array<int, array<string, mixed>> The field descriptions.
 	 */
-	private function nullIfEmpty(string $value): ?string {
-		if ($value === '') {
-			return null;
-		}
-
-		return $value;
-	}//end nullIfEmpty()
-
-	/**
-	 * Null for an empty list.
-	 *
-	 * @param array<int, string> $value The list.
-	 *
-	 * @return array<int, string>|null The list, or null when empty.
-	 */
-	private function nullIfEmptyList(array $value): ?array {
-		if ($value === []) {
-			return null;
-		}
-
-		return $value;
-	}//end nullIfEmptyList()
+	private function continuationFields(): array {
+		return [
+			[
+				'key' => 'outcomeKey',
+				'label' => $this->l10n->t('Field to store the answer in'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'The outcome is written onto every item under this field, so later steps can route on it. Defaults to "task".'
+				),
+			],
+			[
+				'key' => 'failOnReject',
+				'label' => $this->l10n->t('Treat a rejection as a failure'),
+				'type' => 'boolean',
+				'help' => $this->l10n->t('Off by default: being told "no" is usually the flow working, not breaking. Route on the outcome instead.'),
+			],
+			[
+				'key' => 'advance',
+				'label' => $this->l10n->t('Continue after the answer'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'How far the run continues inside the request that completes the task: 0 leaves it to the background worker (default), '
+					. 'a number runs that many steps, "all" runs to the next pause or the end.'
+				),
+			],
+		];
+	}//end continuationFields()
 }//end class

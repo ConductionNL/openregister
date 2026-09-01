@@ -73,6 +73,15 @@ use Throwable;
  * @SuppressWarnings(PHPMD.StaticAccess) TaskState is a stateless published
  * vocabulary (the one status mapping); calling it statically is the point,
  * an instance would be a second copy of the same table.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) The tenth constructor
+ * argument is the nullable event dispatcher that announces terminality
+ * (flow-user-task-node); it is last so the hand-built test services keep
+ * their order, and folding it into another collaborator would hide that a
+ * lifecycle verb has an after-commit side effect.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) 52 against 50, and the
+ * two came from announceTerminal(): one guard and one swallowed listener
+ * failure, both of which are the property that a listener cannot undo a
+ * committed transition.
  */
 class TaskService {
 

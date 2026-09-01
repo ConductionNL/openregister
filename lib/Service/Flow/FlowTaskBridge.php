@@ -57,6 +57,11 @@ use Throwable;
  * @SuppressWarnings(PHPMD.StaticAccess) TaskState is a stateless published
  * vocabulary and FlowAdvanceBudget a value object with named constructors;
  * calling either statically is the design, an instance would be a second copy.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) This class IS the coupling
+ * point between the task layer (service, entity, state vocabulary) and the run
+ * layer (run, mapper, service, advancer, engine constant, resume state). Every
+ * name it imports is one side or the other; splitting it would put the two
+ * halves of "a task the graph raised" in two files that must agree.
  */
 class FlowTaskBridge {
 
