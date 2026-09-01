@@ -111,7 +111,8 @@ class FlowTriggerService {
 					);
 				} catch (Throwable $one) {
 					$this->logger->error(
-						message: '[FlowTriggerService] Failed to queue a flow run for an event; the event\'s other flows still queue: ' . $one->getMessage(),
+						message: '[FlowTriggerService] Failed to queue a flow run for an event; '
+							. 'the event\'s other flows still queue: ' . $one->getMessage(),
 						context: ['file' => __FILE__, 'line' => __LINE__, 'event' => $event, 'flow' => $flowId]
 					);
 					continue;

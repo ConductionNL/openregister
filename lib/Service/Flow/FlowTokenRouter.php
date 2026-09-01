@@ -140,14 +140,7 @@ class FlowTokenRouter {
 		// A conditioned exit that holds still wins (a Switch is unchanged);
 		// among unconditioned exits, one an item is tagged for — by exit id or
 		// by target place — beats the plain declaration-order else.
-		$tags = [];
-		foreach ($items as $item) {
-			$tag = FlowItems::outputOf(member: (array)$item);
-			if ($tag !== null) {
-				$tags[$tag] = true;
-			}
-		}
-
+		$tags = $this->routedTags(items: $items);
 		$tagged = null;
 		$fallback = null;
 
@@ -169,8 +162,8 @@ class FlowTokenRouter {
 
 			$condition = ($exit['condition'] ?? null);
 			if (is_array($condition) === false || $condition === []) {
-				if ($tagged === null && (isset($tags[$exitId]) === true || array_intersect($targets, array_keys($tags)) !== [])) {
-					$tagged = $targets;
+				if ($this->exitIsTagged(exitId: $exitId, targets: $targets, tags: $tags) === true) {
+					$tagged = ($tagged ?? $targets);
 				}
 
 				$fallback = ($fallback ?? $targets);
@@ -189,6 +182,42 @@ class FlowTokenRouter {
 		// return nothing rather than silently broadcasting to every branch.
 		return ($tagged ?? $fallback ?? []);
 	}//end takenExits()
+
+	/**
+	 * The set of output tags the produced items carry, keyed for lookup.
+	 *
+	 * @param array<int, mixed> $items What the step produced.
+	 *
+	 * @return array<string, true> The tags.
+	 *
+	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 */
+	private function routedTags(array $items): array {
+		$tags = [];
+		foreach ($items as $item) {
+			$tag = FlowItems::outputOf(member: (array)$item);
+			if ($tag !== null) {
+				$tags[$tag] = true;
+			}
+		}
+
+		return $tags;
+	}//end routedTags()
+
+	/**
+	 * Whether any produced item is routed to this exit, by id or by place.
+	 *
+	 * @param string $exitId The exit's id.
+	 * @param array<string> $targets The exit's places.
+	 * @param array<string, true> $tags The items' output tags.
+	 *
+	 * @return bool True when an item names the exit or one of its places.
+	 *
+	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 */
+	private function exitIsTagged(string $exitId, array $targets, array $tags): bool {
+		return array_intersect(array_merge([$exitId], $targets), array_keys($tags)) !== [];
+	}//end exitIsTagged()
 
 	/**
 	 * Resolve item output tags that name an EXIT into the exit's place.

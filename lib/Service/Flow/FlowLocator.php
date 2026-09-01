@@ -224,40 +224,10 @@ class FlowLocator {
 			return [];
 		}
 
-		// The column match is kept ONLY for flows the index does not represent.
-		// A converted flow's columns are stale by construction — they hold one
-		// trigger where its nodes may hold several — so consulting them for a
-		// converted flow would resurrect a subscription its author removed.
-		$matched = [];
-		foreach ($candidates as $flow) {
-			$uuid = (string)$flow->getUuid();
-			if (isset($converted[$uuid]) === true) {
-				continue;
-			}
-
-			// 🔴 A DRAFT MATCHES NOTHING (flow-definition-versioning: only a
-			// flow's published version contributes trigger records). The index
-			// already enforces that — it is derived from the published graph —
-			// but the column fallback is not: an enabled flow that was never
-			// published has zero index rows, so it is "unrepresented", its
-			// columns match, and `queue()` then refuses it with "no published
-			// version". Left in the list, that refusal used to abort the whole
-			// fan-out for every healthy flow on the same event. Refused OUT
-			// LOUD here instead, and only on the fallback path: legacy flows
-			// were all given a published version 1 by the backfill, so the
-			// only thing this filters is a flow that could never have run.
-			if ($this->hasPublishedVersion(uuid: $uuid) === false) {
-				$this->logger->warning(
-					message: '[FlowLocator] Flow "' . $uuid . '" matched trigger "' . $event
-						. '" through its columns but has no published version, so it cannot back a run.'
-						. ' Publish a version to make it fire.',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $uuid]
-				);
-				continue;
-			}
-
-			$matched[$uuid] = $flow;
-		}//end foreach
+		// The column match is kept ONLY for unconverted flows, and among those
+		// only for flows a published version can back — see the docblock of
+		// {@see self::columnFallbackMatches()} for both halves of that rule.
+		$matched = $this->columnFallbackMatches(candidates: $candidates, converted: $converted, event: $event);
 
 		// The index answers in UUIDs; the dispatch check needs the row. These
 		// are the flows whose NODES want this event.
@@ -282,6 +252,57 @@ class FlowLocator {
 
 		return $this->dispatchableUuids(matched: $matched, event: $event);
 	}//end flowsForTrigger()
+
+	/**
+	 * The column-fallback matches: unconverted flows a published version can back.
+	 *
+	 * Two rules, one per failure mode this fallback has produced:
+	 *
+	 * - ONLY flows the index does not represent. A converted flow's columns
+	 *   are stale by construction — they hold one trigger where its nodes may
+	 *   hold several — so consulting them would resurrect a subscription its
+	 *   author removed.
+	 * - 🔴 ONLY flows with a published version (flow-definition-versioning:
+	 *   a draft's trigger nodes SHALL NOT match anything). The index enforces
+	 *   that by derivation from the published graph, but the fallback did not:
+	 *   an enabled flow that was never published has zero index rows, so it is
+	 *   "unrepresented", its columns match, and `queue()` then refuses it with
+	 *   "no published version" — a refusal that used to abort the whole
+	 *   fan-out for every healthy flow on the same event. Refused OUT LOUD
+	 *   here instead. Legacy flows all hold a backfilled published version 1,
+	 *   so the only thing filtered is a flow that could never have run.
+	 *
+	 * @param array<int, Flow> $candidates The flows whose columns match the event.
+	 * @param array<string, int> $converted Uuids the index represents, flipped for lookup.
+	 * @param string $event The trigger being resolved, for the log line.
+	 *
+	 * @return array<string, Flow> The matches, by uuid.
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md#requirement-trigger-matching-answers-which-flow-the-queue-path-answers-which-version
+	 */
+	private function columnFallbackMatches(array $candidates, array $converted, string $event): array {
+		$matched = [];
+		foreach ($candidates as $flow) {
+			$uuid = (string)$flow->getUuid();
+			if (isset($converted[$uuid]) === true) {
+				continue;
+			}
+
+			if ($this->hasPublishedVersion(uuid: $uuid) === false) {
+				$this->logger->warning(
+					message: '[FlowLocator] Flow "' . $uuid . '" matched trigger "' . $event
+						. '" through its columns but has no published version, so it cannot back a run.'
+						. ' Publish a version to make it fire.',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $uuid]
+				);
+				continue;
+			}
+
+			$matched[$uuid] = $flow;
+		}//end foreach
+
+		return $matched;
+	}//end columnFallbackMatches()
 
 	/**
 	 * Whether a flow has a published version to back a run.

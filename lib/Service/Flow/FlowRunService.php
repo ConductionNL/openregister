@@ -829,10 +829,8 @@ class FlowRunService {
 
 		$resuming = ($run->getStatus() === FlowRun::STATUS_SUSPENDED);
 		if ($resuming === true) {
-			// The stored items win on resume (see below), but the SUBJECT'S
-			// own fields on them are a trigger-time snapshot — refreshed here
-			// so a step that branches on what a human just changed reads the
-			// object as it stands, not as it stood when the run started.
+			// Stored items win on resume (below), but the subject's own fields
+			// on them are a trigger-time snapshot. {@see self::refreshSubjectItems()}
 			$this->refreshSubjectItems(run: $run, subject: $subject);
 		}
 

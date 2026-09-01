@@ -327,32 +327,49 @@ class TaskInboxService {
 				$serialised = $object->jsonSerialize();
 			}
 
-			// 🔴 THE REAL SHAPE. ObjectEntity::jsonSerialize() puts the object's
-			// own data at top level and its identity under `@self` (uuid keyed
-			// `id` there, mirrored as top-level `id`); there is no top-level
-			// `uuid`, `register` or `schema` key. Reading those flat keys made
-			// every row's subject null — the portal contract (flow-portal-task:
-			// "with their case context") shipped null case context while the
-			// unit test's hand-rolled stub agreed with the wrong shape. The
-			// flat keys stay as fallbacks for stores that serialise flat.
-			$self = [];
-			if (is_array(($serialised['@self'] ?? null)) === true) {
-				$self = $serialised['@self'];
+			$context = $this->contextRow(serialised: (array)$serialised);
+			if ($context !== null) {
+				$contexts[(string)$context['uuid']] = $context;
 			}
-
-			$uuid = trim((string)($self['id'] ?? ($serialised['id'] ?? ($serialised['uuid'] ?? ''))));
-			if ($uuid === '') {
-				continue;
-			}
-
-			$contexts[$uuid] = [
-				'uuid' => $uuid,
-				'register' => ($self['register'] ?? ($serialised['register'] ?? null)),
-				'schema' => ($self['schema'] ?? ($serialised['schema'] ?? null)),
-				'title' => ($self['name'] ?? ($serialised['name'] ?? ($serialised['title'] ?? null))),
-			];
 		}
 
 		return $contexts;
 	}//end subjectContexts()
+
+	/**
+	 * One subject's context row, read from its REAL serialised shape.
+	 *
+	 * 🔴 THE REAL SHAPE. ObjectEntity::jsonSerialize() puts the object's own
+	 * data at top level and its identity under `@self` (uuid keyed `id` there,
+	 * mirrored as top-level `id`); there is no top-level `uuid`, `register` or
+	 * `schema` key. Reading those flat keys made every row's subject null —
+	 * the portal contract (flow-portal-task: "with their case context")
+	 * shipped null case context while the unit test's hand-rolled stub agreed
+	 * with the wrong shape. The flat keys stay as fallbacks for stores that
+	 * serialise flat.
+	 *
+	 * @param array<string, mixed> $serialised The object's serialised form.
+	 *
+	 * @return array<string, mixed>|null The context row, or null without an identity.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
+	 */
+	private function contextRow(array $serialised): ?array {
+		$self = ($serialised['@self'] ?? null);
+		if (is_array($self) === false) {
+			$self = [];
+		}
+
+		$uuid = trim((string)($self['id'] ?? ($serialised['id'] ?? ($serialised['uuid'] ?? ''))));
+		if ($uuid === '') {
+			return null;
+		}
+
+		return [
+			'uuid' => $uuid,
+			'register' => ($self['register'] ?? ($serialised['register'] ?? null)),
+			'schema' => ($self['schema'] ?? ($serialised['schema'] ?? null)),
+			'title' => ($self['name'] ?? ($serialised['name'] ?? ($serialised['title'] ?? null))),
+		];
+	}//end contextRow()
 }//end class
