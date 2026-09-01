@@ -531,8 +531,8 @@ class RelationsController extends Controller {
 		string $schema,
 		string $id,
 	): ?\OCA\OpenRegister\Db\ObjectEntity {
-		$this->objectService->setSchema($schema);
 		$this->objectService->setRegister($register);
+		$this->objectService->setSchema($schema);
 		$this->objectService->setObject($id);
 
 		return $this->objectService->getObject();
