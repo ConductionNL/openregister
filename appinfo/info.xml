@@ -240,6 +240,12 @@ Vrij en open source onder de EUPL-licentie.
 			     Post-migration, because it needs the flow_* columns the schema
 			     migration adds. -->
 			<step>OCA\OpenRegister\Repair\RechainAuditTrailForFlowAttribution</step>
+			<!-- Task fixtures (flow-task-entity, ADR-001): the five seed
+			     groups from the change's design.md, idempotent on uuid, so
+			     both a fresh install and an existing instance get them.
+			     Post-migration because the step needs the openregister_tasks
+			     tables its own change's migration creates. -->
+			<step>OCA\OpenRegister\Repair\SeedTaskFixtures</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>

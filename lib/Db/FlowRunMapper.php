@@ -23,8 +23,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use InvalidArgumentException;
+use OCA\OpenRegister\Event\FlowRunTerminalEvent;
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 
 /**
@@ -36,6 +40,10 @@ use OCP\IDBConnection;
  * ad-hoc query builders at each call site.
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) Thirty lines over, from the
+ * update() override that announces run terminality (flow-task-entity). It
+ * lives here because this is the one choke point every terminal write
+ * passes; moving it out would recreate the per-site dispatch it replaces.
  *
  * @template-extends QBMapper<FlowRun>
  *
@@ -47,11 +55,58 @@ class FlowRunMapper extends QBMapper {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db The database connection.
+	 * @param IEventDispatcher|null $dispatcher Publishes run terminality
+	 *                                          ({@see FlowRunTerminalEvent}).
+	 *                                          Nullable so the mapper stays
+	 *                                          constructible without a
+	 *                                          container; absent, terminality
+	 *                                          simply goes unannounced.
 	 */
-	public function __construct(IDBConnection $db) {
+	public function __construct(
+		IDBConnection $db,
+		private readonly ?IEventDispatcher $dispatcher = null,
+	) {
 		parent::__construct(db: $db, tableName: 'openregister_flow_runs', entityClass: FlowRun::class);
 
 	}//end __construct()
+
+	/**
+	 * Update, announcing terminality.
+	 *
+	 * This is the ONE choke point every terminal status write passes — the
+	 * engine's persist, the worker's failure paths and the stale-run reaper
+	 * all land here — so the terminal event is dispatched from it rather
+	 * than from each of those sites, where a new failure path could forget
+	 * it. The event can therefore fire more than once for one run; its
+	 * listeners are idempotent by contract (see the event's docblock).
+	 *
+	 * Dispatched AFTER the row is persisted: a listener that reads the run
+	 * back must see the terminal status it was told about.
+	 *
+	 * @param Entity $entity The run to update.
+	 *
+	 * @return FlowRun The updated run.
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
+	 */
+	public function update(Entity $entity): FlowRun {
+		if ($entity instanceof FlowRun === false) {
+			throw new InvalidArgumentException('FlowRunMapper persists FlowRun entities only.');
+		}
+
+		$updated = parent::update(entity: $entity);
+
+		if ($this->dispatcher !== null && $updated->isTerminal() === true) {
+			$this->dispatcher->dispatchTyped(
+				new FlowRunTerminalEvent(
+					runUuid: (string)$updated->getUuid(),
+					status: (string)$updated->getStatus()
+				)
+			);
+		}
+
+		return $updated;
+	}//end update()
 
 	/**
 	 * Find a run by its public uuid.
