@@ -146,6 +146,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\ArchivalRetentionTask</job>
 		<job>OCA\OpenRegister\BackgroundJob\FlowRunWorker</job>
 		<job>OCA\OpenRegister\BackgroundJob\FlowScheduleWorker</job>
+		<job>OCA\OpenRegister\BackgroundJob\FlowTimerWorker</job>
 		<job>OCA\OpenRegister\BackgroundJob\HandoffQueueDrainJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TemporalCalculationSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DsarDpiaDetectionJob</job>
@@ -250,6 +251,15 @@ Vrij en open source onder de EUPL-licentie.
 			     tables its own change's migration creates. -->
 			<step>OCA\OpenRegister\Repair\SeedTaskFixtures</step>
 			<step>OCA\OpenRegister\Repair\SeedCaseFixtures</step>
+			<!-- Business timers (flow-business-timers, ADR-001): the flow-timers
+			     register with its working-calendar and escalation-ladder schemas
+			     and seeded defaults (nl-national, nl-termijn-default), idempotent
+			     with force: false so administrator edits survive. Then the
+			     invariant check, which COUNTS orphaned or inconsistent timers and
+			     reports them rather than cancelling them. Post-migration because
+			     both need the openregister_flow_timers tables. -->
+			<step>OCA\OpenRegister\Repair\SeedFlowTimerRegister</step>
+			<step>OCA\OpenRegister\Repair\CheckFlowTimerInvariants</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
@@ -291,6 +301,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedVocabularyRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
 			<step>OCA\OpenRegister\Repair\SeedZgwZakenMigrationPack</step>
+			<step>OCA\OpenRegister\Repair\SeedFlowTimerRegister</step>
 		</install>
 	</repair-steps>
 

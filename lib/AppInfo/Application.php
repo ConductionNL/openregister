@@ -2660,6 +2660,22 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Listener\FlowTriggerListener::class
 		);
 
+		// Business-timer cancellation propagation (flow-business-timers, design
+		// D-9): the SAME terminal event, and the run-terminal one, also cancel
+		// the subject's open business timers. TaskTerminalEvent fires right
+		// after the terminal write commits (see TaskService::transactional),
+		// FlowRunTerminalEvent inside the run's own write; the listener is
+		// idempotent and never deletes, and the invariant repair step counts
+		// anything a crash window leaves behind.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
+			\OCA\OpenRegister\Listener\FlowTimerSubjectTerminalListener::class
+		);
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\FlowRunTerminalEvent::class,
+			\OCA\OpenRegister\Listener\FlowTimerSubjectTerminalListener::class
+		);
+
 		// Lifecycle annotation listeners — see x-openregister-lifecycle.
 		// Order matters: initial state runs on creating; validation runs on updating.
 		$context->registerEventListener(ObjectCreatingEvent::class, LifecycleInitialStateListener::class);

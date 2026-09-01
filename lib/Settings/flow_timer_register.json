@@ -1,0 +1,525 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Flow Timers",
+    "description": "Configuration data for the business-timer store (flow-business-timers): named working calendars whose non-working dates are COMPUTED from rules so they never expire, and escalation ladders whose rungs are editable data rather than a compiled-in constant (ADR-001, ADR-031). Materialised by the SeedFlowTimerRegister repair step; OpenRegister does not self-import its own register JSON at boot (ADR-037).",
+    "version": "1.0.0"
+  },
+  "x-openregister": {
+    "type": "core",
+    "app": "openregister",
+    "openregister": "^v0.2.10",
+    "description": "Working calendars and escalation ladders for the durable business-timer store. Nothing here sends: a ladder rung names roles, a priority and a message identity that the notification subsystem resolves."
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "flow-timers": {
+        "slug": "flow-timers",
+        "title": "Flow Timers",
+        "version": "1.0.0",
+        "description": "Working calendars and escalation ladders consumed by the business-timer store. The timers themselves live in openregister_flow_timers, not here.",
+        "published": "2026-09-01T00:00:00+00:00",
+        "schemas": [
+          "working-calendar",
+          "escalation-ladder"
+        ],
+        "folder": "Open Registers/Flow Timers"
+      }
+    },
+    "schemas": {
+      "working-calendar": {
+        "slug": "working-calendar",
+        "title": "Working calendar",
+        "version": "1.0.0",
+        "published": "2026-09-01T00:00:00+00:00",
+        "summary": "Which weekdays work, which dates do not (computed from rules), and how many hours a working day holds.",
+        "description": "A named working calendar resolved by the business-timer store in the order: the calendar named on the timer, the calendar configured for the subject's organisation, the seeded national default. Non-working dates are computed from rules of kind fixed, easter or observedShift, so the calendar does not expire; enumerated exceptions may accompany rules but a calendar consisting only of enumerated dates is refused. hoursPerWorkingDay is required because without it hours and businessDays are not commensurable.",
+        "required": [
+          "slug",
+          "workingWeekdays",
+          "hoursPerWorkingDay",
+          "rules"
+        ],
+        "properties": {
+          "slug": {
+            "title": "Slug",
+            "type": "string",
+            "description": "The calendar's stable name, referenced by a timer's calendar_slug."
+          },
+          "title": {
+            "title": "Title",
+            "type": "string",
+            "description": "Human-readable title."
+          },
+          "organisation": {
+            "title": "Organisation",
+            "type": "string",
+            "description": "UUID of the organisation this calendar is configured for. Empty for a shared calendar. The resolution order picks an organisation's calendar when the timer names none."
+          },
+          "workingWeekdays": {
+            "title": "Working weekdays",
+            "type": "array",
+            "description": "ISO weekdays (1 = Monday, 7 = Sunday) that are working days.",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7
+            }
+          },
+          "hoursPerWorkingDay": {
+            "title": "Hours per working day",
+            "type": "number",
+            "description": "Working hours in one working day. Makes hours and businessDays commensurable.",
+            "minimum": 0.25,
+            "maximum": 24
+          },
+          "rules": {
+            "title": "Non-working-date rules",
+            "type": "array",
+            "description": "Computed non-working-date rules. kind fixed: {month, day, name, observedShift?: {whenWeekday, days}}. kind easter: {offset, name}, offset in days from Easter Sunday. kind observedShift: a fixed date with a required shift.",
+            "items": {
+              "type": "object",
+              "required": [
+                "kind",
+                "name"
+              ],
+              "properties": {
+                "kind": {
+                  "title": "Kind",
+                  "type": "string",
+                  "enum": [
+                    "fixed",
+                    "easter",
+                    "observedShift"
+                  ],
+                  "description": "fixed: a month/day; easter: an offset in days from Easter Sunday; observedShift: a month/day with a required observed shift."
+                },
+                "name": {
+                  "title": "Name",
+                  "type": "string",
+                  "description": "The holiday's name."
+                },
+                "month": {
+                  "title": "Month",
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 12,
+                  "description": "Month of a fixed or observedShift rule; ignored by an easter rule."
+                },
+                "day": {
+                  "title": "Day",
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 31,
+                  "description": "Day of a fixed or observedShift rule; ignored by an easter rule."
+                },
+                "offset": {
+                  "title": "Offset",
+                  "type": "integer",
+                  "minimum": -100,
+                  "maximum": 100,
+                  "description": "Days from Easter Sunday for an easter rule; ignored by the other kinds."
+                },
+                "observedShift": {
+                  "title": "Observed shift",
+                  "type": "object",
+                  "description": "Optional on a fixed rule, required on observedShift: {whenWeekday: weekday name or ISO 1..7, days: integer}.",
+                  "properties": {
+                    "whenWeekday": {
+                      "title": "When weekday",
+                      "type": "string",
+                      "enum": [
+                        "monday",
+                        "tuesday",
+                        "wednesday",
+                        "thursday",
+                        "friday",
+                        "saturday",
+                        "sunday"
+                      ],
+                      "description": "The weekday (name) on which the date shifts, e.g. sunday for Koningsdag."
+                    },
+                    "days": {
+                      "title": "Days",
+                      "type": "integer",
+                      "minimum": -6,
+                      "maximum": 6,
+                      "description": "How many days the observed date shifts, e.g. -1 for the Saturday before."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "exceptions": {
+            "title": "Exception dates",
+            "type": "array",
+            "description": "Enumerated one-off closures as {date, name}. Allowed alongside rules; refused as the whole calendar.",
+            "items": {
+              "type": "object",
+              "required": [
+                "date",
+                "name"
+              ],
+              "properties": {
+                "date": {
+                  "title": "Date",
+                  "type": "string",
+                  "format": "date",
+                  "description": "The closed date, Y-m-d."
+                },
+                "name": {
+                  "title": "Name",
+                  "type": "string",
+                  "description": "Why the day is closed."
+                }
+              }
+            }
+          }
+        }
+      },
+      "escalation-ladder": {
+        "slug": "escalation-ladder",
+        "title": "Escalation ladder",
+        "version": "1.0.0",
+        "published": "2026-09-01T00:00:00+00:00",
+        "summary": "An ordered set of rungs, each a distance from the deadline with the roles, priority and message identity to raise.",
+        "description": "Editable escalation data for the business-timer store. Each rung fires at most once per timer, decided by the unique fire ledger. The rung's roles are resolved against the subject's performer (handler = the assignee) or through roleBindings; the message value is an identity the notification subsystem resolves. Nothing here renders or sends.",
+        "required": [
+          "slug",
+          "rungs"
+        ],
+        "properties": {
+          "slug": {
+            "title": "Slug",
+            "type": "string",
+            "description": "The ladder's stable name, referenced by a timer's ladder_slug."
+          },
+          "title": {
+            "title": "Title",
+            "type": "string",
+            "description": "Human-readable title."
+          },
+          "organisation": {
+            "title": "Organisation",
+            "type": "string",
+            "description": "UUID of the organisation this ladder is the default for. Empty for the shared default."
+          },
+          "rungs": {
+            "title": "Rungs",
+            "type": "array",
+            "description": "Ordered rungs: {key, trigger (preBreach|slaBreached), offset, offsetUnit (hours|businessDays|calendarDays), notifyRole[], escalateToRole[], priority, message, openIncident}.",
+            "items": {
+              "type": "object",
+              "required": [
+                "trigger",
+                "offset",
+                "offsetUnit",
+                "notifyRole",
+                "priority"
+              ],
+              "properties": {
+                "key": {
+                  "title": "Key",
+                  "type": "string",
+                  "description": "Stable rung identity, e.g. preBreach:14:calendarDays; derived from trigger, offset and unit when absent."
+                },
+                "trigger": {
+                  "title": "Trigger",
+                  "type": "string",
+                  "enum": [
+                    "preBreach",
+                    "slaBreached"
+                  ],
+                  "description": "preBreach fires before the deadline, slaBreached at or after it."
+                },
+                "offset": {
+                  "title": "Offset",
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000,
+                  "description": "Distance from the deadline, in the offset unit."
+                },
+                "offsetUnit": {
+                  "title": "Offset unit",
+                  "type": "string",
+                  "enum": [
+                    "hours",
+                    "businessDays",
+                    "calendarDays"
+                  ],
+                  "description": "The unit of the offset: the same set the SLA accepts."
+                },
+                "notifyRole": {
+                  "title": "Notify roles",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Roles told at this rung; handler is the subject's own performer."
+                },
+                "escalateToRole": {
+                  "title": "Escalate to roles",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Roles the matter is escalated to at this rung."
+                },
+                "priority": {
+                  "title": "Priority",
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high",
+                    "critical"
+                  ],
+                  "description": "The urgency the raised transition carries."
+                },
+                "message": {
+                  "title": "Message",
+                  "type": "string",
+                  "description": "A message identity the notification subsystem resolves."
+                },
+                "openIncident": {
+                  "title": "Open incident",
+                  "type": "boolean",
+                  "description": "Whether reaching this rung opens an incident."
+                }
+              }
+            }
+          },
+          "roleBindings": {
+            "title": "Role bindings",
+            "type": "object",
+            "description": "Optional map from a role name to a concrete recipient descriptor, e.g. {\"teamleader\": \"group:teamleaders\"}. Roles without a binding travel unresolved as role:<name>."
+          }
+        }
+      }
+    },
+    "objects": [
+      {
+        "@self": {
+          "register": "flow-timers",
+          "schema": "working-calendar",
+          "slug": "nl-national",
+          "uuid": "00000000-0000-0000-0000-000000000101"
+        },
+        "slug": "nl-national",
+        "title": "Nederland, nationale feestdagen",
+        "workingWeekdays": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "hoursPerWorkingDay": 8,
+        "rules": [
+          {
+            "kind": "fixed",
+            "month": 1,
+            "day": 1,
+            "name": "Nieuwjaarsdag"
+          },
+          {
+            "kind": "easter",
+            "offset": -2,
+            "name": "Goede Vrijdag"
+          },
+          {
+            "kind": "easter",
+            "offset": 1,
+            "name": "Tweede Paasdag"
+          },
+          {
+            "kind": "fixed",
+            "month": 4,
+            "day": 27,
+            "name": "Koningsdag",
+            "observedShift": {
+              "whenWeekday": "sunday",
+              "days": -1
+            }
+          },
+          {
+            "kind": "easter",
+            "offset": 39,
+            "name": "Hemelvaartsdag"
+          },
+          {
+            "kind": "easter",
+            "offset": 50,
+            "name": "Tweede Pinksterdag"
+          },
+          {
+            "kind": "fixed",
+            "month": 12,
+            "day": 25,
+            "name": "Eerste Kerstdag"
+          },
+          {
+            "kind": "fixed",
+            "month": 12,
+            "day": 26,
+            "name": "Tweede Kerstdag"
+          }
+        ],
+        "exceptions": []
+      },
+      {
+        "@self": {
+          "register": "flow-timers",
+          "schema": "working-calendar",
+          "slug": "example-organisation",
+          "uuid": "00000000-0000-0000-0000-000000000103"
+        },
+        "slug": "example-organisation",
+        "title": "Gemeente Example, lokale sluitingsdag",
+        "organisation": "00000000-0000-0000-0000-000000000000",
+        "workingWeekdays": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "hoursPerWorkingDay": 7,
+        "rules": [
+          {
+            "kind": "fixed",
+            "month": 1,
+            "day": 1,
+            "name": "Nieuwjaarsdag"
+          },
+          {
+            "kind": "easter",
+            "offset": -2,
+            "name": "Goede Vrijdag"
+          },
+          {
+            "kind": "easter",
+            "offset": 1,
+            "name": "Tweede Paasdag"
+          },
+          {
+            "kind": "fixed",
+            "month": 4,
+            "day": 27,
+            "name": "Koningsdag",
+            "observedShift": {
+              "whenWeekday": "sunday",
+              "days": -1
+            }
+          },
+          {
+            "kind": "easter",
+            "offset": 39,
+            "name": "Hemelvaartsdag"
+          },
+          {
+            "kind": "easter",
+            "offset": 50,
+            "name": "Tweede Pinksterdag"
+          },
+          {
+            "kind": "fixed",
+            "month": 12,
+            "day": 25,
+            "name": "Eerste Kerstdag"
+          },
+          {
+            "kind": "fixed",
+            "month": 12,
+            "day": 26,
+            "name": "Tweede Kerstdag"
+          }
+        ],
+        "exceptions": [
+          {
+            "date": "2026-10-05",
+            "name": "Lokale sluitingsdag (voorbeeld)"
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "flow-timers",
+          "schema": "escalation-ladder",
+          "slug": "nl-termijn-default",
+          "uuid": "00000000-0000-0000-0000-000000000102"
+        },
+        "slug": "nl-termijn-default",
+        "title": "Termijnbewaking, standaardladder 14/7/2/0",
+        "rungs": [
+          {
+            "key": "preBreach:14:calendarDays",
+            "trigger": "preBreach",
+            "offset": 14,
+            "offsetUnit": "calendarDays",
+            "notifyRole": [
+              "handler"
+            ],
+            "escalateToRole": [],
+            "priority": "low",
+            "message": "termijn-14d",
+            "openIncident": false
+          },
+          {
+            "key": "preBreach:7:calendarDays",
+            "trigger": "preBreach",
+            "offset": 7,
+            "offsetUnit": "calendarDays",
+            "notifyRole": [
+              "handler",
+              "teamleader"
+            ],
+            "escalateToRole": [
+              "teamleader"
+            ],
+            "priority": "medium",
+            "message": "termijn-7d",
+            "openIncident": false
+          },
+          {
+            "key": "preBreach:2:calendarDays",
+            "trigger": "preBreach",
+            "offset": 2,
+            "offsetUnit": "calendarDays",
+            "notifyRole": [
+              "handler",
+              "teamleader",
+              "manager"
+            ],
+            "escalateToRole": [
+              "manager"
+            ],
+            "priority": "high",
+            "message": "termijn-2d",
+            "openIncident": false
+          },
+          {
+            "key": "slaBreached:0",
+            "trigger": "slaBreached",
+            "offset": 0,
+            "offsetUnit": "calendarDays",
+            "notifyRole": [
+              "handler",
+              "teamleader",
+              "manager"
+            ],
+            "escalateToRole": [
+              "manager"
+            ],
+            "priority": "critical",
+            "message": "termijn-overschreden",
+            "openIncident": true
+          }
+        ],
+        "roleBindings": {}
+      }
+    ]
+  }
+}
