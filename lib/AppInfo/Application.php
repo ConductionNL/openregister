@@ -67,7 +67,6 @@ use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Event\AgentCreatedEvent;
 use OCA\OpenRegister\Event\AgentUpdatedEvent;
-use OCA\OpenRegister\Event\ApprovalStepCompletedEvent;
 use OCA\OpenRegister\Event\ConfigurationCreatedEvent;
 use OCA\OpenRegister\Event\ConfigurationUpdatedEvent;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
@@ -2572,14 +2571,28 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Listener\TaskRunTerminalListener::class
 		);
 
-		// The other direction (flow-user-task-node): a task the graph raised
+// The other direction (flow-user-task-node): a task the graph raised
 		// reached a terminal state, so its suspended run is woken and, per the
 		// node's `advance` budget, continued in-request. Fires AFTER the task's
-		// own transaction committed; a failure here costs latency, never the
-		// completion.
+		// own transaction committed (the listener skips uncommitted dispatches);
+		// a failure here costs latency, never the completion.
 		$context->registerEventListener(
 			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
 			\OCA\OpenRegister\Listener\UserTaskTerminalListener::class
+		);
+
+		// Business-timer cancellation propagation (flow-business-timers, design
+		// D-9): a terminal task (TaskMapper, both write paths) or a terminal run
+		// (FlowRunMapper) cancels its open timers INSIDE the write that made the
+		// subject terminal, so no escalation goes out about finished work. The
+		// listener is idempotent and never deletes.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
+			\OCA\OpenRegister\Listener\FlowTimerSubjectTerminalListener::class
+		);
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\FlowRunTerminalEvent::class,
+			\OCA\OpenRegister\Listener\FlowTimerSubjectTerminalListener::class
 		);
 
 		// The portal reminder (flow-portal-task, design D-8): a preBreach rung
@@ -2682,11 +2695,12 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ObjectUpdatingEvent::class, LifecycleValidationListener::class);
 
 		// Approval-chains declarative wiring — see x-openregister-approval-chains.
-		// Provisions ApprovalChain rows from the annotation (schema save), then
-		// gates any lifecycle transition it names until the provisioned chain's
-		// steps are all approved. Registered immediately after
-		// LifecycleValidationListener: transition legality must be established
-		// before approval-chain gating runs against it.
+		// The annotation is validated at schema save; the gate compiles it into
+		// a task template on demand and blocks any lifecycle transition it
+		// names until the object's approval SEQUENCE completes with an
+		// approving outcome (flow-approval-consolidation). Registered
+		// immediately after LifecycleValidationListener: transition legality
+		// must be established before approval gating runs against it.
 		// Declared flows (`x-openregister-flows`) are MATERIALISED into the flow
 		// store on schema save, because a flow lives in its own table rather
 		// than being read off the schema at runtime like every other
@@ -2699,7 +2713,18 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(SchemaCreatedEvent::class, ApprovalChainAnnotationInstaller::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, ApprovalChainAnnotationInstaller::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, ApprovalChainGateListener::class);
-		$context->registerEventListener(ApprovalStepCompletedEvent::class, ApprovalChainAdvanceListener::class);
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskSequenceCompletedEvent::class,
+			ApprovalChainAdvanceListener::class
+		);
+
+		// Sequence progression (flow-approval-consolidation): a committed
+		// terminal task that belongs to a sequence enables the next position,
+		// or closes the sequence, in the SAME request as the decision.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
+			\OCA\OpenRegister\Listener\TaskSequenceProgressListener::class
+		);
 
 		// Lifecycle action executor — see x-openregister-lifecycle.transitions[*].actions[].
 		// Runs the declared actions of a matched transition on the save path, so

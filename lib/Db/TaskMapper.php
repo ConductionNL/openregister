@@ -37,9 +37,11 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use InvalidArgumentException;
+use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 
 /**
@@ -49,6 +51,10 @@ use OCP\IDBConnection;
  * predicates plus the portal seam's two party-scoped finders; each method is
  * small, and moving the party predicates to a second mapper would split the
  * one WHERE-clause vocabulary this class exists to keep together.
+ * @SuppressWarnings(PHPMD.TooManyMethods) Same rule as the public count
+ * below: one query per distinct question, and the sequence's ordinal read
+ * (flow-approval-consolidation) is the twenty-seventh question, not a
+ * design change.
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) A mapper's public methods
  * are its query vocabulary, one per distinct question the service and the
  * inbox ask of the table (same reasoning as FlowRunMapper); two of them
@@ -65,8 +71,17 @@ class TaskMapper extends QBMapper {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db The database connection.
+	 * @param IEventDispatcher|null $dispatcher Publishes task terminality
+	 *                                          ({@see TaskTerminalEvent}) so
+	 *                                          business timers are cancelled in
+	 *                                          the same operation. Nullable so
+	 *                                          the mapper stays constructible
+	 *                                          without a container.
 	 */
-	public function __construct(IDBConnection $db) {
+	public function __construct(
+		IDBConnection $db,
+		private readonly ?IEventDispatcher $dispatcher = null,
+	) {
 		parent::__construct(db: $db, tableName: 'openregister_tasks', entityClass: Task::class);
 
 	}//end __construct()
@@ -108,8 +123,59 @@ class TaskMapper extends QBMapper {
 
 		$entity->setUpdated(new DateTime());
 
-		return parent::update(entity: $entity);
+		$updated = parent::update(entity: $entity);
+		$this->announceTerminality(task: $updated);
+
+		return $updated;
 	}//end update()
+
+	/**
+	 * Announce a terminal write (flow-business-timers D-9).
+	 *
+	 * Called from BOTH persistence paths — {@see update()} and
+	 * {@see updateIfOpen()} — so the two choke points every terminal task
+	 * write passes both dispatch, inside the caller's transaction, and a
+	 * listener cancelling the task's business timers does so in the same
+	 * operation that made the subject terminal. Idempotent listeners only:
+	 * the event can fire more than once for one task.
+	 *
+	 * @param Task $task The task as persisted.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 */
+	private function announceTerminality(Task $task): void {
+		if ($this->dispatcher === null || $task->isInTerminalState() === false) {
+			return;
+		}
+
+		$this->dispatcher->dispatchTyped(
+			new TaskTerminalEvent(task: $task, committed: false)
+		);
+	}//end announceTerminality()
+
+	/**
+	 * A sequence's positions, in ordinal order.
+	 *
+	 * Ordinal order is the ONLY order that means anything to a sequence:
+	 * never creation time, never id (flow-approval-consolidation).
+	 *
+	 * @param string $sequenceUuid The sequence uuid.
+	 *
+	 * @return array<int, Task> The sequence's tasks, lowest ordinal first.
+	 *
+	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 */
+	public function findBySequence(string $sequenceUuid): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('sequence_uuid', $qb->createNamedParameter($sequenceUuid)))
+			->orderBy('sequence_position', 'ASC');
+
+		return $this->findEntities(query: $qb);
+	}//end findBySequence()
 
 	/**
 	 * Find a task by its public uuid.
@@ -174,7 +240,12 @@ class TaskMapper extends QBMapper {
 		$qb->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
 			->andWhere($qb->expr()->eq('is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)));
 
-		return $qb->executeStatement() === 1;
+		$won = ($qb->executeStatement() === 1);
+		if ($won === true) {
+			$this->announceTerminality(task: $task);
+		}
+
+		return $won;
 	}//end updateIfOpen()
 
 	/**

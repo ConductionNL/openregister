@@ -1032,12 +1032,59 @@ class FlowRunService {
 
 		$run->setResumeAt($resumeAt);
 
+		// The correlation key mirrors `resumeAt`: meaningful only while
+		// suspended, cleared on every other outcome so a finished run can
+		// never be the addressee of a business-key signal (design D-7).
+		$run->setCorrelationKey($this->correlationKeyFrom(context: $context, suspended: ($status === FlowRun::STATUS_SUSPENDED)));
+
 		$persisted = $this->mapper->update($run);
 
 		$this->recordLastRun(run: $persisted, status: $status);
 
 		return $persisted;
 	}//end persistResult()
+
+	/**
+	 * The correlation key a suspended run can be addressed by, or null.
+	 *
+	 * Read off the STORED resume-state slots the walk left behind: an
+	 * await-signal step that declared a `correlationKey` resolved it at
+	 * suspension and stamped it into its node slot. Copying it onto the
+	 * run's indexed column here is what makes delivery an index lookup
+	 * instead of a JSON scan (flow-approval-consolidation design D-7). The
+	 * first non-empty key wins; a run holding two suspended await steps with
+	 * keys is addressed by the earlier node's key.
+	 *
+	 * @param array<string, mixed> $context The context as it will be persisted.
+	 * @param bool $suspended Whether the run is suspending.
+	 *
+	 * @return string|null The key, or null when not suspended or none is set.
+	 *
+	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
+	 */
+	private function correlationKeyFrom(array $context, bool $suspended): ?string {
+		if ($suspended === false) {
+			return null;
+		}
+
+		$byNode = ($context[FlowResumeState::CONTEXT_KEY] ?? null);
+		if (is_array($byNode) === false) {
+			return null;
+		}
+
+		foreach ($byNode as $slot) {
+			if (is_array($slot) === false) {
+				continue;
+			}
+
+			$key = trim((string)($slot['correlationKey'] ?? ''));
+			if ($key !== '') {
+				return $key;
+			}
+		}
+
+		return null;
+	}//end correlationKeyFrom()
 
 	/**
 	 * Copy a finished run's outcome onto its flow.

@@ -123,6 +123,12 @@ use OCP\AppFramework\Db\Entity;
  * @method void setTemplateVersion(?int $templateVersion)
  * @method array|null getTemplateSnapshot()
  * @method void setTemplateSnapshot(?array $templateSnapshot)
+ * @method string|null getSequenceUuid()
+ * @method void setSequenceUuid(?string $sequenceUuid)
+ * @method integer|null getSequencePosition()
+ * @method void setSequencePosition(?int $sequencePosition)
+ * @method integer|null getLegacyStepId()
+ * @method void setLegacyStepId(?int $legacyStepId)
  * @method array|null getChecklist()
  * @method void setChecklist(?array $checklist)
  * @method array|null getResponses()
@@ -588,6 +594,31 @@ class Task extends Entity implements JsonSerializable {
 	protected ?array $templateSnapshot = null;
 
 	/**
+	 * The sequence this task is a position of, when any
+	 * (flow-approval-consolidation). Null for every task outside an ordered
+	 * approval.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $sequenceUuid = null;
+
+	/**
+	 * This task's ordinal within its sequence. Stable and unique per
+	 * sequence, enforced by a unique index.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $sequencePosition = null;
+
+	/**
+	 * The legacy approval step this task was migrated from, when any. The
+	 * reconciliation pair with `migrated_task_uuid` on the kept step row.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $legacyStepId = null;
+
+	/**
 	 * Typed checklist: a list of {id, label, description, checked} entries.
 	 * Never a string containing JSON.
 	 *
@@ -733,6 +764,9 @@ class Task extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'templateId', type: 'string');
 		$this->addType(fieldName: 'templateVersion', type: 'integer');
 		$this->addType(fieldName: 'templateSnapshot', type: 'json');
+		$this->addType(fieldName: 'sequenceUuid', type: 'string');
+		$this->addType(fieldName: 'sequencePosition', type: 'integer');
+		$this->addType(fieldName: 'legacyStepId', type: 'integer');
 		$this->addType(fieldName: 'checklist', type: 'json');
 		$this->addType(fieldName: 'responses', type: 'json');
 		$this->addType(fieldName: 'percentComplete', type: 'integer');
@@ -845,6 +879,9 @@ class Task extends Entity implements JsonSerializable {
 			'templateId' => $this->templateId,
 			'templateVersion' => $this->templateVersion,
 			'templateSnapshot' => $this->templateSnapshot,
+			'sequenceUuid' => $this->sequenceUuid,
+			'sequencePosition' => $this->sequencePosition,
+			'legacyStepId' => $this->legacyStepId,
 			'checklist' => $this->checklist,
 			'responses' => $this->responses,
 			'percentComplete' => $this->percentComplete,

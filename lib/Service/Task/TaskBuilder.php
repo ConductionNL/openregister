@@ -162,6 +162,12 @@ class TaskBuilder {
 		$task->setTemplateVersion($this->intOrNull(value: ($data['templateVersion'] ?? null)));
 		$task->setTemplateSnapshot($this->arrayOrNull(value: $data['templateSnapshot'] ?? null));
 
+		// Sequence membership (flow-approval-consolidation): the ordinal is
+		// written at provisioning and never re-derived from timestamps.
+		$task->setSequenceUuid($this->stringOrNull(value: $data['sequenceUuid'] ?? null));
+		$task->setSequencePosition($this->intOrNull(value: ($data['sequencePosition'] ?? null)));
+		$task->setLegacyStepId($this->intOrNull(value: ($data['legacyStepId'] ?? null)));
+
 		return $task;
 	}//end fromData()
 

@@ -100,7 +100,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -131,8 +133,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/actions",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "actions"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "actions"
+              ]
             }
           }
         },
@@ -143,7 +150,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -178,8 +187,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/actions",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "actions"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "actions"
+              ]
             }
           }
         },
@@ -190,7 +204,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -221,8 +237,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/actions/{{actionId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "actions", "{{actionId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "actions",
+                "{{actionId}}"
+              ]
             }
           }
         },
@@ -233,7 +255,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -266,8 +290,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/actions/{{actionId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "actions", "{{actionId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "actions",
+                "{{actionId}}"
+              ]
             }
           }
         },
@@ -278,7 +308,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -308,8 +340,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/actions/{{actionId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "actions", "{{actionId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "actions",
+                "{{actionId}}"
+              ]
             }
           }
         }
@@ -326,7 +364,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -356,8 +396,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/archival/legal-holds",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "archival", "legal-holds"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "archival",
+                "legal-holds"
+              ]
             }
           }
         },
@@ -368,7 +414,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -398,8 +446,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/archival/certificates",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "archival", "certificates"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "archival",
+                "certificates"
+              ]
             }
           }
         },
@@ -410,7 +464,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -440,8 +496,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/archival/destruction-lists",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "archival", "destruction-lists"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "archival",
+                "destruction-lists"
+              ]
             }
           }
         },
@@ -452,7 +514,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -482,8 +546,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/archival/destruction-lists",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "archival", "destruction-lists"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "archival",
+                "destruction-lists"
+              ]
             }
           }
         }
@@ -500,7 +570,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -528,9 +600,20 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/emails/by-sender?sender=nomatch@example.com",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "emails", "by-sender"],
-              "query": [{ "key": "sender", "value": "nomatch@example.com" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "emails",
+                "by-sender"
+              ],
+              "query": [
+                {
+                  "key": "sender",
+                  "value": "nomatch@example.com"
+                }
+              ]
             }
           }
         },
@@ -541,7 +624,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -569,8 +654,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/emails/by-sender?sender=test@example.com",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "emails", "by-sender"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "emails",
+                "by-sender"
+              ],
               "query": [
                 {
                   "key": "sender",
@@ -593,7 +684,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -621,8 +714,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/contacts/match?email=admin@example.com",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "contacts", "match"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacts",
+                "match"
+              ],
               "query": [
                 {
                   "key": "email",
@@ -639,7 +738,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -667,8 +768,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/contacts/match?name=Admin",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "contacts", "match"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacts",
+                "match"
+              ],
               "query": [
                 {
                   "key": "name",
@@ -691,7 +798,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -722,8 +831,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/files/1/objects",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "files", "1", "objects"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "files",
+                "1",
+                "objects"
+              ]
             }
           }
         },
@@ -734,7 +850,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -764,8 +882,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/files/1/extraction-status",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "files", "1", "extraction-status"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "files",
+                "1",
+                "extraction-status"
+              ]
             }
           }
         }
@@ -782,7 +907,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -810,8 +937,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/user/me",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "user", "me"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "me"
+              ]
             }
           }
         },
@@ -822,7 +955,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -850,8 +985,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/user/me/notifications",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "user", "me", "notifications"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "me",
+                "notifications"
+              ]
             }
           }
         },
@@ -862,7 +1004,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -895,8 +1039,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/user/me/notifications",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "user", "me", "notifications"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "me",
+                "notifications"
+              ]
             }
           }
         },
@@ -907,7 +1058,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -935,8 +1088,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/user/me/activity",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "user", "me", "activity"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "me",
+                "activity"
+              ]
             }
           }
         },
@@ -947,7 +1107,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -975,8 +1137,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/user/me/tokens",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "user", "me", "tokens"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "me",
+                "tokens"
+              ]
             }
           }
         },
@@ -987,7 +1156,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -1021,8 +1192,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/user/me/tokens",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "user", "me", "tokens"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "me",
+                "tokens"
+              ]
             }
           }
         },
@@ -1033,7 +1211,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -1061,8 +1241,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/user/me/deactivation-status",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "user", "me", "deactivation-status"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "me",
+                "deactivation-status"
+              ]
             }
           }
         }
@@ -1070,7 +1257,7 @@
     },
     {
       "name": "Workflow API",
-      "description": "Workflow executions, scheduled workflows, approval chains, and approval steps.",
+      "description": "Workflow executions, scheduled workflows, and correlation-addressed flow signals. The approval chain and step routes are retired (flow-approval-consolidation); approvals are decided through the task routes.",
       "item": [
         {
           "name": "List Workflow Executions",
@@ -1079,7 +1266,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -1109,8 +1298,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/workflow-executions",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "workflow-executions"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "workflow-executions"
+              ]
             }
           }
         },
@@ -1121,7 +1315,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -1153,95 +1349,63 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/scheduled-workflows",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "scheduled-workflows"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "scheduled-workflows"
+              ]
             }
           }
         },
         {
-          "name": "List Approval Chains",
+          "name": "Signal by correlation key: an unmatched key is refused, not stored",
           "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [""]
-              }
-            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status code is 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test('Content-Type is JSON', function () {",
-                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
-                  "});",
-                  "",
-                  "// approval#index returns a bare array (the shape the Vue",
-                  "// ApprovalChainPanel consumes via `response.data.filter(...)`).",
-                  "pm.test('Response is an array', function () {",
-                  "    const json = pm.response.json();",
-                  "    pm.expect(json).to.be.an('array');",
+                  "// flow-approval-consolidation: delivery is fail-closed. A key no",
+                  "// suspended run carries answers 404, and the signal is NOT buffered",
+                  "// for a run that suspends later.",
+                  "pm.test('unmatched correlation key answers 404', () => pm.response.to.have.status(404));",
+                  "pm.test('the refusal says the signal was not stored', () => {",
+                  "  pm.expect(pm.response.json().error).to.include('not stored');",
                   "});"
                 ]
               }
             }
           ],
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/approval-chains",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "approval-chains"]
-            }
-          }
-        },
-        {
-          "name": "List Approval Steps",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [""]
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
               }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"decision\": \"approve\"}"
             },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status code is 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test('Content-Type is JSON', function () {",
-                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
-                  "});",
-                  "",
-                  "// approval#steps returns a bare array (the shape the Vue",
-                  "// ApprovalStepList consumes via `response.data`).",
-                  "pm.test('Response is an array', function () {",
-                  "    const json = pm.response.json();",
-                  "    pm.expect(json).to.be.an('array');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/approval-steps",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "approval-steps"]
-            }
+              "raw": "{{baseUrl}}/api/flow-run-signals/contract-test:no-such-key",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "flow-run-signals",
+                "contract-test:no-such-key"
+              ]
+            },
+            "description": "Contract for POST /api/flow-run-signals/{key} (flow-approval-consolidation). Zero matches is a 404 and nothing is buffered; ambiguity would be a 409 and wakes nothing."
           }
         }
       ]
@@ -1257,7 +1421,9 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [""]
+                "exec": [
+                  ""
+                ]
               }
             },
             {
@@ -1290,8 +1456,16 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/tmlo/voorzieningen/applicatie/summary",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "tmlo", "voorzieningen", "applicatie", "summary"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tmlo",
+                "voorzieningen",
+                "applicatie",
+                "summary"
+              ]
             }
           }
         }

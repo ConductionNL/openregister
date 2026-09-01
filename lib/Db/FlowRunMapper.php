@@ -135,6 +135,33 @@ class FlowRunMapper extends QBMapper {
 	}//end findByUuid()
 
 	/**
+	 * The suspended runs carrying a correlation key, capped at two.
+	 *
+	 * Two is all a fail-closed resolution needs (flow-approval-consolidation
+	 * design D-7): zero is "not found", one is the addressee, and a second
+	 * row already proves ambiguity, which refuses without caring whether a
+	 * third exists. Only SUSPENDED runs are consulted, on the
+	 * (status, correlation_key) index.
+	 *
+	 * @param string $correlationKey The business key.
+	 *
+	 * @return array<int, FlowRun> Zero, one or two suspended runs.
+	 *
+	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
+	 */
+	public function findSuspendedByCorrelationKey(string $correlationKey): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('status', $qb->createNamedParameter(FlowRun::STATUS_SUSPENDED)))
+			->andWhere($qb->expr()->eq('correlation_key', $qb->createNamedParameter($correlationKey)))
+			->orderBy('id', 'ASC')
+			->setMaxResults(2);
+
+		return $this->findEntities(query: $qb);
+	}//end findSuspendedByCorrelationKey()
+
+	/**
 	 * Read one run FOR UPDATE — the critical section's lock.
 	 *
 	 * Must be called inside a transaction; the lock lives exactly as long as
