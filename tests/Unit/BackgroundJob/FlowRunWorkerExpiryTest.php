@@ -41,11 +41,6 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
 
-/**
- * Covers.
- *
- * @covers \OCA\OpenRegister\BackgroundJob\FlowRunWorker
- */
 class FlowRunWorkerExpiryTest extends TestCase {
 
 	private FlowRunMapper&MockObject $mapper;

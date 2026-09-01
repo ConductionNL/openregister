@@ -69,11 +69,6 @@ class RecordingDispatcher implements FlowStepDispatcher {
 	}//end dispatch()
 }//end class
 
-/**
- * Covers.
- *
- * @covers \OCA\OpenRegister\Service\Flow\FlowEngine
- */
 class FlowEngineTest extends TestCase {
 
 	private FlowEngine $engine;

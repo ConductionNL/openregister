@@ -39,12 +39,6 @@ use Symfony\Component\Workflow\Transition;
 
 /**
  * The walk's bookkeeping.
- *
- * @covers \OCA\OpenRegister\Service\Flow\FlowStreamWalk
- * @covers \OCA\OpenRegister\Service\Flow\FlowFiring
- * @covers \OCA\OpenRegister\Service\Flow\FlowFiringResult
- * @covers \OCA\OpenRegister\Db\FlowStream
- * @covers \OCA\OpenRegister\Db\FlowRun
  */
 class FlowStreamWalkTest extends TestCase {
 

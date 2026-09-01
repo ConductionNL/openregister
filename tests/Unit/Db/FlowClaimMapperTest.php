@@ -38,9 +38,6 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Claims mapper.
- *
- * @covers \OCA\OpenRegister\Db\FlowClaimMapper
- * @covers \OCA\OpenRegister\Db\FlowClaim
  */
 class FlowClaimMapperTest extends TestCase {
 

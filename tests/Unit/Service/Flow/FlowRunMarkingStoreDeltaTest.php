@@ -31,9 +31,6 @@ use stdClass;
 
 /**
  * Delta writes.
- *
- * @covers \OCA\OpenRegister\Service\Flow\FlowRunMarkingStore
- * @covers \OCA\OpenRegister\Db\FlowRun
  */
 class FlowRunMarkingStoreDeltaTest extends TestCase {
 

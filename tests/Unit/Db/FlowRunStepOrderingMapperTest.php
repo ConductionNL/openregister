@@ -34,11 +34,6 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Ordering and locking reads.
- *
- * @covers \OCA\OpenRegister\Db\FlowRunStepMapper
- * @covers \OCA\OpenRegister\Db\FlowRunMapper
- * @covers \OCA\OpenRegister\Db\FlowRunStep
- * @covers \OCA\OpenRegister\Db\FlowRun
  */
 class FlowRunStepOrderingMapperTest extends TestCase {
 

@@ -78,11 +78,6 @@ class StreamWalkDispatcher implements FlowStepDispatcher {
 
 /**
  * The walk.
- *
- * @covers \OCA\OpenRegister\Service\Flow\FlowEngine
- * @covers \OCA\OpenRegister\Service\Flow\FlowRunMarkingStore
- * @covers \OCA\OpenRegister\Service\Flow\FlowItemPlacement
- * @covers \OCA\OpenRegister\Db\FlowRun
  */
 class FlowEngineStreamWalkTest extends TestCase {
 

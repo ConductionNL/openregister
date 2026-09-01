@@ -29,8 +29,6 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Ordinal paths.
- *
- * @covers \OCA\OpenRegister\Db\FlowStream
  */
 class FlowStreamTest extends TestCase {
 

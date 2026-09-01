@@ -38,8 +38,6 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * The migration.
- *
- * @covers \OCA\OpenRegister\Migration\Version1Date20260901120000
  */
 class Version1Date20260901120000Test extends TestCase {
 

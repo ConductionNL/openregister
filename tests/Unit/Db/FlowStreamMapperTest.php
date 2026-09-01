@@ -33,9 +33,6 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Streams mapper.
- *
- * @covers \OCA\OpenRegister\Db\FlowStreamMapper
- * @covers \OCA\OpenRegister\Db\FlowStream
  */
 class FlowStreamMapperTest extends TestCase {
 

@@ -41,10 +41,6 @@ use stdClass;
 
 /**
  * The advance budget.
- *
- * @covers \OCA\OpenRegister\Service\Flow\FlowRunService
- * @covers \OCA\OpenRegister\Service\Flow\FlowStreamWalk
- * @covers \OCA\OpenRegister\Db\FlowRun
  */
 class FlowRunServiceAdvanceStreamTest extends TestCase {
 

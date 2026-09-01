@@ -109,12 +109,6 @@ class ContextCapturingNode implements IFlowNode {
 	}
 }
 
-/**
- * Covers.
- *
- * @covers \OCA\OpenRegister\Service\Flow\FlowRunService
- * @covers \OCA\OpenRegister\Db\FlowRun
- */
 class FlowRunServiceTest extends TestCase {
 	use \OCA\OpenRegister\Tests\Unit\Service\Flow\PublishedVersionDouble;
 

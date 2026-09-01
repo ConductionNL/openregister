@@ -25,12 +25,6 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
-/**
- * Covers.
- *
- * @covers \OCA\OpenRegister\Service\Flow\FlowStepHistory
- * @covers \OCA\OpenRegister\Db\FlowRunStep
- */
 class FlowStepHistoryTest extends TestCase {
 
 	/**

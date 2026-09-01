@@ -29,11 +29,6 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
-/**
- * Covers.
- *
- * @covers \OCA\OpenRegister\BackgroundJob\FlowRunWorker
- */
 class FlowRunWorkerStaleTest extends TestCase {
 	private FlowRunMapper&MockObject $mapper;
 
