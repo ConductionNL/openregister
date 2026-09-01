@@ -52,6 +52,10 @@ use Throwable;
  * The durable half of flow execution.
  *
  * @spec openspec/specs/flow-engine/spec.md
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) The run lifecycle — queue, execute, resume,
+ * signal, persist — plus the stream walk's wiring and the in-request advance; each is one
+ * entry into the same engine and belongs beside the others.
  */
 class FlowRunService {
 	/**
@@ -189,6 +193,31 @@ class FlowRunService {
 			budget: $budget
 		);
 	}//end streamWalkFor()
+
+	/**
+	 * Release the claims a failed walk still holds, so a pass that died inside
+	 * the engine does not leave its branches locked until the reaper's cutoff.
+	 * Best-effort: the run is being failed anyway, and the reaper remains the
+	 * backstop for a release that itself fails.
+	 *
+	 * @param FlowStreamWalk|null $walk The walk, when there was one.
+	 *
+	 * @return void
+	 */
+	private function releaseWalk(?FlowStreamWalk $walk): void {
+		if ($walk === null) {
+			return;
+		}
+
+		try {
+			$walk->finalize(enabled: false, forcedTerminal: FlowRun::STATUS_FAILED);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[FlowRunService] Could not release a failed walk\'s claims; the reaper will',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $walk->run()->getUuid(), 'error' => $e->getMessage()]
+			);
+		}
+	}//end releaseWalk()
 
 	/**
 	 * Advance ONE stream of a run in the calling request, within a budget.
@@ -795,6 +824,7 @@ class FlowRunService {
 
 		$guard = $this->guardFor(run: $run, flow: $flow);
 		$context = $this->nodeContextFor(run: $run, resuming: $resuming, guard: $guard);
+		$walk = $this->streamWalkFor(run: $run, flow: $flow);
 
 		try {
 			$result = $this->engine->run(
@@ -805,9 +835,10 @@ class FlowRunService {
 				context: $context,
 				items: $items,
 				startAt: $start,
-				streams: $this->streamWalkFor(run: $run, flow: $flow)
+				streams: $walk
 			);
 		} catch (FlowRunExpired $e) {
+			$this->releaseWalk(walk: $walk);
 			// The run stopped ITSELF at a checkpoint, having used its budget.
 			// Recorded as a first-class outcome rather than folded into the crash
 			// path below: nothing went wrong with the work, and the message has to
@@ -829,6 +860,7 @@ class FlowRunService {
 
 			return $this->mapper->update($run);
 		} catch (Throwable $e) {
+			$this->releaseWalk(walk: $walk);
 			// The engine itself failing (rather than a step) is not something
 			// the run should be left `running` for — that status would make it
 			// look claimed by a worker forever.

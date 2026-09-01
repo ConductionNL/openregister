@@ -95,7 +95,7 @@ class Version1Date20260901120000 extends SimpleMigrationStep {
 			$table->addColumn('owner', Types::STRING, ['notnull' => true, 'length' => 128]);
 			$table->addColumn('stream_id', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null]);
 			$table->addColumn('transition', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => null]);
-			$table->addColumn('claimed_at', Types::DATETIME, ['notnull' => true]);
+			$table->addColumn('claimed_at', Types::DATETIME_MUTABLE, ['notnull' => true]);
 			$table->setPrimaryKey(['id']);
 			// The unique index IS the lock.
 			$table->addUniqueIndex(['run_uuid', 'place'], 'or_flowclaim_place_uq');
@@ -118,11 +118,11 @@ class Version1Date20260901120000 extends SimpleMigrationStep {
 			// branch waits, and how a resumed run knows which token is whose.
 			$table->addColumn('place', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => null]);
 			$table->addColumn('status', Types::STRING, ['notnull' => true, 'length' => 32]);
-			$table->addColumn('resume_at', Types::DATETIME, ['notnull' => false, 'default' => null]);
+			$table->addColumn('resume_at', Types::DATETIME_MUTABLE, ['notnull' => false, 'default' => null]);
 			$table->addColumn('next_sequence', Types::INTEGER, ['notnull' => true, 'default' => 1]);
 			$table->addColumn('error', Types::TEXT, ['notnull' => false, 'default' => null]);
-			$table->addColumn('created', Types::DATETIME, ['notnull' => false, 'default' => null]);
-			$table->addColumn('updated', Types::DATETIME, ['notnull' => false, 'default' => null]);
+			$table->addColumn('created', Types::DATETIME_MUTABLE, ['notnull' => false, 'default' => null]);
+			$table->addColumn('updated', Types::DATETIME_MUTABLE, ['notnull' => false, 'default' => null]);
 			$table->setPrimaryKey(['id']);
 			$table->addUniqueIndex(['run_uuid', 'stream_id'], 'or_flowstream_id_uq');
 			$table->addIndex(['run_uuid', 'status'], 'or_flowstream_status_idx');

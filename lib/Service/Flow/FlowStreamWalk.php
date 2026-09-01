@@ -279,6 +279,19 @@ class FlowStreamWalk {
 	}//end workRemains()
 
 	/**
+	 * The ordinal path of a stream, for a log entry that is not a firing (a
+	 * suspension, a stop, a terminal failure) and so is written by the step
+	 * history rather than the commit.
+	 *
+	 * @param string $id The stream id.
+	 *
+	 * @return string The path; the root path for an unknown stream.
+	 */
+	public function pathOf(string $id): string {
+		return (string)($this->streams[$id]['path'] ?? FlowStream::ROOT_PATH);
+	}//end pathOf()
+
+	/**
 	 * The place holding a stream's token.
 	 *
 	 * @param string $id The stream id.

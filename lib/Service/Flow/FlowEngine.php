@@ -824,6 +824,7 @@ class FlowEngine {
 					'checkId' => $stop->checkId(),
 					'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
 					'streamId' => $streamId,
+					'ordinalPath' => $streams->pathOf(id: $streamId),
 				];
 
 				$stopStatus = self::STATUS_STOPPED;
@@ -845,6 +846,7 @@ class FlowEngine {
 					'status' => 'suspended',
 					'reason' => $suspension->getMessage(),
 					'streamId' => $streamId,
+					'ordinalPath' => $streams->pathOf(id: $streamId),
 				];
 				$streams->park(
 					id: $streamId,
@@ -885,6 +887,7 @@ class FlowEngine {
 					}
 
 					$entry['streamId'] = $streamId;
+					$entry['ordinalPath'] = $streams->pathOf(id: $streamId);
 					$log[] = $entry;
 					$streams->endStream(id: $streamId, status: $terminal, error: $e->getMessage(), claimed: $claimed, enabled: false);
 					$streams->finalize(enabled: false, forcedTerminal: $terminal);
@@ -1028,6 +1031,7 @@ class FlowEngine {
 
 		$entry['recorded'] = true;
 		$entry['streamId'] = $streamId;
+		$entry['ordinalPath'] = $streams->pathOf(id: $streamId);
 		$entry['firings'] = $result->firings;
 		$log[] = $entry;
 
