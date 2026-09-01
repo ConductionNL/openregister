@@ -35,6 +35,7 @@ use PHPUnit\Framework\TestCase;
  * Strategy behaviour over expanded pools.
  *
  * @covers \OCA\OpenRegister\Service\Task\TaskPerformerResolver
+ * @covers \OCA\OpenRegister\Db\Task
  */
 class TaskPerformerResolverTest extends TestCase {
 

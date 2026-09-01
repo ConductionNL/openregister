@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
  * The clock-controlled overdue derivation.
  *
  * @covers \OCA\OpenRegister\Service\Task\TaskTemporalProjection
+ * @covers \OCA\OpenRegister\Db\Task
  */
 class TaskTemporalProjectionTest extends TestCase {
 

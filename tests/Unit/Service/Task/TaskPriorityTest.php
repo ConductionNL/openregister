@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
  * All four fleet scales in, one scale out; off-scale refused.
  *
  * @covers \OCA\OpenRegister\Service\Task\TaskPriority
+ * @covers \OCA\OpenRegister\Exception\TaskValidationException
  */
 class TaskPriorityTest extends TestCase {
 

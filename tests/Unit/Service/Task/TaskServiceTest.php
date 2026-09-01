@@ -51,6 +51,14 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\Task\TaskService
  * @covers \OCA\OpenRegister\Service\Task\TaskBuilder
+ * @covers \OCA\OpenRegister\Service\Task\TaskState
+ * @covers \OCA\OpenRegister\Service\Task\TaskPriority
+ * @covers \OCA\OpenRegister\Db\Task
+ * @covers \OCA\OpenRegister\Db\TaskAudit
+ * @covers \OCA\OpenRegister\Db\TaskRelation
+ * @covers \OCA\OpenRegister\Exception\TaskValidationException
+ * @covers \OCA\OpenRegister\Exception\TaskAccessDeniedException
+ * @covers \OCA\OpenRegister\Exception\TaskConflictException
  */
 class TaskServiceTest extends TestCase {
 
@@ -703,6 +711,289 @@ class TaskServiceTest extends TestCase {
 		$this->assertSame(2, $this->service()->terminateForRun(runUuid: 'run-9', runStatus: 'stopped'));
 		$this->assertSame(Task::STATE_TERMINATED, $third->getState());
 	}//end testTerminateForRunContinuesPastAFailingTask()
+
+	/**
+	 * unclaim returns the task to its pool and clears delegation state.
+	 *
+	 * @return void
+	 */
+	public function testUnclaimReturnsTheTaskToItsPool(): void {
+		$task = $this->openTask();
+		$task->setOnBehalfOf('someone');
+		$this->tasks->method('findByUuid')->willReturn($task);
+		$this->audits->expects($this->once())->method('insert');
+
+		$pooled = $this->service()->unclaim(uuid: 't-7', actor: 'alice');
+
+		$this->assertNull($pooled->getAssignee());
+		$this->assertNull($pooled->getOnBehalfOf());
+		$this->assertSame(Task::STATE_ENABLED, $pooled->getState());
+		$this->assertSame('unclaim', $pooled->getLastAction());
+	}//end testUnclaimReturnsTheTaskToItsPool()
+
+	/**
+	 * assign and reassign set the holder, activate, and refuse an empty one.
+	 *
+	 * @return void
+	 */
+	public function testAssignAndReassignSetTheHolder(): void {
+		$task = $this->openTask();
+		$task->setAssignee(null);
+		$task->setState(Task::STATE_ENABLED);
+		$this->tasks->method('findByUuid')->willReturn($task);
+
+		$assigned = $this->service()->assign(uuid: 't-7', assignee: 'bob', actor: 'rita');
+		$this->assertSame('bob', $assigned->getAssignee());
+		$this->assertSame(Task::STATE_ACTIVE, $assigned->getState());
+
+		$reassigned = $this->service()->reassign(uuid: 't-7', assignee: 'carol', actor: 'rita');
+		$this->assertSame('carol', $reassigned->getAssignee());
+		$this->assertSame('reassign', $reassigned->getLastAction());
+
+		$this->expectException(TaskValidationException::class);
+		$this->service()->assign(uuid: 't-7', assignee: ' ', actor: 'rita');
+	}//end testAssignAndReassignSetTheHolder()
+
+	/**
+	 * cancel terminates with outcome cancelled and records the reason.
+	 *
+	 * @return void
+	 */
+	public function testCancelTerminatesWithAReason(): void {
+		$task = $this->openTask();
+		$this->tasks->method('findByUuid')->willReturn($task);
+		$reason = null;
+		$this->audits->method('insert')->willReturnCallback(
+			static function (TaskAudit $entry) use (&$reason): TaskAudit {
+				$reason = $entry->getReason();
+
+				return $entry;
+			}
+		);
+
+		$cancelled = $this->service()->cancel(uuid: 't-7', reason: 'Aanvraag ingetrokken', actor: 'rita');
+
+		$this->assertSame(Task::STATE_TERMINATED, $cancelled->getState());
+		$this->assertTrue($cancelled->getIsTerminal());
+		$this->assertSame('cancelled', $cancelled->getOutcome());
+		$this->assertSame('Aanvraag ingetrokken', $reason);
+	}//end testCancelTerminatesWithAReason()
+
+	/**
+	 * resolve completes with the resolved outcome.
+	 *
+	 * @return void
+	 */
+	public function testResolveCompletesWithTheResolvedOutcome(): void {
+		$this->tasks->method('findByUuid')->willReturn($this->openTask());
+
+		$resolved = $this->service()->resolve(uuid: 't-7', resultText: 'Klaar', comment: null, actor: 'alice');
+
+		$this->assertSame(Task::STATE_COMPLETED, $resolved->getState());
+		$this->assertSame('resolved', $resolved->getOutcome());
+		$this->assertSame('Klaar', $resolved->getResultText());
+		$this->assertSame('alice', $resolved->getCompletedBy());
+	}//end testResolveCompletesWithTheResolvedOutcome()
+
+	/**
+	 * terminateAsMoot terminates an open task with the source as actor and
+	 * leaves an already-terminal one exactly as it ended.
+	 *
+	 * @return void
+	 */
+	public function testTerminateAsMootIsIdempotent(): void {
+		$open = $this->openTask();
+		$this->tasks->method('findByUuid')->willReturn($open);
+		$actor = null;
+		$this->audits->method('insert')->willReturnCallback(
+			static function (TaskAudit $entry) use (&$actor): TaskAudit {
+				$actor = $entry->getActor();
+
+				return $entry;
+			}
+		);
+
+		$terminated = $this->service()->terminateAsMoot(uuid: 't-7', reason: 'Branch closed', source: 'flow-node:gateway');
+		$this->assertSame(Task::STATE_TERMINATED, $terminated->getState());
+		$this->assertSame('flow-node:gateway', $actor);
+
+		// Second observation: already terminal, nothing written.
+		$this->db->expects($this->never())->method('beginTransaction');
+		$again = $this->service()->terminateAsMoot(uuid: 't-7', reason: 'Branch closed', source: 'flow-node:gateway');
+		$this->assertSame(Task::STATE_TERMINATED, $again->getState());
+	}//end testTerminateAsMootIsIdempotent()
+
+	/**
+	 * get and auditTrail read through the mappers.
+	 *
+	 * @return void
+	 */
+	public function testGetAndAuditTrailRead(): void {
+		$this->tasks->method('findByUuid')->willReturn($this->openTask());
+		$this->audits->expects($this->once())->method('findForTask')->with(taskId: 7)->willReturn([new TaskAudit()]);
+
+		$this->assertSame('t-7', $this->service()->get(uuid: 't-7')->getUuid());
+		$this->assertCount(1, $this->service()->auditTrail(uuid: 't-7'));
+	}//end testGetAndAuditTrailRead()
+
+	/**
+	 * Relations named at creation are inserted as typed rows; one without a
+	 * role or object is refused.
+	 *
+	 * @return void
+	 */
+	public function testRelationsAtCreationAreInsertedAndValidated(): void {
+		$inserted = [];
+		$this->relations->method('insert')->willReturnCallback(
+			static function ($row) use (&$inserted) {
+				$inserted[] = $row;
+
+				return $row;
+			}
+		);
+
+		$this->service()->import(
+			data: [
+				'relations' => [
+					['role' => 'case', 'objectUuid' => 'obj-1', 'registerId' => 2, 'schemaId' => 3],
+					['role' => 'evidence', 'objectUuid' => 'obj-2'],
+					'not-an-array',
+				],
+			],
+			actor: 'rita'
+		);
+		$this->assertCount(2, $inserted);
+		$this->assertSame('case', $inserted[0]->getRole());
+		$this->assertSame(2, $inserted[0]->getRegisterId());
+
+		$this->expectException(TaskValidationException::class);
+		$this->service()->import(data: ['relations' => [['role' => '', 'objectUuid' => 'obj-1']]], actor: 'rita');
+	}//end testRelationsAtCreationAreInsertedAndValidated()
+
+	/**
+	 * Intake refusals from the builder, each naming what was wrong: an
+	 * unparsable date, a malformed checklist item, an unknown performer type.
+	 *
+	 * @return void
+	 */
+	public function testIntakeRefusalsAreNamed(): void {
+		$service = $this->service();
+		$cases = [
+			[['dueAt' => 'not a date'], 'dueAt'],
+			[['checklist' => [['label' => 'no id']]], 'id and a label'],
+			[['checklist' => 'yes'], 'string containing JSON'],
+			[['checklist' => 42], 'typed array'],
+			[['performerType' => 'robot'], "'robot'"],
+			[['priority' => 'normaal'], "'normaal'"],
+		];
+		foreach ($cases as [$data, $named]) {
+			try {
+				$service->import(data: $data, actor: 'rita');
+				$this->fail('Accepted: ' . json_encode($data));
+			} catch (TaskValidationException $refused) {
+				$this->assertStringContainsString($named, $refused->getMessage());
+			}
+		}
+	}//end testIntakeRefusalsAreNamed()
+
+	/**
+	 * Creation carries every stored-but-uninterpreted column through
+	 * unchanged (the round-trip the design demands for the timer columns),
+	 * accepts a DateTime as well as an ISO string, and stamps the creator.
+	 *
+	 * @return void
+	 */
+	public function testCreationRoundTripsTheStoredButUninterpretedColumns(): void {
+		$start = new \DateTime('2026-09-02T09:00:00+00:00');
+		$created = $this->service()->import(
+			data: [
+				'uuid' => 'fixed-uuid',
+				'key' => 'EXT-1',
+				'title' => 'T',
+				'description' => 'D',
+				'metadata' => ['x' => 1],
+				'runUuid' => 'run-1',
+				'nodeId' => 'node-1',
+				'definitionVersion' => 4,
+				'appId' => 'dossiq',
+				'workflowStepId' => 'step-1',
+				'organisation' => 'org-1',
+				'startAt' => $start,
+				'suspendedUntil' => '2026-09-03T09:00:00+00:00',
+				'slaValue' => 5,
+				'slaUnit' => 'days',
+				'compliancePeriodDays' => 30,
+				'recurrence' => 'FREQ=WEEKLY',
+				'watchers' => ['w1'],
+				'parentTaskId' => 1,
+				'epicTaskId' => 2,
+				'percentComplete' => 10,
+				'responses' => [['a' => 1]],
+				'evidence' => [['file' => 9]],
+				'outcome' => 'custom',
+				'state' => 'in-progress',
+			],
+			actor: 'rita'
+		);
+
+		$this->assertSame('fixed-uuid', $created->getUuid());
+		$this->assertSame('EXT-1', $created->getTaskKey());
+		$this->assertSame(4, $created->getDefinitionVersion());
+		$this->assertSame($start, $created->getStartAt());
+		$this->assertSame('2026-09-03T09:00:00+00:00', $created->getSuspendedUntil()?->format('c'));
+		$this->assertSame(5, $created->getSlaValue());
+		$this->assertSame('days', $created->getSlaUnit());
+		$this->assertSame(30, $created->getCompliancePeriodDays());
+		$this->assertSame('FREQ=WEEKLY', $created->getRecurrence());
+		$this->assertSame(['w1'], $created->getWatchers());
+		$this->assertSame(2, $created->getEpicTaskId());
+		$this->assertSame(10, $created->getPercentComplete());
+		// An explicit outcome wins over the mapping's; the state still maps.
+		$this->assertSame('custom', $created->getOutcome());
+		$this->assertSame(Task::STATE_ACTIVE, $created->getState());
+		$this->assertSame('rita', $created->getCreatedBy());
+		$this->assertSame('create', $created->getLastAction());
+	}//end testCreationRoundTripsTheStoredButUninterpretedColumns()
+
+	/**
+	 * A checklist item that does not exist is refused by id.
+	 *
+	 * @return void
+	 */
+	public function testAMissingChecklistItemIsRefusedById(): void {
+		$task = $this->openTask();
+		$task->setChecklist([['id' => 'c1', 'label' => 'Een', 'description' => null, 'checked' => false]]);
+		$this->tasks->method('findByUuid')->willReturn($task);
+
+		$this->expectException(TaskValidationException::class);
+		$this->expectExceptionMessage("'c9'");
+		$this->service()->checkChecklistItem(uuid: 't-7', itemId: 'c9', checked: true, actor: 'alice');
+	}//end testAMissingChecklistItemIsRefusedById()
+
+	/**
+	 * A denial on a task with no id (creation) is rethrown without an audit
+	 * row, and a failing denial-audit write does not change the denial.
+	 *
+	 * @return void
+	 */
+	public function testDenialAuditFailuresNeverChangeTheDenial(): void {
+		$this->authorization->method('assertMay')->willThrowException(new TaskAccessDeniedException('no identity'));
+		$this->audits->expects($this->never())->method('insert');
+		try {
+			$this->service()->import(data: [], actor: null);
+			$this->fail('Created without an identity.');
+		} catch (TaskAccessDeniedException) {
+			// Expected: nothing to audit against yet.
+		}
+
+		$this->setUp();
+		$this->tasks->method('findByUuid')->willReturn($this->openTask());
+		$this->authorization->method('assertMay')->willThrowException(new TaskAccessDeniedException('denied'));
+		$this->audits->method('insert')->willThrowException(new RuntimeException('audit down'));
+
+		$this->expectException(TaskAccessDeniedException::class);
+		$this->service()->cancel(uuid: 't-7', reason: null, actor: 'mallory');
+	}//end testDenialAuditFailuresNeverChangeTheDenial()
 
 	/**
 	 * The template freeze: id, version and snapshot land at creation.
