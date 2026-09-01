@@ -135,13 +135,15 @@ class TaskAuthorizationServiceTest extends TestCase {
 	public function testAnUnknownPerformerTypeDenies(): void {
 		$service = new TaskAuthorizationService(groupManager: $this->emptyGroupBackend());
 		$task = $this->assignedTask();
-		$task->setPerformerType('external');
+		// `external` used to be the example here; flow-portal-task admitted it
+		// to the vocabulary, so the unknown type is now one nothing declares.
+		$task->setPerformerType('robot');
 
 		try {
 			$service->assertMay(verb: 'complete', task: $task, uid: 'alice');
 			$this->fail('An unknown performer type was admitted.');
 		} catch (TaskAccessDeniedException $denied) {
-			$this->assertStringContainsString("'external'", $denied->getMessage());
+			$this->assertStringContainsString("'robot'", $denied->getMessage());
 		}
 	}//end testAnUnknownPerformerTypeDenies()
 

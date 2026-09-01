@@ -822,6 +822,33 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
+		// The task inbox and the portal party resolver read the object store
+		// through AbstractObjectMapper, which the autowirer cannot build (it is
+		// abstract) and would silently default to null: an inbox row without
+		// subject context, and a portal task that can match nobody. Both are
+		// wired to the MagicMapper explicitly for that reason.
+		$context->registerService(
+			\OCA\OpenRegister\Service\Task\TaskInboxService::class,
+			function (ContainerInterface $container) {
+				return new \OCA\OpenRegister\Service\Task\TaskInboxService(
+					tasks: $container->get(\OCA\OpenRegister\Db\TaskMapper::class),
+					temporal: $container->get(\OCA\OpenRegister\Service\Task\TaskTemporalProjection::class),
+					logger: $container->get('Psr\Log\LoggerInterface'),
+					objects: $container->get(MagicMapper::class),
+					deliveries: $container->get(\OCA\OpenRegister\Db\PortalTaskDeliveryMapper::class)
+				);
+			}
+		);
+
+		$context->registerService(
+			\OCA\OpenRegister\Service\Portal\PortalPartyResolver::class,
+			function (ContainerInterface $container) {
+				return new \OCA\OpenRegister\Service\Portal\PortalPartyResolver(
+					objects: $container->get(MagicMapper::class)
+				);
+			}
+		);
+
 		// EntityRelationMapper is registered explicitly because it constructor-injects
 		// `IEventDispatcher` to dispatch `EntityRelationDecisionUpdatedEvent`. Every
 		// other event-dispatcher-dependent mapper in this method (SchemaMapper,
@@ -2539,6 +2566,18 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(
 			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
 			\OCA\OpenRegister\Listener\UserTaskTerminalListener::class
+		);
+
+		// The portal reminder (flow-portal-task, design D-8): a preBreach rung
+		// of flow-business-timers on an EXTERNAL task becomes a reminder
+		// delivery request through the portal seam; a slaBreached rung stays
+		// inward. Registered by the event's NAME because the timers change is
+		// built in parallel and its event class may not be on this branch yet;
+		// the listener is duck-typed against the event's published surface, so
+		// the two merge in either order.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Listener\PortalTaskReminderListener::EVENT_CLASS,
+			\OCA\OpenRegister\Listener\PortalTaskReminderListener::class
 		);
 
 		// Lifecycle annotation listeners — see x-openregister-lifecycle.

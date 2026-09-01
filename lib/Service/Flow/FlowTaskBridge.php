@@ -167,6 +167,25 @@ class FlowTaskBridge {
 	}//end createTask()
 
 	/**
+	 * Record a fact about a task the graph raised, in its audit, without
+	 * moving it: the portal-task node records the party role it matched and
+	 * the reference it froze. Delegates to the task service, which owns the
+	 * audit's shape.
+	 *
+	 * @param string $uuid The task.
+	 * @param string $action The audited action name.
+	 * @param string|null $actor The run's acting identity.
+	 * @param string $reason What is being recorded.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-matched-party-comes-from-the-case-and-is-frozen-at-creation
+	 */
+	public function record(string $uuid, string $action, ?string $actor, string $reason): void {
+		$this->tasks->record(uuid: $uuid, action: $action, actor: $actor, reason: $reason);
+	}//end record()
+
+	/**
 	 * The task a node's resume slot points at, or null when it is gone.
 	 *
 	 * @param string $uuid The task uuid held in the slot.
