@@ -158,7 +158,7 @@ class TaskService {
 	 *
 	 * @throws Exception If no user is logged in
 	 *
-	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-the-projection-carries-a-real-assignee-not-prose
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-the-projection-carries-a-real-assignee-not-prose
 	 */
 	public function getAllUserTasks(
 		?string $status = null,

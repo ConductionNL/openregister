@@ -131,6 +131,10 @@ class TaskController extends Controller {
 	 *
 	 * @return RedirectResponse Into the app.
 	 *
+	 * @no-admin-idor-exempt Reads nothing: the uuid is only interpolated into
+	 *   a redirect to the app's task route, where the SPA performs the
+	 *   visibility-checked read (TaskController::show, 404 for the invisible).
+	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-an-assigned-task-appears-in-the-assignees-own-calendar
 	 */
 	#[NoAdminRequired]
