@@ -39,6 +39,8 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
+use OCA\OpenRegister\Db\FlowVersion;
+use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -119,11 +121,17 @@ class FlowTriggerIdSlugMatchTest extends TestCase {
 		$flowMapper->method('findByTrigger')->willReturn([]);
 		$flowMapper->method('findByUuid')->willReturn($flow);
 
+		$publishedVersion = new FlowVersion();
+		$publishedVersion->setStatus(FlowVersion::STATUS_PUBLISHED);
+		$versionMapper = $this->createMock(FlowVersionMapper::class);
+		$versionMapper->method('findPublished')->willReturn($publishedVersion);
+
 		$locator = new FlowLocator(
 			$flowMapper,
 			$triggerMapper,
 			$this->createMock(ObjectService::class),
-			new NullLogger()
+			new NullLogger(),
+			$versionMapper
 		);
 
 		$runner = $this->createMock(FlowRunService::class);

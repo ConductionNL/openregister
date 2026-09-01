@@ -138,14 +138,19 @@ class FlowTriggerExecutionModeTest extends TestCase {
 	 * This is the guarantee that makes inline execution safe to offer at all:
 	 * the flow runs on a user's save, and a broken flow must not break the save.
 	 *
+	 * The count is ONE, not zero: by the time inline execution fails the run
+	 * has been queued and the worker will drain it, so reporting zero would be
+	 * the instrument lying about a run that exists. (It also used to abort the
+	 * fan-out for every later flow on the event, which is the D6 poisoning.)
+	 *
 	 * @return void
 	 */
 	public function testAThrowingSyncFlowDoesNotEscapeTheTrigger(): void {
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'flow-1', 'executionMode' => 'sync']);
 		$this->runs->method('execute')->willThrowException(new RuntimeException('step blew up'));
 
-		// Swallowed and reported as zero, exactly as any other trigger failure.
-		$this->assertSame(0, $this->service->fire('object.created', ['uuid' => 'u-1']));
+		// Swallowed; the queued run is still counted, because it still runs.
+		$this->assertSame(1, $this->service->fire('object.created', ['uuid' => 'u-1']));
 
 	}//end testAThrowingSyncFlowDoesNotEscapeTheTrigger()
 

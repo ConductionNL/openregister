@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
+use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use Psr\Log\LoggerInterface;
@@ -66,12 +67,14 @@ class FlowLocator {
 	 * @param FlowTriggerMapper $triggerMapper The node-derived trigger index.
 	 * @param ObjectService $objectService Loads the object a run is about.
 	 * @param LoggerInterface $logger Records refusals and failures.
+	 * @param FlowVersionMapper $versions Answers whether a fallback-matched flow has a published version.
 	 */
 	public function __construct(
 		private readonly FlowMapper $mapper,
 		private readonly FlowTriggerMapper $triggerMapper,
 		private readonly ObjectService $objectService,
 		private readonly LoggerInterface $logger,
+		private readonly FlowVersionMapper $versions,
 	) {
 
 	}//end __construct()
@@ -232,8 +235,29 @@ class FlowLocator {
 				continue;
 			}
 
+			// 🔴 A DRAFT MATCHES NOTHING (flow-definition-versioning: only a
+			// flow's published version contributes trigger records). The index
+			// already enforces that — it is derived from the published graph —
+			// but the column fallback is not: an enabled flow that was never
+			// published has zero index rows, so it is "unrepresented", its
+			// columns match, and `queue()` then refuses it with "no published
+			// version". Left in the list, that refusal used to abort the whole
+			// fan-out for every healthy flow on the same event. Refused OUT
+			// LOUD here instead, and only on the fallback path: legacy flows
+			// were all given a published version 1 by the backfill, so the
+			// only thing this filters is a flow that could never have run.
+			if ($this->hasPublishedVersion(uuid: $uuid) === false) {
+				$this->logger->warning(
+					message: '[FlowLocator] Flow "' . $uuid . '" matched trigger "' . $event
+						. '" through its columns but has no published version, so it cannot back a run.'
+						. ' Publish a version to make it fire.',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $uuid]
+				);
+				continue;
+			}
+
 			$matched[$uuid] = $flow;
-		}
+		}//end foreach
 
 		// The index answers in UUIDs; the dispatch check needs the row. These
 		// are the flows whose NODES want this event.
@@ -258,6 +282,34 @@ class FlowLocator {
 
 		return $this->dispatchableUuids(matched: $matched, event: $event);
 	}//end flowsForTrigger()
+
+	/**
+	 * Whether a flow has a published version to back a run.
+	 *
+	 * FAIL OPEN on an unreadable version table: silencing every fallback flow
+	 * because one lookup failed would stop the engine without a word, and
+	 * `FlowRunVersionPin` re-checks the same fact at queue time anyway — this
+	 * filter only decides whether a flow is worth OFFERING to the queue.
+	 *
+	 * @param string $uuid The flow's uuid.
+	 *
+	 * @return bool True when a published version exists, or when the answer is unknowable.
+	 *
+	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md#requirement-trigger-matching-answers-which-flow-the-queue-path-answers-which-version
+	 */
+	private function hasPublishedVersion(string $uuid): bool {
+		try {
+			return $this->versions->findPublished(flowUuid: $uuid) !== null;
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[FlowLocator] Could not read the published version of flow "' . $uuid . '": '
+					. $e->getMessage() . '. Keeping it in the match; the queue path decides.',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $uuid]
+			);
+
+			return true;
+		}
+	}//end hasPublishedVersion()
 
 	/**
 	 * The uuids of the matched flows that can actually be dispatched.

@@ -40,6 +40,8 @@ use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
+use OCA\OpenRegister\Db\FlowVersion;
+use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCA\OpenRegister\Service\Flow\FlowAdoptionRefused;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
@@ -195,11 +197,17 @@ class FlowAdoptionTest extends TestCase {
 			$flowMapper->method('findByTrigger')->willReturn([]);
 			$flowMapper->method('findByUuid')->willReturn($case['flow']);
 
+			$publishedVersion = new FlowVersion();
+			$publishedVersion->setStatus(FlowVersion::STATUS_PUBLISHED);
+			$versionMapper = $this->createMock(FlowVersionMapper::class);
+			$versionMapper->method('findPublished')->willReturn($publishedVersion);
+
 			$locator = new FlowLocator(
 				$flowMapper,
 				$triggerMapper,
 				$this->createMock(ObjectService::class),
-				new NullLogger()
+				new NullLogger(),
+				$versionMapper
 			);
 
 			$this->assertSame(

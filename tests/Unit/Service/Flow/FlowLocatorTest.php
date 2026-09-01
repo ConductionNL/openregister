@@ -12,6 +12,8 @@ namespace Unit\Service\Flow;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
+use OCA\OpenRegister\Db\FlowVersion;
+use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -63,9 +65,27 @@ class FlowLocatorTest extends TestCase {
 			$mapper,
 			$this->createMock(FlowTriggerMapper::class),
 			$this->createMock(ObjectService::class),
-			new \Psr\Log\NullLogger()
+			new \Psr\Log\NullLogger(),
+			$this->publishedVersions()
 		);
 	}//end locator()
+
+	/**
+	 * A version store where every flow has a published version — the shape a
+	 * backfilled instance has, so the column-path tests stay about columns.
+	 *
+	 * @return FlowVersionMapper The mapped double.
+	 */
+	private function publishedVersions(): FlowVersionMapper {
+		$published = new FlowVersion();
+		$published->setStatus(FlowVersion::STATUS_PUBLISHED);
+		$published->setVersion(1);
+
+		$versions = $this->createMock(FlowVersionMapper::class);
+		$versions->method('findPublished')->willReturn($published);
+
+		return $versions;
+	}//end publishedVersions()
 
 	public function testResolveFlowReturnsTheDocument(): void {
 		$mapper = $this->createMock(FlowMapper::class);

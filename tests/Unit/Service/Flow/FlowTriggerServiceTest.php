@@ -107,6 +107,52 @@ class FlowTriggerServiceTest extends TestCase {
 	}//end testAnEventWithNoWiredFlowQueuesNothing()
 
 	/**
+	 * 🔴 ONE BAD FLOW MUST NOT SILENCE ITS SIBLINGS. An enabled-but-unpublished
+	 * flow on an event is refused by the queue path with "no published
+	 * version" — a fact about THAT flow. Thrown out of the fan-out loop it
+	 * aborted the whole event: the healthy flow wired to the same event queued
+	 * nothing, and the case it should have picked up got no run. Per-flow
+	 * isolation: the refusal is logged and skipped, the rest queue.
+	 */
+	public function testOneUnpublishedFlowDoesNotAbortTheFanOutForItsSiblings(): void {
+		$queued = [];
+		$runner = $this->createMock(FlowRunService::class);
+		$runner->method('queue')->willReturnCallback(
+			function (string $flowId) use (&$queued): FlowRun {
+				if ($flowId === 'unpublished') {
+					throw new \OCA\OpenRegister\Service\Flow\FlowLifecycleRefused(
+						reason: \OCA\OpenRegister\Service\Flow\FlowLifecycleRefused::REASON_NO_PUBLISHED_VERSION,
+						flowId: $flowId,
+						state: null
+					);
+				}
+
+				$queued[] = $flowId;
+				$run = new FlowRun();
+				$run->setUuid('run-' . $flowId);
+				$run->setFlowId($flowId);
+
+				return $run;
+			}
+		);
+
+		$service = new FlowTriggerService(
+			$this->locatorReturning(['unpublished', 'healthy']),
+			$runner,
+			new \Psr\Log\NullLogger()
+		);
+
+		$count = $service->fire(
+			event: 'object.created',
+			subject: ['uuid' => 'u1', 'register' => 'dossiq', 'schema' => 'case'],
+			user: 'alice'
+		);
+
+		$this->assertSame(1, $count, 'the healthy flow still queues');
+		$this->assertSame(['healthy'], $queued, 'the refused flow is skipped, not fatal');
+	}//end testOneUnpublishedFlowDoesNotAbortTheFanOutForItsSiblings()
+
+	/**
 	 * A trigger runs inside a user's save; a failure to queue must be swallowed,
 	 * never thrown into that action.
 	 */
