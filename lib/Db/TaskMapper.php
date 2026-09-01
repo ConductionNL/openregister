@@ -37,17 +37,11 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use InvalidArgumentException;
-<<<<<<< HEAD
 use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
-=======
-use OCP\AppFramework\Db\Entity;
-use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
->>>>>>> origin/development
 use OCP\IDBConnection;
 
 /**
@@ -62,13 +56,10 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<Task>
  *
  * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
-<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Two over the threshold
  * since the terminality announcement (flow-business-timers D-9) joined both
  * write paths; the branches are the inbox predicates, which are the tenant
  * boundary, plus that one dispatch.
-=======
->>>>>>> origin/development
  */
 class TaskMapper extends QBMapper {
 
@@ -76,7 +67,6 @@ class TaskMapper extends QBMapper {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db The database connection.
-<<<<<<< HEAD
 	 * @param IEventDispatcher|null $dispatcher Publishes task terminality
 	 *                                          ({@see TaskTerminalEvent}) so
 	 *                                          business timers are cancelled in
@@ -88,10 +78,6 @@ class TaskMapper extends QBMapper {
 		IDBConnection $db,
 		private readonly ?IEventDispatcher $dispatcher = null,
 	) {
-=======
-	 */
-	public function __construct(IDBConnection $db) {
->>>>>>> origin/development
 		parent::__construct(db: $db, tableName: 'openregister_tasks', entityClass: Task::class);
 
 	}//end __construct()
@@ -133,7 +119,6 @@ class TaskMapper extends QBMapper {
 
 		$entity->setUpdated(new DateTime());
 
-<<<<<<< HEAD
 		$updated = parent::update(entity: $entity);
 		$this->announceTerminality(task: $updated);
 
@@ -171,12 +156,6 @@ class TaskMapper extends QBMapper {
 	}//end announceTerminality()
 
 	/**
-=======
-		return parent::update(entity: $entity);
-	}//end update()
-
-	/**
->>>>>>> origin/development
 	 * Find a task by its public uuid.
 	 *
 	 * @param string $uuid The task uuid.
@@ -239,16 +218,12 @@ class TaskMapper extends QBMapper {
 		$qb->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
 			->andWhere($qb->expr()->eq('is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)));
 
-<<<<<<< HEAD
 		$won = ($qb->executeStatement() === 1);
 		if ($won === true) {
 			$this->announceTerminality(task: $task);
 		}
 
 		return $won;
-=======
-		return $qb->executeStatement() === 1;
->>>>>>> origin/development
 	}//end updateIfOpen()
 
 	/**
