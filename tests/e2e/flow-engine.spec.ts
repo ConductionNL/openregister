@@ -656,7 +656,7 @@ test.describe('the Flows page', () => {
 
 		// `networkidle` never settles on Nextcloud (ADR-074 rule 4) — the
 		// readiness signal is the row/name assertion that follows each goto.
-		await page.goto(`/apps/openregister/#${FlowsIndex}`, {
+		await page.goto(`/apps/openregister${FlowsIndex}`, {
 			waitUntil: 'domcontentloaded',
 		})
 
@@ -664,7 +664,7 @@ test.describe('the Flows page', () => {
 			timeout: 15000,
 		})
 
-		await page.goto(`/apps/openregister/#${FlowDetailPage(flow.id)}`, {
+		await page.goto(`/apps/openregister${FlowDetailPage(flow.id)}`, {
 			waitUntil: 'domcontentloaded',
 		})
 
@@ -692,7 +692,7 @@ test.describe('the Flows page', () => {
 			nodes: [{ id: 'end1', type: 'openregister.end', config: {} }],
 		})
 
-		await page.goto(`/apps/openregister/#${FlowDetailPage(flow.id)}`, {
+		await page.goto(`/apps/openregister${FlowDetailPage(flow.id)}`, {
 			waitUntil: 'domcontentloaded',
 		})
 
@@ -742,7 +742,7 @@ test.describe('the Flows page', () => {
 			{ publish: false },
 		)
 
-		await page.goto(`/apps/openregister/#${FlowDetailPage(flow.id)}`, {
+		await page.goto(`/apps/openregister${FlowDetailPage(flow.id)}`, {
 			waitUntil: 'domcontentloaded',
 		})
 
@@ -772,7 +772,7 @@ test.describe('the Flows page', () => {
 	test('the list is an ordinary index page with a New flow action (ADR-096)', async ({
 		page,
 	}) => {
-		await page.goto(`/apps/openregister/#${FlowsIndex}`, {
+		await page.goto(`/apps/openregister${FlowsIndex}`, {
 			waitUntil: 'domcontentloaded',
 		})
 
@@ -789,7 +789,7 @@ test.describe('the Flows page', () => {
 	test('a new flow is the SAME editor holding only a starting point', async ({
 		page,
 	}) => {
-		await page.goto(`/apps/openregister/#${FlowDetailPage('new')}`, {
+		await page.goto(`/apps/openregister${FlowDetailPage('new')}`, {
 			waitUntil: 'domcontentloaded',
 		})
 
@@ -823,7 +823,7 @@ test.describe('the Flows page', () => {
 		page,
 		request,
 	}) => {
-		await page.goto(`/apps/openregister/#${FlowDetailPage('new')}`, {
+		await page.goto(`/apps/openregister${FlowDetailPage('new')}`, {
 			waitUntil: 'domcontentloaded',
 		})
 
@@ -868,7 +868,7 @@ test.describe('the Flows page', () => {
 
 		// `networkidle` never settles on Nextcloud (ADR-074 rule 4); the row
 		// assertion below is the real wait.
-		await page.goto(`/apps/openregister/#${FlowsIndex}`, {
+		await page.goto(`/apps/openregister${FlowsIndex}`, {
 			waitUntil: 'domcontentloaded',
 		})
 

@@ -34,6 +34,6 @@ test.describe('Open Register — DSAR cases visual baseline', () => {
 			)
 		}
 		// The AVG view opens on the Activities tab; the Cases tab is client-side.
-		await shootSurface(page, `${APP}/#/avg`, 'avg-cases.png')
+		await shootSurface(page, `${APP}/avg`, 'avg-cases.png')
 	})
 })

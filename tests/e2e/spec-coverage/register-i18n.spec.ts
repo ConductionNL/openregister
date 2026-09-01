@@ -175,7 +175,7 @@ test.describe('register-i18n — register language management UI', () => {
 		if (!fs.existsSync(STORAGE_STATE)) test.skip(true, 'no auth state')
 		if (!registerId) test.skip(true, 'no test register')
 
-		await page.goto(`/index.php/apps/openregister/#/registers`, {
+		await page.goto(`/index.php/apps/openregister/registers`, {
 			waitUntil: 'domcontentloaded',
 		})
 		// Wait for the app to mount
@@ -311,7 +311,7 @@ test.describe('register-i18n — register language management UI', () => {
 			})
 
 		await page
-			.goto(`/index.php/apps/openregister/#/registers`, {
+			.goto(`/index.php/apps/openregister/registers`, {
 				waitUntil: 'domcontentloaded',
 			})
 
@@ -340,7 +340,7 @@ test.describe('register-i18n — register language management UI', () => {
 		if (!fs.existsSync(STORAGE_STATE)) test.skip(true, 'no auth state')
 
 		// Navigate to registers
-		await page.goto(`/index.php/apps/openregister/#/registers`, {
+		await page.goto(`/index.php/apps/openregister/registers`, {
 			waitUntil: 'domcontentloaded',
 		})
 		await expect(page.locator('main, .app-content').first()).toBeVisible({
@@ -444,7 +444,7 @@ test.describe('register-i18n — register language management UI', () => {
 	}) => {
 		if (!fs.existsSync(STORAGE_STATE)) test.skip(true, 'no auth state')
 
-		await page.goto(`/index.php/apps/openregister/#/registers`, {
+		await page.goto(`/index.php/apps/openregister/registers`, {
 			waitUntil: 'domcontentloaded',
 		})
 		await expect(page.locator('main, .app-content').first()).toBeVisible({

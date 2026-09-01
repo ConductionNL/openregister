@@ -83,7 +83,7 @@ async function deleteTestObject(
 async function gotoApp(page: Page, subpath: string): Promise<void> {
 	// HASH form — the router runs in hash mode (src/main.js); path-form
 	// deep-links render the dashboard instead of the target page.
-	await page.goto(`/index.php/apps/openregister/#${subpath}`, {
+	await page.goto(`/index.php/apps/openregister${subpath}`, {
 		waitUntil: 'domcontentloaded',
 	})
 	await page.waitForSelector('#header, header.header-appcontainer', {
@@ -151,7 +151,7 @@ test.describe('entity-management-modals — copy-single-object-names-the-duplica
 		// register+schema pre-selected so the route watcher triggers
 		// applyQueryParamsFromRoute → performSearchWithFacets immediately.
 		await page.goto(
-			`/index.php/apps/openregister/#/tables?register=${REGISTER_ID}&schema=${SCHEMA_ID}`,
+			`/index.php/apps/openregister/tables?register=${REGISTER_ID}&schema=${SCHEMA_ID}`,
 			{ waitUntil: 'domcontentloaded' },
 		)
 		await page.waitForSelector('#header, header.header-appcontainer', {

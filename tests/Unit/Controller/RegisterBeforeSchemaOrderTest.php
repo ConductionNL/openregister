@@ -75,8 +75,19 @@ class RegisterBeforeSchemaOrderTest extends TestCase {
 		$source = file_get_contents($file);
 		$this->assertIsString($source, 'controller source is readable');
 
+		// Matches ANY receiver, not just `$this->objectService`. The first pass
+		// of this guard pinned the receiver and so missed
+		// `ObjectsController::contracts()` and `::used()`, which call the same
+		// two setters on an INJECTED `$objectService` parameter and with named
+		// arguments. A guard narrower than the defect finds only the instances
+		// you already fixed.
+		//
+		// Entity setters (`$objectEntity->setSchema()`, `$auditTrail->…`) share
+		// the method names and are NOT this defect, so the receiver must repeat
+		// between the two calls: the bug is one object being configured in the
+		// wrong order, not two unrelated writes.
 		$inverted = preg_match_all(
-			'/setSchema\(\s*[^)]*\s*\)\s*;\s*\n\s*\$this->objectService->setRegister\(/',
+			'/(\$[A-Za-z_>\-\[\]\'\"\w]*?)->setSchema\((?:schema:\s*)?[^)]*\)\s*;\s*\n\s*\1->setRegister\(/',
 			$source
 		);
 

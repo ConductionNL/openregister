@@ -4,13 +4,15 @@
  * Cancellation propagation for business timers: a terminal subject cancels
  * its open timers.
  *
- * Listens for {@see TaskTerminalEvent} (dispatched from TaskMapper inside the
- * verb's transaction) and {@see FlowRunTerminalEvent} (dispatched from
- * FlowRunMapper the same way) and CANCELS — never deletes — every armed or
- * suspended timer bound to the subject, with the reason recorded (design
- * D-9). Because both events fire inside the write that made the subject
- * terminal, the cancellation lands in the same operation: there is no window
- * in which an escalation goes out about work that is already done.
+ * Listens for {@see TaskTerminalEvent} (dispatched by TaskService right after
+ * the transaction that made the task terminal commits — the platform's one
+ * terminality seam, shared with the user-task node's run continuation) and
+ * {@see FlowRunTerminalEvent} (dispatched from FlowRunMapper inside the run's
+ * terminal write) and CANCELS — never deletes — every armed or suspended
+ * timer bound to the subject, with the reason recorded (design D-9). The
+ * cancellation lands in the same request as the terminal write, before any
+ * 300-second sweep can run; the crash window between commit and listener is
+ * covered by the invariant repair step, which counts orphans.
  *
  * Idempotent by construction: the cancel reads only open timers, so observing
  * terminality twice cancels nothing twice. A failure is logged, not rethrown:
@@ -76,18 +78,20 @@ class FlowTimerSubjectTerminalListener implements IEventListener {
 	public function handle(Event $event): void {
 		try {
 			if ($event instanceof TaskTerminalEvent === true) {
+				$task = $event->getTask();
+				$uuid = (string)$task->getUuid();
 				$cancelled = $this->timers->cancelForSubject(
 					subjectType: 'task',
-					subjectUuid: $event->getTaskUuid(),
+					subjectUuid: $uuid,
 					reason: sprintf(
 						"Task '%s' reached terminal state '%s' (outcome '%s').",
-						$event->getTaskUuid(),
-						$event->getState(),
-						(string)$event->getOutcome()
+						$uuid,
+						(string)$task->getState(),
+						(string)$task->getOutcome()
 					),
-					actor: sprintf('task:%s', $event->getTaskUuid())
+					actor: sprintf('task:%s', $uuid)
 				);
-				$this->report(count: $cancelled, subject: 'task ' . $event->getTaskUuid());
+				$this->report(count: $cancelled, subject: 'task ' . $uuid);
 				return;
 			}
 
