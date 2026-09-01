@@ -462,7 +462,6 @@ class TaskMapper extends QBMapper {
 		$this->applyScope(qb: $qb, criteria: $criteria);
 		$this->applyVisibility(qb: $qb, criteria: $criteria);
 		$this->applyFilters(qb: $qb, criteria: $criteria);
-<<<<<<< HEAD
 		$this->applyExternalExclusion(qb: $qb, criteria: $criteria);
 	}//end applyInboxPredicates()
 
@@ -564,11 +563,6 @@ class TaskMapper extends QBMapper {
 	}//end applyPartyPredicates()
 
 	/**
-=======
-	}//end applyInboxPredicates()
-
-	/**
->>>>>>> origin/development
 	 * The scope half of the predicate: which relationship the list is about.
 	 *
 	 * @param IQueryBuilder $qb The query under construction.

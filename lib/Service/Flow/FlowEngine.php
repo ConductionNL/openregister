@@ -719,7 +719,6 @@ class FlowEngine {
 	}//end run()
 
 	/**
-<<<<<<< HEAD
 	 * The per-walk transition ceiling a caller put on the context, if any.
 	 *
 	 * Only a positive integer counts. Zero, a negative number or junk is not a
@@ -816,7 +815,8 @@ class FlowEngine {
 			byTransition: $transition->getName()
 		);
 	}//end pruneUntakenExits()
-=======
+
+	/**
 	 * The per-stream walk: round-robin over advanceable streams, a claim before
 	 * every firing, a locked delta commit after it, and suspension scoped to
 	 * the stream that raised it.
@@ -1202,7 +1202,6 @@ class FlowEngine {
 
 		return [$placeItems, $log];
 	}//end fireOnStream()
->>>>>>> origin/development
 
 	/**
 	 * Override where a flow starts, for "run from here".
