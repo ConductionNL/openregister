@@ -71,6 +71,21 @@ class TaskAuthorizationService {
 	];
 
 	/**
+	 * Verbs no caller may run on an external task (flow-portal-task).
+	 *
+	 * @var array<int, string>
+	 */
+	private const REFUSED_FOR_EXTERNAL = ['claim', 'unclaim', 'delegate', 'offer', 'assign', 'reassign'];
+
+	/**
+	 * Verbs that ANSWER a task, admitted on an external task to the matched
+	 * party alone.
+	 *
+	 * @var array<int, string>
+	 */
+	private const ANSWERING_VERBS = ['complete', 'resolve', 'checklist'];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IGroupManager|null $groupManager Resolves group membership, role
@@ -123,6 +138,15 @@ class TaskAuthorizationService {
 			throw new TaskAccessDeniedException(
 				message: sprintf("Verb '%s' denied: performer type '%s' is unknown, so authorization cannot be determined.", $verb, $performerType)
 			);
+		}
+
+		// An EXTERNAL task is decided by its own rule set, BEFORE the
+		// administrator bypass: the matched party is the only identity that
+		// may answer, and "an administrator acting through the seam" is one
+		// of the callers the spec names as denied.
+		if ($performerType === Task::PERFORMER_EXTERNAL) {
+			$this->assertExternal(verb: $verb, task: $task, uid: $uid);
+			return;
 		}
 
 		if ($this->isAdmin(uid: $uid) === true) {
@@ -238,6 +262,79 @@ class TaskAuthorizationService {
 			return false;
 		}
 	}//end isAdmin()
+
+	/**
+	 * The rule set of an external (portal party) task.
+	 *
+	 * Three groups of verbs, decided in this order. The pooling and mandate
+	 * verbs (`claim`, `unclaim`, `delegate`, and the assignment verbs
+	 * `offer`, `assign`, `reassign` that would move the frozen match) are
+	 * REFUSED for everyone, naming the performer type: there is no candidate
+	 * pool to claim from and no mandate model for a party outside the
+	 * instance, and the frozen match is corrected by cancel or re-ask, never
+	 * by moving the reference (design D-3). The answering verbs (`complete`,
+	 * `resolve`, `checklist`) admit exactly ONE identity: the stored party
+	 * reference, compared as a whole, with no administrator bypass and no
+	 * on-behalf path. The requester's verb (`cancel`) keeps its ordinary
+	 * rule, administrator included, because withdrawing an ask is the
+	 * caseworker's act, not an answer.
+	 *
+	 * @param string $verb The verb being attempted.
+	 * @param Task $task The external task.
+	 * @param string $uid The acting identity (a party reference, or a uid).
+	 *
+	 * @return void
+	 *
+	 * @throws TaskAccessDeniedException When denied, or undeterminable.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-tasks/spec.md#requirement-the-external-performer-type-is-portal-scoped-and-never-pooled
+	 */
+	private function assertExternal(string $verb, Task $task, string $uid): void {
+		if ($verb === 'create') {
+			return;
+		}
+
+		if (in_array($verb, self::REFUSED_FOR_EXTERNAL, true) === true) {
+			throw new TaskAccessDeniedException(
+				message: sprintf(
+					"Verb '%s' refused: performer type '%s' has no candidate pool and no mandate model; cancel or re-ask instead.",
+					$verb,
+					Task::PERFORMER_EXTERNAL
+				)
+			);
+		}
+
+		if (in_array($verb, self::ANSWERING_VERBS, true) === true) {
+			$party = trim((string)$task->getAssignee());
+			// Fail closed on every undeterminable shape: no stored reference,
+			// a reference that is not a party reference, or a caller that is
+			// not one. Only a whole-string match of two party references admits.
+			if ($party === ''
+				|| str_starts_with($party, Task::EXTERNAL_PARTY_PREFIX) === false
+				|| str_starts_with($uid, Task::EXTERNAL_PARTY_PREFIX) === false
+				|| hash_equals($party, $uid) === false
+			) {
+				throw new TaskAccessDeniedException(
+					message: sprintf("Verb '%s' denied: only the matched portal subject may answer an external task.", $verb)
+				);
+			}
+
+			return;
+		}
+
+		if ($verb === 'cancel') {
+			if ($this->isAdmin(uid: $uid) === true) {
+				return;
+			}
+
+			$this->assertRequester(verb: $verb, task: $task, uid: $uid);
+			return;
+		}
+
+		throw new TaskAccessDeniedException(
+			message: sprintf("Verb '%s' denied: no authorization rule exists for it on performer type '%s'.", $verb, Task::PERFORMER_EXTERNAL)
+		);
+	}//end assertExternal()
 
 	/**
 	 * The caller must be the task's current assignee.

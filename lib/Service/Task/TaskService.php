@@ -451,19 +451,36 @@ class TaskService {
 	 * @param string|null $resultText Free-text result.
 	 * @param string|null $comment Completion comment.
 	 * @param string|null $actor The completing identity — must be the assignee.
+	 * @param array<string, mixed>|null $responses The submitted answer fields,
+	 *                                             when the completion carries
+	 *                                             any (a portal task's form).
+	 * @param array<int, array<string, mixed>>|null $evidence References to the
+	 *                                                       files ALREADY stored
+	 *                                                       for this completion;
+	 *                                                       never bytes.
 	 *
 	 * @return Task The completed task.
 	 *
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	public function complete(string $uuid, string $outcome, ?string $resultText, ?string $comment, ?string $actor): Task {
+	public function complete(
+		string $uuid,
+		string $outcome,
+		?string $resultText,
+		?string $comment,
+		?string $actor,
+		?array $responses = null,
+		?array $evidence = null,
+	): Task {
 		return $this->completeInternal(
 			verb: 'complete',
 			uuid: $uuid,
 			outcome: $outcome,
 			resultText: $resultText,
 			comment: $comment,
-			actor: $actor
+			actor: $actor,
+			responses: $responses,
+			evidence: $evidence
 		);
 	}//end complete()
 
@@ -661,6 +678,60 @@ class TaskService {
 	}//end get()
 
 	/**
+	 * Resolve, authorize and audit a verb's task WITHOUT running the verb.
+	 *
+	 * For a caller that must do work between the authorization and the
+	 * verb: the portal completion stores uploads on the case object before it
+	 * records the completion, and a stranger must be refused, and the refusal
+	 * audited, BEFORE any byte lands on a case that is not theirs. Same three
+	 * checks in the same order as every verb (exists, authorized, open), so a
+	 * denial here reads in the audit exactly as a denial from the verb would.
+	 *
+	 * @param string $verb The verb about to be attempted.
+	 * @param string $uuid The task uuid.
+	 * @param string|null $actor The acting identity.
+	 *
+	 * @return Task The open, authorized task.
+	 *
+	 * @throws TaskAccessDeniedException When authorization denies (audited).
+	 * @throws TaskConflictException When the task is already terminal.
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such task exists.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-only-the-matched-party-completes-fail-closed
+	 */
+	public function openFor(string $verb, string $uuid, ?string $actor): Task {
+		return $this->openTaskFor(verb: $verb, uuid: $uuid, actor: $actor);
+	}//end openFor()
+
+	/**
+	 * Append an audit entry that records a FACT about the task without
+	 * moving it: the party a portal task was matched to, and the role it was
+	 * matched from. The state is unchanged; only the trail grows.
+	 *
+	 * @param string $uuid The task uuid.
+	 * @param string $action The audited action name.
+	 * @param string|null $actor The acting identity.
+	 * @param string $reason What is being recorded.
+	 *
+	 * @return Task The task, unchanged.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such task exists.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-matched-party-comes-from-the-case-and-is-frozen-at-creation
+	 */
+	public function record(string $uuid, string $action, ?string $actor, string $reason): Task {
+		$task = $this->tasks->findByUuid(uuid: $uuid);
+
+		return $this->transactional(
+			mutation: function () use ($task, $action, $actor, $reason): Task {
+				$this->appendAudit(task: $task, action: $action, actor: $actor, reason: $reason);
+
+				return $task;
+			}
+		);
+	}//end record()
+
+	/**
 	 * The audit trail of a task, oldest first.
 	 *
 	 * @param string $uuid The task uuid.
@@ -717,6 +788,8 @@ class TaskService {
 	 * @param string|null $resultText Free-text result.
 	 * @param string|null $comment Completion comment.
 	 * @param string|null $actor The acting identity.
+	 * @param array<string, mixed>|null $responses Submitted answer fields, when any.
+	 * @param array<int, array<string, mixed>>|null $evidence Stored file references, when any.
 	 *
 	 * @return Task The completed task.
 	 *
@@ -731,6 +804,8 @@ class TaskService {
 		?string $resultText,
 		?string $comment,
 		?string $actor,
+		?array $responses = null,
+		?array $evidence = null,
 	): Task {
 		$task = $this->openTaskFor(verb: $verb, uuid: $uuid, actor: $actor);
 
@@ -743,10 +818,18 @@ class TaskService {
 		}
 
 		return $this->transactional(
-			mutation: function () use ($task, $outcome, $resultText, $comment, $actor, $verb): Task {
+			mutation: function () use ($task, $outcome, $resultText, $comment, $actor, $verb, $responses, $evidence): Task {
 				$task->setOutcome($outcome);
 				$task->setResultText($resultText);
 				$task->setComment($comment);
+				if ($responses !== null) {
+					$task->setResponses($responses);
+				}
+
+				if ($evidence !== null) {
+					$task->setEvidence($evidence);
+				}
+
 				$task->setCompletedAt(new DateTime());
 				$task->setCompletedBy($actor);
 				$this->applyState(task: $task, state: Task::STATE_COMPLETED, action: $verb);
