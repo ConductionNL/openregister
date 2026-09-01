@@ -2,7 +2,7 @@
 
 ## 1. Storage
 
-- [ ] 1.1 Migration: create `openregister_task_sequences` (`uuid`,
+- [x] 1.1 Migration: create `openregister_task_sequences` (`uuid`,
       `template_id`, `template_version`, `template_snapshot`,
       `anchor_object_uuid`, `register_id`, `schema_id`, `chain_key`,
       `requester_id`, `resolved_tier`, `position_cursor`, `status`, `outcome`,
@@ -13,7 +13,7 @@
       `openregister_approval_steps`; add `correlation_key` to
       `openregister_flow_runs` with an index on `(status, correlation_key)`.
       No table is dropped.
-- [ ] 1.2 `lib/Db/TaskSequence.php` + `TaskSequenceMapper` (find by uuid, find
+- [x] 1.2 `lib/Db/TaskSequence.php` + `TaskSequenceMapper` (find by uuid, find
       the running sequence for an anchor+template, list an anchor's sequences
       newest-first, list positions in ordinal order). Ordinals are stable and
       unique within a sequence — enforced by a unique index, not by the
@@ -22,7 +22,7 @@
 
 ## 2. The sequence
 
-- [ ] 2.1 `lib/Service/Task/TaskSequenceService.php`: provision (create every
+- [x] 2.1 `lib/Service/Task/TaskSequenceService.php`: provision (create every
       position, enable only the first, freeze `template_snapshot` and
       `resolved_tier`), advance (enable the next position in the SAME request
       as the completing decision — the behaviour at
@@ -31,25 +31,25 @@
       rejecting position), and terminate. Each verb goes through
       `TaskService`'s authorized lifecycle verbs; none writes a task row
       directly.
-- [ ] 2.2 Sequence authorization: separation of duties resolved from the
+- [x] 2.2 Sequence authorization: separation of duties resolved from the
       chain's declarative entry, defaulting to ON when the entry exists
       (`ApprovalService.php:371-397`), evaluated against the acting identity
       AND the `on_behalf_of` identity, refused BEFORE the performer check so
       the reason is honest (`ApprovalService.php:165-168`); rejecting outcomes
       require a comment.
-- [ ] 2.3 `lib/Event/TaskSequenceCompletedEvent.php`, dispatched at the moment
+- [x] 2.3 `lib/Event/TaskSequenceCompletedEvent.php`, dispatched at the moment
       the retired `ApprovalStepCompletedEvent` was — the final position
       completing with an approving outcome — carrying sequence, final task,
       decider and resolved approving status.
 
 ## 3. The declarative surface, re-pointed
 
-- [ ] 3.1 `ApprovalChainAnnotationInstaller` compiles
+- [x] 3.1 `ApprovalChainAnnotationInstaller` compiles
       `x-openregister-approval-chains` into a task TEMPLATE instead of an
       `ApprovalChain` row (`:134-175`), idempotent so a re-save produces no
       second template and no new template version. The annotation's declared
       shape and its vocabulary registration are unchanged.
-- [ ] 3.2 `ApprovalChainGateListener` asks the SEQUENCE whether the approval is
+- [x] 3.2 `ApprovalChainGateListener` asks the SEQUENCE whether the approval is
       complete instead of scanning step rows (`:225-244`); keeps
       `approval-chain-pending` and `approval-chain-misconfigured` verbatim;
       keeps failing closed on an unprovisionable chain (`:200-206`); CLOSES a
@@ -57,14 +57,14 @@
       (`:232`); freezes the amount tier at provisioning
       (`resolveStepsOverride()`, `:277-300`) so a mid-cycle amount edit cannot
       re-route a running approval.
-- [ ] 3.3 `ApprovalChainAdvanceListener` subscribes to
+- [x] 3.3 `ApprovalChainAdvanceListener` subscribes to
       `TaskSequenceCompletedEvent`; the `onApprove: advanceTransition` lookup
       and the fail-soft `TransitionEngine::transition()` call (`:110-121`) are
       otherwise unchanged.
 
 ## 4. Retirement
 
-- [ ] 4.1 Delete `lib/Db/ApprovalChain.php`, `ApprovalChainMapper.php`,
+- [x] 4.1 Delete `lib/Db/ApprovalChain.php`, `ApprovalChainMapper.php`,
       `ApprovalStep.php`, `ApprovalStepMapper.php`,
       `lib/Service/ApprovalService.php`,
       `lib/Controller/ApprovalController.php`, the four
@@ -72,18 +72,18 @@
       `appinfo/routes.php:1231-1240`. No facade, alias or deprecation shim.
       Assert the removal left no orphan route entry, service registration or
       listener registration.
-- [ ] 4.2 Delete `src/components/workflow/ApprovalChainPanel.vue` and
+- [x] 4.2 Delete `src/components/workflow/ApprovalChainPanel.vue` and
       `ApprovalStepList.vue`; `src/views/schemas/SchemaWorkflowTab.vue:42`
       mounts the task-sequence panel instead. Deciding happens in the task
       inbox, not in a schema tab.
-- [ ] 4.3 Publish the event replacement mapping as migration documentation:
+- [x] 4.3 Publish the event replacement mapping as migration documentation:
       per retired event, the replacement, the replacement for EVERY field it
       carried, the ordering guarantee, and any field with no replacement named
       as such. Referenced by `filinq: migrate-signing-to-or-tasks`.
 
 ## 5. Correlation
 
-- [ ] 5.1 `correlationKey` added to `AwaitSignalNode::configKeys()`
+- [x] 5.1 `correlationKey` added to `AwaitSignalNode::configKeys()`
       (`lib/Service/Flow/Nodes/AwaitSignalNode.php:180`) and its config form,
       resolved from items/context and written to the run's indexed
       `correlation_key` at suspension; one new route beside
@@ -94,7 +94,7 @@
 
 ## 6. Data migration
 
-- [ ] 6.1 Repair step: chains → templates; each `(chain_id, object_uuid)` →
+- [x] 6.1 Repair step: chains → templates; each `(chain_id, object_uuid)` →
       one sequence; each step → a task at its `stepOrder` with `role` as
       candidate group and performer type `group`, `requesterId` as sequence
       requester, `created` preserved, `pending` → enabled, `waiting` →
@@ -102,14 +102,14 @@
       migrated task-audit entry attributed to the ORIGINAL decider with the
       original comment and time. Reconciliation columns written on both sides;
       every stage guarded on them so a second run changes nothing.
-- [ ] 6.2 In-migration verification that FAILS LOUDLY: every non-terminal step
+- [x] 6.2 In-migration verification that FAILS LOUDLY: every non-terminal step
       has exactly one non-terminal task; every chain has exactly one template;
       no (object, template) has two running sequences; every migrated task's
       ordinal equals its step's `stepOrder`; enabled-task count equals the
       count of steps that were `pending`. Any mismatch names chain, object and
       step and stops the migration. The cutover timestamp is recorded where an
       operator will find it.
-- [ ] 6.3 Reverse repair step for the post-cutover rollback path: write
+- [x] 6.3 Reverse repair step for the post-cutover rollback path: write
       migrated tasks' decisions back onto their originating step rows for the
       fields the legacy schema can express, and REPORT the fields it cannot
       (performer type, on-behalf-of, mandate, per-entry audit). Dropping the
@@ -118,7 +118,7 @@
 
 ## 7. Contracts
 
-- [ ] 7.1 openconnector HITL retirement inventory as a checked-in fixture with
+- [x] 7.1 openconnector HITL retirement inventory as a checked-in fixture with
       a test asserting it covers every property of
       `../openconnector/lib/Settings/register.d/hitl-approval-rule-action.json`:
       approver group, requester, comment, `expiresAt` + `onTimeout` (to
@@ -126,7 +126,7 @@
       outcome, with `skip` given the behaviour its enum always promised and
       `../openconnector/lib/Service/ApprovalService.php:662` never gave it),
       and `consumedAt`. A property with no named home fails the test.
-- [ ] 7.2 The leaf migration contract as the spec's enforceable rules, handed
+- [x] 7.2 The leaf migration contract as the spec's enforceable rules, handed
       to the hydra-gates anti-pattern gate: no home-grown step engine, no own
       approver-group resolution, no stored `overdue`, no schema mirroring
       flow-definition or task fields, and a hard finding for any call to a
@@ -137,14 +137,14 @@
 
 ## 8. Tests
 
-- [ ] 8.1 Sequence, gate and correlation tests: one position enabled at a
+- [x] 8.1 Sequence, gate and correlation tests: one position enabled at a
       time; advance inside the completing request; rejection terminating every
       remaining task; rejection without a comment refused; a delegated
       self-approval refused; a frozen tier surviving a mid-cycle amount edit;
       a rejected cycle still readable after resubmission; and the four
       correlation cases (hit, ambiguous, unmatched-and-not-buffered, cannot
       decide a user task).
-- [ ] 8.2 Migration and regression: the repair over a seeded database with
+- [x] 8.2 Migration and regression: the repair over a seeded database with
       in-flight, rejected and fully decided chains, run twice with identical
       results; verification failing loudly on a corrupted fixture; the reverse
       repair reporting what it cannot carry; and a full pass with opencatalogi

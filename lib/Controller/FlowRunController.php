@@ -702,6 +702,87 @@ class FlowRunController extends Controller {
 	}//end resume()
 
 	/**
+	 * Deliver a signal addressed by BUSINESS KEY instead of run uuid.
+	 *
+	 * The caller that knows "the vote on proposal X closed" does not know a
+	 * run uuid; an await-signal step that declared a `correlationKey` made
+	 * its suspension addressable by that key. Resolution is FAIL-CLOSED in
+	 * both directions (flow-approval-consolidation design D-7):
+	 *
+	 * - zero matches is a 404 and the signal is NOT buffered: a run that
+	 *   suspends with that key later was never the addressee
+	 * - more than one match is a 409 and wakes NOTHING: picking one is
+	 *   picking wrong half the time, silently
+	 *
+	 * The authority is exactly {@see resume()}'s — the same flow-level check
+	 * and the same recorded-assignee check, on the resolved run. A
+	 * correlated signal cannot complete, claim or advance a user task: a run
+	 * suspended on a user-task node treats any signal as a nudge, and a
+	 * nudge is not an answer.
+	 *
+	 * @param string $key The business key.
+	 *
+	 * @return JSONResponse The signalled run, 404 when unmatched, 409 when
+	 *                      ambiguous or not suspended.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @contract tests/integration/openregister-integrations.postman_collection.json
+	 *
+	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function signalByKey(string $key): JSONResponse {
+		$key = trim($key);
+		$matches = [];
+		if ($key !== '') {
+			$matches = $this->mapper->findSuspendedByCorrelationKey(correlationKey: $key);
+		}
+
+		if ($matches === []) {
+			return new JSONResponse(
+				['error' => 'No suspended run is waiting for this key. The signal was not stored.'],
+				Http::STATUS_NOT_FOUND
+			);
+		}
+
+		if (count($matches) > 1) {
+			return new JSONResponse(
+				['error' => 'More than one suspended run carries this key. Nothing was signalled; address the run by its uuid instead.'],
+				Http::STATUS_CONFLICT
+			);
+		}
+
+		$run = $matches[0];
+
+		$refusal = $this->refuseUnlessRunnable(flowId: (string)$run->getFlowId());
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$refusal = $this->refuseUnlessAssignee(run: $run);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$payload = $this->request->getParams();
+		// Routing artefacts, not part of what the signaller is telling the run.
+		unset($payload['key'], $payload['_route']);
+
+		$signalled = $this->runner->signal(run: $run, payload: $payload);
+		if ($signalled === null) {
+			return new JSONResponse(
+				['error' => 'Only a suspended run can be signalled; this one is ' . $run->getStatus() . '.'],
+				Http::STATUS_CONFLICT
+			);
+		}
+
+		return new JSONResponse($signalled->jsonSerialize());
+	}//end signalByKey()
+
+	/**
 	 * Refuse unless the caller may RUN this flow.
 	 *
 	 * WHY THE CONTROLLER AND NOT THE RESOLVER. `FlowLocator::resolveSubject()`

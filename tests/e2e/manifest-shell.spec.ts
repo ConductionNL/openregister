@@ -182,6 +182,13 @@ test.describe('openregister-app-manifest — registry dispatch', () => {
 		page,
 	}) => {
 		requireAuth()
+		// Eighteen routes, and since `feat(router): move openregister off hash
+		// routing` (#3270) each one is a full document load rather than a
+		// same-document hash change — the app boots eighteen times, not once.
+		// The default budget was sized for the cheap version and now runs out
+		// around the eleventh route, which surfaces as a teardown error
+		// ("session closed") against whichever route it happened to reach.
+		test.setTimeout(180_000)
 		// One representative route per top-level manifest destination. Each must
 		// resolve through CnPageRenderer → registry kind:"page" entry and render
 		// the app-content shell (lists may be empty against a fresh instance).

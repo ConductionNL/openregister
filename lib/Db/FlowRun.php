@@ -82,6 +82,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setResumeAt(?DateTime $resumeAt)
  * @method string|null getParentRunUuid()
  * @method void setParentRunUuid(?string $parentRunUuid)
+ * @method string|null getCorrelationKey()
+ * @method void setCorrelationKey(?string $correlationKey)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
@@ -344,6 +346,16 @@ class FlowRun extends Entity implements JsonSerializable {
 	protected ?string $parentRunUuid = null;
 
 	/**
+	 * The business key an await-signal step is waiting to be told about,
+	 * populated at suspension and cleared when the run leaves suspension
+	 * (flow-approval-consolidation design D-7). Indexed, so a signal
+	 * addressed by key resolves without a JSON scan.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $correlationKey = null;
+
+	/**
 	 * Creation timestamp.
 	 *
 	 * @var DateTime|null
@@ -381,6 +393,7 @@ class FlowRun extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'error', type: 'string');
 		$this->addType(fieldName: 'resumeAt', type: 'datetime');
 		$this->addType(fieldName: 'parentRunUuid', type: 'string');
+		$this->addType(fieldName: 'correlationKey', type: 'string');
 		$this->addType(fieldName: 'created', type: 'datetime');
 		$this->addType(fieldName: 'updated', type: 'datetime');
 
@@ -442,6 +455,7 @@ class FlowRun extends Entity implements JsonSerializable {
 			'error' => $this->error,
 			'resumeAt' => $resumeAt,
 			'parentRunUuid' => $this->parentRunUuid,
+			'correlationKey' => $this->correlationKey,
 			'created' => $created,
 			'updated' => $updated,
 		];
