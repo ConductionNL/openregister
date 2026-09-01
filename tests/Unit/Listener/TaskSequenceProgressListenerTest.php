@@ -34,6 +34,8 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Listener\TaskSequenceProgressListener
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Event\TaskTerminalEvent
  */
 class TaskSequenceProgressListenerTest extends TestCase {
 

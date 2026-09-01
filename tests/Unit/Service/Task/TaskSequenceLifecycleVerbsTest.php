@@ -44,6 +44,14 @@ use Psr\Log\NullLogger;
 /**
  * @covers \OCA\OpenRegister\Service\Task\TaskService
  * @covers \OCA\OpenRegister\Service\Task\TaskSequenceDecisionGuard
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Db\TaskAudit
+ * @uses \OCA\OpenRegister\Db\TaskSequence
+ * @uses \OCA\OpenRegister\Service\Task\TaskBuilder
+ * @uses \OCA\OpenRegister\Service\Task\TaskState
+ * @uses \OCA\OpenRegister\Exception\TaskConflictException
+ * @uses \OCA\OpenRegister\Exception\TaskSeparationOfDutiesException
+ * @uses \OCA\OpenRegister\Exception\TaskValidationException
  */
 class TaskSequenceLifecycleVerbsTest extends TestCase {
 

@@ -30,6 +30,8 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Db\TaskSequenceMapper
  * @covers \OCA\OpenRegister\Db\TaskSequence
+ * @covers \OCA\OpenRegister\Db\TaskMapper
+ * @uses \OCA\OpenRegister\Db\Task
  */
 class TaskSequenceMapperQueriesTest extends TestCase {
 	use FluentQueryBuilderTrait;

@@ -35,6 +35,8 @@ use Symfony\Component\Console\Tester\CommandTester;
 
 /**
  * @covers \OCA\OpenRegister\Command\RollbackApprovalMigrationCommand
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Service\Task\TaskState
  */
 class RollbackApprovalMigrationCommandTest extends TestCase {
 

@@ -39,6 +39,11 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItems
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeResumeState
+ * @uses \OCA\OpenRegister\Service\Flow\FlowResumeState
+ * @uses \OCA\OpenRegister\Service\Flow\FlowSuspension
+ * @uses \OCA\OpenRegister\Service\Flow\FlowValueTemplate
  */
 class AwaitSignalCorrelationTest extends TestCase {
 

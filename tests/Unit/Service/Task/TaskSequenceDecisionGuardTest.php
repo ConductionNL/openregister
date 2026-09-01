@@ -34,6 +34,8 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Service\Task\TaskSequenceDecisionGuard
  * @covers \OCA\OpenRegister\Exception\TaskSeparationOfDutiesException
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Db\TaskSequence
  */
 class TaskSequenceDecisionGuardTest extends TestCase {
 

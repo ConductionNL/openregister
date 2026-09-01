@@ -2,9 +2,15 @@
 	<div class="task-sequence-panel">
 		<h3>{{ t('openregister', 'Approval sequences') }}</h3>
 
-		<NcEmptyContent v-if="chainEntries.length === 0"
+		<NcEmptyContent
+			v-if="chainEntries.length === 0"
 			:name="t('openregister', 'No approval chains declared')"
-			:description="t('openregister', 'Declare x-openregister-approval-chains on this schema to gate a lifecycle transition on approval.')">
+			:description="
+				t(
+					'openregister',
+					'Declare x-openregister-approval-chains on this schema to gate a lifecycle transition on approval.',
+				)
+			">
 			<template #icon>
 				<CheckDecagramOutline :size="48" />
 			</template>
@@ -12,28 +18,66 @@
 
 		<template v-else>
 			<p class="task-sequence-panel__hint">
-				{{ t('openregister', 'Each declared chain provisions an ordered task sequence when its transition is attempted. Approvers decide in their task inbox, not here.') }}
+				{{
+					t(
+						'openregister',
+						'Each declared chain provisions an ordered task sequence when its transition is attempted. Approvers decide in their task inbox, not here.',
+					)
+				}}
 			</p>
 
-			<div v-for="entry in chainEntries" :key="entry.key" class="task-sequence-panel__chain">
+			<div
+				v-for="entry in chainEntries"
+				:key="entry.key"
+				class="task-sequence-panel__chain">
 				<h4>{{ entry.key }}</h4>
 				<ul class="task-sequence-panel__meta">
-					<li>{{ t('openregister', 'Gated transition: {transition}', { transition: entry.transition || '?' }) }}</li>
+					<li>
+						{{
+							t('openregister', 'Gated transition: {transition}', {
+								transition: entry.transition || '?',
+							})
+						}}
+					</li>
 					<li v-if="entry.amountField">
-						{{ t('openregister', 'Tier routing on field: {field}', { field: entry.amountField }) }}
+						{{
+							t('openregister', 'Tier routing on field: {field}', {
+								field: entry.amountField,
+							})
+						}}
 					</li>
 					<li v-if="entry.separationOfDuties">
-						{{ t('openregister', 'The requester may not decide their own approval.') }}
+						{{
+							t(
+								'openregister',
+								'The requester may not decide their own approval.',
+							)
+						}}
 					</li>
 					<li v-if="entry.onApprove === 'advanceTransition'">
-						{{ t('openregister', 'The transition is applied automatically once every step approves.') }}
+						{{
+							t(
+								'openregister',
+								'The transition is applied automatically once every step approves.',
+							)
+						}}
 					</li>
 				</ul>
 				<ol class="task-sequence-panel__steps">
 					<li v-for="(approver, index) in entry.approvers" :key="index">
-						{{ t('openregister', 'Role {role}', { role: approver.role || '?' }) }}
-						<span v-if="approver.minAmount !== undefined" class="task-sequence-panel__tier">
-							{{ t('openregister', 'from amount {amount}', { amount: approver.minAmount }) }}
+						{{
+							t('openregister', 'Role {role}', {
+								role: approver.role || '?',
+							})
+						}}
+						<span
+							v-if="approver.minAmount !== undefined"
+							class="task-sequence-panel__tier">
+							{{
+								t('openregister', 'from amount {amount}', {
+									amount: approver.minAmount,
+								})
+							}}
 						</span>
 					</li>
 				</ol>
@@ -74,7 +118,8 @@ export default {
 		 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-006
 		 */
 		chainEntries() {
-			const chains = this.schema?.configuration?.['x-openregister-approval-chains'] || {}
+			const chains =
+				this.schema?.configuration?.['x-openregister-approval-chains'] || {}
 			return Object.entries(chains)
 				.filter(([, spec]) => spec && typeof spec === 'object')
 				.map(([key, spec]) => ({

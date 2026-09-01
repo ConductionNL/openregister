@@ -37,6 +37,8 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\Task\TaskSequenceService
  * @covers \OCA\OpenRegister\Db\TaskSequence
  * @covers \OCA\OpenRegister\Event\TaskSequenceCompletedEvent
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Service\Task\TaskState
  */
 class TaskSequenceServiceTest extends TestCase {
 

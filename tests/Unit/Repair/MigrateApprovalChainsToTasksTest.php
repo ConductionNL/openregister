@@ -46,6 +46,12 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Repair\MigrateApprovalChainsToTasks
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Db\TaskAudit
+ * @uses \OCA\OpenRegister\Db\TaskSequence
+ * @uses \OCA\OpenRegister\Service\Task\TaskBuilder
+ * @uses \OCA\OpenRegister\Service\Task\TaskPriority
+ * @uses \OCA\OpenRegister\Service\Task\TaskState
  */
 class MigrateApprovalChainsToTasksTest extends TestCase {
 

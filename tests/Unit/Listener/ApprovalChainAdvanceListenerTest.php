@@ -45,6 +45,9 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Listener\ApprovalChainAdvanceListener
  * @covers \OCA\OpenRegister\Event\TaskSequenceCompletedEvent
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Db\TaskSequence
  */
 class ApprovalChainAdvanceListenerTest extends TestCase {
 	private SchemaMapper&MockObject $schemaMapper;
