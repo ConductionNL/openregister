@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
+use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\InvalidTransitionInputException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -245,9 +246,15 @@ class TransitionEngine {
 	 * @throws RuntimeException When the object/schema/transition is missing,
 	 *                          the action is not allowed from the current
 	 *                          state, or the underlying save is rejected.
+	 * @throws NotAuthorizedException When the caller lacks `update` permission
+	 *                          on the object.
 	 * @throws InvalidTransitionInputException When `$data` contains a key the
 	 *                          transition does not declare, or a `required`
 	 *                          input is absent or empty-string.
+	 * @throws \Exception When the save path refuses the merged write — schema
+	 *                          validation, readOnly enforcement or a vetoing
+	 *                          hook ({@see HookStoppedException}) — exactly as
+	 *                          it would refuse any other object write.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Linear resolve→guard→mutate→save flow; splitting would obscure the transition contract.
 	 *
@@ -394,7 +401,7 @@ class TransitionEngine {
 	 * transition accepts no payload", which is exactly what the allowlist in
 	 * {@see resolveTransitionInputs()} enforces.
 	 *
-	 * @return array<int, array{action:string, to:string, requires:?string, description:?string, inputs:array<int, array{field:string, required:bool}>}>
+	 * @return array<int, array{action:string, to:string, requires:?string, description:?string, inputs:array<int,array{field:string,required:bool}>, label?:string}>
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) RBAC check + missing-object guard + annotation-absent
 	 * guard + per-transition from/requires/description checks each add one branch; none can be removed
@@ -510,7 +517,7 @@ class TransitionEngine {
 	 * @param array<string, mixed> $graph The `graph` block off the annotation.
 	 * @param string $field The lifecycle field name on the object.
 	 *
-	 * @return array<int, array{action: string, to: string, label: string, requires: ?string, description: ?string}>
+	 * @return array<int, array{action:string, to:string, label:string, requires:?string, description:?string, inputs:array<int,array{field:string,required:bool}>}>
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) FK read + sibling fetch + current-state
 	 * location + per-move-policy branching are each irreducible steps of the derivation.
