@@ -2531,7 +2531,6 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Listener\TaskRunTerminalListener::class
 		);
 
-<<<<<<< HEAD
 		// The case layer (flow-cmmn-case-semantics). A realisation ending (a task
 		// or a run) drives its plan item; an object change may satisfy a sentry;
 		// and a plan item reaching a terminal state is a catalog event fired
@@ -2555,8 +2554,6 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Listener\EventCatalogListener::class
 		);
 
-=======
->>>>>>> origin/development
 		// Lifecycle annotation listeners — see x-openregister-lifecycle.
 		// Order matters: initial state runs on creating; validation runs on updating.
 		$context->registerEventListener(ObjectCreatingEvent::class, LifecycleInitialStateListener::class);
