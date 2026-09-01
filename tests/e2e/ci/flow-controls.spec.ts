@@ -504,7 +504,7 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// The route still has to catch up, or a reload lands back on `new`. With
 		// the create already asserted above this is a pure router assertion with
 		// no round-trip left in it, so it needs a fraction of the old budget.
-		await page.waitForURL(new RegExp(`#/flows/${uuid}$`), {
+		await page.waitForURL(new RegExp(`/flows/${uuid}$`), {
 			timeout: 5_000,
 		})
 
