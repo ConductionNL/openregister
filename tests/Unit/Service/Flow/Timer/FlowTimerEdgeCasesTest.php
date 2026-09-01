@@ -42,6 +42,9 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
  * @covers \OCA\OpenRegister\Service\Flow\Timer\EscalationLadderService
  * @covers \OCA\OpenRegister\Service\Flow\Timer\FlowTimerDefinitionStore
+ * @covers \OCA\OpenRegister\Db\FlowTimer
+ * @covers \OCA\OpenRegister\Exception\FlowTimerStateException
+ * @covers \OCA\OpenRegister\Exception\FlowTimerValidationException
  */
 class FlowTimerEdgeCasesTest extends TestCase {
 

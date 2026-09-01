@@ -30,6 +30,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Timer\SlaCalculator
+ * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
  */
 class SlaCalculatorTest extends TestCase {
 

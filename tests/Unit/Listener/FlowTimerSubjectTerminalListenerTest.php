@@ -34,6 +34,9 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Listener\FlowTimerSubjectTerminalListener
+ * @covers \OCA\OpenRegister\Db\Task
+ * @covers \OCA\OpenRegister\Event\FlowRunTerminalEvent
+ * @covers \OCA\OpenRegister\Event\TaskTerminalEvent
  */
 class FlowTimerSubjectTerminalListenerTest extends TestCase {
 

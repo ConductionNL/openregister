@@ -38,6 +38,10 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Repair\SeedFlowTimerRegister
  * @covers \OCA\OpenRegister\Repair\CheckFlowTimerInvariants
+ * @covers \OCA\OpenRegister\Db\FlowTimer
+ * @covers \OCA\OpenRegister\Db\FlowTimerMapper
+ * @covers \OCA\OpenRegister\Db\Task
+ * @covers \OCA\OpenRegister\Db\TaskMapper
  */
 class FlowTimerRepairStepsTest extends TestCase {
 

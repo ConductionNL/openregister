@@ -49,6 +49,18 @@ use Psr\Log\NullLogger;
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Timer\FlowTimerService
  * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService
+ * @covers \OCA\OpenRegister\Db\FlowTimer
+ * @covers \OCA\OpenRegister\Db\FlowTimerEvent
+ * @covers \OCA\OpenRegister\Db\FlowTimerEventMapper
+ * @covers \OCA\OpenRegister\Db\FlowTimerFireMapper
+ * @covers \OCA\OpenRegister\Db\FlowTimerMapper
+ * @covers \OCA\OpenRegister\Db\Task
+ * @covers \OCA\OpenRegister\Db\TaskMapper
+ * @covers \OCA\OpenRegister\Event\FlowTimerFiredEvent
+ * @covers \OCA\OpenRegister\Exception\TaskConflictException
+ * @covers \OCA\OpenRegister\Service\Flow\Timer\EscalationLadderService
+ * @covers \OCA\OpenRegister\Service\Flow\Timer\SlaCalculator
+ * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
  */
 class FlowTimerServiceTest extends TestCase {
 
