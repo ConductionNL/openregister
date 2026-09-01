@@ -102,7 +102,7 @@
       reason; a losing parallel branch takes its task with it; a second
       observation of terminality records nothing; a `run_uuid`-null task is
       untouched.
-- [ ] 6.5 Playwright coverage for the eight `@e2e`-marked scenarios in
+- [x] 6.5 Playwright coverage for the eight `@e2e`-marked scenarios in
       `specs/flow-user-task-node/spec.md`, including the negative one: a
       caller who may run the flow but is not the performer CANNOT answer the
       task through `POST /api/flow-runs/{uuid}/resume`.
