@@ -61,9 +61,6 @@ use Throwable;
 /**
  * Creates, routes, claims, completes, cancels and terminates tasks.
  *
- * @SuppressWarnings(PHPMD.TooManyMethods) Same count, same reason: the
- * private bodies are the shared halves of those verbs, and the portal seam's
- * two narrow windows (openFor, record) reuse them rather than fork them.
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) One method per lifecycle
  * verb the spec names (create/offer/claim/unclaim/assign/reassign/delegate/
  * resolve/complete/cancel) plus the two propagation entry points. Merging
