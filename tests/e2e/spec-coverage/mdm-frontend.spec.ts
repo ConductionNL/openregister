@@ -12,7 +12,7 @@
  * RegisterSchemaSelector is now route-scoped, so when the self-seeding MDM
  * fixture (tests/e2e/mdm-seed.ts, run in globalSetup) has planted data, these
  * tests DEEP-LINK straight to the seeded register/schema
- * (`#/quality?register=<id>&schema=<id>`) and assert populated surfaces.
+ * (`/quality?register=<id>&schema=<id>`) and assert populated surfaces.
  * Without a seed (no pipelinq instance) they fall back to driving the selector
  * and degrade to test.skip(), so the suite still runs everywhere.
  */

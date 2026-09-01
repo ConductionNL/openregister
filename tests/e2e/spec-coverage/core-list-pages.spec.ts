@@ -102,10 +102,11 @@ function trackErrors(page: Page): { console: string[]; http: string[] } {
 
 /** Navigate to an OR route via the manifest shell and wait for content mount. */
 async function gotoPage(page: Page, route: string): Promise<void> {
-	// HASH form — the router runs in hash mode (src/main.js). A path-form
-	// deep-link (`/apps/openregister/registers`) is rewritten by the hash
-	// router to `/registers#/` and renders the DASHBOARD, not the target page
-	// (verified empirically 2026-07-27).
+	// PATH form. This used to say the opposite: while the app was hash-routed a
+	// path-form deep-link resolved to the dashboard, so routes had to travel in
+	// the fragment. src/main.js now builds createWebHistory(routerBase()) and
+	// dashboard#catchAll serves the shell on any sub-path, so the path IS the
+	// route and a full-page load reaches the page it names.
 	await page.goto(`/index.php/apps/openregister${route}`, {
 		waitUntil: 'domcontentloaded',
 	})

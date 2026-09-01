@@ -10,7 +10,7 @@
  * Methodology: drive the real UI. When the self-seeding MDM fixture
  * (tests/e2e/mdm-seed.ts, run in globalSetup) has planted a duplicate pair,
  * these tests DEEP-LINK to the seeded register/schema
- * (`#/duplicates?register=<id>&schema=<id>`) and run the full
+ * (`/duplicates?register=<id>&schema=<id>`) and run the full
  * duplicate→merge→reverse chain: launch the merge wizard from the candidate
  * pair, preview, provide a reason, execute, then reverse the resulting
  * operation from the Merge Operations view. Without a seed the suite degrades

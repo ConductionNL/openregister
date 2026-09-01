@@ -250,7 +250,7 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		}
 
 		// Reach the editor the way a user does. Direct navigation to
-		// `#/flows/new` does not always hydrate the canvas.
+		// `/flows/new` does not always hydrate the canvas.
 		//
 		// If the button is absent, say WHY rather than just that it is missing.
 		// This assertion has been failing on development (#2957) and the bare
@@ -504,7 +504,7 @@ test('flow controls render, and a flow can be built, saved and run', async ({
 		// The route still has to catch up, or a reload lands back on `new`. With
 		// the create already asserted above this is a pure router assertion with
 		// no round-trip left in it, so it needs a fraction of the old budget.
-		await page.waitForURL(new RegExp(`#/flows/${uuid}$`), {
+		await page.waitForURL(new RegExp(`/flows/${uuid}$`), {
 			timeout: 5_000,
 		})
 

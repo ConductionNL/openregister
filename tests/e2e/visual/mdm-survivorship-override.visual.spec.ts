@@ -61,7 +61,8 @@ test.describe('mdm-survivorship-override — visual baselines', () => {
 	// MdmConflictResolutionModal — opened from a master entity's golden record.
 	test('MdmConflictResolutionModal', async ({ page }) => {
 		// Manifest route is kebab-case '/master-entities' (src/manifest.json);
-		// '#/masterEntities' hits the catch-all and redirects to the dashboard.
+		// '/masterEntities' hits the router catch-all and redirects to the
+		// dashboard, so the casing here is load-bearing.
 		await page.goto(`${APP}/master-entities`, {
 			waitUntil: 'domcontentloaded',
 		})

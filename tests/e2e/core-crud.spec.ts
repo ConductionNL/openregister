@@ -140,7 +140,7 @@ test.describe('frontend-app-bootstrap — app mount and data load', () => {
 test.describe('deep-link-registry — hash routes render correct views', () => {
 	test.use({ storageState: STORAGE_STATE })
 
-	test('#/registers route renders register list', async ({ page }) => {
+	test('/registers route renders register list', async ({ page }) => {
 		await page.goto('/index.php/apps/openregister/registers', {
 			waitUntil: 'domcontentloaded',
 		})
@@ -151,7 +151,7 @@ test.describe('deep-link-registry — hash routes render correct views', () => {
 		})
 	})
 
-	test('#/schemas route renders schema list', async ({ page }) => {
+	test('/schemas route renders schema list', async ({ page }) => {
 		await page.goto('/index.php/apps/openregister/schemas', {
 			waitUntil: 'domcontentloaded',
 		})
@@ -161,7 +161,7 @@ test.describe('deep-link-registry — hash routes render correct views', () => {
 		})
 	})
 
-	test('#/objects route renders object list', async ({ page }) => {
+	test('/objects route renders object list', async ({ page }) => {
 		await page.goto('/index.php/apps/openregister/objects', {
 			waitUntil: 'domcontentloaded',
 		})
@@ -171,7 +171,7 @@ test.describe('deep-link-registry — hash routes render correct views', () => {
 		})
 	})
 
-	test('#/objects/:register/:schema/:id deep-links to object detail', async ({
+	test('/objects/:register/:schema/:id deep-links to object detail', async ({
 		page,
 		request,
 	}) => {

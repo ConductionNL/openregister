@@ -112,8 +112,8 @@ async function dismissOverlays(page: Page): Promise<void> {
 
 /** Navigate to an OR (or absolute) route and settle. */
 async function go(page: Page, route: string): Promise<void> {
-	// OR routes use HASH form — the router runs in hash mode (src/main.js);
-	// path-form deep-links render the dashboard instead of the target page.
+	// OR routes are real paths — src/main.js builds createWebHistory(routerBase())
+	// and dashboard#catchAll serves the shell on any sub-path.
 	const url =
 		route.startsWith('/apps/') || route.startsWith('/settings/')
 			? `/index.php${route}`
@@ -295,7 +295,7 @@ test.describe('docs: user track', () => {
 		}
 
 		const route =
-			reg && sch ? `/#/tables?register=${reg}&schema=${sch}` : '/#/tables'
+			reg && sch ? `/tables?register=${reg}&schema=${sch}` : '/tables'
 		await go(page, route)
 		// Wait for the deep-linked register/schema selection to actually apply
 		// (SearchSideBar.applyQueryParamsFromRoute retries while the register
