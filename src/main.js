@@ -6,9 +6,10 @@ import {
 	registerIcons,
 } from '@conduction/nextcloud-vue'
 import { translatePlural as n, translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
 import { createApp, h } from 'vue'
 // eslint-disable-next-line n/no-unpublished-import
-import { createRouter, createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
 import appIcons from './icons.js'
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
@@ -173,18 +174,38 @@ function routesFromManifest(manifest) {
 	return routes
 }
 
-// Hash mode (not history): the PHP backend registers exactly one frontend
-// route — `dashboard#page` at `/` (appinfo/routes.php) — and no catch-all that
-// serves the SPA shell for deep sub-paths like `/registers` or `/schemas`. In
-// history mode a full-page load or bookmark to `#/registers` drops the fragment
-// and resolves the base path `/` → the Dashboard surface, so the relocated /
-// grouped index pages render empty (no Add button, no list) on deep-link — the
-// #133 regression. Hash mode keeps every route under the single `/` server
-// route, so `#/registers` etc. resolve client-side to their correct index
-// surface. This also matches the e2e harness contract (tests deep-link via
-// `/index.php/apps/openregister/#/<route>`).
+/**
+ * The router base for THIS page load.
+ *
+ * ⚠️ `generateUrl('/apps/openregister')` alone is not enough. Nextcloud serves
+ * the app under BOTH `/apps/openregister/...` and
+ * `/index.php/apps/openregister/...`, but `generateUrl()` returns only the form
+ * the instance is configured for. A visitor arriving on the other form falls
+ * outside the router base, vue-router cannot resolve the path, and the
+ * catch-all above redirects to `/`: they land on the Dashboard with no error
+ * and the deep link is silently swallowed. This app's e2e harness deep-links
+ * via the `/index.php` form, so pinning the other one would break every one of
+ * those.
+ *
+ * @return {string} The base path vue-router should strip from the URL.
+ */
+function routerBase() {
+	const match = window.location.pathname.match(/^(.*\/apps\/openregister)(?:\/|$)/)
+	return match ? match[1] : generateUrl('/apps/openregister')
+}
+
+// History mode. This app ran on HASH mode as a workaround for #133: the PHP
+// backend registered exactly one frontend route — `dashboard#page` at `/` — and
+// no catch-all serving the SPA shell for deep sub-paths like `/registers` or
+// `/schemas`, so a bookmark or full-page load never reached the SPA and the
+// grouped index pages rendered empty (no Add button, no list).
+//
+// `dashboard#catchAll` in appinfo/routes.php now serves the shell on any
+// sub-path, which removes the cause rather than working around it. Verified by
+// requesting a NONSENSE path: /apps/openregister/zzz-nonsense answered 404
+// before and 401 after — an enumerated path would have proved nothing.
 const router = createRouter({
-	history: createWebHashHistory(),
+	history: createWebHistory(routerBase()),
 	routes: routesFromManifest(mergedManifest),
 })
 

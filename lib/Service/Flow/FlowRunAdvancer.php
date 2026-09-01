@@ -165,4 +165,65 @@ class FlowRunAdvancer {
 
 	}//end advance()
 
+	/**
+	 * Advance ONE stream of a suspended run in the calling request, within a budget.
+	 *
+	 * The completion side of a user task (flow-user-task-node, ADR-098 D9): the
+	 * task on one branch was answered, and THAT branch may continue for the
+	 * node's budget while its siblings are untouched. Resolution is the same
+	 * as {@see self::advance()} so the two cannot drift on what a run needs;
+	 * the walk itself is {@see FlowRunService::advanceStream()}, which scopes
+	 * the stream collaborator, applies the run's version pin and honours the
+	 * budget as a firing ceiling next to the run-wide one.
+	 *
+	 * Errors are NOT swallowed: the caller is a completion listener that has
+	 * already committed the task and treats any failure here as "the worker
+	 * takes over", so it wants to see the error to log it.
+	 *
+	 * @param FlowRun $run The suspended run.
+	 * @param string $streamId The stream parked on the answered node.
+	 * @param int|string $budget `0`, `N`, or `"all"`.
+	 *
+	 * @return FlowRun The run as it stands after the advance.
+	 *
+	 * @throws Throwable When the run could not be advanced.
+	 *
+	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+	 */
+	public function advanceStream(FlowRun $run, string $streamId, int|string $budget): FlowRun {
+		$flow = $this->resolvers->resolveFlow((string)$run->getFlowId());
+		if ($flow === null) {
+			$run->setStatus(FlowRun::STATUS_FAILED);
+			$run->setError(sprintf('No app provides flow "%s" (deleted, or its app removed?).', $run->getFlowId()));
+
+			return $this->mapper->update($run);
+		}
+
+		$subject = null;
+		if (trim((string)$run->getSubjectUuid()) !== '') {
+			$subject = $this->resolvers->resolveSubject(
+				(string)$run->getSubjectUuid(),
+				(string)$run->getSubjectRegister(),
+				(string)$run->getSubjectSchema()
+			);
+
+			if ($subject === null) {
+				$run->setStatus(FlowRun::STATUS_FAILED);
+				$run->setError(sprintf('Subject "%s" no longer exists.', $run->getSubjectUuid()));
+
+				return $this->mapper->update($run);
+			}
+		}
+
+		// A resumed walk reads its items from the run, never from a seed, so a
+		// subjectless run needs only the bare marking holder here.
+		return $this->runner->advanceStream(
+			run: $run,
+			flow: $flow,
+			subject: ($subject ?? new stdClass()),
+			streamId: $streamId,
+			budget: $budget
+		);
+	}//end advanceStream()
+
 }//end class

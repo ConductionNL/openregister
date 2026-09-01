@@ -49,6 +49,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\SwitchNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
 use OCP\EventDispatcher\Event;
@@ -85,6 +86,7 @@ class FlowNodeRegistrationListener implements IEventListener {
 	 * @param TriggerObjectNode $triggerObject The "When an object changes" entry point.
 	 * @param TriggerScheduleNode $triggerSchedule The "On a schedule" entry point.
 	 * @param TriggerManualNode $triggerManual The "When someone runs it" entry point.
+	 * @param UserTaskNode $userTask The built-in "Ask a person" node.
 	 */
 	public function __construct(
 		private readonly SetFieldsNode $setFields,
@@ -109,6 +111,7 @@ class FlowNodeRegistrationListener implements IEventListener {
 		private readonly TriggerObjectNode $triggerObject,
 		private readonly TriggerScheduleNode $triggerSchedule,
 		private readonly TriggerManualNode $triggerManual,
+		private readonly UserTaskNode $userTask,
 	) {
 
 	}//end __construct()
@@ -153,6 +156,12 @@ class FlowNodeRegistrationListener implements IEventListener {
 		$event->registerNode(node: $this->sendNotification);
 		$event->registerNode(node: $this->sendEmail);
 		$event->registerNode(node: $this->sendTalkMessage);
+
+		// The human step (flow-user-task-node). Registered beside await-signal
+		// deliberately: the two are a pair, and their palette descriptions
+		// state which is for a system that calls back and which is for a
+		// performer who has to be found, told, and allowed to say no.
+		$event->registerNode(node: $this->userTask);
 
 		// Entry points. Registered like any other node so the palette can offer
 		// them and the preflight can check their config — a trigger is where a

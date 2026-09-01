@@ -115,7 +115,7 @@ async function openSharesTab(
 	uuid: string,
 ) {
 	await page.goto(
-		`/index.php/apps/openregister/#/objects/${register}/${schema}/${uuid}`,
+		`/index.php/apps/openregister/objects/${register}/${schema}/${uuid}`,
 		{ waitUntil: 'domcontentloaded' },
 	)
 

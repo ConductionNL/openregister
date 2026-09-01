@@ -2531,14 +2531,25 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Listener\TaskRunTerminalListener::class
 		);
 
+		// The other direction (flow-user-task-node): a task the graph raised
+		// reached a terminal state, so its suspended run is woken and, per the
+		// node's `advance` budget, continued in-request. Fires AFTER the task's
+		// own transaction committed; a failure here costs latency, never the
+		// completion.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
+			\OCA\OpenRegister\Listener\UserTaskTerminalListener::class
+		);
+
 		// The case layer (flow-cmmn-case-semantics). A realisation ending (a task
 		// or a run) drives its plan item; an object change may satisfy a sentry;
 		// and a plan item reaching a terminal state is a catalog event fired
 		// against the anchoring object. Nothing under Service\Flow depends on
 		// Service\Case: these listeners are the only coupling, and it points one
-		// way. TaskTerminalEvent is dispatched by flow-user-task-node's
-		// TaskService; until that lands the same reconciliation runs on every
-		// case-plan evaluation, so this listener is an accelerator, not the path.
+		// way. TaskTerminalEvent is dispatched by TaskService after the
+		// terminal transition commits (flow-user-task-node); the same
+		// reconciliation also runs on every case-plan evaluation, so a missed
+		// event costs latency, never correctness.
 		$context->registerEventListener(
 			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
 			\OCA\OpenRegister\Listener\CaseTaskTerminalListener::class

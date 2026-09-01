@@ -1411,5 +1411,24 @@ return [
 		['name' => 'federatedConfig#publicKey', 'url' => '/api/federated-config/public-key', 'verb' => 'GET'],
 		['name' => 'federatedConfig#trust', 'url' => '/api/federated-config/trust', 'verb' => 'GET'],
 		['name' => 'federatedConfig#setTrust', 'url' => '/api/federated-config/trust', 'verb' => 'PUT'],
+
+		// SPA catch-all — MUST stay last so every explicit route above keeps
+		// priority over the /{path} fallback. Without it only `/` served the
+		// shell, so any deep link (/registers, /schemas, a detail route) never
+		// reached the SPA at all — the #133 regression that forced this app back
+		// onto hash routing. Spelled inline rather than via
+		// \OCA\OpenRegister\AppHost\Routes::standard() because this file also
+		// declares a `resources` block the builder does not carry, and because
+		// this IS openregister — guarding a call to its own class would be odd.
+		// ⚠️ `(?!api/)` is load-bearing. Nextcloud's RouteParser processes the
+		// `routes` array BEFORE the `resources` array
+		// (RouteParser::parseDefaultRoutes), and Symfony matches in insertion
+		// order — so even as the LAST entry here this route still registers
+		// ahead of all nine `api/...` resource routes below. Without the
+		// lookahead `.+` (which matches slashes) would swallow
+		// GET /api/registers, /api/schemas and the rest, answering the SPA
+		// shell instead of JSON. The SPA never needs an `api/` path.
+		['name' => 'dashboard#catchAll', 'url' => '/{path}', 'verb' => 'GET',
+			'requirements' => ['path' => '(?!api/).+'], 'defaults' => ['path' => '']],
     ],
 ];

@@ -35,7 +35,7 @@ import { makeRunId } from '../_fixtures.ts'
 const STORAGE_STATE = path.resolve(__dirname, '..', '.auth', 'admin.json')
 // HASH form — the router runs in hash mode (src/main.js); the path-form URL
 // renders the dashboard instead of the registers page.
-const REGISTERS_ROUTE = '/index.php/apps/openregister/#/registers'
+const REGISTERS_ROUTE = '/index.php/apps/openregister/registers'
 const API = '/index.php/apps/openregister/api'
 
 const RUN_ID = makeRunId()

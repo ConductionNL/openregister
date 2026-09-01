@@ -162,7 +162,7 @@ async function openObjectDetail(
 	// URL dispatches `objectDetail` (route name in the manifest) to
 	// ObjectsIndex and its param-watch primes the object store.
 	await page.goto(
-		`${baseURL}/index.php/apps/openregister/#/objects/${triple.register}/${triple.schema}/${triple.objectId}`,
+		`${baseURL}/index.php/apps/openregister/objects/${triple.register}/${triple.schema}/${triple.objectId}`,
 		// `networkidle` never settles on Nextcloud (ADR-074 rule 4): the
 		// long-poll / notification channels keep a request in flight for the
 		// life of the page, so it always burns its timeout. The readiness
