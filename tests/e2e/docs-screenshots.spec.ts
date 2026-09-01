@@ -112,9 +112,8 @@ async function dismissOverlays(page: Page): Promise<void> {
 
 /** Navigate to an OR (or absolute) route and settle. */
 async function go(page: Page, route: string): Promise<void> {
-	// OR routes use PATH form. They used to be hash routes, and a path deep-link
-	// then rendered the dashboard instead of the target page; #3270 moved the
-	// router to createWebHistory and inverted that.
+	// OR routes are real paths — src/main.js builds createWebHistory(routerBase())
+	// and dashboard#catchAll serves the shell on any sub-path.
 	const url =
 		route.startsWith('/apps/') || route.startsWith('/settings/')
 			? `/index.php${route}`
