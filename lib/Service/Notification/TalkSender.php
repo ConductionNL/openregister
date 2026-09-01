@@ -183,6 +183,8 @@ class TalkSender {
 	 * @return void
 	 *
 	 * @throws TalkSendException On every non-delivery, naming the reason.
+	 *
+	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
 	 */
 	protected function postViaTalkApp(string $token, string $message, string $actorUid): void {
 		if ($this->serverContainer === null) {

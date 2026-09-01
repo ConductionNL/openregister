@@ -159,7 +159,7 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 *
 	 * @return array<int, array<string, mixed>> The field descriptions.
 	 *
-	 * @spec openspec/changes/flow-node-config-forms/specs/flow-node-config-forms/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
 	 */
 	public function configForm(): array {
 		return [

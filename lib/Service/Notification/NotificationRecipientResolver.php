@@ -214,6 +214,8 @@ class NotificationRecipientResolver {
 	 * @param string $uid Candidate Nextcloud user identifier.
 	 *
 	 * @return bool True when the uid corresponds to a real Nextcloud user.
+	 *
+	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	public function userExists(string $uid): bool {
 		if ($uid === '') {
@@ -246,6 +248,8 @@ class NotificationRecipientResolver {
 	 * @param string $gid Candidate group id.
 	 *
 	 * @return bool True when the group exists.
+	 *
+	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	public function groupExists(string $gid): bool {
 		if ($gid === '') {
@@ -277,6 +281,8 @@ class NotificationRecipientResolver {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Handles six distinct relation shapes
 	 * (null, array-of-strings, array-of-objects with uid/id/userId, plain string); each
 	 * shape requires a separate extraction branch that cannot be unified.
+	 *
+	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	public function extractUidsFromRelation(mixed $value): array {
 		if ($value === null) {
