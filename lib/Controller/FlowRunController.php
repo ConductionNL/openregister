@@ -728,6 +728,8 @@ class FlowRunController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
+	 * @contract tests/integration/openregister-integrations.postman_collection.json
+	 *
 	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
 	 */
 	#[NoAdminRequired]

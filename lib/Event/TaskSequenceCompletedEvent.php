@@ -10,7 +10,7 @@
  * chain-and-step pair.
  *
  * Replacement mapping for the four retired events (normative in the spec,
- * published for consumers in docs/developers/approval-events-migration.md):
+ * published for consumers in docs/development/approval-events-migration.md):
  * a position becoming enabled replaces Initiated; a task completing with an
  * approving outcome replaces Approved; one completing with a rejecting
  * outcome replaces Rejected; THIS event replaces Completed.
