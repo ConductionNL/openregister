@@ -138,6 +138,12 @@ class FlowEngine {
 	 *                                       so the engine stays unit-testable without
 	 *                                       a container; absent, writes are simply
 	 *                                       unattributed rather than mis-attributed.
+	 * @param FlowTaskMootness|null $mootness Told which places a routing decision
+	 *                                        cleared, so a user task waiting on one
+	 *                                        of them is terminated rather than
+	 *                                        orphaned. Nullable on the same terms;
+	 *                                        absent, run-terminality propagation is
+	 *                                        the only backstop.
 	 */
 	public function __construct(
 		private readonly FlowDefinitionBuilder $builder,
@@ -146,6 +152,7 @@ class FlowEngine {
 		private readonly ?FlowTokenRouter $router = null,
 		private readonly ?FlowItemPlacement $placement = null,
 		private readonly ?FlowRunContext $runContext = null,
+		private readonly ?FlowTaskMootness $mootness = null,
 	) {
 
 	}//end __construct()
@@ -491,11 +498,12 @@ class FlowEngine {
 					taken: $taken
 				);
 				$workflow->apply(subject: $subject, transitionName: $name);
-				$this->router()->keepOnlyTakenExits(
+				$this->pruneUntakenExits(
 					workflow: $workflow,
 					subject: $subject,
 					transition: $transition,
-					taken: $taken
+					taken: $taken,
+					context: $context
 				);
 				continue;
 			}//end if
@@ -670,15 +678,58 @@ class FlowEngine {
 			// Symfony's workflow deposits a token on EVERY output place, which
 			// is right for a parallel split and wrong for a choice. Withdraw
 			// the ones the taken exit did not claim, or every branch runs.
-			$this->router()->keepOnlyTakenExits(
+			$this->pruneUntakenExits(
 				workflow: $workflow,
 				subject: $subject,
 				transition: $transition,
-				taken: $taken
+				taken: $taken,
+				context: $context
 			);
 		}//end while
 
 	}//end run()
+
+	/**
+	 * Withdraw the tokens a choice did not take, and say so.
+	 *
+	 * The withdrawal itself is the router's. What is added here is the report:
+	 * a place cleared by a routing decision may be one a user-task node had
+	 * already asked somebody from, and that node will now never fire from it,
+	 * so its task is moot and must not stay in an inbox as actionable work.
+	 * The Petri net raises no event for this; the engine is the only thing
+	 * that sees the moment, so the engine reports it (design D-7).
+	 *
+	 * @param Workflow $workflow The running workflow.
+	 * @param object $subject The marking holder.
+	 * @param object $transition The transition that just fired.
+	 * @param array<string> $taken The output places the exit claimed.
+	 * @param array<string, mixed> $context The run context, carrying the resume state.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
+	 */
+	private function pruneUntakenExits(Workflow $workflow, object $subject, object $transition, array $taken, array $context): void {
+		$tos = array_map(static fn ($t): string => (string)$t, $transition->getTos());
+		$pruned = array_values(array_diff($tos, $taken));
+
+		$this->router()->keepOnlyTakenExits(
+			workflow: $workflow,
+			subject: $subject,
+			transition: $transition,
+			taken: $taken
+		);
+
+		if ($pruned === []) {
+			return;
+		}
+
+		$this->mootness?->placesPruned(
+			context: $context,
+			places: $pruned,
+			byTransition: $transition->getName()
+		);
+	}//end pruneUntakenExits()
 
 	/**
 	 * The per-stream walk: round-robin over advanceable streams, a claim before
@@ -1027,7 +1078,7 @@ class FlowEngine {
 		$taken = $this->router()->takenExits(flow: $flow, transition: $transition, items: $items, context: $context);
 		$placeItems = $this->placement()->advanceItems(transition: $transition, placeItems: $placeItems, items: $items, taken: $taken);
 		$workflow->apply(subject: $subject, transitionName: $name);
-		$this->router()->keepOnlyTakenExits(workflow: $workflow, subject: $subject, transition: $transition, taken: $taken);
+		$this->pruneUntakenExits(workflow: $workflow, subject: $subject, transition: $transition, taken: $taken, context: $context);
 
 		// The places actually taken, in the transition's declaration order.
 		$takenTos = [];

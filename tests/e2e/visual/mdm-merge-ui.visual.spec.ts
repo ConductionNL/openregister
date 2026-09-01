@@ -64,14 +64,14 @@ test.describe('mdm-merge-ui — visual baselines', () => {
 	test('MergeOperationsIndex', async ({ page }) => {
 		await shootSurface(
 			page,
-			`${APP}/#/mergeOperations`,
+			`${APP}/mergeOperations`,
 			'MergeOperationsIndex.png',
 		)
 	})
 
 	// MdmMergeWizardModal — opened from a candidate pair on DuplicatesIndex.
 	test('MdmMergeWizardModal', async ({ page }) => {
-		await page.goto(`${APP}/#/duplicates`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP}/duplicates`, { waitUntil: 'domcontentloaded' })
 		await dismissSupportDialog(page)
 		await waitForContentReady(page)
 

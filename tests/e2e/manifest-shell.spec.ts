@@ -34,7 +34,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 
 const STORAGE_STATE = path.resolve(__dirname, '.auth/admin.json')
-const APP_BASE = '/index.php/apps/openregister/#'
+const APP_BASE = '/index.php/apps/openregister'
 
 function requireAuth() {
 	if (!fs.existsSync(STORAGE_STATE)) {
@@ -42,8 +42,8 @@ function requireAuth() {
 	}
 }
 
-async function gotoRoute(page: Page, hash: string) {
-	await page.goto(`${APP_BASE}${hash}`, { waitUntil: 'domcontentloaded' })
+async function gotoRoute(page: Page, route: string) {
+	await page.goto(`${APP_BASE}${route}`, { waitUntil: 'domcontentloaded' })
 	// App content shell must render for every manifest-driven route.
 	await expect(page.locator('main, .app-content').first()).toBeVisible({
 		timeout: 25_000,
@@ -84,7 +84,7 @@ test.describe('openregister-app-manifest — CnAppRoot shell mounts', () => {
 		// A non-root manifest route must resolve via the manifest-built router
 		// rather than redirecting away (catch-all only fires for unknown paths).
 		await gotoRoute(page, '/schemas')
-		await expect(page).toHaveURL(/#\/schemas$/)
+		await expect(page).toHaveURL(/\/apps\/openregister\/schemas$/)
 		await expect(page.locator('main, .app-content').first()).toBeVisible()
 	})
 })
@@ -155,7 +155,7 @@ test.describe('openregister-app-manifest — registry dispatch', () => {
 	}) => {
 		requireAuth()
 		await gotoRoute(page, '/registers')
-		await expect(page).toHaveURL(/#\/registers$/)
+		await expect(page).toHaveURL(/\/apps\/openregister\/registers$/)
 		await expect(page.locator('main, .app-content').first()).toBeVisible()
 	})
 
@@ -171,7 +171,9 @@ test.describe('openregister-app-manifest — registry dispatch', () => {
 		// router into a registry component and the app-content shell renders — the
 		// scenario asserts the dispatch + shell, not that an unknown id stays put.
 		await gotoRoute(page, '/registers/e2e-probe-id')
-		await expect(page).toHaveURL(/#\/registers(\/e2e-probe-id)?$/)
+		await expect(page).toHaveURL(
+			/\/apps\/openregister\/registers(\/e2e-probe-id)?$/,
+		)
 		await expect(page.locator('main, .app-content').first()).toBeVisible()
 	})
 

@@ -49,7 +49,7 @@ test.describe('Per-leaf screenshot harness', () => {
 		await page.goto(
 			// HASH form — the router runs in hash mode (src/main.js); the
 			// path-form URL renders the dashboard instead of the integrations view.
-			`${baseURL}/index.php/apps/openregister/#${IntegrationsView(
+			`${baseURL}/index.php/apps/openregister${IntegrationsView(
 				REGISTER,
 				SCHEMA,
 				OBJECT_ID,

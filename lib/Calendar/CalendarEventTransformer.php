@@ -139,7 +139,7 @@ class CalendarEventTransformer {
 
 		// URL to OpenRegister object.
 		$register = $object->getRegister();
-		$url = '/apps/openregister/#/objects/' . $register . '/' . $schemaId . '/' . $objectUuid;
+		$url = '/apps/openregister/objects/' . $register . '/' . $schemaId . '/' . $objectUuid;
 		$veventProperties['URL'] = [$url, []];
 
 		return [

@@ -117,7 +117,7 @@ async function go(page: Page, route: string): Promise<void> {
 	const url =
 		route.startsWith('/apps/') || route.startsWith('/settings/')
 			? `/index.php${route}`
-			: `/index.php${APP}/#${route}`
+			: `/index.php${APP}${route}`
 	// `networkidle` NEVER settles on Nextcloud (ADR-074 rule 4): the
 	// notification long-poll keeps a request in flight for the life of the
 	// page, so this wait always ran to its timeout and the `.catch()` hid

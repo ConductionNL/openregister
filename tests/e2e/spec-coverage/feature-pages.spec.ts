@@ -89,7 +89,7 @@ function trackErrors(
 async function gotoPage(page: Page, route: string): Promise<void> {
 	// HASH form — the router runs in hash mode (src/main.js); path-form
 	// deep-links render the dashboard instead of the target page.
-	await page.goto(`/index.php/apps/openregister/#${route}`, {
+	await page.goto(`/index.php/apps/openregister${route}`, {
 		waitUntil: 'domcontentloaded',
 	})
 	await page.waitForSelector('#header, header.header-appcontainer', {
@@ -243,7 +243,7 @@ test.describe('feature-pages — real UI render + actions', () => {
 		page,
 	}) => {
 		await gotoPage(page, '/registers')
-		await expect(page).toHaveURL(/#\/registers$/)
+		await expect(page).toHaveURL(/\/apps\/openregister\/registers$/)
 
 		// The manifest declares this entry in the `footer` section; CnAppNav
 		// renders footer entries as NcAppNavigationItem router-links.
@@ -253,7 +253,9 @@ test.describe('feature-pages — real UI render + actions', () => {
 		await expect(navEntry).toHaveCount(1)
 		await navEntry.first().click()
 
-		await expect(page).toHaveURL(/#\/features-roadmap$/, { timeout: 15_000 })
+		await expect(page).toHaveURL(/\/apps\/openregister\/features-roadmap$/, {
+			timeout: 15_000,
+		})
 
 		const view = page.locator('.cn-features-and-roadmap-view')
 		await expect(view).toBeVisible({ timeout: 15_000 })

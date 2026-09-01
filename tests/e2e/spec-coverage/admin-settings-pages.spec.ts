@@ -83,7 +83,7 @@ function trackErrors(page: Page): { console: string[]; http: string[] } {
 async function gotoPage(page: Page, route: string): Promise<void> {
 	// HASH form — the router runs in hash mode (src/main.js); path-form
 	// deep-links render the dashboard instead of the target page.
-	await page.goto(`/index.php/apps/openregister/#${route}`, {
+	await page.goto(`/index.php/apps/openregister${route}`, {
 		waitUntil: 'domcontentloaded',
 	})
 	await page.waitForSelector('#header, header.header-appcontainer', {
