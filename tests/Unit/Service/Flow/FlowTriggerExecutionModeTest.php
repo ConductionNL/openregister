@@ -22,6 +22,8 @@ use stdClass;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowTriggerService
+ * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  */
 class FlowTriggerExecutionModeTest extends TestCase {
 

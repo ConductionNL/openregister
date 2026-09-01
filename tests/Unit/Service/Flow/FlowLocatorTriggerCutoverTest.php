@@ -44,6 +44,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowLocator
+ * @uses \OCA\OpenRegister\Db\Flow
  * @uses \OCA\OpenRegister\Db\FlowVersion
  */
 class FlowLocatorTriggerCutoverTest extends TestCase {

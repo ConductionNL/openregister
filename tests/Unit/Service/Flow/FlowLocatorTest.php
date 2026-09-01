@@ -191,6 +191,65 @@ class FlowLocatorTest extends TestCase {
 	}//end testAnOwnerlessScheduledFlowIsNotDispatched()
 
 	/**
+	 * The column fallback refuses a flow with no published version and keeps
+	 * its published sibling. Asserted here in the roster-free suite so the
+	 * refusal branch is counted by the coverage cell; the behavioural pin
+	 * lives in FlowLocatorTriggerCutoverTest too.
+	 */
+	public function testTheColumnFallbackRefusesAnUnpublishedFlow(): void {
+		$mapper = $this->createMock(FlowMapper::class);
+		$mapper->method('findByTrigger')->willReturn(
+			[$this->flow(['uuid' => 'never-published']), $this->flow(['uuid' => 'published-1'])]
+		);
+
+		$published = new FlowVersion();
+		$published->setStatus(FlowVersion::STATUS_PUBLISHED);
+
+		$versions = $this->createMock(FlowVersionMapper::class);
+		$versions->method('findPublished')->willReturnCallback(
+			static function (string $flowUuid) use ($published): ?FlowVersion {
+				if ($flowUuid === 'never-published') {
+					return null;
+				}
+
+				return $published;
+			}
+		);
+
+		$locator = new FlowLocator(
+			$mapper,
+			$this->createMock(FlowTriggerMapper::class),
+			$this->createMock(ObjectService::class),
+			new \Psr\Log\NullLogger(),
+			$versions
+		);
+
+		$this->assertSame(['published-1'], $locator->flowsForTrigger('object.created', 'r', 's'));
+	}//end testTheColumnFallbackRefusesAnUnpublishedFlow()
+
+	/**
+	 * An unreadable version table fails OPEN: the flow stays matched and the
+	 * queue path decides. Roster-free twin of the cutover pin, for coverage.
+	 */
+	public function testAnUnreadableVersionTableKeepsTheFlowMatched(): void {
+		$mapper = $this->createMock(FlowMapper::class);
+		$mapper->method('findByTrigger')->willReturn([$this->flow(['uuid' => 'legacy-1'])]);
+
+		$versions = $this->createMock(FlowVersionMapper::class);
+		$versions->method('findPublished')->willThrowException(new \RuntimeException('table gone'));
+
+		$locator = new FlowLocator(
+			$mapper,
+			$this->createMock(FlowTriggerMapper::class),
+			$this->createMock(ObjectService::class),
+			new \Psr\Log\NullLogger(),
+			$versions
+		);
+
+		$this->assertSame(['legacy-1'], $locator->flowsForTrigger('object.created', 'r', 's'));
+	}//end testAnUnreadableVersionTableKeepsTheFlowMatched()
+
+	/**
 	 * A store read that throws must not take the triggering action down with it.
 	 */
 	public function testAStoreFailureYieldsNoFlowsRatherThanThrowing(): void {

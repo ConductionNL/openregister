@@ -209,6 +209,33 @@ class FlowTokenRouterEndpointsTest extends TestCase {
 	}//end testTakenExitsHonoursTheItemsRoutingTag()
 
 	/**
+	 * takenExits skips what it cannot use: a non-array exit entry, and an exit
+	 * no edge leads out of. The remaining wired else still takes the token.
+	 *
+	 * @return void
+	 */
+	public function testTakenExitsSkipsMalformedAndUnwiredExits(): void {
+		$flow = [
+			'nodes' => [
+				['id' => 'split', 'type' => 'openregister.router', 'exits' => ['junk', ['id' => 'unwired'], ['id' => 'ok']]],
+				['id' => 'hi', 'type' => 'openregister.set-fields'],
+			],
+			'edges' => [
+				['id' => 'a', 'from' => ['split'], 'fromExit' => 'ok', 'to' => ['hi']],
+			],
+		];
+
+		$taken = $this->router->takenExits(
+			flow: $flow,
+			transition: $this->transition('split', ['hi']),
+			items: [['json' => [], 'binary' => [], 'pairedItem' => null]],
+			context: []
+		);
+
+		$this->assertSame(['hi'], $taken);
+	}//end testTakenExitsSkipsMalformedAndUnwiredExits()
+
+	/**
 	 * A LIST source resolves the places an exit reaches.
 	 *
 	 * @return void

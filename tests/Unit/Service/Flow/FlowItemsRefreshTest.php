@@ -130,4 +130,25 @@ class FlowItemsRefreshTest extends TestCase {
 			'a non-array member passes through'
 		);
 	}//end testTheNoOpBranchesPassThrough()
+	/**
+	 * A subject exposing only getObject() (an ObjectEntity-like store shape)
+	 * still yields its fields for the refresh.
+	 *
+	 * @return void
+	 */
+	public function testASubjectExposingGetObjectIsRead(): void {
+		$subject = new class () {
+			public function getObject(): array {
+				return ['id' => 'case-1', 'x' => 'new'];
+			}
+		};
+
+		$refreshed = FlowItems::refreshSubjectProjection(
+			items: [FlowItems::item(json: ['id' => 'case-1', 'x' => 'old'])],
+			subject: $subject,
+			subjectUuid: 'case-1'
+		);
+
+		$this->assertSame('new', $refreshed[0]['json']['x']);
+	}//end testASubjectExposingGetObjectIsRead()
 }//end class
