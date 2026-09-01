@@ -57,6 +57,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use DateTime;
+use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowStop;
@@ -411,7 +412,12 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		$representative = [];
 		foreach ($items as $item) {
 			if (is_array($item) === true) {
-				$representative = $item;
+				// An engine item wraps its payload under the json envelope;
+				// render against the payload, tolerating a bare array too.
+				$payload = ($item[FlowItems::JSON] ?? $item);
+				if (is_array($payload) === true) {
+					$representative = $payload;
+				}
 				break;
 			}
 		}

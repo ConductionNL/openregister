@@ -1,17 +1,17 @@
 <?php
 
 /**
- * ApprovalChainGateListener runtime-enforcement tests (approval-chains-declarative).
+ * ApprovalChainGateListener enforcement tests (flow-approval-consolidation).
  *
- * Exercises the ObjectUpdatingEvent gate enforcement of
- * `x-openregister-approval-chains`:
+ * Exercises the ObjectUpdatingEvent gate against the SEQUENCE store:
  *  - an ungated transition (no matching declared chain) passes untouched;
- *  - the first gated attempt provisions steps and BLOCKS
+ *  - the first gated attempt provisions a sequence and BLOCKS
  *    (`approval-chain-pending`);
- *  - a still-in-progress chain blocks a repeat attempt WITHOUT duplicating steps;
- *  - amount-threshold routing selects the correct single tier;
- *  - a fully-approved chain RELEASES the transition;
- *  - a rejected cycle is cleared and a fresh cycle opened on the next attempt.
+ *  - a running sequence blocks a repeat attempt WITHOUT provisioning again;
+ *  - amount-threshold routing freezes the correct single tier;
+ *  - a completed sequence RELEASES the transition;
+ *  - a rejected sequence is KEPT and a new one opened on the next attempt;
+ *  - an uncompilable declaration fails CLOSED (`approval-chain-misconfigured`).
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -25,24 +25,22 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/approval-chains-declarative/specs/approval-workflow/spec.md
+ * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-007
  */
 
 declare(strict_types=1);
 
 namespace Unit\Listener;
 
-use OCA\OpenRegister\Db\ApprovalChain;
-use OCA\OpenRegister\Db\ApprovalChainMapper;
-use OCA\OpenRegister\Db\ApprovalStep;
-use OCA\OpenRegister\Db\ApprovalStepMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\TaskSequence;
+use OCA\OpenRegister\Db\TaskSequenceMapper;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\ApprovalChainGateListener;
 use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
-use OCA\OpenRegister\Service\ApprovalService;
+use OCA\OpenRegister\Service\Task\TaskSequenceService;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -50,34 +48,32 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * @coversDefaultClass \OCA\OpenRegister\Listener\ApprovalChainGateListener
+ * @covers \OCA\OpenRegister\Listener\ApprovalChainGateListener
+ * @covers \OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller
  */
 class ApprovalChainGateListenerTest extends TestCase {
 	private SchemaMapper&MockObject $schemaMapper;
-	private ApprovalChainMapper&MockObject $chainMapper;
-	private ApprovalStepMapper&MockObject $stepMapper;
-	private ApprovalService&MockObject $approvalService;
-	private ApprovalChainAnnotationInstaller&MockObject $installer;
+	private TaskSequenceMapper&MockObject $sequenceMapper;
+	private TaskSequenceService&MockObject $sequenceService;
 	private IUserSession&MockObject $userSession;
 	private ApprovalChainGateListener $listener;
 
 	protected function setUp(): void {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
-		$this->chainMapper = $this->createMock(ApprovalChainMapper::class);
-		$this->stepMapper = $this->createMock(ApprovalStepMapper::class);
-		$this->approvalService = $this->createMock(ApprovalService::class);
-		$this->installer = $this->createMock(ApprovalChainAnnotationInstaller::class);
+		$this->sequenceMapper = $this->createMock(TaskSequenceMapper::class);
+		$this->sequenceService = $this->createMock(TaskSequenceService::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$logger = $this->createMock(LoggerInterface::class);
 
 		$this->loginAs('requester1');
 
+		// The REAL compiler on purpose: it is a pure function of the schema,
+		// and the gate's contract includes what the compiler derives.
 		$this->listener = new ApprovalChainGateListener(
 			$this->schemaMapper,
-			$this->chainMapper,
-			$this->stepMapper,
-			$this->approvalService,
-			$this->installer,
+			$this->sequenceMapper,
+			$this->sequenceService,
+			new ApprovalChainAnnotationInstaller(logger: $logger),
 			$this->userSession,
 			$logger
 		);
@@ -93,7 +89,7 @@ class ApprovalChainGateListenerTest extends TestCase {
 	 * Schema with a `submit` lifecycle transition and a declared
 	 * `submit-approval` chain gating it, amount-routed between two tiers.
 	 */
-	private function gatedSchema(): Schema {
+	private function gatedSchema(array $approvers = null): Schema {
 		$schema = new Schema();
 		$schema->setId(5);
 		$schema->setSlug('test-commitment');
@@ -111,10 +107,10 @@ class ApprovalChainGateListenerTest extends TestCase {
 						'amountField' => 'amount',
 						'separationOfDuties' => true,
 						'onApprove' => 'advanceTransition',
-						'approvers' => [
+						'approvers' => ($approvers ?? [
 							['role' => 'finance-clerks', 'min' => 1, 'minAmount' => 0],
 							['role' => 'finance-directors', 'min' => 1, 'minAmount' => 100000],
-						],
+						]),
 					],
 				],
 			]
@@ -161,146 +157,115 @@ class ApprovalChainGateListenerTest extends TestCase {
 		return new ObjectUpdatingEvent(newObject: $new, oldObject: $old);
 	}//end event()
 
+	private function sequence(string $status): TaskSequence {
+		$sequence = new TaskSequence();
+		$sequence->setUuid('seq-1');
+		$sequence->setStatus($status);
+		return $sequence;
+	}//end sequence()
+
 	public function testUngatedTransitionPassesUntouched(): void {
 		$this->ungatedSchema();
 		$event = $this->event('test-plain', 'draft', 'submitted');
 
-		$this->approvalService->expects($this->never())->method('initializeChain');
+		$this->sequenceService->expects($this->never())->method('provision');
 
 		$this->listener->handle($event);
 
 		$this->assertFalse($event->isPropagationStopped());
 	}//end testUngatedTransitionPassesUntouched()
 
-	public function testFirstGatedAttemptProvisionsStepsAndIsBlocked(): void {
+	public function testFirstGatedAttemptProvisionsASequenceAndIsBlocked(): void {
 		$this->gatedSchema();
 		$event = $this->event('test-commitment', 'draft', 'submitted', amount: 5000);
 
-		$chain = new ApprovalChain();
-		$chain->setId(10);
-		$this->chainMapper->method('findBySchemaAndName')->willReturn($chain);
-		$this->stepMapper->method('findByChainAndObject')->willReturn([]);
-
-		$this->approvalService->expects($this->once())
-			->method('initializeChain')
+		$this->sequenceMapper->method('findNewestForAnchor')->willReturn(null);
+		$this->sequenceService->expects($this->once())
+			->method('provision')
 			->with(
-				$chain,
+				$this->callback(
+					static fn (array $template): bool => ($template['name'] === 'submit-approval')
+						&& (count($template['positions']) === 2)
+				),
 				'obj-1',
 				'requester1',
-				[['order' => 1, 'role' => 'finance-clerks']]
+				[['order' => 1, 'role' => 'finance-clerks', 'min' => 1, 'minAmount' => 0]]
 			);
 
 		$this->listener->handle($event);
 
 		$this->assertTrue($event->isPropagationStopped());
 		$this->assertSame('approval-chain-pending', $event->getErrors()['code']);
-	}//end testFirstGatedAttemptProvisionsStepsAndIsBlocked()
+	}//end testFirstGatedAttemptProvisionsASequenceAndIsBlocked()
 
-	public function testInProgressChainBlocksWithoutDuplicating(): void {
+	public function testARunningSequenceBlocksWithoutProvisioningAgain(): void {
 		$this->gatedSchema();
 		$event = $this->event('test-commitment', 'draft', 'submitted');
 
-		$chain = new ApprovalChain();
-		$chain->setId(10);
-		$this->chainMapper->method('findBySchemaAndName')->willReturn($chain);
-
-		$pendingStep = new ApprovalStep();
-		$pendingStep->hydrate(['status' => 'pending', 'stepOrder' => 1]);
-		$this->stepMapper->method('findByChainAndObject')->willReturn([$pendingStep]);
-
-		$this->approvalService->expects($this->never())->method('initializeChain');
-		$this->stepMapper->expects($this->never())->method('deleteByChainAndObject');
+		$this->sequenceMapper->method('findNewestForAnchor')->willReturn($this->sequence(TaskSequence::STATUS_RUNNING));
+		$this->sequenceService->expects($this->never())->method('provision');
 
 		$this->listener->handle($event);
 
 		$this->assertTrue($event->isPropagationStopped());
 		$this->assertSame('approval-chain-pending', $event->getErrors()['code']);
-	}//end testInProgressChainBlocksWithoutDuplicating()
+	}//end testARunningSequenceBlocksWithoutProvisioningAgain()
 
-	public function testLowAmountObjectRoutesToLowerTier(): void {
-		$this->gatedSchema();
-		$event = $this->event('test-commitment', 'draft', 'submitted', amount: 5000);
-
-		$chain = new ApprovalChain();
-		$chain->setId(10);
-		$this->chainMapper->method('findBySchemaAndName')->willReturn($chain);
-		$this->stepMapper->method('findByChainAndObject')->willReturn([]);
-
-		$this->approvalService->expects($this->once())
-			->method('initializeChain')
-			->with(
-				$chain,
-				'obj-1',
-				'requester1',
-				[['order' => 1, 'role' => 'finance-clerks']]
-			);
-
-		$this->listener->handle($event);
-	}//end testLowAmountObjectRoutesToLowerTier()
-
-	public function testHighAmountObjectRoutesToHigherTier(): void {
-		$this->gatedSchema();
-		$event = $this->event('test-commitment', 'draft', 'submitted', amount: 250000);
-
-		$chain = new ApprovalChain();
-		$chain->setId(10);
-		$this->chainMapper->method('findBySchemaAndName')->willReturn($chain);
-		$this->stepMapper->method('findByChainAndObject')->willReturn([]);
-
-		$this->approvalService->expects($this->once())
-			->method('initializeChain')
-			->with(
-				$chain,
-				'obj-1',
-				'requester1',
-				[['order' => 1, 'role' => 'finance-directors']]
-			);
-
-		$this->listener->handle($event);
-	}//end testHighAmountObjectRoutesToHigherTier()
-
-	public function testFullyApprovedChainReleasesTransition(): void {
+	public function testACompletedSequenceReleasesTheTransition(): void {
 		$this->gatedSchema();
 		$event = $this->event('test-commitment', 'draft', 'submitted');
 
-		$chain = new ApprovalChain();
-		$chain->setId(10);
-		$this->chainMapper->method('findBySchemaAndName')->willReturn($chain);
-
-		$approvedStep = new ApprovalStep();
-		$approvedStep->hydrate(['status' => 'approved', 'stepOrder' => 1]);
-		$this->stepMapper->method('findByChainAndObject')->willReturn([$approvedStep]);
-
-		$this->approvalService->expects($this->never())->method('initializeChain');
+		$this->sequenceMapper->method('findNewestForAnchor')->willReturn($this->sequence(TaskSequence::STATUS_COMPLETED));
+		$this->sequenceService->expects($this->never())->method('provision');
 
 		$this->listener->handle($event);
 
 		$this->assertFalse($event->isPropagationStopped());
-	}//end testFullyApprovedChainReleasesTransition()
+	}//end testACompletedSequenceReleasesTheTransition()
 
-	public function testRejectedCycleIsClearedAndReopened(): void {
+	public function testARejectedSequenceIsKeptAndANewOneOpens(): void {
 		$this->gatedSchema();
-		$event = $this->event('test-commitment', 'draft', 'submitted', amount: 5000);
+		$event = $this->event('test-commitment', 'draft', 'submitted');
 
-		$chain = new ApprovalChain();
-		$chain->setId(10);
-		$this->chainMapper->method('findBySchemaAndName')->willReturn($chain);
-
-		$rejectedStep = new ApprovalStep();
-		$rejectedStep->hydrate(['status' => 'rejected', 'stepOrder' => 1]);
-		$this->stepMapper->method('findByChainAndObject')->willReturn([$rejectedStep]);
-
-		$this->stepMapper->expects($this->once())
-			->method('deleteByChainAndObject')
-			->with(10, 'obj-1');
-
-		$this->approvalService->expects($this->once())
-			->method('initializeChain')
-			->with($chain, 'obj-1', 'requester1', $this->anything());
+		// The rejected sequence is the NEWEST one — it was not deleted.
+		$this->sequenceMapper->method('findNewestForAnchor')->willReturn($this->sequence(TaskSequence::STATUS_REJECTED));
+		$this->sequenceService->expects($this->once())->method('provision');
 
 		$this->listener->handle($event);
 
 		$this->assertTrue($event->isPropagationStopped());
 		$this->assertSame('approval-chain-pending', $event->getErrors()['code']);
-	}//end testRejectedCycleIsClearedAndReopened()
+	}//end testARejectedSequenceIsKeptAndANewOneOpens()
+
+	public function testHighAmountObjectFreezesTheHigherTier(): void {
+		$this->gatedSchema();
+		$event = $this->event('test-commitment', 'draft', 'submitted', amount: 250000);
+
+		$this->sequenceMapper->method('findNewestForAnchor')->willReturn(null);
+		$this->sequenceService->expects($this->once())
+			->method('provision')
+			->with(
+				$this->anything(),
+				'obj-1',
+				'requester1',
+				[['order' => 1, 'role' => 'finance-directors', 'min' => 1, 'minAmount' => 100000]]
+			);
+
+		$this->listener->handle($event);
+
+		$this->assertTrue($event->isPropagationStopped());
+	}//end testHighAmountObjectFreezesTheHigherTier()
+
+	public function testAnUncompilableChainFailsClosed(): void {
+		// Declared, but with no usable approver at all.
+		$this->gatedSchema(approvers: [['min' => 1]]);
+		$event = $this->event('test-commitment', 'draft', 'submitted');
+
+		$this->sequenceService->expects($this->never())->method('provision');
+
+		$this->listener->handle($event);
+
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame('approval-chain-misconfigured', $event->getErrors()['code']);
+	}//end testAnUncompilableChainFailsClosed()
 }//end class
