@@ -141,7 +141,8 @@ class CasePlanCascade {
 				if ($passes >= self::MAX_CASCADE_DEPTH) {
 					throw new CaseCascadeBoundException(
 						message: sprintf(
-							'Case-plan evaluation of object %s did not settle within %d passes (MAX_CASCADE_DEPTH); the plan was rolled back to its state before evaluation.',
+							'Case-plan evaluation of object %s did not settle within %d passes (MAX_CASCADE_DEPTH); '
+							. 'the plan was rolled back to its state before evaluation.',
 							$objectUuid,
 							self::MAX_CASCADE_DEPTH
 						)

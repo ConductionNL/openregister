@@ -222,23 +222,12 @@ class CaseRealisationService {
 		$users = ($item->getCandidateUsers() ?? []);
 		$groups = ($item->getCandidateGroups() ?? []);
 		$role = trim((string)$item->getCandidateRole());
-		$pooled = ($users !== [] || $groups !== [] || $role !== '');
-
-		$performerType = Task::PERFORMER_USER;
-		if ($users === [] && $groups !== []) {
-			$performerType = Task::PERFORMER_GROUP;
-		}
-
-		$state = Task::STATE_AVAILABLE;
-		if ($pooled === true) {
-			$state = Task::STATE_ENABLED;
-		}
 
 		$data = [
 			'title' => (string)($item->getName() ?? $item->getItemKey()),
 			'description' => $item->getDescription(),
-			'state' => $state,
-			'performerType' => $performerType,
+			'state' => $this->initialState(users: $users, groups: $groups, role: $role),
+			'performerType' => $this->performerType(users: $users, groups: $groups),
 			'requester' => (string)($item->getCreatedBy() ?? $actor),
 			'objectUuid' => $item->getObjectUuid(),
 			'registerId' => $item->getRegisterId(),
@@ -275,6 +264,44 @@ class CaseRealisationService {
 
 		return $data;
 	}//end taskDataFor()
+
+	/**
+	 * A task with candidates starts pooled (`enabled`); one without starts
+	 * `available`. The case layer never assigns.
+	 *
+	 * @param array<int, mixed> $users Candidate uids.
+	 * @param array<int, mixed> $groups Candidate group ids.
+	 * @param string $role Candidate role.
+	 *
+	 * @return string The initial task state.
+	 *
+	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
+	 */
+	private function initialState(array $users, array $groups, string $role): string {
+		if ($users !== [] || $groups !== [] || $role !== '') {
+			return Task::STATE_ENABLED;
+		}
+
+		return Task::STATE_AVAILABLE;
+	}//end initialState()
+
+	/**
+	 * Groups-only candidates make a group task; anything else a user task.
+	 *
+	 * @param array<int, mixed> $users Candidate uids.
+	 * @param array<int, mixed> $groups Candidate group ids.
+	 *
+	 * @return string The performer type.
+	 *
+	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
+	 */
+	private function performerType(array $users, array $groups): string {
+		if ($users === [] && $groups !== []) {
+			return Task::PERFORMER_GROUP;
+		}
+
+		return Task::PERFORMER_USER;
+	}//end performerType()
 
 	/**
 	 * A task's terminal outcome as a plan-item state.

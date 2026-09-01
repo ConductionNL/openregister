@@ -270,19 +270,7 @@ class CasePlanStateMachine {
 	): CaseItem {
 		$from = (string)$item->getState();
 		$identity = ($actor ?? self::SYSTEM_ACTOR);
-
-		if ($to === CaseItem::STATE_ACTIVE) {
-			$this->realiser->realise(item: $item, actor: $identity);
-			$item->setEnteredAt(new DateTime());
-		}
-
-		if ($to === CaseItem::STATE_COMPLETED && $item->getEnteredAt() === null) {
-			$item->setEnteredAt(new DateTime());
-		}
-
-		if ($to === CaseItem::STATE_TERMINATED) {
-			$item->setTerminatedReason($reason);
-		}
+		$this->stamp(item: $item, to: $to, reason: $reason, actor: $identity);
 
 		// THE one place `state` and `is_terminal` change, in the same statement.
 		$item->setState($to);
@@ -305,20 +293,7 @@ class CasePlanStateMachine {
 			authorized: true
 		);
 
-		// An exited work item closes its realisation, UNLESS the realisation
-		// is what ended it (it is already closed, and terminating a completed
-		// task would be the drift the one-directional rule forbids).
-		if ($item->isInTerminalState() === true && $cause !== CaseItemAudit::CAUSE_REALISATION) {
-			$this->realiser->terminate(
-				item: $item,
-				reason: ($reason ?? sprintf("Plan item '%s' reached '%s'.", (string)$item->getItemKey(), $to))
-			);
-		}
-
-		if ($to === CaseItem::STATE_COMPLETED && $item->getPlanItemType() === CaseItem::TYPE_MILESTONE) {
-			$this->writer->mirrorStatus(milestone: $item);
-		}
-
+		$this->propagate(item: $item, cause: $cause, reason: $reason);
 		$this->pending[] = new CaseItemTransitionedEvent(item: $item, fromState: $from);
 
 		if ($item->getPlanItemType() === CaseItem::TYPE_STAGE && $item->isInTerminalState() === true) {
@@ -327,6 +302,64 @@ class CasePlanStateMachine {
 
 		return $item;
 	}//end apply()
+
+	/**
+	 * The side stamps of entering a state: realise and stamp `entered_at` on
+	 * activation, stamp `entered_at` on a milestone's completion, record the
+	 * reason on a termination.
+	 *
+	 * @param CaseItem $item The item.
+	 * @param string $to The target state.
+	 * @param string|null $reason Free text.
+	 * @param string $actor The acting identity the realisation is created by.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
+	 */
+	private function stamp(CaseItem $item, string $to, ?string $reason, string $actor): void {
+		if ($to === CaseItem::STATE_ACTIVE) {
+			$this->realiser->realise(item: $item, actor: $actor);
+			$item->setEnteredAt(new DateTime());
+		}
+
+		if ($to === CaseItem::STATE_COMPLETED && $item->getEnteredAt() === null) {
+			$item->setEnteredAt(new DateTime());
+		}
+
+		if ($to === CaseItem::STATE_TERMINATED) {
+			$item->setTerminatedReason($reason);
+		}
+	}//end stamp()
+
+	/**
+	 * What a committed transition tells the world outside the row: an exited
+	 * work item closes its realisation (UNLESS the realisation is what ended
+	 * it: it is already closed, and terminating a completed task would be the
+	 * drift the one-directional rule forbids), and a reached milestone is
+	 * mirrored onto the object.
+	 *
+	 * @param CaseItem $item The item, already in its new state.
+	 * @param string $cause The cause.
+	 * @param string|null $reason Free text.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
+	 */
+	private function propagate(CaseItem $item, string $cause, ?string $reason): void {
+		$hasRealisation = trim((string)$item->getRealisationUuid()) !== '';
+		if ($item->isInTerminalState() === true && $cause !== CaseItemAudit::CAUSE_REALISATION && $hasRealisation === true) {
+			$this->realiser->terminate(
+				item: $item,
+				reason: ($reason ?? sprintf("Plan item '%s' reached '%s'.", (string)$item->getItemKey(), (string)$item->getState()))
+			);
+		}
+
+		if ($item->getState() === CaseItem::STATE_COMPLETED && $item->getPlanItemType() === CaseItem::TYPE_MILESTONE) {
+			$this->writer->mirrorStatus(milestone: $item);
+		}
+	}//end propagate()
 
 	/**
 	 * Stage exit: non-terminal entered children are terminated, unentered

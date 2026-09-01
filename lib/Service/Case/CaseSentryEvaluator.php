@@ -112,24 +112,40 @@ class CaseSentryEvaluator {
 
 		$known = $this->catalog->knownTriggerIds();
 		foreach ($criteria as $index => $sentry) {
-			$label = sprintf('%s sentry #%d', $where, (int)$index + 1);
-			if (is_array($sentry) === false) {
-				throw new CaseValidationException(message: sprintf('%s must be an object with an on-part and/or an if-part.', $label));
-			}
-
-			if (array_key_exists('on', $sentry) === false && array_key_exists('if', $sentry) === false) {
-				throw new CaseValidationException(message: sprintf('%s has neither an on-part nor an if-part.', $label));
-			}
-
-			if (array_key_exists('on', $sentry) === true) {
-				$this->validateOnPart(onPart: $sentry['on'], label: $label, known: $known);
-			}
-
-			if (array_key_exists('if', $sentry) === true && FlowExpression::isValid(logic: $sentry['if']) === false) {
-				throw new CaseValidationException(message: sprintf('%s has an if-part that is not a valid expression.', $label));
-			}
+			$this->validateSentry(sentry: $sentry, label: sprintf('%s sentry #%d', $where, (int)$index + 1), known: $known);
 		}
 	}//end validateCriteria()
+
+	/**
+	 * Save-time check of one sentry.
+	 *
+	 * @param mixed $sentry The sentry as stored.
+	 * @param string $label Which sentry, for the message.
+	 * @param array<int, string> $known The catalog's known trigger ids.
+	 *
+	 * @return void
+	 *
+	 * @throws CaseValidationException On the first refused part.
+	 *
+	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 */
+	private function validateSentry(mixed $sentry, string $label, array $known): void {
+		if (is_array($sentry) === false) {
+			throw new CaseValidationException(message: sprintf('%s must be an object with an on-part and/or an if-part.', $label));
+		}
+
+		if (array_key_exists('on', $sentry) === false && array_key_exists('if', $sentry) === false) {
+			throw new CaseValidationException(message: sprintf('%s has neither an on-part nor an if-part.', $label));
+		}
+
+		if (array_key_exists('on', $sentry) === true) {
+			$this->validateOnPart(onPart: $sentry['on'], label: $label, known: $known);
+		}
+
+		if (array_key_exists('if', $sentry) === true && FlowExpression::isValid(logic: $sentry['if']) === false) {
+			throw new CaseValidationException(message: sprintf('%s has an if-part that is not a valid expression.', $label));
+		}
+	}//end validateSentry()
 
 	/**
 	 * Which entry sentry admits an item now, if any.
@@ -347,16 +363,35 @@ class CaseSentryEvaluator {
 	}//end validateOnPart()
 
 	/**
-	 * Whether an if-part reads at least one field (`{"var": ...}` somewhere).
+	 * Whether an if-part is a rule that reads at least one field: an operator
+	 * object (not a list literal, which JSONLogic evaluates to itself and
+	 * would fire on being non-empty) with `{"var": ...}` somewhere inside.
 	 * A literal `true` names no field and is malformed by the spec's rule.
 	 *
 	 * @param mixed $logic The if-part.
 	 *
-	 * @return boolean True when a `var` operator occurs anywhere in it.
+	 * @return boolean True when it is a rule object containing a `var`.
 	 *
 	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	private function namesField(mixed $logic): bool {
+		if (is_array($logic) === false || $logic === [] || array_is_list($logic) === true) {
+			return false;
+		}
+
+		return $this->containsVar(logic: $logic);
+	}//end namesField()
+
+	/**
+	 * Whether a `var` operator occurs anywhere in an expression tree.
+	 *
+	 * @param mixed $logic Any node of the expression.
+	 *
+	 * @return boolean True when a `var` key occurs at any depth.
+	 *
+	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 */
+	private function containsVar(mixed $logic): bool {
 		if (is_array($logic) === false) {
 			return false;
 		}
@@ -366,11 +401,11 @@ class CaseSentryEvaluator {
 		}
 
 		foreach ($logic as $child) {
-			if ($this->namesField(logic: $child) === true) {
+			if ($this->containsVar(logic: $child) === true) {
 				return true;
 			}
 		}
 
 		return false;
-	}//end namesField()
+	}//end containsVar()
 }//end class

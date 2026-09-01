@@ -110,7 +110,7 @@ class CaseController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function items(?string $type = null, ?string $state = null, int $limit = 25, int $offset = 0): JSONResponse {
-		return $this->guard(fn (): array => $this->plans->findStuck(type: $type, state: $state, limit: $limit, offset: $offset, uid: $this->uid()));
+		return $this->guard(action: fn (): array => $this->plans->findStuck(type: $type, state: $state, limit: $limit, offset: $offset, uid: $this->uid()));
 	}//end items()
 
 	/**
@@ -126,7 +126,7 @@ class CaseController extends Controller {
 	#[NoCSRFRequired]
 	public function skeletonFromZaaktype(?array $zaaktype = null): JSONResponse {
 		return $this->guard(
-			function () use ($zaaktype): array {
+			action: function () use ($zaaktype): array {
 				$this->authorization->assertIdentified(uid: $this->uid(), verb: 'skeleton-from-zaaktype');
 				if (is_array($zaaktype) === false || $zaaktype === []) {
 					throw new CaseValidationException(message: 'A `zaaktype` document is required.');
@@ -149,7 +149,7 @@ class CaseController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function show(string $objectUuid): JSONResponse {
-		return $this->guard(fn (): array => $this->plans->getPlan(objectUuid: $objectUuid, uid: $this->uid()));
+		return $this->guard(action: fn (): array => $this->plans->getPlan(objectUuid: $objectUuid, uid: $this->uid()));
 	}//end show()
 
 	/**
@@ -177,7 +177,7 @@ class CaseController extends Controller {
 		?int $flowVersion = null,
 	): JSONResponse {
 		return $this->guard(
-			fn (): array => $this->plans->createPlan(
+			action: fn (): array => $this->plans->createPlan(
 				objectUuid: $objectUuid,
 				registerId: $register,
 				schemaId: $schema,
@@ -202,7 +202,7 @@ class CaseController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function evaluate(string $objectUuid): JSONResponse {
-		return $this->guard(fn (): array => $this->plans->evaluate(objectUuid: $objectUuid, uid: $this->uid()));
+		return $this->guard(action: fn (): array => $this->plans->evaluate(objectUuid: $objectUuid, uid: $this->uid()));
 	}//end evaluate()
 
 	/**
@@ -217,7 +217,7 @@ class CaseController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function enableable(string $objectUuid): JSONResponse {
-		return $this->guard(fn (): array => ['results' => $this->plans->enableableItems(objectUuid: $objectUuid, uid: $this->uid())]);
+		return $this->guard(action: fn (): array => ['results' => $this->plans->enableableItems(objectUuid: $objectUuid, uid: $this->uid())]);
 	}//end enableable()
 
 	/**
@@ -242,6 +242,9 @@ class CaseController extends Controller {
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One parameter per
 	 * field the route accepts; Nextcloud binds them by name from the body.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `required` is a stored
+	 * boolean field of the item, bound from the body like the others, not a
+	 * behaviour switch of this method.
 	 *
 	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
@@ -289,7 +292,7 @@ class CaseController extends Controller {
 		}
 
 		return $this->guard(
-			fn (): array => $this->plans->attachAdHoc(objectUuid: $objectUuid, data: $data, uid: $this->uid())->jsonSerialize(),
+			action: fn (): array => $this->plans->attachAdHoc(objectUuid: $objectUuid, data: $data, uid: $this->uid())->jsonSerialize(),
 			status: Http::STATUS_CREATED
 		);
 	}//end attach()
@@ -308,7 +311,7 @@ class CaseController extends Controller {
 	#[NoCSRFRequired]
 	public function complete(string $objectUuid, ?string $result = null): JSONResponse {
 		return $this->guard(
-			function () use ($objectUuid, $result): array {
+			action: function () use ($objectUuid, $result): array {
 				if ($result === null || trim($result) === '') {
 					throw new CaseValidationException(message: 'A `result` is required to finish a case.');
 				}
@@ -330,7 +333,7 @@ class CaseController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function destroy(string $objectUuid): JSONResponse {
-		return $this->guard(fn (): array => ['deleted' => $this->plans->deletePlan(objectUuid: $objectUuid, uid: $this->uid())]);
+		return $this->guard(action: fn (): array => ['deleted' => $this->plans->deletePlan(objectUuid: $objectUuid, uid: $this->uid())]);
 	}//end destroy()
 
 	/**
@@ -348,7 +351,7 @@ class CaseController extends Controller {
 	#[NoCSRFRequired]
 	public function transition(string $uuid, ?string $to = null, ?string $reason = null): JSONResponse {
 		return $this->guard(
-			function () use ($uuid, $to, $reason): array {
+			action: function () use ($uuid, $to, $reason): array {
 				if ($to === null || trim($to) === '') {
 					throw new CaseValidationException(message: 'A target state `to` is required.');
 				}
@@ -370,7 +373,7 @@ class CaseController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function enable(string $uuid): JSONResponse {
-		return $this->guard(fn (): array => $this->plans->enableDiscretionary(itemUuid: $uuid, uid: $this->uid())->jsonSerialize());
+		return $this->guard(action: fn (): array => $this->plans->enableDiscretionary(itemUuid: $uuid, uid: $this->uid())->jsonSerialize());
 	}//end enable()
 
 	/**

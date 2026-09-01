@@ -73,6 +73,11 @@ class EventCatalogListener implements IEventListener {
 	 * @param Event $event The dispatched event.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) A dispatch table: one
+	 * instanceof branch per catalog event, each a one-liner; splitting it
+	 * would spread the catalog over several methods.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) Same cause.
 	 */
 	public function handle(Event $event): void {
 		// A plan item reaching a terminal state (flow-cmmn-case-semantics) fires

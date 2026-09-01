@@ -79,7 +79,18 @@ class ZaaktypeCaseSkeletonMapper {
 	 *
 	 * @var array<int, string>
 	 */
-	private const IDENTITY = ['url', 'uuid', 'identificatie', 'omschrijving', 'omschrijvingGeneriek', 'catalogus', 'versiedatum', 'beginGeldigheid', 'eindeGeldigheid', 'concept'];
+	private const IDENTITY = [
+		'url',
+		'uuid',
+		'identificatie',
+		'omschrijving',
+		'omschrijvingGeneriek',
+		'catalogus',
+		'versiedatum',
+		'beginGeldigheid',
+		'eindeGeldigheid',
+		'concept',
+	];
 
 	/**
 	 * Produce the draft skeleton and the report.
@@ -95,7 +106,12 @@ class ZaaktypeCaseSkeletonMapper {
 		$settings = [
 			'name' => (string)($zaaktype['omschrijving'] ?? $zaaktype['identificatie'] ?? 'zaaktype'),
 			'source' => ['zaaktype' => (string)($zaaktype['url'] ?? $zaaktype['identificatie'] ?? '')],
-			'writeThrough' => ['statusField' => 'status', 'statusAtField' => 'statusReachedAt', 'resultField' => 'resultaat', 'resultAtField' => 'resultaatReachedAt'],
+			'writeThrough' => [
+				'statusField' => 'status',
+				'statusAtField' => 'statusReachedAt',
+				'resultField' => 'resultaat',
+				'resultAtField' => 'resultaatReachedAt',
+			],
 		];
 		$report[] = $this->entry(
 			element: 'authorization',
@@ -149,11 +165,40 @@ class ZaaktypeCaseSkeletonMapper {
 			return [];
 		}
 
+		$items = [];
+		$previousMilestone = null;
+		foreach ($this->orderStatuses(statuses: $statuses, report: $report) as $position => $status) {
+			$stage = $this->stageFor(status: $status, number: $position + 1, behandelaar: $behandelaar, terms: $terms, previousMilestone: $previousMilestone);
+			$items[] = $stage;
+			$previousMilestone = $stage['children'][1]['key'];
+			$this->reportStatus(status: $status, stage: $stage, report: $report);
+		}
+
+		return $items;
+	}//end mapStatuses()
+
+	/**
+	 * Numbered statuses in `volgnummer` order, unnumbered ones after them
+	 * (reported), non-objects dropped (reported).
+	 *
+	 * @param array<int, mixed> $statuses The statustypen as stored.
+	 * @param array<int, array<string, string>> $report The report (by reference).
+	 *
+	 * @return array<int, array<string, mixed>> The ordered statuses.
+	 *
+	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 */
+	private function orderStatuses(array $statuses, array &$report): array {
 		$ordered = [];
 		$unnumbered = [];
 		foreach ($statuses as $index => $status) {
 			if (is_array($status) === false) {
-				$report[] = $this->entry(element: 'statustypen[' . (int)$index . ']', status: self::UNMAPPED, reason: 'Not an object.', action: 'Correct the source document.');
+				$report[] = $this->entry(
+					element: 'statustypen[' . (int)$index . ']',
+					status: self::UNMAPPED,
+					reason: 'Not an object.',
+					action: 'Correct the source document.'
+				);
 				continue;
 			}
 
@@ -172,79 +217,105 @@ class ZaaktypeCaseSkeletonMapper {
 		}
 
 		usort($ordered, static fn (array $a, array $b): int => (int)$a['volgnummer'] <=> (int)$b['volgnummer']);
-		$sequence = array_merge($ordered, $unnumbered);
 
-		$items = [];
-		$previousMilestone = null;
-		foreach ($sequence as $position => $status) {
-			$number = $position + 1;
-			$label = (string)($status['omschrijving'] ?? ('status ' . $number));
-			$slug = $this->slug(text: $label);
-			$stageKey = sprintf('fase-%d-%s', $number, $slug);
-			$taskKey = sprintf('behandel-%d-%s', $number, $slug);
-			$milestoneKey = sprintf('status-%d-%s', $number, $slug);
+		return array_merge($ordered, $unnumbered);
+	}//end orderStatuses()
 
-			$task = [
-				'key' => $taskKey,
-				'type' => CaseItem::TYPE_HUMAN_TASK,
-				'name' => sprintf('Behandelen: %s', $label),
-				'required' => true,
-				'doorlooptijd' => $terms['doorlooptijd'],
-				'servicenorm' => $terms['servicenorm'],
-			];
-			if ($behandelaar !== null) {
-				$task['candidateRole'] = $behandelaar;
-			}
+	/**
+	 * One status as a stage holding a placeholder human item and the milestone.
+	 *
+	 * @param array<string, mixed> $status The statustype.
+	 * @param int $number Its position in the sequence, from 1.
+	 * @param string|null $behandelaar The behandelaar role, when any.
+	 * @param array<string, string|null> $terms doorlooptijd / servicenorm.
+	 * @param string|null $previousMilestone The milestone key this stage waits for.
+	 *
+	 * @return array<string, mixed> The stage node.
+	 *
+	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 */
+	private function stageFor(array $status, int $number, ?string $behandelaar, array $terms, ?string $previousMilestone): array {
+		$label = (string)($status['omschrijving'] ?? ('status ' . $number));
+		$slug = $this->slug(text: $label);
+		$stageKey = sprintf('fase-%d-%s', $number, $slug);
+		$taskKey = sprintf('behandel-%d-%s', $number, $slug);
+		$milestoneKey = sprintf('status-%d-%s', $number, $slug);
 
-			$stage = [
-				'key' => $stageKey,
-				'type' => CaseItem::TYPE_STAGE,
-				'name' => $label,
-				'required' => true,
-				'entryCriteria' => [],
-				'children' => [
-					$task,
-					[
-						'key' => $milestoneKey,
-						'type' => CaseItem::TYPE_MILESTONE,
-						'name' => $label,
-						'required' => true,
-						'entryCriteria' => [
-							['id' => $milestoneKey . ':entry', 'on' => ['event' => 'case.item.completed', 'item' => $taskKey]],
-						],
+		$task = [
+			'key' => $taskKey,
+			'type' => CaseItem::TYPE_HUMAN_TASK,
+			'name' => sprintf('Behandelen: %s', $label),
+			'required' => true,
+			'doorlooptijd' => $terms['doorlooptijd'],
+			'servicenorm' => $terms['servicenorm'],
+		];
+		if ($behandelaar !== null) {
+			$task['candidateRole'] = $behandelaar;
+		}
+
+		$entry = [];
+		if ($previousMilestone !== null) {
+			$entry = [['id' => $stageKey . ':entry', 'on' => ['event' => 'case.item.completed', 'item' => $previousMilestone]]];
+		}
+
+		return [
+			'key' => $stageKey,
+			'type' => CaseItem::TYPE_STAGE,
+			'name' => $label,
+			'required' => true,
+			'entryCriteria' => $entry,
+			'children' => [
+				$task,
+				[
+					'key' => $milestoneKey,
+					'type' => CaseItem::TYPE_MILESTONE,
+					'name' => $label,
+					'required' => true,
+					'entryCriteria' => [
+						['id' => $milestoneKey . ':entry', 'on' => ['event' => 'case.item.completed', 'item' => $taskKey]],
 					],
 				],
-			];
-			if ($previousMilestone !== null) {
-				$stage['entryCriteria'] = [
-					['id' => $stageKey . ':entry', 'on' => ['event' => 'case.item.completed', 'item' => $previousMilestone]],
-				];
+			],
+		];
+	}//end stageFor()
+
+	/**
+	 * Report the approximate wrapping of one status, and every attribute of
+	 * it that has no counterpart.
+	 *
+	 * @param array<string, mixed> $status The statustype.
+	 * @param array<string, mixed> $stage The stage it became.
+	 * @param array<int, array<string, string>> $report The report (by reference).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 */
+	private function reportStatus(array $status, array $stage, array &$report): void {
+		$number = (string)($status['volgnummer'] ?? '-');
+		$report[] = $this->entry(
+			element: sprintf('statustypen (volgnummer %s)', $number),
+			status: self::APPROXIMATE,
+			reason: sprintf(
+				"Milestone '%s' was wrapped in stage '%s' with one required human item '%s' so the sequence does not complete itself on import.",
+				(string)$stage['children'][1]['key'],
+				(string)$stage['key'],
+				(string)$stage['children'][0]['key']
+			),
+			action: 'Replace the placeholder human item with the real work of this phase, or drop the stage and give the milestone a real entry criterion.'
+		);
+
+		foreach (['statustekst', 'informeren', 'toelichting', 'doorlooptijd', 'checklistitemStatustype'] as $extra) {
+			if (isset($status[$extra]) === true && $status[$extra] !== '') {
+				$report[] = $this->entry(
+					element: sprintf('statustypen (volgnummer %s).%s', $number, $extra),
+					status: self::UNMAPPED,
+					reason: 'A statustype attribute with no counterpart on a milestone.',
+					action: 'Carry it in the milestone description if it matters to the caseworker.'
+				);
 			}
-
-			$items[] = $stage;
-			$previousMilestone = $milestoneKey;
-
-			$report[] = $this->entry(
-				element: sprintf('statustypen (volgnummer %s)', (string)($status['volgnummer'] ?? '-')),
-				status: self::APPROXIMATE,
-				reason: sprintf("Milestone '%s' was wrapped in stage '%s' with one required human item '%s' so the sequence does not complete itself on import.", $milestoneKey, $stageKey, $taskKey),
-				action: 'Replace the placeholder human item with the real work of this phase, or drop the stage and give the milestone a real entry criterion.'
-			);
-
-			foreach (['statustekst', 'informeren', 'toelichting', 'doorlooptijd', 'checklistitemStatustype'] as $extra) {
-				if (isset($status[$extra]) === true && $status[$extra] !== '' && $status[$extra] !== null) {
-					$report[] = $this->entry(
-						element: sprintf('statustypen (volgnummer %s).%s', (string)($status['volgnummer'] ?? '-'), $extra),
-						status: self::UNMAPPED,
-						reason: 'A statustype attribute with no counterpart on a milestone.',
-						action: 'Carry it in the milestone description if it matters to the caseworker.'
-					);
-				}
-			}
-		}//end foreach
-
-		return $items;
-	}//end mapStatuses()
+		}
+	}//end reportStatus()
 
 	/**
 	 * `roltypen` -> candidate roles; the behandelaar goes on the human items.
@@ -267,14 +338,24 @@ class ZaaktypeCaseSkeletonMapper {
 		$settings['candidateRoles'] = [];
 		foreach ($roles as $index => $role) {
 			if (is_array($role) === false) {
-				$report[] = $this->entry(element: 'roltypen[' . (int)$index . ']', status: self::UNMAPPED, reason: 'Not an object.', action: 'Correct the source document.');
+				$report[] = $this->entry(
+					element: 'roltypen[' . (int)$index . ']',
+					status: self::UNMAPPED,
+					reason: 'Not an object.',
+					action: 'Correct the source document.',
+				);
 				continue;
 			}
 
 			$name = trim((string)($role['omschrijving'] ?? ''));
 			$generic = trim((string)($role['omschrijvingGeneriek'] ?? ''));
 			if ($name === '') {
-				$report[] = $this->entry(element: 'roltypen[' . (int)$index . ']', status: self::UNMAPPED, reason: 'No `omschrijving`.', action: 'Name the role.');
+				$report[] = $this->entry(
+					element: 'roltypen[' . (int)$index . ']',
+					status: self::UNMAPPED,
+					reason: 'No `omschrijving`.',
+					action: 'Name the role.',
+				);
 				continue;
 			}
 
@@ -334,7 +415,12 @@ class ZaaktypeCaseSkeletonMapper {
 			}
 
 			if ($name === '') {
-				$report[] = $this->entry(element: 'resultaattypen[' . (int)$index . ']', status: self::UNMAPPED, reason: 'No `omschrijving`.', action: 'Name the result.');
+				$report[] = $this->entry(
+					element: 'resultaattypen[' . (int)$index . ']',
+					status: self::UNMAPPED,
+					reason: 'No `omschrijving`.',
+					action: 'Name the result.',
+				);
 				continue;
 			}
 

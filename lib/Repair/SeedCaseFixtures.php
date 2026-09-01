@@ -241,6 +241,7 @@ class SeedCaseFixtures implements IRepairStep {
 	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
 	 */
 	private function fixtures(): array {
+		// phpcs:disable Generic.Files.LineLength.MaxExceeded -- one fixture row per line keeps each seed readable as one record.
 		$permitSettings = [
 			'authorization' => ['demo-behandelaars'],
 			'results' => ['verleend', 'geweigerd'],
@@ -330,5 +331,6 @@ class SeedCaseFixtures implements IRepairStep {
 				'audit' => [['from' => '', 'to' => CaseItem::STATE_AVAILABLE, 'cause' => CaseItemAudit::CAUSE_REALISATION, 'causeRef' => '00000000-0000-0000-0000-0000000000cb', 'actor' => 'case-plan'], ['from' => CaseItem::STATE_AVAILABLE, 'to' => CaseItem::STATE_ACTIVE, 'cause' => CaseItemAudit::CAUSE_SENTRY, 'causeRef' => 'entry:default', 'actor' => 'case-plan']],
 			],
 		];
+		// phpcs:enable Generic.Files.LineLength.MaxExceeded
 	}//end fixtures()
 }//end class

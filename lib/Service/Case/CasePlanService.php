@@ -59,6 +59,9 @@ use Throwable;
  * each verb is short and single-purpose.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The sum of the verbs'
  * guards: authorize, then precondition, then the conditional write.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) The constructor names its
+ * collaborators one by one; hiding them behind a locator would hide the
+ * dependency direction this change exists to enforce.
  *
  * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
  */
@@ -303,7 +306,9 @@ class CasePlanService {
 		}
 
 		if ($parent !== null && $parent->getState() !== CaseItem::STATE_ACTIVE) {
-			throw new CaseValidationException(message: sprintf("Stage '%s' is not active; an ad-hoc item is attached to a live stage.", (string)$parent->getItemKey()));
+			throw new CaseValidationException(
+				message: sprintf("Stage '%s' is not active; an ad-hoc item is attached to a live stage.", (string)$parent->getItemKey())
+			);
 		}
 
 		$first = $rows[0];
@@ -436,9 +441,13 @@ class CasePlanService {
 		$this->authorization->assertMayAdminister(verb: 'complete-case', settings: $settings, uid: $uid);
 
 		$allowed = ($settings['results'] ?? []);
-		if (is_array($allowed) === false || in_array($result, $allowed, true) === false) {
+		if (is_array($allowed) === false) {
+			$allowed = [];
+		}
+
+		if (in_array($result, $allowed, true) === false) {
 			throw new CaseValidationException(
-				message: sprintf("Result '%s' is not in the case's allowed set [%s].", $result, implode(', ', is_array($allowed) ? $allowed : []))
+				message: sprintf("Result '%s' is not in the case's allowed set [%s].", $result, implode(', ', $allowed))
 			);
 		}
 
@@ -569,7 +578,11 @@ class CasePlanService {
 
 		$first = $rows[0];
 		$visible = $this->authorization->isAdministrator(uid: $uid)
-			|| ($uid !== null && $this->anchor->mayRead(objectUuid: $objectUuid, registerId: $first->getRegisterId(), schemaId: $first->getSchemaId()) === true);
+			|| ($uid !== null && $this->anchor->mayRead(
+				objectUuid: $objectUuid,
+				registerId: $first->getRegisterId(),
+				schemaId: $first->getSchemaId()
+			) === true);
 		if ($visible === false) {
 			throw new DoesNotExistException(sprintf('Object %s has no case plan.', $objectUuid));
 		}

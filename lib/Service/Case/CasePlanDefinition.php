@@ -56,6 +56,14 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity) `rowFrom()` is one setter
  * per optional definition field; each nullable field is one branch.
  * @SuppressWarnings(PHPMD.NPathComplexity) Same cause.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The sum of every shape
+ * the boundary refuses; each refusal is one `if` with one message, and the
+ * spec asks for all of them to fail at save time.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) `rowFrom()` takes the
+ * anchor triple, the tree position, the settings and the provenance
+ * separately because they come from different callers (definition import,
+ * ad-hoc attach, repetition); a parameter object would be built and unpacked
+ * at every one of them.
  *
  * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-cmmn-notation-is-not-adopted-and-bpmn-remains-a-format
  */
@@ -291,6 +299,7 @@ class CasePlanDefinition {
 		}
 
 		$node['key'] = $key;
+		$children = ($node['children'] ?? []);
 		$node['children'] = [];
 		if ($type === CaseItem::TYPE_STAGE) {
 			$flow = trim((string)($node['flow'] ?? ''));
@@ -298,7 +307,6 @@ class CasePlanDefinition {
 				$flows[$key] = $flow;
 			}
 
-			$children = ($node['children'] ?? []);
 			if (is_array($children) === false) {
 				throw new CaseValidationException(message: sprintf("'%s'.children must be a list.", $key));
 			}

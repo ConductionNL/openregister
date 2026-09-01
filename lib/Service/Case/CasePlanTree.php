@@ -33,6 +33,10 @@ use OCA\OpenRegister\Db\CaseItem;
 /**
  * Structural reads over one plan's rows.
  *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) One method per structural
+ * question the evaluator, the completion rule and the authorization ask;
+ * the tree is a read-only query vocabulary, like a mapper.
+ *
  * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
  */
 class CasePlanTree {
