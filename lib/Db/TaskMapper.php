@@ -51,6 +51,10 @@ use OCP\IDBConnection;
  * predicates plus the portal seam's two party-scoped finders; each method is
  * small, and moving the party predicates to a second mapper would split the
  * one WHERE-clause vocabulary this class exists to keep together.
+ * @SuppressWarnings(PHPMD.TooManyMethods) Same rule as the public count
+ * below: one query per distinct question, and the sequence's ordinal read
+ * (flow-approval-consolidation) is the twenty-seventh question, not a
+ * design change.
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) A mapper's public methods
  * are its query vocabulary, one per distinct question the service and the
  * inbox ask of the table (same reasoning as FlowRunMapper); two of them
