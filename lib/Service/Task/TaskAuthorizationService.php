@@ -42,6 +42,11 @@ use Throwable;
 /**
  * Decides who may run which lifecycle verb on which task.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One small rule method per
+ * relationship the spec names, plus the external rule set (flow-portal-task),
+ * which lives HERE deliberately: a second authorization service would be two
+ * places fail-closed has to hold instead of one.
+ *
  * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
 class TaskAuthorizationService {
@@ -69,6 +74,21 @@ class TaskAuthorizationService {
 		// ends up assigned: that is the requester's call, nobody else's.
 		'offer' => 'assertRequester',
 	];
+
+	/**
+	 * Verbs no caller may run on an external task (flow-portal-task).
+	 *
+	 * @var array<int, string>
+	 */
+	private const REFUSED_FOR_EXTERNAL = ['claim', 'unclaim', 'delegate', 'offer', 'assign', 'reassign'];
+
+	/**
+	 * Verbs that ANSWER a task, admitted on an external task to the matched
+	 * party alone.
+	 *
+	 * @var array<int, string>
+	 */
+	private const ANSWERING_VERBS = ['complete', 'resolve', 'checklist'];
 
 	/**
 	 * Constructor.
@@ -108,21 +128,15 @@ class TaskAuthorizationService {
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	public function assertMay(string $verb, Task $task, ?string $uid): void {
-		// No verb is anonymous, and no verb is reachable by uuid alone.
-		if ($uid === null || trim($uid) === '') {
-			throw new TaskAccessDeniedException(
-				message: sprintf("Verb '%s' denied: no acting identity.", $verb)
-			);
-		}
+		$uid = $this->assertDeterminable(verb: $verb, task: $task, uid: $uid);
 
-		// An unknown performer type is UNDETERMINABLE, which is a denial.
-		// PERFORMER_TYPES is the extensible vocabulary: adding `external`
-		// there admits it everywhere at once.
-		$performerType = (string)$task->getPerformerType();
-		if (in_array($performerType, Task::PERFORMER_TYPES, true) === false) {
-			throw new TaskAccessDeniedException(
-				message: sprintf("Verb '%s' denied: performer type '%s' is unknown, so authorization cannot be determined.", $verb, $performerType)
-			);
+		// An EXTERNAL task is decided by its own rule set, BEFORE the
+		// administrator bypass: the matched party is the only identity that
+		// may answer, and "an administrator acting through the seam" is one
+		// of the callers the spec names as denied.
+		if ((string)$task->getPerformerType() === Task::PERFORMER_EXTERNAL) {
+			$this->assertExternal(verb: $verb, task: $task, uid: $uid);
+			return;
 		}
 
 		if ($this->isAdmin(uid: $uid) === true) {
@@ -238,6 +252,131 @@ class TaskAuthorizationService {
 			return false;
 		}
 	}//end isAdmin()
+
+	/**
+	 * The two checks every verb makes before any rule: an acting identity
+	 * exists, and the performer type is in the vocabulary. Anything else is
+	 * UNDETERMINABLE, which is a denial — adding a type to PERFORMER_TYPES is
+	 * what admits it everywhere at once.
+	 *
+	 * @param string $verb The verb being attempted.
+	 * @param Task $task The task acted on.
+	 * @param string|null $uid The acting identity, or null when there is none.
+	 *
+	 * @return string The non-empty acting identity.
+	 *
+	 * @throws TaskAccessDeniedException When anonymous or undeterminable.
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 */
+	private function assertDeterminable(string $verb, Task $task, ?string $uid): string {
+		// No verb is anonymous, and no verb is reachable by uuid alone.
+		if ($uid === null || trim($uid) === '') {
+			throw new TaskAccessDeniedException(
+				message: sprintf("Verb '%s' denied: no acting identity.", $verb)
+			);
+		}
+
+		$performerType = (string)$task->getPerformerType();
+		if (in_array($performerType, Task::PERFORMER_TYPES, true) === false) {
+			throw new TaskAccessDeniedException(
+				message: sprintf("Verb '%s' denied: performer type '%s' is unknown, so authorization cannot be determined.", $verb, $performerType)
+			);
+		}
+
+		return $uid;
+	}//end assertDeterminable()
+
+	/**
+	 * The rule set of an external (portal party) task.
+	 *
+	 * Three groups of verbs, decided in this order. The pooling and mandate
+	 * verbs (`claim`, `unclaim`, `delegate`, and the assignment verbs
+	 * `offer`, `assign`, `reassign` that would move the frozen match) are
+	 * REFUSED for everyone, naming the performer type: there is no candidate
+	 * pool to claim from and no mandate model for a party outside the
+	 * instance, and the frozen match is corrected by cancel or re-ask, never
+	 * by moving the reference (design D-3). The answering verbs (`complete`,
+	 * `resolve`, `checklist`) admit exactly ONE identity: the stored party
+	 * reference, compared as a whole, with no administrator bypass and no
+	 * on-behalf path. The requester's verb (`cancel`) keeps its ordinary
+	 * rule, administrator included, because withdrawing an ask is the
+	 * caseworker's act, not an answer.
+	 *
+	 * @param string $verb The verb being attempted.
+	 * @param Task $task The external task.
+	 * @param string $uid The acting identity (a party reference, or a uid).
+	 *
+	 * @return void
+	 *
+	 * @throws TaskAccessDeniedException When denied, or undeterminable.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-tasks/spec.md#requirement-the-external-performer-type-is-portal-scoped-and-never-pooled
+	 */
+	private function assertExternal(string $verb, Task $task, string $uid): void {
+		if ($verb === 'create') {
+			return;
+		}
+
+		if (in_array($verb, self::REFUSED_FOR_EXTERNAL, true) === true) {
+			throw new TaskAccessDeniedException(
+				message: sprintf(
+					"Verb '%s' refused: performer type '%s' has no candidate pool and no mandate model; cancel or re-ask instead.",
+					$verb,
+					Task::PERFORMER_EXTERNAL
+				)
+			);
+		}
+
+		if (in_array($verb, self::ANSWERING_VERBS, true) === true) {
+			$this->assertMatchedParty(verb: $verb, task: $task, uid: $uid);
+			return;
+		}
+
+		if ($verb === 'cancel') {
+			if ($this->isAdmin(uid: $uid) === true) {
+				return;
+			}
+
+			$this->assertRequester(verb: $verb, task: $task, uid: $uid);
+			return;
+		}
+
+		throw new TaskAccessDeniedException(
+			message: sprintf("Verb '%s' denied: no authorization rule exists for it on performer type '%s'.", $verb, Task::PERFORMER_EXTERNAL)
+		);
+	}//end assertExternal()
+
+	/**
+	 * The caller must BE the stored party reference, as a whole.
+	 *
+	 * Fail closed on every undeterminable shape: no stored reference, a
+	 * reference that is not a party reference, or a caller that is not one.
+	 * Only a whole-string match of two party references admits; there is no
+	 * administrator bypass and no on-behalf path.
+	 *
+	 * @param string $verb The verb, for the denial message.
+	 * @param Task $task The external task.
+	 * @param string $uid The acting identity.
+	 *
+	 * @return void
+	 *
+	 * @throws TaskAccessDeniedException When the caller is not the matched party.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-only-the-matched-party-completes-fail-closed
+	 */
+	private function assertMatchedParty(string $verb, Task $task, string $uid): void {
+		$party = trim((string)$task->getAssignee());
+		if ($party === ''
+			|| str_starts_with($party, Task::EXTERNAL_PARTY_PREFIX) === false
+			|| str_starts_with($uid, Task::EXTERNAL_PARTY_PREFIX) === false
+			|| hash_equals($party, $uid) === false
+		) {
+			throw new TaskAccessDeniedException(
+				message: sprintf("Verb '%s' denied: only the matched portal subject may answer an external task.", $verb)
+			);
+		}
+	}//end assertMatchedParty()
 
 	/**
 	 * The caller must be the task's current assignee.
