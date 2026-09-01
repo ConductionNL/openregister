@@ -56,6 +56,10 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength) The run lifecycle — queue, execute, resume,
  * signal, persist — plus the stream walk's wiring and the in-request advance; each is one
  * entry into the same engine and belongs beside the others.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) 50 against 50, and the
+ * one branch is the version-pin refusal in advanceStream(): the same rule
+ * execute() enforces, applied to the completion path so a week-old task
+ * continues the graph its run was pinned to.
  */
 class FlowRunService {
 	/**
@@ -253,6 +257,17 @@ class FlowRunService {
 
 			return $this->mapper->update($run);
 		}
+
+		// 🔴 THE RUN'S PIN OUTRANKS THE CALLER'S DOCUMENT, here as in execute():
+		// a completion that lands a week after the run started must continue
+		// the graph the run was pinned to, not the one its author has since
+		// edited. An unpinned (draft test) run passes its document through.
+		$pinned = (new FlowPublishedGraph($this->container))->overlayOnto(run: $run, live: $flow);
+		if ($pinned === null) {
+			return $this->failUnresolvableVersion(run: $run);
+		}
+
+		$flow = $pinned;
 
 		$walk = $this->streamWalkFor(run: $run, flow: $flow, onlyStream: $streamId, budget: $firings);
 		if ($walk === null) {

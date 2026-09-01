@@ -38,7 +38,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\FlowRun;
 use Psr\Log\LoggerInterface;
@@ -117,19 +116,6 @@ class FlowEngine {
 	 * it is a failure, reported as one, not a silent truncation.
 	 */
 	private const MAX_TRANSITIONS = 1000;
-
-	/**
-	 * Context key carrying a per-walk transition ceiling.
-	 *
-	 * Set by a task completion whose node carries an `advance: N` budget
-	 * (flow-user-task-node, ADR-098 D9), read by THIS loop's own counter
-	 * alongside MAX_TRANSITIONS, and consumed by the walk that read it so the
-	 * worker's next pass is unbounded again. A ceiling that is reached is not
-	 * a failure: the run parks as due and the worker takes it from there.
-	 *
-	 * @var string
-	 */
-	public const CONTEXT_ADVANCE_BUDGET = 'advanceBudget';
 
 	/**
 	 * Constructor.
@@ -381,13 +367,6 @@ class FlowEngine {
 		$log = [];
 		$fired = 0;
 
-		// A per-walk ceiling, when a task completion set one. Read and then
-		// REMOVED from the context this walk hands on: the budget bounds the
-		// walk that spends it, and a persisted ceiling would bound the worker's
-		// next pass too, which nobody asked for.
-		$budget = $this->advanceBudgetFrom(context: $context);
-		unset($context[self::CONTEXT_ADVANCE_BUDGET]);
-
 		// Per-place item buffers. Items belong to the PLACES a token sits on,
 		// not to the run globally ({@see self::seedPlaceItems()}). With a stream
 		// walk the buffers persisted by the last commit win, so each branch
@@ -431,14 +410,6 @@ class FlowEngine {
 					'context' => $context,
 					'items' => $items,
 				];
-			}
-
-			if ($budget !== null && $fired >= $budget) {
-				// The completing request has pushed the run as far as its node
-				// allowed. Not a failure and not an end: the marking is already
-				// advanced past the last hop, so parking as due hands exactly
-				// the remainder to the worker.
-				return $this->parkedAtBudget(budget: $budget, log: $log, context: $context, items: $items);
 			}
 
 			$fired++;
@@ -717,62 +688,6 @@ class FlowEngine {
 		}//end while
 
 	}//end run()
-
-	/**
-	 * The per-walk transition ceiling a caller put on the context, if any.
-	 *
-	 * Only a positive integer counts. Zero, a negative number or junk is not a
-	 * ceiling: it reads as "no budget", never as "stop before the first hop",
-	 * because a caller that wanted no advance would not have advanced.
-	 *
-	 * @param array<string, mixed> $context The run context.
-	 *
-	 * @return integer|null The ceiling, or null for none.
-	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
-	 */
-	private function advanceBudgetFrom(array $context): ?int {
-		$raw = ($context[self::CONTEXT_ADVANCE_BUDGET] ?? null);
-		if (is_int($raw) === false || $raw < 1) {
-			return null;
-		}
-
-		return $raw;
-	}//end advanceBudgetFrom()
-
-	/**
-	 * The result of a walk that spent its budget: parked as due, not ended.
-	 *
-	 * A SUSPENDED status with a `resumeAt` of now is exactly what `signal()`
-	 * produces to hand a run to the worker, so the worker's `findDue()` picks
-	 * it up on its next pass with no new state to learn. The log entry says
-	 * why the segment stopped, so a person reading the run history does not
-	 * mistake a parked run for a stuck one.
-	 *
-	 * @param integer $budget The ceiling that was reached.
-	 * @param array<int, array<string, mixed>> $log This segment's log.
-	 * @param array<string, mixed> $context The run context.
-	 * @param array $items The items as the last hop left them.
-	 *
-	 * @return array<string, mixed> The run result envelope.
-	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
-	 */
-	private function parkedAtBudget(int $budget, array $log, array $context, array $items): array {
-		$log[] = [
-			'transition' => (string)(($log[count($log) - 1] ?? [])['transition'] ?? ''),
-			'status' => 'parked',
-			'reason' => sprintf('advance budget of %d transition(s) spent; the worker continues the run', $budget),
-		];
-
-		return [
-			'status' => self::STATUS_SUSPENDED,
-			'log' => $log,
-			'context' => $context,
-			'items' => $items,
-			'resumeAt' => new DateTime(),
-		];
-	}//end parkedAtBudget()
 
 	/**
 	 * Withdraw the tokens a choice did not take, and say so.
@@ -1163,7 +1078,7 @@ class FlowEngine {
 		$taken = $this->router()->takenExits(flow: $flow, transition: $transition, items: $items, context: $context);
 		$placeItems = $this->placement()->advanceItems(transition: $transition, placeItems: $placeItems, items: $items, taken: $taken);
 		$workflow->apply(subject: $subject, transitionName: $name);
-		$this->router()->keepOnlyTakenExits(workflow: $workflow, subject: $subject, transition: $transition, taken: $taken);
+		$this->pruneUntakenExits(workflow: $workflow, subject: $subject, transition: $transition, taken: $taken, context: $context);
 
 		// The places actually taken, in the transition's declaration order.
 		$takenTos = [];
