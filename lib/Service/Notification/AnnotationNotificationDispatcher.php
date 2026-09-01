@@ -2300,9 +2300,10 @@ class AnnotationNotificationDispatcher {
 	 * @param array<string, mixed> $data The triggering object's data.
 	 * @param string $originApp The resolved origin app id.
 	 *
-	 * @return array<int, array{label: array<string,string>, primary: bool, url: string}>
+	 * @return array<int, array{label: array<string,string>, primary: bool, url: string, method: string}>
 	 *
 	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-binary-decision-is-decidable-from-the-notification
 	 */
 	private function resolveActions(array $spec, ObjectEntity $object, array $data, string $originApp): array {
 		$declared = ($spec['actions'] ?? null);
@@ -2337,11 +2338,108 @@ class AnnotationNotificationDispatcher {
 				'label' => $label,
 				'primary' => (bool)($action['primary'] ?? false),
 				'url' => $url,
+				// A `task-verb` target is a state-changing REQUEST and renders
+				// POST; every navigation kind keeps rendering GET.
+				'method' => $this->resolveActionMethod(target: ($action['target'] ?? [])),
 			];
 		}//end foreach
 
 		return $resolved;
 	}//end resolveActions()
+
+	/**
+	 * The HTTP method a resolved action is delivered with.
+	 *
+	 * Only a `task-verb` target is a state change. Even then, a verb whose
+	 * outcome requires a mandatory comment (a rejecting outcome) resolves to
+	 * the task form instead, which is a navigation and therefore GET.
+	 *
+	 * @param mixed $target The raw target spec.
+	 *
+	 * @return string `POST` or `GET`.
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-binary-decision-is-decidable-from-the-notification
+	 */
+	private function resolveActionMethod(mixed $target): string {
+		if (is_array($target) === false || (string)($target['kind'] ?? '') !== 'task-verb') {
+			return 'GET';
+		}
+
+		if ($this->taskVerbNeedsForm(target: $target) === true) {
+			return 'GET';
+		}
+
+		return 'POST';
+	}//end resolveActionMethod()
+
+	/**
+	 * Whether a `task-verb` action must open the form rather than act directly.
+	 *
+	 * `flow-tasks` refuses a rejecting or returning outcome without a
+	 * comment, so a button for such an outcome cannot complete the task by
+	 * itself; it opens the surface that collects the comment.
+	 *
+	 * @param array<string, mixed> $target The task-verb target.
+	 *
+	 * @return bool True when the form must be opened.
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-binary-decision-is-decidable-from-the-notification
+	 */
+	private function taskVerbNeedsForm(array $target): bool {
+		$outcome = ($target['outcome'] ?? null);
+		if (is_string($outcome) === false) {
+			return false;
+		}
+
+		return \OCA\OpenRegister\Service\Task\TaskState::isRejectingOutcome(outcome: $outcome);
+	}//end taskVerbNeedsForm()
+
+	/**
+	 * Resolve a `task-verb` target to the verb route, or to the task form
+	 * when the outcome needs a comment.
+	 *
+	 * The uuid comes from the adapter payload (`taskUuid`) or the entity
+	 * uuid; the verb is validated against the closed list by the validator,
+	 * and the route it lands on is authorized by TaskAuthorizationService
+	 * identically to any other caller. The notification is a transport,
+	 * never a bypass.
+	 *
+	 * @param array<string, mixed> $target The task-verb target.
+	 * @param ObjectEntity $object The triggering object.
+	 * @param array<string, mixed> $data The triggering object's data.
+	 *
+	 * @return string|null The absolute URL, or null when unresolvable (no url generator, no uuid).
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-binary-decision-is-decidable-from-the-notification
+	 */
+	private function resolveTaskVerbTarget(array $target, ObjectEntity $object, array $data): ?string {
+		if ($this->urlGenerator === null) {
+			return null;
+		}
+
+		$uuid = (string)($data['taskUuid'] ?? ($object->getUuid() ?? ''));
+		$verb = (string)($target['verb'] ?? '');
+		if ($uuid === '' || $verb === '' || preg_match('/^[a-z]+$/', $verb) !== 1) {
+			return null;
+		}
+
+		try {
+			if ($this->taskVerbNeedsForm(target: $target) === true) {
+				return $this->urlGenerator->linkToRouteAbsolute('openregister.task.open', ['uuid' => $uuid]);
+			}
+
+			$url = $this->urlGenerator->linkToRouteAbsolute('openregister.task.' . $verb, ['uuid' => $uuid]);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		$outcome = ($target['outcome'] ?? null);
+		if (is_string($outcome) === true && $outcome !== '') {
+			$url .= '?outcome=' . rawurlencode($outcome);
+		}
+
+		return $url;
+	}//end resolveTaskVerbTarget()
 
 	/**
 	 * Resolve a single action `target` to an absolute deeplink.
@@ -2354,6 +2452,8 @@ class AnnotationNotificationDispatcher {
 	 *    id is never trusted from the wire.
 	 *  - route: an originApp frontend route with {{prop}} interpolation (HTML-escaped).
 	 *  - url: an absolute URL, passed through verbatim.
+	 *  - task-verb: the task lifecycle verb route (POST), or the task form
+	 *    when the outcome requires a comment.
 	 *
 	 * @param mixed $target The raw target spec.
 	 * @param ObjectEntity $object The triggering object.
@@ -2363,6 +2463,8 @@ class AnnotationNotificationDispatcher {
 	 * @return string|null The resolved absolute URL, or null when unresolvable.
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per target kind.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) The fourth kind (task-verb)
+	 * adds one branch; each kind's resolution is a distinct contract.
 	 *
 	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
 	 */
@@ -2372,6 +2474,10 @@ class AnnotationNotificationDispatcher {
 		}
 
 		$kind = (string)($target['kind'] ?? '');
+
+		if ($kind === 'task-verb') {
+			return $this->resolveTaskVerbTarget(target: $target, object: $object, data: $data);
+		}
 
 		if ($kind === 'url') {
 			$href = (string)($target['href'] ?? '');

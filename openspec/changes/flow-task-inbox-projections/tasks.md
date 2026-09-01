@@ -2,14 +2,14 @@
 
 ## 1. Dialect: a notification that can decide
 
-- [ ] 1.1 Add the `task-verb` action target kind to
+- [x] 1.1 Add the `task-verb` action target kind to
       `lib/Service/Notification/NotificationAnnotationValidator.php` beside
       the three at `:60` (`object-detail|route|url`): it names a lifecycle
       verb and an optional outcome, never an author-composed URL. Keep
       `MAX_ACTIONS = 2` (`:68`) — approve and reject is exactly two. Reject
       an unknown verb naming the value. Existing rules keep validating
       unchanged.
-- [ ] 1.2 Render it as a state-changing action:
+- [x] 1.2 Render it as a state-changing action:
       `lib/Notification/AnnotationNotifier.php:235` hardcodes
       `->setLink($url, 'GET')` for every declared action; a `task-verb`
       target renders POST against the `TaskController` verb route, and the
@@ -21,7 +21,7 @@
 
 ## 2. Task notifications, declaratively
 
-- [ ] 2.1 `lib/Service/Notification/TaskObjectAdapter.php` extending
+- [x] 2.1 `lib/Service/Notification/TaskObjectAdapter.php` extending
       `ObjectEntity`, modelled on `SystemEntityObjectAdapter.php:46`. Entity
       uuid = TASK uuid (so `NotificationDedupeState`, which is keyed per
       object, dedupes per task). Flattens assignee, candidate users/groups,
@@ -29,7 +29,7 @@
       overdue fields and the subject object's context into payload fields
       recipients and filters can read. NO notification logic in it — design
       D-1's fence.
-- [ ] 2.2 `lib/Service/Notification/TaskNotificationRules.php` modelled on
+- [x] 2.2 `lib/Service/Notification/TaskNotificationRules.php` modelled on
       `SystemSchemaRules.php:58`: the rule set from design.md — Seed Data,
       addressed at `trigger.action` (matched at
       `AnnotationNotificationDispatcher.php:1523-1539`), covering offered,
@@ -37,13 +37,13 @@
       overdue rule uses the operator-object filter grammar verified at
       `shillinq/lib/Settings/register.d/contract-lifecycle-management.json:383-401`
       over DERIVED fields — no rule anywhere filters a stored `overdue`.
-- [ ] 2.3 `lib/Listener/TaskNotificationListener.php` on the task lifecycle
+- [x] 2.3 `lib/Listener/TaskNotificationListener.php` on the task lifecycle
       events, calling
       `AnnotationNotificationDispatcher::dispatchWithSchema()` (`:211`) with
       `context['action']` set to the recorded transition action — the same
       seam `SystemEntityNotificationListener.php:94-127` uses. No second
       notification pipeline.
-- [ ] 2.4 Withdrawal via `IManager::markProcessed()` (the call already used
+- [x] 2.4 Withdrawal via `IManager::markProcessed()` (the call already used
       at `lib/Service/NotificationService.php:228`) on every terminal
       transition and on assignee change: a claimed pool task clears the
       other members' notifications; a task terminated by propagation leaves
@@ -51,11 +51,11 @@
 
 ## 3. The calendar projection
 
-- [ ] 3.1 Projection state per task (rendered-content hash + timestamp,
+- [x] 3.1 Projection state per task (rendered-content hash + timestamp,
       written by the projector only, read by no lifecycle or authorization
       rule) so idempotency, echo suppression and drift detection are
       comparisons rather than guesses — design D-2 rules 6 and 8.
-- [ ] 3.2 `lib/Service/Task/TaskCalendarProjector.php` rendering the VTODO
+- [x] 3.2 `lib/Service/Task/TaskCalendarProjector.php` rendering the VTODO
       from the task per the property table in design.md — D-5, including the
       new `URL` (a form deep link; `lib/Service/TaskService.php:400-440`
       emits no `URL` at all today), `X-OPENREGISTER-TASK` and
@@ -64,7 +64,7 @@
       must be parameterised by uid. A pooled task with no assignee is NOT
       projected. Reassignment removes and recreates; a terminal task is
       rendered terminal.
-- [ ] 3.3 Invert `lib/Service/TaskService.php` (753L) from store to
+- [x] 3.3 Invert `lib/Service/TaskService.php` (753L) from store to
       projection writer per the method table in design.md — D-7: two classes
       keyed on `X-OPENREGISTER-TASK`; `createTask()` refuses an
       engine-identity payload from the sub-resource endpoint;
@@ -74,7 +74,11 @@
       `nextcloud-vue/src/components/CnObjectSidebar/CnTasksTab.vue:304`, and
       fix the docblock at `:112` that claims ATTENDEE matching no code
       performs.
-- [ ] 3.4 Run projection and notification AFTER the lifecycle transaction
+      > OpenRegister side done. The `'Assigned to: '` WRITER at
+      > `CnTasksTab.vue:304` lives in nextcloud-vue and is tracked with 5.2;
+      > until it lands, that prose arrives as an ordinary DESCRIPTION on a
+      > STANDALONE VTODO and nothing on the server reads it any more.
+- [x] 3.4 Run projection and notification AFTER the lifecycle transaction
       commits, never inside it (design D-8): a calendar outage or an
       assignee with no VTODO-capable calendar logs and skips naming the
       task, and the transition still succeeds. `findUserCalendar()`'s
@@ -84,20 +88,20 @@
 
 ## 4. The write-back gate
 
-- [ ] 4.1 One gate implementation taking `(task_uuid, requested_verb,
+- [x] 4.1 One gate implementation taking `(task_uuid, requested_verb,
       actor)` and nothing else — never a state, never a field value (design
       D-2 rule 3). It calls the entity `TaskService`, which authorizes.
       Fail-closed on unresolvable task, illegal transition, unknown property
       shape or unavailable authorization. Only `STATUS` and deletion name
       verbs; `SUMMARY`/`DESCRIPTION`/`DUE`/`PRIORITY` edits reach the engine
       never and are overwritten by the next render.
-- [ ] 4.2 `lib/Dav/TaskVtodoWriteBackPlugin.php` — a Sabre `ServerPlugin`
+- [x] 4.2 `lib/Dav/TaskVtodoWriteBackPlugin.php` — a Sabre `ServerPlugin`
       declared in `appinfo/info.xml` under `<sabre><plugins><plugin>` (the
       mechanism `apps/dav/lib/AppInfo/PluginManager.php:155-160` loads) on
       `beforeWriteContent`/`beforeUnbind`, acting only on VTODOs carrying
       `X-OPENREGISTER-TASK`. A refusal throws a DAV forbidden exception so
       the client never records the change.
-- [ ] 4.3 `lib/Listener/TaskVtodoWriteBackListener.php` on the `apps/dav`
+- [x] 4.3 `lib/Listener/TaskVtodoWriteBackListener.php` on the `apps/dav`
       `CalendarObjectUpdatedEvent`/`CalendarObjectDeletedEvent` for writes
       that bypass the plugin: here the write has committed, so REVERT the
       projection to the engine's truth and notify the actor naming the task
@@ -111,6 +115,17 @@
       the `flow-tasks` inbox API. Filter, sort, page and total come from the
       query; the badge reads the TOTAL, never the row count; no client-side
       filter is applied over a returned page.
+      > **Blocked (nextcloud-vue, 2026-09-01).** The endpoint side is done:
+      > `GET /api/flow-tasks` and `GET /api/tasks` both answer with
+      > server-side filter, sort, page and a datastore `total`. The surface
+      > is a manifest page of `type: "index"` over a NAMED entity source,
+      > not a bespoke Vue page, and the registry that resolves named sources
+      > (`nextcloud-vue/src/composables/indexSources.js`, version 2.0.5)
+      > knows exactly one source, `flows`. A `tasks` source must be added
+      > there first; declaring `entitySource: "tasks"` in a manifest before
+      > that lands renders an empty index with a console error, which is
+      > worse than no page. Ships with the nextcloud-vue change that adds
+      > the source and `CnTasksWidget`.
 - [ ] 5.2 Repoint the leaf: `src/integrations/builtin/tasks.js` (64L),
       `CnObjectSidebar/CnTasksTab.vue` (500L),
       `CnTasksCard/CnTasksCard.vue` (387L) and `src/types/task.d.ts` (31L)
@@ -121,7 +136,17 @@
       no assignee and offers claim; and only verbs the caller is authorized
       to invoke are offered. Coordinate with decidesk, the only mounter
       (`decidesk/src/manifest.json:594`).
-- [ ] 5.3 `GET /api/tasks` (`appinfo/routes.php:903`) answers from the inbox
+      > **Blocked (nextcloud-vue, 2026-09-01).** Same repo, same
+      > coordination as 5.1: the leaf files named here are nextcloud-vue's,
+      > and decidesk is the one mounter to coordinate with. The server
+      > contract they repoint onto is in place (`GET /api/flow-tasks`
+      > with `objectUuid=`, the six CMMN states, server-derived `overdue`,
+      > the assignee as a uid, and verbs refused with 403 so a surface can
+      > learn what to offer). The two `@e2e` scenarios this leaves
+      > uncovered, the watcher who sees no action buttons and the widget's
+      > page-of-rows with the full count, are UI scenarios and travel with
+      > this task.
+- [x] 5.3 `GET /api/tasks` (`appinfo/routes.php:903`) answers from the inbox
       instead of `TaskService::getAllUserTasks()` (`:120-197`, which walks
       every calendar and filters and paginates in PHP). Visibility, filter,
       sort, page and total are the query's; `assignee` is no longer accepted
@@ -129,25 +154,25 @@
 
 ## 6. Seed data and tests
 
-- [ ] 6.1 Install the rule set and projection fixtures from design.md —
+- [x] 6.1 Install the rule set and projection fixtures from design.md —
       Seed Data (assigned-to-you with two `task-verb` actions; offered-to-
       pool via `kind: groups` from the task's own candidate groups; overdue
       in the verified filter grammar; cancelled-by-propagation; one
       projected task, one pooled task with no projection, one assignee with
       no VTODO-capable calendar) through the existing seeding path,
       idempotent.
-- [ ] 6.2 Gate tests: a stranger's completion refused and audited; a shared-
+- [x] 6.2 Gate tests: a stranger's completion refused and audited; a shared-
       calendar tick reverted and the actor notified; an illegal transition
       from a terminal task refused; a VTODO with no `X-OPENREGISTER-TASK`
       untouched through create/edit/complete; a `SUMMARY` edit not reaching
       the engine; both hooks proven to reach the one gate.
-- [ ] 6.3 Contract tests: rendering twice produces one VTODO and no second
+- [x] 6.3 Contract tests: rendering twice produces one VTODO and no second
       notification; a gate-driven completion records exactly one audit
       entry (no echo); a deleted VTODO is rebuilt with identical content and
       the task untouched; a clock-controlled overdue rule fires with the row
       byte-identical before and after; a failing calendar backend leaves the
       assignment committed and inboxed.
-- [ ] 6.4 Playwright coverage for the six `@e2e`-marked scenarios across
+- [x] 6.4 Playwright coverage for the six `@e2e`-marked scenarios across
       `specs/flow-task-projections/spec.md` and
       `specs/object-interactions/spec.md`: approve from the notification;
       the assigned task in the calendar with a link that resolves to the

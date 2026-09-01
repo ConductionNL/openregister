@@ -1,41 +1,41 @@
 <?php
 
 /**
- * Create the durable business-timer store: `openregister_flow_timers`,
- * `openregister_flow_timer_fires` and `openregister_flow_timer_events`.
- *
- * FLOW-BUSINESS-TIMERS (openspec/changes/flow-business-timers). The timer
- * table holds a BUDGET and a suspension ledger, not a target instant
- * (design D-2): `budget_value`/`budget_unit` say what the term is,
- * `consumed_value` how much of it has run, `running_since` when the current
- * running segment began, and `fire_at`/`next_rung_at` are materialised
- * derivations of those inputs so the sweep can be an index range scan
- * (design D-8). There is deliberately NO `overdue`, `is_overdue` or
- * `days_overdue` column: overdue is `state = 'armed' AND fire_at < now`,
- * computed on read, and a suspended timer has a NULL `fire_at` so it cannot
- * satisfy it.
- *
- * The fire ledger is UNIQUE on `(timer_uuid, rung_key)`: the constraint the
- * whole at-most-once argument for escalation rungs rests on (design D-7). The
- * event table is append-only evidence with no update or delete path.
- *
- * Strictly additive: no existing table is altered. Idempotent: each table is
- * created only when absent. Every index name stays within the 30-character
- * limit, matching `or_flowtrig_match_idx`.
- *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
+ *
+ * The case layer's store: two tables, additive only.
+ *
+ * `openregister_case_items` holds one row per plan-item INSTANCE, anchored to
+ * an OpenRegister object by the same triple a flow run and a task already
+ * carry (`object_uuid`, `register_id`, `schema_id`). This is the replacement
+ * for the reference implementation's single `casePlanState` string: a plan
+ * item is a row with its own state column, so "which cases have an active
+ * item of type X" is an indexed query and two caseworkers completing two
+ * different items never overwrite each other.
+ *
+ * Three deliberate absences, same rule as `openregister_tasks`:
+ *
+ * - NO `overdue`, `days_until_due` or `days_overdue` column. Deadlines are
+ *   CARRIED (`due_at`, `expires_at`, `doorlooptijd`, `servicenorm`) and
+ *   never computed on here; that is flow-business-timers' work.
+ * - NO case entity and NO case id. The anchoring object IS the case.
+ * - NO column on `openregister_tasks`: the link runs plan item -> task via
+ *   `realisation_uuid`, never the other way.
+ *
+ * `openregister_case_item_audit` is append-only. Its mapper exposes no update
+ * and no delete, and deleting a plan item does not cascade into it.
  *
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author    Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+ * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
  */
 
 declare(strict_types=1);
@@ -43,69 +43,54 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
+use Doctrine\DBAL\Types\Types;
 use OCP\DB\ISchemaWrapper;
-use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * Adds the three business-timer tables.
+ * Creates the plan-item and plan-item-audit tables.
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+ * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
  */
 class Version1Date20260901150000 extends SimpleMigrationStep {
-	/**
-	 * The timer table.
-	 *
-	 * @var string
-	 */
-	public const TABLE_TIMERS = 'openregister_flow_timers';
 
 	/**
-	 * The rung dedup ledger.
-	 *
-	 * @var string
+	 * The plan-item table.
 	 */
-	public const TABLE_FIRES = 'openregister_flow_timer_fires';
+	private const TABLE_ITEMS = 'openregister_case_items';
 
 	/**
-	 * The append-only evidence log.
-	 *
-	 * @var string
+	 * The append-only audit table.
 	 */
-	public const TABLE_EVENTS = 'openregister_flow_timer_events';
+	private const TABLE_AUDIT = 'openregister_case_item_audit';
 
 	/**
-	 * Change the database schema.
+	 * Create both tables and their indexes.
 	 *
-	 * @param IOutput $output Output for the migration process.
-	 * @param Closure $schemaClosure The schema closure.
-	 * @param array<array-key, mixed> $options Migration options.
+	 * @param IOutput $output Migration output.
+	 * @param Closure $schemaClosure Returns the ISchemaWrapper.
+	 * @param array<string, mixed> $options Migration options.
 	 *
 	 * @return ISchemaWrapper|null The changed schema, or null when nothing changed.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
-
 		$schema = $schemaClosure();
+
 		$changed = false;
 
-		if ($schema->hasTable(self::TABLE_TIMERS) === false) {
-			$this->createTimers(schema: $schema);
+		if ($schema->hasTable(self::TABLE_ITEMS) === false) {
+			$this->createItemsTable(schema: $schema);
 			$changed = true;
 		}
 
-		if ($schema->hasTable(self::TABLE_FIRES) === false) {
-			$this->createFires(schema: $schema);
-			$changed = true;
-		}
-
-		if ($schema->hasTable(self::TABLE_EVENTS) === false) {
-			$this->createEvents(schema: $schema);
+		if ($schema->hasTable(self::TABLE_AUDIT) === false) {
+			$this->createAuditTable(schema: $schema);
 			$changed = true;
 		}
 
@@ -113,142 +98,126 @@ class Version1Date20260901150000 extends SimpleMigrationStep {
 			return null;
 		}
 
+		$output->info('Created the case-plan tables: ' . self::TABLE_ITEMS . ', ' . self::TABLE_AUDIT . '.');
+
 		return $schema;
 	}//end changeSchema()
 
 	/**
-	 * The timer table (design.md, Data model).
+	 * The plan-item table: design.md, Data model.
 	 *
-	 * @param ISchemaWrapper $schema The schema being changed.
+	 * @param ISchemaWrapper $schema The schema to add to.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
-	private function createTimers(ISchemaWrapper $schema): void {
-		$table = $schema->createTable(self::TABLE_TIMERS);
+	private function createItemsTable(ISchemaWrapper $schema): void {
+		$table = $schema->createTable(self::TABLE_ITEMS);
 
 		// Identity.
 		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
 		$table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
-		$table->addColumn('title', Types::STRING, ['notnull' => false, 'length' => 255]);
-		$table->addColumn('metadata', Types::JSON, ['notnull' => false]);
+		$table->addColumn('item_key', Types::STRING, ['notnull' => true, 'length' => 128]);
+		$table->addColumn('name', Types::STRING, ['notnull' => false, 'length' => 255]);
+		$table->addColumn('description', Types::TEXT, ['notnull' => false]);
 
-		// Subject: the row the timer measures. Provenance is optional.
-		$table->addColumn('subject_type', Types::STRING, ['notnull' => true, 'length' => 16]);
-		$table->addColumn('subject_uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
-		$table->addColumn('organisation', Types::STRING, ['notnull' => false, 'length' => 64]);
-		$table->addColumn('run_uuid', Types::STRING, ['notnull' => false, 'length' => 36]);
-		$table->addColumn('node_id', Types::STRING, ['notnull' => false, 'length' => 255]);
-		$table->addColumn('app_id', Types::STRING, ['notnull' => false, 'length' => 64]);
+		// Anchor: the same triple FlowRun::subject_* and Task::object_* carry.
+		$table->addColumn('object_uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
+		$table->addColumn('register_id', Types::BIGINT, ['notnull' => false]);
+		$table->addColumn('schema_id', Types::BIGINT, ['notnull' => false]);
 
-		// Purpose: due advises, expiry enforces, and only wettelijk may enforce.
-		$table->addColumn('purpose', Types::STRING, ['notnull' => true, 'length' => 16]);
-		$table->addColumn('legal_effect', Types::STRING, ['notnull' => true, 'length' => 16]);
-		$table->addColumn('on_expiry', Types::STRING, ['notnull' => false, 'length' => 128]);
+		// Definition provenance. All nullable: an ad-hoc item has none.
+		$table->addColumn('flow_uuid', Types::STRING, ['notnull' => false, 'length' => 36]);
+		$table->addColumn('flow_version', Types::INTEGER, ['notnull' => false]);
+		$table->addColumn('definition_item_key', Types::STRING, ['notnull' => false, 'length' => 128]);
+		$table->addColumn('origin', Types::STRING, ['notnull' => true, 'length' => 16]);
 
-		// Anchor: stored, so a moved anchor can re-arm (design D-4).
-		$table->addColumn('anchor_event', Types::STRING, ['notnull' => false, 'length' => 128]);
-		$table->addColumn('anchor_offset', Types::INTEGER, ['notnull' => false]);
-		$table->addColumn('anchor_offset_unit', Types::STRING, ['notnull' => false, 'length' => 16]);
-		$table->addColumn('anchor_at', Types::DATETIME, ['notnull' => true]);
+		// Structure.
+		$table->addColumn('parent_item_id', Types::BIGINT, ['notnull' => false]);
+		$table->addColumn('plan_item_type', Types::STRING, ['notnull' => true, 'length' => 16]);
+		$table->addColumn('position', Types::INTEGER, ['notnull' => true, 'default' => 0]);
 
-		// Budget and the suspension ledger (design D-2).
-		$table->addColumn('budget_value', Types::DECIMAL, ['notnull' => true, 'precision' => 12, 'scale' => 4]);
-		$table->addColumn('budget_unit', Types::STRING, ['notnull' => true, 'length' => 16]);
-		$table->addColumn('consumed_value', Types::DECIMAL, ['notnull' => true, 'precision' => 12, 'scale' => 4, 'default' => 0]);
-		$table->addColumn('running_since', Types::DATETIME, ['notnull' => false]);
+		// Lifecycle. `is_terminal` is written in the same statement as `state`.
+		$table->addColumn('state', Types::STRING, ['notnull' => true, 'length' => 20]);
+		$table->addColumn('is_terminal', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
+		$table->addColumn('entered_at', Types::DATETIME_MUTABLE, ['notnull' => false]);
+		$table->addColumn('terminated_reason', Types::STRING, ['notnull' => false, 'length' => 512]);
 
-		// Derived, maintained by ONE private method (design D-2, D-8).
-		$table->addColumn('fire_at', Types::DATETIME, ['notnull' => false]);
-		$table->addColumn('next_rung_at', Types::DATETIME, ['notnull' => false]);
+		// Criteria.
+		$table->addColumn('entry_criteria', Types::JSON, ['notnull' => false]);
+		$table->addColumn('exit_criteria', Types::JSON, ['notnull' => false]);
+		$table->addColumn('required', Types::BOOLEAN, ['notnull' => true, 'default' => true]);
+		$table->addColumn('discretionary', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
+		$table->addColumn('repetition', Types::JSON, ['notnull' => false]);
 
-		// Calendar and ladder.
-		$table->addColumn('calendar_slug', Types::STRING, ['notnull' => false, 'length' => 128]);
-		$table->addColumn('ladder_slug', Types::STRING, ['notnull' => false, 'length' => 128]);
-		$table->addColumn('escalation_rules', Types::JSON, ['notnull' => false]);
+		// Realisation: the link runs FROM the plan item TO the task or run.
+		$table->addColumn('realisation_kind', Types::STRING, ['notnull' => false, 'length' => 8]);
+		$table->addColumn('realisation_uuid', Types::STRING, ['notnull' => false, 'length' => 36]);
+		$table->addColumn('realisation_count', Types::INTEGER, ['notnull' => true, 'default' => 1]);
 
-		// Suspension evidence (reporting, NOT arithmetic inputs).
-		$table->addColumn('suspended_since', Types::DATETIME, ['notnull' => false]);
-		$table->addColumn('suspend_reason', Types::STRING, ['notnull' => false, 'length' => 512]);
-		$table->addColumn('suspended_total_seconds', Types::BIGINT, ['notnull' => true, 'default' => 0]);
+		// Authorization. Named `authorization_rules` rather than the design's
+		// `authorization` because AUTHORIZATION is a reserved word in the SQL
+		// standard; the API serialises it as `authorization`.
+		$table->addColumn('authorization_rules', Types::JSON, ['notnull' => false]);
 
-		// Extension bound.
-		$table->addColumn('extension_count', Types::INTEGER, ['notnull' => true, 'default' => 0]);
-		$table->addColumn('extension_max', Types::INTEGER, ['notnull' => true, 'default' => 1]);
+		// Performer hints: passed to the task on realisation, never evaluated here.
+		$table->addColumn('candidate_users', Types::JSON, ['notnull' => false]);
+		$table->addColumn('candidate_groups', Types::JSON, ['notnull' => false]);
+		$table->addColumn('candidate_role', Types::STRING, ['notnull' => false, 'length' => 128]);
 
-		// Lifecycle. No overdue column, by requirement.
-		$table->addColumn('state', Types::STRING, ['notnull' => true, 'length' => 16]);
-		$table->addColumn('supersedes_uuid', Types::STRING, ['notnull' => false, 'length' => 36]);
-		$table->addColumn('fired_at', Types::DATETIME, ['notnull' => false]);
-		$table->addColumn('breached', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
-		$table->addColumn('cancelled_at', Types::DATETIME, ['notnull' => false]);
-		$table->addColumn('cancel_reason', Types::STRING, ['notnull' => false, 'length' => 512]);
+		// Deadlines: carried, not computed.
+		$table->addColumn('due_at', Types::DATETIME_MUTABLE, ['notnull' => false]);
+		$table->addColumn('expires_at', Types::DATETIME_MUTABLE, ['notnull' => false]);
+		$table->addColumn('doorlooptijd', Types::STRING, ['notnull' => false, 'length' => 64]);
+		$table->addColumn('servicenorm', Types::STRING, ['notnull' => false, 'length' => 64]);
+
+		// Plan-level settings (root authorization, allowed results, the
+		// write-through field mapping), frozen at plan creation and carried on
+		// every row of the plan so the plan needs no record of its own.
+		$table->addColumn('plan_settings', Types::JSON, ['notnull' => false]);
 
 		// Stamps.
-		$table->addColumn('created', Types::DATETIME, ['notnull' => true]);
-		$table->addColumn('updated', Types::DATETIME, ['notnull' => false]);
+		$table->addColumn('created', Types::DATETIME_MUTABLE, ['notnull' => true]);
+		$table->addColumn('updated', Types::DATETIME_MUTABLE, ['notnull' => false]);
 		$table->addColumn('created_by', Types::STRING, ['notnull' => false, 'length' => 64]);
 
 		$table->setPrimaryKey(['id']);
-		$table->addUniqueIndex(['uuid'], 'or_flowtimer_uuid_idx');
-		// The two bounded range scans of the sweep.
-		$table->addIndex(['state', 'fire_at'], 'or_flowtimer_due_idx');
-		$table->addIndex(['state', 'next_rung_at'], 'or_flowtimer_rung_idx');
-		// Cancellation by subject, and the run provenance read.
-		$table->addIndex(['subject_type', 'subject_uuid', 'state'], 'or_flowtimer_subj_idx');
-		$table->addIndex(['run_uuid'], 'or_flowtimer_run_idx');
-	}//end createTimers()
+		$table->addUniqueIndex(['uuid'], 'or_caseitem_uuid');
+		// "What is open on this case."
+		$table->addIndex(['object_uuid', 'is_terminal'], 'or_caseitem_obj_term');
+		// The tree read.
+		$table->addIndex(['object_uuid', 'parent_item_id'], 'or_caseitem_obj_parent');
+		// "Which cases are stuck where."
+		$table->addIndex(['plan_item_type', 'state'], 'or_caseitem_type_state');
+		// The reverse lookup from a task or a run.
+		$table->addIndex(['realisation_uuid'], 'or_caseitem_realisation');
+		// A repetition cannot collide with itself.
+		$table->addUniqueIndex(['object_uuid', 'item_key', 'realisation_count'], 'or_caseitem_obj_key_rep');
+	}//end createItemsTable()
 
 	/**
-	 * The rung dedup ledger, unique per (timer, rung).
+	 * The append-only audit table.
 	 *
-	 * @param ISchemaWrapper $schema The schema being changed.
+	 * @param ISchemaWrapper $schema The schema to add to.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
-	private function createFires(ISchemaWrapper $schema): void {
-		$table = $schema->createTable(self::TABLE_FIRES);
+	private function createAuditTable(ISchemaWrapper $schema): void {
+		$table = $schema->createTable(self::TABLE_AUDIT);
 		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
-		$table->addColumn('timer_uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
-		$table->addColumn('rung_key', Types::STRING, ['notnull' => true, 'length' => 128]);
-		$table->addColumn('fired_at', Types::DATETIME, ['notnull' => true]);
-		$table->addColumn('transition_action', Types::STRING, ['notnull' => false, 'length' => 128]);
-		$table->addColumn('recipient_roles', Types::JSON, ['notnull' => false]);
-		$table->addColumn('priority', Types::STRING, ['notnull' => false, 'length' => 16]);
-		$table->addColumn('inherited', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
-		$table->addColumn('created', Types::DATETIME, ['notnull' => true]);
-
-		$table->setPrimaryKey(['id']);
-		// The constraint the at-most-once argument rests on.
-		$table->addUniqueIndex(['timer_uuid', 'rung_key'], 'or_flowtimfire_uq');
-	}//end createFires()
-
-	/**
-	 * The append-only evidence log.
-	 *
-	 * @param ISchemaWrapper $schema The schema being changed.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
-	 */
-	private function createEvents(ISchemaWrapper $schema): void {
-		$table = $schema->createTable(self::TABLE_EVENTS);
-		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
-		$table->addColumn('timer_uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
-		$table->addColumn('type', Types::STRING, ['notnull' => true, 'length' => 16]);
+		$table->addColumn('case_item_id', Types::BIGINT, ['notnull' => true]);
+		$table->addColumn('from_state', Types::STRING, ['notnull' => false, 'length' => 20]);
+		$table->addColumn('to_state', Types::STRING, ['notnull' => false, 'length' => 20]);
+		$table->addColumn('cause', Types::STRING, ['notnull' => true, 'length' => 16]);
+		$table->addColumn('cause_ref', Types::STRING, ['notnull' => false, 'length' => 255]);
 		$table->addColumn('actor', Types::STRING, ['notnull' => false, 'length' => 128]);
-		$table->addColumn('reason', Types::STRING, ['notnull' => false, 'length' => 1024]);
-		$table->addColumn('prior_fire_at', Types::DATETIME, ['notnull' => false]);
-		$table->addColumn('new_fire_at', Types::DATETIME, ['notnull' => false]);
-		$table->addColumn('days_impact', Types::DECIMAL, ['notnull' => false, 'precision' => 12, 'scale' => 4]);
-		$table->addColumn('basis', Types::STRING, ['notnull' => false, 'length' => 128]);
-		$table->addColumn('created', Types::DATETIME, ['notnull' => true]);
-
+		$table->addColumn('reason', Types::TEXT, ['notnull' => false]);
+		$table->addColumn('authorized', Types::BOOLEAN, ['notnull' => true, 'default' => true]);
+		$table->addColumn('created', Types::DATETIME_MUTABLE, ['notnull' => true]);
 		$table->setPrimaryKey(['id']);
-		$table->addIndex(['timer_uuid', 'created'], 'or_flowtimev_timer_idx');
-	}//end createEvents()
+		$table->addIndex(['case_item_id'], 'or_caseaudit_item');
+	}//end createAuditTable()
 }//end class
