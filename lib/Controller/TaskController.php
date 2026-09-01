@@ -46,8 +46,12 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
+use OCA\OpenRegister\Exception\TaskFormRefusedException;
+use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
+use OCA\OpenRegister\Service\Task\TaskFormCompletion;
+use OCA\OpenRegister\Service\Task\TaskFormResolver;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
@@ -68,11 +72,20 @@ use Throwable;
 /**
  * REST surface for the fleet-generic task.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The sum of the verb
+ * routes and one catch per refusal shape in {@see respondWith()}; both scale
+ * with the spec, not with entanglement.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) One collaborator per
+ * concern, injected: the deep-link builder the projections carry, the form
+ * resolver and the form-aware completion. The controller is the one place
+ * those meet HTTP, and a facade over them would add a class that only
+ * forwards.
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity) respondWith() holds ONE
+ * catch per refusal shape so no verb can drift; folding two shapes into one
+ * catch is how a 400 and a 422 end up indistinguishable.
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) One route method per
  * lifecycle verb the spec names, plus the three reads. Folding verbs into a
  * mode parameter is how per-verb authorization rules get lost.
- * @SuppressWarnings(PHPMD.ExcessiveParameterList) One collaborator per
- * concern, injected; the tenth builds the deep link the projections carry.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The controller mediates
  * between HTTP and the task services plus their three exception shapes;
  * that is the whole of its job.
@@ -91,6 +104,9 @@ class TaskController extends Controller {
 	 * @param TaskAuthorizationService $authorization Read-visibility decisions.
 	 * @param TaskTemporalProjection $temporal The one overdue derivation.
 	 * @param IUserSession $userSession Names the acting identity.
+	 * @param TaskFormResolver $forms Resolves the form a task presents, per read.
+	 * @param TaskFormCompletion $completion Completes a task with a form payload,
+	 *                                       writing the subject first.
 	 * @param LoggerInterface|null $logger Where an unexpected failure's
 	 *                                     detail goes, INSTEAD of the response.
 	 * @param IGroupManager|null $groupManager Resolves the caller's groups
@@ -111,6 +127,8 @@ class TaskController extends Controller {
 		private readonly TaskAuthorizationService $authorization,
 		private readonly TaskTemporalProjection $temporal,
 		private readonly IUserSession $userSession,
+		private readonly TaskFormResolver $forms,
+		private readonly TaskFormCompletion $completion,
 		private readonly ?LoggerInterface $logger = null,
 		private readonly ?IGroupManager $groupManager = null,
 		private readonly ?IURLGenerator $urlGenerator = null,
@@ -226,13 +244,20 @@ class TaskController extends Controller {
 	}//end index()
 
 	/**
-	 * One task, visibility-checked.
+	 * One task, visibility-checked, with the form it presents.
+	 *
+	 * The row carries `form` (null when the step declares none, else the
+	 * resolved description with each field's `required` and `order` from the
+	 * declaration) and `requireChecklist`, so the completion surface needs no
+	 * second round-trip. Derived on this read from the pinned declaration
+	 * and the live schema; nothing is stored.
 	 *
 	 * @param string $uuid The task uuid.
 	 *
 	 * @return JSONResponse The task row; 404 when absent OR invisible.
 	 *
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-the-rendered-form-carries-the-declarations-required-flags-and-order
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -250,7 +275,10 @@ class TaskController extends Controller {
 		}
 
 		return new JSONResponse(
-			$this->inbox->row(task: $task, subjects: [], now: $this->temporal->now())
+			array_merge(
+				$this->inbox->row(task: $task, subjects: [], now: $this->temporal->now()),
+				$this->forms->describe(task: $task)
+			)
 		);
 	}//end show()
 
@@ -437,20 +465,37 @@ class TaskController extends Controller {
 	 * @param string|null $resultText Free-text result.
 	 * @param string|null $comment Completion comment — MANDATORY on a
 	 *                             rejecting or returning outcome.
+	 * @param mixed $data The declared form field values, as an object; the
+	 *                    same key the object transition endpoint uses. Absent
+	 *                    for a form-less completion. An undeclared key or a
+	 *                    missing required input is a 400 naming the fields;
+	 *                    a value the subject schema refuses is a 422.
 	 *
 	 * @return JSONResponse The completed task, or a named refusal.
 	 *
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
-	public function complete(string $uuid, string $outcome = 'done', ?string $resultText = null, ?string $comment = null): JSONResponse {
+	public function complete(
+		string $uuid,
+		string $outcome = 'done',
+		?string $resultText = null,
+		?string $comment = null,
+		mixed $data = null,
+	): JSONResponse {
+		if ($data !== null && is_array($data) === false) {
+			return new JSONResponse(['error' => 'Field "data" must be an object of field values.'], Http::STATUS_BAD_REQUEST);
+		}
+
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->complete(
+			verb: fn (): Task => $this->completion->complete(
 				uuid: $uuid,
 				outcome: $outcome,
 				resultText: $resultText,
 				comment: $comment,
+				data: ($data ?? []),
 				actor: $this->uid()
 			),
 			uuid: $uuid
@@ -502,12 +547,15 @@ class TaskController extends Controller {
 	/**
 	 * Run a verb and translate its refusals to HTTP, uniformly.
 	 *
-	 * One translation so no verb can drift: validation 400; denial 403 for
-	 * a caller who may READ the task and 404 for one who may not (so a
-	 * stranger cannot confirm a uuid by probing a verb); conflict 409 (the
-	 * current state in the message, per the spec); absence 404; everything
-	 * else a LOGGED 500 with a generic message, never the exception text,
-	 * which for a database failure carries SQL and bound parameters.
+	 * One translation so no verb can drift: validation 400, with the
+	 * offending `fields` and the refusal `kind` beside the message when a
+	 * form payload was refused; a subject write the schema or lifecycle
+	 * refused 422; denial 403 for a caller who may READ the task and 404 for
+	 * one who may not (so a stranger cannot confirm a uuid by probing a
+	 * verb); conflict 409 (the current state in the message, per the spec);
+	 * absence 404; everything else a LOGGED 500 with a generic message,
+	 * never the exception text, which for a database failure carries SQL and
+	 * bound parameters.
 	 *
 	 * @param callable(): Task $verb The service call.
 	 * @param int $successStatus The status of the happy path.
@@ -516,6 +564,7 @@ class TaskController extends Controller {
 	 * @return JSONResponse The task, or the refusal.
 	 *
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
 	 */
 	private function respondWith(callable $verb, int $successStatus = Http::STATUS_OK, ?string $uuid = null): JSONResponse {
 		try {
@@ -525,8 +574,24 @@ class TaskController extends Controller {
 				$this->inbox->row(task: $task, subjects: [], now: $this->temporal->now()),
 				$successStatus
 			);
+		} catch (TaskFormRefusedException $refused) {
+			// The form contract's refusal: the fields machine-readable next
+			// to the message, and the kind, so a client can flag each field
+			// and tell an undeclared key from a missing required input.
+			return new JSONResponse(
+				[
+					'error' => $refused->getMessage(),
+					'fields' => $refused->getFields(),
+					'kind' => $refused->getKind(),
+				],
+				Http::STATUS_BAD_REQUEST
+			);
 		} catch (TaskValidationException $refused) {
 			return new JSONResponse(['error' => $refused->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (TaskSubjectWriteRefusedException $refused) {
+			// The payload passed the form and the SUBJECT refused it, on the
+			// ordinary save path: not malformed, not completed.
+			return new JSONResponse(['error' => $refused->getMessage()], Http::STATUS_UNPROCESSABLE_ENTITY);
 		} catch (TaskAccessDeniedException $denied) {
 			if ($uuid !== null && $this->mayReadUuid(uuid: $uuid) === false) {
 				return new JSONResponse(['error' => 'No such task'], Http::STATUS_NOT_FOUND);

@@ -38,6 +38,8 @@ use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
+use OCA\OpenRegister\Service\Task\TaskForm;
+use OCA\OpenRegister\Service\Task\TaskFormReader;
 use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCP\IDBConnection;
@@ -45,6 +47,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use UnexpectedValueException;
 
 /**
  * Authorization ordering, concurrency, transactionality and normalisation.
@@ -59,6 +62,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Exception\TaskValidationException
  * @covers \OCA\OpenRegister\Exception\TaskAccessDeniedException
  * @covers \OCA\OpenRegister\Exception\TaskConflictException
+ * @uses \OCA\OpenRegister\Service\Task\TaskForm
  */
 class TaskServiceTest extends TestCase {
 
@@ -605,6 +609,114 @@ class TaskServiceTest extends TestCase {
 		$this->expectException(TaskConflictException::class);
 		$this->service()->complete(uuid: 't-7', outcome: 'rejected', resultText: null, comment: 'no', actor: 'alice');
 	}//end testASecondCompletionLosesTheConditionalUpdate()
+
+	/**
+	 * A REFUSED COMPLETION IS AUDITED, DISTINCTLY: its own action name, the
+	 * task's unchanged state, authorized (the caller was allowed to try), and
+	 * outside any transaction because nothing else changed.
+	 *
+	 * @return void
+	 */
+	public function testARefusedCompletionIsAuditedDistinctlyFromACompletion(): void {
+		$this->audits->expects($this->once())->method('insert')->willReturnCallback(
+			function (TaskAudit $entry): TaskAudit {
+				$this->assertSame('complete-refused', $entry->getAction());
+				$this->assertSame(Task::STATE_ACTIVE, $entry->getStateAfter());
+				$this->assertTrue($entry->getAuthorized());
+				$this->assertSame('alice', $entry->getActor());
+				$this->assertStringContainsString('reason', (string)$entry->getReason());
+
+				return $entry;
+			}
+		);
+		$this->db->expects($this->never())->method('beginTransaction');
+		$this->tasks->expects($this->never())->method('updateIfOpen');
+
+		$this->service()->recordRefusedCompletion(task: $this->openTask(), reason: 'missing required input field(s): "reason"', actor: 'alice');
+	}//end testARefusedCompletionIsAuditedDistinctlyFromACompletion()
+
+	/**
+	 * The seam a write-first caller uses: exists, authorized, open. A terminal
+	 * task is a conflict and a denial is audited, exactly as for the verb.
+	 *
+	 * @return void
+	 */
+	public function testAuthorizedOpenTaskRefusesATerminalTaskAndAuditsADenial(): void {
+		$closed = $this->openTask();
+		$closed->setState(Task::STATE_COMPLETED);
+		$closed->setIsTerminal(true);
+		$this->tasks->method('findByUuid')->willReturn($closed);
+
+		try {
+			$this->service()->authorizedOpenTask(verb: 'complete', uuid: 't-7', actor: 'alice');
+			$this->fail('Expected a conflict.');
+		} catch (TaskConflictException $conflict) {
+			$this->assertStringContainsString('completed', $conflict->getMessage());
+		}
+
+		$this->authorization->method('assertMay')->willThrowException(new TaskAccessDeniedException('not the assignee'));
+		$this->audits->expects($this->once())->method('insert');
+
+		$this->expectException(TaskAccessDeniedException::class);
+		$this->service()->authorizedOpenTask(verb: 'complete', uuid: 't-7', actor: 'mallory');
+	}//end testAuthorizedOpenTaskRefusesATerminalTaskAndAuditsADenial()
+
+	/**
+	 * A run-less task's own form declaration is refused at creation, the way a
+	 * step's is at save: nothing is inserted, the reader's reason is the message.
+	 *
+	 * @return void
+	 */
+	public function testCreateRefusesARecordFormTheReaderRefuses(): void {
+		$this->authorization->method('isAdministrator')->willReturn(false);
+		$reader = $this->createMock(TaskFormReader::class);
+		$reader->method('fromRecord')->willReturn(new TaskForm(kind: 'fields', schema: 'case', fields: [['field' => 'reasonn', 'required' => true]]));
+		$reader->method('validate')->willThrowException(new UnexpectedValueException('Field "reasonn" of schema "case" cannot be asked for: the schema has no such property.'));
+		$service = new TaskService(
+			tasks: $this->tasks,
+			candidates: $this->candidates,
+			relations: $this->relations,
+			audits: $this->audits,
+			authorization: $this->authorization,
+			resolver: $this->createMock(TaskPerformerResolver::class),
+			db: $this->db,
+			logger: new NullLogger(),
+			builder: new TaskBuilder(),
+			forms: $reader
+		);
+		$this->tasks->expects($this->never())->method('insert');
+
+		$this->expectException(TaskValidationException::class);
+		$this->expectExceptionMessage('reasonn');
+		$service->create(data: ['title' => 'Approve', 'metadata' => ['form' => ['kind' => 'fields', 'schema' => 'case', 'fields' => 'reasonn*']]], actor: 'alice');
+	}//end testCreateRefusesARecordFormTheReaderRefuses()
+
+	/**
+	 * A task without a record form is created without consulting the reader.
+	 *
+	 * @return void
+	 */
+	public function testCreateWithoutARecordFormNeverConsultsTheReader(): void {
+		$this->authorization->method('isAdministrator')->willReturn(false);
+		$reader = $this->createMock(TaskFormReader::class);
+		$reader->expects($this->never())->method('validate');
+		$service = new TaskService(
+			tasks: $this->tasks,
+			candidates: $this->candidates,
+			relations: $this->relations,
+			audits: $this->audits,
+			authorization: $this->authorization,
+			resolver: $this->createMock(TaskPerformerResolver::class),
+			db: $this->db,
+			logger: new NullLogger(),
+			builder: new TaskBuilder(),
+			forms: $reader
+		);
+
+		$created = $service->create(data: ['title' => 'Approve'], actor: 'alice');
+
+		$this->assertSame('Approve', $created->getTitle());
+	}//end testCreateWithoutARecordFormNeverConsultsTheReader()
 
 	/**
 	 * OVER HTTP, THE REQUESTER IS THE ACTOR: an ordinary caller cannot write

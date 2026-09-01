@@ -6,7 +6,7 @@
  * Dispatched by the case layer AFTER the transaction that moved the item
  * closes, never inside it. For the three terminal states the event carries
  * a catalog trigger id (`case.item.completed`, `case.item.terminated`,
- * `case.item.disabled`) so {@see \OCA\OpenRegister\Listener\EventCatalogListener}
+ * `case.item.disabled`) so {@see \OCA\OpenRegister\Listener\FlowTriggerListener}
  * can fire it against the anchoring object like any other catalog event:
  * a catalog entry that nothing dispatches would be the "declared but never
  * fired" trigger the catalog's own docblock forbids.
@@ -95,7 +95,9 @@ class CaseItemTransitionedEvent extends Event {
 
 	/**
 	 * The anchoring object as a trigger subject: the same shape
-	 * `EventCatalogListener::dispatch()` builds from an ObjectEntity.
+	 * `FlowTriggerListener` fires for an ObjectEntity. `register` and
+	 * `schema` are the item's NUMERIC ids; the listener resolves them to
+	 * the slugs the trigger index stores before firing.
 	 *
 	 * @return array{uuid: string, register: string, schema: string} The subject.
 	 *

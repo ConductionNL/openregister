@@ -24,6 +24,7 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
+ * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
  */
 
 declare(strict_types=1);
@@ -36,6 +37,7 @@ use OCA\OpenRegister\Service\Flow\FlowAdvanceBudget;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
+use OCA\OpenRegister\Service\Task\TaskFormReader;
 use OCP\IL10N;
 use UnexpectedValueException;
 
@@ -80,9 +82,11 @@ final class UserTaskConfig {
 	 * Constructor.
 	 *
 	 * @param IL10N $l10n Translations, for refusal messages an author reads.
+	 * @param TaskFormReader $forms Reads and refuses the step's form declaration.
 	 */
 	public function __construct(
 		private readonly IL10N $l10n,
+		private readonly TaskFormReader $forms,
 	) {
 
 	}//end __construct()
@@ -96,6 +100,12 @@ final class UserTaskConfig {
 	 * is refused by name so an author who asked for unlimited never silently
 	 * gets zero.
 	 *
+	 * The form declaration is checked here too, against the LIVE subject
+	 * schema: a field that is not a property, or is read-only or not visible,
+	 * an action the schema does not declare, or an external form without the
+	 * Forms app, is refused now, naming schema, field and reason. Left to run
+	 * time it would surface as a refusal the performer cannot act on.
+	 *
 	 * @param array<string, mixed> $config The step configuration.
 	 *
 	 * @return void
@@ -103,6 +113,7 @@ final class UserTaskConfig {
 	 * @throws UnexpectedValueException When the config is refused.
 	 *
 	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
+	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
 	 */
 	public function validate(array $config): void {
 		if (trim((string)($config['title'] ?? '')) === '') {
@@ -137,6 +148,9 @@ final class UserTaskConfig {
 
 		// Throws its own message, which names the value and states the spelling.
 		FlowAdvanceBudget::fromConfig(config: $config);
+
+		// Throws naming schema, field and reason; a step with no form passes.
+		$this->forms->validate(form: $this->forms->fromConfig(config: $config));
 
 	}//end validate()
 
