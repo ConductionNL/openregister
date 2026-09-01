@@ -394,7 +394,7 @@ class TransitionEngine {
 	 * transition accepts no payload", which is exactly what the allowlist in
 	 * {@see resolveTransitionInputs()} enforces.
 	 *
-	 * @return array<int, array{action: string, to: string, requires: ?string, description: ?string, inputs: array<int, array{field: string, required: bool}>}>
+	 * @return array<int, array{action:string, to:string, requires:?string, description:?string, inputs:array<int, array{field:string, required:bool}>}>
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) RBAC check + missing-object guard + annotation-absent
 	 * guard + per-transition from/requires/description checks each add one branch; none can be removed
@@ -661,7 +661,7 @@ class TransitionEngine {
 	 * A graph-derived action declares no `inputs`, and says so: the key is
 	 * present and empty, so a client handles static and graph responses alike.
 	 *
-	 * @return array{action: string, to: string, label: string, requires: ?string, description: ?string, inputs: array<int, array{field: string, required: bool}>}
+	 * @return array{action:string, to:string, label:string, requires:?string, description:?string, inputs:array<int,array{field:string,required:bool}>}
 	 *
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/flow-task-forms/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs

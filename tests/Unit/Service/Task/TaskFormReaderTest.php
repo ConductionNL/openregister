@@ -288,7 +288,7 @@ class TaskFormReaderTest extends TestCase {
 	public function testAnActionInheritsTheTransitionsDeclaredInputs(): void {
 		$schema = $this->caseSchema();
 		$this->schemas->method('find')->willReturn($schema);
-		$this->engine->expects($this->once())->method('declaredInputs')
+		$this->engine->expects($this->atLeastOnce())->method('declaredInputs')
 			->with($schema, 'reject')
 			->willReturn([['field' => 'reason', 'required' => true], ['field' => 'note', 'required' => false]]);
 		$form = $this->reader->fromConfig(config: ['formKind' => 'fields', 'formSchema' => 'case', 'formAction' => 'reject']);

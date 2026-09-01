@@ -596,7 +596,9 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 				'label' => $this->l10n->t('Form'),
 				'type' => 'text',
 				'help' => $this->l10n->t(
-					'What the performer fills in besides the outcome: leave empty for none, "fields" for fields of the subject object, "external" for a Nextcloud Forms form bound to the subject. Fields are validated by the subject schema; an external form is recorded as evidence and writes nothing to the object.'
+					'What the performer fills in besides the outcome: leave empty for none, "fields" for fields of the subject object, '
+					. '"external" for a Nextcloud Forms form bound to the subject. Fields are validated by the subject schema; '
+					. 'an external form is recorded as evidence and writes nothing to the object.'
 				),
 			],
 			[
@@ -611,7 +613,8 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 				'label' => $this->l10n->t('Lifecycle action'),
 				'type' => 'text',
 				'help' => $this->l10n->t(
-					'Inherit the fields a lifecycle transition of the subject schema declares, and apply that transition on completion. Leave empty to list fields instead.'
+					'Inherit the fields a lifecycle transition of the subject schema declares, and apply that transition on completion. '
+					. 'Leave empty to list fields instead.'
 				),
 			],
 			[
@@ -619,7 +622,8 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 				'label' => $this->l10n->t('Fields to ask for'),
 				'type' => 'text',
 				'help' => $this->l10n->t(
-					'Properties of the subject schema the performer supplies, comma separated; add * after a name to make it required, like "reason*". A name the schema does not have is refused when the step is saved. Not combined with a lifecycle action.'
+					'Properties of the subject schema the performer supplies, comma separated; add * after a name to make it required, '
+					. 'like "reason*". A name the schema does not have is refused when the step is saved. Not combined with a lifecycle action.'
 				),
 			],
 			[

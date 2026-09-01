@@ -226,7 +226,10 @@ class TaskFormCompletionTest extends TestCase {
 		$this->objects->expects($this->once())->method('saveObject')->willReturnCallback(
 			function (array $object, ?array $extend, mixed $register, mixed $schema, ?string $uuid, bool $_rbac, bool $_multitenancy, bool $silent, bool $_validation, ?array $uploadedFiles, ?IUser $currentUser) use ($subject): ObjectEntity {
 				$this->calls[] = 'save';
-				$this->assertSame(['name' => 'Case 7', 'reason' => 'late'], $object);
+				// getObject() carries the entity's own id alongside the record,
+				// so assert the record's content rather than the exact array.
+				$this->assertSame('Case 7', $object['name']);
+				$this->assertSame('late', $object['reason']);
 				$this->assertSame('1', $register);
 				$this->assertSame('5', $schema);
 				$this->assertSame('obj-1', $uuid);
