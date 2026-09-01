@@ -36,6 +36,8 @@ use OCA\OpenRegister\Exception\TaskValidationException;
 
 /**
  * Normalises every known priority scale onto low|normal|high|urgent.
+ *
+ * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-priority-is-normalised-to-one-scale-on-the-way-in
  */
 final class TaskPriority {
 

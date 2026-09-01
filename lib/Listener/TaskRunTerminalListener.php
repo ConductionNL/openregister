@@ -43,6 +43,8 @@ use Throwable;
  * Terminates a terminal run's open tasks.
  *
  * @template-implements IEventListener<FlowRunTerminalEvent>
+ *
+ * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
  */
 class TaskRunTerminalListener implements IEventListener {
 

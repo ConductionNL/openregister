@@ -47,13 +47,9 @@ use OCP\IDBConnection;
  * they filter. Splitting the table across two mappers would hide the count, not
  * the vocabulary.
  * @SuppressWarnings(PHPMD.ExcessiveClassLength) Over the line budget by the same
- * change, and again by the update() override that announces run terminality
- * (flow-task-entity). Most of the length is the docblocks that record WHY each
- * query carries the predicates it does; those predicates are tenant boundaries,
- * and trimming the reasoning to fit a line count is the wrong trade. The
- * terminality override lives here because this is the one choke point every
- * terminal write passes; moving it out would recreate the per-site dispatch it
- * replaces.
+ * change. Most of the length is the docblocks that record WHY each query carries
+ * the predicates it does; those predicates are tenant boundaries, and trimming
+ * the reasoning to fit a line count is the wrong trade.
  *
  * @template-extends QBMapper<FlowRun>
  *

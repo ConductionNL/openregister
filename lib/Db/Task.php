@@ -163,6 +163,8 @@ use OCP\AppFramework\Db\Entity;
  * column count, same as {@see FlowRun}.
  * @SuppressWarnings(PHPMD.ExcessivePublicCount) Entity getters/setters are
  * the column surface, not an API design choice.
+ *
+ * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
  */
 class Task extends Entity implements JsonSerializable {
 

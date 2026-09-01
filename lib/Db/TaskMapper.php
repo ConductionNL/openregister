@@ -47,7 +47,15 @@ use OCP\IDBConnection;
 /**
  * Reads and writes tasks.
  *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) A mapper's public methods
+ * are its query vocabulary, one per distinct question the service and the
+ * inbox ask of the table (same reasoning as FlowRunMapper); two of them
+ * (`watchersAsText`, `candidateMembershipSql`) are public so the
+ * platform-dependent SQL is unit-testable without a database.
+ *
  * @template-extends QBMapper<Task>
+ *
+ * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
  */
 class TaskMapper extends QBMapper {
 
@@ -143,6 +151,145 @@ class TaskMapper extends QBMapper {
 
 		return $this->findEntity(query: $qb);
 	}//end findByUuid()
+
+	/**
+	 * Update a task ONLY while it is still open: the conditional write every
+	 * state-changing verb goes through.
+	 *
+	 * Two completions, or a completion and a cancellation, can both pass the
+	 * in-memory terminality check and then race to the row. This statement
+	 * carries `AND is_terminal = false`, so the database lets exactly one
+	 * through and the other affects no row; the SERVICE turns that into a
+	 * conflict rather than letting the second outcome overwrite the first.
+	 *
+	 * Mirrors QBMapper::update() field by field (updated fields only) with
+	 * the extra predicate; a row id is required, as there.
+	 *
+	 * @param Task $task The task, with its setters already applied.
+	 *
+	 * @return boolean True when the open row was updated; false when the
+	 *                 task had already been closed by someone else.
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 */
+	public function updateIfOpen(Task $task): bool {
+		$id = $task->getId();
+		if ($id === null) {
+			throw new InvalidArgumentException('A task must be persisted before it can be updated.');
+		}
+
+		$task->setUpdated(new DateTime());
+		$properties = $task->getUpdatedFields();
+		unset($properties['id']);
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->update($this->getTableName());
+		foreach (array_keys($properties) as $property) {
+			$getter = 'get' . ucfirst($property);
+			$qb->set(
+				$task->propertyToColumn(property: $property),
+				$qb->createNamedParameter($task->$getter(), $this->getParameterTypeForProperty(entity: $task, property: $property))
+			);
+		}
+
+		$qb->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)));
+
+		return $qb->executeStatement() === 1;
+	}//end updateIfOpen()
+
+	/**
+	 * The `watchers` JSON column, readable as text on every platform.
+	 *
+	 * `Types::JSON` creates a `json` column on PostgreSQL, and `json LIKE
+	 * text` is not an operator there (`operator does not exist: json ~~
+	 * unknown`): without this cast every non-admin inbox request 500s on
+	 * PostgreSQL. MySQL/MariaDB and SQLite cast with `AS CHAR`, PostgreSQL
+	 * with `AS TEXT`, so the choice is by platform, the way MagicMapper does
+	 * it for its metadata columns.
+	 *
+	 * @return string The platform-correct cast expression.
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	public function watchersAsText(): string {
+		$column = $this->quote(identifier: 'watchers');
+		if ($this->isPostgres() === true) {
+			return sprintf('CAST(%s AS TEXT)', $column);
+		}
+
+		return sprintf('CAST(%s AS CHAR)', $column);
+	}//end watchersAsText()
+
+	/**
+	 * The correlated EXISTS over the candidate index, as SQL text.
+	 *
+	 * Public and parameter-agnostic so the shape is unit-testable: the
+	 * caller supplies the placeholders it created on its own builder. Every
+	 * kind the index holds is matched — a uid against `user`, the caller's
+	 * groups against `group` AND against `role` (a role names the group of
+	 * the same name, exactly as TaskAuthorizationService resolves it), so a
+	 * role-only pool is visible to the people who may claim from it.
+	 *
+	 * @param string $uidPlaceholder The named parameter holding the caller's uid.
+	 * @param string|null $groupsPlaceholder The named parameter holding the
+	 *                                       caller's group ids, or null when
+	 *                                       the caller has none.
+	 *
+	 * @return string The EXISTS predicate.
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	public function candidateMembershipSql(string $uidPlaceholder, ?string $groupsPlaceholder): string {
+		$kind = $this->quote(identifier: 'tc.kind');
+		$ref = $this->quote(identifier: 'tc.ref');
+		$membership = [
+			sprintf("(%s = 'user' AND %s = %s)", $kind, $ref, $uidPlaceholder),
+		];
+		if ($groupsPlaceholder !== null) {
+			$membership[] = sprintf("(%s = 'group' AND %s IN (%s))", $kind, $ref, $groupsPlaceholder);
+			$membership[] = sprintf("(%s = 'role' AND %s IN (%s))", $kind, $ref, $groupsPlaceholder);
+		}
+
+		return sprintf(
+			'EXISTS (SELECT 1 FROM %s %s WHERE %s = %s AND (%s))',
+			$this->quote(identifier: '*PREFIX*openregister_task_candidates'),
+			$this->quote(identifier: 'tc'),
+			$this->quote(identifier: 'tc.task_id'),
+			$this->quote(identifier: '*PREFIX*' . $this->getTableName() . '.id'),
+			implode(' OR ', $membership)
+		);
+	}//end candidateMembershipSql()
+
+	/**
+	 * Whether the connection speaks PostgreSQL.
+	 *
+	 * @return boolean True on PostgreSQL.
+	 */
+	private function isPostgres(): bool {
+		return stripos($this->db->getDatabasePlatform()::class, 'PostgreSQL') !== false;
+	}//end isPostgres()
+
+	/**
+	 * Quote a (possibly dotted) identifier the way THIS platform wants it.
+	 *
+	 * Raw SQL handed to createFunction() bypasses the query builder's
+	 * quoting, and a backtick is a syntax error on PostgreSQL, so every
+	 * identifier in raw SQL goes through the platform's own quoter.
+	 *
+	 * @param string $identifier `column`, `alias.column` or `*PREFIX*table`.
+	 *
+	 * @return string The quoted identifier.
+	 */
+	private function quote(string $identifier): string {
+		$platform = $this->db->getDatabasePlatform();
+		$parts = [];
+		foreach (explode('.', $identifier) as $part) {
+			$parts[] = $platform->quoteIdentifier($part);
+		}
+
+		return implode('.', $parts);
+	}//end quote()
 
 	/**
 	 * Atomically claim a task: assign IF still unassigned and still open.
@@ -436,8 +583,12 @@ class TaskMapper extends QBMapper {
 		if ($criteria->overdueAt !== null) {
 			$qb->andWhere(
 				$qb->createFunction(
-					'COALESCE(`due_at`, `expires_at`) < '
-					. $qb->createNamedParameter($criteria->overdueAt, IQueryBuilder::PARAM_DATETIME_MUTABLE)
+					sprintf(
+						'COALESCE(%s, %s) < %s',
+						$this->quote(identifier: 'due_at'),
+						$this->quote(identifier: 'expires_at'),
+						$qb->createNamedParameter($criteria->overdueAt, IQueryBuilder::PARAM_DATETIME_MUTABLE)
+					)
 				)
 			);
 		}
@@ -457,29 +608,18 @@ class TaskMapper extends QBMapper {
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	private function candidateMembershipPredicate(IQueryBuilder $qb, TaskInboxCriteria $criteria): \OCP\DB\QueryBuilder\IQueryFunction {
-		// Built as a raw EXISTS because the correlated subquery must share
-		// the OUTER query's parameter bag: parameters are therefore created
-		// on $qb, and the table names carry *PREFIX* so the connection's
-		// textual prefix replacement covers the correlation too.
-		$membership = [
-			sprintf(
-				"(`tc`.`kind` = 'user' AND `tc`.`ref` = %s)",
-				$qb->createNamedParameter($criteria->uid)
-			),
-		];
+		// Parameters are created on the OUTER builder so the correlated
+		// subquery shares its parameter bag; the SQL shape itself lives in
+		// candidateMembershipSql() where a test can read it.
+		$groups = null;
 		if ($criteria->groupIds !== []) {
-			$membership[] = sprintf(
-				"(`tc`.`kind` = 'group' AND `tc`.`ref` IN (%s))",
-				(string)$qb->createNamedParameter($criteria->groupIds, IQueryBuilder::PARAM_STR_ARRAY)
-			);
+			$groups = (string)$qb->createNamedParameter($criteria->groupIds, IQueryBuilder::PARAM_STR_ARRAY);
 		}
 
 		return $qb->createFunction(
-			sprintf(
-				'EXISTS (SELECT 1 FROM `*PREFIX*openregister_task_candidates` `tc` '
-				. 'WHERE `tc`.`task_id` = `*PREFIX*%s`.`id` AND (%s))',
-				$this->getTableName(),
-				implode(' OR ', $membership)
+			$this->candidateMembershipSql(
+				uidPlaceholder: (string)$qb->createNamedParameter($criteria->uid),
+				groupsPlaceholder: $groups
 			)
 		);
 	}//end candidateMembershipPredicate()
@@ -487,7 +627,8 @@ class TaskMapper extends QBMapper {
 	/**
 	 * The caller is on the task's watcher list.
 	 *
-	 * A LIKE over the JSON column: watchers confer READ visibility only and
+	 * A LIKE over the JSON column cast to text (see watchersAsText()):
+	 * watchers confer READ visibility only and
 	 * are not the inbox's hot path, so the readable record is authoritative
 	 * here rather than an index table.
 	 *
@@ -501,7 +642,9 @@ class TaskMapper extends QBMapper {
 	private function watcherPredicate(IQueryBuilder $qb, string $uid): string {
 		$needle = '%"' . $this->db->escapeLikeParameter($uid) . '"%';
 
-		return (string)$qb->expr()->like('watchers', $qb->createNamedParameter($needle));
+		return (string)$qb->createFunction(
+			sprintf('%s LIKE %s', $this->watchersAsText(), $qb->createNamedParameter($needle))
+		);
 	}//end watcherPredicate()
 
 	/**
@@ -527,7 +670,10 @@ class TaskMapper extends QBMapper {
 			case TaskInboxCriteria::SORT_PRIORITY:
 				$qb->orderBy(
 					$qb->createFunction(
-						"CASE `priority` WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END"
+						sprintf(
+							"CASE %s WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END",
+							$this->quote(identifier: 'priority')
+						)
 					),
 					$direction
 				);

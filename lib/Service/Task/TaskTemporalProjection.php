@@ -41,6 +41,8 @@ use OCA\OpenRegister\Db\Task;
 
 /**
  * Computes overdue, days-until-due and days-overdue from the stored deadlines.
+ *
+ * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-overdue-is-derived-and-must-not-be-stored
  */
 final class TaskTemporalProjection {
 
