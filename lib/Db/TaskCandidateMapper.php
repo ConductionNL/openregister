@@ -94,7 +94,7 @@ class TaskCandidateMapper extends QBMapper {
 			$row->setTaskId($taskId);
 			$row->setKind($candidate['kind']);
 			$row->setRef($candidate['ref']);
-			$this->insert($row);
+			$this->insert(entity: $row);
 		}
 	}//end replaceForTask()
 }//end class

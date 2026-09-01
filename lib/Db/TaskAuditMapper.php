@@ -70,7 +70,7 @@ class TaskAuditMapper extends QBMapper {
 		/*
 		 * @var TaskAudit
 		 */
-		return parent::insert($entity);
+		return parent::insert(entity: $entity);
 	}//end insert()
 
 	/**

@@ -79,10 +79,15 @@ final class TaskPriority {
 			}
 		}
 
+		$printable = gettype($value);
+		if (is_scalar($value) === true) {
+			$printable = (string)$value;
+		}
+
 		throw new TaskValidationException(
-			sprintf(
+			message: sprintf(
 				"Priority '%s' is on no known scale (low|normal|high|urgent, low|medium|high|critical, or iCal 0-9) and is refused, not coerced.",
-				is_scalar($value) === true ? (string)$value : gettype($value)
+				$printable
 			)
 		);
 	}//end normalise()
@@ -105,7 +110,7 @@ final class TaskPriority {
 	private static function fromIcal(int $value): string {
 		if ($value < 0 || $value > 9) {
 			throw new TaskValidationException(
-				sprintf("Priority '%d' is outside the iCal 0-9 range and is refused, not coerced.", $value)
+				message: sprintf("Priority '%d' is outside the iCal 0-9 range and is refused, not coerced.", $value)
 			);
 		}
 

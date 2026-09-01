@@ -124,7 +124,7 @@ class TaskService {
 		$this->authorizeOrRecord(verb: 'create', task: $task, actor: $actor);
 
 		return $this->transactional(
-			function () use ($task, $data, $actor): Task {
+			mutation: function () use ($task, $data, $actor): Task {
 				$persisted = $this->tasks->insert($task);
 				$this->rewriteCandidateIndex(task: $persisted);
 				$this->insertRelations(task: $persisted, data: $data);
@@ -162,7 +162,7 @@ class TaskService {
 		$task = $this->openTaskFor(verb: 'offer', uuid: $uuid, actor: $actor);
 
 		return $this->transactional(
-			function () use ($task, $pool, $actor): Task {
+			mutation: function () use ($task, $pool, $actor): Task {
 				if (array_key_exists('candidateUsers', $pool) === true) {
 					$task->setCandidateUsers($pool['candidateUsers']);
 				}
@@ -221,11 +221,11 @@ class TaskService {
 		$task = $this->openTaskFor(verb: 'claim', uuid: $uuid, actor: $actor);
 
 		return $this->transactional(
-			function () use ($task, $actor): Task {
+			mutation: function () use ($task, $actor): Task {
 				$won = $this->tasks->claim(taskId: (int)$task->getId(), uid: (string)$actor);
 				if ($won === false) {
 					throw new TaskConflictException(
-						sprintf("Task '%s' was not claimable: another claim won, or the task is no longer open.", (string)$task->getUuid())
+						message: sprintf("Task '%s' was not claimable: another claim won, or the task is no longer open.", (string)$task->getUuid())
 					);
 				}
 
@@ -251,7 +251,7 @@ class TaskService {
 		$task = $this->openTaskFor(verb: 'unclaim', uuid: $uuid, actor: $actor);
 
 		return $this->transactional(
-			function () use ($task, $actor): Task {
+			mutation: function () use ($task, $actor): Task {
 				$task->setAssignee(null);
 				$task->setOnBehalfOf(null);
 				$task->setMandate(null);
@@ -315,11 +315,11 @@ class TaskService {
 		$task = $this->openTaskFor(verb: 'delegate', uuid: $uuid, actor: $actor);
 
 		if (trim($mandate) === '') {
-			throw new TaskValidationException('A delegation requires a mandate naming the authority relied on.');
+			throw new TaskValidationException(message: 'A delegation requires a mandate naming the authority relied on.');
 		}
 
 		return $this->transactional(
-			function () use ($task, $delegate, $mandate, $actor): Task {
+			mutation: function () use ($task, $delegate, $mandate, $actor): Task {
 				$task->setOnBehalfOf($task->getAssignee());
 				$task->setAssignee($delegate);
 				$task->setMandate($mandate);
@@ -397,7 +397,7 @@ class TaskService {
 		$task = $this->openTaskFor(verb: 'cancel', uuid: $uuid, actor: $actor);
 
 		return $this->transactional(
-			function () use ($task, $reason, $actor): Task {
+			mutation: function () use ($task, $reason, $actor): Task {
 				$task->setOutcome('cancelled');
 				$this->applyState(task: $task, state: Task::STATE_TERMINATED, action: 'cancel');
 				$persisted = $this->tasks->update($task);
@@ -426,7 +426,7 @@ class TaskService {
 		$task = $this->openTaskFor(verb: 'checklist', uuid: $uuid, actor: $actor);
 
 		return $this->transactional(
-			function () use ($task, $itemId, $checked, $actor): Task {
+			mutation: function () use ($task, $itemId, $checked, $actor): Task {
 				$checklist = ($task->getChecklist() ?? []);
 				$found = false;
 				foreach ($checklist as $index => $item) {
@@ -439,7 +439,7 @@ class TaskService {
 
 				if ($found === false) {
 					throw new TaskValidationException(
-						sprintf("Checklist item '%s' does not exist on task '%s'.", $itemId, (string)$task->getUuid())
+						message: sprintf("Checklist item '%s' does not exist on task '%s'.", $itemId, (string)$task->getUuid())
 					);
 				}
 
@@ -449,7 +449,7 @@ class TaskService {
 					task: $persisted,
 					action: 'checklist',
 					actor: $actor,
-					reason: sprintf("Item '%s' set to %s.", $itemId, $checked === true ? 'checked' : 'unchecked')
+					reason: sprintf("Item '%s' set to '%s'.", $itemId, var_export($checked, true))
 				);
 
 				return $persisted;
@@ -484,7 +484,7 @@ class TaskService {
 		$terminated = 0;
 		foreach ($open as $task) {
 			$this->transactional(
-				function () use ($task, $reason, $runUuid): Task {
+				mutation: function () use ($task, $reason, $runUuid): Task {
 					$task->setOutcome('terminated');
 					$task->setBlockedReason(null);
 					$this->applyState(task: $task, state: Task::STATE_TERMINATED, action: 'terminate');
@@ -525,7 +525,7 @@ class TaskService {
 		}
 
 		return $this->transactional(
-			function () use ($task, $reason, $source): Task {
+			mutation: function () use ($task, $reason, $source): Task {
 				$task->setOutcome('terminated');
 				$this->applyState(task: $task, state: Task::STATE_TERMINATED, action: 'terminate');
 				$persisted = $this->tasks->update($task);
@@ -582,11 +582,11 @@ class TaskService {
 		$task = $this->openTaskFor(verb: $action, uuid: $uuid, actor: $actor);
 
 		if (trim($assignee) === '') {
-			throw new TaskValidationException('An assignment requires a non-empty assignee.');
+			throw new TaskValidationException(message: 'An assignment requires a non-empty assignee.');
 		}
 
 		return $this->transactional(
-			function () use ($task, $assignee, $actor, $action): Task {
+			mutation: function () use ($task, $assignee, $actor, $action): Task {
 				$task->setAssignee($assignee);
 				$task->setOnBehalfOf(null);
 				$task->setMandate(null);
@@ -629,12 +629,12 @@ class TaskService {
 		// task keeps its pre-call state.
 		if (TaskState::isRejectingOutcome(outcome: $outcome) === true && trim((string)$comment) === '') {
 			throw new TaskValidationException(
-				sprintf("Outcome '%s' rejects or returns the work, so a non-empty comment is mandatory.", $outcome)
+				message: sprintf("Outcome '%s' rejects or returns the work, so a non-empty comment is mandatory.", $outcome)
 			);
 		}
 
 		return $this->transactional(
-			function () use ($task, $outcome, $resultText, $comment, $actor, $verb): Task {
+			mutation: function () use ($task, $outcome, $resultText, $comment, $actor, $verb): Task {
 				$task->setOutcome($outcome);
 				$task->setResultText($resultText);
 				$task->setComment($comment);
@@ -670,7 +670,7 @@ class TaskService {
 
 		if ($task->isInTerminalState() === true) {
 			throw new TaskConflictException(
-				sprintf("Verb '%s' refused: task '%s' is already in terminal state '%s'.", $verb, $uuid, (string)$task->getState())
+				message: sprintf("Verb '%s' refused: task '%s' is already in terminal state '%s'.", $verb, $uuid, (string)$task->getState())
 			);
 		}
 
@@ -824,7 +824,12 @@ class TaskService {
 		// outcome unless the caller supplied an explicit one.
 		$normalised = TaskState::normalise(value: (string)($data['state'] ?? Task::STATE_AVAILABLE));
 		$this->applyState(task: $task, state: $normalised['state'], action: 'create');
-		$task->setOutcome((string)($data['outcome'] ?? '') !== '' ? (string)$data['outcome'] : $normalised['outcome']);
+		$outcome = $normalised['outcome'];
+		if ((string)($data['outcome'] ?? '') !== '') {
+			$outcome = (string)$data['outcome'];
+		}
+
+		$task->setOutcome($outcome);
 
 		// Priority: one scale, off-scale refused.
 		$task->setPriority(TaskPriority::normalise(value: ($data['priority'] ?? 'normal')));
@@ -833,7 +838,7 @@ class TaskService {
 		$performerType = (string)($data['performerType'] ?? Task::PERFORMER_USER);
 		if (in_array($performerType, Task::PERFORMER_TYPES, true) === false) {
 			throw new TaskValidationException(
-				sprintf("Performer type '%s' is not in the known vocabulary (%s).", $performerType, implode('|', Task::PERFORMER_TYPES))
+				message: sprintf("Performer type '%s' is not in the known vocabulary (%s).", $performerType, implode('|', Task::PERFORMER_TYPES))
 			);
 		}
 
@@ -845,7 +850,7 @@ class TaskService {
 		$expiresAt = $this->parseDate(value: ($data['expiresAt'] ?? null), field: 'expiresAt');
 		if ($dueAt !== null && $expiresAt !== null && $expiresAt < $dueAt) {
 			throw new TaskValidationException(
-				sprintf(
+				message: sprintf(
 					"expiresAt '%s' lies before dueAt '%s': a task that dies before it is due is a configuration error.",
 					$expiresAt->format('c'),
 					$dueAt->format('c')
@@ -863,45 +868,45 @@ class TaskService {
 
 		// Plain carried fields.
 		$task->setUuid((string)($data['uuid'] ?? Uuid::v4()->toRfc4122()));
-		$task->setTaskKey($this->stringOrNull($data['key'] ?? null));
-		$task->setTitle($this->stringOrNull($data['title'] ?? null));
-		$task->setDescription($this->stringOrNull($data['description'] ?? null));
-		$task->setMetadata($this->arrayOrNull($data['metadata'] ?? null));
-		$task->setRunUuid($this->stringOrNull($data['runUuid'] ?? null));
-		$task->setNodeId($this->stringOrNull($data['nodeId'] ?? null));
-		$task->setDefinitionVersion(isset($data['definitionVersion']) === true ? (int)$data['definitionVersion'] : null);
-		$task->setAppId($this->stringOrNull($data['appId'] ?? null));
-		$task->setWorkflowStepId($this->stringOrNull($data['workflowStepId'] ?? null));
-		$task->setOrganisation($this->stringOrNull($data['organisation'] ?? null));
-		$task->setAssignee($this->stringOrNull($data['assignee'] ?? null));
-		$task->setCandidateUsers($this->arrayOrNull($data['candidateUsers'] ?? null));
-		$task->setCandidateGroups($this->arrayOrNull($data['candidateGroups'] ?? null));
-		$task->setCandidateRole($this->stringOrNull($data['candidateRole'] ?? null));
-		$task->setRoutingStrategy($this->stringOrNull($data['routingStrategy'] ?? null));
-		$task->setRoutingFallback($this->stringOrNull($data['routingFallback'] ?? null));
-		$task->setOnBehalfOf($this->stringOrNull($data['onBehalfOf'] ?? null));
-		$task->setMandate($this->stringOrNull($data['mandate'] ?? null));
-		$task->setRequester($this->stringOrNull($data['requester'] ?? null));
-		$task->setWatchers($this->arrayOrNull($data['watchers'] ?? null));
-		$task->setSlaValue(isset($data['slaValue']) === true ? (int)$data['slaValue'] : null);
-		$task->setSlaUnit($this->stringOrNull($data['slaUnit'] ?? null));
-		$task->setCompliancePeriodDays(isset($data['compliancePeriodDays']) === true ? (int)$data['compliancePeriodDays'] : null);
-		$task->setRecurrence($this->stringOrNull($data['recurrence'] ?? null));
-		$task->setObjectUuid($this->stringOrNull($data['objectUuid'] ?? null));
-		$task->setRegisterId(isset($data['registerId']) === true ? (int)$data['registerId'] : null);
-		$task->setSchemaId(isset($data['schemaId']) === true ? (int)$data['schemaId'] : null);
-		$task->setParentTaskId(isset($data['parentTaskId']) === true ? (int)$data['parentTaskId'] : null);
-		$task->setEpicTaskId(isset($data['epicTaskId']) === true ? (int)$data['epicTaskId'] : null);
-		$task->setPercentComplete(isset($data['percentComplete']) === true ? (int)$data['percentComplete'] : null);
-		$task->setResponses($this->arrayOrNull($data['responses'] ?? null));
-		$task->setEvidence($this->arrayOrNull($data['evidence'] ?? null));
+		$task->setTaskKey($this->stringOrNull(value: $data['key'] ?? null));
+		$task->setTitle($this->stringOrNull(value: $data['title'] ?? null));
+		$task->setDescription($this->stringOrNull(value: $data['description'] ?? null));
+		$task->setMetadata($this->arrayOrNull(value: $data['metadata'] ?? null));
+		$task->setRunUuid($this->stringOrNull(value: $data['runUuid'] ?? null));
+		$task->setNodeId($this->stringOrNull(value: $data['nodeId'] ?? null));
+		$task->setDefinitionVersion($this->intOrNull(value: ($data['definitionVersion'] ?? null)));
+		$task->setAppId($this->stringOrNull(value: $data['appId'] ?? null));
+		$task->setWorkflowStepId($this->stringOrNull(value: $data['workflowStepId'] ?? null));
+		$task->setOrganisation($this->stringOrNull(value: $data['organisation'] ?? null));
+		$task->setAssignee($this->stringOrNull(value: $data['assignee'] ?? null));
+		$task->setCandidateUsers($this->arrayOrNull(value: $data['candidateUsers'] ?? null));
+		$task->setCandidateGroups($this->arrayOrNull(value: $data['candidateGroups'] ?? null));
+		$task->setCandidateRole($this->stringOrNull(value: $data['candidateRole'] ?? null));
+		$task->setRoutingStrategy($this->stringOrNull(value: $data['routingStrategy'] ?? null));
+		$task->setRoutingFallback($this->stringOrNull(value: $data['routingFallback'] ?? null));
+		$task->setOnBehalfOf($this->stringOrNull(value: $data['onBehalfOf'] ?? null));
+		$task->setMandate($this->stringOrNull(value: $data['mandate'] ?? null));
+		$task->setRequester($this->stringOrNull(value: $data['requester'] ?? null));
+		$task->setWatchers($this->arrayOrNull(value: $data['watchers'] ?? null));
+		$task->setSlaValue($this->intOrNull(value: ($data['slaValue'] ?? null)));
+		$task->setSlaUnit($this->stringOrNull(value: $data['slaUnit'] ?? null));
+		$task->setCompliancePeriodDays($this->intOrNull(value: ($data['compliancePeriodDays'] ?? null)));
+		$task->setRecurrence($this->stringOrNull(value: $data['recurrence'] ?? null));
+		$task->setObjectUuid($this->stringOrNull(value: $data['objectUuid'] ?? null));
+		$task->setRegisterId($this->intOrNull(value: ($data['registerId'] ?? null)));
+		$task->setSchemaId($this->intOrNull(value: ($data['schemaId'] ?? null)));
+		$task->setParentTaskId($this->intOrNull(value: ($data['parentTaskId'] ?? null)));
+		$task->setEpicTaskId($this->intOrNull(value: ($data['epicTaskId'] ?? null)));
+		$task->setPercentComplete($this->intOrNull(value: ($data['percentComplete'] ?? null)));
+		$task->setResponses($this->arrayOrNull(value: $data['responses'] ?? null));
+		$task->setEvidence($this->arrayOrNull(value: $data['evidence'] ?? null));
 		$task->setCreatedBy($actor);
 
 		// Template FREEZE at creation: id, version and the snapshot land
 		// together, and later evaluation reads only the snapshot.
-		$task->setTemplateId($this->stringOrNull($data['templateId'] ?? null));
-		$task->setTemplateVersion(isset($data['templateVersion']) === true ? (int)$data['templateVersion'] : null);
-		$task->setTemplateSnapshot($this->arrayOrNull($data['templateSnapshot'] ?? null));
+		$task->setTemplateId($this->stringOrNull(value: $data['templateId'] ?? null));
+		$task->setTemplateVersion($this->intOrNull(value: ($data['templateVersion'] ?? null)));
+		$task->setTemplateSnapshot($this->arrayOrNull(value: $data['templateSnapshot'] ?? null));
 
 		return $task;
 	}//end buildTask()
@@ -971,15 +976,15 @@ class TaskService {
 			$role = trim((string)($relation['role'] ?? ''));
 			$objectUuid = trim((string)($relation['objectUuid'] ?? ''));
 			if ($role === '' || $objectUuid === '') {
-				throw new TaskValidationException('A task relation requires both a role and an objectUuid.');
+				throw new TaskValidationException(message: 'A task relation requires both a role and an objectUuid.');
 			}
 
 			$row = new TaskRelation();
 			$row->setTaskId((int)$task->getId());
 			$row->setRole($role);
 			$row->setObjectUuid($objectUuid);
-			$row->setRegisterId(isset($relation['registerId']) === true ? (int)$relation['registerId'] : null);
-			$row->setSchemaId(isset($relation['schemaId']) === true ? (int)$relation['schemaId'] : null);
+			$row->setRegisterId($this->intOrNull(value: ($relation['registerId'] ?? null)));
+			$row->setSchemaId($this->intOrNull(value: ($relation['schemaId'] ?? null)));
 			$this->relations->insert($row);
 		}
 	}//end insertRelations()
@@ -1014,7 +1019,7 @@ class TaskService {
 		}
 
 		throw new TaskValidationException(
-			sprintf("Field '%s' does not parse as a date.", $field)
+			message: sprintf("Field '%s' does not parse as a date.", $field)
 		);
 	}//end parseDate()
 
@@ -1039,18 +1044,18 @@ class TaskService {
 
 		if (is_string($value) === true) {
 			throw new TaskValidationException(
-				'The checklist must be a typed array of {id, label, description, checked} items, not a string containing JSON.'
+				message: 'The checklist must be a typed array of {id, label, description, checked} items, not a string containing JSON.'
 			);
 		}
 
 		if (is_array($value) === false) {
-			throw new TaskValidationException('The checklist must be a typed array of {id, label, description, checked} items.');
+			throw new TaskValidationException(message: 'The checklist must be a typed array of {id, label, description, checked} items.');
 		}
 
 		$items = [];
 		foreach ($value as $item) {
 			if (is_array($item) === false || trim((string)($item['id'] ?? '')) === '' || trim((string)($item['label'] ?? '')) === '') {
-				throw new TaskValidationException('Every checklist item requires an id and a label.');
+				throw new TaskValidationException(message: 'Every checklist item requires an id and a label.');
 			}
 
 			$items[] = [
@@ -1083,6 +1088,21 @@ class TaskService {
 
 		return $string;
 	}//end stringOrNull()
+
+	/**
+	 * An integer, or null for absent.
+	 *
+	 * @param mixed $value The incoming value.
+	 *
+	 * @return int|null The integer, or null.
+	 */
+	private function intOrNull(mixed $value): ?int {
+		if ($value === null || $value === '') {
+			return null;
+		}
+
+		return (int)$value;
+	}//end intOrNull()
 
 	/**
 	 * An array, or null for absent.

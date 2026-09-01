@@ -85,7 +85,7 @@ class TaskAuthorizationService {
 		// No verb is anonymous, and no verb is reachable by uuid alone.
 		if ($uid === null || trim($uid) === '') {
 			throw new TaskAccessDeniedException(
-				sprintf("Verb '%s' denied: no acting identity.", $verb)
+				message: sprintf("Verb '%s' denied: no acting identity.", $verb)
 			);
 		}
 
@@ -95,7 +95,7 @@ class TaskAuthorizationService {
 		$performerType = (string)$task->getPerformerType();
 		if (in_array($performerType, Task::PERFORMER_TYPES, true) === false) {
 			throw new TaskAccessDeniedException(
-				sprintf("Verb '%s' denied: performer type '%s' is unknown, so authorization cannot be determined.", $verb, $performerType)
+				message: sprintf("Verb '%s' denied: performer type '%s' is unknown, so authorization cannot be determined.", $verb, $performerType)
 			);
 		}
 
@@ -131,7 +131,7 @@ class TaskAuthorizationService {
 			default:
 				// An unknown verb has no rule, so it has no permission.
 				throw new TaskAccessDeniedException(
-					sprintf("Verb '%s' denied: no authorization rule exists for it.", $verb)
+					message: sprintf("Verb '%s' denied: no authorization rule exists for it.", $verb)
 				);
 		}//end switch
 	}//end assertMay()
@@ -222,7 +222,7 @@ class TaskAuthorizationService {
 		$assignee = trim((string)$task->getAssignee());
 		if ($assignee === '' || $assignee !== $uid) {
 			throw new TaskAccessDeniedException(
-				sprintf("Verb '%s' denied: only the current assignee may perform it.", $verb)
+				message: sprintf("Verb '%s' denied: only the current assignee may perform it.", $verb)
 			);
 		}
 	}//end assertAssignee()
@@ -244,7 +244,7 @@ class TaskAuthorizationService {
 		$requester = trim((string)$task->getRequester());
 		if ($requester === '' || $requester !== $uid) {
 			throw new TaskAccessDeniedException(
-				sprintf("Verb '%s' denied: only the requester or an administrator may perform it.", $verb)
+				message: sprintf("Verb '%s' denied: only the requester or an administrator may perform it.", $verb)
 			);
 		}
 	}//end assertRequester()
@@ -290,7 +290,7 @@ class TaskAuthorizationService {
 		}
 
 		throw new TaskAccessDeniedException(
-			sprintf("Verb '%s' denied: the caller is not in the task's candidate pool.", $verb)
+			message: sprintf("Verb '%s' denied: the caller is not in the task's candidate pool.", $verb)
 		);
 	}//end assertPoolMember()
 
@@ -332,7 +332,7 @@ class TaskAuthorizationService {
 	private function assertRoleResolvable(string $verb, string $role): void {
 		if ($this->groupManager === null) {
 			throw new TaskAccessDeniedException(
-				sprintf("Verb '%s' denied: role '%s' cannot be resolved because no group backend is available.", $verb, $role)
+				message: sprintf("Verb '%s' denied: role '%s' cannot be resolved because no group backend is available.", $verb, $role)
 			);
 		}
 
@@ -345,7 +345,7 @@ class TaskAuthorizationService {
 
 		if ($exists === false) {
 			throw new TaskAccessDeniedException(
-				sprintf("Verb '%s' denied: role '%s' does not resolve to any group.", $verb, $role)
+				message: sprintf("Verb '%s' denied: role '%s' does not resolve to any group.", $verb, $role)
 			);
 		}
 	}//end assertRoleResolvable()

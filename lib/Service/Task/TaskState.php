@@ -124,13 +124,13 @@ final class TaskState {
 
 		if ($sourceVocabulary !== null && in_array($trimmed, $sourceVocabulary, true) === false) {
 			throw new TaskValidationException(
-				sprintf("Unmapped task status '%s': the declared source vocabulary does not define it, so it is refused, not defaulted.", $trimmed)
+				message: sprintf("Unmapped task status '%s': the declared source vocabulary does not define it, so it is refused, not defaulted.", $trimmed)
 			);
 		}
 
 		if (array_key_exists($trimmed, self::LEGACY) === false) {
 			throw new TaskValidationException(
-				sprintf("Unmapped task status '%s': it is in no known fleet vocabulary and is refused, not defaulted.", $trimmed)
+				message: sprintf("Unmapped task status '%s': it is in no known fleet vocabulary and is refused, not defaulted.", $trimmed)
 			);
 		}
 

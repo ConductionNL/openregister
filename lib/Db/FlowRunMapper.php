@@ -88,7 +88,7 @@ class FlowRunMapper extends QBMapper {
 		/*
 		 * @var FlowRun $updated
 		 */
-		$updated = parent::update($entity);
+		$updated = parent::update(entity: $entity);
 
 		if ($this->dispatcher !== null && $updated instanceof FlowRun && $updated->isTerminal() === true) {
 			$this->dispatcher->dispatchTyped(

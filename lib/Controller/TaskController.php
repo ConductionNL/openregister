@@ -229,8 +229,8 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function create(): JSONResponse {
 		return $this->respondWith(
-			fn (): Task => $this->tasks->create(data: $this->body(), actor: $this->uid()),
-			Http::STATUS_CREATED
+			verb: fn (): Task => $this->tasks->create(data: $this->body(), actor: $this->uid()),
+			successStatus: Http::STATUS_CREATED
 		);
 	}//end create()
 
@@ -247,7 +247,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function offer(string $uuid): JSONResponse {
 		return $this->respondWith(
-			fn (): Task => $this->tasks->offer(uuid: $uuid, pool: $this->body(), actor: $this->uid())
+			verb: fn (): Task => $this->tasks->offer(uuid: $uuid, pool: $this->body(), actor: $this->uid())
 		);
 	}//end offer()
 
@@ -264,7 +264,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function claim(string $uuid): JSONResponse {
 		return $this->respondWith(
-			fn (): Task => $this->tasks->claim(uuid: $uuid, actor: $this->uid())
+			verb: fn (): Task => $this->tasks->claim(uuid: $uuid, actor: $this->uid())
 		);
 	}//end claim()
 
@@ -281,7 +281,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function unclaim(string $uuid): JSONResponse {
 		return $this->respondWith(
-			fn (): Task => $this->tasks->unclaim(uuid: $uuid, actor: $this->uid())
+			verb: fn (): Task => $this->tasks->unclaim(uuid: $uuid, actor: $this->uid())
 		);
 	}//end unclaim()
 
@@ -299,7 +299,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function assign(string $uuid, string $assignee = ''): JSONResponse {
 		return $this->respondWith(
-			fn (): Task => $this->tasks->assign(uuid: $uuid, assignee: $assignee, actor: $this->uid())
+			verb: fn (): Task => $this->tasks->assign(uuid: $uuid, assignee: $assignee, actor: $this->uid())
 		);
 	}//end assign()
 
@@ -317,7 +317,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function reassign(string $uuid, string $assignee = ''): JSONResponse {
 		return $this->respondWith(
-			fn (): Task => $this->tasks->reassign(uuid: $uuid, assignee: $assignee, actor: $this->uid())
+			verb: fn (): Task => $this->tasks->reassign(uuid: $uuid, assignee: $assignee, actor: $this->uid())
 		);
 	}//end reassign()
 
@@ -336,7 +336,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function delegate(string $uuid, string $delegate = '', string $mandate = ''): JSONResponse {
 		return $this->respondWith(
-			fn (): Task => $this->tasks->delegate(uuid: $uuid, delegate: $delegate, mandate: $mandate, actor: $this->uid())
+			verb: fn (): Task => $this->tasks->delegate(uuid: $uuid, delegate: $delegate, mandate: $mandate, actor: $this->uid())
 		);
 	}//end delegate()
 
@@ -355,7 +355,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function resolve(string $uuid, ?string $resultText = null, ?string $comment = null): JSONResponse {
 		return $this->respondWith(
-			fn (): Task => $this->tasks->resolve(uuid: $uuid, resultText: $resultText, comment: $comment, actor: $this->uid())
+			verb: fn (): Task => $this->tasks->resolve(uuid: $uuid, resultText: $resultText, comment: $comment, actor: $this->uid())
 		);
 	}//end resolve()
 
@@ -376,7 +376,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function complete(string $uuid, string $outcome = 'done', ?string $resultText = null, ?string $comment = null): JSONResponse {
 		return $this->respondWith(
-			fn (): Task => $this->tasks->complete(
+			verb: fn (): Task => $this->tasks->complete(
 				uuid: $uuid,
 				outcome: $outcome,
 				resultText: $resultText,
@@ -400,7 +400,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function cancel(string $uuid, ?string $reason = null): JSONResponse {
 		return $this->respondWith(
-			fn (): Task => $this->tasks->cancel(uuid: $uuid, reason: $reason, actor: $this->uid())
+			verb: fn (): Task => $this->tasks->cancel(uuid: $uuid, reason: $reason, actor: $this->uid())
 		);
 	}//end cancel()
 
@@ -419,7 +419,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function checkItem(string $uuid, string $itemId, bool $checked = true): JSONResponse {
 		return $this->respondWith(
-			fn (): Task => $this->tasks->checkChecklistItem(uuid: $uuid, itemId: $itemId, checked: $checked, actor: $this->uid())
+			verb: fn (): Task => $this->tasks->checkChecklistItem(uuid: $uuid, itemId: $itemId, checked: $checked, actor: $this->uid())
 		);
 	}//end checkItem()
 

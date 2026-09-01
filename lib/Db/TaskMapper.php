@@ -75,7 +75,7 @@ class TaskMapper extends QBMapper {
 		/*
 		 * @var Task
 		 */
-		return parent::insert($entity);
+		return parent::insert(entity: $entity);
 	}//end insert()
 
 	/**
@@ -95,7 +95,7 @@ class TaskMapper extends QBMapper {
 		/*
 		 * @var Task
 		 */
-		return parent::update($entity);
+		return parent::update(entity: $entity);
 	}//end update()
 
 	/**
