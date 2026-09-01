@@ -2,41 +2,41 @@
 
 ## 1. The node
 
-- [ ] 1.1 `lib/Service/Flow/Nodes/UserTaskNode.php` implementing `IFlowNode`,
+- [x] 1.1 `lib/Service/Flow/Nodes/UserTaskNode.php` implementing `IFlowNode`,
       `IFlowNodeConfigKeys` and `IFlowNodeConfigForm`. Follow
       `lib/Service/Flow/Nodes/AwaitSignalNode.php` for shape: EUPL-1.2
       header, `@spec` on every method, a file docblock that states the
       division of labour with `await-signal` and the reason the heartbeat
       exists. `getId()` returns `openregister.user-task`;
       `isAvailableForScope()` allows `SCOPE_ADMIN` and `SCOPE_USER`.
-- [ ] 1.2 `configForm()` + `configKeys()` covering title/description
+- [x] 1.2 `configForm()` + `configKeys()` covering title/description
       templates, candidate users/groups/role, routing strategy and fallback,
       priority, `dueAt`/`expiresAt` references, outcome vocabulary,
       `outcomeKey` (default `task`), `failOnReject`, `heartbeatMinutes`,
       `advance`. No editor change needed —
       `FlowNodeRegistry::palette()` already publishes `configForm`
       (`lib/Service/Flow/FlowNodeRegistry.php:243-250`).
-- [ ] 1.3 `validateConfig()` — refuse a config naming no candidate user,
+- [x] 1.3 `validateConfig()` — refuse a config naming no candidate user,
       group, role or fallback; refuse `advance: null` with a message naming
       the value and stating that unlimited is spelled `"all"`; refuse an
       `advance` that is neither `0`, a positive integer, nor `"all"`.
-- [ ] 1.4 Register the node in `lib/Listener/FlowNodeRegistrationListener.php`
+- [x] 1.4 Register the node in `lib/Listener/FlowNodeRegistrationListener.php`
       alongside the existing built-ins. Do not touch `AwaitSignalNode.php`.
 
 ## 2. Suspend and resume
 
-- [ ] 2.1 First-firing path: no items → return items unchanged and do NOT
+- [x] 2.1 First-firing path: no items → return items unchanged and do NOT
       suspend; items present and no task in this node's resume slot → create
       one task via `flow-tasks`' `TaskService` with `run_uuid` + `node_id`,
       store its uuid and the creation time in the slot
       (`FlowNodeResumeState`), then throw `FlowSuspension`.
-- [ ] 2.2 Heartbeat: suspend with a non-null `resumeAt`, defaulting to 15
+- [x] 2.2 Heartbeat: suspend with a non-null `resumeAt`, defaulting to 15
       minutes and clamped to a 5-minute floor, matching
       `AwaitSignalNode.php:87` and `:98`. NEVER `resumeAt: null` — that is
       the only shape `FlowRunMapper::findAbandonedSignals()`
       (`lib/Db/FlowRunMapper.php:589-605`) reaps, and it would FAIL slow
       approvals at 14 days (`lib/BackgroundJob/FlowRunWorker.php:94`).
-- [ ] 2.3 Continuation path: read terminality from the TASK by uuid, never
+- [x] 2.3 Continuation path: read terminality from the TASK by uuid, never
       from `$context['signal']`. Non-terminal → suspend again without
       restamping the creation time. Terminal → continue. Idempotence is
       per node via the resume slot, so two user-task nodes in one flow keep
@@ -44,42 +44,42 @@
 
 ## 3. Outcome and rejection
 
-- [ ] 3.1 Write the completion result onto EVERY item under `outcomeKey` —
+- [x] 3.1 Write the completion result onto EVERY item under `outcomeKey` —
       outcome, comment, completing identity, performer type, `on_behalf_of`
       — and mark a task that went terminal WITHOUT a completion (terminated,
       expired) distinguishably. Non-array items are skipped, not fatal.
       Rationale is `AwaitSignalNode.php:294-296`: a Switch cannot branch on
       something only the run holds.
-- [ ] 3.2 Rejection is a BRANCH: continue by default, `failOnReject` opt-in
+- [x] 3.2 Rejection is a BRANCH: continue by default, `failOnReject` opt-in
       raising `FlowStop`, same shape as `AwaitSignalNode.php:277-287`.
 
 ## 4. The advance budget
 
-- [ ] 4.1 Completion listener: signal the run with an EMPTY payload so it is
+- [x] 4.1 Completion listener: signal the run with an EMPTY payload so it is
       parked as due (`FlowRunService::signal()`), then honour the node's
       budget — `0` returns immediately for the worker; `N` and `"all"` call
       `FlowRunAdvancer::advance(run: $run, rethrow: true)`, the same path
       `FlowService.php:511` already uses.
-- [ ] 4.2 Per-walk transition ceiling carried on the run context and read by
+- [x] 4.2 Per-walk transition ceiling carried on the run context and read by
       the engine's existing loop counter alongside `MAX_TRANSITIONS`
       (`lib/Service/Flow/FlowEngine.php:103`, `:325`); the lower ceiling
       wins. No second walk implementation, no second oversight call site —
       `assertOversightAllows()` (`FlowEngine.php:425`) still gates every hop
       and still fails closed.
-- [ ] 4.3 Degradation: a throw during in-request continuation leaves the task
+- [x] 4.3 Degradation: a throw during in-request continuation leaves the task
       completed and the run due for the worker, and the completing caller is
       told the task was accepted. The budget is an optimisation; its failure
       mode is the unoptimised behaviour.
 
 ## 5. Cancellation propagation
 
-- [ ] 5.1 Run-terminality listener: on `completed`, `stopped`, `failed` or
+- [x] 5.1 Run-terminality listener: on `completed`, `stopped`, `failed` or
       `dead_letter` (`lib/Db/FlowRun.php` STATUS constants), terminate every
       non-terminal task created by any user-task node in that run, reason
       naming the run and its status, propagation source as actor.
       Idempotent — terminality is observable twice (completing request and
       `FlowRunWorker::reapStale()`, `lib/BackgroundJob/FlowRunWorker.php:226-287`).
-- [ ] 5.2 Branch-mootness call: when `keepOnlyTakenExits()`
+- [x] 5.2 Branch-mootness call: when `keepOnlyTakenExits()`
       (`FlowEngine.php:410`, `:540`) prunes a place holding a live
       user-task node's task, terminate it with a reason naming the branch.
       Never reaches a task with `run_uuid` null.

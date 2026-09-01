@@ -48,9 +48,11 @@ use OCA\OpenRegister\Db\TaskAuditMapper;
 use OCA\OpenRegister\Db\TaskCandidateMapper;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\TaskRelationMapper;
+use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -87,6 +89,16 @@ class TaskService {
 	 * @param LoggerInterface $logger Failure reporting.
 	 * @param TaskBuilder $builder Validates and builds a new task from
 	 *                             boundary data (the vocabularies live there).
+	 * @param IEventDispatcher|null $dispatcher Announces a task reaching a
+	 *                                          terminal state
+	 *                                          ({@see TaskTerminalEvent}), AFTER
+	 *                                          the transition committed. Last and
+	 *                                          nullable so the four test suites
+	 *                                          that build this service by hand
+	 *                                          keep their argument order; absent,
+	 *                                          terminality goes unannounced and a
+	 *                                          parked run learns of it on its
+	 *                                          heartbeat instead.
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
@@ -98,6 +110,7 @@ class TaskService {
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 		private readonly TaskBuilder $builder,
+		private readonly ?IEventDispatcher $dispatcher = null,
 	) {
 
 	}//end __construct()
@@ -399,7 +412,7 @@ class TaskService {
 	public function cancel(string $uuid, ?string $reason, ?string $actor): Task {
 		$task = $this->openTaskFor(verb: 'cancel', uuid: $uuid, actor: $actor);
 
-		return $this->transactional(
+		$cancelled = $this->transactional(
 			mutation: function () use ($task, $reason, $actor): Task {
 				$task->setOutcome('cancelled');
 				$this->applyState(task: $task, state: Task::STATE_TERMINATED, action: 'cancel');
@@ -409,6 +422,8 @@ class TaskService {
 				return $persisted;
 			}
 		);
+
+		return $this->announceTerminal(task: $cancelled);
 	}//end cancel()
 
 	/**
@@ -486,7 +501,7 @@ class TaskService {
 		$reason = sprintf("Run '%s' reached terminal status '%s'.", $runUuid, $runStatus);
 		$terminated = 0;
 		foreach ($open as $task) {
-			$this->transactional(
+			$moot = $this->transactional(
 				mutation: function () use ($task, $reason, $runUuid): Task {
 					$task->setOutcome('terminated');
 					$task->setBlockedReason(null);
@@ -502,6 +517,7 @@ class TaskService {
 					return $persisted;
 				}
 			);
+			$this->announceTerminal(task: $moot);
 			$terminated++;
 		}
 
@@ -527,7 +543,7 @@ class TaskService {
 			return $task;
 		}
 
-		return $this->transactional(
+		$moot = $this->transactional(
 			mutation: function () use ($task, $reason, $source): Task {
 				$task->setOutcome('terminated');
 				$this->applyState(task: $task, state: Task::STATE_TERMINATED, action: 'terminate');
@@ -537,6 +553,8 @@ class TaskService {
 				return $persisted;
 			}
 		);
+
+		return $this->announceTerminal(task: $moot);
 	}//end terminateAsMoot()
 
 	/**
@@ -636,7 +654,7 @@ class TaskService {
 			);
 		}
 
-		return $this->transactional(
+		$completed = $this->transactional(
 			mutation: function () use ($task, $outcome, $resultText, $comment, $actor, $verb): Task {
 				$task->setOutcome($outcome);
 				$task->setResultText($resultText);
@@ -650,7 +668,42 @@ class TaskService {
 				return $persisted;
 			}
 		);
+
+		return $this->announceTerminal(task: $completed);
 	}//end completeInternal()
+
+	/**
+	 * Announce a committed terminal transition, and hand the task back.
+	 *
+	 * Called AFTER {@see self::transactional()} returned, never inside it: the
+	 * flow-side listener may continue the task's run in-request, and that walk
+	 * must see a completion that already exists on its own. A listener
+	 * failure is logged and swallowed for the same reason the propagation
+	 * listener swallows: the verb's caller has a completed task in hand and
+	 * must be told so, whatever the run did with it afterwards.
+	 *
+	 * @param Task $task The task as persisted in its terminal state.
+	 *
+	 * @return Task The same task, for the caller's return.
+	 *
+	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
+	 */
+	private function announceTerminal(Task $task): Task {
+		if ($this->dispatcher === null || $task->isInTerminalState() === false) {
+			return $task;
+		}
+
+		try {
+			$this->dispatcher->dispatchTyped(new TaskTerminalEvent(task: $task));
+		} catch (Throwable $failure) {
+			$this->logger->warning(
+				'[TaskService] A terminal-task listener failed; the task itself is unaffected: ' . $failure->getMessage(),
+				['task' => $task->getUuid(), 'exception' => $failure]
+			);
+		}
+
+		return $task;
+	}//end announceTerminal()
 
 	/**
 	 * Resolve a verb's task: it must exist, be non-terminal, and the caller
