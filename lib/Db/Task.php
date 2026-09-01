@@ -219,9 +219,9 @@ class Task extends Entity implements JsonSerializable {
 	 *
 	 * DELIBERATELY NOT A CLOSED SET at the storage level: the column is a
 	 * plain string, and this list is the vocabulary the service validates
-	 * against today. An `external` (portal party) type is being added by a
-	 * parallel ADR-098 amendment; admitting it is an append to this array,
-	 * not a migration.
+	 * against today. `external` (a portal party, ADR-098 D3 as amended
+	 * 2026-08-31 for flow-portal-task) was admitted exactly that way: an
+	 * append to this array, not a migration.
 	 */
 	public const PERFORMER_USER = 'user';
 
@@ -230,6 +230,25 @@ class Task extends Entity implements JsonSerializable {
 	public const PERFORMER_AGENT = 'agent';
 
 	public const PERFORMER_WORKER = 'worker';
+
+	/**
+	 * A party outside the instance, reached through the portal seam. Its
+	 * performer reference is a PARTY reference (see EXTERNAL_PARTY_PREFIX),
+	 * never a Nextcloud uid, group or role; it is never pooled, claimed or
+	 * delegated, and only the matched portal subject may complete it.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-tasks/spec.md#requirement-the-external-performer-type-is-portal-scoped-and-never-pooled
+	 */
+	public const PERFORMER_EXTERNAL = 'external';
+
+	/**
+	 * The prefix an external task's assignee carries. A Nextcloud uid cannot
+	 * contain a colon, so a party reference can never collide with a uid and
+	 * a uid can never be mistaken for the matched party.
+	 *
+	 * @var string
+	 */
+	public const EXTERNAL_PARTY_PREFIX = 'party:';
 
 	/**
 	 * The performer types known to this release.
@@ -241,6 +260,7 @@ class Task extends Entity implements JsonSerializable {
 		self::PERFORMER_GROUP,
 		self::PERFORMER_AGENT,
 		self::PERFORMER_WORKER,
+		self::PERFORMER_EXTERNAL,
 	];
 
 	/**

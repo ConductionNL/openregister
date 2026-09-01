@@ -209,6 +209,86 @@ class FlowService {
 	}//end find()
 
 	/**
+	 * Make the CALLING user the flow's owner — the adoption seam.
+	 *
+	 * An imported flow deliberately arrives `enabled=false, owner=null`
+	 * ({@see \OCA\OpenRegister\Listener\SchemaFlowImportListener}): a schema
+	 * save is not a person volunteering to run a graph, and
+	 * `Flow::canDispatch()` fails closed on the missing owner. That design is
+	 * right — but until this method existed it had no counterpart: `owner` is
+	 * not among `applyEditableFields()`'s allowlist (correctly, so a payload
+	 * cannot hand a flow to an arbitrary uid), no occ command sets it, and the
+	 * only route from "shipped" to "runnable" on a live instance was raw SQL.
+	 * "Inert until somebody makes it theirs" needs a deliberate act to exist.
+	 *
+	 * The owner is ALWAYS the caller, never a uid from a request body —
+	 * adoption is a volunteering, and volunteering somebody else defeats the
+	 * reason ownership exists. A flow already owned by another user is refused
+	 * rather than taken over: a silent takeover would re-point whose identity
+	 * existing subscriptions run as, which is the exact move the import path
+	 * refuses on upgrade. Adopting a flow one already owns is idempotent.
+	 *
+	 * Enabling stays SEPARATE, deliberately: publishing answers "which graph",
+	 * adoption answers "whose identity", enabling answers "may it run" — and
+	 * collapsing the last two would make viewing a shipped flow's checkbox a
+	 * consent to run it.
+	 *
+	 * The adoption is audited out loud (who, which flow, when) at info level:
+	 * an ownership change is the fact an operator reads back after a run did
+	 * something surprising.
+	 *
+	 * @param Flow $flow The flow to adopt — already loaded through `find()`,
+	 *                   so the organisation guard has been applied.
+	 *
+	 * @return Flow The stored flow, now owned by the caller.
+	 *
+	 * @throws FlowAdoptionRefused When there is no acting user, or the flow
+	 *                             already belongs to someone else.
+	 *
+	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 */
+	public function adopt(Flow $flow): Flow {
+		$uid = $this->actingUser();
+		if ($uid === null) {
+			throw new FlowAdoptionRefused(
+				reason: FlowAdoptionRefused::REASON_NO_ACTING_USER,
+				message: 'Adopting a flow makes YOU its owner, so it needs a signed-in user.'
+			);
+		}
+
+		$current = trim((string)($flow->getOwner() ?? ''));
+		if ($current === $uid) {
+			return $flow;
+		}
+
+		if ($current !== '') {
+			throw new FlowAdoptionRefused(
+				reason: FlowAdoptionRefused::REASON_ALREADY_OWNED,
+				message: 'This flow already belongs to "' . $current . '". Adoption is not a takeover.'
+			);
+		}
+
+		$flow->setOwner($uid);
+		$flow->setUpdated(new DateTime());
+		$stored = $this->mapper->update($flow);
+
+		$this->logger->info(
+			message: '[FlowService] Flow "' . (string)$stored->getUuid() . '" ("' . (string)$stored->getName()
+				. '", app "' . (string)$stored->getApp() . '") was ADOPTED by "' . $uid
+				. '": it now has an owner and will dispatch once enabled.',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'flow' => (string)$stored->getUuid(),
+				'adoptedBy' => $uid,
+				'previousOwner' => null,
+			]
+		);
+
+		return $stored;
+	}//end adopt()
+
+	/**
 	 * Create or update a flow.
 	 *
 	 * `owner` and `organisation` are SERVER-STAMPED on create and never taken
@@ -328,7 +408,7 @@ class FlowService {
 	 * @return Flow The stored flow, as the mapper returned it.
 	 */
 	private function persistFlow(Flow $flow, ?string $uuid): Flow {
-		if ($uuid === null || $uuid === '') {
+		if (($uuid ?? '') === '') {
 			return $this->mapper->insert($flow);
 		}
 
@@ -350,7 +430,7 @@ class FlowService {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	private function flowToSave(array $data, ?string $uuid): Flow {
-		if ($uuid !== null && $uuid !== '') {
+		if (($uuid ?? '') !== '') {
 			// Goes through find(), so an update to a flow the caller cannot see
 			// is refused with the same "no such flow" as a missing one.
 			return $this->find(uuid: $uuid);
@@ -658,12 +738,12 @@ class FlowService {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	private function actingUser(): ?string {
-		$uid = $this->userSession->getUser()?->getUID();
-		if ($uid === null || $uid === '') {
+		$uid = (string)($this->userSession->getUser()?->getUID() ?? '');
+		if ($uid === '') {
 			return null;
 		}
 
-		return (string)$uid;
+		return $uid;
 	}//end actingUser()
 
 	/**
@@ -690,7 +770,7 @@ class FlowService {
 			return null;
 		}
 
-		if ($uuid === null || $uuid === '') {
+		if ((string)$uuid === '') {
 			return null;
 		}
 

@@ -57,10 +57,15 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use UnexpectedValueException;
 
 /**
  * Creates, routes, claims, completes, cancels and terminates tasks.
  *
+ * @SuppressWarnings(PHPMD.TooManyMethods) The verbs, one private helper per
+ * concern they share (open, authorize, audit, persist, announce), and the two
+ * seams the task-form completion uses. Merging helpers to duck a count would
+ * hide which rule a verb relies on.
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) One method per lifecycle
  * verb the spec names (create/offer/claim/unclaim/assign/reassign/delegate/
  * resolve/complete/cancel) plus the two propagation entry points. Merging
@@ -76,9 +81,6 @@ use Throwable;
  * rules (authorize, then terminality, then the verb's precondition, then
  * the conditional write); folding verbs together to lower the number would
  * hide exactly the per-verb rules the spec enumerates.
- * @SuppressWarnings(PHPMD.TooManyMethods) One private helper per concern the
- * verbs share (open, authorize, audit, persist, announce); merging them would
- * hide which rule a verb relies on.
  * @SuppressWarnings(PHPMD.StaticAccess) TaskState is a stateless published
  * vocabulary (the one status mapping); calling it statically is the point,
  * an instance would be a second copy of the same table.
@@ -120,6 +122,13 @@ class TaskService {
 	 *                                          is projected, terminality goes
 	 *                                          unannounced, and the lifecycle is
 	 *                                          unchanged.
+	 * @param TaskFormReader|null $forms Refuses a run-less task's own form
+	 *                                   declaration (`metadata.form`) at
+	 *                                   creation, the way a step's is refused
+	 *                                   at save. Nullable for the same reason
+	 *                                   as the dispatcher; absent, a record
+	 *                                   declaration is stored unchecked and
+	 *                                   judged on read.
 	 * @param TaskSequenceDecisionGuard|null $sequenceGuard Refuses a
 	 *                                                      self-decision on a
 	 *                                                      sequence position
@@ -142,6 +151,7 @@ class TaskService {
 		private readonly LoggerInterface $logger,
 		private readonly TaskBuilder $builder,
 		private readonly ?IEventDispatcher $dispatcher = null,
+		private readonly ?TaskFormReader $forms = null,
 		private readonly ?TaskSequenceDecisionGuard $sequenceGuard = null,
 	) {
 
@@ -223,6 +233,7 @@ class TaskService {
 	 */
 	public function import(array $data, ?string $actor): Task {
 		$task = $this->builder->fromData(data: $data, actor: $actor);
+		$this->refuseUnrenderableForm(task: $task);
 		$this->authorizeOrRecord(verb: 'create', task: $task, actor: $actor);
 		$this->pending = [
 			'assignee' => null,
@@ -489,19 +500,36 @@ class TaskService {
 	 * @param string|null $resultText Free-text result.
 	 * @param string|null $comment Completion comment.
 	 * @param string|null $actor The completing identity — must be the assignee.
+	 * @param array<string, mixed>|null $responses The submitted answer fields,
+	 *                                             when the completion carries
+	 *                                             any (a portal task's form).
+	 * @param array<int, array<string, mixed>>|null $evidence References to the
+	 *                                                       files ALREADY stored
+	 *                                                       for this completion;
+	 *                                                       never bytes.
 	 *
 	 * @return Task The completed task.
 	 *
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	public function complete(string $uuid, string $outcome, ?string $resultText, ?string $comment, ?string $actor): Task {
+	public function complete(
+		string $uuid,
+		string $outcome,
+		?string $resultText,
+		?string $comment,
+		?string $actor,
+		?array $responses = null,
+		?array $evidence = null,
+	): Task {
 		return $this->completeInternal(
 			verb: 'complete',
 			uuid: $uuid,
 			outcome: $outcome,
 			resultText: $resultText,
 			comment: $comment,
-			actor: $actor
+			actor: $actor,
+			responses: $responses,
+			evidence: $evidence
 		);
 	}//end complete()
 
@@ -910,6 +938,60 @@ class TaskService {
 	}//end get()
 
 	/**
+	 * Resolve, authorize and audit a verb's task WITHOUT running the verb.
+	 *
+	 * For a caller that must do work between the authorization and the
+	 * verb: the portal completion stores uploads on the case object before it
+	 * records the completion, and a stranger must be refused, and the refusal
+	 * audited, BEFORE any byte lands on a case that is not theirs. Same three
+	 * checks in the same order as every verb (exists, authorized, open), so a
+	 * denial here reads in the audit exactly as a denial from the verb would.
+	 *
+	 * @param string $verb The verb about to be attempted.
+	 * @param string $uuid The task uuid.
+	 * @param string|null $actor The acting identity.
+	 *
+	 * @return Task The open, authorized task.
+	 *
+	 * @throws TaskAccessDeniedException When authorization denies (audited).
+	 * @throws TaskConflictException When the task is already terminal.
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such task exists.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-only-the-matched-party-completes-fail-closed
+	 */
+	public function openFor(string $verb, string $uuid, ?string $actor): Task {
+		return $this->openTaskFor(verb: $verb, uuid: $uuid, actor: $actor);
+	}//end openFor()
+
+	/**
+	 * Append an audit entry that records a FACT about the task without
+	 * moving it: the party a portal task was matched to, and the role it was
+	 * matched from. The state is unchanged; only the trail grows.
+	 *
+	 * @param string $uuid The task uuid.
+	 * @param string $action The audited action name.
+	 * @param string|null $actor The acting identity.
+	 * @param string $reason What is being recorded.
+	 *
+	 * @return Task The task, unchanged.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such task exists.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-matched-party-comes-from-the-case-and-is-frozen-at-creation
+	 */
+	public function record(string $uuid, string $action, ?string $actor, string $reason): Task {
+		$task = $this->tasks->findByUuid(uuid: $uuid);
+
+		return $this->transactional(
+			mutation: function () use ($task, $action, $actor, $reason): Task {
+				$this->appendAudit(task: $task, action: $action, actor: $actor, reason: $reason);
+
+				return $task;
+			}
+		);
+	}//end record()
+
+	/**
 	 * The audit trail of a task, oldest first.
 	 *
 	 * @param string $uuid The task uuid.
@@ -966,6 +1048,8 @@ class TaskService {
 	 * @param string|null $resultText Free-text result.
 	 * @param string|null $comment Completion comment.
 	 * @param string|null $actor The acting identity.
+	 * @param array<string, mixed>|null $responses Submitted answer fields, when any.
+	 * @param array<int, array<string, mixed>>|null $evidence Stored file references, when any.
 	 *
 	 * @return Task The completed task.
 	 *
@@ -980,6 +1064,8 @@ class TaskService {
 		?string $resultText,
 		?string $comment,
 		?string $actor,
+		?array $responses = null,
+		?array $evidence = null,
 	): Task {
 		// Separation of duties FIRST (flow-approval-consolidation D-8): a
 		// requester who claimed their own approval would PASS the assignee
@@ -999,10 +1085,18 @@ class TaskService {
 		}
 
 		return $this->transactional(
-			mutation: function () use ($task, $outcome, $resultText, $comment, $actor, $verb): Task {
+			mutation: function () use ($task, $outcome, $resultText, $comment, $actor, $verb, $responses, $evidence): Task {
 				$task->setOutcome($outcome);
 				$task->setResultText($resultText);
 				$task->setComment($comment);
+				if ($responses !== null) {
+					$task->setResponses($responses);
+				}
+
+				if ($evidence !== null) {
+					$task->setEvidence($evidence);
+				}
+
 				$task->setCompletedAt(new DateTime());
 				$task->setCompletedBy($actor);
 				$this->applyState(task: $task, state: Task::STATE_COMPLETED, action: $verb);
@@ -1014,6 +1108,100 @@ class TaskService {
 		);
 
 	}//end completeInternal()
+
+	/**
+	 * A verb's task, resolved for a caller that writes something else FIRST.
+	 *
+	 * The task-form completion writes the subject object before it completes
+	 * the task, and the task verb's authorization must be settled before a
+	 * byte reaches the subject. This is {@see openTaskFor()} made reachable
+	 * for that one caller: exists, authorized (a denial audited), open.
+	 *
+	 * @param string $verb The verb about to be attempted.
+	 * @param string $uuid The task uuid.
+	 * @param string|null $actor The acting identity.
+	 *
+	 * @return Task The open, authorized task.
+	 *
+	 * @throws TaskConflictException When the task is already terminal.
+	 * @throws TaskAccessDeniedException When authorization denies (audited).
+	 *
+	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
+	 */
+	public function authorizedOpenTask(string $verb, string $uuid, ?string $actor): Task {
+		return $this->openTaskFor(verb: $verb, uuid: $uuid, actor: $actor);
+	}//end authorizedOpenTask()
+
+	/**
+	 * Record that a completion was attempted and refused, without completing anything.
+	 *
+	 * Its own action name, so a refused attempt and a completion are
+	 * distinguishable in the trail; `authorized` stays true because the caller
+	 * WAS allowed to try and it was the payload that was refused. Outside any
+	 * transaction, because nothing else changed. "The performer tried three
+	 * times" is the signal that a form is wrong, which is why it is kept.
+	 *
+	 * @param Task $task The task the attempt was made on, unchanged.
+	 * @param string $reason Why the attempt was refused.
+	 * @param string|null $actor The attempting identity.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
+	 */
+	public function recordRefusedCompletion(Task $task, string $reason, ?string $actor): void {
+		if ($task->getId() === null) {
+			return;
+		}
+
+		try {
+			$entry = new TaskAudit();
+			$entry->setTaskId((int)$task->getId());
+			$entry->setAction('complete-refused');
+			$entry->setStateAfter($task->getState());
+			$entry->setActor($actor);
+			$entry->setPerformerType($task->getPerformerType());
+			$entry->setOnBehalfOf($task->getOnBehalfOf());
+			$entry->setMandate($task->getMandate());
+			$entry->setReason($reason);
+			$entry->setAuthorized(true);
+			$this->audits->insert($entry);
+		} catch (Throwable $auditFailure) {
+			$this->logger->warning(
+				'[TaskService] Could not record a refused completion: ' . $auditFailure->getMessage(),
+				['task' => $task->getUuid()]
+			);
+		}
+	}//end recordRefusedCompletion()
+
+	/**
+	 * Refuse a run-less task whose own form declaration could not be rendered.
+	 *
+	 * The record is the declaration for a task with no run, so creation is
+	 * its save time: a field the subject schema lacks, or marks read-only or
+	 * not visible, is refused now, naming it, rather than left for the
+	 * performer to meet.
+	 *
+	 * @param Task $task The task about to be inserted.
+	 *
+	 * @return void
+	 *
+	 * @throws TaskValidationException When the declaration is refused.
+	 *
+	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
+	 */
+	private function refuseUnrenderableForm(Task $task): void {
+		$record = (($task->getMetadata() ?? [])['form'] ?? null);
+		if ($this->forms === null || is_array($record) === false || $record === []) {
+			return;
+		}
+
+		try {
+			$this->forms->validate(form: $this->forms->fromRecord(record: $record));
+		} catch (UnexpectedValueException $refused) {
+			throw new TaskValidationException(message: $refused->getMessage(), previous: $refused);
+		}
+	}//end refuseUnrenderableForm()
 
 	/**
 	 * Resolve a verb's task: it must exist, the caller must be authorized,

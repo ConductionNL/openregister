@@ -37,6 +37,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Timer\EscalationLadderService
+ * @covers \OCA\OpenRegister\Db\FlowTimer
+ * @covers \OCA\OpenRegister\Db\Task
+ * @covers \OCA\OpenRegister\Service\Flow\Timer\SlaCalculator
+ * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
  */
 class EscalationLadderServiceTest extends TestCase {
 

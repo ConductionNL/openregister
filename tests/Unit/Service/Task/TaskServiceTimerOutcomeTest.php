@@ -42,6 +42,9 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Task\TaskService
+ * @covers \OCA\OpenRegister\Db\Task
+ * @covers \OCA\OpenRegister\Db\TaskAudit
+ * @covers \OCA\OpenRegister\Service\Task\TaskState
  */
 class TaskServiceTimerOutcomeTest extends TestCase {
 

@@ -550,6 +550,10 @@ return [
         // The VERSION number is `\d+`, not `[^/]+`. Without that,
         // `/versions/publish` would match `version` with the literal string
         // "publish" and return a 404 for a route that exists.
+        // Adoption: the CALLER becomes the owner of a shipped, ownerless flow.
+        // A deliberate act with its own verb — `owner` is not an editable field
+        // on PUT, so this is the only path from imported to dispatchable.
+        ['name' => 'flow#adopt',     'url' => '/api/flows/{id}/adopt',               'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#versions',  'url' => '/api/flows/{id}/versions',            'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#version',   'url' => '/api/flows/{id}/versions/{version}',  'verb' => 'GET',  'requirements' => ['id' => '[^/]+', 'version' => '\d+']],
         ['name' => 'flow#publish',   'url' => '/api/flows/{id}/publish',             'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
@@ -1370,6 +1374,21 @@ return [
 		['name' => 'task#complete', 'url' => '/api/flow-tasks/{uuid}/complete', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#cancel', 'url' => '/api/flow-tasks/{uuid}/cancel', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#checkItem', 'url' => '/api/flow-tasks/{uuid}/checklist/{itemId}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+', 'itemId' => '[^/]+']],
+
+		// The portal seam (flow-portal-task): a party OUTSIDE the instance,
+		// authenticated at portaliq's edge, acts here under a signed
+		// X-Portal-Subject assertion, never a Nextcloud session. The subject
+		// routes are PublicPage by design and authorized inside the service
+		// against the task's STORED party reference. The delivery routes are
+		// the operator's (administrator): portaliq settles what it sent.
+		// `deliveries` is registered before `{uuid}` so the literal wins.
+		['name' => 'portalTask#index', 'url' => '/api/portal-tasks', 'verb' => 'GET'],
+		['name' => 'portalTask#deliveries', 'url' => '/api/portal-tasks/deliveries', 'verb' => 'GET'],
+		['name' => 'portalTask#deliveryDelivered', 'url' => '/api/portal-tasks/deliveries/{uuid}/delivered', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'portalTask#deliveryFailed', 'url' => '/api/portal-tasks/deliveries/{uuid}/failed', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'portalTask#show', 'url' => '/api/portal-tasks/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'portalTask#complete', 'url' => '/api/portal-tasks/{uuid}/complete', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+
 		// The case layer (flow-cmmn-case-semantics): a plan of stages, human
 		// items and milestones anchored to an OpenRegister OBJECT. There is no
 		// case id: every plan route is keyed by the anchoring object's uuid, and

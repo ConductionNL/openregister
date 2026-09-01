@@ -100,7 +100,6 @@ use OCA\OpenRegister\Listener\AuthorizationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
-use OCA\OpenRegister\Listener\EventCatalogListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
@@ -234,6 +233,7 @@ use OCA\OpenRegister\Service\ObjectSource\UserDirectoryObjectSourceProvider;
 use OCA\OpenRegister\Service\OpenProjectLinkService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PhotoLinkService;
+use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\Schema\SchemaDiffService;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
@@ -241,6 +241,7 @@ use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
+use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
@@ -817,6 +818,33 @@ class Application extends App implements IBootstrap {
 					logger: $container->get('Psr\Log\LoggerInterface'),
 					settingsService: $container->get(SettingsService::class),
 					container: $container
+				);
+			}
+		);
+
+		// The task inbox and the portal party resolver read the object store
+		// through AbstractObjectMapper, which the autowirer cannot build (it is
+		// abstract) and would silently default to null: an inbox row without
+		// subject context, and a portal task that can match nobody. Both are
+		// wired to the MagicMapper explicitly for that reason.
+		$context->registerService(
+			TaskInboxService::class,
+			function (ContainerInterface $container) {
+				return new TaskInboxService(
+					tasks: $container->get(\OCA\OpenRegister\Db\TaskMapper::class),
+					temporal: $container->get(\OCA\OpenRegister\Service\Task\TaskTemporalProjection::class),
+					logger: $container->get('Psr\Log\LoggerInterface'),
+					objects: $container->get(MagicMapper::class),
+					deliveries: $container->get(\OCA\OpenRegister\Db\PortalTaskDeliveryMapper::class)
+				);
+			}
+		);
+
+		$context->registerService(
+			PortalPartyResolver::class,
+			function (ContainerInterface $container) {
+				return new PortalPartyResolver(
+					objects: $container->get(MagicMapper::class)
 				);
 			}
 		);
@@ -2567,6 +2595,18 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Listener\FlowTimerSubjectTerminalListener::class
 		);
 
+		// The portal reminder (flow-portal-task, design D-8): a preBreach rung
+		// of flow-business-timers on an EXTERNAL task becomes a reminder
+		// delivery request through the portal seam; a slaBreached rung stays
+		// inward. Registered by the event's NAME because the timers change is
+		// built in parallel and its event class may not be on this branch yet;
+		// the listener is duck-typed against the event's published surface, so
+		// the two merge in either order.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Listener\PortalTaskReminderListener::EVENT_CLASS,
+			\OCA\OpenRegister\Listener\PortalTaskReminderListener::class
+		);
+
 		// Task projections (flow-task-inbox-projections): a committed
 		// transition becomes a declarative notification and a VTODO in the
 		// assignee's calendar. Both run AFTER the commit and neither can fail
@@ -2622,9 +2662,31 @@ class Application extends App implements IBootstrap {
 		);
 		$context->registerEventListener(ObjectUpdatedEvent::class, \OCA\OpenRegister\Listener\CaseObjectEventListener::class);
 		$context->registerEventListener(ObjectTransitionedEvent::class, \OCA\OpenRegister\Listener\CaseObjectEventListener::class);
+		// Routed through FlowTriggerListener, the ONE object-trigger path (the
+		// branch that retired EventCatalogListener as a duplicate). The case
+		// branch moved with the retirement, and gains what the one path has:
+		// the subject's register/schema resolved to the SLUGS the trigger
+		// index stores — CaseItemTransitionedEvent::getSubject() answers the
+		// item's numeric ids — and the acting user attributed to the run.
 		$context->registerEventListener(
 			\OCA\OpenRegister\Event\CaseItemTransitionedEvent::class,
-			\OCA\OpenRegister\Listener\EventCatalogListener::class
+			\OCA\OpenRegister\Listener\FlowTriggerListener::class
+		);
+
+		// Business-timer cancellation propagation (flow-business-timers, design
+		// D-9): the SAME terminal event, and the run-terminal one, also cancel
+		// the subject's open business timers. TaskTerminalEvent fires right
+		// after the terminal write commits (see TaskService::transactional),
+		// FlowRunTerminalEvent inside the run's own write; the listener is
+		// idempotent and never deletes, and the invariant repair step counts
+		// anything a crash window leaves behind.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
+			\OCA\OpenRegister\Listener\FlowTimerSubjectTerminalListener::class
+		);
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\FlowRunTerminalEvent::class,
+			\OCA\OpenRegister\Listener\FlowTimerSubjectTerminalListener::class
 		);
 
 		// Lifecycle annotation listeners — see x-openregister-lifecycle.
@@ -2734,22 +2796,18 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ObjectUpdatedEvent::class, AnnotationNotificationListener::class);
 		$context->registerEventListener(ObjectTransitionedEvent::class, AnnotationNotificationListener::class);
 
-		// Object-CRUD flow triggers. These route through EventCatalogListener
-		// like every other catalog event, so there is ONE path from a dispatched
-		// event to a queued run — the action-list engine that used to handle
-		// create/update/delete separately is gone.
-		$context->registerEventListener(ObjectCreatedEvent::class, EventCatalogListener::class);
-		$context->registerEventListener(ObjectUpdatedEvent::class, EventCatalogListener::class);
-		$context->registerEventListener(ObjectDeletedEvent::class, EventCatalogListener::class);
-
-		// Additional flow-catalog triggers beyond CRUD (lock/unlock/revert/state
-		// transition). Routed by EventCatalogListener so create/update/delete are
-		// not double-handled. Each event carries the object, so its schema's flows
-		// run — see EventCatalogService for the trigger ids.
-		$context->registerEventListener(ObjectLockedEvent::class, EventCatalogListener::class);
-		$context->registerEventListener(ObjectUnlockedEvent::class, EventCatalogListener::class);
-		$context->registerEventListener(ObjectRevertedEvent::class, EventCatalogListener::class);
-		$context->registerEventListener(ObjectTransitionedEvent::class, EventCatalogListener::class);
+		// Object-lifecycle flow triggers have ONE listener: FlowTriggerListener,
+		// registered above with the other flow triggers. EventCatalogListener
+		// used to be registered here for the SAME seven events, each handler
+		// calling FlowTriggerService::fire() — every object event reached the
+		// trigger service twice. The double-fire was invisible only because both
+		// listeners fired the object's numeric register/schema ids against an
+		// index that holds slugs, so neither ever matched; the moment the
+		// vocabulary was fixed, two registrations would have queued every
+		// matched flow twice per event. FlowTriggerListener is the one kept
+		// because it is the superset: it attributes the acting user to the run
+		// and carries the transition's action/from/to as context, both of which
+		// EventCatalogListener dropped.
 
 		// Native Nextcloud Flow (workflowengine) composition — expose OR objects
 		// as a Flow entity and OR flows as a Flow operation. Guarded by

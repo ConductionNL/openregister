@@ -103,7 +103,7 @@ class TaskEntitiesTest extends TestCase {
 		}
 
 		$this->assertCount(6, Task::STATES);
-		$this->assertSame(['user', 'group', 'agent', 'worker'], Task::PERFORMER_TYPES);
+		$this->assertSame(['user', 'group', 'agent', 'worker', 'external'], Task::PERFORMER_TYPES);
 		$this->assertSame(['low', 'normal', 'high', 'urgent'], Task::PRIORITIES);
 		$this->assertCount(5, Task::ROUTING_STRATEGIES);
 	}//end testTaskTerminalityAndVocabularies()

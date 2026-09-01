@@ -269,6 +269,15 @@ Vrij en open source onder de EUPL-licentie.
 			     openregister:approval:rollback-to-steps command. -->
 			<step>OCA\OpenRegister\Repair\MigrateApprovalChainsToTasks</step>
 			<step>OCA\OpenRegister\Repair\SeedCaseFixtures</step>
+			<!-- Business timers (flow-business-timers, ADR-001): the flow-timers
+			     register with its working-calendar and escalation-ladder schemas
+			     and seeded defaults (nl-national, nl-termijn-default), idempotent
+			     with force: false so administrator edits survive. Then the
+			     invariant check, which COUNTS orphaned or inconsistent timers and
+			     reports them rather than cancelling them. Post-migration because
+			     both need the openregister_flow_timers tables. -->
+			<step>OCA\OpenRegister\Repair\SeedFlowTimerRegister</step>
+			<step>OCA\OpenRegister\Repair\CheckFlowTimerInvariants</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>

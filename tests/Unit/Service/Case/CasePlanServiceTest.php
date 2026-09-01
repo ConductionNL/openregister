@@ -396,8 +396,13 @@ class CasePlanServiceTest extends TestCase {
 		$doneB = $service->transition(itemUuid: (string)$visitB->getUuid(), to: CaseItem::STATE_COMPLETED, uid: 'alice', reason: 'done b');
 		$this->assertSame(CaseItem::STATE_COMPLETED, $doneA->getState());
 		$this->assertSame(CaseItem::STATE_COMPLETED, $doneB->getState());
-		$this->assertSame('active->completed (user)', end($this->audits->trail((int)$visitA->getId())));
-		$this->assertSame('active->completed (user)', end($this->audits->trail((int)$visitB->getId())));
+		// Into variables first: end() takes its argument by reference, and
+		// handing it a function's return value raises "Only variables should
+		// be passed by reference" on every run of this test.
+		$trailA = $this->audits->trail((int)$visitA->getId());
+		$trailB = $this->audits->trail((int)$visitB->getId());
+		$this->assertSame('active->completed (user)', end($trailA));
+		$this->assertSame('active->completed (user)', end($trailB));
 		$this->assertSame('done b', $this->audits->findForItem((int)$visitB->getId())[2]->getReason());
 
 		try {

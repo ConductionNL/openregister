@@ -191,6 +191,12 @@ class FlowTimerDefinitionStore {
 	private function fromDescriptor(string $schema): array {
 		try {
 			$path = $this->appManager->getAppPath('openregister') . SeedFlowTimerRegister::REGISTER_PATH;
+			if (is_file($path) === false) {
+				$this->logger->warning('[FlowTimerDefinitionStore] Descriptor absent: ' . $path);
+
+				return [];
+			}
+
 			$data = json_decode((string)file_get_contents($path), true);
 		} catch (Throwable $failure) {
 			$this->logger->warning('[FlowTimerDefinitionStore] Descriptor unreadable: ' . $failure->getMessage());

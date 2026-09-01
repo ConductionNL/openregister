@@ -37,6 +37,8 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep
+ * @covers \OCA\OpenRegister\Db\FlowTimer
+ * @covers \OCA\OpenRegister\Db\FlowTimerMapper
  */
 class FlowTimerSweepTest extends TestCase {
 

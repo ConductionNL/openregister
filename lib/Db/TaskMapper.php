@@ -47,6 +47,10 @@ use OCP\IDBConnection;
 /**
  * Reads and writes tasks.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The sum of the inbox
+ * predicates plus the portal seam's two party-scoped finders; each method is
+ * small, and moving the party predicates to a second mapper would split the
+ * one WHERE-clause vocabulary this class exists to keep together.
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) A mapper's public methods
  * are its query vocabulary, one per distinct question the service and the
  * inbox ask of the table (same reasoning as FlowRunMapper); two of them
@@ -533,7 +537,105 @@ class TaskMapper extends QBMapper {
 		$this->applyScope(qb: $qb, criteria: $criteria);
 		$this->applyVisibility(qb: $qb, criteria: $criteria);
 		$this->applyFilters(qb: $qb, criteria: $criteria);
+		$this->applyExternalExclusion(qb: $qb, criteria: $criteria);
 	}//end applyInboxPredicates()
+
+	/**
+	 * An EXTERNAL task is in nobody's Nextcloud inbox and in nobody's total.
+	 *
+	 * The one read that admits it is the read anchored to its subject object
+	 * (`objectUuid` set): that is the caseworker looking at the case, which is
+	 * the visibility the spec grants inside the instance. Every other inbox
+	 * shape (assigned, pooled, watched, all; administrator or not) excludes
+	 * it in the datastore, so a badge count can never include a resident's
+	 * ask. NULL performer types are legacy rows and stay visible.
+	 *
+	 * @param IQueryBuilder $qb The query under construction.
+	 * @param TaskInboxCriteria $criteria Carries the object anchor, when any.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-tasks/spec.md#requirement-the-external-performer-type-is-portal-scoped-and-never-pooled
+	 */
+	private function applyExternalExclusion(IQueryBuilder $qb, TaskInboxCriteria $criteria): void {
+		if ($criteria->objectUuid !== null) {
+			return;
+		}
+
+		$qb->andWhere(
+			$qb->expr()->orX(
+				$qb->expr()->isNull('performer_type'),
+				$qb->expr()->neq('performer_type', $qb->createNamedParameter(Task::PERFORMER_EXTERNAL))
+			)
+		);
+	}//end applyExternalExclusion()
+
+	/**
+	 * One portal subject's open external tasks, oldest ask first.
+	 *
+	 * Subject-scoped in the WHERE clause, never post-filtered: the party
+	 * reference, the performer type and non-terminality are all predicates,
+	 * so a page and its count (see {@see countOpenExternalForParty()}) agree
+	 * by construction and no other subject's row is ever fetched.
+	 *
+	 * @param string $partyReference The stored party reference (`party:<ref>`).
+	 * @param int $limit Page size.
+	 * @param int $offset Page offset.
+	 *
+	 * @return array<int, Task> The page.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
+	 */
+	public function findOpenExternalForParty(string $partyReference, int $limit = 25, int $offset = 0): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')->from($this->getTableName());
+		$this->applyPartyPredicates(qb: $qb, partyReference: $partyReference);
+		$qb->orderBy('created', 'ASC')->addOrderBy('id', 'ASC');
+		$qb->setMaxResults($limit)->setFirstResult($offset);
+
+		return $this->findEntities(query: $qb);
+	}//end findOpenExternalForParty()
+
+	/**
+	 * The total behind {@see findOpenExternalForParty()}, over the SAME predicates.
+	 *
+	 * @param string $partyReference The stored party reference.
+	 *
+	 * @return int The total.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
+	 */
+	public function countOpenExternalForParty(string $partyReference): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectAlias($qb->func()->count('id'), 'total')->from($this->getTableName());
+		$this->applyPartyPredicates(qb: $qb, partyReference: $partyReference);
+
+		$result = $qb->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+
+		if ($row === false) {
+			return 0;
+		}
+
+		return (int)$row['total'];
+	}//end countOpenExternalForParty()
+
+	/**
+	 * The portal seam's predicate: this party's, external, still open.
+	 *
+	 * @param IQueryBuilder $qb The query under construction.
+	 * @param string $partyReference The stored party reference.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
+	 */
+	private function applyPartyPredicates(IQueryBuilder $qb, string $partyReference): void {
+		$qb->andWhere($qb->expr()->eq('assignee', $qb->createNamedParameter($partyReference)));
+		$qb->andWhere($qb->expr()->eq('performer_type', $qb->createNamedParameter(Task::PERFORMER_EXTERNAL)));
+		$qb->andWhere($qb->expr()->eq('is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)));
+	}//end applyPartyPredicates()
 
 	/**
 	 * The scope half of the predicate: which relationship the list is about.

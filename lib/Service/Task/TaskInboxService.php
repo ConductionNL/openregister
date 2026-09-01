@@ -36,6 +36,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\AbstractObjectMapper;
+use OCA\OpenRegister\Db\PortalTaskDelivery;
+use OCA\OpenRegister\Db\PortalTaskDeliveryMapper;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Db\TaskMapper;
@@ -46,6 +48,9 @@ use Throwable;
  * Lists and counts tasks for a caller, with subject context attached.
  *
  * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) PortalTaskDelivery::summarise is a
+ * stateless fold over rows; an instance to call it would be a second copy.
  */
 class TaskInboxService {
 
@@ -63,12 +68,23 @@ class TaskInboxService {
 	 *                                           reads null, which is honest —
 	 *                                           the TASK list never fails
 	 *                                           over a context lookup.
+	 * @param PortalTaskDeliveryMapper|null $deliveries Reads the delivery
+	 *                                                  state of an EXTERNAL
+	 *                                                  task's ask, attached
+	 *                                                  to its row so the
+	 *                                                  caseworker sees "not
+	 *                                                  yet delivered" instead
+	 *                                                  of silence. Nullable
+	 *                                                  for the same reason as
+	 *                                                  the object store; absent,
+	 *                                                  the row says so.
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
 		private readonly TaskTemporalProjection $temporal,
 		private readonly LoggerInterface $logger,
 		private readonly ?AbstractObjectMapper $objects = null,
+		private readonly ?PortalTaskDeliveryMapper $deliveries = null,
 	) {
 
 	}//end __construct()
@@ -152,8 +168,66 @@ class TaskInboxService {
 		$row['daysUntilDue'] = $projection['daysUntilDue'];
 		$row['daysOverdue'] = $projection['daysOverdue'];
 
+		if ((string)$task->getPerformerType() === Task::PERFORMER_EXTERNAL) {
+			$row['delivery'] = $this->deliveryState(task: $task);
+		}
+
 		return $row;
 	}//end row()
+
+	/**
+	 * The delivery state of an external task's ask, for its row.
+	 *
+	 * Summarised from the delivery request records: `requested` until every
+	 * channel reports, `delivered` when the portal inbox message went out,
+	 * `failed` when a channel failed, and `not-recorded` when no request row
+	 * exists at all (the outage case the spec wants visible). Never throws:
+	 * the task list does not fail over a delivery lookup.
+	 *
+	 * @param Task $task The external task.
+	 *
+	 * @return array<string, mixed> {state, channels, requestedAt, deliveredAt}.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-tasks/spec.md#requirement-the-external-performer-type-is-portal-scoped-and-never-pooled
+	 */
+	public function deliveryState(Task $task): array {
+		$unknown = [
+			'state' => PortalTaskDelivery::STATE_NOT_RECORDED,
+			'channels' => [],
+			'requestedAt' => null,
+			'deliveredAt' => null,
+		];
+		if ($this->deliveries === null) {
+			return $unknown;
+		}
+
+		try {
+			$rows = $this->deliveries->findForTask(taskUuid: (string)$task->getUuid());
+		} catch (Throwable $failure) {
+			$this->logger->debug(
+				'[TaskInboxService] Could not read delivery state: ' . $failure->getMessage(),
+				['task' => $task->getUuid()]
+			);
+
+			return $unknown;
+		}
+
+		return PortalTaskDelivery::summarise(rows: $rows);
+	}//end deliveryState()
+
+	/**
+	 * Subject context for a set of tasks, for readers outside this service
+	 * (the portal seam lists a subject's tasks WITH their case context).
+	 *
+	 * @param array<int, Task> $tasks The tasks.
+	 *
+	 * @return array<string, array<string, mixed>> Context by object uuid.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
+	 */
+	public function subjectContextsFor(array $tasks): array {
+		return $this->subjectContexts(tasks: $tasks);
+	}//end subjectContextsFor()
 
 	/**
 	 * One task as an API row, with its subject context resolved.

@@ -53,7 +53,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
  */
-class Version1Date20260901193000 extends SimpleMigrationStep {
+class Version1Date20260901170000 extends SimpleMigrationStep {
 	/**
 	 * The timer table.
 	 *
