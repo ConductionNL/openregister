@@ -15,12 +15,23 @@ use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectRevertedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Listener\FlowTriggerListener;
 use OCA\OpenRegister\Service\Flow\FlowTriggerService;
+use OCA\OpenRegister\Service\Flow\FlowTriggerSlugs;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\Event;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 
+/**
+ * @covers \OCA\OpenRegister\Listener\FlowTriggerListener
+ * @covers \OCA\OpenRegister\Service\Flow\FlowTriggerSlugs
+ */
 class FlowTriggerListenerTest extends TestCase {
 	private FlowTriggerService $triggers;
 
@@ -31,7 +42,47 @@ class FlowTriggerListenerTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn(null);
 
-		$this->listener = new FlowTriggerListener($this->triggers, $session);
+		$this->listener = new FlowTriggerListener($this->triggers, $session, $this->slugs());
+	}
+
+	/**
+	 * A real FlowTriggerSlugs over mapper doubles.
+	 *
+	 * The mappers know exactly one register (`16` => `dossiq`) and one schema
+	 * (`26` => `case`); anything else does not resolve, which per the resolver's
+	 * contract passes the identifier through unchanged — so the pre-existing
+	 * tests that fire on `reg`/`sch` keep asserting exactly what they did.
+	 */
+	private function slugs(): FlowTriggerSlugs {
+		$registers = $this->createMock(RegisterMapper::class);
+		$registers->method('find')->willReturnCallback(
+			static function (string|int $id): Register {
+				if ((string)$id !== '16') {
+					throw new DoesNotExistException('no such register');
+				}
+
+				$register = new Register();
+				$register->setSlug('dossiq');
+
+				return $register;
+			}
+		);
+
+		$schemas = $this->createMock(SchemaMapper::class);
+		$schemas->method('find')->willReturnCallback(
+			static function (string|int $id): Schema {
+				if ((string)$id !== '26') {
+					throw new DoesNotExistException('no such schema');
+				}
+
+				$schema = new Schema();
+				$schema->setSlug('case');
+
+				return $schema;
+			}
+		);
+
+		return new FlowTriggerSlugs($registers, $schemas, new NullLogger());
 	}
 
 	private function object(): ObjectEntity {
@@ -89,6 +140,57 @@ class FlowTriggerListenerTest extends TestCase {
 	public function testCreateStillCarriesNoExtraContext(): void {
 		$this->triggers->expects($this->once())->method('fire')
 			->with('object.created', $this->anything(), null, [])
+			->willReturn(1);
+
+		$this->listener->handle(new ObjectCreatedEvent($this->object()));
+	}
+
+	/**
+	 * 🔴 THE DEFECT: an object event carries NUMERIC register/schema ids, and
+	 * the trigger index holds SLUGS — an imported declaration cannot know an
+	 * instance's row ids. The subject must therefore fire with the slugs, so a
+	 * trigger declared as `dossiq`/`case` matches an object saved as `16`/`26`.
+	 * Before the fix this fired `16`/`26` literally, and three case creations
+	 * on a clean instance queued nothing.
+	 */
+	public function testNumericIdsFireAsTheirSlugs(): void {
+		$this->triggers->expects($this->once())->method('fire')
+			->with(
+				'object.created',
+				$this->callback(
+					static fn (array $s): bool => ($s['register'] ?? null) === 'dossiq'
+						&& ($s['schema'] ?? null) === 'case'
+						&& ($s['uuid'] ?? null) === 'obj-1'
+				),
+				null,
+				[]
+			)
+			->willReturn(1);
+
+		$object = new ObjectEntity();
+		$object->setUuid('obj-1');
+		$object->setRegister('16');
+		$object->setSchema('26');
+
+		$this->listener->handle(new ObjectCreatedEvent($object));
+	}
+
+	/**
+	 * An object already carrying slugs fires them unchanged: resolution is
+	 * idempotent, and an identifier that resolves to nothing passes through
+	 * rather than being blanked — a blank would silently unsubscribe the flow.
+	 */
+	public function testSlugsAndUnresolvablesPassThroughUnchanged(): void {
+		$this->triggers->expects($this->once())->method('fire')
+			->with(
+				'object.created',
+				$this->callback(
+					static fn (array $s): bool => ($s['register'] ?? null) === 'reg'
+						&& ($s['schema'] ?? null) === 'sch'
+				),
+				null,
+				[]
+			)
 			->willReturn(1);
 
 		$this->listener->handle(new ObjectCreatedEvent($this->object()));

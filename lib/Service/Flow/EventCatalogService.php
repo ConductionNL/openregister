@@ -6,8 +6,8 @@
  * Single source of truth for the triggers a declarative flow (`x-openregister-flows`)
  * may subscribe to. The visual flow builder reads this catalog (via
  * `GET /api/flow/event-catalog`) to populate its trigger palette, and
- * {@see \OCA\OpenRegister\Listener\EventCatalogListener} uses the same map to
- * route dispatched events to {@see \OCA\OpenRegister\Service\Flow\FlowActionService}.
+ * {@see \OCA\OpenRegister\Listener\FlowTriggerListener} fires the same ids
+ * into {@see \OCA\OpenRegister\Service\Flow\FlowTriggerService}.
  *
  * Every entry is a real, dispatched event that resolves to an OpenRegister
  * object (so the flow's schema selects which flows run) — there are no

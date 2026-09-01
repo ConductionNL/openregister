@@ -44,6 +44,7 @@ use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Flow\FlowTriggerService;
+use OCA\OpenRegister\Service\Flow\FlowTriggerSlugs;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -59,10 +60,12 @@ class FlowTriggerListener implements IEventListener {
 	 *
 	 * @param FlowTriggerService $triggers Queues the runs.
 	 * @param IUserSession $userSession The acting user, for attribution.
+	 * @param FlowTriggerSlugs $slugs Turns the object's numeric ids into the slugs triggers match on.
 	 */
 	public function __construct(
 		private readonly FlowTriggerService $triggers,
 		private readonly IUserSession $userSession,
+		private readonly FlowTriggerSlugs $slugs,
 	) {
 
 	}//end __construct()
@@ -88,12 +91,20 @@ class FlowTriggerListener implements IEventListener {
 			$user = $this->userSession->getUser()->getUID();
 		}
 
+		// 🔴 SLUGS, NOT THE OBJECT'S NUMERIC IDS. The trigger index and the
+		// flow trigger columns both hold slugs (`dossiq`/`case`) — an imported
+		// `x-openregister-flows` declaration cannot know an instance's row ids
+		// — while `$object->getRegister()` answers `16`. Firing the ids meant
+		// the comparison was `16 === 'dossiq'` on every event: three case
+		// creations on a clean instance queued NOTHING, with the flow enabled
+		// and owned, and nothing logged. Measured 2026-09-01 on dossiq
+		// 0.3.11-unstable / openregister 2.0.13-unstable.
 		$this->triggers->fire(
 			event: $eventId,
 			subject: [
 				'uuid' => (string)$object->getUuid(),
-				'register' => (string)$object->getRegister(),
-				'schema' => (string)$object->getSchema(),
+				'register' => $this->slugs->registerSlug(identifier: (string)$object->getRegister()),
+				'schema' => $this->slugs->schemaSlug(identifier: (string)$object->getSchema()),
 			],
 			user: $user,
 			context: $this->contextFor(event: $event)

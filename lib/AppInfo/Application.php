@@ -101,7 +101,6 @@ use OCA\OpenRegister\Listener\AuthorizationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
-use OCA\OpenRegister\Listener\EventCatalogListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
@@ -2626,22 +2625,18 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ObjectUpdatedEvent::class, AnnotationNotificationListener::class);
 		$context->registerEventListener(ObjectTransitionedEvent::class, AnnotationNotificationListener::class);
 
-		// Object-CRUD flow triggers. These route through EventCatalogListener
-		// like every other catalog event, so there is ONE path from a dispatched
-		// event to a queued run — the action-list engine that used to handle
-		// create/update/delete separately is gone.
-		$context->registerEventListener(ObjectCreatedEvent::class, EventCatalogListener::class);
-		$context->registerEventListener(ObjectUpdatedEvent::class, EventCatalogListener::class);
-		$context->registerEventListener(ObjectDeletedEvent::class, EventCatalogListener::class);
-
-		// Additional flow-catalog triggers beyond CRUD (lock/unlock/revert/state
-		// transition). Routed by EventCatalogListener so create/update/delete are
-		// not double-handled. Each event carries the object, so its schema's flows
-		// run — see EventCatalogService for the trigger ids.
-		$context->registerEventListener(ObjectLockedEvent::class, EventCatalogListener::class);
-		$context->registerEventListener(ObjectUnlockedEvent::class, EventCatalogListener::class);
-		$context->registerEventListener(ObjectRevertedEvent::class, EventCatalogListener::class);
-		$context->registerEventListener(ObjectTransitionedEvent::class, EventCatalogListener::class);
+		// Object-lifecycle flow triggers have ONE listener: FlowTriggerListener,
+		// registered above with the other flow triggers. EventCatalogListener
+		// used to be registered here for the SAME seven events, each handler
+		// calling FlowTriggerService::fire() — every object event reached the
+		// trigger service twice. The double-fire was invisible only because both
+		// listeners fired the object's numeric register/schema ids against an
+		// index that holds slugs, so neither ever matched; the moment the
+		// vocabulary was fixed, two registrations would have queued every
+		// matched flow twice per event. FlowTriggerListener is the one kept
+		// because it is the superset: it attributes the acting user to the run
+		// and carries the transition's action/from/to as context, both of which
+		// EventCatalogListener dropped.
 
 		// Native Nextcloud Flow (workflowengine) composition — expose OR objects
 		// as a Flow entity and OR flows as a Flow operation. Guarded by
