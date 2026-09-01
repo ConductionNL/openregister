@@ -550,6 +550,10 @@ return [
         // The VERSION number is `\d+`, not `[^/]+`. Without that,
         // `/versions/publish` would match `version` with the literal string
         // "publish" and return a 404 for a route that exists.
+        // Adoption: the CALLER becomes the owner of a shipped, ownerless flow.
+        // A deliberate act with its own verb — `owner` is not an editable field
+        // on PUT, so this is the only path from imported to dispatchable.
+        ['name' => 'flow#adopt',     'url' => '/api/flows/{id}/adopt',               'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#versions',  'url' => '/api/flows/{id}/versions',            'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#version',   'url' => '/api/flows/{id}/versions/{version}',  'verb' => 'GET',  'requirements' => ['id' => '[^/]+', 'version' => '\d+']],
         ['name' => 'flow#publish',   'url' => '/api/flows/{id}/publish',             'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
