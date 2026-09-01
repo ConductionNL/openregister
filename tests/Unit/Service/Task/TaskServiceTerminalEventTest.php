@@ -15,6 +15,7 @@ use OCA\OpenRegister\Db\TaskCandidateMapper;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\TaskRelationMapper;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
+use OCA\OpenRegister\Event\TaskTransitionedEvent;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
@@ -98,10 +99,21 @@ class TaskServiceTerminalEventTest extends TestCase {
 	 */
 	public function testACompletionIsAnnouncedOnceAfterTheCommit(): void {
 		$this->tasks->method('findByUuid')->willReturn($this->openTask());
-		$this->dispatcher->expects($this->once())
+		// Two announcements, both after the commit, in a fixed order: the
+		// transition to the projections first (flow-task-inbox-projections),
+		// then terminality to the flow side — the run-walk that continues on
+		// terminality must find the projections already told.
+		$this->dispatcher->expects($this->exactly(2))
 			->method('dispatchTyped')
 			->with($this->callback(function (Event $event): bool {
-				$this->sequence[] = 'dispatch';
+				if ($event instanceof TaskTransitionedEvent) {
+					$this->sequence[] = 'transition';
+					$this->assertSame('alice', $event->getActor());
+
+					return true;
+				}
+
+				$this->sequence[] = 'terminal';
 				$this->assertInstanceOf(TaskTerminalEvent::class, $event);
 				$this->assertSame(Task::STATE_COMPLETED, $event->getTask()->getState());
 				$this->assertSame('approved', $event->getTask()->getOutcome());
@@ -111,14 +123,22 @@ class TaskServiceTerminalEventTest extends TestCase {
 
 		$this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'alice');
 
-		$this->assertSame(['commit', 'dispatch'], $this->sequence);
+		$this->assertSame(['commit', 'transition', 'terminal'], $this->sequence);
 	}//end testACompletionIsAnnouncedOnceAfterTheCommit()
 
 	public function testACancellationIsAnnounced(): void {
 		$this->tasks->method('findByUuid')->willReturn($this->openTask());
-		$this->dispatcher->expects($this->once())->method('dispatchTyped')->with($this->isInstanceOf(TaskTerminalEvent::class));
+		$seen = [];
+		$this->dispatcher->expects($this->exactly(2))->method('dispatchTyped')
+			->with($this->callback(static function (Event $event) use (&$seen): bool {
+				$seen[] = $event::class;
+
+				return true;
+			}));
 
 		$this->service()->cancel(uuid: 't-7', reason: 'moot', actor: 'rita');
+
+		$this->assertSame([TaskTransitionedEvent::class, TaskTerminalEvent::class], $seen);
 	}//end testACancellationIsAnnounced()
 
 	/**
