@@ -20,14 +20,11 @@
  *
  * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md
  */
-import {
-	test,
-	expect,
-	request as apiRequest,
-	type APIRequestContext,
-} from '@playwright/test'
+import type { APIRequestContext } from '@playwright/test'
+
+import { request as apiRequest, expect, test } from '@playwright/test'
 import { execSync } from 'node:child_process'
-import { resolveContainer } from '../base-url'
+import { resolveContainer } from '../base-url.ts'
 
 const API = '/index.php/apps/openregister/api'
 const JSON_HEADERS = {
@@ -36,7 +33,8 @@ const JSON_HEADERS = {
 }
 const RUN_ID = `e2e-usertask-${Date.now().toString(36)}`
 const ADMIN = process.env.NEXTCLOUD_ADMIN_USER || process.env.OR_USER || 'admin'
-const ADMIN_PASS = process.env.NEXTCLOUD_ADMIN_PASSWORD || process.env.OR_PASS || 'admin'
+const ADMIN_PASS =
+	process.env.NEXTCLOUD_ADMIN_PASSWORD || process.env.OR_PASS || 'admin'
 const STRANGER = `${RUN_ID}-perf`
 const STRANGER_PASS = `Perf0rmer!${Date.now().toString(36)}A`
 
@@ -126,7 +124,12 @@ function userTask(id: string, config: Record<string, unknown> = {}): Node {
 }
 
 function setFields(id: string, set: Record<string, unknown>): Node {
-	return { id, type: 'openregister.set-fields', config: { set }, position: { x: 0, y: 0 } }
+	return {
+		id,
+		type: 'openregister.set-fields',
+		config: { set },
+		position: { x: 0, y: 0 },
+	}
 }
 
 /** Run a flow synchronously through the test endpoint; returns the run row. */
@@ -155,8 +158,12 @@ async function inboxTaskFor(
 		`${API}/flow-tasks?scope=assigned&isTerminal=false&limit=100&sort=created&direction=desc`,
 	)
 	expect(resp.status(), await resp.text()).toBe(200)
-	const rows = ((await resp.json()).results ?? []) as Array<Record<string, unknown>>
-	return rows.find((row) => row.runUuid === runUuid && row.nodeId === nodeId) ?? null
+	const rows = ((await resp.json()).results ?? []) as Array<
+		Record<string, unknown>
+	>
+	return (
+		rows.find((row) => row.runUuid === runUuid && row.nodeId === nodeId) ?? null
+	)
 }
 
 async function readTask(request: APIRequestContext, uuid: string) {
@@ -191,7 +198,9 @@ test.describe('flow-user-task-node: a person in the graph', () => {
 	})
 
 	// @e2e flow-user-task-node::the-catalog-serves-the-nodes-form
-	test('the node catalog offers the user-task node with its form', async ({ request }) => {
+	test('the node catalog offers the user-task node with its form', async ({
+		request,
+	}) => {
 		const resp = await request.get(`${API}/flow/node-catalog`)
 		expect(resp.status(), await resp.text()).toBe(200)
 		const entry = ((await resp.json()).results ?? []).find(
@@ -201,7 +210,14 @@ test.describe('flow-user-task-node: a person in the graph', () => {
 		expect(Array.isArray(entry.configForm)).toBe(true)
 		expect(entry.configForm.length).toBeGreaterThan(0)
 		const formKeys = entry.configForm.map((field: { key: string }) => field.key)
-		for (const key of ['title', 'candidateUsers', 'priority', 'dueAt', 'outcomes', 'advance']) {
+		for (const key of [
+			'title',
+			'candidateUsers',
+			'priority',
+			'dueAt',
+			'outcomes',
+			'advance',
+		]) {
 			expect(formKeys, `form field ${key}`).toContain(key)
 		}
 		expect(entry.configKeys).toContain('advance')
@@ -210,11 +226,17 @@ test.describe('flow-user-task-node: a person in the graph', () => {
 	})
 
 	// @e2e flow-user-task-node::the-first-firing-produces-a-task-and-a-suspended-run
-	test('a flow with a user task suspends and the task appears in the inbox', async ({ request }) => {
+	test('a flow with a user task suspends and the task appears in the inbox', async ({
+		request,
+	}) => {
 		const flowId = await createFlow(
 			request,
 			'suspends',
-			[setFields('start', { step: 1 }), userTask('ask'), setFields('done', { step: 2 })],
+			[
+				setFields('start', { step: 1 }),
+				userTask('ask'),
+				setFields('done', { step: 2 }),
+			],
 			[
 				{ id: 'e1', from: 'start', to: 'ask' },
 				{ id: 'e2', from: 'ask', to: 'done' },
@@ -226,7 +248,10 @@ test.describe('flow-user-task-node: a person in the graph', () => {
 		expect(run.status).toBe('suspended')
 		// The heartbeat: a suspension a clock can reach. Null is the one shape
 		// the 14-day abandoned-signal reaper would FAIL.
-		expect(run.resumeAt, 'a user task never parks on a null resumeAt').toBeTruthy()
+		expect(
+			run.resumeAt,
+			'a user task never parks on a null resumeAt',
+		).toBeTruthy()
 
 		const task = await inboxTaskFor(request, run.uuid, 'ask')
 		expect(task, 'exactly this run and node raised a task').toBeTruthy()
@@ -245,16 +270,18 @@ test.describe('flow-user-task-node: a person in the graph', () => {
 		const listed = await request.get(
 			`${API}/flow-tasks?scope=assigned&isTerminal=false&limit=100`,
 		)
-		const mine = (((await listed.json()).results ?? []) as Array<Record<string, unknown>>).filter(
-			(row) => row.runUuid === run.uuid,
-		)
+		const mine = (
+			((await listed.json()).results ?? []) as Array<Record<string, unknown>>
+		).filter((row) => row.runUuid === run.uuid)
 		expect(mine).toHaveLength(1)
 
 		await complete(request, task!.uuid as string, 'approved')
 	})
 
 	// @e2e flow-user-task-node::completing-the-task-advances-the-run
-	test('completing a task from the inbox advances its flow run', async ({ request }) => {
+	test('completing a task from the inbox advances its flow run', async ({
+		request,
+	}) => {
 		const flowId = await createFlow(
 			request,
 			'default budget',
@@ -277,12 +304,17 @@ test.describe('flow-user-task-node: a person in the graph', () => {
 		// heartbeat fifteen minutes out.
 		const parked = await readRun(request, run.uuid)
 		expect(parked.status).toBe('suspended')
-		expect(new Date(parked.resumeAt as string).getTime()).toBeLessThanOrEqual(before + 60_000)
+		expect(new Date(parked.resumeAt as string).getTime()).toBeLessThanOrEqual(
+			before + 60_000,
+		)
 
 		// On the next advance the node MUST NOT suspend again. That advance is
 		// the worker's; drive it when occ is reachable, and say so when not.
 		const job = runWorkerJobId()
-		test.skip(job === null, 'FlowRunWorker not reachable via occ; the worker half of this scenario cannot run here')
+		test.skip(
+			job === null,
+			'FlowRunWorker not reachable via occ; the worker half of this scenario cannot run here',
+		)
 		occ(`background-job:execute ${job} --force-execute`)
 
 		const after = await readRun(request, run.uuid)
@@ -295,7 +327,9 @@ test.describe('flow-user-task-node: a person in the graph', () => {
 	})
 
 	// @e2e flow-user-task-node::the-resume-endpoint-cannot-answer-for-a-performer
-	test('a flow-runner who is not the performer cannot answer a user task', async ({ request }) => {
+	test('a flow-runner who is not the performer cannot answer a user task', async ({
+		request,
+	}) => {
 		// A second real account is the task's performer. The ADMIN owns the
 		// flow and may run it, and is exactly the caller the spec names: may
 		// run the FLOW, is not the performer.
@@ -308,7 +342,10 @@ test.describe('flow-user-task-node: a person in the graph', () => {
 		)
 
 		const performer = await apiRequest.newContext({
-			baseURL: process.env.PLAYWRIGHT_BASE_URL || process.env.NEXTCLOUD_URL || process.env.BASE_URL,
+			baseURL:
+				process.env.PLAYWRIGHT_BASE_URL
+				|| process.env.NEXTCLOUD_URL
+				|| process.env.BASE_URL,
 			extraHTTPHeaders: STRANGER_HEADERS,
 		})
 
@@ -316,7 +353,10 @@ test.describe('flow-user-task-node: a person in the graph', () => {
 			const flowId = await createFlow(
 				request,
 				'not the performer',
-				[userTask('ask', { assignee: STRANGER }), setFields('done', { finished: true })],
+				[
+					userTask('ask', { assignee: STRANGER }),
+					setFields('done', { finished: true }),
+				],
 				[{ id: 'e1', from: 'ask', to: 'done' }],
 			)
 			flows.push(flowId)
@@ -325,20 +365,27 @@ test.describe('flow-user-task-node: a person in the graph', () => {
 			expect(run.status).toBe('suspended')
 
 			// The performer sees it in THEIR inbox.
-			const theirs = await performer.get(`${API}/flow-tasks?scope=assigned&isTerminal=false&limit=100`)
-			expect(theirs.status(), await theirs.text()).toBe(200)
-			const task = (((await theirs.json()).results ?? []) as Array<Record<string, unknown>>).find(
-				(row) => row.runUuid === run.uuid,
+			const theirs = await performer.get(
+				`${API}/flow-tasks?scope=assigned&isTerminal=false&limit=100`,
 			)
+			expect(theirs.status(), await theirs.text()).toBe(200)
+			const task = (
+				((await theirs.json()).results ?? []) as Array<
+					Record<string, unknown>
+				>
+			).find((row) => row.runUuid === run.uuid)
 			expect(task, 'the performer is asked').toBeTruthy()
 
 			// The flow-runner posts a decision at the RUN. Whatever the door
 			// says (the assignee guard refuses, or a nudge is accepted), the
 			// task must not move and the run must still be waiting.
-			const answered = await request.post(`${API}/flow-runs/${run.uuid}/resume`, {
-				headers: JSON_HEADERS,
-				data: { decision: 'approve', outcome: 'approved' },
-			})
+			const answered = await request.post(
+				`${API}/flow-runs/${run.uuid}/resume`,
+				{
+					headers: JSON_HEADERS,
+					data: { decision: 'approve', outcome: 'approved' },
+				},
+			)
 			expect([200, 403]).toContain(answered.status())
 
 			const taskAfter = await readTask(request, task!.uuid as string)
@@ -350,21 +397,31 @@ test.describe('flow-user-task-node: a person in the graph', () => {
 			expect(runAfter.status).toBe('suspended')
 
 			// Positive control: the performer CAN answer, through the task verb.
-			const done = await performer.post(`${API}/flow-tasks/${task!.uuid}/complete`, {
-				headers: JSON_HEADERS,
-				data: { outcome: 'approved' },
-			})
+			const done = await performer.post(
+				`${API}/flow-tasks/${task!.uuid}/complete`,
+				{
+					headers: JSON_HEADERS,
+					data: { outcome: 'approved' },
+				},
+			)
 			expect(done.status(), await done.text()).toBe(200)
 		} finally {
 			await performer.dispose()
 			await request
 				.delete(`/ocs/v2.php/cloud/users/${STRANGER}`)
-				.catch((error) => console.warn('[flow-user-task] performer cleanup failed:', error))
+				.catch((error) =>
+					console.warn(
+						'[flow-user-task] performer cleanup failed:',
+						error,
+					),
+				)
 		}
 	})
 
 	// @e2e flow-user-task-node::a-downstream-switch-branches-on-the-outcome
-	test('a rejected task routes the flow down its rejection branch', async ({ request }) => {
+	test('a rejected task routes the flow down its rejection branch', async ({
+		request,
+	}) => {
 		const flowId = await createFlow(
 			request,
 			'rejection branch',
@@ -375,7 +432,12 @@ test.describe('flow-user-task-node: a person in the graph', () => {
 					type: 'openregister.route',
 					config: {
 						rules: [
-							{ condition: { '==': [{ var: 'json.task.outcome' }, 'rejected'] }, output: 'no' },
+							{
+								condition: {
+									'==': [{ var: 'json.task.outcome' }, 'rejected'],
+								},
+								output: 'no',
+							},
 						],
 						default: 'yes',
 					},
@@ -399,11 +461,20 @@ test.describe('flow-user-task-node: a person in the graph', () => {
 		expect(task).toBeTruthy()
 
 		// A rejecting outcome requires a comment; the run is NOT failed by it.
-		await complete(request, task!.uuid as string, 'rejected', 'Missing signature')
+		await complete(
+			request,
+			task!.uuid as string,
+			'rejected',
+			'Missing signature',
+		)
 
 		const after = await readRun(request, run.uuid)
-		expect(after.status, 'a rejection is a branch, not a failure').toBe('completed')
-		const transitions = (after.log ?? []).map((entry: { transition?: string }) => entry.transition)
+		expect(after.status, 'a rejection is a branch, not a failure').toBe(
+			'completed',
+		)
+		const transitions = (after.log ?? []).map(
+			(entry: { transition?: string }) => entry.transition,
+		)
 		expect(transitions).toContain('onRejected')
 		expect(transitions).not.toContain('onApproved')
 		const item = (after.items ?? [])[0]?.json ?? {}
@@ -433,7 +504,10 @@ test.describe('flow-user-task-node: a person in the graph', () => {
 		expect(run.status).toBe('suspended')
 		const first = await inboxTaskFor(request, run.uuid, 'first')
 		expect(first).toBeTruthy()
-		expect(await inboxTaskFor(request, run.uuid, 'second'), 'the second question is not asked yet').toBeNull()
+		expect(
+			await inboxTaskFor(request, run.uuid, 'second'),
+			'the second question is not asked yet',
+		).toBeNull()
 
 		await complete(request, first!.uuid as string, 'approved')
 
@@ -456,7 +530,9 @@ test.describe('flow-user-task-node: a person in the graph', () => {
 	})
 
 	// @e2e flow-user-task-node::a-budget-of-all-runs-to-the-next-stopping-point
-	test('completing a task with an "all" budget finishes the run in one request', async ({ request }) => {
+	test('completing a task with an "all" budget finishes the run in one request', async ({
+		request,
+	}) => {
 		const flowId = await createFlow(
 			request,
 			'all budget',
@@ -464,7 +540,12 @@ test.describe('flow-user-task-node: a person in the graph', () => {
 				userTask('ask', { advance: 'all' }),
 				setFields('one', { one: true }),
 				setFields('two', { two: true }),
-				{ id: 'end', type: 'openregister.end', config: { message: 'done' }, position: { x: 0, y: 0 } },
+				{
+					id: 'end',
+					type: 'openregister.end',
+					config: { message: 'done' },
+					position: { x: 0, y: 0 },
+				},
 			],
 			[
 				{ id: 'e1', from: 'ask', to: 'one' },
@@ -485,13 +566,17 @@ test.describe('flow-user-task-node: a person in the graph', () => {
 		// completing request itself walked the two steps and the end.
 		const after = await readRun(request, run.uuid)
 		expect(['completed', 'stopped'], 'ended in-request').toContain(after.status)
-		const transitions = (after.log ?? []).map((entry: { transition?: string }) => entry.transition)
+		const transitions = (after.log ?? []).map(
+			(entry: { transition?: string }) => entry.transition,
+		)
 		expect(transitions).toContain('one')
 		expect(transitions).toContain('two')
 	})
 
 	// @e2e flow-user-task-node::stopping-a-run-empties-its-inboxes
-	test("stopping a run removes its tasks from the assignees' inboxes", async ({ request }) => {
+	test("stopping a run removes its tasks from the assignees' inboxes", async ({
+		request,
+	}) => {
 		const job = runWorkerJobId()
 		test.skip(
 			job === null,
@@ -516,10 +601,13 @@ test.describe('flow-user-task-node: a person in the graph', () => {
 			// so the worker's walk ends the run as `stopped` (terminal), and
 			// cancellation propagation terminates the run's open tasks.
 			occ('config:app:set openregister flow_kill_switch --value=1')
-			const nudged = await request.post(`${API}/flow-runs/${run.uuid}/resume`, {
-				headers: JSON_HEADERS,
-				data: {},
-			})
+			const nudged = await request.post(
+				`${API}/flow-runs/${run.uuid}/resume`,
+				{
+					headers: JSON_HEADERS,
+					data: {},
+				},
+			)
 			expect(nudged.status(), await nudged.text()).toBe(200)
 			occ(`background-job:execute ${job} --force-execute`)
 
@@ -535,7 +623,9 @@ test.describe('flow-user-task-node: a person in the graph', () => {
 			expect(terminated.isTerminal).toBe(true)
 			const audit = await request.get(`${API}/flow-tasks/${task!.uuid}/audit`)
 			expect(audit.status()).toBe(200)
-			const entries = ((await audit.json()).results ?? []) as Array<Record<string, unknown>>
+			const entries = ((await audit.json()).results ?? []) as Array<
+				Record<string, unknown>
+			>
 			const termination = entries.find((e) => e.action === 'terminate')
 			expect(termination, 'the termination is audited').toBeTruthy()
 			expect(String(termination!.reason)).toContain(run.uuid)
