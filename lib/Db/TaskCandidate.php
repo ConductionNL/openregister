@@ -42,6 +42,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setRef(?string $ref)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ *
+ * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
  */
 class TaskCandidate extends Entity implements JsonSerializable {
 

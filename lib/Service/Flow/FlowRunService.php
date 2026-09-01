@@ -282,6 +282,7 @@ class FlowRunService {
 		$context[FlowToken::CONTEXT_KEY] = FlowToken::fromArray(($context[FlowToken::CONTEXT_KEY] ?? null));
 		$context[FlowResumeState::CONTEXT_KEY] = FlowResumeState::fromArray(($context[FlowResumeState::CONTEXT_KEY] ?? null));
 		$context[FlowRunGuard::CONTEXT_KEY] = $guard;
+		$context[FlowStepReport::CONTEXT_KEY] = new FlowStepReport();
 
 		// ATTRIBUTION. Read BEFORE the walk: the audit rows are written during
 		// it, so the base has to be predicted. See {@see FlowStepHistory}.

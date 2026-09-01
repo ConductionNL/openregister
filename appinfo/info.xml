@@ -242,8 +242,10 @@ Vrij en open source onder de EUPL-licentie.
 			     migration adds. -->
 			<step>OCA\OpenRegister\Repair\RechainAuditTrailForFlowAttribution</step>
 			<!-- Task fixtures (flow-task-entity, ADR-001): the five seed
-			     groups from the change's design.md, idempotent on uuid, so
-			     both a fresh install and an existing instance get them.
+			     groups from the change's design.md, idempotent on uuid.
+			     OPT-IN: runs only when app config openregister/seed_demo_tasks
+			     is true, so a production instance never receives demo rows;
+			     a demo instance and the test environment switch it on.
 			     Post-migration because the step needs the openregister_tasks
 			     tables its own change's migration creates. -->
 			<step>OCA\OpenRegister\Repair\SeedTaskFixtures</step>

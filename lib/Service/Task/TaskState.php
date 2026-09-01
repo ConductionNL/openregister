@@ -40,6 +40,8 @@ use OCA\OpenRegister\Exception\TaskValidationException;
 
 /**
  * Resolves any fleet status vocabulary onto the six CMMN states.
+ *
+ * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
  */
 final class TaskState {
 

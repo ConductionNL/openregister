@@ -170,15 +170,184 @@ class FlowRunControllerTest extends TestCase {
 		$this->params([]);
 		$this->activeOrganisation('org-a');
 
+		// No `subject` on the request means NO subject predicate reaches the
+		// mapper: the org-wide widget's read is bit-identical to before.
 		$this->mapper->expects($this->once())->method('findActive')
-			->with('org-a', 10)
+			->with('org-a', 10, null)
 			->willReturn([]);
 		$this->mapper->expects($this->once())->method('countActive')
-			->with('org-a')
+			->with('org-a', null)
 			->willReturn(0);
 
 		$this->controller->active();
 	}//end testActiveScopesToTheCallersOrganisation()
+
+	public function testActivePassesTheSubjectToBothTheRowsAndTheTotal(): void {
+		$this->params(['subject' => 'case-x']);
+		$this->activeOrganisation('org-a');
+
+		// The organisation predicate stays: the subject NARROWS inside it. And
+		// the total is counted with the same filter, so a case widget can say
+		// "2 running" rather than the tenant-wide number.
+		$this->mapper->expects($this->once())->method('findActive')
+			->with('org-a', 10, 'case-x')
+			->willReturn([]);
+		$this->mapper->expects($this->once())->method('countActive')
+			->with('org-a', 'case-x')
+			->willReturn(2);
+
+		$this->assertSame(2, $this->controller->active()->getData()['total']);
+	}//end testActivePassesTheSubjectToBothTheRowsAndTheTotal()
+
+	public function testActiveWithASubjectStillReadsNothingWithoutAnOrganisation(): void {
+		$this->params(['subject' => 'case-x']);
+		$this->activeOrganisation(null);
+
+		// A subject uuid is guessable. It must not become a way to read runs
+		// when the tenant scope cannot be established: no query at all.
+		$this->mapper->expects($this->never())->method('findActive');
+		$this->mapper->expects($this->never())->method('countActive');
+
+		$body = $this->controller->active()->getData();
+
+		$this->assertSame([], $body['results']);
+		$this->assertSame(0, $body['total']);
+	}//end testActiveWithASubjectStillReadsNothingWithoutAnOrganisation()
+
+	public function testABlankSubjectOnTheLiveReadIsNoFilter(): void {
+		$this->params(['subject' => '   ']);
+		$this->activeOrganisation('org-a');
+
+		$this->mapper->expects($this->once())->method('findActive')
+			->with('org-a', 10, null)
+			->willReturn([]);
+		$this->mapper->method('countActive')->willReturn(0);
+
+		$this->controller->active();
+	}//end testABlankSubjectOnTheLiveReadIsNoFilter()
+
+	public function testCompletedForSubjectWithoutASubjectIsRefusedNamingTheParameter(): void {
+		$this->params([]);
+		$this->activeOrganisation('org-a');
+
+		// Refused, not answered widely: there is no org-wide "everything that
+		// ever finished" on this path. The history endpoint is that surface,
+		// with its own per-caller visibility rule.
+		$this->mapper->expects($this->never())->method('findCompletedForSubject');
+		$this->mapper->expects($this->never())->method('countCompletedForSubject');
+
+		$response = $this->controller->completedForSubject();
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertStringContainsString('subject', $response->getData()['error']);
+	}//end testCompletedForSubjectWithoutASubjectIsRefusedNamingTheParameter()
+
+	public function testCompletedForSubjectWithABlankSubjectIsRefused(): void {
+		$this->params(['subject' => '  ']);
+		$this->activeOrganisation('org-a');
+
+		$this->mapper->expects($this->never())->method('findCompletedForSubject');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller->completedForSubject()->getStatus());
+	}//end testCompletedForSubjectWithABlankSubjectIsRefused()
+
+	public function testCompletedForSubjectWithNoResolvableOrganisationReturnsNothing(): void {
+		$this->params(['subject' => 'case-x']);
+		$this->activeOrganisation(null);
+
+		$this->mapper->expects($this->never())->method('findCompletedForSubject');
+		$this->mapper->expects($this->never())->method('countCompletedForSubject');
+
+		$response = $this->controller->completedForSubject();
+		$body = $response->getData();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame([], $body['results']);
+		$this->assertSame(0, $body['total']);
+	}//end testCompletedForSubjectWithNoResolvableOrganisationReturnsNothing()
+
+	public function testCompletedForSubjectScopesToTheOrganisationAndTheSubjectWithACappedLimit(): void {
+		$this->params(['subject' => 'case-x', 'limit' => 5000]);
+		$this->activeOrganisation('org-a');
+
+		$this->mapper->expects($this->once())->method('findCompletedForSubject')
+			->with('org-a', 'case-x', 50)
+			->willReturn([]);
+		$this->mapper->expects($this->once())->method('countCompletedForSubject')
+			->with('org-a', 'case-x')
+			->willReturn(14);
+
+		$body = $this->controller->completedForSubject()->getData();
+
+		$this->assertSame(50, $body['limit']);
+		// The honest total, not the length of the bounded page.
+		$this->assertSame(14, $body['total']);
+	}//end testCompletedForSubjectScopesToTheOrganisationAndTheSubjectWithACappedLimit()
+
+	public function testBothReadsShareOneRowShapeAndNeverCarryTheMarkingItemsOrLog(): void {
+		$this->params(['subject' => 'case-x']);
+		$this->activeOrganisation('org-a');
+
+		$live = new FlowRun();
+		$live->setUuid('run-live');
+		$live->setFlowId('f1');
+		$live->setStatus(FlowRun::STATUS_SUSPENDED);
+		$live->setMarking(['await-reply' => 1]);
+		$live->setItems([['record' => 'the subject\'s own data']]);
+		$live->setLog([['step' => 1, 'node' => 'start']]);
+		$live->setContext(['secret' => 'x']);
+		$live->setCreated(new \DateTime('2026-09-01T10:00:00+00:00'));
+		$live->setSubjectUuid('case-x');
+		$live->setSubjectRegister('cases');
+		$live->setSubjectSchema('case');
+
+		$done = new FlowRun();
+		$done->setUuid('run-done');
+		$done->setFlowId('f1');
+		$done->setStatus(FlowRun::STATUS_FAILED);
+		// A finished run has no token anywhere: step must read null, not ''.
+		$done->setMarking([]);
+		$done->setItems([['record' => 'more subject data']]);
+		$done->setLog([['step' => 1], ['step' => 2]]);
+		$done->setCreated(new \DateTime('2026-08-30T09:00:00+00:00'));
+		$done->setSubjectUuid('case-x');
+		$done->setSubjectRegister('cases');
+		$done->setSubjectSchema('case');
+
+		$this->mapper->method('findActive')->willReturn([$live]);
+		$this->mapper->method('countActive')->willReturn(1);
+		$this->mapper->method('findCompletedForSubject')->willReturn([$done]);
+		$this->mapper->method('countCompletedForSubject')->willReturn(1);
+		$this->resolvers->method('resolveFlow')->with('f1')->willReturn(['id' => 'f1', 'name' => 'Hersteltermijn']);
+
+		$liveRow = $this->controller->active()->getData()['results'][0];
+		$doneRow = $this->controller->completedForSubject()->getData()['results'][0];
+
+		// The five widget fields plus the subject block, on both.
+		$this->assertSame('run-live', $liveRow['uuid']);
+		$this->assertSame('Hersteltermijn', $liveRow['flowName']);
+		$this->assertSame('await-reply', $liveRow['step']);
+		$this->assertSame(FlowRun::STATUS_SUSPENDED, $liveRow['status']);
+		$this->assertSame('2026-09-01T10:00:00+00:00', $liveRow['created']);
+		$this->assertSame(['uuid' => 'case-x', 'register' => 'cases', 'schema' => 'case'], $liveRow['subject']);
+
+		$this->assertSame('run-done', $doneRow['uuid']);
+		$this->assertSame('Hersteltermijn', $doneRow['flowName']);
+		$this->assertNull($doneRow['step']);
+		$this->assertSame(FlowRun::STATUS_FAILED, $doneRow['status']);
+		$this->assertSame('2026-08-30T09:00:00+00:00', $doneRow['created']);
+		$this->assertSame(['uuid' => 'case-x', 'register' => 'cases', 'schema' => 'case'], $doneRow['subject']);
+
+		// One shape: a widget renders live and finished runs as one list.
+		$this->assertSame(array_keys($liveRow), array_keys($doneRow));
+
+		// And never the heavy fields: kilobytes per row a list never renders,
+		// and items can hold the subject's own record data.
+		foreach (['marking', 'items', 'log', 'context', 'error', 'steps'] as $heavy) {
+			$this->assertArrayNotHasKey($heavy, $liveRow, "live row leaks '$heavy'");
+			$this->assertArrayNotHasKey($heavy, $doneRow, "completed row leaks '$heavy'");
+		}
+	}//end testBothReadsShareOneRowShapeAndNeverCarryTheMarkingItemsOrLog()
 
 	public function testActiveSummarisesEachRunWithItsFlowNameAndStep(): void {
 		$this->params(['limit' => 5]);

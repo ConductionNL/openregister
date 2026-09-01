@@ -486,7 +486,7 @@ class FlowEngine {
 
 				$produced = $dispatcher->dispatch(step: $step, items: $itemsIn, context: $context);
 				$items = FlowItems::normalise(value: $produced);
-				$log[] = [
+				$entry = [
 					'transition' => $name,
 					'type' => $stepType,
 					'status' => 'completed',
@@ -501,6 +501,17 @@ class FlowEngine {
 					'output' => $this->sampleItems(items: $items),
 					'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
 				];
+
+				// What the step LOGGED, beyond its items: a side-effect node's
+				// own report (a send node's per-recipient outcomes, say). The
+				// report handle travels in the context and is drained per hop,
+				// so a node's detail lands on ITS entry and no other.
+				$report = $this->stepReport(context: $context);
+				if ($report !== []) {
+					$entry['report'] = $report;
+				}
+
+				$log[] = $entry;
 			} catch (FlowStop $stop) {
 				// A deliberate end, requested by a Stop step. Caught before the
 				// generic Throwable so it is never treated as a step failure and
@@ -552,13 +563,23 @@ class FlowEngine {
 					'resumeAt' => $suspension->getResumeAt(),
 				];
 			} catch (Throwable $e) {
-				$log[] = [
+				$entry = [
 					'transition' => $name,
 					'type' => $stepType,
 					'status' => 'failed',
 					'error' => $e->getMessage(),
 					'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
 				];
+
+				// A failing step's report is worth MORE than a completing one's:
+				// a send node that delivered to two recipients and failed on the
+				// third records exactly which sends went out before the throw.
+				$report = $this->stepReport(context: $context);
+				if ($report !== []) {
+					$entry['report'] = $report;
+				}
+
+				$log[] = $entry;
 				$outcome = $this->outcomeForFailedStep(
 					step: $step,
 					error: $e,
@@ -693,6 +714,28 @@ class FlowEngine {
 
 		return null;
 	}//end outcomeForFailedStep()
+
+	/**
+	 * Drain the hop's step report from the context, when one travels there.
+	 *
+	 * Taking (rather than reading) is what scopes a report to one hop: the
+	 * handle is cleared by the read, so a node's detail can never bleed onto a
+	 * later step's log entry.
+	 *
+	 * @param array $context The run context.
+	 *
+	 * @return array<string, mixed> The report detail, or an empty array.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-records-what-each-node-received-returned-and-logged
+	 */
+	private function stepReport(array $context): array {
+		$report = ($context[FlowStepReport::CONTEXT_KEY] ?? null);
+		if (($report instanceof FlowStepReport) === false) {
+			return [];
+		}
+
+		return $report->take();
+	}//end stepReport()
 
 	/**
 	 * A bounded, honest sample of an item list, for the run log.
