@@ -46,6 +46,14 @@ use Psr\Log\NullLogger;
 
 /**
  * The commit path over an in-memory row.
+ *
+ * @covers \OCA\OpenRegister\Service\Flow\FlowRunCommit
+ * @covers \OCA\OpenRegister\Service\Flow\FlowFiring
+ * @covers \OCA\OpenRegister\Service\Flow\FlowFiringResult
+ * @covers \OCA\OpenRegister\Db\FlowStream
+ * @covers \OCA\OpenRegister\Db\FlowClaim
+ * @covers \OCA\OpenRegister\Db\FlowRun
+ * @covers \OCA\OpenRegister\Db\FlowRunStep
  */
 class FlowRunCommitTest extends TestCase {
 

@@ -41,6 +41,9 @@ use Psr\Log\NullLogger;
 
 /**
  * Claims.
+ *
+ * @covers \OCA\OpenRegister\Service\Flow\FlowPlaceClaims
+ * @covers \OCA\OpenRegister\Db\FlowClaim
  */
 class FlowPlaceClaimsTest extends TestCase {
 

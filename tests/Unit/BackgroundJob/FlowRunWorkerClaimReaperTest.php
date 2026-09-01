@@ -42,6 +42,11 @@ use Psr\Log\NullLogger;
 
 /**
  * Abandoned claims.
+ *
+ * @covers \OCA\OpenRegister\BackgroundJob\FlowRunWorker
+ * @covers \OCA\OpenRegister\Db\FlowClaim
+ * @covers \OCA\OpenRegister\Db\FlowStream
+ * @covers \OCA\OpenRegister\Db\FlowRun
  */
 class FlowRunWorkerClaimReaperTest extends TestCase {
 
