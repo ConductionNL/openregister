@@ -113,6 +113,9 @@ function collect(node, where, sink) {
 	for (const value of Object.values(node)) collect(value, where, sink)
 }
 
+/**
+ *
+ */
 function main() {
 	const update = process.argv.includes('--update')
 	const list = process.argv.includes('--list')

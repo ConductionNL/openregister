@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-/* eslint-disable n/no-process-exit */
+ 
 // Romansh (Rumantsch Grischun) register detector for openregister l10n.
 //
 // THERE IS NO CORE EVIDENCE FOR THIS LOCALE AT ALL. Nextcloud ships ZERO rm
@@ -69,6 +68,10 @@
 // JS \b is ASCII-only and would treat `à`/`è`/`ì` as boundaries, so every guard
 // is (?<!\p{L}) … (?!\p{L}) with the u flag.
 
+/**
+ *
+ * @param s
+ */
 function fold(s) {
 	return String(s).toLowerCase()
 }
@@ -229,10 +232,14 @@ const UNDETECTABLE = [
 	['Las tias datas', 'a possessive with the definite article reads informal but '
 		+ 'is caught only by `tias` itself; a nominal sentence carrying no pronoun '
 		+ 'and no finite verb has no marker at all'],
-	['Na sa emblidar da memorisar', 'negated imperatives are formed with `na … '
+	['Na sa emblidar da memorisar', 'negated imperatives are formed with `na … '
 		+ 'betg` around an open set of verbs; only affirmative forms are enumerated'],
 ]
 
+/**
+ *
+ * @param s
+ */
 function score(s) {
 	const t = fold(s)
 	let f = 0
@@ -244,6 +251,9 @@ function score(s) {
 	return { f, i }
 }
 
+/**
+ *
+ */
 function runControls() {
 	let fail = 0
 	for (const [s, want] of CONTROLS) {

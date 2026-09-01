@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-/* eslint-disable n/no-process-exit */
+ 
 // Belarusian register detector for openregister l10n.
 //
 // Measures the PROSE register, which is FORMAL: вы / ваш / 2pl verb forms.
@@ -68,6 +67,10 @@
 // JS \b is ASCII-only and would treat "ў", "і" and "ё" as boundaries, so every
 // guard is (?<![\p{L}-]) … (?!\p{L}) with the u flag.
 
+/**
+ *
+ * @param s
+ */
 function fold(s) {
 	// No case-sensitive distinction to preserve: Belarusian capitalises the
 	// polite "Вы"/"Ваш" optionally, and both casings are the same register in a
@@ -237,6 +240,10 @@ const UNDETECTABLE = [
 		+ 'plural and genitive-singular ending in the language'],
 ]
 
+/**
+ *
+ * @param s
+ */
 function score(s) {
 	const t = fold(s)
 	let f = 0
@@ -248,6 +255,9 @@ function score(s) {
 	return { f, i }
 }
 
+/**
+ *
+ */
 function runControls() {
 	let fail = 0
 	for (const [s, want] of CONTROLS) {

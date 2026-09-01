@@ -1,3 +1,5 @@
+import type { APIRequestContext, Page } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -45,7 +47,7 @@
  *   NEXTCLOUD_URL=http://localhost:8080 npx playwright test \
  *     tests/e2e/integration-mount.spec.ts --project=chromium
  */
-import { test, expect, type APIRequestContext, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 /**
  * Fetch the registry's advertised providers from OCS capabilities. The

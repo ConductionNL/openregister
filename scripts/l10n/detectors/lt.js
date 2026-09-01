@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-/* eslint-disable n/no-process-exit */
+ 
 // Lithuanian register detector for openregister l10n.
 //
 // Measures the PROSE register. Whether Lithuanian also splits by string role
@@ -22,6 +21,10 @@
 // The unambiguous signals are the pronouns (tu-series vs jūs-series) plus 2sg
 // forms whose 3sg counterpart differs ("žinai" vs 3sg "žino").
 
+/**
+ *
+ * @param s
+ */
 function fold(s) {
 	return String(s).toLowerCase()
 }
@@ -92,6 +95,10 @@ const UNDETECTABLE = [
 	['Įrašyk savo vardą', '"savo" is person-neutral, so only the bare 2sg imperative signals 2sg'],
 ]
 
+/**
+ *
+ * @param s
+ */
 function score(s) {
 	const t = fold(s)
 	let f = 0
@@ -103,6 +110,9 @@ function score(s) {
 	return { f, i }
 }
 
+/**
+ *
+ */
 function runControls() {
 	let fail = 0
 	for (const [s, want] of CONTROLS) {

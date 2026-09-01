@@ -1,3 +1,5 @@
+import type { ConsoleMessage } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -30,9 +32,9 @@
  * ⚠️ `toBeVisible()` on a container is NOT sufficient — the shell is visible
  * when the app is dead. Assert on rendered descendants.
  */
-import { test, expect, type ConsoleMessage } from '@playwright/test'
-import * as path from 'path'
+import { expect, test } from '@playwright/test'
 import * as fs from 'fs'
+import * as path from 'path'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 

@@ -52,6 +52,12 @@ use RuntimeException;
  * HTTP status and body translation for every task route.
  *
  * @covers \OCA\OpenRegister\Controller\TaskController
+ * @covers \OCA\OpenRegister\Db\TaskInboxCriteria
+ * @covers \OCA\OpenRegister\Db\Task
+ * @covers \OCA\OpenRegister\Service\Task\TaskTemporalProjection
+ * @covers \OCA\OpenRegister\Exception\TaskValidationException
+ * @covers \OCA\OpenRegister\Exception\TaskAccessDeniedException
+ * @covers \OCA\OpenRegister\Exception\TaskConflictException
  */
 class TaskControllerTest extends TestCase {
 
@@ -354,6 +360,148 @@ class TaskControllerTest extends TestCase {
 			$this->assertSame('t-1', $response->getData()['uuid']);
 		}
 	}//end testEveryVerbRouteReachesItsServiceVerb()
+
+	/**
+	 * Every inbox filter reaches the criteria: states split on commas,
+	 * isTerminal and overdue parse as booleans, priority and object pass
+	 * through, and the overdue clock instant is set only when asked.
+	 *
+	 * @return void
+	 */
+	public function testIndexPassesEveryFilterIntoTheCriteria(): void {
+		$this->inbox->expects($this->once())->method('inbox')->willReturnCallback(
+			function (TaskInboxCriteria $criteria): array {
+				$this->assertSame(TaskInboxCriteria::SCOPE_POOLED, $criteria->scope);
+				$this->assertSame(['active', 'enabled'], $criteria->states);
+				$this->assertFalse($criteria->isTerminal);
+				$this->assertSame('high', $criteria->priority);
+				$this->assertSame('obj-1', $criteria->objectUuid);
+				$this->assertNotNull($criteria->overdueAt);
+				$this->assertSame(TaskInboxCriteria::SORT_PRIORITY, $criteria->sort);
+				$this->assertFalse($criteria->sortDescending);
+
+				return ['results' => [], 'total' => 0, 'limit' => 25, 'offset' => 0];
+			}
+		);
+
+		$response = $this->controller->index(
+			scope: TaskInboxCriteria::SCOPE_POOLED,
+			state: 'active, enabled,',
+			isTerminal: 'false',
+			priority: 'high',
+			objectUuid: 'obj-1',
+			overdue: 'true',
+			sort: 'priority'
+		);
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+	}//end testIndexPassesEveryFilterIntoTheCriteria()
+
+	/**
+	 * With overdue unset the criteria carry no clock instant.
+	 *
+	 * @return void
+	 */
+	public function testIndexWithoutOverdueCarriesNoClock(): void {
+		$this->inbox->expects($this->once())->method('inbox')->willReturnCallback(
+			function (TaskInboxCriteria $criteria): array {
+				$this->assertNull($criteria->overdueAt);
+				$this->assertNull($criteria->isTerminal);
+
+				return ['results' => [], 'total' => 0, 'limit' => 25, 'offset' => 0];
+			}
+		);
+
+		$this->controller->index(overdue: 'false');
+	}//end testIndexWithoutOverdueCarriesNoClock()
+
+	/**
+	 * The audit route answers 404 for absent AND for invisible tasks.
+	 *
+	 * @return void
+	 */
+	public function testAuditIs404ForAbsentAndInvisibleTasks(): void {
+		$this->tasks->method('get')->willReturnOnConsecutiveCalls(
+			$this->throwException(new DoesNotExistException('nope')),
+			$this->task()
+		);
+		$this->authorization->method('mayRead')->willReturn(false);
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller->audit(uuid: 'ghost')->getStatus());
+		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller->audit(uuid: 't-1')->getStatus());
+	}//end testAuditIs404ForAbsentAndInvisibleTasks()
+
+	/**
+	 * checkItem reads its flag as a boolean from whatever the route passed.
+	 *
+	 * @return void
+	 */
+	public function testCheckItemParsesItsFlag(): void {
+		$seen = [];
+		$this->tasks->method('checkChecklistItem')->willReturnCallback(
+			function (string $uuid, string $itemId, bool $checked) use (&$seen): Task {
+				$seen[] = $checked;
+
+				return $this->task();
+			}
+		);
+
+		$this->controller->checkItem(uuid: 't-1', itemId: 'c1', checked: 'false');
+		$this->controller->checkItem(uuid: 't-1', itemId: 'c1', checked: '1');
+		$this->controller->checkItem(uuid: 't-1', itemId: 'c1');
+
+		$this->assertSame([false, true, true], $seen);
+	}//end testCheckItemParsesItsFlag()
+
+	/**
+	 * A verb refused for an ABSENT task is 404 (DoesNotExist from the service).
+	 *
+	 * @return void
+	 */
+	public function testAVerbOnAnAbsentTaskIs404(): void {
+		$this->tasks->method('unclaim')->willThrowException(new DoesNotExistException('nope'));
+
+		$response = $this->controller->unclaim(uuid: 'ghost');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+	}//end testAVerbOnAnAbsentTaskIs404()
+
+	/**
+	 * A failing group backend scopes: no groups, not admin, and the request
+	 * still answers.
+	 *
+	 * @return void
+	 */
+	public function testAFailingGroupBackendScopesRatherThanWidens(): void {
+		$user = $this->createMock(originalClassName: IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$session = $this->createMock(originalClassName: IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		$groups = $this->createMock(originalClassName: IGroupManager::class);
+		$groups->method('getUserGroupIds')->willThrowException(new RuntimeException('ldap down'));
+		$groups->method('isAdmin')->willThrowException(new RuntimeException('ldap down'));
+		$this->inbox->expects($this->once())->method('inbox')->willReturnCallback(
+			function (TaskInboxCriteria $criteria): array {
+				$this->assertSame([], $criteria->groupIds);
+				$this->assertFalse($criteria->isAdmin);
+
+				return ['results' => [], 'total' => 0, 'limit' => 25, 'offset' => 0];
+			}
+		);
+		$controller = new TaskController(
+			appName: 'openregister',
+			request: $this->createMock(originalClassName: IRequest::class),
+			tasks: $this->tasks,
+			inbox: $this->inbox,
+			authorization: $this->authorization,
+			temporal: new TaskTemporalProjection(),
+			userSession: $session,
+			logger: $this->logger,
+			groupManager: $groups
+		);
+
+		$this->assertSame(Http::STATUS_OK, $controller->index()->getStatus());
+	}//end testAFailingGroupBackendScopesRatherThanWidens()
 
 	/**
 	 * Without a session the inbox is 401, not an empty 200.

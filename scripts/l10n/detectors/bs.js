@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-/* eslint-disable n/no-process-exit */
+ 
 // Bosnian register detector for openregister l10n.
 //
 // CORE IS NOT EVIDENCE FOR THIS LOCALE, and this is the shape §2.3 warns about:
@@ -54,6 +53,10 @@
 // marker, so the plain letter guard is correct here and the hyphen must stay
 // OUTSIDE it. Same question as `sq` and `ca`, third distinct answer.
 
+/**
+ *
+ * @param s
+ */
 function fold(s) {
 	return String(s).toLowerCase()
 }
@@ -172,6 +175,10 @@ const UNDETECTABLE = [
 	['Sačuvaj izmjene', 'the app\'s own Save label; indistinguishable from a 2sg address'],
 ]
 
+/**
+ *
+ * @param s
+ */
 function score(s) {
 	const t = fold(s)
 	let f = 0
@@ -183,6 +190,9 @@ function score(s) {
 	return { f, i }
 }
 
+/**
+ *
+ */
 function runControls() {
 	let fail = 0
 	for (const [s, want] of CONTROLS) {
@@ -203,8 +213,8 @@ if (require.main === module) {
 	console.log(`controls: ${total - fail}/${total} pass`)
 	if (fail) process.exitCode = 1
 
-	const path = require('path')
 	const fs = require('fs')
+	const path = require('path')
 	const {
 		scanCoreRegister, loadJsTranslations, APP_ROOT, isIdentical,
 	} = require('../lib.js')
@@ -212,7 +222,7 @@ if (require.main === module) {
 	// Core exists but is one thin catalogue, so it is REPORTED and then set aside
 	// rather than trusted. Printing its marker count is the point: a verdict from
 	// 0 markers over 44 values is what §2.3 tells you not to record.
-	let core = null
+	let core
 	try {
 		core = scanCoreRegister('bs', score)
 		console.log(`\ncore bs: ${core.files.length} catalogue(s), ${core.values} value(s), `

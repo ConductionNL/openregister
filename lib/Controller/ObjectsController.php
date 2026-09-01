@@ -3911,8 +3911,8 @@ class ObjectsController extends Controller {
 	public function lock(string $register, string $schema, string $id): JSONResponse {
 		try {
 			// Set the schema and register to the object service.
-			$this->objectService->setSchema(schema: $schema);
 			$this->objectService->setRegister(register: $register);
+			$this->objectService->setSchema(schema: $schema);
 
 			$data = $this->request->getParams();
 			$process = ($data['process'] ?? null);
