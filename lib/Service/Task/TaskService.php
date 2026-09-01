@@ -62,10 +62,10 @@ use UnexpectedValueException;
 /**
  * Creates, routes, claims, completes, cancels and terminates tasks.
  *
- * @SuppressWarnings(PHPMD.TooManyMethods) The same argument as below, counted
- * differently: the verbs plus the four-step protocol each verb shares
- * (resolve, authorize, persist-open, audit) and the two seams the task-form
- * completion uses. Merging helpers to duck a count would hide the protocol.
+ * @SuppressWarnings(PHPMD.TooManyMethods) The verbs, one private helper per
+ * concern they share (open, authorize, audit, persist, announce), and the two
+ * seams the task-form completion uses. Merging helpers to duck a count would
+ * hide which rule a verb relies on.
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) One method per lifecycle
  * verb the spec names (create/offer/claim/unclaim/assign/reassign/delegate/
  * resolve/complete/cancel) plus the two propagation entry points. Merging
@@ -81,9 +81,6 @@ use UnexpectedValueException;
  * rules (authorize, then terminality, then the verb's precondition, then
  * the conditional write); folding verbs together to lower the number would
  * hide exactly the per-verb rules the spec enumerates.
- * @SuppressWarnings(PHPMD.TooManyMethods) One private helper per concern the
- * verbs share (open, authorize, audit, persist, announce); merging them would
- * hide which rule a verb relies on.
  * @SuppressWarnings(PHPMD.StaticAccess) TaskState is a stateless published
  * vocabulary (the one status mapping); calling it statically is the point,
  * an instance would be a second copy of the same table.
