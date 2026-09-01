@@ -48,7 +48,10 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\Portal\PortalTaskService
  * @covers \OCA\OpenRegister\Service\Portal\PortalSubject
  * @covers \OCA\OpenRegister\Service\Task\TaskAuthorizationService
+ * @covers \OCA\OpenRegister\Service\Task\TaskInboxService
  * @covers \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Db\PortalTaskDelivery
+ * @uses \OCA\OpenRegister\Service\Task\TaskTemporalProjection
  */
 class PortalTaskServiceTest extends TestCase {
 

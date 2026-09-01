@@ -53,6 +53,8 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Controller\PortalTaskController
  * @covers \OCA\OpenRegister\Exception\PortalSubjectException
  * @covers \OCA\OpenRegister\Db\PortalTaskDelivery
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Service\Portal\PortalSubject
  */
 class PortalTaskControllerTest extends TestCase {
 

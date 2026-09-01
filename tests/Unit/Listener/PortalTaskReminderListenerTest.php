@@ -81,6 +81,8 @@ final class FakeTimerFiredEvent extends Event {
  * Tests for {@see PortalTaskReminderListener}.
  *
  * @covers \OCA\OpenRegister\Listener\PortalTaskReminderListener
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Db\PortalTaskDelivery
  */
 class PortalTaskReminderListenerTest extends TestCase {
 

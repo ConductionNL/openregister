@@ -57,6 +57,12 @@ use UnexpectedValueException;
  * @covers \OCA\OpenRegister\Service\Flow\FlowNodeResumeState
  * @covers \OCA\OpenRegister\Service\Flow\FlowResumeState
  * @covers \OCA\OpenRegister\Service\Flow\FlowSuspension
+ * @uses \OCA\OpenRegister\Service\Flow\FlowAdvanceBudget
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItems
+ * @uses \OCA\OpenRegister\Service\Flow\FlowTaskBridge
+ * @uses \OCA\OpenRegister\Service\Flow\FlowValueTemplate
+ * @uses \OCA\OpenRegister\Service\Task\TaskState
+ * @uses \OCA\OpenRegister\Db\PortalTaskDelivery
  */
 class PortalTaskNodeTest extends TestCase {
 

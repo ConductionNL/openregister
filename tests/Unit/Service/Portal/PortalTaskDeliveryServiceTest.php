@@ -36,6 +36,7 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService
  * @covers \OCA\OpenRegister\Db\PortalTaskDelivery
+ * @uses \OCA\OpenRegister\Db\Task
  */
 class PortalTaskDeliveryServiceTest extends TestCase {
 

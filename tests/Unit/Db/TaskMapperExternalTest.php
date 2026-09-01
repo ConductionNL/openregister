@@ -28,6 +28,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Db\TaskMapper
  * @covers \OCA\OpenRegister\Db\TaskInboxCriteria
+ * @uses \OCA\OpenRegister\Db\Task
  */
 class TaskMapperExternalTest extends TestCase {
 	use FluentQueryBuilderTrait;
