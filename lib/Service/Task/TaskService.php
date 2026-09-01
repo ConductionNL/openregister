@@ -56,6 +56,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use UnexpectedValueException;
 
 /**
  * Creates, routes, claims, completes, cancels and terminates tasks.
@@ -111,6 +112,13 @@ class TaskService {
 	 *                                          terminality goes unannounced and a
 	 *                                          parked run learns of it on its
 	 *                                          heartbeat instead.
+	 * @param TaskFormReader|null $forms Refuses a run-less task's own form
+	 *                                   declaration (`metadata.form`) at
+	 *                                   creation, the way a step's is refused
+	 *                                   at save. Nullable for the same reason
+	 *                                   as the dispatcher; absent, a record
+	 *                                   declaration is stored unchecked and
+	 *                                   judged on read.
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
@@ -123,6 +131,7 @@ class TaskService {
 		private readonly LoggerInterface $logger,
 		private readonly TaskBuilder $builder,
 		private readonly ?IEventDispatcher $dispatcher = null,
+		private readonly ?TaskFormReader $forms = null,
 	) {
 
 	}//end __construct()
@@ -190,6 +199,7 @@ class TaskService {
 	 */
 	public function import(array $data, ?string $actor): Task {
 		$task = $this->builder->fromData(data: $data, actor: $actor);
+		$this->refuseUnrenderableForm(task: $task);
 		$this->authorizeOrRecord(verb: 'create', task: $task, actor: $actor);
 
 		return $this->transactional(
@@ -758,6 +768,100 @@ class TaskService {
 		);
 
 	}//end completeInternal()
+
+	/**
+	 * A verb's task, resolved for a caller that writes something else FIRST.
+	 *
+	 * The task-form completion writes the subject object before it completes
+	 * the task, and the task verb's authorization must be settled before a
+	 * byte reaches the subject. This is {@see openTaskFor()} made reachable
+	 * for that one caller: exists, authorized (a denial audited), open.
+	 *
+	 * @param string $verb The verb about to be attempted.
+	 * @param string $uuid The task uuid.
+	 * @param string|null $actor The acting identity.
+	 *
+	 * @return Task The open, authorized task.
+	 *
+	 * @throws TaskConflictException When the task is already terminal.
+	 * @throws TaskAccessDeniedException When authorization denies (audited).
+	 *
+	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
+	 */
+	public function authorizedOpenTask(string $verb, string $uuid, ?string $actor): Task {
+		return $this->openTaskFor(verb: $verb, uuid: $uuid, actor: $actor);
+	}//end authorizedOpenTask()
+
+	/**
+	 * Record that a completion was attempted and refused, without completing anything.
+	 *
+	 * Its own action name, so a refused attempt and a completion are
+	 * distinguishable in the trail; `authorized` stays true because the caller
+	 * WAS allowed to try and it was the payload that was refused. Outside any
+	 * transaction, because nothing else changed. "The performer tried three
+	 * times" is the signal that a form is wrong, which is why it is kept.
+	 *
+	 * @param Task $task The task the attempt was made on, unchanged.
+	 * @param string $reason Why the attempt was refused.
+	 * @param string|null $actor The attempting identity.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
+	 */
+	public function recordRefusedCompletion(Task $task, string $reason, ?string $actor): void {
+		if ($task->getId() === null) {
+			return;
+		}
+
+		try {
+			$entry = new TaskAudit();
+			$entry->setTaskId((int)$task->getId());
+			$entry->setAction('complete-refused');
+			$entry->setStateAfter($task->getState());
+			$entry->setActor($actor);
+			$entry->setPerformerType($task->getPerformerType());
+			$entry->setOnBehalfOf($task->getOnBehalfOf());
+			$entry->setMandate($task->getMandate());
+			$entry->setReason($reason);
+			$entry->setAuthorized(true);
+			$this->audits->insert($entry);
+		} catch (Throwable $auditFailure) {
+			$this->logger->warning(
+				'[TaskService] Could not record a refused completion: ' . $auditFailure->getMessage(),
+				['task' => $task->getUuid()]
+			);
+		}
+	}//end recordRefusedCompletion()
+
+	/**
+	 * Refuse a run-less task whose own form declaration could not be rendered.
+	 *
+	 * The record is the declaration for a task with no run, so creation is
+	 * its save time: a field the subject schema lacks, or marks read-only or
+	 * not visible, is refused now, naming it, rather than left for the
+	 * performer to meet.
+	 *
+	 * @param Task $task The task about to be inserted.
+	 *
+	 * @return void
+	 *
+	 * @throws TaskValidationException When the declaration is refused.
+	 *
+	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
+	 */
+	private function refuseUnrenderableForm(Task $task): void {
+		$record = (($task->getMetadata() ?? [])['form'] ?? null);
+		if ($this->forms === null || is_array($record) === false || $record === []) {
+			return;
+		}
+
+		try {
+			$this->forms->validate(form: $this->forms->fromRecord(record: $record));
+		} catch (UnexpectedValueException $refused) {
+			throw new TaskValidationException(message: $refused->getMessage(), previous: $refused);
+		}
+	}//end refuseUnrenderableForm()
 
 	/**
 	 * Resolve a verb's task: it must exist, the caller must be authorized,

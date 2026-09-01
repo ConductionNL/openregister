@@ -55,6 +55,7 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md
+ * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
  */
 
 declare(strict_types=1);
@@ -70,6 +71,7 @@ use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
+use OCA\OpenRegister\Service\Task\TaskFormReader;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -97,6 +99,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 * @param FlowTaskBridge $bridge Creates and reads the node's task.
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urls For the palette icon.
+	 * @param TaskFormReader $forms Reads and refuses the step's form declaration.
 	 *
 	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md
 	 */
@@ -104,8 +107,9 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 		private readonly FlowTaskBridge $bridge,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urls,
+		TaskFormReader $forms,
 	) {
-		$this->config = new UserTaskConfig(l10n: $l10n);
+		$this->config = new UserTaskConfig(l10n: $l10n, forms: $forms);
 
 	}//end __construct()
 
@@ -194,24 +198,27 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			'failOnReject',
 			'heartbeatMinutes',
 			'advance',
+			...TaskFormReader::CONFIG_KEYS,
 		];
 	}//end configKeys()
 
 	/**
 	 * The fields this node is edited through, in the order the spec names them:
 	 * what the task is, who may perform it, how urgent and when, and how the
-	 * flow continues.
+	 * flow continues, and what the performer fills in.
 	 *
 	 * @return array<int, array<string, mixed>> The field descriptions.
 	 *
 	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
+	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
 	 */
 	public function configForm(): array {
 		return array_merge(
 			$this->whatFields(),
 			$this->whoFields(),
 			$this->whenFields(),
-			$this->continuationFields()
+			$this->continuationFields(),
+			$this->formFields()
 		);
 	}//end configForm()
 
@@ -568,4 +575,65 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			],
 		];
 	}//end continuationFields()
+
+	/**
+	 * What the performer fills in.
+	 *
+	 * Flat keys, like the rest of the vocabulary, so the server-driven config
+	 * form draws them without an editor change. The field list is a
+	 * constrained pick from the subject schema's properties, never a
+	 * free-typed name: a misspelled field is refused when the step is saved,
+	 * so the performer never meets a refusal they cannot act on.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
+	 */
+	private function formFields(): array {
+		return [
+			[
+				'key' => 'formKind',
+				'label' => $this->l10n->t('Form'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'What the performer fills in besides the outcome: leave empty for none, "fields" for fields of the subject object, "external" for a Nextcloud Forms form bound to the subject. Fields are validated by the subject schema; an external form is recorded as evidence and writes nothing to the object.'
+				),
+			],
+			[
+				'key' => 'formSchema',
+				'label' => $this->l10n->t('Subject schema'),
+				'type' => 'select',
+				'optionsFrom' => '/apps/openregister/api/schemas',
+				'help' => $this->l10n->t('The schema the fields belong to. Required for a field form.'),
+			],
+			[
+				'key' => 'formAction',
+				'label' => $this->l10n->t('Lifecycle action'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'Inherit the fields a lifecycle transition of the subject schema declares, and apply that transition on completion. Leave empty to list fields instead.'
+				),
+			],
+			[
+				'key' => 'formFields',
+				'label' => $this->l10n->t('Fields to ask for'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'Properties of the subject schema the performer supplies, comma separated; add * after a name to make it required, like "reason*". A name the schema does not have is refused when the step is saved. Not combined with a lifecycle action.'
+				),
+			],
+			[
+				'key' => 'formId',
+				'label' => $this->l10n->t('Nextcloud Forms form'),
+				'type' => 'number',
+				'help' => $this->l10n->t('The id of the Forms form linked to the subject object. Needs the Forms app.'),
+			],
+			[
+				'key' => 'formRequireChecklist',
+				'label' => $this->l10n->t('Require every checklist item checked'),
+				'type' => 'boolean',
+				'help' => $this->l10n->t('Refuse completion while a checklist item is unchecked, naming it. Checklist state is never part of the form values.'),
+			],
+		];
+	}//end formFields()
 }//end class

@@ -388,7 +388,13 @@ class TransitionEngine {
 	 *
 	 * @param string $objectId Object id/uuid/slug.
 	 *
-	 * @return array<int, array{action: string, to: string, requires: ?string, description: ?string}>
+	 * Every entry carries the transition's declared `inputs` in the contract's
+	 * own shape (`[{field, required}]`), EMPTY rather than absent when the
+	 * transition declares none: empty is the positive statement "this
+	 * transition accepts no payload", which is exactly what the allowlist in
+	 * {@see resolveTransitionInputs()} enforces.
+	 *
+	 * @return array<int, array{action: string, to: string, requires: ?string, description: ?string, inputs: array<int, array{field: string, required: bool}>}>
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) RBAC check + missing-object guard + annotation-absent
 	 * guard + per-transition from/requires/description checks each add one branch; none can be removed
@@ -399,6 +405,7 @@ class TransitionEngine {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/flow-task-forms/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
 	 */
 	public function availableActions(string $objectId): array {
 		$object = $this->objectService->find(id: $objectId);
@@ -479,6 +486,7 @@ class TransitionEngine {
 				'to' => (string)($spec['to'] ?? ''),
 				'requires' => $requires,
 				'description' => $description,
+				'inputs' => $this->publishedInputs(inputs: (array)($spec['inputs'] ?? [])),
 			];
 		}//end foreach
 
@@ -650,9 +658,13 @@ class TransitionEngine {
 	 *
 	 * @param ObjectEntity $sibling The target sibling to move to.
 	 *
-	 * @return array{action: string, to: string, label: string, requires: ?string, description: ?string}
+	 * A graph-derived action declares no `inputs`, and says so: the key is
+	 * present and empty, so a client handles static and graph responses alike.
+	 *
+	 * @return array{action: string, to: string, label: string, requires: ?string, description: ?string, inputs: array<int, array{field: string, required: bool}>}
 	 *
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/flow-task-forms/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
 	 */
 	private function buildGraphAction(ObjectEntity $sibling): array {
 		$uuid = (string)$sibling->getUuid();
@@ -668,8 +680,71 @@ class TransitionEngine {
 			'label' => (string)$name,
 			'requires' => null,
 			'description' => null,
+			'inputs' => [],
 		];
 	}//end buildGraphAction()
+
+	/**
+	 * A transition's declared `inputs`, normalised to the contract's shape.
+	 *
+	 * Null when the schema declares no lifecycle annotation or no static
+	 * transition of that name, so a caller can tell "declares nothing" (an
+	 * empty list) from "no such transition". Graph-mode schemas declare no
+	 * static transitions and therefore answer null for every action; their
+	 * derived `move-to-*` actions accept no payload, which is what
+	 * {@see availableActions()} publishes for them.
+	 *
+	 * The second consumer of the contract, next to the write path: a
+	 * user-task step that names an action inherits this list as its form,
+	 * verbatim, so a schema change and a form change are the same edit.
+	 *
+	 * @param Schema $schema The schema whose lifecycle declares the transition.
+	 * @param string $action The transition action name.
+	 *
+	 * @return array<int, array{field: string, required: bool}>|null The declared inputs, or null when the action is not declared.
+	 *
+	 * @spec openspec/changes/flow-task-forms/specs/object-lifecycle/spec.md#requirement-a-transition-may-declare-inputs-bounding-the-payload-it-accepts
+	 */
+	public function declaredInputs(Schema $schema, string $action): ?array {
+		$annotation = $this->getLifecycleAnnotation(schema: $schema);
+		if ($annotation === null) {
+			return null;
+		}
+
+		$transitions = (array)($annotation['transitions'] ?? []);
+		$spec = ($transitions[$action] ?? null);
+		if (is_array($spec) === false) {
+			return null;
+		}
+
+		return $this->publishedInputs(inputs: (array)($spec['inputs'] ?? []));
+	}//end declaredInputs()
+
+	/**
+	 * The response shape of a declared `inputs` list: `[{field, required}]`.
+	 *
+	 * Runs the declaration through the SAME normalisation the allowlist uses,
+	 * so what a client is told the transition accepts is exactly what the
+	 * write path will accept; a malformed entry the allowlist skips is not
+	 * published either.
+	 *
+	 * @param array<int, mixed> $inputs The transition's declared `inputs` list.
+	 *
+	 * @return array<int, array{field: string, required: bool}> The published list, in declaration order.
+	 *
+	 * @spec openspec/changes/flow-task-forms/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
+	 */
+	private function publishedInputs(array $inputs): array {
+		$published = [];
+		foreach ($this->normaliseDeclaredInputs(inputs: $inputs) as $field => $required) {
+			$published[] = [
+				'field' => (string)$field,
+				'required' => $required,
+			];
+		}
+
+		return $published;
+	}//end publishedInputs()
 
 	/**
 	 * Validate a transition `data` payload against the declared `inputs` allowlist.
@@ -683,6 +758,13 @@ class TransitionEngine {
 	 * carrying object write, so the standard save-path validation (and readOnly
 	 * enforcement) applies to them exactly like any other object write.
 	 *
+	 * Public since the task form became its second caller: a user-task
+	 * completion that carries field values runs THIS allowlist over its
+	 * payload before writing the subject object, so the form layer never
+	 * grows a validator of its own. The signature and the throws are the
+	 * write path's, unchanged; a test asserts both callers refuse the same
+	 * payloads identically.
+	 *
 	 * @param array<int, mixed> $inputs The transition's declared `inputs` list.
 	 * @param array<string, mixed> $data The caller-supplied payload.
 	 * @param string $action The transition action name, for error messages.
@@ -693,8 +775,9 @@ class TransitionEngine {
 	 *                          key, or a `required` input is absent or empty-string.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/flow-task-forms/specs/object-lifecycle/spec.md#requirement-a-transition-may-declare-inputs-bounding-the-payload-it-accepts
 	 */
-	private function resolveTransitionInputs(array $inputs, array $data, string $action): array {
+	public function resolveTransitionInputs(array $inputs, array $data, string $action): array {
 		$declared = $this->normaliseDeclaredInputs(inputs: $inputs);
 
 		// Reject any payload key the transition does not declare.

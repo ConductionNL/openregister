@@ -20,6 +20,8 @@ use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
+use OCA\OpenRegister\Service\Task\TaskForm;
+use OCA\OpenRegister\Service\Task\TaskFormReader;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -55,7 +57,12 @@ class UserTaskNodeTest extends TestCase {
 			}
 		);
 
-		$this->node = new UserTaskNode($this->bridge, $l10n, $this->createMock(IURLGenerator::class));
+		// A reader that accepts every declaration: the form contract has its
+		// own suite, this one is about the node's lifecycle.
+		$forms = $this->createMock(TaskFormReader::class);
+		$forms->method('fromConfig')->willReturn(new TaskForm(kind: null));
+
+		$this->node = new UserTaskNode($this->bridge, $l10n, $this->createMock(IURLGenerator::class), $forms);
 	}//end setUp()
 
 	/**
@@ -571,6 +578,13 @@ class UserTaskNodeTest extends TestCase {
 
 		foreach (['title', 'description', 'candidateUsers', 'candidateGroups', 'candidateRole', 'routingStrategy', 'routingFallback', 'priority', 'dueAt', 'expiresAt', 'outcomes', 'outcomeKey', 'failOnReject', 'heartbeatMinutes', 'advance'] as $required) {
 			$this->assertContains($required, $formKeys);
+		}
+
+		// The form block: kind, subject schema, action or inline list, the
+		// external form reference, and the checklist rule (flow-task-forms 2.1).
+		foreach (['formKind', 'formSchema', 'formAction', 'formFields', 'formId', 'formRequireChecklist'] as $formKey) {
+			$this->assertContains($formKey, $formKeys);
+			$this->assertContains($formKey, $keys);
 		}
 
 		$this->assertNotEmpty($this->node->configForm());
