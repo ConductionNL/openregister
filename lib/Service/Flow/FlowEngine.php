@@ -835,6 +835,10 @@ class FlowEngine {
 					'output' => $this->sampleItems(items: $items),
 					'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
 				];
+				$report = $this->stepReport(context: $context);
+				if ($report !== []) {
+					$entry['report'] = $report;
+				}
 			} catch (FlowStop $stop) {
 				$streams->release(places: $claimed);
 				$log[] = [
@@ -885,6 +889,10 @@ class FlowEngine {
 					'error' => $e->getMessage(),
 					'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
 				];
+				$report = $this->stepReport(context: $context);
+				if ($report !== []) {
+					$entry['report'] = $report;
+				}
 
 				$policy = (string)($step['onError'] ?? self::ON_ERROR_STOP);
 				$this->logger->warning(
