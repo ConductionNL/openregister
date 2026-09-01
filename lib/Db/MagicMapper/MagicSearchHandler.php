@@ -1821,10 +1821,15 @@ class MagicSearchHandler {
 	}//end applyIdFilters()
 
 	/**
-	 * Apply relations contains filter to find objects referencing a specific UUID
+	 * Apply relations contains filter to find objects referencing a specific UUID.
 	 *
-	 * This uses PostgreSQL's JSONB @> operator to check if the _relations array
-	 * contains the specified UUID.
+	 * Relations can be stored as either an array (`["uuid1", "uuid2", ...]`, the
+	 * legacy/common format) or an object (`{"fieldName": "uuid", ...}`, the newer
+	 * format). Both dialects are handled below via a platform-conditional branch;
+	 * PostgreSQL uses jsonb_typeof + `@>`, MariaDB/MySQL use JSON_SEARCH which
+	 * walks both structures natively.
+	 *
+	 * Consumed by OpenCatalogi's public search (WOO-536 Stap 5a) — see WOO-548.
 	 *
 	 * @param IQueryBuilder $qb Query builder to modify
 	 * @param string $uuid UUID to search for in relations
@@ -1832,20 +1837,25 @@ class MagicSearchHandler {
 	 * @return void
 	 */
 	private function applyRelationsContainsFilter(IQueryBuilder $qb, string $uuid): void {
-		// Relations can be stored as either:
-		// - An array: ["uuid1", "uuid2", ...] (legacy/common format)
-		// - An object: {"fieldName": "uuid", ...} (new format)
-		// Handle both formats using jsonb_typeof to dispatch correctly.
 		$param = $qb->createNamedParameter($uuid);
-		$qb->andWhere(
-			"(
+		if ($this->isPostgresPlatform() === true) {
+			$qb->andWhere(
+				"(
                 (jsonb_typeof(t._relations) = 'array' AND t._relations @> to_jsonb({$param}::text))
                 OR
                 (jsonb_typeof(t._relations) = 'object' AND EXISTS (
                     SELECT 1 FROM jsonb_each_text(t._relations) AS kv WHERE kv.value = {$param}
                 ))
             )"
-		);
+			);
+			return;
+		}
+
+		// MariaDB / MySQL: JSON_SEARCH walks both array and object structures and
+		// returns the path (or NULL) for the first match of the value at any
+		// depth — semantic parallel to the PostgreSQL branch above. Available on
+		// MariaDB 10.2+ / MySQL 5.7+ (both mandated by the NC platform baseline).
+		$qb->andWhere("JSON_SEARCH(t._relations, 'one', {$param}) IS NOT NULL");
 	}//end applyRelationsContainsFilter()
 
 	/**
@@ -1904,8 +1914,9 @@ class MagicSearchHandler {
 		// Array-indexed relation keys are stored as `<field>.<n>` (e.g. `keywords.1`).
 		$prefixParam = $qb->createNamedParameter($field . '.%');
 
-		$qb->andWhere(
-			"(
+		if ($this->isPostgresPlatform() === true) {
+			$qb->andWhere(
+				"(
                 (jsonb_typeof(t._relations) = 'object' AND EXISTS (
                     SELECT 1 FROM jsonb_each_text(t._relations) AS kv
                     WHERE kv.value = {$valueParam}
@@ -1913,6 +1924,21 @@ class MagicSearchHandler {
                 ))
                 OR
                 (jsonb_typeof(t._relations) = 'array' AND t._relations @> to_jsonb({$valueParam}::text))
+            )"
+			);
+			return;
+		}
+
+		// MariaDB / MySQL fallback (WOO-548).
+		//   1. Object with exact field key:  JSON_EXTRACT($.<field>) equals the value
+		//   2. Object with array-indexed key: JSON_SEARCH restricted to path $.<field>.%
+		//   3. Legacy array shape:            JSON_CONTAINS on the whole array
+		// JSON path arg composed via CONCAT so the field-name parameter binds through.
+		$qb->andWhere(
+			"(
+                JSON_UNQUOTE(JSON_EXTRACT(t._relations, CONCAT('$.', {$exactKey}))) = {$valueParam}
+                OR JSON_SEARCH(t._relations, 'one', {$valueParam}, NULL, CONCAT('$.', {$prefixParam})) IS NOT NULL
+                OR JSON_CONTAINS(t._relations, JSON_QUOTE({$valueParam}))
             )"
 		);
 	}//end applyRelationFieldFilter()
@@ -1929,13 +1955,15 @@ class MagicSearchHandler {
 	 * @return string[] Array of SQL conditions (without leading AND/WHERE).
 	 */
 	private function buildRelationFilterConditionsSql(array $query, object $connection): array {
+		$isPostgres = $this->isPostgresPlatform();
 		$conditions = [];
 		foreach ($this->extractRelationFieldFilters(query: $query) as $field => $value) {
 			$valueQuoted = $connection->quote($value);
 			$exactQuoted = $connection->quote($field);
 			$prefixQuoted = $connection->quote($field . '.%');
 
-			$conditions[] = "(
+			if ($isPostgres === true) {
+				$conditions[] = "(
                 (jsonb_typeof(_relations) = 'object' AND EXISTS (
                     SELECT 1 FROM jsonb_each_text(_relations) AS kv
                     WHERE kv.value = {$valueQuoted}
@@ -1943,6 +1971,15 @@ class MagicSearchHandler {
                 ))
                 OR
                 (jsonb_typeof(_relations) = 'array' AND _relations @> to_jsonb({$valueQuoted}::text))
+            )";
+				continue;
+			}
+
+			// MariaDB / MySQL fallback — see applyRelationFieldFilter() (WOO-548).
+			$conditions[] = "(
+                JSON_UNQUOTE(JSON_EXTRACT(_relations, CONCAT('$.', {$exactQuoted}))) = {$valueQuoted}
+                OR JSON_SEARCH(_relations, 'one', {$valueQuoted}, NULL, CONCAT('$.', {$prefixQuoted})) IS NOT NULL
+                OR JSON_CONTAINS(_relations, JSON_QUOTE({$valueQuoted}))
             )";
 		}
 
