@@ -31,6 +31,19 @@ use Psr\Log\NullLogger;
 /**
  * @covers \OCA\OpenRegister\Listener\FlowTriggerListener
  * @covers \OCA\OpenRegister\Service\Flow\FlowTriggerSlugs
+ *
+ * Every collaborator the tests execute is named in the uses-list because
+ * `beStrictAboutCoverageMetadata` is on: an unlisted executed class marks the
+ * test risky and PHPUnit then discards its coverage wholesale.
+ *
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
+ * @uses \OCA\OpenRegister\Event\ObjectLockedEvent
+ * @uses \OCA\OpenRegister\Event\ObjectUnlockedEvent
+ * @uses \OCA\OpenRegister\Event\ObjectRevertedEvent
+ * @uses \OCA\OpenRegister\Event\ObjectTransitionedEvent
  */
 class FlowTriggerListenerTest extends TestCase {
 	private FlowTriggerService $triggers;

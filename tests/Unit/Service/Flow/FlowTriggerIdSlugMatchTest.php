@@ -61,6 +61,13 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\Flow\FlowTriggerService
  * @covers \OCA\OpenRegister\Service\Flow\FlowLocator
  * @covers \OCA\OpenRegister\Service\Flow\FlowTriggerSlugs
+ *
+ * @uses \OCA\OpenRegister\Db\Flow
+ * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
  */
 class FlowTriggerIdSlugMatchTest extends TestCase {
 

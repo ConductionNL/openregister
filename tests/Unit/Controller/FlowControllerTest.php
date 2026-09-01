@@ -43,6 +43,18 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Controller\FlowController
+ *
+ * The uses-list below is load-bearing, not decoration. phpunit.xml sets
+ * `beStrictAboutCoverageMetadata`, so a covers-tagged test that executes an
+ * unlisted class is RISKY and PHPUnit discards its coverage entirely — this
+ * class's whole coverage was being thrown away over the real FlowAccess it
+ * deliberately constructs, and the CI coverage guard read that as the
+ * controller being untested.
+ *
+ * @uses \OCA\OpenRegister\Service\Flow\FlowAccess
+ * @uses \OCA\OpenRegister\Db\Flow
+ * @uses \OCA\OpenRegister\Db\FlowState
+ * @uses \OCA\OpenRegister\Service\Flow\FlowAdoptionRefused
  */
 class FlowControllerTest extends TestCase {
 

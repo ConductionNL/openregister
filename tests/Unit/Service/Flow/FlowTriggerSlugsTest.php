@@ -42,6 +42,9 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowTriggerSlugs
+ *
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class FlowTriggerSlugsTest extends TestCase {
 

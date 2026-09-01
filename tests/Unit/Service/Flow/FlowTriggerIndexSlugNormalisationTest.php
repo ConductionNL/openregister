@@ -51,6 +51,11 @@ use Psr\Log\NullLogger;
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowTriggerIndex
  * @covers \OCA\OpenRegister\Service\Flow\FlowTriggerSlugs
+ *
+ * @uses \OCA\OpenRegister\Db\Flow
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Flow\FlowTriggerDerivation
  */
 class FlowTriggerIndexSlugNormalisationTest extends TestCase {
 
