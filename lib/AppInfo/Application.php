@@ -2520,6 +2520,17 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ObjectCreatingEvent::class, FlowNodePreflightListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, FlowNodePreflightListener::class);
 
+		// Task cancellation propagation (flow-task-entity, design D-8): a run
+		// persisted in a terminal status terminates its open tasks, with the
+		// reason recorded. The event fires from FlowRunMapper::update() — the
+		// one choke point all terminal writes pass — and may fire repeatedly;
+		// the listener is idempotent, and a task with run_uuid null is
+		// structurally out of its reach.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\FlowRunTerminalEvent::class,
+			\OCA\OpenRegister\Listener\TaskRunTerminalListener::class
+		);
+
 		// Lifecycle annotation listeners — see x-openregister-lifecycle.
 		// Order matters: initial state runs on creating; validation runs on updating.
 		$context->registerEventListener(ObjectCreatingEvent::class, LifecycleInitialStateListener::class);
