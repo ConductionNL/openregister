@@ -11,7 +11,7 @@
  * See _visual-helpers.ts for the platform-rendering caveat.
  */
 import { test } from '@playwright/test'
-import { shootSurface, shootByNav } from './_visual-helpers'
+import { shootSurface } from './_visual-helpers.ts'
 
 const APP = '/index.php/apps/openregister'
 

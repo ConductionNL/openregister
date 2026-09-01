@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-/* eslint-disable n/no-process-exit */
+ 
 // Slovak register detector for openregister l10n.
 //
 // Measures the prose register AND the 2sg imperative, which is a genuine
@@ -44,6 +43,10 @@
 // JS \b is ASCII-only and would treat "á" as a boundary, so every guard is
 // (?<!\p{L}) … (?!\p{L}) with the u flag.
 
+/**
+ *
+ * @param s
+ */
 function fold(s) {
 	return String(s).toLowerCase()
 }
@@ -164,6 +167,10 @@ const UNDETECTABLE = [
 		+ 'carries the 2sg — covered here, but a nominal sentence would not be'],
 ]
 
+/**
+ *
+ * @param s
+ */
 function score(s) {
 	const t = fold(s)
 	let f = 0
@@ -175,6 +182,9 @@ function score(s) {
 	return { f, i }
 }
 
+/**
+ *
+ */
 function runControls() {
 	let fail = 0
 	for (const [s, want] of CONTROLS) {

@@ -45,7 +45,6 @@ function targetFiles() {
 // `pathPrefix` is the JSON-pointer-ish path used in the error message.
 function parseStrict(text, label) {
 	const dupErrors = []
-	const reviverPathStack = []
 	// JSON.parse's reviver can't see duplicates (the object is already
 	// collapsed). So we re-implement just enough: tokenise object keys.
 	// Simpler robust approach: walk the raw text with a tiny tokenizer.
@@ -101,7 +100,7 @@ function parseStrict(text, label) {
 			return
 		}
 		let idx = 0
-		// eslint-disable-next-line no-constant-condition
+
 		while (true) {
 			readValue(`${pathStr}/${idx}`)
 			idx++
@@ -126,7 +125,7 @@ function parseStrict(text, label) {
 			i++
 			return
 		}
-		// eslint-disable-next-line no-constant-condition
+
 		while (true) {
 			skipWs()
 			if (text[i] !== '"') err('expected string key in object')

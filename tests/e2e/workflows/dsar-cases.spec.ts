@@ -19,9 +19,9 @@
  * (the app is not reachable in the current environment). Any placeholder
  * subject/token is a safe placeholder — never a real BSN or secret.
  */
-import { test, expect } from '@playwright/test'
-import * as path from 'path'
+import { expect, test } from '@playwright/test'
 import * as fs from 'fs'
+import * as path from 'path'
 
 const STORAGE_STATE = path.resolve(__dirname, '..', '.auth', 'admin.json')
 const AVG_URL = '/index.php/apps/openregister/#/avg'

@@ -1,3 +1,5 @@
+import type { APIRequestContext } from '@playwright/test'
+
 /**
  * OpenRegister scheduled flow trigger — end-to-end.
  *
@@ -14,9 +16,9 @@
  *
  * @spec openspec/changes/or-flow-scheduled-trigger/specs/flow-scheduled-trigger/spec.md
  */
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { execSync } from 'node:child_process'
-import { resolveContainer } from '../base-url'
+import { resolveContainer } from '../base-url.ts'
 
 const API = '/index.php/apps/openregister/api'
 const JSON_HEADERS = {
@@ -120,7 +122,6 @@ async function schemaOfRegister(
 
 test.describe('Scheduled flow trigger', () => {
 	let reg: number
-	let sch: number
 	let jobId: string | null
 	const created: string[] = []
 

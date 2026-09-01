@@ -22,9 +22,9 @@
  * rendered table row — this is exactly the persistence guarantee the shell
  * tests do not cover.
  */
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
-import { makeRunId, twoPropertySchema } from '../_fixtures'
+import { makeRunId, twoPropertySchema } from '../_fixtures.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '..', '.auth', 'admin.json')
 // HASH form — the router runs in hash mode (src/main.js); the path-form URL

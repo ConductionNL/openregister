@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-/* eslint-disable n/no-process-exit */
+ 
 // Latvian register detector for openregister l10n.
 //
 // Measures the PROSE register: jūs (formal 2pl) against tu (informal 2sg).
@@ -53,6 +52,10 @@
 // forms whose third-person counterpart is spelled differently ("vari" vs "var",
 // "zini" vs "zina", "esi" vs "ir", "spied" vs "spiež").
 
+/**
+ *
+ * @param s
+ */
 function fold(s) {
 	return String(s).toLowerCase()
 }
@@ -153,6 +156,10 @@ const UNDETECTABLE = [
 	['Ieraksti savu vārdu', '"savu" is person-neutral, and "ieraksti" is also the plural of "ieraksts" (a record) — the noun this app uses constantly'],
 ]
 
+/**
+ *
+ * @param s
+ */
 function score(s) {
 	const t = fold(s)
 	let f = 0
@@ -164,6 +171,9 @@ function score(s) {
 	return { f, i }
 }
 
+/**
+ *
+ */
 function runControls() {
 	let fail = 0
 	for (const [s, want] of CONTROLS) {

@@ -17,9 +17,11 @@
  * and degrade to test.skip(), so the suite still runs everywhere.
  */
 
-import { test, expect, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
-import { readMdmSeed } from '../mdm-seed'
+import { readMdmSeed } from '../mdm-seed.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 const seed = readMdmSeed()

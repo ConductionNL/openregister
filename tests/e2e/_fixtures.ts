@@ -1,3 +1,5 @@
+import type { APIRequestContext } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -23,7 +25,7 @@
  * Basic-auth `extraHTTPHeaders` from playwright.config.ts (admin/admin), so
  * fixture setup works without a browser session.
  */
-import { type APIRequestContext, expect } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 const API = '/index.php/apps/openregister/api'
 const JSON_HEADERS = {
