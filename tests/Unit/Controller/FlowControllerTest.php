@@ -82,6 +82,16 @@ class FlowControllerTest extends TestCase {
 	private $flows;
 
 	/**
+	 * The action-rights matrix, mocked to allow by default.
+	 *
+	 * Declared rather than assigned dynamically: PHP 8.2 deprecates dynamic
+	 * properties, and this one was created on the fly in setUp().
+	 *
+	 * @var \OCA\OpenRegister\Service\OpenRegisterActionAuthService
+	 */
+	private $actionAuth;
+
+	/**
 	 * The mocked user session, used to resolve the caller.
 	 *
 	 * @var IUserSession
@@ -867,4 +877,134 @@ class FlowControllerTest extends TestCase {
 		$this->assertSame(200, $response->getStatus());
 		$this->assertSame([], $response->getData()['results']);
 	}//end testLogActionsReturnsAnEmptyListForAnAbsentEntry()
+
+	/**
+	 * Adoption makes the CALLER the owner — the body is never consulted.
+	 *
+	 * The service receives the flow the organisation-scoped `find()` loaded
+	 * and nothing else: there is no parameter a request could smuggle a
+	 * different uid through, which is the security property of the seam.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 */
+	public function testAdoptSetsTheCallerAsOwner(): void {
+		$flow = new Flow();
+		$flow->setUuid('flow-1');
+
+		$adopted = new Flow();
+		$adopted->setUuid('flow-1');
+		$adopted->setOwner('admin');
+
+		$this->flows->expects($this->once())->method('find')->with('flow-1')->willReturn($flow);
+		$this->flows->expects($this->once())->method('adopt')->with($flow)->willReturn($adopted);
+		// The body must be irrelevant: the controller never reads it.
+		$this->request->expects($this->never())->method('getParams');
+
+		$response = $this->controller->adopt('flow-1');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame('admin', $response->getData()['owner']);
+	}//end testAdoptSetsTheCallerAsOwner()
+
+	/**
+	 * Without the `flow.update` right the adoption never reaches the service.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 */
+	public function testAdoptIsRefusedWithoutTheRight(): void {
+		$denying = $this->createMock(\OCA\OpenRegister\Service\OpenRegisterActionAuthService::class);
+		$denying->method('can')->willReturn(false);
+
+		$controller = new FlowController(
+			'openregister',
+			$this->request,
+			$this->createMock(EventCatalogService::class),
+			$this->nodes,
+			$this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class),
+			$this->preflight,
+			$this->flows,
+			$this->access($this->userSession, $this->groupManager, $denying),
+			$this->createMock(\OCA\OpenRegister\Service\Flow\FlowVersionService::class)
+		);
+
+		$this->flows->expects($this->never())->method('adopt');
+
+		$this->assertSame(403, $controller->adopt('flow-1')->getStatus());
+	}//end testAdoptIsRefusedWithoutTheRight()
+
+	/**
+	 * No session, no adoption: there is nobody to become the owner.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 */
+	public function testAdoptRequiresASession(): void {
+		$anonymous = $this->createMock(IUserSession::class);
+		$anonymous->method('getUser')->willReturn(null);
+
+		$controller = new FlowController(
+			'openregister',
+			$this->request,
+			$this->createMock(EventCatalogService::class),
+			$this->nodes,
+			$this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class),
+			$this->preflight,
+			$this->flows,
+			$this->access($anonymous, $this->groupManager, $this->actionAuth),
+			$this->createMock(\OCA\OpenRegister\Service\Flow\FlowVersionService::class)
+		);
+
+		$this->flows->expects($this->never())->method('adopt');
+
+		$this->assertSame(401, $controller->adopt('flow-1')->getStatus());
+	}//end testAdoptRequiresASession()
+
+	/**
+	 * A flow the caller may not see answers the same 404 a missing one does —
+	 * the adopt route must not become an oracle for other tenants' flow ids.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 */
+	public function testAdoptAnswersNotFoundForAFlowTheCallerMayNotSee(): void {
+		$this->flows->method('find')->willThrowException(
+			new \OCP\AppFramework\Db\DoesNotExistException('No such flow')
+		);
+		$this->flows->expects($this->never())->method('adopt');
+
+		$this->assertSame(404, $this->controller->adopt('foreign-flow')->getStatus());
+	}//end testAdoptAnswersNotFoundForAFlowTheCallerMayNotSee()
+
+	/**
+	 * Adoption is not a takeover: a flow that already belongs to someone else
+	 * answers a machine-readable 409.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 */
+	public function testAdoptAnswersConflictWhenAlreadyOwned(): void {
+		$flow = new Flow();
+		$flow->setUuid('flow-1');
+		$flow->setOwner('bob');
+
+		$this->flows->method('find')->willReturn($flow);
+		$this->flows->method('adopt')->willThrowException(
+			new \OCA\OpenRegister\Service\Flow\FlowAdoptionRefused(
+				reason: \OCA\OpenRegister\Service\Flow\FlowAdoptionRefused::REASON_ALREADY_OWNED,
+				message: 'This flow already belongs to "bob". Adoption is not a takeover.'
+			)
+		);
+
+		$response = $this->controller->adopt('flow-1');
+
+		$this->assertSame(409, $response->getStatus());
+		$this->assertSame('already-owned', $response->getData()['reason']);
+	}//end testAdoptAnswersConflictWhenAlreadyOwned()
 }//end class

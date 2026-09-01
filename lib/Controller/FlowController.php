@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
+use OCA\OpenRegister\Service\Flow\FlowAdoptionRefused;
 use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
@@ -1026,6 +1027,64 @@ class FlowController extends Controller {
 
 		return new JSONResponse($version->jsonSerialize());
 	}//end deprecate()
+
+	/**
+	 * Adopt a flow: the CALLING user becomes its owner.
+	 *
+	 * The missing half of the shipped-flow lifecycle. An imported flow arrives
+	 * `enabled=false, owner=null` and `Flow::canDispatch()` fails closed on
+	 * the missing owner — correct — but no endpoint could supply one: `owner`
+	 * is deliberately not an editable field, so "until somebody adopts it" had
+	 * no mechanism and the only route on a live instance was raw SQL.
+	 *
+	 * The body is IGNORED. The new owner is the session's user, never a uid a
+	 * request names — an endpoint that accepted one would let any caller with
+	 * `flow.update` volunteer a colleague's identity for unattended execution.
+	 * Enabling stays separate: adoption answers "whose flow", the `enabled`
+	 * flag answers "may it run", and the flow becomes dispatchable only when
+	 * both are true.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return JSONResponse The adopted flow, 401, 404, or 409 when it already
+	 *                      belongs to someone else.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @no-admin-idor-exempt Guarded downstream: `FlowService::find()` applies
+	 * the organisation scope (a foreign flow answers the same 404 as a missing
+	 * one), and `adopt()` writes only the CALLER's uid — there is no
+	 * caller-chosen object state to abuse.
+	 *
+	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 */
+	#[NoAdminRequired]
+	public function adopt(string $id): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.update');
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		try {
+			$flow = $this->flows->find(uuid: $id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+		}
+
+		try {
+			$adopted = $this->flows->adopt(flow: $flow);
+		} catch (FlowAdoptionRefused $e) {
+			return new JSONResponse(
+				[
+					'error' => $e->getMessage(),
+					'reason' => $e->getReason(),
+				],
+				Http::STATUS_CONFLICT
+			);
+		}
+
+		return new JSONResponse($adopted->jsonSerialize());
+	}//end adopt()
 
 	/**
 	 * The flow fields carried on a create or update request.
