@@ -154,6 +154,36 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 	}//end testAnUnpublishedFlowIsFilteredFromTheColumnFallback()
 
 	/**
+	 * An unreadable version table FAILS OPEN: the fallback flow stays in the
+	 * match and the queue path decides. Silencing every fallback flow because
+	 * one lookup failed would stop the engine without a word.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableVersionTableFailsOpen(): void {
+		$this->triggerMapper->method('flowUuidsFor')->willReturn([]);
+		$this->triggerMapper->method('representedFlowUuids')->willReturn([]);
+		$this->mapper->method('findByTrigger')->willReturn([$this->flow('legacy-1')]);
+
+		$versions = $this->createMock(FlowVersionMapper::class);
+		$versions->method('findPublished')->willThrowException(new RuntimeException('table gone'));
+
+		$locator = new FlowLocator(
+			mapper: $this->mapper,
+			triggerMapper: $this->triggerMapper,
+			objectService: $this->createMock(ObjectService::class),
+			logger: $this->logger,
+			versions: $versions
+		);
+
+		$this->assertSame(
+			['legacy-1'],
+			$locator->flowsForTrigger('object.created', 'dossiq', 'case'),
+			'an unreadable version table must not silence the engine'
+		);
+	}//end testAnUnreadableVersionTableFailsOpen()
+
+	/**
 	 * An UNCONVERTED flow keeps firing through its columns.
 	 *
 	 * This is the case every flow in a real instance is in the moment the

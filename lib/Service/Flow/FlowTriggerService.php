@@ -134,7 +134,8 @@ class FlowTriggerService {
 					$this->runInline(run: $run, flowId: $flowId, subject: $subject);
 				} catch (Throwable $inline) {
 					$this->logger->error(
-						message: '[FlowTriggerService] Inline execution of a sync flow failed; the run stays queued and the worker takes over: ' . $inline->getMessage(),
+						message: '[FlowTriggerService] Inline execution of a sync flow failed; '
+							. 'the run stays queued and the worker takes over: ' . $inline->getMessage(),
 						context: ['file' => __FILE__, 'line' => __LINE__, 'event' => $event, 'flow' => $flowId, 'run' => $run->getUuid()]
 					);
 				}

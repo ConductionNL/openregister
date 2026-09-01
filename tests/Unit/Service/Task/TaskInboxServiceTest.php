@@ -257,6 +257,38 @@ class TaskInboxServiceTest extends TestCase {
 	}//end testSubjectContextIsBatchedForThePage()
 
 	/**
+	 * A store that serialises FLAT (uuid/register/schema/name at top level)
+	 * still resolves: the flat keys are the documented fallback for stores
+	 * that are not ObjectEntity.
+	 *
+	 * @return void
+	 */
+	public function testAFlatSerialisingStoreStillResolvesThroughTheFallbacks(): void {
+		$objects = $this->createMock(originalClassName: AbstractObjectMapper::class);
+		$objects->method('findMultiple')->willReturn(
+			[
+				new class () implements \JsonSerializable {
+					public function jsonSerialize(): array {
+						return ['uuid' => 'obj-1', 'register' => 'zaken', 'schema' => 'zaak', 'title' => 'Zaak 42'];
+					}
+				},
+			]
+		);
+		$inbox = new TaskInboxService(tasks: $this->tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: $objects);
+
+		$task = new Task();
+		$task->setUuid('t-1');
+		$task->setObjectUuid('obj-1');
+		$this->tasks->method('findInbox')->willReturn([$task]);
+		$this->tasks->method('countInbox')->willReturn(1);
+
+		$result = $inbox->inbox(criteria: new TaskInboxCriteria(uid: 'alice'));
+
+		$this->assertSame('zaken', $result['results'][0]['subject']['register']);
+		$this->assertSame('Zaak 42', $result['results'][0]['subject']['title'], 'the flat title fallback still answers');
+	}//end testAFlatSerialisingStoreStillResolvesThroughTheFallbacks()
+
+	/**
 	 * A failing object store never fails the inbox: context reads null.
 	 *
 	 * @return void

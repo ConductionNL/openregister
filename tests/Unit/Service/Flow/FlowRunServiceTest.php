@@ -410,6 +410,36 @@ class FlowRunServiceTest extends TestCase {
 		$this->assertSame(1, $this->doneBranch->calls);
 	}//end testAReAskLoopThatReceivesTheAnswerTerminates()
 
+	/**
+	 * The refresh reaches the PER-PLACE buffers too: with a stream layer the
+	 * resumed walk reads its input place's buffer, not the flat list, so a
+	 * refresh that missed placeItems would leave the stale snapshot exactly
+	 * where the branch decision is made.
+	 *
+	 * @return void
+	 */
+	public function testTheResumeRefreshAlsoRewritesThePerPlaceBuffers(): void {
+		$run = $this->service->queue('f1', ['uuid' => 'case-1'], 'object.created', user: 'alice');
+		$run = $this->service->execute(
+			$run,
+			$this->waitFlow(),
+			new IdentifiedSubject(fields: ['id' => 'case-1', 'description' => null])
+		);
+		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
+
+		$run->setPlaceItems(['hop' => [FlowItems::item(json: ['id' => 'case-1', 'description' => null, 'stepProduced' => 'kept'])]]);
+
+		$run = $this->service->execute(
+			$run,
+			$this->waitFlow(),
+			new IdentifiedSubject(fields: ['id' => 'case-1', 'description' => 'now supplied'])
+		);
+
+		$buffer = $run->getPlaceItems()['hop'];
+		$this->assertSame('now supplied', $buffer[0]['json']['description'], 'the per-place buffer reads the live subject');
+		$this->assertSame('kept', $buffer[0]['json']['stepProduced'], 'step output survives in the buffer too');
+	}//end testTheResumeRefreshAlsoRewritesThePerPlaceBuffers()
+
 	public function testResumeAtIsClearedOnceTheRunIsNoLongerSuspended(): void {
 		$run = $this->service->queue('f1', user: 'alice');
 		$run = $this->service->execute($run, $this->waitFlow(), new RunSubject());
