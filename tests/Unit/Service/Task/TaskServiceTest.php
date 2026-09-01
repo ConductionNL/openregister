@@ -37,6 +37,7 @@ use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
+use OCA\OpenRegister\Service\Task\TaskBuilder;
 use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCP\IDBConnection;
@@ -108,7 +109,8 @@ class TaskServiceTest extends TestCase {
 			authorization: $this->authorization,
 			resolver: $this->createMock(TaskPerformerResolver::class),
 			db: $this->db,
-			logger: new NullLogger()
+			logger: new NullLogger(),
+			builder: new TaskBuilder()
 		);
 	}//end service()
 

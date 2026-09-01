@@ -192,187 +192,227 @@ class SeedTaskFixtures implements IRepairStep {
 	 */
 	private function fixtures(): array {
 		return [
-			// 1. Municipality: a pooled permit check, NO flow attached.
-			[
-				'uuid' => '00000000-0000-0000-0000-000000000001',
-				'task' => [
-					'title' => 'Controleer bouwtekening op welstandseisen',
-					'state' => Task::STATE_ENABLED,
-					'isTerminal' => false,
+			$this->municipalPermitCheck(),
+			$this->consultancyDelegatedApproval(),
+			$this->travelAgencyAgentTask(),
+			$this->completedApproval(),
+			$this->terminatedByPropagation(),
+		];
+	}//end fixtures()
+
+	/**
+	 * Seed group 1: Municipality: a pooled permit check, NO flow attached.
+	 *
+	 * @return array<string, mixed> The fixture.
+	 */
+	private function municipalPermitCheck(): array {
+		return [
+			'uuid' => '00000000-0000-0000-0000-000000000001',
+			'task' => [
+				'title' => 'Controleer bouwtekening op welstandseisen',
+				'state' => Task::STATE_ENABLED,
+				'isTerminal' => false,
+				'performerType' => Task::PERFORMER_GROUP,
+				'assignee' => null,
+				'candidateGroups' => ['GEMEENTE_VERGUNNINGEN_TEAM'],
+				'routingStrategy' => 'least-loaded',
+				'priority' => 'normal',
+				'dueAt' => new DateTime('2026-09-04T17:00:00+02:00'),
+				'expiresAt' => null,
+				'runUuid' => null,
+				'objectUuid' => '00000000-0000-0000-0000-0000000000aa',
+				'registerId' => 1,
+				'schemaId' => 1,
+				'requester' => 'EXAMPLE_BALIE_USER',
+				'lastAction' => 'offer',
+				'appId' => 'openregister',
+			],
+			'audit' => [
+				[
+					'action' => 'offer',
+					'stateAfter' => Task::STATE_ENABLED,
+					'actor' => 'EXAMPLE_BALIE_USER',
 					'performerType' => Task::PERFORMER_GROUP,
-					'assignee' => null,
-					'candidateGroups' => ['GEMEENTE_VERGUNNINGEN_TEAM'],
-					'routingStrategy' => 'least-loaded',
-					'priority' => 'normal',
-					'dueAt' => new DateTime('2026-09-04T17:00:00+02:00'),
-					'expiresAt' => null,
-					'runUuid' => null,
-					'objectUuid' => '00000000-0000-0000-0000-0000000000aa',
-					'registerId' => 1,
-					'schemaId' => 1,
-					'requester' => 'EXAMPLE_BALIE_USER',
-					'lastAction' => 'offer',
-					'appId' => 'openregister',
-				],
-				'audit' => [
-					[
-						'action' => 'offer',
-						'stateAfter' => Task::STATE_ENABLED,
-						'actor' => 'EXAMPLE_BALIE_USER',
-						'performerType' => Task::PERFORMER_GROUP,
-						'authorized' => true,
-					],
-				],
-			],
-			// 2. Consultancy: a delegated approval with enforcing expiry, on a run.
-			[
-				'uuid' => '00000000-0000-0000-0000-000000000002',
-				'task' => [
-					'title' => 'Keur inkooporder > EUR 10.000 goed',
-					'state' => Task::STATE_ACTIVE,
-					'isTerminal' => false,
-					'performerType' => Task::PERFORMER_USER,
-					'assignee' => 'EXAMPLE_DELEGATE_USER',
-					'onBehalfOf' => 'EXAMPLE_DIRECTOR_USER',
-					'mandate' => 'Volmacht inkoop 2026, artikel 4 lid 2',
-					'priority' => 'high',
-					'dueAt' => new DateTime('2026-08-29T12:00:00+02:00'),
-					'expiresAt' => new DateTime('2026-09-01T12:00:00+02:00'),
-					'runUuid' => '00000000-0000-0000-0000-0000000000f1',
-					'nodeId' => 'approve-purchase-order',
-					'templateId' => '00000000-0000-0000-0000-0000000000e0',
-					'templateVersion' => 3,
-					'templateSnapshot' => ['checklist' => []],
-					'objectUuid' => '00000000-0000-0000-0000-0000000000bb',
-					'requester' => 'EXAMPLE_CONTROLLER_USER',
-					'lastAction' => 'delegate',
-					'appId' => 'openregister',
-				],
-				'audit' => [
-					[
-						'action' => 'delegate',
-						'stateAfter' => Task::STATE_ACTIVE,
-						'actor' => 'EXAMPLE_DIRECTOR_USER',
-						'performerType' => Task::PERFORMER_USER,
-						'onBehalfOf' => 'EXAMPLE_DIRECTOR_USER',
-						'mandate' => 'Volmacht inkoop 2026, artikel 4 lid 2',
-						'authorized' => true,
-					],
-				],
-			],
-			// 3. Travel agency: an agent task with a checklist.
-			[
-				'uuid' => '00000000-0000-0000-0000-000000000003',
-				'task' => [
-					'title' => 'Verifieer visumvereisten voor reisgroep',
-					'state' => Task::STATE_ACTIVE,
-					'isTerminal' => false,
-					'performerType' => Task::PERFORMER_AGENT,
-					'assignee' => 'EXAMPLE_AGENT_IDENTITY',
-					'priority' => 'urgent',
-					'checklist' => [
-						[
-							'id' => 'c1',
-							'label' => 'Paspoortgeldigheid > 6 maanden',
-							'description' => null,
-							'checked' => true,
-						],
-						[
-							'id' => 'c2',
-							'label' => 'Visumplicht per bestemming gecontroleerd',
-							'description' => null,
-							'checked' => false,
-						],
-						[
-							'id' => 'c3',
-							'label' => 'Transitvisum nodig?',
-							'description' => null,
-							'checked' => false,
-						],
-					],
-					'epicTaskId' => null,
-					'objectUuid' => '00000000-0000-0000-0000-0000000000cc',
-					'runUuid' => null,
-					'requester' => 'EXAMPLE_TRAVEL_PLANNER',
-					'lastAction' => 'claim',
-					'appId' => 'openregister',
-				],
-				'audit' => [
-					[
-						'action' => 'claim',
-						'stateAfter' => Task::STATE_ACTIVE,
-						'actor' => 'EXAMPLE_AGENT_IDENTITY',
-						'performerType' => Task::PERFORMER_AGENT,
-						'authorized' => true,
-					],
-				],
-			],
-			// 4a. Terminal: completed with the collapse-preserved outcome.
-			[
-				'uuid' => '00000000-0000-0000-0000-000000000004',
-				'task' => [
-					'title' => 'Beoordeel offerte serverhal',
-					'state' => Task::STATE_COMPLETED,
-					'isTerminal' => true,
-					'performerType' => Task::PERFORMER_USER,
-					'assignee' => 'EXAMPLE_REVIEWER_USER',
-					'outcome' => 'approved',
-					'priority' => 'normal',
-					'completedAt' => new DateTime('2026-08-20T09:30:00+02:00'),
-					'completedBy' => 'EXAMPLE_REVIEWER_USER',
-					'runUuid' => null,
-					'requester' => 'EXAMPLE_CONTROLLER_USER',
-					'lastAction' => 'complete',
-					'appId' => 'openregister',
-				],
-				'audit' => [
-					[
-						'action' => 'complete',
-						'stateAfter' => Task::STATE_COMPLETED,
-						'actor' => 'EXAMPLE_REVIEWER_USER',
-						'performerType' => Task::PERFORMER_USER,
-						'authorized' => true,
-					],
-					// The DENIED entry: a stranger tried first, and the
-					// append-only denial path has a fixture because of it.
-					[
-						'action' => 'complete',
-						'stateAfter' => Task::STATE_ACTIVE,
-						'actor' => 'EXAMPLE_STRANGER_USER',
-						'performerType' => Task::PERFORMER_USER,
-						'reason' => "Verb 'complete' denied: only the current assignee may perform it.",
-						'authorized' => false,
-					],
-				],
-			],
-			// 4b. Terminal: terminated by propagation from a stopped run.
-			[
-				'uuid' => '00000000-0000-0000-0000-000000000005',
-				'task' => [
-					'title' => 'Vraag aanvullende stukken op',
-					'state' => Task::STATE_TERMINATED,
-					'isTerminal' => true,
-					'performerType' => Task::PERFORMER_USER,
-					'assignee' => 'EXAMPLE_CASEWORKER_USER',
-					'outcome' => 'terminated',
-					'priority' => 'normal',
-					'runUuid' => '00000000-0000-0000-0000-0000000000f2',
-					'nodeId' => 'request-documents',
-					'requester' => 'EXAMPLE_CONTROLLER_USER',
-					'lastAction' => 'terminate',
-					'appId' => 'openregister',
-				],
-				'audit' => [
-					[
-						'action' => 'terminate',
-						'stateAfter' => Task::STATE_TERMINATED,
-						'actor' => 'flow-run:00000000-0000-0000-0000-0000000000f2',
-						'performerType' => Task::PERFORMER_USER,
-						'reason' => "Run '00000000-0000-0000-0000-0000000000f2' reached terminal status 'stopped'.",
-						'authorized' => true,
-					],
+					'authorized' => true,
 				],
 			],
 		];
-	}//end fixtures()
+	}//end municipalPermitCheck()
+
+	/**
+	 * Seed group 2: Consultancy: a delegated approval with enforcing expiry, on a run.
+	 *
+	 * @return array<string, mixed> The fixture.
+	 */
+	private function consultancyDelegatedApproval(): array {
+		return [
+			'uuid' => '00000000-0000-0000-0000-000000000002',
+			'task' => [
+				'title' => 'Keur inkooporder > EUR 10.000 goed',
+				'state' => Task::STATE_ACTIVE,
+				'isTerminal' => false,
+				'performerType' => Task::PERFORMER_USER,
+				'assignee' => 'EXAMPLE_DELEGATE_USER',
+				'onBehalfOf' => 'EXAMPLE_DIRECTOR_USER',
+				'mandate' => 'Volmacht inkoop 2026, artikel 4 lid 2',
+				'priority' => 'high',
+				'dueAt' => new DateTime('2026-08-29T12:00:00+02:00'),
+				'expiresAt' => new DateTime('2026-09-01T12:00:00+02:00'),
+				'runUuid' => '00000000-0000-0000-0000-0000000000f1',
+				'nodeId' => 'approve-purchase-order',
+				'templateId' => '00000000-0000-0000-0000-0000000000e0',
+				'templateVersion' => 3,
+				'templateSnapshot' => ['checklist' => []],
+				'objectUuid' => '00000000-0000-0000-0000-0000000000bb',
+				'requester' => 'EXAMPLE_CONTROLLER_USER',
+				'lastAction' => 'delegate',
+				'appId' => 'openregister',
+			],
+			'audit' => [
+				[
+					'action' => 'delegate',
+					'stateAfter' => Task::STATE_ACTIVE,
+					'actor' => 'EXAMPLE_DIRECTOR_USER',
+					'performerType' => Task::PERFORMER_USER,
+					'onBehalfOf' => 'EXAMPLE_DIRECTOR_USER',
+					'mandate' => 'Volmacht inkoop 2026, artikel 4 lid 2',
+					'authorized' => true,
+				],
+			],
+		];
+	}//end consultancyDelegatedApproval()
+
+	/**
+	 * Seed group 3: Travel agency: an agent task with a checklist.
+	 *
+	 * @return array<string, mixed> The fixture.
+	 */
+	private function travelAgencyAgentTask(): array {
+		return [
+			'uuid' => '00000000-0000-0000-0000-000000000003',
+			'task' => [
+				'title' => 'Verifieer visumvereisten voor reisgroep',
+				'state' => Task::STATE_ACTIVE,
+				'isTerminal' => false,
+				'performerType' => Task::PERFORMER_AGENT,
+				'assignee' => 'EXAMPLE_AGENT_IDENTITY',
+				'priority' => 'urgent',
+				'checklist' => [
+					[
+						'id' => 'c1',
+						'label' => 'Paspoortgeldigheid > 6 maanden',
+						'description' => null,
+						'checked' => true,
+					],
+					[
+						'id' => 'c2',
+						'label' => 'Visumplicht per bestemming gecontroleerd',
+						'description' => null,
+						'checked' => false,
+					],
+					[
+						'id' => 'c3',
+						'label' => 'Transitvisum nodig?',
+						'description' => null,
+						'checked' => false,
+					],
+				],
+				'epicTaskId' => null,
+				'objectUuid' => '00000000-0000-0000-0000-0000000000cc',
+				'runUuid' => null,
+				'requester' => 'EXAMPLE_TRAVEL_PLANNER',
+				'lastAction' => 'claim',
+				'appId' => 'openregister',
+			],
+			'audit' => [
+				[
+					'action' => 'claim',
+					'stateAfter' => Task::STATE_ACTIVE,
+					'actor' => 'EXAMPLE_AGENT_IDENTITY',
+					'performerType' => Task::PERFORMER_AGENT,
+					'authorized' => true,
+				],
+			],
+		];
+	}//end travelAgencyAgentTask()
+
+	/**
+	 * Seed group 4a: Terminal: completed with the collapse-preserved outcome.
+	 *
+	 * @return array<string, mixed> The fixture.
+	 */
+	private function completedApproval(): array {
+		return [
+			'uuid' => '00000000-0000-0000-0000-000000000004',
+			'task' => [
+				'title' => 'Beoordeel offerte serverhal',
+				'state' => Task::STATE_COMPLETED,
+				'isTerminal' => true,
+				'performerType' => Task::PERFORMER_USER,
+				'assignee' => 'EXAMPLE_REVIEWER_USER',
+				'outcome' => 'approved',
+				'priority' => 'normal',
+				'completedAt' => new DateTime('2026-08-20T09:30:00+02:00'),
+				'completedBy' => 'EXAMPLE_REVIEWER_USER',
+				'runUuid' => null,
+				'requester' => 'EXAMPLE_CONTROLLER_USER',
+				'lastAction' => 'complete',
+				'appId' => 'openregister',
+			],
+			'audit' => [
+				[
+					'action' => 'complete',
+					'stateAfter' => Task::STATE_COMPLETED,
+					'actor' => 'EXAMPLE_REVIEWER_USER',
+					'performerType' => Task::PERFORMER_USER,
+					'authorized' => true,
+				],
+				// The DENIED entry: a stranger tried first, and the
+				// append-only denial path has a fixture because of it.
+				[
+					'action' => 'complete',
+					'stateAfter' => Task::STATE_ACTIVE,
+					'actor' => 'EXAMPLE_STRANGER_USER',
+					'performerType' => Task::PERFORMER_USER,
+					'reason' => "Verb 'complete' denied: only the current assignee may perform it.",
+					'authorized' => false,
+				],
+			],
+		];
+	}//end completedApproval()
+
+	/**
+	 * Seed group 4b: Terminal: terminated by propagation from a stopped run.
+	 *
+	 * @return array<string, mixed> The fixture.
+	 */
+	private function terminatedByPropagation(): array {
+		return [
+			'uuid' => '00000000-0000-0000-0000-000000000005',
+			'task' => [
+				'title' => 'Vraag aanvullende stukken op',
+				'state' => Task::STATE_TERMINATED,
+				'isTerminal' => true,
+				'performerType' => Task::PERFORMER_USER,
+				'assignee' => 'EXAMPLE_CASEWORKER_USER',
+				'outcome' => 'terminated',
+				'priority' => 'normal',
+				'runUuid' => '00000000-0000-0000-0000-0000000000f2',
+				'nodeId' => 'request-documents',
+				'requester' => 'EXAMPLE_CONTROLLER_USER',
+				'lastAction' => 'terminate',
+				'appId' => 'openregister',
+			],
+			'audit' => [
+				[
+					'action' => 'terminate',
+					'stateAfter' => Task::STATE_TERMINATED,
+					'actor' => 'flow-run:00000000-0000-0000-0000-0000000000f2',
+					'performerType' => Task::PERFORMER_USER,
+					'reason' => "Run '00000000-0000-0000-0000-0000000000f2' reached terminal status 'stopped'.",
+					'authorized' => true,
+				],
+			],
+		];
+	}//end terminatedByPropagation()
 }//end class

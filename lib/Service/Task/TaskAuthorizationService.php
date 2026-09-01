@@ -45,6 +45,27 @@ use Throwable;
 class TaskAuthorizationService {
 
 	/**
+	 * Which relationship each verb requires of the caller.
+	 *
+	 * The spec's minimums, as data: claim needs pool membership; unclaim,
+	 * delegate, complete, resolve and checklist need the assignee; assign,
+	 * reassign and cancel need the requester (an administrator passes all).
+	 *
+	 * @var array<string, string> verb => private rule method.
+	 */
+	private const RULES = [
+		'claim' => 'assertPoolMember',
+		'unclaim' => 'assertAssignee',
+		'delegate' => 'assertAssignee',
+		'complete' => 'assertAssignee',
+		'resolve' => 'assertAssignee',
+		'checklist' => 'assertAssignee',
+		'assign' => 'assertRequester',
+		'reassign' => 'assertRequester',
+		'cancel' => 'assertRequester',
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IGroupManager|null $groupManager Resolves group membership, role
@@ -103,37 +124,29 @@ class TaskAuthorizationService {
 			return;
 		}
 
-		switch ($verb) {
-			case 'create':
-			case 'offer':
-				// Creating and offering carry no per-task privilege beyond an
-				// identity; offering additionally belongs to the requester.
-				return;
-			case 'claim':
-				$this->assertPoolMember(verb: $verb, task: $task, uid: $uid);
-				return;
-			case 'unclaim':
-				$this->assertAssignee(verb: $verb, task: $task, uid: $uid);
-				return;
-			case 'assign':
-			case 'reassign':
-			case 'cancel':
-				$this->assertRequester(verb: $verb, task: $task, uid: $uid);
-				return;
-			case 'delegate':
-				$this->assertAssignee(verb: $verb, task: $task, uid: $uid);
-				return;
-			case 'complete':
-			case 'resolve':
-			case 'checklist':
-				$this->assertAssignee(verb: $verb, task: $task, uid: $uid);
-				return;
-			default:
-				// An unknown verb has no rule, so it has no permission.
-				throw new TaskAccessDeniedException(
-					message: sprintf("Verb '%s' denied: no authorization rule exists for it.", $verb)
-				);
-		}//end switch
+		// Verbs carrying no per-task privilege beyond an identity.
+		if (in_array($verb, ['create', 'offer'], true) === true) {
+			return;
+		}
+
+		// An unknown verb has no rule, so it has no permission.
+		if (array_key_exists($verb, self::RULES) === false) {
+			throw new TaskAccessDeniedException(
+				message: sprintf("Verb '%s' denied: no authorization rule exists for it.", $verb)
+			);
+		}
+
+		if (self::RULES[$verb] === 'assertPoolMember') {
+			$this->assertPoolMember(verb: $verb, task: $task, uid: $uid);
+			return;
+		}
+
+		if (self::RULES[$verb] === 'assertAssignee') {
+			$this->assertAssignee(verb: $verb, task: $task, uid: $uid);
+			return;
+		}
+
+		$this->assertRequester(verb: $verb, task: $task, uid: $uid);
 	}//end assertMay()
 
 	/**

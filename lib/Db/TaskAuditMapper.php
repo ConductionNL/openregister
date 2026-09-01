@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use LogicException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -80,12 +81,15 @@ class TaskAuditMapper extends QBMapper {
 	 *
 	 * @return TaskAudit Never returns.
 	 *
-	 * @throws \LogicException Always.
+	 * @throws LogicException Always.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The parameter is the
+	 * inherited signature; refusing it unread is the whole method.
 	 *
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
 	 */
 	public function update(Entity $entity): TaskAudit {
-		throw new \LogicException('The task audit is append-only: entries are never updated.');
+		throw new LogicException('The task audit is append-only: entries are never updated.');
 	}//end update()
 
 	/**
@@ -95,12 +99,15 @@ class TaskAuditMapper extends QBMapper {
 	 *
 	 * @return TaskAudit Never returns.
 	 *
-	 * @throws \LogicException Always.
+	 * @throws LogicException Always.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The parameter is the
+	 * inherited signature; refusing it unread is the whole method.
 	 *
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
 	 */
 	public function delete(Entity $entity): TaskAudit {
-		throw new \LogicException('The task audit is append-only: entries are never deleted.');
+		throw new LogicException('The task audit is append-only: entries are never deleted.');
 	}//end delete()
 
 	/**

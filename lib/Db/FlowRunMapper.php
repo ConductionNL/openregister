@@ -39,6 +39,10 @@ use OCP\IDBConnection;
  * ad-hoc query builders at each call site.
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) Thirty lines over, from the
+ * update() override that announces run terminality (flow-task-entity). It
+ * lives here because this is the one choke point every terminal write
+ * passes; moving it out would recreate the per-site dispatch it replaces.
  *
  * @template-extends QBMapper<FlowRun>
  *

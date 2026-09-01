@@ -104,8 +104,9 @@ class TaskController extends Controller {
 	 * @param string|null $priority Restrict to one priority.
 	 * @param string|null $objectUuid Restrict to tasks anchored to this object.
 	 * @param string|null $overdue 'true' to restrict to derived-overdue tasks.
-	 * @param string $sort dueAt|priority|created.
-	 * @param string $direction 'asc'|'desc'.
+	 * @param string $sort dueAt|priority|created. A leading `-` inverts
+	 *                     the order (`-dueAt`), so sort and direction travel
+	 *                     as one parameter.
 	 * @param int $limit Page size.
 	 * @param int $offset Page offset.
 	 *
@@ -123,7 +124,6 @@ class TaskController extends Controller {
 		?string $objectUuid = null,
 		?string $overdue = null,
 		string $sort = TaskInboxCriteria::SORT_DUE,
-		string $direction = 'asc',
 		int $limit = 25,
 		int $offset = 0,
 	): JSONResponse {
@@ -149,6 +149,9 @@ class TaskController extends Controller {
 			$overdueAt = $this->temporal->now();
 		}
 
+		$descending = str_starts_with($sort, '-');
+		$sortKey = ltrim($sort, '-');
+
 		$criteria = new TaskInboxCriteria(
 			uid: $uid,
 			groupIds: $this->groupIds(uid: $uid),
@@ -159,8 +162,8 @@ class TaskController extends Controller {
 			priority: $priority,
 			objectUuid: $objectUuid,
 			overdueAt: $overdueAt,
-			sort: $sort,
-			sortDescending: (strtolower($direction) === 'desc'),
+			sort: $sortKey,
+			sortDescending: $descending,
 		);
 
 		return new JSONResponse($this->inbox->inbox(criteria: $criteria, limit: $limit, offset: $offset));
@@ -409,7 +412,8 @@ class TaskController extends Controller {
 	 *
 	 * @param string $uuid The task uuid.
 	 * @param string $itemId The checklist item id.
-	 * @param bool $checked The new checked value.
+	 * @param mixed $checked The new checked value, read as a boolean
+	 *                       ('true'/'false'/1/0 all parse).
 	 *
 	 * @return JSONResponse The task with the one item changed.
 	 *
@@ -417,9 +421,11 @@ class TaskController extends Controller {
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
-	public function checkItem(string $uuid, string $itemId, bool $checked = true): JSONResponse {
+	public function checkItem(string $uuid, string $itemId, mixed $checked = 'true'): JSONResponse {
+		$value = filter_var($checked, FILTER_VALIDATE_BOOLEAN);
+
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->checkChecklistItem(uuid: $uuid, itemId: $itemId, checked: $checked, actor: $this->uid())
+			verb: fn (): Task => $this->tasks->checkChecklistItem(uuid: $uuid, itemId: $itemId, checked: $value, actor: $this->uid())
 		);
 	}//end checkItem()
 

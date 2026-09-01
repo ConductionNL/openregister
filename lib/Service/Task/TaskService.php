@@ -47,14 +47,12 @@ use OCA\OpenRegister\Db\TaskAudit;
 use OCA\OpenRegister\Db\TaskAuditMapper;
 use OCA\OpenRegister\Db\TaskCandidateMapper;
 use OCA\OpenRegister\Db\TaskMapper;
-use OCA\OpenRegister\Db\TaskRelation;
 use OCA\OpenRegister\Db\TaskRelationMapper;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Uid\Uuid;
 use Throwable;
 
 /**
@@ -70,6 +68,9 @@ use Throwable;
  * vocabulary collaborators; that IS its job description.
  * @SuppressWarnings(PHPMD.ExcessiveClassLength) Scales with the verb count;
  * each verb is short and single-purpose.
+ * @SuppressWarnings(PHPMD.StaticAccess) TaskState is a stateless published
+ * vocabulary (the one status mapping); calling it statically is the point,
+ * an instance would be a second copy of the same table.
  */
 class TaskService {
 
@@ -84,6 +85,8 @@ class TaskService {
 	 * @param TaskPerformerResolver $resolver The routing strategies.
 	 * @param IDBConnection $db Holds the one transaction per verb.
 	 * @param LoggerInterface $logger Failure reporting.
+	 * @param TaskBuilder $builder Validates and builds a new task from
+	 *                             boundary data (the vocabularies live there).
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
@@ -94,6 +97,7 @@ class TaskService {
 		private readonly TaskPerformerResolver $resolver,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
+		private readonly TaskBuilder $builder,
 	) {
 
 	}//end __construct()
@@ -120,14 +124,16 @@ class TaskService {
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function create(array $data, ?string $actor): Task {
-		$task = $this->buildTask(data: $data, actor: $actor);
+		$task = $this->builder->fromData(data: $data, actor: $actor);
 		$this->authorizeOrRecord(verb: 'create', task: $task, actor: $actor);
 
 		return $this->transactional(
 			mutation: function () use ($task, $data, $actor): Task {
 				$persisted = $this->tasks->insert($task);
 				$this->rewriteCandidateIndex(task: $persisted);
-				$this->insertRelations(task: $persisted, data: $data);
+				foreach ($this->builder->relationsFor(task: $persisted, data: $data) as $relation) {
+					$this->relations->insert(entity: $relation);
+				}
 				$this->appendAudit(
 					task: $persisted,
 					action: 'create',
@@ -163,34 +169,31 @@ class TaskService {
 
 		return $this->transactional(
 			mutation: function () use ($task, $pool, $actor): Task {
-				if (array_key_exists('candidateUsers', $pool) === true) {
-					$task->setCandidateUsers($pool['candidateUsers']);
+				// Only the keys the caller sent change; an absent key keeps
+				// the stored value, so offer can adjust one routing field.
+				$settable = [
+					'candidateUsers' => 'setCandidateUsers',
+					'candidateGroups' => 'setCandidateGroups',
+					'candidateRole' => 'setCandidateRole',
+					'routingStrategy' => 'setRoutingStrategy',
+					'routingFallback' => 'setRoutingFallback',
+				];
+				foreach ($settable as $key => $setter) {
+					if (array_key_exists($key, $pool) === true) {
+						$task->$setter($pool[$key]);
+					}
 				}
 
-				if (array_key_exists('candidateGroups', $pool) === true) {
-					$task->setCandidateGroups($pool['candidateGroups']);
-				}
-
-				if (array_key_exists('candidateRole', $pool) === true) {
-					$task->setCandidateRole($pool['candidateRole']);
-				}
-
-				if (array_key_exists('routingStrategy', $pool) === true) {
-					$task->setRoutingStrategy($pool['routingStrategy']);
-				}
-
-				if (array_key_exists('routingFallback', $pool) === true) {
-					$task->setRoutingFallback($pool['routingFallback']);
-				}
-
+				// Routing either names somebody (active) or leaves the task
+				// pooled (enabled). Never a third option.
 				$chosen = $this->resolver->resolveAssignee(task: $task);
+				$task->setAssignee($chosen);
+				$state = Task::STATE_ENABLED;
 				if ($chosen !== null) {
-					$task->setAssignee($chosen);
-					$this->applyState(task: $task, state: Task::STATE_ACTIVE, action: 'offer');
-				} else {
-					$task->setAssignee(null);
-					$this->applyState(task: $task, state: Task::STATE_ENABLED, action: 'offer');
+					$state = Task::STATE_ACTIVE;
 				}
+
+				$this->applyState(task: $task, state: $state, action: 'offer');
 
 				$persisted = $this->tasks->update($task);
 				$this->rewriteCandidateIndex(task: $persisted);
@@ -805,113 +808,6 @@ class TaskService {
 	}//end transactional()
 
 	/**
-	 * Build and validate a new task from boundary data.
-	 *
-	 * @param array<string, mixed> $data The incoming fields.
-	 * @param string|null $actor The creating identity.
-	 *
-	 * @return Task The validated, unsaved task.
-	 *
-	 * @throws TaskValidationException On any refused value.
-	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
-	 */
-	private function buildTask(array $data, ?string $actor): Task {
-		$task = new Task();
-
-		// Lifecycle: any vocabulary in, one vocabulary stored. state and
-		// is_terminal land together; the collapsed distinction lands on
-		// outcome unless the caller supplied an explicit one.
-		$normalised = TaskState::normalise(value: (string)($data['state'] ?? Task::STATE_AVAILABLE));
-		$this->applyState(task: $task, state: $normalised['state'], action: 'create');
-		$outcome = $normalised['outcome'];
-		if ((string)($data['outcome'] ?? '') !== '') {
-			$outcome = (string)$data['outcome'];
-		}
-
-		$task->setOutcome($outcome);
-
-		// Priority: one scale, off-scale refused.
-		$task->setPriority(TaskPriority::normalise(value: ($data['priority'] ?? 'normal')));
-
-		// Performer type: validated against the extensible vocabulary.
-		$performerType = (string)($data['performerType'] ?? Task::PERFORMER_USER);
-		if (in_array($performerType, Task::PERFORMER_TYPES, true) === false) {
-			throw new TaskValidationException(
-				message: sprintf("Performer type '%s' is not in the known vocabulary (%s).", $performerType, implode('|', Task::PERFORMER_TYPES))
-			);
-		}
-
-		$task->setPerformerType($performerType);
-
-		// Deadlines: due_at advises, expires_at enforces, and an expiry
-		// before the due date is a configuration error, not a schedule.
-		$dueAt = $this->parseDate(value: ($data['dueAt'] ?? null), field: 'dueAt');
-		$expiresAt = $this->parseDate(value: ($data['expiresAt'] ?? null), field: 'expiresAt');
-		if ($dueAt !== null && $expiresAt !== null && $expiresAt < $dueAt) {
-			throw new TaskValidationException(
-				message: sprintf(
-					"expiresAt '%s' lies before dueAt '%s': a task that dies before it is due is a configuration error.",
-					$expiresAt->format('c'),
-					$dueAt->format('c')
-				)
-			);
-		}
-
-		$task->setDueAt($dueAt);
-		$task->setExpiresAt($expiresAt);
-		$task->setStartAt($this->parseDate(value: ($data['startAt'] ?? null), field: 'startAt'));
-		$task->setSuspendedUntil($this->parseDate(value: ($data['suspendedUntil'] ?? null), field: 'suspendedUntil'));
-
-		// Checklist: typed array, never a string containing JSON.
-		$task->setChecklist($this->validChecklist(value: ($data['checklist'] ?? null)));
-
-		// Plain carried fields.
-		$task->setUuid((string)($data['uuid'] ?? Uuid::v4()->toRfc4122()));
-		$task->setTaskKey($this->stringOrNull(value: $data['key'] ?? null));
-		$task->setTitle($this->stringOrNull(value: $data['title'] ?? null));
-		$task->setDescription($this->stringOrNull(value: $data['description'] ?? null));
-		$task->setMetadata($this->arrayOrNull(value: $data['metadata'] ?? null));
-		$task->setRunUuid($this->stringOrNull(value: $data['runUuid'] ?? null));
-		$task->setNodeId($this->stringOrNull(value: $data['nodeId'] ?? null));
-		$task->setDefinitionVersion($this->intOrNull(value: ($data['definitionVersion'] ?? null)));
-		$task->setAppId($this->stringOrNull(value: $data['appId'] ?? null));
-		$task->setWorkflowStepId($this->stringOrNull(value: $data['workflowStepId'] ?? null));
-		$task->setOrganisation($this->stringOrNull(value: $data['organisation'] ?? null));
-		$task->setAssignee($this->stringOrNull(value: $data['assignee'] ?? null));
-		$task->setCandidateUsers($this->arrayOrNull(value: $data['candidateUsers'] ?? null));
-		$task->setCandidateGroups($this->arrayOrNull(value: $data['candidateGroups'] ?? null));
-		$task->setCandidateRole($this->stringOrNull(value: $data['candidateRole'] ?? null));
-		$task->setRoutingStrategy($this->stringOrNull(value: $data['routingStrategy'] ?? null));
-		$task->setRoutingFallback($this->stringOrNull(value: $data['routingFallback'] ?? null));
-		$task->setOnBehalfOf($this->stringOrNull(value: $data['onBehalfOf'] ?? null));
-		$task->setMandate($this->stringOrNull(value: $data['mandate'] ?? null));
-		$task->setRequester($this->stringOrNull(value: $data['requester'] ?? null));
-		$task->setWatchers($this->arrayOrNull(value: $data['watchers'] ?? null));
-		$task->setSlaValue($this->intOrNull(value: ($data['slaValue'] ?? null)));
-		$task->setSlaUnit($this->stringOrNull(value: $data['slaUnit'] ?? null));
-		$task->setCompliancePeriodDays($this->intOrNull(value: ($data['compliancePeriodDays'] ?? null)));
-		$task->setRecurrence($this->stringOrNull(value: $data['recurrence'] ?? null));
-		$task->setObjectUuid($this->stringOrNull(value: $data['objectUuid'] ?? null));
-		$task->setRegisterId($this->intOrNull(value: ($data['registerId'] ?? null)));
-		$task->setSchemaId($this->intOrNull(value: ($data['schemaId'] ?? null)));
-		$task->setParentTaskId($this->intOrNull(value: ($data['parentTaskId'] ?? null)));
-		$task->setEpicTaskId($this->intOrNull(value: ($data['epicTaskId'] ?? null)));
-		$task->setPercentComplete($this->intOrNull(value: ($data['percentComplete'] ?? null)));
-		$task->setResponses($this->arrayOrNull(value: $data['responses'] ?? null));
-		$task->setEvidence($this->arrayOrNull(value: $data['evidence'] ?? null));
-		$task->setCreatedBy($actor);
-
-		// Template FREEZE at creation: id, version and the snapshot land
-		// together, and later evaluation reads only the snapshot.
-		$task->setTemplateId($this->stringOrNull(value: $data['templateId'] ?? null));
-		$task->setTemplateVersion($this->intOrNull(value: ($data['templateVersion'] ?? null)));
-		$task->setTemplateSnapshot($this->arrayOrNull(value: $data['templateSnapshot'] ?? null));
-
-		return $task;
-	}//end buildTask()
-
-	/**
 	 * Rewrite the candidate INDEX rows from the task's JSON record.
 	 *
 	 * The other half of the one-write-path rule: called only inside a
@@ -949,173 +845,4 @@ class TaskService {
 
 		$this->candidates->replaceForTask(taskId: (int)$task->getId(), candidates: $rows);
 	}//end rewriteCandidateIndex()
-
-	/**
-	 * Insert the typed relations named at creation.
-	 *
-	 * @param Task $task The persisted task.
-	 * @param array<string, mixed> $data The creation payload; `relations` is
-	 *                                   a list of {role, objectUuid,
-	 *                                   registerId?, schemaId?}.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-generic-anchor-plus-typed-relations
-	 */
-	private function insertRelations(Task $task, array $data): void {
-		$relations = ($data['relations'] ?? null);
-		if (is_array($relations) === false) {
-			return;
-		}
-
-		foreach ($relations as $relation) {
-			if (is_array($relation) === false) {
-				continue;
-			}
-
-			$role = trim((string)($relation['role'] ?? ''));
-			$objectUuid = trim((string)($relation['objectUuid'] ?? ''));
-			if ($role === '' || $objectUuid === '') {
-				throw new TaskValidationException(message: 'A task relation requires both a role and an objectUuid.');
-			}
-
-			$row = new TaskRelation();
-			$row->setTaskId((int)$task->getId());
-			$row->setRole($role);
-			$row->setObjectUuid($objectUuid);
-			$row->setRegisterId($this->intOrNull(value: ($relation['registerId'] ?? null)));
-			$row->setSchemaId($this->intOrNull(value: ($relation['schemaId'] ?? null)));
-			$this->relations->insert($row);
-		}
-	}//end insertRelations()
-
-	/**
-	 * Parse a date field: DateTime passes, ISO strings parse, junk refuses.
-	 *
-	 * @param mixed $value The incoming value.
-	 * @param string $field The field name, for the refusal message.
-	 *
-	 * @return DateTime|null The parsed date, or null for absent.
-	 *
-	 * @throws TaskValidationException When present but unparsable.
-	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-due_at-advises-expires_at-enforces
-	 */
-	private function parseDate(mixed $value, string $field): ?DateTime {
-		if ($value === null || $value === '') {
-			return null;
-		}
-
-		if ($value instanceof DateTime === true) {
-			return $value;
-		}
-
-		if (is_string($value) === true) {
-			try {
-				return new DateTime($value);
-			} catch (Throwable) {
-				// Falls through to the refusal below.
-			}
-		}
-
-		throw new TaskValidationException(
-			message: sprintf("Field '%s' does not parse as a date.", $field)
-		);
-	}//end parseDate()
-
-	/**
-	 * The checklist must be a typed array of {id, label} items.
-	 *
-	 * A STRING is refused by name: procest stores JSON-in-a-string today,
-	 * which is exactly the unqueryable shape this entity removes.
-	 *
-	 * @param mixed $value The incoming checklist.
-	 *
-	 * @return array<int, array<string, mixed>>|null The validated checklist.
-	 *
-	 * @throws TaskValidationException When it is a string or malformed.
-	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-templated-task-freezes-its-template-at-creation
-	 */
-	private function validChecklist(mixed $value): ?array {
-		if ($value === null) {
-			return null;
-		}
-
-		if (is_string($value) === true) {
-			throw new TaskValidationException(
-				message: 'The checklist must be a typed array of {id, label, description, checked} items, not a string containing JSON.'
-			);
-		}
-
-		if (is_array($value) === false) {
-			throw new TaskValidationException(message: 'The checklist must be a typed array of {id, label, description, checked} items.');
-		}
-
-		$items = [];
-		foreach ($value as $item) {
-			if (is_array($item) === false || trim((string)($item['id'] ?? '')) === '' || trim((string)($item['label'] ?? '')) === '') {
-				throw new TaskValidationException(message: 'Every checklist item requires an id and a label.');
-			}
-
-			$items[] = [
-				'id' => (string)$item['id'],
-				'label' => (string)$item['label'],
-				'description' => ($item['description'] ?? null),
-				'checked' => (bool)($item['checked'] ?? false),
-			];
-		}
-
-		return $items;
-	}//end validChecklist()
-
-	/**
-	 * A trimmed string, or null for absent/empty.
-	 *
-	 * @param mixed $value The incoming value.
-	 *
-	 * @return string|null The string, or null.
-	 */
-	private function stringOrNull(mixed $value): ?string {
-		if ($value === null) {
-			return null;
-		}
-
-		$string = trim((string)$value);
-		if ($string === '') {
-			return null;
-		}
-
-		return $string;
-	}//end stringOrNull()
-
-	/**
-	 * An integer, or null for absent.
-	 *
-	 * @param mixed $value The incoming value.
-	 *
-	 * @return int|null The integer, or null.
-	 */
-	private function intOrNull(mixed $value): ?int {
-		if ($value === null || $value === '') {
-			return null;
-		}
-
-		return (int)$value;
-	}//end intOrNull()
-
-	/**
-	 * An array, or null for absent.
-	 *
-	 * @param mixed $value The incoming value.
-	 *
-	 * @return array<int|string, mixed>|null The array, or null.
-	 */
-	private function arrayOrNull(mixed $value): ?array {
-		if (is_array($value) === true) {
-			return $value;
-		}
-
-		return null;
-	}//end arrayOrNull()
 }//end class

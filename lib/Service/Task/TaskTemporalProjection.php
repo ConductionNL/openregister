@@ -87,18 +87,18 @@ final class TaskTemporalProjection {
 		$seconds = ($deadline->getTimestamp() - $now->getTimestamp());
 		$days = intdiv(abs($seconds), 86400);
 
-		$daysUntilDue = null;
-		$daysOverdue = null;
 		if ($overdue === true) {
-			$daysOverdue = $days;
-		} else {
-			$daysUntilDue = $days;
+			return [
+				'overdue' => true,
+				'daysUntilDue' => null,
+				'daysOverdue' => $days,
+			];
 		}
 
 		return [
-			'overdue' => $overdue,
-			'daysUntilDue' => $daysUntilDue,
-			'daysOverdue' => $daysOverdue,
+			'overdue' => false,
+			'daysUntilDue' => $days,
+			'daysOverdue' => null,
 		];
 	}//end project()
 }//end class

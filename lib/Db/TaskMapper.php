@@ -311,7 +311,22 @@ class TaskMapper extends QBMapper {
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	private function applyInboxPredicates(IQueryBuilder $qb, TaskInboxCriteria $criteria): void {
-		// Scope.
+		$this->applyScope(qb: $qb, criteria: $criteria);
+		$this->applyVisibility(qb: $qb, criteria: $criteria);
+		$this->applyFilters(qb: $qb, criteria: $criteria);
+	}//end applyInboxPredicates()
+
+	/**
+	 * The scope half of the predicate: which relationship the list is about.
+	 *
+	 * @param IQueryBuilder $qb The query under construction.
+	 * @param TaskInboxCriteria $criteria Carries the scope and identity.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function applyScope(IQueryBuilder $qb, TaskInboxCriteria $criteria): void {
 		switch ($criteria->scope) {
 			case TaskInboxCriteria::SCOPE_ASSIGNED:
 				$qb->andWhere($qb->expr()->eq('assignee', $qb->createNamedParameter($criteria->uid)));
@@ -329,12 +344,23 @@ class TaskMapper extends QBMapper {
 				$qb->andWhere($this->watcherPredicate(qb: $qb, uid: $criteria->uid));
 				break;
 			default:
-				// SCOPE_ALL: everything the caller may see; visibility below.
+				// SCOPE_ALL: everything the caller may see; visibility decides.
 				break;
 		}//end switch
+	}//end applyScope()
 
-		// Visibility. An administrator sees everything; anyone else sees a
-		// task only through one of the five sanctioned relationships.
+	/**
+	 * The visibility half: an administrator sees everything; anyone else
+	 * sees a task only through one of the five sanctioned relationships.
+	 *
+	 * @param IQueryBuilder $qb The query under construction.
+	 * @param TaskInboxCriteria $criteria Carries the identity facts.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function applyVisibility(IQueryBuilder $qb, TaskInboxCriteria $criteria): void {
 		if ($criteria->isAdmin === false) {
 			$qb->andWhere(
 				$qb->expr()->orX(
@@ -346,7 +372,19 @@ class TaskMapper extends QBMapper {
 			);
 		}
 
-		// Filters — all in the WHERE clause, none in PHP.
+	}//end applyVisibility()
+
+	/**
+	 * The filter half — every filter in the WHERE clause, none in PHP.
+	 *
+	 * @param IQueryBuilder $qb The query under construction.
+	 * @param TaskInboxCriteria $criteria Carries the filters.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function applyFilters(IQueryBuilder $qb, TaskInboxCriteria $criteria): void {
 		if ($criteria->states !== []) {
 			$qb->andWhere($qb->expr()->in('state', $qb->createNamedParameter($criteria->states, IQueryBuilder::PARAM_STR_ARRAY)));
 		}
@@ -377,7 +415,7 @@ class TaskMapper extends QBMapper {
 				)
 			);
 		}
-	}//end applyInboxPredicates()
+	}//end applyFilters()
 
 	/**
 	 * The caller is in the task's candidate pool (by uid or by group).

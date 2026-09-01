@@ -229,6 +229,19 @@ class Version1Date20260831120000 extends SimpleMigrationStep {
 		$table->addColumn('updated', Types::DATETIME, ['notnull' => false]);
 		$table->addColumn('created_by', Types::STRING, ['notnull' => false, 'length' => 64]);
 
+		$this->addTaskIndexes(table: $table);
+	}//end createTasksTable()
+
+	/**
+	 * The task table's indexes: one per query the inbox and propagation run.
+	 *
+	 * @param \Doctrine\DBAL\Schema\Table $table The task table.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function addTaskIndexes(\Doctrine\DBAL\Schema\Table $table): void {
 		$table->setPrimaryKey(['id']);
 		$table->addUniqueIndex(['uuid'], 'or_tasks_uuid');
 		// "My open work": the inbox's hot path.
@@ -239,7 +252,7 @@ class Version1Date20260831120000 extends SimpleMigrationStep {
 		$table->addIndex(['object_uuid'], 'or_tasks_object');
 		// Cancellation propagation.
 		$table->addIndex(['run_uuid'], 'or_tasks_run');
-	}//end createTasksTable()
+	}//end addTaskIndexes()
 
 	/**
 	 * The candidate-pool index table.

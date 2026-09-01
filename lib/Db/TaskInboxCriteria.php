@@ -32,6 +32,12 @@ use DateTime;
 /**
  * One inbox read's scope, filters and sort.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) A criteria value object:
+ * one parameter per filter the spec names, all optional. A builder or an
+ * array would hide exactly the shape this class exists to make explicit.
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag) isAdmin and sortDescending
+ * are filter VALUES carried into the WHERE/ORDER BY, not behaviour switches.
+ *
  * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
  */
 final class TaskInboxCriteria {
