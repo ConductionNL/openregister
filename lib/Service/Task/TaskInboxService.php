@@ -327,16 +327,29 @@ class TaskInboxService {
 				$serialised = $object->jsonSerialize();
 			}
 
-			$uuid = (string)($serialised['uuid'] ?? '');
+			// 🔴 THE REAL SHAPE. ObjectEntity::jsonSerialize() puts the object's
+			// own data at top level and its identity under `@self` (uuid keyed
+			// `id` there, mirrored as top-level `id`); there is no top-level
+			// `uuid`, `register` or `schema` key. Reading those flat keys made
+			// every row's subject null — the portal contract (flow-portal-task:
+			// "with their case context") shipped null case context while the
+			// unit test's hand-rolled stub agreed with the wrong shape. The
+			// flat keys stay as fallbacks for stores that serialise flat.
+			$self = [];
+			if (is_array(($serialised['@self'] ?? null)) === true) {
+				$self = $serialised['@self'];
+			}
+
+			$uuid = trim((string)($self['id'] ?? ($serialised['id'] ?? ($serialised['uuid'] ?? ''))));
 			if ($uuid === '') {
 				continue;
 			}
 
 			$contexts[$uuid] = [
 				'uuid' => $uuid,
-				'register' => ($serialised['register'] ?? null),
-				'schema' => ($serialised['schema'] ?? null),
-				'title' => ($serialised['name'] ?? ($serialised['title'] ?? null)),
+				'register' => ($self['register'] ?? ($serialised['register'] ?? null)),
+				'schema' => ($self['schema'] ?? ($serialised['schema'] ?? null)),
+				'title' => ($self['name'] ?? ($serialised['name'] ?? ($serialised['title'] ?? null))),
 			];
 		}
 

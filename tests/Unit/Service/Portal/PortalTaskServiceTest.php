@@ -51,6 +51,7 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\Task\TaskInboxService
  * @covers \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Db\PortalTaskDelivery
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Task\TaskTemporalProjection
  */
 class PortalTaskServiceTest extends TestCase {
@@ -379,6 +380,55 @@ class PortalTaskServiceTest extends TestCase {
 		$this->assertSame('t-1', $page['results'][0]['uuid']);
 		$this->assertSame('not-recorded', $page['results'][0]['delivery']['state'], 'an external row carries its delivery state');
 	}//end testTheListIsScopedToTheSubjectInTheQueryAndTheTotal()
+
+	/**
+	 * 🔴 D5 REGRESSION: a portal row carries its CASE CONTEXT (flow-portal-task:
+	 * "with their case context"). The context comes from the real
+	 * ObjectEntity serialisation — identity under `@self`, not flat keys — so
+	 * this builds the inbox WITH an object store returning a real entity: the
+	 * portal unit tests used to omit the store entirely, which made `subject`
+	 * structurally null and let the seam ship null context.
+	 *
+	 * @return void
+	 */
+	public function testAPortalRowCarriesItsCaseContext(): void {
+		$case = new \OCA\OpenRegister\Db\ObjectEntity();
+		$case->setUuid('case-7');
+		$case->setName('passport renewal');
+		$case->setRegister('3');
+		$case->setSchema('9');
+		$case->setObject(['name' => 'passport renewal', 'initiator' => 'bsn-1']);
+
+		$objects = $this->createMock(\OCA\OpenRegister\Db\AbstractObjectMapper::class);
+		$objects->method('findMultiple')->willReturn([$case]);
+
+		$inbox = new TaskInboxService(
+			tasks: $this->mapper,
+			temporal: new TaskTemporalProjection(),
+			logger: new NullLogger(),
+			objects: $objects
+		);
+		$service = new PortalTaskService(
+			tasks: $this->tasks,
+			mapper: $this->mapper,
+			inbox: $inbox,
+			temporal: new TaskTemporalProjection(),
+			files: $this->files,
+			logger: new NullLogger()
+		);
+
+		$this->mapper->method('findOpenExternalForParty')->willReturn([$this->task()]);
+		$this->mapper->method('countOpenExternalForParty')->willReturn(1);
+
+		$page = $service->listForSubject(subject: new PortalSubject(subjectRef: 'bsn-1'));
+
+		$subject = $page['results'][0]['subject'];
+		$this->assertNotNull($subject, 'the row must carry its case context');
+		$this->assertSame('case-7', $subject['uuid']);
+		$this->assertSame('passport renewal', $subject['title']);
+		$this->assertSame('3', (string)$subject['register']);
+		$this->assertSame('9', (string)$subject['schema']);
+	}//end testAPortalRowCarriesItsCaseContext()
 
 	/**
 	 * `show` answers absence for a task that is not this subject's or not external.
