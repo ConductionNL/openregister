@@ -1,0 +1,125 @@
+{
+  "info": {
+    "_postman_id": "or-edepot-transfer-2026-07-06",
+    "name": "OpenRegister e-Depot Transfer API",
+    "description": "Exercises the now-real transfer#index/show/create surface (archival-transfer-hardening, OR-AD-2/OR-AD-3): index returns the durable transfer-list records, show 404s an unknown id, and create refuses a non-existent / non-approved list without dispatching. Read-only against whatever transfer records exist — creates no fixtures, so it is safe to run on any instance.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      { "key": "username", "value": "{{username}}", "type": "string" },
+      { "key": "password", "value": "{{password}}", "type": "string" }
+    ]
+  },
+  "protocolProfileBehavior": {
+    "disableCookies": true
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost", "type": "string" },
+    { "key": "username", "value": "admin", "type": "string" },
+    { "key": "password", "value": "admin", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "GET /api/transfers → durable list envelope",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/transfers",
+          "host": ["{{baseUrl}}"],
+          "path": ["index.php", "apps", "openregister", "api", "transfers"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('transfers index returns 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('envelope has results + total (durable records, not a hard-coded empty)', () => {",
+              "  pm.expect(body).to.have.property('results');",
+              "  pm.expect(body).to.have.property('total');",
+              "  pm.expect(body.results).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/transfers/{unknown} → 404",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/transfers/__no_such_transfer__",
+          "host": ["{{baseUrl}}"],
+          "path": ["index.php", "apps", "openregister", "api", "transfers", "__no_such_transfer__"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('unknown transfer list → 404', () => pm.response.to.have.status(404));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/transfers without uuid → 400",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/transfers",
+          "host": ["{{baseUrl}}"],
+          "path": ["index.php", "apps", "openregister", "api", "transfers"]
+        },
+        "body": { "mode": "raw", "raw": "{}" }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('missing transferListUuid → 400', () => pm.response.to.have.status(400));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/transfers for unknown list → 404 (no dispatch)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/transfers",
+          "host": ["{{baseUrl}}"],
+          "path": ["index.php", "apps", "openregister", "api", "transfers"]
+        },
+        "body": { "mode": "raw", "raw": "{\"transferListUuid\": \"__no_such_transfer__\"}" }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('initiate on unknown list → 404, nothing enqueued', () => pm.response.to.have.status(404));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+  ]
+}

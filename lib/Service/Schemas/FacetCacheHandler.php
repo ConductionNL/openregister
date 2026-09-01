@@ -9,6 +9,9 @@
  * Since facets are determined by schema properties, they can be cached and
  * invalidated when schemas change, providing significant performance benefits.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -20,18 +23,17 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-30
+ * @spec openspec/specs/faceting-configuration/spec.md#requirement-schema-id-in-non-aggregated-facet-response
  */
 
 namespace OCA\OpenRegister\Service\Schemas;
 
+use DateInterval;
+use DateTime;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use DateTime;
-use DateInterval;
-use RuntimeException;
-use OCP\IDBConnection;
 use OCP\ICacheFactory;
+use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -66,466 +68,475 @@ use Psr\Log\LoggerInterface;
  *
  * @link https://www.OpenRegister.app
  */
-class FacetCacheHandler
-{
-    /**
-     * Cache table name for facet data
-     *
-     * Database table used for persistent facet caching.
-     *
-     * @var string Facet cache table name
-     */
-    private const FACET_CACHE_TABLE = 'openregister_schema_facet_cache';
+class FacetCacheHandler {
+	/**
+	 * Cache table name for facet data
+	 *
+	 * Database table used for persistent facet caching.
+	 *
+	 * @var string Facet cache table name
+	 */
+	private const FACET_CACHE_TABLE = 'openregister_schema_facet_cache';
 
-    /**
-     * Default cache TTL in seconds
-     *
-     * Default time-to-live for cached facet data (30 minutes).
-     * Facets are cached for shorter periods than schemas due to data volatility.
-     *
-     * @var int Default facet cache TTL in seconds (1800 = 30 minutes)
-     */
-    private const DEFAULT_FACET_TTL = 1800;
+	/**
+	 * Default cache TTL in seconds
+	 *
+	 * Default time-to-live for cached facet data (30 minutes).
+	 * Facets are cached for shorter periods than schemas due to data volatility.
+	 *
+	 * @var int Default facet cache TTL in seconds (1800 = 30 minutes)
+	 */
+	private const DEFAULT_FACET_TTL = 1800;
 
-    /**
-     * Maximum cache TTL for office environments
-     *
-     * Maximum time-to-live for cached facet data (8 hours in seconds).
-     * This prevents indefinite cache buildup while maintaining performance
-     * during business hours.
-     *
-     * @var int Maximum cache TTL in seconds (28800 = 8 hours)
-     */
-    private const MAX_CACHE_TTL = 28800;
+	/**
+	 * Maximum cache TTL for office environments
+	 *
+	 * Maximum time-to-live for cached facet data (8 hours in seconds).
+	 * This prevents indefinite cache buildup while maintaining performance
+	 * during business hours.
+	 *
+	 * @var int Maximum cache TTL in seconds (28800 = 8 hours)
+	 */
+	private const MAX_CACHE_TTL = 28800;
 
-    /**
-     * Facet type constant for terms facets
-     *
-     * Used for categorical/string field faceting.
-     *
-     * @var string Facet type identifier
-     */
-    private const FACET_TYPE_TERMS = 'terms';
+	/**
+	 * Facet type constant for terms facets
+	 *
+	 * Used for categorical/string field faceting.
+	 *
+	 * @var string Facet type identifier
+	 */
+	private const FACET_TYPE_TERMS = 'terms';
 
-    /**
-     * Facet type constant for date histogram facets
-     *
-     * Used for date/time field faceting with time buckets.
-     *
-     * @var string Facet type identifier
-     */
-    private const FACET_TYPE_DATE_HISTOGRAM = 'date_histogram';
+	/**
+	 * Facet type constant for date histogram facets
+	 *
+	 * Used for date/time field faceting with time buckets.
+	 *
+	 * @var string Facet type identifier
+	 */
+	private const FACET_TYPE_DATE_HISTOGRAM = 'date_histogram';
 
-    /**
-     * Facet type constant for range facets
-     *
-     * Used for numeric range faceting.
-     *
-     * @var string Facet type identifier
-     */
-    private const FACET_TYPE_RANGE = 'range';
+	/**
+	 * Facet type constant for range facets
+	 *
+	 * Used for numeric range faceting.
+	 *
+	 * @var string Facet type identifier
+	 */
+	private const FACET_TYPE_RANGE = 'range';
 
-    /**
-     * In-memory cache for facet configurations
-     *
-     * Static array cache for ultra-fast access to facet configurations.
-     * Shared across all instances of this service.
-     *
-     * @var array<string, mixed> In-memory facet configuration cache
-     */
-    private static array $facetConfigCache = [];
+	/**
+	 * In-memory cache for facet configurations
+	 *
+	 * Static array cache for ultra-fast access to facet configurations.
+	 * Shared across all instances of this service.
+	 *
+	 * @var array<string, mixed> In-memory facet configuration cache
+	 */
+	private static array $facetConfigCache = [];
 
-    /**
-     * Database connection
-     *
-     * Used for persistent facet cache storage and retrieval.
-     *
-     * @var IDBConnection Database connection instance
-     */
-    private readonly IDBConnection $db;
+	/**
+	 * Database connection
+	 *
+	 * Used for persistent facet cache storage and retrieval.
+	 *
+	 * @var IDBConnection Database connection instance
+	 */
+	private readonly IDBConnection $db;
 
-    /**
-     * Schema mapper for database operations
-     *
-     * Used to load schemas when computing facet configurations.
-     *
-     * @var SchemaMapper Schema mapper instance
-     */
-    private readonly SchemaMapper $schemaMapper;
+	/**
+	 * Schema mapper for database operations
+	 *
+	 * Used to load schemas when computing facet configurations.
+	 *
+	 * @var SchemaMapper Schema mapper instance
+	 */
+	private readonly SchemaMapper $schemaMapper;
 
-    /**
-     * Cache factory for distributed/local cache access
-     *
-     * Used to clear the facet result caches used by FacetHandler and HyperFacetHandler.
-     *
-     * @var ICacheFactory Cache factory instance
-     */
-    private readonly ICacheFactory $cacheFactory;
+	/**
+	 * Cache factory for distributed/local cache access
+	 *
+	 * Used to clear the facet result caches used by FacetHandler and HyperFacetHandler.
+	 *
+	 * @var ICacheFactory Cache factory instance
+	 */
+	private readonly ICacheFactory $cacheFactory;
 
-    /**
-     * Logger for performance monitoring
-     *
-     * Used for logging cache operations and performance metrics.
-     *
-     * @var LoggerInterface Logger instance
-     */
-    private readonly LoggerInterface $logger;
+	/**
+	 * Logger for performance monitoring
+	 *
+	 * Used for logging cache operations and performance metrics.
+	 *
+	 * @var LoggerInterface Logger instance
+	 */
+	private readonly LoggerInterface $logger;
 
-    /**
-     * Constructor
-     *
-     * Initializes service with database connection, schema mapper, cache factory, and logger
-     * for facet caching operations.
-     *
-     * @param IDBConnection   $db           Database connection for persistent facet cache
-     * @param SchemaMapper    $schemaMapper Schema mapper for loading schemas
-     * @param ICacheFactory   $cacheFactory Cache factory for distributed cache access
-     * @param LoggerInterface $logger       Logger for performance monitoring and debugging
-     *
-     * @return void
-     */
-    public function __construct(
-        IDBConnection $db,
-        SchemaMapper $schemaMapper,
-        ICacheFactory $cacheFactory,
-        LoggerInterface $logger
-    ) {
-        // Store dependencies for use in service methods.
-        $this->db           = $db;
-        $this->schemaMapper = $schemaMapper;
-        $this->cacheFactory = $cacheFactory;
-        $this->logger       = $logger;
-    }//end __construct()
+	/**
+	 * Constructor
+	 *
+	 * Initializes service with database connection, schema mapper, cache factory, and logger
+	 * for facet caching operations.
+	 *
+	 * @param IDBConnection $db Database connection for persistent facet cache
+	 * @param SchemaMapper $schemaMapper Schema mapper for loading schemas
+	 * @param ICacheFactory $cacheFactory Cache factory for distributed cache access
+	 * @param LoggerInterface $logger Logger for performance monitoring and debugging
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		IDBConnection $db,
+		SchemaMapper $schemaMapper,
+		ICacheFactory $cacheFactory,
+		LoggerInterface $logger,
+	) {
+		// Store dependencies for use in service methods.
+		$this->db = $db;
+		$this->schemaMapper = $schemaMapper;
+		$this->cacheFactory = $cacheFactory;
+		$this->logger = $logger;
+	}//end __construct()
 
-    /**
-     * Cache facetable fields configuration for a schema
-     *
-     * @param int   $schemaId        The schema ID
-     * @param array $facetableFields The facetable fields configuration
-     * @param int   $ttl             Cache TTL in seconds (longer for config)
-     *
-     * @return void
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     */
-    public function cacheFacetableFields(int $schemaId, array $facetableFields, int $ttl=7200): void
-    {
-        $this->setCachedFacetData(
-            schemaId: $schemaId,
-            cacheKey: 'facetable_fields',
-            facetType: 'config',
-            facetConfig: [],
-            data: $facetableFields,
-            ttl: $ttl
-        );
+	/**
+	 * Cache facetable fields configuration for a schema
+	 *
+	 * @param int $schemaId The schema ID
+	 * @param array $facetableFields The facetable fields configuration
+	 * @param int $ttl Cache TTL in seconds (longer for config)
+	 *
+	 * @return void
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-12
+	 */
+	public function cacheFacetableFields(int $schemaId, array $facetableFields, int $ttl = 7200): void {
+		$this->setCachedFacetData(
+			schemaId: $schemaId,
+			cacheKey: 'facetable_fields',
+			facetType: 'config',
+			facetConfig: [],
+			data: $facetableFields,
+			ttl: $ttl
+		);
 
-        // Store in memory cache.
-        $cacheKey = "facetable_fields_{$schemaId}";
-        self::$facetConfigCache[$cacheKey] = $facetableFields;
+		// Store in memory cache.
+		$cacheKey = "facetable_fields_{$schemaId}";
+		self::$facetConfigCache[$cacheKey] = $facetableFields;
 
-        $this->logger->debug(
-            message: '[FacetCacheHandler] Cached facetable fields configuration',
-            context: [
-                'file'       => __FILE__,
-                'line'       => __LINE__,
-                'schemaId'   => $schemaId,
-                'fieldCount' => count($facetableFields),
-                'ttl'        => $ttl,
-            ]
-        );
-    }//end cacheFacetableFields()
+		$this->logger->debug(
+			message: '[FacetCacheHandler] Cached facetable fields configuration',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schemaId' => $schemaId,
+				'fieldCount' => count($facetableFields),
+				'ttl' => $ttl,
+			]
+		);
+	}//end cacheFacetableFields()
 
-    /**
-     * Invalidate all cached facets for a schema
-     *
-     * **SCHEMA FACET INVALIDATION**: Called when schemas are created, updated,
-     * or deleted to ensure facet cache consistency.
-     *
-     * @param int    $schemaId  The schema ID to invalidate
-     * @param string $operation The operation performed (create/update/delete)
-     *
-     * @return void
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Operation parameter with default is not a boolean
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-30
-     */
-    public function invalidateForSchemaChange(int $schemaId, string $operation='update'): void
-    {
-        $startTime    = microtime(true);
-        $deletedCount = 0;
+	/**
+	 * Invalidate all cached facets for a schema
+	 *
+	 * **SCHEMA FACET INVALIDATION**: Called when schemas are created, updated,
+	 * or deleted to ensure facet cache consistency.
+	 *
+	 * @param int $schemaId The schema ID to invalidate
+	 * @param string $operation The operation performed (create/update/delete)
+	 *
+	 * @return void
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Operation parameter with default is not a boolean
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-schema-id-in-non-aggregated-facet-response
+	 */
+	public function invalidateForSchemaChange(int $schemaId, string $operation = 'update'): void {
+		$startTime = microtime(true);
+		$deletedCount = 0;
 
-        // Remove from database cache (if table exists).
-        try {
-            $qb = $this->db->getQueryBuilder();
-            $qb->delete(self::FACET_CACHE_TABLE)
-                ->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId)));
-            $deletedCount = $qb->executeStatement();
-        } catch (\Exception $e) {
-            // If the cache table doesn't exist yet, just log a debug message and continue.
-            // This allows the app to work even if the migration hasn't been run yet.
-            $this->logger->debug(
-                message: '[FacetCacheHandler] Schema facet cache table does not exist yet, skipping db cache invalidation',
-                context: [
-                    'file'     => __FILE__,
-                    'line'     => __LINE__,
-                    'schemaId' => $schemaId,
-                    'error'    => $e->getMessage(),
-                ]
-            );
-        }
+		// Remove from database cache (if table exists).
+		try {
+			$qb = $this->db->getQueryBuilder();
+			$qb->delete(self::FACET_CACHE_TABLE)
+				->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId)));
+			$deletedCount = $qb->executeStatement();
+		} catch (\Exception $e) {
+			// The cache is an optimisation, so a database failure must not fail
+			// the schema change that triggered it — but it is NOT expected.
+			//
+			// This block used to say the table "doesn't exist yet" and that the
+			// tolerance let the app work "even if the migration hasn't been run
+			// yet". No migration created this table, so the condition was
+			// permanent rather than transitional, and at default log level
+			// `debug` emitted nothing — the only trace was 22 `relation ...
+			// does not exist` errors per run in the Postgres server log. The
+			// table is now created by Version1Date20260809000000, so reaching
+			// this branch means something real went wrong.
+			$this->logger->warning(
+				message: '[FacetCacheHandler] Failed to invalidate the database facet cache; continuing on the memory cache only',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'schemaId' => $schemaId,
+					'error' => $e->getMessage(),
+				]
+			);
+		}//end try
 
-        // Remove from memory cache (always safe to do).
-        $memoryClearedCount = 0;
-        $cacheKeys          = array_keys(self::$facetConfigCache);
-        foreach ($cacheKeys as $key) {
-            if (str_contains($key, "_{$schemaId}") === true) {
-                unset(self::$facetConfigCache[$key]);
-                $memoryClearedCount++;
-            }
-        }
+		// Remove from memory cache (always safe to do).
+		$memoryClearedCount = 0;
+		$cacheKeys = array_keys(self::$facetConfigCache);
+		foreach ($cacheKeys as $key) {
+			if (str_contains($key, "_{$schemaId}") === true) {
+				unset(self::$facetConfigCache[$key]);
+				$memoryClearedCount++;
+			}
+		}
 
-        // Clear the distributed/local facet result caches used by FacetHandler and HyperFacetHandler.
-        // These caches store computed facet results keyed by query hash, so we must clear all entries
-        // since we cannot selectively invalidate by schema ID.
-        $this->clearDistributedFacetCaches();
+		// Clear the distributed/local facet result caches used by FacetHandler and HyperFacetHandler.
+		// These caches store computed facet results keyed by query hash, so we must clear all entries
+		// since we cannot selectively invalidate by schema ID.
+		$this->clearDistributedFacetCaches();
 
-        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
-        $this->logger->info(
-            message: '[FacetCacheHandler] Schema facet cache invalidated',
-            context: [
-                'file'                 => __FILE__,
-                'line'                 => __LINE__,
-                'schemaId'             => $schemaId,
-                'operation'            => $operation,
-                'deletedDbEntries'     => $deletedCount,
-                'clearedMemoryEntries' => $memoryClearedCount,
-                'executionTime'        => $executionTime.'ms',
-            ]
-        );
-    }//end invalidateForSchemaChange()
+		$this->logger->info(
+			message: '[FacetCacheHandler] Schema facet cache invalidated',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schemaId' => $schemaId,
+				'operation' => $operation,
+				'deletedDbEntries' => $deletedCount,
+				'clearedMemoryEntries' => $memoryClearedCount,
+				'executionTime' => $executionTime . 'ms',
+			]
+		);
+	}//end invalidateForSchemaChange()
 
-    /**
-     * Clear all facet caches (Administrative Operation)
-     *
-     * **NUCLEAR OPTION**: Clears all facet caches for all schemas.
-     * Use with caution as it will impact performance until caches are rebuilt.
-     *
-     * @return void
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     */
-    public function clearAllCaches(): void
-    {
-        $startTime = microtime(true);
+	/**
+	 * Clear all facet caches (Administrative Operation)
+	 *
+	 * **NUCLEAR OPTION**: Clears all facet caches for all schemas.
+	 * Use with caution as it will impact performance until caches are rebuilt.
+	 *
+	 * @return void
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-12
+	 */
+	public function clearAllCaches(): void {
+		$startTime = microtime(true);
 
-        // Clear database cache.
-        $qb = $this->db->getQueryBuilder();
-        $qb->delete(self::FACET_CACHE_TABLE);
-        $deletedCount = $qb->executeStatement();
+		// Clear database cache.
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete(self::FACET_CACHE_TABLE);
+		$deletedCount = $qb->executeStatement();
 
-        // Clear memory cache.
-        $memoryCacheSize        = count(self::$facetConfigCache);
-        self::$facetConfigCache = [];
+		// Clear memory cache.
+		$memoryCacheSize = count(self::$facetConfigCache);
+		self::$facetConfigCache = [];
 
-        // Clear the distributed/local facet result caches.
-        $this->clearDistributedFacetCaches();
+		// Clear the distributed/local facet result caches.
+		$this->clearDistributedFacetCaches();
 
-        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
-        $this->logger->info(
-            message: '[FacetCacheHandler] All facet caches cleared',
-            context: [
-                'file'                 => __FILE__,
-                'line'                 => __LINE__,
-                'deletedDbEntries'     => $deletedCount,
-                'clearedMemoryEntries' => $memoryCacheSize,
-                'executionTime'        => $executionTime.'ms',
-            ]
-        );
-    }//end clearAllCaches()
+		$this->logger->info(
+			message: '[FacetCacheHandler] All facet caches cleared',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'deletedDbEntries' => $deletedCount,
+				'clearedMemoryEntries' => $memoryCacheSize,
+				'executionTime' => $executionTime . 'ms',
+			]
+		);
+	}//end clearAllCaches()
 
-    /**
-     * Clean expired facet cache entries
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @return int The number of deleted cache entries.
-     */
-    public function cleanExpiredEntries(): int
-    {
-        $startTime = microtime(true);
+	/**
+	 * Clean expired facet cache entries
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 *
+	 * @return int The number of deleted cache entries.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-12
+	 */
+	public function cleanExpiredEntries(): int {
+		$startTime = microtime(true);
 
-        $qb = $this->db->getQueryBuilder();
-        $qb->delete(self::FACET_CACHE_TABLE)
-            ->where($qb->expr()->isNotNull('expires'))
-            ->andWhere($qb->expr()->lt('expires', $qb->createNamedParameter(new DateTime(), 'datetime')));
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete(self::FACET_CACHE_TABLE)
+			->where($qb->expr()->isNotNull('expires'))
+			->andWhere($qb->expr()->lt('expires', $qb->createNamedParameter(new DateTime(), 'datetime')));
 
-        $deletedCount = $qb->executeStatement();
+		$deletedCount = $qb->executeStatement();
 
-        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
-        if ($deletedCount > 0) {
-            $this->logger->info(
-                message: '[FacetCacheHandler] Cleaned expired facet cache entries',
-                context: [
-                    'file'          => __FILE__,
-                    'line'          => __LINE__,
-                    'count'         => $deletedCount,
-                    'executionTime' => $executionTime.'ms',
-                ]
-            );
-        }
+		if ($deletedCount > 0) {
+			$this->logger->info(
+				message: '[FacetCacheHandler] Cleaned expired facet cache entries',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'count' => $deletedCount,
+					'executionTime' => $executionTime . 'ms',
+				]
+			);
+		}
 
-        return $deletedCount;
-    }//end cleanExpiredEntries()
+		return $deletedCount;
+	}//end cleanExpiredEntries()
 
-    /**
-     * Get comprehensive facet cache statistics
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @return array Statistics with total entries, by type, memory cache size, cache table, query time, timestamp.
-     */
-    public function getCacheStatistics(): array
-    {
-        $startTime = microtime(true);
+	/**
+	 * Get comprehensive facet cache statistics
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 *
+	 * @return array Statistics with total entries, by type, memory cache size, cache table, query time, timestamp.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-12
+	 */
+	public function getCacheStatistics(): array {
+		$startTime = microtime(true);
 
-        $qb = $this->db->getQueryBuilder();
-        $qb->select($qb->func()->count('id', 'total_entries'))
-            ->addSelect('facet_type')
-            ->addSelect($qb->func()->count('id', 'count'))
-            ->from(self::FACET_CACHE_TABLE)
-            ->groupBy('facet_type');
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('id', 'total_entries'))
+			->addSelect('facet_type')
+			->addSelect($qb->func()->count('id', 'count'))
+			->from(self::FACET_CACHE_TABLE)
+			->groupBy('facet_type');
 
-        $results = $qb->executeQuery()->fetchAll();
+		$results = $qb->executeQuery()->fetchAll();
 
-        $stats = [
-            'total_entries'     => 0,
-            'by_type'           => [],
-            'memory_cache_size' => count(self::$facetConfigCache),
-            'cache_table'       => self::FACET_CACHE_TABLE,
-        ];
+		$stats = [
+			'total_entries' => 0,
+			'by_type' => [],
+			'memory_cache_size' => count(self::$facetConfigCache),
+			'cache_table' => self::FACET_CACHE_TABLE,
+		];
 
-        foreach ($results as $result) {
-            $stats['total_entries'] += (int) $result['count'];
-            $stats['by_type'][$result['facet_type']] = (int) $result['count'];
-        }
+		foreach ($results as $result) {
+			$stats['total_entries'] += (int)$result['count'];
+			$stats['by_type'][$result['facet_type']] = (int)$result['count'];
+		}
 
-        $executionTime       = round((microtime(true) - $startTime) * 1000, 2);
-        $stats['query_time'] = $executionTime.'ms';
-        $stats['timestamp']  = time();
+		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
+		$stats['query_time'] = $executionTime . 'ms';
+		$stats['timestamp'] = time();
 
-        return $stats;
-    }//end getCacheStatistics()
+		return $stats;
+	}//end getCacheStatistics()
 
-    /**
-     * Clear distributed/local facet result caches
-     *
-     * Clears the IMemcache caches used by FacetHandler, HyperFacetHandler,
-     * and MagicFacetHandler for storing computed facet results and labels.
-     * These caches use prefix-based keys, so we clear the entire cache prefix.
-     *
-     * @return void
-     */
-    private function clearDistributedFacetCaches(): void
-    {
-        $cacheNames = ['openregister_facets', 'openregister_facet_labels'];
+	/**
+	 * Clear distributed/local facet result caches
+	 *
+	 * Clears the IMemcache caches used by FacetHandler, HyperFacetHandler,
+	 * and MagicFacetHandler for storing computed facet results and labels.
+	 * These caches use prefix-based keys, so we clear the entire cache prefix.
+	 *
+	 * @return void
+	 */
+	private function clearDistributedFacetCaches(): void {
+		$cacheNames = ['openregister_facets', 'openregister_facet_labels'];
 
-        foreach ($cacheNames as $cacheName) {
-            try {
-                $cache = $this->cacheFactory->createDistributed($cacheName);
-                $cache->clear();
-            } catch (\Exception $e) {
-                // Fallback to local cache.
-                try {
-                    $cache = $this->cacheFactory->createLocal($cacheName);
-                    $cache->clear();
-                } catch (\Exception $e) {
-                    // No cache available, nothing to clear.
-                }
-            }
-        }
+		foreach ($cacheNames as $cacheName) {
+			try {
+				$cache = $this->cacheFactory->createDistributed($cacheName);
+				$cache->clear();
+			} catch (\Exception $e) {
+				// Fallback to local cache.
+				try {
+					$cache = $this->cacheFactory->createLocal($cacheName);
+					$cache->clear();
+				} catch (\Exception $e) {
+					// No cache available, nothing to clear.
+				}
+			}
+		}
 
-        $this->logger->debug(
-            message: '[FacetCacheHandler] Distributed facet result caches cleared',
-            context: [
-                'file'   => __FILE__,
-                'line'   => __LINE__,
-                'caches' => $cacheNames,
-            ]
-        );
-    }//end clearDistributedFacetCaches()
+		$this->logger->debug(
+			message: '[FacetCacheHandler] Distributed facet result caches cleared',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'caches' => $cacheNames,
+			]
+		);
+	}//end clearDistributedFacetCaches()
 
-    /**
-     * Set cached facet data in database
-     *
-     * @param int    $schemaId    Schema ID
-     * @param string $cacheKey    Cache key
-     * @param string $facetType   Facet type
-     * @param array  $facetConfig Facet configuration
-     * @param mixed  $data        Data to cache
-     * @param int    $ttl         Cache TTL in seconds
-     *
-     * @return void
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Database upsert logic with conditional insert/update
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Multiple cache configuration parameters required
-     * Insert alternative when update returns zero rows
-     */
-    private function setCachedFacetData(
-        int $schemaId,
-        string $cacheKey,
-        string $facetType,
-        array $facetConfig,
-        mixed $data,
-        int $ttl
-    ): void {
-        // Enforce maximum cache TTL for office environments.
-        $ttl = min($ttl, self::MAX_CACHE_TTL);
+	/**
+	 * Set cached facet data in database
+	 *
+	 * @param int $schemaId Schema ID
+	 * @param string $cacheKey Cache key
+	 * @param string $facetType Facet type
+	 * @param array $facetConfig Facet configuration
+	 * @param mixed $data Data to cache
+	 * @param int $ttl Cache TTL in seconds
+	 *
+	 * @return void
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Database upsert logic with conditional insert/update
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Multiple cache configuration parameters required
+	 * Insert alternative when update returns zero rows
+	 */
+	private function setCachedFacetData(
+		int $schemaId,
+		string $cacheKey,
+		string $facetType,
+		array $facetConfig,
+		mixed $data,
+		int $ttl,
+	): void {
+		// Enforce maximum cache TTL for office environments.
+		$ttl = min($ttl, self::MAX_CACHE_TTL);
 
-        $now = new DateTime();
-        if ($ttl > 0) {
-            $expires = (clone $now)->add(new DateInterval("PT{$ttl}S"));
-        } else {
-            $expires = null;
-        }
+		$now = new DateTime();
+		$expires = null;
+		if ($ttl > 0) {
+			$expires = (clone $now)->add(new DateInterval("PT{$ttl}S"));
+		}
 
-        // Use INSERT ... ON DUPLICATE KEY UPDATE pattern.
-        $qb = $this->db->getQueryBuilder();
+		// Use INSERT ... ON DUPLICATE KEY UPDATE pattern.
+		$qb = $this->db->getQueryBuilder();
 
-        // Try update first.
-        $qb->update(self::FACET_CACHE_TABLE)
-            ->set('cache_data', $qb->createNamedParameter(json_encode($data)))
-            ->set('updated', $qb->createNamedParameter($now, 'datetime'))
-            ->set('expires', $qb->createNamedParameter($expires, 'datetime'))
-            ->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId)))
-            ->andWhere($qb->expr()->eq('field_name', $qb->createNamedParameter($cacheKey)));
+		// Try update first.
+		$qb->update(self::FACET_CACHE_TABLE)
+			->set('cache_data', $qb->createNamedParameter(json_encode($data)))
+			->set('updated', $qb->createNamedParameter($now, 'datetime'))
+			->set('expires', $qb->createNamedParameter($expires, 'datetime'))
+			->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId)))
+			->andWhere($qb->expr()->eq('field_name', $qb->createNamedParameter($cacheKey)));
 
-        $updated = $qb->executeStatement();
+		$updated = $qb->executeStatement();
 
-        // If no rows updated, insert new record.
-        if ($updated === 0) {
-            $qb = $this->db->getQueryBuilder();
-            $qb->insert(self::FACET_CACHE_TABLE)
-                ->values(
-                    values: [
-                        'schema_id'    => $qb->createNamedParameter($schemaId),
-                        'facet_type'   => $qb->createNamedParameter($facetType),
-                        'field_name'   => $qb->createNamedParameter($cacheKey),
-                        'facet_config' => $qb->createNamedParameter(json_encode($facetConfig)),
-                        'cache_data'   => $qb->createNamedParameter(json_encode($data)),
-                        'created'      => $qb->createNamedParameter($now, 'datetime'),
-                        'updated'      => $qb->createNamedParameter($now, 'datetime'),
-                        'expires'      => $qb->createNamedParameter($expires, 'datetime'),
-                    ]
-                );
-            $qb->executeStatement();
-        }
-    }//end setCachedFacetData()
+		// If no rows updated, insert new record.
+		if ($updated === 0) {
+			$qb = $this->db->getQueryBuilder();
+			$qb->insert(self::FACET_CACHE_TABLE)
+				->values(
+					values: [
+						'schema_id' => $qb->createNamedParameter($schemaId),
+						'facet_type' => $qb->createNamedParameter($facetType),
+						'field_name' => $qb->createNamedParameter($cacheKey),
+						'facet_config' => $qb->createNamedParameter(json_encode($facetConfig)),
+						'cache_data' => $qb->createNamedParameter(json_encode($data)),
+						'created' => $qb->createNamedParameter($now, 'datetime'),
+						'updated' => $qb->createNamedParameter($now, 'datetime'),
+						'expires' => $qb->createNamedParameter($expires, 'datetime'),
+					]
+				);
+			$qb->executeStatement();
+		}
+	}//end setCachedFacetData()
 }//end class

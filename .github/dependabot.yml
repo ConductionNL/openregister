@@ -1,0 +1,76 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "development"
+    open-pull-requests-limit: 10
+    # HELD BACK DELIBERATELY, not out of caution. Each of these is blocked by a
+    # package we do not control, and dependabot cannot see that, so it proposes
+    # them on every run and each one takes `npm ci` or `npm run build` from
+    # green to red with no code change that can fix it.
+    #
+    # typescript 7:  typescript-eslint hard-throws on TS >= 7 (a `versionMajor
+    #                >= 7` guard in its dist/index.js) and every published
+    #                version still peers `typescript: ">=4.8.4 <6.1.0"`.
+    # webpack-cli 7: @nextcloud/webpack-vue-config 7.0.4, the latest, peers
+    #                `webpack-cli: ^6.0.1`.
+    # @babel/core 8: the same package peers `@babel/core: ^7.22.9`, and
+    #                preset-env 8 requires core 8, so the pair moves together
+    #                or not at all.
+    #
+    # Lift each the moment its blocker ships support. These are compatibility
+    # limits, not security ones: `npm audit` reports no advisory against any of
+    # the versions pinned here.
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # vue-router 5 peers `vite: ^7.3.0 || ^8.0.0` and expects a Vite
+      # toolchain. Measured, not assumed, and the result is SPLIT: integriq and
+      # zaakafhandelapp fail their build on `Can't resolve 'vue-router'`, while
+      # openregister and learniq build clean on 5.3.0. Held because a bump that
+      # breaks some apps and not others cannot be merged unattended, and the
+      # difference is not yet understood. Adopting it fleet-wide is a
+      # Vite migration, not a bump. versioniq is already on Vite and is the
+      # natural pilot.
+      - dependency-name: "vue-router"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "webpack-cli"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@babel/core"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@babel/preset-env"
+        update-types: ["version-update:semver-major"]
+    cooldown:
+      default-days: 1
+      include:
+        - "*"
+      exclude:
+        - "@conduction/*"
+
+  # Composer had NO entry at all, so PHP dependencies were updated with no
+  # cooldown whatsoever — the window in which a compromised release is still
+  # published is exactly the window an instant update walks into. `npm` above
+  # has had one for a while; composer was simply never added, which is not a
+  # decision anyone made.
+  #
+  # Two days rather than one: that is the floor gate-93 enforces, and the npm
+  # entry's single day predates it.
+  #
+  # Our own packages are excluded from the wait on purpose. A cooldown protects
+  # against a compromised upstream release; `conduction/*` comes from this
+  # fleet's own CI, and delaying it would only slow the loop between a fix
+  # being released here and arriving here.
+  - package-ecosystem: "composer"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "development"
+    open-pull-requests-limit: 10
+    cooldown:
+      default-days: 2
+      include:
+        - "*"
+      exclude:
+        - "conduction/*"

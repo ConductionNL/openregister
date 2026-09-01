@@ -6,6 +6,8 @@
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
     "build": "docusaurus build",
+    "postbuild": "validate-ai-baseline",
+    "validate:ai-baseline": "validate-ai-baseline",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",
@@ -15,6 +17,7 @@
     "ci": "npm ci --legacy-peer-deps && npm run build"
   },
   "dependencies": {
+    "@conduction/docusaurus-preset": "^3.24.0",
     "@docusaurus/core": "^3.7.0",
     "@docusaurus/preset-classic": "^3.7.0",
     "@docusaurus/theme-mermaid": "^3.7.0",
@@ -28,6 +31,35 @@
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "^3.7.0"
+  },
+  "overrides": {
+    "@babel/core": "7.29.7",
+    "@babel/plugin-transform-modules-systemjs": "7.29.8",
+    "body-parser": "1.20.6",
+    "dompurify": "3.4.14",
+    "estree-util-value-to-estree": "3.5.0",
+    "fast-uri": "3.1.6",
+    "fast-xml-parser": "4.5.7",
+    "follow-redirects": "1.16.0",
+    "http-proxy-middleware": "2.0.10",
+    "image-size": "1.2.1",
+    "joi": "17.13.6",
+    "launch-editor": "2.14.1",
+    "lodash": "4.18.1",
+    "lodash-es": "4.18.1",
+    "mdast-util-to-hast": "13.2.1",
+    "mermaid": "11.17.2",
+    "nanoid": "3.3.18",
+    "node-forge": "1.4.0",
+    "on-headers": "1.1.0",
+    "picomatch": "2.3.2",
+    "postcss": "8.5.26",
+    "qs": "6.15.3",
+    "redoc": "2.5.3",
+    "shell-quote": "1.10.0",
+    "svgo": "3.3.5",
+    "websocket-driver": "0.7.5",
+    "yaml": "1.10.3"
   },
   "browserslist": {
     "production": [

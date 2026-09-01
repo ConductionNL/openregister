@@ -6,10 +6,13 @@
  * Listens for object CRUD events and pushes them to the
  * GraphQL subscription buffer for SSE delivery.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
@@ -29,46 +32,44 @@ use Psr\Log\LoggerInterface;
  *
  * @implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectDeletedEvent>
  */
-class GraphQLSubscriptionListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param SubscriptionService $subscriptionService Subscription service
-     * @param LoggerInterface     $logger              Logger
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-11
-     */
-    public function __construct(
-        private readonly SubscriptionService $subscriptionService,
-        private readonly LoggerInterface $logger,
-    ) {
-    }//end __construct()
+class GraphQLSubscriptionListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param SubscriptionService $subscriptionService Subscription service
+	 * @param LoggerInterface $logger Logger
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	public function __construct(
+		private readonly SubscriptionService $subscriptionService,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Handle an event.
-     *
-     * @param Event $event The event
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-11
-     */
-    public function handle(Event $event): void
-    {
-        try {
-            if ($event instanceof ObjectCreatedEvent) {
-                $this->subscriptionService->pushEvent('create', $event->getObject());
-            } else if ($event instanceof ObjectUpdatedEvent) {
-                $this->subscriptionService->pushEvent('update', $event->getObject());
-            } else if ($event instanceof ObjectDeletedEvent) {
-                $this->subscriptionService->pushEvent('delete', $event->getObject());
-            }
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                'GraphQL subscription event push failed: '.$e->getMessage()
-            );
-        }
+	/**
+	 * Handle an event.
+	 *
+	 * @param Event $event The event
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	public function handle(Event $event): void {
+		try {
+			if ($event instanceof ObjectCreatedEvent) {
+				$this->subscriptionService->pushEvent('create', $event->getObject());
+			} elseif ($event instanceof ObjectUpdatedEvent) {
+				$this->subscriptionService->pushEvent('update', $event->getObject());
+			} elseif ($event instanceof ObjectDeletedEvent) {
+				$this->subscriptionService->pushEvent('delete', $event->getObject());
+			}
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				'GraphQL subscription event push failed: ' . $e->getMessage()
+			);
+		}
 
-    }//end handle()
+	}//end handle()
 }//end class

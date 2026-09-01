@@ -6,6 +6,9 @@
  * Interface for LLphant function tools that agents can use to interact
  * with OpenRegister data.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Tool
  * @package  OCA\OpenRegister\Tool
  *
@@ -30,89 +33,88 @@ namespace OCA\OpenRegister\Tool;
  * @category Tool
  * @package  OCA\OpenRegister\Tool
  */
-interface ToolInterface
-{
-    /**
-     * Get the tool name
-     *
-     * This name is used to identify the tool and must be unique.
-     * It's also used in the Agent's tools array to enable/disable tools.
-     *
-     * @return string Tool name (e.g., 'register', 'schema', 'objects')
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
-     */
-    public function getName(): string;
+interface ToolInterface {
+	/**
+	 * Get the tool name
+	 *
+	 * This name is used to identify the tool and must be unique.
+	 * It's also used in the Agent's tools array to enable/disable tools.
+	 *
+	 * @return string Tool name (e.g., 'register', 'schema', 'objects')
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getName(): string;
 
-    /**
-     * Get the tool description
-     *
-     * This description helps the LLM understand when and how to use this tool.
-     * Should clearly describe the tool's purpose and capabilities.
-     *
-     * @return string Tool description for LLM
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
-     */
-    public function getDescription(): string;
+	/**
+	 * Get the tool description
+	 *
+	 * This description helps the LLM understand when and how to use this tool.
+	 * Should clearly describe the tool's purpose and capabilities.
+	 *
+	 * @return string Tool description for LLM
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getDescription(): string;
 
-    /**
-     * Get the tool's function definitions for LLphant
-     *
-     * Returns an array of function definitions that LLphant can call.
-     * Each function definition includes name, description, and parameters schema.
-     *
-     * Format:
-     * [
-     *     [
-     *         'name' => 'function_name',
-     *         'description' => 'What this function does',
-     *         'parameters' => [
-     *             'type' => 'object',
-     *             'properties' => [
-     *                 'param1' => ['type' => 'string', 'description' => '...'],
-     *                 'param2' => ['type' => 'integer', 'description' => '...']
-     *             ],
-     *             'required' => ['param1']
-     *         ]
-     *     ]
-     * ]
-     *
-     * @return array Array of function definitions
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
-     */
-    public function getFunctions(): array;
+	/**
+	 * Get the tool's function definitions for LLphant
+	 *
+	 * Returns an array of function definitions that LLphant can call.
+	 * Each function definition includes name, description, and parameters schema.
+	 *
+	 * Format:
+	 * [
+	 *     [
+	 *         'name' => 'function_name',
+	 *         'description' => 'What this function does',
+	 *         'parameters' => [
+	 *             'type' => 'object',
+	 *             'properties' => [
+	 *                 'param1' => ['type' => 'string', 'description' => '...'],
+	 *                 'param2' => ['type' => 'integer', 'description' => '...']
+	 *             ],
+	 *             'required' => ['param1']
+	 *         ]
+	 *     ]
+	 * ]
+	 *
+	 * @return array Array of function definitions
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getFunctions(): array;
 
-    /**
-     * Execute a tool function
-     *
-     * Called by the LLM when it wants to use this tool.
-     * The function name and parameters are provided by the LLM.
-     *
-     * @param string      $functionName Name of the function to execute
-     * @param array       $parameters   Function parameters from LLM
-     * @param string|null $userId       User ID for session context (optional)
-     *
-     * @return array Result of the function execution
-     *
-     * @throws \Exception If function execution fails
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
-     */
-    public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array;
+	/**
+	 * Execute a tool function
+	 *
+	 * Called by the LLM when it wants to use this tool.
+	 * The function name and parameters are provided by the LLM.
+	 *
+	 * @param string $functionName Name of the function to execute
+	 * @param array $parameters Function parameters from LLM
+	 * @param string|null $userId User ID for session context (optional)
+	 *
+	 * @return array Result of the function execution
+	 *
+	 * @throws \Exception If function execution fails
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array;
 
-    /**
-     * Set the agent context
-     *
-     * Called when tool is used by an agent to provide agent context
-     * for view filtering and permissions.
-     *
-     * @param \OCA\OpenRegister\Db\Agent|null $agent The agent using this tool
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
-     */
-    public function setAgent(?\OCA\OpenRegister\Db\Agent $agent): void;
+	/**
+	 * Set the agent context
+	 *
+	 * Called when tool is used by an agent to provide agent context
+	 * for view filtering and permissions.
+	 *
+	 * @param \OCA\OpenRegister\Db\Agent|null $agent The agent using this tool
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function setAgent(?\OCA\OpenRegister\Db\Agent $agent): void;
 }//end interface

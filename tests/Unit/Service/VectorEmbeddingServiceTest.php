@@ -9,28 +9,25 @@ use ReflectionMethod;
 /**
  * Unit tests for VectorSearchHandler (cosine similarity, RRF)
  */
-class VectorEmbeddingServiceTest extends TestCase
-{
+class VectorEmbeddingServiceTest extends TestCase {
 	/** @var VectorSearchHandler */
 	private $handler;
 
-	protected function setUp(): void
-	{
+	protected function setUp(): void {
 		parent::setUp();
 
 		$db = $this->createMock(\OCP\IDBConnection::class);
-		$settings = $this->createMock(\OCA\OpenRegister\Service\SettingsService::class);
-		$indexService = $this->createMock(\OCA\OpenRegister\Service\IndexService::class);
+		$pgVector = $this->createMock(\OCA\OpenRegister\Service\Vectorization\Handlers\PgVectorPlatform::class);
+		$pgVector->method('getVectorColumnDimension')->willReturn(null);
 		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
 
-		$this->handler = new VectorSearchHandler($db, $settings, $indexService, $logger);
+		$this->handler = new VectorSearchHandler($db, $pgVector, $logger);
 	}
 
 	/**
 	 * Invoke a private/protected method on the handler.
 	 */
-	private function invokeMethod(string $methodName, array $args = []): mixed
-	{
+	private function invokeMethod(string $methodName, array $args = []): mixed {
 		$method = new ReflectionMethod($this->handler, $methodName);
 		$method->setAccessible(true);
 		return $method->invokeArgs($this->handler, $args);
@@ -39,8 +36,7 @@ class VectorEmbeddingServiceTest extends TestCase
 	/**
 	 * Helper to build a vector result entry matching the expected format.
 	 */
-	private function makeVectorResult(string $id, float $similarity, string $entityType = 'object'): array
-	{
+	private function makeVectorResult(string $id, float $similarity, string $entityType = 'object'): array {
 		return [
 			'entity_type' => $entityType,
 			'entity_id' => $id,
@@ -54,8 +50,7 @@ class VectorEmbeddingServiceTest extends TestCase
 	/**
 	 * Helper to build a SOLR result entry matching the expected format.
 	 */
-	private function makeSolrResult(string $id, float $score, string $entityType = 'object'): array
-	{
+	private function makeSolrResult(string $id, float $score, string $entityType = 'object'): array {
 		return [
 			'entity_type' => $entityType,
 			'entity_id' => $id,
@@ -66,47 +61,40 @@ class VectorEmbeddingServiceTest extends TestCase
 		];
 	}
 
-	public function testCosineSimilarityIdentical()
-	{
+	public function testCosineSimilarityIdentical() {
 		$similarity = $this->invokeMethod('cosineSimilarity', [[1.0, 0.0, 0.0], [1.0, 0.0, 0.0]]);
 		$this->assertEqualsWithDelta(1.0, $similarity, 0.001);
 	}
 
-	public function testCosineSimilarityOrthogonal()
-	{
+	public function testCosineSimilarityOrthogonal() {
 		$similarity = $this->invokeMethod('cosineSimilarity', [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]);
 		$this->assertEqualsWithDelta(0.0, $similarity, 0.001);
 	}
 
-	public function testCosineSimilarityOpposite()
-	{
+	public function testCosineSimilarityOpposite() {
 		$similarity = $this->invokeMethod('cosineSimilarity', [[1.0, 0.0], [-1.0, 0.0]]);
 		$this->assertEqualsWithDelta(-1.0, $similarity, 0.001);
 	}
 
-	public function testCosineSimilarityPartial()
-	{
+	public function testCosineSimilarityPartial() {
 		$similarity = $this->invokeMethod('cosineSimilarity', [[1.0, 1.0, 0.0], [1.0, 0.0, 0.0]]);
 		// cos(45) = 0.707.
 		$this->assertGreaterThan(0.7, $similarity);
 		$this->assertLessThan(0.8, $similarity);
 	}
 
-	public function testCosineSimilarityHighDimensional()
-	{
+	public function testCosineSimilarityHighDimensional() {
 		$v = array_fill(0, 1536, 1.0);
 		$similarity = $this->invokeMethod('cosineSimilarity', [$v, $v]);
 		$this->assertEqualsWithDelta(1.0, $similarity, 0.001);
 	}
 
-	public function testCosineSimilarityNormalization()
-	{
+	public function testCosineSimilarityNormalization() {
 		$similarity = $this->invokeMethod('cosineSimilarity', [[2.0, 2.0], [1.0, 1.0]]);
 		$this->assertEqualsWithDelta(1.0, $similarity, 0.001);
 	}
 
-	public function testReciprocalRankFusionBasic()
-	{
+	public function testReciprocalRankFusionBasic() {
 		$vector = [
 			$this->makeVectorResult('A', 0.9),
 			$this->makeVectorResult('B', 0.8),
@@ -125,8 +113,7 @@ class VectorEmbeddingServiceTest extends TestCase
 		$this->assertGreaterThan(0, $merged[0]['combined_score']);
 	}
 
-	public function testReciprocalRankFusionOnlyVector()
-	{
+	public function testReciprocalRankFusionOnlyVector() {
 		$vector = [
 			$this->makeVectorResult('A', 0.9),
 			$this->makeVectorResult('B', 0.8),
@@ -138,8 +125,7 @@ class VectorEmbeddingServiceTest extends TestCase
 		$this->assertEquals('B', $merged[1]['entity_id']);
 	}
 
-	public function testReciprocalRankFusionOnlySolr()
-	{
+	public function testReciprocalRankFusionOnlySolr() {
 		$solr = [
 			$this->makeSolrResult('X', 10.0),
 			$this->makeSolrResult('Y', 8.0),
@@ -151,8 +137,7 @@ class VectorEmbeddingServiceTest extends TestCase
 		$this->assertEquals('Y', $merged[1]['entity_id']);
 	}
 
-	public function testReciprocalRankFusionWeights()
-	{
+	public function testReciprocalRankFusionWeights() {
 		// A appears at rank 0 in vector, B at rank 0 in solr.
 		// With vector-heavy weights, A should rank higher; with solr-heavy, B should rank higher.
 		$vector = [$this->makeVectorResult('A', 0.9)];
@@ -167,8 +152,7 @@ class VectorEmbeddingServiceTest extends TestCase
 		$this->assertEquals('B', $merged2[0]['entity_id']);
 	}
 
-	public function testReciprocalRankFusionPreservesMetadata()
-	{
+	public function testReciprocalRankFusionPreservesMetadata() {
 		$vector = [[
 			'entity_type' => 'object',
 			'entity_id' => 'A',
@@ -187,8 +171,7 @@ class VectorEmbeddingServiceTest extends TestCase
 		$this->assertEquals(['title' => 'Title A'], $merged[0]['metadata']);
 	}
 
-	public function testReciprocalRankFusionLargeDataset()
-	{
+	public function testReciprocalRankFusionLargeDataset() {
 		$vector = [];
 		for ($i = 1; $i <= 100; $i++) {
 			$vector[] = $this->makeVectorResult('V' . $i, 1.0 - ($i * 0.005));

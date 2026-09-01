@@ -1,15 +1,19 @@
 /**
- * Composable for managing email link API state.
+ * Composable for managing email link API state. Powers the three-tab
+ * sidebar's Objects + Link data flow (cache, abort, sender-suggestion
+ * de-dup against linked uuids).
  *
- * @package OpenRegister
+ * @package
+ *
+ * @spec openspec/specs/mail-sidebar/spec.md
  */
 
 import { ref } from 'vue'
 import {
-	fetchLinkedObjects,
-	fetchSenderObjects,
 	createQuickLink,
 	deleteEmailLink,
+	fetchLinkedObjects,
+	fetchSenderObjects,
 } from '../api/emailLinks.js'
 
 /**
@@ -46,7 +50,7 @@ export function useEmailLinks() {
 	 * @param {number} accountId The mail account ID.
 	 * @param {number} messageId The mail message ID.
 	 * @param {string} [sender] The sender email address for discovery.
-	 * @param {boolean} [useCache=true] Whether to use cached results.
+	 * @param {boolean} [useCache] Whether to use cached results.
 	 */
 	async function loadForMessage(accountId, messageId, sender, useCache = true) {
 		const key = cacheKey(accountId, messageId)
@@ -77,7 +81,11 @@ export function useEmailLinks() {
 			const signal = currentAbortController.signal
 
 			// Fetch linked objects
-			const linkedResult = await fetchLinkedObjects(accountId, messageId, signal)
+			const linkedResult = await fetchLinkedObjects(
+				accountId,
+				messageId,
+				signal,
+			)
 			linkedObjects.value = linkedResult.results || []
 			total.value = linkedResult.total || 0
 
@@ -106,9 +114,12 @@ export function useEmailLinks() {
 			if (err.name === 'AbortError' || err.name === 'CanceledError') {
 				return
 			}
-			error.value = err.response?.status >= 500
-				? 'server'
-				: (err.code === 'ECONNABORTED' ? 'timeout' : 'network')
+			error.value =
+				err.response?.status >= 500
+					? 'server'
+					: err.code === 'ECONNABORTED'
+						? 'timeout'
+						: 'network'
 			linkedObjects.value = []
 			suggestedObjects.value = []
 		} finally {

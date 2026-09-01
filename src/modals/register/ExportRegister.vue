@@ -1,30 +1,41 @@
 <script setup>
-import { translate as t } from '@nextcloud/l10n'
-import { registerStore, navigationStore, schemaStore } from '../../store/store.js'
-import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
+import { navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'exportRegister'"
+	<NcDialog
+		v-if="navigationStore.modal === 'exportRegister'"
 		name="export-register-dialog"
-		title="Export Objects"
+		:title="t('openregister', 'Export Objects')"
 		size="small"
-		:can-close="false">
+		:canClose="false">
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
 		</NcNoteCard>
 
 		<div class="formContainer">
-			<p>Export "{{ schemaTitle }}" objects from "{{ registerTitle }}"</p>
+			<p>
+				{{
+					t(
+						'openregister',
+						'Export "{schema}" objects from "{register}"',
+						{ schema: schemaTitle, register: registerTitle },
+					)
+				}}
+			</p>
 
 			<div class="formGroup">
-				<label>Export Format:</label>
-				<NcSelect v-model="exportFormat"
+				<label>{{ t('openregister', 'Export Format:') }}</label>
+				<NcSelect
+					v-model="exportFormat"
+					inputLabel="Export Format"
 					:options="exportFormats"
-					option-label="label"
-					option-value="value"
-					:reduce="option => option.value" />
+					optionLabel="label"
+					optionValue="value"
+					:reduce="(option) => option.value" />
 			</div>
 		</div>
 
@@ -33,17 +44,14 @@ import axios from '@nextcloud/axios'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				Cancel
+				{{ t('openregister', 'Cancel') }}
 			</NcButton>
-			<NcButton
-				:disabled="loading"
-				type="primary"
-				@click="exportObjects">
+			<NcButton :disabled="loading" variant="primary" @click="exportObjects">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<Export v-else :size="20" />
 				</template>
-				Export
+				{{ t('openregister', 'Export') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -57,7 +65,6 @@ import {
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Export from 'vue-material-design-icons/Export.vue'
 
@@ -73,6 +80,7 @@ export default {
 		Export,
 		Cancel,
 	},
+
 	data() {
 		return {
 			loading: false,
@@ -84,29 +92,45 @@ export default {
 			],
 		}
 	},
+
 	computed: {
+		/**
+		 * @spec exclude Computed register title for display; UI presentation helper.
+		 */
 		registerTitle() {
 			const item = registerStore.registerItem
 			return item?.title || 'Unknown'
 		},
+
+		/**
+		 * @spec exclude Computed schema title for display; UI presentation helper.
+		 */
 		schemaTitle() {
 			const item = schemaStore.schemaItem
 			return item?.title || 'Unknown'
 		},
 	},
+
 	methods: {
+		/**
+		 * @spec exclude Modal close handler resetting navigationStore.modal and form state; UI plumbing.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.loading = false
 			this.error = null
 			this.exportFormat = 'excel'
 		},
+
+		/**
+		 * @spec exclude Export handler triggering the objects export endpoint download; UI orchestration plumbing.
+		 */
 		async exportObjects() {
 			const register = registerStore.registerItem
 			const schema = schemaStore.schemaItem
 
 			if (!register?.id || !schema?.id) {
-				this.error = 'Register and schema are required'
+				this.error = t('openregister', 'Register and schema are required')
 				return
 			}
 
@@ -116,7 +140,9 @@ export default {
 			try {
 				const registerSlug = register.slug || register.id
 				const schemaSlug = schema.slug || schema.id
-				const url = generateUrl(`/apps/openregister/api/objects/${registerSlug}/${schemaSlug}/export`)
+				const url = generateUrl(
+					`/apps/openregister/api/objects/${registerSlug}/${schemaSlug}/export`,
+				)
 				const params = {
 					type: this.exportFormat,
 				}
@@ -128,7 +154,9 @@ export default {
 					responseType: 'blob',
 				})
 
-				const blob = new Blob([response.data], { type: response.headers['content-type'] })
+				const blob = new Blob([response.data], {
+					type: response.headers['content-type'],
+				})
 				const downloadUrl = window.URL.createObjectURL(blob)
 				const link = document.createElement('a')
 
@@ -146,7 +174,10 @@ export default {
 
 				this.closeModal()
 			} catch (error) {
-				this.error = error.response?.data?.error || error.message || 'Failed to export objects'
+				this.error =
+					error.response?.data?.error
+					|| error.message
+					|| t('openregister', 'Failed to export objects')
 			} finally {
 				this.loading = false
 			}

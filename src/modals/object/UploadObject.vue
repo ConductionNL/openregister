@@ -1,12 +1,15 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { objectStore, navigationStore, schemaStore, registerStore } from '../../store/store.js'
+import {
+	navigationStore,
+	objectStore,
+	registerStore,
+	schemaStore,
+} from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog name="Upload Object"
-		size="normal"
-		:can-close="false">
+	<NcDialog name="Upload Object" size="normal" :canClose="false">
 		<NcNoteCard v-if="success" type="success">
 			<p>Object successfully uploaded</p>
 		</NcNoteCard>
@@ -15,7 +18,8 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 		</NcNoteCard>
 
 		<template #actions>
-			<NcButton v-if="registers?.value?.id && !schemas?.value?.id"
+			<NcButton
+				v-if="registers?.value?.id && !schemas?.value?.id"
 				:disabled="loading"
 				@click="registers.value = null">
 				<template #icon>
@@ -23,7 +27,8 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 				</template>
 				Back to Register
 			</NcButton>
-			<NcButton v-if="registers.value?.id && schemas.value?.id"
+			<NcButton
+				v-if="registers.value?.id && schemas.value?.id"
 				:disabled="loading"
 				@click="schemas.value = null">
 				<template #icon>
@@ -31,16 +36,21 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 				</template>
 				Back to Schema
 			</NcButton>
-			<NcButton
-				@click="closeModal">
+			<NcButton @click="closeModal">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
 				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
-			<NcButton v-if="success === null"
-				:disabled="!registers.value?.id || !schemas.value?.id || loading || !validateJson(object)"
-				type="primary"
+			<NcButton
+				v-if="success === null"
+				:disabled="
+					!registers.value?.id
+					|| !schemas.value?.id
+					|| loading
+					|| !validateJson(object)
+				"
+				variant="primary"
 				@click="uploadObject()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -53,51 +63,53 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 		<div v-if="!success" class="formContainer">
 			<div v-if="registers?.value?.id && success === null">
 				<b>Register:</b> {{ registers.value.label }}
-				<NcButton @click="registers.value = null">
-					Edit Register
-				</NcButton>
+				<NcButton @click="registers.value = null"> Edit Register </NcButton>
 			</div>
 			<div v-if="schemas.value?.id && success === null">
 				<b>Schema:</b> {{ schemas.value.label }}
-				<NcButton @click="schemas.value = null">
-					Edit Schema
-				</NcButton>
+				<NcButton @click="schemas.value = null"> Edit Schema </NcButton>
 			</div>
 
 			<!-- STAGE 1 -->
 			<div v-if="!registers?.value?.id">
-				<NcSelect v-bind="registers"
+				<NcSelect
+					v-bind="registers"
 					v-model="registers.value"
-					input-label="Register"
+					:inputLabel="t('openregister', 'Register')"
 					:loading="registersLoading"
 					:disabled="loading" />
 			</div>
 
 			<!-- STAGE 2 -->
 			<div v-if="registers?.value?.id && !schemas?.value?.id">
-				<NcSelect v-bind="schemas"
+				<NcSelect
+					v-bind="schemas"
 					v-model="schemas.value"
-					input-label="Schemas"
+					:inputLabel="t('openregister', 'Schemas')"
 					:loading="schemasLoading"
 					:disabled="loading" />
 			</div>
 
 			<!-- STAGE 3 -->
 			<div v-if="registers.value?.id && schemas.value?.id">
-				<NcSelect v-bind="mappings"
+				<NcSelect
+					v-bind="mappings"
 					v-model="mappings.value"
-					input-label="Mappings"
+					:inputLabel="t('openregister', 'Mappings')"
 					:loading="mappingsLoading"
 					:disabled="loading || !mappings.options?.length" />
 
 				<div :class="`codeMirrorContainer ${getTheme()}`">
-					<p>Object</p>
-					<CodeMirror v-model="object"
+					<p>{{ t('openregister', 'Object') }}</p>
+					<CodeMirror
+						v-model="object"
 						:basic="true"
 						:dark="getTheme() === 'dark'"
 						:lang="json()"
 						:linter="jsonParseLinter()"
-						placeholder="Enter your object here..." />
+						:placeholder="
+							t('openregister', 'Enter your object here...')
+						" />
 
 					<NcButton class="prettifyButton" @click="prettifyJson">
 						<template #icon>
@@ -112,6 +124,7 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 </template>
 
 <script>
+import { json, jsonParseLinter } from '@codemirror/lang-json'
 import {
 	NcButton,
 	NcDialog,
@@ -119,14 +132,12 @@ import {
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
-import { getTheme } from '../../services/getTheme.js'
-import { json, jsonParseLinter } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
-
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Upload from 'vue-material-design-icons/Upload.vue'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import AutoFix from 'vue-material-design-icons/AutoFix.vue'
+import Cancel from 'vue-material-design-icons/Cancel.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
+import { getTheme } from '../../services/getTheme.js'
 
 export default {
 	name: 'UploadObject',
@@ -140,6 +151,7 @@ export default {
 		Cancel,
 		Upload,
 	},
+
 	data() {
 		return {
 			object: '{}',
@@ -155,16 +167,25 @@ export default {
 			hasUpdated: false,
 		}
 	},
+
+	/**
+	 * @spec exclude Vue lifecycle hook initializing modal data
+	 */
 	mounted() {
 		this.initializeMappings()
 		this.initializeSchemas()
 		this.initializeRegisters()
 	},
+
 	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		initializeMappings() {
 			this.mappingsLoading = true
 
-			objectStore.getMappings()
+			objectStore
+				.getMappings()
 				.then(({ data }) => {
 					this.mappings = {
 						multiple: false,
@@ -180,10 +201,15 @@ export default {
 					this.mappingsLoading = false
 				})
 		},
+
+		/**
+		 * @spec exclude form-state loader populating schema select options
+		 */
 		initializeSchemas() {
 			this.schemasLoading = true
 
-			schemaStore.refreshSchemaList()
+			schemaStore
+				.refreshSchemaList()
 				.then(() => {
 					this.schemas = {
 						multiple: false,
@@ -199,10 +225,15 @@ export default {
 					this.schemasLoading = false
 				})
 		},
+
+		/**
+		 * @spec exclude form-state loader populating register select options
+		 */
 		initializeRegisters() {
 			this.registersLoading = true
 
-			registerStore.refreshRegisterList()
+			registerStore
+				.refreshRegisterList()
 				.then(() => {
 					this.registers = {
 						multiple: false,
@@ -218,6 +249,10 @@ export default {
 					this.registersLoading = false
 				})
 		},
+
+		/**
+		 * @spec exclude modal close + form-state reset handler
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.success = null
@@ -229,6 +264,10 @@ export default {
 				url: '',
 			}
 		},
+
+		/**
+		 * @spec exclude modal submit handler delegating to objectStore.saveObject
+		 */
 		async uploadObject() {
 			this.loading = true
 
@@ -241,22 +280,40 @@ export default {
 			}
 
 			const type = `${newObject.register}-${newObject.schema}`
-			objectStore.registerObjectType(type, newObject.schema, newObject.register)
-			objectStore.saveObject(type, newObject)
+			objectStore.registerObjectType(
+				type,
+				newObject.schema,
+				newObject.register,
+			)
+			objectStore
+				.saveObject(type, newObject)
 				.then((data) => {
 					this.success = !!data
 					this.error = false
 					data && setTimeout(this.closeModal, 2000)
-				}).catch((error) => {
+				})
+				.catch((error) => {
 					this.success = false
-					this.error = error.message || 'An error occurred while uploading the object'
-				}).finally(() => {
+					this.error =
+						error.message
+						|| 'An error occurred while uploading the object'
+				})
+				.finally(() => {
 					this.loading = false
 				})
 		},
+
+		/**
+		 * @spec exclude JSON formatting UI helper
+		 */
 		prettifyJson() {
 			this.object = JSON.stringify(JSON.parse(this.object), null, 2)
 		},
+
+		/**
+		 * @param json
+		 * @spec exclude client-side JSON validation helper
+		 */
 		validateJson(json) {
 			try {
 				JSON.parse(json)

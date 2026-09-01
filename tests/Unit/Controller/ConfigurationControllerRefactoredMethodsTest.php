@@ -23,14 +23,14 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use OCA\OpenRegister\Controller\ConfigurationController;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
+use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\NotificationService;
 use OCP\App\IAppManager;
 use OCP\IRequest;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
@@ -40,8 +40,7 @@ use ReflectionClass;
  * Tests the 1 extracted private method using reflection:
  * 1. applyConfigurationUpdates(Configuration $configuration, array $data): void
  */
-class ConfigurationControllerRefactoredMethodsTest extends TestCase
-{
+class ConfigurationControllerRefactoredMethodsTest extends TestCase {
 	private ConfigurationController $configurationController;
 	private ReflectionClass $reflection;
 
@@ -74,8 +73,7 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	protected function setUp(): void
-	{
+	protected function setUp(): void {
 		parent::setUp();
 
 		// Create mocks for all dependencies.
@@ -98,7 +96,9 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 			githubHandler: $this->githubHandler,
 			gitlabHandler: $this->gitlabHandler,
 			appManager: $this->appManager,
-			logger: $this->logger
+			logger: $this->logger,
+			userSession: $this->createMock(\OCP\IUserSession::class),
+			groupManager: $this->createMock(\OCP\IGroupManager::class)
 		);
 
 		// Set up reflection for accessing private methods.
@@ -109,12 +109,11 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	 * Helper method to invoke private methods using reflection.
 	 *
 	 * @param string $methodName The name of the private method.
-	 * @param array  $parameters The parameters to pass to the method.
+	 * @param array $parameters The parameters to pass to the method.
 	 *
 	 * @return mixed The result of the method invocation.
 	 */
-	private function invokePrivateMethod(string $methodName, array $parameters = []): mixed
-	{
+	private function invokePrivateMethod(string $methodName, array $parameters = []): mixed {
 		$method = $this->reflection->getMethod($methodName);
 		$method->setAccessible(true);
 
@@ -128,8 +127,7 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testApplyConfigurationUpdatesAppliesSingleField(): void
-	{
+	public function testApplyConfigurationUpdatesAppliesSingleField(): void {
 		$config = new Configuration();
 		$config->setTitle('Old Name');
 		$config->setDescription('Old Description');
@@ -152,8 +150,7 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testApplyConfigurationUpdatesAppliesMultipleFields(): void
-	{
+	public function testApplyConfigurationUpdatesAppliesMultipleFields(): void {
 		$config = new Configuration();
 		$config->setTitle('Old Name');
 		$config->setDescription('Old Description');
@@ -180,8 +177,7 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testApplyConfigurationUpdatesWithEmptyInput(): void
-	{
+	public function testApplyConfigurationUpdatesWithEmptyInput(): void {
 		$config = new Configuration();
 		$config->setTitle('Test Config');
 		$config->setDescription('Test Description');
@@ -200,8 +196,7 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testApplyConfigurationUpdatesWithNullValues(): void
-	{
+	public function testApplyConfigurationUpdatesWithNullValues(): void {
 		$config = new Configuration();
 		$config->setTitle('Test Config');
 		$config->setDescription('Test Description');
@@ -225,8 +220,7 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testApplyConfigurationUpdatesWithBooleanValues(): void
-	{
+	public function testApplyConfigurationUpdatesWithBooleanValues(): void {
 		$config = new Configuration();
 		$config->setAutoUpdate(false);
 
@@ -247,8 +241,7 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testApplyConfigurationUpdatesWithArrayValues(): void
-	{
+	public function testApplyConfigurationUpdatesWithArrayValues(): void {
 		$config = new Configuration();
 		$config->setRegisters(['reg1']);
 
@@ -271,8 +264,7 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testApplyConfigurationUpdatesPreservesDataTypes(): void
-	{
+	public function testApplyConfigurationUpdatesPreservesDataTypes(): void {
 		$config = new Configuration();
 
 		$input = [
@@ -298,8 +290,7 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testApplyConfigurationUpdatesPerformance(): void
-	{
+	public function testApplyConfigurationUpdatesPerformance(): void {
 		$config = new Configuration();
 		$config->setTitle('old_title');
 		$config->setDescription('old_desc');
@@ -340,8 +331,7 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testDataDrivenApproachReducesComplexity(): void
-	{
+	public function testDataDrivenApproachReducesComplexity(): void {
 		$config = new Configuration();
 
 		// Simulate updating all fields that had separate if statements.
@@ -371,8 +361,7 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testApplyConfigurationUpdatesIgnoresUnknownFields(): void
-	{
+	public function testApplyConfigurationUpdatesIgnoresUnknownFields(): void {
 		$config = new Configuration();
 		$config->setTitle('Original');
 
@@ -396,8 +385,7 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testApplyConfigurationUpdatesWithGitHubFields(): void
-	{
+	public function testApplyConfigurationUpdatesWithGitHubFields(): void {
 		$config = new Configuration();
 
 		$input = [

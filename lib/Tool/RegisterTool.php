@@ -6,6 +6,9 @@
  * LLphant function tool for managing registers through natural language.
  * Provides CRUD operations on registers with RBAC and multi-tenancy support.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Tool
  * @package  OCA\OpenRegister\Tool
  *
@@ -41,370 +44,397 @@ use Psr\Log\LoggerInterface;
  * @category Tool
  * @package  OCA\OpenRegister\Tool
  */
-class RegisterTool extends AbstractTool
-{
+class RegisterTool extends AbstractTool {
 
-    /**
-     * Register service
-     *
-     * @var RegisterService
-     */
-    private RegisterService $registerService;
+	/**
+	 * Register service
+	 *
+	 * @var RegisterService
+	 */
+	private RegisterService $registerService;
 
-    /**
-     * Constructor
-     *
-     * @param IUserSession    $userSession     User session service
-     * @param LoggerInterface $logger          Logger service
-     * @param RegisterService $registerService Register service
-     */
-    public function __construct(
-        IUserSession $userSession,
-        LoggerInterface $logger,
-        RegisterService $registerService
-    ) {
-        parent::__construct(userSession: $userSession, logger: $logger);
-        $this->registerService = $registerService;
-    }//end __construct()
+	/**
+	 * Constructor
+	 *
+	 * @param IUserSession $userSession User session service
+	 * @param LoggerInterface $logger Logger service
+	 * @param RegisterService $registerService Register service
+	 */
+	public function __construct(
+		IUserSession $userSession,
+		LoggerInterface $logger,
+		RegisterService $registerService,
+	) {
+		parent::__construct(userSession: $userSession, logger: $logger);
+		$this->registerService = $registerService;
+	}//end __construct()
 
-    /**
-     * Get tool name
-     *
-     * @return string Tool name
-     *
-     * @psalm-return 'register'
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
-     */
-    public function getName(): string
-    {
-        return 'register';
-    }//end getName()
+	/**
+	 * Get tool name
+	 *
+	 * @return string Tool name
+	 *
+	 * @psalm-return 'register'
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getName(): string {
+		return 'register';
+	}//end getName()
 
-    /**
-     * Get tool description
-     *
-     * @return string The tool description
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
-     */
-    public function getDescription(): string
-    {
-        return 'Manage registers: list, view, create, update, or delete registers. Registers organize schemas and objects.';
-    }//end getDescription()
+	/**
+	 * Get tool description
+	 *
+	 * @return string The tool description
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getDescription(): string {
+		return 'Manage registers: list, view, create, update, or delete registers. Registers organize schemas and objects.';
+	}//end getDescription()
 
-    /**
-     * Get function definitions for LLphant
-     *
-     * @return array<int, array<string, mixed>> Array of function definitions
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
-     */
-    public function getFunctions(): array
-    {
-        return [
-            [
-                'name'        => 'list_registers',
-                'description' => 'Get a list of all accessible registers',
-                'parameters'  => [
-                    'type'       => 'object',
-                    'properties' => [
-                        'limit'  => [
-                            'type'        => 'integer',
-                            'description' => 'Maximum number of registers to return (default: 100)',
-                        ],
-                        'offset' => [
-                            'type'        => 'integer',
-                            'description' => 'Number of registers to skip for pagination (default: 0)',
-                        ],
-                    ],
-                    'required'   => [],
-                ],
-            ],
-            [
-                'name'        => 'get_register',
-                'description' => 'Get details about a specific register by ID or slug',
-                'parameters'  => [
-                    'type'       => 'object',
-                    'properties' => [
-                        'id' => [
-                            'type'        => 'string',
-                            'description' => 'The register ID or slug to retrieve',
-                        ],
-                    ],
-                    'required'   => ['id'],
-                ],
-            ],
-            [
-                'name'        => 'create_register',
-                'description' => 'Create a new register',
-                'parameters'  => [
-                    'type'       => 'object',
-                    'properties' => [
-                        'title'       => [
-                            'type'        => 'string',
-                            'description' => 'The title of the register',
-                        ],
-                        'description' => [
-                            'type'        => 'string',
-                            'description' => 'A description of what this register is for',
-                        ],
-                        'slug'        => [
-                            'type'        => 'string',
-                            'description' => 'URL-friendly identifier (optional, generated from title if not provided)',
-                        ],
-                    ],
-                    'required'   => ['title'],
-                ],
-            ],
-            [
-                'name'        => 'update_register',
-                'description' => 'Update an existing register',
-                'parameters'  => [
-                    'type'       => 'object',
-                    'properties' => [
-                        'id'          => [
-                            'type'        => 'string',
-                            'description' => 'The register ID to update',
-                        ],
-                        'title'       => [
-                            'type'        => 'string',
-                            'description' => 'New title for the register',
-                        ],
-                        'description' => [
-                            'type'        => 'string',
-                            'description' => 'New description for the register',
-                        ],
-                    ],
-                    'required'   => ['id'],
-                ],
-            ],
-            [
-                'name'        => 'delete_register',
-                'description' => 'Delete a register (only if it has no objects)',
-                'parameters'  => [
-                    'type'       => 'object',
-                    'properties' => [
-                        'id' => [
-                            'type'        => 'string',
-                            'description' => 'The register ID to delete',
-                        ],
-                    ],
-                    'required'   => ['id'],
-                ],
-            ],
-        ];
-    }//end getFunctions()
+	/**
+	 * Get function definitions for LLphant
+	 *
+	 * @return array<int, array<string, mixed>> Array of function definitions
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getFunctions(): array {
+		return array_merge(self::readFunctions(), self::writeFunctions());
 
-    /**
-     * Execute a function
-     *
-     * @param string      $functionName Function name
-     * @param array       $parameters   Function parameters
-     * @param string|null $userId       User ID for context
-     *
-     * @return array Function result
-     *
-     * @throws \Exception If function execution fails
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
-     */
-    public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
-    {
-        $this->log(functionName: $functionName, parameters: $parameters);
+	}//end getFunctions()
 
-        if ($this->hasUserContext(explicitUserId: $userId) === false) {
-            return $this->formatError(message: 'No user context available. Tool cannot execute without user session.');
-        }
+	/**
+	 * The register descriptors that change nothing.
+	 *
+	 * @return array<int, array<string, mixed>> The read descriptors.
+	 */
+	private static function readFunctions(): array {
+		return [
+			[
+				'name' => 'list_registers',
+				'subject' => 'register',
+				'action' => 'list',
+				'description' => 'Get a list of all accessible registers',
+				'parameters' => [
+					'type' => 'object',
+					'properties' => [
+						'limit' => [
+							'type' => 'integer',
+							'description' => 'Maximum number of registers to return (default: 100)',
+						],
+						'offset' => [
+							'type' => 'integer',
+							'description' => 'Number of registers to skip for pagination (default: 0)',
+						],
+					],
+					'required' => [],
+				],
+			],
+			[
+				'name' => 'get_register',
+				'subject' => 'register',
+				'action' => 'get',
+				'description' => 'Get details about a specific register by ID or slug',
+				'parameters' => [
+					'type' => 'object',
+					'properties' => [
+						'id' => [
+							'type' => 'string',
+							'description' => 'The register ID or slug to retrieve',
+						],
+					],
+					'required' => ['id'],
+				],
+			],
+		];
 
-        try {
-            // Convert snake_case to camelCase for PSR compliance.
-            $methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
+	}//end readFunctions()
 
-            // Call the method directly (LLPhant-compatible).
-            return $this->$methodName(...array_values($parameters));
-        } catch (\Exception $e) {
-            $this->log(functionName: $functionName, parameters: $parameters, level: 'error', message: $e->getMessage());
-            return $this->formatError(message: $e->getMessage());
-        }
-    }//end executeFunction()
+	/**
+	 * The register descriptors that change state.
+	 *
+	 * Split from the reading half only to keep each method inside the
+	 * ExcessiveMethodLength budget — declaring `subject`/`action` on every
+	 * descriptor pushed the single combined table past it. The read/write line
+	 * is the honest place to cut, since it is the same boundary the grant
+	 * matrix groups on.
+	 *
+	 * @return array<int, array<string, mixed>> The write descriptors.
+	 */
+	private static function writeFunctions(): array {
+		return [
+			[
+				'name' => 'create_register',
+				'subject' => 'register',
+				'action' => 'create',
+				'description' => 'Create a new register',
+				'parameters' => [
+					'type' => 'object',
+					'properties' => [
+						'title' => [
+							'type' => 'string',
+							'description' => 'The title of the register',
+						],
+						'description' => [
+							'type' => 'string',
+							'description' => 'A description of what this register is for',
+						],
+						'slug' => [
+							'type' => 'string',
+							'description' => 'URL-friendly identifier (optional, generated from title if not provided)',
+						],
+					],
+					'required' => ['title'],
+				],
+			],
+			[
+				'name' => 'update_register',
+				'subject' => 'register',
+				'action' => 'update',
+				'description' => 'Update an existing register',
+				'parameters' => [
+					'type' => 'object',
+					'properties' => [
+						'id' => [
+							'type' => 'string',
+							'description' => 'The register ID to update',
+						],
+						'title' => [
+							'type' => 'string',
+							'description' => 'New title for the register',
+						],
+						'description' => [
+							'type' => 'string',
+							'description' => 'New description for the register',
+						],
+					],
+					'required' => ['id'],
+				],
+			],
+			[
+				'name' => 'delete_register',
+				'subject' => 'register',
+				'action' => 'delete',
+				'description' => 'Delete a register (only if it has no objects)',
+				'parameters' => [
+					'type' => 'object',
+					'properties' => [
+						'id' => [
+							'type' => 'string',
+							'description' => 'The register ID to delete',
+						],
+					],
+					'required' => ['id'],
+				],
+			],
+		];
+	}//end writeFunctions()
 
-    /**
-     * List registers
-     *
-     * LLPhant-compatible method that can be called directly.
-     *
-     * @param int $limit  Maximum number of registers to return
-     * @param int $offset Offset for pagination
-     *
-     * @return (mixed|string|true)[] Result with list of registers
-     *
-     * @psalm-return array{success: true, message: string, data: mixed}
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
-     */
-    public function listRegisters(int $limit=100, int $offset=0): array
-    {
+	/**
+	 * Execute a function
+	 *
+	 * @param string $functionName Function name
+	 * @param array $parameters Function parameters
+	 * @param string|null $userId User ID for context
+	 *
+	 * @return array Function result
+	 *
+	 * @throws \Exception If function execution fails
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array {
+		$this->log(functionName: $functionName, parameters: $parameters);
 
-        $filters = [];
-        $filters = $this->applyViewFilters(params: $filters);
+		if ($this->hasUserContext(explicitUserId: $userId) === false) {
+			return $this->formatError(message: 'No user context available. Tool cannot execute without user session.');
+		}
 
-        $registers = $this->registerService->findAll(limit: $limit, offset: $offset, filters: $filters);
+		try {
+			// Convert snake_case to camelCase for PSR compliance.
+			$methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
 
-        $registerList = array_map(
-            function ($register) {
-                return [
-                    'id'          => $register->getId(),
-                    'uuid'        => $register->getUuid(),
-                    'title'       => $register->getTitle(),
-                    'description' => $register->getDescription(),
-                    'slug'        => $register->getSlug(),
-                ];
-            },
-            $registers
-        );
+			// Call the method directly (LLPhant-compatible).
+			return $this->$methodName(...array_values($parameters));
+		} catch (\Exception $e) {
+			$this->log(functionName: $functionName, parameters: $parameters, level: 'error', message: $e->getMessage());
+			return $this->formatError(message: $e->getMessage());
+		}
+	}//end executeFunction()
 
-        return $this->formatSuccess(data: $registerList, message: sprintf('Found %d registers', count($registerList)));
-    }//end listRegisters()
+	/**
+	 * List registers
+	 *
+	 * LLPhant-compatible method that can be called directly.
+	 *
+	 * @param int $limit Maximum number of registers to return
+	 * @param int $offset Offset for pagination
+	 *
+	 * @return (mixed|string|true)[] Result with list of registers
+	 *
+	 * @psalm-return array{success: true, message: string, data: mixed}
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function listRegisters(int $limit = 100, int $offset = 0): array {
 
-    /**
-     * Get a specific register
-     *
-     * @param string $id Register ID
-     *
-     * @return (mixed|string|true)[] Result with register details
-     *
-     * @throws \Exception If register not found
-     *
-     * @psalm-return array{success: true, message: string, data: mixed}
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
-     */
-    public function getRegister(string $id): array
-    {
-        $register = $this->registerService->find(id: $id);
+		$filters = [];
+		$filters = $this->applyViewFilters(params: $filters);
 
-        return $this->formatSuccess(
-            data: [
-                'id'           => $register->getId(),
-                'uuid'         => $register->getUuid(),
-                'title'        => $register->getTitle(),
-                'description'  => $register->getDescription(),
-                'slug'         => $register->getSlug(),
-                'folder'       => $register->getFolder(),
-                'organisation' => $register->getOrganisation(),
-                'created'      => $register->getCreated()?->format('Y-m-d H:i:s'),
-                'updated'      => $register->getUpdated()?->format('Y-m-d H:i:s'),
-            ],
-            message: 'Register retrieved successfully'
-        );
-    }//end getRegister()
+		$registers = $this->registerService->findAll(limit: $limit, offset: $offset, filters: $filters);
 
-    /**
-     * Create a new register
-     *
-     * @param string      $title       Register title
-     * @param string      $description Register description
-     * @param string|null $slug        Register slug
-     *
-     * @return (mixed|string|true)[] Result with created register
-     *
-     * @throws \Exception If creation fails
-     *
-     * @psalm-return array{success: true, message: string, data: mixed}
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
-     */
-    public function createRegister(string $title, string $description='', ?string $slug=null): array
-    {
-        $data = [
-            'title'       => $title,
-            'description' => $description,
-        ];
+		$registerList = array_map(
+			function ($register) {
+				return [
+					'id' => $register->getId(),
+					'uuid' => $register->getUuid(),
+					'title' => $register->getTitle(),
+					'description' => $register->getDescription(),
+					'slug' => $register->getSlug(),
+				];
+			},
+			$registers
+		);
 
-        if ($slug !== null) {
-            $data['slug'] = $slug;
-        }
+		return $this->formatSuccess(data: $registerList, message: sprintf('Found %d registers', count($registerList)));
+	}//end listRegisters()
 
-        $register = $this->registerService->createFromArray(data: $data);
+	/**
+	 * Get a specific register
+	 *
+	 * @param string $id Register ID
+	 *
+	 * @return (mixed|string|true)[] Result with register details
+	 *
+	 * @throws \Exception If register not found
+	 *
+	 * @psalm-return array{success: true, message: string, data: mixed}
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getRegister(string $id): array {
+		$register = $this->registerService->find(id: $id);
 
-        return $this->formatSuccess(
-            data: [
-                'id'          => $register->getId(),
-                'uuid'        => $register->getUuid(),
-                'title'       => $register->getTitle(),
-                'description' => $register->getDescription(),
-                'slug'        => $register->getSlug(),
-            ],
-            message: 'Register created successfully'
-        );
-    }//end createRegister()
+		return $this->formatSuccess(
+			data: [
+				'id' => $register->getId(),
+				'uuid' => $register->getUuid(),
+				'title' => $register->getTitle(),
+				'description' => $register->getDescription(),
+				'slug' => $register->getSlug(),
+				'folder' => $register->getFolder(),
+				'organisation' => $register->getOrganisation(),
+				'created' => $register->getCreated()?->format('Y-m-d H:i:s'),
+				'updated' => $register->getUpdated()?->format('Y-m-d H:i:s'),
+			],
+			message: 'Register retrieved successfully'
+		);
+	}//end getRegister()
 
-    /**
-     * Update an existing register
-     *
-     * @param string      $id          Register ID
-     * @param string|null $title       Register title
-     * @param string|null $description Register description
-     *
-     * @return (mixed|string|true)[] Result with updated register
-     *
-     * @throws \Exception If update fails
-     *
-     * @psalm-return array{success: true, message: string, data: mixed}
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
-     */
-    public function updateRegister(string $id, ?string $title=null, ?string $description=null): array
-    {
-        $data = [];
-        if ($title !== null) {
-            $data['title'] = $title;
-        }
+	/**
+	 * Create a new register
+	 *
+	 * @param string $title Register title
+	 * @param string $description Register description
+	 * @param string|null $slug Register slug
+	 *
+	 * @return (mixed|string|true)[] Result with created register
+	 *
+	 * @throws \Exception If creation fails
+	 *
+	 * @psalm-return array{success: true, message: string, data: mixed}
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function createRegister(string $title, string $description = '', ?string $slug = null): array {
+		$data = [
+			'title' => $title,
+			'description' => $description,
+		];
 
-        if ($description !== null) {
-            $data['description'] = $description;
-        }
+		if ($slug !== null) {
+			$data['slug'] = $slug;
+		}
 
-        if ($data === []) {
-            throw new InvalidArgumentException('No update data provided');
-        }
+		$register = $this->registerService->createFromArray(data: $data);
 
-        $register = $this->registerService->updateFromArray(id: (int) $id, data: $data);
+		return $this->formatSuccess(
+			data: [
+				'id' => $register->getId(),
+				'uuid' => $register->getUuid(),
+				'title' => $register->getTitle(),
+				'description' => $register->getDescription(),
+				'slug' => $register->getSlug(),
+			],
+			message: 'Register created successfully'
+		);
+	}//end createRegister()
 
-        return $this->formatSuccess(
-            data: [
-                'id'          => $register->getId(),
-                'uuid'        => $register->getUuid(),
-                'title'       => $register->getTitle(),
-                'description' => $register->getDescription(),
-                'slug'        => $register->getSlug(),
-            ],
-            message: 'Register updated successfully'
-        );
-    }//end updateRegister()
+	/**
+	 * Update an existing register
+	 *
+	 * @param string $id Register ID
+	 * @param string|null $title Register title
+	 * @param string|null $description Register description
+	 *
+	 * @return (mixed|string|true)[] Result with updated register
+	 *
+	 * @throws \Exception If update fails
+	 *
+	 * @psalm-return array{success: true, message: string, data: mixed}
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function updateRegister(string $id, ?string $title = null, ?string $description = null): array {
+		$data = [];
+		if ($title !== null) {
+			$data['title'] = $title;
+		}
 
-    /**
-     * Delete a register
-     *
-     * @param string $id Register ID
-     *
-     * @return (mixed|string|true)[] Result of deletion
-     *
-     * @throws \Exception If deletion fails
-     *
-     * @psalm-return array{success: true, message: string, data: mixed}
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
-     */
-    public function deleteRegister(string $id): array
-    {
-        $register = $this->registerService->find(id: $id);
-        $this->registerService->delete(register: $register);
+		if ($description !== null) {
+			$data['description'] = $description;
+		}
 
-        return $this->formatSuccess(
-            data: ['id' => $id],
-            message: 'Register deleted successfully'
-        );
-    }//end deleteRegister()
+		if ($data === []) {
+			throw new InvalidArgumentException('No update data provided');
+		}
+
+		$register = $this->registerService->updateFromArray(id: (int)$id, data: $data);
+
+		return $this->formatSuccess(
+			data: [
+				'id' => $register->getId(),
+				'uuid' => $register->getUuid(),
+				'title' => $register->getTitle(),
+				'description' => $register->getDescription(),
+				'slug' => $register->getSlug(),
+			],
+			message: 'Register updated successfully'
+		);
+	}//end updateRegister()
+
+	/**
+	 * Delete a register
+	 *
+	 * @param string $id Register ID
+	 *
+	 * @return (mixed|string|true)[] Result of deletion
+	 *
+	 * @throws \Exception If deletion fails
+	 *
+	 * @psalm-return array{success: true, message: string, data: mixed}
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function deleteRegister(string $id): array {
+		$register = $this->registerService->find(id: $id);
+		$this->registerService->delete(register: $register);
+
+		return $this->formatSuccess(
+			data: ['id' => $id],
+			message: 'Register deleted successfully'
+		);
+	}//end deleteRegister()
 }//end class

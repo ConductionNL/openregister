@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 
 const apiUrl = '/index.php/apps/openregister/api'
@@ -46,6 +45,7 @@ export const useDeletedStore = defineStore('deleted', {
 	actions: {
 		/**
 		 * Set items for bulk action
+		 *
 		 * @param {Array} items - The items to set for bulk action
 		 */
 		setSelectedForBulkAction(items) {
@@ -54,6 +54,8 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Clear items for bulk action
+		 *
+		 * @spec exclude store setter (clears local bulk-selection state)
 		 */
 		clearSelectedForBulkAction() {
 			this.selectedForBulkAction = []
@@ -61,6 +63,7 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Set deleted list
+		 *
 		 * @param {Array} deletedList - The deleted list to set
 		 */
 		setDeletedList(deletedList) {
@@ -69,6 +72,7 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Set deleted item
+		 *
 		 * @param {object} deletedItem - The deleted item to set
 		 */
 		setDeletedItem(deletedItem) {
@@ -77,7 +81,9 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Set deleted pagination
+		 *
 		 * @param {object} pagination - The pagination object
+		 * @spec exclude store setter (local pagination state)
 		 */
 		setDeletedPagination(pagination) {
 			this.deletedPagination = {
@@ -88,7 +94,9 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Set statistics
+		 *
 		 * @param {object} stats - The statistics object
+		 * @spec exclude store setter (local statistics state)
 		 */
 		setStatistics(stats) {
 			this.statistics = {
@@ -99,6 +107,7 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Set top deleters
+		 *
 		 * @param {Array} deleters - Array of top deleters
 		 */
 		setTopDeleters(deleters) {
@@ -107,6 +116,7 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Set deleted filters
+		 *
 		 * @param {object} filters - The filters to set
 		 */
 		setDeletedFilters(filters) {
@@ -115,6 +125,7 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Set deleted search
+		 *
 		 * @param {string} search - The search term
 		 */
 		setDeletedSearch(search) {
@@ -123,8 +134,10 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Fetch deleted objects with optional filtering and pagination
+		 *
 		 * @param {object} options - Options for fetching
 		 * @return {Promise<object>} The fetched data
+		 * @spec exclude API passthrough to GET /api/deleted (list + pagination state)
 		 */
 		async fetchDeleted(options = {}) {
 			this.deletedLoading = true
@@ -196,7 +209,9 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Fetch deleted object statistics
+		 *
 		 * @return {Promise<object>} The statistics data
+		 * @spec exclude API passthrough to GET /api/deleted/statistics
 		 */
 		async fetchStatistics() {
 			this.statisticsLoading = true
@@ -228,7 +243,9 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Fetch top deleters
+		 *
 		 * @return {Promise<Array>} The top deleters data
+		 * @spec exclude API passthrough to GET /api/deleted/top-deleters
 		 */
 		async fetchTopDeleters() {
 			this.topDeletersLoading = true
@@ -260,8 +277,10 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Restore a deleted object
+		 *
 		 * @param {string|number} id - The ID of the object to restore
 		 * @return {Promise<object>} The response data
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async restoreDeleted(id) {
 			try {
@@ -280,7 +299,7 @@ export const useDeletedStore = defineStore('deleted', {
 				}
 
 				// Remove from deleted list
-				this.deletedList = this.deletedList.filter(item => item.id !== id)
+				this.deletedList = this.deletedList.filter((item) => item.id !== id)
 
 				return data
 			} catch (error) {
@@ -291,8 +310,10 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Restore multiple deleted objects
+		 *
 		 * @param {Array} ids - Array of object IDs to restore
 		 * @return {Promise<object>} The response data
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async restoreMultiple(ids) {
 			try {
@@ -312,7 +333,9 @@ export const useDeletedStore = defineStore('deleted', {
 				}
 
 				// Remove restored objects from list
-				this.deletedList = this.deletedList.filter(item => !ids.includes(item.id))
+				this.deletedList = this.deletedList.filter(
+					(item) => !ids.includes(item.id),
+				)
 
 				return data
 			} catch (error) {
@@ -323,8 +346,10 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Permanently delete an object
+		 *
 		 * @param {string|number} id - The ID of the object to permanently delete
 		 * @return {Promise<object>} The response data
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async permanentlyDelete(id) {
 			try {
@@ -339,11 +364,13 @@ export const useDeletedStore = defineStore('deleted', {
 				const data = await response.json()
 
 				if (!response.ok) {
-					throw new Error(data.error || 'Failed to permanently delete object')
+					throw new Error(
+						data.error || 'Failed to permanently delete object',
+					)
 				}
 
 				// Remove from deleted list
-				this.deletedList = this.deletedList.filter(item => item.id !== id)
+				this.deletedList = this.deletedList.filter((item) => item.id !== id)
 
 				return data
 			} catch (error) {
@@ -354,8 +381,10 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Permanently delete multiple objects
+		 *
 		 * @param {Array} ids - Array of object IDs to permanently delete
 		 * @return {Promise<object>} The response data
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async permanentlyDeleteMultiple(ids) {
 			try {
@@ -371,11 +400,15 @@ export const useDeletedStore = defineStore('deleted', {
 				const data = await response.json()
 
 				if (!response.ok) {
-					throw new Error(data.error || 'Failed to permanently delete objects')
+					throw new Error(
+						data.error || 'Failed to permanently delete objects',
+					)
 				}
 
 				// Remove deleted objects from list
-				this.deletedList = this.deletedList.filter(item => !ids.includes(item.id))
+				this.deletedList = this.deletedList.filter(
+					(item) => !ids.includes(item.id),
+				)
 
 				return data
 			} catch (error) {
@@ -386,7 +419,9 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Refresh deleted list with current filters
+		 *
 		 * @return {Promise} The refresh promise
+		 * @spec exclude convenience wrapper over fetchDeleted (API passthrough)
 		 */
 		async refreshDeletedList() {
 			return this.fetchDeleted({
@@ -397,6 +432,8 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Clear all deleted store data
+		 *
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		clearDeletedStore() {
 			this.deletedList = []
@@ -418,7 +455,6 @@ export const useDeletedStore = defineStore('deleted', {
 			this.deletedFilters = {}
 			this.deletedSearch = ''
 			this.selectedForBulkAction = []
-			console.info('Deleted store cleared')
 		},
 	},
 })

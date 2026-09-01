@@ -5,191 +5,301 @@ import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcModal v-if="navigationStore.modal === 'uploadFiles'"
+	<NcModal
+		v-if="navigationStore.modal === 'uploadFiles'"
 		ref="modalRef"
-		label-id="AddAttachmentModal"
+		labelId="AddAttachmentModal"
 		@close="closeModal()">
 		<div class="modal__content TestMappingMainModal">
-			<h2>Bijlage toevoegen</h2>
+			<h2>{{ t('openregister', 'Add Attachment') }}</h2>
 
 			<div class="labelAndShareContainer">
-				<NcSelect v-bind="labelOptions"
+				<NcSelect
+					v-bind="labelOptions"
 					v-model="labelOptions.value"
+					inputLabel="Label Options Value"
 					:disabled="loading || tagsLoading"
 					:loading="tagsLoading"
 					:taggable="true"
 					:multiple="true"
 					:selectable="(option) => isSelectable(option)" />
-				<NcCheckboxRadioSwitch :disabled="loading"
-					label="Automatisch delen"
-					type="switch"
-					:checked.sync="share">
-					Automatisch delen
+				<NcCheckboxRadioSwitch
+					v-model="share"
+					:disabled="loading"
+					:label="t('openregister', 'Auto share')"
+					type="switch">
+					{{ t('openregister', 'Auto share') }}
 				</NcCheckboxRadioSwitch>
 			</div>
 
 			<div class="container">
-				<div v-if="!labelOptions.value?.length || loading" class="filesListDragDropNotice" :class="'tabPanelFileUpload'">
+				<div
+					v-if="!labelOptions.value?.length || loading"
+					class="filesListDragDropNotice tabPanelFileUpload">
 					<div v-if="!labelOptions.value?.length">
 						<NcNoteCard type="info">
-							<p>Selecteer of maak labels aan of selecteer "Geen label" om bestanden toe te voegen</p>
-						</NcNoteCard>
-					</div>
-					<div v-if="success !== null || error">
-						<NcNoteCard v-if="success" type="success">
-							<p>Bestanden succesvol toegevoegd</p>
-						</NcNoteCard>
-						<NcNoteCard v-if="error && !success" type="error">
-							<p>Er is iets fout gegaan bij het toevoegen van bestanden</p>
-						</NcNoteCard>
-						<NcNoteCard v-if="error && !success" type="error">
-							<p>{{ error }}</p>
-						</NcNoteCard>
-						<div v-if="false">
-							<NcNoteCard type="error">
-								<p>Selecteer bestanden met de juiste extensie</p>
-							</NcNoteCard>
-						</div>
-					</div>
-					<div class="filesListDragDropNoticeWrapper" :class="{ 'filesListDragDropNoticeWrapper--disabled': !labelOptions.value?.length || loading }">
-						<div class="filesListDragDropNoticeWrapperIcon">
-							<TrayArrowDown :size="48" />
-							<h3 class="filesListDragDropNoticeTitle">
-								Sleep een bestand of bestanden hierheen
-							</h3>
-						</div>
-
-						<h3 class="filesListDragDropNoticeTitle">
-							Of
-						</h3>
-
-						<div class="filesListDragDropNoticeTitle">
-							<NcButton
-								:disabled="loading || !labelOptions.value?.length"
-								type="primary"
-								@click="openFileUpload()">
-								<template #icon>
-									<Plus :size="20" />
-								</template>
-								Een bestand of bestanden toevoegen
-							</NcButton>
-						</div>
-					</div>
-				</div>
-				<div v-if="labelOptions.value?.length && !loading"
-					ref="dropzone"
-					class="filesListDragDropNotice"
-					:class="'tabPanelFileUpload'">
-					<div v-if="!labelOptions.value?.length">
-						<NcNoteCard type="info">
-							<p>Selecteer of maak labels aan of selecteer "Geen label" om bestanden toe te voegen</p>
-						</NcNoteCard>
-					</div>
-					<div v-if="checkForTooBigFiles(filesComputed)">
-						<NcNoteCard type="warning">
-							<p class="folderLink">
-								Als je bestanden groter of gelijk aan 512MB wilt toevoegen, ga dan naar de
-								<NcButton type="secondary"
-									class="folderLinkButton"
-									aria-label="Open map"
-									@click="openFolder(objectStore.objectItem?.['@self']?.folder)">
-									<template #icon>
-										<FolderOutline :size="20" />
-									</template>
-									map
-								</NcButton>
-								en voeg de bestanden daar toe.
+							<p>
+								{{
+									t(
+										'openregister',
+										'Select or create labels, or select "No label" to add files',
+									)
+								}}
 							</p>
 						</NcNoteCard>
 					</div>
 					<div v-if="success !== null || error">
 						<NcNoteCard v-if="success" type="success">
-							<p>Bestanden succesvol toegevoegd</p>
+							<p>
+								{{ t('openregister', 'Files added successfully') }}
+							</p>
 						</NcNoteCard>
 						<NcNoteCard v-if="error && !success" type="error">
-							<p>Er is iets fout gegaan bij het toevoegen van bestanden</p>
+							<p>
+								{{
+									t(
+										'openregister',
+										'Something went wrong while adding files',
+									)
+								}}
+							</p>
 						</NcNoteCard>
 						<NcNoteCard v-if="error && !success" type="error">
 							<p>{{ error }}</p>
 						</NcNoteCard>
 						<div v-if="false">
 							<NcNoteCard type="error">
-								<p>Selecteer bestanden met de juiste extensie</p>
+								<p>
+									{{
+										t(
+											'openregister',
+											'Select files with the correct extension',
+										)
+									}}
+								</p>
 							</NcNoteCard>
 						</div>
 					</div>
-					<div class="filesListDragDropNoticeWrapper" :class="{ 'filesListDragDropNoticeWrapper--disabled': !labelOptions.value?.length }">
+					<div
+						class="filesListDragDropNoticeWrapper"
+						:class="{
+							'filesListDragDropNoticeWrapper--disabled':
+								!labelOptions.value?.length || loading,
+						}">
 						<div class="filesListDragDropNoticeWrapperIcon">
 							<TrayArrowDown :size="48" />
 							<h3 class="filesListDragDropNoticeTitle">
-								Sleep een bestand of bestanden hierheen
+								{{ t('openregister', 'Drag a file or files here') }}
 							</h3>
 						</div>
 
 						<h3 class="filesListDragDropNoticeTitle">
-							Of
+							{{ t('openregister', 'Or') }}
 						</h3>
 
 						<div class="filesListDragDropNoticeTitle">
 							<NcButton
 								:disabled="loading || !labelOptions.value?.length"
-								type="primary"
+								variant="primary"
 								@click="openFileUpload()">
 								<template #icon>
 									<Plus :size="20" />
 								</template>
-								Een bestand of bestanden toevoegen
+								{{ t('openregister', 'Add a file or files') }}
+							</NcButton>
+						</div>
+					</div>
+				</div>
+				<div
+					v-if="labelOptions.value?.length && !loading"
+					ref="dropzone"
+					class="filesListDragDropNotice tabPanelFileUpload">
+					<div v-if="!labelOptions.value?.length">
+						<NcNoteCard type="info">
+							<p>
+								{{
+									t(
+										'openregister',
+										'Select or create labels, or select "No label" to add files',
+									)
+								}}
+							</p>
+						</NcNoteCard>
+					</div>
+					<div v-if="checkForTooBigFiles(filesComputed)">
+						<NcNoteCard type="warning">
+							<p class="folderLink">
+								{{
+									t(
+										'openregister',
+										'To add files larger than or equal to 512MB, go to the',
+									)
+								}}
+								<NcButton
+									variant="secondary"
+									class="folderLinkButton"
+									:aria-label="t('openregister', 'Open folder')"
+									@click="
+										openFolder(
+											objectStore.objectItem?.['@self']
+												?.folder,
+										)
+									">
+									<template #icon>
+										<FolderOutline :size="20" />
+									</template>
+									{{ t('openregister', 'folder') }}
+								</NcButton>
+								{{ t('openregister', 'and add the files there.') }}
+							</p>
+						</NcNoteCard>
+					</div>
+					<div v-if="success !== null || error">
+						<NcNoteCard v-if="success" type="success">
+							<p>
+								{{ t('openregister', 'Files added successfully') }}
+							</p>
+						</NcNoteCard>
+						<NcNoteCard v-if="error && !success" type="error">
+							<p>
+								{{
+									t(
+										'openregister',
+										'Something went wrong while adding files',
+									)
+								}}
+							</p>
+						</NcNoteCard>
+						<NcNoteCard v-if="error && !success" type="error">
+							<p>{{ error }}</p>
+						</NcNoteCard>
+						<div v-if="false">
+							<NcNoteCard type="error">
+								<p>
+									{{
+										t(
+											'openregister',
+											'Select files with the correct extension',
+										)
+									}}
+								</p>
+							</NcNoteCard>
+						</div>
+					</div>
+					<div
+						class="filesListDragDropNoticeWrapper"
+						:class="{
+							'filesListDragDropNoticeWrapper--disabled':
+								!labelOptions.value?.length,
+						}">
+						<div class="filesListDragDropNoticeWrapperIcon">
+							<TrayArrowDown :size="48" />
+							<h3 class="filesListDragDropNoticeTitle">
+								{{ t('openregister', 'Drag a file or files here') }}
+							</h3>
+						</div>
+
+						<h3 class="filesListDragDropNoticeTitle">
+							{{ t('openregister', 'Or') }}
+						</h3>
+
+						<div class="filesListDragDropNoticeTitle">
+							<NcButton
+								:disabled="loading || !labelOptions.value?.length"
+								variant="primary"
+								@click="openFileUpload()">
+								<template #icon>
+									<Plus :size="20" />
+								</template>
+								{{ t('openregister', 'Add a file or files') }}
 							</NcButton>
 						</div>
 					</div>
 				</div>
 				<div v-if="!filesComputed">
-					Geen bestanden geselecteerd
+					{{ t('openregister', 'No files selected') }}
 				</div>
 
 				<table v-if="filesComputed" class="files-table">
 					<thead>
 						<tr class="files-table-tr">
 							<th class="files-table-td-status" />
-							<th>
-								Bestandsnaam
+							<th scope="col">
+								{{ t('openregister', 'File name') }}
 							</th>
-							<th>
-								Grootte
+							<th scope="col">
+								{{ t('openregister', 'Size') }}
 							</th>
-							<th>
-								Labels
+							<th scope="col">
+								{{ t('openregister', 'Labels') }}
 							</th>
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="file of filesComputed" :key="file.name" class="files-table-tr">
+						<tr
+							v-for="file of filesComputed"
+							:key="file.name"
+							class="files-table-tr">
 							<td>
-								<CheckCircle v-if="file.status === 'uploaded'" class="success" :size="20" />
-								<NcLoadingIcon v-if="file.status === 'uploading'" :size="20" />
-								<AlphaXCircle v-if="file.status === 'failed'" class="failed" :size="20" />
-								<Exclamation v-if="file.status === 'too_large'" class="failed" :size="20" />
+								<CheckCircle
+									v-if="file.status === 'uploaded'"
+									class="success"
+									:size="20" />
+								<NcLoadingIcon
+									v-if="file.status === 'uploading'"
+									:size="20" />
+								<AlphaXCircle
+									v-if="file.status === 'failed'"
+									class="failed"
+									:size="20" />
+								<Exclamation
+									v-if="file.status === 'too_large'"
+									class="failed"
+									:size="20" />
 							</td>
-							<td class="files-table-td-name" :class="{ 'files-table-name-wrong': getTooBigFiles(file.size) }">
-								<span class="files-table-name">{{ getFileNameAndExtension(file.name).name }}</span>
-								<span class="files-table-extension">.{{ getFileNameAndExtension(file.name).extension }}</span>
+							<td
+								class="files-table-td-name"
+								:class="{
+									'files-table-name-wrong': getTooBigFiles(
+										file.size,
+									),
+								}">
+								<span class="files-table-name">{{
+									getFileNameAndExtension(file.name).name
+								}}</span>
+								<span class="files-table-extension"
+									>.{{
+										getFileNameAndExtension(file.name).extension
+									}}</span
+								>
 							</td>
 							<td>
 								{{ bytesToSize(file.size) }}
 							</td>
 							<td class="files-table-td-labels">
-								<span v-if="editingTags !== file.name"
+								<span
+									v-if="editingTags !== file.name"
 									class="files-list__row-action--inline files-list__row-action-system-tags">
-									<ul v-if="file.tags && file.tags.length > 0" class="files-list__system-tags" aria-label="Assigned collaborative tags">
-										<li v-for="label of file.tags"
+									<ul
+										v-if="file.tags && file.tags.length > 0"
+										class="files-list__system-tags"
+										:aria-label="
+											t(
+												'openregister',
+												'Assigned collaborative tags',
+											)
+										">
+										<li
+											v-for="label of file.tags"
 											:key="label"
 											class="files-list__system-tag"
 											:title="label">
 											{{ label }}
 										</li>
 									</ul>
-									<span v-if="!file.tags || file.tags.length === 0">
-										Geen labels
+									<span
+										v-if="!file.tags || file.tags.length === 0">
+										{{ t('openregister', 'No labels') }}
 									</span>
 								</span>
 								<NcSelect
@@ -199,28 +309,51 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									:loading="tagsLoading"
 									:taggable="true"
 									:multiple="true"
-									:aria-label-combobox="labelOptionsEdit.inputLabel"
+									:aria-label-combobox="
+										labelOptionsEdit.inputLabel
+									"
 									:options="labelOptionsEdit.options" />
 
 								<span class="buttonContainer">
 									<!-- Tags Buttons -->
 									<NcButton
 										v-if="editingTags !== file.name"
-										v-tooltip="'Labels bewerken'"
-										:disabled="editingTags && editingTags !== file.name || loading || file.status === 'too_large' || tagsLoading"
-										:aria-label="`edit tags for ${file.name}`"
-										type="secondary"
+										:title="t('openregister', 'Edit labels')"
+										:disabled="
+											(editingTags
+												&& editingTags !== file.name)
+											|| loading
+											|| file.status === 'too_large'
+											|| tagsLoading
+										"
+										:aria-label="
+											t(
+												'openregister',
+												'Edit tags for {name}',
+												{ name: file.name },
+											)
+										"
+										variant="secondary"
 										class="editTagsButton"
-										@click="editingTags = file.name, editedTags = file.tags">
+										@click="
+											((editingTags = file.name),
+											(editedTags = file.tags))
+										">
 										<template #icon>
 											<TagEdit :size="20" />
 										</template>
 									</NcButton>
 									<NcButton
 										v-if="editingTags === file.name"
-										v-tooltip="'Labels opslaan'"
-										type="primary"
-										:aria-label="`save tags for ${file.name}`"
+										:title="t('openregister', 'Save labels')"
+										variant="primary"
+										:aria-label="
+											t(
+												'openregister',
+												'Save tags for {name}',
+												{ name: file.name },
+											)
+										"
 										class="editTagsButton"
 										@click="saveTags(file, editedTags)">
 										<template #icon>
@@ -229,9 +362,10 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									</NcButton>
 
 									<!-- File Actions -->
-									<NcButton v-if="file.status === 'failed'"
-										v-tooltip="'Opnieuw uploaden'"
-										type="primary"
+									<NcButton
+										v-if="file.status === 'failed'"
+										:title="t('openregister', 'Retry upload')"
+										variant="primary"
 										@click="addAttachments(file)">
 										<template #icon>
 											<Refresh :size="20" />
@@ -239,8 +373,10 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									</NcButton>
 									<NcButton
 										v-if="file.status === 'too_large'"
-										v-tooltip="'Verwijder uit lijst'"
-										type="primary"
+										:title="
+											t('openregister', 'Remove from list')
+										"
+										variant="primary"
 										@click="removeFile(file.name)">
 										<template #icon>
 											<Minus :size="20" />
@@ -257,19 +393,26 @@ import { navigationStore, objectStore } from '../../store/store.js'
 </template>
 
 <script>
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcLoadingIcon,
+	NcModal,
+	NcNoteCard,
+	NcSelect,
+} from '@nextcloud/vue'
 import { ref } from 'vue'
-import { NcButton, NcLoadingIcon, NcModal, NcNoteCard, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
-import { useFileSelection } from './../../composables/UseFileSelection.js'
-import Plus from 'vue-material-design-icons/Plus.vue'
-import TrayArrowDown from 'vue-material-design-icons/TrayArrowDown.vue'
-import TagEdit from 'vue-material-design-icons/TagEdit.vue'
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
-import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
-import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import AlphaXCircle from 'vue-material-design-icons/AlphaXCircle.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Exclamation from 'vue-material-design-icons/Exclamation.vue'
+import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
 import Minus from 'vue-material-design-icons/Minus.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import TagEdit from 'vue-material-design-icons/TagEdit.vue'
+import TrayArrowDown from 'vue-material-design-icons/TrayArrowDown.vue'
+import { useFileSelection } from './../../composables/UseFileSelection.js'
 
 const dropzone = ref(null)
 
@@ -298,6 +441,7 @@ export default {
 		Exclamation,
 		Minus,
 	},
+
 	data() {
 		return {
 			loading: false,
@@ -310,58 +454,104 @@ export default {
 				inputLabel: 'Labels',
 				multiple: true,
 			},
+
 			labelOptionsEdit: {
 				inputLabel: 'Labels',
 				multiple: true,
 			},
+
 			tagsLoading: false,
 		}
 	},
+
 	computed: {
+		/**
+		 * @spec exclude Computed passthrough exposing objectStore.objectItem to the template; UI state helper.
+		 */
 		objectItem() {
 			return objectStore.objectItem
 		},
+
+		/**
+		 * @spec exclude Computed register-id extraction from the object's @self metadata; UI state helper.
+		 */
 		registerId() {
 			const register = this.objectItem?.['@self']?.register
-			return typeof register === 'object' && register !== null ? register.id : register
+			return typeof register === 'object' && register !== null
+				? register.id
+				: register
 		},
+
+		/**
+		 * @spec exclude Computed schema-id extraction from the object's @self metadata; UI state helper.
+		 */
 		schemaId() {
 			const schema = this.objectItem?.['@self']?.schema
 			return typeof schema === 'object' && schema !== null ? schema.id : schema
 		},
+
+		/**
+		 * @spec exclude Computed object-id extraction from the object's @self metadata; UI state helper.
+		 */
 		objectId() {
 			return this.objectItem?.['@self']?.id || this.objectItem?.id
 		},
+
+		/**
+		 * @spec exclude Computed passthrough exposing the upload-queue ref to the template; UI state helper.
+		 */
 		filesComputed() {
 			return files.value
 		},
 	},
+
 	watch: {
 		filesComputed: {
+			/**
+			 * @param newFiles
+			 * @param _oldFiles
+			 * @spec exclude Watcher auto-triggering upload when files are queued; UI reactivity plumbing.
+			 */
 			handler(newFiles, _oldFiles) {
 				if (newFiles?.length) {
 					this.addAttachments()
 				}
 			},
+
 			deep: true,
 		},
+
 		labelOptions: {
+			/**
+			 * @spec exclude UI handler/computed reactive label-options sync
+			 */
 			handler() {
 				setTags(this.getLabels())
 			},
+
 			deep: true,
 		},
 	},
+
 	mounted() {
 		this.getAllTags()
 	},
+
 	methods: {
+		/**
+		 * @spec exclude Modal close handler resetting upload state and navigationStore.modal; UI plumbing.
+		 */
 		closeModal() {
 			this.success = null
 			this.error = null
 			reset()
 			navigationStore.setModal(false)
 		},
+
+		/**
+		 * @param bytes
+		 * @spec exclude Human-readable byte-size formatter for file display; UI presentation helper.
+		 */
 		bytesToSize(bytes) {
 			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
 			if (bytes === 0) return 'n/a'
@@ -371,6 +561,10 @@ export default {
 			return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i]
 		},
 
+		/**
+		 * @param fullname
+		 * @spec exclude Splits a filename into name + extension for display; UI presentation helper.
+		 */
 		getFileNameAndExtension(fullname) {
 			const lastDot = fullname.lastIndexOf('.')
 			const name = fullname.slice(0, lastDot)
@@ -378,13 +572,17 @@ export default {
 			return { name, extension }
 		},
 
+		/**
+		 * @param files
+		 * @spec exclude Flags over-size files in the queue with a status; UI validation helper.
+		 */
 		checkForTooBigFiles(files) {
 			if (!files) return false
-			const wrongFiles = files.filter(file => {
+			const wrongFiles = files.filter((file) => {
 				return this.getTooBigFiles(file.size)
 			})
 
-			wrongFiles.forEach(file => {
+			wrongFiles.forEach((file) => {
 				file.status = 'too_large'
 			})
 
@@ -395,57 +593,81 @@ export default {
 			return size > 536870480 // 512MB
 		},
 
+		/**
+		 * @param option
+		 * @spec exclude Mutual-exclusion guard for the tag multiselect ("No label" vs real tags); UI selection helper.
+		 */
 		isSelectable(option) {
-			if (this.labelOptions.value?.includes('Geen label') && option !== 'Geen label') {
+			if (
+				this.labelOptions.value?.includes(t('openregister', 'No label'))
+				&& option !== t('openregister', 'No label')
+			) {
 				return false
 			}
-			if (this.labelOptions.value?.length >= 1 && !this.labelOptions.value?.includes('Geen label') && option === 'Geen label') {
+			if (
+				this.labelOptions.value?.length >= 1
+				&& !this.labelOptions.value?.includes(t('openregister', 'No label'))
+				&& option === t('openregister', 'No label')
+			) {
 				return false
 			}
 			return true
 		},
 
+		/**
+		 * @spec exclude Maps the "No label" sentinel to null for the tag value; UI selection helper.
+		 */
 		getLabels() {
-			if (this.labelOptions.value?.includes('Geen label')) {
+			if (this.labelOptions.value?.includes(t('openregister', 'No label'))) {
 				return null
 			} else {
 				return this.labelOptions.value
 			}
 		},
 
+		/**
+		 * @spec exclude Loads available tags via objectStore.fetchTags to populate the label multiselect; UI form-loading plumbing.
+		 */
 		getAllTags() {
 			this.tagsLoading = true
 			// @TODO - this functionality always calls and therefore always has to wait.
 			// split this up into a computed value and action, the computed value can dervive tags from `objectStore.getTags` (getter) or `objectStore.tags` (state)
 			// this avoids the waiting time in later calls
-			objectStore.fetchTags().then((tags) => {
-				const newLabelOptions = new Set()
-				const newLabelOptionsEdit = new Set()
+			objectStore
+				.fetchTags()
+				.then((tags) => {
+					const newLabelOptions = new Set()
+					const newLabelOptionsEdit = new Set()
 
-				// add labels to set
-				newLabelOptions.add('Geen label')
+					// add labels to set
+					newLabelOptions.add(t('openregister', 'No label'))
 
-				tags.map(tag => newLabelOptions.add(tag))
-				tags.map(tag => newLabelOptionsEdit.add(tag))
+					tags.map((tag) => newLabelOptions.add(tag))
+					tags.map((tag) => newLabelOptionsEdit.add(tag))
 
-				// convert set to array
-				this.labelOptions.options = Array.from(newLabelOptions)
-				this.labelOptionsEdit.options = Array.from(newLabelOptionsEdit)
-			}).finally(() => {
-				this.tagsLoading = false
-			})
+					// convert set to array
+					this.labelOptions.options = Array.from(newLabelOptions)
+					this.labelOptionsEdit.options = Array.from(newLabelOptionsEdit)
+				})
+				.finally(() => {
+					this.tagsLoading = false
+				})
 		},
 
 		/**
 		 * Opens the folder URL in a new tab after parsing the encoded URL and converting to Nextcloud format
+		 *
 		 * @param {string} url - The encoded folder URL to open (e.g. "Open Registers\/Publicatie Register\/Publicatie\/123")
+		 * @spec exclude Opens the Files app at the object's folder in a new tab; UI navigation helper.
 		 */
-		 openFolder(url) {
+		openFolder(url) {
 			// Parse the encoded URL by replacing escaped characters
 			const decodedUrl = url.replace(/\\\//g, '/')
 
 			// Ensure URL starts with forward slash
-			const normalizedUrl = decodedUrl.startsWith('/') ? decodedUrl : '/' + decodedUrl
+			const normalizedUrl = decodedUrl.startsWith('/')
+				? decodedUrl
+				: '/' + decodedUrl
 
 			// Construct the proper Nextcloud Files app URL with the normalized path
 			// Use window.location.origin to get the current domain instead of hardcoding
@@ -455,6 +677,11 @@ export default {
 			window.open(nextcloudUrl, '_blank')
 		},
 
+		/**
+		 * @param file
+		 * @param editedTags
+		 * @spec exclude Applies edited tags to a queued file and re-triggers upload; UI selection plumbing.
+		 */
 		saveTags(file, editedTags) {
 			file.tags = editedTags
 			file.status = 'pending'
@@ -464,17 +691,33 @@ export default {
 			this.editedTags = []
 		},
 
+		/**
+		 * @param fileName
+		 * @spec exclude Removes a file from the upload queue; UI file-picker plumbing.
+		 */
 		removeFile(fileName) {
 			reset(fileName)
 			if (this.editingTags === fileName) {
 				this.editingTags = null
 			}
 		},
+
+		/**
+		 * @spec exclude Computed-style enablement guard for the upload action; UI state helper.
+		 */
 		checkIfDisabled() {
-			if (this.objectStore.objectItem.downloadUrl || this.objectStore.objectItem.title) return true
+			if (
+				this.objectStore.objectItem.downloadUrl
+				|| this.objectStore.objectItem.title
+			)
+				return true
 			return false
 		},
 
+		/**
+		 * @param specificFile
+		 * @spec exclude Uploads queued attachments to the object via objectStore; entity-file persistence lives in the store, this is modal orchestration plumbing.
+		 */
 		async addAttachments(specificFile = null) {
 			if (!this.registerId || !this.schemaId || !this.objectId) {
 				this.error = 'Missing object context'
@@ -491,10 +734,16 @@ export default {
 					filesToUpload = [specificFile]
 				} else {
 					// filter out successful and pending files
-					filesToUpload = this.filesComputed.filter(file => file.status !== 'uploaded' && file.status !== 'uploading')
+					filesToUpload = this.filesComputed.filter(
+						(file) =>
+							file.status !== 'uploaded'
+							&& file.status !== 'uploading',
+					)
 
 					// filter out files too large
-					filesToUpload = filesToUpload.filter(file => !this.getTooBigFiles(file.size))
+					filesToUpload = filesToUpload.filter(
+						(file) => !this.getTooBigFiles(file.size),
+					)
 				}
 
 				if (filesToUpload.length === 0) {
@@ -505,40 +754,52 @@ export default {
 				// Build and register the type
 				const type = `${this.registerId}-${this.schemaId}`
 				if (!objectStore.objectTypes?.includes(type)) {
-					objectStore.registerObjectType(type, this.schemaId, this.registerId)
+					objectStore.registerObjectType(
+						type,
+						this.schemaId,
+						this.registerId,
+					)
 				}
 
 				// file calls
-				const calls = await Promise.all(filesToUpload.map(async (file) => {
-					file.status = 'uploading'
+				const calls = await Promise.all(
+					filesToUpload.map(async (file) => {
+						file.status = 'uploading'
 
-					try {
-						const formData = new FormData()
-						formData.append('files[]', file)
-						if (Array.isArray(file.tags)) {
-							file.tags.forEach(tag => formData.append('tags[]', tag))
+						try {
+							const formData = new FormData()
+							formData.append('files[]', file)
+							if (Array.isArray(file.tags)) {
+								file.tags.forEach((tag) =>
+									formData.append('tags[]', tag),
+								)
+							}
+							if (this.share) {
+								formData.append('share', '1')
+							}
+
+							const responseJson = await objectStore.uploadFiles(
+								type,
+								this.objectId,
+								formData,
+							)
+
+							file.status = 'uploaded'
+
+							return [true, responseJson]
+						} catch (error) {
+							file.status = 'failed'
+							return [false, error]
 						}
-						if (this.share) {
-							formData.append('share', '1')
-						}
-
-						const responseJson = await objectStore.uploadFiles(type, this.objectId, formData)
-
-						file.status = 'uploaded'
-
-						return [true, responseJson]
-					} catch (error) {
-						file.status = 'failed'
-						return [false, error]
-					}
-				}))
+					}),
+				)
 
 				this.getAllTags()
 
 				// Refresh files for the object
 				await objectStore.fetchFiles(type, this.objectId)
 
-				const failed = calls.filter(result => result[0] === false)
+				const failed = calls.filter((result) => result[0] === false)
 
 				if (failed.length > 0) {
 					this.error = failed[0][1].message
@@ -574,12 +835,8 @@ div[class='modal-container']:has(.TestMappingMainModal) {
 	margin-inline-end: var(--OC-margin-20);
 }
 
-.filesListDragDropNoticeWrapper--disabled{
+.filesListDragDropNoticeWrapper--disabled {
 	opacity: 0.4;
-}
-
-.success {
-	color: green;
 }
 
 .folderLink {
@@ -610,7 +867,7 @@ div[class='modal-container']:has(.TestMappingMainModal) {
 	border-collapse: collapse;
 }
 
-.files-table-td-name{
+.files-table-td-name {
 	overflow: hidden;
 	white-space: nowrap;
 	text-overflow: ellipsis;
@@ -679,7 +936,7 @@ div[class='modal-container']:has(.TestMappingMainModal) {
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	min-width: calc(var(--min-size)* 2);
+	min-width: calc(var(--min-size) * 2);
 	max-width: 300px;
 }
 
@@ -712,11 +969,10 @@ div[class='modal-container']:has(.TestMappingMainModal) {
 	justify-content: space-between;
 	text-align: unset;
 	align-items: center;
-	-webkit-box-align: end;
 	box-sizing: border-box;
 }
 
-.labelAndShareContainer{
+.labelAndShareContainer {
 	display: flex;
 	justify-content: center;
 	align-items: end;

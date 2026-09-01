@@ -1,6 +1,8 @@
 /* eslint-disable no-console */
-import { Ref, ref } from 'vue'
+import type { Ref } from 'vue'
+
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
 export const useSearchStore = defineStore('search', () => {
 	/*
@@ -14,44 +16,46 @@ export const useSearchStore = defineStore('search', () => {
 	const searchResults = ref<any>('')
 	const searchError = ref<any>('')
 
+	/**
+	 *
+	 * @param _search
+	 */
 	function setSearch(_search: string) {
 		search.value = _search
-		console.info('Active search set to ' + search.value)
 	}
+	/**
+	 *
+	 * @param _searchResults
+	 */
 	function setSearchResults(_searchResults: string) {
 		searchResults.value = _searchResults
-		console.info('Active search set to ' + searchResults.value)
 	}
 	/* istanbul ignore next */ // ignore this for Jest until moved into a service
+	/**
+	 *
+	 */
 	function getSearchResults() {
-		fetch(
-			'/index.php/apps/openregister/api/search?_search=' + search.value,
-			{
-				method: 'GET',
-			},
-		)
-			.then(
-				(response) => {
-					response.json().then(
-						(data) => {
-							if (data?.code === 403 && data?.message) {
-								searchError.value = data.message
-								console.info(searchError.value)
-							} else {
-								searchError.value = '' // Clear any previous errors
-							}
-							searchResults.value = data
-						},
-					)
-				},
-			)
-			.catch(
-				(err) => {
-					searchError.value = err.message || 'An error occurred'
-					console.error(err.message ?? err)
-				},
-			)
+		fetch('/index.php/apps/openregister/api/search?_search=' + search.value, {
+			method: 'GET',
+		})
+			.then((response) => {
+				response.json().then((data) => {
+					if (data?.code === 403 && data?.message) {
+						searchError.value = data.message
+					} else {
+						searchError.value = '' // Clear any previous errors
+					}
+					searchResults.value = data
+				})
+			})
+			.catch((err) => {
+				searchError.value = err.message || 'An error occurred'
+				console.error(err.message ?? err)
+			})
 	}
+	/**
+	 *
+	 */
 	function clearSearch() {
 		search.value = ''
 		searchError.value = ''
@@ -60,8 +64,8 @@ export const useSearchStore = defineStore('search', () => {
 
 	// new, used by search page
 	// search data
-	const searchObjectsDataRegister = ref<{ label: string, id: string } | null>(null)
-	const searchObjectsDataSchema = ref<{ label: string, id: string } | null>(null)
+	const searchObjectsDataRegister = ref<{ label: string; id: string } | null>(null)
+	const searchObjectsDataSchema = ref<{ label: string; id: string } | null>(null)
 	const searchObjectsDataPagination = ref<number>(1)
 	const searchObjectsDataPaginationLimit = ref<number>(14)
 
@@ -77,10 +81,15 @@ export const useSearchStore = defineStore('search', () => {
 	 * Search for objects in the database.
 	 * This function returns refs immediately while updating them asynchronously as the search results come in.
 	 *
-	 * @param {Record<string, string>} searchQuery - Key-value pairs of search parameters
-	 * @return {object} Object containing refs that will be updated with search results
+	 * @param searchQuery - Key-value pairs of search parameters
+	 * @return Object containing refs that will be updated with search results
 	 */
-	function searchObjects(searchQuery: Record<string, string> = {}): {success: Ref<boolean>, loading: Ref<boolean>, result: Ref<Record<string, any>[]>, error: Ref<string>} {
+	function searchObjects(searchQuery: Record<string, string> = {}): {
+		success: Ref<boolean>
+		loading: Ref<boolean>
+		result: Ref<Record<string, any>[]>
+		error: Ref<string>
+	} {
 		const searchQueryString = new URLSearchParams(searchQuery).toString()
 		const queryPart = searchQueryString ? `?${searchQueryString}` : ''
 
@@ -89,9 +98,6 @@ export const useSearchStore = defineStore('search', () => {
 		console.group('search objects')
 
 		console.group('Fetching search results with params:')
-		Object.entries(searchQuery).forEach(([key, value]) => {
-			console.info(`${key}: ${value}`)
-		})
 		console.groupEnd()
 
 		searchObjectsLoading.value = true
@@ -101,15 +107,11 @@ export const useSearchStore = defineStore('search', () => {
 		const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}${queryPart}`
 
 		fetch(endpoint, { method: 'GET' })
-			.then(async response => {
-				console.info('Search results fetched')
-
+			.then(async (response) => {
 				// Clear any previous errors
 				searchObjectsError.value = ''
 
 				const data = await response.json()
-
-				console.info(`${data.results.length} objects found`)
 
 				if (!response.ok && response.statusText) {
 					searchObjectsError.value = response.statusText
@@ -120,7 +122,7 @@ export const useSearchStore = defineStore('search', () => {
 				searchObjectsSuccess.value = true
 				searchObjectsResult.value = data
 			})
-			.catch(error => {
+			.catch((error) => {
 				console.error('Error fetching search results:', error)
 				searchObjectsSuccess.value = false
 				searchObjectsError.value = error
@@ -138,12 +140,18 @@ export const useSearchStore = defineStore('search', () => {
 		}
 	}
 
+	/**
+	 *
+	 */
 	function reDoSearch() {
 		return searchObjects({
 			...oldSearchQuery.value,
 		})
 	}
 
+	/**
+	 *
+	 */
 	function clearObjectSearchResults() {
 		searchObjectsSuccess.value = false
 		searchObjectsLoading.value = false

@@ -2,15 +2,173 @@ name: Code Quality
 
 on:
   push:
-    branches: [main, beta, development, feature/**, bugfix/**, hotfix/**]
+    # DEFAULT BRANCHES ONLY. `pull_request` below carries every other branch.
+    #
+    # This was an allow-list of branch prefixes, and that was a gate with a
+    # SILENT hole: a branch matching nothing got no CI at all, and its last
+    # visible status was whatever it inherited — indistinguishable, on every
+    # dashboard, from a branch that passed. Two live examples, both found
+    # 2026-08-14: `perf/**` was uncovered in openconnector, where a merge
+    # carrying unresolved conflict markers and 84 failing tests was pushed and
+    # nothing ran; and `feat/**` was uncovered in openregister, because the
+    # list said `feature/**`.
+    #
+    # The comment that stood here said adding prefixes was not the durable fix,
+    # and that the durable fix was to let the pull_request trigger gate it.
+    # THIS IS THAT CHANGE.
+    #
+    # What forced it now: a push to a branch with an open PR ran the SAME 34
+    # jobs TWICE on the same commit. `concurrency` cannot dedupe them — the
+    # group is suffixed by event name deliberately (.github#540: a
+    # default-branch push carries jobs a PR run does not, and a dispatch must
+    # not be cancellable by a standing release PR), so the two events sit in
+    # different lanes BY DESIGN and both run to completion. Measured fleet-wide
+    # 2026-08-25..27, 659 of 2,106 Code Quality runs were that duplicate — 31%
+    # of the fleet's most expensive workflow, re-deciding a commit another run
+    # was already deciding. The account ceiling is 60 concurrent jobs (Team
+    # plan); the fleet was measured at 53 running with 1,528 jobs queued behind
+    # them, the oldest run 7 hours old and not yet started.
+    #
+    # NO BRANCH LOSES ITS FLOOR. merge-hygiene.yml runs on `'**'` — every
+    # branch anyone pushes, no prefix list to forget — and it is the check
+    # `development` actually requires. That is the smoke alarm; this workflow
+    # is the fire brigade and belongs on the PR. Of 668 feature-branch push
+    # runs in that window, only NINE were on a branch with no PR run beside
+    # them.
+    #
+    # The default branches STAY: their push runs are not duplicates, they are
+    # the only carrier of Coverage Baseline Check, SBOM and Features Extract,
+    # none of which run on a pull_request event.
+    branches:
+      - main
+      - beta
+      - development
   pull_request:
-    types: [opened, reopened]
+    # `synchronize` — a push to an open PR — is what was missing. Without it the
+    # quality suite runs ONCE, when the PR is opened, and every commit after
+    # that is merged unchecked while the PR still shows the first run's green.
+    #
+    # Observed on this repo 2026-07-31: #2227 was opened, failed phpcs on
+    # pre-existing debt, was fixed by a follow-up push, and the fix was never
+    # verified by CI. #2228's only Code Quality run stayed pinned to its first
+    # commit across a merge from development and two further commits, so its
+    # checks were describing code that no longer existed.
+    #
+    # The branch list on `push:` does not cover the gap: it names `feature/**`
+    # while the convention in practice is `feat/**` and `fix/**`, so most
+    # branches get nothing there either.
+    #
+    # Cost is bounded by the `concurrency` block below — a new push cancels the
+    # in-flight run for the same head ref rather than queueing beside it.
+    #
+    # hermiq's copy of this workflow omits `types:` entirely, which defaults to
+    # [opened, synchronize, reopened]. This repo is the outlier.
+    types: [opened, reopened, synchronize]
     branches: [main, beta, development]
   workflow_dispatch:
 
+# Deduplicating a `push` run against the `pull_request` run for the SAME head
+# ref is the point of this block, and for a feature branch it is exactly right:
+# two runs of identical jobs, one of them wasted.
+#
+# It is wrong for `main` and `development`, because the push run there is NOT a
+# duplicate — it is the only carrier of the push-only jobs: "Coverage Baseline
+# Check" (`github.event_name == 'push'`), "SBOM" and "Features Extract". And
+# those two branches always have an open PR whose `head_ref` IS the branch
+# name: the standing "Release: merge development into beta" (#1711 here).
+# `github.head_ref` on that PR run and `github.ref_name` on the push run both
+# render the identical group `quality-development`, and `cancel-in-progress`
+# then killed whichever started first — always the push run, by a few seconds.
+#
+# Measured on this repo: push runs 31038051904 (cancelled 27s in) and
+# 30906672684 (cancelled 61s in). That duration is the discriminator: the
+# shared workflow's `timeout-minutes: 45` cancellation lands at 45m16s–45m28s,
+# so these are concurrency kills, not timeouts.
+#
+# On the surviving PR run "Coverage Baseline Check" reports `skipped`, which is
+# CORRECT for a pull_request event and renders exactly like a pass. So the gate
+# appears on both runs and executes on neither — a dead gate of the
+# permanently-pending shape.
+#
+# Suffixing only the default-branch push keeps feature-branch dedup untouched
+# (`quality-feature/x` for both events, exactly as before) and gives the two
+# default branches' push runs a lane of their own.
+#
+# Proven in openconnector#1158: its first-ever completed `development` push run
+# (31048998594) executed Coverage Baseline Check, SBOM and Features Extract.
 concurrency:
-  group: quality-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
+  # SUFFIXED BY EVENT NAME, not just by `-push`.
+  #
+  # The previous expression gave a push on `development` its own lane
+  # (`-push`) but left EVERYTHING ELSE sharing `quality-development` — and
+  # that is not a quiet lane: `Sync to Beta` keeps a PR open whose head_ref
+  # IS `development`, so its run computes the same group and is re-triggered
+  # on every merge.
+  #
+  # A `workflow_dispatch` therefore shared a group with that PR and was
+  # cancelled by it. Measured on shillinq 2026-08-21: dispatch 32487948678
+  # cancelled by pull_request run 32490160836 (head_branch `development`).
+  # A run someone deliberately asked for could essentially never complete.
+  #
+  # That reaches past ad-hoc verification: the fleet gate-drift sweep
+  # (.github#523) dispatches per app with `--ref development`, because
+  # `schedule:` cannot choose a branch. Under the old group those runs are
+  # cancelled and report neither pass nor fail — and a routine that produces
+  # no verdict is indistinguishable from one that never ran.
+  #
+  # This is hermiq's form, already live there. Pull requests keep the bare
+  # group (so a PR still supersedes its own earlier run); push, dispatch and
+  # schedule each get their own lane.
+  #
+  # THE BRANCH RESTRICTION IS GONE, because it contradicted the sentence above.
+  #
+  # The suffix used to apply only when `ref_name` was `main` or `development`,
+  # so on every OTHER branch push and pull_request still computed the SAME
+  # group — and `cancel-in-progress` made them kill each other. That became
+  # reachable when the push allow-list widened on 2026-08-14 to include
+  # `feat/**`, `fix/**`, `perf/**`, `refactor/**` and `chore/**`: those branches
+  # now get both a push run and a pull_request run for one commit.
+  #
+  # Measured on openregister#2821, sha 4cad83d, branch
+  # `fix/userservice-execute-removed-in-nc34`:
+  #
+  #   07:51:57  event=push          queued     <- never started
+  #   07:52:15  event=pull_request  cancelled
+  #
+  # Both runs gone, and `quality / Quality Report` — a `needs:`-gated
+  # aggregator — reports FAILURE when its dependencies are cancelled. So the PR
+  # showed a red gate having never been evaluated, and re-running collided the
+  # same way: three PRs sat in that loop for hours. See .github#563.
+  #
+  # A branch name is not a unique lane when two event types can each produce a
+  # run for it, so the event is now always part of the key.
+  group: quality-${{ github.head_ref || github.ref_name }}${{ github.event_name != 'pull_request' && format('-{0}', github.event_name) || '' }}
+
+  # PUSH RUNS ARE NOT CANCELLED — and this has to be said HERE, not only in the
+  # shared workflow. .github#597 set `cancel-in-progress` on quality.yml itself,
+  # but a caller's own concurrency cancels the whole run before the called
+  # workflow's setting can apply, so that fix reached only the apps that declare
+  # no concurrency of their own. Measured 2026-08-28 over push runs on
+  # `development` since #597: 0 of 11 cancelled where the caller was silent, 7 of
+  # 13 (54%) cancelled where the caller still said `true`.
+  #
+  # An integration branch needs a verdict per commit: the run being cancelled is
+  # the only thing that would have said whether what just landed is sound, and
+  # its replacement is cancelled too. `pull_request` keeps cancelling, where
+  # superseding really is correct.
+  cancel-in-progress: ${{ github.event_name != 'push' }}
+
+# Permission CEILING for the called quality pipeline. GitHub statically
+# validates the called workflow's declared job permissions against this
+# grant — even for jobs that are disabled — so it must cover the maximum
+# any nested job declares: journeydoc-capture (contents+actions write),
+# update-baseline / features-extract (contents write), and the Quality
+# Report PR comment (issues / pull-requests write).
+permissions:
+  contents: write
+  actions: write
+  issues: write
+  pull-requests: write
 
 jobs:
   quality:
@@ -20,7 +178,15 @@ jobs:
       app-name: openregister
       php-version: "8.3"
       php-test-versions: '["8.3", "8.4"]'
-      nextcloud-test-refs: '["stable32"]'
+      # THE LIST IS THE WHOLE DECLARED RANGE. appinfo/info.xml declares
+      # <nextcloud min-version="32" max-version="34"/>, so 32, 33 and 34 each get
+      # a leg. Adopting NC 34 by REPLACING the list left 32 and 33 advertised to
+      # the App Store with no job touching them — the declared floor became the
+      # untested end, which is the same drift as never testing 34, reversed.
+      # stable34 leads because newman, playwright and journeydoc-capture all read
+      # `fromJSON(inputs.nextcloud-test-refs)[0]` as their single server, and 34
+      # is the major this app had never been exercised on.
+      nextcloud-test-refs: '["stable34", "stable32", "stable33"]'
       enable-psalm: true
       enable-phpstan: true
       enable-phpmetrics: true
@@ -28,5 +194,176 @@ jobs:
       enable-eslint: true
       enable-phpunit: true
       enable-newman: true
+      # Playwright starts from a deliberately SMALL spec set rather than the
+      # whole of tests/e2e (58 files, several of which write fixtures or shell
+      # out to occ). A gate that is red on arrival is a gate nobody turns on —
+      # which is how this repo ended up with an E2E job that had never
+      # succeeded. The floor is green and it grows; see tests/e2e/ci/.
+      enable-playwright: true
+      playwright-test-path: tests/e2e/ci
+      # The object-sharing specs need two non-admin accounts: sharing something
+      # to yourself proves nothing, and task 4.0's whole point is that an OWNER
+      # who is not an admin can set their own object's scope.
+      #
+      # Created with `occ`, NOT through `/ocs/v2.php/cloud/users`. The specs used
+      # to provision them over OCS and that started returning 404 on this
+      # instance — `provisioning_api` is shipped but optional, and an e2e suite
+      # for object sharing should not go dark because a user-management app is
+      # absent. `|| true` because the accounts persist across re-runs on the same
+      # instance; the specs assert they can authenticate rather than assuming the
+      # seed ran, so a genuinely failed seed still fails loudly.
+      #
+      # A SCRIPT, not an inline command, and the shell operators are why. The
+      # shared workflow runs this through `eval <value>` UNQUOTED, so the outer
+      # bash parses whatever it expands to and any metacharacter is parsed at the
+      # wrong level. Measured, both wrong:
+      #   `( … ) && ( … )` -> "syntax error near unexpected token OC_PASS=…", and
+      #                       the seed silently never ran.
+      #   `sh -c '… ; …'`  -> no error, but the `;` still split at the OUTER level,
+      #                       so only part of it ran inside the sh -c.
+      # `bash <path>` is a single word with no metacharacters, so eval cannot
+      # mis-parse it. Path is relative to `server/`, which the step cd's into.
+      playwright-seed-command: bash apps/openregister/tests/e2e/ci/seed.sh
       enable-coverage-guard: true
+      # Run the Hydra mechanical quality gates against this PR's diff.
+      #
+      # This tier has never executed in this repository. `enable-hydra-gates`
+      # defaults to false, so `quality / Hydra Gates` has been SKIPPED on every
+      # run here — and a skipped job is neither a pass nor a failure in the
+      # Quality Report rollup, so its absence has been indistinguishable from
+      # its success. That is the whole reason for turning it on rather than
+      # assuming the gates were already covering this repo.
+      #
+      # No count is written here on purpose: the number of gates depends on the
+      # gate package version in use and the number that actually run depends on
+      # this repo's diff and toolchain. The package prints both
+      # (`COVERAGE: N of M`) in the job log; a digit in prose has nothing to
+      # reconcile against and goes stale silently.
+      # See https://github.com/ConductionNL/.github/tree/main/hydra-gates
+      enable-hydra-gates: true
+      # No `hydra-gates-ref` here on purpose. The shared workflow defaults it
+      # to @main, and this workflow is itself consumed at @main, so the two
+      # sides move together and a gate fix reaches this repo without a commit
+      # in this repo. A pin is a silent expiry date: 22 repos sat on v1.0.1 and
+      # 16 gates were dead fleet-wide while every one reported PASS (.github#159),
+      # and a default flipped at @main later reached those old runners and made
+      # them red on gates they had no subject matter for (.github#173).
+      # To hold this repo still for a specific reason, set the input explicitly
+      # and say why — it is still honoured. To roll back for everyone, revert on
+      # ConductionNL/.github main.
+      #
+      # THIRD CAUSE, and the one that is failing this repo RIGHT NOW
+      # (.github#177): quality.yml@main began executing three gate helpers BY
+      # NAME — check_spec_anchors.py, check_form_labels.py and
+      # check_license_triangle.py — which exist in NO tag before v1.5.0.
+      # Verified by DIRECTORY LISTING of each tag, not by per-file lookups:
+      # those answered "present" uniformly across v1.0.0..v1.5.0, and the
+      # uniformity across independent inputs was the tell that the instrument
+      # was wrong. So the Hydra Gates job here fails at "Verify the pinned gates
+      # package satisfies this workflow", before a single gate runs, with the
+      # workflow's own words: "This is NOT a code-quality finding about your
+      # repository." Removing the pin is the repair.
+      #
+      # Unpinning also picks up v1.5.1's push scoping (.github#179): on a push to
+      # `development`, `origin/development` IS `HEAD`, so the diff was empty by
+      # construction — <= v1.4.0 passed over it (permanently green) and v1.5.0
+      # refused with exit 99 (permanently red). The scope is now
+      # `github.event.before...HEAD`, what the push actually changed.
+      #
+      # `hydra-gates-require-full-coverage: false` USED TO BE SET HERE and is
+      # deliberately NOT set now. It was added when the shared workflow's
+      # default flipped to `true`, on the reasoning that this repo "cannot
+      # honestly satisfy it yet" — gate-33 (producer `enable-axe` deliberately
+      # off) and gate-4 (correctly diff-scoped out per ADR-020) did not report.
+      # Neither is a coverage gap: they are NOT APPLICABLE, and a current gate
+      # package says so out loud instead of counting them as "DID NOT RUN".
+      # Measured diff-scoped against origin/development WITH
+      # --require-full-coverage — exactly the condition the override existed to
+      # avoid — the run exits 0 with all applicable gates passing and 4/6/7/33
+      # each naming itself NOT APPLICABLE and why. A switched-off control is
+      # worth less than a loud one, so do not re-add the override without a
+      # measurement showing it is needed.
+      # `enable-axe` is deliberately NOT set. It is the input that produces
+      # `tests/axe/report.json`, which gate-33 consumes; without it gate-33
+      # reports SKIPPED, as it has done in every repo in the fleet. Measured
+      # against a vanilla Nextcloud with no app installed, core's own pages
+      # already carry serious/critical axe violations, so switching it on in
+      # the same change as the gates themselves would confuse "this repo has an
+      # accessibility defect" with "Nextcloud core does". Separate change.
       enable-sbom: true
+
+      # ── Frontend Check legs ──────────────────────────────────────────────
+      # `frontend-checks` defaults to `[]`, and an empty list means the shared
+      # workflow emits NO "Frontend Check" job at all — which is why this repo's
+      # validator family had never run in CI even though everything else here is
+      # switched on. Both entries are self-contained `node` scripts, which is
+      # what a leg has to be (each leg is a fresh job with its own checkout +
+      # `npm ci`).
+      # `check:specs` is the aggregate (json-strict + manifest + register),
+      # listed as ONE leg rather than three.
+      # Measured on this tree before enabling: `check:specs` PASSES (with
+      # warnings), `test:l10n` FAILED on source strings missing from the English
+      # catalogue. That defect is now fixed and the leg PASSES: the gate was
+      # asserting frontend t() calls against l10n/en.json, a file no frontend
+      # code path reads, and now targets l10n/en.js.
+      #
+      # `test:l10n:parity` is listed as a SEPARATE leg from `test:l10n` because
+      # they answer different questions and fail for different reasons:
+      #   test:l10n         -> does en.js cover every t()/n() call in src/?
+      #   test:l10n:parity  -> does every FINISHED locale cover every en.js key?
+      # Without the second one, adding an English string silently leaves 17
+      # finished locales one key short and nothing notices — which is how en.js
+      # came to sit ~700 keys ahead of the locales in the first place. Locales
+      # still being translated are reported as a backlog and do not fail the
+      # build; empty values and wrong plural arity fail for every locale, because
+      # those render blank at runtime.
+      # Measured on this tree before enabling: PASSES — 17 locales at full
+      # key-for-key parity (2051 keys each), 19 in progress.
+      # `test` is NOT listed: "Frontend Tests (unit)" already runs it.
+      #
+      # `format` (prettier --check) is listed because the shared workflow has NO
+      # prettier job of its own — `quality.yml` runs eslint and stylelint and
+      # mentions prettier ZERO times. This repo already carries
+      # `@nextcloud/prettier-config` and a `format` script, so without this leg
+      # `npm run format` never runs outside a developer's editor and the tree
+      # drifts straight back out of format between merges — the same inert-
+      # formatter failure mode that made the old `.prettierrc` worth deleting.
+      # Centralising the config never stopped drift; the gate does.
+      # Measured on this tree before enabling: PASSES, 428 of 478 tracked
+      # frontend files in scope (l10n/, docs/ and js/ excluded via
+      # .prettierignore / .gitignore, which prettier 3 also reads).
+      # `check:schema-l10n` is a RATCHET, not a gate. Every string inside a form
+      # comes from the schema and is a key in THIS app's catalogue; an absent key
+      # renders the English source inside an otherwise translated form, silently.
+      # The fleet had 30,459 such strings, so this records the current count and
+      # fails only when it GROWS — burning it down stays an ordinary PR.
+      #
+      # `test:l10n:parity` is a SEPARATE leg from `test:l10n` because they answer
+      # different questions: `test:l10n` asks whether en.js covers every t()/n()
+      # call in src/, while `test:l10n:parity` asks whether every locale matches
+      # en.js key-for-key. One passing tells you nothing about the other.
+      #
+      # `check:l10n-js` is a THIRD question again: whether the generated browser
+      # catalogues (l10n/*.js) are in step with their .json sources. Both sides
+      # of this merge added one of these; neither replaces the other.
+      frontend-checks: '["check:specs", "test:l10n", "test:l10n:parity", "format", "check:schema-l10n", "check:l10n-js"]'
+      # ── Cost controls (see ConductionNL/.github#596, #599) ───────────────
+      #
+      # The fleet's CI was not slow, it was QUEUED. A Code Quality run does
+      # ~38 job-minutes of work and its longest job is 16 minutes, but the
+      # median run took 78.5 minutes wall clock: one poll on 2026-08-27 found
+      # 53 jobs running against the account's 60-job ceiling, 1,528 queued
+      # behind them, and a run that had waited 425 minutes to start. ~96% of
+      # the wall clock was queueing, so the levers below remove DEMAND rather
+      # than making any check faster.
+      # Run PHPUnit and Playwright only when the diff could change their
+      # verdict. They are 29 of the ~38 job-minutes a run spends, and 58% of
+      # sampled fleet commits touched no .php/.js/.ts/.vue file at all. Fails
+      # safe TOWARDS running, and a filtered skip is a declared state in the
+      # Quality Report, distinct from both a pass and a missing verdict.
+      enable-path-filtering: true
+      # PR-time PHPUnit runs the primary PHP against the newest declared
+      # Nextcloud; the full matrix still runs on every push to a default
+      # branch and on the release PR into beta. Breadth moves from
+      # per-commit to per-merge, it is not dropped.
+      reduce-pr-matrix: true

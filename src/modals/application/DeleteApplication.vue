@@ -1,5 +1,5 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { applicationStore, navigationStore } from '../../store/store.js'
 </script>
 
@@ -15,9 +15,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 				</template>
 				{{ t('openregister', 'Cancel') }}
 			</NcButton>
-			<NcButton
-				type="error"
-				@click="deleteApplication">
+			<NcButton variant="error" @click="deleteApplication">
 				<template #icon>
 					<TrashCanOutline :size="20" />
 				</template>
@@ -28,7 +26,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import { NcDialog, NcButton } from '@nextcloud/vue'
+import { NcButton, NcDialog } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
@@ -40,22 +38,43 @@ export default {
 		Cancel,
 		TrashCanOutline,
 	},
+
 	computed: {
+		/**
+		 * @spec exclude computed display helper for confirmation message
+		 */
 		deleteMessage() {
-			return t('openregister', 'Are you sure you want to delete the application "{name}"? This action cannot be undone.', {
-				name: applicationStore.applicationItem?.name || t('openregister', 'this application'),
-			})
+			return t(
+				'openregister',
+				'Are you sure you want to delete the application "{name}"? This action cannot be undone.',
+				{
+					name:
+						applicationStore.applicationItem?.name
+						|| t('openregister', 'this application'),
+				},
+			)
 		},
 	},
+
 	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		async deleteApplication() {
 			try {
-				await applicationStore.deleteApplication(applicationStore.applicationItem)
+				await applicationStore.deleteApplication(
+					applicationStore.applicationItem,
+				)
 				navigationStore.setDialog(false)
 			} catch (error) {
 				console.error('Error deleting application:', error)
 			}
 		},
+
+		/**
+		 * @param open
+		 * @spec exclude modal open/close UI handler
+		 */
 		handleDialogClose(open) {
 			if (!open) {
 				navigationStore.setDialog(false)

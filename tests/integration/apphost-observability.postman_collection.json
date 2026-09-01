@@ -1,0 +1,125 @@
+{
+    "info": {
+        "name": "AppHost Declarative Observability — Contract",
+        "description": "Engine-owned contract for the AppHost observability endpoints (ADR-040). Guards every adopting app at once: public health endpoint + ADR-006 shape, statusCodePolicy HTTP codes, admin-gated metrics (anonymous rejected), Prometheus 0.0.4 content-type, implicit {app}_info/{app}_up presence. Parameterised by {{health_path}} / {{metrics_path}} / {{app_prefix}} so per-app adopt-apphost specs reuse it by overriding the variables.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        { "key": "base_url", "value": "http://localhost" },
+        { "key": "admin_user", "value": "admin" },
+        { "key": "admin_password", "value": "admin" },
+        { "key": "health_path", "value": "/index.php/apps/openregister/api/health" },
+        { "key": "metrics_path", "value": "/index.php/apps/openregister/api/metrics" },
+        { "key": "app_prefix", "value": "openregister" }
+    ],
+    "item": [
+        {
+            "name": "Health — public, ADR-006 shape",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test('health is reachable without auth (public)', function () {",
+                            "    pm.expect([200, 503]).to.include(pm.response.code);",
+                            "});",
+                            "var body = pm.response.json();",
+                            "pm.test('response has ADR-006 shape {status, app, version, checks}', function () {",
+                            "    pm.expect(body).to.have.property('status');",
+                            "    pm.expect(body).to.have.property('app');",
+                            "    pm.expect(body).to.have.property('version');",
+                            "    pm.expect(body).to.have.property('checks');",
+                            "});",
+                            "pm.test('status is one of ok|degraded|error', function () {",
+                            "    pm.expect(['ok', 'degraded', 'error']).to.include(body.status);",
+                            "});",
+                            "pm.test('HTTP code matches status under adr006 policy', function () {",
+                            "    if (body.status === 'error') { pm.expect(pm.response.code).to.eql(503); }",
+                            "    else { pm.expect(pm.response.code).to.eql(200); }",
+                            "});",
+                            "pm.test('checks values never leak internals (ok | failed[: msg])', function () {",
+                            "    Object.values(body.checks).forEach(function (v) {",
+                            "        pm.expect(v === 'ok' || String(v).indexOf('failed') === 0).to.be.true;",
+                            "    });",
+                            "});"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [ { "key": "Accept", "value": "application/json" } ],
+                "url": { "raw": "{{base_url}}{{health_path}}", "host": ["{{base_url}}{{health_path}}"] }
+            }
+        },
+        {
+            "name": "Metrics — anonymous access rejected (admin-only)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test('anonymous metrics never returns metric data', function () {",
+                            "    pm.expect([401, 403, 302]).to.include(pm.response.code);",
+                            "});",
+                            "pm.test('body is not Prometheus exposition', function () {",
+                            "    pm.expect(pm.response.text()).to.not.match(/^# (HELP|TYPE) /m);",
+                            "});"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_url}}{{metrics_path}}", "host": ["{{base_url}}{{metrics_path}}"] }
+            }
+        },
+        {
+            "name": "Metrics — admin gets Prometheus 0.0.4 + implicit info/up",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test('admin metrics returns 200', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "pm.test('content-type is Prometheus text 0.0.4', function () {",
+                            "    pm.expect(pm.response.headers.get('Content-Type')).to.include('text/plain');",
+                            "    pm.expect(pm.response.headers.get('Content-Type')).to.include('version=0.0.4');",
+                            "});",
+                            "var text = pm.response.text();",
+                            "pm.test('implicit {app}_info present with version label', function () {",
+                            "    pm.expect(text).to.include('# TYPE ' + pm.variables.get('app_prefix') + '_info gauge');",
+                            "    pm.expect(text).to.match(new RegExp(pm.variables.get('app_prefix') + '_info\\\\{[^}]*version='));",
+                            "});",
+                            "pm.test('implicit {app}_up present and equals 1', function () {",
+                            "    pm.expect(text).to.include(pm.variables.get('app_prefix') + '_up 1');",
+                            "});",
+                            "pm.test('HELP/TYPE comment lines present', function () {",
+                            "    pm.expect(text).to.match(/^# HELP /m);",
+                            "    pm.expect(text).to.match(/^# TYPE /m);",
+                            "});"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [ { "key": "OCS-APIRequest", "value": "true" } ],
+                "auth": {
+                    "type": "basic",
+                    "basic": [
+                        { "key": "username", "value": "{{admin_user}}" },
+                        { "key": "password", "value": "{{admin_password}}" }
+                    ]
+                },
+                "url": { "raw": "{{base_url}}{{metrics_path}}", "host": ["{{base_url}}{{metrics_path}}"] }
+            }
+        }
+    ]
+}

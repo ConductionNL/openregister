@@ -2,25 +2,30 @@
 	<div class="workflow-execution-panel">
 		<h3>Execution History</h3>
 		<div v-if="loading" class="loading">
-			Loading...
+			{{ t('openregister', 'Loading…') }}
 		</div>
 		<table v-else-if="executions.length" class="execution-table">
 			<thead>
 				<tr>
-					<th>Timestamp</th>
-					<th>Hook</th>
-					<th>Object</th>
-					<th>Status</th>
-					<th>Duration</th>
+					<th scope="col">{{ t('openregister', 'Timestamp') }}</th>
+					<th scope="col">Hook</th>
+					<th scope="col">{{ t('openregister', 'Object') }}</th>
+					<th scope="col">{{ t('openregister', 'Status') }}</th>
+					<th scope="col">Duration</th>
 				</tr>
 			</thead>
 			<tbody>
-				<tr v-for="exec in executions" :key="exec.id" @click="selectedExecution = exec">
+				<tr
+					v-for="exec in executions"
+					:key="exec.id"
+					@click="selectedExecution = exec">
 					<td>{{ formatDate(exec.executedAt) }}</td>
 					<td>{{ exec.hookId }}</td>
 					<td>{{ exec.objectUuid }}</td>
 					<td>
-						<span :class="['status-badge', `status-${exec.status}`]">
+						<span
+							class="status-badge"
+							:class="[`status-${exec.status}`]">
 							{{ exec.status }}
 						</span>
 					</td>
@@ -28,16 +33,17 @@
 				</tr>
 			</tbody>
 		</table>
-		<p v-else>
-			No executions found.
-		</p>
+		<p v-else>No executions found.</p>
 		<div v-if="total > limit" class="pagination">
 			<NcButton :disabled="offset === 0" @click="prevPage">
-				Previous
+				{{ t('openregister', 'Previous') }}
 			</NcButton>
-			<span>{{ offset + 1 }} - {{ Math.min(offset + limit, total) }} of {{ total }}</span>
+			<span
+				>{{ offset + 1 }} - {{ Math.min(offset + limit, total) }} of
+				{{ total }}</span
+			>
 			<NcButton :disabled="offset + limit >= total" @click="nextPage">
-				Next
+				{{ t('openregister', 'Next') }}
 			</NcButton>
 		</div>
 		<WorkflowExecutionDetail
@@ -48,12 +54,12 @@
 </template>
 
 <script>
-/**
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
- */
-import { NcButton } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+/**
+ * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
+ */
+import { NcButton } from '@nextcloud/vue'
 import WorkflowExecutionDetail from './WorkflowExecutionDetail.vue'
 
 export default {
@@ -62,6 +68,7 @@ export default {
 	props: {
 		schemaId: { type: Number, default: null },
 	},
+
 	data() {
 		return {
 			executions: [],
@@ -72,12 +79,14 @@ export default {
 			selectedExecution: null,
 		}
 	},
+
 	mounted() {
 		this.fetchExecutions()
 	},
+
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
+		 * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
 		 */
 		async fetchExecutions() {
 			this.loading = true
@@ -94,22 +103,26 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
+		 * @param dateStr
+		 * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
 		 */
 		formatDate(dateStr) {
 			if (!dateStr) return '-'
 			return new Date(dateStr).toLocaleString()
 		},
+
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
+		 * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
 		 */
 		prevPage() {
 			this.offset = Math.max(0, this.offset - this.limit)
 			this.fetchExecutions()
 		},
+
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
+		 * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
 		 */
 		nextPage() {
 			this.offset += this.limit
@@ -120,12 +133,49 @@ export default {
 </script>
 
 <style scoped>
-.execution-table { width: 100%; border-collapse: collapse; }
-.execution-table th, .execution-table td { padding: 8px; border-bottom: 1px solid var(--color-border); }
-.execution-table tr:hover { background: var(--color-background-hover); cursor: pointer; }
-.status-badge { padding: 2px 6px; border-radius: 3px; font-size: 0.85em; }
-.status-approved { background: var(--color-success); color: white; }
-.status-error, .status-rejected { background: var(--color-error); color: white; }
-.status-modified, .status-delivered { background: var(--color-warning); color: white; }
-.pagination { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.execution-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.execution-table th,
+.execution-table td {
+	padding: 8px;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.execution-table tr:hover {
+	background: var(--color-background-hover);
+	cursor: pointer;
+}
+
+.status-badge {
+	padding: 2px 6px;
+	border-radius: 3px;
+	font-size: 0.85em;
+}
+
+.status-approved {
+	background: var(--color-success);
+	color: white;
+}
+
+.status-error,
+.status-rejected {
+	background: var(--color-error);
+	color: white;
+}
+
+.status-modified,
+.status-delivered {
+	background: var(--color-warning);
+	color: white;
+}
+
+.pagination {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 12px;
+}
 </style>

@@ -1,3 +1,7 @@
+---
+status: in-progress
+---
+
 # audit-hash-chain Specification
 
 ---
@@ -5,10 +9,28 @@ status: implemented
 ---
 
 ## Purpose
+
+@e2e exclude cryptographic backend service — covered by PHPUnit
 Cryptographic SHA-256 hash chaining on audit trail entries with genesis hash, verification endpoint, and tamper detection reporting. Each entry's hash chains to the previous entry, making any tampering detectable by auditors.
 
-## Requirements
+## OpenSpec changes
 
+- `audit-seal-backlog-repair` (in-progress) — builds the bulk seal pass that the
+  fail-soft write path has assumed since `harden-audit-seal-concurrency`: a
+  bounded, resumable, idempotent driver (`occ` command + capped background job)
+  that drains unsealed rows in ascending chain order, one lock per window rather
+  than one per row, never re-hashing an already-sealed row. Adds a partial index
+  for the backlog cursor and a cutover marker so `verifyChain()` stops reporting
+  `valid: true` over rows it silently skipped.
+
+- `flow-object-attribution` (active) — the canonical form gains the three flow
+  attribution fields so a row's run/node/step is hash-covered, the genesis seed
+  moves to `openregister-genesis-v2`, and a seed change is defined as a
+  verify-then-rechain migration: the outgoing canonicaliser is frozen in the
+  codebase and used for the pre-check, whose verdict is persisted before the
+  re-seal makes the prior state underivable.
+
+## Requirements
 ### Requirement: Every audit trail entry MUST include a SHA-256 hash chained to the previous entry
 Each audit trail entry MUST contain a `hash` field computed as `SHA-256(previous_hash + canonical_json(entry_data))`. The `previous_hash` field links to the preceding entry's hash, forming a tamper-evident chain.
 
@@ -67,3 +89,66 @@ The migration MUST add `hash` and `previous_hash` columns to the audit trails ta
 - **THEN** columns `hash` (VARCHAR 64) and `previous_hash` (VARCHAR 64) MUST be added
 - **AND** existing entries MUST retain null values for both columns
 - **AND** an index MUST be created on the `hash` column for verification queries
+
+### Requirement: Audit rows are hash-chained at insert time
+
+Every audit-trail row SHALL be sealed into the SHA-256 hash chain at the moment
+it is inserted. The insert paths `AuditTrailMapper::createAuditTrail()` and
+`createAuditTrailEntry()` SHALL set `previousHash` from the current chain head
+(`AuditHashService::getLastHash()`) and set `hash` (`computeHash()`) before
+persisting the row. The hashed payload SHALL exclude the `hash` and
+`previousHash` fields themselves.
+
+#### Scenario: A newly created audit row carries a hash
+
+- **WHEN** an object write produces an audit-trail row
+- **THEN** the persisted row has a non-null `hash`
+- **AND** its `previousHash` equals the `hash` of the immediately preceding row
+  (or the genesis seed for the first hashed row)
+
+#### Scenario: Tampering is detected
+
+- **WHEN** a persisted audit row's payload is altered directly in the database
+- **AND** `AuditHashService::verifyChain()` is run
+- **THEN** it returns `valid: false`
+- **AND** it identifies the index at which the chain breaks
+
+#### Scenario: Post-cutover null hash is a break, not a skip
+
+- **WHEN** a row created after the hash-chain cutover marker has a null `hash`
+- **AND** `verifyChain()` is run
+- **THEN** it returns `valid: false`
+- **AND** it does NOT silently count the row as `skippedNullHashes`
+
+#### Scenario: Legacy pre-cutover rows are sealed by backfill
+
+- **WHEN** the backfill repair step runs against pre-existing null-hash rows
+- **THEN** each row is sealed with `previousHash`/`hash` in insertion order
+- **AND** re-running the step is a no-op (already-hashed rows are skipped)
+
+### Requirement: Audit entries cannot be deleted through the service layer without an audited admin override
+
+Service-layer helpers that delete audit rows SHALL NOT bypass the immutability
+guarantee. `LogService::deleteLog()`/`deleteLogs()` SHALL either not exist or
+SHALL require an admin caller and record an "immutability override" audit entry
+before deletion, matching `LogService::clearAll()`.
+
+#### Scenario: Non-admin cannot delete audit entries via the service
+
+- **WHEN** a non-admin context invokes an audit-deletion service helper
+- **THEN** the call is rejected
+- **AND** no audit row is deleted
+
+### Requirement: Authorization-configuration changes are durably audited
+
+Changes to register/schema authorization and role definitions SHALL be persisted
+as audit-trail rows via `AuditTrailMapper::createAuditTrailEntry()`, not recorded
+only in the application log.
+
+#### Scenario: Changing a schema's authorization writes an audit row
+
+- **WHEN** a schema's `authorization` block is modified
+- **THEN** a hash-chained audit-trail row describing the change (actor, target,
+  before/after) is persisted
+- **AND** the row participates in `verifyChain()`
+

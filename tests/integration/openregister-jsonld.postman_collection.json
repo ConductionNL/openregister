@@ -1,0 +1,248 @@
+{
+  "info": {
+    "name": "OpenRegister JSON-LD Output",
+    "description": "Read-side JSON-LD content negotiation on the object read endpoints, context-document dereferencing, default-JSON regression, and write-verb independence (json-ld-output spec).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      { "key": "username", "value": "{{admin_user}}", "type": "string" },
+      { "key": "password", "value": "{{admin_password}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost" },
+    { "key": "admin_user", "value": "admin" },
+    { "key": "admin_password", "value": "admin" },
+    { "key": "test_timestamp", "value": "" },
+    { "key": "register_id", "value": "" },
+    { "key": "register_slug", "value": "" },
+    { "key": "schema_id", "value": "" },
+    { "key": "schema_slug", "value": "" },
+    { "key": "object_uuid", "value": "" },
+    { "key": "context_url", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "0. Init timestamp",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.collectionVariables.set('test_timestamp', Date.now().toString());"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/registers", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","registers"] }
+      }
+    },
+    {
+      "name": "1. Create Register",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+              "var d = pm.response.json();",
+              "pm.collectionVariables.set('register_id', d.id);",
+              "pm.collectionVariables.set('register_slug', d.slug);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"title\": \"JSONLD Register {{test_timestamp}}\",\n  \"description\": \"Register for JSON-LD Newman testing\"\n}" },
+        "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/registers", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","registers"] }
+      }
+    },
+    {
+      "name": "2. Create Schema (with Schema.org jsonld mapping)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+              "var d = pm.response.json();",
+              "pm.collectionVariables.set('schema_id', d.id);",
+              "pm.collectionVariables.set('schema_slug', d.slug);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"title\": \"Person {{test_timestamp}}\",\n  \"description\": \"JSON-LD test schema\",\n  \"properties\": {\n    \"name\": {\"type\": \"string\"},\n    \"birthDate\": {\"type\": \"string\", \"format\": \"date\"}\n  },\n  \"configuration\": {\n    \"jsonld\": {\n      \"@vocab\": \"https://schema.org/\",\n      \"type\": \"https://schema.org/Person\",\n      \"properties\": { \"name\": \"https://schema.org/name\" }\n    }\n  }\n}" },
+        "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/schemas?register={{register_id}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","schemas"], "query": [ { "key": "register", "value": "{{register_id}}" } ] }
+      }
+    },
+    {
+      "name": "2b. Invalid jsonld mapping rejected with 400",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Invalid mapping rejected with 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('Structured error returned', function () { var d = pm.response.json(); pm.expect(d).to.have.property('errors'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"title\": \"Bad JSONLD {{test_timestamp}}\",\n  \"properties\": { \"name\": {\"type\": \"string\"} },\n  \"configuration\": { \"jsonld\": { \"properties\": { \"name\": \"just a label\" } } }\n}" },
+        "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/schemas?register={{register_id}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","schemas"], "query": [ { "key": "register", "value": "{{register_id}}" } ] }
+      }
+    },
+    {
+      "name": "3. Create Object (plain JSON, Accept ld+json must not affect write)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Write verb unaffected by ld+json Accept — 201/200', function () { pm.expect([200,201]).to.include(pm.response.code); });",
+              "pm.test('Response is plain-JSON @self envelope (not JSON-LD)', function () { var d = pm.response.json(); pm.expect(d).to.have.property('@self'); pm.expect(d).to.not.have.property('@context'); });",
+              "var d = pm.response.json();",
+              "var uuid = (d['@self'] && d['@self'].id) ? d['@self'].id : d.id;",
+              "pm.collectionVariables.set('object_uuid', uuid);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/ld+json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"name\": \"Jansen\",\n  \"birthDate\": \"1980-04-01\"\n}" },
+        "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{register_slug}}","{{schema_slug}}"] }
+      }
+    },
+    {
+      "name": "4. Object as JSON-LD (Accept: application/ld+json)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Content-Type is application/ld+json', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/ld+json'); });",
+              "pm.test('Vary: Accept present', function () { pm.expect(pm.response.headers.get('Vary')).to.include('Accept'); });",
+              "var d = pm.response.json();",
+              "pm.test('Has @context, @id, @type', function () { pm.expect(d).to.have.property('@context'); pm.expect(d).to.have.property('@id'); pm.expect(d).to.have.property('@type'); });",
+              "pm.test('@type resolves to mapped Schema.org class', function () { pm.expect(d['@type']).to.eql('https://schema.org/Person'); });",
+              "pm.test('@self is lifted, not emitted', function () { pm.expect(d).to.not.have.property('@self'); pm.expect(d).to.have.property('or:schema'); });",
+              "pm.test('data property present', function () { pm.expect(d.name).to.eql('Jansen'); });",
+              "pm.test('@context is a dereferenceable URL string pointing at the register/schema context', function () { pm.expect(d['@context']).to.be.a('string'); pm.expect(d['@context']).to.include('/api/contexts/' + pm.collectionVariables.get('register_slug') + '/' + pm.collectionVariables.get('schema_slug')); });",
+              "pm.collectionVariables.set('context_url', d['@context']);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "Accept", "value": "application/ld+json" } ],
+        "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}/{{object_uuid}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{register_slug}}","{{schema_slug}}","{{object_uuid}}"] }
+      }
+    },
+    {
+      "name": "5. Same object as default JSON (legacy shape unchanged)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Content-Type is application/json (not ld+json)', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); pm.expect(pm.response.headers.get('Content-Type')).to.not.include('ld+json'); });",
+              "var d = pm.response.json();",
+              "pm.test('Keeps @self envelope, no JSON-LD keywords', function () { pm.expect(d).to.have.property('@self'); pm.expect(d).to.not.have.property('@context'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "Accept", "value": "application/json" } ],
+        "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}/{{object_uuid}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{register_slug}}","{{schema_slug}}","{{object_uuid}}"] }
+      }
+    },
+    {
+      "name": "6. Collection as JSON-LD @graph",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Content-Type is application/ld+json', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/ld+json'); });",
+              "var d = pm.response.json();",
+              "pm.test('Has top-level @context and @graph', function () { pm.expect(d).to.have.property('@context'); pm.expect(d).to.have.property('@graph'); pm.expect(d['@graph']).to.be.an('array'); });",
+              "pm.test('Graph nodes have @id/@type, no repeated @context', function () { if (d['@graph'].length > 0) { var n = d['@graph'][0]; pm.expect(n).to.have.property('@id'); pm.expect(n).to.have.property('@type'); pm.expect(n).to.not.have.property('@context'); } });",
+              "pm.test('Pagination under or: terms', function () { pm.expect(d).to.have.property('or:total'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "Accept", "value": "application/ld+json" } ],
+        "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{register_slug}}","{{schema_slug}}"] }
+      }
+    },
+    {
+      "name": "7. Dereference the object's @context URL",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Content-Type is application/ld+json', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/ld+json'); });",
+              "pm.test('ETag header present', function () { pm.expect(pm.response.headers.get('ETag')).to.not.be.null; });",
+              "var d = pm.response.json();",
+              "pm.test('Body is { @context: {...} }', function () { pm.expect(d).to.have.property('@context'); pm.expect(d['@context']).to.be.an('object'); });",
+              "pm.test('Context defines mapped name term', function () { pm.expect(d['@context']).to.have.property('name'); });",
+              "pm.test('Context defines or: prefix', function () { pm.expect(d['@context']).to.have.property('or'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "Accept", "value": "application/ld+json" } ],
+        "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/contexts/{{register_slug}}/{{schema_slug}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","contexts","{{register_slug}}","{{schema_slug}}"] }
+      }
+    },
+    {
+      "name": "8. Context document — unknown register 404",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Unknown register slug returns 404', function () { pm.response.to.have.status(404); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "Accept", "value": "application/ld+json" } ],
+        "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/contexts/does-not-exist-{{test_timestamp}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","contexts","does-not-exist-{{test_timestamp}}"] }
+      }
+    }
+  ]
+}

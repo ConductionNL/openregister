@@ -4,10 +4,10 @@
 			name="Cache Management"
 			description="Monitor and manage API caching for optimal performance"
 			:loading="loadingCache"
-			loading-message="Loading cache statistics...">
+			:loadingMessage="t('openregister', 'Loading cache statistics...')">
 			<template #actions>
 				<NcButton
-					type="secondary"
+					variant="secondary"
 					:disabled="loading || clearingCache || loadingCache"
 					@click="loadCacheStats">
 					<template #icon>
@@ -17,8 +17,13 @@
 					Refresh
 				</NcButton>
 				<NcButton
-					type="error"
-					:disabled="loading || clearingCache || loadingCache || cacheStats.unavailable"
+					variant="error"
+					:disabled="
+						loading
+						|| clearingCache
+						|| loadingCache
+						|| cacheStats.unavailable
+					"
 					@click="showClearCacheDialog">
 					<template #icon>
 						<NcLoadingIcon v-if="clearingCache" :size="20" />
@@ -35,15 +40,20 @@
 					<p>Cache monitoring is not available. This can happen when:</p>
 					<ul>
 						<li>Cache systems are not properly configured</li>
-						<li>Statistics collection is disabled for performance reasons</li>
+						<li>
+							Statistics collection is disabled for performance reasons
+						</li>
 						<li>Cache backends don't support statistics</li>
 					</ul>
 					<div v-if="cacheStats.errorMessage" class="error-details">
-						<strong>Technical Details:</strong> {{ cacheStats.errorMessage }}
+						<strong>Technical Details:</strong>
+						{{ cacheStats.errorMessage }}
 					</div>
 					<p class="performance-note">
-						<strong>Note:</strong> This is normal behavior as storing cache metadata in database tables would cause performance issues.
-						Cache systems are working but detailed statistics are not collected.
+						<strong>Note:</strong> This is normal behavior as storing
+						cache metadata in database tables would cause performance
+						issues. Cache systems are working but detailed statistics are
+						not collected.
 					</p>
 				</div>
 			</div>
@@ -55,28 +65,44 @@
 						<div class="cache-overview-card">
 							<h4>📈 Hit Rate</h4>
 							<div class="cache-metric">
-								<span class="metric-value" :class="hitRateClass">{{ cacheStats.overview.overallHitRate.toFixed(1) }}%</span>
+								<span class="metric-value" :class="hitRateClass"
+									>{{
+										cacheStats.overview.overallHitRate.toFixed(
+											1,
+										)
+									}}%</span
+								>
 								<span class="metric-label">Overall Success</span>
 							</div>
 						</div>
 						<div class="cache-overview-card">
 							<h4>💾 Total Size</h4>
 							<div class="cache-metric">
-								<span class="metric-value">{{ formatBytes(cacheStats.overview.totalCacheSize) }}</span>
+								<span class="metric-value">{{
+									formatBytes(cacheStats.overview.totalCacheSize)
+								}}</span>
 								<span class="metric-label">Memory Used</span>
 							</div>
 						</div>
 						<div class="cache-overview-card">
 							<h4>🗃️ Entries</h4>
 							<div class="cache-metric">
-								<span class="metric-value">{{ cacheStats.overview.totalCacheEntries.toLocaleString() }}</span>
+								<span class="metric-value">{{
+									cacheStats.overview.totalCacheEntries.toLocaleString()
+								}}</span>
 								<span class="metric-label">Cache Items</span>
 							</div>
 						</div>
 						<div class="cache-overview-card">
 							<h4>⚡ Performance</h4>
 							<div class="cache-metric">
-								<span class="metric-value performance-gain">{{ cacheStats.performance.performanceGain.toFixed(0) }}x</span>
+								<span class="metric-value performance-gain"
+									>{{
+										cacheStats.performance.performanceGain.toFixed(
+											0,
+										)
+									}}x</span
+								>
 								<span class="metric-label">Speed Boost</span>
 							</div>
 						</div>
@@ -93,17 +119,38 @@
 							<div class="service-stats">
 								<div class="service-stat">
 									<span class="stat-label">Entries:</span>
-									<span class="stat-value">{{ (cacheStats.services.object.entries || 0).toLocaleString() }}</span>
+									<span class="stat-value">{{
+										(
+											cacheStats.services.object.entries || 0
+										).toLocaleString()
+									}}</span>
 								</div>
 								<div class="service-stat">
 									<span class="stat-label">Hit Rate:</span>
-									<span class="stat-value" :class="getHitRateClass(getServiceHitRate(cacheStats.services.object))">
-										{{ getServiceHitRate(cacheStats.services.object).toFixed(1) }}%
+									<span
+										class="stat-value"
+										:class="
+											getHitRateClass(
+												getServiceHitRate(
+													cacheStats.services.object,
+												),
+											)
+										">
+										{{
+											getServiceHitRate(
+												cacheStats.services.object,
+											).toFixed(1)
+										}}%
 									</span>
 								</div>
 								<div class="service-stat">
 									<span class="stat-label">Memory:</span>
-									<span class="stat-value">{{ formatBytes(cacheStats.services.object.memoryUsage || 0) }}</span>
+									<span class="stat-value">{{
+										formatBytes(
+											cacheStats.services.object.memoryUsage
+												|| 0,
+										)
+									}}</span>
 								</div>
 							</div>
 						</div>
@@ -114,17 +161,38 @@
 							<div class="service-stats">
 								<div class="service-stat">
 									<span class="stat-label">Entries:</span>
-									<span class="stat-value">{{ (cacheStats.services.schema.entries || 0).toLocaleString() }}</span>
+									<span class="stat-value">{{
+										(
+											cacheStats.services.schema.entries || 0
+										).toLocaleString()
+									}}</span>
 								</div>
 								<div class="service-stat">
 									<span class="stat-label">Hit Rate:</span>
-									<span class="stat-value" :class="getHitRateClass(getServiceHitRate(cacheStats.services.schema))">
-										{{ getServiceHitRate(cacheStats.services.schema).toFixed(1) }}%
+									<span
+										class="stat-value"
+										:class="
+											getHitRateClass(
+												getServiceHitRate(
+													cacheStats.services.schema,
+												),
+											)
+										">
+										{{
+											getServiceHitRate(
+												cacheStats.services.schema,
+											).toFixed(1)
+										}}%
 									</span>
 								</div>
 								<div class="service-stat">
 									<span class="stat-label">Memory:</span>
-									<span class="stat-value">{{ formatBytes(cacheStats.services.schema.memoryUsage || 0) }}</span>
+									<span class="stat-value">{{
+										formatBytes(
+											cacheStats.services.schema.memoryUsage
+												|| 0,
+										)
+									}}</span>
 								</div>
 							</div>
 						</div>
@@ -135,17 +203,38 @@
 							<div class="service-stats">
 								<div class="service-stat">
 									<span class="stat-label">Entries:</span>
-									<span class="stat-value">{{ (cacheStats.services.facet.entries || 0).toLocaleString() }}</span>
+									<span class="stat-value">{{
+										(
+											cacheStats.services.facet.entries || 0
+										).toLocaleString()
+									}}</span>
 								</div>
 								<div class="service-stat">
 									<span class="stat-label">Hit Rate:</span>
-									<span class="stat-value" :class="getHitRateClass(getServiceHitRate(cacheStats.services.facet))">
-										{{ getServiceHitRate(cacheStats.services.facet).toFixed(1) }}%
+									<span
+										class="stat-value"
+										:class="
+											getHitRateClass(
+												getServiceHitRate(
+													cacheStats.services.facet,
+												),
+											)
+										">
+										{{
+											getServiceHitRate(
+												cacheStats.services.facet,
+											).toFixed(1)
+										}}%
 									</span>
 								</div>
 								<div class="service-stat">
 									<span class="stat-label">Memory:</span>
-									<span class="stat-value">{{ formatBytes(cacheStats.services.facet.memoryUsage || 0) }}</span>
+									<span class="stat-value">{{
+										formatBytes(
+											cacheStats.services.facet.memoryUsage
+												|| 0,
+										)
+									}}</span>
 								</div>
 							</div>
 						</div>
@@ -156,12 +245,24 @@
 							<div class="service-stats">
 								<div class="service-stat">
 									<span class="stat-label">Backend:</span>
-									<span class="stat-value">{{ getDistributedCacheBackend() }}</span>
+									<span class="stat-value">{{
+										getDistributedCacheBackend()
+									}}</span>
 								</div>
 								<div class="service-stat">
 									<span class="stat-label">Status:</span>
-									<span class="stat-value" :class="cacheStats.distributed.available ? 'status-enabled' : 'status-disabled'">
-										{{ cacheStats.distributed.available ? 'Available' : 'Unavailable' }}
+									<span
+										class="stat-value"
+										:class="
+											cacheStats.distributed.available
+												? 'status-enabled'
+												: 'status-disabled'
+										">
+										{{
+											cacheStats.distributed.available
+												? 'Available'
+												: 'Unavailable'
+										}}
 									</span>
 								</div>
 							</div>
@@ -176,16 +277,16 @@
 						<table class="performance-table">
 							<thead>
 								<tr>
-									<th class="performance-table-header">
+									<th scope="col" class="performance-table-header">
 										Metric
 									</th>
-									<th class="performance-table-header">
+									<th scope="col" class="performance-table-header">
 										Current
 									</th>
-									<th class="performance-table-header">
+									<th scope="col" class="performance-table-header">
 										Target
 									</th>
-									<th class="performance-table-header">
+									<th scope="col" class="performance-table-header">
 										Status
 									</th>
 								</tr>
@@ -198,11 +299,19 @@
 									<td class="performance-table-value">
 										{{ cacheStats.performance.averageHitTime }}ms
 									</td>
-									<td class="performance-table-value">
-										&lt; 5ms
-									</td>
-									<td class="performance-table-value" :class="cacheStats.performance.averageHitTime < 5 ? 'status-enabled' : 'status-warning'">
-										{{ cacheStats.performance.averageHitTime < 5 ? '✓ Good' : '⚠ Slow' }}
+									<td class="performance-table-value">&lt; 5ms</td>
+									<td
+										class="performance-table-value"
+										:class="
+											cacheStats.performance.averageHitTime < 5
+												? 'status-enabled'
+												: 'status-warning'
+										">
+										{{
+											cacheStats.performance.averageHitTime < 5
+												? '✓ Good'
+												: '⚠ Slow'
+										}}
 									</td>
 								</tr>
 								<tr class="performance-table-row">
@@ -210,13 +319,27 @@
 										Average Miss Time
 									</td>
 									<td class="performance-table-value">
-										{{ cacheStats.performance.averageMissTime }}ms
+										{{
+											cacheStats.performance.averageMissTime
+										}}ms
 									</td>
 									<td class="performance-table-value">
 										&lt; 500ms
 									</td>
-									<td class="performance-table-value" :class="cacheStats.performance.averageMissTime < 500 ? 'status-enabled' : 'status-error'">
-										{{ cacheStats.performance.averageMissTime < 500 ? '✓ Good' : '❌ Slow' }}
+									<td
+										class="performance-table-value"
+										:class="
+											cacheStats.performance.averageMissTime
+											< 500
+												? 'status-enabled'
+												: 'status-error'
+										">
+										{{
+											cacheStats.performance.averageMissTime
+											< 500
+												? '✓ Good'
+												: '❌ Slow'
+										}}
 									</td>
 								</tr>
 								<tr class="performance-table-row">
@@ -224,13 +347,28 @@
 										Overall Hit Rate
 									</td>
 									<td class="performance-table-value">
-										{{ cacheStats.overview.overallHitRate.toFixed(1) }}%
+										{{
+											cacheStats.overview.overallHitRate.toFixed(
+												1,
+											)
+										}}%
 									</td>
 									<td class="performance-table-value">
-										≥ {{ cacheStats.performance.optimalHitRate }}%
+										≥
+										{{ cacheStats.performance.optimalHitRate }}%
 									</td>
-									<td class="performance-table-value" :class="getHitRateClass(cacheStats.overview.overallHitRate)">
-										{{ getHitRateText(cacheStats.overview.overallHitRate) }}
+									<td
+										class="performance-table-value"
+										:class="
+											getHitRateClass(
+												cacheStats.overview.overallHitRate,
+											)
+										">
+										{{
+											getHitRateText(
+												cacheStats.overview.overallHitRate,
+											)
+										}}
 									</td>
 								</tr>
 							</tbody>
@@ -242,31 +380,38 @@
 				<div class="cache-warmup">
 					<h4>Cache Warmup Schedule</h4>
 					<p class="warmup-description">
-						Configure automatic cache warmup to prevent cold-start delays. The background job pre-populates caches at the configured interval.
+						Configure automatic cache warmup to prevent cold-start
+						delays. The background job pre-populates caches at the
+						configured interval.
 					</p>
 					<div class="warmup-controls">
 						<div class="warmup-select">
 							<label for="warmup-interval">Warmup Interval:</label>
 							<NcSelect
-								input-id="warmup-interval"
-								:value="selectedWarmupOption"
+								inputLabel="Warmup Interval"
+								inputId="warmup-interval"
+								:modelValue="selectedWarmupOption"
 								:options="warmupIntervalOptions"
 								:clearable="false"
 								:disabled="savingWarmupInterval"
 								label="label"
-								track-by="value"
-								@input="onWarmupIntervalChange" />
+								trackBy="value"
+								@update:modelValue="onWarmupIntervalChange" />
 						</div>
 						<div class="warmup-actions">
 							<NcButton
-								type="secondary"
+								variant="secondary"
 								:disabled="warmingUpCache || savingWarmupInterval"
 								@click="triggerWarmup">
 								<template #icon>
-									<NcLoadingIcon v-if="warmingUpCache" :size="20" />
+									<NcLoadingIcon
+										v-if="warmingUpCache"
+										:size="20" />
 									<Refresh v-else :size="20" />
 								</template>
-								{{ warmingUpCache ? 'Warming up...' : 'Trigger Now' }}
+								{{
+									warmingUpCache ? 'Warming up...' : 'Trigger Now'
+								}}
 							</NcButton>
 						</div>
 					</div>
@@ -284,96 +429,34 @@
 		</SettingsSection>
 
 		<!-- Clear Cache Confirmation Dialog -->
-		<NcDialog
+		<ClearCacheDialog
 			v-if="showClearCacheConfirmation"
-			name="Clear Cache"
-			:can-close="!clearingCache"
-			@closing="hideClearCacheDialog">
-			<div class="clear-cache-dialog">
-				<div class="clear-cache-options">
-					<h3>🗑️ Clear Cache</h3>
-					<p class="warning-text">
-						Select the type of cache to clear. This action cannot be undone and may temporarily impact performance.
-					</p>
-
-					<div class="cache-type-selection">
-						<h4>Cache Type:</h4>
-						<NcCheckboxRadioSwitch
-							:checked.sync="clearCacheType"
-							name="cache_type"
-							value="all"
-							type="radio">
-							Clear All Cache (Recommended)
-						</NcCheckboxRadioSwitch>
-						<NcCheckboxRadioSwitch
-							:checked.sync="clearCacheType"
-							name="cache_type"
-							value="object"
-							type="radio">
-							Object Cache Only
-						</NcCheckboxRadioSwitch>
-						<NcCheckboxRadioSwitch
-							:checked.sync="clearCacheType"
-							name="cache_type"
-							value="schema"
-							type="radio">
-							Schema Cache Only
-						</NcCheckboxRadioSwitch>
-						<NcCheckboxRadioSwitch
-							:checked.sync="clearCacheType"
-							name="cache_type"
-							value="facet"
-							type="radio">
-							Facet Cache Only
-						</NcCheckboxRadioSwitch>
-						<NcCheckboxRadioSwitch
-							:checked.sync="clearCacheType"
-							name="cache_type"
-							value="distributed"
-							type="radio">
-							Distributed Cache Only
-						</NcCheckboxRadioSwitch>
-					</div>
-				</div>
-				<div class="dialog-actions">
-					<NcButton
-						:disabled="clearingCache"
-						@click="hideClearCacheDialog">
-						Cancel
-					</NcButton>
-					<NcButton
-						type="error"
-						:disabled="clearingCache"
-						@click="performClearCache">
-						<template #icon>
-							<NcLoadingIcon v-if="clearingCache" :size="20" />
-							<Delete v-else :size="20" />
-						</template>
-						{{ clearingCache ? 'Clearing...' : 'Clear Cache' }}
-					</NcButton>
-				</div>
-			</div>
-		</NcDialog>
+			:open="showClearCacheConfirmation"
+			:clearing="clearingCache"
+			:cacheType="clearCacheType"
+			@update:cacheType="clearCacheType = $event"
+			@closing="hideClearCacheDialog"
+			@confirm="performClearCache" />
 	</div>
 </template>
 
 <script>
+import { NcButton, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
 import { mapStores } from 'pinia'
-import { useSettingsStore } from '../../../store/settings.js'
-import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import { NcButton, NcLoadingIcon, NcDialog, NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import ClearCacheDialog from '../../../dialogs/settings/ClearCacheDialog.vue'
+import { useSettingsStore } from '../../../store/settings.js'
 
 export default {
 	name: 'CacheManagement',
 
 	components: {
 		SettingsSection,
+		ClearCacheDialog,
 		NcButton,
 		NcLoadingIcon,
-		NcDialog,
-		NcCheckboxRadioSwitch,
 		NcSelect,
 		Refresh,
 		Delete,
@@ -382,30 +465,74 @@ export default {
 	computed: {
 		...mapStores(useSettingsStore),
 
+		/**
+		 * Cache statistics from the settings store, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {object}
+		 */
 		cacheStats() {
 			return this.settingsStore.cacheStats
 		},
 
+		/**
+		 * Whether cache stats are loading, for spinner display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		loadingCache() {
 			return this.settingsStore.loadingCache
 		},
 
+		/**
+		 * Whether the cache is currently being cleared, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		clearingCache() {
 			return this.settingsStore.clearingCache
 		},
 
+		/**
+		 * Whether the settings store is loading, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		loading() {
 			return this.settingsStore.loading
 		},
 
+		/**
+		 * Whether the clear-cache confirmation is showing, for display.
+		 *
+		 * @spec exclude UI plumbing — derived dialog visibility state
+		 * @return {boolean}
+		 */
 		showClearCacheConfirmation() {
 			return this.settingsStore.showClearCacheConfirmation
 		},
 
 		clearCacheType: {
+			/**
+			 * Read the selected clear-cache type from the store.
+			 *
+			 * @spec exclude UI plumbing — computed getter proxies the store
+			 * @return {string}
+			 */
 			get() {
 				return this.settingsStore.clearCacheType
 			},
+
+			/**
+			 * Write the selected clear-cache type to the store.
+			 *
+			 * @param {string} value The new clear-cache type.
+			 * @spec exclude UI plumbing — computed setter proxies the store
+			 * @return {void}
+			 */
 			set(value) {
 				this.settingsStore.clearCacheType = value
 			},
@@ -414,24 +541,51 @@ export default {
 		/**
 		 * Get CSS class for overall hit rate
 		 *
+		 * @spec exclude UI plumbing — derived row-styling helper
 		 * @return {string} CSS class name
 		 */
 		hitRateClass() {
-			return this.getHitRateClass(this.cacheStats.overview?.overallHitRate || 0)
+			return this.getHitRateClass(
+				this.cacheStats.overview?.overallHitRate || 0,
+			)
 		},
 
+		/**
+		 * Whether a cache warmup is in progress, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		warmingUpCache() {
 			return this.settingsStore.warmingUpCache
 		},
 
+		/**
+		 * Whether the warmup interval is being saved, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		savingWarmupInterval() {
 			return this.settingsStore.savingWarmupInterval
 		},
 
+		/**
+		 * Timestamp of the last warmup run, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {(string|null)}
+		 */
 		warmupLastRun() {
 			return this.settingsStore.warmupLastRun
 		},
 
+		/**
+		 * Selectable warmup-interval options for the dropdown.
+		 *
+		 * @spec exclude UI plumbing — static select-option list
+		 * @return {Array<object>}
+		 */
 		warmupIntervalOptions() {
 			return [
 				{ label: 'Disabled', value: 0 },
@@ -443,12 +597,27 @@ export default {
 			]
 		},
 
+		/**
+		 * Currently selected warmup-interval option, for display.
+		 *
+		 * @spec exclude UI plumbing — derived select-value state
+		 * @return {object}
+		 */
 		selectedWarmupOption() {
 			const interval = this.settingsStore.warmupInterval
-			return this.warmupIntervalOptions.find((o) => o.value === interval) || this.warmupIntervalOptions[3]
+			return (
+				this.warmupIntervalOptions.find((o) => o.value === interval)
+				|| this.warmupIntervalOptions[3]
+			)
 		},
 	},
 
+	/**
+	 * Lifecycle hook: load the warmup interval setting on mount.
+	 *
+	 * @spec exclude UI plumbing — view-mount data fetch for display only
+	 * @return {void}
+	 */
 	mounted() {
 		this.settingsStore.loadWarmupInterval()
 	},
@@ -456,6 +625,9 @@ export default {
 	methods: {
 		/**
 		 * Load cache statistics
+		 *
+		 * @spec exclude UI plumbing — delegates to the settings store
+		 * @return {void}
 		 */
 		loadCacheStats() {
 			this.settingsStore.loadCacheStats()
@@ -463,6 +635,9 @@ export default {
 
 		/**
 		 * Show clear cache dialog
+		 *
+		 * @spec exclude UI plumbing — dialog visibility toggle via store
+		 * @return {void}
 		 */
 		showClearCacheDialog() {
 			this.settingsStore.showClearCacheDialog()
@@ -470,6 +645,9 @@ export default {
 
 		/**
 		 * Hide clear cache dialog
+		 *
+		 * @spec exclude UI plumbing — dialog visibility toggle via store
+		 * @return {void}
 		 */
 		hideClearCacheDialog() {
 			this.settingsStore.hideClearCacheDialog()
@@ -477,6 +655,9 @@ export default {
 
 		/**
 		 * Perform cache clearing
+		 *
+		 * @spec exclude UI plumbing — action delegates to the settings store
+		 * @return {void}
 		 */
 		performClearCache() {
 			this.settingsStore.performClearCache()
@@ -486,6 +667,7 @@ export default {
 		 * Format bytes to human readable format
 		 *
 		 * @param {number} bytes Number of bytes
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Formatted string
 		 */
 		formatBytes(bytes) {
@@ -502,6 +684,7 @@ export default {
 		 * Get service hit rate
 		 *
 		 * @param {object} service Service stats object
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {number} Hit rate percentage
 		 */
 		getServiceHitRate(service) {
@@ -515,6 +698,7 @@ export default {
 		 * Get CSS class for hit rate
 		 *
 		 * @param {number} hitRate Hit rate percentage
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} CSS class name
 		 */
 		getHitRateClass(hitRate) {
@@ -527,6 +711,7 @@ export default {
 		 * Get hit rate text
 		 *
 		 * @param {number} hitRate Hit rate percentage
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Status text
 		 */
 		getHitRateText(hitRate) {
@@ -538,6 +723,7 @@ export default {
 		/**
 		 * Get distributed cache backend name
 		 *
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Backend name
 		 */
 		getDistributedCacheBackend() {
@@ -551,6 +737,8 @@ export default {
 		 * Handle warmup interval change
 		 *
 		 * @param {object} option Selected option
+		 * @spec exclude UI plumbing — delegates to the settings store
+		 * @return {void}
 		 */
 		onWarmupIntervalChange(option) {
 			if (option) {
@@ -560,6 +748,9 @@ export default {
 
 		/**
 		 * Trigger manual cache warmup
+		 *
+		 * @spec exclude UI plumbing — action delegates to the settings store
+		 * @return {void}
 		 */
 		triggerWarmup() {
 			this.settingsStore.warmupNamesCache()
@@ -569,6 +760,7 @@ export default {
 		 * Format date for display
 		 *
 		 * @param {string|null} dateString ISO date string
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Formatted date
 		 */
 		formatDate(dateString) {
@@ -832,34 +1024,6 @@ export default {
 
 .status-disabled {
 	color: var(--color-text-maxcontrast) !important;
-}
-
-/* Dialog styles */
-.clear-cache-dialog {
-	padding: 20px;
-}
-
-.clear-cache-options h3 {
-	margin: 0 0 16px 0;
-	color: var(--color-text-light);
-}
-
-.warning-text {
-	color: var(--color-text-light);
-	margin: 0 0 20px 0;
-	line-height: 1.5;
-}
-
-.cache-type-selection h4 {
-	margin: 0 0 12px 0;
-	color: var(--color-text-light);
-}
-
-.dialog-actions {
-	display: flex;
-	justify-content: flex-end;
-	gap: 8px;
-	margin-top: 20px;
 }
 
 @media (max-width: 768px) {

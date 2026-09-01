@@ -1,12 +1,16 @@
 <template>
-	<div class="configurationCard"
+	<div
+		class="configurationCard"
 		:class="{
 			'configurationCard--imported': isImported,
 			'configurationCard--local': isImported && isLocalConfiguration,
-			'configurationCard--external': isImported && !isLocalConfiguration
+			'configurationCard--external': isImported && !isLocalConfiguration,
 		}">
 		<div class="cardHeader">
-			<h2 v-tooltip.bottom="configuration.description || configuration.config?.description">
+			<h2
+				:title="
+					configuration.description || configuration.config?.description
+				">
 				<CogOutline :size="20" />
 				{{ configuration.title || configuration.config?.title }}
 				<!-- Status Badges -->
@@ -14,9 +18,11 @@
 					<template v-if="isLocalConfiguration">
 						<span class="configBadge configBadge--local">
 							<CheckCircle :size="16" />
-							Local
+							{{ t('openregister', 'Local') }}
 						</span>
-						<span v-if="displayConfiguration.app" class="configBadge configBadge--app">
+						<span
+							v-if="displayConfiguration.app"
+							class="configBadge configBadge--app">
 							<ApplicationCog :size="16" />
 							{{ displayConfiguration.app }}
 						</span>
@@ -25,24 +31,41 @@
 						<Cloud :size="16" />
 						External
 					</span>
-					<span v-if="!isLocalConfiguration && displayConfiguration.syncEnabled" class="configBadge" :class="'configBadge--sync-' + displayConfiguration.syncStatus">
-						<Sync v-if="displayConfiguration.syncStatus === 'success'" :size="16" />
-						<AlertCircle v-else-if="displayConfiguration.syncStatus === 'failed'" :size="16" />
+					<span
+						v-if="
+							!isLocalConfiguration && displayConfiguration.syncEnabled
+						"
+						class="configBadge"
+						:class="
+							'configBadge--sync-' + displayConfiguration.syncStatus
+						">
+						<Sync
+							v-if="displayConfiguration.syncStatus === 'success'"
+							:size="16" />
+						<AlertCircle
+							v-else-if="displayConfiguration.syncStatus === 'failed'"
+							:size="16" />
 						<ClockOutline v-else :size="16" />
 						{{ getSyncStatusText(displayConfiguration) }}
 					</span>
-					<span v-if="hasUpdateAvailable" class="configBadge configBadge--update">
+					<span
+						v-if="hasUpdateAvailable"
+						class="configBadge configBadge--update">
 						<Update :size="16" />
 						Update Available
 					</span>
-					<span v-if="isPublished" class="configBadge configBadge--published">
+					<span
+						v-if="isPublished"
+						class="configBadge configBadge--published">
 						<CloudUploadOutline :size="16" />
 						Published
 					</span>
 				</template>
 				<template v-else>
 					<!-- For discovered/external configurations -->
-					<span v-if="configuration.config?.app" class="configBadge configBadge--app">
+					<span
+						v-if="configuration.config?.app"
+						class="configBadge configBadge--app">
 						{{ configuration.config.app }}
 					</span>
 					<span class="configBadge configBadge--discovered">
@@ -51,55 +74,67 @@
 					</span>
 				</template>
 			</h2>
-			<NcActions :primary="true" menu-name="Actions">
+			<NcActions :primary="true" menuName="Actions">
 				<template #icon>
 					<DotsHorizontal :size="20" />
 				</template>
 				<!-- Actions for imported configurations -->
 				<template v-if="isImported">
-					<NcActionButton close-after-click @click="handleView">
+					<NcActionButton closeAfterClick @click="handleView">
 						<template #icon>
 							<Eye :size="20" />
 						</template>
 						View
 					</NcActionButton>
-					<NcActionButton v-if="hasUpdateAvailable" close-after-click @click="handlePreviewUpdate">
+					<NcActionButton
+						v-if="hasUpdateAvailable"
+						closeAfterClick
+						@click="handlePreviewUpdate">
 						<template #icon>
 							<EyeOutline :size="20" />
 						</template>
 						Preview Update
 					</NcActionButton>
-					<NcActionButton v-if="isRemoteConfiguration" close-after-click @click="handleCheckVersion">
+					<NcActionButton
+						v-if="isRemoteConfiguration"
+						closeAfterClick
+						@click="handleCheckVersion">
 						<template #icon>
 							<Sync :size="20" />
 						</template>
 						Check Version
 					</NcActionButton>
-					<NcActionButton close-after-click @click="handleEdit">
+					<NcActionButton closeAfterClick @click="handleEdit">
 						<template #icon>
 							<Pencil :size="20" />
 						</template>
 						Edit
 					</NcActionButton>
-					<NcActionButton close-after-click @click="handleExport">
+					<NcActionButton closeAfterClick @click="handleExport">
 						<template #icon>
 							<Download :size="20" />
 						</template>
 						Export
 					</NcActionButton>
-					<NcActionButton v-if="isLocalConfiguration && !isPublished" close-after-click @click="handlePublish">
+					<NcActionButton
+						v-if="isLocalConfiguration && !isPublished"
+						closeAfterClick
+						@click="handlePublish">
 						<template #icon>
 							<CloudUploadOutline :size="20" />
 						</template>
 						Publish
 					</NcActionButton>
-					<NcActionButton v-if="isPublished" close-after-click @click="handlePublish">
+					<NcActionButton
+						v-if="isPublished"
+						closeAfterClick
+						@click="handlePublish">
 						<template #icon>
 							<CloudUploadOutline :size="20" />
 						</template>
 						Update Published
 					</NcActionButton>
-					<NcActionButton close-after-click @click="handleDelete">
+					<NcActionButton closeAfterClick @click="handleDelete">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
@@ -108,13 +143,18 @@
 				</template>
 				<!-- Actions for discovered/external configurations -->
 				<template v-else>
-					<NcActionButton type="primary" close-after-click @click="$emit('import', configuration)">
+					<NcActionButton
+						closeAfterClick
+						@click="$emit('import', configuration)">
 						<template #icon>
 							<CloudUpload :size="20" />
 						</template>
 						Import
 					</NcActionButton>
-					<NcActionButton v-if="viewSourceUrl" close-after-click @click="openInNewTab(viewSourceUrl)">
+					<NcActionButton
+						v-if="viewSourceUrl"
+						closeAfterClick
+						@click="openInNewTab(viewSourceUrl)">
 						<template #icon>
 							<OpenInNew :size="20" />
 						</template>
@@ -145,8 +185,8 @@
 
 				<!-- Organization link -->
 				<a
-					v-if="displayConfiguration.organization && displayConfiguration.organization.url"
-					:href="displayConfiguration.organization.url"
+					v-if="safeOrgUrl"
+					:href="safeOrgUrl"
 					target="_blank"
 					rel="noopener noreferrer"
 					class="metaItem metaLink">
@@ -161,24 +201,43 @@
 				</span>
 
 				<!-- App ID badge (fallback if no repo info) -->
-				<span v-if="displayConfiguration.app && !repositoryFullName" class="metaItem">
+				<span
+					v-if="displayConfiguration.app && !repositoryFullName"
+					class="metaItem">
 					<ApplicationCog :size="16" />
 					{{ displayConfiguration.app }}
 				</span>
 
 				<!-- Source type (fallback if no repo info) -->
-				<span v-if="displayConfiguration.sourceType && !repositoryFullName" class="metaItem">
+				<span
+					v-if="displayConfiguration.sourceType && !repositoryFullName"
+					class="metaItem">
 					<Cloud :size="16" />
 					{{ getSourceTypeLabel(displayConfiguration.sourceType) }}
 				</span>
 
 				<!-- Version info -->
-				<span v-if="displayConfiguration.version || displayConfiguration.localVersion" class="metaItem">
+				<span
+					v-if="
+						displayConfiguration.version
+						|| displayConfiguration.localVersion
+					"
+					class="metaItem">
 					<Tag :size="16" />
-					v{{ displayConfiguration.version || displayConfiguration.localVersion }}
+					v{{
+						displayConfiguration.version
+						|| displayConfiguration.localVersion
+					}}
 				</span>
 
-				<span v-if="displayConfiguration.remoteVersion && displayConfiguration.remoteVersion !== (displayConfiguration.version || displayConfiguration.localVersion)" class="metaItem">
+				<span
+					v-if="
+						displayConfiguration.remoteVersion
+						&& displayConfiguration.remoteVersion
+							!== (displayConfiguration.version
+								|| displayConfiguration.localVersion)
+					"
+					class="metaItem">
 					<Update :size="16" />
 					v{{ displayConfiguration.remoteVersion }} available
 				</span>
@@ -188,30 +247,29 @@
 </template>
 
 <script>
-import { NcActions, NcActionButton } from '@nextcloud/vue'
-import CogOutline from 'vue-material-design-icons/CogOutline.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
-import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import Download from 'vue-material-design-icons/Download.vue'
+import { NcActionButton, NcActions } from '@nextcloud/vue'
+import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
+import ApplicationCog from 'vue-material-design-icons/ApplicationCog.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
+import Cloud from 'vue-material-design-icons/Cloud.vue'
 import CloudUpload from 'vue-material-design-icons/CloudUpload.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
+import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import Eye from 'vue-material-design-icons/Eye.vue'
+import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
+import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-import Update from 'vue-material-design-icons/Update.vue'
-import Sync from 'vue-material-design-icons/Sync.vue'
-import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
-import Cloud from 'vue-material-design-icons/Cloud.vue'
-import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
-import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
-import ApplicationCog from 'vue-material-design-icons/ApplicationCog.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
 import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
 import Star from 'vue-material-design-icons/Star.vue'
-import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
-import Magnify from 'vue-material-design-icons/Magnify.vue'
+import Sync from 'vue-material-design-icons/Sync.vue'
 import Tag from 'vue-material-design-icons/Tag.vue'
-
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import Update from 'vue-material-design-icons/Update.vue'
 import { configurationStore, navigationStore } from '../../store/store.js'
 
 /**
@@ -259,6 +317,7 @@ export default {
 		Magnify,
 		Tag,
 	},
+
 	props: {
 		/**
 		 * Configuration object
@@ -269,7 +328,17 @@ export default {
 			required: true,
 		},
 	},
-	emits: ['view', 'edit', 'export', 'delete', 'import', 'check-version', 'preview-update'],
+
+	emits: [
+		'view',
+		'edit',
+		'export',
+		'delete',
+		'import',
+		'check-version',
+		'preview-update',
+	],
+
 	data() {
 		return {
 			// Track if this discovered config is already imported (fetched from backend)
@@ -277,6 +346,7 @@ export default {
 			checkingImportStatus: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * Check if this is a discovered configuration (has config.app structure)
@@ -286,36 +356,42 @@ export default {
 		isDiscovered() {
 			return !!this.configuration.config?.app
 		},
+
 		/**
 		 * Get the app ID from configuration
 		 *
 		 * @return {string|null}
+		 * @spec exclude computed read of app id from configuration prop, UI plumbing
 		 */
 		appId() {
 			return this.configuration.app || this.configuration.config?.app || null
 		},
+
 		/**
 		 * Check if this discovered configuration is already imported
 		 * Uses backend-fetched data, not frontend store (which may be paginated)
 		 *
 		 * @return {boolean}
+		 * @spec exclude computed read of import-status flag set by checkIfImported (REQ-002), UI plumbing
 		 */
 		isAlreadyImported() {
 			if (!this.isDiscovered) return false
 			// Check if we've fetched and found an imported config ID
 			return this.importedConfigId !== null
 		},
+
 		/**
 		 * Get the existing local configuration if it's already imported
 		 *
 		 * @return {object|null}
+		 * @spec exclude computed lookup/synthesis of local config for display, UI plumbing
 		 */
 		existingConfiguration() {
 			if (!this.importedConfigId) return null
 
 			// Try to find in store first (fast)
 			const found = configurationStore.configurationList.find(
-				config => config.id === this.importedConfigId,
+				(config) => config.id === this.importedConfigId,
 			)
 
 			if (found) return found
@@ -339,11 +415,13 @@ export default {
 				syncEnabled: true,
 			}
 		},
+
 		/**
 		 * Get the configuration to display
 		 * If discovered and already imported, merge with local config
 		 *
 		 * @return {object}
+		 * @spec exclude computed merge of discovered + local config for display, UI plumbing
 		 */
 		displayConfiguration() {
 			if (this.isDiscovered && this.existingConfiguration) {
@@ -357,8 +435,13 @@ export default {
 					owner: this.configuration.owner, // Repository owner
 					repo: this.configuration.repo, // Repository name
 					// Ensure isLocal and sourceType are preserved
-					isLocal: this.existingConfiguration.isLocal ?? this.configuration.isLocal,
-					sourceType: this.existingConfiguration.sourceType ?? this.configuration.sourceType,
+					isLocal:
+						this.existingConfiguration.isLocal
+						?? this.configuration.isLocal,
+
+					sourceType:
+						this.existingConfiguration.sourceType
+						?? this.configuration.sourceType,
 				}
 			}
 			// For imported configurations, ensure we have the properties
@@ -370,10 +453,12 @@ export default {
 				sourceType: config.sourceType,
 			}
 		},
+
 		/**
 		 * Check if this is an imported configuration
 		 *
 		 * @return {boolean}
+		 * @spec exclude computed import-state read for display, UI plumbing
 		 */
 		isImported() {
 			// If it's a discovered config, check if it exists locally
@@ -383,19 +468,23 @@ export default {
 			// Otherwise, it's imported if it has an ID (local database entity)
 			return !!this.configuration.id
 		},
+
 		/**
 		 * Get description from either format
 		 *
 		 * @return {string}
+		 * @spec exclude computed description display helper, UI plumbing
 		 */
 		description() {
 			const config = this.displayConfiguration
 			return config.description || config.config?.description || ''
 		},
+
 		/**
 		 * Check if configuration is local
 		 *
 		 * @return {boolean}
+		 * @spec exclude computed local-vs-external display flag, UI plumbing
 		 */
 		isLocalConfiguration() {
 			// Check both displayConfiguration and original configuration prop
@@ -414,6 +503,7 @@ export default {
 			const sourceType = displayConfig.sourceType ?? originalConfig.sourceType
 			return sourceType === 'local' || sourceType === 'manual'
 		},
+
 		/**
 		 * Check if configuration is external (not local)
 		 *
@@ -422,20 +512,27 @@ export default {
 		isExternal() {
 			return !this.isImported || !this.isLocalConfiguration
 		},
+
 		/**
 		 * Check if configuration is remote
 		 *
 		 * @return {boolean}
+		 * @spec exclude computed remote-source display flag, UI plumbing
 		 */
 		isRemoteConfiguration() {
-			const result = this.isImported && this.displayConfiguration.sourceType && this.displayConfiguration.sourceType !== 'local'
+			const result =
+				this.isImported
+				&& this.displayConfiguration.sourceType
+				&& this.displayConfiguration.sourceType !== 'local'
 
 			return result
 		},
+
 		/**
 		 * Check if update is available
 		 *
 		 * @return {boolean}
+		 * @spec exclude computed version-comparison display flag, UI plumbing
 		 */
 		hasUpdateAvailable() {
 			const config = this.displayConfiguration
@@ -445,29 +542,39 @@ export default {
 			}
 			return config.remoteVersion !== currentVersion
 		},
+
 		/**
 		 * Check if configuration is published (local and has GitHub repo info)
 		 *
 		 * @return {boolean}
+		 * @spec exclude computed published-state display flag, UI plumbing
 		 */
 		isPublished() {
 			const config = this.displayConfiguration
 			// Published if: isLocal=true AND has githubRepo (or sourceType is github/gitlab with repo info)
-			return this.isLocalConfiguration && (config.githubRepo || (config.sourceType === 'github' && config.githubRepo))
+			return (
+				this.isLocalConfiguration
+				&& (config.githubRepo
+					|| (config.sourceType === 'github' && config.githubRepo))
+			)
 		},
+
 		/**
 		 * Get view source URL
 		 *
 		 * @return {string|null}
+		 * @spec exclude computed source-URL display helper, UI plumbing
 		 */
 		viewSourceUrl() {
 			const config = this.displayConfiguration
 			return config.url || config.sourceUrl || null
 		},
+
 		/**
 		 * Check if configuration has any metadata to display in footer
 		 *
 		 * @return {boolean}
+		 * @spec exclude computed footer-metadata presence flag, UI plumbing
 		 */
 		hasMetadata() {
 			const config = this.displayConfiguration
@@ -481,10 +588,12 @@ export default {
 				|| config.remoteVersion
 			)
 		},
+
 		/**
 		 * Get repository full name (owner/repo)
 		 *
 		 * @return {string|null}
+		 * @spec exclude computed repo-name display helper, UI plumbing
 		 */
 		repositoryFullName() {
 			const config = this.displayConfiguration
@@ -501,7 +610,9 @@ export default {
 
 			// Try to extract from sourceUrl
 			if (config.sourceUrl) {
-				const githubMatch = config.sourceUrl.match(/github\.com\/([^/]+\/[^/]+)/)
+				const githubMatch = config.sourceUrl.match(
+					/github\.com\/([^/]+\/[^/]+)/,
+				)
 				if (githubMatch) {
 					return githubMatch[1].replace(/\/blob\/.*$/, '')
 				}
@@ -509,10 +620,12 @@ export default {
 
 			return null
 		},
+
 		/**
 		 * Get repository URL
 		 *
 		 * @return {string|null}
+		 * @spec exclude computed repo-URL display helper, UI plumbing
 		 */
 		repositoryUrl() {
 			if (!this.repositoryFullName) return null
@@ -520,32 +633,58 @@ export default {
 			const config = this.displayConfiguration
 
 			// Check if it's a GitLab repo
-			if (config.sourceType === 'gitlab' || config.sourceUrl?.includes('gitlab')) {
+			if (
+				config.sourceType === 'gitlab'
+				|| config.sourceUrl?.includes('gitlab')
+			) {
 				return `https://gitlab.com/${this.repositoryFullName}`
 			}
 
 			// Default to GitHub
 			return `https://github.com/${this.repositoryFullName}`
 		},
+
+		/**
+		 * Organization URL, validated to be a safe http(s) link to prevent
+		 * javascript:/data: URL injection via imported configuration data.
+		 *
+		 * @return {string|null}
+		 * @spec exclude computed org-URL display helper, UI plumbing
+		 */
+		safeOrgUrl() {
+			const url = this.displayConfiguration.organization?.url
+			if (typeof url === 'string' && /^https?:\/\//i.test(url)) {
+				return url
+			}
+			return null
+		},
 	},
+
 	watch: {
-		'configuration.config.app'() {
+		'configuration.config.app': function () {
 			// Re-check if app ID changes
 			if (this.isDiscovered && this.appId) {
 				this.checkIfImported()
 			}
 		},
 	},
+
+	/**
+	 * @spec exclude lifecycle hook delegating to checkIfImported (REQ-002), UI plumbing
+	 */
 	mounted() {
 		// For discovered configs, check backend to see if already imported
 		if (this.isDiscovered && this.appId) {
 			this.checkIfImported()
 		}
 	},
+
 	methods: {
 		/**
 		 * Check if this discovered configuration is already imported in the backend
 		 * Makes an API call to check by appId and stores the full config
+		 *
+		 * @spec openspec/specs/shared-ui-components/spec.md
 		 */
 		async checkIfImported() {
 			if (!this.appId || this.checkingImportStatus) return
@@ -575,9 +714,10 @@ export default {
 						this.importedConfigId = importedConfig.id
 
 						// Add to store if not already there (for pagination support)
-						const existsInStore = configurationStore.configurationList.find(
-							c => c.id === importedConfig.id,
-						)
+						const existsInStore =
+							configurationStore.configurationList.find(
+								(c) => c.id === importedConfig.id,
+							)
 						if (!existsInStore) {
 							configurationStore.configurationList.push(importedConfig)
 						}
@@ -597,11 +737,13 @@ export default {
 				this.checkingImportStatus = false
 			}
 		},
+
 		/**
 		 * Get source type label
 		 *
 		 * @param {string} sourceType Source type
 		 * @return {string}
+		 * @spec exclude source-type label display helper, UI plumbing
 		 */
 		getSourceTypeLabel(sourceType) {
 			const labels = {
@@ -612,14 +754,19 @@ export default {
 			}
 			return labels[sourceType] || 'Unknown'
 		},
+
 		/**
 		 * Get sync status text
 		 *
 		 * @param {object} configuration Configuration object
 		 * @return {string}
+		 * @spec exclude sync-status display formatter, UI plumbing
 		 */
 		getSyncStatusText(configuration) {
-			if (configuration.syncStatus === 'success' && configuration.lastSyncDate) {
+			if (
+				configuration.syncStatus === 'success'
+				&& configuration.lastSyncDate
+			) {
 				const now = new Date()
 				const lastSync = new Date(configuration.lastSyncDate)
 				const diffInHours = Math.floor((now - lastSync) / (1000 * 60 * 60))
@@ -640,16 +787,21 @@ export default {
 				return 'Never synced'
 			}
 		},
+
 		/**
 		 * Open URL in new tab
 		 *
 		 * @param {string} url URL to open
+		 * @spec exclude window.open UI plumbing
 		 */
 		openInNewTab(url) {
 			window.open(url, '_blank')
 		},
+
 		/**
 		 * Handle view action
+		 *
+		 * @spec exclude emit/store-dispatch UI handler opening view modal
 		 */
 		handleView() {
 			const config = this.existingConfiguration || this.displayConfiguration
@@ -661,8 +813,11 @@ export default {
 				this.$emit('view', config)
 			}
 		},
+
 		/**
 		 * Handle edit action
+		 *
+		 * @spec exclude emit/store-dispatch UI handler opening edit modal
 		 */
 		handleEdit() {
 			const config = this.existingConfiguration || this.displayConfiguration
@@ -673,8 +828,11 @@ export default {
 				this.$emit('edit', config)
 			}
 		},
+
 		/**
 		 * Handle export action
+		 *
+		 * @spec exclude emit/store-dispatch UI handler opening export modal
 		 */
 		handleExport() {
 			const config = this.existingConfiguration || this.displayConfiguration
@@ -685,16 +843,22 @@ export default {
 				this.$emit('export', config)
 			}
 		},
+
 		/**
 		 * Handle publish action
+		 *
+		 * @spec exclude store-dispatch UI handler opening publish modal
 		 */
 		handlePublish() {
 			const config = this.existingConfiguration || this.displayConfiguration
 			configurationStore.setConfigurationItem(config)
 			navigationStore.setModal('publishConfiguration')
 		},
+
 		/**
 		 * Handle delete action
+		 *
+		 * @spec exclude emit/store-dispatch UI handler opening delete dialog
 		 */
 		handleDelete() {
 			const config = this.existingConfiguration || this.displayConfiguration
@@ -705,15 +869,21 @@ export default {
 				this.$emit('delete', config)
 			}
 		},
+
 		/**
 		 * Handle check version action
+		 *
+		 * @spec exclude emit UI handler dispatching check-version event
 		 */
 		handleCheckVersion() {
 			const config = this.existingConfiguration || this.displayConfiguration
 			this.$emit('check-version', config)
 		},
+
 		/**
 		 * Handle preview update action
+		 *
+		 * @spec exclude emit/store-dispatch UI handler opening preview modal
 		 */
 		handlePreviewUpdate() {
 			const config = this.existingConfiguration || this.displayConfiguration
@@ -922,5 +1092,12 @@ export default {
 .configBadge--published {
 	background-color: var(--color-error);
 	color: white;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.configurationCard,
+	.metaLink {
+		transition: none;
+	}
 }
 </style>

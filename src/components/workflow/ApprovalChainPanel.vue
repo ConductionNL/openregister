@@ -10,40 +10,53 @@
 			<p>Steps: {{ chain.steps.length }}</p>
 			<ul>
 				<li v-for="(step, i) in chain.steps" :key="i">
-					Step {{ step.order }}: {{ step.role }} (approve: {{ step.statusOnApprove }}, reject: {{ step.statusOnReject }})
+					Step {{ step.order }}: {{ step.role }} (approve:
+					{{ step.statusOnApprove }}, reject: {{ step.statusOnReject }})
 				</li>
 			</ul>
 		</div>
-		<NcButton type="primary" @click="showCreateForm = !showCreateForm">
+		<NcButton variant="primary" @click="showCreateForm = !showCreateForm">
 			{{ showCreateForm ? 'Cancel' : 'Create Chain' }}
 		</NcButton>
 		<div v-if="showCreateForm" class="create-form">
 			<div class="form-group">
-				<label>Name</label>
-				<input v-model="newChain.name" type="text" class="input-field">
+				<label for="approval-chain-name">{{
+					t('openregister', 'Name')
+				}}</label>
+				<input
+					id="approval-chain-name"
+					v-model="newChain.name"
+					type="text"
+					class="input-field" />
 			</div>
 			<div class="form-group">
-				<label>Status Field</label>
-				<input v-model="newChain.statusField" type="text" class="input-field">
+				<label for="approval-chain-status-field">Status Field</label>
+				<input
+					id="approval-chain-status-field"
+					v-model="newChain.statusField"
+					type="text"
+					class="input-field" />
 			</div>
-			<NcButton type="primary" @click="createChain">
-				Save Chain
-			</NcButton>
+			<NcButton variant="primary" @click="createChain"> Save Chain </NcButton>
 		</div>
 	</div>
 </template>
 
 <script>
-import { NcButton } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { NcButton } from '@nextcloud/vue'
 
+/**
+ * @spec openspec/specs/approval-workflow/spec.md
+ */
 export default {
 	name: 'ApprovalChainPanel',
 	components: { NcButton },
 	props: {
 		schemaId: { type: Number, default: null },
 	},
+
 	data() {
 		return {
 			chains: [],
@@ -51,19 +64,30 @@ export default {
 			newChain: { name: '', statusField: 'status', steps: [] },
 		}
 	},
+
 	mounted() {
 		this.fetchChains()
 	},
+
 	methods: {
+		/**
+		 * @spec openspec/specs/approval-workflow/spec.md
+		 */
 		async fetchChains() {
 			try {
 				const url = generateUrl('/apps/openregister/api/approval-chains')
 				const response = await axios.get(url)
-				this.chains = (response.data || []).filter(c => !this.schemaId || c.schemaId === this.schemaId)
+				this.chains = (response.data || []).filter(
+					(c) => !this.schemaId || c.schemaId === this.schemaId,
+				)
 			} catch (error) {
 				console.error('Failed to fetch chains:', error)
 			}
 		},
+
+		/**
+		 * @spec exclude API passthrough creating chain + refetch; approval-chain contract owned by approval-workflow capability
+		 */
 		async createChain() {
 			try {
 				const url = generateUrl('/apps/openregister/api/approval-chains')
@@ -79,9 +103,31 @@ export default {
 </script>
 
 <style scoped>
-.chain-card { border: 1px solid var(--color-border); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
-.form-group { margin-bottom: 8px; }
-.form-group label { display: block; font-weight: bold; }
-.input-field { width: 100%; padding: 8px; }
-.create-form { margin-top: 12px; padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; }
+.chain-card {
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	padding: 12px;
+	margin-bottom: 12px;
+}
+
+.form-group {
+	margin-bottom: 8px;
+}
+
+.form-group label {
+	display: block;
+	font-weight: bold;
+}
+
+.input-field {
+	width: 100%;
+	padding: 8px;
+}
+
+.create-form {
+	margin-top: 12px;
+	padding: 12px;
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+}
 </style>

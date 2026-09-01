@@ -1,7 +1,6 @@
 /**
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
  */
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 
 const apiUrl = '/index.php/apps/openregister/api'
@@ -73,38 +72,49 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 	actions: {
 		/**
 		 * Set search trail list
+		 *
 		 * @param {Array} searchTrailList - The search trail list to set
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		setSearchTrailList(searchTrailList) {
 			// Ensure we have a clean array without reactive references
-			this.searchTrailList = Array.isArray(searchTrailList) ? [...searchTrailList] : []
-			console.info('Search trail list set to:', this.searchTrailList.length, 'items')
+			this.searchTrailList = Array.isArray(searchTrailList)
+				? [...searchTrailList]
+				: []
 		},
 
 		/**
 		 * Set search trail item
+		 *
 		 * @param {object} searchTrailItem - The search trail item to set
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		setSearchTrailItem(searchTrailItem) {
 			this.searchTrailItem = searchTrailItem
-			console.info('Search trail item set to:', searchTrailItem)
 		},
 
 		/**
 		 * Set search trail pagination
+		 *
 		 * @param {object} pagination - The pagination object
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		setSearchTrailPagination(pagination) {
 			this.searchTrailPagination = {
 				...this.searchTrailPagination,
 				...pagination,
 			}
-			console.info('Search trail pagination set to:', this.searchTrailPagination)
 		},
 
 		/**
 		 * Set statistics
+		 *
 		 * @param {object} stats - The statistics object
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		setStatistics(stats) {
 			this.statistics = {
@@ -112,7 +122,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				totalResults: stats.total_results || 0,
 				averageResultsPerSearch: stats.avg_results_per_search || 0,
 				averageExecutionTime: stats.avg_response_time || 0,
-				successRate: stats.success_rate ? (stats.success_rate / 100) : 0,
+				successRate: stats.success_rate ? stats.success_rate / 100 : 0,
 				uniqueSearchTerms: stats.unique_search_terms || 0,
 				uniqueUsers: stats.unique_users || 0,
 				uniqueOrganizations: stats.unique_organizations || 0,
@@ -124,23 +134,27 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 					complex: 0,
 				},
 			}
-			console.info('Search trail statistics set to:', this.statistics)
 		},
 
 		/**
 		 * Set popular terms
+		 *
 		 * @param {object} response - The popular terms response object
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		setPopularTerms(response) {
 			// Handle response structure from API
 			const terms = response?.results || response?.terms || response
 			this.popularTerms = Array.isArray(terms) ? [...terms] : []
-			console.info('Popular terms set to:', this.popularTerms.length, 'items')
 		},
 
 		/**
 		 * Set activity data
+		 *
 		 * @param {object} activityResponse - The activity data response
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		setActivity(activityResponse) {
 			// Handle response structure from API
@@ -150,7 +164,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				const activityData = response?.activity || response
 				if (Array.isArray(activityData)) {
 					// Map the activity data to match expected format
-					this.activity[period] = activityData.map(item => ({
+					this.activity[period] = activityData.map((item) => ({
 						period: item.period,
 						searches: item.count || item.searches || 0,
 						avgResults: item.avg_results || 0,
@@ -160,62 +174,68 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 					this.activity[period] = []
 				}
 			})
-			console.info('Search trail activity set to:', this.activity)
 		},
 
 		/**
 		 * Set register schema statistics
+		 *
 		 * @param {object} response - The register schema statistics response
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		setRegisterSchemaStats(response) {
 			// Handle response structure from API
 			const stats = response?.results || response?.statistics || response
 			this.registerSchemaStats = Array.isArray(stats) ? [...stats] : []
-			console.info('Register schema stats set to:', this.registerSchemaStats.length, 'items')
 		},
 
 		/**
 		 * Set user agent statistics
+		 *
 		 * @param {object} response - The user agent statistics response
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		setUserAgentStats(response) {
 			// Handle response structure from API
 			const stats = response?.results || response?.user_agents || response
 			this.userAgentStats = Array.isArray(stats) ? [...stats] : []
-			console.info('User agent stats set to:', this.userAgentStats.length, 'items')
 		},
 
 		/**
 		 * Set search trail filters
+		 *
 		 * @param {object} filters - The filters to set
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		setSearchTrailFilters(filters) {
 			this.searchTrailFilters = filters
-			console.info('Search trail filters set to:', filters)
 		},
 
 		/**
 		 * Set search trail search
+		 *
 		 * @param {string} search - The search term
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		setSearchTrailSearch(search) {
 			this.searchTrailSearch = search
-			console.info('Search trail search set to:', search)
 		},
 
 		/**
 		 * Fetch search trails with optional filtering and pagination
+		 *
 		 * @param {object} options - Options for fetching
 		 * @return {Promise<object>} The fetched data
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async fetchSearchTrails(options = {}) {
 			this.searchTrailLoading = true
 
 			try {
-				console.info('Fetching search trails with options:', options)
-
 				// Build query parameters
 				const params = new URLSearchParams()
 
@@ -246,7 +266,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				}
 
 				const url = `${apiUrl}/search-trails?${params.toString()}`
-				console.info('Fetching from URL:', url)
 
 				const response = await fetch(url, {
 					method: 'GET',
@@ -257,14 +276,15 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				})
 
 				const data = await response.json()
-				console.info('Search trail fetch response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to fetch search trails')
 				}
 
 				// Update store state - ensure we pass clean data
-				this.setSearchTrailList(data.results ? JSON.parse(JSON.stringify(data.results)) : [])
+				this.setSearchTrailList(
+					data.results ? JSON.parse(JSON.stringify(data.results)) : [],
+				)
 				this.setSearchTrailPagination({
 					total: data.total || 0,
 					page: data.page || 1,
@@ -284,24 +304,32 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Fetch search trail statistics
+		 *
+		 * @param {object} options - Optional { from, to } ISO date filters
 		 * @return {Promise<object>} The statistics data
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
-		async fetchStatistics() {
+		async fetchStatistics(options = {}) {
 			this.statisticsLoading = true
 
 			try {
-				console.info('Fetching search trail statistics')
-
-				const response = await fetch(`${apiUrl}/search-trails/statistics`, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
+				const query = new URLSearchParams()
+				if (options.from) query.append('from', options.from)
+				if (options.to) query.append('to', options.to)
+				const suffix = query.toString() ? `?${query.toString()}` : ''
+				const response = await fetch(
+					`${apiUrl}/search-trails/statistics${suffix}`,
+					{
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+							requesttoken: OC.requestToken,
+						},
 					},
-				})
+				)
 
 				const data = await response.json()
-				console.info('Search trail statistics response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to fetch statistics')
@@ -319,25 +347,28 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Fetch popular search terms
+		 *
 		 * @param {number} limit - Number of terms to fetch
 		 * @return {Promise<Array>} The popular terms data
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async fetchPopularTerms(limit = 10) {
 			this.popularTermsLoading = true
 
 			try {
-				console.info('Fetching popular search terms')
-
-				const response = await fetch(`${apiUrl}/search-trails/popular-terms?limit=${limit}`, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
+				const response = await fetch(
+					`${apiUrl}/search-trails/popular-terms?limit=${limit}`,
+					{
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+							requesttoken: OC.requestToken,
+						},
 					},
-				})
+				)
 
 				const data = await response.json()
-				console.info('Popular terms response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to fetch popular terms')
@@ -355,25 +386,28 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Fetch search activity data
+		 *
 		 * @param {string} period - The period to fetch (hourly, daily, weekly, monthly)
 		 * @return {Promise<Array>} The activity data
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async fetchActivity(period = 'daily') {
 			this.activityLoading = true
 
 			try {
-				console.info('Fetching search activity for period:', period)
-
-				const response = await fetch(`${apiUrl}/search-trails/activity?interval=${period}`, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
+				const response = await fetch(
+					`${apiUrl}/search-trails/activity?interval=${period}`,
+					{
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+							requesttoken: OC.requestToken,
+						},
 					},
-				})
+				)
 
 				const data = await response.json()
-				console.info('Activity response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to fetch activity data')
@@ -391,25 +425,30 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Fetch register schema statistics
+		 *
 		 * @return {Promise<Array>} The register schema statistics
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async fetchRegisterSchemaStats() {
 			try {
-				console.info('Fetching register schema statistics')
-
-				const response = await fetch(`${apiUrl}/search-trails/register-schema-stats`, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
+				const response = await fetch(
+					`${apiUrl}/search-trails/register-schema-stats`,
+					{
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+							requesttoken: OC.requestToken,
+						},
 					},
-				})
+				)
 
 				const data = await response.json()
-				console.info('Register schema stats response:', data)
 
 				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch register schema statistics')
+					throw new Error(
+						data.error || 'Failed to fetch register schema statistics',
+					)
 				}
 
 				this.setRegisterSchemaStats(data)
@@ -422,25 +461,30 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Fetch user agent statistics
+		 *
 		 * @return {Promise<Array>} The user agent statistics
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async fetchUserAgentStats() {
 			try {
-				console.info('Fetching user agent statistics')
-
-				const response = await fetch(`${apiUrl}/search-trails/user-agent-stats`, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
+				const response = await fetch(
+					`${apiUrl}/search-trails/user-agent-stats`,
+					{
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+							requesttoken: OC.requestToken,
+						},
 					},
-				})
+				)
 
 				const data = await response.json()
-				console.info('User agent stats response:', data)
 
 				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch user agent statistics')
+					throw new Error(
+						data.error || 'Failed to fetch user agent statistics',
+					)
 				}
 
 				this.setUserAgentStats(data)
@@ -453,15 +497,14 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Delete search trail logs older than specified days
+		 *
 		 * @param {number} days - Number of days to keep
 		 * @return {Promise<object>} The response data
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async cleanupSearchTrails(days = 30) {
 			try {
-				console.info('Cleaning up search trails older than', days, 'days')
-
 				const response = await fetch(`${apiUrl}/search-trails/cleanup`, {
 					method: 'POST',
 					headers: {
@@ -472,7 +515,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				})
 
 				const data = await response.json()
-				console.info('Cleanup response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to cleanup search trails')
@@ -487,7 +529,10 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Refresh search trail list with current filters
+		 *
 		 * @return {Promise} The refresh promise
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async refreshSearchTrailList() {
 			return this.fetchSearchTrails({
@@ -498,7 +543,10 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Get search trail statistics
+		 *
 		 * @return {Promise<object>} The statistics
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async getStatistics() {
 			try {
@@ -526,8 +574,11 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Get popular search terms
+		 *
 		 * @param {number} limit - Number of terms to get
 		 * @return {Promise<Array>} The popular terms
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async getPopularTerms(limit = 10) {
 			try {
@@ -541,8 +592,11 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Get search activity data
+		 *
 		 * @param {string} period - The period to get data for
 		 * @return {Promise<Array>} The activity data
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async getActivity(period = 'daily') {
 			try {
@@ -556,7 +610,10 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Get register schema usage statistics
+		 *
 		 * @return {Promise<Array>} The register schema statistics
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async getRegisterSchemaStats() {
 			try {
@@ -570,7 +627,10 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Get user agent statistics
+		 *
 		 * @return {Promise<Array>} The user agent statistics
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async getUserAgentStats() {
 			try {
@@ -584,6 +644,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Clear all search trail store data
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		clearSearchTrailStore() {
 			this.searchTrailList = []
@@ -621,7 +683,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 			this.userAgentStats = []
 			this.searchTrailFilters = {}
 			this.searchTrailSearch = ''
-			console.info('Search trail store cleared')
 		},
 	},
 })

@@ -1,8 +1,9 @@
-import { SafeParseReturnType, z } from 'zod'
-import { TApplication } from './application.types'
+import type { ZodSafeParseResult } from 'zod'
+import type { TApplication } from './application.types'
+
+import { z } from 'zod'
 
 export class Application implements TApplication {
-
 	public id?: number
 	public uuid?: string
 	public name: string
@@ -35,6 +36,10 @@ export class Application implements TApplication {
 	public created?: string
 	public updated?: string
 
+	/**
+	 * @param application
+	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
+	 */
 	constructor(application: TApplication) {
 		this.id = application.id
 		this.uuid = application.uuid || ''
@@ -72,7 +77,7 @@ export class Application implements TApplication {
 		this.updated = application.updated || ''
 	}
 
-	public validate(): SafeParseReturnType<TApplication, unknown> {
+	public validate(): ZodSafeParseResult<unknown> {
 		const schema = z.object({
 			id: z.number().optional(),
 			uuid: z.string().optional(),
@@ -84,26 +89,32 @@ export class Application implements TApplication {
 			registers: z.array(z.number()).optional(),
 			schemas: z.array(z.number()).optional(),
 			groups: z.array(z.string()).optional(),
-			quota: z.object({
-				storage: z.number().nullable().optional(),
-				bandwidth: z.number().nullable().optional(),
-				requests: z.number().nullable().optional(),
-				users: z.number().nullable().optional(),
-				groups: z.number().nullable().optional(),
-			}).optional(),
-			usage: z.object({
-				storage: z.number().optional(),
-				bandwidth: z.number().optional(),
-				requests: z.number().optional(),
-				users: z.number().optional(),
-				groups: z.number().optional(),
-			}).optional(),
-			authorization: z.object({
-				create: z.array(z.string()).optional(),
-				read: z.array(z.string()).optional(),
-				update: z.array(z.string()).optional(),
-				delete: z.array(z.string()).optional(),
-			}).optional(),
+			quota: z
+				.object({
+					storage: z.number().nullable().optional(),
+					bandwidth: z.number().nullable().optional(),
+					requests: z.number().nullable().optional(),
+					users: z.number().nullable().optional(),
+					groups: z.number().nullable().optional(),
+				})
+				.optional(),
+			usage: z
+				.object({
+					storage: z.number().optional(),
+					bandwidth: z.number().optional(),
+					requests: z.number().optional(),
+					users: z.number().optional(),
+					groups: z.number().optional(),
+				})
+				.optional(),
+			authorization: z
+				.object({
+					create: z.array(z.string()).optional(),
+					read: z.array(z.string()).optional(),
+					update: z.array(z.string()).optional(),
+					delete: z.array(z.string()).optional(),
+				})
+				.optional(),
 			owner: z.string().optional(),
 			active: z.boolean().optional(),
 			created: z.string().optional(),
@@ -112,5 +123,4 @@ export class Application implements TApplication {
 
 		return schema.safeParse(this)
 	}
-
 }

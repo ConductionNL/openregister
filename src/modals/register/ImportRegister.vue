@@ -1,23 +1,43 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { registerStore, schemaStore, navigationStore, objectStore, dashboardStore } from '../../store/store.js'
+import {
+	dashboardStore,
+	navigationStore,
+	objectStore,
+	registerStore,
+	schemaStore,
+} from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'importRegister'"
+	<NcDialog
+		v-if="navigationStore.modal === 'importRegister'"
 		name="import"
-		title="Import Data into Register"
+		:title="t('openregister', 'Import Data into Register')"
 		size="large"
-		:can-close="true"
+		:canClose="true"
 		@update:open="handleDialogClose">
-		<NcNoteCard v-if="success && importSummary && !hasImportErrors" type="success">
+		<NcNoteCard
+			v-if="success && importSummary && !hasImportErrors"
+			type="success">
 			<p>Register imported successfully!</p>
-			<p><small>The register list is being refreshed in the background.</small></p>
+			<p>
+				<small
+					>The register list is being refreshed in the background.</small
+				>
+			</p>
 		</NcNoteCard>
 
-		<NcNoteCard v-if="success && importSummary && hasImportErrors" type="warning">
+		<NcNoteCard
+			v-if="success && importSummary && hasImportErrors"
+			type="warning">
 			<p>Import completed with errors!</p>
-			<p><small>Some objects could not be imported. Check the details below.</small></p>
+			<p>
+				<small
+					>Some objects could not be imported. Check the details
+					below.</small
+				>
+			</p>
 		</NcNoteCard>
 
 		<div v-if="importResults" class="importResults">
@@ -27,46 +47,142 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				<table class="sheetSummaryTable">
 					<thead>
 						<tr>
-							<th>Sheet</th>
-							<th>Found</th>
-							<th>Created</th>
-							<th>Updated</th>
-							<th>Unchanged</th>
-							<th>Invalid</th>
-							<th>Errors</th>
-							<th>Total</th>
+							<th scope="col">Sheet</th>
+							<th scope="col">Found</th>
+							<th scope="col">
+								{{ t('openregister', 'Created') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Updated') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Unchanged') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Invalid') }}
+							</th>
+							<th scope="col">Errors</th>
+							<th scope="col">{{ t('openregister', 'Total') }}</th>
 						</tr>
 					</thead>
 					<tbody>
-						<template v-for="(sheetSummary, sheetKey) in importResults">
-							<tr :key="sheetKey">
+						<template
+							v-for="(sheetSummary, sheetKey) in importResults"
+							:key="sheetKey">
+							<tr>
 								<td class="sheetName">
 									{{ sheetKey }}
-									<div v-if="sheetSummary.schema" class="schemaInfo">
-										<small>Schema: {{ sheetSummary.schema.title }}</small>
+									<div
+										v-if="sheetSummary.schema"
+										class="schemaInfo">
+										<small
+											>Schema:
+											{{ sheetSummary.schema.title }}</small
+										>
 									</div>
-									<div v-if="sheetSummary.errors && sheetSummary.errors.some(error => error.type === 'MissingIdColumnException')" class="errorInfo">
-										<small class="errorText">Missing required "id" column</small>
+									<div
+										v-if="
+											sheetSummary.errors
+											&& sheetSummary.errors.some(
+												(error) =>
+													error.type
+													=== 'MissingIdColumnException',
+											)
+										"
+										class="errorInfo">
+										<small class="errorText"
+											>Missing required "id" column</small
+										>
 									</div>
-									<div v-else-if="sheetSummary.errors && sheetSummary.errors.some(error => error.type === 'InvalidUuidException')" class="errorInfo">
-										<small class="errorText">Invalid UUID format in ID column</small>
+									<div
+										v-else-if="
+											sheetSummary.errors
+											&& sheetSummary.errors.some(
+												(error) =>
+													error.type
+													=== 'InvalidUuidException',
+											)
+										"
+										class="errorInfo">
+										<small class="errorText"
+											>Invalid UUID format in ID column</small
+										>
 									</div>
-									<div v-else-if="sheetSummary.errors && sheetSummary.errors.some(error => error.type === 'ValidationException')" class="errorInfo">
-										<small class="errorText">{{ getInvalidCount(sheetSummary) }} objects failed validation</small>
+									<div
+										v-else-if="
+											sheetSummary.errors
+											&& sheetSummary.errors.some(
+												(error) =>
+													error.type
+													=== 'ValidationException',
+											)
+										"
+										class="errorInfo">
+										<small class="errorText"
+											>{{
+												getInvalidCount(sheetSummary)
+											}}
+											objects failed validation</small
+										>
 									</div>
-									<div v-else-if="sheetSummary.found === 0 && sheetSummary.errors && sheetSummary.errors.length > 0" class="errorInfo">
-										<small class="errorText">No data found - check schema matching or cache issues</small>
+									<div
+										v-else-if="
+											sheetSummary.found === 0
+											&& sheetSummary.errors
+											&& sheetSummary.errors.length > 0
+										"
+										class="errorInfo">
+										<small class="errorText"
+											>No data found - check schema matching or
+											cache issues</small
+										>
 									</div>
-									<div v-if="isCacheRelatedError(sheetSummary)" class="cacheWarning">
-										<small class="warningText">⚠️ Cache-related error detected. Try refreshing the page or contact support.</small>
+									<div
+										v-if="isCacheRelatedError(sheetSummary)"
+										class="cacheWarning">
+										<small class="warningText"
+											>⚠️ Cache-related error detected. Try
+											refreshing the page or contact
+											support.</small
+										>
 									</div>
-									<div v-if="sheetSummary.found === 0 && sheetSummary.errors && sheetSummary.errors.length === 0" class="infoInfo">
-										<small class="infoText">Sheet appears empty or has no matching data</small>
+									<div
+										v-if="
+											sheetSummary.found === 0
+											&& sheetSummary.errors
+											&& sheetSummary.errors.length === 0
+										"
+										class="infoInfo">
+										<small class="infoText"
+											>Sheet appears empty or has no matching
+											data</small
+										>
 									</div>
-									<div v-if="sheetSummary.found === 0 && sheetSummary.debug && sheetSummary.debug.headers && Array.isArray(sheetSummary.debug.headers)" class="debugInfo">
+									<div
+										v-if="
+											sheetSummary.found === 0
+											&& sheetSummary.debug
+											&& sheetSummary.debug.headers
+											&& Array.isArray(
+												sheetSummary.debug.headers,
+											)
+										"
+										class="debugInfo">
 										<small class="debugText">
-											Headers: {{ sheetSummary.debug.headers.join(', ') }}<br>
-											Schema properties: {{ Array.isArray(sheetSummary.debug.schemaProperties) ? sheetSummary.debug.schemaProperties.join(', ') : 'N/A' }}
+											Headers:
+											{{ sheetSummary.debug.headers.join(', ')
+											}}<br />
+											Schema properties:
+											{{
+												Array.isArray(
+													sheetSummary.debug
+														.schemaProperties,
+												)
+													? sheetSummary.debug.schemaProperties.join(
+															', ',
+														)
+													: 'N/A'
+											}}
 										</small>
 									</div>
 								</td>
@@ -74,24 +190,52 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 									{{ sheetSummary.found || 0 }}
 								</td>
 								<td class="statCell created">
-									{{ (sheetSummary.created && sheetSummary.created.length) || 0 }}
+									{{
+										(sheetSummary.created
+											&& sheetSummary.created.length)
+										|| 0
+									}}
 								</td>
 								<td class="statCell updated">
-									{{ (sheetSummary.updated && sheetSummary.updated.length) || 0 }}
+									{{
+										(sheetSummary.updated
+											&& sheetSummary.updated.length)
+										|| 0
+									}}
 								</td>
 								<td class="statCell unchanged">
-									{{ (sheetSummary.unchanged && sheetSummary.unchanged.length) || 0 }}
+									{{
+										(sheetSummary.unchanged
+											&& sheetSummary.unchanged.length)
+										|| 0
+									}}
 								</td>
 								<td class="statCell invalid">
 									{{ getInvalidCount(sheetSummary) }}
 								</td>
 								<td class="statCell errors">
 									<div class="errorCell">
-										<span>{{ (sheetSummary.errors && sheetSummary.errors.length) || 0 }}</span>
+										<span>{{
+											(sheetSummary.errors
+												&& sheetSummary.errors.length)
+											|| 0
+										}}</span>
 										<button
-											v-if="sheetSummary.errors && sheetSummary.errors.length > 0"
+											v-if="
+												sheetSummary.errors
+												&& sheetSummary.errors.length > 0
+											"
+											type="button"
 											class="expandButton"
-											:class="{ expanded: expandedErrors[sheetKey] }"
+											:class="{
+												expanded: expandedErrors[sheetKey],
+											}"
+											:aria-expanded="
+												!!expandedErrors[sheetKey]
+											"
+											:aria-label="
+												t('openregister', 'Error Details')
+											"
 											@click="toggleErrorDetails(sheetKey)">
 											<ChevronDown :size="16" />
 										</button>
@@ -99,46 +243,114 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 								</td>
 								<td class="statCell total">
 									{{
-										((sheetSummary.created && sheetSummary.created.length) || 0) +
-											((sheetSummary.updated && sheetSummary.updated.length) || 0) +
-											((sheetSummary.unchanged && sheetSummary.unchanged.length) || 0) +
-											getInvalidCount(sheetSummary) +
-											((sheetSummary.errors && sheetSummary.errors.length) || 0)
+										((sheetSummary.created
+											&& sheetSummary.created.length)
+											|| 0)
+										+ ((sheetSummary.updated
+											&& sheetSummary.updated.length)
+											|| 0)
+										+ ((sheetSummary.unchanged
+											&& sheetSummary.unchanged.length)
+											|| 0)
+										+ getInvalidCount(sheetSummary)
+										+ ((sheetSummary.errors
+											&& sheetSummary.errors.length)
+											|| 0)
 									}}
 								</td>
 							</tr>
 							<!-- Error Details Row -->
-							<tr v-if="expandedErrors[sheetKey] && sheetSummary.errors && sheetSummary.errors.length > 0" :key="`${sheetKey}-errors`" class="errorDetailsRow">
+							<tr
+								v-if="
+									expandedErrors[sheetKey]
+									&& sheetSummary.errors
+									&& sheetSummary.errors.length > 0
+								"
+								class="errorDetailsRow">
 								<td colspan="8" class="errorDetailsCell">
 									<div class="errorDetailsTable">
 										<table class="errorTable">
 											<thead>
 												<tr>
-													<th>Row</th>
-													<th>Error Type</th>
-													<th>Error Message</th>
-													<th>Data</th>
+													<th scope="col">Row</th>
+													<th scope="col">Error Type</th>
+													<th scope="col">
+														{{
+															t(
+																'openregister',
+																'Error Message',
+															)
+														}}
+													</th>
+													<th scope="col">
+														{{
+															t('openregister', 'Data')
+														}}
+													</th>
 												</tr>
 											</thead>
 											<tbody>
-												<tr v-for="(importError, index) in sheetSummary.errors" :key="index" class="errorRow">
+												<tr
+													v-for="(
+														importError, index
+													) in sheetSummary.errors"
+													:key="index"
+													class="errorRow">
 													<td class="errorRowNumber">
 														{{ importError.row }}
 													</td>
 													<td class="errorType">
-														{{ importError.type || 'Unknown' }}
+														{{
+															importError.type
+															|| 'Unknown'
+														}}
 													</td>
 													<td class="errorMessage">
 														{{ importError.error }}
-														<div v-if="importError.debug" class="errorDebugInfo">
-															<small>File: {{ importError.debug.file }}</small><br>
-															<small>Line: {{ importError.debug.line }}</small><br>
-															<small>Class: {{ importError.debug.class }}</small>
+														<div
+															v-if="importError.debug"
+															class="errorDebugInfo">
+															<small
+																>File:
+																{{
+																	importError.debug
+																		.file
+																}}</small
+															><br />
+															<small
+																>Line:
+																{{
+																	importError.debug
+																		.line
+																}}</small
+															><br />
+															<small
+																>Class:
+																{{
+																	importError.debug
+																		.class
+																}}</small
+															>
 														</div>
 													</td>
 													<td class="errorData">
-														<pre v-if="importError.data && Object.keys(importError.data).length > 0">{{ JSON.stringify(importError.data, null, 2) }}</pre>
-														<span v-else class="noData">No data</span>
+														<pre
+															v-if="
+																importError.data
+																&& Object.keys(
+																	importError.data,
+																).length > 0
+															"
+															>{{
+																JSON.stringify(
+																	importError.data,
+																	null,
+																	2,
+																)
+															}}</pre>
+														<span v-else class="noData"
+															>No data</span
+														>
 													</td>
 												</tr>
 											</tbody>
@@ -151,8 +363,9 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				</table>
 			</div>
 
-			<NcButton type="secondary"
-				style="margin-top: 1rem;"
+			<NcButton
+				variant="secondary"
+				style="margin-top: 1rem"
 				@click="closeModal">
 				<template #icon>
 					<Cancel :size="20" />
@@ -168,11 +381,22 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 		<!-- Heartbeat indicator for long imports -->
 		<NcNoteCard v-if="loading && isHeartbeatActive" type="info">
 			<p>🔄 Processing large file - keeping connection alive...</p>
-			<p><small>This may take several minutes for large datasets. The system is actively preventing timeouts.</small></p>
-			<div v-if="heartbeatStatus && heartbeatStatus.count > 0" class="heartbeatStatus">
+			<p>
+				<small
+					>This may take several minutes for large datasets. The system is
+					actively preventing timeouts.</small
+				>
+			</p>
+			<div
+				v-if="heartbeatStatus && heartbeatStatus.count > 0"
+				class="heartbeatStatus">
 				<small>
-					<span v-if="heartbeatStatus.healthy" class="heartbeatHealthy">✓ Connection stable</span>
-					<span v-else class="heartbeatUnhealthy">⚠ Connection issues detected</span>
+					<span v-if="heartbeatStatus.healthy" class="heartbeatHealthy"
+						>✓ Connection stable</span
+					>
+					<span v-else class="heartbeatUnhealthy"
+						>⚠ Connection issues detected</span
+					>
 					({{ heartbeatStatus.count }} heartbeats sent)
 				</small>
 			</div>
@@ -184,7 +408,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				type="file"
 				accept=".json,.xlsx,.xls,.csv"
 				style="display: none"
-				@change="handleFileUpload">
+				@change="handleFileUpload" />
 
 			<div class="fileSelection">
 				<NcButton @click="$refs.fileInput.click()">
@@ -196,7 +420,9 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				<div v-if="selectedFile" class="selectedFile">
 					<div class="fileInfo">
 						<span class="fileName">{{ selectedFile.name }}</span>
-						<span class="fileType">({{ getFileType(selectedFile.name) }})</span>
+						<span class="fileType"
+							>({{ getFileType(selectedFile.name) }})</span
+						>
 					</div>
 					<div class="fileSize">
 						{{ formatFileSize(selectedFile.size) }}
@@ -204,39 +430,51 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				</div>
 			</div>
 
-			<NcSelect v-if="selectedFile && (getFileExtension(selectedFile?.name) === 'xlsx' || getFileExtension(selectedFile.name) === 'xls' || getFileExtension(selectedFile.name) === 'csv')"
+			<NcSelect
+				v-if="
+					selectedFile
+					&& (getFileExtension(selectedFile?.name) === 'xlsx'
+						|| getFileExtension(selectedFile.name) === 'xls'
+						|| getFileExtension(selectedFile.name) === 'csv')
+				"
 				v-bind="registerOptions"
-				:model-value="selectedRegisterValue"
+				:modelValue="selectedRegisterValue"
 				:loading="registerLoading"
 				:disabled="registerLoading"
-				aria-label-combobox="Select a register"
-				placeholder="Select a register"
-				@update:model-value="handleRegisterChange" />
+				:aria-label-combobox="t('openregister', 'Select a register')"
+				:placeholder="t('openregister', 'Select a register')"
+				@update:modelValue="handleRegisterChange" />
 
-			<NcSelect v-if="selectedFile && (getFileExtension(selectedFile?.name) === 'csv')"
+			<NcSelect
+				v-if="selectedFile && getFileExtension(selectedFile?.name) === 'csv'"
 				v-bind="schemaOptions"
-				:model-value="selectedSchemaValue"
+				:modelValue="selectedSchemaValue"
 				:loading="schemaLoading"
 				:disabled="!registerStore.registerItem || schemaLoading"
-				aria-label-combobox="Select a schema"
-				placeholder="Select a schema"
-				@update:model-value="handleSchemaChange" />
+				:aria-label-combobox="t('openregister', 'Select a schema')"
+				:placeholder="t('openregister', 'Select a schema')"
+				@update:modelValue="handleSchemaChange" />
 
 			<div class="fileTypes">
-				<p class="fileTypesTitle">
-					Supported file types:
-				</p>
+				<p class="fileTypesTitle">Supported file types:</p>
 				<ul class="fileTypesList">
 					<li>
-						<strong>JSON</strong> - Register configuration and objects.<br>
-						<em>You can create or update objects for multiple schemas at once.</em>
+						<strong>JSON</strong> - Register configuration and
+						objects.<br />
+						<em
+							>You can create or update objects for multiple schemas at
+							once.</em
+						>
 					</li>
 					<li>
-						<strong>Excel</strong> (.xlsx, .xls) - Objects data.<br>
-						<em>You can create or update objects for multiple schemas at once.</em>
+						<strong>Excel</strong> (.xlsx, .xls) - Objects data.<br />
+						<em
+							>You can create or update objects for multiple schemas at
+							once.</em
+						>
 					</li>
 					<li>
-						<strong>CSV</strong> - Objects data.<br>
+						<strong>CSV</strong> - Objects data.<br />
 						<em>You can only update one schema within a register.</em>
 					</li>
 				</ul>
@@ -245,19 +483,31 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 						<strong>Import Requirements:</strong>
 					</p>
 					<ul class="requirementsList">
-						<li>Every sheet must have an <strong>"id"</strong> column for object identification</li>
-						<li>Empty "id" values create new objects, existing "id" values update objects</li>
-						<li>ID values must be valid UUID format (e.g., 123e4567-e89b-12d3-a456-426614174000)</li>
-						<li>Metadata columns (starting with "_") are automatically ignored</li>
+						<li>
+							Every sheet must have an <strong>"id"</strong> column for
+							object identification
+						</li>
+						<li>
+							Empty "id" values create new objects, existing "id"
+							values update objects
+						</li>
+						<li>
+							ID values must be valid UUID format (e.g.,
+							123e4567-e89b-12d3-a456-426614174000)
+						</li>
+						<li>
+							Metadata columns (starting with "_") are automatically
+							ignored
+						</li>
 					</ul>
 				</div>
 			</div>
 
 			<div class="importOptions">
 				<NcCheckboxRadioSwitch
-					:checked="includeObjects"
+					:modelValue="includeObjects"
 					type="switch"
-					@update:checked="includeObjects = $event">
+					@update:modelValue="includeObjects = $event">
 					Include objects in the import
 					<template #helper>
 						This will create or update objects on the register
@@ -265,45 +515,48 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				</NcCheckboxRadioSwitch>
 
 				<NcCheckboxRadioSwitch
-					:checked="validation"
+					:modelValue="validation"
 					type="switch"
-					@update:checked="validation = $event">
+					@update:modelValue="validation = $event">
 					Enable validation
 					<template #helper>
-						Validate objects against schema definitions before saving. Invalid objects will be excluded from import.
+						Validate objects against schema definitions before saving.
+						Invalid objects will be excluded from import.
 					</template>
 				</NcCheckboxRadioSwitch>
 
 				<NcCheckboxRadioSwitch
-					:checked="events"
+					:modelValue="events"
 					type="switch"
-					@update:checked="events = $event">
+					@update:modelValue="events = $event">
 					Enable events (experimental)
 					<template #helper>
-						Dispatch object lifecycle events during bulk operations. May impact performance.
+						Dispatch object lifecycle events during bulk operations. May
+						impact performance.
 					</template>
 				</NcCheckboxRadioSwitch>
 
 				<NcCheckboxRadioSwitch
-					:checked="rbac"
+					:modelValue="rbac"
 					type="switch"
-					@update:checked="rbac = $event">
+					@update:modelValue="rbac = $event">
 					Enable RBAC (Role-Based Access Control)
 					<template #helper>
-						Apply role-based access control checks during import. Recommended for production environments.
+						Apply role-based access control checks during import.
+						Recommended for production environments.
 					</template>
 				</NcCheckboxRadioSwitch>
 
 				<NcCheckboxRadioSwitch
-					:checked="multi"
+					:modelValue="multi"
 					type="switch"
-					@update:checked="multi = $event">
+					@update:modelValue="multi = $event">
 					Enable Multi-tenancy
 					<template #helper>
-						Apply multi-tenancy filtering during import. Recommended for multi-organization setups.
+						Apply multi-tenancy filtering during import. Recommended for
+						multi-organization setups.
 					</template>
 				</NcCheckboxRadioSwitch>
-
 			</div>
 		</div>
 
@@ -315,8 +568,13 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				Cancel
 			</NcButton>
 			<NcButton
-				:disabled="loading || !selectedFile || !isValidFileType || !checkDataCompleted()"
-				type="primary"
+				:disabled="
+					loading
+					|| !selectedFile
+					|| !isValidFileType
+					|| !checkDataCompleted()
+				"
+				variant="primary"
 				@click="importRegister">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -330,21 +588,20 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 
 <script>
 /**
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+ * @spec openspec/specs/data-import-export/spec.md
  */
 import {
 	NcButton,
+	NcCheckboxRadioSwitch,
 	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcCheckboxRadioSwitch,
 	NcSelect,
 } from '@nextcloud/vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
+import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import Import from 'vue-material-design-icons/Import.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
-import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 
 export default {
 	name: 'ImportRegister',
@@ -361,8 +618,10 @@ export default {
 		Upload,
 		ChevronDown,
 	},
+
 	/**
 	 * Component data properties
+	 *
 	 * @return {object}
 	 */
 	data() {
@@ -388,65 +647,94 @@ export default {
 			heartbeatStatus: null, // Current heartbeat status (healthy, failure count, etc.)
 		}
 	},
+
 	computed: {
 		/**
 		 * Check if the selected file type is valid
+		 *
 		 * @return {boolean}
+		 * @spec exclude computed client-side file-type validation
 		 */
 		isValidFileType() {
 			if (!this.selectedFile) return false
 			const extension = this.getFileExtension(this.selectedFile.name)
 			return this.allowedFileTypes.includes(extension)
 		},
+
+		/**
+		 * @spec exclude computed display helper building register select options
+		 */
 		registerOptions() {
 			return {
-				options: registerStore.registerList.map(register => ({
+				options: registerStore.registerList.map((register) => ({
 					value: register.id,
 					label: register.title,
 					title: register.title,
 					register,
 				})),
-				reduce: option => option.register,
+
+				reduce: (option) => option.register,
 				label: 'title',
-				getOptionLabel: option => {
-					return option.title || (option.register && option.register.title) || option.label || ''
+				getOptionLabel: (option) => {
+					return (
+						option.title
+						|| (option.register && option.register.title)
+						|| option.label
+						|| ''
+					)
 				},
 			}
 		},
+
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+		 * @spec openspec/specs/data-import-export/spec.md
 		 */
 		schemaOptions() {
 			if (!registerStore.registerItem) return { options: [] }
 
 			// Convert register schemas to strings for comparison.
 			// Schema IDs can be either numbers or objects with an id property.
-			const registerSchemaIds = (registerStore.registerItem.schemas || []).map(schema => {
-				// If schema is an object with an id property, extract it; otherwise use the value directly.
-				const schemaId = typeof schema === 'object' && schema !== null ? schema.id : schema
-				return String(schemaId)
-			})
+			const registerSchemaIds = (registerStore.registerItem.schemas || []).map(
+				(schema) => {
+					// If schema is an object with an id property, extract it; otherwise use the value directly.
+					const schemaId =
+						typeof schema === 'object' && schema !== null
+							? schema.id
+							: schema
+					return String(schemaId)
+				},
+			)
 
 			return {
 				options: schemaStore.schemaList
-					.filter(schema => {
+					.filter((schema) => {
 						// Convert schema ID to string for comparison.
 						const schemaId = String(schema.id)
 						return registerSchemaIds.includes(schemaId)
 					})
-					.map(schema => ({
+					.map((schema) => ({
 						value: schema.id,
 						label: schema.title,
 						title: schema.title,
 						schema,
 					})),
-				reduce: option => option.schema,
+
+				reduce: (option) => option.schema,
 				label: 'title',
-				getOptionLabel: option => {
-					return option.title || (option.schema && option.schema.title) || option.label || ''
+				getOptionLabel: (option) => {
+					return (
+						option.title
+						|| (option.schema && option.schema.title)
+						|| option.label
+						|| ''
+					)
 				},
 			}
 		},
+
+		/**
+		 * @spec exclude computed display helper for selected register value
+		 */
 		selectedRegisterValue() {
 			if (!registerStore.registerItem) return null
 			const register = registerStore.registerItem
@@ -457,8 +745,9 @@ export default {
 				register,
 			}
 		},
+
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+		 * @spec openspec/specs/data-import-export/spec.md
 		 */
 		selectedSchemaValue() {
 			if (!schemaStore.schemaItem) return null
@@ -470,67 +759,83 @@ export default {
 				schema,
 			}
 		},
+
 		/**
 		 * Check if there are any errors in the import results
+		 *
 		 * @return {boolean} - Whether there are import errors
+		 * @spec exclude computed flag for import errors
 		 */
 		hasImportErrors() {
 			if (!this.importResults) return false
 
 			// Check if any sheet has errors
-			return Object.values(this.importResults).some(sheetSummary =>
-				sheetSummary.errors && sheetSummary.errors.length > 0,
+			return Object.values(this.importResults).some(
+				(sheetSummary) =>
+					sheetSummary.errors && sheetSummary.errors.length > 0,
 			)
 		},
 	},
+
+	/**
+	 * @spec exclude Vue lifecycle hook preloading registers/schemas
+	 */
 	mounted() {
 		dashboardStore.preload()
 		this.registerLoading = true
 		this.schemaLoading = true
 
 		// Always load lists to ensure fresh data.
-		registerStore.refreshRegisterList()
+		registerStore
+			.refreshRegisterList()
 			.finally(() => (this.registerLoading = false))
 
-		schemaStore.refreshSchemaList()
-			.finally(() => (this.schemaLoading = false))
+		schemaStore.refreshSchemaList().finally(() => (this.schemaLoading = false))
 
 		// Load objects if register and schema are already selected.
 		if (registerStore.registerItem && schemaStore.schemaItem) {
 			objectStore.refreshObjectList()
 		}
 	},
+
 	methods: {
 		/**
 		 * Get the file extension from a filename
+		 *
 		 * @param {string} filename - The name of the file to get extension from
 		 * @return {string}
 		 */
 		getFileExtension(filename) {
 			return filename.split('.').pop().toLowerCase()
 		},
+
 		/**
 		 * Get the file type label for display
+		 *
 		 * @param {string} filename - The name of the file to get type label from
 		 * @return {string}
+		 * @spec exclude display helper mapping extension to label
 		 */
 		getFileType(filename) {
 			const extension = this.getFileExtension(filename)
 			switch (extension) {
-			case 'json':
-				return 'JSON Configuration'
-			case 'xlsx':
-			case 'xls':
-				return 'Excel Spreadsheet'
-			case 'csv':
-				return 'CSV Data'
-			default:
-				return 'Unknown'
+				case 'json':
+					return 'JSON Configuration'
+				case 'xlsx':
+				case 'xls':
+					return 'Excel Spreadsheet'
+				case 'csv':
+					return 'CSV Data'
+				default:
+					return 'Unknown'
 			}
 		},
+
 		/**
 		 * Handle file input change event
+		 *
 		 * @param {Event} event - The file input change event
+		 * @spec exclude file-input UI handler with client-side validation
 		 */
 		handleFileUpload(event) {
 			const file = event.target.files[0]
@@ -542,7 +847,7 @@ export default {
 
 			const extension = this.getFileExtension(file.name)
 			if (!this.allowedFileTypes.includes(extension)) {
-				this.error = `Invalid file type: ${file.name}. Please select a ${this.allowedFileTypes.map(e => '.' + e).join(', ')} file.`
+				this.error = `Invalid file type: ${file.name}. Please select a ${this.allowedFileTypes.map((e) => '.' + e).join(', ')} file.`
 				this.selectedFile = null
 				return
 			}
@@ -550,8 +855,11 @@ export default {
 			this.selectedFile = file
 			this.error = null
 		},
+
 		/**
 		 * Close the import modal and reset state
+		 *
+		 * @spec exclude modal close + form-state reset handler
 		 */
 		closeModal() {
 			navigationStore.setModal(false)
@@ -571,18 +879,24 @@ export default {
 			this.isHeartbeatActive = false // Reset heartbeat state
 			this.heartbeatStatus = null // Reset heartbeat status
 		},
+
 		/**
 		 * Handle dialog close event from X button
+		 *
 		 * @param {boolean} isOpen - Whether the dialog is open
+		 * @spec exclude modal open/close UI handler
 		 */
 		handleDialogClose(isOpen) {
 			if (!isOpen) {
 				this.closeModal()
 			}
 		},
+
 		/**
 		 * Import the selected register file and handle the summary
+		 *
 		 * @return {Promise<void>}
+		 * @spec exclude modal submit handler delegating to registerStore.importRegister
 		 */
 		async importRegister() {
 			if (!this.selectedFile || !this.isValidFileType) {
@@ -590,41 +904,36 @@ export default {
 				return
 			}
 
-			console.info('ImportRegister: Starting import, setting loading to true')
 			this.loading = true
 			this.error = null
 
 			// Activate heartbeat indicator for large files (>500KB) to show timeout prevention
 			const isLargeFile = this.selectedFile.size > 500 * 1024 // 500KB threshold
 			if (isLargeFile) {
-				console.info('ImportRegister: Large file detected, activating heartbeat indicator')
 				this.isHeartbeatActive = true
 			}
 
 			try {
-				console.info('ImportRegister: Calling registerStore.importRegister')
 				// Call importRegister with heartbeat status monitoring
 				const result = await registerStore.importRegister(
 					this.selectedFile,
 					// Heartbeat status callback
 					(status) => {
 						this.heartbeatStatus = status
-						console.info('ImportRegister: Heartbeat status updated:', status)
 					},
 				)
 
-				console.info('ImportRegister: Import completed, setting success state')
 				// Store the import summary from the backend response
-				this.importSummary = result?.responseData?.summary || result?.summary || null
-				this.importResults = result?.responseData?.summary || result?.summary || null
+				this.importSummary =
+					result?.responseData?.summary || result?.summary || null
+				this.importResults =
+					result?.responseData?.summary || result?.summary || null
 				this.success = true
 
-				console.info('ImportRegister: Setting loading to false')
 				// Turn off loading immediately after import completes
 				// The register refresh will happen in the background
 				this.loading = false
 
-				console.info('ImportRegister: Loading state set to false, success:', this.success)
 				// Do not auto-close; let user review the summary and close manually
 			} catch (error) {
 				console.error('ImportRegister: Import failed:', error)
@@ -633,13 +942,15 @@ export default {
 			} finally {
 				// Always disable heartbeat indicator when import ends
 				this.isHeartbeatActive = false
-				console.info('ImportRegister: Heartbeat indicator deactivated')
 			}
 		},
+
 		/**
 		 * Format file size for display
+		 *
 		 * @param {number} bytes - The size in bytes
 		 * @return {string}
+		 * @spec exclude display helper formatting file size
 		 */
 		formatFileSize(bytes) {
 			if (bytes === 0) return '0 Bytes'
@@ -648,6 +959,11 @@ export default {
 			const i = Math.floor(Math.log(bytes) / Math.log(k))
 			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 		},
+
+		/**
+		 * @param option
+		 * @spec exclude select-change UI handler updating register/schema stores
+		 */
 		async handleRegisterChange(option) {
 			if (!option) {
 				registerStore.setRegisterItem(null)
@@ -673,8 +989,10 @@ export default {
 				}
 			}
 		},
+
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+		 * @param option
+		 * @spec openspec/specs/data-import-export/spec.md
 		 */
 		async handleSchemaChange(option) {
 			schemaStore.setSchemaItem(option)
@@ -683,17 +1001,22 @@ export default {
 				objectStore.refreshObjectList()
 			}
 		},
+
 		/**
 		 * Check based on the selected file type if all the required data is selected
+		 *
 		 * @return {boolean}
+		 * @spec exclude computed form-completion gate
 		 */
 		checkDataCompleted() {
 			if (!this.selectedFile) return false
 			if (this.getFileExtension(this.selectedFile?.name) === 'json') {
 				return true
 			}
-			if (this.getFileExtension(this.selectedFile?.name) === 'xlsx' || this.getFileExtension(this.selectedFile?.name) === 'xls') {
-
+			if (
+				this.getFileExtension(this.selectedFile?.name) === 'xlsx'
+				|| this.getFileExtension(this.selectedFile?.name) === 'xls'
+			) {
 				return !!this.selectedRegisterValue
 			}
 			if (this.getFileExtension(this.selectedFile?.name) === 'csv') {
@@ -701,25 +1024,34 @@ export default {
 			}
 			return false
 		},
+
 		/**
 		 * Toggle the expanded state for a sheet's details
+		 *
 		 * @param {string} sheetName - The name of the sheet to toggle
+		 * @spec exclude UI toggle for sheet details
 		 */
 		toggleDetails(sheetName) {
 			// Use Vue.set to ensure reactivity for dynamic object properties
-			this.$set(this.expandedSheets, sheetName, !this.expandedSheets[sheetName])
+			this.expandedSheets[sheetName] = !this.expandedSheets[sheetName]
 		},
+
 		/**
 		 * Toggle the expanded state for a sheet's error details
+		 *
 		 * @param {string} sheetName - The name of the sheet to toggle
+		 * @spec exclude UI toggle for sheet error details
 		 */
 		toggleErrorDetails(sheetName) {
-			this.$set(this.expandedErrors, sheetName, !this.expandedErrors[sheetName])
+			this.expandedErrors[sheetName] = !this.expandedErrors[sheetName]
 		},
+
 		/**
 		 * Get the count of invalid objects from validation errors
+		 *
 		 * @param {object} sheetSummary - The sheet summary object
 		 * @return {number} - The number of invalid objects
+		 * @spec exclude display helper counting validation errors
 		 */
 		getInvalidCount(sheetSummary) {
 			if (!sheetSummary.errors || !Array.isArray(sheetSummary.errors)) {
@@ -727,12 +1059,17 @@ export default {
 			}
 			// Count validation errors (objects that failed validation)
 			// Now that invalid objects contain their error info directly, we still count ValidationException types
-			return sheetSummary.errors.filter(error => error.type === 'ValidationException').length
+			return sheetSummary.errors.filter(
+				(error) => error.type === 'ValidationException',
+			).length
 		},
+
 		/**
 		 * Check if the error might be cache-related
+		 *
 		 * @param {object} sheetSummary - The sheet summary object
 		 * @return {boolean} - Whether cache issues might be causing problems
+		 * @spec exclude display helper detecting cache-related errors
 		 */
 		isCacheRelatedError(sheetSummary) {
 			if (!sheetSummary.errors || !Array.isArray(sheetSummary.errors)) {
@@ -747,9 +1084,9 @@ export default {
 				'Invalid property',
 			]
 
-			return sheetSummary.errors.some(error =>
-				cacheIndicators.some(indicator =>
-					error.error && error.error.includes(indicator),
+			return sheetSummary.errors.some((error) =>
+				cacheIndicators.some(
+					(indicator) => error.error && error.error.includes(indicator),
 				),
 			)
 		},
@@ -1315,6 +1652,12 @@ export default {
 		flex-direction: column;
 		gap: 0.5rem;
 		align-items: flex-start;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.expandButton {
+		transition: none;
 	}
 }
 </style>

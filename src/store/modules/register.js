@@ -1,6 +1,15 @@
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 import { Register } from '../../entities/index.js'
+
+// Module-scoped single-flight token for refreshRegisterList. The endpoint is
+// expensive (~5-16s with _extend=schemas + @self.stats on dev envs with 100+
+// registers), and every sidebar mount + AppInitializationService both call
+// refreshRegisterList on app boot. Without coalescing, callers issue 2-4
+// identical parallel fetches that race the SearchSideBar's `:loading` /
+// `:disabled` flags past the e2e tests' 30s budget (see
+// tests/e2e/spec-coverage/saved-search-views.spec.ts). Holding the in-flight
+// promise here lets every caller await the same fetch.
+let inFlightRefresh = null
 
 export const useRegisterStore = defineStore('register', {
 	state: () => ({
@@ -24,20 +33,29 @@ export const useRegisterStore = defineStore('register', {
 		getViewMode: (state) => state.viewMode,
 	},
 	actions: {
+		/**
+		 * @param tab
+		 * @spec exclude Pure client UI-state setter — active detail tab. No backend contract.
+		 */
 		setActiveTab(tab) {
 			this.activeTab = tab
-			console.log('Active tab set to:', tab)
 		},
+		/**
+		 * @param mode
+		 * @spec exclude Pure client UI-state setter — list/card view-mode toggle. No backend contract.
+		 */
 		setViewMode(mode) {
 			this.viewMode = mode
-			console.log('View mode set to:', mode)
 		},
+		/**
+		 * @param registerItem
+		 * @spec exclude Client state mutator — wraps the active register in an entity. No backend contract.
+		 */
 		setRegisterItem(registerItem) {
 			try {
 				this.loading = true
 				this.error = null
 				this.registerItem = registerItem ? new Register(registerItem) : null
-				console.log('Active register item set to ' + (registerItem?.title || 'null'))
 			} catch (error) {
 				console.error('Error setting register item:', error)
 				this.error = error.message
@@ -45,48 +63,71 @@ export const useRegisterStore = defineStore('register', {
 				this.loading = false
 			}
 		},
+		/**
+		 * @param registerList
+		 * @spec exclude Client state mutator — maps the register list to entities. No backend contract.
+		 */
 		setRegisterList(registerList) {
 			this.registerList = registerList.map(
 				(registerItem) => new Register(registerItem),
 			)
-			console.log('Register list set to ' + registerList.length + ' items')
 		},
 		/**
 		 * Set pagination details
+		 *
 		 * @param {number} page - The current page number for pagination
 		 * @param {number} limit - The number of items to display per page
+		 *
+		 * @spec exclude Pure client UI-state setter — list pagination cursor. No backend contract.
 		 */
 		setPagination(page, limit = 14) {
 			this.pagination = { page, limit }
-			console.info('Pagination set to', { page, limit }) // Logging the pagination
 		},
 		/**
 		 * Set query filters for register list
+		 *
 		 * @param {object} filters - The filter criteria to apply to the register list
+		 *
+		 * @spec exclude Pure client UI-state setter — list filter criteria. No backend contract.
 		 */
 		setFilters(filters) {
 			this.filters = { ...this.filters, ...filters }
-			console.info('Query filters set to', this.filters) // Logging the filters
 		},
+		/**
+		 * @spec exclude Thin API passthrough — GET /api/registers list; observable contract owned by the register lifecycle backend capability.
+		 */
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
 		async refreshRegisterList(search = null) {
-			console.log('RegisterStore: Starting refreshRegisterList')
-			let endpoint = '/index.php/apps/openregister/api/registers?_extend[]=schemas&_extend[]=@self.stats'
+			// Single-flight: callers that pass the same `search` (or none)
+			// while a fetch is in flight share the same promise. CRUD-driven
+			// callers that pass a custom search bypass the cache.
+			if (search === null && inFlightRefresh) {
+				return inFlightRefresh
+			}
+			let endpoint =
+				'/index.php/apps/openregister/api/registers?_extend[]=schemas&_extend[]=@self.stats'
 			if (search !== null && search !== '') {
 				endpoint = endpoint + '&_search=' + encodeURIComponent(search)
 			}
-			const response = await fetch(endpoint, {
-				method: 'GET',
-			})
-
-			const data = (await response.json()).results
-
-			this.setRegisterList(data)
-			console.log('RegisterStore: refreshRegisterList completed, got', data.length, 'registers')
-
-			return { response, data }
+			const work = (async () => {
+				const response = await fetch(endpoint, { method: 'GET' })
+				const data = (await response.json()).results
+				this.setRegisterList(data)
+				return { response, data }
+			})()
+			if (search === null) {
+				inFlightRefresh = work.finally(() => {
+					inFlightRefresh = null
+				})
+				return inFlightRefresh
+			}
+			return work
 		},
 		// New function to get a single register
+		/**
+		 * @param id
+		 * @spec exclude Thin API passthrough — GET /api/registers/{id}; observable contract owned by the register lifecycle backend capability.
+		 */
 		async getRegister(id) {
 			const endpoint = `/index.php/apps/openregister/api/registers/${id}`
 			try {
@@ -102,6 +143,10 @@ export const useRegisterStore = defineStore('register', {
 			}
 		},
 		// New function to get register statistics
+		/**
+		 * @param id
+		 * @spec exclude Thin API passthrough — GET /api/registers/{id}/stats; observable contract owned by the register lifecycle backend capability.
+		 */
 		async getRegisterStats(id) {
 			const endpoint = `/index.php/apps/openregister/api/registers/${id}/stats`
 			try {
@@ -116,12 +161,14 @@ export const useRegisterStore = defineStore('register', {
 			}
 		},
 		// Delete a register
+		/**
+		 * @param registerItem
+		 * @spec exclude Thin API passthrough — DELETE /api/registers/{id}; observable contract owned by the register lifecycle backend capability.
+		 */
 		async deleteRegister(registerItem) {
 			if (!registerItem.id) {
 				throw new Error('No register item to delete')
 			}
-
-			console.log('Deleting register...')
 
 			const endpoint = `/index.php/apps/openregister/api/registers/${registerItem.id}`
 
@@ -146,90 +193,20 @@ export const useRegisterStore = defineStore('register', {
 				return { response, data: responseData }
 			} catch (error) {
 				console.error('Error deleting register:', error)
-				throw new Error(`Failed to delete register: ${error.message}`)
-			}
-		},
-		// Publish a register
-		async publishRegister(registerId, date = null) {
-			if (!registerId) {
-				throw new Error('No register ID provided')
-			}
-
-			console.log('Publishing register...')
-
-			let endpoint = `/index.php/apps/openregister/api/registers/${registerId}/publish`
-			if (date) {
-				endpoint += `?date=${encodeURIComponent(date)}`
-			}
-
-			try {
-				const response = await fetch(endpoint, {
-					method: 'POST',
+				throw new Error(`Failed to delete register: ${error.message}`, {
+					cause: error,
 				})
-
-				if (!response.ok) {
-					const errorData = await response.json().catch(() => ({}))
-					throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
-				}
-
-				const responseData = await response.json()
-
-				await this.refreshRegisterList()
-				// Update the register item if it's currently selected
-				if (this.registerItem && this.registerItem.id === registerId) {
-					this.setRegisterItem(responseData)
-				}
-
-				return { response, data: responseData }
-			} catch (error) {
-				console.error('Error publishing register:', error)
-				throw new Error(`Failed to publish register: ${error.message}`)
-			}
-		},
-		// Depublish a register
-		async depublishRegister(registerId, date = null) {
-			if (!registerId) {
-				throw new Error('No register ID provided')
-			}
-
-			console.log('Depublishing register...')
-
-			let endpoint = `/index.php/apps/openregister/api/registers/${registerId}/depublish`
-			if (date) {
-				endpoint += `?date=${encodeURIComponent(date)}`
-			}
-
-			try {
-				const response = await fetch(endpoint, {
-					method: 'POST',
-				})
-
-				if (!response.ok) {
-					const errorData = await response.json().catch(() => ({}))
-					throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
-				}
-
-				const responseData = await response.json()
-
-				await this.refreshRegisterList()
-				// Update the register item if it's currently selected
-				if (this.registerItem && this.registerItem.id === registerId) {
-					this.setRegisterItem(responseData)
-				}
-
-				return { response, data: responseData }
-			} catch (error) {
-				console.error('Error depublishing register:', error)
-				throw new Error(`Failed to depublish register: ${error.message}`)
 			}
 		},
 		// Create or save a register from store
+		/**
+		 * @param registerItem
+		 * @spec exclude Thin API passthrough — POST/PUT /api/registers; observable contract owned by the register lifecycle backend capability.
+		 */
 		async saveRegister(registerItem) {
 			if (!registerItem) {
 				throw new Error('No register item to save')
 			}
-
-			console.log('Saving register...')
 
 			const isNewRegister = !registerItem.id
 			const endpoint = isNewRegister
@@ -241,16 +218,13 @@ export const useRegisterStore = defineStore('register', {
 			const cleanedData = this.cleanRegisterForSave(registerItem)
 
 			try {
-				const response = await fetch(
-					endpoint,
-					{
-						method,
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify(cleanedData),
+				const response = await fetch(endpoint, {
+					method,
+					headers: {
+						'Content-Type': 'application/json',
 					},
-				)
+					body: JSON.stringify(cleanedData),
+				})
 
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
@@ -270,10 +244,16 @@ export const useRegisterStore = defineStore('register', {
 				return { response, data }
 			} catch (error) {
 				console.error('Error saving register:', error)
-				throw new Error(`Failed to save register: ${error.message}`)
+				throw new Error(`Failed to save register: ${error.message}`, {
+					cause: error,
+				})
 			}
 		},
 		// Clean register data for saving - remove read-only fields
+		/**
+		 * @param registerItem
+		 * @spec exclude Client-side payload sanitiser — strips read-only fields before save. No standalone backend contract.
+		 */
 		cleanRegisterForSave(registerItem) {
 			const cleaned = { ...registerItem }
 
@@ -286,12 +266,14 @@ export const useRegisterStore = defineStore('register', {
 			return cleaned
 		},
 		// Create or save a register from store
+		/**
+		 * @param register
+		 * @spec exclude Thin API passthrough — POST/PUT /api/registers/upload; observable contract owned by the register lifecycle backend capability.
+		 */
 		async uploadRegister(register) {
 			if (!register) {
 				throw new Error('No register item to upload')
 			}
-
-			console.log('Uploading register...')
 
 			const isNewRegister = !this.registerItem
 			const endpoint = isNewRegister
@@ -299,16 +281,13 @@ export const useRegisterStore = defineStore('register', {
 				: `/index.php/apps/openregister/api/registers/upload/${this.registerItem.id}`
 			const method = isNewRegister ? 'POST' : 'PUT'
 
-			const response = await fetch(
-				endpoint,
-				{
-					method,
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(register),
+			const response = await fetch(endpoint, {
+				method,
+				headers: {
+					'Content-Type': 'application/json',
 				},
-			)
+				body: JSON.stringify(register),
+			})
 
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`)
@@ -326,17 +305,17 @@ export const useRegisterStore = defineStore('register', {
 			this.refreshRegisterList()
 
 			return { response, data }
-
 		},
 		/**
 		 * Start a heartbeat mechanism to prevent gateway timeouts during long imports
+		 *
 		 * @param {number} intervalMs - Heartbeat interval in milliseconds (default: 15 seconds)
 		 * @param {Function} onStatusChange - Callback for heartbeat status changes
 		 * @return {object} - Object with stop() method and status property
+		 *
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		startImportHeartbeat(intervalMs = 15000, onStatusChange = null) {
-			console.log('RegisterStore: Starting import heartbeat every', intervalMs, 'ms')
-
 			let heartbeatCount = 0
 			let failureCount = 0
 			let isHealthy = true
@@ -344,70 +323,86 @@ export const useRegisterStore = defineStore('register', {
 			const heartbeatInterval = setInterval(async () => {
 				try {
 					heartbeatCount++
-					const startTime = Date.now()
 
 					// Send a lightweight request to keep the session alive
-					const response = await fetch('/index.php/apps/openregister/api/heartbeat', {
-						method: 'GET',
-						headers: {
-							'X-Requested-With': 'XMLHttpRequest',
-							'Cache-Control': 'no-cache',
+					const response = await fetch(
+						'/index.php/apps/openregister/api/heartbeat',
+						{
+							method: 'GET',
+							headers: {
+								'X-Requested-With': 'XMLHttpRequest',
+								'Cache-Control': 'no-cache',
+							},
+							// Add timeout to prevent hanging requests
+							signal: AbortSignal.timeout(10000), // 10 second timeout
 						},
-						// Add timeout to prevent hanging requests
-						signal: AbortSignal.timeout(10000), // 10 second timeout
-					})
+					)
 
 					if (!response.ok) {
-						throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+						throw new Error(
+							`HTTP ${response.status}: ${response.statusText}`,
+						)
 					}
-
-					const duration = Date.now() - startTime
-					console.log(`RegisterStore: Heartbeat #${heartbeatCount} successful (${duration}ms)`)
 
 					// Reset failure count on success
 					if (failureCount > 0) {
 						failureCount = 0
 						isHealthy = true
 						if (onStatusChange) {
-							onStatusChange({ healthy: true, failures: 0, count: heartbeatCount })
+							onStatusChange({
+								healthy: true,
+								failures: 0,
+								count: heartbeatCount,
+							})
 						}
 					}
-
 				} catch (error) {
 					failureCount++
 					const wasHealthy = isHealthy
 					isHealthy = failureCount < 3 // Consider unhealthy after 3 consecutive failures
 
-					console.error(`RegisterStore: Heartbeat #${heartbeatCount} failed (failure ${failureCount}):`, error.message)
+					console.error(
+						`RegisterStore: Heartbeat #${heartbeatCount} failed (failure ${failureCount}):`,
+						error.message,
+					)
 
-					if (onStatusChange && (!wasHealthy !== !isHealthy)) {
-						onStatusChange({ healthy: isHealthy, failures: failureCount, count: heartbeatCount, error: error.message })
-					}
-
-					// If too many failures, warn user but don't stop heartbeat
-					if (failureCount === 3) {
-						console.warn('RegisterStore: Multiple heartbeat failures detected - connection may be unstable')
+					if (onStatusChange && !wasHealthy !== !isHealthy) {
+						onStatusChange({
+							healthy: isHealthy,
+							failures: failureCount,
+							count: heartbeatCount,
+							error: error.message,
+						})
 					}
 				}
 			}, intervalMs)
 
 			return {
+				/**
+				 * @spec openspec/specs/frontend-store-client-state/spec.md
+				 */
 				stop() {
-					console.log(`RegisterStore: Stopping import heartbeat after ${heartbeatCount} attempts (${failureCount} failures)`)
 					clearInterval(heartbeatInterval)
 				},
 				getStatus() {
-					return { healthy: isHealthy, failures: failureCount, count: heartbeatCount }
+					return {
+						healthy: isHealthy,
+						failures: failureCount,
+						count: heartbeatCount,
+					}
 				},
 			}
 		},
 
+		/**
+		 * @param file
+		 * @param heartbeatCallback
+		 * @spec exclude Thin API passthrough — POST /api/registers/{id}/import; observable contract owned by data-import-export (the heartbeat it spins up is spec'd separately under frontend-client-state-orchestration REQ-001).
+		 */
 		async importRegister(file, heartbeatCallback = null) {
 			if (!file) {
 				throw new Error('No file to import')
 			}
-
-			console.log('RegisterStore: Starting import...')
 
 			const registerId = this.registerItem?.id
 			if (!registerId) {
@@ -418,7 +413,10 @@ export const useRegisterStore = defineStore('register', {
 			const fileExtension = file.name.split('.').pop().toLowerCase()
 			const { useSchemaStore } = await import('./schema.js')
 			const schemaStore = useSchemaStore()
-			const schemaId = (fileExtension === 'csv' && schemaStore.schemaItem) ? schemaStore.schemaItem.id : null
+			const schemaId =
+				fileExtension === 'csv' && schemaStore.schemaItem
+					? schemaStore.schemaItem.id
+					: null
 
 			// Build basic endpoint
 			let endpoint = `/index.php/apps/openregister/api/registers/${registerId}/import`
@@ -437,23 +435,20 @@ export const useRegisterStore = defineStore('register', {
 			const heartbeat = this.startImportHeartbeat(15000, heartbeatCallback) // Every 15 seconds
 
 			try {
-				console.log('RegisterStore: Sending import request to:', endpoint)
-
 				// Create controller for potential timeout handling
 				const controller = new AbortController()
-				const timeoutId = setTimeout(() => {
-					console.warn('RegisterStore: Import taking longer than expected (5 minutes)')
-					// Don't abort, but log a warning for debugging
-				}, 5 * 60 * 1000) // 5 minutes warning
-
-				const response = await fetch(
-					endpoint,
-					{
-						method: 'POST',
-						body: formData,
-						signal: controller.signal,
+				const timeoutId = setTimeout(
+					() => {
+						// Import taking longer than expected (5 minutes); no action taken.
 					},
-				)
+					5 * 60 * 1000,
+				) // 5 minutes warning
+
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					body: formData,
+					signal: controller.signal,
+				})
 
 				clearTimeout(timeoutId)
 				const responseData = await response.json()
@@ -470,13 +465,14 @@ export const useRegisterStore = defineStore('register', {
 					throw new Error('Invalid response data')
 				}
 
-				console.log('RegisterStore: Import successful, starting register refresh in background...')
 				// Start the register refresh in the background without waiting for it to complete
 				// This way the import can complete and the loading state can be turned off
-				this.refreshRegisterList().catch(error => {
-					console.error('RegisterStore: Error refreshing register list:', error)
+				this.refreshRegisterList().catch((error) => {
+					console.error(
+						'RegisterStore: Error refreshing register list:',
+						error,
+					)
 				})
-				console.log('RegisterStore: Register refresh started in background')
 
 				return { response, responseData }
 			} catch (error) {
@@ -487,6 +483,9 @@ export const useRegisterStore = defineStore('register', {
 				heartbeat.stop()
 			}
 		},
+		/**
+		 * @spec exclude Pure client UI-state mutator — resets the active register and error. No backend contract.
+		 */
 		clearRegisterItem() {
 			this.registerItem = null
 			this.error = null

@@ -48,6 +48,8 @@
           "        'import_test_register_id', 'import_test_register_slug',",
           "        'import_test_schema_id', 'import_test_schema_slug',",
           "        'bulk_object_1_uuid', 'bulk_object_2_uuid',",
+          "        'org2_uuid', 'org2_schema_id', 'org2_schema_slug',",
+          "        'register_schemas_merged',",
           "        'test_org_uuid', 'test_timestamp'",
           "    ];",
           "    ",
@@ -1714,6 +1716,251 @@
           ]
         }
       }
+    },
+    {
+      "name": "3b2. Switch to Org1 to link the org2 schema (cross-tenant setup)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// A register's `schemas` list is a BOUNDARY: a slug it does not carry is",
+              "// refused with 404. `POST /api/schemas?register=` records that membership,",
+              "// but the write goes through RegisterMapper::update(), whose cross-tenant",
+              "// check applies to EVERYONE INCLUDING ADMINS. Register {{register_id}}",
+              "// belongs to org1, so while org2 is active the linkage is refused and only",
+              "// logged. Recording an org2 schema inside an org1 register is therefore a",
+              "// write that must be performed FROM org1 — which is exactly what a real",
+              "// multi-tenant client has to do. These three steps do that explicitly",
+              "// instead of relying on the global slug fallback that used to hide it.",
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/organisations/{{test_org_uuid}}/set-active",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "organisations",
+            "{{test_org_uuid}}",
+            "set-active"
+          ]
+        },
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{admin_user}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{admin_password}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3b3. Read the register's current schema list",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "var body = pm.response.json();",
+              "var current = (body.schemas || body.results || []);",
+              "",
+              "// Guard, not decoration: if this list came back empty the PATCH below would",
+              "// REPLACE the register's real linkage with a one-element array and every",
+              "// later slug read in this collection would 404 for a reason unrelated to",
+              "// the code under test. It must already carry the two schemas created with",
+              "// ?register= at steps 2 and 2a.",
+              "pm.test('Register already carries the schemas created with ?register=', function () {",
+              "    pm.expect(current.length).to.be.at.least(2);",
+              "    pm.expect(current.map(String)).to.include(String(pm.collectionVariables.get('schema_id')));",
+              "    pm.expect(current.map(String)).to.include(String(pm.collectionVariables.get('validation_schema_id')));",
+              "});",
+              "",
+              "var merged = current.map(Number);",
+              "var org2SchemaId = Number(pm.collectionVariables.get('org2_schema_id'));",
+              "if (merged.indexOf(org2SchemaId) === -1) { merged.push(org2SchemaId); }",
+              "pm.collectionVariables.set('register_schemas_merged', JSON.stringify(merged));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "registers",
+            "{{register_id}}"
+          ]
+        },
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{admin_user}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{admin_password}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3b4. Link the org2 schema into the org1 register",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Register now carries the org2 schema', function () {",
+              "    var body = pm.response.json();",
+              "    var ids = (body.schemas || []).map(String);",
+              "    pm.expect(ids).to.include(String(pm.collectionVariables.get('org2_schema_id')));",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schemas\": {{register_schemas_merged}}\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "registers",
+            "{{register_id}}"
+          ]
+        },
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{admin_user}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{admin_password}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3b5. Switch back to Org2 (restore the multitenancy context)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/organisations/{{org2_uuid}}/set-active",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "organisations",
+            "{{org2_uuid}}",
+            "set-active"
+          ]
+        },
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{admin_user}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{admin_password}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": []
     },
     {
       "name": "3c. Create Object in Org2 (Multitenancy)",
@@ -3872,10 +4119,10 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"title\": \"Person Schema {{$timestamp}}\", \"description\": \"Schema for file tests\", \"properties\": {\"name\": {\"type\": \"string\"}}}"
+              "raw": "{\"title\": \"Person Schema Files {{$timestamp}}-{{$randomInt}}\", \"description\": \"Schema for file tests\", \"properties\": {\"name\": {\"type\": \"string\"}}}"
             },
             "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas?register={{register_id}}",
+              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas?register={{file_test_register_id}}",
               "host": [
                 "{{base_url}}"
               ],
@@ -3889,7 +4136,7 @@
               "query": [
                 {
                   "key": "register",
-                  "value": "{{register_id}}"
+                  "value": "{{file_test_register_id}}"
                 }
               ]
             }
@@ -4112,10 +4359,10 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"title\": \"Person Schema {{$timestamp}}\", \"description\": \"Schema for import tests\", \"properties\": {\"name\": {\"type\": \"string\"}, \"age\": {\"type\": \"integer\"}}}"
+              "raw": "{\"title\": \"Person Schema Imports {{$timestamp}}-{{$randomInt}}\", \"description\": \"Schema for import tests\", \"properties\": {\"name\": {\"type\": \"string\"}, \"age\": {\"type\": \"integer\"}}}"
             },
             "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas?register={{register_id}}",
+              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas?register={{import_test_register_id}}",
               "host": [
                 "{{base_url}}"
               ],
@@ -4129,7 +4376,7 @@
               "query": [
                 {
                   "key": "register",
-                  "value": "{{register_id}}"
+                  "value": "{{import_test_register_id}}"
                 }
               ]
             }
@@ -4167,7 +4414,7 @@
                 {
                   "key": "file",
                   "type": "file",
-                  "src": "/var/www/html/custom_apps/openregister/tests/integration/test-import.csv"
+                  "src": "test-import.csv"
                 },
                 {
                   "key": "schema",
@@ -4230,7 +4477,7 @@
                 {
                   "key": "file",
                   "type": "file",
-                  "src": "/var/www/html/custom_apps/openregister/tests/integration/test-import.csv"
+                  "src": "test-import.csv"
                 },
                 {
                   "key": "schema",
@@ -4668,20 +4915,38 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "// Bulk save with magic tables has a known issue where 'name' is treated as both",
-                  "// a metadata field (_name) and a schema property (name), causing NOT NULL violations.",
-                  "pm.test('Status code is 200 or 201 or 500 (known magic table limitation)', function () {",
-                  "    pm.expect([200, 201, 500]).to.include(pm.response.code);",
+                  "// This schema declares a 'name' property, and the bulk path's",
+                  "// extractBusinessData() strips 'name' from the business payload",
+                  "// unconditionally (it is also a magic-table metadata column). The row then",
+                  "// fails the schema's `name` required rule and is refused, so this batch",
+                  "// legitimately writes NOTHING today - see #2781 for that defect.",
+                  "//",
+                  "// What this test pins is that the API SAYS SO. It used to accept",
+                  "// [200, 201, 500] and never compared saved_count to requested_count, so it",
+                  "// passed while the server answered 200 / success:true / saved_count:0 and",
+                  "// BOTH objects were lost (#2778). Whichever way this request goes, a silent",
+                  "// partial write must not be one of them. 500 is deliberately no longer",
+                  "// accepted: a crash on a well-formed batch should fail this suite.",
+                  "pm.test('Status code is 200 or 201 or 422 (rows refused) - never a silent partial', function () {",
+                  "    pm.expect([200, 201, 422]).to.include(pm.response.code);",
                   "});",
                   "",
+                  "var jsonData = pm.response.json();",
+                  "",
                   "if (pm.response.code === 200 || pm.response.code === 201) {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.test('Bulk save succeeded', function () {",
+                  "    pm.test('A 2xx bulk save wrote every object it was given', function () {",
                   "        pm.expect(jsonData.saved_objects).to.exist;",
+                  "        pm.expect(jsonData.saved_count).to.eql(jsonData.requested_count);",
                   "    });",
                   "    console.log('\u2713 Bulk save completed, saved:', jsonData.saved_count);",
                   "} else {",
-                  "    console.log('\u2139 Bulk save returned 500 (known magic table limitation with name field)');",
+                  "    pm.test('A refused batch reports success:false and names every rejected object', function () {",
+                  "        pm.expect(jsonData.success).to.eql(false);",
+                  "        pm.expect(jsonData.failed_count).to.be.above(0);",
+                  "        pm.expect(jsonData.failures).to.be.an('array').that.is.not.empty;",
+                  "        pm.expect(jsonData.failures[0].error).to.be.a('string').and.to.have.length.above(0);",
+                  "    });",
+                  "    console.log('\u2139 Bulk save refused', jsonData.failed_count, 'of', jsonData.requested_count, 'object(s):', jsonData.failures[0].error);",
                   "}"
                 ],
                 "type": "text/javascript"

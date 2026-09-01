@@ -1,8 +1,9 @@
-import { SafeParseReturnType, z } from 'zod'
-import { TOrganisation } from './organisation.types'
+import type { ZodSafeParseResult } from 'zod'
+import type { TOrganisation } from './organisation.types'
+
+import { z } from 'zod'
 
 export class Organisation implements TOrganisation {
-
 	public id?: number
 	public uuid?: string
 	public name: string
@@ -35,6 +36,10 @@ export class Organisation implements TOrganisation {
 	public created?: string
 	public updated?: string
 
+	/**
+	 * @param organisation
+	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
+	 */
 	constructor(organisation: TOrganisation) {
 		this.id = organisation.id
 		this.uuid = organisation.uuid || ''
@@ -79,7 +84,7 @@ export class Organisation implements TOrganisation {
 		this.updated = organisation.updated || ''
 	}
 
-	public validate(): SafeParseReturnType<TOrganisation, unknown> {
+	public validate(): ZodSafeParseResult<unknown> {
 		const crudSchema = z.object({
 			create: z.array(z.string()).optional(),
 			read: z.array(z.string()).optional(),
@@ -98,38 +103,43 @@ export class Organisation implements TOrganisation {
 			isDefault: z.boolean().optional(),
 			active: z.boolean().optional(),
 			owner: z.string().optional(),
-			quota: z.object({
-				storage: z.number().nullable().optional(),
-				bandwidth: z.number().nullable().optional(),
-				requests: z.number().nullable().optional(),
-				users: z.number().nullable().optional(),
-				groups: z.number().nullable().optional(),
-			}).optional(),
-			usage: z.object({
-				storage: z.number().optional(),
-				bandwidth: z.number().optional(),
-				requests: z.number().optional(),
-				users: z.number().optional(),
-				groups: z.number().optional(),
-			}).optional(),
-			authorization: z.object({
-				register: crudSchema.optional(),
-				schema: crudSchema.optional(),
-				object: crudSchema.optional(),
-				view: crudSchema.optional(),
-				agent: crudSchema.optional(),
-				configuration: crudSchema.optional(),
-				application: crudSchema.optional(),
-				object_publish: z.array(z.string()).optional(),
-				agent_use: z.array(z.string()).optional(),
-				dashboard_view: z.array(z.string()).optional(),
-				llm_use: z.array(z.string()).optional(),
-			}).optional(),
+			quota: z
+				.object({
+					storage: z.number().nullable().optional(),
+					bandwidth: z.number().nullable().optional(),
+					requests: z.number().nullable().optional(),
+					users: z.number().nullable().optional(),
+					groups: z.number().nullable().optional(),
+				})
+				.optional(),
+			usage: z
+				.object({
+					storage: z.number().optional(),
+					bandwidth: z.number().optional(),
+					requests: z.number().optional(),
+					users: z.number().optional(),
+					groups: z.number().optional(),
+				})
+				.optional(),
+			authorization: z
+				.object({
+					register: crudSchema.optional(),
+					schema: crudSchema.optional(),
+					object: crudSchema.optional(),
+					view: crudSchema.optional(),
+					agent: crudSchema.optional(),
+					configuration: crudSchema.optional(),
+					application: crudSchema.optional(),
+					object_publish: z.array(z.string()).optional(),
+					agent_use: z.array(z.string()).optional(),
+					dashboard_view: z.array(z.string()).optional(),
+					llm_use: z.array(z.string()).optional(),
+				})
+				.optional(),
 			created: z.string().optional(),
 			updated: z.string().optional(),
 		})
 
 		return schema.safeParse(this)
 	}
-
 }

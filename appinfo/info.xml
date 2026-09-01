@@ -6,100 +6,349 @@
     <name lang="nl">Open Register</name>
     <summary lang="en">Build structured data registers with schemas, RBAC, and full-text search</summary>
     <summary lang="nl">Bouw gestructureerde dataregisters met schema's, RBAC en full-text zoeken</summary>
-    <description lang="en"><![CDATA[> ⚠️ **Active development — not for production use yet.** This app is under active development. Although it may carry a stable release status, **please do not use it in production environments before 17 June 2026.** See the [app page on conduction.nl](https://conduction.nl/apps/openregister) for release planning and what this app does.
-
-Open Register is the foundation for structured data management in Nextcloud. Define your data models with JSON Schema, store objects in high-performance registers, and let your other apps build on top of a solid, standards-based data layer.
+    <description lang="en"><![CDATA[Open Register is the foundation for structured data management in Nextcloud. Define your data models with JSON Schema, store objects in high-performance registers, and let your other apps build on top of a solid, standards-based data layer.
 
 **Key Features**
 
 - **Schema-based registers** — Define data structures with JSON Schema and organize them into registers
 - **Full CRUD API** — Create, read, update, and delete objects through a powerful REST API
-- **Full-text search with faceting** — Search across registers with filters, powered by magic tables or Solr
+- **Full-text search with faceting** — Search across registers with filters, powered by magic tables
 - **Role-based access control** — Fine-grained permissions with organization-level multitenancy
 - **Event-driven architecture** — React to data changes with events for tasks, notifications, and integrations
 - **CalDAV tasks and notes** — Attach Nextcloud tasks and comments directly to your data objects
-- **JSON-LD and Linked Data** — Standards-compliant data that connects to the broader open data ecosystem
+- **JSON-LD and Linked Data** — Opt-in read-side JSON-LD output (via `Accept: application/ld+json` content negotiation) with canonical `@id`, schema-derived `@context`, and dereferenceable context documents; Schema.org alignment is per-schema opt-in mapping. Read-side only (no JSON-LD ingest)
 - **Source synchronization** — Keep your registers in sync with external data sources
 
 Open Register powers apps like OpenCatalogi, Procest, Pipelinq, and Software Catalogus, giving them a shared, federated data backbone.
 
 Free and open source under the EUPL license.
     ]]></description>
-    <description lang="nl"><![CDATA[> ⚠️ **In actieve ontwikkeling — nog niet voor productiegebruik.** Deze app is volop in ontwikkeling. Hoewel de app een stabiele release-status kan hebben, **gebruik deze nog niet in productieomgevingen vóór 17 juni 2026.** Zie de [app-pagina op conduction.nl](https://conduction.nl/apps/openregister) voor release-planning en het doel van deze app.
-
-Open Register is de basis voor gestructureerd databeheer in Nextcloud. Definieer je datamodellen met JSON Schema, sla objecten op in krachtige registers en laat je andere apps bouwen op een solide, op standaarden gebaseerde datalaag.
+    <description lang="nl"><![CDATA[Open Register is de basis voor gestructureerd databeheer in Nextcloud. Definieer je datamodellen met JSON Schema, sla objecten op in krachtige registers en laat je andere apps bouwen op een solide, op standaarden gebaseerde datalaag.
 
 **Belangrijkste functies**
 
 - **Schema-gebaseerde registers** — Definieer datastructuren met JSON Schema en organiseer ze in registers
 - **Volledige CRUD API** — Maak, lees, wijzig en verwijder objecten via een krachtige REST API
-- **Full-text zoeken met facetten** — Zoek dwars door registers met filters, aangedreven door magic tables of Solr
+- **Full-text zoeken met facetten** — Zoek dwars door registers met filters, aangedreven door magic tables
 - **Rolgebaseerde toegangscontrole** — Fijnmazige rechten met multitenancy op organisatieniveau
 - **Event-driven architectuur** — Reageer op datawijzigingen met events voor taken, notificaties en integraties
 - **CalDAV taken en notities** — Koppel Nextcloud-taken en opmerkingen direct aan je dataobjecten
-- **JSON-LD en Linked Data** — Data conform standaarden die aansluit op het bredere open data ecosysteem
+- **JSON-LD en Linked Data** — Optionele read-side JSON-LD-uitvoer (via `Accept: application/ld+json` content-negotiation) met canonieke `@id`, een uit het schema afgeleide `@context` en dereferenceerbare context-documenten; Schema.org-uitlijning is een per-schema opt-in mapping. Alleen lezen (geen JSON-LD-import)
 - **Bronsynchronisatie** — Houd je registers in sync met externe databronnen
 
 Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Catalogus aan en geeft ze een gedeelde, gefedereerde data-backbone.
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>0.2.19</version>
-    <licence>agpl</licence>
+    <version>2.0.5-unstable.20260831053109</version>
+    <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
-    <category>organization</category>
-    <category>tools</category>
-    <category>search</category>
-    <website>https://github.com/ConductionNL/OpenRegister</website>
-    <discussion>https://github.com/ConductionNL/OpenRegister/discussions</discussion>
-    <bugs>https://github.com/ConductionNL/OpenRegister/issues</bugs>
-    <repository>https://github.com/ConductionNL/OpenRegister</repository>
-
-    <screenshot>https://raw.githubusercontent.com/ConductionNL/OpenRegister/main/img/app-store.svg</screenshot>
-    <screenshot>https://raw.githubusercontent.com/ConductionNL/openregister/main/img/screenshot.png</screenshot>
-
     <documentation>
         <user>https://conduction.gitbook.io/openregister-nextcloud/</user>
         <admin>https://conduction.gitbook.io/openregister-nextcloud/</admin>
         <developer>https://conduction.gitbook.io/openregister-nextcloud/</developer>
     </documentation>
+    <category>organization</category>
+    <category>tools</category>
+    <category>search</category>
+    <website>https://github.com/ConductionNL/openregister</website>
+    <bugs>https://github.com/ConductionNL/openregister/issues</bugs>
+    <repository>https://github.com/ConductionNL/openregister</repository>
+
+    <screenshot>https://raw.githubusercontent.com/ConductionNL/openregister/main/img/screenshot-dashboard.png</screenshot>
+    <screenshot>https://raw.githubusercontent.com/ConductionNL/openregister/main/img/screenshot-registers.png</screenshot>
+    <screenshot>https://raw.githubusercontent.com/ConductionNL/openregister/main/img/screenshot-objects.png</screenshot>
 
     <dependencies>
-        <php min-version="8.0" min-int-size="64"/>
+        <php min-version="8.3" min-int-size="64"/>
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
         <database min-version="8.0">mysql</database>
-        <nextcloud min-version="28" max-version="34"/>
+        <!-- 32, as a deliberate product decision: the platform floor moves to
+             Nextcloud 32 fleet-wide.
+
+             This repository has been round the 28/32 loop once already —
+             #2378 raised it to 32, #2379 recorded the fallout, #2380 put it
+             back to 28 — so the reasoning is written out here rather than
+             left to the commit log.
+
+             WHY 32 IS THE RIGHT DECLARATION
+
+             openregister is the foundation app. openconnector, openbuild,
+             larpingapp and scholiq all name it as a hard `<app>` dependency,
+             and the rule established by openconnector#1172/#1173 is that an
+             app's min-version must be at least the maximum floor of every
+             `<app>` it depends on — otherwise the App Store advertises a
+             range the app cannot deliver: on a server below the dependency's
+             floor the dependency refuses to install and every entity in the
+             dependent app is unreachable. openconnector's own info.xml
+             already justifies its floor by asserting that openregister
+             declares 32. Until this change that assertion was false.
+
+             It also matches what is actually tested. This repo's CI matrix is
+             a single leg — PHP 8.3 / stable32 (.github/workflows/
+             code-quality.yml). There has never been a job below 32, so
+             declaring 28-31 supported claimed coverage that does not exist.
+
+             WHAT THIS COSTS, MEASURED — read before lowering it again
+
+             min-version is enforced at INSTALL time. Eight fleet repos install
+             openregister as an additional-app while their own e2e runs on
+             stable31: procest, shillinq, portaliq, openbuild, decidesk,
+             doriath, hermiq and larpingapp. When #2378 last moved this floor,
+             each failed its seed with "OpenRegister is not installed or
+             enabled" followed by a 404 from /api/configurations/import —
+             observed on procest#758 and tracked in #2379.
+
+             Those eight repos must move their own test matrices to stable32.
+             Until they do, they will fail exactly as they did before. That is
+             the accepted, known cost of the decision, not an unforeseen
+             regression — if these failures reappear, the fix is to move the
+             consumer matrices up, NOT to lower this floor again.
+
+             Note: `<php min-version="8.3">` above is enforced independently of
+             the Nextcloud version, so the PHP 8.3 requirement does not itself
+             depend on this floor.
+
+             max-version stays 34, which is the fleet-wide value everywhere
+             except openconnector, which declares 35. That split is known and
+             deliberately not resolved here. -->
+        <nextcloud min-version="32" max-version="34"/>
     </dependencies>
 
-	<repair-steps>
-		<post-migration>
-			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
-		</post-migration>
-		<install>
-			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
-		</install>
-	</repair-steps>
-
 	<background-jobs>
-		<job>OCA\OpenRegister\Cron\LogCleanUpTask</job>
-		<job>OCA\OpenRegister\Cron\ConfigurationCheckJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\SolrNightlyWarmupJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\LogCleanUpTask</job>
+		<job>OCA\OpenRegister\BackgroundJob\ConfigurationCheckJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob</job>
-		<job>OCA\OpenRegister\Cron\WebhookRetryJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ChunkVectorizationJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\WebhookRetryJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\BlobMigrationJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DestructionCheckJob</job>
-		<job>OCA\OpenRegister\Cron\TransferCheckJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\TransferExecutionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\TransferCheckJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\SyncConfigurationsJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\SyncDataJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledWorkflowJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ScheduledNotificationJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ActionScheduleJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TenantDeprovisionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TenantPurgeJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TenantUsageSyncJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ExecutionHistoryCleanupJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\FlowRunRetentionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\AuditSealJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\AvgRetentionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\DsarRetentionSweepJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ReportRenderJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\NotificationQueueFlushJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ArchivalRetentionTask</job>
+		<job>OCA\OpenRegister\BackgroundJob\FlowRunWorker</job>
+		<job>OCA\OpenRegister\BackgroundJob\FlowScheduleWorker</job>
+		<job>OCA\OpenRegister\BackgroundJob\HandoffQueueDrainJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\TemporalCalculationSweepJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\DsarDpiaDetectionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ScheduleReconcilerJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\DbalIntrospectionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ScheduledReportJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\GroupReconcilerJob</job>
 	</background-jobs>
+
+	<repair-steps>
+		<post-migration>
+			<!--
+				The two job-list steps are a pair and run together.
+
+				ReconcileDeclaredBackgroundJobs works FORWARDS from info.xml: it
+				adds a <job> Nextcloud never registered. RemoveRetiredCronJobs
+				works backwards — it removes a row naming a class that no longer
+				exists, which reconciliation cannot see, because such a row is
+				not in the declaration list at all.
+
+				The second is needed because the jobs moved from
+				OCA\OpenRegister\Cron to OCA\OpenRegister\BackgroundJob, and
+				Nextcloud never removes a registration whose class disappeared:
+				it cannot tell a renamed class from one merely unavailable this
+				boot. Measured on a live instance carrying the equivalent
+				opencatalogi move — oc_jobs still held the Cron rows beside
+				their replacements.
+
+				post-migration only. On a fresh install there are no old rows,
+				and the step is idempotent either way.
+			-->
+			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
+			<step>OCA\OpenRegister\Repair\RemoveRetiredCronJobs</step>
+			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
+			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
+			<!-- The flows register must EXIST before any step reads flows.
+			     ImportFlowRegister was written, and named here zero times, so
+			     the `flows` register was never created and every flow step
+			     below it silently operated on nothing.
+
+			     Surfaced by `occ openregister:descriptors:list`, which reported
+			     `flows` ABSENT on an instance where `occ upgrade` had just
+			     reported complete success — 8 of 15 declared registers missing.
+			     Before that command existed the only evidence was two unrelated
+			     e2e suites dying on `registers slug=flows`. -->
+			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
+			<!-- Rewrite before the index is derived: the index is built FROM node
+			     types, so the types should already be the current ones. -->
+			<step>OCA\OpenRegister\Repair\MigrateRenamedFlowNodeTypes</step>
+			<!-- Versions FIRST: the trigger index is derived from a flow's PUBLISHED
+			     version, so a flow with no version rows yet would index nothing. -->
+			<step>OCA\OpenRegister\Repair\BackfillFlowVersions</step>
+			<step>OCA\OpenRegister\Repair\BackfillFlowTriggerIndex</step>
+			<step>OCA\OpenRegister\Repair\InitializeFlowActions</step>
+			<step>OCA\OpenRegister\Repair\MigrateNotificationSubscriptionsToUserConfig</step>
+			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
+			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
+			<step>OCA\OpenRegister\Repair\SeedTablesVirtualSchemas</step>
+			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
+			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
+			<!-- `merge-operation` is where MergeService writes the audit row for
+			     every merge, and where reverseMerge reads the preMergeSnapshot
+			     back from. Its descriptor shipped with no Repair step, so the
+			     register never existed: a merge history that is not recorded,
+			     and a reversal that has nothing to read. -->
+			<step>OCA\OpenRegister\Repair\ImportMergeOperationRegister</step>
+			<!-- ONE STORE PER FLOW. Flows lived in two places — this table and
+			     objects in the `flows` register — and every subsystem reads the
+			     table. Measured with controls: the same definition fires and
+			     bundles from the table and does neither from the register.
+			     Copies the register-authored ones across, disabled, leaving the
+			     register rows in place so the step stays reversible. -->
+			<step>OCA\OpenRegister\Repair\MigrateRegisterFlowsToTable</step>
+			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
+			<step>OCA\OpenRegister\Repair\SeedVocabularyRegister</step>
+			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
+			<step>OCA\OpenRegister\Repair\SeedZgwZakenMigrationPack</step>
+			<!-- Post-migration ONLY: a fresh install has no Dutch columns to
+			     move, so listing this under <install> would be a guaranteed
+			     no-op. MagicMapper ADDS a column for a renamed property and
+			     never renames, so without this step the data stays in the old
+			     column while every read looks at the new one and finds null —
+			     no error, no data loss, invisible to the suite. -->
+			<step>OCA\OpenRegister\Repair\RenameDutchColumns</step>
+			<!-- AUDIT CHAIN SEED v1 → v2. The flow-attribution fields joined the
+			     canonical JSON the hash covers, so every stored hash has to be
+			     recomputed; ADR-003 Rule 4 requires that be a verify-then-reseal
+			     migration rather than an in-place edit. The step verifies the
+			     OLD chain against the frozen v1 canonicaliser and records the
+			     verdict BEFORE re-sealing — after the re-seal, the difference
+			     between an intact chain and a tampered one no longer exists.
+			     Post-migration, because it needs the flow_* columns the schema
+			     migration adds. -->
+			<step>OCA\OpenRegister\Repair\RechainAuditTrailForFlowAttribution</step>
+		</post-migration>
+		<install>
+			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
+			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
+			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
+			<!-- The flows register must EXIST before any step reads flows.
+			     ImportFlowRegister was written, and named here zero times, so
+			     the `flows` register was never created and every flow step
+			     below it silently operated on nothing. -->
+			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
+			<!-- Rewrite before the index is derived: the index is built FROM node
+			     types, so the types should already be the current ones. -->
+			<step>OCA\OpenRegister\Repair\MigrateRenamedFlowNodeTypes</step>
+			<!-- Versions FIRST: the trigger index is derived from a flow's PUBLISHED
+			     version, so a flow with no version rows yet would index nothing. -->
+			<step>OCA\OpenRegister\Repair\BackfillFlowVersions</step>
+			<step>OCA\OpenRegister\Repair\BackfillFlowTriggerIndex</step>
+			<step>OCA\OpenRegister\Repair\InitializeFlowActions</step>
+			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
+			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
+			<step>OCA\OpenRegister\Repair\SeedTablesVirtualSchemas</step>
+			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
+			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
+			<!-- `merge-operation` is where MergeService writes the audit row for
+			     every merge, and where reverseMerge reads the preMergeSnapshot
+			     back from. Its descriptor shipped with no Repair step, so the
+			     register never existed: a merge history that is not recorded,
+			     and a reversal that has nothing to read. -->
+			<step>OCA\OpenRegister\Repair\ImportMergeOperationRegister</step>
+			<!-- ONE STORE PER FLOW. Flows lived in two places — this table and
+			     objects in the `flows` register — and every subsystem reads the
+			     table. Measured with controls: the same definition fires and
+			     bundles from the table and does neither from the register.
+			     Copies the register-authored ones across, disabled, leaving the
+			     register rows in place so the step stays reversible. -->
+			<step>OCA\OpenRegister\Repair\MigrateRegisterFlowsToTable</step>
+			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
+			<step>OCA\OpenRegister\Repair\SeedVocabularyRegister</step>
+			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
+			<step>OCA\OpenRegister\Repair\SeedZgwZakenMigrationPack</step>
+		</install>
+	</repair-steps>
+
+	<commands>
+		<!-- migrate-storage command triggers circular DI during occ bootstrap.
+		     Disabled until that's untangled. -->
+		<!-- <command>OCA\OpenRegister\Command\MigrateStorageCommand</command> -->
+		<!-- Annotation-related commands have light DI graphs (mappers + evaluator). -->
+		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
+		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
+		<command>OCA\OpenRegister\Command\ImportSkosCsvCommand</command>
+		<!-- App-rename repair: re-points registers and schemas at a new owning
+		     app id. Only a DB connection, so the DI graph stays light. -->
+		<command>OCA\OpenRegister\Command\MigrateSchemaApplicationCommand</command>
+		<command>OCA\OpenRegister\Command\RechainAuditTrailCommand</command>
+		<!-- Read-only report: which RBAC groups this instance declares, and whether
+		     anyone belongs to them. Provisioning guarantees a declared group EXISTS;
+		     it never adds members, so an unpopulated group still denies every
+		     caller. This is how that state becomes visible. -->
+		<command>OCA\OpenRegister\Command\DeclaredGroupsCommand</command>
+		<!-- Backwards remediation for the #2150 cross-app schema-slug collision:
+		     the per-register uniqueness fix is preventive only, so pre-existing
+		     shared rows still need splitting. Reports only unless applied. -->
+		<command>OCA\OpenRegister\Command\DedupCollidedSchemasCommand</command>
+		<command>OCA\OpenRegister\Command\BackfillTranslationSourceLanguageCommand</command>
+		<command>OCA\OpenRegister\Command\DescriptorListCommand</command>
+		<!-- field-level-object-encryption: encrypt existing plaintext values of a newly-flagged property. -->
+		<command>OCA\OpenRegister\Command\EncryptFieldCommand</command>
+		<command>OCA\OpenRegister\Command\DedupeRegistersCommand</command>
+		<command>OCA\OpenRegister\Command\RelinkRegisterSchemasCommand</command>
+		<command>OCA\OpenRegister\Command\ReconcileMagicTablesCommand</command>
+		<command>OCA\OpenRegister\Command\DedupeConfigurationsCommand</command>
+		<command>OCA\OpenRegister\Command\ResolverListCommand</command>
+		<command>OCA\OpenRegister\Command\TimeReconcileCommand</command>
+		<!-- Web Push VAPID keypair generation (openregister-web-push-engine). Light DI graph (IAppConfig only). -->
+		<command>OCA\OpenRegister\Command\GenerateVapidKeys</command>
+		<!-- Reconcile the `tables` virtual register with the Nextcloud Tables app. -->
+		<command>OCA\OpenRegister\Command\TablesSyncCommand</command>
+		<!-- Batched Context Chat backfill for opted-in, published objects. -->
+		<command>OCA\OpenRegister\Command\ContextChatReindexCommand</command>
+	</commands>
+
+	<settings>
+		<admin>OCA\OpenRegister\Settings\OpenRegisterAdmin</admin>
+		<admin>OCA\OpenRegister\Settings\IntegrationsAdminSettings</admin>
+		<admin-section>OCA\OpenRegister\Sections\OpenRegisterAdmin</admin-section>
+		<personal>OCA\OpenRegister\Settings\OpenRegisterPersonal</personal>
+	</settings>
+
+	<!-- The notifier is registered in PHP:
+	     IRegistrationContext::registerNotifierService(AnnotationNotifier::class)
+	     in lib/AppInfo/Application.php. There is no <notification> element in
+	     the App Store schema and Nextcloud's InfoParser never read one, so the
+	     declaration that stood here registered nothing. -->
+
+	<activity>
+		<settings>
+			<setting>OCA\OpenRegister\Activity\Setting\ObjectSetting</setting>
+			<setting>OCA\OpenRegister\Activity\Setting\RegisterSetting</setting>
+			<setting>OCA\OpenRegister\Activity\Setting\SchemaSetting</setting>
+		</settings>
+		<filters>
+			<filter>OCA\OpenRegister\Activity\Filter</filter>
+		</filters>
+		<providers>
+			<provider>OCA\OpenRegister\Activity\Provider</provider>
+		</providers>
+	</activity>
 
     <navigations>
         <navigation>
@@ -111,38 +360,7 @@ Vrij en open source onder de EUPL-licentie.
         </navigation>
     </navigations>
 
-	<settings>
-		<admin>OCA\OpenRegister\Settings\OpenRegisterAdmin</admin>
-		<admin-section>OCA\OpenRegister\Sections\OpenRegisterAdmin</admin-section>
-	</settings>
-
-	<!-- TEMPORARILY DISABLED: Commands trigger circular DI during occ bootstrap
-	<commands>
-		<command>OCA\OpenRegister\Command\SolrDebugCommand</command>
-		<command>OCA\OpenRegister\Command\SolrManagementCommand</command>
-		<command>OCA\OpenRegister\Command\MigrateStorageCommand</command>
-	</commands>
-	-->
-
-	<notification>
-		<service>OCA\OpenRegister\Notification\Notifier</service>
-	</notification>
-
 	<contactsmenu>
 		<provider>OCA\OpenRegister\Contacts\ContactsMenuProvider</provider>
 	</contactsmenu>
-
-	<activity>
-		<providers>
-			<provider>OCA\OpenRegister\Activity\Provider</provider>
-		</providers>
-		<settings>
-			<setting>OCA\OpenRegister\Activity\Setting\ObjectSetting</setting>
-			<setting>OCA\OpenRegister\Activity\Setting\RegisterSetting</setting>
-			<setting>OCA\OpenRegister\Activity\Setting\SchemaSetting</setting>
-		</settings>
-		<filters>
-			<filter>OCA\OpenRegister\Activity\Filter</filter>
-		</filters>
-	</activity>
 </info>

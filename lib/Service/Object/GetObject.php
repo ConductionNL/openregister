@@ -12,6 +12,9 @@
  * - Handling search operations
  * - Managing object extensions
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service
  *
@@ -34,6 +37,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
+use Psr\Log\LoggerInterface;
 
 /**
  * Handler class for retrieving objects in the OpenRegister application.
@@ -44,7 +49,7 @@ use OCA\OpenRegister\Service\SettingsService;
  * @category  Service
  * @package   OCA\OpenRegister\Service\Objects
  * @author    Conduction b.v. <info@conduction.nl>
- * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://github.com/OpenCatalogi/OpenRegister
  * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.
@@ -54,23 +59,72 @@ class GetObject
     /**
      * Constructor for GetObject handler.
      *
-     * @param MagicMapper      $objectMapper     Object entity data mapper.
-     * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for logs.
-     * @param SettingsService  $settingsService  Settings service for accessing trail settings.
+     * @param MagicMapper          $objectMapper         Object entity data mapper.
+     * @param AuditTrailMapper     $auditTrailMapper     Audit trail mapper for logs.
+     * @param SettingsService      $settingsService      Settings service for accessing trail settings.
+     * @param ObjectSourceRegistry $objectSourceRegistry Registry of object-source providers (virtual schemas).
+     * @param LoggerInterface      $logger               Logger for object-source delegation warnings.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly SettingsService $settingsService
+        private readonly SettingsService $settingsService,
+        private readonly ObjectSourceRegistry $objectSourceRegistry,
+        private readonly LoggerInterface $logger
     ) {
     }//end __construct()
 
     /**
+     * Resolve the ObjectSourceProvider for a schema, or null when the schema is
+     * served from the magic table (no `x-openregister-object-source`).
+     *
+     * When a schema declares an object source whose provider is missing or
+     * disabled, this logs a warning and returns null WITH `$sourced` set true,
+     * so the caller degrades to an empty result instead of reading the database.
+     *
+     * @param Schema|null $schema  The schema being read (null = magic table).
+     * @param bool        $sourced Set true when the schema declares an object source.
+     *
+     * @return \OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider|null
+     *         An enabled provider, or null (see $sourced).
+     *
+     * @spec openspec/changes/object-source-providers/tasks.md#task-3.1
+     */
+    private function resolveObjectSource(?Schema $schema, bool &$sourced): ?object
+    {
+        $sourced = false;
+        if ($schema === null) {
+            return null;
+        }
+
+        $source = $schema->getObjectSource();
+        if ($source === null) {
+            return null;
+        }
+
+        $sourced  = true;
+        $provider = $this->objectSourceRegistry->get($source['provider']);
+        if ($provider === null || $provider->isEnabled() === false) {
+            $this->logger->warning(
+                sprintf(
+                    '[ObjectSource] schema "%s" declares object-source provider "%s" but it is missing or disabled — returning empty result',
+                    (string) $schema->getSlug(),
+                    (string) $source['provider']
+                )
+            );
+            return null;
+        }
+
+        return $provider;
+    }//end resolveObjectSource()
+
+    /**
      * Gets an object by its ID with optional extensions.
      *
-     * This method also creates an audit trail entry for the 'read' action.
+     * This method also creates an audit trail entry for the 'read' action,
+     * unless `$_audit` says otherwise.
      *
      * @param string   $id            The ID of the object to get.
      * @param Register $register      The register containing the object.
@@ -79,6 +133,9 @@ class GetObject
      * @param bool     $files         Include file information.
      * @param bool     $_rbac         Whether to apply RBAC checks (default: true).
      * @param bool     $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * @param bool     $_audit        Whether this read is worth an audit-trail row (default: true).
+     *                                Pass false for machine-to-machine reads inside one
+     *                                operation - the instance setting is all-or-nothing.
      *
      * @return ObjectEntity The retrieved object.
      *
@@ -87,7 +144,7 @@ class GetObject
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flags required for flexible API filtering
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function find(
         string $id,
@@ -96,8 +153,24 @@ class GetObject
         ?array $_extend=[],
         bool $files=false,
         bool $_rbac=true,
-        bool $_multitenancy=true
+        bool $_multitenancy=true,
+        bool $_audit=true
     ): ObjectEntity {
+        // Object-source delegation: for a schema served from an external source
+        // (x-openregister-object-source) the object is fetched live from the
+        // provider and never read from the magic table. Absent/denied → 404.
+        $sourced  = false;
+        $provider = $this->resolveObjectSource(schema: $schema, sourced: $sourced);
+        if ($sourced === true) {
+            $config  = ($schema->getObjectSource()['config'] ?? []);
+            $virtual = $provider?->find(register: $register, schema: $schema, id: $id, config: $config);
+            if ($virtual === null) {
+                throw new DoesNotExistException(sprintf('Object %s not found', $id));
+            }
+
+            return $virtual;
+        }
+
         $object = $this->objectMapper->find(
             identifier: $id,
             register: $register,
@@ -113,7 +186,15 @@ class GetObject
         }
 
         // Create an audit trail for the 'read' action if audit trails are enabled.
-        if ($this->isAuditTrailsEnabled() === true) {
+        //
+        // `$_audit` is the PER-CALL opt-out. The instance setting is all or
+        // nothing, so a bulk synchronisation reading thousands of objects had no
+        // way to skip audit without disabling it for user-facing reads too — and
+        // read logging is 91% of this instance's audit table (2,864,555 of
+        // 3,153,490 rows, in a table carrying 1,596MB of indexes over 1,089MB of
+        // data). Machine-to-machine reads inside one operation are not the thing
+        // an audit trail exists to record; a person opening an object is.
+        if ($_audit === true && $this->isAuditTrailsEnabled() === true) {
             $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $object, action: 'read');
             $object->setLastLog($log->jsonSerialize());
         }
@@ -142,7 +223,7 @@ class GetObject
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flags required for flexible API filtering
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function findSilent(
         string $id,
@@ -153,6 +234,19 @@ class GetObject
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
+        // Object-source delegation (silent read, no audit) — see find().
+        $sourced  = false;
+        $provider = $this->resolveObjectSource(schema: $schema, sourced: $sourced);
+        if ($sourced === true) {
+            $config  = ($schema->getObjectSource()['config'] ?? []);
+            $virtual = $provider?->find(register: $register, schema: $schema, id: $id, config: $config);
+            if ($virtual === null) {
+                throw new DoesNotExistException(sprintf('Object %s not found', $id));
+            }
+
+            return $virtual;
+        }
+
         $object = $this->objectMapper->find(
             identifier: $id,
             register: $register,
@@ -195,7 +289,7 @@ class GetObject
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible query interface
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags required for flexible API filtering
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function findAll(
         ?int $limit=null,
@@ -212,6 +306,41 @@ class GetObject
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
+        // Object-source delegation: a schema served from an external source
+        // lists live from the provider, never the magic table. A missing/disabled
+        // provider degrades to an empty list (resolveObjectSource logs it).
+        $sourced  = false;
+        $provider = $this->resolveObjectSource(schema: $schema, sourced: $sourced);
+        if ($sourced === true) {
+            if ($provider === null) {
+                return [];
+            }
+
+            $source = $schema->getObjectSource();
+            $query  = [
+                'limit'   => $limit,
+                'offset'  => $offset,
+                'filters' => $filters,
+                'sort'    => $sort,
+                'search'  => $search,
+                'ids'     => $ids,
+            ];
+
+            return $provider->findAll(
+                register: $register,
+                schema: $schema,
+                query: $query,
+                config: ($source['config'] ?? [])
+            );
+        }//end if
+
+        // Thread the RBAC / multitenancy posture into the filters so the search
+        // handler honours them. These are read from the query array downstream;
+        // passing them only as method arguments left them silently dropped, so
+        // a caller's `_rbac:false` (e.g. installer/system context) had no effect.
+        $filters['_rbac']         = $_rbac;
+        $filters['_multitenancy'] = $_multitenancy;
+
         // Retrieve objects using the objectEntityMapper with optional register, schema, and ids.
         $objects = $this->objectMapper->findAll(
             limit: $limit,
@@ -244,7 +373,7 @@ class GetObject
      *
      * @return ObjectEntity The hydrated object.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function hydrateFiles(ObjectEntity $object, array $files): ObjectEntity
     {
@@ -287,7 +416,7 @@ class GetObject
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flags required for flexible API filtering
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function findLogs(
         ObjectEntity $object,
@@ -317,7 +446,7 @@ class GetObject
      *
      * @return bool True if audit trails are enabled, false otherwise
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function isAuditTrailsEnabled(): bool
     {

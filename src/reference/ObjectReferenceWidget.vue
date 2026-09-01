@@ -12,13 +12,17 @@
   @see https://docs.nextcloud.com/server/latest/developer_manual/digging_deeper/reference.html
 -->
 <template>
-	<a :href="objectUrl"
+	<a
+		:href="objectUrl"
 		class="openregister-reference-widget"
 		target="_blank"
 		rel="noopener noreferrer"
 		:title="t('openregister', 'View object')">
 		<div class="openregister-reference-widget__icon">
-			<img :src="iconUrl" :alt="title" class="openregister-reference-widget__icon-img">
+			<img
+				:src="iconUrl"
+				:alt="title"
+				class="openregister-reference-widget__icon-img" />
 		</div>
 		<div class="openregister-reference-widget__content">
 			<h3 class="openregister-reference-widget__title">
@@ -33,12 +37,19 @@
 					{{ t('openregister', 'Register') }}: {{ registerTitle }}
 				</span>
 			</p>
-			<ul v-if="properties.length > 0" class="openregister-reference-widget__properties">
-				<li v-for="prop in properties"
+			<ul
+				v-if="properties.length > 0"
+				class="openregister-reference-widget__properties">
+				<li
+					v-for="prop in properties"
 					:key="prop.label"
 					class="openregister-reference-widget__property">
-					<span class="openregister-reference-widget__property-label">{{ prop.label }}:</span>
-					<span class="openregister-reference-widget__property-value">{{ prop.value }}</span>
+					<span class="openregister-reference-widget__property-label"
+						>{{ prop.label }}:</span
+					>
+					<span class="openregister-reference-widget__property-value">{{
+						prop.value
+					}}</span>
 				</li>
 			</ul>
 			<p v-if="updated" class="openregister-reference-widget__updated">
@@ -59,10 +70,12 @@ export default {
 			type: String,
 			default: 'openregister-object',
 		},
+
 		richObject: {
 			type: Object,
 			default: () => ({}),
 		},
+
 		accessible: {
 			type: Boolean,
 			default: true,
@@ -70,27 +83,60 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec openspec/specs/mail-smart-picker/spec.md
+		 */
 		title() {
 			return this.richObject.title || t('openregister', 'Unknown Object')
 		},
+
+		/**
+		 * @spec openspec/specs/mail-smart-picker/spec.md
+		 */
 		objectUrl() {
 			return this.richObject.url || '#'
 		},
+
+		/**
+		 * @spec openspec/specs/mail-smart-picker/spec.md
+		 */
 		iconUrl() {
 			return this.richObject.icon_url || ''
 		},
+
+		/**
+		 * @spec openspec/specs/mail-smart-picker/spec.md
+		 */
 		schemaTitle() {
-			return this.richObject.schema?.title || t('openregister', 'Unknown Schema')
+			return (
+				this.richObject.schema?.title || t('openregister', 'Unknown Schema')
+			)
 		},
+
+		/**
+		 * @spec openspec/specs/mail-smart-picker/spec.md
+		 */
 		registerTitle() {
-			return this.richObject.register?.title || t('openregister', 'Unknown Register')
+			return (
+				this.richObject.register?.title
+				|| t('openregister', 'Unknown Register')
+			)
 		},
+
+		/**
+		 * @spec openspec/specs/mail-smart-picker/spec.md
+		 */
 		properties() {
 			return this.richObject.properties || []
 		},
+
 		updated() {
 			return this.richObject.updated || ''
 		},
+
+		/**
+		 * @spec openspec/specs/mail-smart-picker/spec.md
+		 */
 		formattedDate() {
 			if (!this.updated) {
 				return ''
@@ -218,6 +264,12 @@ export default {
 		width: 100%;
 		height: auto;
 		justify-content: flex-start;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.openregister-reference-widget {
+		transition: none;
 	}
 }
 </style>

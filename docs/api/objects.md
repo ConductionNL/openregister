@@ -29,9 +29,45 @@ Retrieves a paginated list of objects that match the specified register and sche
 - **deleted**: Filter by deletion date
 
 ##### Pagination
-- **`_limit`**: Number of items per page (default: 20)
+- **`_limit`**: Number of items per page. Also accepts an explicit **unlimited**
+  value — see below.
 - **`_offset`**: Number of items to skip
 - **`_page`**: Current page number (alternative to `_offset`)
+
+###### Asking for every row
+
+`_limit` accepts `false`, `null`, `0`, `all`, `unlimited` or `none` (any case)
+to mean **no limit at all**. The query then carries no `LIMIT` clause and every
+matching row is returned.
+
+```
+GET /api/objects/myregister/myschema?_limit=false
+GET /api/objects/myregister/myschema?_limit=0
+```
+
+Prefer `_limit=false`: it says what it means. `0` is accepted because callers
+already wrote it expecting exactly this.
+
+**Use it deliberately.** An unlimited read is a full scan of the matching set,
+and the whole result is materialised in PHP before it is serialised. It exists
+so that a caller who genuinely needs the complete set can ask for it *and know
+they got it*, rather than filtering a silently truncated page in the browser
+and presenting the count as a total. If you only need a number, ask for the
+number: `_count=true` returns the total without the rows.
+
+**Values that are not row counts are read as unlimited, not as zero.** A
+non-numeric `_limit` (`?_limit=abc`) and a negative one both mean "no usable
+limit given". This matters because `(int)"abc"` is `0` in PHP, and a `LIMIT 0`
+returns an empty list with HTTP 200 — a typo in a query string used to produce
+a confidently empty result.
+
+> **Changed in this release.** `_limit=0` previously behaved three different
+> ways depending on which read path served the request: no rows on the
+> single-schema path, one row on the cross-schema path, and 200 rows against an
+> external database. A hard cap of 1000 rows also applied on the latter two
+> paths, silently — a caller asking for 5000 received 1000 and was told
+> nothing. Both are gone. If you were relying on `_limit=0` to return an empty
+> page, request `_count=true` instead.
 
 ##### Search
 - **`_search`**: Full-text search term
@@ -606,6 +642,7 @@ When creating or updating objects, you can explicitly set certain @self metadata
 - **`organisation`**: Organization UUID  
 - **`published`**: Publication timestamp
 - **`depublished`**: Depublication timestamp
+- **`folder`**: Numeric Nextcloud folder ID to bind the object to (see access-control contract below)
 
 Example:
 ```json
@@ -620,6 +657,65 @@ Example:
 ```
 
 For detailed information about @self metadata handling, see [Self Metadata Handling](../development/self-metadata-handling.md).
+
+### `@self.folder` access-control contract
+
+The `@self.folder` metadata field binds an object to an existing Nextcloud folder
+by node ID. The bind is governed by an access-control check on every save:
+
+- **Empty / absent** — the system creates a new folder under the register's root
+  folder and stores the new node ID on the object. (Default behaviour, unchanged.)
+- **Legacy non-numeric** (path-style strings from older installs) — auto-create
+  proceeds as before; no access check runs.
+- **Non-empty numeric** (the format produced by current `@self.folder` writes) —
+  the acting user MUST be able to read the folder. The check uses the user's
+  user-folder mount and `Folder::isReadable()`. If either fails — folder doesn't
+  exist in the user's mount, the resolved node is a file, the folder is trashed,
+  or the user has no read permission — the save is rejected.
+
+#### Denial response shape
+
+When `@self.folder` is rejected, the endpoint returns **HTTP 403** with body:
+
+```json
+{
+  "error": "folder_access_denied"
+}
+```
+
+The attempted node ID is intentionally **not** echoed in the response body —
+echoing it would turn the endpoint into a folder-ID enumeration oracle for an
+attacker. The attempted ID is recorded server-side in the audit trail
+(`AuditTrail` table, action `folder_access_denied`) for forensic review by
+operators with audit-log access. The check applies uniformly across `POST`
+(create), `PUT` (update), and `PATCH` (partial update) on object endpoints.
+
+#### Acting user resolution ("self")
+
+The check resolves the acting user in this order:
+
+1. The `IUser` explicitly passed to the underlying service helper (DI / cron path).
+2. The session user (`IUserSession::getUser()`).
+3. If neither resolves, the bind is **denied** by default — there is no fail-open
+   path on `@self.folder` writes.
+
+#### Audit trail
+
+Every denial writes a forensic audit-trail entry with `action: "folder_access_denied"`,
+the actor (UID or `"system"`), the attempted folder ID, and a reason code. The
+entry is written **before** the exception is thrown, so even a caller that
+catches the exception has a record. Audit-write failures are logged at warning
+level and do **not** swallow the denial — denial is authoritative.
+
+For cleanup of stale `@self.folder` references on existing objects (folders the
+owner can no longer access), an `occ openregister:folder-audit` command is
+tracked separately as a follow-up.
+
+#### See also
+
+- Capability spec (post-archive): `openspec/specs/self-folder-access-control/spec.md`
+- Architectural context: ADR-007 (Security and Auth), ADR-008 (Backend Layering)
+- Downstream consumer benefiting from this hardening: DocuDesk's `add-dossier-schema` change.
 
 ## Security
 

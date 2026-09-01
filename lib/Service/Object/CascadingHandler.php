@@ -5,22 +5,24 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
-use ReflectionClass;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\SaveObject;
-use OCA\OpenRegister\Service\Object\UtilityHandler;
 use Psr\Log\LoggerInterface;
+use ReflectionClass;
 
 /**
  * Handles cascading object creation for inversedBy relationships.
@@ -33,242 +35,239 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  */
-class CascadingHandler
-{
-    /**
-     * Constructor for CascadingHandler.
-     *
-     * @param SaveObject      $saveHandler    Handler for saving objects.
-     * @param SchemaMapper    $schemaMapper   Mapper for schema entities.
-     * @param UtilityHandler  $utilityHandler Handler for utility operations.
-     * @param LoggerInterface $logger         Logger for logging operations.
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
-     */
-    public function __construct(
-        private readonly SaveObject $saveHandler,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly UtilityHandler $utilityHandler,
-        private readonly LoggerInterface $logger
-    ) {
-    }//end __construct()
+class CascadingHandler {
+	/**
+	 * Constructor for CascadingHandler.
+	 *
+	 * @param SaveObject $saveHandler Handler for saving objects.
+	 * @param SchemaMapper $schemaMapper Mapper for schema entities.
+	 * @param UtilityHandler $utilityHandler Handler for utility operations.
+	 * @param LoggerInterface $logger Logger for logging operations.
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	public function __construct(
+		private readonly SaveObject $saveHandler,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly UtilityHandler $utilityHandler,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Handle pre-validation cascading for inversedBy properties.
-     *
-     * This method processes nested objects in inversedBy relationships before validation.
-     * It automatically creates related objects and replaces them with their UUIDs.
-     *
-     * @param array       $object          Object data to process.
-     * @param Schema      $schema          Schema entity defining the structure.
-     * @param string|null $uuid            Object UUID (generated if null).
-     * @param int         $currentRegister Current register ID.
-     *
-     * @return ((array|mixed|string)[]|null|string)[] Array containing [processed object, uuid].
-     *
-     * @psalm-return list{array<array|mixed|string>, null|string}
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex cascading logic with multiple relationship types
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for handling different relationship configurations
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
-     */
-    public function handlePreValidationCascading(array $object, Schema $schema, ?string $uuid, ?int $currentRegister): array
-    {
-        // Pre-validation cascading to handle nested objects.
-        try {
-            // Get the URL generator from the SaveObject handler.
-            $urlGenerator         = new ReflectionClass($this->saveHandler);
-            $urlGeneratorProperty = $urlGenerator->getProperty('urlGenerator');
-            $urlGeneratorInstance = $urlGeneratorProperty->getValue($this->saveHandler);
+	/**
+	 * Handle pre-validation cascading for inversedBy properties.
+	 *
+	 * This method processes nested objects in inversedBy relationships before validation.
+	 * It automatically creates related objects and replaces them with their UUIDs.
+	 *
+	 * @param array $object Object data to process.
+	 * @param Schema $schema Schema entity defining the structure.
+	 * @param string|null $uuid Object UUID (generated if null).
+	 * @param int $currentRegister Current register ID.
+	 *
+	 * @return ((array|mixed|string)[]|null|string)[] Array containing [processed object, uuid].
+	 *
+	 * @psalm-return list{array<array|mixed|string>, null|string}
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex cascading logic with multiple relationship types
+	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for handling different relationship configurations
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	public function handlePreValidationCascading(array $object, Schema $schema, ?string $uuid, ?int $currentRegister): array {
+		// Pre-validation cascading to handle nested objects.
+		try {
+			// Get the URL generator from the SaveObject handler.
+			$urlGenerator = new ReflectionClass($this->saveHandler);
+			$urlGeneratorProperty = $urlGenerator->getProperty('urlGenerator');
+			$urlGeneratorInstance = $urlGeneratorProperty->getValue($this->saveHandler);
 
-            $schemaObject = $schema->getSchemaObject($urlGeneratorInstance);
-            $properties   = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
-            // Process schema properties for inversedBy relationships.
-        } catch (Exception $e) {
-            // Handle error in schema processing.
-            return [$object, $uuid];
-        }
+			$schemaObject = $schema->getSchemaObject($urlGeneratorInstance);
+			$properties = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
+			// Process schema properties for inversedBy relationships.
+		} catch (Exception $e) {
+			// Handle error in schema processing.
+			return [$object, $uuid];
+		}
 
-        // Find properties that have inversedBy configuration.
-        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
-        $inversedByProperties = array_filter(
-            $properties,
-            function (array $property) {
-                // Check for inversedBy in array items.
-                if ($property['type'] === 'array' && isset($property['items']['inversedBy']) === true) {
-                    return true;
-                }
+		// Find properties that have inversedBy configuration.
+		// TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
+		$inversedByProperties = array_filter(
+			$properties,
+			function (array $property) {
+				// Check for inversedBy in array items.
+				if ($property['type'] === 'array' && isset($property['items']['inversedBy']) === true) {
+					return true;
+				}
 
-                // Check for inversedBy in direct object properties.
-                if (isset($property['inversedBy']) === true) {
-                    return true;
-                }
+				// Check for inversedBy in direct object properties.
+				if (isset($property['inversedBy']) === true) {
+					return true;
+				}
 
-                return false;
-            }
-        );
+				return false;
+			}
+		);
 
-        // Check if we have any inversedBy properties to process.
-        if (count($inversedByProperties) === 0) {
-            return [$object, $uuid];
-        }
+		// Check if we have any inversedBy properties to process.
+		if (count($inversedByProperties) === 0) {
+			return [$object, $uuid];
+		}
 
-        // Generate UUID for parent object if not provided.
-        if ($uuid === null) {
-            $uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
-        }
+		// Generate UUID for parent object if not provided.
+		if ($uuid === null) {
+			$uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+		}
 
-        foreach ($inversedByProperties as $propertyName => $definition) {
-            // Skip if property not present in data or is empty.
-            if (isset($object[$propertyName]) === false || empty($object[$propertyName]) === true) {
-                continue;
-            }
+		foreach ($inversedByProperties as $propertyName => $definition) {
+			// Skip if property not present in data or is empty.
+			if (isset($object[$propertyName]) === false || empty($object[$propertyName]) === true) {
+				continue;
+			}
 
-            $propertyValue = $object[$propertyName];
+			$propertyValue = $object[$propertyName];
 
-            // Handle array properties.
-            if ($definition['type'] === 'array' && isset($definition['items']['inversedBy']) === true) {
-                if (is_array($propertyValue) === true && empty($propertyValue) === false) {
-                    $createdUuids = [];
-                    foreach ($propertyValue as $item) {
-                        if (is_array($item) === true && $this->utilityHandler->isUuid($item) === false) {
-                            // This is a nested object, create it first.
-                            $createdUuid = $this->createRelatedObject(
-                                objectData: $item,
-                                definition: $definition['items'],
-                                parentUuid: $uuid,
-                                currentRegister: $currentRegister
-                            );
+			// Handle array properties. No emptiness re-check: the loop head above
+			// already skipped every empty $object[$propertyName].
+			if ($definition['type'] === 'array' && isset($definition['items']['inversedBy']) === true) {
+				$createdUuids = [];
+				foreach ($propertyValue as $item) {
+					if (is_array($item) === true && $this->utilityHandler->isUuid($item) === false) {
+						// This is a nested object, create it first.
+						$createdUuid = $this->createRelatedObject(
+							objectData: $item,
+							definition: $definition['items'],
+							parentUuid: $uuid,
+							currentRegister: $currentRegister
+						);
 
-                            // If creation failed, keep original item to avoid empty array.
-                            $createdUuids[] = $createdUuid ?? $item;
-                        } else if (is_string($item) === true && $this->utilityHandler->isUuid($item) === true) {
-                            // This is already a UUID, keep it.
-                            $createdUuids[] = $item;
-                        }
-                    }
+						// If creation failed, keep original item to avoid empty array.
+						$createdUuids[] = $createdUuid ?? $item;
+					} elseif (is_string($item) === true && $this->utilityHandler->isUuid($item) === true) {
+						// This is already a UUID, keep it.
+						$createdUuids[] = $item;
+					}
+				}
 
-                    $object[$propertyName] = $createdUuids;
-                }//end if
-            } else if (isset($definition['inversedBy']) === true && $definition['type'] !== 'array') {
-                // Handle single object properties.
-                if (is_array($propertyValue) === true && $this->utilityHandler->isUuid($propertyValue) === false) {
-                    // This is a nested object, create it first.
-                    $createdUuid = $this->createRelatedObject(
-                        objectData: $propertyValue,
-                        definition: $definition,
-                        parentUuid: $uuid,
-                        currentRegister: $currentRegister
-                    );
+				$object[$propertyName] = $createdUuids;
+			} elseif (isset($definition['inversedBy']) === true && $definition['type'] !== 'array') {
+				// Handle single object properties.
+				if (is_array($propertyValue) === true && $this->utilityHandler->isUuid($propertyValue) === false) {
+					// This is a nested object, create it first.
+					$createdUuid = $this->createRelatedObject(
+						objectData: $propertyValue,
+						definition: $definition,
+						parentUuid: $uuid,
+						currentRegister: $currentRegister
+					);
 
-                    // Only overwrite if creation succeeded.
-                    $object[$propertyName] = $createdUuid ?? $propertyValue;
-                }
-            }//end if
-        }//end foreach
+					// Only overwrite if creation succeeded.
+					$object[$propertyName] = $createdUuid ?? $propertyValue;
+				}
+			}//end if
+		}//end foreach
 
-        return [$object, $uuid];
-    }//end handlePreValidationCascading()
+		return [$object, $uuid];
+	}//end handlePreValidationCascading()
 
-    /**
-     * Create a related object and return its UUID.
-     *
-     * This method creates a nested object with an inverse relationship to the parent.
-     * It resolves the schema from the property definition and sets the inversedBy field.
-     *
-     * @param array    $objectData      Object data to create.
-     * @param array    $definition      Property definition containing schema reference.
-     * @param string   $parentUuid      UUID of the parent object.
-     * @param int|null $currentRegister Current register ID (nullable for seedData).
-     *
-     * @return string|null UUID of created object or null if creation failed.
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
-     */
-    public function createRelatedObject(
-        array $objectData,
-        array $definition,
-        string $parentUuid,
-        ?int $currentRegister
-    ): ?string {
-        try {
-            // Resolve schema reference to actual schema ID.
-            $schemaRef = $definition['$ref'] ?? null;
-            if ($schemaRef === null || $schemaRef === '') {
-                return null;
-            }
+	/**
+	 * Create a related object and return its UUID.
+	 *
+	 * This method creates a nested object with an inverse relationship to the parent.
+	 * It resolves the schema from the property definition and sets the inversedBy field.
+	 *
+	 * @param array $objectData Object data to create.
+	 * @param array $definition Property definition containing schema reference.
+	 * @param string $parentUuid UUID of the parent object.
+	 * @param int|null $currentRegister Current register ID (nullable for seedData).
+	 *
+	 * @return string|null UUID of created object or null if creation failed.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	public function createRelatedObject(
+		array $objectData,
+		array $definition,
+		string $parentUuid,
+		?int $currentRegister,
+	): ?string {
+		try {
+			// Resolve schema reference to actual schema ID.
+			$schemaRef = $definition['$ref'] ?? null;
+			if ($schemaRef === null || $schemaRef === '') {
+				return null;
+			}
 
-            // Extract schema slug from reference.
-            $schemaSlug = null;
-            if (str_contains($schemaRef, '#/components/schemas/') === true) {
-                $schemaSlug = substr($schemaRef, strrpos($schemaRef, '/') + 1);
-            }
+			// Extract schema slug from reference.
+			$schemaSlug = null;
+			if (str_contains($schemaRef, '#/components/schemas/') === true) {
+				$schemaSlug = substr($schemaRef, strrpos($schemaRef, '/') + 1);
+			}
 
-            if ($schemaSlug === null || $schemaSlug === '') {
-                return null;
-            }
+			if ($schemaSlug === null || $schemaSlug === '') {
+				return null;
+			}
 
-            // Find the schema - use the same logic as SaveObject.resolveSchemaReference.
-            $targetSchema = null;
+			// Find the schema - use the same logic as SaveObject.resolveSchemaReference.
+			$targetSchema = null;
 
-            // First try to find by slug using findAll and filtering.
-            $allSchemas = $this->schemaMapper->findAll();
-            foreach ($allSchemas as $schema) {
-                if (strcasecmp(string1: $schema->getSlug(), string2: $schemaSlug) === 0) {
-                    $targetSchema = $schema;
-                    break;
-                }
-            }
+			// First try to find by slug using findAll and filtering.
+			$allSchemas = $this->schemaMapper->findAll();
+			foreach ($allSchemas as $schema) {
+				if (strcasecmp(string1: $schema->getSlug(), string2: $schemaSlug) === 0) {
+					$targetSchema = $schema;
+					break;
+				}
+			}
 
-            if ($targetSchema === null) {
-                return null;
-            }
+			if ($targetSchema === null) {
+				return null;
+			}
 
-            // Get the register (use the same register as the parent object).
-            $targetRegister = $currentRegister;
+			// Get the register (use the same register as the parent object).
+			$targetRegister = $currentRegister;
 
-            // Add the inverse relationship to the parent object.
-            $inversedBy = $definition['inversedBy'] ?? null;
-            if ($inversedBy !== null && $inversedBy !== '') {
-                $objectData[$inversedBy] = $parentUuid;
-            }
+			// Add the inverse relationship to the parent object.
+			$inversedBy = $definition['inversedBy'] ?? null;
+			if ($inversedBy !== null && $inversedBy !== '') {
+				$objectData[$inversedBy] = $parentUuid;
+			}
 
-            // Create the object.
-            $createdObject = $this->saveHandler->saveObject(
-                register: $targetRegister,
-                schema: $targetSchema,
-                data: $objectData,
-                uuid: null,
-                // Let it generate a new UUID.
-                folderId: null,
-                _rbac: true,
-                // Use default RBAC for internal cascading operations.
-                _multitenancy: true
-                // Use default multitenancy for internal cascading operations.
-            );
+			// Create the object.
+			$createdObject = $this->saveHandler->saveObject(
+				register: $targetRegister,
+				schema: $targetSchema,
+				data: $objectData,
+				uuid: null,
+				// Let it generate a new UUID.
+				folderId: null,
+				_rbac: true,
+				// Use default RBAC for internal cascading operations.
+				_multitenancy: true
+				// Use default multitenancy for internal cascading operations.
+			);
 
-            // Track the created sub-object for inclusion in parent's @self.objects.
-            $createdUuid = $createdObject->getUuid();
-            if ($createdUuid !== null) {
-                $this->saveHandler->trackCreatedSubObject($createdUuid, $createdObject->jsonSerialize());
-            }
+			// Track the created sub-object for inclusion in parent's @self.objects.
+			$createdUuid = $createdObject->getUuid();
+			if ($createdUuid !== null) {
+				$this->saveHandler->trackCreatedSubObject($createdUuid, $createdObject->jsonSerialize());
+			}
 
-            return $createdUuid;
-        } catch (Exception $e) {
-            // Log error but don't expose details.
-            $this->logger->error(
-                message: '[CascadingHandler] Failed to create related object: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            return null;
-        }//end try
-    }//end createRelatedObject()
+			return $createdUuid;
+		} catch (Exception $e) {
+			// Log error but don't expose details.
+			$this->logger->error(
+				message: '[CascadingHandler] Failed to create related object: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}//end try
+	}//end createRelatedObject()
 }//end class

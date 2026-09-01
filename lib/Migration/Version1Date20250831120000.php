@@ -35,44 +35,40 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @package OCA\OpenRegister\Migration
  */
-class Version1Date20250831120000 extends SimpleMigrationStep
-{
-    /**
-     * Add size column to search trails table.
-     *
-     * @param IOutput $output        Output interface for logging
-     * @param Closure $schemaClosure Schema retrieval closure
-     * @param array   $options       Migration options
-     *
-     * @return null|ISchemaWrapper Modified schema or null
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        $schema = $schemaClosure();
+class Version1Date20250831120000 extends SimpleMigrationStep {
+	/**
+	 * Add size column to search trails table.
+	 *
+	 * @param IOutput $output Output interface for logging
+	 * @param Closure $schemaClosure Schema retrieval closure
+	 * @param array $options Migration options
+	 *
+	 * @return null|ISchemaWrapper Modified schema or null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		$schema = $schemaClosure();
 
-        // Check if the search trails table exists.
-        if ($schema->hasTable('openregister_search_trails') === false) {
-            return null;
-        }
+		// Check if the search trails table exists.
+		if ($schema->hasTable('openregister_search_trails') === false) {
+			return null;
+		}
 
-        $table = $schema->getTable('openregister_search_trails');
+		$table = $schema->getTable('openregister_search_trails');
 
-        // Add size column if it doesn't exist.
-        if ($table->hasColumn('size') === false) {
-            $table->addColumn(
-                'size',
-                'bigint',
-                [
-                    'notnull' => false,
-                    'default' => null,
-                    'comment' => 'Size of the search trail entry in bytes',
-                ]
-            );
-            $output->info(message: 'Added size column to openregister_search_trails table');
-        }
+		// Add size column if it doesn't exist.
+		if ($table->hasColumn('size') === false) {
+			$table->addColumn(
+				'size',
+				'bigint',
+				[
+					'notnull' => false,
+					'default' => null,
+					'comment' => 'Size of the search trail entry in bytes',
+				]
+			);
+			$output->info(message: 'Added size column to openregister_search_trails table');
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

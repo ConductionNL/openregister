@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Vectorization;
 
+use OCA\OpenRegister\Service\Vectorization\Handlers\PgVectorPlatform;
 use OCA\OpenRegister\Service\Vectorization\Handlers\VectorSearchHandler;
-use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\IndexService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -14,399 +13,378 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Coverage tests for VectorSearchHandler — targets uncovered branches in
- * cosineSimilarity, extractEntityId, getCollectionsToSearch,
- * getSolrCollectionForEntityType, semanticSearch (php backend paths),
+ * cosineSimilarity, extractEntityId, semanticSearch (php fallback paths),
  * hybridSearch, and reciprocalRankFusion.
  */
-class VectorSearchHandlerCoverageTest extends TestCase
-{
-    private VectorSearchHandler $handler;
-    private IDBConnection&MockObject $db;
-    private SettingsService&MockObject $settingsService;
-    private IndexService&MockObject $indexService;
-    private LoggerInterface&MockObject $logger;
+class VectorSearchHandlerCoverageTest extends TestCase {
+	private VectorSearchHandler $handler;
+	private IDBConnection&MockObject $db;
+	private PgVectorPlatform&MockObject $pgVector;
+	private LoggerInterface&MockObject $logger;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->db = $this->createMock(IDBConnection::class);
-        $this->settingsService = $this->createMock(SettingsService::class);
-        $this->indexService = $this->createMock(IndexService::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
+		$this->db = $this->createMock(IDBConnection::class);
+		$this->pgVector = $this->createMock(PgVectorPlatform::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        $this->handler = new VectorSearchHandler(
-            $this->db,
-            $this->settingsService,
-            $this->indexService,
-            $this->logger
-        );
-    }
+		// pgvector fast path unavailable → PHP fallback (pre-change behaviour).
+		$this->pgVector->method('getVectorColumnDimension')->willReturn(null);
 
-    // =========================================================================
-    // cosineSimilarity via semanticSearch with php backend
-    // =========================================================================
+		$this->handler = new VectorSearchHandler(
+			$this->db,
+			$this->pgVector,
+			$this->logger
+		);
+	}
 
-    public function testSemanticSearchPhpBackendNoVectors(): void
-    {
-        // Mock fetchVectors returning empty array
-        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
-        $expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
-        $result = $this->createMock(\OCP\DB\IResult::class);
+	// =========================================================================
+	// cosineSimilarity via semanticSearch with php backend
+	// =========================================================================
 
-        $this->db->method('getQueryBuilder')->willReturn($qb);
-        $qb->method('select')->willReturnSelf();
-        $qb->method('from')->willReturnSelf();
-        $qb->method('andWhere')->willReturnSelf();
-        $qb->method('setMaxResults')->willReturnSelf();
-        $qb->method('orderBy')->willReturnSelf();
-        $qb->method('expr')->willReturn($expr);
-        $expr->method('eq')->willReturn('1=1');
-        $expr->method('in')->willReturn('1=1');
-        $qb->method('createNamedParameter')->willReturn('?');
-        $qb->method('executeQuery')->willReturn($result);
-        $result->method('fetchAll')->willReturn([]);
+	public function testSemanticSearchPhpBackendNoVectors(): void {
+		// Mock fetchVectors returning empty array
+		$qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+		$expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
+		$result = $this->createMock(\OCP\DB\IResult::class);
 
-        $results = $this->handler->semanticSearch(
-            queryEmbedding: [0.1, 0.2, 0.3],
-            limit: 5,
-            filters: [],
-            backend: 'php'
-        );
+		$this->db->method('getQueryBuilder')->willReturn($qb);
+		$qb->method('select')->willReturnSelf();
+		$qb->method('from')->willReturnSelf();
+		$qb->method('andWhere')->willReturnSelf();
+		$qb->method('setMaxResults')->willReturnSelf();
+		$qb->method('orderBy')->willReturnSelf();
+		$qb->method('expr')->willReturn($expr);
+		$expr->method('eq')->willReturn('1=1');
+		$expr->method('in')->willReturn('1=1');
+		$qb->method('createNamedParameter')->willReturn('?');
+		$qb->method('executeQuery')->willReturn($result);
+		$result->method('fetchAll')->willReturn([]);
 
-        $this->assertSame([], $results);
-    }
+		$results = $this->handler->semanticSearch(
+			queryEmbedding: [0.1, 0.2, 0.3],
+			limit: 5,
+			filters: []
+		);
 
-    public function testSemanticSearchPhpBackendWithVectors(): void
-    {
-        $embedding = serialize([0.1, 0.2, 0.3]);
-        $vectors = [
-            [
-                'id' => 1,
-                'entity_type' => 'object',
-                'entity_id' => '123',
-                'chunk_index' => 0,
-                'total_chunks' => 1,
-                'chunk_text' => 'test text',
-                'metadata' => json_encode(['key' => 'val']),
-                'embedding_model' => 'test-model',
-                'embedding_dimensions' => 3,
-                'embedding' => $embedding,
-            ],
-        ];
+		$this->assertSame([], $results);
+	}
 
-        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
-        $expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
-        $result = $this->createMock(\OCP\DB\IResult::class);
+	public function testSemanticSearchPhpBackendWithVectors(): void {
+		$embedding = serialize([0.1, 0.2, 0.3]);
+		$vectors = [
+			[
+				'id' => 1,
+				'entity_type' => 'object',
+				'entity_id' => '123',
+				'chunk_index' => 0,
+				'total_chunks' => 1,
+				'chunk_text' => 'test text',
+				'metadata' => json_encode(['key' => 'val']),
+				'embedding_model' => 'test-model',
+				'embedding_dimensions' => 3,
+				'embedding' => $embedding,
+			],
+		];
 
-        $this->db->method('getQueryBuilder')->willReturn($qb);
-        $qb->method('select')->willReturnSelf();
-        $qb->method('from')->willReturnSelf();
-        $qb->method('andWhere')->willReturnSelf();
-        $qb->method('setMaxResults')->willReturnSelf();
-        $qb->method('orderBy')->willReturnSelf();
-        $qb->method('expr')->willReturn($expr);
-        $expr->method('eq')->willReturn('1=1');
-        $expr->method('in')->willReturn('1=1');
-        $qb->method('createNamedParameter')->willReturn('?');
-        $qb->method('executeQuery')->willReturn($result);
-        $result->method('fetchAll')->willReturn($vectors);
+		$qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+		$expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
+		$result = $this->createMock(\OCP\DB\IResult::class);
 
-        $results = $this->handler->semanticSearch(
-            queryEmbedding: [0.1, 0.2, 0.3],
-            limit: 5,
-            filters: [],
-            backend: 'php'
-        );
+		$this->db->method('getQueryBuilder')->willReturn($qb);
+		$qb->method('select')->willReturnSelf();
+		$qb->method('from')->willReturnSelf();
+		$qb->method('andWhere')->willReturnSelf();
+		$qb->method('setMaxResults')->willReturnSelf();
+		$qb->method('orderBy')->willReturnSelf();
+		$qb->method('expr')->willReturn($expr);
+		$expr->method('eq')->willReturn('1=1');
+		$expr->method('in')->willReturn('1=1');
+		$qb->method('createNamedParameter')->willReturn('?');
+		$qb->method('executeQuery')->willReturn($result);
+		$result->method('fetchAll')->willReturn($vectors);
 
-        $this->assertCount(1, $results);
-        $this->assertSame('object', $results[0]['entity_type']);
-        $this->assertSame('123', $results[0]['entity_id']);
-        $this->assertGreaterThan(0, $results[0]['similarity']);
-    }
+		$results = $this->handler->semanticSearch(
+			queryEmbedding: [0.1, 0.2, 0.3],
+			limit: 5,
+			filters: []
+		);
 
-    public function testSemanticSearchPhpBackendWithBadSerializedEmbedding(): void
-    {
-        $vectors = [
-            [
-                'id' => 1,
-                'entity_type' => 'object',
-                'entity_id' => '123',
-                'chunk_index' => 0,
-                'total_chunks' => 1,
-                'chunk_text' => 'test text',
-                'metadata' => '',
-                'embedding_model' => 'test-model',
-                'embedding_dimensions' => 3,
-                'embedding' => serialize('not-an-array'),
-            ],
-        ];
+		$this->assertCount(1, $results);
+		$this->assertSame('object', $results[0]['entity_type']);
+		$this->assertSame('123', $results[0]['entity_id']);
+		$this->assertGreaterThan(0, $results[0]['similarity']);
+	}
 
-        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
-        $expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
-        $result = $this->createMock(\OCP\DB\IResult::class);
+	public function testSemanticSearchPhpBackendWithBadSerializedEmbedding(): void {
+		$vectors = [
+			[
+				'id' => 1,
+				'entity_type' => 'object',
+				'entity_id' => '123',
+				'chunk_index' => 0,
+				'total_chunks' => 1,
+				'chunk_text' => 'test text',
+				'metadata' => '',
+				'embedding_model' => 'test-model',
+				'embedding_dimensions' => 3,
+				'embedding' => serialize('not-an-array'),
+			],
+		];
 
-        $this->db->method('getQueryBuilder')->willReturn($qb);
-        $qb->method('select')->willReturnSelf();
-        $qb->method('from')->willReturnSelf();
-        $qb->method('andWhere')->willReturnSelf();
-        $qb->method('setMaxResults')->willReturnSelf();
-        $qb->method('orderBy')->willReturnSelf();
-        $qb->method('expr')->willReturn($expr);
-        $expr->method('eq')->willReturn('1=1');
-        $expr->method('in')->willReturn('1=1');
-        $qb->method('createNamedParameter')->willReturn('?');
-        $qb->method('executeQuery')->willReturn($result);
-        $result->method('fetchAll')->willReturn($vectors);
+		$qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+		$expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
+		$result = $this->createMock(\OCP\DB\IResult::class);
 
-        $results = $this->handler->semanticSearch(
-            queryEmbedding: [0.1, 0.2, 0.3],
-            limit: 5,
-            filters: [],
-            backend: 'php'
-        );
+		$this->db->method('getQueryBuilder')->willReturn($qb);
+		$qb->method('select')->willReturnSelf();
+		$qb->method('from')->willReturnSelf();
+		$qb->method('andWhere')->willReturnSelf();
+		$qb->method('setMaxResults')->willReturnSelf();
+		$qb->method('orderBy')->willReturnSelf();
+		$qb->method('expr')->willReturn($expr);
+		$expr->method('eq')->willReturn('1=1');
+		$expr->method('in')->willReturn('1=1');
+		$qb->method('createNamedParameter')->willReturn('?');
+		$qb->method('executeQuery')->willReturn($result);
+		$result->method('fetchAll')->willReturn($vectors);
 
-        // Non-array embedding is skipped
-        $this->assertSame([], $results);
-    }
+		$results = $this->handler->semanticSearch(
+			queryEmbedding: [0.1, 0.2, 0.3],
+			limit: 5,
+			filters: []
+		);
 
-    public function testSemanticSearchWithEntityTypeFilter(): void
-    {
-        $embedding = serialize([1.0, 0.0]);
-        $vectors = [
-            [
-                'id' => 1,
-                'entity_type' => 'file',
-                'entity_id' => '42',
-                'chunk_index' => 0,
-                'total_chunks' => 1,
-                'chunk_text' => 'file text',
-                'metadata' => '',
-                'embedding_model' => 'model',
-                'embedding_dimensions' => 2,
-                'embedding' => $embedding,
-            ],
-        ];
+		// Non-array embedding is skipped
+		$this->assertSame([], $results);
+	}
 
-        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
-        $expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
-        $result = $this->createMock(\OCP\DB\IResult::class);
+	public function testSemanticSearchWithEntityTypeFilter(): void {
+		$embedding = serialize([1.0, 0.0]);
+		$vectors = [
+			[
+				'id' => 1,
+				'entity_type' => 'file',
+				'entity_id' => '42',
+				'chunk_index' => 0,
+				'total_chunks' => 1,
+				'chunk_text' => 'file text',
+				'metadata' => '',
+				'embedding_model' => 'model',
+				'embedding_dimensions' => 2,
+				'embedding' => $embedding,
+			],
+		];
 
-        $this->db->method('getQueryBuilder')->willReturn($qb);
-        $qb->method('select')->willReturnSelf();
-        $qb->method('from')->willReturnSelf();
-        $qb->method('andWhere')->willReturnSelf();
-        $qb->method('setMaxResults')->willReturnSelf();
-        $qb->method('orderBy')->willReturnSelf();
-        $qb->method('expr')->willReturn($expr);
-        $expr->method('eq')->willReturn('1=1');
-        $expr->method('in')->willReturn('1=1');
-        $qb->method('createNamedParameter')->willReturn('?');
-        $qb->method('executeQuery')->willReturn($result);
-        $result->method('fetchAll')->willReturn($vectors);
+		$qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+		$expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
+		$result = $this->createMock(\OCP\DB\IResult::class);
 
-        $results = $this->handler->semanticSearch(
-            queryEmbedding: [1.0, 0.0],
-            limit: 5,
-            filters: ['entity_type' => 'file'],
-            backend: 'database'
-        );
+		$this->db->method('getQueryBuilder')->willReturn($qb);
+		$qb->method('select')->willReturnSelf();
+		$qb->method('from')->willReturnSelf();
+		$qb->method('andWhere')->willReturnSelf();
+		$qb->method('setMaxResults')->willReturnSelf();
+		$qb->method('orderBy')->willReturnSelf();
+		$qb->method('expr')->willReturn($expr);
+		$expr->method('eq')->willReturn('1=1');
+		$expr->method('in')->willReturn('1=1');
+		$qb->method('createNamedParameter')->willReturn('?');
+		$qb->method('executeQuery')->willReturn($result);
+		$result->method('fetchAll')->willReturn($vectors);
 
-        $this->assertCount(1, $results);
-        $this->assertSame('file', $results[0]['entity_type']);
-    }
+		$results = $this->handler->semanticSearch(
+			queryEmbedding: [1.0, 0.0],
+			limit: 5,
+			filters: ['entity_type' => 'file']
+		);
 
-    public function testSemanticSearchWithEntityTypeArrayFilter(): void
-    {
-        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
-        $expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
-        $result = $this->createMock(\OCP\DB\IResult::class);
+		$this->assertCount(1, $results);
+		$this->assertSame('file', $results[0]['entity_type']);
+	}
 
-        $this->db->method('getQueryBuilder')->willReturn($qb);
-        $qb->method('select')->willReturnSelf();
-        $qb->method('from')->willReturnSelf();
-        $qb->method('andWhere')->willReturnSelf();
-        $qb->method('setMaxResults')->willReturnSelf();
-        $qb->method('orderBy')->willReturnSelf();
-        $qb->method('expr')->willReturn($expr);
-        $expr->method('eq')->willReturn('1=1');
-        $expr->method('in')->willReturn('1=1');
-        $qb->method('createNamedParameter')->willReturn('?');
-        $qb->method('executeQuery')->willReturn($result);
-        $result->method('fetchAll')->willReturn([]);
+	public function testSemanticSearchWithEntityTypeArrayFilter(): void {
+		$qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+		$expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
+		$result = $this->createMock(\OCP\DB\IResult::class);
 
-        $results = $this->handler->semanticSearch(
-            queryEmbedding: [1.0],
-            limit: 5,
-            filters: [
-                'entity_type' => ['file', 'object'],
-                'entity_id' => ['1', '2'],
-            ],
-            backend: 'php'
-        );
+		$this->db->method('getQueryBuilder')->willReturn($qb);
+		$qb->method('select')->willReturnSelf();
+		$qb->method('from')->willReturnSelf();
+		$qb->method('andWhere')->willReturnSelf();
+		$qb->method('setMaxResults')->willReturnSelf();
+		$qb->method('orderBy')->willReturnSelf();
+		$qb->method('expr')->willReturn($expr);
+		$expr->method('eq')->willReturn('1=1');
+		$expr->method('in')->willReturn('1=1');
+		$qb->method('createNamedParameter')->willReturn('?');
+		$qb->method('executeQuery')->willReturn($result);
+		$result->method('fetchAll')->willReturn([]);
 
-        $this->assertSame([], $results);
-    }
+		$results = $this->handler->semanticSearch(
+			queryEmbedding: [1.0],
+			limit: 5,
+			filters: [
+				'entity_type' => ['file', 'object'],
+				'entity_id' => ['1', '2'],
+			]
+		);
 
-    public function testSemanticSearchWithEntityIdStringFilter(): void
-    {
-        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
-        $expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
-        $result = $this->createMock(\OCP\DB\IResult::class);
+		$this->assertSame([], $results);
+	}
 
-        $this->db->method('getQueryBuilder')->willReturn($qb);
-        $qb->method('select')->willReturnSelf();
-        $qb->method('from')->willReturnSelf();
-        $qb->method('andWhere')->willReturnSelf();
-        $qb->method('setMaxResults')->willReturnSelf();
-        $qb->method('orderBy')->willReturnSelf();
-        $qb->method('expr')->willReturn($expr);
-        $expr->method('eq')->willReturn('1=1');
-        $expr->method('in')->willReturn('1=1');
-        $qb->method('createNamedParameter')->willReturn('?');
-        $qb->method('executeQuery')->willReturn($result);
-        $result->method('fetchAll')->willReturn([]);
+	public function testSemanticSearchWithEntityIdStringFilter(): void {
+		$qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+		$expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
+		$result = $this->createMock(\OCP\DB\IResult::class);
 
-        $results = $this->handler->semanticSearch(
-            queryEmbedding: [1.0],
-            limit: 5,
-            filters: ['entity_id' => '42'],
-            backend: 'php'
-        );
+		$this->db->method('getQueryBuilder')->willReturn($qb);
+		$qb->method('select')->willReturnSelf();
+		$qb->method('from')->willReturnSelf();
+		$qb->method('andWhere')->willReturnSelf();
+		$qb->method('setMaxResults')->willReturnSelf();
+		$qb->method('orderBy')->willReturnSelf();
+		$qb->method('expr')->willReturn($expr);
+		$expr->method('eq')->willReturn('1=1');
+		$expr->method('in')->willReturn('1=1');
+		$qb->method('createNamedParameter')->willReturn('?');
+		$qb->method('executeQuery')->willReturn($result);
+		$result->method('fetchAll')->willReturn([]);
 
-        $this->assertSame([], $results);
-    }
+		$results = $this->handler->semanticSearch(
+			queryEmbedding: [1.0],
+			limit: 5,
+			filters: ['entity_id' => '42']
+		);
 
-    // =========================================================================
-    // hybridSearch
-    // =========================================================================
+		$this->assertSame([], $results);
+	}
 
-    public function testHybridSearchCombinesVectorAndSolrResults(): void
-    {
-        // Mock fetchVectors to return empty (so vector results are empty)
-        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
-        $expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
-        $result = $this->createMock(\OCP\DB\IResult::class);
+	// =========================================================================
+	// hybridSearch
+	// =========================================================================
 
-        $this->db->method('getQueryBuilder')->willReturn($qb);
-        $qb->method('select')->willReturnSelf();
-        $qb->method('from')->willReturnSelf();
-        $qb->method('andWhere')->willReturnSelf();
-        $qb->method('setMaxResults')->willReturnSelf();
-        $qb->method('orderBy')->willReturnSelf();
-        $qb->method('expr')->willReturn($expr);
-        $expr->method('eq')->willReturn('1=1');
-        $expr->method('in')->willReturn('1=1');
-        $qb->method('createNamedParameter')->willReturn('?');
-        $qb->method('executeQuery')->willReturn($result);
-        $result->method('fetchAll')->willReturn([]);
+	public function testHybridSearchCombinesVectorAndSolrResults(): void {
+		// Mock fetchVectors to return empty (so vector results are empty)
+		$qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+		$expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
+		$result = $this->createMock(\OCP\DB\IResult::class);
 
-        $solrResults = [
-            [
-                'entity_type' => 'object',
-                'entity_id' => 'abc',
-                'score' => 1.5,
-                'chunk_index' => 0,
-                'chunk_text' => 'solr text',
-                'metadata' => [],
-            ],
-        ];
+		$this->db->method('getQueryBuilder')->willReturn($qb);
+		$qb->method('select')->willReturnSelf();
+		$qb->method('from')->willReturnSelf();
+		$qb->method('andWhere')->willReturnSelf();
+		$qb->method('setMaxResults')->willReturnSelf();
+		$qb->method('orderBy')->willReturnSelf();
+		$qb->method('expr')->willReturn($expr);
+		$expr->method('eq')->willReturn('1=1');
+		$expr->method('in')->willReturn('1=1');
+		$qb->method('createNamedParameter')->willReturn('?');
+		$qb->method('executeQuery')->willReturn($result);
+		$result->method('fetchAll')->willReturn([]);
 
-        $hybrid = $this->handler->hybridSearch(
-            queryEmbedding: [0.1, 0.2],
-            solrResults: $solrResults,
-            limit: 10,
-            weights: ['solr' => 0.7, 'vector' => 0.3],
-            backend: 'php'
-        );
+		$solrResults = [
+			[
+				'entity_type' => 'object',
+				'entity_id' => 'abc',
+				'score' => 1.5,
+				'chunk_index' => 0,
+				'chunk_text' => 'solr text',
+				'metadata' => [],
+			],
+		];
 
-        $this->assertArrayHasKey('results', $hybrid);
-        $this->assertArrayHasKey('source_breakdown', $hybrid);
-        $this->assertArrayHasKey('weights', $hybrid);
-        $this->assertGreaterThan(0, $hybrid['total']);
-        $this->assertTrue($hybrid['results'][0]['in_solr']);
-    }
+		$hybrid = $this->handler->hybridSearch(
+			queryEmbedding: [0.1, 0.2],
+			keywordResults: $solrResults,
+			limit: 10,
+			weights: ['keyword' => 0.7, 'vector' => 0.3]
+		);
 
-    public function testHybridSearchWithZeroVectorWeight(): void
-    {
-        $solrResults = [
-            [
-                'entity_type' => 'object',
-                'entity_id' => 'xyz',
-                'score' => 2.0,
-            ],
-        ];
+		$this->assertArrayHasKey('results', $hybrid);
+		$this->assertArrayHasKey('source_breakdown', $hybrid);
+		$this->assertArrayHasKey('weights', $hybrid);
+		$this->assertGreaterThan(0, $hybrid['total']);
+		$this->assertTrue($hybrid['results'][0]['in_keyword']);
+	}
 
-        $hybrid = $this->handler->hybridSearch(
-            queryEmbedding: [0.1],
-            solrResults: $solrResults,
-            limit: 5,
-            weights: ['solr' => 1.0, 'vector' => 0.0],
-            backend: 'php'
-        );
+	public function testHybridSearchWithZeroVectorWeight(): void {
+		$solrResults = [
+			[
+				'entity_type' => 'object',
+				'entity_id' => 'xyz',
+				'score' => 2.0,
+			],
+		];
 
-        $this->assertSame(1, $hybrid['total']);
-        $this->assertSame(1, $hybrid['source_breakdown']['solr_only']);
-    }
+		$hybrid = $this->handler->hybridSearch(
+			queryEmbedding: [0.1],
+			keywordResults: $solrResults,
+			limit: 5,
+			weights: ['keyword' => 1.0, 'vector' => 0.0]
+		);
 
-    public function testHybridSearchWithBothVectorAndSolr(): void
-    {
-        // Vectors return empty (no db), but we test the RRF with overlapping results
-        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
-        $expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
-        $dbResult = $this->createMock(\OCP\DB\IResult::class);
+		$this->assertSame(1, $hybrid['total']);
+		$this->assertSame(1, $hybrid['source_breakdown']['keyword_only']);
+	}
 
-        $embedding = serialize([1.0, 0.0]);
-        $vectors = [
-            [
-                'id' => 1,
-                'entity_type' => 'object',
-                'entity_id' => 'shared-id',
-                'chunk_index' => 0,
-                'total_chunks' => 1,
-                'chunk_text' => 'shared text',
-                'metadata' => '',
-                'embedding_model' => 'model',
-                'embedding_dimensions' => 2,
-                'embedding' => $embedding,
-            ],
-        ];
+	public function testHybridSearchWithBothVectorAndSolr(): void {
+		// Vectors return empty (no db), but we test the RRF with overlapping results
+		$qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+		$expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
+		$dbResult = $this->createMock(\OCP\DB\IResult::class);
 
-        $this->db->method('getQueryBuilder')->willReturn($qb);
-        $qb->method('select')->willReturnSelf();
-        $qb->method('from')->willReturnSelf();
-        $qb->method('andWhere')->willReturnSelf();
-        $qb->method('setMaxResults')->willReturnSelf();
-        $qb->method('orderBy')->willReturnSelf();
-        $qb->method('expr')->willReturn($expr);
-        $expr->method('eq')->willReturn('1=1');
-        $expr->method('in')->willReturn('1=1');
-        $qb->method('createNamedParameter')->willReturn('?');
-        $qb->method('executeQuery')->willReturn($dbResult);
-        $dbResult->method('fetchAll')->willReturn($vectors);
+		$embedding = serialize([1.0, 0.0]);
+		$vectors = [
+			[
+				'id' => 1,
+				'entity_type' => 'object',
+				'entity_id' => 'shared-id',
+				'chunk_index' => 0,
+				'total_chunks' => 1,
+				'chunk_text' => 'shared text',
+				'metadata' => '',
+				'embedding_model' => 'model',
+				'embedding_dimensions' => 2,
+				'embedding' => $embedding,
+			],
+		];
 
-        $solrResults = [
-            [
-                'entity_type' => 'object',
-                'entity_id' => 'shared-id',
-                'score' => 2.0,
-            ],
-            [
-                'entity_type' => 'object',
-                'entity_id' => 'solr-only',
-                'score' => 1.0,
-            ],
-        ];
+		$this->db->method('getQueryBuilder')->willReturn($qb);
+		$qb->method('select')->willReturnSelf();
+		$qb->method('from')->willReturnSelf();
+		$qb->method('andWhere')->willReturnSelf();
+		$qb->method('setMaxResults')->willReturnSelf();
+		$qb->method('orderBy')->willReturnSelf();
+		$qb->method('expr')->willReturn($expr);
+		$expr->method('eq')->willReturn('1=1');
+		$expr->method('in')->willReturn('1=1');
+		$qb->method('createNamedParameter')->willReturn('?');
+		$qb->method('executeQuery')->willReturn($dbResult);
+		$dbResult->method('fetchAll')->willReturn($vectors);
 
-        $hybrid = $this->handler->hybridSearch(
-            queryEmbedding: [1.0, 0.0],
-            solrResults: $solrResults,
-            limit: 10,
-            weights: ['solr' => 0.5, 'vector' => 0.5],
-            backend: 'php'
-        );
+		$solrResults = [
+			[
+				'entity_type' => 'object',
+				'entity_id' => 'shared-id',
+				'score' => 2.0,
+			],
+			[
+				'entity_type' => 'object',
+				'entity_id' => 'solr-only',
+				'score' => 1.0,
+			],
+		];
 
-        $this->assertGreaterThanOrEqual(2, $hybrid['total']);
-        $this->assertGreaterThanOrEqual(1, $hybrid['source_breakdown']['both']);
-    }
+		$hybrid = $this->handler->hybridSearch(
+			queryEmbedding: [1.0, 0.0],
+			keywordResults: $solrResults,
+			limit: 10,
+			weights: ['keyword' => 0.5, 'vector' => 0.5]
+		);
+
+		$this->assertGreaterThanOrEqual(2, $hybrid['total']);
+		$this->assertGreaterThanOrEqual(1, $hybrid['source_breakdown']['both']);
+	}
 }

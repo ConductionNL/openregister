@@ -5,17 +5,19 @@
  *
  * Formats GraphQL errors into structured responses with extension codes.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\GraphQL
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
 
 namespace OCA\OpenRegister\Service\GraphQL;
 
-use GraphQL\Error\ClientAware;
 use GraphQL\Error\Error;
 use GraphQL\Error\FormattedError;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -27,82 +29,79 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
  *
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
-class GraphQLErrorFormatter
-{
-    /**
-     * Format a GraphQL error into a structured response.
-     *
-     * @param Error $error The GraphQL error
-     *
-     * @return array<string, mixed> The formatted error
-     */
-    public function format(Error $error): array
-    {
-        $formatted = FormattedError::createFromException($error);
+class GraphQLErrorFormatter {
+	/**
+	 * Format a GraphQL error into a structured response.
+	 *
+	 * @param Error $error The GraphQL error
+	 *
+	 * @return array<string, mixed> The formatted error
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	public function format(Error $error): array {
+		$formatted = FormattedError::createFromException($error);
 
-        $previous = $error->getPrevious();
+		$previous = $error->getPrevious();
 
-        if ($previous instanceof NotAuthorizedException) {
-            $formatted['extensions']['code'] = 'FORBIDDEN';
-        } else if ($previous instanceof \OCA\OpenRegister\Exception\ValidationException
-            || $previous instanceof \OCA\OpenRegister\Exception\CustomValidationException
-        ) {
-            $formatted['extensions']['code'] = 'VALIDATION_ERROR';
-        } else if ($error->getExtensions() !== null && isset($error->getExtensions()['code']) === true) {
-            $formatted['extensions']['code'] = $error->getExtensions()['code'];
-        } else if ($previous !== null) {
-            $formatted['extensions']['code'] = 'INTERNAL_ERROR';
-        }
+		if ($previous instanceof NotAuthorizedException) {
+			$formatted['extensions']['code'] = 'FORBIDDEN';
+		} elseif ($previous instanceof \OCA\OpenRegister\Exception\ValidationException
+			|| $previous instanceof \OCA\OpenRegister\Exception\CustomValidationException
+		) {
+			$formatted['extensions']['code'] = 'VALIDATION_ERROR';
+		} elseif ($error->getExtensions() !== null && isset($error->getExtensions()['code']) === true) {
+			$formatted['extensions']['code'] = $error->getExtensions()['code'];
+		} elseif ($previous !== null) {
+			$formatted['extensions']['code'] = 'INTERNAL_ERROR';
+		}
 
-        return $formatted;
+		return $formatted;
+	}//end format()
 
-    }//end format()
+	/**
+	 * Create a field-level forbidden error.
+	 *
+	 * @param string $field The field name
+	 * @param array<string> $path The field path
+	 *
+	 * @return Error The GraphQL error
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-enforce-schema-level-rbac-via-permissionhandler
+	 */
+	public static function fieldForbidden(string $field, array $path): Error {
+		return new Error(
+			"Not authorized to read field '$field'",
+			null,
+			null,
+			[],
+			$path,
+			null,
+			['code' => 'FIELD_FORBIDDEN']
+		);
 
-    /**
-     * Create a field-level forbidden error.
-     *
-     * @param string        $field The field name
-     * @param array<string> $path  The field path
-     *
-     * @return Error The GraphQL error
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
-     */
-    public static function fieldForbidden(string $field, array $path): Error
-    {
-        return new Error(
-            "Not authorized to read field '$field'",
-            null,
-            null,
-            [],
-            $path,
-            null,
-            ['code' => 'FIELD_FORBIDDEN']
-        );
+	}//end fieldForbidden()
 
-    }//end fieldForbidden()
+	/**
+	 * Create a not-found error.
+	 *
+	 * @param string $type The object type
+	 * @param string $id The object ID
+	 *
+	 * @return Error The GraphQL error
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-enforce-schema-level-rbac-via-permissionhandler
+	 */
+	public static function notFound(string $type, string $id): Error {
+		return new Error(
+			"$type with ID '$id' not found",
+			null,
+			null,
+			[],
+			null,
+			null,
+			['code' => 'NOT_FOUND']
+		);
 
-    /**
-     * Create a not-found error.
-     *
-     * @param string $type The object type
-     * @param string $id   The object ID
-     *
-     * @return Error The GraphQL error
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
-     */
-    public static function notFound(string $type, string $id): Error
-    {
-        return new Error(
-            "$type with ID '$id' not found",
-            null,
-            null,
-            [],
-            null,
-            null,
-            ['code' => 'NOT_FOUND']
-        );
-
-    }//end notFound()
+	}//end notFound()
 }//end class

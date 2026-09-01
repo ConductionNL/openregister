@@ -2,12 +2,15 @@
 	<NcDialog
 		v-if="show"
 		name="Mass Validate Objects"
-		:can-close="!massValidating"
+		:canClose="!massValidating"
 		size="large"
 		@closing="$emit('close')">
 		<div class="dialog-content">
 			<p class="validate-description">
-				Configure mass validation parameters for object processing. This operation will re-save objects in the system to trigger business logic validation and processing according to current rules and schemas.
+				Configure mass validation parameters for object processing. This
+				operation will re-save objects in the system to trigger business
+				logic validation and processing according to current rules and
+				schemas.
 			</p>
 
 			<!-- Loading State -->
@@ -17,13 +20,28 @@
 				</div>
 				<h4>Mass Validating Objects...</h4>
 				<p class="loading-description">
-					Please wait while objects are being processed. This may take several minutes depending on the amount of data and configuration.
+					Please wait while objects are being processed. This may take
+					several minutes depending on the amount of data and
+					configuration.
 				</p>
 				<div class="loading-details">
-					<p><strong>Mode:</strong> {{ config.mode === 'serial' ? 'Serial' : 'Parallel' }}</p>
-					<p><strong>Max Objects:</strong> {{ config.maxObjects === 0 ? 'All' : config.maxObjects }}</p>
+					<p>
+						<strong>{{ t('openregister', 'Mode:') }}</strong>
+						{{ config.mode === 'serial' ? 'Serial' : 'Parallel' }}
+					</p>
+					<p>
+						<strong>Max Objects:</strong>
+						{{ config.maxObjects === 0 ? 'All' : config.maxObjects }}
+					</p>
 					<p><strong>Batch Size:</strong> {{ config.batchSize }}</p>
-					<p><strong>Error Handling:</strong> {{ config.collectErrors ? 'Collect all errors' : 'Stop on first error' }}</p>
+					<p>
+						<strong>Error Handling:</strong>
+						{{
+							config.collectErrors
+								? 'Collect all errors'
+								: 'Stop on first error'
+						}}
+					</p>
 				</div>
 			</div>
 
@@ -31,11 +49,17 @@
 			<div v-else-if="completed && results" class="validate-results">
 				<!-- Overall Status -->
 				<div class="results-header">
-					<div class="status-icon" :class="results.success ? 'success' : 'error'">
+					<div
+						class="status-icon"
+						:class="results.success ? 'success' : 'error'">
 						{{ results.success ? '✅' : '❌' }}
 					</div>
 					<h4 :class="results.success ? 'success-text' : 'error-text'">
-						{{ results.success ? 'Mass Validation Completed Successfully!' : 'Mass Validation Failed' }}
+						{{
+							results.success
+								? 'Mass Validation Completed Successfully!'
+								: 'Mass Validation Failed'
+						}}
 					</h4>
 					<p class="results-message">
 						{{ results.message }}
@@ -46,51 +70,95 @@
 				<div v-if="!results.success && results.error" class="error-banner">
 					<div class="error-header">
 						<span class="error-icon">⚠️</span>
-						<h5>Error Details</h5>
+						<h5>{{ t('openregister', 'Error Details') }}</h5>
 					</div>
 					<div class="error-content">
 						<div class="error-message">
 							{{ results.error }}
 						</div>
-						<details v-if="results.error_details || hasDetailedError" class="error-details-toggle">
+						<details
+							v-if="results.error_details || hasDetailedError"
+							class="error-details-toggle">
 							<summary>Show Technical Details</summary>
-							<pre class="error-details-content">{{ formatErrorDetails() }}</pre>
+							<pre class="error-details-content">{{
+								formatErrorDetails()
+							}}</pre>
 						</details>
 					</div>
 				</div>
 
 				<!-- Performance Summary -->
-				<div v-if="results.success || results.stats" class="performance-summary">
+				<div
+					v-if="results.success || results.stats"
+					class="performance-summary">
 					<h5>Performance Summary</h5>
 					<div class="summary-grid">
 						<div class="summary-item">
 							<span class="summary-label">Execution Time:</span>
-							<span class="summary-value">{{ formatExecutionTime(results.execution_time_ms || (results.stats?.duration_seconds * 1000)) }}</span>
+							<span class="summary-value">{{
+								formatExecutionTime(
+									results.execution_time_ms
+										|| results.stats?.duration_seconds * 1000,
+								)
+							}}</span>
 						</div>
-						<div v-if="results.stats?.processed_objects !== undefined" class="summary-item">
+						<div
+							v-if="results.stats?.processed_objects !== undefined"
+							class="summary-item">
 							<span class="summary-label">Objects Processed:</span>
-							<span class="summary-value">{{ results.stats.processed_objects.toLocaleString() }}</span>
+							<span class="summary-value">{{
+								results.stats.processed_objects.toLocaleString()
+							}}</span>
 						</div>
-						<div v-if="results.stats?.successful_saves !== undefined" class="summary-item">
+						<div
+							v-if="results.stats?.successful_saves !== undefined"
+							class="summary-item">
 							<span class="summary-label">Successful Saves:</span>
-							<span class="summary-value">{{ results.stats.successful_saves.toLocaleString() }}</span>
+							<span class="summary-value">{{
+								results.stats.successful_saves.toLocaleString()
+							}}</span>
 						</div>
-						<div v-if="results.stats?.failed_saves !== undefined" class="summary-item">
+						<div
+							v-if="results.stats?.failed_saves !== undefined"
+							class="summary-item">
 							<span class="summary-label">Failed Saves:</span>
-							<span class="summary-value" :class="{ 'error': results.stats.failed_saves > 0 }">{{ results.stats.failed_saves }}</span>
+							<span
+								class="summary-value"
+								:class="{ error: results.stats.failed_saves > 0 }"
+								>{{ results.stats.failed_saves }}</span
+							>
 						</div>
-						<div v-if="results.batches_processed !== undefined" class="summary-item">
+						<div
+							v-if="results.batches_processed !== undefined"
+							class="summary-item">
 							<span class="summary-label">Batches Processed:</span>
-							<span class="summary-value">{{ results.batches_processed }}</span>
+							<span class="summary-value">{{
+								results.batches_processed
+							}}</span>
 						</div>
 						<div v-if="results.memory_usage" class="summary-item">
 							<span class="summary-label">Memory Used:</span>
-							<span class="summary-value">{{ results.memory_usage.formatted.actual_used }}</span>
+							<span class="summary-value">{{
+								results.memory_usage.formatted.actual_used
+							}}</span>
 						</div>
-						<div v-if="results.memory_usage && results.memory_usage.formatted.peak_percentage" class="summary-item">
+						<div
+							v-if="
+								results.memory_usage
+								&& results.memory_usage.formatted.peak_percentage
+							"
+							class="summary-item">
 							<span class="summary-label">Peak Memory:</span>
-							<span class="summary-value" :class="getMemoryUsageClass(results.memory_usage.peak_percentage)">
-								{{ results.memory_usage.formatted.peak_usage }} ({{ results.memory_usage.formatted.peak_percentage }})
+							<span
+								class="summary-value"
+								:class="
+									getMemoryUsageClass(
+										results.memory_usage.peak_percentage,
+									)
+								">
+								{{ results.memory_usage.formatted.peak_usage }} ({{
+									results.memory_usage.formatted.peak_percentage
+								}})
 							</span>
 						</div>
 					</div>
@@ -98,34 +166,46 @@
 
 				<!-- Success Rate Display -->
 				<div v-if="results.stats" class="success-rate-display">
-					<h5>Success Rate</h5>
+					<h5>{{ t('openregister', 'Success Rate') }}</h5>
 					<div class="success-rate-container">
 						<div class="success-rate-bar">
-							<div class="success-rate-fill"
+							<div
+								class="success-rate-fill"
 								:style="{ width: getSuccessRate() + '%' }"
 								:class="getSuccessRateClass()" />
 						</div>
 						<div class="success-rate-text">
-							{{ getSuccessRate().toFixed(1) }}% Success Rate
-							({{ results.stats.successful_saves }} / {{ results.stats.total_objects }} objects)
+							{{ getSuccessRate().toFixed(1) }}% Success Rate ({{
+								results.stats.successful_saves
+							}}
+							/ {{ results.stats.total_objects }} objects)
 						</div>
 					</div>
 				</div>
 
 				<!-- Error Collection Results -->
-				<div v-if="results.errors && results.errors.length > 0" class="error-collection">
+				<div
+					v-if="results.errors && results.errors.length > 0"
+					class="error-collection">
 					<h5>Collected Errors ({{ results.errors.length }})</h5>
 					<div class="error-list-container">
-						<div v-for="(error, index) in results.errors.slice(0, 10)" :key="index" class="error-item">
+						<div
+							v-for="(error, index) in results.errors.slice(0, 10)"
+							:key="index"
+							class="error-item">
 							<div class="error-item-header">
 								<span class="error-index">#{{ index + 1 }}</span>
-								<span v-if="error.object_id" class="error-object-id">Object ID: {{ error.object_id }}</span>
+								<span v-if="error.object_id" class="error-object-id"
+									>Object ID: {{ error.object_id }}</span
+								>
 							</div>
 							<div class="error-item-message">
 								{{ error.error || error.message }}
 							</div>
 						</div>
-						<div v-if="results.errors.length > 10" class="error-overflow">
+						<div
+							v-if="results.errors.length > 10"
+							class="error-overflow">
 							... and {{ results.errors.length - 10 }} more errors
 						</div>
 					</div>
@@ -136,12 +216,18 @@
 					<h5>Configuration Used</h5>
 					<div class="config-grid">
 						<div class="config-item">
-							<span class="config-label">Mode:</span>
-							<span class="config-value">{{ config.mode === 'serial' ? 'Serial' : 'Parallel' }}</span>
+							<span class="config-label">{{
+								t('openregister', 'Mode:')
+							}}</span>
+							<span class="config-value">{{
+								config.mode === 'serial' ? 'Serial' : 'Parallel'
+							}}</span>
 						</div>
 						<div class="config-item">
 							<span class="config-label">Max Objects:</span>
-							<span class="config-value">{{ config.maxObjects === 0 ? 'All' : config.maxObjects }}</span>
+							<span class="config-value">{{
+								config.maxObjects === 0 ? 'All' : config.maxObjects
+							}}</span>
 						</div>
 						<div class="config-item">
 							<span class="config-label">Batch Size:</span>
@@ -149,7 +235,11 @@
 						</div>
 						<div class="config-item">
 							<span class="config-label">Error Handling:</span>
-							<span class="config-value">{{ config.collectErrors ? 'Collect errors' : 'Stop on first error' }}</span>
+							<span class="config-value">{{
+								config.collectErrors
+									? 'Collect errors'
+									: 'Stop on first error'
+							}}</span>
 						</div>
 					</div>
 				</div>
@@ -161,123 +251,213 @@
 					<h4>⚠️ Important Information</h4>
 					<div class="warning-box">
 						<ul>
-							<li><strong>Processing:</strong> All objects will be re-saved to trigger validation and business logic</li>
-							<li><strong>Duration:</strong> This may take several minutes depending on the number of objects and configuration</li>
-							<li><strong>Impact:</strong> Objects will be updated with current processing rules</li>
-							<li><strong>Safety:</strong> This operation is safe and will not delete data</li>
+							<li>
+								<strong>Processing:</strong> All objects will be
+								re-saved to trigger validation and business logic
+							</li>
+							<li>
+								<strong>Duration:</strong> This may take several
+								minutes depending on the number of objects and
+								configuration
+							</li>
+							<li>
+								<strong>Impact:</strong> Objects will be updated with
+								current processing rules
+							</li>
+							<li>
+								<strong>Safety:</strong> This operation is safe and
+								will not delete data
+							</li>
 						</ul>
 					</div>
 				</div>
 
 				<div class="form-section">
-					<h4>Execution Mode</h4>
+					<h4>{{ t('openregister', 'Execution Mode') }}</h4>
 					<div class="radio-group">
 						<NcCheckboxRadioSwitch
-							:checked.sync="localConfig.mode"
+							v-model="localConfig.mode"
 							name="validate_mode"
 							value="serial"
 							type="radio">
-							Serial Mode (Safer, slower)
+							{{ t('openregister', 'Serial Mode (Safer, slower)') }}
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
-							:checked.sync="localConfig.mode"
+							v-model="localConfig.mode"
 							name="validate_mode"
 							value="parallel"
 							type="radio">
-							Parallel Mode (Faster, more resource intensive)
+							{{
+								t(
+									'openregister',
+									'Parallel Mode (Faster, more resource intensive)',
+								)
+							}}
 						</NcCheckboxRadioSwitch>
 					</div>
 					<p class="form-description">
-						Serial mode processes objects one by one, while parallel mode processes multiple objects simultaneously for faster completion.
+						Serial mode processes objects one by one, while parallel mode
+						processes multiple objects simultaneously for faster
+						completion.
 					</p>
 				</div>
 
 				<div class="form-section">
-					<h4>Processing Limits</h4>
+					<h4>{{ t('openregister', 'Processing Limits') }}</h4>
 
 					<!-- Object Count Prediction -->
 					<div class="object-prediction">
 						<div class="prediction-header">
 							<h5>📊 Object Count Prediction</h5>
-							<div v-if="objectStats.loading" class="loading-indicator">
+							<div
+								v-if="objectStats.loading"
+								class="loading-indicator">
 								<NcLoadingIcon :size="16" />
 								<span>Loading object count...</span>
 							</div>
 						</div>
-						<div v-if="!objectStats.loading && objectStats.totalObjects > 0" class="prediction-content">
+						<div
+							v-if="
+								!objectStats.loading && objectStats.totalObjects > 0
+							"
+							class="prediction-content">
 							<div class="prediction-stats">
 								<div class="stat-item">
-									<span class="stat-label">Total Objects in Database:</span>
-									<span class="stat-value">{{ objectStats.totalObjects.toLocaleString() }}</span>
+									<span class="stat-label">{{
+										t(
+											'openregister',
+											'Total Objects in Database:',
+										)
+									}}</span>
+									<span class="stat-value">{{
+										objectStats.totalObjects.toLocaleString()
+									}}</span>
 								</div>
 								<div class="stat-item">
-									<span class="stat-label">Objects to Process:</span>
+									<span class="stat-label">{{
+										t('openregister', 'Objects to Process:')
+									}}</span>
 									<span class="stat-value">
-										{{ localConfig.maxObjects === 0 ? objectStats.totalObjects.toLocaleString() : Math.min(localConfig.maxObjects, objectStats.totalObjects).toLocaleString() }}
-										<span v-if="localConfig.maxObjects > 0 && localConfig.maxObjects < objectStats.totalObjects" class="limited-indicator">
+										{{
+											localConfig.maxObjects === 0
+												? objectStats.totalObjects.toLocaleString()
+												: Math.min(
+														localConfig.maxObjects,
+														objectStats.totalObjects,
+													).toLocaleString()
+										}}
+										<span
+											v-if="
+												localConfig.maxObjects > 0
+												&& localConfig.maxObjects
+													< objectStats.totalObjects
+											"
+											class="limited-indicator">
 											(limited by max objects setting)
 										</span>
 									</span>
 								</div>
 								<div class="stat-item">
-									<span class="stat-label">Estimated Batches:</span>
+									<span class="stat-label">{{
+										t('openregister', 'Estimated Batches:')
+									}}</span>
 									<span class="stat-value">
-										{{ Math.ceil((localConfig.maxObjects === 0 ? objectStats.totalObjects : Math.min(localConfig.maxObjects, objectStats.totalObjects)) / localConfig.batchSize) }}
+										{{
+											Math.ceil(
+												(localConfig.maxObjects === 0
+													? objectStats.totalObjects
+													: Math.min(
+															localConfig.maxObjects,
+															objectStats.totalObjects,
+														)) / localConfig.batchSize,
+											)
+										}}
 									</span>
 								</div>
 								<div class="stat-item">
-									<span class="stat-label">Estimated Duration:</span>
+									<span class="stat-label">{{
+										t('openregister', 'Estimated Duration:')
+									}}</span>
 									<span class="stat-value">
 										{{ estimateValidationDuration() }}
 									</span>
 								</div>
 								<div class="stat-item">
-									<span class="stat-label">Memory Prediction:</span>
-									<span v-if="memoryPredictionLoading" class="stat-value loading">
+									<span class="stat-label"
+										>Memory Prediction:</span
+									>
+									<span
+										v-if="memoryPredictionLoading"
+										class="stat-value loading">
 										<NcLoadingIcon :size="16" />
-										Loading...
+										{{ t('openregister', 'Loading…') }}
 									</span>
-									<span v-else class="stat-value" :class="{ 'warning': !memoryPrediction.prediction_safe }">
+									<span
+										v-else
+										class="stat-value"
+										:class="{
+											warning:
+												!memoryPrediction.prediction_safe,
+										}">
 										{{ formatMemoryPrediction() }}
 									</span>
 								</div>
 							</div>
 						</div>
-						<div v-else-if="!objectStats.loading" class="prediction-error">
-							<span>Unable to load object count. Validation will process all available objects.</span>
+						<div
+							v-else-if="!objectStats.loading"
+							class="prediction-error">
+							<span
+								>Unable to load object count. Validation will process
+								all available objects.</span
+							>
 						</div>
 					</div>
 
 					<div class="form-row">
-						<label class="form-label">
-							<strong>Max Objects (0 = all)</strong>
-							<p class="form-description">Maximum number of objects to process. Set to 0 to process all objects.</p>
+						<label class="form-label" for="mass-validate-max-objects">
+							<strong>{{
+								t('openregister', 'Max Objects (0 = all)')
+							}}</strong>
+							<p class="form-description">
+								Maximum number of objects to process. Set to 0 to
+								process all objects.
+							</p>
 						</label>
 						<div class="form-input">
 							<input
+								id="mass-validate-max-objects"
 								v-model.number="localConfig.maxObjects"
 								type="number"
 								:disabled="massValidating"
 								placeholder="0"
 								min="0"
-								class="validate-input-field">
+								class="validate-input-field" />
 						</div>
 					</div>
 
 					<div class="form-row">
-						<label class="form-label">
-							<strong>Batch Size</strong>
-							<p class="form-description">Number of objects to process in each batch (1-5000).</p>
+						<label class="form-label" for="mass-validate-batch-size">
+							<strong>{{ t('openregister', 'Batch Size') }}</strong>
+							<p class="form-description">
+								{{
+									t(
+										'openregister',
+										'Number of objects to process in each batch (1-5000).',
+									)
+								}}
+							</p>
 						</label>
 						<div class="form-input">
 							<input
+								id="mass-validate-batch-size"
 								v-model.number="localConfig.batchSize"
 								type="number"
 								:disabled="massValidating"
 								placeholder="1000"
 								min="1"
 								max="5000"
-								class="validate-input-field">
+								class="validate-input-field" />
 						</div>
 					</div>
 				</div>
@@ -291,8 +471,11 @@
 						Continue on errors (collect all errors)
 					</NcCheckboxRadioSwitch>
 					<p class="form-description">
-						<strong>When enabled:</strong> Validation continues processing even if errors occur, collecting all errors for review at the end.<br>
-						<strong>When disabled:</strong> Validation stops immediately when the first error is encountered.
+						<strong>When enabled:</strong> Validation continues
+						processing even if errors occur, collecting all errors for
+						review at the end.<br />
+						<strong>When disabled:</strong> Validation stops immediately
+						when the first error is encountered.
 					</p>
 				</div>
 			</div>
@@ -300,18 +483,16 @@
 
 		<template #actions>
 			<div class="modal-actions">
-				<NcButton
-					:disabled="massValidating"
-					@click="$emit('close')">
+				<NcButton :disabled="massValidating" @click="$emit('close')">
 					<template #icon>
 						<Cancel :size="20" />
 					</template>
-					{{ massValidating ? 'Close' : (completed ? 'Close' : 'Cancel') }}
+					{{ massValidating ? 'Close' : completed ? 'Close' : 'Cancel' }}
 				</NcButton>
 
 				<NcButton
 					v-if="!massValidating && !completed"
-					type="primary"
+					variant="primary"
 					@click="startMassValidate">
 					<template #icon>
 						<CheckCircle :size="20" />
@@ -319,10 +500,7 @@
 					Start Mass Validation
 				</NcButton>
 
-				<NcButton
-					v-if="completed"
-					type="secondary"
-					@click="resetModal">
+				<NcButton v-if="completed" variant="secondary" @click="resetModal">
 					<template #icon>
 						<Refresh :size="20" />
 					</template>
@@ -334,10 +512,15 @@
 </template>
 
 <script>
-import { NcDialog, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcDialog,
+	NcLoadingIcon,
+} from '@nextcloud/vue'
+import Cancel from 'vue-material-design-icons/Cancel.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 
 export default {
 	name: 'MassValidateModal',
@@ -357,6 +540,7 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+
 		objectStats: {
 			type: Object,
 			default: () => ({
@@ -364,18 +548,22 @@ export default {
 				totalObjects: 0,
 			}),
 		},
+
 		massValidating: {
 			type: Boolean,
 			default: false,
 		},
+
 		completed: {
 			type: Boolean,
 			default: false,
 		},
+
 		results: {
 			type: Object,
 			default: null,
 		},
+
 		config: {
 			type: Object,
 			default: () => ({
@@ -385,6 +573,7 @@ export default {
 				collectErrors: false,
 			}),
 		},
+
 		memoryPrediction: {
 			type: Object,
 			default: () => ({
@@ -395,6 +584,7 @@ export default {
 				},
 			}),
 		},
+
 		memoryPredictionLoading: {
 			type: Boolean,
 			default: false,
@@ -411,28 +601,48 @@ export default {
 
 	watch: {
 		config: {
+			/**
+			 * @param newConfig
+			 * @spec exclude Watcher syncing the incoming config prop into local state; UI reactivity plumbing.
+			 */
 			handler(newConfig) {
 				this.localConfig = { ...newConfig }
 			},
+
 			deep: true,
 		},
+
 		localConfig: {
+			/**
+			 * @param newConfig
+			 * @spec exclude Watcher emitting config changes to the parent; UI reactivity plumbing.
+			 */
 			handler(newConfig) {
 				this.$emit('config-changed', newConfig)
 			},
+
 			deep: true,
 		},
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/specs/platform-administration-modals/spec.md
+		 */
 		startMassValidate() {
 			this.$emit('start-validate', this.localConfig)
 		},
 
+		/**
+		 * @spec exclude Emits a retry event to the parent; UI plumbing.
+		 */
 		retryValidation() {
 			this.$emit('retry')
 		},
 
+		/**
+		 * @spec exclude Emits a reset event to the parent; UI plumbing.
+		 */
 		resetModal() {
 			this.$emit('reset')
 		},
@@ -441,15 +651,20 @@ export default {
 		 * Estimate validation duration based on configuration
 		 *
 		 * @return {string} Estimated duration in human-readable format
+		 * @spec exclude Heuristic duration estimate for display; UI presentation helper.
 		 */
 		estimateValidationDuration() {
 			if (this.objectStats.totalObjects === 0) {
 				return 'Unknown'
 			}
 
-			const totalObjects = this.localConfig.maxObjects === 0
-				? this.objectStats.totalObjects
-				: Math.min(this.localConfig.maxObjects, this.objectStats.totalObjects)
+			const totalObjects =
+				this.localConfig.maxObjects === 0
+					? this.objectStats.totalObjects
+					: Math.min(
+							this.localConfig.maxObjects,
+							this.objectStats.totalObjects,
+						)
 
 			const batches = Math.ceil(totalObjects / this.localConfig.batchSize)
 
@@ -475,6 +690,7 @@ export default {
 		 *
 		 * @param {number} milliseconds Execution time in milliseconds
 		 * @return {string} Formatted execution time
+		 * @spec exclude Human-readable duration formatter; UI presentation helper.
 		 */
 		formatExecutionTime(milliseconds) {
 			if (!milliseconds) return 'Unknown'
@@ -494,6 +710,7 @@ export default {
 		 * Format memory prediction for display
 		 *
 		 * @return {string} Formatted memory prediction
+		 * @spec exclude Formats the memory-prediction readout for display; UI presentation helper.
 		 */
 		formatMemoryPrediction() {
 			if (!this.memoryPrediction || this.memoryPrediction.error) {
@@ -513,6 +730,7 @@ export default {
 		 *
 		 * @param {number} percentage Memory usage percentage
 		 * @return {string} CSS class
+		 * @spec exclude Maps memory-usage percentage to a CSS severity class; UI presentation helper.
 		 */
 		getMemoryUsageClass(percentage) {
 			const numPercentage = parseFloat(percentage)
@@ -525,16 +743,20 @@ export default {
 		 * Check if there are detailed error information available
 		 *
 		 * @return {boolean} True if detailed error info is available
+		 * @spec exclude Predicate for whether a detailed-error block should render; UI state helper.
 		 */
 		hasDetailedError() {
-			return !!(this.results?.error_details
-					 || (this.results?.error && this.results.error.length > 100))
+			return !!(
+				this.results?.error_details
+				|| (this.results?.error && this.results.error.length > 100)
+			)
 		},
 
 		/**
 		 * Format error details for display
 		 *
 		 * @return {string} Formatted error details
+		 * @spec exclude Stringifies error details for display; UI presentation helper.
 		 */
 		formatErrorDetails() {
 			if (this.results?.error_details) {
@@ -546,6 +768,9 @@ export default {
 			return this.results?.error || 'No detailed error information available'
 		},
 
+		/**
+		 * @spec exclude Computes the success-rate percentage from results stats; UI presentation helper.
+		 */
 		getSuccessRate() {
 			if (!this.results || !this.results.stats) return 0
 			const { successfulSaves, totalObjects } = this.results.stats
@@ -553,6 +778,9 @@ export default {
 			return (successfulSaves / totalObjects) * 100
 		},
 
+		/**
+		 * @spec exclude Maps the success rate to a CSS severity class; UI presentation helper.
+		 */
 		getSuccessRateClass() {
 			const rate = this.getSuccessRate()
 			if (rate >= 95) return 'success'
@@ -564,7 +792,7 @@ export default {
 </script>
 
 <style scoped>
-/* Dialog content styles (consistent with SolrWarmupModal.vue) */
+/* Dialog content styles */
 .dialog-content {
 	padding: 0 20px;
 }
@@ -791,7 +1019,7 @@ export default {
 	font-size: 0.9rem;
 }
 
-/* Results state styles (consistent with SolrWarmupModal) */
+/* Results state styles */
 .validate-results {
 	padding: 1rem 0;
 }
@@ -838,7 +1066,7 @@ export default {
 	font-size: 0.9rem;
 	line-height: 1.4;
 	white-space: pre-wrap;
-	word-break: break-word;
+	overflow-wrap: break-word;
 	max-height: 200px;
 	overflow-y: auto;
 }
@@ -871,7 +1099,7 @@ export default {
 	font-size: 0.85rem;
 	line-height: 1.4;
 	white-space: pre-wrap;
-	word-break: break-word;
+	overflow-wrap: break-word;
 	max-height: 300px;
 	overflow-y: auto;
 }
@@ -984,15 +1212,27 @@ export default {
 }
 
 .success-rate-fill.success {
-	background: linear-gradient(90deg, var(--color-success-light) 0%, var(--color-success) 100%);
+	background: linear-gradient(
+		90deg,
+		var(--color-success-light) 0%,
+		var(--color-success) 100%
+	);
 }
 
 .success-rate-fill.warning {
-	background: linear-gradient(90deg, var(--color-warning-light) 0%, var(--color-warning) 100%);
+	background: linear-gradient(
+		90deg,
+		var(--color-warning-light) 0%,
+		var(--color-warning) 100%
+	);
 }
 
 .success-rate-fill.error {
-	background: linear-gradient(90deg, var(--color-error-light) 0%, var(--color-error) 100%);
+	background: linear-gradient(
+		90deg,
+		var(--color-error-light) 0%,
+		var(--color-error) 100%
+	);
 }
 
 .success-rate-text {
@@ -1059,7 +1299,7 @@ export default {
 	color: var(--color-text);
 	font-size: 0.9rem;
 	line-height: 1.4;
-	word-break: break-word;
+	overflow-wrap: break-word;
 }
 
 .error-overflow {
@@ -1140,5 +1380,11 @@ export default {
 	display: flex;
 	gap: 0.5rem;
 	justify-content: flex-end;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.success-rate-fill {
+		transition: none;
+	}
 }
 </style>

@@ -7,6 +7,9 @@
  * This listener uses the standard Nextcloud pattern for loading scripts
  * into the Files app context via LoadAdditionalScriptsEvent.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
@@ -23,9 +26,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Service\ScriptManifestLoader;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use OCP\Util;
 
 /**
  * FilesSidebarListener
@@ -41,28 +44,31 @@ use OCP\Util;
  *
  * @template-implements IEventListener<Event>
  */
-class FilesSidebarListener implements IEventListener
-{
-    /**
-     * Handle the LoadAdditionalScriptsEvent from the Files app.
-     *
-     * Injects the sidebar tab JavaScript bundle so that the OpenRegister
-     * tabs appear in the Files app sidebar.
-     *
-     * @param Event $event The event instance.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
-     */
-    public function handle(Event $event): void
-    {
-        // Only handle LoadAdditionalScriptsEvent from the Files app.
-        // We check by class name string to avoid a hard dependency on the Files app.
-        if (get_class($event) !== 'OCA\Files\Event\LoadAdditionalScriptsEvent') {
-            return;
-        }
+class FilesSidebarListener implements IEventListener {
+	/**
+	 * Handle the LoadAdditionalScriptsEvent from the Files app.
+	 *
+	 * Injects the sidebar tab JavaScript bundle so that the OpenRegister
+	 * tabs appear in the Files app sidebar.
+	 *
+	 * @param Event $event The event instance.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function handle(Event $event): void {
+		// Only handle LoadAdditionalScriptsEvent from the Files app.
+		// We check by class name string to avoid a hard dependency on the Files app.
+		if (get_class($event) !== 'OCA\Files\Event\LoadAdditionalScriptsEvent') {
+			return;
+		}
 
-        Util::addScript('openregister', 'openregister-filesSidebar');
-    }//end handle()
+		$jsPath = __DIR__ . '/../../js/openregister-filesSidebar.js';
+		if (file_exists($jsPath) === true) {
+			ScriptManifestLoader::addEntryScripts('openregister', 'filesSidebar', 'openregister-filesSidebar');
+		}
+	}//end handle()
 }//end class

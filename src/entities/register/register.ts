@@ -1,8 +1,9 @@
-import { SafeParseReturnType, z } from 'zod'
-import { TRegister } from './register.types'
+import type { ZodSafeParseResult } from 'zod'
+import type { TRegister } from './register.types'
+
+import { z } from 'zod'
 
 export class Register implements TRegister {
-
 	public id: string
 	public title: string
 	public description: string
@@ -14,10 +15,15 @@ export class Register implements TRegister {
 	public created: string
 	public slug: string
 	public groups?: string[]
+	public languages?: string[]
 	public quota?: TRegister['quota']
 	public usage?: TRegister['usage']
 	public stats?: TRegister['stats']
 
+	/**
+	 * @param register
+	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
+	 */
 	constructor(register: TRegister) {
 		this.id = register.id || ''
 		this.title = register.title
@@ -30,6 +36,7 @@ export class Register implements TRegister {
 		this.created = register.created || ''
 		this.slug = register.slug || ''
 		this.groups = register.groups || []
+		this.languages = register.languages || []
 		this.quota = register.quota || {
 			storage: null,
 			bandwidth: null,
@@ -47,7 +54,7 @@ export class Register implements TRegister {
 		this.stats = register.stats
 	}
 
-	public validate(): SafeParseReturnType<TRegister, unknown> {
+	public validate(): ZodSafeParseResult<unknown> {
 		const schema = z.object({
 			id: z.string().min(1),
 			title: z.string().min(1),
@@ -65,5 +72,4 @@ export class Register implements TRegister {
 	public getFullTablePrefix(databasePrefix: string): string {
 		return `${databasePrefix}${this.tablePrefix}`.replace(/_{2,}/g, '_')
 	}
-
 }

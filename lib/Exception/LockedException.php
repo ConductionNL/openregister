@@ -5,6 +5,9 @@
  *
  * This file contains the exception class for object lock errors.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *
@@ -40,29 +43,28 @@ use Throwable;
  *
  * @link https://OpenRegister.app
  */
-class LockedException extends Exception
-{
-    /**
-     * Constructor for LockedException
-     *
-     * Initializes exception with lock error message.
-     * Uses HTTP 423 Locked status code (RFC 4918) to indicate the resource
-     * is locked and cannot be modified at this time.
-     *
-     * @param string         $message  The error message describing lock status
-     *                                 (default: 'Object is locked and cannot be modified')
-     * @param int            $code     The error code (default: 423 Locked)
-     * @param Throwable|null $previous The previous exception that caused this one
-     *
-     * @return void
-     */
-    public function __construct(
-        string $message='Object is locked and cannot be modified',
-        int $code=423,
-        ?Throwable $previous=null
-    ) {
-        // Call parent constructor to initialize base exception properties.
-        // HTTP 423 Locked indicates the resource is locked (RFC 4918).
-        parent::__construct(message: $message, code: $code, previous: $previous);
-    }//end __construct()
+class LockedException extends Exception {
+	/**
+	 * Constructor for LockedException
+	 *
+	 * Initializes exception with lock error message.
+	 * Uses HTTP 423 Locked status code (RFC 4918) to indicate the resource
+	 * is locked and cannot be modified at this time.
+	 *
+	 * @param string $message The error message describing lock status
+	 *                        (default: 'Object is locked and cannot be modified')
+	 * @param int $code The error code (default: 423 Locked)
+	 * @param Throwable|null $previous The previous exception that caused this one
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		string $message = 'Object is locked and cannot be modified',
+		int $code = 423,
+		?Throwable $previous = null,
+	) {
+		// Call parent constructor to initialize base exception properties.
+		// HTTP 423 Locked indicates the resource is locked (RFC 4918).
+		parent::__construct(message: $message, code: $code, previous: $previous);
+	}//end __construct()
 }//end class

@@ -13,6 +13,10 @@
 
 /node_modules/
 /docs/node_modules/
+
+# Third-party hunspell dictionaries for the l10n audit spell pass. Fetched by
+# `npm run l10n:fetchdicts`; tens of MB and licensed variously, so not vendored.
+/scripts/l10n/dicts/
 /website/.docusaurus/
 /docs/build/
 /docs/.docusaurus/
@@ -28,6 +32,11 @@
 quality-baseline.json
 /phpmetrics/
 /phpmetrics-deps/
+# PHPMD's incremental result cache. Generated output, and a correctness hazard if
+# committed: `composer quality:phpmd-score` passes --cache, so a stale cache checked
+# into the tree makes PHPMD replay a verdict for code that has since changed. That is
+# a gate reporting a result it never computed.
+.phpmd.result-cache.php
 
 # PHPCS/Psalm output files (not config files)
 phpcs-*.json
@@ -41,25 +50,55 @@ phpqa_output.log
 *.csv
 *.xls
 *.xlsx
+# Exception: committed Newman fixture consumed by
+# tests/integration/magic-mapper-import.postman_collection.json — the CI
+# Newman job checks out the app fresh (no dev-container state), so the
+# fixture must be tracked, not generated.
+!tests/integration/magic-mapper-data/*.csv
+# Exception: committed CSV fixture consumed by the file-upload requests in
+# tests/integration/openregister-crud.postman_collection.json (referenced by a
+# path relative to the collection, so it resolves on the CI host runner too).
+!tests/integration/test-import.csv
 
-# Files with unusual extensions or no extensions that could be mistakes
+# Files with unusual names (trailing space, no extension) that are likely mistakes.
+# Patterns listed here must NOT match legitimate PHP source filenames.
 **/PR *
 **/adds *
 **/implements *
 **/ALL *
 **/endpoints *
 **/*Analysis*
+!**/*Analysis*.php
 **/*references*
+!**/*references*.php
+!**/*references*/
 **/*encoding*
+!**/*encoding*.php
 **/ter
 **/clearCache*
 **/update*Settings*
 **/rebase*
 **/setup*
+# ...and must not match legitimate Vue components either. eslint-plugin-n's
+# `n/no-unpublished-import` reads this file with CASE-INSENSITIVE matching, so
+# `**/clearCache*` swallows `src/dialogs/settings/ClearCacheDialog.vue` even
+# though git itself (case-sensitive here) does not ignore it. The file is
+# committed and lints clean; the IMPORT of it fails. Measured on PR #2414:
+# renaming the component made the error disappear with its contents unchanged.
+# A `*Dialog.vue` / `*.vue` negation cannot re-admit the scratch output these
+# patterns exist to catch — those have no extension at all.
+!**/*.vue
 
 # Temporary test files that shouldn't be committed
 simple-solr-test.php
 test-solr-connection.php
+
+# Editor / scratch backups should never be committed (issue #1956 part d)
+*.bak
+*.bak2
+*.bak3
+*.orig
+*.backup_*
 
 phpqa/
 
@@ -80,3 +119,25 @@ website/docs/features/img_5.png
 sbom.cdx.json
 bom-php.cdx.json
 bom-npm.cdx.json
+
+# Playwright e2e artefacts (ADR-030 / journeydoc)
+tests/e2e/.auth/
+tests/e2e/playwright-report/
+# Both the root and the CI subset config write here. The CI config used to
+# write to `test-results-ci/` instead, which the shared workflow's trace upload
+# does not glob — so red runs uploaded no traces at all. Keep them in step.
+tests/e2e/test-results/
+tests/e2e/test-results-ci/
+tests/e2e/.mdm-seed.json
+.hydra
+
+# harvest.js writes its candidate list next to itself, one file per locale. It is
+# scratch input for a translation pass, not something a locale commit should carry.
+scripts/l10n/harvest-*.json
+# Agent/test scratch and tool caches — generated, never source.
+# Added by the 2026-08-25 fleet hygiene sweep (ADR-100 Decision 2).
+.stale/
+/.e2e-state/
+.phpunit.result.cache
+test-results/
+playwright-report/

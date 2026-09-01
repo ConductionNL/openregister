@@ -1,11 +1,12 @@
-import { SafeParseReturnType, z } from 'zod'
-import { TConfiguration } from './configuration.types'
+import type { ZodSafeParseResult } from 'zod'
+import type { TConfiguration } from './configuration.types'
+
+import { z } from 'zod'
 
 /**
  * Entity class representing a Configuration with validation
  */
 export class ConfigurationEntity implements TConfiguration {
-
 	id: string
 	title: string
 	description: string | null
@@ -32,6 +33,10 @@ export class ConfigurationEntity implements TConfiguration {
 	githubPath?: string | null
 	app?: string
 
+	/**
+	 * @param configuration
+	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
+	 */
 	constructor(configuration: TConfiguration) {
 		this.id = configuration.id || ''
 		this.title = configuration.title || ''
@@ -64,7 +69,7 @@ export class ConfigurationEntity implements TConfiguration {
 	/**
 	 * Validates the configuration against a schema
 	 */
-	public validate(): SafeParseReturnType<TConfiguration, unknown> {
+	public validate(): ZodSafeParseResult<unknown> {
 		const schema = z.object({
 			id: z.string().min(1),
 			title: z.string().min(1),
@@ -81,5 +86,4 @@ export class ConfigurationEntity implements TConfiguration {
 
 		return schema.safeParse(this)
 	}
-
 }

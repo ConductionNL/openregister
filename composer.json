@@ -11,50 +11,68 @@
 	],
 	"autoload": {
 		"psr-4": {
+			"OCA\\OpenRegister\\Contract\\": "lib/Contract/",
 			"OCA\\OpenRegister\\": "lib/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"OCA\\OpenRegister\\Tests\\": "tests/"
 		}
 	},
 	"repositories": [
 		{
 			"type": "vcs",
 			"url": "https://github.com/theodo-group/LLPhant"
+		},
+		{
+			"type": "vcs",
+			"url": "https://github.com/ConductionNL/sapp"
 		}
 	],
 	"scripts": {
 		"post-install-cmd": [
-			"@composer bin all install --ansi"
+			"@composer bin all install --ansi",
+			"git config core.hooksPath .githooks || true"
 		],
 		"post-update-cmd": [
 			"@composer bin all update --ansi"
 		],
 		"lint": "find . -name \\*.php -not -path './vendor/*' -not -path './vendor-bin/*' -not -path './build/*' -print0 | xargs -0 -n1 php -l",
-		"cs:check": "./vendor/bin/phpcs --standard=phpcs.xml",
-		"cs:fix": "./vendor/bin/phpcbf --standard=phpcs.xml",
+		"cs:check": "php-cs-fixer fix --dry-run --diff",
+		"cs:fix": "php-cs-fixer fix",
 		"phpcs": "./vendor/bin/phpcs --standard=phpcs.xml --warning-severity=0",
 		"phpcs:fix": "./vendor/bin/phpcbf --standard=phpcs.xml",
 		"phpcs:output": "./vendor/bin/phpcs --standard=phpcs.xml --report=json lib/ 2>/dev/null | tail -1 > phpcs-output.json",
-		"psalm": "./vendor/bin/psalm --threads=1 --no-cache || echo 'Psalm not installed, skipping...'",
+		"psalm": "if [ -f vendor/bin/psalm ]; then ./vendor/bin/psalm --threads=1 --no-cache; else echo 'Psalm not installed, skipping...'; fi",
 		"psalm:fix": "./vendor/bin/psalm --threads=1 --no-cache --alter || echo 'Psalm not installed, skipping...'",
 		"psalm:output": "./vendor/bin/psalm --threads=1 --no-cache --output-format=json 2>/dev/null | tail -1 > psalm-output.json || echo 'Psalm not installed, skipping...'",
-		"phpstan": "./vendor/bin/phpstan analyse --memory-limit=1G || echo 'PHPStan not installed, skipping...'",
-		"phpmd": "phpmd lib text phpmd.xml || echo 'PHPMD not installed, skipping...'",
+		"phpstan": "if [ -f vendor/bin/phpstan ]; then ./vendor/bin/phpstan analyse --memory-limit=1G; else echo 'PHPStan not installed, skipping...'; fi",
+		"phpmd": "E=0; ./vendor/bin/phpmd lib text phpmd.xml --baseline-file phpmd.baseline.xml || E=$?; ./vendor/bin/phpmd lib text vendor/conduction/hydra-gates/quality-config/phpmd-unusedparams.xml --baseline-file phpmd.baseline.xml || E=$?; exit $E",
 		"phpmetrics": "./vendor/bin/phpmetrics --report-html=phpmetrics lib/",
 		"phpmetrics:json": "./vendor/bin/phpmetrics --report-json=phpmetrics/report.json lib/",
 		"phpmetrics:csv": "./vendor/bin/phpmetrics --report-csv=phpmetrics/report.csv lib/",
 		"phpmetrics:violations": "./vendor/bin/phpmetrics --violations-xml=phpmetrics/violations.xml lib/",
-		"test:unit": "./vendor/bin/phpunit --testsuite=\"Unit Tests\" --colors=always || echo 'Tests require Nextcloud environment, skipping...'",
-		"test:integration": "./vendor/bin/phpunit --testsuite=\"Integration Tests\" --colors=always || echo 'Tests require Nextcloud environment, skipping...'",
-		"test:db": "./vendor/bin/phpunit --testsuite=\"Database Tests\" --colors=always || echo 'Tests require Nextcloud environment, skipping...'",
-		"test:service": "./vendor/bin/phpunit --testsuite=\"Service Tests\" --colors=always || echo 'Tests require Nextcloud environment, skipping...'",
-		"test:all": "./vendor/bin/phpunit --colors=always || echo 'Tests require Nextcloud environment, skipping...'",
+		"test:unit": "./vendor/bin/phpunit --testsuite=\"Unit Tests\" --colors=always",
+		"test:integration": "if [ ! -f ../../lib/base.php ]; then echo 'SKIPPED: the Integration suite boots the Nextcloud server (../../lib/base.php not found) - run from inside a Nextcloud checkout or in CI'; else ./vendor/bin/phpunit --testsuite=\"Integration Tests\" --colors=always; fi",
+		"test:db": "if [ ! -f ../../lib/base.php ]; then echo 'SKIPPED: the Database suite needs a booted Nextcloud server and a live database (../../lib/base.php not found) - run from inside a Nextcloud checkout or in CI'; else ./vendor/bin/phpunit --testsuite=\"Database Tests\" --colors=always; fi",
+		"test:service": "if [ ! -f ../../lib/base.php ]; then echo 'SKIPPED: the Service suite needs a booted Nextcloud server container (../../lib/base.php not found) - run from inside a Nextcloud checkout or in CI'; else ./vendor/bin/phpunit --testsuite=\"Service Tests\" --colors=always; fi",
+		"test:all": "./vendor/bin/phpunit --colors=always",
 		"test:docker": "docker exec -u 33 master-nextcloud-1 bash -c 'cd /var/www/html/apps-extra/openregister && ./vendor/bin/phpunit --colors=always'",
 		"test:api": "docker exec -u 33 master-nextcloud-1 bash -c 'cd /var/www/html/apps-extra/openregister && ./vendor/bin/phpunit --testsuite=\"Integration Tests\" --colors=always'",
+		"test:newman": "bash tests/newman/run-all.sh",
+		"test:newman:fail-fast": "FAIL_FAST=1 bash tests/newman/run-all.sh",
+		"test:chat-streaming": "bash tests/chat-streaming/run-all.sh",
+		"api-test": [
+			"@test:api",
+			"@test:newman"
+		],
 		"test:coverage": "./vendor/bin/phpunit --coverage-html=coverage/html --coverage-clover=coverage/clover.xml --colors=always",
 		"test:coverage-docker": "docker exec -u 33 master-nextcloud-1 bash -c 'cd /var/www/html/apps-extra/openregister && ./vendor/bin/phpunit --coverage-html=coverage/html --coverage-clover=coverage/clover.xml --colors=always'",
 		"coverage:check": "php scripts/coverage-guard.php coverage/clover.xml",
 		"coverage:update": "php scripts/coverage-guard.php coverage/clover.xml --update-baseline",
 		"quality:phpcs-score": "./vendor/bin/phpcs --standard=phpcs.xml --report=json lib/ | php -r \"\\$json = json_decode(file_get_contents('php://stdin'), true); \\$errors = \\$json['totals']['errors'] ?? 0; \\$warnings = \\$json['totals']['warnings'] ?? 0; \\$score = 1000 - \\$errors - (\\$warnings / 2); echo 'PHPCS Score: ' . \\$score . ' (Errors: ' . \\$errors . ', Warnings: ' . \\$warnings . ')' . PHP_EOL;\"",
-		"quality:phpmd-score": "phpmd lib/ json phpmd.xml | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$violations = count(\\$json['files'] ?? []); \\$score = 1000 - (\\$violations * 10); echo 'PHPMD Score: ' . \\$score . ' (Violations: ' . \\$violations . ')' . PHP_EOL;\" || echo 'PHPMD not available'",
+		"quality:phpmd-score": "phpmd lib/ json phpmd.xml --cache | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$violations = count(\\$json['files'] ?? []); \\$score = 1000 - (\\$violations * 10); echo 'PHPMD Score: ' . \\$score . ' (Violations: ' . \\$violations . ')' . PHP_EOL;\" || echo 'PHPMD not available'",
 		"quality:psalm-score": "./vendor/bin/psalm --output-format=json --no-cache | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$errors = count(\\$json ?? []); \\$score = 1000 - (\\$errors * 5); echo 'Psalm Score: ' . \\$score . ' (Errors: ' . \\$errors . ')' . PHP_EOL;\" || echo 'Psalm not available'",
 		"quality:phpstan-score": "./vendor/bin/phpstan analyse --memory-limit=1G --error-format=json --no-progress | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$errors = \\$json['totals']['file_errors'] ?? 0; \\$score = 1000 - (\\$errors * 5); echo 'PHPStan Score: ' . \\$score . ' (Errors: ' . \\$errors . ')' . PHP_EOL;\" || echo 'PHPStan not available'",
 		"quality:score": [
@@ -81,37 +99,53 @@
 		]
 	},
 	"require": {
-		"php": "^8.1",
+		"php": "^8.3",
 		"adbario/php-dot-notation": "^3.3.0",
 		"bamarni/composer-bin-plugin": "^1.8",
-		"elasticsearch/elasticsearch": "^v8.14.0",
+		"cweagans/composer-patches": "^2.0",
+		"ddn/sapp": "dev-feat/chained-filter-text-replace#5c406e91254d6936f44372db35f1cc15e5a06c56",
+		"dompdf/dompdf": "^3.1",
+		"dragonmantank/cron-expression": "^3.3",
+		"elasticsearch/elasticsearch": "^v9.5.0",
 		"guzzlehttp/guzzle": "^7.0",
+		"jwadhams/json-logic-php": "^1.5",
+		"minishlink/web-push": "^11.0",
 		"opis/json-schema": "^2.3",
 		"phpoffice/phpspreadsheet": "^5.0",
 		"phpoffice/phpword": "^1.2",
+		"react/async": "^4.3",
 		"react/event-loop": "^1.5",
 		"react/promise": "^3.2",
 		"smalot/pdfparser": "^2.9",
+		"symfony/console": "^6.4",
+		"symfony/http-foundation": "^6.4.41",
+		"symfony/http-kernel": "^6.4",
+		"symfony/process": "^6.4",
 		"symfony/uid": "^6.4",
-		"symfony/yaml": "^6.4",
-		"theodo-group/llphant": "^0.9.3",
-		"twig/twig": "^3.18",
-		"web-token/jwt-framework": "^3",
-		"webonyx/graphql-php": "^15.0"
+		"symfony/workflow": "^6.4",
+		"symfony/yaml": "^6.4 || ^7.0",
+		"theodo-group/llphant": "^1.0",
+		"twig/twig": "^3.27.0",
+		"web-token/jwt-library": "^4.1.9",
+		"webonyx/graphql-php": "^15.0",
+		"zbateson/mail-mime-parser": "^3.0"
 	},
 	"require-dev": {
+		"conduction/coding-standard": "^1.0",
+		"conduction/hydra-gates": "^1.8.2",
 		"cyclonedx/cyclonedx-php-composer": "^6.2",
+		"doctrine/dbal": "^3.8",
 		"edgedesign/phpqa": "^1.27",
-		"nextcloud/coding-standard": "^1.4",
-		"nextcloud/ocp": "^31.0",
+		"nextcloud/ocp": "^34.0",
 		"phpcsstandards/phpcsextra": "^1.4",
 		"phpmd/phpmd": "^2.15",
 		"phpmetrics/phpmetrics": "^2.8",
-		"phpstan/phpstan": "^1.10",
+		"phpstan/phpstan": "^2.0",
 		"phpunit/phpunit": "^10.5.62",
 		"roave/security-advisories": "dev-latest",
+		"sabre/vobject": "^4.5",
+		"sabre/xml": "^2.2",
 		"squizlabs/php_codesniffer": "^3.9",
-		"symfony/http-foundation": "^6.4",
 		"vimeo/psalm": "^5.26"
 	},
 	"config": {
@@ -119,12 +153,24 @@
 			"bamarni/composer-bin-plugin": true,
 			"php-http/discovery": true,
 			"dealerdirect/phpcodesniffer-composer-installer": true,
-			"cyclonedx/cyclonedx-php-composer": true
+			"cyclonedx/cyclonedx-php-composer": true,
+			"cweagans/composer-patches": true
 		},
 		"optimize-autoloader": true,
 		"sort-packages": true,
 		"platform": {
-			"php": "8.1"
+			"php": "8.3"
+		}
+	},
+	"extra": {
+		"patches": {
+			"theodo-group/llphant": {
+				"Forward think:false + keep_alive:-1 to the Ollama API (qwen3 ~5x speedup, no idle-unload wedge) \u2014 drop when LLPhant adds a per-call keep_alive/think model option": "patches/llphant-ollama-think-keepalive.patch",
+				"Capture Ollama token/latency usage on OllamaChat::$lastUsage so ChatService can record per-run cost (run-analytics) \u2014 drop when LLPhant exposes response usage": "patches/llphant-ollama-usage-capture.patch"
+			},
+			"phpoffice/phpspreadsheet": {
+				"Prefer ZipStream3 when zipstream-php v3 is installed \u2014 a co-installed app's leaked zipstream v2 Option\\Archive otherwise mis-selects the v2 shim and 500s every .xlsx export on the shared Nextcloud autoloader": "patches/phpspreadsheet-zipstream3-prefer.patch"
+			}
 		}
 	}
 }

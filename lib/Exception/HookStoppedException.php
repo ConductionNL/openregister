@@ -5,6 +5,9 @@
  *
  * Exception thrown when a schema hook stops event propagation.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *
@@ -27,43 +30,41 @@ use Throwable;
  *
  * Contains the validation errors returned by the hook that rejected the operation.
  */
-class HookStoppedException extends Exception
-{
+class HookStoppedException extends Exception {
 
-    /**
-     * Validation errors from the hook
-     *
-     * @var array<string, mixed>
-     */
-    private readonly array $errors;
+	/**
+	 * Validation errors from the hook
+	 *
+	 * @var array<string, mixed>
+	 */
+	private readonly array $errors;
 
-    /**
-     * Constructor for HookStoppedException
-     *
-     * @param string               $message  Error message
-     * @param array<string, mixed> $errors   Hook validation errors
-     * @param int                  $code     Error code
-     * @param Throwable|null       $previous Previous exception
-     *
-     * @return void
-     */
-    public function __construct(
-        string $message='Operation blocked by schema hook',
-        array $errors=[],
-        int $code=0,
-        ?Throwable $previous=null
-    ) {
-        $this->errors = $errors;
-        parent::__construct(message: $message, code: $code, previous: $previous);
-    }//end __construct()
+	/**
+	 * Constructor for HookStoppedException
+	 *
+	 * @param string $message Error message
+	 * @param array<string, mixed> $errors Hook validation errors
+	 * @param int $code Error code
+	 * @param Throwable|null $previous Previous exception
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		string $message = 'Operation blocked by schema hook',
+		array $errors = [],
+		int $code = 0,
+		?Throwable $previous = null,
+	) {
+		$this->errors = $errors;
+		parent::__construct(message: $message, code: $code, previous: $previous);
+	}//end __construct()
 
-    /**
-     * Get the hook validation errors
-     *
-     * @return array<string, mixed>
-     */
-    public function getErrors(): array
-    {
-        return $this->errors;
-    }//end getErrors()
+	/**
+	 * Get the hook validation errors
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function getErrors(): array {
+		return $this->errors;
+	}//end getErrors()
 }//end class

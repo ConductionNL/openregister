@@ -11,7 +11,6 @@ use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -21,131 +20,121 @@ use PHPUnit\Framework\TestCase;
  *
  * @package Unit\Controller
  */
-class RevertControllerTest extends TestCase
-{
-    private RevertController $controller;
-    private IRequest&MockObject $request;
-    private RevertHandler&MockObject $revertService;
+class RevertControllerTest extends TestCase {
+	private RevertController $controller;
+	private IRequest&MockObject $request;
+	private RevertHandler&MockObject $revertService;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->request = $this->createMock(IRequest::class);
-        $this->revertService = $this->createMock(RevertHandler::class);
+		$this->request = $this->createMock(IRequest::class);
+		$this->revertService = $this->createMock(RevertHandler::class);
 
-        $this->controller = new RevertController(
-            'openregister',
-            $this->request,
-            $this->revertService
-        );
-    }
+		$this->controller = new RevertController(
+			'openregister',
+			$this->request,
+			$this->revertService
+		);
+	}
 
-    public function testRevertWithDatetimeReturnsSuccess(): void
-    {
-        $object = $this->createMock(ObjectEntity::class);
-        $object->method('jsonSerialize')->willReturn(['id' => 1, 'uuid' => 'uuid-123']);
+	public function testRevertWithDatetimeReturnsSuccess(): void {
+		$object = $this->createMock(ObjectEntity::class);
+		$object->method('jsonSerialize')->willReturn(['id' => 1, 'uuid' => 'uuid-123']);
 
-        $this->request->method('getParams')->willReturn([
-            'datetime' => '2024-01-01T00:00:00',
-        ]);
-        $this->revertService->method('revert')->willReturn($object);
+		$this->request->method('getParams')->willReturn([
+			'datetime' => '2024-01-01T00:00:00',
+		]);
+		$this->revertService->method('revert')->willReturn($object);
 
-        $result = $this->controller->revert('reg', 'schema', 'uuid-123');
+		$result = $this->controller->revert('reg', 'schema', 'uuid-123');
 
-        $this->assertSame(200, $result->getStatus());
-    }
+		$this->assertSame(200, $result->getStatus());
+	}
 
-    public function testRevertWithAuditTrailIdReturnsSuccess(): void
-    {
-        $object = $this->createMock(ObjectEntity::class);
-        $object->method('jsonSerialize')->willReturn(['id' => 1]);
+	public function testRevertWithAuditTrailIdReturnsSuccess(): void {
+		$object = $this->createMock(ObjectEntity::class);
+		$object->method('jsonSerialize')->willReturn(['id' => 1]);
 
-        $this->request->method('getParams')->willReturn([
-            'auditTrailId' => 42,
-        ]);
-        $this->revertService->method('revert')->willReturn($object);
+		$this->request->method('getParams')->willReturn([
+			'auditTrailId' => 42,
+		]);
+		$this->revertService->method('revert')->willReturn($object);
 
-        $result = $this->controller->revert('reg', 'schema', 'uuid-123');
+		$result = $this->controller->revert('reg', 'schema', 'uuid-123');
 
-        $this->assertSame(200, $result->getStatus());
-    }
+		$this->assertSame(200, $result->getStatus());
+	}
 
-    public function testRevertWithVersionReturnsSuccess(): void
-    {
-        $object = $this->createMock(ObjectEntity::class);
-        $object->method('jsonSerialize')->willReturn(['id' => 1]);
+	public function testRevertWithVersionReturnsSuccess(): void {
+		$object = $this->createMock(ObjectEntity::class);
+		$object->method('jsonSerialize')->willReturn(['id' => 1]);
 
-        $this->request->method('getParams')->willReturn([
-            'version' => '1.0.0',
-        ]);
-        $this->revertService->method('revert')->willReturn($object);
+		$this->request->method('getParams')->willReturn([
+			'version' => '1.0.0',
+		]);
+		$this->revertService->method('revert')->willReturn($object);
 
-        $result = $this->controller->revert('reg', 'schema', 'uuid-123');
+		$result = $this->controller->revert('reg', 'schema', 'uuid-123');
 
-        $this->assertSame(200, $result->getStatus());
-    }
+		$this->assertSame(200, $result->getStatus());
+	}
 
-    public function testRevertReturns400WhenNoCriteriaProvided(): void
-    {
-        $this->request->method('getParams')->willReturn([]);
+	public function testRevertReturns400WhenNoCriteriaProvided(): void {
+		$this->request->method('getParams')->willReturn([]);
 
-        $result = $this->controller->revert('reg', 'schema', 'uuid-123');
+		$result = $this->controller->revert('reg', 'schema', 'uuid-123');
 
-        $this->assertSame(400, $result->getStatus());
-        $data = $result->getData();
-        $this->assertStringContainsString('datetime', $data['error']);
-    }
+		$this->assertSame(400, $result->getStatus());
+		$data = $result->getData();
+		$this->assertStringContainsString('datetime', $data['error']);
+	}
 
-    public function testRevertReturns404WhenObjectNotFound(): void
-    {
-        $this->request->method('getParams')->willReturn([
-            'datetime' => '2024-01-01T00:00:00',
-        ]);
-        $this->revertService->method('revert')
-            ->willThrowException(new DoesNotExistException('Not found'));
+	public function testRevertReturns404WhenObjectNotFound(): void {
+		$this->request->method('getParams')->willReturn([
+			'datetime' => '2024-01-01T00:00:00',
+		]);
+		$this->revertService->method('revert')
+			->willThrowException(new DoesNotExistException('Not found'));
 
-        $result = $this->controller->revert('reg', 'schema', 'uuid-123');
+		$result = $this->controller->revert('reg', 'schema', 'uuid-123');
 
-        $this->assertSame(404, $result->getStatus());
-    }
+		$this->assertSame(404, $result->getStatus());
+	}
 
-    public function testRevertReturns403WhenNotAuthorized(): void
-    {
-        $this->request->method('getParams')->willReturn([
-            'datetime' => '2024-01-01T00:00:00',
-        ]);
-        $this->revertService->method('revert')
-            ->willThrowException(new NotAuthorizedException('Forbidden'));
+	public function testRevertReturns403WhenNotAuthorized(): void {
+		$this->request->method('getParams')->willReturn([
+			'datetime' => '2024-01-01T00:00:00',
+		]);
+		$this->revertService->method('revert')
+			->willThrowException(new NotAuthorizedException('Forbidden'));
 
-        $result = $this->controller->revert('reg', 'schema', 'uuid-123');
+		$result = $this->controller->revert('reg', 'schema', 'uuid-123');
 
-        $this->assertSame(403, $result->getStatus());
-    }
+		$this->assertSame(403, $result->getStatus());
+	}
 
-    public function testRevertReturns423WhenLocked(): void
-    {
-        $this->request->method('getParams')->willReturn([
-            'datetime' => '2024-01-01T00:00:00',
-        ]);
-        $this->revertService->method('revert')
-            ->willThrowException(new LockedException('Locked'));
+	public function testRevertReturns423WhenLocked(): void {
+		$this->request->method('getParams')->willReturn([
+			'datetime' => '2024-01-01T00:00:00',
+		]);
+		$this->revertService->method('revert')
+			->willThrowException(new LockedException('Locked'));
 
-        $result = $this->controller->revert('reg', 'schema', 'uuid-123');
+		$result = $this->controller->revert('reg', 'schema', 'uuid-123');
 
-        $this->assertSame(423, $result->getStatus());
-    }
+		$this->assertSame(423, $result->getStatus());
+	}
 
-    public function testRevertReturns500OnGenericException(): void
-    {
-        $this->request->method('getParams')->willReturn([
-            'datetime' => '2024-01-01T00:00:00',
-        ]);
-        $this->revertService->method('revert')
-            ->willThrowException(new Exception('Internal error'));
+	public function testRevertReturns500OnGenericException(): void {
+		$this->request->method('getParams')->willReturn([
+			'datetime' => '2024-01-01T00:00:00',
+		]);
+		$this->revertService->method('revert')
+			->willThrowException(new Exception('Internal error'));
 
-        $result = $this->controller->revert('reg', 'schema', 'uuid-123');
+		$result = $this->controller->revert('reg', 'schema', 'uuid-123');
 
-        $this->assertSame(500, $result->getStatus());
-    }
+		$this->assertSame(500, $result->getStatus());
+	}
 }

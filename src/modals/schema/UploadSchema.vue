@@ -1,13 +1,14 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { schemaStore, navigationStore } from '../../store/store.js'
+import { navigationStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'uploadSchema'"
+	<NcDialog
+		v-if="navigationStore.modal === 'uploadSchema'"
 		name="Upload Schema"
 		size="normal"
-		:can-close="false">
+		:canClose="false">
 		<NcNoteCard v-if="success" type="success">
 			<p>Schema successfully uploaded</p>
 		</NcNoteCard>
@@ -16,24 +17,26 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 		</NcNoteCard>
 
 		<div v-if="!success" class="formContainer">
-			<NcTextField :disabled="loading"
-				label="Url"
-				:value.sync="schema.url" />
+			<NcTextField
+				v-model="schema.url"
+				:disabled="loading"
+				:label="t('openregister', 'Url')" />
 
 			<div :class="`codeMirrorContainer ${getTheme()}`">
-				<p>Schema</p>
-				<CodeMirror v-model="schema.json"
+				<p>{{ t('openregister', 'Schema') }}</p>
+				<CodeMirror
+					v-model="schema.json"
 					:basic="true"
 					:dark="getTheme() === 'dark'"
 					:lang="json()"
 					:linter="jsonParseLinter()"
-					placeholder="Enter your schema here..." />
+					:placeholder="t('openregister', 'Enter your schema here...')" />
 			</div>
 			<NcButton class="prettifyButton" @click="prettifyJson">
 				<template #icon>
 					<AutoFix :size="20" />
 				</template>
-				Prettify
+				{{ t('openregister', 'Prettify') }}
 			</NcButton>
 		</div>
 
@@ -44,9 +47,10 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 				</template>
 				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
-			<NcButton v-if="!success"
+			<NcButton
+				v-if="!success"
 				:disabled="loading || !schema || !validateJson(schema.json)"
-				type="primary"
+				variant="primary"
 				@click="uploadSchema()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -59,20 +63,19 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
+import { json, jsonParseLinter } from '@codemirror/lang-json'
 import {
 	NcButton,
 	NcDialog,
-	NcTextField,
 	NcLoadingIcon,
 	NcNoteCard,
+	NcTextField,
 } from '@nextcloud/vue'
-import { getTheme } from '../../services/getTheme.js'
-import { json, jsonParseLinter } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
-
+import AutoFix from 'vue-material-design-icons/AutoFix.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
-import AutoFix from 'vue-material-design-icons/AutoFix.vue'
+import { getTheme } from '../../services/getTheme.js'
 
 export default {
 	name: 'UploadSchema',
@@ -87,12 +90,14 @@ export default {
 		Cancel,
 		Upload,
 	},
+
 	data() {
 		return {
 			schema: {
 				json: '{}',
 				url: '',
 			},
+
 			success: false,
 			loading: false,
 			error: false,
@@ -100,7 +105,11 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	methods: {
+		/**
+		 * @spec exclude Modal close plumbing — resets upload form state and closes the modal.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			clearTimeout(this.closeModalTimeout)
@@ -113,9 +122,17 @@ export default {
 				url: '',
 			}
 		},
+
+		/**
+		 * @spec exclude UI helper — pretty-prints the JSON in the editor field.
+		 */
 		prettifyJson() {
 			this.schema.json = JSON.stringify(JSON.parse(this.schema.json), null, 2)
 		},
+
+		/**
+		 * @spec exclude Modal action plumbing — delegates schema upload to schemaStore.uploadSchema.
+		 */
 		async uploadSchema() {
 			this.loading = true
 
@@ -123,17 +140,32 @@ export default {
 				...this.schema,
 				json: JSON.stringify(JSON.parse(this.schema.json)), // create a clean json string
 			}
-			schemaStore.uploadSchema(newSchema).then(({ response }) => {
-				this.success = response.ok
-				this.error = false
-				response.ok && (this.closeModalTimeout = setTimeout(this.closeModal, 2000))
-			}).catch((error) => {
-				this.success = false
-				this.error = error.message || 'An error occurred while uploading the schema'
-			}).finally(() => {
-				this.loading = false
-			})
+			schemaStore
+				.uploadSchema(newSchema)
+				.then(({ response }) => {
+					this.success = response.ok
+					this.error = false
+					response.ok
+						&& (this.closeModalTimeout = setTimeout(
+							this.closeModal,
+							2000,
+						))
+				})
+				.catch((error) => {
+					this.success = false
+					this.error =
+						error.message
+						|| 'An error occurred while uploading the schema'
+				})
+				.finally(() => {
+					this.loading = false
+				})
 		},
+
+		/**
+		 * @param json
+		 * @spec exclude UI validation helper — reports whether a string parses as JSON.
+		 */
 		validateJson(json) {
 			try {
 				JSON.parse(json)

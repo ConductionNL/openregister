@@ -6,10 +6,13 @@
  * This file contains the event class dispatched when an organisation is updated
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Event
  * @package  OCA\OpenRegister\Event
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -26,71 +29,66 @@ use OCP\EventDispatcher\Event;
 /**
  * Event dispatched when an organisation is updated.
  */
-class OrganisationUpdatedEvent extends Event
-{
+class OrganisationUpdatedEvent extends Event {
 
-    /**
-     * The updated organisation state.
-     *
-     * @var Organisation The organisation after update.
-     */
-    private Organisation $newOrganisation;
+	/**
+	 * The updated organisation state.
+	 *
+	 * @var Organisation The organisation after update.
+	 */
+	private Organisation $newOrganisation;
 
-    /**
-     * The previous organisation state.
-     *
-     * @var Organisation The organisation before update.
-     */
-    private Organisation $oldOrganisation;
+	/**
+	 * The previous organisation state.
+	 *
+	 * @var Organisation The organisation before update.
+	 */
+	private Organisation $oldOrganisation;
 
-    /**
-     * Constructor for OrganisationUpdatedEvent.
-     *
-     * @param Organisation $newOrganisation The organisation after update.
-     * @param Organisation $oldOrganisation The organisation before update.
-     *
-     * @return void
-     */
-    public function __construct(Organisation $newOrganisation, Organisation $oldOrganisation)
-    {
-        parent::__construct();
-        $this->newOrganisation = $newOrganisation;
-        $this->oldOrganisation = $oldOrganisation;
-    }//end __construct()
+	/**
+	 * Constructor for OrganisationUpdatedEvent.
+	 *
+	 * @param Organisation $newOrganisation The organisation after update.
+	 * @param Organisation $oldOrganisation The organisation before update.
+	 *
+	 * @return void
+	 */
+	public function __construct(Organisation $newOrganisation, Organisation $oldOrganisation) {
+		parent::__construct();
+		$this->newOrganisation = $newOrganisation;
+		$this->oldOrganisation = $oldOrganisation;
+	}//end __construct()
 
-    /**
-     * Get the organisation (the updated state).
-     *
-     * @return Organisation The organisation after update.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
-     */
-    public function getOrganisation(): Organisation
-    {
-        return $this->newOrganisation;
-    }//end getOrganisation()
+	/**
+	 * Get the organisation (the updated state).
+	 *
+	 * @return Organisation The organisation after update.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getOrganisation(): Organisation {
+		return $this->newOrganisation;
+	}//end getOrganisation()
 
-    /**
-     * Get the new organisation state.
-     *
-     * @return Organisation The organisation after update.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
-     */
-    public function getNewOrganisation(): Organisation
-    {
-        return $this->newOrganisation;
-    }//end getNewOrganisation()
+	/**
+	 * Get the new organisation state.
+	 *
+	 * @return Organisation The organisation after update.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getNewOrganisation(): Organisation {
+		return $this->newOrganisation;
+	}//end getNewOrganisation()
 
-    /**
-     * Get the old organisation state.
-     *
-     * @return Organisation The organisation before update.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
-     */
-    public function getOldOrganisation(): Organisation
-    {
-        return $this->oldOrganisation;
-    }//end getOldOrganisation()
+	/**
+	 * Get the old organisation state.
+	 *
+	 * @return Organisation The organisation before update.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getOldOrganisation(): Organisation {
+		return $this->oldOrganisation;
+	}//end getOldOrganisation()
 }//end class

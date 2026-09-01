@@ -12,9 +12,9 @@ on:
 
 jobs:
   triage:
-    # @main, not @feature/openspec-project-sync — that branch no longer exists
-    # on ConductionNL/.github, so GitHub could not resolve the callee and the
-    # run failed before any job was created.
+    # `@main`, not `@feature/openspec-project-sync` — that branch no longer
+    # exists on ConductionNL/.github, so this reference was unresolvable and the
+    # triage workflow never ran.
     uses: ConductionNL/.github/.github/workflows/issue-triage.yml@main
     with:
       app-name: openregister

@@ -3,6 +3,9 @@
 /**
  * OpenRegister FileUnlockedEvent
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Event
  * @package  OCA\OpenRegister\Event
  *
@@ -20,58 +23,56 @@ use OCP\EventDispatcher\Event;
 /**
  * Event dispatched for file action: FileUnlockedEvent
  */
-class FileUnlockedEvent extends Event
-{
-    /**
-     * Constructor for FileUnlockedEvent
-     *
-     * @param string $objectUuid The UUID of the parent object.
-     * @param int    $fileId     The file ID.
-     * @param array  $data       Additional event data.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly string $objectUuid,
-        private readonly int $fileId,
-        private readonly array $data=[]
-    ) {
-        parent::__construct();
-    }//end __construct()
+class FileUnlockedEvent extends Event {
+	/**
+	 * Constructor for FileUnlockedEvent
+	 *
+	 * @param string $objectUuid The UUID of the parent object.
+	 * @param int $fileId The file ID.
+	 * @param array $data Additional event data.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function __construct(
+		private readonly string $objectUuid,
+		private readonly int $fileId,
+		private readonly array $data = [],
+	) {
+		parent::__construct();
+	}//end __construct()
 
-    /**
-     * Get the object UUID.
-     *
-     * @return string The object UUID.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
-     */
-    public function getObjectUuid(): string
-    {
-        return $this->objectUuid;
-    }//end getObjectUuid()
+	/**
+	 * Get the object UUID.
+	 *
+	 * @return string The object UUID.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getObjectUuid(): string {
+		return $this->objectUuid;
+	}//end getObjectUuid()
 
-    /**
-     * Get the file ID.
-     *
-     * @return int The file ID.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
-     */
-    public function getFileId(): int
-    {
-        return $this->fileId;
-    }//end getFileId()
+	/**
+	 * Get the file ID.
+	 *
+	 * @return int The file ID.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getFileId(): int {
+		return $this->fileId;
+	}//end getFileId()
 
-    /**
-     * Get additional event data.
-     *
-     * @return array The event data.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
-     */
-    public function getData(): array
-    {
-        return $this->data;
-    }//end getData()
+	/**
+	 * Get additional event data.
+	 *
+	 * @return array The event data.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getData(): array {
+		return $this->data;
+	}//end getData()
 }//end class

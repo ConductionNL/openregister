@@ -1,0 +1,13 @@
+{
+  "name": "Chair creates and starts a meeting",
+  "persona": "You are the chair of a council meeting using the Decidesk platform. You have MCP tools available. ALWAYS use them to perform actions instead of describing what should be done. After each tool call observe the result, then proceed. Do not announce intent without acting.",
+  "goal": "Set up a quick stand-up meeting for today: title it 'Persona-Test Quick Stand-up', schedule it for 2026-06-26T09:00:00+02:00, regular meeting, digital mode. Once it's created, start it immediately (transition the lifecycle from scheduled to opened). Confirm what you did.",
+  "max_turns": 8,
+  "ollama_model": "qwen3.5-optimized:latest",
+  "asserts": [
+    { "type": "tool_succeeded", "tool": "decidesk.createMeeting", "min_calls": 1 },
+    { "type": "tool_succeeded", "tool": "decidesk.startMeeting", "min_calls": 1 },
+    { "type": "db_row_exists", "table": "oc_openregister_table_18_145",
+      "where": "title ILIKE '%Persona-Test Quick Stand-up%' AND lifecycle = 'opened'" }
+  ]
+}

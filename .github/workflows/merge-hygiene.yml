@@ -1,0 +1,111 @@
+name: Merge Hygiene
+
+# WHY THIS EXISTS, and why it is separate from Code Quality.
+#
+# On 2026-08-14 a merge of origin/development was committed and PUSHED to
+# `perf/predicted-page-fanout` with UNRESOLVED CONFLICT MARKERS in two files.
+# `lib/Service/SynchronizationService.php` did not parse. Eighty-four tests were
+# red. Nothing stopped it, and nothing reported it — because Code Quality's push
+# trigger allows only `[main, development, feature/**, bugfix/**, hotfix/**]`,
+# and `perf/**` matches none of them. The branch had no CI at all, so its last
+# visible state was green from before the branch existed.
+#
+# The lesson is not "add perf/** to the list" — that fixes this branch and leaves
+# the next prefix uncovered. Any branch anyone pushes should get at least the
+# checks that take seconds, so this runs on `**` and stays deliberately cheap:
+# no matrix, no containers, no dependencies, no Playwright. It is a smoke alarm,
+# not the fire brigade. Code Quality remains the real gate on PRs.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: merge-hygiene-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  hygiene:
+    name: Conflict markers and PHP syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Conflict markers, anywhere in the tree we author. A marker means a merge
+      # was committed half-finished; every downstream signal from that commit is
+      # meaningless, so this fails first and says so plainly.
+      #
+      # Anchored to line start: `<<<<<<<` inside a string, a diff fixture or a
+      # docs example is legitimate and must not fail the build. Matching only at
+      # column 0 is what git itself writes.
+      - name: No unresolved conflict markers
+        run: |
+          set -euo pipefail
+          # SCOPED TO CODE, and to paths we author. A marker is only a defect
+          # where it would break something: prose that DOCUMENTS a conflict is
+          # legitimate, and so are agent-eval artifacts that capture one as
+          # sample output. openbuild failed this gate on
+          # `.claude/skills/create-pr/evals/.../summary.md` — a correct file.
+          #
+          # That matters more than the miss it allows. A gate that fails on
+          # correct files gets switched off, and takes the checks that were
+          # working with it; a marker in a markdown file breaks nothing.
+          if git grep -nE '^(<{7}|={7}|>{7})( |$)' -- \
+               '*.php' '*.js' '*.mjs' '*.ts' '*.vue' '*.json' '*.yml' '*.yaml' '*.css' '*.scss' \
+               ':!vendor' ':!node_modules' ':!*.lock' ':!tests/fixtures' ':!.claude' \
+               ':!**/evals/**' ':!**/fixtures/**' > /tmp/markers.txt; then
+            echo "::error::Unresolved merge conflict markers are committed. This branch does not build."
+            cat /tmp/markers.txt
+            exit 1
+          fi
+          echo "No conflict markers."
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      # Every PHP file parses. A conflict marker is caught above, but so is any
+      # other way a file can be committed unparseable — and this is the check
+      # that would have failed within seconds of the merge landing.
+      - name: PHP syntax
+        run: |
+          set -euo pipefail
+          fail=0
+          while IFS= read -r f; do
+            php -l "$f" > /dev/null 2>&1 || { echo "::error file=$f::PHP syntax error"; php -l "$f" || true; fail=1; }
+          done < <(git ls-files '*.php' | grep -v '^vendor/' | grep -v '^tests/fixtures/')
+          exit "$fail"
+
+      # JSON that will not parse breaks register fragments and app metadata,
+      # and is the other thing a bad merge leaves behind.
+      #
+      # SCOPED TWICE, because each widening found another honest file. The
+      # first version parsed every tracked .json and died on tsconfig/eslint
+      # JSONC. The second still reached `lib/**/*.json`, which in openbuild
+      # includes an entire app TEMPLATE — `.vscode/settings.json` and all.
+      # A template is not this app's configuration, and an editor file is not
+      # loaded by anything. What is left is what OpenRegister actually reads.
+      #
+      # SCOPED, because the first version was not and failed immediately on
+      # honest files: editor and tooling configs (tsconfig, eslint, devcontainer)
+      # are JSONC — comments and trailing commas — which is valid for their
+      # consumers and invalid for a strict parser. A gate that fails on correct
+      # files is worse than no gate: it gets switched off, and takes the checks
+      # that were working with it. Only the JSON the app itself loads is checked.
+      - name: JSON parses
+        run: |
+          set -euo pipefail
+          fail=0
+          while IFS= read -r f; do
+            [ -f "$f" ] || continue
+            python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$f" \
+              || { echo "::error file=$f::invalid JSON"; fail=1; }
+          done < <(git ls-files 'composer.json' 'package.json' 'appinfo/*.json' 'lib/Settings/**/*.json' \
+                     | grep -v '^vendor/' | grep -v '^node_modules/' \
+                     | grep -v '/\.vscode/' | grep -v '^lib/Resources/template/')
+          exit "$fail"

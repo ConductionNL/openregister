@@ -6,10 +6,13 @@
  * This file contains the event class dispatched when an agent is updated
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Event
  * @package  OCA\OpenRegister\Event
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -26,71 +29,66 @@ use OCP\EventDispatcher\Event;
 /**
  * Event dispatched when an agent is updated.
  */
-class AgentUpdatedEvent extends Event
-{
+class AgentUpdatedEvent extends Event {
 
-    /**
-     * The updated agent state.
-     *
-     * @var Agent The agent after update.
-     */
-    private Agent $newAgent;
+	/**
+	 * The updated agent state.
+	 *
+	 * @var Agent The agent after update.
+	 */
+	private Agent $newAgent;
 
-    /**
-     * The previous agent state.
-     *
-     * @var Agent The agent before update.
-     */
-    private Agent $oldAgent;
+	/**
+	 * The previous agent state.
+	 *
+	 * @var Agent The agent before update.
+	 */
+	private Agent $oldAgent;
 
-    /**
-     * Constructor for AgentUpdatedEvent.
-     *
-     * @param Agent $newAgent The agent after update.
-     * @param Agent $oldAgent The agent before update.
-     *
-     * @return void
-     */
-    public function __construct(Agent $newAgent, Agent $oldAgent)
-    {
-        parent::__construct();
-        $this->newAgent = $newAgent;
-        $this->oldAgent = $oldAgent;
-    }//end __construct()
+	/**
+	 * Constructor for AgentUpdatedEvent.
+	 *
+	 * @param Agent $newAgent The agent after update.
+	 * @param Agent $oldAgent The agent before update.
+	 *
+	 * @return void
+	 */
+	public function __construct(Agent $newAgent, Agent $oldAgent) {
+		parent::__construct();
+		$this->newAgent = $newAgent;
+		$this->oldAgent = $oldAgent;
+	}//end __construct()
 
-    /**
-     * Get the updated agent.
-     *
-     * @return Agent The agent after update.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
-     */
-    public function getAgent(): Agent
-    {
-        return $this->newAgent;
-    }//end getAgent()
+	/**
+	 * Get the updated agent.
+	 *
+	 * @return Agent The agent after update.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getAgent(): Agent {
+		return $this->newAgent;
+	}//end getAgent()
 
-    /**
-     * Get the new agent state.
-     *
-     * @return Agent The agent after update.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
-     */
-    public function getNewAgent(): Agent
-    {
-        return $this->newAgent;
-    }//end getNewAgent()
+	/**
+	 * Get the new agent state.
+	 *
+	 * @return Agent The agent after update.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getNewAgent(): Agent {
+		return $this->newAgent;
+	}//end getNewAgent()
 
-    /**
-     * Get the old agent state.
-     *
-     * @return Agent The agent before update.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
-     */
-    public function getOldAgent(): Agent
-    {
-        return $this->oldAgent;
-    }//end getOldAgent()
+	/**
+	 * Get the old agent state.
+	 *
+	 * @return Agent The agent before update.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getOldAgent(): Agent {
+		return $this->oldAgent;
+	}//end getOldAgent()
 }//end class
