@@ -159,6 +159,36 @@ class RateLimiterTest extends TestCase {
 		$limiter->tryConsume('rule', 'alice', $override); // dropped
 	}
 
+	public function testTheSharedPerRecipientBudgetIsCallerAgnostic(): void {
+		// Ten different rules — the declarative subsystem's shape — each
+		// consume once for alice. Every per-rule bucket is nearly full, but
+		// the SHARED per-recipient bucket (default size 10) is now empty…
+		$this->appConfigDefaults();
+		$limiter = $this->makeLimiter();
+		for ($i = 0; $i < 10; $i++) {
+			$this->assertTrue($limiter->tryConsume('rule-' . $i, 'alice'));
+		}
+
+		// …so an ELEVENTH caller — a flow send, under its own rule id whose
+		// per-rule bucket is untouched — is refused by the shared budget.
+		// The bucket key is the recipient, not the caller: one budget for
+		// "how much this instance messages this person".
+		$this->assertFalse($limiter->tryConsume('openregister.send-notification', 'alice'));
+
+		// A different recipient's budget is unaffected: the positive control.
+		$this->assertTrue($limiter->tryConsume('openregister.send-notification', 'bob'));
+	}
+
+	public function testBroadcastPseudoRecipientsStayOutsideTheSharedBudget(): void {
+		// `__webhook__` / `__talk__` keys are channels, not people; filling
+		// many rules' broadcast buckets must not starve one another.
+		$this->appConfigDefaults();
+		$limiter = $this->makeLimiter();
+		for ($i = 0; $i < 15; $i++) {
+			$this->assertTrue($limiter->tryConsume('rule-' . $i, '__webhook__'));
+		}
+	}
+
 	private function appConfigDefaults(): void {
 		$this->appConfig->method('getValueString')
 			->willReturnCallback(static fn (string $app, string $key, string $default): string => $default);
