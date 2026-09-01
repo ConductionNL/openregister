@@ -1,7 +1,5 @@
 #!/usr/bin/env node
-/* eslint-disable n/no-process-exit */
-/* eslint-disable no-console */
-/* eslint-disable n/shebang */
+ 
 /**
  * Prove that test:l10n:parity actually FAILS when a locale loses a key.
  *
@@ -32,10 +30,10 @@
 
 'use strict'
 
+const { execFileSync } = require('child_process')
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
-const { execFileSync } = require('child_process')
 const { loadJsTranslations, serializeJs, APP_ROOT } = require('./lib.js')
 
 const loc = process.argv[2]

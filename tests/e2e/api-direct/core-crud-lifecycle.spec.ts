@@ -1,3 +1,5 @@
+import type { APIRequestContext } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -20,7 +22,7 @@
  *
  * Extracted from core-crud.spec.ts (the UI tests stay there).
  */
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 // Run-unique prefix so parallel agents don't collide.
 const RUN_ID = `e2e-${Date.now()}`

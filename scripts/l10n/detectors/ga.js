@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-/* eslint-disable n/no-process-exit */
+ 
 // Irish (Gaeilge) register detector for openregister l10n.
 //
 // IRISH HAS NO T-V DISTINCTION, and that is the single fact to understand before
@@ -78,6 +77,10 @@
 // JS \b is ASCII-only and would treat á/é/í/ó/ú as boundaries, so every guard is
 // (?<!\p{L}) … (?!\p{L}) with the u flag.
 
+/**
+ *
+ * @param s
+ */
 function fold(s) {
 	return String(s).toLowerCase()
 }
@@ -192,7 +195,7 @@ const CONTROLS = [
 	['Ag cóipeáil sonraí...', 'neither'],
 	['Ag tástáil...', 'neither'],
 	['Ag próiseáil...', 'neither'],
-	['Clúdach séalaithe á léamh …', 'neither'],
+	['Clúdach séalaithe á léamh …', 'neither'],
 	['Ag luchtú scagairí ardleibhéil...', 'neither'],
 
 	// ---- must read NEITHER: the `do` trap. `do` is the 2sg possessive here in
@@ -263,6 +266,10 @@ const UNDETECTABLE = [
 		+ 'matters is that the formal count is zero'],
 ]
 
+/**
+ *
+ * @param s
+ */
 function score(s) {
 	const t = fold(s)
 	let f = 0
@@ -274,6 +281,9 @@ function score(s) {
 	return { f, i }
 }
 
+/**
+ *
+ */
 function runControls() {
 	let fail = 0
 	for (const [s, want] of CONTROLS) {

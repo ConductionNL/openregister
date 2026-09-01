@@ -20,9 +20,9 @@
  * They skip when the shared auth storageState is absent. All ids are safe
  * placeholders — never real subject data.
  */
-import { test, expect } from '@playwright/test'
-import * as path from 'path'
+import { expect, test } from '@playwright/test'
 import * as fs from 'fs'
+import * as path from 'path'
 
 const STORAGE_STATE = path.resolve(__dirname, '..', '.auth', 'admin.json')
 const API_BASE = '/index.php/apps/openregister/api'
