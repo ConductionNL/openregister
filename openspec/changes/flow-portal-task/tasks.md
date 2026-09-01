@@ -2,88 +2,88 @@
 
 ## 1. The node
 
-- [ ] 1.1 `lib/Service/Flow/Nodes/PortalTaskNode.php` implementing
+- [x] 1.1 `lib/Service/Flow/Nodes/PortalTaskNode.php` implementing
       `IFlowNode`, `IFlowNodeConfigKeys` and `IFlowNodeConfigForm`. Follow
       `UserTaskNode` for shape: EUPL-1.2 header, `@spec` on every method, a
       file docblock stating the three-waiter division of labour (signal:
       a system that calls back; user task: a performer in the organisation;
       portal task: a party outside it). `getId()` returns
       `openregister.portal-task`.
-- [ ] 1.2 `configForm()` + `configKeys()`: title/description templates,
+- [x] 1.2 `configForm()` + `configKeys()`: title/description templates,
       party role (default `initiator`), upload requirements (required,
       count, types, max size), `outcomeKey` (default `portalTask`),
       re-ask reason item field, `dueAt`/`expiresAt` references,
       `heartbeatMinutes`, `advance`. Register the node in
       `lib/Listener/FlowNodeRegistrationListener.php`.
-- [ ] 1.3 `validateConfig()`: refuse a config with no party role; refuse
+- [x] 1.3 `validateConfig()`: refuse a config with no party role; refuse
       `advance: null` exactly as `UserTaskNode` does. The mandatory re-ask
       reason cannot be checked statically (whether a firing is a re-entry
       is runtime knowledge), so it is validated at fire time per section 6.
 
 ## 2. Party matching
 
-- [ ] 2.1 Party resolver: resolve the configured role against the subject
+- [x] 2.1 Party resolver: resolve the configured role against the subject
       case object at creation, freeze the reference on the task, record
       role and reference in the audit; fail the firing loudly when the case
       names nobody for the role.
-- [ ] 2.2 No re-resolution anywhere: completion authorization reads the
+- [x] 2.2 No re-resolution anywhere: completion authorization reads the
       STORED reference only; add the case-edit scenario as a regression
       test.
 
 ## 3. Suspend, resume, outcome
 
-- [ ] 3.1 Reuse `flow-user-task-node`'s bridge for suspension and
+- [x] 3.1 Reuse `flow-user-task-node`'s bridge for suspension and
       continuation: one task per node per run via the resume slot,
       non-null heartbeat `resumeAt` (15-minute default, 5-minute floor,
       never null: `FlowRunMapper::findAbandonedSignals()` matches
       `resume_at IS NULL` and `FlowRunWorker` fails matches at 14 days),
       continuation on task terminality read from the task.
-- [ ] 3.2 Outcome placement onto every item under `outcomeKey`: outcome,
+- [x] 3.2 Outcome placement onto every item under `outcomeKey`: outcome,
       answer fields, stored file references, matched party reference;
       expiry/termination distinguishable from completion.
 
 ## 4. The portal delivery seam
 
-- [ ] 4.1 Subject-scoped portal-task read: list one portal subject's open
+- [x] 4.1 Subject-scoped portal-task read: list one portal subject's open
       external tasks with case context, shaped for ADR-046 consumption
       (descriptor aggregate, subject-scoped rows, no cross-subject rows or
       counts).
-- [ ] 4.2 Delivery request record (portal inbox message + mail) written at
+- [x] 4.2 Delivery request record (portal inbox message + mail) written at
       creation and re-ask, queryable delivery state, failure leaves the
       task and suspension standing.
 
 ## 5. Completion
 
-- [ ] 5.1 Completion endpoint on the portal seam: validate upload
+- [x] 5.1 Completion endpoint on the portal seam: validate upload
       constraints fail-closed, store each accepted file via
       `FileService::addFile()` onto the CASE object BEFORE recording the
       completion, reference the stored files from the completion.
-- [ ] 5.2 Completion authorization: acting portal subject vs stored party
+- [x] 5.2 Completion authorization: acting portal subject vs stored party
       reference, deny on any mismatch or unresolvable comparison, audit
       every denial; no completion-on-behalf path.
-- [ ] 5.3 Keep `POST /api/flow-runs/{uuid}/resume` unable to touch an
+- [x] 5.3 Keep `POST /api/flow-runs/{uuid}/resume` unable to touch an
       external task (same contract as `flow-user-task-node`); regression
       test it.
 
 ## 6. Re-ask
 
-- [ ] 6.1 Re-entry path: slot task terminal + reason present → new task
+- [x] 6.1 Re-entry path: slot task terminal + reason present → new task
       (fresh match, reason, cycle number, previous task uuid) + delivery;
       slot task terminal + reason absent → fail the firing naming the
       missing reason; slot task open → suspend again (heartbeat case).
 
 ## 7. The external performer type (flow-tasks delta)
 
-- [ ] 7.1 Extend the task entity/service with `performer_type: external`
+- [x] 7.1 Extend the task entity/service with `performer_type: external`
       and the party-reference performer shape; refuse `claim`, `unclaim`
       and `delegate` for it naming the performer type.
-- [ ] 7.2 Exclude external tasks from every Nextcloud inbox query, count
+- [x] 7.2 Exclude external tasks from every Nextcloud inbox query, count
       and projection; keep them readable on their anchored object for
       authorized caseworkers, with delivery state.
 
 ## 8. Timers
 
-- [ ] 8.1 Pass `due_at`/`expires_at` references through to the task; wire
+- [x] 8.1 Pass `due_at`/`expires_at` references through to the task; wire
       the preBreach (party reminder via the portal seam) and slaBreached
       (caseworker escalation) rung addressing as consumption of
       `flow-business-timers`; add no clock, sweep or business-day code
@@ -98,15 +98,15 @@
 
 ## 10. Tests
 
-- [ ] 10.1 Node unit tests: idempotence across a heartbeat wake, empty
+- [x] 10.1 Node unit tests: idempotence across a heartbeat wake, empty
       firing, frozen match incl. the case-edit regression, re-ask cycle
       and mandatory reason, expiry-vs-completion distinguishability,
       non-null `resumeAt`.
-- [ ] 10.2 Authorization and validation tables: wrong subject,
+- [x] 10.2 Authorization and validation tables: wrong subject,
       unresolvable subject, missing required upload, oversized file, and
       the refused verbs (`claim`/`unclaim`/`delegate`) on an external
       task.
-- [ ] 10.3 Playwright coverage for the six `@e2e`-marked scenarios across
+- [x] 10.3 Playwright coverage for the six `@e2e`-marked scenarios across
       `specs/flow-portal-task/spec.md` and `specs/flow-tasks/spec.md`,
       including the negative one: another portal subject cannot complete
       a task that is not theirs.

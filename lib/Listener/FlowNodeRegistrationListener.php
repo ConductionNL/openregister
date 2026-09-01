@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
+use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode;
@@ -87,6 +88,7 @@ class FlowNodeRegistrationListener implements IEventListener {
 	 * @param TriggerScheduleNode $triggerSchedule The "On a schedule" entry point.
 	 * @param TriggerManualNode $triggerManual The "When someone runs it" entry point.
 	 * @param UserTaskNode $userTask The built-in "Ask a person" node.
+	 * @param PortalTaskNode $portalTask The built-in "Ask a party outside the organisation" node.
 	 */
 	public function __construct(
 		private readonly SetFieldsNode $setFields,
@@ -112,6 +114,7 @@ class FlowNodeRegistrationListener implements IEventListener {
 		private readonly TriggerScheduleNode $triggerSchedule,
 		private readonly TriggerManualNode $triggerManual,
 		private readonly UserTaskNode $userTask,
+		private readonly PortalTaskNode $portalTask,
 	) {
 
 	}//end __construct()
@@ -162,6 +165,13 @@ class FlowNodeRegistrationListener implements IEventListener {
 		// state which is for a system that calls back and which is for a
 		// performer who has to be found, told, and allowed to say no.
 		$event->registerNode(node: $this->userTask);
+
+		// The third waiter (flow-portal-task): a party OUTSIDE the instance,
+		// matched from the case and reached through the portal seam. The three
+		// palette descriptions are written as a set: signal for a system that
+		// calls back, user task for a performer in the organisation, portal
+		// task for a party outside it.
+		$event->registerNode(node: $this->portalTask);
 
 		// Entry points. Registered like any other node so the palette can offer
 		// them and the preflight can check their config — a trigger is where a

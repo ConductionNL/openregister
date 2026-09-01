@@ -1374,6 +1374,21 @@ return [
 		['name' => 'task#complete', 'url' => '/api/flow-tasks/{uuid}/complete', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#cancel', 'url' => '/api/flow-tasks/{uuid}/cancel', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#checkItem', 'url' => '/api/flow-tasks/{uuid}/checklist/{itemId}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+', 'itemId' => '[^/]+']],
+
+		// The portal seam (flow-portal-task): a party OUTSIDE the instance,
+		// authenticated at portaliq's edge, acts here under a signed
+		// X-Portal-Subject assertion, never a Nextcloud session. The subject
+		// routes are PublicPage by design and authorized inside the service
+		// against the task's STORED party reference. The delivery routes are
+		// the operator's (administrator): portaliq settles what it sent.
+		// `deliveries` is registered before `{uuid}` so the literal wins.
+		['name' => 'portalTask#index', 'url' => '/api/portal-tasks', 'verb' => 'GET'],
+		['name' => 'portalTask#deliveries', 'url' => '/api/portal-tasks/deliveries', 'verb' => 'GET'],
+		['name' => 'portalTask#deliveryDelivered', 'url' => '/api/portal-tasks/deliveries/{uuid}/delivered', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'portalTask#deliveryFailed', 'url' => '/api/portal-tasks/deliveries/{uuid}/failed', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'portalTask#show', 'url' => '/api/portal-tasks/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'portalTask#complete', 'url' => '/api/portal-tasks/{uuid}/complete', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+
 		// The case layer (flow-cmmn-case-semantics): a plan of stages, human
 		// items and milestones anchored to an OpenRegister OBJECT. There is no
 		// case id: every plan route is keyed by the anchoring object's uuid, and
