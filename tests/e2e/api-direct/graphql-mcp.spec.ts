@@ -9,7 +9,7 @@
  *
  * These are pure API tests — no browser needed.
  */
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // graphql-api — auto-generated GraphQL schema

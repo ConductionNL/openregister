@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-/* eslint-disable n/no-process-exit */
+ 
 // Luxembourgish (Lëtzebuergesch) register detector for openregister l10n.
 //
 // CORE IS EFFECTIVELY EMPTY FOR THIS LOCALE. Nextcloud ships exactly ONE lb
@@ -75,6 +74,10 @@
 
 // Whitespace normalisation only. See the header: lowercasing would destroy the
 // dir/Dir distinction, which is the one signal this locale actually turns on.
+/**
+ *
+ * @param s
+ */
 function fold(s) {
 	return String(s).replace(/\s+/g, ' ')
 }
@@ -246,6 +249,10 @@ const UNDETECTABLE = [
 		+ 'payoff when it lands is large'],
 ]
 
+/**
+ *
+ * @param s
+ */
 function score(s) {
 	const t = fold(s)
 	let f = 0
@@ -257,6 +264,9 @@ function score(s) {
 	return { f, i }
 }
 
+/**
+ *
+ */
 function runControls() {
 	let fail = 0
 	for (const [s, want] of CONTROLS) {

@@ -1,7 +1,5 @@
 #!/usr/bin/env node
-/* eslint-disable n/no-process-exit */
-/* eslint-disable no-console */
-/* eslint-disable n/shebang */
+ 
 /**
  * Read-only status and worklist for one locale.
  *

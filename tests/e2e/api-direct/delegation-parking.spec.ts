@@ -1,3 +1,5 @@
+import type { APIRequestContext } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -28,15 +30,15 @@
  *
  * @spec openspec/specs/delegation-grants/spec.md
  */
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { execSync } from 'node:child_process'
-import { resolveContainer } from '../base-url'
+import { resolveContainer } from '../base-url.ts'
 import {
 	ADMIN,
 	findSecondAccount,
 	NO_SECOND_ACCOUNT,
 	revokeGrantsOver,
-} from './delegation-fixtures'
+} from './delegation-fixtures.ts'
 
 const API = '/index.php/apps/openregister/api'
 const RUN_ID = `e2e-park-${Date.now().toString(36)}`

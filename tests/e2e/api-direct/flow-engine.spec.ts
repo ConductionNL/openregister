@@ -1,3 +1,5 @@
+import type { APIRequestContext } from '@playwright/test'
+
 /**
  * OpenRegister flow engine — end-to-end via the live HTTP API.
  *
@@ -14,7 +16,7 @@
  *
  * @spec openspec/changes/or-flow-store/specs/flow-store/spec.md
  */
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const API = '/index.php/apps/openregister/api'
 const JSON_HEADERS = {

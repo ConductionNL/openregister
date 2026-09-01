@@ -1,3 +1,5 @@
+import type { Locator, Page } from '@playwright/test'
+
 /*
  * SPDX-License-Identifier: EUPL-1.2
  *
@@ -24,7 +26,7 @@
  * own baselines on first run, or (b) stay non-gating until baselined in the CI
  * environment. See tests/e2e/visual/README in-repo wiring notes.
  */
-import { expect, type Page, type Locator } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 /** Common screenshot options applied to every visual assertion. */
 export const SHOT_OPTIONS = {

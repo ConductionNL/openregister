@@ -101,7 +101,7 @@
  */
 import { defineConfig, devices } from '@playwright/test'
 import * as path from 'path'
-import { resolveBaseUrl } from '../base-url'
+import { resolveBaseUrl } from '../base-url.ts'
 
 export default defineConfig({
 	// Rooted at `tests/e2e` so the allow-list below can admit a spec without
