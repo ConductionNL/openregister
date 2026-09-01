@@ -60,10 +60,6 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<Task>
  *
  * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Two over the threshold
- * since the terminality announcement (flow-business-timers D-9) joined both
- * write paths; the branches are the inbox predicates, which are the tenant
- * boundary, plus that one dispatch.
  */
 class TaskMapper extends QBMapper {
 
