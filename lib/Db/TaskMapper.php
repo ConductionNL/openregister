@@ -37,9 +37,11 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use InvalidArgumentException;
+use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 
 /**
@@ -53,8 +55,17 @@ class TaskMapper extends QBMapper {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db The database connection.
+	 * @param IEventDispatcher|null $dispatcher Publishes task terminality
+	 *                                          ({@see TaskTerminalEvent}) so
+	 *                                          business timers are cancelled in
+	 *                                          the same operation. Nullable so
+	 *                                          the mapper stays constructible
+	 *                                          without a container.
 	 */
-	public function __construct(IDBConnection $db) {
+	public function __construct(
+		IDBConnection $db,
+		private readonly ?IEventDispatcher $dispatcher = null,
+	) {
 		parent::__construct(db: $db, tableName: 'openregister_tasks', entityClass: Task::class);
 
 	}//end __construct()
@@ -96,7 +107,21 @@ class TaskMapper extends QBMapper {
 
 		$entity->setUpdated(new DateTime());
 
-		return parent::update(entity: $entity);
+		$updated = parent::update(entity: $entity);
+
+		// Announce terminality from the ONE choke point every terminal write
+		// passes (flow-business-timers D-9), inside the caller's transaction.
+		if ($this->dispatcher !== null && $updated->isInTerminalState() === true) {
+			$this->dispatcher->dispatchTyped(
+				new TaskTerminalEvent(
+					taskUuid: (string)$updated->getUuid(),
+					state: (string)$updated->getState(),
+					outcome: $updated->getOutcome()
+				)
+			);
+		}
+
+		return $updated;
 	}//end update()
 
 	/**

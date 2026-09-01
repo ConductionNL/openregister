@@ -2,7 +2,7 @@
 
 ## 1. Storage
 
-- [ ] 1.1 Migration creating `openregister_flow_timers`,
+- [x] 1.1 Migration creating `openregister_flow_timers`,
       `openregister_flow_timer_fires` and `openregister_flow_timer_events`
       with the columns in design.md — Data model. Indexes
       `or_flowtimer_due_idx (state, fire_at)`,
@@ -14,7 +14,7 @@
       matching `or_flowtrig_match_idx`
       (`lib/Migration/Version1Date20260810140000.php:98`). Additive only.
       Verify NO `overdue`, `is_overdue` or `days_overdue` column exists.
-- [ ] 1.2 `lib/Db/FlowTimer.php` + `FlowTimerMapper`, `FlowTimerFire.php` +
+- [x] 1.2 `lib/Db/FlowTimer.php` + `FlowTimerMapper`, `FlowTimerFire.php` +
       `FlowTimerFireMapper`, `FlowTimerEvent.php` + `FlowTimerEventMapper`.
       Mapper finders: due-by-`fire_at`, due-by-`next_rung_at`, by subject,
       by run, by lineage. The fire and event mappers expose insert and read
