@@ -71,8 +71,7 @@
             "title": "Hours per working day",
             "type": "number",
             "description": "Working hours in one working day. Makes hours and businessDays commensurable.",
-            "minimum": 0,
-            "exclusiveMinimum": true,
+            "minimum": 0.25,
             "maximum": 24
           },
           "rules": {
@@ -80,15 +79,103 @@
             "type": "array",
             "description": "Computed non-working-date rules. kind fixed: {month, day, name, observedShift?: {whenWeekday, days}}. kind easter: {offset, name}, offset in days from Easter Sunday. kind observedShift: a fixed date with a required shift.",
             "items": {
-              "type": "object"
+              "type": "object",
+              "required": [
+                "kind",
+                "name",
+                "month",
+                "day",
+                "offset"
+              ],
+              "properties": {
+                "kind": {
+                  "title": "Kind",
+                  "type": "string",
+                  "enum": [
+                    "fixed",
+                    "easter",
+                    "observedShift"
+                  ],
+                  "description": "fixed: a month/day; easter: an offset in days from Easter Sunday; observedShift: a month/day with a required observed shift."
+                },
+                "name": {
+                  "title": "Name",
+                  "type": "string",
+                  "description": "The holiday's name."
+                },
+                "month": {
+                  "title": "Month",
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 12,
+                  "description": "Month of a fixed or observedShift rule; ignored by an easter rule."
+                },
+                "day": {
+                  "title": "Day",
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 31,
+                  "description": "Day of a fixed or observedShift rule; ignored by an easter rule."
+                },
+                "offset": {
+                  "title": "Offset",
+                  "type": "integer",
+                  "minimum": -100,
+                  "maximum": 100,
+                  "description": "Days from Easter Sunday for an easter rule; ignored by the other kinds."
+                },
+                "observedShift": {
+                  "title": "Observed shift",
+                  "type": "object",
+                  "description": "Optional on a fixed rule, required on observedShift: {whenWeekday: weekday name or ISO 1..7, days: integer}.",
+                  "properties": {
+                    "whenWeekday": {
+                      "title": "When weekday",
+                      "type": "string",
+                      "enum": [
+                        "monday",
+                        "tuesday",
+                        "wednesday",
+                        "thursday",
+                        "friday",
+                        "saturday",
+                        "sunday"
+                      ]
+                    },
+                    "days": {
+                      "title": "Days",
+                      "type": "integer",
+                      "minimum": -6,
+                      "maximum": 6
+                    }
+                  }
+                }
+              }
             }
           },
           "exceptions": {
             "title": "Exception dates",
             "type": "array",
-            "description": "Enumerated one-off closures as Y-m-d strings or {date, name}. Allowed alongside rules; refused as the whole calendar.",
+            "description": "Enumerated one-off closures as {date, name}. Allowed alongside rules; refused as the whole calendar.",
             "items": {
-              "type": "string"
+              "type": "object",
+              "required": [
+                "date",
+                "name"
+              ],
+              "properties": {
+                "date": {
+                  "title": "Date",
+                  "type": "string",
+                  "format": "date",
+                  "description": "The closed date, Y-m-d."
+                },
+                "name": {
+                  "title": "Name",
+                  "type": "string",
+                  "description": "Why the day is closed."
+                }
+              }
             }
           }
         }
@@ -125,7 +212,78 @@
             "type": "array",
             "description": "Ordered rungs: {key, trigger (preBreach|slaBreached), offset, offsetUnit (hours|businessDays|calendarDays), notifyRole[], escalateToRole[], priority, message, openIncident}.",
             "items": {
-              "type": "object"
+              "type": "object",
+              "required": [
+                "trigger",
+                "offset",
+                "offsetUnit",
+                "notifyRole",
+                "priority"
+              ],
+              "properties": {
+                "key": {
+                  "title": "Key",
+                  "type": "string",
+                  "description": "Stable rung identity, e.g. preBreach:14:calendarDays; derived from trigger, offset and unit when absent."
+                },
+                "trigger": {
+                  "title": "Trigger",
+                  "type": "string",
+                  "enum": [
+                    "preBreach",
+                    "slaBreached"
+                  ]
+                },
+                "offset": {
+                  "title": "Offset",
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "offsetUnit": {
+                  "title": "Offset unit",
+                  "type": "string",
+                  "enum": [
+                    "hours",
+                    "businessDays",
+                    "calendarDays"
+                  ]
+                },
+                "notifyRole": {
+                  "title": "Notify roles",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Roles told at this rung; handler is the subject's own performer."
+                },
+                "escalateToRole": {
+                  "title": "Escalate to roles",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "priority": {
+                  "title": "Priority",
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "message": {
+                  "title": "Message",
+                  "type": "string",
+                  "description": "A message identity the notification subsystem resolves."
+                },
+                "openIncident": {
+                  "title": "Open incident",
+                  "type": "boolean"
+                }
+              }
             }
           },
           "roleBindings": {
