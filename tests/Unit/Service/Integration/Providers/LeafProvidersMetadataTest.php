@@ -513,7 +513,7 @@ class LeafProvidersMetadataTest extends TestCase {
 	 *
 	 * @return array<string,array{0: string, 1: string, 2: string, 3: string, 4: ?string, 5: string}>
 	 */
-	public function greenfieldStubProvider(): array {
+	public static function greenfieldStubProvider(): array {
 		// [class, id, label, icon, group, requiredApp, storage]
 		return [
 			'activity' => [ActivityProvider::class, 'activity', 'Activity', 'Timeline', 'workflow', 'activity', 'query-time'],
