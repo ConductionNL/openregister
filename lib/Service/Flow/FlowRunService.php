@@ -87,6 +87,39 @@ class FlowRunService {
 	public const SIGNAL_CONTEXT_KEY = 'signal';
 
 	/**
+	 * The context key the run's ACTING IDENTITY travels under.
+	 *
+	 * Stamped by {@see self::baseContextFor()} from the run — never from the
+	 * context, per ADR-099 — and read back by every node whose work needs the
+	 * run's rights. Exported so consumers reference one name instead of each
+	 * hard-coding the literal; the VALUE is frozen, because it is stored inside
+	 * every parked run's context and a rename would strand them.
+	 *
+	 * @var string
+	 */
+	public const RUN_AS_CONTEXT_KEY = 'runAs';
+
+	/**
+	 * The acting-identity scope handed to every dispatcher this service builds.
+	 *
+	 * Resolved lazily from the container and cached — see {@see identityScope()}.
+	 *
+	 * @var FlowRunAsScope|null
+	 */
+	private ?FlowRunAsScope $runAsScope = null;
+
+	/**
+	 * Whether the lazy resolution above has been attempted.
+	 *
+	 * A separate flag because null is ALSO a valid outcome: a harness container
+	 * that cannot build the scope answers null once rather than being asked on
+	 * every step.
+	 *
+	 * @var boolean
+	 */
+	private bool $runAsScopeResolved = false;
+
+	/**
 	 * Loads and writes back the state that belongs to the FLOW, not the run.
 	 *
 	 * A separate collaborator because it handles a different lifetime: the token
@@ -295,7 +328,7 @@ class FlowRunService {
 			flow: $flow,
 			store: new FlowRunMarkingStore(run: $run),
 			subject: $subject,
-			dispatcher: new RegistryStepDispatcher(registry: $this->registry, guard: $guard),
+			dispatcher: new RegistryStepDispatcher(registry: $this->registry, guard: $guard, scope: $this->identityScope()),
 			context: $context,
 			items: ($run->getItems() ?? []),
 			startAt: null,
@@ -401,7 +434,7 @@ class FlowRunService {
 		// Assignment, not coalesce: the run wins over anything the stored context
 		// carries. See the docblock — a context-supplied acting identity would be
 		// an authoring-time privilege escalation.
-		$context['runAs'] = $run->getRunAs();
+		$context[self::RUN_AS_CONTEXT_KEY] = $run->getRunAs();
 
 		return $context;
 	}//end baseContextFor()
@@ -457,6 +490,39 @@ class FlowRunService {
 
 		return $context;
 	}//end nodeContextFor()
+
+	/**
+	 * The acting-identity scope for the dispatchers this service builds.
+	 *
+	 * Resolved from the container rather than the constructor so adding it
+	 * breaks no existing construction site, and LAZILY because most of what
+	 * this service does (queueing, listing, signalling) never dispatches a
+	 * node. A container that cannot build one — the unit harness — answers
+	 * null, and the dispatcher then runs nodes bare, which is the harness's
+	 * existing contract; every production container can build it.
+	 *
+	 * @return FlowRunAsScope|null The scope, or null when the container cannot build one.
+	 *
+	 * @spec openspec/changes/flow-engine-consumer-seams/specs/flow-engine-consumer-seams/spec.md#requirement-a-contributed-node-executes-under-the-runs-acting-identity
+	 */
+	private function identityScope(): ?FlowRunAsScope {
+		if ($this->runAsScopeResolved === true) {
+			return $this->runAsScope;
+		}
+
+		$this->runAsScopeResolved = true;
+
+		try {
+			$scope = $this->container->get(FlowRunAsScope::class);
+			if ($scope instanceof FlowRunAsScope === true) {
+				$this->runAsScope = $scope;
+			}
+		} catch (Throwable $e) {
+			$this->runAsScope = null;
+		}
+
+		return $this->runAsScope;
+	}//end identityScope()
 
 
 
@@ -761,6 +827,17 @@ class FlowRunService {
 	 * walk ({@see self::persistResult()}), so a node reads the answer to ITS
 	 * question rather than one left behind by an earlier suspension.
 	 *
+	 * 🔴 THIS IS THE UNGUARDED PRIMITIVE, for trusted engine-internal delivery
+	 * only: it checks the run's STATUS and nothing about the CALLER, so calling
+	 * it directly is asserting "whoever I am acting for has already been
+	 * allowed to answer this". Everything outside the engine goes through
+	 * {@see FlowRunSignalService::signalAs()}, which applies the
+	 * recorded-assignee guard (group resolution included) and audits a refusal
+	 * — the HTTP resume endpoints use that same seam, so there is exactly one
+	 * guard. A consumer that calls this method instead has re-opened the gap
+	 * the seam exists to close, silently: the wrong person's answer arrives
+	 * correctly formatted.
+	 *
 	 * @param FlowRun $run The suspended run to wake.
 	 * @param array $payload What the signaller wants the run to know.
 	 *
@@ -858,7 +935,7 @@ class FlowRunService {
 				flow: $flow,
 				store: new FlowRunMarkingStore(run: $run),
 				subject: $subject,
-				dispatcher: new RegistryStepDispatcher(registry: $this->registry, guard: $guard),
+				dispatcher: new RegistryStepDispatcher(registry: $this->registry, guard: $guard, scope: $this->identityScope()),
 				context: $context,
 				items: $items,
 				startAt: $start,

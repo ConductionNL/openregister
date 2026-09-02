@@ -35,8 +35,9 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
-use OCA\OpenRegister\Service\Flow\FlowRunAssignee;
+use OCA\OpenRegister\Exception\FlowSignalRefused;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Controller;
@@ -97,6 +98,14 @@ class FlowRunController extends Controller {
 	 *                                           caller; absent, the endpoint
 	 *                                           reports the surface unavailable
 	 *                                           rather than an empty run.
+	 * @param FlowRunSignalService|null $signalService The guarded signal seam the
+	 *                                                 resume endpoints delegate to.
+	 *                                                 Nullable and appended so no
+	 *                                                 construction site shifts;
+	 *                                                 absent, one is built on
+	 *                                                 demand from this
+	 *                                                 controller's own
+	 *                                                 collaborators.
 	 */
 	public function __construct(
 		string $appName,
@@ -112,6 +121,7 @@ class FlowRunController extends Controller {
 		// inserted anywhere else shifts every positional caller, and the
 		// resulting TypeError names the argument AFTER the one that moved.
 		private readonly ?AuditFlowAttribution $auditTrails = null,
+		private readonly ?FlowRunSignalService $signalService = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -681,21 +691,16 @@ class FlowRunController extends Controller {
 			return $refusal;
 		}
 
-		$refusal = $this->refuseUnlessAssignee(run: $run);
-		if ($refusal !== null) {
-			return $refusal;
-		}
-
 		$payload = $this->request->getParams();
 		// Routing artefacts, not part of what the signaller is telling the run.
 		unset($payload['uuid'], $payload['_route']);
 
-		$signalled = $this->runner->signal(run: $run, payload: $payload);
-		if ($signalled === null) {
-			return new JSONResponse(
-				['error' => 'Only a suspended run can be resumed; this one is ' . $run->getStatus() . '.'],
-				Http::STATUS_CONFLICT
-			);
+		// The guard and the delivery are ONE seam — the same one a PHP consumer
+		// calls — so who may answer is decided in exactly one place.
+		try {
+			$signalled = $this->signals()->signalRunAs(run: $run, payload: $payload, actorUid: $this->callerUid());
+		} catch (FlowSignalRefused $refused) {
+			return $this->refusalResponse(refused: $refused, run: $run, verb: 'resumed');
 		}
 
 		return new JSONResponse($signalled->jsonSerialize());
@@ -762,21 +767,15 @@ class FlowRunController extends Controller {
 			return $refusal;
 		}
 
-		$refusal = $this->refuseUnlessAssignee(run: $run);
-		if ($refusal !== null) {
-			return $refusal;
-		}
-
 		$payload = $this->request->getParams();
 		// Routing artefacts, not part of what the signaller is telling the run.
 		unset($payload['key'], $payload['_route']);
 
-		$signalled = $this->runner->signal(run: $run, payload: $payload);
-		if ($signalled === null) {
-			return new JSONResponse(
-				['error' => 'Only a suspended run can be signalled; this one is ' . $run->getStatus() . '.'],
-				Http::STATUS_CONFLICT
-			);
+		// Same seam as resume() and as every PHP consumer: one guard.
+		try {
+			$signalled = $this->signals()->signalRunAs(run: $run, payload: $payload, actorUid: $this->callerUid());
+		} catch (FlowSignalRefused $refused) {
+			return $this->refusalResponse(refused: $refused, run: $run, verb: 'signalled');
 		}
 
 		return new JSONResponse($signalled->jsonSerialize());
@@ -823,70 +822,66 @@ class FlowRunController extends Controller {
 	}//end refuseUnlessRunnable()
 
 	/**
-	 * Refuse when the awaiting step names an assignee and the caller is not it.
+	 * Translate the seam's typed refusal into this endpoint's HTTP contract.
 	 *
-	 * WHY THIS EXISTS. `AwaitSignalNode` has always RECORDED an `assignee` on
-	 * the suspension, and nothing ever read it back. The run-level check above
-	 * asks "may you run this flow?", which is a different question from "is
-	 * this decision yours to make": everyone who could run the flow could
-	 * approve a step assigned to someone else, and the recorded assignee made
-	 * it look otherwise. ADR-098 names this gap — "no task authz — anyone
-	 * reaching the resume endpoint can decide".
+	 * The GUARD lives in {@see FlowRunSignalService} — the same seam a PHP
+	 * consumer calls, so who may answer is decided in one place (ADR-098 named
+	 * the gap this closes: "no task authz — anyone reaching the resume endpoint
+	 * can decide"). What stays here is only the WORDING, which differs per
+	 * endpoint and is part of the existing HTTP contract.
 	 *
-	 * Scope, stated honestly: this closes the WHO of an already-recorded
-	 * assignment. It is not the task entity, inbox or definition versioning
-	 * ADR-098 describes, and a step with no assignee is unchanged — silence
-	 * still means anyone, because tightening that would break every existing
-	 * webhook and child-run signal, which are not human decisions at all.
+	 * A step with no assignee is unchanged — silence still means anyone,
+	 * because tightening that would break every existing webhook and child-run
+	 * signal, which are not human decisions at all.
 	 *
-	 * @param FlowRun $run The suspended run.
+	 * @param FlowSignalRefused $refused The seam's refusal.
+	 * @param FlowRun $run The run the signal addressed.
+	 * @param string $verb This endpoint's verb for the 409 wording ('resumed' or 'signalled').
 	 *
-	 * @return JSONResponse|null A 403 when the caller is not the assignee.
+	 * @return JSONResponse The 403 or 409 the refusal maps to.
+	 *
+	 * @spec openspec/changes/flow-engine-consumer-seams/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
 	 */
-	private function refuseUnlessAssignee(FlowRun $run): ?JSONResponse {
-		// The rule itself lives in FlowRunAssignee, because HTTP is no longer
-		// the only way to answer a step: a leaf app whose object completes a
-		// task resumes the run in-process through FlowRunService::signal(),
-		// which never passes this controller. One implementation, so the two
-		// paths cannot drift into disagreeing about who may answer.
-		$assignee = $this->assignees()->recordedFor(run: $run);
-		if ($assignee === '') {
-			return null;
-		}
+	private function refusalResponse(FlowSignalRefused $refused, FlowRun $run, string $verb): JSONResponse {
+		if ($refused->getReason() === FlowSignalRefused::NOT_ASSIGNEE) {
+			if ($refused->getActorUid() === null) {
+				return new JSONResponse(
+					['error' => 'This step is assigned; sign in as the assignee to answer it.'],
+					Http::STATUS_FORBIDDEN
+				);
+			}
 
-		$uid = $this->callerUid();
-
-		if ($this->assignees()->mayAnswer(run: $run, uid: $uid) === true) {
-			return null;
-		}
-
-		if ($uid === null) {
 			return new JSONResponse(
-				['error' => 'This step is assigned; sign in as the assignee to answer it.'],
+				['error' => 'This step is assigned to someone else.'],
 				Http::STATUS_FORBIDDEN
 			);
 		}
 
 		return new JSONResponse(
-			['error' => 'This step is assigned to someone else.'],
-			Http::STATUS_FORBIDDEN
+			['error' => 'Only a suspended run can be ' . $verb . '; this one is ' . $run->getStatus() . '.'],
+			Http::STATUS_CONFLICT
 		);
-	}//end refuseUnlessAssignee()
+	}//end refusalResponse()
 
 	/**
-	 * The assignee rule, made on demand when none was injected.
+	 * The guarded signal seam, made on demand when none was injected.
 	 *
 	 * Built locally rather than required as a constructor argument so adding it
-	 * breaks no existing construction site; it holds no state, so a locally
-	 * made one is indistinguishable from an injected one.
+	 * breaks no existing construction site. The refusal a locally-built seam
+	 * cannot log still reaches the caller as the 403 above, so nothing is
+	 * silent; the container-built instance audits too.
 	 *
-	 * @return FlowRunAssignee The rule.
+	 * @return FlowRunSignalService The seam.
 	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
+	 * @spec openspec/changes/flow-engine-consumer-seams/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
 	 */
-	private function assignees(): FlowRunAssignee {
-		return new FlowRunAssignee(groupManager: $this->groupManager);
-	}//end assignees()
+	private function signals(): FlowRunSignalService {
+		return ($this->signalService ?? new FlowRunSignalService(
+			mapper: $this->mapper,
+			runner: $this->runner,
+			groupManager: $this->groupManager
+		));
+	}//end signals()
 
 	/**
 	 * The current caller's uid, or null when anonymous.

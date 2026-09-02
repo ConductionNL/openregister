@@ -151,4 +151,69 @@ class FlowRunAssigneeTest extends TestCase {
 		$this->assertSame('', $assignee->recordedFor(run: $run));
 		$this->assertTrue($assignee->mayAnswer(run: $run, uid: 'anyone'));
 	}//end testARunWithNoSlotsNamesNobodyAndIsOpen()
+
+	/**
+	 * ADDRESSING. A run can await several nodes at once, each with its own
+	 * assignee. The run-level scan answers with the FIRST asked slot's, which
+	 * refuses the second node's own audience — so a caller that knows which
+	 * node its answer addresses is checked against THAT node's record.
+	 */
+	public function testAddressingANodeChecksThatNodesAssignee(): void {
+		$run = $this->runWithSlots([
+			'ask-a' => ['askedAt' => 'now', 'assignee' => 'alice'],
+			'ask-b' => ['askedAt' => 'now', 'assignee' => 'bob'],
+		]);
+
+		$assignee = new FlowRunAssignee();
+
+		$this->assertSame('bob', $assignee->recordedFor(run: $run, nodeId: 'ask-b'));
+		$this->assertTrue($assignee->mayAnswer(run: $run, uid: 'bob', nodeId: 'ask-b'));
+		// Without addressing, the run-level scan would have refused bob.
+		$this->assertFalse($assignee->mayAnswer(run: $run, uid: 'bob'));
+	}//end testAddressingANodeChecksThatNodesAssignee()
+
+	/**
+	 * 🔴 Addressing can NARROW the check but never loosen it: a nodeId whose
+	 * slot is not held (the node is not asking) falls back to the run-level
+	 * rule, so naming a silent node is not a way around the guard on the node
+	 * that IS asking.
+	 */
+	public function testAddressingASilentNodeFallsBackToTheRunLevelRule(): void {
+		$run = $this->runWithSlots(['ask-a' => ['askedAt' => 'now', 'assignee' => 'alice']]);
+
+		$assignee = new FlowRunAssignee();
+
+		$this->assertSame('alice', $assignee->recordedFor(run: $run, nodeId: 'never-asked'));
+		$this->assertFalse($assignee->mayAnswer(run: $run, uid: 'mallory', nodeId: 'never-asked'));
+	}//end testAddressingASilentNodeFallsBackToTheRunLevelRule()
+
+	/**
+	 * ...and a slot that exists but never ASKED is equally silent: recording
+	 * an assignee is not asking a question.
+	 */
+	public function testAddressingAnUnaskedSlotFallsBackToo(): void {
+		$run = $this->runWithSlots([
+			'ask-a' => ['askedAt' => 'now', 'assignee' => 'alice'],
+			'idle' => ['assignee' => 'mallory'],
+		]);
+
+		$this->assertFalse(
+			(new FlowRunAssignee())->mayAnswer(run: $run, uid: 'mallory', nodeId: 'idle')
+		);
+	}//end testAddressingAnUnaskedSlotFallsBackToo()
+
+	/**
+	 * An addressed node whose held slot records NO assignee is open — the
+	 * unassigned contract holds per node, exactly as it does run-level.
+	 */
+	public function testAnAddressedUnassignedNodeIsOpen(): void {
+		$run = $this->runWithSlots([
+			'ask-a' => ['askedAt' => 'now', 'assignee' => 'alice'],
+			'hook' => ['askedAt' => 'now'],
+		]);
+
+		$this->assertTrue(
+			(new FlowRunAssignee())->mayAnswer(run: $run, uid: 'anyone', nodeId: 'hook')
+		);
+	}//end testAnAddressedUnassignedNodeIsOpen()
 }//end class
