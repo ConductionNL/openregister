@@ -157,12 +157,26 @@ test.describe('flow-task-projections: the calendar projection', () => {
 			expect(url).toContain(`${OPEN}/${task.uuid}`)
 			expect(url).not.toContain('/api/')
 
-			// Following it lands in the app (a redirect into the task route), not a 404.
+			// Following it lands in the app, not a 404 and not the API.
+			//
+			// THIS ASSERTED A REDIRECT AND A HASH URL, AND BOTH ARE GONE.
+			// `TaskController::open()` used to answer 302 with
+			// `Location: …/#/flow-tasks/<uuid>`; #3315 rewrote it to serve the SPA
+			// shell directly, and #3270 had already moved the router off hash
+			// routing so that fragment addressed nothing. The old assertion
+			// survived both changes because this block SKIPS on any instance whose
+			// assignee has no VTODO-capable calendar, which CI's `admin` does not
+			// have — so it has been asserting a contract that no longer exists,
+			// without ever running to say so.
 			const followed = await request.get(url!, { maxRedirects: 0 })
-			expect([302, 303]).toContain(followed.status())
-			expect(followed.headers().location).toContain(
-				`#/flow-tasks/${task.uuid}`,
-			)
+			expect(
+				followed.status(),
+				'the deep link serves the app shell directly, no redirect hop',
+			).toBe(200)
+			expect(
+				await followed.text(),
+				'the shell, not an API payload or an error page',
+			).toContain('<html')
 		} finally {
 			await cancelQuietly(request, task.uuid)
 		}
