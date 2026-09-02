@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -650,4 +651,28 @@ class TaskControllerTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_UNAUTHORIZED, $controller->index()->getStatus());
 	}//end testIndexWithoutASessionIs401()
+
+	/**
+	 * GET /flow-tasks/{uuid} serves the SPA shell, never a hash redirect.
+	 *
+	 * The router runs in history mode, so a redirect to `/#/flow-tasks/…`
+	 * rendered the dashboard and silently swallowed every notification
+	 * button and VTODO URL. The shell answer is what lets the manifest's
+	 * `flow-task-detail` page resolve the path; the visibility-checked
+	 * read stays with show(), so the shell itself may be identical for
+	 * every uuid.
+	 *
+	 * @return void
+	 */
+	public function testOpenServesTheSpaShell(): void {
+		$response = $this->controller->open('t-1');
+
+		$this->assertInstanceOf(TemplateResponse::class, $response);
+		$this->assertSame('index', $response->getTemplateName());
+		// The SPA calls the API from this page, so the shell must carry the
+		// same connect-domain relaxation the dashboard shell does.
+		$policy = $response->getContentSecurityPolicy();
+		$this->assertNotNull($policy);
+		$this->assertStringContainsString('connect-src', $policy->buildPolicy());
+	}//end testOpenServesTheSpaShell()
 }//end class

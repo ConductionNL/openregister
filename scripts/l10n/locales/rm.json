@@ -101,7 +101,9 @@
 		"_object_::_objects_": "Plural key for the bare 'object' / 'objects' count label. Romansh spells both identically, as already recorded against 'Object' and 'Objects'.",
 		"_register_::_registers_": "Plural key for the bare 'register' / 'registers' count label. Romansh spells both identically, as already recorded against 'Register' and 'Registers'.",
 		"_schema_::_schemas_": "Plural key for the bare 'schema' / 'schemas' count label. Romansh spells both identically, as already recorded against 'Schema' and 'Schemas'.",
-		"_{count} schema_::_{count} schemas_": "Plural key for '{count} schema' / '{count} schemas'. Only the placeholder and the identically-spelled Romansh noun are in it, so both forms match the source."
+		"_{count} schema_::_{count} schemas_": "Plural key for '{count} schema' / '{count} schemas'. Only the placeholder and the identically-spelled Romansh noun are in it, so both forms match the source.",
+		"Normal": "Same spelling and meaning in Romansh (normal).",
+		"Urgent": "Same spelling and meaning in Romansh (urgent)."
 	},
 	"corrections": {
 		"_schema_::_schemas_": "Capitalised to 'Schema(s)' after first being written lowercase. translatePlural hands the form it selects back to translate(), which resolves it against the bundle again — so lowercase 'schema(s)' matched this bundle's own 'schema(s)' KEY and rendered that key's value, 'Schema(s)'. Same characters, produced by an unrelated entry. The capital makes it this array's own value, and matches how the bundle writes the noun everywhere else. check-l10n-parity now fails on the collision class.",

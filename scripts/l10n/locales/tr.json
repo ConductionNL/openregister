@@ -49,7 +49,8 @@
 		"Url": "Invariant abbreviation, written the same way in this locale.",
 		"Min ms": "Two abbreviations (minimum, milliseconds) shown as a compact column label; both are invariant in Turkish.",
 		"Port": "Networking term, used unchanged in Turkish.",
-		"Zookeeper Port": "Apache ZooKeeper product name plus the invariant term Port."
+		"Zookeeper Port": "Apache ZooKeeper product name plus the invariant term Port.",
+		"Normal": "Same spelling and meaning in Turkish (normal), an established loan."
 	},
 	"corrections": {}
 }

@@ -204,9 +204,32 @@ function routerBase() {
 // sub-path, which removes the cause rather than working around it. Verified by
 // requesting a NONSENSE path: /apps/openregister/zzz-nonsense answered 404
 // before and 401 after — an enumerated path would have proved nothing.
+// The task deep link: /flow-tasks/:uuid, the one stable address every VTODO
+// URL and notification button carries (flow-task-inbox-projections). It is a
+// consuming-app route on CnAppRoot's own <router-view>, NOT a manifest page:
+// a task is a native entity, so none of the typed page archetypes can render
+// it (the built-in `detail` type resolves register+schema), and gate-69's
+// custom-page ratchet exists precisely so a screen like this does not grow
+// the manifest's bespoke-page count. The inbox LIST stays declarative (the
+// `flow-task-inbox` manifest page over the `tasks` entity source); this
+// route only resolves the record address. Fold it back into the manifest the
+// day nc-vue ships a task page type the way it shipped `flow`.
+//
+// Registered BEFORE createRouter so the manifest's `/:pathMatch(.*)*`
+// fallback (matched by rank, not order) can never swallow a cold deep-link
+// load — which is exactly what happened when this address was a hash
+// redirect: every notification button landed on the dashboard.
+const routes = routesFromManifest(mergedManifest)
+routes.push({
+	name: 'flow-task-detail',
+	path: '/flow-tasks/:uuid',
+	component: () => import('./views/task/FlowTaskDetail.vue'),
+	props: true,
+})
+
 const router = createRouter({
 	history: createWebHistory(routerBase()),
-	routes: routesFromManifest(mergedManifest),
+	routes,
 })
 
 // Pass shallow copies of the registry maps to App.vue → CnAppRoot. The lib

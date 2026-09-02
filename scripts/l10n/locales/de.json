@@ -82,6 +82,8 @@
 		"org-...": "Literal example of an API-key prefix; not prose.",
 		"sk-...": "Literal example of an API-key prefix; not prose.",
 		"{property} - {other}": "Two placeholders and a separating dash; nothing translatable.",
-		"{title} in {register} / {schema}": "Only 'in' is translatable and it is the same preposition in German."
+		"{title} in {register} / {schema}": "Only 'in' is translatable and it is the same preposition in German.",
+		"Details": "Same spelling and meaning in German (die Details).",
+		"Normal": "Same spelling and meaning in German (normal)."
 	}
 }
