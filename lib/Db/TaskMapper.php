@@ -156,6 +156,35 @@ class TaskMapper extends QBMapper {
 	}//end announceTerminality()
 
 	/**
+	 * The due timeouts: non-terminal tasks past their enforcing deadline
+	 * that DECLARE a timeout behaviour, earliest deadline first.
+	 *
+	 * A bounded, index-backed range scan (`or_tasks_open_expiry`), the same
+	 * discipline as the timer scans (flow-business-timers design D-8): never
+	 * a page of open rows filtered in PHP. A processed row leaves the scan
+	 * because applying its behaviour makes it terminal.
+	 *
+	 * @param \DateTimeInterface $now The sweep instant.
+	 * @param int $limit The batch limit.
+	 *
+	 * @return array<int, Task> The due tasks, earliest expiry first.
+	 *
+	 * @spec openspec/changes/task-expiry-and-outcomes/specs/task-expiry-and-outcomes/spec.md#requirement-the-timer-sweep-enforces-a-declared-task-expiry
+	 */
+	public function findDueTimeouts(\DateTimeInterface $now, int $limit): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)))
+			->andWhere($qb->expr()->isNotNull('on_timeout'))
+			->andWhere($qb->expr()->lte('expires_at', $qb->createNamedParameter($now, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
+			->orderBy('expires_at', 'ASC')
+			->setMaxResults(max(1, $limit));
+
+		return $this->findEntities(query: $qb);
+	}//end findDueTimeouts()
+
+	/**
 	 * A sequence's positions, in ordinal order.
 	 *
 	 * Ordinal order is the ONLY order that means anything to a sequence:

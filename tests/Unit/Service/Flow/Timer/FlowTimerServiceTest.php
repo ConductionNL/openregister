@@ -825,6 +825,47 @@ class FlowTimerServiceTest extends TestCase {
 		self::assertSame('2026-09-01 09:00', $timer->getAnchorAt()->format('Y-m-d H:i'));
 	}//end testAnAnchorlessTimerRunsFromNow()
 
+	public function testANonEnforcingExpiryFallsBackToTheTasksDeclaredTimeout(): void {
+		// A servicenorm expiry timer may not carry onExpiry (only wettelijk
+		// enforces), but the SUBJECT TASK declares its own onTimeout — the
+		// task's contract applies when the timer fires
+		// (task-expiry-and-outcomes D-4).
+		$task = $this->task();
+		$task->setOnTimeout('error');
+		$start = $this->at('2026-09-01 09:00');
+		$timer = $this->service->arm(
+			config: $this->config(['purpose' => 'expiry', 'legalEffect' => 'servicenorm', 'ladder' => null]),
+			actor: null,
+			now: $start
+		);
+
+		$applied = [];
+		$this->taskService->method('applyTimerOutcome')->willReturnCallback(
+			function (string $uuid, string $outcome, string $source, string $reason) use (&$applied): Task {
+				$applied[] = [$uuid, $outcome, $reason];
+
+				return $this->store->tasks[$uuid];
+			}
+		);
+
+		self::assertTrue($this->service->fireExpiry(timer: $timer, now: $start->modify('+57 days')));
+		self::assertSame([['task-1', 'error']], array_map(static fn (array $row): array => [$row[0], $row[1]], $applied));
+		self::assertStringContainsString('task-declared onTimeout', $applied[0][2]);
+	}//end testANonEnforcingExpiryFallsBackToTheTasksDeclaredTimeout()
+
+	public function testANonEnforcingExpiryWithNoDeclaredTimeoutAppliesNothing(): void {
+		$this->task();
+		$start = $this->at('2026-09-01 09:00');
+		$timer = $this->service->arm(
+			config: $this->config(['purpose' => 'expiry', 'legalEffect' => 'servicenorm', 'ladder' => null]),
+			actor: null,
+			now: $start
+		);
+
+		$this->taskService->expects(self::never())->method('applyTimerOutcome');
+		self::assertTrue($this->service->fireExpiry(timer: $timer, now: $start->modify('+57 days')));
+	}//end testANonEnforcingExpiryWithNoDeclaredTimeoutAppliesNothing()
+
 	public function testANonTaskSubjectEnforcesNothingAndEscalatesToRoles(): void {
 		// An enforcing timer on an OBJECT subject fires and records, but no
 		// task action is applied and the rung recipients stay role descriptors.

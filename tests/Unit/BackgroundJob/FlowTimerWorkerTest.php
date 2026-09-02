@@ -70,16 +70,16 @@ class FlowTimerWorkerTest extends TestCase {
 		$this->appConfig->method('getValueString')->with('openregister', FlowTimerWorker::CONFIG_BATCH, '200')->willReturn('50');
 		$this->sweep->expects(self::once())->method('run')
 			->with(self::callback(static fn (DateTimeImmutable $now): bool => $now->format('Y-m-d H:i') === '2026-09-01 10:00'), 50)
-			->willReturn(['expiriesFired' => 3, 'rungsFired' => 2, 'truncated' => true, 'errors' => 0]);
+			->willReturn(['expiriesFired' => 3, 'rungsFired' => 2, 'taskTimeouts' => 1, 'truncated' => true, 'errors' => 0]);
 		$this->logger->expects(self::once())->method('info')
-			->with(self::stringContains('Fired 3 expiry timer(s) and 2 escalation rung(s); truncated: true'), self::anything());
+			->with(self::stringContains('Fired 3 expiry timer(s), 2 escalation rung(s) and 1 task timeout(s); truncated: true'), self::anything());
 		$this->tick();
 	}//end testRunsOnePassWithTheConfiguredBatchAndLogsWorkPerformed()
 
 	public function testAQuietPassLogsNothingAndABadBatchIsFlooredAtOne(): void {
 		$this->appConfig->method('getValueString')->willReturn('-5');
 		$this->sweep->expects(self::once())->method('run')->with(self::anything(), 1)
-			->willReturn(['expiriesFired' => 0, 'rungsFired' => 0, 'truncated' => false, 'errors' => 0]);
+			->willReturn(['expiriesFired' => 0, 'rungsFired' => 0, 'taskTimeouts' => 0, 'truncated' => false, 'errors' => 0]);
 		$this->logger->expects(self::never())->method('info');
 		$this->tick();
 	}//end testAQuietPassLogsNothingAndABadBatchIsFlooredAtOne()

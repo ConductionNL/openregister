@@ -197,6 +197,8 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			'priority',
 			'dueAt',
 			'expiresAt',
+			'onTimeout',
+			'onReject',
 			'outcomes',
 			'outcomeKey',
 			'failOnReject',
@@ -535,6 +537,18 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 				'label' => $this->l10n->t('Expires'),
 				'type' => 'text',
 				'help' => $this->l10n->t('When the task stops being doable. Same shapes as "Due". Must not lie before it.'),
+			],
+			[
+				'key' => 'onTimeout',
+				'label' => $this->l10n->t('On timeout'),
+				'type' => 'text',
+				'help' => $this->l10n->t('What happens when the task expires: skip, error or dead_letter. Empty means the deadline enforces nothing.'),
+			],
+			[
+				'key' => 'onReject',
+				'label' => $this->l10n->t('On rejection'),
+				'type' => 'text',
+				'help' => $this->l10n->t('Only dead_letter changes the record; skip and error are read by whatever resumes the flow.'),
 			],
 			[
 				'key' => 'heartbeatMinutes',

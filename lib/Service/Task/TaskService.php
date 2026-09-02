@@ -49,10 +49,10 @@ use OCA\OpenRegister\Db\TaskCandidateMapper;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\TaskRelationMapper;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
+use OCA\OpenRegister\Event\TaskTransitionedEvent;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
-use OCA\OpenRegister\Event\TaskTransitionedEvent;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -504,9 +504,9 @@ class TaskService {
 	 *                                             when the completion carries
 	 *                                             any (a portal task's form).
 	 * @param array<int, array<string, mixed>>|null $evidence References to the
-	 *                                                       files ALREADY stored
-	 *                                                       for this completion;
-	 *                                                       never bytes.
+	 *                                                        files ALREADY stored
+	 *                                                        for this completion;
+	 *                                                        never bytes.
 	 *
 	 * @return Task The completed task.
 	 *
@@ -1056,6 +1056,7 @@ class TaskService {
 	 * @throws TaskValidationException When a rejecting outcome has no comment.
 	 *
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/changes/task-expiry-and-outcomes/specs/task-expiry-and-outcomes/spec.md#requirement-a-rejecting-completion-honours-the-tasks-declared-reject-behaviour
 	 */
 	private function completeInternal(
 		string $verb,
@@ -1084,9 +1085,36 @@ class TaskService {
 			);
 		}
 
+		// Declared reject behaviour (task-expiry-and-outcomes D-5): only
+		// `dead_letter` reroutes the record, through the SAME mapping the
+		// timer path resolves; `skip` and `error` are the resuming
+		// consumer's contract and change nothing about the completion.
+		$recordedOutcome = $outcome;
+		$targetState = Task::STATE_COMPLETED;
+		$auditReason = $comment;
+		if (TaskState::isRejectingOutcome(outcome: $outcome) === true && $task->getOnReject() === 'dead_letter') {
+			[$targetState, $recordedOutcome] = $this->timerOutcomeTarget(outcome: 'dead_letter');
+			$auditReason = sprintf(
+				"Rejected as '%s'; declared onReject 'dead_letter' routed it to the dead letter state. %s",
+				$outcome,
+				(string)$comment
+			);
+		}
+
 		return $this->transactional(
-			mutation: function () use ($task, $outcome, $resultText, $comment, $actor, $verb, $responses, $evidence): Task {
-				$task->setOutcome($outcome);
+			mutation: function () use (
+				$task,
+				$recordedOutcome,
+				$targetState,
+				$auditReason,
+				$resultText,
+				$comment,
+				$actor,
+				$verb,
+				$responses,
+				$evidence,
+			): Task {
+				$task->setOutcome($recordedOutcome);
 				$task->setResultText($resultText);
 				$task->setComment($comment);
 				if ($responses !== null) {
@@ -1099,9 +1127,9 @@ class TaskService {
 
 				$task->setCompletedAt(new DateTime());
 				$task->setCompletedBy($actor);
-				$this->applyState(task: $task, state: Task::STATE_COMPLETED, action: $verb);
+				$this->applyState(task: $task, state: $targetState, action: $verb);
 				$persisted = $this->persistOpen(task: $task);
-				$this->appendAudit(task: $persisted, action: $verb, actor: $actor, reason: $comment);
+				$this->appendAudit(task: $persisted, action: $verb, actor: $actor, reason: $auditReason);
 
 				return $persisted;
 			}
@@ -1214,7 +1242,7 @@ class TaskService {
 	 * @return Task The open, authorized task.
 	 *
 	 * @throws TaskConflictException When the task is already terminal — with
-	 *         the current state in the message.
+	 *                               the current state in the message.
 	 * @throws TaskAccessDeniedException When authorization denies (audited).
 	 *
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed

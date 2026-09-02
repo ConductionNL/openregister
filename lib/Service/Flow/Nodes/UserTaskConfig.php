@@ -195,6 +195,8 @@ final class UserTaskConfig {
 			'routingFallback' => $this->nullIfEmpty(value: trim((string)($config['routingFallback'] ?? ''))),
 			'dueAt' => $this->renderedOrNull(value: ($config['dueAt'] ?? null), json: $json),
 			'expiresAt' => $this->renderedOrNull(value: ($config['expiresAt'] ?? null), json: $json),
+			'onTimeout' => $this->nullIfEmpty(value: trim((string)($config['onTimeout'] ?? ''))),
+			'onReject' => $this->nullIfEmpty(value: trim((string)($config['onReject'] ?? ''))),
 			'metadata' => [
 				'flowNodeType' => $nodeType,
 				'flowNode' => $nodeId,

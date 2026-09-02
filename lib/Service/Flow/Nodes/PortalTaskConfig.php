@@ -269,6 +269,8 @@ final class PortalTaskConfig {
 			'assignee' => $partyReference,
 			'dueAt' => $this->renderedOrNull(value: ($config['dueAt'] ?? null), json: $json),
 			'expiresAt' => $this->renderedOrNull(value: ($config['expiresAt'] ?? null), json: $json),
+			'onTimeout' => $this->behaviourOrNull(value: ($config['onTimeout'] ?? '')),
+			'onReject' => $this->behaviourOrNull(value: ($config['onReject'] ?? '')),
 			'metadata' => [
 				'flowNodeType' => $nodeType,
 				'flowNode' => $nodeId,
@@ -511,6 +513,23 @@ final class PortalTaskConfig {
 
 		return [];
 	}//end representativeJson()
+
+	/**
+	 * A declared behaviour value, trimmed, or null for absent. Vocabulary
+	 * validation is TaskBuilder's boundary, not this node's.
+	 *
+	 * @param mixed $value The configured value.
+	 *
+	 * @return string|null The behaviour, or null.
+	 */
+	private function behaviourOrNull(mixed $value): ?string {
+		$behaviour = trim((string)$value);
+		if ($behaviour === '') {
+			return null;
+		}
+
+		return $behaviour;
+	}//end behaviourOrNull()
 
 	/**
 	 * A templated string, or null when it renders to nothing.

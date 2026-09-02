@@ -1126,4 +1126,121 @@ class TaskServiceTest extends TestCase {
 		$this->assertSame(3, $created->getTemplateVersion());
 		$this->assertSame(['checklist' => [['id' => 'c1', 'label' => 'Vast']]], $created->getTemplateSnapshot());
 	}//end testTheTemplateIsFrozenAtCreation()
+
+	/**
+	 * A REJECTION OF A TASK DECLARING onReject dead_letter LANDS IN THE
+	 * DEAD LETTER STATE, through the same mapping the timer path resolves,
+	 * with the comment kept and the audit naming the original rejection
+	 * (task-expiry-and-outcomes D-5).
+	 *
+	 * @return void
+	 */
+	public function testARejectionRoutesToTheDeadLetterStateWhenDeclared(): void {
+		$task = $this->openTask();
+		$task->setOnReject('dead_letter');
+		$this->tasks->method('findByUuid')->willReturn($task);
+		$audited = [];
+		$this->setUpAuditRecorder(audited: $audited);
+
+		$completed = $this->service()->complete(uuid: 't-7', outcome: 'rejected', resultText: null, comment: 'niet akkoord', actor: 'alice');
+
+		$this->assertSame(Task::STATE_DISABLED, $completed->getState());
+		$this->assertSame('dead_letter', $completed->getOutcome());
+		$this->assertTrue($completed->getIsTerminal());
+		$this->assertSame('niet akkoord', $completed->getComment());
+		$this->assertStringContainsString("'rejected'", (string)$audited[0]->getReason());
+	}//end testARejectionRoutesToTheDeadLetterStateWhenDeclared()
+
+	/**
+	 * WITHOUT A DECLARED BEHAVIOUR a rejection stays a plain rejection, and
+	 * a declared `error`/`skip` changes nothing about the completion either:
+	 * those two are the resuming consumer's contract, not the record's.
+	 *
+	 * @return void
+	 */
+	public function testARejectionWithoutDeadLetterStaysARejection(): void {
+		foreach ([null, 'error', 'skip'] as $declared) {
+			$this->setUp();
+			$task = $this->openTask();
+			$task->setOnReject($declared);
+			$this->tasks->method('findByUuid')->willReturn($task);
+
+			$completed = $this->service()->complete(uuid: 't-7', outcome: 'rejected', resultText: null, comment: 'nee', actor: 'alice');
+
+			$this->assertSame(Task::STATE_COMPLETED, $completed->getState(), var_export($declared, true));
+			$this->assertSame('rejected', $completed->getOutcome(), var_export($declared, true));
+		}
+	}//end testARejectionWithoutDeadLetterStaysARejection()
+
+	/**
+	 * AN APPROVING COMPLETION IGNORES onReject ENTIRELY: the behaviour is a
+	 * reject behaviour, not a completion behaviour.
+	 *
+	 * @return void
+	 */
+	public function testAnApprovalIgnoresTheDeclaredRejectBehaviour(): void {
+		$task = $this->openTask();
+		$task->setOnReject('dead_letter');
+		$this->tasks->method('findByUuid')->willReturn($task);
+
+		$completed = $this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'alice');
+
+		$this->assertSame(Task::STATE_COMPLETED, $completed->getState());
+		$this->assertSame('approved', $completed->getOutcome());
+	}//end testAnApprovalIgnoresTheDeclaredRejectBehaviour()
+
+	/**
+	 * INTAKE REFUSES a behaviour outside the vocabulary by name, and a
+	 * timeout behaviour with no deadline (task-expiry-and-outcomes D-6);
+	 * valid declarations are carried onto the row.
+	 *
+	 * @return void
+	 */
+	public function testDeclaredBehavioursAreValidatedAtIntake(): void {
+		$builder = new TaskBuilder();
+
+		try {
+			$builder->fromData(data: ['onTimeout' => 'explode', 'expiresAt' => '2027-01-01T00:00:00+00:00'], actor: 'rita');
+			$this->fail('An unknown behaviour must be refused.');
+		} catch (TaskValidationException $refusal) {
+			$this->assertStringContainsString("'explode'", $refusal->getMessage());
+			$this->assertStringContainsString('dead_letter', $refusal->getMessage());
+		}
+
+		try {
+			$builder->fromData(data: ['onTimeout' => 'error'], actor: 'rita');
+			$this->fail('A timeout behaviour without a deadline must be refused.');
+		} catch (TaskValidationException $refusal) {
+			$this->assertStringContainsString('expiresAt', $refusal->getMessage());
+		}
+
+		$task = $builder->fromData(
+			data: ['expiresAt' => '2027-01-01T00:00:00+00:00', 'onTimeout' => 'dead_letter', 'onReject' => 'error'],
+			actor: 'rita'
+		);
+		$this->assertSame('dead_letter', $task->getOnTimeout());
+		$this->assertSame('error', $task->getOnReject());
+
+		$rejectOnly = $builder->fromData(data: ['onReject' => 'dead_letter'], actor: 'rita');
+		$this->assertSame('dead_letter', $rejectOnly->getOnReject());
+		$this->assertNull($rejectOnly->getOnTimeout());
+	}//end testDeclaredBehavioursAreValidatedAtIntake()
+
+	/**
+	 * Re-route audit inserts into a local recorder for one test.
+	 *
+	 * @param array<int, TaskAudit> $audited Filled with the audit rows, by reference.
+	 *
+	 * @return void
+	 */
+	private function setUpAuditRecorder(array &$audited): void {
+		$this->audits = $this->createMock(TaskAuditMapper::class);
+		$this->audits->method('insert')->willReturnCallback(
+			static function (TaskAudit $entry) use (&$audited): TaskAudit {
+				$audited[] = $entry;
+
+				return $entry;
+			}
+		);
+	}//end setUpAuditRecorder()
 }//end class

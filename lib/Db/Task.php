@@ -99,6 +99,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setDueAt(?DateTime $dueAt)
  * @method DateTime|null getExpiresAt()
  * @method void setExpiresAt(?DateTime $expiresAt)
+ * @method string|null getOnTimeout()
+ * @method void setOnTimeout(?string $onTimeout)
+ * @method string|null getOnReject()
+ * @method void setOnReject(?string $onReject)
  * @method integer|null getSlaValue()
  * @method void setSlaValue(?int $slaValue)
  * @method string|null getSlaUnit()
@@ -213,6 +217,15 @@ class Task extends Entity implements JsonSerializable {
 		self::STATE_TERMINATED,
 		self::STATE_DISABLED,
 	];
+
+	/**
+	 * The reserved behaviour vocabulary `on_timeout` and `on_reject` accept —
+	 * the same words `TaskService::applyTimerOutcome()` resolves, so one
+	 * mapping serves the timer path, the sweep and the reject routing.
+	 *
+	 * @var array<int, string>
+	 */
+	public const OUTCOME_BEHAVIOURS = ['skip', 'error', 'dead_letter'];
 
 	/**
 	 * Performer types (ADR-098 D3).
@@ -509,6 +522,24 @@ class Task extends Entity implements JsonSerializable {
 	protected ?DateTime $expiresAt = null;
 
 	/**
+	 * Declared behaviour when the enforcing deadline passes: one value of
+	 * the reserved timer-outcome vocabulary (skip|error|dead_letter). Null
+	 * means no declared behaviour — the bare deadline enforces nothing.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $onTimeout = null;
+
+	/**
+	 * Declared behaviour on a rejecting completion: one value of the
+	 * reserved timer-outcome vocabulary. Only `dead_letter` reroutes the
+	 * record; `skip` and `error` are the resuming consumer's contract.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $onReject = null;
+
+	/**
 	 * SLA magnitude. Stored, not interpreted here.
 	 *
 	 * @var integer|null
@@ -752,6 +783,8 @@ class Task extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'startAt', type: 'datetime');
 		$this->addType(fieldName: 'dueAt', type: 'datetime');
 		$this->addType(fieldName: 'expiresAt', type: 'datetime');
+		$this->addType(fieldName: 'onTimeout', type: 'string');
+		$this->addType(fieldName: 'onReject', type: 'string');
 		$this->addType(fieldName: 'slaValue', type: 'integer');
 		$this->addType(fieldName: 'slaUnit', type: 'string');
 		$this->addType(fieldName: 'compliancePeriodDays', type: 'integer');
@@ -867,6 +900,8 @@ class Task extends Entity implements JsonSerializable {
 			'startAt' => $this->startAt?->format('c'),
 			'dueAt' => $this->dueAt?->format('c'),
 			'expiresAt' => $this->expiresAt?->format('c'),
+			'onTimeout' => $this->onTimeout,
+			'onReject' => $this->onReject,
 			'slaValue' => $this->slaValue,
 			'slaUnit' => $this->slaUnit,
 			'compliancePeriodDays' => $this->compliancePeriodDays,

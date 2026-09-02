@@ -114,6 +114,19 @@ class TaskBuilder {
 
 		$task->setDueAt($dueAt);
 		$task->setExpiresAt($expiresAt);
+
+		// Declared behaviours: one reserved vocabulary, refused by name
+		// outside it, and a timeout behaviour with no deadline is a
+		// configuration error, not a schedule (task-expiry-and-outcomes D-6).
+		$onTimeout = $this->validBehaviour(value: ($data['onTimeout'] ?? null), field: 'onTimeout');
+		if ($onTimeout !== null && $expiresAt === null) {
+			throw new TaskValidationException(
+				message: sprintf("onTimeout '%s' without an expiresAt is a configuration error: there is no deadline to time out on.", $onTimeout)
+			);
+		}
+
+		$task->setOnTimeout($onTimeout);
+		$task->setOnReject($this->validBehaviour(value: ($data['onReject'] ?? null), field: 'onReject'));
 		$task->setStartAt($this->parseDate(value: ($data['startAt'] ?? null), field: 'startAt'));
 		$task->setSuspendedUntil($this->parseDate(value: ($data['suspendedUntil'] ?? null), field: 'suspendedUntil'));
 
@@ -212,6 +225,38 @@ class TaskBuilder {
 
 		return $rows;
 	}//end relationsFor()
+
+	/**
+	 * A declared behaviour: one value of the reserved outcome vocabulary.
+	 *
+	 * @param mixed $value The incoming value.
+	 * @param string $field The field name, for the refusal message.
+	 *
+	 * @return string|null The validated behaviour, or null for absent.
+	 *
+	 * @throws TaskValidationException When present but outside the vocabulary.
+	 *
+	 * @spec openspec/changes/task-expiry-and-outcomes/specs/task-expiry-and-outcomes/spec.md#requirement-a-task-declares-its-timeout-and-reject-behaviour-in-one-vocabulary
+	 */
+	private function validBehaviour(mixed $value, string $field): ?string {
+		$behaviour = $this->stringOrNull(value: $value);
+		if ($behaviour === null) {
+			return null;
+		}
+
+		if (in_array($behaviour, Task::OUTCOME_BEHAVIOURS, true) === false) {
+			throw new TaskValidationException(
+				message: sprintf(
+					"Field '%s' value '%s' is not in the behaviour vocabulary (%s).",
+					$field,
+					$behaviour,
+					implode('|', Task::OUTCOME_BEHAVIOURS)
+				)
+			);
+		}
+
+		return $behaviour;
+	}//end validBehaviour()
 
 	/**
 	 * Parse a date field: DateTime passes, ISO strings parse, junk refuses.
