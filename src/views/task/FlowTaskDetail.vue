@@ -55,7 +55,9 @@
 								<td data-testid="task-state">{{ stateLabel }}</td>
 							</tr>
 							<tr>
-								<th scope="row">{{ t('openregister', 'Priority') }}</th>
+								<th scope="row">
+									{{ t('openregister', 'Priority') }}
+								</th>
 								<td>{{ priorityLabel }}</td>
 							</tr>
 							<tr v-if="task.dueAt">
@@ -65,11 +67,15 @@
 								</td>
 							</tr>
 							<tr>
-								<th scope="row">{{ t('openregister', 'Assignee') }}</th>
+								<th scope="row">
+									{{ t('openregister', 'Assignee') }}
+								</th>
 								<td>{{ assigneeLabel }}</td>
 							</tr>
 							<tr v-if="task.requester">
-								<th scope="row">{{ t('openregister', 'Requested by') }}</th>
+								<th scope="row">
+									{{ t('openregister', 'Requested by') }}
+								</th>
 								<td>{{ task.requester }}</td>
 							</tr>
 							<tr v-if="task.appId">
@@ -77,11 +83,15 @@
 								<td>{{ task.appId }}</td>
 							</tr>
 							<tr v-if="task.outcome">
-								<th scope="row">{{ t('openregister', 'Outcome') }}</th>
+								<th scope="row">
+									{{ t('openregister', 'Outcome') }}
+								</th>
 								<td>{{ task.outcome }}</td>
 							</tr>
 							<tr v-if="subjectTitle">
-								<th scope="row">{{ t('openregister', 'Subject') }}</th>
+								<th scope="row">
+									{{ t('openregister', 'Subject') }}
+								</th>
 								<td>
 									<router-link
 										v-if="subjectRoute"
@@ -125,7 +135,12 @@ import { getCurrentUser } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
-import { NcAppContent, NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import {
+	NcAppContent,
+	NcButton,
+	NcEmptyContent,
+	NcLoadingIcon,
+} from '@nextcloud/vue'
 import ClipboardListOutline from 'vue-material-design-icons/ClipboardListOutline.vue'
 
 export default {
@@ -268,7 +283,9 @@ export default {
 		 * @return {boolean} True when claim is offered.
 		 */
 		canClaim() {
-			return !!this.task && !this.task.assignee && this.task.isTerminal !== true
+			return (
+				!!this.task && !this.task.assignee && this.task.isTerminal !== true
+			)
 		},
 
 		/**
@@ -280,10 +297,12 @@ export default {
 		 */
 		canComplete() {
 			const uid = getCurrentUser()?.uid || ''
-			return uid !== ''
+			return (
+				uid !== ''
 				&& !!this.task
 				&& this.task.assignee === uid
 				&& this.task.isTerminal !== true
+			)
 		},
 
 		/**
@@ -312,7 +331,7 @@ export default {
 		 *
 		 * @spec exclude UI plumbing — param-watch reload, no contract of its own
 		 */
-		'$route.params.uuid': function() {
+		'$route.params.uuid': function () {
 			this.load()
 		},
 	},
@@ -439,9 +458,10 @@ export default {
 			if (id === 'done') {
 				return this.t('openregister', 'Complete')
 			}
-			const label = (outcome && typeof outcome === 'object' && outcome.label)
-				? String(outcome.label)
-				: id
+			const label =
+				outcome && typeof outcome === 'object' && outcome.label
+					? String(outcome.label)
+					: id
 			return this.t('openregister', 'Complete: {outcome}', { outcome: label })
 		},
 
@@ -458,7 +478,9 @@ export default {
 				return ''
 			}
 			const parsed = new Date(value)
-			return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toLocaleDateString()
+			return Number.isNaN(parsed.getTime())
+				? String(value)
+				: parsed.toLocaleDateString()
 		},
 	},
 }
