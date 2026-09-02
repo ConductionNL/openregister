@@ -327,6 +327,64 @@ class ContentSearchHandlerTest extends TestCase {
 		$this->assertSame($matched, $result['results'][0]);
 	}//end testUnscopedQueryMatchesAnyRegisterOrSchema()
 
+	/**
+	 * `_registers` (plural, array) and `_schema` (singular) are supported query
+	 * shapes with no test until now. `resolveScope()` reads four keys per
+	 * dimension — `@self.register`, `_register`, `register` and the plural
+	 * `_registers` — and the two shapes exercised elsewhere in this file are
+	 * `_register` and `_schemas`, i.e. one singular and one plural, never the
+	 * other diagonal. A caller using the untested pair got a scope assembled by
+	 * branches nothing had ever run.
+	 *
+	 * Asserted as a MATCH rather than a skip, so it fails if either branch stops
+	 * contributing its id: a scope that silently resolved to empty would let this
+	 * object through for the wrong reason and read identically.
+	 */
+	public function testPluralRegistersAndSingularSchemaBothNarrowTheScope(): void {
+		$this->chunkMapper->method('searchByKeyword')->willReturn(
+			[
+				['entity_type' => 'object', 'entity_id' => '42', 'score' => 0.8, 'chunk_text' => 'x', 'chunk_index' => 0, 'metadata' => []],
+			]
+		);
+		$matched = $this->makeObject(42, register: '7', schema: '3');
+		$this->objectMapper->method('find')->willReturn($matched);
+
+		$result = $this->handler->augmentWithChunkMatches(
+			query: ['_search' => 'quarterly report', '_registers' => [7, 8], '_schema' => 3],
+			results: [],
+			total: 0,
+			limit: 20
+		);
+
+		$this->assertCount(1, $result['results']);
+		$this->assertSame($matched, $result['results'][0]);
+		$this->assertSame(1, $result['total']);
+	}//end testPluralRegistersAndSingularSchemaBothNarrowTheScope()
+
+	/**
+	 * The same pair, narrowing the other way: an object OUTSIDE the plural
+	 * register list is skipped. Without this, the test above would pass even if
+	 * `_registers` contributed nothing, because an empty scope matches everything.
+	 */
+	public function testObjectOutsideThePluralRegisterListIsSkipped(): void {
+		$this->chunkMapper->method('searchByKeyword')->willReturn(
+			[
+				['entity_type' => 'object', 'entity_id' => '42', 'score' => 0.8, 'chunk_text' => 'x', 'chunk_index' => 0, 'metadata' => []],
+			]
+		);
+		$this->objectMapper->method('find')->willReturn($this->makeObject(42, register: '99', schema: '3'));
+
+		$result = $this->handler->augmentWithChunkMatches(
+			query: ['_search' => 'quarterly report', '_registers' => [7, 8], '_schema' => 3],
+			results: [],
+			total: 0,
+			limit: 20
+		);
+
+		$this->assertSame([], $result['results']);
+		$this->assertSame(0, $result['total']);
+	}//end testObjectOutsideThePluralRegisterListIsSkipped()
+
 	// =========================================================================
 	// Page-limit clamping
 	// =========================================================================
