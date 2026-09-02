@@ -133,3 +133,60 @@ uuid/slug rather than minting new ones.
 - **GIVEN** an instance where the migration already ran
 - **WHEN** it runs again
 - **THEN** no column or index is added a second time and no row is modified.
+
+### Requirement: A leaf app's organisations are adopted, not re-created (REQ-ORG-106)
+
+Adopting a leaf app's organisation objects into the OpenRegister Organisation
+MUST preserve each row's existing uuid, because references to it are stored in
+places no migration can reach.
+
+The idempotency key MUST be the uuid, never the slug and never the name. A leaf
+row is free to carry no slug at all, and two rows sharing a name are routine, so
+a name-derived key would skip the second row as already migrated and silently
+merge two distinct legal entities.
+
+Where the same legal entity already exists in OpenRegister under a different
+uuid, the rows MUST NOT be collapsed into one. The adopted row is created and
+pointed at the existing one through `mergedInto`, so both uuids keep resolving
+and the merge is a fact recorded on a row rather than data thrown away. Matching
+MUST be on a legal identifier, in the order OIN, RSIN, KVK, and MUST NOT be on a
+name. Among several matches the lowest id is canonical, so a repeated run
+chooses the same survivor.
+
+A leaf property the Organisation entity does not declare MUST be reported before
+the write. OpenRegister discards an undeclared property and answers 200 with the
+object, so an adoption that loses fields is indistinguishable from one that did
+not.
+
+#### Scenario: An adopted organisation keeps its uuid
+
+- **GIVEN** a leaf organisation object with uuid `abc`
+- **WHEN** it is adopted
+- **THEN** the resulting Organisation carries uuid `abc`.
+
+#### Scenario: A second run adopts nothing
+
+- **GIVEN** an instance where the adoption already ran
+- **WHEN** it runs again
+- **THEN** every row is skipped as already adopted and nothing is written.
+
+#### Scenario: The same OIN records a merge rather than collapsing
+
+- **GIVEN** an existing organisation carrying OIN `00000001002220647000`
+- **AND** a leaf row carrying the same OIN under a different uuid
+- **WHEN** the leaf row is adopted
+- **THEN** it is created with its own uuid and `mergedInto` set to the existing
+  organisation's uuid.
+
+#### Scenario: Two organisations sharing only a name are not merged
+
+- **GIVEN** two organisations with the same name and no shared legal identifier
+- **WHEN** one is adopted
+- **THEN** no merge is recorded.
+
+#### Scenario: Properties with no column are named before the write
+
+- **GIVEN** a leaf schema carrying a property the Organisation entity does not
+  declare
+- **WHEN** the adoption runs
+- **THEN** that property is reported as one that will not be carried over.

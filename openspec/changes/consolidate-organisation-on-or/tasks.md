@@ -34,11 +34,23 @@
 
 ## 5. Leaf-app consolidation
 
-- [ ] 5.1 DECISION REQUIRED: the migration path for existing leaf-app
-      organisation data. Adding the columns makes reuse possible; it does not
-      move OpenCatalogi's publisher rows or Stackiq's vendor rows into them.
-      The backfill must preserve the existing uuid/slug, and it needs a ruling
-      on what happens when the same legal entity exists in BOTH leaf apps under
-      different UUIDs. Until then the leaf apps keep their own records and OR's
-      new columns stay empty.
-- [ ] 5.2 Point the leaf apps at the OR organisation once 5.1 is decided.
+- [x] 5.1 DECIDED and built: `openregister:organisations:adopt`. The uuid is
+      the idempotency key and is preserved, following the rule dossiq's
+      `migrate-partners` arrived at — a leaf row may carry no slug, and two
+      rows sharing a name are routine, so a name-derived key would skip the
+      second as "already migrated" and silently merge two legal entities.
+      Where the same entity already exists under a different uuid the rows are
+      NOT collapsed: the adopted row is created and pointed at the existing one
+      through `mergedInto`, so both uuids keep resolving. Matching is on OIN,
+      then RSIN, then KVK, normalised for punctuation, and never on a name.
+      Lowest id is canonical; a merged-away candidate loses to a live one.
+      Properties Organisation has no column for are NAMED before the write,
+      because OpenRegister discards an undeclared property and answers 200.
+      Dry-run by default. Proven live on the dev instance including the
+      negative control (no shared identifier, no merge reported).
+- [ ] 5.2 Point the leaf apps at the OR organisation. opencatalogi maps
+      9-for-9 onto Organisation apart from `tooiIdentifier`. Stackiq's 21
+      properties leave 8 with no column (`xml`, `contactsUid`,
+      `contactpersonen`, `deelnames`, `participants`, `samenwerkingtype`,
+      `registeredBy`, `publicationDate`/`depublicationDate`), so it needs a
+      field ruling before its schema can be retired.
