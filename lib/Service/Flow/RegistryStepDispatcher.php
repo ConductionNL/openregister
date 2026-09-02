@@ -48,10 +48,19 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 	 *                                 callers with no run to guard — the flow
 	 *                                 tester and the node unit tests dispatch
 	 *                                 without one.
+	 * @param FlowRunAsScope|null $scope Executes a CONTRIBUTED node as the
+	 *                                   run's acting identity. Null only for a
+	 *                                   dispatcher built by hand with no
+	 *                                   container behind it — the flow tester
+	 *                                   and the node unit tests — which then
+	 *                                   runs every node bare, exactly like the
+	 *                                   nullable guard; all three production
+	 *                                   construction sites supply one.
 	 */
 	public function __construct(
 		private readonly FlowNodeRegistry $registry,
 		private readonly ?FlowRunGuard $guard = null,
+		private readonly ?FlowRunAsScope $scope = null,
 	) {
 
 	}//end __construct()
@@ -117,7 +126,7 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 		$this->scopeSignal(context: $context, scoped: $scoped);
 
 		$startedAt = microtime(true);
-		$out = $node->execute(items: $items, config: $config, context: $context);
+		$out = $this->executeScoped(node: $node, items: $items, config: $config, context: $context);
 		$tookMs = (int)round((microtime(true) - $startedAt) * 1000);
 
 		// Reached only when the node RETURNED. A node that suspends throws, so
@@ -132,6 +141,56 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 
 		return $out;
 	}//end dispatch()
+
+	/**
+	 * Execute the node — a CONTRIBUTED one inside the run's acting identity.
+	 *
+	 * The engine's `runAs` used to reach a contributed node as a context key
+	 * and nothing more: unless the app built its own wrapper, every write the
+	 * node performed ran under the ambient session — which under the cron
+	 * worker is nobody, so it was refused as anonymous no matter whose rights
+	 * the run declared. dossiq shipped three broken nodes (and a fourth
+	 * handler) before building that wrapper. The identity is run-level state,
+	 * so the dispatcher applies it: every consumer inherits the scoping
+	 * instead of re-implementing it.
+	 *
+	 * WHO IS WRAPPED. A node whose class lives under `OCA\OpenRegister\` is
+	 * the engine's own and already scopes itself — `ObjectWriteNode` and
+	 * friends validate and wrap internally, with node-specific wording and
+	 * skip-when semantics — so wrapping it again would change the ambient
+	 * identity of nodes that deliberately run bare. Everything else is
+	 * contributed and runs inside {@see FlowRunAsScope}, which validates the
+	 * identity (exists, enabled — refused loudly otherwise) and NARROWS to it;
+	 * a contributed node that must manage its own identity declares
+	 * {@see IFlowSelfScopedNode}, the documented escape hatch.
+	 *
+	 * A context that names NO identity runs the node bare either way — the
+	 * interactive path — so a dispatcher walking a tester context changes
+	 * nothing.
+	 *
+	 * @param IFlowNode $node The resolved node.
+	 * @param array $items The input items.
+	 * @param array $config The step configuration.
+	 * @param array $context The node context.
+	 *
+	 * @return array The output items.
+	 *
+	 * @spec openspec/changes/flow-engine-consumer-seams/specs/flow-engine-consumer-seams/spec.md#requirement-a-contributed-node-executes-under-the-runs-acting-identity
+	 */
+	private function executeScoped(IFlowNode $node, array $items, array $config, array $context): array {
+		$engineOwned = str_starts_with(get_class($node), 'OCA\\OpenRegister\\');
+
+		if ($this->scope === null || $engineOwned === true || $node instanceof IFlowSelfScopedNode === true) {
+			return $node->execute(items: $items, config: $config, context: $context);
+		}
+
+		return (array)$this->scope->call(
+			context: $context,
+			operation: static function () use ($node, $items, $config, $context): array {
+				return $node->execute(items: $items, config: $config, context: $context);
+			}
+		);
+	}//end executeScoped()
 
 	/**
 	 * Put this node's resume slot into the context it is about to be called with.

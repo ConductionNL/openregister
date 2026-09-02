@@ -518,7 +518,7 @@ class FlowMessagingService {
 	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
 	 */
 	private function resolveActingUser(array $context): string {
-		$uid = ($context['runAs'] ?? null);
+		$uid = ($context[FlowRunService::RUN_AS_CONTEXT_KEY] ?? null);
 		if (is_string($uid) === false || trim($uid) === '') {
 			throw new RuntimeException(
 				'This flow run has no acting identity (runAs); a message must have a sender, so nothing was sent.'

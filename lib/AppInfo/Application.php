@@ -526,7 +526,11 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Service\Flow\FlowStepDispatcher::class,
 			static function ($c) {
 				return new RegistryStepDispatcher(
-					registry: $c->get(\OCA\OpenRegister\Service\Flow\FlowNodeRegistry::class)
+					registry: $c->get(\OCA\OpenRegister\Service\Flow\FlowNodeRegistry::class),
+					// The acting-identity scope IS container state, unlike the
+					// guard: a loop's body steps must scope a contributed node
+					// to the run's runAs exactly as top-level steps do.
+					scope: $c->get(\OCA\OpenRegister\Service\Flow\FlowRunAsScope::class)
 				);
 			}
 		);
