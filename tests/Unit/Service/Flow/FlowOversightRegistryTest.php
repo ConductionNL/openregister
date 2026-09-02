@@ -11,6 +11,9 @@ namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowOversightRegistry;
 use OCA\OpenRegister\Service\Flow\IFlowOversightCheck;
+use OCA\OpenRegister\Service\Flow\RegisterFlowOversightEvent;
+use OCP\EventDispatcher\Event;
+use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -120,4 +123,55 @@ class FlowOversightRegistryTest extends TestCase {
 		$this->assertCount(1, $registry->all());
 		$this->assertSame('second', $registry->firstRefusal([])['reason']);
 	}//end testRegisteringTheSameIdReplacesTheEarlierCheck()
+
+	/**
+	 * THE GAP THE 2026-09-01 ACCEPTANCE RUN FOUND. Listeners for
+	 * RegisterFlowOversightEvent were registered on every boot, but nothing
+	 * ever dispatched the event — so the registry consulted on every hop was
+	 * permanently empty and the instance kill switch was decorative. The
+	 * registry must collect its contributions itself, the way
+	 * FlowNodeRegistry does, before it answers its first question.
+	 */
+	public function testTheRegistryCollectsContributedChecksBeforeAnswering(): void {
+		$contributed = $this->check('app.gate', 'closed');
+
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->expects($this->once())->method('dispatchTyped')->willReturnCallback(
+			static function (Event $event) use ($contributed): void {
+				if ($event instanceof RegisterFlowOversightEvent) {
+					$event->registerCheck(check: $contributed);
+				}
+			}
+		);
+
+		$registry = new FlowOversightRegistry(new \Psr\Log\NullLogger(), $dispatcher);
+
+		$refusal = $registry->firstRefusal([]);
+		$this->assertNotNull($refusal, 'a contributed check must actually be consulted');
+		$this->assertSame('app.gate', $refusal['checkId']);
+
+		// Once. A second question must not re-dispatch and re-register.
+		$this->assertSame('app.gate', $registry->firstRefusal([])['checkId']);
+	}//end testTheRegistryCollectsContributedChecksBeforeAnswering()
+
+	/**
+	 * `all()` discovers too: a surface listing the active checks must not
+	 * read empty while the checks are one dispatch away.
+	 */
+	public function testAllCollectsContributionsAsWell(): void {
+		$contributed = $this->check('app.gate', null);
+
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->method('dispatchTyped')->willReturnCallback(
+			static function (Event $event) use ($contributed): void {
+				if ($event instanceof RegisterFlowOversightEvent) {
+					$event->registerCheck(check: $contributed);
+				}
+			}
+		);
+
+		$registry = new FlowOversightRegistry(new \Psr\Log\NullLogger(), $dispatcher);
+
+		$this->assertArrayHasKey('app.gate', $registry->all());
+	}//end testAllCollectsContributionsAsWell()
 }//end class

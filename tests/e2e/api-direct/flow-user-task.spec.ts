@@ -580,6 +580,85 @@ test.describe('flow-user-task-node: a person in the graph', () => {
 		expect(transitions).toContain('two')
 	})
 
+	// @e2e flow-engine::a-run-suspended-on-an-external-signal-must-be-reachable
+	test('a resume answers only the node that asked; the next await asks fresh', async ({
+		request,
+	}) => {
+		const job = runWorkerJobId()
+		test.skip(
+			job === null,
+			'FlowRunWorker not reachable via occ; a resume parks the run for the worker',
+		)
+
+		// Two sequential await-signal nodes. The 2026-09-01 acceptance run
+		// showed the second consuming the FIRST answer out of the shared
+		// signal key and completing in 0ms, racing the run to its end (runs
+		// f8996ccc / ca50c56c). One answer must advance the run to the NEXT
+		// question, never past it.
+		const flowId = await createFlow(
+			request,
+			'two signals',
+			[
+				{
+					id: 'first-gate',
+					type: 'openregister.await-signal',
+					config: { question: 'first gate?', signalKey: 'firstGate' },
+					position: { x: 0, y: 0 },
+				},
+				{
+					id: 'second-gate',
+					type: 'openregister.await-signal',
+					config: { question: 'second gate?', signalKey: 'secondGate' },
+					position: { x: 0, y: 0 },
+				},
+				setFields('done', { finished: true }),
+			],
+			[
+				{ id: 'e1', from: 'first-gate', to: 'second-gate' },
+				{ id: 'e2', from: 'second-gate', to: 'done' },
+			],
+		)
+		flows.push(flowId)
+
+		const run = await testRun(request, flowId)
+		expect(run.status).toBe('suspended')
+
+		const answer = async (payload: Record<string, unknown>) => {
+			const resp = await request.post(`${API}/flow-runs/${run.uuid}/resume`, {
+				headers: JSON_HEADERS,
+				data: payload,
+			})
+			expect(resp.status(), await resp.text()).toBe(200)
+			occ(`background-job:execute ${job} --force-execute`)
+		}
+
+		await answer({ decision: 'approved', mark: 'first' })
+
+		const between = await readRun(request, run.uuid)
+		expect(
+			between.status,
+			'one answer advances the run to the NEXT question, never to the end',
+		).toBe('suspended')
+		const suspendedAt = (between.log ?? [])
+			.filter((entry: { status?: string }) => entry.status === 'suspended')
+			.map((entry: { transition?: string }) => entry.transition)
+		expect(suspendedAt, 'the second gate asked fresh').toContain('second-gate')
+
+		await answer({ decision: 'approved', mark: 'second' })
+
+		const after = await readRun(request, run.uuid)
+		expect(after.status).toBe('completed')
+		const item = (after.items ?? [])[0]?.json ?? {}
+		expect(item.finished).toBe(true)
+		expect(item.firstGate?.mark, 'the first gate holds the first answer').toBe(
+			'first',
+		)
+		expect(
+			item.secondGate?.mark,
+			'the second gate holds ITS answer, not an inherited one',
+		).toBe('second')
+	})
+
 	// @e2e flow-user-task-node::stopping-a-run-empties-its-inboxes
 	test("stopping a run removes its tasks from the assignees' inboxes", async ({
 		request,

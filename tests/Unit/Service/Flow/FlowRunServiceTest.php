@@ -16,13 +16,18 @@ use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
+use OCA\OpenRegister\Service\Flow\FlowOversightRegistry;
+use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunMarkingStore;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\Oversight\KillSwitchCheck;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -126,6 +131,62 @@ class BranchRecordingNode implements IFlowNode {
 	}
 }
 
+/**
+ * An await-signal-shaped node: consumes a visible signal as its answer,
+ * otherwise records the ask in its OWN resume slot and suspends — the shape
+ * AwaitSignalNode and dossiq's askPerson/requestDecision nodes share.
+ */
+class AskingNode implements IFlowNode {
+	/**
+	 * The signal each node id saw on each entry, in order.
+	 */
+	public array $sawSignal = [];
+
+	public function getId(): string {
+		return 'test.ask';
+	}
+
+	public function getDisplayName(): string {
+		return 'Ask';
+	}
+
+	public function getDescription(): string {
+		return 'Waits for an answer.';
+	}
+
+	public function getIcon(): string {
+		return 'i.svg';
+	}
+
+	public function isAvailableForScope(int $scope): bool {
+		return true;
+	}
+
+	public function validateConfig(array $config): void {
+	}
+
+	public function execute(array $items, array $config, array $context): array {
+		$slot = $context[FlowNodeResumeState::CONTEXT_KEY];
+		$signal = ($context[FlowRunService::SIGNAL_CONTEXT_KEY] ?? null);
+		$this->sawSignal[$slot->nodeId()][] = $signal;
+
+		if (is_array($signal) === true && trim((string)($signal['decision'] ?? '')) !== '') {
+			foreach ($items as $index => $item) {
+				$item['json'][$slot->nodeId()] = $signal;
+				$items[$index] = $item;
+			}
+
+			return $items;
+		}
+
+		if ($slot->has(key: 'askedAt') === false) {
+			$slot->set(key: 'askedAt', value: '2026-09-01T00:00:00+00:00');
+		}
+
+		throw new FlowSuspension(resumeAt: null, reason: 'waiting for an answer');
+	}
+}
+
 /** Records the context it was handed, so attribution can be asserted. */
 class ContextCapturingNode implements IFlowNode {
 	public array $seenContext = [];
@@ -173,6 +234,8 @@ class FlowRunServiceTest extends TestCase {
 
 	private BranchRecordingNode $retryBranch;
 
+	private AskingNode $asker;
+
 	protected function setUp(): void {
 		$this->mapper = $this->createMock(FlowRunMapper::class);
 		// insert/update echo the entity back, so assertions read the real state.
@@ -183,6 +246,7 @@ class FlowRunServiceTest extends TestCase {
 		$this->capturer = new ContextCapturingNode();
 		$this->doneBranch = new BranchRecordingNode(id: 'test.done');
 		$this->retryBranch = new BranchRecordingNode(id: 'test.retry');
+		$this->asker = new AskingNode();
 
 		$dispatcher = $this->createMock(IEventDispatcher::class);
 		$dispatcher->method('dispatchTyped')->willReturnCallback(
@@ -192,6 +256,7 @@ class FlowRunServiceTest extends TestCase {
 					$event->registerNode($this->capturer);
 					$event->registerNode($this->doneBranch);
 					$event->registerNode($this->retryBranch);
+					$event->registerNode($this->asker);
 				}
 			}
 		);
@@ -409,6 +474,193 @@ class FlowRunServiceTest extends TestCase {
 		$this->assertSame(2, $this->retryBranch->calls, 'exactly one re-check, which sees the answer');
 		$this->assertSame(1, $this->doneBranch->calls);
 	}//end testAReAskLoopThatReceivesTheAnswerTerminates()
+
+	/**
+	 * THE RESUME ANSWER IS SCOPED TO THE NODE THAT SUSPENDED — through the
+	 * worker path. `signal()` then `execute()` is exactly what the resume
+	 * endpoint plus the next FlowRunWorker pass do, so this is the defect the
+	 * 2026-09-01 acceptance run caught (runs f8996ccc / ca50c56c) driven
+	 * through the same seam: answering the FIRST wait must leave the SECOND
+	 * suspended on a fresh ask of its own, not complete it in zero
+	 * milliseconds on somebody else's answer.
+	 *
+	 * @return void
+	 */
+	public function testAnsweringOneWaitDoesNotAnswerTheNext(): void {
+		$flow = [
+			'id' => 'f1',
+			'nodes' => [
+				['id' => 'first', 'type' => 'test.ask'],
+				['id' => 'second', 'type' => 'test.ask'],
+			],
+			'edges' => [
+				['id' => 'e1', 'from' => 'first', 'to' => 'second'],
+			],
+		];
+
+		$run = $this->service->queue('f1', user: 'alice');
+		$run = $this->service->execute($run, $flow, new RunSubject());
+		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
+		$this->assertArrayHasKey(
+			'first',
+			($run->getContext()[FlowResumeState::CONTEXT_KEY] ?? []),
+			'the first ask holds the run'
+		);
+
+		// The answer to the FIRST question arrives; the worker picks the run up.
+		$answer = ['decision' => 'approved', 'node' => 'first', 'taskId' => 'task-1'];
+		$run = $this->service->signal($run, $answer);
+		$this->assertNotNull($run, 'a suspended run accepts its signal');
+		$run = $this->service->execute($run, $flow, new RunSubject());
+
+		$this->assertSame(
+			FlowRun::STATUS_SUSPENDED,
+			$run->getStatus(),
+			'one answer advances the run to the NEXT question, never to the end'
+		);
+
+		$slots = ($run->getContext()[FlowResumeState::CONTEXT_KEY] ?? []);
+		$this->assertArrayHasKey('second', $slots, 'the second ask recorded a question of its own');
+		$this->assertArrayNotHasKey('first', $slots, 'the answered ask keeps no slot');
+		$this->assertArrayNotHasKey(
+			FlowRunService::SIGNAL_CONTEXT_KEY,
+			($run->getContext() ?? []),
+			'the consumed signal does not linger in the stored context'
+		);
+
+		$this->assertSame(
+			[null, $answer],
+			$this->asker->sawSignal['first'] ?? [],
+			'the answered node read the payload on its resume, and only then'
+		);
+		$this->assertSame(
+			[null],
+			$this->asker->sawSignal['second'] ?? [],
+			'the second node never saw the first answer'
+		);
+
+		// The second answer is the one that finishes the run, and each item
+		// carries each answer under its OWN node.
+		$secondAnswer = ['decision' => 'approved', 'node' => 'second'];
+		$run = $this->service->signal($run, $secondAnswer);
+		$run = $this->service->execute($run, $flow, new RunSubject());
+
+		$this->assertSame(FlowRun::STATUS_COMPLETED, $run->getStatus());
+		$item = ($run->getItems()[0]['json'] ?? []);
+		$this->assertSame($answer, ($item['first'] ?? null));
+		$this->assertSame($secondAnswer, ($item['second'] ?? null));
+	}//end testAnsweringOneWaitDoesNotAnswerTheNext()
+
+	/**
+	 * On the first walk — no suspension yet, nothing resuming — an ask node
+	 * asks rather than answering itself: the negative control for the
+	 * scoping, proving the signal gate does not leak on fresh runs either.
+	 *
+	 * @return void
+	 */
+	public function testAFreshRunsFirstAskSeesNoSignal(): void {
+		$flow = [
+			'id' => 'f1',
+			'nodes' => [['id' => 'only', 'type' => 'test.ask']],
+			'edges' => [],
+		];
+
+		$run = $this->service->queue('f1', user: 'alice');
+		$run = $this->service->execute($run, $flow, new RunSubject());
+
+		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
+		$this->assertSame([null], $this->asker->sawSignal['only'] ?? []);
+	}//end testAFreshRunsFirstAskSeesNoSignal()
+
+	/**
+	 * THE OPERATOR'S STOP LANDS ON THE NEXT OBSERVATION. The kill switch is
+	 * thrown while a run is suspended; the operator nudges it (`resume` with
+	 * an empty body is `signal([])`) and the next worker pass must end the run
+	 * `stopped` — the oversight veto travels an author's Stop-step path — not
+	 * leave it suspended forever. The run's terminal write is what triggers
+	 * task termination (FlowRunTerminalEvent → terminateForRun), so a stop
+	 * that never lands is also an inbox that never empties.
+	 *
+	 * @return void
+	 */
+	public function testAKillSwitchVetoLandsTheStopOnTheNextObservation(): void {
+		$thrown = false;
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueBool')->willReturnCallback(
+			static function (string $app, string $key, bool $default = false) use (&$thrown): bool {
+				return $thrown;
+			}
+		);
+
+		$oversight = new FlowOversightRegistry(logger: $this->createMock(LoggerInterface::class));
+		$oversight->register(check: new KillSwitchCheck(appConfig: $appConfig));
+
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->method('dispatchTyped')->willReturnCallback(
+			function (Event $event): void {
+				if ($event instanceof RegisterFlowNodesEvent) {
+					$event->registerNode($this->waiter);
+				}
+			}
+		);
+		$registry = new FlowNodeRegistry($dispatcher, $this->createMock(LoggerInterface::class));
+		$engine = new FlowEngine(
+			new FlowDefinitionBuilder(),
+			$this->createMock(LoggerInterface::class),
+			$oversight
+		);
+
+		$container = $this->createMock(ContainerInterface::class);
+		$versions = $this->publishedVersionMapper();
+		$pin = $this->pinReturning();
+		$container->method('get')->willReturnCallback(
+			function (string $id) use ($versions, $pin): object {
+				if ($id === \OCA\OpenRegister\Db\FlowVersionMapper::class) {
+					return $versions;
+				}
+
+				if ($id === \OCA\OpenRegister\Service\Flow\FlowDefinitionPin::class) {
+					return $pin;
+				}
+
+				throw new \RuntimeException('not available');
+			}
+		);
+
+		$service = new FlowRunService(
+			$this->mapper,
+			$this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
+			$engine,
+			$registry,
+			$this->createMock(LoggerInterface::class),
+			$container
+		);
+
+		$run = $service->queue('f1', user: 'alice');
+		$run = $service->execute($run, $this->waitFlow(), new RunSubject());
+		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
+
+		// The operator throws the switch and nudges the parked run.
+		$thrown = true;
+		$run = $service->signal($run, []);
+		$this->assertNotNull($run);
+		$run = $service->execute($run, $this->waitFlow(), new RunSubject());
+
+		$this->assertSame(
+			FlowRun::STATUS_STOPPED,
+			$run->getStatus(),
+			'the veto must END the run; a stop that leaves it suspended never lands'
+		);
+
+		$last = $run->getLog()[count($run->getLog()) - 1];
+		$this->assertSame('stopped', $last['status']);
+		$this->assertSame(
+			'openregister.kill-switch',
+			($last['checkId'] ?? null),
+			'the history records WHICH gate closed'
+		);
+		$this->assertNull($run->getResumeAt(), 'a stopped run is never due again');
+	}//end testAKillSwitchVetoLandsTheStopOnTheNextObservation()
 
 	/**
 	 * The refresh reaches the PER-PLACE buffers too: with a stream layer the
