@@ -166,6 +166,28 @@ class TaskMapperQueriesTest extends TestCase {
 	}//end testInsertAndUpdateStampAndGuardTheEntityType()
 
 	/**
+	 * The sweep's task scan (task-expiry-and-outcomes D-3) selects only open
+	 * rows that DECLARE a timeout behaviour, orders by the deadline, and is
+	 * bounded by a floored batch limit.
+	 *
+	 * @return void
+	 */
+	public function testFindDueTimeoutsScansOpenDeclaredRowsBoundedAndOrdered(): void {
+		$mapper = new TaskMapper(db: $this->connectionWith(rows: [$this->row()]));
+		$due = $mapper->findDueTimeouts(now: new \DateTime('2026-09-02 10:00:00'), limit: 200);
+		$this->assertCount(1, $due);
+		$this->assertSame('t-7', $due[0]->getUuid());
+		$this->assertTrue($this->saw('expr.eq', 'is_terminal'));
+		$this->assertTrue($this->saw('expr.isNotNull', 'on_timeout'));
+		$this->assertTrue($this->saw('orderBy', 'expires_at'));
+		$this->assertTrue($this->saw('setMaxResults', 200));
+
+		// The batch limit is floored at one, never zero or negative.
+		(new TaskMapper(db: $this->connectionWith(rows: [])))->findDueTimeouts(now: new \DateTime('2026-09-02 10:00:00'), limit: -5);
+		$this->assertTrue($this->saw('setMaxResults', 1));
+	}//end testFindDueTimeoutsScansOpenDeclaredRowsBoundedAndOrdered()
+
+	/**
 	 * The propagation read selects by run uuid AND openness — the structural
 	 * half of "a standalone task survives everything".
 	 *
