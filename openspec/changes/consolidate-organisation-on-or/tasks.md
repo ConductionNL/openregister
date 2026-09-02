@@ -22,9 +22,13 @@
 - [x] 3.1 Implement `OrganisationMapper::resolveMergeTarget()` — bounded,
       cycle-guarded, never failing open.
 - [x] 3.2 Implement `findByUuidFollowingMerge()` as the read counterpart.
-- [ ] 3.3 Call the resolver from the live tenant-resolution path. HELD: this
-      changes which rows every scoped query returns for a merged organisation,
-      so it needs its own change and its own regression suite.
+- [x] 3.3 Call the resolver from the live tenant-resolution path. Both entries
+      into `fetchActiveOrganisationFromDatabase()` now walk it: the stored
+      active UUID, and the oldest-membership auto-pick that runs when nothing
+      is stored. The walk is guarded on `isMerged()`, so an unmerged row costs
+      no query, and the survivor is written back to user config so the walk is
+      a one-off per user per merge. Six regression tests in
+      `tests/Unit/Service/ActiveOrganisationFollowsMergeTest.php`.
 
 ## 4. Tests
 

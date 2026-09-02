@@ -1167,6 +1167,92 @@ class OrganisationService {
 	}//end hasAdminGroupInAuthorization()
 
 	/**
+	 * Resolve an organisation through its merge chain
+	 *
+	 * A merge is recorded on the row that was merged AWAY, so a UUID held
+	 * anywhere outside the mapper — a user's stored active organisation, a
+	 * membership list, a federation peer's reference — can name an organisation
+	 * that no longer owns anything. The resolver is bounded and cycle-guarded
+	 * and never fails open; if the survivor cannot be loaded this returns the
+	 * organisation it was handed, which is a real row.
+	 *
+	 * @param Organisation $organisation The (possibly merged-away) organisation.
+	 *
+	 * @return Organisation The surviving organisation, or the input if unresolvable.
+	 *
+	 * @spec openspec/changes/consolidate-organisation-on-or/tasks.md#3-merge-resolution
+	 */
+	private function followMerge(Organisation $organisation): Organisation {
+		// The overwhelming majority of rows were never merged, and those need no
+		// walk at all: the flag lives on the row that was merged AWAY.
+		if ($organisation->isMerged() === false) {
+			return $organisation;
+		}
+
+		$uuid = (string) $organisation->getUuid();
+		if ($uuid === '') {
+			return $organisation;
+		}
+
+		try {
+			return $this->organisationMapper->findByUuidFollowingMerge(uuid: $uuid);
+		} catch (Exception $e) {
+			// An unresolvable survivor is a data defect, not a reason to hand
+			// the caller nothing: the row we already have is real.
+			$this->logger->warning(
+				message: '[OrganisationService] Could not resolve merge target; keeping the organisation as stored',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'organisationUuid' => $uuid,
+					'error' => $e->getMessage(),
+				]
+			);
+			return $organisation;
+		}
+	}//end followMerge()
+
+	/**
+	 * Write a followed merge back into the user's stored active organisation
+	 *
+	 * Following the merge on every read is correct but leaves the dead UUID in
+	 * config forever, so every later read pays the walk. Persisting the survivor
+	 * once makes the walk a one-off per user per merge.
+	 *
+	 * @param string       $userId       The user whose setting is being corrected.
+	 * @param string       $storedUuid   The UUID currently in user config.
+	 * @param Organisation $organisation The organisation the merge resolved to.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/consolidate-organisation-on-or/tasks.md#3-merge-resolution
+	 */
+	private function persistFollowedMerge(string $userId, string $storedUuid, Organisation $organisation): void {
+		$survivorUuid = (string) $organisation->getUuid();
+		if ($survivorUuid === '' || $survivorUuid === $storedUuid) {
+			return;
+		}
+
+		$this->config->setUserValue(
+			$userId,
+			self::APP_NAME,
+			self::CONFIG_ACTIVE_ORGANISATION,
+			$survivorUuid
+		);
+
+		$this->logger->info(
+			message: '[OrganisationService] Active organisation followed a merge',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'userId' => $userId,
+				'from' => $storedUuid,
+				'to' => $survivorUuid,
+			]
+		);
+	}//end persistFollowedMerge()
+
+	/**
 	 * Fetch active organisation from database (cache miss fallback)
 	 *
 	 * @param string $userId The user ID to fetch active organisation for.
@@ -1190,8 +1276,21 @@ class OrganisationService {
 			try {
 				$organisation = $this->organisationMapper->findByUuid($activeUuid);
 
-				// Verify user still has access to this organisation.
+				// Follow the merge chain BEFORE the UUID is used as a scope. A
+				// merged-away organisation no longer owns its data, so using the
+				// stored UUID literally would run every scoped query for this
+				// user under a tenant boundary that no longer applies.
+				$organisation = $this->followMerge(organisation: $organisation);
+
+				// Verify user still has access to this organisation. Note this is
+				// membership of the SURVIVOR: a user the merge did not carry over
+				// falls through to their own organisation list, which fails closed.
 				if ($organisation->hasUser($userId) === true) {
+					$this->persistFollowedMerge(
+						userId: $userId,
+						storedUuid: $activeUuid,
+						organisation: $organisation
+					);
 					return $organisation;
 				}
 
@@ -1234,7 +1333,10 @@ class OrganisationService {
 				}
 			);
 
-			$oldestOrg = $organisations[0];
+			// The user's membership list can still name a merged-away
+			// organisation, so the auto-pick resolves too — otherwise the very
+			// first login after a merge writes the dead UUID back into config.
+			$oldestOrg = $this->followMerge(organisation: $organisations[0]);
 
 			// Set in user configuration.
 			$this->config->setUserValue(
