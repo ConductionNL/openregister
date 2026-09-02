@@ -201,10 +201,10 @@ class ContentSearchHandlerTest extends TestCase {
 		);
 
 		$this->assertSame([], $result['results']);
-		// Total is metaTotal + distinct-chunk-owners upper bound (1 chunk hit
-		// even though it turned out to be unresolvable). See "stable total
-		// across pages" fix — over-count is intentional and accepted.
-		$this->assertSame(4, $result['total']);
+		// The unresolvable owner is NOT counted. `total` is the number of
+		// chunk owners this caller can actually see, so a chunk whose owning
+		// object cannot be resolved contributes nothing to it.
+		$this->assertSame(3, $result['total']);
 	}//end testFileChunkWithUnresolvableOwningObjectIsSkippedSilently()
 
 	public function testResolveExceptionIsCaughtLoggedAndSkipped(): void {
@@ -225,9 +225,10 @@ class ContentSearchHandlerTest extends TestCase {
 		);
 
 		$this->assertSame([], $result['results']);
-		// Total is upper-bound: chunk-owner set included the doomed id
-		// before the resolve threw. See "stable total across pages" fix.
-		$this->assertSame(1, $result['total']);
+		// A hit whose resolve THREW is not a hit this caller can see, so it
+		// is not counted either. Swallowing the exception must not leave the
+		// row behind in the count.
+		$this->assertSame(0, $result['total']);
 	}//end testResolveExceptionIsCaughtLoggedAndSkipped()
 
 	// =========================================================================
@@ -256,10 +257,10 @@ class ContentSearchHandlerTest extends TestCase {
 		);
 
 		$this->assertCount(1, $result['results']);
-		// Total is upper-bound: chunk-owner set had 1 hit even though it
-		// deduped against the metadata arm. Over-count is intentional per
-		// "stable total across pages" fix — pagination stays consistent.
-		$this->assertSame(2, $result['total']);
+		// One object, counted once. It is already in the metadata arm's
+		// total, so the chunk arm must not add it a second time — an object
+		// that matches BOTH ways is still one result.
+		$this->assertSame(1, $result['total']);
 	}//end testObjectAlreadyMatchedByMetadataArmIsNotDuplicated()
 
 	// =========================================================================
@@ -282,9 +283,8 @@ class ContentSearchHandlerTest extends TestCase {
 		);
 
 		$this->assertSame([], $result['results']);
-		// Total is upper-bound: the out-of-scope chunk is counted before the
-		// scope filter runs. Over-count accepted per "stable total" fix.
-		$this->assertSame(1, $result['total']);
+		// Out of the caller's register scope is out of the caller's count.
+		$this->assertSame(0, $result['total']);
 	}//end testObjectOutsideRequestedRegisterIsSkipped()
 
 	public function testObjectOutsideRequestedSchemasIsSkipped(): void {
@@ -303,9 +303,8 @@ class ContentSearchHandlerTest extends TestCase {
 		);
 
 		$this->assertSame([], $result['results']);
-		// Total is upper-bound: the out-of-scope chunk is counted before the
-		// scope filter runs. Over-count accepted per "stable total" fix.
-		$this->assertSame(1, $result['total']);
+		// Out of the caller's schema scope is out of the caller's count.
+		$this->assertSame(0, $result['total']);
 	}//end testObjectOutsideRequestedSchemasIsSkipped()
 
 	public function testUnscopedQueryMatchesAnyRegisterOrSchema(): void {
@@ -338,7 +337,12 @@ class ContentSearchHandlerTest extends TestCase {
 				['entity_type' => 'object', 'entity_id' => '42', 'score' => 0.8, 'chunk_text' => 'x', 'chunk_index' => 0, 'metadata' => []],
 			]
 		);
-		$this->objectMapper->expects($this->never())->method('find');
+		// The hit RESOLVES even though this page has no room for it. That is
+		// the change: `total` can only be truthful if visibility is actually
+		// checked, and visibility cannot be known without resolving. The cost
+		// is bounded by CHUNK_CANDIDATE_LIMIT, which this class already
+		// documents as its worst case.
+		$this->objectMapper->method('find')->willReturn($this->makeObject(42));
 
 		// limit=1, already 1 metadata-match result -> zero room for chunk-only appends.
 		$result = $this->handler->augmentWithChunkMatches(
@@ -348,11 +352,12 @@ class ContentSearchHandlerTest extends TestCase {
 			limit: 1
 		);
 
+		// The page is still clamped: nothing is appended beyond the room.
 		$this->assertCount(1, $result['results']);
-		// Total is upper-bound = metaTotal + distinct chunk-owner count
-		// (1 chunk hit, room=0 so nothing appended). This is the whole point
-		// of the "stable total" fix: page 2 of the same query would then
-		// append this chunk, and the total stays 2 across both pages.
+		// And the total still counts the resolvable owner, so page 2 of the
+		// same query reports the same number. Stability now comes from
+		// resolving the same candidate set every page, not from counting
+		// candidates nobody can see.
 		$this->assertSame(2, $result['total']);
 	}//end testAppendedRowsAreClampedToRemainingRoomOnThePage()
 
