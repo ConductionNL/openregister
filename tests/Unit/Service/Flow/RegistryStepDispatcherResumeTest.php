@@ -12,6 +12,7 @@ namespace Unit\Service\Flow;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
+use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
@@ -189,6 +190,122 @@ class RegistryStepDispatcherResumeTest extends TestCase {
 		);
 
 		$dispatcher->dispatch(['type' => 'test.node'], [], [FlowResumeState::CONTEXT_KEY => $state]);
+
+		$this->assertNull($seen);
+	}
+
+	/**
+	 * A resume signal answers ONE node: the one whose held slot marks it as
+	 * the node that suspended. That node reads the payload.
+	 */
+	public function testTheSignalReachesTheNodeWhoseSlotItAnswers(): void {
+		$state = new FlowResumeState();
+		$state->forNode(nodeId: 'first-ask')->set(key: 'askedAt', value: '2026-09-01T00:00:00+00:00');
+
+		$seen = 'unset';
+		$dispatcher = $this->dispatcher(
+			$this->node(function (array $items, array $config, array $context) use (&$seen): array {
+				$seen = ($context[FlowRunService::SIGNAL_CONTEXT_KEY] ?? null);
+
+				return $items;
+			})
+		);
+
+		$dispatcher->dispatch(
+			['id' => 'first-ask', 'type' => 'test.node'],
+			[],
+			[
+				FlowResumeState::CONTEXT_KEY => $state,
+				FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'approved'],
+			]
+		);
+
+		$this->assertSame(['decision' => 'approved'], $seen);
+	}
+
+	/**
+	 * THE LEAK THIS SCOPING REMOVES. A wait node the resumed walk reaches
+	 * AFTER the answered one holds no slot — it never suspended — so the
+	 * payload is not its answer and must not be readable as one. Unscoped,
+	 * every later wait node in the walk completed on somebody else's answer:
+	 * observed live as a decision step whose outcome was an applicant task's
+	 * completion payload (run f8996ccc), and a second decision inheriting the
+	 * first's reference (run ca50c56c).
+	 */
+	public function testAFreshWaitNodeInTheSameWalkDoesNotSeeTheSignal(): void {
+		$state = new FlowResumeState();
+		// The answered node's slot is already cleared: it consumed the signal
+		// and returned. The second node enters with no slot of its own.
+		$seen = 'unset';
+		$dispatcher = $this->dispatcher(
+			$this->node(function (array $items, array $config, array $context) use (&$seen): array {
+				$seen = ($context[FlowRunService::SIGNAL_CONTEXT_KEY] ?? null);
+
+				return $items;
+			})
+		);
+
+		$dispatcher->dispatch(
+			['id' => 'second-ask', 'type' => 'test.node'],
+			[],
+			[
+				FlowResumeState::CONTEXT_KEY => $state,
+				FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'approved', 'node' => 'first-ask'],
+			]
+		);
+
+		$this->assertNull($seen, 'a node that never suspended has not been answered');
+	}
+
+	/**
+	 * ...and holding a DIFFERENT node's slot does not help: the addressee test
+	 * is this node's own slot, never the walk-wide fact that some slot exists.
+	 */
+	public function testAnotherNodesHeldSlotDoesNotDeliverTheSignalHere(): void {
+		$state = new FlowResumeState();
+		$state->forNode(nodeId: 'first-ask')->set(key: 'askedAt', value: '2026-09-01T00:00:00+00:00');
+
+		$seen = 'unset';
+		$dispatcher = $this->dispatcher(
+			$this->node(function (array $items, array $config, array $context) use (&$seen): array {
+				$seen = ($context[FlowRunService::SIGNAL_CONTEXT_KEY] ?? null);
+
+				return $items;
+			})
+		);
+
+		$dispatcher->dispatch(
+			['id' => 'second-ask', 'type' => 'test.node'],
+			[],
+			[
+				FlowResumeState::CONTEXT_KEY => $state,
+				FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'approved'],
+			]
+		);
+
+		$this->assertNull($seen);
+	}
+
+	/**
+	 * With no slot machinery there is no addressee, so the signal is withheld
+	 * rather than delivered to whichever node happens to run: suspending
+	 * visibly beats answering the wrong question silently.
+	 */
+	public function testWithNoSlotMachineryTheSignalIsWithheld(): void {
+		$seen = 'unset';
+		$dispatcher = $this->dispatcher(
+			$this->node(function (array $items, array $config, array $context) use (&$seen): array {
+				$seen = ($context[FlowRunService::SIGNAL_CONTEXT_KEY] ?? null);
+
+				return $items;
+			})
+		);
+
+		$dispatcher->dispatch(
+			['id' => 'ask', 'type' => 'test.node'],
+			[],
+			[FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'approved']]
+		);
 
 		$this->assertNull($seen);
 	}

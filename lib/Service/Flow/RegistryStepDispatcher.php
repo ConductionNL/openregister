@@ -110,6 +110,12 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 		// and cannot reach another node's slot even by accident.
 		$scoped = $this->scopeResumeState(step: $step, context: $context);
 
+		// Scope the resume SIGNAL the same way. Without this, the payload that
+		// answered ONE node's question is readable by every wait node the
+		// resumed walk goes on to enter, and each of them completes on somebody
+		// else's answer instead of suspending with a question of its own.
+		$this->scopeSignal(context: $context, scoped: $scoped);
+
 		$startedAt = microtime(true);
 		$out = $node->execute(items: $items, config: $config, context: $context);
 		$tookMs = (int)round((microtime(true) - $startedAt) * 1000);
@@ -158,6 +164,57 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 
 		return $scoped;
 	}//end scopeResumeState()
+
+	/**
+	 * Withhold the resume signal from every node except the one it answers.
+	 *
+	 * A signal wakes a RUN, but it answers one NODE: the one that suspended and
+	 * whose resume slot is still held. The walk's context is shared, so without
+	 * this gate every wait node the resumed walk re-enters AFTER the answered
+	 * one reads the same payload as its own answer and completes instead of
+	 * suspending — a flow with two approval steps auto-approves the second the
+	 * moment the first is granted, and a decision step downstream of an answered
+	 * task adopts the task's payload as its decision outcome. Observed live on
+	 * dossiq case flows (runs f8996ccc and ca50c56c, 2026-09-01): a DECISION
+	 * node's outcome held `{decision, node: "ask-indiener", taskId}` — an
+	 * applicant task's completion — and a second decision node inherited the
+	 * first decision's reference because it never suspended at all.
+	 *
+	 * The slot is the addressee test, not `$context['resuming']`: the run-wide
+	 * flag is true for every node of a resumed walk, while a held slot marks
+	 * exactly the node that suspended and has not yet been given its answer.
+	 * The dispatcher clears the slot when a node returns, so a wait node
+	 * re-entered later in the SAME walk (a loop) asks fresh rather than
+	 * re-reading a consumed answer. With no slot machinery at all (a
+	 * container-built dispatcher walking a tester context) the signal is
+	 * withheld too: with no slots there is no addressee, and withholding makes
+	 * the node suspend visibly where delivering would answer the wrong
+	 * question silently.
+	 *
+	 * The strip is LOCAL to this node's context copy — `dispatch()` receives
+	 * `$context` by value — so the walk keeps carrying the signal to the node
+	 * whose slot it answers, wherever in the round-robin that node is visited.
+	 *
+	 * @param array $context The node context, modified in place.
+	 * @param FlowNodeResumeState|null $scoped This node's resume slot, when it has one.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
+	 */
+	private function scopeSignal(array &$context, ?FlowNodeResumeState $scoped): void {
+		if (array_key_exists(FlowRunService::SIGNAL_CONTEXT_KEY, $context) === false) {
+			return;
+		}
+
+		if ($scoped !== null && $scoped->isResuming() === true) {
+			// This node is the one that suspended: the answer is its to read.
+			return;
+		}
+
+		unset($context[FlowRunService::SIGNAL_CONTEXT_KEY]);
+
+	}//end scopeSignal()
 
 	/**
 	 * Stop a step that took longer than its own `maxRuntimeSeconds`.

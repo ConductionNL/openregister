@@ -29,6 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
+use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
 use OCP\IL10N;
@@ -37,6 +39,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\WaitNode
+ *
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeResumeState
+ * @uses \OCA\OpenRegister\Service\Flow\FlowResumeState
+ * @uses \OCA\OpenRegister\Service\Flow\FlowSuspension
  */
 final class WaitNodeTest extends TestCase {
 
@@ -129,4 +135,65 @@ final class WaitNodeTest extends TestCase {
 		);
 
 	}//end testResumingPassesItemsThrough()
+
+	/**
+	 * A SECOND wait node in a resumed walk still waits.
+	 *
+	 * `context.resuming` is true for every node of a resumed walk, so a wait
+	 * the walk has only just reached must not read it as "my wait is over".
+	 * The node that suspended holds a resume slot; this one holds none, and an
+	 * empty slot means the waiting has not started yet.
+	 *
+	 * @return void
+	 */
+	public function testASecondWaitInAResumedWalkStillWaits(): void {
+		$slot = (new FlowResumeState())->forNode(nodeId: 'second-wait');
+		$context = [
+			'resuming' => true,
+			FlowNodeResumeState::CONTEXT_KEY => $slot,
+		];
+
+		try {
+			$this->node->execute([['json' => ['a' => 1]]], ['for' => '60 seconds'], $context);
+			$this->fail('a wait that never waited must suspend, resumed walk or not');
+		} catch (FlowSuspension $suspension) {
+			$this->assertNotNull(
+				actual: $suspension->getResumeAt(),
+				message: 'the second wait suspends on its OWN clock'
+			);
+		}
+
+		$this->assertTrue(
+			condition: $slot->has(key: 'waitingUntil'),
+			message: 'the suspension marks this node as the one now waiting'
+		);
+
+	}//end testASecondWaitInAResumedWalkStillWaits()
+
+	/**
+	 * The node whose own slot is held is the one whose wait is over.
+	 *
+	 * It wrote the slot when it suspended, and the run only became eligible
+	 * again once its `resumeAt` had passed — so a held slot is the per-node
+	 * fact the run-wide `resuming` flag only pretends to be.
+	 *
+	 * @return void
+	 */
+	public function testAWaitWhoseOwnSlotIsHeldPassesThrough(): void {
+		$state = new FlowResumeState();
+		$state->forNode(nodeId: 'the-wait')->set(key: 'waitingUntil', value: '2026-01-01T00:00:00+00:00');
+
+		$items = [['json' => ['a' => 1]]];
+		$context = [
+			'resuming' => true,
+			FlowNodeResumeState::CONTEXT_KEY => $state->forNode(nodeId: 'the-wait'),
+		];
+
+		$this->assertSame(
+			expected: $items,
+			actual: $this->node->execute($items, ['for' => '60 seconds'], $context),
+			message: 'the wait that suspended is over once the run is woken'
+		);
+
+	}//end testAWaitWhoseOwnSlotIsHeldPassesThrough()
 }//end class

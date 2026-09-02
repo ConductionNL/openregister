@@ -9,7 +9,11 @@
  *
  * Because the marking does not advance, this node runs a SECOND time when the
  * run resumes. That is what makes it correct rather than a one-shot: on the
- * way back in it sees `context.resuming` and lets the items straight through.
+ * way back in it sees its OWN resume slot held and lets the items straight
+ * through. Its own slot, not `context.resuming` — the run-wide flag is true
+ * for every node of a resumed walk, so a SECOND wait node reached later in
+ * the same walk would read it as "my wait is over" and pass through without
+ * ever having waited. The slot marks exactly the node that suspended.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -31,6 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use DateTime;
+use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -175,9 +180,19 @@ class WaitNode implements IFlowNode, IFlowNodeConfigKeys {
 			return $items;
 		}
 
-		if (($context['resuming'] ?? false) === true) {
-			// Woken by the worker: the wait is over by construction, because
-			// the run was only eligible once `resumeAt` had passed.
+		$resume = ($context[FlowNodeResumeState::CONTEXT_KEY] ?? null);
+		if ($resume instanceof FlowNodeResumeState === true) {
+			if ($resume->isResuming() === true) {
+				// THIS node's wait is over: it wrote its slot when it
+				// suspended, and the run was only eligible again once its
+				// `resumeAt` had passed. The dispatcher clears the slot on
+				// return, so a loop back into this node waits again.
+				return $items;
+			}
+		} elseif (($context['resuming'] ?? false) === true) {
+			// No slot machinery at all — a context built outside a real run
+			// (the flow tester, a node unit test). There is only one wait in
+			// such a walk, so the run-wide flag is unambiguous there.
 			return $items;
 		}
 
@@ -187,6 +202,14 @@ class WaitNode implements IFlowNode, IFlowNodeConfigKeys {
 			// Passing through beats suspending forever on a time that will
 			// never arrive.
 			return $items;
+		}
+
+		// The slot is the addressee mark the re-entry above reads. Without it,
+		// a resumed walk cannot tell the wait that is OVER from a wait it has
+		// only just reached — `context.resuming` is true for both, and reading
+		// that flag made a second wait node pass through in zero seconds.
+		if ($resume instanceof FlowNodeResumeState === true) {
+			$resume->set(key: 'waitingUntil', value: $resumeAt->format('c'));
 		}
 
 		throw new FlowSuspension(
