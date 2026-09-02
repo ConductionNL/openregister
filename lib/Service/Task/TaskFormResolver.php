@@ -130,21 +130,43 @@ class TaskFormResolver {
 					'error' => $unresolvable->getMessage(),
 				],
 				'requireChecklist' => false,
+				'behaviours' => $this->behavioursOf(task: $task),
 			];
 		}
 
 		$form = null;
 		if ($declaration->isNative() === true) {
 			$form = $this->describeNative(declaration: $declaration);
-		} else if ($declaration->isExternal() === true) {
+		} elseif ($declaration->isExternal() === true) {
 			$form = $this->describeExternal(declaration: $declaration, task: $task);
 		}
 
 		return [
 			'form' => $form,
 			'requireChecklist' => $declaration->requireChecklist,
+			'behaviours' => $this->behavioursOf(task: $task),
 		];
 	}//end describe()
+
+	/**
+	 * The task's declared deadline behaviours, so a surface rendering the
+	 * form can say what happens on timeout or rejection
+	 * (task-expiry-and-outcomes: the behaviours are the task's contract,
+	 * not the form's).
+	 *
+	 * @param Task $task The task.
+	 *
+	 * @return array<string, string|null> expiresAt, onTimeout and onReject.
+	 *
+	 * @spec openspec/changes/task-expiry-and-outcomes/specs/task-expiry-and-outcomes/spec.md#requirement-a-task-declares-its-timeout-and-reject-behaviour-in-one-vocabulary
+	 */
+	private function behavioursOf(Task $task): array {
+		return [
+			'expiresAt' => $task->getExpiresAt()?->format('c'),
+			'onTimeout' => $task->getOnTimeout(),
+			'onReject' => $task->getOnReject(),
+		];
+	}//end behavioursOf()
 
 	/**
 	 * The declaration a task resolves to: pinned version, or its own record.

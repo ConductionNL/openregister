@@ -100,12 +100,14 @@ class FlowTimerWorker extends TimedJob {
 			$now = DateTimeImmutable::createFromInterface($this->time->getDateTime());
 			$result = $this->sweep->run(now: $now, batch: $this->batchLimit());
 
-			if ($result['expiriesFired'] > 0 || $result['rungsFired'] > 0 || $result['truncated'] === true || $result['errors'] > 0) {
+			$quiet = ($result['expiriesFired'] === 0 && $result['rungsFired'] === 0 && $result['taskTimeouts'] === 0);
+			if ($quiet === false || $result['truncated'] === true || $result['errors'] > 0) {
 				$this->logger->info(
 					message: sprintf(
-						'[FlowTimerWorker] Fired %d expiry timer(s) and %d escalation rung(s); truncated: %s; errors: %d',
+						'[FlowTimerWorker] Fired %d expiry timer(s), %d escalation rung(s) and %d task timeout(s); truncated: %s; errors: %d',
 						$result['expiriesFired'],
 						$result['rungsFired'],
+						$result['taskTimeouts'],
 						var_export($result['truncated'], true),
 						$result['errors']
 					),

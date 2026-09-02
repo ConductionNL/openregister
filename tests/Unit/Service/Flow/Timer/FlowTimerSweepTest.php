@@ -26,9 +26,12 @@ use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapper;
+use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
+use OCA\OpenRegister\Service\Task\TaskService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -39,6 +42,8 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep
  * @covers \OCA\OpenRegister\Db\FlowTimer
  * @covers \OCA\OpenRegister\Db\FlowTimerMapper
+ *
+ * @uses \OCA\OpenRegister\Db\Task
  */
 class FlowTimerSweepTest extends TestCase {
 
@@ -88,7 +93,7 @@ class FlowTimerSweepTest extends TestCase {
 		$this->calendars->expects(self::once())->method('reset');
 
 		$result = $this->sweep->run(now: new DateTimeImmutable('2026-09-01 10:00:00'), batch: 200);
-		self::assertSame(['expiriesFired' => 1, 'rungsFired' => 0, 'truncated' => false, 'errors' => 0], $result);
+		self::assertSame(['expiriesFired' => 1, 'rungsFired' => 0, 'taskTimeouts' => 0, 'truncated' => false, 'errors' => 0], $result);
 	}//end testADueTimerBeyondTheBatchSizeIsStillReached()
 
 	public function testCountsReportWorkNotReadsAndTruncationIsVisible(): void {
@@ -114,7 +119,7 @@ class FlowTimerSweepTest extends TestCase {
 		$this->seed('s-1', 'expiry', '2026-08-30 00:00:00', '2026-08-30 00:00:00', FlowTimer::STATE_SUSPENDED);
 		$this->service->expects(self::never())->method('fireExpiry');
 		$this->service->expects(self::never())->method('fireRungs');
-		self::assertSame(['expiriesFired' => 0, 'rungsFired' => 0, 'truncated' => false, 'errors' => 0], $this->sweep->run(now: new DateTimeImmutable('2026-09-01'), batch: 10));
+		self::assertSame(['expiriesFired' => 0, 'rungsFired' => 0, 'taskTimeouts' => 0, 'truncated' => false, 'errors' => 0], $this->sweep->run(now: new DateTimeImmutable('2026-09-01'), batch: 10));
 	}//end testASuspendedTimerIsNeverSelected()
 
 	public function testOneFailureIsCountedAndDoesNotStopThePass(): void {
@@ -132,6 +137,69 @@ class FlowTimerSweepTest extends TestCase {
 		$this->logger->expects(self::exactly(2))->method('error');
 
 		$result = $this->sweep->run(now: new DateTimeImmutable('2026-09-01'), batch: 10);
-		self::assertSame(['expiriesFired' => 1, 'rungsFired' => 0, 'truncated' => false, 'errors' => 2], $result);
+		self::assertSame(['expiriesFired' => 1, 'rungsFired' => 0, 'taskTimeouts' => 0, 'truncated' => false, 'errors' => 2], $result);
 	}//end testOneFailureIsCountedAndDoesNotStopThePass()
+
+	/**
+	 * A sweep wired with the task scan closes each due task through the
+	 * timer-outcome path with the TASK's declared behaviour, counts the work,
+	 * reports truncation when the scan hits the batch limit, and one failure
+	 * does not stop the pass (task-expiry-and-outcomes D-3).
+	 */
+	public function testDueTaskTimeoutsAreAppliedCountedAndErrorTolerant(): void {
+		$due = [];
+		foreach ([['t-1', 'error'], ['t-2', 'dead_letter'], ['t-3', 'skip']] as [$uuid, $behaviour]) {
+			$task = new Task();
+			$task->setUuid($uuid);
+			$task->setOnTimeout($behaviour);
+			$task->setExpiresAt(new DateTime('2026-08-30 00:00:00'));
+			$due[] = $task;
+		}
+
+		$tasks = $this->createMock(TaskMapper::class);
+		$tasks->expects(self::once())->method('findDueTimeouts')->willReturn($due);
+		$taskService = $this->createMock(TaskService::class);
+		$applied = [];
+		$taskService->method('applyTimerOutcome')->willReturnCallback(
+			static function (string $uuid, string $outcome, string $source, string $reason) use (&$applied): Task {
+				if ($uuid === 't-2') {
+					throw new RuntimeException('row is poisoned');
+				}
+
+				$applied[$uuid] = [$outcome, $source, $reason];
+
+				return new Task();
+			}
+		);
+		$this->logger->expects(self::once())->method('error');
+
+		$sweep = new FlowTimerSweep(
+			timers: $this->mapper,
+			service: $this->service,
+			calendars: $this->calendars,
+			logger: $this->logger,
+			tasks: $tasks,
+			taskService: $taskService
+		);
+		$result = $sweep->run(now: new DateTimeImmutable('2026-09-01 10:00:00'), batch: 3);
+
+		self::assertSame(2, $result['taskTimeouts']);
+		self::assertSame(1, $result['errors']);
+		self::assertTrue($result['truncated'], 'the task scan hit the batch limit');
+		self::assertSame(['error', FlowTimerSweep::TIMEOUT_SOURCE], [$applied['t-1'][0], $applied['t-1'][1]]);
+		self::assertSame('skip', $applied['t-3'][0]);
+		self::assertStringContainsString('2026-08-30', $applied['t-1'][2], 'the reason names the deadline that passed');
+	}//end testDueTaskTimeoutsAreAppliedCountedAndErrorTolerant()
+
+	/**
+	 * A sweep constructed WITHOUT the task scan (the pre-change positional
+	 * shape) keeps running the two timer scans and reports zero task work.
+	 */
+	public function testASweepWithoutTheTaskScanStillSweepsTimers(): void {
+		$this->seed('exp-1', 'expiry', '2026-08-30 00:00:00');
+		$this->service->method('fireExpiry')->willReturn(true);
+
+		$result = $this->sweep->run(now: new DateTimeImmutable('2026-09-01'), batch: 10);
+		self::assertSame(['expiriesFired' => 1, 'rungsFired' => 0, 'taskTimeouts' => 0, 'truncated' => false, 'errors' => 0], $result);
+	}//end testASweepWithoutTheTaskScanStillSweepsTimers()
 }//end class

@@ -1196,23 +1196,42 @@ class FlowTimerService {
 	}//end cancelAll()
 
 	/**
-	 * Apply an expiry timer's enforcing outcome to a task subject.
+	 * Apply a fired expiry timer's outcome to a task subject.
+	 *
+	 * An enforcing timer applies its own validated `onExpiry`. A
+	 * non-enforcing expiry timer falls back to the SUBJECT TASK's declared
+	 * `onTimeout` (task-expiry-and-outcomes D-4): {@see project()} nulls the
+	 * task's `expires_at` once the last expiry timer fires, so without this
+	 * fallback the sweep's task scan would never reach a timer-managed task.
 	 *
 	 * @param FlowTimer $timer The fired timer.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/task-expiry-and-outcomes/specs/task-expiry-and-outcomes/spec.md#requirement-a-non-enforcing-expiry-timer-falls-back-to-the-tasks-declared-behaviour
 	 */
 	private function applyOutcome(FlowTimer $timer): void {
-		if ($timer->isEnforcing() === false || $timer->getSubjectType() !== 'task') {
+		if ($timer->getSubjectType() !== 'task') {
+			return;
+		}
+
+		$outcome = $this->subjectTask(timer: $timer)?->getOnTimeout();
+		$basis = 'task-declared onTimeout';
+		if ($timer->isEnforcing() === true) {
+			$outcome = (string)$timer->getOnExpiry();
+			$basis = (string)$timer->getLegalEffect();
+		}
+
+		if ($outcome === null || $outcome === '') {
 			return;
 		}
 
 		try {
 			$this->taskService->applyTimerOutcome(
 				uuid: (string)$timer->getSubjectUuid(),
-				outcome: (string)$timer->getOnExpiry(),
+				outcome: $outcome,
 				source: 'flow-timer:' . (string)$timer->getUuid(),
-				reason: sprintf("Expiry timer '%s' (%s) reached its deadline.", (string)$timer->getUuid(), (string)$timer->getLegalEffect())
+				reason: sprintf("Expiry timer '%s' (%s) reached its deadline.", (string)$timer->getUuid(), $basis)
 			);
 		} catch (TaskConflictException $race) {
 			// The task closed concurrently: nothing to do, the timer is cancelled by that close.

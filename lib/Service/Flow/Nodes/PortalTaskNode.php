@@ -211,6 +211,8 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			'reasonField',
 			'dueAt',
 			'expiresAt',
+			'onTimeout',
+			'onReject',
 			'heartbeatMinutes',
 			'advance',
 		];
@@ -599,6 +601,18 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 				'help' => $this->l10n->t(
 					'When the ask stops being answerable. Same shapes as "Due". Expiry is enforced by the business timers, not by this step.'
 				),
+			],
+			[
+				'key' => 'onTimeout',
+				'label' => $this->l10n->t('On timeout'),
+				'type' => 'text',
+				'help' => $this->l10n->t('What happens when the ask expires: skip, error or dead_letter. Empty means the deadline enforces nothing.'),
+			],
+			[
+				'key' => 'onReject',
+				'label' => $this->l10n->t('On rejection'),
+				'type' => 'text',
+				'help' => $this->l10n->t('Only dead_letter changes the record; skip and error are read by whatever resumes the flow.'),
 			],
 			[
 				'key' => 'heartbeatMinutes',
