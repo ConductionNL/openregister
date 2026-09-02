@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode;
+use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
 use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
@@ -89,6 +90,7 @@ class FlowNodeRegistrationListener implements IEventListener {
 	 * @param TriggerManualNode $triggerManual The "When someone runs it" entry point.
 	 * @param UserTaskNode $userTask The built-in "Ask a person" node.
 	 * @param PortalTaskNode $portalTask The built-in "Ask a party outside the organisation" node.
+	 * @param DecisionTableNode $decisionTable The built-in "Evaluate a decision table" node.
 	 */
 	public function __construct(
 		private readonly SetFieldsNode $setFields,
@@ -115,6 +117,7 @@ class FlowNodeRegistrationListener implements IEventListener {
 		private readonly TriggerManualNode $triggerManual,
 		private readonly UserTaskNode $userTask,
 		private readonly PortalTaskNode $portalTask,
+		private readonly DecisionTableNode $decisionTable,
 	) {
 
 	}//end __construct()
@@ -149,6 +152,13 @@ class FlowNodeRegistrationListener implements IEventListener {
 		$event->registerNode(node: $this->flowState);
 		$event->registerNode(node: $this->map);
 		$event->registerNode(node: $this->iterate);
+
+		// The rule step (flow-decision-tables). Registered with the data
+		// reshapers rather than the waiters, deliberately: it decides and
+		// moves on in one firing. A decision that needs a person is the
+		// user task below, and the split is the fleet's directive - rule
+		// evaluation is the engine's, human decisions are decidiq's.
+		$event->registerNode(node: $this->decisionTable);
 
 		// Messaging. Three nodes, not one "send" with a channel picker: the
 		// three differ in config shape and failure modes, so three flat forms
