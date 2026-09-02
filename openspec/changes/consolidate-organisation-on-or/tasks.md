@@ -48,9 +48,35 @@
       because OpenRegister discards an undeclared property and answers 200.
       Dry-run by default. Proven live on the dev instance including the
       negative control (no shared identifier, no merge reported).
-- [ ] 5.2 Point the leaf apps at the OR organisation. opencatalogi maps
-      9-for-9 onto Organisation apart from `tooiIdentifier`. Stackiq's 21
-      properties leave 8 with no column (`xml`, `contactsUid`,
-      `contactpersonen`, `deelnames`, `participants`, `samenwerkingtype`,
-      `registeredBy`, `publicationDate`/`depublicationDate`), so it needs a
-      field ruling before its schema can be retired.
+- [ ] 5.2 Point the leaf apps at the OR organisation, then retire their
+      schemas. Measured 2026-09-02, and the measurement changed the shape:
+
+      **opencatalogi** maps 9-for-9 onto Organisation apart from
+      `tooiIdentifier`. 22 code sites name the slug, and most are
+      `catalog['organization']`, a stored REFERENCE that keeps resolving once
+      the uuid is preserved. Roughly 8 real UI sites do
+      `getCollection('organization')` and need repointing at the Organisation
+      API. Tractable as one change.
+
+      **stackiq** carries 21 properties, 9 of which have no column on
+      Organisation. The plan was to map what maps and rehome the rest. Reading
+      the entity rather than assuming, NOTHING maps:
+
+      - `contactpersonen` -> `contacts` is a different thing. `contacts` is
+        linked Nextcloud Contacts app data, serialised as `_contacts`.
+      - `participants` / `deelnames` -> `children` would be lost. The setter
+        says it plainly: "Children are not stored in the database, only loaded
+        on demand." A written value is dropped and then recomputed.
+      - `samenwerkingtype` -> `type` collides. `type` has a closed vocabulary
+        (organisation, government, vendor, collaboration, department), and a
+        collaboration SUBtype is a different axis from it.
+
+      So all 9 belong on a stackiq-owned schema under a non-colliding slug,
+      and none on Organisation. 235 code sites name the slug, because the app
+      treats `organization` as a first-class object type throughout
+      (`objectStore.getCollection('organization')`). That is its own change
+      with its own spec, not a step in this one.
+
+      A later option worth recording: `participants` could be modelled through
+      OR's `parent`, which IS stored, by setting it on each participant rather
+      than listing them on the collaboration.
