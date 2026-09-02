@@ -118,6 +118,9 @@ class DecisionTableValidator {
 	 * @return array<int, array{name: string, type: string}> The usable columns, with effective types.
 	 *
 	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `DecisionTableEvaluator::effectiveType()`
+	 * is static precisely so validator and evaluator share one normalisation.
 	 */
 	private function validateColumns(mixed $raw, string $side, array &$problems): array {
 		if (is_array($raw) === false || $raw === []) {
@@ -181,7 +184,11 @@ class DecisionTableValidator {
 				continue;
 			}
 
-			$ruleId = trim((string)($rule['id'] ?? '')) !== '' ? trim((string)$rule['id']) : ('#' . $position);
+			$ruleId = trim((string)($rule['id'] ?? ''));
+			if ($ruleId === '') {
+				$ruleId = ('#' . $position);
+			}
+
 			$this->validateRule(rule: $rule, ruleId: $ruleId, inputs: $inputs, outputCount: $outputCount, problems: $problems);
 		}
 
@@ -201,8 +208,15 @@ class DecisionTableValidator {
 	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
 	 */
 	private function validateRule(array $rule, string $ruleId, array $inputs, int $outputCount, array &$problems): void {
-		$inputEntries = is_array($rule['inputEntries'] ?? null) === true ? array_values($rule['inputEntries']) : [];
-		$outputEntries = is_array($rule['outputEntries'] ?? null) === true ? array_values($rule['outputEntries']) : [];
+		$inputEntries = [];
+		if (is_array($rule['inputEntries'] ?? null) === true) {
+			$inputEntries = array_values($rule['inputEntries']);
+		}
+
+		$outputEntries = [];
+		if (is_array($rule['outputEntries'] ?? null) === true) {
+			$outputEntries = array_values($rule['outputEntries']);
+		}
 
 		if (count($inputEntries) !== count($inputs)) {
 			// A short row would silently wildcard its missing tail: the

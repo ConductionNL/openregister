@@ -169,13 +169,17 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 				'key' => 'inputMapping',
 				'label' => $this->l10n->t('Input fields'),
 				'type' => 'textarea',
-				'help' => $this->l10n->t('Where each table input is read from, as input name to field path. An input without an entry reads the field with its own name.'),
+				'help' => $this->l10n->t(
+					'Where each table input is read from, as input name to field path. An input without an entry reads the field with its own name.'
+				),
 			],
 			[
 				'key' => 'outputMapping',
 				'label' => $this->l10n->t('Output fields'),
 				'type' => 'textarea',
-				'help' => $this->l10n->t('Where each table output is written, as output name to field path. An output without an entry writes the field with its own name.'),
+				'help' => $this->l10n->t(
+					'Where each table output is written, as output name to field path. An output without an entry writes the field with its own name.'
+				),
 			],
 			[
 				'key' => 'defaultOutputs',
@@ -323,6 +327,9 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	 * @throws DecisionEvaluationException When the item cannot be decided and no default row exists.
 	 *
 	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-no-match-takes-the-authors-explicit-default-or-fails-loudly
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `FlowValueTemplate::render()` is the
+	 * engine's canonical dotted-path read.
 	 */
 	private function decide(array $table, array $config, array $json, array $inputMapping): array {
 		$inputs = [];
