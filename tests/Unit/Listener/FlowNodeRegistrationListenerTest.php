@@ -23,6 +23,7 @@ use OCA\OpenRegister\Listener\FlowNodeRegistrationListener;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode;
+use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
 use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
@@ -92,6 +93,7 @@ class FlowNodeRegistrationListenerTest extends TestCase {
 			triggerManual: $mock(TriggerManualNode::class),
 			userTask: $mock(UserTaskNode::class),
 			portalTask: $mock(PortalTaskNode::class),
+			decisionTable: $mock(DecisionTableNode::class),
 		);
 
 		return $listener;
@@ -116,7 +118,7 @@ class FlowNodeRegistrationListenerTest extends TestCase {
 
 		$listener->handle(new RegisterFlowNodesEvent(registry: $registry));
 
-		$this->assertCount(24, $registered, 'all twenty-four built-ins are registered');
+		$this->assertCount(25, $registered, 'all twenty-five built-ins are registered');
 		$classes = array_map(static fn (IFlowNode $node): string => get_parent_class($node) ?: get_class($node), $registered);
 		foreach ([PortalTaskNode::class, UserTaskNode::class, AwaitSignalNode::class] as $waiter) {
 			$this->assertContains($waiter, $classes, "$waiter is registered");
