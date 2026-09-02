@@ -27,9 +27,9 @@
  *
  * WHAT COUNTS AS AN ANSWER. The payload posted to the resume endpoint lands at
  * `context.signal`. This node reads `decision` from it and writes the whole
- * payload onto every item under `signalKey`, so the steps after it can branch on
- * what was decided and see who decided it. A resume with no `decision` is a
- * nudge, not an answer: the node suspends again. That is what makes an
+ * payload into every item's record under `json.<signalKey>`, so the steps after
+ * it can branch on what was decided and see who decided it. A resume with no
+ * `decision` is a nudge, not an answer: the node suspends again. That is what makes an
  * accidental or duplicate POST harmless.
  *
  * REJECTION IS NOT FAILURE. A rejected approval is the flow working correctly —
@@ -301,15 +301,19 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			$key = 'signal';
 		}
 
-		// Onto every item rather than into the token, because the steps that
-		// follow route per item; a Switch cannot branch on something only the
-		// run holds.
+		// Into every item's record (`json`), not beside it, and not into the
+		// token: the steps that follow route per item and read `json.<key>`
+		// (FlowExpression::dataFor exposes json.*, and a rebuilding node like
+		// set-fields keeps only [json, binary]). A key at the envelope level
+		// is invisible to a Switch and silently dropped by the next rebuild.
 		foreach ($items as $index => $item) {
 			if (is_array($item) === false) {
 				continue;
 			}
 
-			$item[$key] = $signal;
+			$json = (array)($item[FlowItems::JSON] ?? []);
+			$json[$key] = $signal;
+			$item[FlowItems::JSON] = $json;
 			$items[$index] = $item;
 		}
 

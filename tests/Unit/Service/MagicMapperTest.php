@@ -282,7 +282,7 @@ class MagicMapperTest extends TestCase {
 	 *
 	 * @return array<string, array<mixed>>
 	 */
-	public function registerSchemaTableNameProvider(): array {
+	public static function registerSchemaTableNameProvider(): array {
 		return [
 			'basic_combination' => [
 				'registerId' => 1,
@@ -334,7 +334,7 @@ class MagicMapperTest extends TestCase {
 	 *
 	 * @return array<string, array<mixed>>
 	 */
-	public function magicMappingConfigProvider(): array {
+	public static function magicMappingConfigProvider(): array {
 		return [
 			'enabled_in_schema' => [
 				'schemaConfig' => ['magicMapping' => true],
@@ -396,7 +396,7 @@ class MagicMapperTest extends TestCase {
 	 *
 	 * @return array<string, array<string, string>>
 	 */
-	public function columnSanitizationProvider(): array {
+	public static function columnSanitizationProvider(): array {
 		return [
 			'simple_name' => [
 				'input' => 'name',
@@ -498,7 +498,7 @@ class MagicMapperTest extends TestCase {
 	 *
 	 * @return array<string, array<mixed>>
 	 */
-	public function schemaPropertyMappingProvider(): array {
+	public static function schemaPropertyMappingProvider(): array {
 		return [
 			'string_property' => [
 				'propertyConfig' => ['type' => 'string'],
@@ -748,7 +748,7 @@ class MagicMapperTest extends TestCase {
 
 		$tableExistsCache = $reflection->getProperty('tableExistsCache');
 		$tableExistsCache->setAccessible(true);
-		$tableExistsCache->setValue(['test_table' => time()]);
+		$tableExistsCache->setValue(null, ['test_table' => time()]);
 
 		// Test full cache clear.
 		$this->magicMapper->clearCache();
@@ -757,7 +757,7 @@ class MagicMapperTest extends TestCase {
 		$this->assertEquals([], $tableExistsCache->getValue());
 
 		// Test targeted cache clear.
-		$tableExistsCache->setValue(['1_1' => time()]);
+		$tableExistsCache->setValue(null, ['1_1' => time()]);
 		$this->magicMapper->clearCache(1, 1);
 
 		// Should clear specific cache entry.
