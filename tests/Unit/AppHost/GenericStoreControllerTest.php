@@ -49,6 +49,16 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\AppHost\Controller\GenericStoreController
+ *
+ * The controller reads the calling app's declared block, so every test here
+ * executes StoreManifest as a collaborator. `beStrictAboutCoverageMetadata`
+ * marks that RISKY unless the relationship is declared, and the suite's
+ * coverage guard counts risky tests: three of these were risky on the first
+ * CI run for exactly this reason. `@uses` rather than a second `@covers`,
+ * because StoreManifest is not what these tests assert about — it has its own
+ * cases in GenericStoreInstallerTest.
+ *
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifest
  */
 class GenericStoreControllerTest extends TestCase {
 	/** @var ManifestLoader&MockObject */
