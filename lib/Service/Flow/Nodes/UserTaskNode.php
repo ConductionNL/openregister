@@ -65,6 +65,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
+use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
@@ -270,6 +271,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 * @throws RuntimeException When the node has no resume slot, or its task is gone.
 	 *
 	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-wake-re-reads-the-awaited-task-and-applies-a-terminal-outcome
 	 */
 	public function execute(array $items, array $config, array $context): array {
 		if ($items === []) {
@@ -307,6 +309,15 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			// answer. Suspend again, and do NOT touch the slot: askedAt stays
 			// what it was.
 			throw $this->suspension(config: $config, items: $items);
+		}
+
+		// A terminal read with no signal in hand means the completion's wake
+		// never arrived — refused by the assignee guard, or lost — and the
+		// heartbeat is what recovered it. Recorded on the task's audit,
+		// attributed to its completer, BEFORE the outcome is applied below:
+		// the applying is identical on both paths, which is the contract.
+		if (array_key_exists(FlowRunService::SIGNAL_CONTEXT_KEY, $context) === false) {
+			$this->bridge->recordHeartbeatRecovery(task: $task);
 		}
 
 		$bag = FlowTaskBridge::outcomeBagFor(task: $task);

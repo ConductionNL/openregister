@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
+use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskConfig;
@@ -60,6 +61,7 @@ use UnexpectedValueException;
  * @uses \OCA\OpenRegister\Service\Flow\FlowAdvanceBudget
  * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses \OCA\OpenRegister\Service\Flow\FlowTaskBridge
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunService
  * @uses \OCA\OpenRegister\Service\Flow\FlowValueTemplate
  * @uses \OCA\OpenRegister\Service\Task\TaskState
  * @uses \OCA\OpenRegister\Db\PortalTaskDelivery
@@ -466,6 +468,50 @@ class PortalTaskNodeTest extends TestCase {
 		$this->assertSame('not-an-item', $out[2], 'a non-array item is left alone');
 		$this->assertNotNull($state->read(nodeId: 'ask')[PortalTaskConfig::SLOT_PASSED_AT], 'the pass is marked so the next firing is a re-entry');
 	}//end testACompletedTaskPlacesTheAnswerOnEveryItemAndMarksThePass()
+
+	/**
+	 * A terminal read with no signal in hand is the heartbeat recovering a
+	 * missed wake, and the recovery lands on the task's audit — the same call
+	 * the user-task node makes, because the two share the wedge.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
+	 */
+	public function testAHeartbeatRecoveredAnswerIsAuditedOnTheTask(): void {
+		$state = new FlowResumeState();
+		$state->write(nodeId: 'ask', values: [FlowTaskBridge::SLOT_TASK_UUID => 't-1', PortalTaskConfig::SLOT_CYCLE => 1]);
+		$task = $this->task(state: Task::STATE_COMPLETED);
+		$task->setOutcome('submitted');
+		$task->setCompletedBy('party:bsn-1');
+		$this->bridge->method('taskOrNull')->willReturn($task);
+		$this->bridge->expects($this->once())->method('recordHeartbeatRecovery')->with($task);
+
+		$this->node->execute($this->items(), $this->config(), $this->context($state));
+	}//end testAHeartbeatRecoveredAnswerIsAuditedOnTheTask()
+
+	/**
+	 * An answer that arrived on its signal is the ordinary path: no recovery
+	 * entry lands on the task's audit.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
+	 */
+	public function testASignalDeliveredAnswerRecordsNoHeartbeatRecovery(): void {
+		$state = new FlowResumeState();
+		$state->write(nodeId: 'ask', values: [FlowTaskBridge::SLOT_TASK_UUID => 't-1', PortalTaskConfig::SLOT_CYCLE => 1]);
+		$task = $this->task(state: Task::STATE_COMPLETED);
+		$task->setOutcome('submitted');
+		$this->bridge->method('taskOrNull')->willReturn($task);
+		$this->bridge->expects($this->never())->method('recordHeartbeatRecovery');
+
+		$this->node->execute(
+			$this->items(),
+			$this->config(),
+			$this->context($state, extra: [FlowRunService::SIGNAL_CONTEXT_KEY => []])
+		);
+	}//end testASignalDeliveredAnswerRecordsNoHeartbeatRecovery()
 
 	/**
 	 * An expiry-terminated task continues the run distinguishably from an answer.

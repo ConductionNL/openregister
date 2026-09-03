@@ -187,6 +187,60 @@ class FlowTaskBridge {
 	}//end record()
 
 	/**
+	 * Record that a heartbeat, not the completion's signal, delivered a
+	 * terminal task's answer to its run.
+	 *
+	 * The heartbeat exists precisely to recover a missed wake — a completion
+	 * whose signal was refused (the assignee guard, a group that did not exist
+	 * yet) or lost. When it does recover one, the audit must say so: the
+	 * guarded signal seam records a refusal, and without this entry the trail
+	 * ends there, reading as though the answer never reached the run at all.
+	 * Attributed to whoever completed the task, because the fact being
+	 * recorded is THEIR answer arriving — late, by poll — not the cron job's.
+	 *
+	 * Best-effort by design: the recovery itself is the node applying the
+	 * outcome, and a failure to write the audit row must never turn a
+	 * recovered run back into a wedged one.
+	 *
+	 * @param Task $task The terminal task whose outcome the heartbeat applied.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
+	 */
+	public function recordHeartbeatRecovery(Task $task): void {
+		try {
+			$this->tasks->record(
+				uuid: (string)$task->getUuid(),
+				action: 'heartbeat-recovered',
+				actor: $task->getCompletedBy(),
+				reason: sprintf(
+					'The completion signal never reached run %s; the heartbeat re-read this task and applied its outcome.',
+					(string)$task->getRunUuid()
+				)
+			);
+
+			$this->logger->info(
+				message: '[FlowTaskBridge] Heartbeat recovered a missed completion signal',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'task' => (string)$task->getUuid(),
+					'run' => (string)$task->getRunUuid(),
+					'node' => (string)$task->getNodeId(),
+					'completedBy' => (string)($task->getCompletedBy() ?? ''),
+				]
+			);
+		} catch (Throwable $failure) {
+			$this->logger->warning(
+				message: '[FlowTaskBridge] Could not record a heartbeat recovery on task ' . $task->getUuid()
+					. '; the outcome itself was applied: ' . $failure->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'run' => (string)$task->getRunUuid()]
+			);
+		}//end try
+	}//end recordHeartbeatRecovery()
+
+	/**
 	 * The task a node's resume slot points at, or null when it is gone.
 	 *
 	 * @param string $uuid The task uuid held in the slot.
