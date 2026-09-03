@@ -124,6 +124,11 @@ class Bootstrap {
 	private const GENERIC_STORE_CONTROLLER = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericStoreController';
 	private const GENERIC_STORE_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\GenericStoreService';
 	private const GENERIC_STORE_INSTALLER = 'OCA\\OpenRegister\\AppHost\\Store\\GenericStoreInstaller';
+
+	/**
+	 * The catalogue serving a store that exchanges configuration.
+	 */
+	private const FEDERATED_STORE_CATALOG = 'OCA\\OpenRegister\\AppHost\\Store\\FederatedStoreCatalog';
 	private const GENERIC_SETTINGS_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\AppHostSettingsService';
 	private const GENERIC_ACTION_AUTH_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\GenericActionAuthService';
 	private const GENERIC_INITIALIZE_SETTINGS = 'OCA\\OpenRegister\\AppHost\\Repair\\GenericInitializeSettings';
@@ -289,6 +294,7 @@ class Bootstrap {
 					manifestLoader: $c->get(self::OBSERVABILITY_MANIFEST_LOADER),
 					storeService: $c->get(self::GENERIC_STORE_SERVICE),
 					installer: $c->get(self::GENERIC_STORE_INSTALLER),
+					catalog: $c->get(self::FEDERATED_STORE_CATALOG),
 					userSession: $c->get('OCP\\IUserSession'),
 					groupManager: $c->get('OCP\\IGroupManager'),
 					logger: $c->get('Psr\\Log\\LoggerInterface')

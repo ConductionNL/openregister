@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 use OCA\OpenRegister\AppHost\Controller\GenericStoreController;
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
+use OCA\OpenRegister\AppHost\Store\FederatedStoreCatalog;
 use OCA\OpenRegister\AppHost\Store\GenericStoreInstaller;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCP\AppFramework\Http;
@@ -71,6 +72,9 @@ class GenericStoreControllerTest extends TestCase {
 	/** @var GenericStoreInstaller&MockObject */
 	private $installer;
 
+	/** @var FederatedStoreCatalog&MockObject */
+	private $catalog;
+
 	/** @var IUserSession&MockObject */
 	private $userSession;
 
@@ -96,6 +100,8 @@ class GenericStoreControllerTest extends TestCase {
 			->disableOriginalConstructor()->onlyMethods(['search', 'resolve'])->getMock();
 		$this->installer = $this->getMockBuilder(GenericStoreInstaller::class)
 			->disableOriginalConstructor()->onlyMethods(['install'])->getMock();
+		$this->catalog = $this->getMockBuilder(FederatedStoreCatalog::class)
+			->disableOriginalConstructor()->onlyMethods(['search', 'resolve', 'install'])->getMock();
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->request = $this->createMock(IRequest::class);
@@ -115,6 +121,7 @@ class GenericStoreControllerTest extends TestCase {
 			manifestLoader: $this->manifestLoader,
 			storeService: $this->storeService,
 			installer: $this->installer,
+			catalog: $this->catalog,
 			userSession: $this->userSession,
 			groupManager: $this->groupManager,
 			logger: $this->createMock(LoggerInterface::class)

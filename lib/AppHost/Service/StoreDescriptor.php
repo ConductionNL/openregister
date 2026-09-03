@@ -48,6 +48,11 @@ final class StoreDescriptor {
 	 *                                          normalisation; a missing property yields an empty
 	 *                                          string rather than a missing key, so the frontend
 	 *                                          never has to null-check a card.
+	 * @param array<int, string> $types Shareable configuration type ids the calling app declared.
+	 *                                  A non-empty list selects federated discovery, where an item
+	 *                                  is a configuration set, a flow or a schema that marked
+	 *                                  itself shareable. An empty list keeps the remote objects
+	 *                                  API, so an app that has not moved is untouched.
 	 *
 	 * @return void
 	 */
@@ -62,6 +67,18 @@ final class StoreDescriptor {
 			'category' => 'category',
 			'version' => 'version',
 		],
+		public readonly array $types = [],
 	) {
 	}//end __construct()
+
+	/**
+	 * Whether this descriptor selects federated configuration discovery.
+	 *
+	 * @return bool True when the app declared at least one shareable type.
+	 *
+	 * @spec openspec/changes/store-over-federated-config/specs/apphost-store-plane/spec.md#requirement-a-store-descriptor-must-carry-every-per-app-parameter
+	 */
+	public function isFederated(): bool {
+		return $this->types !== [];
+	}//end isFederated()
 }//end class

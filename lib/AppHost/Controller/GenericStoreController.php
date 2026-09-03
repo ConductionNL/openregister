@@ -46,6 +46,7 @@ namespace OCA\OpenRegister\AppHost\Controller;
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
+use OCA\OpenRegister\AppHost\Store\FederatedStoreCatalog;
 use OCA\OpenRegister\AppHost\Store\GenericStoreInstaller;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCP\AppFramework\Controller;
@@ -83,6 +84,7 @@ class GenericStoreController extends Controller {
 	 * @param ManifestLoader        $manifestLoader Loads the leaf app's manifest.
 	 * @param GenericStoreService   $storeService   Guarded remote discovery.
 	 * @param GenericStoreInstaller $installer      Declarative component install.
+	 * @param FederatedStoreCatalog $catalog        Configuration browse and install.
 	 * @param IUserSession          $userSession    Current session.
 	 * @param IGroupManager         $groupManager   Admin check for install.
 	 * @param LoggerInterface       $logger         PSR logger.
@@ -93,6 +95,7 @@ class GenericStoreController extends Controller {
 		private readonly ManifestLoader $manifestLoader,
 		private readonly GenericStoreService $storeService,
 		private readonly GenericStoreInstaller $installer,
+		private readonly FederatedStoreCatalog $catalog,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
@@ -150,11 +153,17 @@ class GenericStoreController extends Controller {
 		}
 
 		try {
-			$result = $this->storeService->search(
-				descriptor: $this->descriptor(store: $store),
-				query: $query,
-				kind: $kind
-			);
+			$descriptor = $this->descriptor(store: $store);
+
+			// An app that declares shareable types exchanges CONFIGURATION, so
+			// its catalogue is what publishers have published, not one remote
+			// instance's rows. Selected by declaration, never by probing: an
+			// app that declares none makes no discovery call at all.
+			if ($descriptor->isFederated() === true) {
+				$result = $this->catalog->search(descriptor: $descriptor, query: $query, kind: $kind);
+			} else {
+				$result = $this->storeService->search(descriptor: $descriptor, query: $query, kind: $kind);
+			}
 		} catch (Throwable $e) {
 			// Detail to the log, generic outcome to the browser: a registry's
 			// internals are not the caller's business.
@@ -171,11 +180,20 @@ class GenericStoreController extends Controller {
 		// `kinds` rides back with the cards so the page can offer the filters the
 		// APP declared, rather than a copy kept in its page config. Empty when
 		// the app names none, and the page falls back to the shared vocabulary.
+		// A federated store's cards are discriminated by TYPE, so the declared
+		// type ids are the honest filter set when the app names no kinds of its
+		// own. Falling through to the shared kind vocabulary would offer chips
+		// (`adapter`, `agent-template`) that match nothing on this page.
+		$kinds = $store->kinds;
+		if ($kinds === [] && $store->isFederated() === true) {
+			$kinds = $store->declaredTypes();
+		}
+
 		return new JSONResponse(
 			data: [
 				'outcome' => $result['outcome'],
 				'cards' => $result['cards'],
-				'kinds' => $store->kinds,
+				'kinds' => $kinds,
 			],
 			statusCode: Http::STATUS_OK
 		);
@@ -227,8 +245,14 @@ class GenericStoreController extends Controller {
 			);
 		}
 
+		$descriptor = $this->descriptor(store: $store);
+
 		try {
-			$item = $this->storeService->resolve(descriptor: $this->descriptor(store: $store), slug: $slug);
+			if ($descriptor->isFederated() === true) {
+				$item = $this->catalog->resolve(descriptor: $descriptor, slug: $slug);
+			} else {
+				$item = $this->storeService->resolve(descriptor: $descriptor, slug: $slug);
+			}
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: sprintf('[AppHost\\Store] resolve failed for %s: %s', $this->appName, $e->getMessage()),
@@ -242,6 +266,13 @@ class GenericStoreController extends Controller {
 				data: ['success' => false, 'message' => 'The store item could not be resolved.'],
 				statusCode: Http::STATUS_NOT_FOUND
 			);
+		}
+
+		// A configuration bundle is applied by the type that owns it, so that a
+		// set arrives as registers, schemas, flows and objects rather than as
+		// rows of whichever schema the plane happened to allow.
+		if ($descriptor->isFederated() === true) {
+			return new JSONResponse(data: $this->catalog->install(ref: $item), statusCode: Http::STATUS_OK);
 		}
 
 		return new JSONResponse(
@@ -274,7 +305,8 @@ class GenericStoreController extends Controller {
 			appId: $this->appName,
 			schema: $store->schema,
 			defaultRegister: $store->register,
-			cardFields: $store->cardFields
+			cardFields: $store->cardFields,
+			types: $store->declaredTypes()
 		);
 	}//end descriptor()
 }//end class
