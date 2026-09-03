@@ -52,11 +52,59 @@ class RoutesTest extends TestCase {
 				'preferences#setPreference',
 				'metrics#index',
 				'health#index',
+				'store#search',
+				'store#install',
 				'dashboard#catchAll',
 			],
 			$names
 		);
 	}//end testCanonicalRouteNamesMatchPetstoreReference()
+
+	/**
+	 * The store routes sit BEFORE the SPA catch-all.
+	 *
+	 * Not a restatement of the list above: that assertion would still pass if
+	 * the catch-all were merged first, and a `/{path}` route with `.+` matches
+	 * `api/store/items`. The catch-all's position is the reason the store
+	 * endpoints answer JSON rather than the Vue shell with HTTP 200.
+	 *
+	 * @return void
+	 */
+	public function testStoreRoutesPrecedeTheSpaCatchAll(): void {
+		$names = $this->names(Routes::standard());
+
+		$this->assertLessThan(
+			array_search('dashboard#catchAll', $names, true),
+			array_search('store#search', $names, true)
+		);
+		$this->assertLessThan(
+			array_search('dashboard#catchAll', $names, true),
+			array_search('store#install', $names, true)
+		);
+	}//end testStoreRoutesPrecedeTheSpaCatchAll()
+
+	/**
+	 * The install route bounds its slug at the router.
+	 *
+	 * A `{slug}` with no requirement accepts anything Symfony will match into
+	 * a single segment, and the value reaches the registry URL. The controller
+	 * guards it too; this is the outer bound.
+	 *
+	 * @return void
+	 */
+	public function testInstallRouteConstrainsTheSlug(): void {
+		$routes = Routes::standard()['routes'];
+		$install = null;
+		foreach ($routes as $route) {
+			if ($route['name'] === 'store#install') {
+				$install = $route;
+				break;
+			}
+		}
+
+		$this->assertNotNull($install);
+		$this->assertSame('[a-z0-9][a-z0-9-]*[a-z0-9]', $install['requirements']['slug']);
+	}//end testInstallRouteConstrainsTheSlug()
 
 	public function testSettingsUpdateRouteIsPutOnApiSettings(): void {
 		$routes = Routes::standard()['routes'];
