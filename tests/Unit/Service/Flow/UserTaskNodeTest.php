@@ -185,6 +185,55 @@ class UserTaskNodeTest extends TestCase {
 		$this->assertSame('ask', $armed['nodeId']);
 	}//end testADeclaredSlaArmsATimerBoundToTheTask()
 
+
+	/**
+	 * A node may carry a deadline without carrying a title.
+	 *
+	 * `title` is optional on a user task, and an empty one must reach the timer
+	 * as null rather than as an empty string: the timer renders it in the
+	 * escalation notice, where '' produces a blank subject line while null lets
+	 * the timer fall back to describing its subject.
+	 *
+	 * This case is also the only one that executes the `$title = null` branch.
+	 * Every other test in this class builds its config through the helper,
+	 * which always supplies a title, so without this test that branch is dead
+	 * on the coverage report and nothing would notice if it stopped working.
+	 *
+	 * @return void
+	 */
+	public function testATitlelessNodeArmsItsTimerWithNoTitle(): void {
+		$state = new FlowResumeState();
+		$this->bridge->method('createTask')->willReturn($this->task(state: Task::STATE_ACTIVE));
+
+		$armed = null;
+		$this->timers->expects($this->once())
+			->method('arm')
+			->willReturnCallback(
+				function (array $config, ?string $actor = null, $now = null) use (&$armed) {
+					$armed = $config;
+
+					return $this->createMock(FlowTimer::class);
+				}
+			);
+
+		try {
+			$this->node->execute(
+				$this->items(),
+				// Whitespace, not a missing key: a title of spaces is still no
+				// title, and trim() is what makes the two the same.
+				['title' => '   ', 'assignee' => 'alice', 'sla' => ['value' => 2, 'unit' => 'businessDays']],
+				$this->context($state)
+			);
+		} catch (FlowSuspension $suspension) {
+			// Suspension is the normal outcome; the arming is the subject here.
+		}
+
+		$this->assertIsArray($armed, 'a declared SLA must arm a timer even with no title');
+		$this->assertNull($armed['title'], 'an empty title must reach the timer as null, not as an empty string');
+		$this->assertSame('task', $armed['subjectType']);
+		$this->assertSame(['value' => 2, 'unit' => 'businessDays'], $armed['sla']);
+	}//end testATitlelessNodeArmsItsTimerWithNoTitle()
+
 	/**
 	 * A node WITHOUT an SLA arms nothing.
 	 *
