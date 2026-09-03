@@ -2380,32 +2380,12 @@ class ImportHandlerTest extends TestCase {
 	/**
 	 * setWorkflowEngineRegistry() stores the registry.
 	 */
-	public function testSetWorkflowEngineRegistry(): void {
-		$registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
-		$this->handler->setWorkflowEngineRegistry($registry);
-
-		$ref = new ReflectionClass($this->handler);
-		$prop = $ref->getProperty('workflowRegistry');
-		$prop->setAccessible(true);
-
-		$this->assertSame($registry, $prop->getValue($this->handler));
-
-	}//end testSetWorkflowEngineRegistry()
+//end testSetWorkflowEngineRegistry()
 
 	/**
 	 * setDeployedWorkflowMapper() stores the mapper.
 	 */
-	public function testSetDeployedWorkflowMapper(): void {
-		$mapper = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
-		$this->handler->setDeployedWorkflowMapper($mapper);
-
-		$ref = new ReflectionClass($this->handler);
-		$prop = $ref->getProperty('deployedWfMapper');
-		$prop->setAccessible(true);
-
-		$this->assertSame($mapper, $prop->getValue($this->handler));
-
-	}//end testSetDeployedWorkflowMapper()
+//end testSetDeployedWorkflowMapper()
 
 	/**
 	 * setMagicMapper() stores the magic mapper.
@@ -4551,272 +4531,32 @@ class ImportHandlerTest extends TestCase {
 	/**
 	 * processWorkflowDeployment() marks workflow as failed when required fields missing.
 	 */
-	public function testWorkflowDeploymentFailsOnMissingRequiredFields(): void {
-		$configuration = $this->makeConfiguration(1);
-
-		$registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
-		$wfMapper = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
-		$this->handler->setWorkflowEngineRegistry($registry);
-		$this->handler->setDeployedWorkflowMapper($wfMapper);
-
-		$this->appConfig->method('getValueString')->willReturn('');
-		$this->appConfig->method('setValueString')->willReturn(true);
-		$this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
-
-		$data = [
-			'appId' => 'myapp',
-			'version' => '1.0.0',
-			'components' => [
-				'workflows' => [
-					['name' => 'wf1'],
-					// Missing 'engine' and 'workflow'.
-				],
-			],
-		];
-
-		$result = $this->handler->importFromJson(
-			data:          $data,
-			configuration: $configuration,
-			version:       '1.0.0'
-		);
-
-		$this->assertCount(1, $result['workflows']['failed']);
-		$this->assertStringContainsString('Missing required fields', $result['workflows']['failed'][0]['error']);
-
-	}//end testWorkflowDeploymentFailsOnMissingRequiredFields()
+//end testWorkflowDeploymentFailsOnMissingRequiredFields()
 
 	/**
 	 * processWorkflowDeployment() marks workflow unchanged when hash matches existing.
 	 */
-	public function testWorkflowDeploymentUnchangedWhenHashMatches(): void {
-		$configuration = $this->makeConfiguration(1);
-
-		$registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
-		$wfMapper = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
-		$this->handler->setWorkflowEngineRegistry($registry);
-		$this->handler->setDeployedWorkflowMapper($wfMapper);
-
-		$this->appConfig->method('getValueString')->willReturn('');
-		$this->appConfig->method('setValueString')->willReturn(true);
-		$this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
-
-		$workflowDef = ['nodes' => [['id' => '1']]];
-		$jsonFlags = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
-		$hash = hash('sha256', json_encode($workflowDef, $jsonFlags));
-
-		$existing = $this->getMockBuilder(\OCA\OpenRegister\Db\DeployedWorkflow::class)
-			->addMethods(['getSourceHash'])
-			->getMock();
-		$existing->method('getSourceHash')->willReturn($hash);
-
-		$wfMapper->method('findByNameAndEngine')->willReturn($existing);
-
-		$data = [
-			'appId' => 'myapp',
-			'version' => '1.0.0',
-			'components' => [
-				'workflows' => [
-					['name' => 'wf1', 'engine' => 'n8n', 'workflow' => $workflowDef],
-				],
-			],
-		];
-
-		$result = $this->handler->importFromJson(
-			data:          $data,
-			configuration: $configuration,
-			version:       '1.0.0'
-		);
-
-		$this->assertContains('wf1', $result['workflows']['unchanged']);
-
-	}//end testWorkflowDeploymentUnchangedWhenHashMatches()
+//end testWorkflowDeploymentUnchangedWhenHashMatches()
 
 	/**
 	 * processWorkflowDeployment() fails when no engine of requested type is registered.
 	 */
-	public function testWorkflowDeploymentFailsWhenNoEngineOfType(): void {
-		$configuration = $this->makeConfiguration(1);
-
-		$registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
-		$wfMapper = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
-		$this->handler->setWorkflowEngineRegistry($registry);
-		$this->handler->setDeployedWorkflowMapper($wfMapper);
-
-		$this->appConfig->method('getValueString')->willReturn('');
-		$this->appConfig->method('setValueString')->willReturn(true);
-		$this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
-
-		$wfMapper->method('findByNameAndEngine')->willReturn(null);
-		$registry->method('getEnginesByType')->willReturn([]);
-
-		$data = [
-			'appId' => 'myapp',
-			'version' => '1.0.0',
-			'components' => [
-				'workflows' => [
-					['name' => 'wf1', 'engine' => 'nonexistent', 'workflow' => ['nodes' => []]],
-				],
-			],
-		];
-
-		$result = $this->handler->importFromJson(
-			data:          $data,
-			configuration: $configuration,
-			version:       '1.0.0'
-		);
-
-		$this->assertCount(1, $result['workflows']['failed']);
-		$this->assertStringContainsString('No registered engine', $result['workflows']['failed'][0]['error']);
-
-	}//end testWorkflowDeploymentFailsWhenNoEngineOfType()
+//end testWorkflowDeploymentFailsWhenNoEngineOfType()
 
 	/**
 	 * processWorkflowDeployment() deploys a new workflow successfully.
 	 */
-	public function testWorkflowDeploymentCreatesNewWorkflow(): void {
-		$configuration = $this->makeConfiguration(1);
-
-		$registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
-		$wfMapper = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
-		$this->handler->setWorkflowEngineRegistry($registry);
-		$this->handler->setDeployedWorkflowMapper($wfMapper);
-
-		$this->appConfig->method('getValueString')->willReturn('');
-		$this->appConfig->method('setValueString')->willReturn(true);
-		$this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
-
-		$wfMapper->method('findByNameAndEngine')->willReturn(null);
-
-		$engine = new \OCA\OpenRegister\Db\WorkflowEngine();
-		$registry->method('getEnginesByType')->willReturn([$engine]);
-
-		$adapter = $this->createMock(\OCA\OpenRegister\WorkflowEngine\WorkflowEngineInterface::class);
-		$adapter->method('deployWorkflow')->willReturn('engine-wf-id-123');
-		$registry->method('resolveAdapter')->willReturn($adapter);
-
-		$deployed = new \OCA\OpenRegister\Db\DeployedWorkflow();
-		$this->setEntityId($deployed, 1);
-		$wfMapper->method('createFromArray')->willReturn($deployed);
-
-		$data = [
-			'appId' => 'myapp',
-			'version' => '1.0.0',
-			'components' => [
-				'workflows' => [
-					['name' => 'new-wf', 'engine' => 'n8n', 'workflow' => ['nodes' => []]],
-				],
-			],
-		];
-
-		$result = $this->handler->importFromJson(
-			data:          $data,
-			configuration: $configuration,
-			version:       '1.0.0'
-		);
-
-		$this->assertCount(1, $result['workflows']['deployed']);
-		$this->assertSame('new-wf', $result['workflows']['deployed'][0]['name']);
-		$this->assertSame('created', $result['workflows']['deployed'][0]['action']);
-
-	}//end testWorkflowDeploymentCreatesNewWorkflow()
+//end testWorkflowDeploymentCreatesNewWorkflow()
 
 	/**
 	 * processWorkflowDeployment() updates an existing workflow when hash differs.
 	 */
-	public function testWorkflowDeploymentUpdatesExistingWorkflow(): void {
-		$configuration = $this->makeConfiguration(1);
-
-		$registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
-		$wfMapper = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
-		$this->handler->setWorkflowEngineRegistry($registry);
-		$this->handler->setDeployedWorkflowMapper($wfMapper);
-
-		$this->appConfig->method('getValueString')->willReturn('');
-		$this->appConfig->method('setValueString')->willReturn(true);
-		$this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
-
-		$existing = new \OCA\OpenRegister\Db\DeployedWorkflow();
-		$this->setEntityId($existing, 5);
-		$existing->setSourceHash('old-hash');
-		$existing->setEngineWorkflowId('engine-id-old');
-		$existing->setVersion(1);
-
-		$wfMapper->method('findByNameAndEngine')->willReturn($existing);
-
-		$engine = new \OCA\OpenRegister\Db\WorkflowEngine();
-		$registry->method('getEnginesByType')->willReturn([$engine]);
-
-		$adapter = $this->createMock(\OCA\OpenRegister\WorkflowEngine\WorkflowEngineInterface::class);
-		$adapter->method('updateWorkflow')->willReturn('engine-id-new');
-		$registry->method('resolveAdapter')->willReturn($adapter);
-
-		$wfMapper->expects($this->once())->method('update');
-
-		$data = [
-			'appId' => 'myapp',
-			'version' => '1.0.0',
-			'components' => [
-				'workflows' => [
-					['name' => 'upd-wf', 'engine' => 'n8n', 'workflow' => ['nodes' => [['id' => 'new']]]],
-				],
-			],
-		];
-
-		$result = $this->handler->importFromJson(
-			data:          $data,
-			configuration: $configuration,
-			version:       '1.0.0'
-		);
-
-		$this->assertCount(1, $result['workflows']['updated']);
-		$this->assertSame('updated', $result['workflows']['updated'][0]['action']);
-
-	}//end testWorkflowDeploymentUpdatesExistingWorkflow()
+//end testWorkflowDeploymentUpdatesExistingWorkflow()
 
 	/**
 	 * processWorkflowDeployment() records failure when adapter throws.
 	 */
-	public function testWorkflowDeploymentRecordsFailureOnAdapterException(): void {
-		$configuration = $this->makeConfiguration(1);
-
-		$registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
-		$wfMapper = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
-		$this->handler->setWorkflowEngineRegistry($registry);
-		$this->handler->setDeployedWorkflowMapper($wfMapper);
-
-		$this->appConfig->method('getValueString')->willReturn('');
-		$this->appConfig->method('setValueString')->willReturn(true);
-		$this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
-
-		$wfMapper->method('findByNameAndEngine')->willReturn(null);
-
-		$engine = new \OCA\OpenRegister\Db\WorkflowEngine();
-		$registry->method('getEnginesByType')->willReturn([$engine]);
-
-		$adapter = $this->createMock(\OCA\OpenRegister\WorkflowEngine\WorkflowEngineInterface::class);
-		$adapter->method('deployWorkflow')->willThrowException(new Exception('Engine down'));
-		$registry->method('resolveAdapter')->willReturn($adapter);
-
-		$data = [
-			'appId' => 'myapp',
-			'version' => '1.0.0',
-			'components' => [
-				'workflows' => [
-					['name' => 'fail-wf', 'engine' => 'n8n', 'workflow' => ['nodes' => []]],
-				],
-			],
-		];
-
-		$result = $this->handler->importFromJson(
-			data:          $data,
-			configuration: $configuration,
-			version:       '1.0.0'
-		);
-
-		$this->assertCount(1, $result['workflows']['failed']);
-		$this->assertSame('Engine down', $result['workflows']['failed'][0]['error']);
-
-	}//end testWorkflowDeploymentRecordsFailureOnAdapterException()
+//end testWorkflowDeploymentRecordsFailureOnAdapterException()
 
 	// =========================================================================
 	// processWorkflowHookWiring() — tested via importFromJson() workflows branch
@@ -4825,291 +4565,27 @@ class ImportHandlerTest extends TestCase {
 	/**
 	 * processWorkflowHookWiring() skips entry without attachTo.
 	 */
-	public function testWorkflowHookWiringSkipsEntryWithoutAttachTo(): void {
-		$configuration = $this->makeConfiguration(1);
-
-		$registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
-		$wfMapper = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
-		$this->handler->setWorkflowEngineRegistry($registry);
-		$this->handler->setDeployedWorkflowMapper($wfMapper);
-
-		$this->appConfig->method('getValueString')->willReturn('');
-		$this->appConfig->method('setValueString')->willReturn(true);
-		$this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
-
-		// Workflow has no attachTo — hook wiring should be skipped.
-		$wfMapper->method('findByNameAndEngine')->willReturn(null);
-		$engine = new \OCA\OpenRegister\Db\WorkflowEngine();
-		$registry->method('getEnginesByType')->willReturn([$engine]);
-
-		$adapter = $this->createMock(\OCA\OpenRegister\WorkflowEngine\WorkflowEngineInterface::class);
-		$adapter->method('deployWorkflow')->willReturn('wf-id');
-		$registry->method('resolveAdapter')->willReturn($adapter);
-
-		$deployed = new \OCA\OpenRegister\Db\DeployedWorkflow();
-		$this->setEntityId($deployed, 1);
-		$wfMapper->method('createFromArray')->willReturn($deployed);
-
-		// schemaMapper.update should NOT be called (no hook wiring).
-		$this->schemaMapper->expects($this->never())->method('update');
-
-		$data = [
-			'appId' => 'myapp',
-			'version' => '1.0.0',
-			'components' => [
-				'workflows' => [
-					['name' => 'no-attach', 'engine' => 'n8n', 'workflow' => ['nodes' => []]],
-					// No 'attachTo' field.
-				],
-			],
-		];
-
-		$result = $this->handler->importFromJson(
-			data:          $data,
-			configuration: $configuration,
-			version:       '1.0.0'
-		);
-
-		$this->assertIsArray($result);
-
-	}//end testWorkflowHookWiringSkipsEntryWithoutAttachTo()
+//end testWorkflowHookWiringSkipsEntryWithoutAttachTo()
 
 	/**
 	 * processWorkflowHookWiring() attaches workflow to schema hook.
 	 */
-	public function testWorkflowHookWiringAttachesWorkflowToSchema(): void {
-		$configuration = $this->makeConfiguration(1);
-		$schema = $this->makeSchema(10, 'person');
-
-		$registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
-		$wfMapper = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
-		$this->handler->setWorkflowEngineRegistry($registry);
-		$this->handler->setDeployedWorkflowMapper($wfMapper);
-
-		$this->appConfig->method('getValueString')->willReturn('');
-		$this->appConfig->method('setValueString')->willReturn(true);
-		$this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
-
-		// Schema import pass — populate schemasMap by including schemas in components.
-		$this->schemaMapper->method('find')
-			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
-		$this->schemaMapper->method('createFromArray')->willReturn($schema);
-		$this->schemaMapper->method('update')->willReturn($schema);
-		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
-
-		// Deploy phase: create new workflow.
-		$wfMapper->method('findByNameAndEngine')->willReturn(null);
-		$engine = new \OCA\OpenRegister\Db\WorkflowEngine();
-		$registry->method('getEnginesByType')->willReturn([$engine]);
-
-		$adapter = $this->createMock(\OCA\OpenRegister\WorkflowEngine\WorkflowEngineInterface::class);
-		$adapter->method('deployWorkflow')->willReturn('wf-id-hook');
-		$registry->method('resolveAdapter')->willReturn($adapter);
-
-		$deployed = new \OCA\OpenRegister\Db\DeployedWorkflow();
-		$this->setEntityId($deployed, 2);
-		$deployed->setEngine('n8n');
-		$deployed->setEngineWorkflowId('wf-id-hook');
-		$wfMapper->method('createFromArray')->willReturn($deployed);
-
-		// Hook wiring phase: update deployed workflow + schema.
-		$wfMapper->expects($this->atLeastOnce())->method('update');
-
-		$data = [
-			'appId' => 'myapp',
-			'version' => '1.0.0',
-			'components' => [
-				'schemas' => [
-					'person' => ['slug' => 'person', 'title' => 'Person', 'version' => '1.0.0'],
-				],
-				'workflows' => [
-					[
-						'name' => 'hook-wf',
-						'engine' => 'n8n',
-						'workflow' => ['nodes' => []],
-						'attachTo' => [
-							'schema' => 'person',
-							'event' => 'post.create',
-							'mode' => 'async',
-							'order' => 5,
-						],
-					],
-				],
-			],
-		];
-
-		$result = $this->handler->importFromJson(
-			data:          $data,
-			configuration: $configuration,
-			version:       '1.0.0'
-		);
-
-		$this->assertIsArray($result);
-
-	}//end testWorkflowHookWiringAttachesWorkflowToSchema()
+//end testWorkflowHookWiringAttachesWorkflowToSchema()
 
 	/**
 	 * processWorkflowHookWiring() skips when schema not found.
 	 */
-	public function testWorkflowHookWiringSkipsWhenSchemaNotFound(): void {
-		$configuration = $this->makeConfiguration(1);
-
-		$registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
-		$wfMapper = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
-		$this->handler->setWorkflowEngineRegistry($registry);
-		$this->handler->setDeployedWorkflowMapper($wfMapper);
-
-		$this->appConfig->method('getValueString')->willReturn('');
-		$this->appConfig->method('setValueString')->willReturn(true);
-		$this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
-
-		$wfMapper->method('findByNameAndEngine')->willReturn(null);
-		$engine = new \OCA\OpenRegister\Db\WorkflowEngine();
-		$registry->method('getEnginesByType')->willReturn([$engine]);
-
-		$adapter = $this->createMock(\OCA\OpenRegister\WorkflowEngine\WorkflowEngineInterface::class);
-		$adapter->method('deployWorkflow')->willReturn('wf-id');
-		$registry->method('resolveAdapter')->willReturn($adapter);
-
-		$deployed = new \OCA\OpenRegister\Db\DeployedWorkflow();
-		$this->setEntityId($deployed, 3);
-		$deployed->setEngine('n8n');
-		$deployed->setEngineWorkflowId('wf-id');
-		$wfMapper->method('createFromArray')->willReturn($deployed);
-
-		// schemaMapper.findBySlug throws — schema not found for hook wiring.
-		$this->schemaMapper->method('findBySlug')
-			->willThrowException(new Exception('not found'));
-
-		// schemaMapper.update should NOT be called (schema not found).
-		$this->schemaMapper->expects($this->never())->method('update');
-
-		$data = [
-			'appId' => 'myapp',
-			'version' => '1.0.0',
-			'components' => [
-				'workflows' => [
-					[
-						'name' => 'orphan-wf',
-						'engine' => 'n8n',
-						'workflow' => ['nodes' => []],
-						'attachTo' => [
-							'schema' => 'nonexistent-schema',
-							'event' => 'post.create',
-						],
-					],
-				],
-			],
-		];
-
-		$result = $this->handler->importFromJson(
-			data:          $data,
-			configuration: $configuration,
-			version:       '1.0.0'
-		);
-
-		$this->assertIsArray($result);
-
-	}//end testWorkflowHookWiringSkipsWhenSchemaNotFound()
+//end testWorkflowHookWiringSkipsWhenSchemaNotFound()
 
 	/**
 	 * processWorkflowHookWiring() skips when attachTo has incomplete schema/event.
 	 */
-	public function testWorkflowHookWiringSkipsIncompleteAttachTo(): void {
-		$configuration = $this->makeConfiguration(1);
-
-		$registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
-		$wfMapper = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
-		$this->handler->setWorkflowEngineRegistry($registry);
-		$this->handler->setDeployedWorkflowMapper($wfMapper);
-
-		$this->appConfig->method('getValueString')->willReturn('');
-		$this->appConfig->method('setValueString')->willReturn(true);
-		$this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
-
-		$wfMapper->method('findByNameAndEngine')->willReturn(null);
-		$engine = new \OCA\OpenRegister\Db\WorkflowEngine();
-		$registry->method('getEnginesByType')->willReturn([$engine]);
-
-		$adapter = $this->createMock(\OCA\OpenRegister\WorkflowEngine\WorkflowEngineInterface::class);
-		$adapter->method('deployWorkflow')->willReturn('wf-id');
-		$registry->method('resolveAdapter')->willReturn($adapter);
-
-		$deployed = new \OCA\OpenRegister\Db\DeployedWorkflow();
-		$this->setEntityId($deployed, 4);
-		$wfMapper->method('createFromArray')->willReturn($deployed);
-
-		$data = [
-			'appId' => 'myapp',
-			'version' => '1.0.0',
-			'components' => [
-				'workflows' => [
-					[
-						'name' => 'partial-attach',
-						'engine' => 'n8n',
-						'workflow' => ['nodes' => []],
-						'attachTo' => [
-							'schema' => 'person',
-							// Missing 'event'.
-						],
-					],
-				],
-			],
-		];
-
-		// Should log warning about incomplete attachTo.
-		$this->logger->expects($this->atLeastOnce())->method('warning');
-
-		$result = $this->handler->importFromJson(
-			data:          $data,
-			configuration: $configuration,
-			version:       '1.0.0'
-		);
-
-		$this->assertIsArray($result);
-
-	}//end testWorkflowHookWiringSkipsIncompleteAttachTo()
+//end testWorkflowHookWiringSkipsIncompleteAttachTo()
 
 	/**
 	 * processWorkflowHookWiring() returns result unchanged when deployedWfMapper is null.
 	 */
-	public function testWorkflowHookWiringReturnsEarlyWhenMapperNull(): void {
-		$configuration = $this->makeConfiguration(1);
-
-		// Set registry but NOT mapper — hook wiring returns early.
-		$registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
-		$this->handler->setWorkflowEngineRegistry($registry);
-		// Deliberately NOT setting deployedWfMapper.
-
-		$this->appConfig->method('getValueString')->willReturn('');
-		$this->appConfig->method('setValueString')->willReturn(true);
-		$this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
-
-		$data = [
-			'appId' => 'myapp',
-			'version' => '1.0.0',
-			'components' => [
-				'workflows' => [
-					[
-						'name' => 'wf-no-mapper',
-						'engine' => 'n8n',
-						'workflow' => ['nodes' => []],
-						'attachTo' => ['schema' => 'x', 'event' => 'y'],
-					],
-				],
-			],
-		];
-
-		// processWorkflowDeployment returns early (no mapper), then processWorkflowHookWiring also returns early.
-		$result = $this->handler->importFromJson(
-			data:          $data,
-			configuration: $configuration,
-			version:       '1.0.0'
-		);
-
-		$this->assertIsArray($result);
-
-	}//end testWorkflowHookWiringReturnsEarlyWhenMapperNull()
+//end testWorkflowHookWiringReturnsEarlyWhenMapperNull()
 
 	// =========================================================================
 	// importSchema() — property edge cases

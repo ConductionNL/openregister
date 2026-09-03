@@ -27,7 +27,6 @@ use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\DeployedWorkflow;
-use OCA\OpenRegister\Db\DeployedWorkflowMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
@@ -39,7 +38,6 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -919,83 +917,12 @@ class ImportHandlerCoverageTest extends TestCase {
 	/**
 	 * processWorkflowHookWiring skips workflow when deployed is null (name not in map).
 	 */
-	public function testWorkflowHookWiringSkipsWhenDeployedNotInMap(): void {
-		$deployedWfMapper = $this->createMock(DeployedWorkflowMapper::class);
-		$registry = $this->createMock(WorkflowEngineRegistry::class);
-
-		$this->handler->setDeployedWorkflowMapper($deployedWfMapper);
-		$this->handler->setWorkflowEngineRegistry($registry);
-
-		$workflows = [
-			[
-				'name' => 'unknown-workflow',
-				'attachTo' => [
-					'schema' => 'test-schema',
-					'event' => 'afterCreate',
-				],
-			],
-		];
-
-		// deployedWorkflows map is empty, so the workflow name won't be found.
-		$result = $this->invokeMethod($this->handler, 'processWorkflowHookWiring', [
-			$workflows,
-			[],
-			['workflows' => ['deployed' => [], 'updated' => [], 'unchanged' => [], 'failed' => []]],
-		]);
-
-		$this->assertIsArray($result);
-
-	}//end testWorkflowHookWiringSkipsWhenDeployedNotInMap()
+//end testWorkflowHookWiringSkipsWhenDeployedNotInMap()
 
 	/**
 	 * processWorkflowHookWiring deduplicates hooks by removing existing hook with same workflowId+event.
 	 */
-	public function testWorkflowHookWiringDeduplicatesExistingHooks(): void {
-		$deployedWfMapper = $this->createMock(DeployedWorkflowMapper::class);
-		$registry = $this->createMock(WorkflowEngineRegistry::class);
-
-		$this->handler->setDeployedWorkflowMapper($deployedWfMapper);
-		$this->handler->setWorkflowEngineRegistry($registry);
-
-		$deployed = $this->makeDeployedWorkflow(1, 'my-wf', 'n8n');
-
-		$schema = $this->makeSchema(30, 'hook-schema');
-		$schema->setHooks([
-			[
-				'event' => 'afterCreate',
-				'workflowId' => 'wf-123',
-				'engine' => 'n8n',
-			],
-		]);
-
-		$this->setProperty($this->handler, 'schemasMap', ['hook-schema' => $schema]);
-
-		$deployedWfMapper->method('update')
-			->willReturnArgument(0);
-		$this->schemaMapper->method('update')
-			->willReturnArgument(0);
-
-		$workflows = [
-			[
-				'name' => 'my-wf',
-				'engine' => 'n8n',
-				'workflow' => ['nodes' => []],
-				'attachTo' => [
-					'schema' => 'hook-schema',
-					'event' => 'afterCreate',
-				],
-			],
-		];
-
-		$result = $this->invokeMethod($this->handler, 'processWorkflowHookWiring', [
-			$workflows,
-			['my-wf' => $deployed],
-			['workflows' => ['deployed' => [], 'updated' => [], 'unchanged' => [], 'failed' => []]],
-		]);
-
-		$this->assertIsArray($result);
-
-	}//end testWorkflowHookWiringDeduplicatesExistingHooks()
+//end testWorkflowHookWiringDeduplicatesExistingHooks()
 
 	// =========================================================================
 	// importFromApp — various metadata update branches
@@ -2148,32 +2075,12 @@ class ImportHandlerCoverageTest extends TestCase {
 	/**
 	 * setWorkflowEngineRegistry sets the registry instance.
 	 */
-	public function testSetWorkflowEngineRegistry(): void {
-		$registry = $this->createMock(WorkflowEngineRegistry::class);
-		$this->handler->setWorkflowEngineRegistry($registry);
-
-		$ref = new ReflectionClass($this->handler);
-		$prop = $ref->getProperty('workflowRegistry');
-		$prop->setAccessible(true);
-
-		$this->assertSame($registry, $prop->getValue($this->handler));
-
-	}//end testSetWorkflowEngineRegistry()
+//end testSetWorkflowEngineRegistry()
 
 	/**
 	 * setDeployedWorkflowMapper sets the mapper instance.
 	 */
-	public function testSetDeployedWorkflowMapper(): void {
-		$mapper = $this->createMock(DeployedWorkflowMapper::class);
-		$this->handler->setDeployedWorkflowMapper($mapper);
-
-		$ref = new ReflectionClass($this->handler);
-		$prop = $ref->getProperty('deployedWfMapper');
-		$prop->setAccessible(true);
-
-		$this->assertSame($mapper, $prop->getValue($this->handler));
-
-	}//end testSetDeployedWorkflowMapper()
+//end testSetDeployedWorkflowMapper()
 
 	/**
 	 * setOpenConnectorConfigurationService sets the connector service.

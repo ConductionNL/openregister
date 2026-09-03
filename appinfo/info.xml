@@ -129,9 +129,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\TransferCheckJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\SyncConfigurationsJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\SyncDataJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\ScheduledWorkflowJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledNotificationJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\ActionScheduleJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TenantDeprovisionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TenantPurgeJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TenantUsageSyncJob</job>
@@ -150,7 +148,6 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\HandoffQueueDrainJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TemporalCalculationSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DsarDpiaDetectionJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\ScheduleReconcilerJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DbalIntrospectionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledReportJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\GroupReconcilerJob</job>
