@@ -84,6 +84,22 @@ final class NcEntitySemanticMap {
 			'requiredApp' => null,
 			'application' => 'openregister',
 		],
+		// OpenRegister's own organisation, projected so a leaf schema can point a
+		// `{"$ref": ...}` at it. Several apps declared their own `organization`
+		// SCHEMA precisely because there was nothing here to reference, and a
+		// schema slug is global per organisation, so those copies collide.
+		//
+		// `nc-`-prefixed for the reason the app-gated rows below are: it must not
+		// collide with the leaf-app `organization` schemas it exists to replace,
+		// which have to keep working until each app has migrated off them.
+		'organisation' => [
+			'register' => self::DIRECTORY_REGISTER,
+			'schema' => 'nc-organisation',
+			'schemaOrg' => 'schema:Organization',
+			'provider' => 'organisation-source',
+			'requiredApp' => null,
+			'application' => 'openregister',
+		],
 		// App-gated rows — each lives on its OWN app-named register (application =
 		// register slug) so the ADR-048 app-enabled gate degrades the projection
 		// when the backing app is uninstalled. Schemas are `nc-`-prefixed to avoid

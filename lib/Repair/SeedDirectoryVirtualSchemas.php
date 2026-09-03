@@ -67,6 +67,30 @@ class SeedDirectoryVirtualSchemas implements IRepairStep {
 			'id' => ['type' => 'string', 'title' => 'Group ID', 'description' => 'The Nextcloud group id (gid).'],
 			'displayName' => ['type' => 'string', 'title' => 'Display name', 'description' => 'The group display name.'],
 		],
+		// The identity facet of an OpenRegister organisation, and nothing else.
+		// This set MUST stay in step with
+		// {@see \OCA\OpenRegister\Service\ObjectSource\OrganisationObjectSourceProvider}'s
+		// projection: a property declared here and not projected reads as
+		// permanently empty, and one projected but not declared is discarded by
+		// the store without a word.
+		//
+		// Tenancy administration (quota, users, groups, authorization) is
+		// deliberately absent. This schema exists so another record can REFERENCE
+		// an organisation, not so anyone can configure one through the object API.
+		'nc-organisation' => [
+			'id' => ['type' => 'string', 'title' => 'Organisation ID', 'description' => 'The organisation uuid.'],
+			'name' => ['type' => 'string', 'title' => 'Name', 'description' => 'The organisation name.'],
+			'description' => ['type' => 'string', 'title' => 'Description', 'description' => 'A description of the organisation.'],
+			'summary' => ['type' => 'string', 'title' => 'Summary', 'description' => 'A short summary.'],
+			'oin' => ['type' => 'string', 'title' => 'OIN', 'description' => 'Organisatie-identificatienummer.'],
+			'tooi' => ['type' => 'string', 'title' => 'TOOI', 'description' => 'TOOI register identifier.'],
+			'rsin' => ['type' => 'string', 'title' => 'RSIN', 'description' => 'Rechtspersonen en Samenwerkingsverbanden Informatienummer.'],
+			'kvk' => ['type' => 'string', 'title' => 'KVK', 'description' => 'Chamber of Commerce number.'],
+			'pki' => ['type' => 'string', 'title' => 'PKI', 'description' => 'PKIoverheid certificate identifier.'],
+			'image' => ['type' => 'string', 'title' => 'Image', 'description' => 'A logo or image URL.'],
+			'type' => ['type' => 'string', 'title' => 'Type', 'description' => 'What kind of organisation this row describes.'],
+			'registrationStatus' => ['type' => 'string', 'title' => 'Registration status', 'description' => 'Registration lifecycle state.'],
+		],
 	];
 
 	/**
