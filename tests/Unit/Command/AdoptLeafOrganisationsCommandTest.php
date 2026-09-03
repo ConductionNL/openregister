@@ -20,7 +20,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Command;
 
 use OCA\OpenRegister\Command\AdoptLeafOrganisationsCommand;
+use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Service\ObjectService;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Tester\CommandTester;
 
 /**
  * Locks the rules that decide what an adoption keeps, merges and drops.
@@ -305,4 +312,243 @@ class AdoptLeafOrganisationsCommandTest extends TestCase {
 		$this->assertNull($organisation->getName());
 
 	}//end testANonScalarValueIsNotWrittenToAStringColumn()
+
+	/**
+	 * Build a command over mocked collaborators.
+	 *
+	 * @param array<int, array<string, mixed>> $rows     The leaf rows the reader returns.
+	 * @param array<int, Organisation>         $existing Organisations already on the instance.
+	 *
+	 * @return array{tester: CommandTester, mapper: OrganisationMapper&MockObject} The tester and the mapper.
+	 */
+	private function commandOver(array $rows, array $existing = []): array {
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->method('searchObjectsBySlug')->willReturn($rows);
+
+		$mapper = $this->createMock(OrganisationMapper::class);
+		$mapper->method('findAll')->willReturn($existing);
+		$mapper->method('insert')->willReturnArgument(0);
+
+		$command = new AdoptLeafOrganisationsCommand(
+			organisationMapper: $mapper,
+			objectService: $objectService,
+			logger: $this->createMock(LoggerInterface::class)
+		);
+
+		return ['tester' => new CommandTester($command), 'mapper' => $mapper];
+
+	}//end commandOver()
+
+	/**
+	 * Build an existing organisation.
+	 *
+	 * @param string      $uuid The uuid.
+	 * @param string|null $oin  The OIN, if any.
+	 *
+	 * @return Organisation The organisation.
+	 */
+	private function existing(string $uuid, ?string $oin = null): Organisation {
+		$organisation = new Organisation();
+		$organisation->setId(4);
+		$organisation->setUuid($uuid);
+		$organisation->setOin($oin);
+
+		return $organisation;
+
+	}//end existing()
+
+	/**
+	 * Without --register there is nothing to read from, and the command says so
+	 * rather than reading whatever it can find.
+	 *
+	 * @return void
+	 */
+	public function testTheRegisterOptionIsRequired(): void {
+		$run = $this->commandOver(rows: []);
+		$this->assertSame(Command::FAILURE, $run['tester']->execute([]));
+		$this->assertStringContainsString('--register is required', $run['tester']->getDisplay());
+
+	}//end testTheRegisterOptionIsRequired()
+
+	/**
+	 * The default is a dry run, because the alternative default is a command
+	 * that writes to every organisation on the instance the first time someone
+	 * types its name to see what it does.
+	 *
+	 * @return void
+	 */
+	public function testItIsADryRunByDefault(): void {
+		$run = $this->commandOver(rows: [['@self' => ['uuid' => 'leaf-1'], 'name' => 'Gemeente Utrecht']]);
+		$run['mapper']->expects($this->never())->method('insert');
+
+		$this->assertSame(Command::SUCCESS, $run['tester']->execute(['--register' => 'publication']));
+		$display = $run['tester']->getDisplay();
+		$this->assertStringContainsString('DRY-RUN', $display);
+		$this->assertStringContainsString('WOULD ADOPT', $display);
+		$this->assertStringContainsString('nothing written', $display);
+
+	}//end testItIsADryRunByDefault()
+
+	/**
+	 * With --apply the row is inserted, keeping its uuid.
+	 *
+	 * @return void
+	 */
+	public function testApplyInsertsTheRowKeepingItsUuid(): void {
+		$run = $this->commandOver(rows: [['@self' => ['uuid' => 'leaf-1'], 'name' => 'Gemeente Utrecht']]);
+		$run['mapper']->expects($this->once())
+			->method('insert')
+			->with(
+				$this->callback(
+					static function ($organisation) {
+						return ((string) $organisation->getUuid() === 'leaf-1');
+					}
+				)
+			)
+			->willReturnArgument(0);
+
+		$this->assertSame(
+			Command::SUCCESS,
+			$run['tester']->execute(['--register' => 'publication', '--apply' => true])
+		);
+		$this->assertStringContainsString('Adopted=1', $run['tester']->getDisplay());
+
+	}//end testApplyInsertsTheRowKeepingItsUuid()
+
+	/**
+	 * A row whose uuid is already an organisation is skipped, which is what
+	 * makes a second run of the command a no-op.
+	 *
+	 * @return void
+	 */
+	public function testAnAlreadyAdoptedRowIsSkipped(): void {
+		$run = $this->commandOver(
+			rows: [['@self' => ['uuid' => 'leaf-1'], 'name' => 'Gemeente Utrecht']],
+			existing: [$this->existing(uuid: 'leaf-1')]
+		);
+		$run['mapper']->expects($this->never())->method('insert');
+
+		$run['tester']->execute(['--register' => 'publication', '--apply' => true]);
+		$display = $run['tester']->getDisplay();
+		$this->assertStringContainsString('already adopted', $display);
+		$this->assertStringContainsString('skipped=1', $display);
+
+	}//end testAnAlreadyAdoptedRowIsSkipped()
+
+	/**
+	 * A row with no uuid has no idempotency key, so adopting it would create a
+	 * duplicate on every run. It is skipped and reported.
+	 *
+	 * @return void
+	 */
+	public function testARowWithNoUuidIsSkipped(): void {
+		$run = $this->commandOver(rows: [['name' => 'Nameless']]);
+		$run['mapper']->expects($this->never())->method('insert');
+
+		$run['tester']->execute(['--register' => 'publication', '--apply' => true]);
+		$this->assertStringContainsString('no uuid', $run['tester']->getDisplay());
+
+	}//end testARowWithNoUuidIsSkipped()
+
+	/**
+	 * A matching legal identifier is reported as a merge and recorded on the
+	 * adopted row, so both uuids keep resolving.
+	 *
+	 * @return void
+	 */
+	public function testAMatchingIdentifierRecordsAMerge(): void {
+		$run = $this->commandOver(
+			rows: [['@self' => ['uuid' => 'leaf-1'], 'name' => 'Gemeente Utrecht', 'oin' => '0000-0001']],
+			existing: [$this->existing(uuid: 'survivor', oin: '00000001')]
+		);
+
+		$run['tester']->execute(['--register' => 'publication', '--apply' => true]);
+		$display = $run['tester']->getDisplay();
+		$this->assertStringContainsString('merges into survivor', $display);
+		$this->assertStringContainsString('merged=1', $display);
+
+	}//end testAMatchingIdentifierRecordsAMerge()
+
+	/**
+	 * Properties Organisation has no column for are named before the write.
+	 * This is the whole reason the report exists: OpenRegister discards an
+	 * undeclared property and answers 200, so a lossy adoption is otherwise
+	 * indistinguishable from a clean one.
+	 *
+	 * @return void
+	 */
+	public function testUndeclaredPropertiesAreReportedBeforeTheWrite(): void {
+		$run = $this->commandOver(
+			rows: [
+				[
+					'@self' => ['uuid' => 'leaf-1'],
+					'name' => 'Gemeente Utrecht',
+					'xml' => '<x/>',
+					'deelnames' => [],
+				],
+			]
+		);
+
+		$run['tester']->execute(['--register' => 'publication']);
+		$display = $run['tester']->getDisplay();
+		$this->assertStringContainsString('2 properties have no column', $display);
+		$this->assertStringContainsString('deelnames, xml', $display);
+
+	}//end testUndeclaredPropertiesAreReportedBeforeTheWrite()
+
+	/**
+	 * One undeclared property reads as one, not as "1 property have".
+	 *
+	 * @return void
+	 */
+	public function testTheSingularReportReadsAsASingular(): void {
+		$run = $this->commandOver(
+			rows: [['@self' => ['uuid' => 'leaf-1'], 'name' => 'Gemeente Utrecht', 'xml' => '<x/>']]
+		);
+
+		$run['tester']->execute(['--register' => 'publication']);
+		$this->assertStringContainsString('1 property has no column', $run['tester']->getDisplay());
+
+	}//end testTheSingularReportReadsAsASingular()
+
+	/**
+	 * A row that fails to insert is counted as failed and the command exits
+	 * non-zero, so a partial adoption does not report success.
+	 *
+	 * @return void
+	 */
+	public function testAFailedInsertMakesTheCommandFail(): void {
+		$run = $this->commandOver(rows: [['@self' => ['uuid' => 'leaf-1'], 'name' => 'Gemeente Utrecht']]);
+		$run['mapper']->method('insert')->willThrowException(new \RuntimeException('constraint'));
+
+		$this->assertSame(
+			Command::FAILURE,
+			$run['tester']->execute(['--register' => 'publication', '--apply' => true])
+		);
+		$display = $run['tester']->getDisplay();
+		$this->assertStringContainsString('FAILED: constraint', $display);
+		$this->assertStringContainsString('failed=1', $display);
+
+	}//end testAFailedInsertMakesTheCommandFail()
+
+	/**
+	 * A second row sharing the first's legal identifier merges into it within
+	 * the same run, because the candidate set grows as rows are adopted.
+	 *
+	 * @return void
+	 */
+	public function testARunMergesADuplicateItAdoptedItself(): void {
+		$run = $this->commandOver(
+			rows: [
+				['@self' => ['uuid' => 'leaf-1'], 'name' => 'Gemeente Utrecht', 'oin' => '111'],
+				['@self' => ['uuid' => 'leaf-2'], 'name' => 'Gemeente Utrecht', 'oin' => '111'],
+			]
+		);
+
+		$run['tester']->execute(['--register' => 'publication', '--apply' => true]);
+		$display = $run['tester']->getDisplay();
+		$this->assertStringContainsString('merges into leaf-1', $display);
+		$this->assertStringContainsString('Adopted=2 (of which merged=1)', $display);
+
+	}//end testARunMergesADuplicateItAdoptedItself()
 }//end class
