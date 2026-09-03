@@ -30,16 +30,26 @@ test.use(fs.existsSync(STORAGE_STATE) ? { storageState: STORAGE_STATE } : {})
 
 test.describe('app chrome (ADR-114)', () => {
 	test.beforeEach(async ({ page }) => {
-		await page.goto('/index.php/apps/openregister/', { waitUntil: 'domcontentloaded' })
-		await expect(page.locator('[data-testid="cn-nav"]')).toBeVisible({ timeout: 30_000 })
+		await page.goto('/index.php/apps/openregister/', {
+			waitUntil: 'domcontentloaded',
+		})
+		await expect(page.locator('[data-testid="cn-nav"]')).toBeVisible({
+			timeout: 30_000,
+		})
 	})
 
-	test('the footer reads Documentation, Reports, Features & roadmap, each with a glyph', async ({ page }) => {
-		const footer = page.locator('[data-testid="cn-nav"] .cn-app-nav__footer-list')
+	test('the footer reads Documentation, Reports, Features & roadmap, each with a glyph', async ({
+		page,
+	}) => {
+		const footer = page.locator(
+			'[data-testid="cn-nav"] .cn-app-nav__footer-list',
+		)
 		await expect(footer).toBeAttached({ timeout: 15_000 })
 
 		const rows = footer.locator('li')
-		const texts = (await rows.allInnerTexts()).map((t) => t.trim()).filter(Boolean)
+		const texts = (await rows.allInnerTexts())
+			.map((t) => t.trim())
+			.filter(Boolean)
 
 		// ORDER is the rule, not the numbers. This app ran its footer at 1 and 2
 		// while pipelinq runs 160/200/230, and both read correctly; ADR-114
@@ -51,19 +61,30 @@ test.describe('app chrome (ADR-114)', () => {
 		expect(seen[2]).toMatch(/roadmap/i)
 
 		for (const row of await rows.all()) {
-			await expect(row.locator('svg, .material-design-icon').first()).toBeAttached()
+			await expect(
+				row.locator('svg, .material-design-icon').first(),
+			).toBeAttached()
 		}
 	})
 
-	test('Reports opens the reports surface, not the dashboard', async ({ page }) => {
-		const footer = page.locator('[data-testid="cn-nav"] .cn-app-nav__footer-list')
-		await footer.getByRole('link', { name: /^Reports$/ }).first().click()
+	test('Reports opens the reports surface, not the dashboard', async ({
+		page,
+	}) => {
+		const footer = page.locator(
+			'[data-testid="cn-nav"] .cn-app-nav__footer-list',
+		)
+		await footer
+			.getByRole('link', { name: /^Reports$/ })
+			.first()
+			.click()
 
 		// By PATH. This app's reports surface is `type: "custom"` at the
 		// canonical /reports path rather than the built-in `reports` page type,
 		// which is deliberate and documented in the manifest — a first version
 		// of gate-107 tested the page TYPE alone and called this MISSING.
-		await expect(page).toHaveURL(/\/apps\/openregister\/reports(\?|$)/, { timeout: 15_000 })
+		await expect(page).toHaveURL(/\/apps\/openregister\/reports(\?|$)/, {
+			timeout: 15_000,
+		})
 		await expect(page.locator('[data-testid="cn-nav"]')).toBeVisible()
 	})
 
@@ -75,30 +96,45 @@ test.describe('app chrome (ADR-114)', () => {
 		await expect(main.getByRole('link', { name: /^Reports$/ })).toHaveCount(1)
 	})
 
-	test('the settings foldout carries Personal settings, Admin settings and Flows', async ({ page }) => {
+	test('the settings foldout carries Personal settings, Admin settings and Flows', async ({
+		page,
+	}) => {
 		const nav = page.locator('[data-testid="cn-nav"]')
 
-		await expect(nav.locator('[data-testid="cn-nav-settings"]')).toBeAttached({ timeout: 15_000 })
+		await expect(nav.locator('[data-testid="cn-nav-settings"]')).toBeAttached({
+			timeout: 15_000,
+		})
 
 		// This app set `nav.includePersonalSettings: false` with no replacement,
 		// which put the user's notification preferences and the ADR-110
 		// Integrations section out of reach entirely. The flag is gone; this is
 		// the test that notices if it comes back.
-		await expect(nav.locator('[data-testid="cn-nav-personal-settings"]')).toBeAttached()
+		await expect(
+			nav.locator('[data-testid="cn-nav-personal-settings"]'),
+		).toBeAttached()
 
 		const admin = nav.locator('[data-testid="cn-nav-admin-settings"]')
 		await expect(admin).toBeAttached()
-		await expect(admin).toHaveAttribute('href', /\/settings\/admin\/openregister$/)
+		await expect(admin).toHaveAttribute(
+			'href',
+			/\/settings\/admin\/openregister$/,
+		)
 	})
 
-	test('Flows stays in the main navigation, which is this app\'s documented exception', async ({ page }) => {
+	test("Flows stays in the main navigation, which is this app's documented exception", async ({
+		page,
+	}) => {
 		// ADR-110 Decision 4 keeps Flows in `main` for exactly three apps, and
 		// openregister is one: it owns the engine, and its /flows is the
 		// unscoped fleet-wide view rather than one app's own automations. If a
 		// future change "tidies" it into the settings foldout, this fails.
 		const nav = page.locator('[data-testid="cn-nav"]')
-		const footerFlows = nav.locator('.cn-app-nav__footer-list').getByRole('link', { name: /^Flows$/ })
+		const footerFlows = nav
+			.locator('.cn-app-nav__footer-list')
+			.getByRole('link', { name: /^Flows$/ })
 		await expect(footerFlows).toHaveCount(0)
-		await expect(nav.getByRole('link', { name: /^Flows$/ }).first()).toBeAttached({ timeout: 15_000 })
+		await expect(
+			nav.getByRole('link', { name: /^Flows$/ }).first(),
+		).toBeAttached({ timeout: 15_000 })
 	})
 })
