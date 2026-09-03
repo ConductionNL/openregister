@@ -205,6 +205,48 @@ class GenericStoreControllerTest extends TestCase {
 	}//end testSearchPassesTheDeclaredBlockToTheEngine()
 
 	/**
+	 * The kinds the APP declared ride back with the cards.
+	 *
+	 * Without this the `kinds` key in the store block is declared and read by
+	 * nobody: the page keeps its own copy in its page config and the block key
+	 * is a silent no-op. Asserted on the not_configured arm too, so an
+	 * unconfigured store still offers its filters over the built-in list.
+	 *
+	 * @return void
+	 */
+	public function testSearchReturnsTheKindsTheAppDeclared(): void {
+		$this->signIn();
+		$this->manifestLoader->method('loadStore')->willReturn(
+			StoreManifest::fromManifest(
+				appId: 'dossiq',
+				manifest: ['store' => ['schema' => 't', 'kinds' => ['case-type', 'flow-template']]]
+			)
+		);
+		$this->storeService->method('search')->willReturn(['outcome' => 'ok', 'cards' => []]);
+
+		$response = $this->controller()->search();
+
+		$this->assertSame(['case-type', 'flow-template'], $response->getData()['kinds']);
+	}//end testSearchReturnsTheKindsTheAppDeclared()
+
+	/**
+	 * An app that declares no kinds gets an empty list, not a missing key: the
+	 * page then falls back to the shared vocabulary rather than null-checking.
+	 *
+	 * @return void
+	 */
+	public function testTheKindsKeyIsAlwaysPresent(): void {
+		$this->signIn();
+		$this->manifestLoader->method('loadStore')
+			->willReturn(new StoreManifest(appId: 'keepiq', enabled: false));
+
+		$data = $this->controller(appId: 'keepiq')->search()->getData();
+
+		$this->assertArrayHasKey('kinds', $data);
+		$this->assertSame([], $data['kinds']);
+	}//end testTheKindsKeyIsAlwaysPresent()
+
+	/**
 	 * A registry that throws reads as unreachable, and its internals never
 	 * reach the browser.
 	 *

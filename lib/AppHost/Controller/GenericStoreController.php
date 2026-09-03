@@ -134,7 +134,7 @@ class GenericStoreController extends Controller {
 			// not_configured rather than 404: the page then renders its
 			// (empty) built-in list instead of reading as a broken endpoint.
 			return new JSONResponse(
-				data: ['outcome' => GenericStoreService::OUTCOME_NOT_CONFIGURED, 'cards' => []],
+				data: ['outcome' => GenericStoreService::OUTCOME_NOT_CONFIGURED, 'cards' => [], 'kinds' => []],
 				statusCode: Http::STATUS_OK
 			);
 		}
@@ -163,13 +163,20 @@ class GenericStoreController extends Controller {
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return new JSONResponse(
-				data: ['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'cards' => []],
+				data: ['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'cards' => [], 'kinds' => $store->kinds],
 				statusCode: Http::STATUS_OK
 			);
 		}
 
+		// `kinds` rides back with the cards so the page can offer the filters the
+		// APP declared, rather than a copy kept in its page config. Empty when
+		// the app names none, and the page falls back to the shared vocabulary.
 		return new JSONResponse(
-			data: ['outcome' => $result['outcome'], 'cards' => $result['cards']],
+			data: [
+				'outcome' => $result['outcome'],
+				'cards' => $result['cards'],
+				'kinds' => $store->kinds,
+			],
 			statusCode: Http::STATUS_OK
 		);
 	}//end search()

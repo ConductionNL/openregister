@@ -72,6 +72,7 @@ class StoreManifest {
 	 * @param string                     $register      Default remote register slug.
 	 * @param string                     $localRegister Local register an install writes into.
 	 * @param array<int, string>         $installable Schema slugs an install may write.
+	 * @param array<int, string>         $kinds       Kind quick-filters offered on the page.
 	 * @param array<string, string>      $cardFields  Remote field to card field map.
 	 * @param array<int, array<string, mixed>> $builtIn The app's own items, for the no-registry case.
 	 */
@@ -82,6 +83,7 @@ class StoreManifest {
 		public readonly string $register = '',
 		public readonly string $localRegister = '',
 		public readonly array $installable = [],
+		public readonly array $kinds = [],
 		public readonly array $cardFields = self::DEFAULT_CARD_FIELDS,
 		public readonly array $builtIn = [],
 	) {
@@ -126,6 +128,11 @@ class StoreManifest {
 			// slug differs from its app id says so here.
 			localRegister: (string)($block['localRegister'] ?? $appId),
 			installable: self::stringList(value: ($block['installable'] ?? [])),
+			// Declared ONCE, beside the allowlist, and served to the page in the
+			// search response. An app that names its kinds here and nowhere else
+			// must get them: a schema key nothing reads is the silent-no-op this
+			// whole plane is built to avoid.
+			kinds: self::stringList(value: ($block['kinds'] ?? [])),
 			cardFields: array_map(callback: static fn ($v): string => (string)$v, array: $cardFields),
 			builtIn: self::objectList(value: ($block['builtIn'] ?? [])),
 		);
