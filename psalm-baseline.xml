@@ -7,11 +7,6 @@
       <code><![CDATA[$container]]></code>
     </UnusedClosureParam>
   </file>
-  <file src="lib/BackgroundJob/ActionRetryJob.php">
-    <ParamNameMismatch>
-      <code><![CDATA[$arguments]]></code>
-    </ParamNameMismatch>
-  </file>
   <file src="lib/BackgroundJob/DestructionCheckJob.php">
     <UnusedParam>
       <code><![CDATA[$actionDate]]></code>
@@ -118,11 +113,6 @@
       <code><![CDATA[Types::DATETIME_MUTABLE]]></code>
       <code><![CDATA[Types::DATETIME_MUTABLE]]></code>
     </UndefinedConstant>
-  </file>
-  <file src="lib/Service/ActionExecutor.php">
-    <UndefinedMethod>
-      <code><![CDATA[getModifiedData]]></code>
-    </UndefinedMethod>
   </file>
   <file src="lib/Service/AuthorizationService.php">
     <InvalidThrow>

@@ -56,7 +56,6 @@
 		<!-- Push Notifications Status Section -->
 		<PushNotificationsConfiguration :pushStatus="pushStatus" />
 
-
 		<!-- LLM Configuration Section -->
 		<LlmConfiguration />
 
