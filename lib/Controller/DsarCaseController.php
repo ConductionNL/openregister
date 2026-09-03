@@ -122,13 +122,11 @@ class DsarCaseController extends Controller {
 		// from the payload (`@self.id` first, then `id`) and the write is
 		// PUT-semantic, so a create carrying either would overwrite an existing
 		// case and null every field it omitted. This endpoint creates.
-		unset($body['_route'], $body['id'], $body['uuid']);
 		$self = (array)($body['@self'] ?? []);
 		unset($self['id'], $self['uuid']);
+		unset($body['_route'], $body['id'], $body['uuid'], $body['@self']);
 		if ($self !== []) {
 			$body['@self'] = $self;
-		} else {
-			unset($body['@self']);
 		}
 
 		try {
