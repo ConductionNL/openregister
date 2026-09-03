@@ -664,9 +664,17 @@ class SearchQueryHandler {
 
 		// Register the deferred flush once per request; it runs after the
 		// response has been generated so the write cost is off the hot path.
+		// The callback is a closure rather than the `[$this, 'flushSearchTrails']`
+		// array form it replaced: a string method name is invisible to every
+		// static tool, so renaming the flush would break the registration with
+		// no error anywhere — trails would just stop being written.
 		if ($this->trailFlushRegistered === false) {
 			$this->trailFlushRegistered = true;
-			register_shutdown_function([$this, 'flushSearchTrails']);
+			register_shutdown_function(
+				function (): void {
+					$this->flushSearchTrails();
+				}
+			);
 		}
 	}//end logSearchTrail()
 

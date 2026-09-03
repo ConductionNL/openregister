@@ -32,10 +32,13 @@ use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Tests\Support\ShutdownFunctionSpy;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+
+require_once __DIR__ . '/../../../Support/ShutdownFunctionSpy.php';
 
 /**
  * Unit tests for deferred search-trail recording in SearchQueryHandler.
@@ -56,6 +59,7 @@ class SearchTrailDeferralTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
+		ShutdownFunctionSpy::reset();
 
 		$this->viewMapper = $this->createMock(ViewMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
@@ -188,6 +192,62 @@ class SearchTrailDeferralTest extends TestCase {
 
 		$this->assertSame(3, $this->handler->flushSearchTrails());
 	}//end testFlushPersistsAllBufferedEntries()
+
+	// ─── Shutdown registration ───────────────────────────────────────
+
+	/**
+	 * Buffering a trail entry registers the post-response flush, exactly once
+	 * per request however many searches it serves.
+	 *
+	 * Without this the deferral is a black hole: entries buffer and nothing
+	 * ever persists them, while every other test in this file still passes
+	 * because they all call flushSearchTrails() by hand.
+	 *
+	 * @return void
+	 */
+	public function testLogSearchTrailRegistersTheShutdownFlushExactlyOnce(): void {
+		$this->configureSettings();
+
+		$this->handler->logSearchTrail(['_search' => 'one'], 1, 1, 1.0);
+		$this->handler->logSearchTrail(['_search' => 'two'], 2, 2, 2.0);
+
+		$this->assertCount(1, ShutdownFunctionSpy::callbacks());
+	}//end testLogSearchTrailRegistersTheShutdownFlushExactlyOnce()
+
+	/**
+	 * The callback handed to the shutdown queue really is the flush: running
+	 * it persists the buffered entry. Proves the registration points at
+	 * flushSearchTrails() and not at some other or stale callable.
+	 *
+	 * @return void
+	 */
+	public function testRegisteredShutdownCallbackPersistsTheBufferedTrail(): void {
+		$this->configureSettings();
+
+		$this->searchTrailService->expects($this->once())
+			->method('createSearchTrail')
+			->with(['_search' => 'deferred'], 5, 42, 12.5, 'database')
+			->willReturn(new SearchTrail());
+
+		$this->handler->logSearchTrail(['_search' => 'deferred'], 5, 42, 12.5, 'database');
+		$this->assertCount(1, ShutdownFunctionSpy::callbacks());
+
+		ShutdownFunctionSpy::runAll();
+	}//end testRegisteredShutdownCallbackPersistsTheBufferedTrail()
+
+	/**
+	 * Trails disabled: nothing is buffered, so no shutdown callback is
+	 * registered either.
+	 *
+	 * @return void
+	 */
+	public function testNoShutdownCallbackIsRegisteredWhenTrailsAreDisabled(): void {
+		$this->configureSettings(enabled: false);
+
+		$this->handler->logSearchTrail(['_search' => 'ignored'], 1, 1, 1.0);
+
+		$this->assertSame([], ShutdownFunctionSpy::callbacks());
+	}//end testNoShutdownCallbackIsRegisteredWhenTrailsAreDisabled()
 
 	// ─── Recording disabled ──────────────────────────────────────────
 

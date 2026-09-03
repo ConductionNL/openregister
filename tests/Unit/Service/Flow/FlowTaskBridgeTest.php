@@ -332,4 +332,103 @@ class FlowTaskBridgeTest extends TestCase {
 		$this->assertFalse($bag['rejected']);
 		$this->assertSame(Task::STATE_TERMINATED, $bag['outcome'], 'an ending with no outcome reports its state');
 	}//end testTheBagSeparatesADecisionFromAnEnding()
+
+	// ---- Heartbeat recovery -------------------------------------------------------
+
+	/**
+	 * 🔴 THE OTHER HALF OF THE REFUSAL TRAIL. The guarded signal seam records
+	 * that a completion was refused; without this entry the trail ends there
+	 * and a recovered answer reads as one that vanished. Attributed to the
+	 * task's COMPLETER, because the fact being recorded is that person's
+	 * answer arriving late by poll — not the cron job acting.
+	 *
+	 * Driven through the REAL bridge. Every other test of this behaviour mocks
+	 * FlowTaskBridge (the nodes are the unit there), so this method's body had
+	 * no execution coverage at all until this test.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
+	 */
+	public function testAHeartbeatRecoveryIsAuditedToTheTasksCompleter(): void {
+		$task = $this->terminalTask();
+		$task->setCompletedBy('bob');
+
+		$seen = [];
+		$this->tasks->expects($this->once())
+			->method('record')
+			->willReturnCallback(
+				function (string $uuid, string $action, ?string $actor, string $reason) use (&$seen, $task): Task {
+					$seen = ['uuid' => $uuid, 'action' => $action, 'actor' => $actor, 'reason' => $reason];
+
+					return $task;
+				}
+			);
+
+		$this->bridge->recordHeartbeatRecovery(task: $task);
+
+		$this->assertSame('t-1', $seen['uuid']);
+		$this->assertSame('heartbeat-recovered', $seen['action']);
+		$this->assertSame('bob', $seen['actor'], 'the recovery is the completer\'s answer arriving, not the worker\'s');
+		$this->assertStringContainsString('run-1', $seen['reason'], 'the reason names the run whose signal never arrived');
+	}//end testAHeartbeatRecoveryIsAuditedToTheTasksCompleter()
+
+	/**
+	 * 🔴 BEST-EFFORT, AND THAT IS THE POINT. The recovery itself is the node
+	 * applying the outcome; this entry only describes it. An audit write that
+	 * fails must therefore NOT propagate — letting it out would abort the walk
+	 * that was recovering the run and put the run straight back into the wedge
+	 * this whole change exists to remove.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
+	 */
+	public function testAFailedRecoveryAuditIsSwallowedSoTheRecoveredRunStands(): void {
+		$task = $this->terminalTask();
+		$task->setCompletedBy('bob');
+
+		$this->tasks->expects($this->once())
+			->method('record')
+			->willThrowException(new RuntimeException('the audit table is unavailable'));
+
+		$this->bridge->recordHeartbeatRecovery(task: $task);
+
+		// Reached only because nothing propagated: the recovery outlives its
+		// own audit failure.
+		$this->addToAssertionCount(1);
+	}//end testAFailedRecoveryAuditIsSwallowedSoTheRecoveredRunStands()
+
+	/**
+	 * A task that ended WITHOUT a completer — terminated or expired rather than
+	 * answered — still records its recovery, with no actor rather than an
+	 * invented one. `completedBy` is null on exactly those endings, and an
+	 * audit that guessed a name there would be worse than one that admits it
+	 * has none.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
+	 */
+	public function testARecoveredEndingWithNoCompleterRecordsNoActor(): void {
+		$task = $this->terminalTask();
+		$task->setState(Task::STATE_TERMINATED);
+		$task->setCompletedBy(null);
+
+		$actor = 'unset';
+		$this->tasks->expects($this->once())
+			->method('record')
+			->willReturnCallback(
+				function (string $uuid, string $action, ?string $seenActor, string $reason) use (&$actor, $task): Task {
+					$actor = $seenActor;
+
+					return $task;
+				}
+			);
+
+		$this->bridge->recordHeartbeatRecovery(task: $task);
+
+		$this->assertNull($actor, 'an ending nobody answered is recorded with no actor, never a guessed one');
+	}//end testARecoveredEndingWithNoCompleterRecordsNoActor()
+
 }//end class

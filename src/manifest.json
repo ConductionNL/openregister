@@ -26,9 +26,6 @@
       ]
     },
   "version": "1.1.0",
-  "nav": {
-    "includePersonalSettings": false
-  },
   "pages": [
     {
       "id": "dashboard",
