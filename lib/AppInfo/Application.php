@@ -54,7 +54,6 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 // failed. The first person to actually reference one would have got a fatal at
 // boot, in the app's own bootstrap, from a line that looks like every other
 // import in the file.
-use OCA\OpenRegister\Db\DeployedWorkflowMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
@@ -90,7 +89,6 @@ use OCA\OpenRegister\Event\SourceCreatedEvent;
 use OCA\OpenRegister\Event\SourceUpdatedEvent;
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
 use OCA\OpenRegister\Federation\OpenRegisterCloudFederationProvider;
-use OCA\OpenRegister\Listener\ActionListener;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\AggregationThresholdListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
@@ -108,7 +106,6 @@ use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\GrantableRightsInvalidationListener;
 use OCA\OpenRegister\Listener\HandoffLifecycleListener;
 use OCA\OpenRegister\Listener\HandoffQueueDrainListener;
-use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Listener\LifecycleActionListener;
 use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
@@ -269,7 +266,6 @@ use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrateg
 use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCA\OpenRegister\Service\WebPush\HexIconService;
-use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use OCA\OpenRegister\Service\XwikiLinkService;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
@@ -983,9 +979,6 @@ class Application extends App implements IBootstrap {
 			// Inject MagicMapper for routing seed data to correct magic table.
 			$importHandler->setObjectMapper($container->get(MagicMapper::class));
 
-			// Inject workflow dependencies for deploying workflows during import.
-			$importHandler->setWorkflowEngineRegistry($container->get(WorkflowEngineRegistry::class));
-			$importHandler->setDeployedWorkflowMapper($container->get(DeployedWorkflowMapper::class));
 
 			// Optional: services used by seed-related-items to attach files /
 			// notes / tasks. Wrapped in try/catch so a missing dependency
@@ -1065,8 +1058,6 @@ class Application extends App implements IBootstrap {
 					logger: $container->get('Psr\Log\LoggerInterface')
 				);
 
-				$exportHandler->setWorkflowEngineRegistry($container->get(WorkflowEngineRegistry::class));
-				$exportHandler->setDeployedWorkflowMapper($container->get(DeployedWorkflowMapper::class));
 
 				return $exportHandler;
 			}
@@ -2906,14 +2897,6 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ObjectDeletedEvent::class, AggregationThresholdListener::class);
 		$context->registerEventListener(ObjectTransitionedEvent::class, AggregationThresholdListener::class);
 
-		// HookListener for schema hook execution on lifecycle events.
-		$context->registerEventListener(ObjectCreatingEvent::class, HookListener::class);
-		$context->registerEventListener(ObjectUpdatingEvent::class, HookListener::class);
-		$context->registerEventListener(ObjectDeletingEvent::class, HookListener::class);
-		$context->registerEventListener(ObjectCreatedEvent::class, HookListener::class);
-		$context->registerEventListener(ObjectUpdatedEvent::class, HookListener::class);
-		$context->registerEventListener(ObjectDeletedEvent::class, HookListener::class);
-
 		// WebhookEventListener for webhook delivery.
 		// OPS-2: register for EVERY event the listener's extractPayload() handles,
 		// not just create — otherwise update/delete/lock/revert/register/schema
@@ -2930,15 +2913,6 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(SchemaCreatedEvent::class, WebhookEventListener::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, WebhookEventListener::class);
 		$context->registerEventListener(SchemaDeletedEvent::class, WebhookEventListener::class);
-
-		// OPS-1: ActionListener drives the event-driven Actions feature. It is
-		// event-agnostic (resolves the payload from the dispatched event), so it
-		// must be wired to the object lifecycle events or configured Actions
-		// never fire.
-		$context->registerEventListener(ObjectCreatedEvent::class, ActionListener::class);
-		$context->registerEventListener(ObjectUpdatedEvent::class, ActionListener::class);
-		$context->registerEventListener(ObjectDeletedEvent::class, ActionListener::class);
-		$context->registerEventListener(ObjectTransitionedEvent::class, ActionListener::class);
 
 		// GraphQL subscription event listeners.
 		$context->registerEventListener(ObjectCreatedEvent::class, GraphQLSubscriptionListener::class);

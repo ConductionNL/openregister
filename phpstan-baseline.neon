@@ -1550,10 +1550,6 @@ parameters:
 			count: 4
 			path: lib/Controller/RetentionController.php
 
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\ScheduledWorkflowController\\:\\:\\$logger is never read, only written\\.$#"
-			count: 1
-			path: lib/Controller/ScheduledWorkflowController.php
 
 		-
 			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
@@ -1920,15 +1916,7 @@ parameters:
 			count: 1
 			path: lib/Controller/Settings/LlmSettingsController.php
 
-		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\N8nSettingsController\\:\\:getN8nSettings\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array, array\\{\\}\\>\\.$#"
-			count: 1
-			path: lib/Controller/Settings/N8nSettingsController.php
 
-		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\N8nSettingsController\\:\\:getN8nSettings\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
-			count: 1
-			path: lib/Controller/Settings/N8nSettingsController.php
 
 		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\VectorSettingsController\\:\\:\\$logger is never read, only written\\.$#"
@@ -3272,25 +3260,9 @@ parameters:
 			count: 1
 			path: lib/Reference/ObjectReferenceProvider.php
 
-		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\WorkflowEngine\\:\\:execute\\(\\)\\.$#"
-			count: 2
-			path: lib/Service/ActionExecutor.php
 
-		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\WorkflowEngine\\\\WorkflowResult\\:\\:getModifiedData\\(\\)\\.$#"
-			count: 1
-			path: lib/Service/ActionExecutor.php
 
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\ActionExecutor\\:\\:\\$cloudEventFormatter is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/ActionExecutor.php
 
-		-
-			message: "#^Strict comparison using \\=\\=\\= between OCA\\\\OpenRegister\\\\Db\\\\WorkflowEngine and null will always evaluate to false\\.$#"
-			count: 1
-			path: lib/Service/ActionExecutor.php
 
 		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Schema\\:\\:getName\\(\\)\\.$#"
@@ -4407,25 +4379,9 @@ parameters:
 			count: 1
 			path: lib/Service/GraphQL/SchemaGenerator.php
 
-		-
-			message: "#^Parameter \\$errors of method OCA\\\\OpenRegister\\\\Event\\\\ObjectCreatingEvent\\:\\:setErrors\\(\\) expects array\\<string, mixed\\>, array\\<int, array\\<string, string\\>\\> given\\.$#"
-			count: 1
-			path: lib/Service/HookExecutor.php
 
-		-
-			message: "#^Parameter \\$errors of method OCA\\\\OpenRegister\\\\Event\\\\ObjectDeletingEvent\\:\\:setErrors\\(\\) expects array\\<string, mixed\\>, array\\<int, array\\<string, string\\>\\> given\\.$#"
-			count: 1
-			path: lib/Service/HookExecutor.php
 
-		-
-			message: "#^Parameter \\$errors of method OCA\\\\OpenRegister\\\\Event\\\\ObjectUpdatingEvent\\:\\:setErrors\\(\\) expects array\\<string, mixed\\>, array\\<int, array\\<string, string\\>\\> given\\.$#"
-			count: 1
-			path: lib/Service/HookExecutor.php
 
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\HookExecutor\\:\\:\\$schemaMapper is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/HookExecutor.php
 
 		-
 			message: "#^Constant OCA\\\\OpenRegister\\\\Service\\\\ImportService\\:\\:DEFAULT_CHUNK_SIZE is unused\\.$#"

@@ -235,14 +235,6 @@ return [
         ['name' => 'Settings\ApiTokenSettings#testGitHubToken', 'url' => '/api/settings/api-tokens/test/github', 'verb' => 'POST'],
         ['name' => 'Settings\ApiTokenSettings#testGitLabToken', 'url' => '/api/settings/api-tokens/test/gitlab', 'verb' => 'POST'],
 
-        // n8n workflow integration.
-        ['name' => 'Settings\N8nSettings#getN8nSettings', 'url' => '/api/settings/n8n', 'verb' => 'GET'],
-        ['name' => 'Settings\N8nSettings#updateN8nSettings', 'url' => '/api/settings/n8n', 'verb' => 'POST'],
-        ['name' => 'Settings\N8nSettings#updateN8nSettings', 'url' => '/api/settings/n8n', 'verb' => 'PATCH'],
-        ['name' => 'Settings\N8nSettings#updateN8nSettings', 'url' => '/api/settings/n8n', 'verb' => 'PUT'],
-        ['name' => 'Settings\N8nSettings#testN8nConnection', 'url' => '/api/settings/n8n/test', 'verb' => 'POST'],
-        ['name' => 'Settings\N8nSettings#initializeN8n', 'url' => '/api/settings/n8n/initialize', 'verb' => 'POST'],
-        ['name' => 'Settings\N8nSettings#getWorkflows', 'url' => '/api/settings/n8n/workflows', 'verb' => 'GET'],
 
         // Statistics endpoint.
         ['name' => 'settings#getStatistics', 'url' => '/api/settings/statistics', 'verb' => 'GET'],
@@ -799,15 +791,6 @@ return [
         ['name' => 'fileSidebar#getExtractionStatus',  'url' => '/api/files/{fileId}/extraction-status', 'verb' => 'GET',  'requirements' => ['fileId' => '[0-9]+']],
 
         // Action registry CRUD + utilities.
-        ['name' => 'actions#index',            'url' => '/api/actions',                          'verb' => 'GET'],
-        ['name' => 'actions#create',           'url' => '/api/actions',                          'verb' => 'POST'],
-        ['name' => 'actions#show',             'url' => '/api/actions/{id}',                     'verb' => 'GET',    'requirements' => ['id' => '[0-9]+']],
-        ['name' => 'actions#update',           'url' => '/api/actions/{id}',                     'verb' => 'PUT',    'requirements' => ['id' => '[0-9]+']],
-        ['name' => 'actions#patch',            'url' => '/api/actions/{id}',                     'verb' => 'PATCH',  'requirements' => ['id' => '[0-9]+']],
-        ['name' => 'actions#destroy',          'url' => '/api/actions/{id}',                     'verb' => 'DELETE', 'requirements' => ['id' => '[0-9]+']],
-        ['name' => 'actions#test',             'url' => '/api/actions/{id}/test',                'verb' => 'POST',   'requirements' => ['id' => '[0-9]+']],
-        ['name' => 'actions#logs',             'url' => '/api/actions/{id}/logs',                'verb' => 'GET',    'requirements' => ['id' => '[0-9]+']],
-        ['name' => 'actions#migrateFromHooks', 'url' => '/api/actions/migrate-hooks/{schemaId}', 'verb' => 'POST',   'requirements' => ['schemaId' => '[0-9]+']],
 
         ['name' => 'objects#index', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'GET'],
 
@@ -1236,26 +1219,10 @@ return [
 		['name' => 'migrationPacks#export', 'url' => '/api/migration-packs/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
 
 		// Workflow Engines - CRUD and health check.
-		['name' => 'workflowEngine#available', 'url' => '/api/engines/available', 'verb' => 'GET'],
-		['name' => 'workflowEngine#index', 'url' => '/api/engines', 'verb' => 'GET'],
-		['name' => 'workflowEngine#create', 'url' => '/api/engines', 'verb' => 'POST'],
-		['name' => 'workflowEngine#show', 'url' => '/api/engines/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'workflowEngine#update', 'url' => '/api/engines/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
-		['name' => 'workflowEngine#destroy', 'url' => '/api/engines/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
-		['name' => 'workflowEngine#health', 'url' => '/api/engines/{id}/health', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
-		['name' => 'workflowEngine#testHook', 'url' => '/api/engines/{id}/test-hook', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 
 		// Workflow Execution History - read/admin-delete persisted hook executions.
-		['name' => 'workflowExecution#index', 'url' => '/api/workflow-executions', 'verb' => 'GET'],
-		['name' => 'workflowExecution#show', 'url' => '/api/workflow-executions/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'workflowExecution#destroy', 'url' => '/api/workflow-executions/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 
 		// Scheduled Workflows - CRUD for TimedJob-driven workflow triggers.
-		['name' => 'scheduledWorkflow#index', 'url' => '/api/scheduled-workflows', 'verb' => 'GET'],
-		['name' => 'scheduledWorkflow#show', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'scheduledWorkflow#create', 'url' => '/api/scheduled-workflows', 'verb' => 'POST'],
-		['name' => 'scheduledWorkflow#update', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
-		['name' => 'scheduledWorkflow#destroy', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 
 
 		// MCP Discovery - Tiered API discovery for AI agents.

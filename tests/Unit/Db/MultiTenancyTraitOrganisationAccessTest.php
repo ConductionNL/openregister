@@ -7,7 +7,7 @@
  * It probed method_exists($entity, 'getOrganisation'), and Nextcloud's Entity
  * serves get*() through __call() while declaring the accessors only as
  * `@method` — so the probe was FALSE for eight of the twelve mappers that use
- * this trait (Schema, Register, Configuration, Action, Mapping, Webhook, Agent
+ * this trait (Schema, Register, Configuration, Mapping, Webhook, Agent
  * declare `@method string|null getOrganisation()`; Endpoint declares nothing at
  * all) and the method returned before comparing anything. No organisation
  * comparison, no `cross_tenant_access_denied` audit line, no 403 — across the
@@ -42,7 +42,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use Exception;
-use OCA\OpenRegister\Db\Action;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\Configuration;
@@ -148,7 +147,6 @@ class MultiTenancyTraitOrganisationAccessTest extends TestCase {
 			'Schema (@method)' => [Schema::class, false],
 			'Register (@method)' => [Register::class, false],
 			'Configuration (@method)' => [Configuration::class, false],
-			'Action (@method)' => [Action::class, false],
 			'Mapping (@method)' => [Mapping::class, false],
 			'Webhook (@method)' => [Webhook::class, false],
 			'Agent (@method)' => [Agent::class, false],
