@@ -155,6 +155,112 @@ class GenericStoreControllerTest extends TestCase {
 	}//end enabledStore()
 
 	/**
+	 * A store manifest declaring shareable configuration types.
+	 *
+	 * @return StoreManifest
+	 */
+	private function federatedStore(): StoreManifest {
+		return StoreManifest::fromManifest(
+			appId: 'decidiq',
+			manifest: ['store' => ['types' => ['openregister.configset', 'openregister.flows']]]
+		);
+	}//end federatedStore()
+
+	/**
+	 * An app declaring types is searched against the configuration catalogue.
+	 *
+	 * @return void
+	 */
+	public function testSearchUsesTheCatalogueWhenTypesAreDeclared(): void {
+		$this->signIn();
+		$this->manifestLoader->method('loadStore')->willReturn($this->federatedStore());
+		$this->storeService->expects($this->never())->method('search');
+		$this->catalog->expects($this->once())
+			->method('search')
+			->willReturn(['outcome' => 'ok', 'cards' => [['slug' => 'a-set']]]);
+
+		$response = $this->controller(appId: 'decidiq')->search();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame('a-set', $response->getData()['cards'][0]['slug']);
+	}//end testSearchUsesTheCatalogueWhenTypesAreDeclared()
+
+	/**
+	 * With no kinds declared, a federated store offers its type ids as filters.
+	 *
+	 * Falling through to the shared kind vocabulary would offer chips that
+	 * match nothing on the page.
+	 *
+	 * @return void
+	 */
+	public function testFederatedKindsFallBackToTheDeclaredTypes(): void {
+		$this->signIn();
+		$this->manifestLoader->method('loadStore')->willReturn($this->federatedStore());
+		$this->catalog->method('search')->willReturn(['outcome' => 'ok', 'cards' => []]);
+
+		$response = $this->controller(appId: 'decidiq')->search();
+
+		$this->assertSame(
+			['openregister.configset', 'openregister.flows'],
+			$response->getData()['kinds']
+		);
+	}//end testFederatedKindsFallBackToTheDeclaredTypes()
+
+	/**
+	 * A federated install runs through the catalogue, not the object installer.
+	 *
+	 * @return void
+	 */
+	public function testInstallUsesTheCatalogueWhenTypesAreDeclared(): void {
+		$this->signIn(isAdmin: true);
+		$this->manifestLoader->method('loadStore')->willReturn($this->federatedStore());
+		$this->installer->expects($this->never())->method('install');
+		$this->catalog->method('resolve')->willReturn(
+			['typeId' => 'openregister.configset', 'repo' => 'a/b', 'source' => 's', 'bundle' => []]
+		);
+		$this->catalog->expects($this->once())
+			->method('install')
+			->willReturn(['success' => true, 'components' => []]);
+
+		$response = $this->controller(appId: 'decidiq')->install(slug: 'a-set');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertTrue($response->getData()['success']);
+	}//end testInstallUsesTheCatalogueWhenTypesAreDeclared()
+
+	/**
+	 * A federated slug that resolves to nothing is a 404, not a blank install.
+	 *
+	 * @return void
+	 */
+	public function testFederatedInstallOfAnUnresolvedSlugIs404(): void {
+		$this->signIn(isAdmin: true);
+		$this->manifestLoader->method('loadStore')->willReturn($this->federatedStore());
+		$this->catalog->method('resolve')->willReturn(null);
+		$this->catalog->expects($this->never())->method('install');
+
+		$response = $this->controller(appId: 'decidiq')->install(slug: 'a-set');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+	}//end testFederatedInstallOfAnUnresolvedSlugIs404()
+
+	/**
+	 * A catalogue failure reports unreachable rather than raising.
+	 *
+	 * @return void
+	 */
+	public function testFederatedSearchFailureIsContained(): void {
+		$this->signIn();
+		$this->manifestLoader->method('loadStore')->willReturn($this->federatedStore());
+		$this->catalog->method('search')->willThrowException(new \RuntimeException('down'));
+
+		$response = $this->controller(appId: 'decidiq')->search();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame('store_unreachable', $response->getData()['outcome']);
+	}//end testFederatedSearchFailureIsContained()
+
+	/**
 	 * An anonymous caller gets an explicit 401, not a login redirect.
 	 *
 	 * @return void
