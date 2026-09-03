@@ -2813,7 +2813,15 @@ class RenderObject {
 			}
 
 			$ref = ($definition['$ref'] ?? ($definition['items']['$ref'] ?? null));
-			if (is_string($ref) === false || $ref === '') {
+
+			// An INT is as valid a `$ref` as a slug, and is what a descriptor
+			// ends up holding: `ImportHandler` rewrites `"$ref": "nc-organisation"`
+			// to the resolved schema id. Requiring a string here meant a
+			// reference resolved fine when hand-written and silently stopped
+			// resolving the moment it had been through an import — the property
+			// rendered as its raw key and nothing reported anything.
+			// `getSchema()` has always accepted `int|string`.
+			if (is_int($ref) === false && (is_string($ref) === false || $ref === '')) {
 				continue;
 			}
 
