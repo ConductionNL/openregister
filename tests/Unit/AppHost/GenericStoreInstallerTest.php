@@ -233,6 +233,103 @@ class GenericStoreInstallerTest extends TestCase {
 	}//end testAcceptsAJsonEncodedComponentList()
 
 	/**
+	 * A JSON string that decodes to something that is not a list yields no
+	 * components rather than a fatal. A registry controls this value.
+	 *
+	 * @return void
+	 */
+	public function testAJsonStringThatIsNotAListYieldsNoComponents(): void {
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		foreach (['"just a string"', '42', 'not json at all'] as $payload) {
+			$result = $this->installer->install(store: $this->store(), item: ['components' => $payload]);
+			$this->assertFalse($result['success']);
+			$this->assertSame([], $result['components']);
+		}
+	}//end testAJsonStringThatIsNotAListYieldsNoComponents()
+
+	/**
+	 * Entries in the component list that are not objects are dropped, so a
+	 * registry cannot make the installer read a string as a component.
+	 *
+	 * @return void
+	 */
+	public function testNonObjectComponentEntriesAreDropped(): void {
+		$this->objectService->expects($this->once())
+			->method('saveObject')
+			->willReturn($this->createMock(ObjectEntity::class));
+
+		$result = $this->installer->install(
+			store: $this->store(),
+			item: ['components' => [
+				'a bare string',
+				['schema' => 'caseType', 'object' => ['title' => 'Config']],
+				42,
+			]]
+		);
+
+		$this->assertCount(1, $result['components']);
+		$this->assertTrue($result['success']);
+	}//end testNonObjectComponentEntriesAreDropped()
+
+	/**
+	 * A component whose `object` is present but not an array is refused rather
+	 * than passed to the write path.
+	 *
+	 * @return void
+	 */
+	public function testAComponentWhoseObjectIsNotAnArrayIsRefused(): void {
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$result = $this->installer->install(
+			store: $this->store(),
+			item: ['components' => [['schema' => 'caseType', 'object' => 'a string']]]
+		);
+
+		$this->assertFalse($result['success']);
+		$this->assertSame('refused', $result['components'][0]['status']);
+	}//end testAComponentWhoseObjectIsNotAnArrayIsRefused()
+
+	/**
+	 * Every list-shaped key coerces a non-array to an empty list rather than
+	 * throwing. A manifest is hand-edited JSON; a scalar where a list belongs
+	 * must degrade to "declared nothing", and for `installable` that means
+	 * refusing every install.
+	 *
+	 * @return void
+	 */
+	public function testScalarsWhereListsBelongCoerceToEmpty(): void {
+		$store = StoreManifest::fromManifest(
+			appId: 'dossiq',
+			manifest: ['store' => [
+				'schema' => 't',
+				'installable' => 'caseType',
+				'kinds' => 42,
+				'builtIn' => 'nope',
+			]]
+		);
+
+		$this->assertSame([], $store->installable);
+		$this->assertSame([], $store->kinds);
+		$this->assertSame([], $store->builtIn);
+		$this->assertFalse($store->isInstallable(slug: 'caseType'));
+	}//end testScalarsWhereListsBelongCoerceToEmpty()
+
+	/**
+	 * The declared kinds survive the same coercion as the allowlist.
+	 *
+	 * @return void
+	 */
+	public function testKindsAreCoercedToUniqueNonEmptyStrings(): void {
+		$store = StoreManifest::fromManifest(
+			appId: 'dossiq',
+			manifest: ['store' => ['schema' => 't', 'kinds' => ['case-type', 'case-type', '', 7, 'flow']]]
+		);
+
+		$this->assertSame(['case-type', 'flow'], array_values($store->kinds));
+	}//end testKindsAreCoercedToUniqueNonEmptyStrings()
+
+	/**
 	 * A write that throws is reported per component, not as a 500.
 	 *
 	 * @return void

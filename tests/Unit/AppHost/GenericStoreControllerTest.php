@@ -322,6 +322,69 @@ class GenericStoreControllerTest extends TestCase {
 	}//end testInstallReportsAnUnresolvedItemAsNotFound()
 
 	/**
+	 * An app that aliased the install route but declares no store block gets a
+	 * 404, not a silent success. The search path answers not_configured so the
+	 * page can render built-ins; there is nothing equivalent to install.
+	 *
+	 * @return void
+	 */
+	public function testInstallIs404WhenTheAppDeclaresNoStore(): void {
+		$this->signIn(isAdmin: true);
+		$this->manifestLoader->method('loadStore')
+			->willReturn(new StoreManifest(appId: 'keepiq', enabled: false));
+		$this->storeService->expects($this->never())->method('resolve');
+		$this->installer->expects($this->never())->method('install');
+
+		$this->assertSame(
+			Http::STATUS_NOT_FOUND,
+			$this->controller(appId: 'keepiq')->install(slug: 'vth')->getStatus()
+		);
+	}//end testInstallIs404WhenTheAppDeclaresNoStore()
+
+	/**
+	 * A registry that THROWS during resolve is a 404, not a 500, and nothing is
+	 * written. The registry's message never reaches the browser.
+	 *
+	 * @return void
+	 */
+	public function testInstallTreatsAThrownResolveAsUnresolved(): void {
+		$this->signIn(isAdmin: true);
+		$this->manifestLoader->method('loadStore')->willReturn($this->enabledStore());
+		$this->storeService->method('resolve')
+			->willThrowException(new RuntimeException('connect to 10.0.0.5 refused'));
+		$this->installer->expects($this->never())->method('install');
+
+		$response = $this->controller()->install(slug: 'vth');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		$this->assertStringNotContainsString('10.0.0.5', json_encode($response->getData()));
+	}//end testInstallTreatsAThrownResolveAsUnresolved()
+
+	/**
+	 * The search term and kind filter reach the engine when the request carries
+	 * them, and become null when it does not.
+	 *
+	 * @return void
+	 */
+	public function testSearchForwardsTheQueryAndKindWhenPresent(): void {
+		$this->signIn();
+		$this->manifestLoader->method('loadStore')->willReturn($this->enabledStore());
+		$this->request->method('getParam')->willReturnMap([
+			['q', null, 'enforcement'],
+			['kind', null, 'adapter'],
+		]);
+		$this->storeService->expects($this->once())
+			->method('search')
+			->willReturnCallback(function ($descriptor, $query, $kind) {
+				$this->assertSame('enforcement', $query);
+				$this->assertSame('adapter', $kind);
+				return ['outcome' => 'ok', 'cards' => []];
+			});
+
+		$this->controller()->search();
+	}//end testSearchForwardsTheQueryAndKindWhenPresent()
+
+	/**
 	 * An administrator's install reaches the installer with the DECLARED
 	 * store, which is what carries the allowlist.
 	 *
