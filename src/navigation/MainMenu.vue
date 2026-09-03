@@ -1,5 +1,5 @@
 <template>
-	<CnAppNav :manifest="manifest" :translate="translate">
+	<CnAppNav :manifest="manifest" :translate="translate" :isAdmin="isAdmin">
 		<!-- Primary action: the active-organisation switcher button. Rendered
 		     in CnAppNav's #primary-action slot because its label is live store
 		     state (organisationStore.activeOrganisation) — the manifest's
@@ -19,6 +19,7 @@
 
 <script>
 import { CnAppNav } from '@conduction/nextcloud-vue'
+import { getCurrentUser } from '@nextcloud/auth'
 import { translate as t } from '@nextcloud/l10n'
 import { NcAppNavigationNew } from '@nextcloud/vue'
 // Icons
@@ -43,6 +44,31 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Whether the current user administers this instance.
+		 *
+		 * CnAppRoot computes this and passes it to the CnAppNav it renders
+		 * itself. This app fills the #menu slot, and that slot carries no
+		 * scope, so the prop never arrived and CnAppNav defaulted it to
+		 * false. The Admin settings entry is gated on it, so it silently did
+		 * not render for anybody, on an app whose whole admin surface lives
+		 * there.
+		 *
+		 * Visibility only. Nextcloud's settings framework refuses
+		 * /settings/admin/openregister server-side for a non-admin.
+		 *
+		 * @return {boolean} True when the user administers the instance.
+		 *
+		 * @spec exclude App-navigation plumbing: forwards a visibility flag CnAppRoot already computes; the access decision is Nextcloud's.
+		 */
+		isAdmin() {
+			try {
+				return getCurrentUser()?.isAdmin === true
+			} catch {
+				return false
+			}
+		},
+
 		/**
 		 * Get the active organisation name to display in navigation.
 		 * Shows the current organisational context for the user.
