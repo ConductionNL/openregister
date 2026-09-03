@@ -319,6 +319,8 @@ class FederationController extends Controller {
 	 * @param string $shareToken The scoped bearer share token.
 	 *
 	 * @return JSONResponse The created object, or an error.
+	 *
+	 * @spec openspec/changes/federation-scope-enforcement/specs/federation-scope-enforcement/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
