@@ -64,6 +64,13 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass
  *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One controller serves every
+ * AppHost app across BOTH store paths, so it holds the objects client, the
+ * objects installer and the configuration catalogue at once. Splitting it per
+ * path would put the route alias in two places, and an alias that resolves to
+ * a class the router cannot find is a dispatch-time 500 rather than a test
+ * failure. The coupling is the price of one alias.
+ *
  * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-leaf-app-must-declare-its-store-rather-than-implement-one
  */
 class GenericStoreController extends Controller {
@@ -154,16 +161,7 @@ class GenericStoreController extends Controller {
 
 		try {
 			$descriptor = $this->descriptor(store: $store);
-
-			// An app that declares shareable types exchanges CONFIGURATION, so
-			// its catalogue is what publishers have published, not one remote
-			// instance's rows. Selected by declaration, never by probing: an
-			// app that declares none makes no discovery call at all.
-			if ($descriptor->isFederated() === true) {
-				$result = $this->catalog->search(descriptor: $descriptor, query: $query, kind: $kind);
-			} else {
-				$result = $this->storeService->search(descriptor: $descriptor, query: $query, kind: $kind);
-			}
+			$result = $this->searchFor(descriptor: $descriptor, query: $query, kind: $kind);
 		} catch (Throwable $e) {
 			// Detail to the log, generic outcome to the browser: a registry's
 			// internals are not the caller's business.
@@ -248,11 +246,7 @@ class GenericStoreController extends Controller {
 		$descriptor = $this->descriptor(store: $store);
 
 		try {
-			if ($descriptor->isFederated() === true) {
-				$item = $this->catalog->resolve(descriptor: $descriptor, slug: $slug);
-			} else {
-				$item = $this->storeService->resolve(descriptor: $descriptor, slug: $slug);
-			}
+			$item = $this->resolveFor(descriptor: $descriptor, slug: $slug);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: sprintf('[AppHost\\Store] resolve failed for %s: %s', $this->appName, $e->getMessage()),
@@ -280,6 +274,48 @@ class GenericStoreController extends Controller {
 			statusCode: Http::STATUS_OK
 		);
 	}//end install()
+
+	/**
+	 * Search whichever catalogue this app declared.
+	 *
+	 * An app that declares shareable types exchanges CONFIGURATION, so its
+	 * catalogue is what publishers have published, not one remote instance's
+	 * rows. Selected by declaration, never by probing: an app that declares
+	 * none makes no discovery call at all.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 * @param string|null     $query      Optional free-text search term.
+	 * @param string|null     $kind       Optional kind filter.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/changes/store-over-federated-config/specs/apphost-store-plane/spec.md#scenario-an-app-that-declares-no-types-keeps-the-object-store
+	 */
+	private function searchFor(StoreDescriptor $descriptor, ?string $query, ?string $kind): array {
+		if ($descriptor->isFederated() === true) {
+			return $this->catalog->search(descriptor: $descriptor, query: $query, kind: $kind);
+		}
+
+		return $this->storeService->search(descriptor: $descriptor, query: $query, kind: $kind);
+	}//end searchFor()
+
+	/**
+	 * Resolve a slug against whichever catalogue this app declared.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 * @param string          $slug       The item slug.
+	 *
+	 * @return array<string, mixed>|null The resolved item, or null when unresolved.
+	 *
+	 * @spec openspec/changes/store-over-federated-config/specs/apphost-store-plane/spec.md#requirement-a-configuration-install-must-run-through-its-owning-type
+	 */
+	private function resolveFor(StoreDescriptor $descriptor, string $slug): ?array {
+		if ($descriptor->isFederated() === true) {
+			return $this->catalog->resolve(descriptor: $descriptor, slug: $slug);
+		}
+
+		return $this->storeService->resolve(descriptor: $descriptor, slug: $slug);
+	}//end resolveFor()
 
 	/**
 	 * The calling app's declared store configuration.

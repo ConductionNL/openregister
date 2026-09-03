@@ -192,6 +192,194 @@ class FederatedStoreCatalogTest extends TestCase {
 	}//end testTrustedBundleInstallsThroughItsType()
 
 	/**
+	 * A slug resolves to the bundle the repository carries.
+	 *
+	 * @return void
+	 */
+	public function testResolveFetchesTheBundleAtTheConventionalPath(): void {
+		$this->registry->method('get')->willReturn(
+			$this->type(id: 'openregister.configset', topic: 'openregister-configset', name: 'Configuration set')
+		);
+		$this->federated->method('discover')->willReturn([
+			['repo' => 'ConductionNL/default-gemeente', 'url' => 'https://github.com/ConductionNL/default-gemeente'],
+		]);
+		$this->federated->expects($this->once())
+			->method('fetchBundle')
+			->with('ConductionNL/default-gemeente', 'openregister.json')
+			->willReturn(['type' => 'openregister.configset', 'version' => '1']);
+
+		$slug = FederatedStoreCatalog::slugFor(
+			typeId: 'openregister.configset',
+			repo: 'ConductionNL/default-gemeente'
+		);
+		$ref = $this->catalog->resolve(descriptor: $this->descriptor(), slug: $slug);
+
+		$this->assertNotNull($ref);
+		$this->assertSame('openregister.configset', $ref['typeId']);
+		$this->assertSame('ConductionNL/default-gemeente', $ref['repo']);
+		$this->assertSame('openregister.configset', $ref['bundle']['type']);
+	}//end testResolveFetchesTheBundleAtTheConventionalPath()
+
+	/**
+	 * A slug matching no discovered repository resolves to nothing.
+	 *
+	 * @return void
+	 */
+	public function testResolveReturnsNullWhenNothingMatches(): void {
+		$this->registry->method('get')->willReturn(
+			$this->type(id: 'openregister.configset', topic: 'openregister-configset', name: 'Configuration set')
+		);
+		$this->federated->method('discover')->willReturn([['repo' => 'someone/other-thing']]);
+		$this->federated->expects($this->never())->method('fetchBundle');
+
+		$this->assertNull($this->catalog->resolve(descriptor: $this->descriptor(), slug: 'nothing-by-that-name'));
+	}//end testResolveReturnsNullWhenNothingMatches()
+
+	/**
+	 * A repository carrying no bundle at any conventional path resolves to nothing.
+	 *
+	 * Every candidate path is tried before giving up, so a repo using the
+	 * dotted directory is still installable.
+	 *
+	 * @return void
+	 */
+	public function testResolveTriesEveryConventionalPath(): void {
+		$this->registry->method('get')->willReturn(
+			$this->type(id: 'openregister.configset', topic: 'openregister-configset', name: 'Configuration set')
+		);
+		$this->federated->method('discover')->willReturn([['repo' => 'a/b']]);
+		$this->federated->expects($this->exactly(count(FederatedStoreCatalog::BUNDLE_PATHS)))
+			->method('fetchBundle')
+			->willThrowException(new \RuntimeException('404'));
+
+		$slug = FederatedStoreCatalog::slugFor(typeId: 'openregister.configset', repo: 'a/b');
+
+		$this->assertNull($this->catalog->resolve(descriptor: $this->descriptor(), slug: $slug));
+	}//end testResolveTriesEveryConventionalPath()
+
+	/**
+	 * The free-text filter reads the title, description and publisher.
+	 *
+	 * @return void
+	 */
+	public function testSearchFiltersOnFreeText(): void {
+		$this->registry->method('get')->willReturn(
+			$this->type(id: 'openregister.configset', topic: 'openregister-configset', name: 'Configuration set')
+		);
+		$this->federated->method('discover')->willReturn([
+			['repo' => 'ConductionNL/default-gemeente', 'name' => 'default-gemeente', 'description' => 'A council.'],
+			['repo' => 'ConductionNL/works-council', 'name' => 'works-council', 'description' => 'Staff advice.'],
+		]);
+
+		$hit = $this->catalog->search(descriptor: $this->descriptor(), query: 'gemeente');
+		$miss = $this->catalog->search(descriptor: $this->descriptor(), query: 'nothing here');
+
+		$this->assertCount(1, $hit['cards']);
+		$this->assertSame('default-gemeente', $hit['cards'][0]['title']);
+		$this->assertSame([], $miss['cards']);
+	}//end testSearchFiltersOnFreeText()
+
+	/**
+	 * The kind chip filters by type id, and a non-matching type is not searched.
+	 *
+	 * @return void
+	 */
+	public function testSearchFiltersByType(): void {
+		$this->registry->method('get')->willReturn(
+			$this->type(id: 'openregister.configset', topic: 'openregister-configset', name: 'Configuration set')
+		);
+		$this->federated->expects($this->never())->method('discover');
+
+		$result = $this->catalog->search(descriptor: $this->descriptor(), query: null, kind: 'openregister.flows');
+
+		$this->assertSame([], $result['cards']);
+	}//end testSearchFiltersByType()
+
+	/**
+	 * A discovery failure leaves the store empty rather than raising.
+	 *
+	 * @return void
+	 */
+	public function testDiscoveryFailureIsContained(): void {
+		$this->registry->method('get')->willReturn(
+			$this->type(id: 'openregister.configset', topic: 'openregister-configset', name: 'Configuration set')
+		);
+		$this->federated->method('discover')->willThrowException(new \RuntimeException('github is down'));
+
+		$result = $this->catalog->search(descriptor: $this->descriptor());
+
+		$this->assertSame('ok', $result['outcome']);
+		$this->assertSame([], $result['cards']);
+	}//end testDiscoveryFailureIsContained()
+
+	/**
+	 * An install whose type raises is reported, not thrown.
+	 *
+	 * @return void
+	 */
+	public function testInstallFailureIsReported(): void {
+		$this->federated->method('isSourceAllowed')->willReturn(true);
+		$this->federated->method('install')->willThrowException(new \RuntimeException('bad bundle'));
+
+		$report = $this->catalog->install(
+			ref: [
+				'typeId' => 'openregister.configset',
+				'repo' => 'c/d',
+				'source' => 'https://github.com/c/d',
+				'bundle' => [],
+			]
+		);
+
+		$this->assertFalse($report['success']);
+		$this->assertSame('error', $report['components'][0]['status']);
+	}//end testInstallFailureIsReported()
+
+	/**
+	 * A type reporting nothing still names itself as the installed component.
+	 *
+	 * @return void
+	 */
+	public function testInstallWithNoReportedComponentsNamesTheType(): void {
+		$this->federated->method('isSourceAllowed')->willReturn(true);
+		$this->federated->method('install')->willReturn(['installed' => []]);
+
+		$report = $this->catalog->install(
+			ref: [
+				'typeId' => 'openregister.flows',
+				'repo' => 'c/d',
+				'source' => 'https://github.com/c/d',
+				'bundle' => [],
+			]
+		);
+
+		$this->assertTrue($report['success']);
+		$this->assertSame('openregister.flows', $report['components'][0]['schema']);
+	}//end testInstallWithNoReportedComponentsNamesTheType()
+
+	/**
+	 * A type reporting descriptors rather than names is read too.
+	 *
+	 * @return void
+	 */
+	public function testInstallReadsDescriptorShapedComponents(): void {
+		$this->federated->method('isSourceAllowed')->willReturn(true);
+		$this->federated->method('install')->willReturn(
+			['installed' => [['type' => 'registers'], ['type' => 'flows']]]
+		);
+
+		$report = $this->catalog->install(
+			ref: [
+				'typeId' => 'openregister.configset',
+				'repo' => 'c/d',
+				'source' => 'https://github.com/c/d',
+				'bundle' => [],
+			]
+		);
+
+		$this->assertSame(['registers', 'flows'], array_column($report['components'], 'schema'));
+	}//end testInstallReadsDescriptorShapedComponents()
+
+	/**
 	 * The card slug survives a round trip through the URL pattern.
 	 *
 	 * @return void

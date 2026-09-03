@@ -265,14 +265,8 @@ class FederatedStoreCatalog {
 
 		$components = [];
 		foreach ($installed as $entry) {
-			if (is_string($entry) === true) {
-				$name = $entry;
-			} else {
-				$name = (string)($entry['type'] ?? $ref['typeId']);
-			}
-
 			$components[] = [
-				'schema' => $name,
+				'schema' => $this->componentName(entry: $entry, fallback: (string)$ref['typeId']),
 				'status' => 'installed',
 				'message' => '',
 			];
@@ -284,6 +278,30 @@ class FederatedStoreCatalog {
 
 		return ['success' => true, 'components' => $components];
 	}//end install()
+
+	/**
+	 * Name one installed component for the report.
+	 *
+	 * A type reports what it installed in its own terms: some return plain
+	 * names, others return descriptors. Both are read here rather than
+	 * assuming one shape.
+	 *
+	 * @param mixed  $entry    One entry from the type's install result.
+	 * @param string $fallback The type id, used when the entry names nothing.
+	 *
+	 * @return string The component name.
+	 */
+	private function componentName(mixed $entry, string $fallback): string {
+		if (is_string($entry) === true) {
+			return $entry;
+		}
+
+		if (is_array($entry) === true) {
+			return (string)($entry['type'] ?? $fallback);
+		}
+
+		return $fallback;
+	}//end componentName()
 
 	/**
 	 * Read a repository's bundle from the first conventional path that answers.

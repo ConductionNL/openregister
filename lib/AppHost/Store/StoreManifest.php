@@ -76,6 +76,12 @@ class StoreManifest {
 	 * @param array<string, string>      $cardFields  Remote field to card field map.
 	 * @param array<int, array<string, mixed>> $builtIn The app's own items, for the no-registry case.
 	 * @param array<int, string>         $types       Shareable configuration type ids this store surfaces.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) This is a value object
+	 * mirroring the manifest's `store` block one key to one parameter, so the
+	 * count is the block's, not a design choice. Grouping them into sub-objects
+	 * would put a translation layer between what an app declares and what the
+	 * engine reads, which is exactly where a silently dropped key hides.
 	 */
 	public function __construct(
 		public readonly string $appId,
