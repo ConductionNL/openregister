@@ -511,4 +511,49 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 		$this->assertArrayNotHasKey('askA', $kept, 'a node that answered has nothing left to remember');
 		$this->assertSame($taskB, (string)($kept['askB']['taskUuid'] ?? ''), 'the waiting sibling keeps its own task');
 	}//end testOnlyTheNodeWhoseTaskEndedRecovers()
+
+	/**
+	 * 🔴 THE SYMMETRIC CASE, PINNED: a task completed while the run was NOT yet
+	 * suspended. `signal()` refuses any run that is not `suspended`, so that
+	 * completion's wake is simply LOST — there is no queue for it, and nothing
+	 * retries it. The design decided this needs no new mechanism, and this test
+	 * is what makes that decision falsifiable: the lost wake must cost latency
+	 * only, because the node parks on a NON-NULL heartbeat and the next wake
+	 * re-reads the task.
+	 *
+	 * Were the heartbeat ever allowed to be null here, this run would be
+	 * unreachable forever — `findDue()` never returns a run with a null
+	 * `resume_at` — which is exactly the trap `UserTaskNode` documents.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-wake-re-reads-the-awaited-task-and-applies-a-terminal-outcome
+	 */
+	public function testACompletionThatRacedTheSuspensionIsRecoveredByTheHeartbeat(): void {
+		$run = $this->suspendedOnBothTasks();
+		$slots = ($run->getContext()['resumeState'] ?? []);
+		$taskA = (string)$slots['askA']['taskUuid'];
+
+		// THE RACE: the task completes while the run is still mid-walk. The
+		// completion listener calls signal(), which refuses a non-suspended
+		// run — so the wake is lost and nothing queues a retry of it.
+		$this->complete(uuid: $taskA, completedBy: 'bob');
+		$run->setStatus(FlowRun::STATUS_RUNNING);
+		$this->assertNull(
+			$this->service->signal($run, []),
+			'a run that is not suspended refuses the signal, so the completion wake is lost'
+		);
+
+		// The walk finishes and the run parks — on a heartbeat that is NEVER
+		// null, which is the only reason the lost wake is recoverable at all.
+		$run->setStatus(FlowRun::STATUS_SUSPENDED);
+		$this->assertNotNull($run->getResumeAt(), 'a task-waiting run must park on a clock, never on a signal alone');
+
+		// The next heartbeat re-reads the task and applies the outcome.
+		$run = $this->service->execute($run, $this->flow(), new HeartbeatSubject());
+
+		$this->assertSame([$taskA], $this->recovered, 'the raced completion is recovered, and audited as a recovery');
+		$this->assertSame(['askA', 'askB'], $this->created, 'recovery never creates a task');
+	}//end testACompletionThatRacedTheSuspensionIsRecoveredByTheHeartbeat()
+
 }//end class

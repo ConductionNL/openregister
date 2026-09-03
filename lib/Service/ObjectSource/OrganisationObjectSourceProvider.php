@@ -1,0 +1,375 @@
+<?php
+
+/**
+ * OrganisationObjectSourceProvider — serves the `nc-organisation` virtual
+ * schema's objects live from OpenRegister's own organisations (read-only).
+ *
+ * WHY THIS EXISTS
+ * ---------------
+ * Several apps grew their own `organization` SCHEMA because they needed to
+ * reference an organisation from a property, and OpenRegister's Organisation is
+ * an ENTITY with no object projection. A schema property written as
+ * `{"$ref": "organization"}` resolves against a schema, so there was nothing for
+ * it to point at, and each app declared its own copy instead. The slug is global
+ * per organisation, so those copies collide.
+ *
+ * Projecting the organisation as a virtual object gives that `$ref` a target,
+ * which is the one thing standing between the leaf copies and retirement.
+ *
+ * This follows {@see GroupObjectSourceProvider} and
+ * {@see UserDirectoryObjectSourceProvider} exactly: OpenRegister already
+ * projects identity entities this way, read-only, on the always-available
+ * `directory` register, with the schema `nc-`-prefixed so it cannot collide
+ * with a leaf app's own `organization`.
+ *
+ * READ-ONLY, AND DELIBERATELY SO
+ * ------------------------------
+ * The authoritative record is the Organisation row. A write path here would be a
+ * second way to mutate a tenant, reachable through the object API and bypassing
+ * `OrganisationService`'s lifecycle. Writes stay where they are.
+ *
+ * SCOPING
+ * -------
+ * An organisation IS the tenant boundary, so the projection is scoped to the
+ * organisations the acting user actually belongs to. An admin sees all of them.
+ * Absent and denied both return null, so the projection is not an enumeration
+ * oracle for the instance's tenants.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\ObjectSource
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\ObjectSource;
+
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCP\IGroupManager;
+use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
+use Throwable;
+
+/**
+ * Projects each organisation as a read-only virtual object.
+ *
+ * @spec openspec/changes/organisations-are-objects/specs/organisation-projection/spec.md#requirement-an-organisation-is-addressable-as-an-object-req-orp-101
+ */
+class OrganisationObjectSourceProvider implements ObjectSourceProvider {
+
+	/**
+	 * The properties the projection exposes.
+	 *
+	 * Deliberately the identity facet and nothing else. The quota, authorization
+	 * and lifecycle columns are tenancy administration: an object projection is
+	 * for referencing an organisation from another record, not for managing one,
+	 * and exposing them here would put tenant configuration behind the object API.
+	 *
+	 * @var array<int, string>
+	 */
+	private const PROJECTED = [
+		'name',
+		'description',
+		'summary',
+		'oin',
+		'tooi',
+		'rsin',
+		'kvk',
+		'pki',
+		'image',
+		'type',
+		'registrationStatus',
+	];
+
+	/**
+	 * Wire the mapper and the acting-user services.
+	 *
+	 * @param OrganisationMapper $organisationMapper The organisation mapper.
+	 * @param IUserSession       $userSession        The acting user's session.
+	 * @param IGroupManager      $groupManager       Group manager, for the admin check.
+	 * @param LoggerInterface    $logger             Logger.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly OrganisationMapper $organisationMapper,
+		private readonly IUserSession $userSession,
+		private readonly IGroupManager $groupManager,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return string The provider id.
+	 *
+	 * @spec openspec/changes/organisations-are-objects/specs/organisation-projection/spec.md#requirement-an-organisation-is-addressable-as-an-object-req-orp-101
+	 */
+	public function getId(): string {
+		return 'organisation-source';
+	}//end getId()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * Organisations are OpenRegister's own, so this provider is always available.
+	 *
+	 * @return bool Always true.
+	 *
+	 * @spec openspec/changes/organisations-are-objects/specs/organisation-projection/spec.md#requirement-an-organisation-is-addressable-as-an-object-req-orp-101
+	 */
+	public function isEnabled(): bool {
+		return true;
+	}//end isEnabled()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * Returns null when the organisation is absent OR the acting user may not
+	 * read it, so the two are indistinguishable and the projection cannot be used
+	 * to enumerate the instance's tenants.
+	 *
+	 * A merged-away organisation resolves to its survivor, so a reference stored
+	 * before a merge keeps pointing at a real record.
+	 *
+	 * @param Register             $register The register the schema belongs to.
+	 * @param Schema               $schema   The sourced schema.
+	 * @param string               $id       The organisation uuid.
+	 * @param array<string, mixed> $config   The object-source config block (unused).
+	 *
+	 * @return ObjectEntity|null The virtual object, or null when absent or denied.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $config reserved for future scoping options.
+	 *
+	 * @spec openspec/changes/organisations-are-objects/specs/organisation-projection/spec.md#requirement-an-organisation-is-addressable-as-an-object-req-orp-101
+	 */
+	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
+		try {
+			$organisation = $this->organisationMapper->findByUuidFollowingMerge(uuid: $id);
+		} catch (Throwable $e) {
+			$this->logger->debug('[ObjectSource:organisation-source] could not read organisation: ' . $e->getMessage());
+			return null;
+		}
+
+		if ($this->mayRead(organisation: $organisation) === false) {
+			return null;
+		}
+
+		return $this->toObjectEntity(register: $register, schema: $schema, organisation: $organisation);
+	}//end find()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * Honours `filters.search` / `_search`, `limit` and `offset`. An admin sees
+	 * every organisation; anyone else sees only the ones they belong to.
+	 *
+	 * @param Register             $register The register the schema belongs to.
+	 * @param Schema               $schema   The sourced schema.
+	 * @param array<string, mixed> $query    Query (filters/search/limit/offset).
+	 * @param array<string, mixed> $config   The object-source config block (unused).
+	 *
+	 * @return ObjectEntity[] The matching virtual objects.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $config reserved for future scoping options.
+	 *
+	 * @spec openspec/changes/organisations-are-objects/specs/organisation-projection/spec.md#requirement-an-organisation-is-addressable-as-an-object-req-orp-101
+	 */
+	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
+		$objects = [];
+		foreach ($this->readOrganisations(query: $query) as $organisation) {
+			$objects[] = $this->toObjectEntity(register: $register, schema: $schema, organisation: $organisation);
+		}
+
+		return $objects;
+	}//end findAll()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param Register             $register The register the schema belongs to.
+	 * @param Schema               $schema   The sourced schema.
+	 * @param array<string, mixed> $query    Query (filters/search).
+	 * @param array<string, mixed> $config   The object-source config block (unused).
+	 *
+	 * @return int The number of matching virtual objects.
+	 *
+	 * @spec openspec/changes/organisations-are-objects/specs/organisation-projection/spec.md#requirement-an-organisation-is-addressable-as-an-object-req-orp-101
+	 */
+	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
+		return count($this->findAll(register: $register, schema: $schema, query: $query, config: $config));
+	}//end count()
+
+	/**
+	 * The projected fields of one organisation.
+	 *
+	 * Empty values are omitted rather than written as null, so a consumer can
+	 * tell "this organisation has no OIN" from "this projection does not carry
+	 * OINs".
+	 *
+	 * @param Organisation $organisation The organisation.
+	 *
+	 * @return array<string, mixed> The object body.
+	 *
+	 * @spec openspec/changes/organisations-are-objects/specs/organisation-projection/spec.md#requirement-the-projection-carries-the-identity-facet-only-req-orp-102
+	 */
+	public static function project(Organisation $organisation): array {
+		// Read the SERIALISED entity, not `method_exists()` + a derived getter.
+		// Organisation's accessors are magic (`Entity::__call`), so
+		// `method_exists($organisation, 'getName')` is FALSE and every field
+		// would have been skipped, leaving a projection carrying nothing but an
+		// id. That shipped-looking-fine failure is what the tests caught.
+		$serialised = $organisation->jsonSerialize();
+
+		$data = ['id' => (string)$organisation->getUuid()];
+
+		foreach (self::PROJECTED as $property) {
+			$value = ($serialised[$property] ?? null);
+			if ($value === null || $value === '') {
+				continue;
+			}
+
+			$data[$property] = $value;
+		}
+
+		return $data;
+	}//end project()
+
+	/**
+	 * Whether the acting user may read this organisation's projection.
+	 *
+	 * @param Organisation $organisation The organisation being read.
+	 *
+	 * @return bool True when the acting user may read it.
+	 *
+	 * @spec openspec/changes/organisations-are-objects/specs/organisation-projection/spec.md#requirement-the-projection-is-not-an-enumeration-oracle-req-orp-103
+	 */
+	private function mayRead(Organisation $organisation): bool {
+		$acting = $this->userSession->getUser();
+		if ($acting === null) {
+			return false;
+		}
+
+		try {
+			if ($this->groupManager->isAdmin($acting->getUID()) === true) {
+				return true;
+			}
+
+			return $organisation->hasUser($acting->getUID());
+		} catch (Throwable $e) {
+			return false;
+		}
+	}//end mayRead()
+
+	/**
+	 * The organisations visible to the acting user, failing closed to an empty list.
+	 *
+	 * @param array<string, mixed> $query Query (filters/search/limit/offset).
+	 *
+	 * @return array<int, Organisation> The visible organisations.
+	 *
+	 * @spec openspec/changes/organisations-are-objects/specs/organisation-projection/spec.md#requirement-the-projection-is-not-an-enumeration-oracle-req-orp-103
+	 */
+	private function readOrganisations(array $query): array {
+		$acting = $this->userSession->getUser();
+		if ($acting === null) {
+			return [];
+		}
+
+		$search = (string)($query['filters']['search'] ?? $query['_search'] ?? $query['search'] ?? '');
+		$limit = (int)($query['limit'] ?? 200);
+		$offset = (int)($query['offset'] ?? 0);
+
+		try {
+			if ($this->groupManager->isAdmin($acting->getUID()) === true) {
+				$organisations = $this->organisationMapper->findAll(limit: $limit, offset: $offset, filters: []);
+				return array_values(self::matching(organisations: $organisations, search: $search));
+			}
+
+			$organisations = $this->organisationMapper->findByUserId($acting->getUID());
+		} catch (Throwable $e) {
+			$this->logger->warning('[ObjectSource:organisation-source] could not list organisations: ' . $e->getMessage());
+			return [];
+		}
+
+		return array_values(self::matching(organisations: $organisations, search: $search));
+	}//end readOrganisations()
+
+	/**
+	 * Filter organisations by a search term over the fields a person would type.
+	 *
+	 * A merged-away organisation is excluded: it is not a usable reference target,
+	 * and offering it in a picker invites a reference to a record that no longer
+	 * owns anything.
+	 *
+	 * @param array<int, Organisation> $organisations The candidates.
+	 * @param string                   $search        The search term, or ''.
+	 *
+	 * @return array<int, Organisation> The matches.
+	 *
+	 * @spec openspec/changes/organisations-are-objects/specs/organisation-projection/spec.md#requirement-the-projection-carries-the-identity-facet-only-req-orp-102
+	 */
+	public static function matching(array $organisations, string $search): array {
+		$live = array_filter(
+			$organisations,
+			static function ($organisation) {
+				return ($organisation instanceof Organisation && $organisation->isMerged() === false);
+			}
+		);
+
+		if ($search === '') {
+			return $live;
+		}
+
+		$needle = strtolower($search);
+
+		return array_filter(
+			$live,
+			static function (Organisation $organisation) use ($needle) {
+				foreach ([$organisation->getName(), $organisation->getOin(), $organisation->getRsin(), $organisation->getKvk()] as $field) {
+					if ($field !== null && str_contains(strtolower((string)$field), $needle) === true) {
+						return true;
+					}
+				}
+
+				return false;
+			}
+		);
+	}//end matching()
+
+	/**
+	 * Map an organisation onto a non-persisted virtual ObjectEntity.
+	 *
+	 * @param Register     $register     The register.
+	 * @param Schema       $schema       The sourced schema.
+	 * @param Organisation $organisation The organisation.
+	 *
+	 * @return ObjectEntity The virtual object (never saved).
+	 *
+	 * @spec openspec/changes/organisations-are-objects/specs/organisation-projection/spec.md#requirement-an-organisation-is-addressable-as-an-object-req-orp-101
+	 */
+	private function toObjectEntity(Register $register, Schema $schema, Organisation $organisation): ObjectEntity {
+		$entity = new ObjectEntity();
+		$entity->setUuid((string)$organisation->getUuid());
+		$entity->setRegister((string)$register->getId());
+		$entity->setSchema((string)$schema->getId());
+		$entity->setObject(self::project(organisation: $organisation));
+
+		return $entity;
+	}//end toObjectEntity()
+}//end class

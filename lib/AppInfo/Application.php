@@ -222,6 +222,7 @@ use OCA\OpenRegister\Service\ObjectSource\DeckObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\FederatedObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\FilesObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\GroupObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\OrganisationObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\ObjectSource\TablesColumnMapper;
 use OCA\OpenRegister\Service\ObjectSource\TablesObjectSourceProvider;
@@ -1469,6 +1470,18 @@ class Application extends App implements IBootstrap {
 				return new GroupObjectSourceProvider(
 					groupManager: $container->get('OCP\IGroupManager'),
 					userSession: $container->get('OCP\IUserSession'),
+					logger: $container->get('Psr\Log\LoggerInterface')
+				);
+			}
+		);
+
+		$context->registerService(
+			OrganisationObjectSourceProvider::class,
+			function (ContainerInterface $container) {
+				return new OrganisationObjectSourceProvider(
+					organisationMapper: $container->get('OCA\OpenRegister\Db\OrganisationMapper'),
+					userSession: $container->get('OCP\IUserSession'),
+					groupManager: $container->get('OCP\IGroupManager'),
 					logger: $container->get('Psr\Log\LoggerInterface')
 				);
 			}
@@ -4436,6 +4449,7 @@ class Application extends App implements IBootstrap {
 			CalDavVtodoObjectSourceProvider::class,
 			UserDirectoryObjectSourceProvider::class,
 			GroupObjectSourceProvider::class,
+			OrganisationObjectSourceProvider::class,
 			ContactsObjectSourceProvider::class,
 			CalendarEventObjectSourceProvider::class,
 			FilesObjectSourceProvider::class,
