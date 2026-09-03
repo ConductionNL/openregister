@@ -89,6 +89,8 @@ use OCP\IUserSession;
  * @method void setOrganisation(?string $organisation)
  * @method array|null getValidation()
  * @method void setValidation(?array $validation)
+ * @method array|null getQuality()
+ * @method void setQuality(?array $quality)
  * @method array|null getDeleted()
  * @method void setDeleted(?array $deleted)
  * @method array|null getGeo()
@@ -262,6 +264,24 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @var array|null Array describing validation results
 	 */
 	protected ?array $validation = [];
+
+	/**
+	 * Platform-computed quality assessment for the object.
+	 *
+	 * Written by QualityScoreOnSaveListener when the schema carries an
+	 * `x-openregister-quality` annotation. Shape:
+	 *   `['score' => 0.0-1.0, 'status' => 'good'|..., 'scoredAt' => '...']`
+	 *
+	 * This is an assessment OF the object's data, not a fact about the thing
+	 * the object describes, which is why it lives in the `@self` envelope
+	 * rather than among the object's own properties. Storing it here means a
+	 * schema no longer has to declare `qualityScore` as an ordinary property
+	 * to be scored, and so no longer puts a number field the platform
+	 * overwrites in front of the person filling the form.
+	 *
+	 * @var array|null Array describing the quality assessment
+	 */
+	protected ?array $quality = [];
 
 	/**
 	 * Deletion details if the object is deleted.
@@ -694,6 +714,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		$this->addType(fieldName: 'application', type: 'string');
 		$this->addType(fieldName: 'organisation', type: 'string');
 		$this->addType(fieldName: 'validation', type: 'json');
+		$this->addType(fieldName: 'quality', type: 'json');
 		$this->addType(fieldName: 'deleted', type: 'json');
 		$this->addType(fieldName: 'geo', type: 'json');
 		$this->addType(fieldName: 'retention', type: 'json');
@@ -737,6 +758,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'relations',
 			'authorization',
 			'validation',
+			'quality',
 			'deleted',
 			'groups',
 			'geo',
@@ -1004,6 +1026,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'folder' => $this->folder,
 			'application' => $this->application,
 			'validation' => $this->getValidation(),
+			'quality' => $this->getQuality(),
 			'geo' => $this->getGeo(),
 			'retention' => $this->getRetention(),
 			'tmlo' => $this->getTmlo(),
