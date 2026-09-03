@@ -2460,6 +2460,15 @@ class MagicMapper extends AbstractObjectMapper {
 				'type' => 'json',
 				'nullable' => true,
 			],
+			// Platform-owned quality assessment. Lives here rather than in the
+			// object body so a schema does not have to declare `qualityScore`
+			// as an ordinary property just to be scored — which put a number
+			// field the platform overwrites on every form the schema drives.
+			self::METADATA_PREFIX . 'quality' => [
+				'name' => self::METADATA_PREFIX . 'quality',
+				'type' => 'json',
+				'nullable' => true,
+			],
 			self::METADATA_PREFIX . 'deleted' => [
 				'name' => self::METADATA_PREFIX . 'deleted',
 				'type' => 'json',
@@ -3689,6 +3698,7 @@ class MagicMapper extends AbstractObjectMapper {
 			// which is what "not writable by this path" has to mean. Writes go
 			// through the dedicated authorization-management path.
 			'validation',
+			'quality',
 			'deleted',
 			'geo',
 			'retention',
@@ -3736,6 +3746,7 @@ class MagicMapper extends AbstractObjectMapper {
 				'locked',
 				'authorization',
 				'validation',
+				'quality',
 				'deleted',
 				'geo',
 				'retention',
