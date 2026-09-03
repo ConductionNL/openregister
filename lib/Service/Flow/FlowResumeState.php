@@ -207,24 +207,37 @@ final class FlowResumeState implements JsonSerializable {
 	/**
 	 * The storable form, or null when there is nothing worth storing.
 	 *
-	 * Only a SUSPENDED run has anywhere to continue from. A terminal one does
-	 * not, so keeping its slots would put a stale cursor in front of anyone
-	 * reading the run to find out what happened — and the dispatcher has already
-	 * cleared every node that returned, so anything still held belongs to a node
-	 * the run never came back to.
+	 * Kept for every run that can still advance, dropped only on a terminal
+	 * one. The first version of this rule said "only a SUSPENDED run has
+	 * anywhere to continue from", and that conflated NOT-SUSPENDED with
+	 * TERMINAL: a pass can end `queued` — an in-request advance whose sibling
+	 * still has enabled work, a claim refused on contention — while a node
+	 * parked in an EARLIER pass still holds live progress. Dropping the slots
+	 * there is how the heartbeat wedge happened: a user-task node lost the
+	 * uuid of the task it was waiting on, asked again on the next wake, and
+	 * the original task's completion could never address the node's slot
+	 * again — its signal was refused against the new slot's assignee, and the
+	 * run rolled its heartbeat forever.
+	 *
+	 * A terminal run still drops them: keeping its slots would put a stale
+	 * cursor in front of anyone reading the run to find out what happened —
+	 * and the dispatcher has already cleared every node that returned, so
+	 * anything still held belongs to a node the run never came back to.
 	 *
 	 * Lives here rather than in the run service because it is a question about
 	 * this value, not about persistence: the state knows when it is worth
 	 * keeping.
 	 *
-	 * @param boolean $suspended Whether the walk ended suspended.
+	 * @param boolean $live Whether the run can still advance (any non-terminal
+	 *                      status — suspended, queued, running).
 	 *
 	 * @return array<string, array<string, mixed>>|null The slots, or null to drop them.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
+	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
 	 */
-	public function storableWhen(bool $suspended): ?array {
-		if ($suspended === false || $this->byNode === []) {
+	public function storableWhen(bool $live): ?array {
+		if ($live === false || $this->byNode === []) {
 			return null;
 		}
 

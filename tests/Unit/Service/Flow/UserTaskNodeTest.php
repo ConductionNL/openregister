@@ -462,6 +462,50 @@ class UserTaskNodeTest extends TestCase {
 	}//end testACompletedTaskContinuesWithTheOutcomeOnEveryItem()
 
 	/**
+	 * A terminal read with no signal in hand is the heartbeat recovering a
+	 * missed wake — the completion's signal was refused or lost — and that
+	 * recovery is recorded on the task's audit, attributed to its completer.
+	 *
+	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
+	 */
+	public function testAHeartbeatRecoveredCompletionIsAuditedOnTheTask(): void {
+		$state = new FlowResumeState();
+		$state->forNode(nodeId: 'ask')->set(key: FlowTaskBridge::SLOT_TASK_UUID, value: 't-1');
+		$done = $this->task(state: Task::STATE_COMPLETED);
+		$done->setOutcome('approved');
+		$done->setCompletedBy('bob');
+		$this->bridge->method('taskOrNull')->willReturn($done);
+		$this->bridge->expects($this->once())->method('recordHeartbeatRecovery')->with($done);
+
+		$out = $this->node->execute($this->items(), $this->config(), $this->context($state));
+
+		$this->assertSame('approved', $out[0][FlowItems::JSON]['task']['outcome'], 'the recovery applies the outcome exactly as the signal path would');
+	}//end testAHeartbeatRecoveredCompletionIsAuditedOnTheTask()
+
+	/**
+	 * A completion whose signal DID arrive is the ordinary path, not a
+	 * recovery: nothing extra lands on the task's audit.
+	 *
+	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
+	 */
+	public function testASignalDeliveredCompletionRecordsNoHeartbeatRecovery(): void {
+		$state = new FlowResumeState();
+		$state->forNode(nodeId: 'ask')->set(key: FlowTaskBridge::SLOT_TASK_UUID, value: 't-1');
+		$done = $this->task(state: Task::STATE_COMPLETED);
+		$done->setOutcome('approved');
+		$this->bridge->method('taskOrNull')->willReturn($done);
+		$this->bridge->expects($this->never())->method('recordHeartbeatRecovery');
+
+		$out = $this->node->execute(
+			$this->items(),
+			$this->config(),
+			$this->context($state, extra: [FlowRunService::SIGNAL_CONTEXT_KEY => []])
+		);
+
+		$this->assertSame('approved', $out[0][FlowItems::JSON]['task']['outcome']);
+	}//end testASignalDeliveredCompletionRecordsNoHeartbeatRecovery()
+
+	/**
 	 * A delegated completion names both identities: the deputy who acted and
 	 * the person they acted for. A four-eyes rule cannot be enforced without
 	 * the difference.

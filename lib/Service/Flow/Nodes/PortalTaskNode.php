@@ -76,6 +76,7 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
+use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -267,6 +268,7 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *                          the case names nobody, or a re-ask has no reason.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-a-portal-task-step-creates-one-external-task-and-suspends-the-run
+	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-wake-re-reads-the-awaited-task-and-applies-a-terminal-outcome
 	 */
 	public function execute(array $items, array $config, array $context): array {
 		if ($items === []) {
@@ -300,6 +302,14 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		}
 
 		if ($resume->get(key: PortalTaskConfig::SLOT_PASSED_AT, default: null) === null) {
+			// A terminal read with no signal in hand means the completion's
+			// wake never arrived — refused or lost — and the heartbeat is what
+			// recovered it. Recorded before the outcome is applied, which is
+			// identical on both paths; the user-task node makes the same call.
+			if (array_key_exists(FlowRunService::SIGNAL_CONTEXT_KEY, $context) === false) {
+				$this->bridge->recordHeartbeatRecovery(task: $task);
+			}
+
 			// The first pass over a terminal task: the answer travels on. Marked
 			// ONCE, so the next firing of this node in this run is a re-entry.
 			$resume->set(key: PortalTaskConfig::SLOT_PASSED_AT, value: (new DateTime())->format('c'));

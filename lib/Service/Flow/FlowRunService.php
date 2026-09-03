@@ -907,7 +907,7 @@ class FlowRunService {
 		$resuming = ($run->getStatus() === FlowRun::STATUS_SUSPENDED);
 		if ($resuming === true) {
 			// Stored items win on resume (below), but the subject's own fields
-			// on them are a trigger-time snapshot. {@see self::refreshSubjectItems()}
+			// on them are a trigger-time snapshot: see refreshSubjectItems().
 			$this->refreshSubjectItems(run: $run, subject: $subject);
 		}
 
@@ -1091,6 +1091,7 @@ class FlowRunService {
 	 * @return FlowRun The updated run.
 	 *
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
 	 */
 	private function persistResult(FlowRun $run, array $result): FlowRun {
 		$status = (string)($result['status'] ?? FlowRun::STATUS_FAILED);
@@ -1141,14 +1142,7 @@ class FlowRunService {
 		// other node also reads from.
 		unset($context[FlowNodeResumeState::CONTEXT_KEY]);
 
-		$resumeState = ($context[FlowResumeState::CONTEXT_KEY] ?? null);
-		unset($context[FlowResumeState::CONTEXT_KEY]);
-		if ($resumeState instanceof FlowResumeState === true) {
-			$storable = $resumeState->storableWhen(suspended: ($status === FlowRun::STATUS_SUSPENDED));
-			if ($storable !== null) {
-				$context[FlowResumeState::CONTEXT_KEY] = $storable;
-			}
-		}
+		$this->keepResumeSlots(context: $context, status: $status);
 
 		// A signal is consumed by the walk it woke. Kept, it would still be
 		// sitting there the NEXT time this run suspends on a signal, and that
@@ -1185,6 +1179,48 @@ class FlowRunService {
 
 		return $persisted;
 	}//end persistResult()
+
+	/**
+	 * Fold the walk's per-node resume slots back into the storable context.
+	 *
+	 * 🔴 LIVE, NOT SUSPENDED. The rule used to be "only a suspended run has
+	 * anywhere to continue from", which quietly conflated NOT-SUSPENDED with
+	 * TERMINAL. A pass legitimately ends `queued` while a node parked in an
+	 * EARLIER pass is still waiting: the in-request advance of one branch
+	 * finalises `queued` whenever a sibling has enabled work, and a claim
+	 * refused on contention does the same. Dropping the slots there costs a
+	 * task-waiting node the uuid of the task it is waiting on — and that loss
+	 * IS the heartbeat wedge. The node's next wake finds an empty slot, so
+	 * (correctly, by its own idempotency guard) it asks again; from then on
+	 * the ORIGINAL task's completion can never address the node's slot, its
+	 * signal is refused against the new slot's recorded assignee, and the run
+	 * re-suspends on its heartbeat forever while a duplicate task sits in
+	 * somebody's inbox.
+	 *
+	 * A terminal run still drops them, for the reason it always did: anything
+	 * still held belongs to a node the run never came back to.
+	 *
+	 * @param array<string, mixed> $context The context being persisted, modified in place.
+	 * @param string $status The status the walk ended in.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
+	 */
+	private function keepResumeSlots(array &$context, string $status): void {
+		$resumeState = ($context[FlowResumeState::CONTEXT_KEY] ?? null);
+		unset($context[FlowResumeState::CONTEXT_KEY]);
+
+		if ($resumeState instanceof FlowResumeState === false) {
+			return;
+		}
+
+		$storable = $resumeState->storableWhen(live: (in_array($status, FlowRun::TERMINAL, true) === false));
+		if ($storable !== null) {
+			$context[FlowResumeState::CONTEXT_KEY] = $storable;
+		}
+
+	}//end keepResumeSlots()
 
 	/**
 	 * The correlation key a suspended run can be addressed by, or null.
