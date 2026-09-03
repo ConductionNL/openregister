@@ -71,6 +71,7 @@ use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -104,6 +105,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urls For the palette icon.
 	 * @param TaskFormReader $forms Reads and refuses the step's form declaration.
+	 * @param FlowTimerService $timers Arms the task's business timer.
 	 *
 	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md
 	 */
@@ -112,6 +114,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urls,
 		TaskFormReader $forms,
+		private readonly FlowTimerService $timers,
 	) {
 		$this->config = new UserTaskConfig(l10n: $l10n, forms: $forms);
 
@@ -204,6 +207,15 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			'failOnReject',
 			'heartbeatMinutes',
 			'advance',
+			// The business-timer half. Absent from a node, nothing is armed and
+			// the node behaves exactly as it did before these existed.
+			'sla',
+			'calendar',
+			'ladder',
+			'escalationRules',
+			'purpose',
+			'legalEffect',
+			'onExpiry',
 			...TaskFormReader::CONFIG_KEYS,
 		];
 	}//end configKeys()
@@ -337,6 +349,23 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 			actor: $this->actingIdentity(context: $context)
 		);
 
+		// ARM THE DEADLINE, if this node declares one. Nothing else in the
+		// engine did: `FlowTimerService::arm()` had no production caller at
+		// all, so a node could describe an SLA and no clock ever started.
+		//
+		// Here rather than anywhere else because this is where the task's uuid
+		// first exists, and the timer is bound to the TASK — the same
+		// (subjectType: 'task', subjectUuid) pair that
+		// FlowTimerSubjectTerminalListener already cancels on completion. Arm
+		// somewhere the uuid is not yet known and the two halves cannot meet.
+		$this->armDeadline(
+			config: $config,
+			taskUuid: (string)$task->getUuid(),
+			runUuid: $runUuid,
+			nodeId: $resume->nodeId(),
+			context: $context
+		);
+
 		// Written ONCE. A heartbeat re-enters execute() and finds the uuid
 		// held, so it never reaches this line again; askedAt therefore records
 		// when somebody was first asked, not when the run last checked.
@@ -345,6 +374,68 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 		);
 
 	}//end createTask()
+
+	/**
+	 * Arm a business timer for the task this node just created.
+	 *
+	 * NO-OP UNLESS THE NODE DECLARES AN SLA. A flow that never mentioned one
+	 * behaves exactly as before, which is what makes this safe to add to an
+	 * engine every app shares.
+	 *
+	 * 🔴 A FAILURE HERE IS NOT SWALLOWED. If an SLA is declared and cannot be
+	 * armed, the task has no deadline, and for a `wettelijk` term that is a
+	 * legal defect rather than something to log and carry on from. Letting it
+	 * propagate is also safe for existing flows precisely because they do not
+	 * reach this branch.
+	 *
+	 * Bound to the TASK, matching what FlowTimerSubjectTerminalListener already
+	 * cancels: `subjectType: 'task'` with the task's uuid. The run and node are
+	 * recorded as provenance, which is what the timer model asks for — a timer
+	 * is subject-bound, and its run is optional context.
+	 *
+	 * @param array<string, mixed> $config The node configuration.
+	 * @param string $taskUuid The uuid of the task just created.
+	 * @param string $runUuid The run this node is executing in.
+	 * @param string $nodeId This node's id.
+	 * @param array<string, mixed> $context The execution context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 */
+	private function armDeadline(array $config, string $taskUuid, string $runUuid, string $nodeId, array $context): void {
+		$sla = ($config['sla'] ?? null);
+		if ($sla === null || $sla === '' || $sla === []) {
+			return;
+		}
+
+		$title = trim((string)($config['title'] ?? ''));
+		if ($title === '') {
+			$title = null;
+		}
+
+		$timerConfig = [
+			'subjectType' => 'task',
+			'subjectUuid' => $taskUuid,
+			'runUuid' => $runUuid,
+			'nodeId' => $nodeId,
+			'appId' => 'openregister',
+			'title' => $title,
+			'sla' => $sla,
+		];
+
+		// Only forward what the author actually set: `build()` applies its own
+		// defaults, and passing an explicit null would override them.
+		foreach (['calendar', 'ladder', 'escalationRules', 'purpose', 'legalEffect', 'onExpiry', 'organisation'] as $key) {
+			if (array_key_exists($key, $config) === true && $config[$key] !== null && $config[$key] !== '') {
+				$timerConfig[$key] = $config[$key];
+			}
+		}
+
+		$this->timers->arm(config: $timerConfig, actor: $this->actingIdentity(context: $context));
+
+	}//end armDeadline()
+
 
 	/**
 	 * Write the outcome bag onto every item, under the configured key.

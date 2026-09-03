@@ -456,3 +456,49 @@ SHALL reflect work performed rather than rows examined.
 - **WHEN** the pass logs its result
 - **THEN** the reported fired count MUST be three
 - @e2e exclude covered by sweep logging unit tests
+
+### Requirement: A user task arms its own deadline
+
+`openregister.user-task` SHALL arm a business timer when it creates its task,
+and only when the node declares an `sla`. A node that declares none SHALL arm
+nothing and behave exactly as it did before this requirement existed.
+
+The timer SHALL be bound to the TASK — `subjectType: 'task'` with the task's
+uuid — which is the same pair the terminal listener cancels on. Arming against
+anything else produces a timer nothing ever cancels, which this spec already
+calls a defect rather than a tolerable condition.
+
+The run and node SHALL be recorded as provenance rather than identity, per the
+durability requirement above.
+
+An SLA that is declared and CANNOT be armed SHALL fail the node. A task
+carrying a declared deadline with no timer is a term nobody is measuring, and
+for a `wettelijk` deadline that is a legal defect rather than something to log
+and continue from.
+
+**Why this requirement exists.** Everything above it was implemented, tested
+and unreachable: `FlowTimerService::arm()` had no production caller anywhere in
+the app. Every reference lived in its own unit test. A node could describe an
+SLA in full and no clock would ever start.
+
+@e2e exclude Arming happens inside a flow run against a persisted task and a resolvable working calendar; observing it needs a seeded run and a clock, which the timer suite already provides. Covered by UserTaskNodeTest with a negative control: removing the arm call fails the binding assertion.
+
+#### Scenario: A declared SLA arms a timer bound to the task
+
+- **GIVEN** a user-task node declaring an `sla` and a `ladder`
+- **WHEN** it creates its task
+- **THEN** a timer MUST be armed with `subjectType: 'task'` and that task's uuid
+- **AND** the sla and ladder MUST reach the timer
+- **AND** the run and node MUST be recorded on it
+
+#### Scenario: A node without an SLA arms nothing
+
+- **GIVEN** a user-task node declaring no `sla`
+- **WHEN** it creates its task
+- **THEN** no timer MUST be armed
+
+#### Scenario: An unarmable SLA fails the node
+
+- **GIVEN** a node whose declared SLA cannot be armed
+- **WHEN** it creates its task
+- **THEN** the node MUST fail rather than continue without a deadline
