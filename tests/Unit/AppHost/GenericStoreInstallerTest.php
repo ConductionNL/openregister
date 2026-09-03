@@ -279,6 +279,95 @@ class GenericStoreInstallerTest extends TestCase {
 	}//end testAManifestWithNoStoreBlockIsDisabled()
 
 	/**
+	 * Card fields fall back to the fleet's published names, and an app that
+	 * declares its own gets those instead.
+	 *
+	 * @return void
+	 */
+	public function testCardFieldsDefaultAndCanBeOverridden(): void {
+		$byDefault = StoreManifest::fromManifest(
+			appId: 'dossiq',
+			manifest: ['store' => ['schema' => 't']]
+		);
+		$this->assertSame(StoreManifest::DEFAULT_CARD_FIELDS, $byDefault->cardFields);
+
+		// An EMPTY map is a declaration of nothing, not a declaration of
+		// emptiness: falling through to the defaults keeps a store rendering
+		// cards rather than seven blank ones.
+		$empty = StoreManifest::fromManifest(
+			appId: 'dossiq',
+			manifest: ['store' => ['schema' => 't', 'cardFields' => []]]
+		);
+		$this->assertSame(StoreManifest::DEFAULT_CARD_FIELDS, $empty->cardFields);
+
+		$own = StoreManifest::fromManifest(
+			appId: 'dossiq',
+			manifest: ['store' => ['schema' => 't', 'cardFields' => ['slug' => 'ref']]]
+		);
+		$this->assertSame(['slug' => 'ref'], $own->cardFields);
+	}//end testCardFieldsDefaultAndCanBeOverridden()
+
+	/**
+	 * The allowlist is coerced: non-strings and blanks are dropped and
+	 * duplicates collapse, so a hand-edited manifest cannot smuggle a truthy
+	 * non-string past `in_array(..., true)` and silently allow nothing.
+	 *
+	 * @return void
+	 */
+	public function testTheAllowlistIsCoercedToUniqueNonEmptyStrings(): void {
+		$store = StoreManifest::fromManifest(
+			appId: 'dossiq',
+			manifest: ['store' => ['schema' => 't', 'installable' => ['caseType', 'caseType', '', '  ', 42, null, 'flow']]]
+		);
+
+		$this->assertSame(['caseType', 'flow'], array_values($store->installable));
+		$this->assertTrue($store->isInstallable(slug: 'caseType'));
+		$this->assertFalse($store->isInstallable(slug: ''));
+	}//end testTheAllowlistIsCoercedToUniqueNonEmptyStrings()
+
+	/**
+	 * Built-in items keep only the entries that are objects. A registry-shaped
+	 * string in the list would otherwise reach the page and render as a card
+	 * with no title.
+	 *
+	 * @return void
+	 */
+	public function testBuiltInKeepsOnlyObjectEntries(): void {
+		$store = StoreManifest::fromManifest(
+			appId: 'dossiq',
+			manifest: ['store' => ['schema' => 't', 'builtIn' => [
+				['slug' => 'a', 'title' => 'A'],
+				'not-an-object',
+				['slug' => 'b', 'title' => 'B'],
+			]]]
+		);
+
+		$this->assertCount(2, $store->builtIn);
+		$this->assertSame(['a', 'b'], array_column($store->builtIn, 'slug'));
+	}//end testBuiltInKeepsOnlyObjectEntries()
+
+	/**
+	 * A `store` key that is not an object disables the store rather than
+	 * half-configuring one.
+	 *
+	 * @return void
+	 */
+	public function testAMalformedStoreKeyDisablesTheStore(): void {
+		foreach ([null, 'yes', 42, []] as $block) {
+			$store = StoreManifest::fromManifest(appId: 'dossiq', manifest: ['store' => $block]);
+			if (is_array($block) === true) {
+				// An empty OBJECT is a declaration, so it stays enabled — and
+				// its empty allowlist refuses every install.
+				$this->assertTrue($store->enabled);
+				$this->assertFalse($store->isInstallable(slug: 'anything'));
+				continue;
+			}
+
+			$this->assertFalse($store->enabled);
+		}
+	}//end testAMalformedStoreKeyDisablesTheStore()
+
+	/**
 	 * The local register defaults to the app id, and an app whose register
 	 * slug differs says so. A schema slug is not unique across the fleet, so
 	 * an unscoped write can land in another app's register.

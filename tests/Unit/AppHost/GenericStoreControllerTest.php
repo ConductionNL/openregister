@@ -59,6 +59,7 @@ use RuntimeException;
  * cases in GenericStoreInstallerTest.
  *
  * @uses \OCA\OpenRegister\AppHost\Store\StoreManifest
+ * @uses \OCA\OpenRegister\AppHost\Service\StoreDescriptor
  */
 class GenericStoreControllerTest extends TestCase {
 	/** @var ManifestLoader&MockObject */
