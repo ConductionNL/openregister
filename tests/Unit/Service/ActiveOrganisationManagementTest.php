@@ -874,10 +874,13 @@ class ActiveOrganisationManagementTest extends TestCase {
 		$reflection = new \ReflectionClass(OrganisationService::class);
 		$cacheProperty = $reflection->getProperty('defaultOrgCache');
 		$cacheProperty->setAccessible(true);
-		$cacheProperty->setValue($defaultOrg);
+		// Both are STATIC, so the object argument is null. Omitting it is
+		// deprecated in PHP 8.3 and removed in PHP 9; the same file already
+		// writes these two caches the explicit way further up.
+		$cacheProperty->setValue(null, $defaultOrg);
 		$tsProperty = $reflection->getProperty('defaultOrgCacheTs');
 		$tsProperty->setAccessible(true);
-		$tsProperty->setValue(time());
+		$tsProperty->setValue(null, time());
 
 		// Act.
 		$result = $this->organisationService->getOrganisationForNewEntity();

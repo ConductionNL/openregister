@@ -336,11 +336,14 @@ class OrganisationTest extends TestCase {
 	}
 
 	public function testSetActiveFalse(): void {
-		// Organisation::setActive() calls parent::setActive(active: $val) with named args,
-		// which triggers the Entity __call named-arg bug. The value is always truthy.
-		// This test documents the current actual behavior.
+		// An organisation CAN be deactivated. This test used to assert the
+		// opposite and called it "the current actual behavior": setActive()
+		// passed a named argument to Entity::__call(), which reads $args[0],
+		// so the value never arrived and every organisation stayed active.
+		// The OrganisationController endpoint for deactivating one could not
+		// work, and this test is what made that look intended.
 		$result = $this->organisation->setActive(false);
-		$this->assertTrue($this->organisation->isActive());
+		$this->assertFalse($this->organisation->isActive(), 'setActive(false) must deactivate');
 		$this->assertSame($this->organisation, $result);
 	}
 
@@ -365,10 +368,11 @@ class OrganisationTest extends TestCase {
 	}
 
 	public function testSetActiveFalsyStringZero(): void {
-		// Due to the named-arg bug in parent::setActive(), '0' is cast to false
-		// but the named arg causes it to be set as truthy string 'active'.
+		// '0' is a falsy string, and the setter casts it. The API sends
+		// strings, so this is the path a deactivation actually arrives on —
+		// which is why it mattered that the value was being dropped.
 		$this->organisation->setActive('0');
-		$this->assertTrue($this->organisation->isActive());
+		$this->assertFalse($this->organisation->isActive(), "'0' must deactivate");
 	}
 
 	public function testIsActiveWhenInternallyNull(): void {
