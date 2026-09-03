@@ -311,6 +311,14 @@ class ListenerDeferralService {
 	/**
 	 * Register the shutdown flush exactly once per request.
 	 *
+	 * The callback is a closure calling `flushAll()` rather than the
+	 * `[$this, 'flushAll']` array form it replaced. A string method name is
+	 * invisible to every static tool: a rename of `flushAll()` leaves the
+	 * array callable pointing at nothing and fails only at shutdown, where
+	 * nothing observes it — the deferred jobs would simply stop being
+	 * enqueued, silently. The closure makes the call site greppable and
+	 * rename-safe, and matches ObjectEventProxyListener::traceEnabled().
+	 *
 	 * @return void
 	 */
 	private function hookShutdown(): void {
@@ -319,6 +327,10 @@ class ListenerDeferralService {
 		}
 
 		$this->shutdownHooked = true;
-		register_shutdown_function([$this, 'flushAll']);
+		register_shutdown_function(
+			function (): void {
+				$this->flushAll();
+			}
+		);
 	}//end hookShutdown()
 }//end class
