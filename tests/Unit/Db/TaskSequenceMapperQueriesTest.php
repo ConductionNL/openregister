@@ -76,6 +76,32 @@ class TaskSequenceMapperQueriesTest extends TestCase {
 		self::assertNotSame([], $orderings, 'history must be explicitly ordered, never id-lucky');
 	}//end testFindNewestForAnchorOrdersByOpenTimeDescending()
 
+	public function testFindNewestForTemplateDoesNotFilterOnAnAnchor(): void {
+		$mapper = new TaskSequenceMapper(db: $this->connectionWith(rows: [$this->row('seq-9', 'rejected')]));
+
+		$newest = $mapper->findNewestForTemplate(templateId: 'tpl-1');
+
+		self::assertSame('seq-9', $newest->getUuid());
+
+		// The whole point of this finder: it aggregates ACROSS anchors, so an
+		// anchor predicate would silently answer a different question than the
+		// caller asked. Its siblings all constrain the anchor; this one must not.
+		$predicates = array_filter($this->calls, static fn (array $call): bool => $call[0] === 'expr.eq');
+		$columns = array_map(static fn (array $call): mixed => $call[1], $predicates);
+		self::assertContains('template_id', $columns);
+		self::assertNotContains('anchor_object_uuid', $columns, 'a template-wide finder must not constrain the anchor');
+
+		// One row off the index, not a scan the caller trims.
+		$limits = array_filter($this->calls, static fn (array $call): bool => $call[0] === 'setMaxResults');
+		self::assertNotSame([], $limits, 'the newest row must be taken by the query, not in PHP');
+	}//end testFindNewestForTemplateDoesNotFilterOnAnAnchor()
+
+	public function testFindNewestForTemplateWithNoRunIsNull(): void {
+		$mapper = new TaskSequenceMapper(db: $this->connectionWith(rows: []));
+
+		self::assertNull($mapper->findNewestForTemplate(templateId: 'tpl-1'));
+	}//end testFindNewestForTemplateWithNoRunIsNull()
+
 	public function testATerminalStatusReadsAsTerminal(): void {
 		$sequence = new TaskSequence();
 		$sequence->setStatus(TaskSequence::STATUS_REJECTED);
