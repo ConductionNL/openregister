@@ -1870,8 +1870,14 @@ class ObjectServiceTest extends TestCase {
 		$this->setProperty('currentSchema', $this->schema);
 
 		// The cascading handler is called before save — verify delegation starts.
+		// It is made to return its documented shape, [object, uuid]. An
+		// unconfigured mock answers null, which ObjectService then reads
+		// offset 0 of: the real handler is `: array` on every return path, so
+		// that was the fake disagreeing with the contract, not a gap in the
+		// production guard.
 		$this->cascadingHandler->expects($this->once())
-			->method('handlePreValidationCascading');
+			->method('handlePreValidationCascading')
+			->willReturn([['title' => 'New'], null]);
 
 		// The actual save will fail due to deep dependencies, but we verify
 		// the method delegates to saveObject() correctly.

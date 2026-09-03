@@ -516,6 +516,14 @@ class SaveObject {
 			$schemas = $this->schemaMapper->findAll();
 			// Cache all schemas by slug for future lookups.
 			foreach ($schemas as $schema) {
+				// A schema with no slug cannot be found BY slug, and feeding
+				// the null on to strtolower()/strcasecmp() is deprecated in
+				// PHP 8.1 and a TypeError in PHP 9. Skipping it is what the
+				// loop was already doing in effect, just noisily.
+				if ($schema->getSlug() === null) {
+					continue;
+				}
+
 				$schemaSlug = strtolower($schema->getSlug());
 				$schemaId = (string)$schema->getId();
 				// Cache the schema entity.

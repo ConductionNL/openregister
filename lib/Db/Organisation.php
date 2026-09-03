@@ -751,7 +751,11 @@ class Organisation extends Entity implements JsonSerializable {
 			$activeValue = (bool)$active;
 		}
 
-		parent::setActive(active: $activeValue);
+		// Assign DIRECTLY, as Application::setActive() does. This called
+		// parent::setActive(active: ...) — a NAMED arg into Entity::__call(),
+		// which reads $args[0], so the value never arrived and setActive(false)
+		// left the organisation ACTIVE. Nothing could be deactivated.
+		$this->active = $activeValue;
 
 		$this->markFieldUpdated(attribute: 'active');
 		return $this;

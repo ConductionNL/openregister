@@ -147,10 +147,21 @@ class RechainAuditTrailCommandTest extends TestCase {
 		$this->hashes->method('verifyChain')
 			->willReturnOnConsecutiveCalls($this->verification(false), $this->verification(true));
 		$this->hashes->method('countUnsealed')->willReturn(0);
-		$this->hashes->expects($this->once())->method('rechainAll')->willReturn(['rechained' => 313136]);
+		// The FULL shape rechainAll() returns. Both of its return paths fill
+		// 'tombstonesPreserved', and the command prints it, so a mock that
+		// omits it makes the command read an undefined key and the test
+		// exercises a state production cannot reach.
+		$this->hashes->expects($this->once())->method('rechainAll')
+			->willReturn(['rechained' => 313136, 'tombstonesPreserved' => 12]);
 
 		$this->assertSame(Command::SUCCESS, $this->tester->execute(['--force' => true]));
 		$this->assertStringContainsString('313136', $this->tester->getDisplay());
+		// The second half of the same sentence. An operator reads this line to
+		// decide whether the repair touched what they expected, and a repair
+		// that silently skipped rows would report the tombstone count wrong.
+		// Nothing asserted it before, so the placeholder could have printed
+		// anything.
+		$this->assertStringContainsString('12 retention tombstone', $this->tester->getDisplay());
 
 	}//end testForceRepairsAndReportsSuccess()
 
@@ -168,7 +179,7 @@ class RechainAuditTrailCommandTest extends TestCase {
 	public function testStillBrokenAfterwardsIsAFailure(): void {
 		$this->hashes->method('verifyChain')->willReturn($this->verification(false));
 		$this->hashes->method('countUnsealed')->willReturn(3);
-		$this->hashes->method('rechainAll')->willReturn(['rechained' => 5]);
+		$this->hashes->method('rechainAll')->willReturn(['rechained' => 5, 'tombstonesPreserved' => 0]);
 
 		$this->assertSame(Command::FAILURE, $this->tester->execute(['--force' => true]));
 		$this->assertStringContainsString('do not treat this repair as complete', $this->tester->getDisplay());

@@ -23,7 +23,13 @@
 namespace OCA\OpenRegister\Formats;
 
 use Opis\JsonSchema\Format;
+use TypeError;
 
+/**
+ * Validates the Dutch BSN (Burgerservicenummer) as a JSON Schema format.
+ *
+ * @spec openspec/specs/data-import-export/spec.md
+ */
 class BsnFormat implements Format {
 	/**
 	 * Validates if a given value conforms to the Dutch BSN (Burgerservicenummer) format.
@@ -37,10 +43,27 @@ class BsnFormat implements Format {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function validate(mixed $data): bool {
+		// An array or object is a caller bug, not an invalid BSN, so it is
+		// refused loudly. str_pad() used to raise the TypeError itself, further
+		// down and by accident; raising it here keeps that contract explicit
+		// once the cast below stops the value ever reaching str_pad() untyped.
+		if (is_array($data) === true || is_object($data) === true) {
+			throw new TypeError(
+				'BsnFormat::validate() expects a scalar or null, '.get_debug_type($data).' given'
+			);
+		}
+
+		// Cast ONCE, here. null and false coerce to '' and pad to the all-zero
+		// sentinel, which is rejected below — that is the documented behaviour
+		// (ADR-008 Rule 4). Passing null on to str_pad() instead is deprecated
+		// in PHP 8.1 and a TypeError in PHP 9, so the same input would stop
+		// being 'not a BSN' and start being a fatal.
+		$data = (string)$data;
+
 		// Reject over-length input before padding: str_pad only left-pads and
 		// never truncates, so a >9-digit value would otherwise be checksummed
 		// on a miscalculated weighting (ADR-008 Rule 4).
-		if (strlen((string)$data) > 9) {
+		if (strlen($data) > 9) {
 			return false;
 		}
 

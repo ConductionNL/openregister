@@ -478,10 +478,10 @@ class DefaultOrganisationManagementTest extends TestCase {
 
 		$cacheProperty = $reflection->getProperty('defaultOrgCache');
 		$cacheProperty->setAccessible(true);
-		$cacheProperty->setValue($defaultOrg);
+		$cacheProperty->setValue(null, $defaultOrg);
 		$tsProperty = $reflection->getProperty('defaultOrgCacheTs');
 		$tsProperty->setAccessible(true);
-		$tsProperty->setValue(time());
+		$tsProperty->setValue(null, time());
 
 		// Mock: update called to save user addition.
 		$this->organisationMapper
