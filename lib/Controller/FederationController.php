@@ -319,6 +319,8 @@ class FederationController extends Controller {
 	 * @param string $shareToken The scoped bearer share token.
 	 *
 	 * @return JSONResponse The created object, or an error.
+	 *
+	 * @spec openspec/changes/federation-scope-enforcement/specs/federation-scope-enforcement/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -332,9 +334,37 @@ class FederationController extends Controller {
 
 		$data = (array)$this->request->getParams();
 		unset($data['shareToken'], $data['_route']);
+
+		// 🔴 STRIP THE CALLER'S IDENTITY. This endpoint CREATES.
+		//
+		// `saveObject()` resolves its target from the payload:
+		// `extractUuidAndNormalizeObject()` reads `@self.id` first, then `id`,
+		// and treats a match as the uuid to UPDATE — PUT-semantically, so every
+		// field the payload omits is NULLED.
+		//
+		// This path is `#[PublicPage]` and runs `_rbac: false`, so nothing
+		// downstream would have refused it. A share grants the holder the right
+		// to ADD objects; without this it also granted the right to overwrite
+		// every existing object in the shared register/schema.
+		//
+		// The organisation pin below was already guarding the sibling half of
+		// this — "a federated writer can never plant an object into another
+		// organisation" — but `+` preserves the LEFT operand's keys, so a
+		// caller-supplied `@self: {id: …}` survived the merge untouched.
+		unset($data['id'], $data['uuid']);
+		$self = (array)($data['@self'] ?? []);
+		unset($self['id'], $self['uuid']);
+
 		// Pin the object to the sharing organisation — a federated writer can
 		// never plant an object into another organisation.
-		$data['@self'] = (($data['@self'] ?? []) + ['organisation' => $share->getOrganisation()]);
+		//
+		// ASSIGNED, not merged. This was `$self + ['organisation' => …]`, and
+		// `+` keeps the LEFT operand's keys: a caller who supplied
+		// `@self: {organisation: 'somebody-else'}` kept it, so the pin this
+		// comment describes did not hold. The same `+` is what let a supplied
+		// `@self.id` through. A pin has to overwrite, or it is a default.
+		$self['organisation'] = $share->getOrganisation();
+		$data['@self'] = $self;
 
 		try {
 			$saved = $this->objectService->saveObject(

@@ -117,8 +117,17 @@ class DsarCaseController extends Controller {
 		}
 
 		$body = (array)$this->request->getParams();
-		// Strip framework-injected keys so only the case payload is saved.
-		unset($body['_route']);
+		// Strip framework-injected keys so only the case payload is saved, and
+		// the caller's IDENTITY with them. `saveObject()` resolves its target
+		// from the payload (`@self.id` first, then `id`) and the write is
+		// PUT-semantic, so a create carrying either would overwrite an existing
+		// case and null every field it omitted. This endpoint creates.
+		$self = (array)($body['@self'] ?? []);
+		unset($self['id'], $self['uuid']);
+		unset($body['_route'], $body['id'], $body['uuid'], $body['@self']);
+		if ($self !== []) {
+			$body['@self'] = $self;
+		}
 
 		try {
 			$saved = $this->objectService->saveObject(
