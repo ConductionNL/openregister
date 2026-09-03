@@ -119,7 +119,7 @@ class TaskSequenceMapper extends QBMapper {
 	 *
 	 * @return TaskSequence|null The newest sequence for the template, or null when none has run.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-o
+	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
 	public function findNewestForTemplate(string $templateId): ?TaskSequence {
 		$qb = $this->db->getQueryBuilder();
