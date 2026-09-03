@@ -46,6 +46,7 @@ namespace OCA\OpenRegister\AppHost\Controller;
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
+use OCA\OpenRegister\AppHost\Store\FederatedStoreCatalog;
 use OCA\OpenRegister\AppHost\Store\GenericStoreInstaller;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCP\AppFramework\Controller;
@@ -62,6 +63,13 @@ use Throwable;
  * Declarative store search and install for AppHost-adopting apps.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One controller serves every
+ * AppHost app across BOTH store paths, so it holds the objects client, the
+ * objects installer and the configuration catalogue at once. Splitting it per
+ * path would put the route alias in two places, and an alias that resolves to
+ * a class the router cannot find is a dispatch-time 500 rather than a test
+ * failure. The coupling is the price of one alias.
  *
  * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-leaf-app-must-declare-its-store-rather-than-implement-one
  */
@@ -83,6 +91,7 @@ class GenericStoreController extends Controller {
 	 * @param ManifestLoader        $manifestLoader Loads the leaf app's manifest.
 	 * @param GenericStoreService   $storeService   Guarded remote discovery.
 	 * @param GenericStoreInstaller $installer      Declarative component install.
+	 * @param FederatedStoreCatalog $catalog        Configuration browse and install.
 	 * @param IUserSession          $userSession    Current session.
 	 * @param IGroupManager         $groupManager   Admin check for install.
 	 * @param LoggerInterface       $logger         PSR logger.
@@ -93,6 +102,7 @@ class GenericStoreController extends Controller {
 		private readonly ManifestLoader $manifestLoader,
 		private readonly GenericStoreService $storeService,
 		private readonly GenericStoreInstaller $installer,
+		private readonly FederatedStoreCatalog $catalog,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
@@ -150,11 +160,8 @@ class GenericStoreController extends Controller {
 		}
 
 		try {
-			$result = $this->storeService->search(
-				descriptor: $this->descriptor(store: $store),
-				query: $query,
-				kind: $kind
-			);
+			$descriptor = $this->descriptor(store: $store);
+			$result = $this->searchFor(descriptor: $descriptor, query: $query, kind: $kind);
 		} catch (Throwable $e) {
 			// Detail to the log, generic outcome to the browser: a registry's
 			// internals are not the caller's business.
@@ -171,11 +178,20 @@ class GenericStoreController extends Controller {
 		// `kinds` rides back with the cards so the page can offer the filters the
 		// APP declared, rather than a copy kept in its page config. Empty when
 		// the app names none, and the page falls back to the shared vocabulary.
+		// A federated store's cards are discriminated by TYPE, so the declared
+		// type ids are the honest filter set when the app names no kinds of its
+		// own. Falling through to the shared kind vocabulary would offer chips
+		// (`adapter`, `agent-template`) that match nothing on this page.
+		$kinds = $store->kinds;
+		if ($kinds === [] && $store->isFederated() === true) {
+			$kinds = $store->declaredTypes();
+		}
+
 		return new JSONResponse(
 			data: [
 				'outcome' => $result['outcome'],
 				'cards' => $result['cards'],
-				'kinds' => $store->kinds,
+				'kinds' => $kinds,
 			],
 			statusCode: Http::STATUS_OK
 		);
@@ -227,8 +243,10 @@ class GenericStoreController extends Controller {
 			);
 		}
 
+		$descriptor = $this->descriptor(store: $store);
+
 		try {
-			$item = $this->storeService->resolve(descriptor: $this->descriptor(store: $store), slug: $slug);
+			$item = $this->resolveFor(descriptor: $descriptor, slug: $slug);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: sprintf('[AppHost\\Store] resolve failed for %s: %s', $this->appName, $e->getMessage()),
@@ -244,11 +262,60 @@ class GenericStoreController extends Controller {
 			);
 		}
 
+		// A configuration bundle is applied by the type that owns it, so that a
+		// set arrives as registers, schemas, flows and objects rather than as
+		// rows of whichever schema the plane happened to allow.
+		if ($descriptor->isFederated() === true) {
+			return new JSONResponse(data: $this->catalog->install(ref: $item), statusCode: Http::STATUS_OK);
+		}
+
 		return new JSONResponse(
 			data: $this->installer->install(store: $store, item: $item),
 			statusCode: Http::STATUS_OK
 		);
 	}//end install()
+
+	/**
+	 * Search whichever catalogue this app declared.
+	 *
+	 * An app that declares shareable types exchanges CONFIGURATION, so its
+	 * catalogue is what publishers have published, not one remote instance's
+	 * rows. Selected by declaration, never by probing: an app that declares
+	 * none makes no discovery call at all.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 * @param string|null     $query      Optional free-text search term.
+	 * @param string|null     $kind       Optional kind filter.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/changes/store-over-federated-config/specs/apphost-store-plane/spec.md#scenario-an-app-that-declares-no-types-keeps-the-object-store
+	 */
+	private function searchFor(StoreDescriptor $descriptor, ?string $query, ?string $kind): array {
+		if ($descriptor->isFederated() === true) {
+			return $this->catalog->search(descriptor: $descriptor, query: $query, kind: $kind);
+		}
+
+		return $this->storeService->search(descriptor: $descriptor, query: $query, kind: $kind);
+	}//end searchFor()
+
+	/**
+	 * Resolve a slug against whichever catalogue this app declared.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 * @param string          $slug       The item slug.
+	 *
+	 * @return array<string, mixed>|null The resolved item, or null when unresolved.
+	 *
+	 * @spec openspec/changes/store-over-federated-config/specs/apphost-store-plane/spec.md#requirement-a-configuration-install-must-run-through-its-owning-type
+	 */
+	private function resolveFor(StoreDescriptor $descriptor, string $slug): ?array {
+		if ($descriptor->isFederated() === true) {
+			return $this->catalog->resolve(descriptor: $descriptor, slug: $slug);
+		}
+
+		return $this->storeService->resolve(descriptor: $descriptor, slug: $slug);
+	}//end resolveFor()
 
 	/**
 	 * The calling app's declared store configuration.
@@ -274,7 +341,8 @@ class GenericStoreController extends Controller {
 			appId: $this->appName,
 			schema: $store->schema,
 			defaultRegister: $store->register,
-			cardFields: $store->cardFields
+			cardFields: $store->cardFields,
+			types: $store->declaredTypes()
 		);
 	}//end descriptor()
 }//end class
