@@ -21,6 +21,8 @@ use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Task\TaskForm;
+use OCA\OpenRegister\Db\FlowTimer;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -40,6 +42,13 @@ use UnexpectedValueException;
 class UserTaskNodeTest extends TestCase {
 
 	private FlowTaskBridge&MockObject $bridge;
+
+	/**
+	 * The timer service the node arms through.
+	 *
+	 * @var FlowTimerService&MockObject
+	 */
+	private $timers;
 
 	private UserTaskNode $node;
 
@@ -62,7 +71,15 @@ class UserTaskNodeTest extends TestCase {
 		$forms = $this->createMock(TaskFormReader::class);
 		$forms->method('fromConfig')->willReturn(new TaskForm(kind: null));
 
-		$this->node = new UserTaskNode($this->bridge, $l10n, $this->createMock(IURLGenerator::class), $forms);
+		$this->timers = $this->createMock(FlowTimerService::class);
+
+		$this->node = new UserTaskNode(
+			$this->bridge,
+			$l10n,
+			$this->createMock(IURLGenerator::class),
+			$forms,
+			$this->timers
+		);
 	}//end setUp()
 
 	/**
@@ -116,6 +133,105 @@ class UserTaskNodeTest extends TestCase {
 	}//end task()
 
 	// ---- Creation and suspension ------------------------------------------
+
+	/**
+	 * 🔴 A NODE THAT DECLARES AN SLA ARMS A TIMER FOR ITS TASK.
+	 *
+	 * Nothing in the engine did this before: `FlowTimerService::arm()` had no
+	 * production caller at all, so a node could describe an SLA and no clock
+	 * ever started. The whole business-timer capability was built, tested and
+	 * unreachable.
+	 *
+	 * The binding is what matters. `FlowTimerSubjectTerminalListener` cancels
+	 * on `(subjectType: 'task', subjectUuid)`, so arming on anything else would
+	 * leave a timer nothing ever cancels — an orphan the spec calls a defect
+	 * rather than a tolerable condition.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 */
+	public function testADeclaredSlaArmsATimerBoundToTheTask(): void {
+		$state = new FlowResumeState();
+		$this->bridge->method('createTask')->willReturn($this->task(state: Task::STATE_ACTIVE));
+
+		$armed = null;
+		$this->timers->expects($this->once())
+			->method('arm')
+			->willReturnCallback(
+				function (array $config, ?string $actor = null, $now = null) use (&$armed) {
+					$armed = $config;
+
+					return $this->createMock(FlowTimer::class);
+				}
+			);
+
+		try {
+			$this->node->execute(
+				$this->items(),
+				$this->config(['sla' => ['value' => 5, 'unit' => 'businessDays'], 'ladder' => 'awb-standard']),
+				$this->context($state)
+			);
+		} catch (FlowSuspension $suspension) {
+			// Suspension is the normal outcome; the arming is the subject here.
+		}
+
+		$this->assertIsArray($armed, 'a declared SLA must arm a timer');
+		$this->assertSame('task', $armed['subjectType']);
+		$this->assertSame('t-1', $armed['subjectUuid'], 'the timer must bind to the task the listener cancels');
+		$this->assertSame(['value' => 5, 'unit' => 'businessDays'], $armed['sla']);
+		$this->assertSame('awb-standard', $armed['ladder'], 'the escalation ladder must reach the timer');
+		$this->assertSame('run-1', $armed['runUuid'], 'the run is recorded as provenance');
+		$this->assertSame('ask', $armed['nodeId']);
+	}//end testADeclaredSlaArmsATimerBoundToTheTask()
+
+	/**
+	 * A node WITHOUT an SLA arms nothing.
+	 *
+	 * This is what makes the change safe to add to an engine every app shares:
+	 * a flow that never mentioned a deadline behaves exactly as it did.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 */
+	public function testANodeWithoutAnSlaArmsNothing(): void {
+		$state = new FlowResumeState();
+		$this->bridge->method('createTask')->willReturn($this->task(state: Task::STATE_ACTIVE));
+
+		$this->timers->expects($this->never())->method('arm');
+
+		try {
+			$this->node->execute($this->items(), $this->config(), $this->context($state));
+		} catch (FlowSuspension $suspension) {
+			// Expected.
+		}
+	}//end testANodeWithoutAnSlaArmsNothing()
+
+	/**
+	 * An SLA that cannot be armed FAILS the node rather than losing the clock.
+	 *
+	 * A task with a declared deadline and no timer is a task whose term nobody
+	 * is measuring. For a `wettelijk` term that is a legal defect, not
+	 * something to log and carry on from — and it cannot regress an existing
+	 * flow, because a flow with no SLA never reaches this branch.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 */
+	public function testAnUnarmableSlaFailsRatherThanSilentlyLosingTheDeadline(): void {
+		$this->bridge->method('createTask')->willReturn($this->task(state: Task::STATE_ACTIVE));
+		$this->timers->method('arm')->willThrowException(new RuntimeException('calendar unresolvable'));
+
+		$this->expectException(RuntimeException::class);
+
+		$this->node->execute(
+			$this->items(),
+			$this->config(['sla' => ['value' => 5, 'unit' => 'businessDays']]),
+			$this->context(new FlowResumeState())
+		);
+	}//end testAnUnarmableSlaFailsRatherThanSilentlyLosingTheDeadline()
 
 	/**
 	 * The first firing creates exactly one task, stamped with run and node,
