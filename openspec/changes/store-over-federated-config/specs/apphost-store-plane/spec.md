@@ -32,9 +32,24 @@ offered as a shareable type by `SchemaShareableConfigScanner`, and the store
 surface SHALL list it for any app that declares its type id.
 
 A schema without that marker SHALL NOT be offered, even when the app's
-`installable` allowlist names it. The allowlist governs what an install may
-write into this instance; the marker governs whether the schema may travel at
-all, and the two SHALL both hold.
+`installable` allowlist names it. The marker governs whether the schema may
+travel at all, which is a different question from what an install may write.
+
+The `installable` allowlist SHALL NOT gate a configuration install, and this is
+deliberate. A configuration set exists to introduce registers, schemas and
+flows the instance does not have yet, so a list of schemas the app already owns
+cannot express whether that set may be applied: it would refuse exactly the
+sets worth installing. The trust boundary for a bundle is its PUBLISHER, and it
+is enforced by `isSourceAllowed()` and the trusted-key check. The allowlist
+keeps its meaning for the objects path, where an item names a schema the app
+does own.
+
+#### Scenario: A set may introduce a schema the app does not own
+
+- **GIVEN** a configuration set carrying a schema absent from `installable`
+- **AND** a publisher this organisation trusts
+- **WHEN** an administrator installs it
+- **THEN** the schema is created
 
 #### Scenario: An unmarked schema is not offered
 
