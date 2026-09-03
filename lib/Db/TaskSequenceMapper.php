@@ -99,6 +99,43 @@ class TaskSequenceMapper extends QBMapper {
 	}//end findRunning()
 
 	/**
+	 * The newest sequence opened from a template, across EVERY anchor.
+	 *
+	 * The other finders here answer "what happened to THIS object". This one
+	 * answers "has this approval ever run", which is what a designer surface
+	 * needs to report a template's last outcome without knowing an object to
+	 * ask about.
+	 *
+	 * buildiq's automation dry-run panel is the caller: it used to read the
+	 * newest ApprovalStep on the chain, and when #3302 retired that surface the
+	 * per-anchor finders could not replace it — an aggregate over the template
+	 * has no anchor to pass. Without this the panel degraded to reporting
+	 * nothing at all (buildiq#651).
+	 *
+	 * Indexed by `template_id` and ordered like its siblings, so it is one row
+	 * off the same index rather than a scan.
+	 *
+	 * @param string $templateId The compiled template id.
+	 *
+	 * @return TaskSequence|null The newest sequence for the template, or null when none has run.
+	 *
+	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-o
+	 */
+	public function findNewestForTemplate(string $templateId): ?TaskSequence {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('template_id', $qb->createNamedParameter($templateId)))
+			->orderBy('opened_at', 'DESC')
+			->addOrderBy('id', 'DESC')
+			->setMaxResults(1);
+
+		$rows = $this->findEntities(query: $qb);
+
+		return ($rows[0] ?? null);
+	}//end findNewestForTemplate()
+
+	/**
 	 * Every sequence for an anchor and template, newest first.
 	 *
 	 * A rejected cycle stays readable here after a resubmission opened a new
