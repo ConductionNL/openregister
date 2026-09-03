@@ -42,7 +42,13 @@ use OCP\IURLGenerator;
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @phpstan-type File array{
+ * The alias below describes a filecache ROW, not the {@see File} entity. It was
+ * named `File`, which shadowed that entity in every docblock in this file: a
+ * mapper method annotated `@return File` read as an array shape, which is why
+ * the phpstan baseline carried an entry for each one. Renamed rather than
+ * baselined.
+ *
+ * @phpstan-type FilecacheRow array{
  *   fileid: int,
  *   storage: int,
  *   path: string,
@@ -68,17 +74,7 @@ use OCP\IURLGenerator;
  *   published: string|null
  * }
  *
- * @method \OCP\AppFramework\Db\Entity insert(\OCP\AppFramework\Db\Entity $entity)
- * @method \OCP\AppFramework\Db\Entity update(\OCP\AppFramework\Db\Entity $entity)
- * @method \OCP\AppFramework\Db\Entity insertOrUpdate(\OCP\AppFramework\Db\Entity $entity)
- * @method \OCP\AppFramework\Db\Entity delete(\OCP\AppFramework\Db\Entity $entity)
- * @method \OCP\AppFramework\Db\Entity find(int|string $id)
- * @method \OCP\AppFramework\Db\Entity findEntity(IQueryBuilder $query)
- * @method File[] findAll(int|null $limit=null, int|null $offset=null)
- * @method File[] findEntities(IQueryBuilder $query)
- * @psalm-suppress LessSpecificImplementedReturnType - File[] is more specific than list<Entity>
- *
- * @template-extends QBMapper<Entity>
+ * @template-extends QBMapper<File>
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
@@ -204,6 +200,34 @@ class FileMapper extends QBMapper {
 	}//end setLabelsForFile()
 
 	/**
+	 * Set the publication window for a Nextcloud file.
+	 *
+	 * Both bounds are set together because they are one fact. Setting them
+	 * separately invites the state where a depublication date precedes the
+	 * publication date it belongs to, which reads as "published" to a careless
+	 * comparison and as nothing at all to a careful one.
+	 *
+	 * @param int            $fileId      The Nextcloud filecache fileid.
+	 * @param \DateTime|null $published   When the file becomes public, or null for never.
+	 * @param \DateTime|null $depublished When it stops, or null for no end date.
+	 *
+	 * @return File The updated entity.
+	 *
+	 * @spec openspec/changes/file-publication-window/specs/file-publication-window/spec.md#requirement-a-file-carries-its-own-publication-window-req-fpw-101
+	 */
+	public function setPublicationWindowForFile(
+		int $fileId,
+		?\DateTime $published,
+		?\DateTime $depublished
+	): File {
+		$file = $this->findOrCreateByFileId(fileId: $fileId);
+		$file->setPublished($published);
+		$file->setDepublished($depublished);
+		$file->setUpdated(new DateTime());
+		return $this->update(entity: $file);
+	}//end setPublicationWindowForFile()
+
+	/**
 	 * Increment the cached download count for a Nextcloud file.
 	 * Idempotent: creates the row on first download.
 	 *
@@ -289,7 +313,7 @@ class FileMapper extends QBMapper {
 	 *
 	 * @phpstan-param  int|null $node
 	 * @phpstan-param  array<int>|null $ids
-	 * @phpstan-return list<File>
+	 * @phpstan-return list<FilecacheRow>
 	 */
 	public function getFiles(?int $node = null, ?array $ids = null): array {
 		// Create a new query builder instance.
@@ -392,7 +416,7 @@ class FileMapper extends QBMapper {
 	 * @return array|null The file as an associative array with share information and owner data, or null if not found
 	 *
 	 * @phpstan-param  int $fileId
-	 * @phpstan-return File|null
+	 * @phpstan-return FilecacheRow|null
 	 */
 	public function getFile(int $fileId): ?array {
 		// Create a new query builder instance.
@@ -488,7 +512,7 @@ class FileMapper extends QBMapper {
 	 *         numeric string, which PHP coerces to an int array key.
 	 *
 	 * @phpstan-param  array<int, int|string> $fileIds
-	 * @phpstan-return array<int|string, File>
+	 * @phpstan-return array<int|string, FilecacheRow>
 	 */
 	public function getFilesByIds(array $fileIds): array {
 		// Normalise to unique positive integers; ignore non-numeric entries.
@@ -526,7 +550,7 @@ class FileMapper extends QBMapper {
 	 * @throws \RuntimeException If more than one node is found for the object's uuid
 	 *
 	 * @phpstan-param  ObjectEntity $object
-	 * @phpstan-return list<File>
+	 * @phpstan-return list<FilecacheRow>
 	 */
 	public function getFilesForObject(ObjectEntity $object): array {
 		// Retrieve the folder property from the object entity.
@@ -802,8 +826,11 @@ class FileMapper extends QBMapper {
 	 * @param string $sharedBy The user who is sharing the file
 	 * @param string $shareOwner The owner of the file
 	 * @param int $permissions The permissions for the share (default: 1 = read)
+	 * @param \DateTime|null $depublished When the share stops working, or null for no end date
 	 *
 	 * @return (int|string)[]
+	 *
+	 * @spec openspec/changes/file-publication-window/specs/file-publication-window/spec.md#requirement-a-depublication-date-expires-the-public-share-req-fpw-102
 	 *
 	 * @throws \Exception If the share creation fails
 	 *
@@ -816,7 +843,13 @@ class FileMapper extends QBMapper {
 	 *
 	 * @psalm-return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
 	 */
-	public function publishFile(int $fileId, string $sharedBy, string $shareOwner, int $permissions = 1): array {
+	public function publishFile(
+		int $fileId,
+		string $sharedBy,
+		string $shareOwner,
+		int $permissions = 1,
+		?\DateTime $depublished = null
+	): array {
 		// Check if a public share already exists for this file.
 		$existingShare = $this->getPublicShare(fileId: $fileId);
 		if ($existingShare !== null) {
@@ -854,7 +887,14 @@ class FileMapper extends QBMapper {
 					'permissions' => $qb->createNamedParameter($permissions, IQueryBuilder::PARAM_INT),
 					'stime' => $qb->createNamedParameter($currentTime, IQueryBuilder::PARAM_INT),
 					'accepted' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-					'expiration' => $qb->createNamedParameter(null),
+					// The share carries the end of the window, so Nextcloud stops
+					// serving the link on the date with nothing having to run.
+					// An OR-side flag alone would leave a public URL that still
+					// works, which is not a depublication.
+					'expiration' => $qb->createNamedParameter(
+						$depublished?->format('Y-m-d H:i:s'),
+						IQueryBuilder::PARAM_STR
+					),
 					'token' => $qb->createNamedParameter($token),
 					'mail_send' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
 					'hide_download' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
