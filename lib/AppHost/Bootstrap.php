@@ -121,6 +121,9 @@ class Bootstrap {
 	private const GENERIC_SETTINGS_CONTROLLER = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericSettingsController';
 	private const GENERIC_HEALTH_CONTROLLER = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericHealthController';
 	private const GENERIC_METRICS_CONTROLLER = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericMetricsController';
+	private const GENERIC_STORE_CONTROLLER = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericStoreController';
+	private const GENERIC_STORE_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\GenericStoreService';
+	private const GENERIC_STORE_INSTALLER = 'OCA\\OpenRegister\\AppHost\\Store\\GenericStoreInstaller';
 	private const GENERIC_SETTINGS_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\AppHostSettingsService';
 	private const GENERIC_ACTION_AUTH_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\GenericActionAuthService';
 	private const GENERIC_INITIALIZE_SETTINGS = 'OCA\\OpenRegister\\AppHost\\Repair\\GenericInitializeSettings';
@@ -266,6 +269,29 @@ class Bootstrap {
 					appName: $appId,
 					request: $c->get('OCP\\IRequest'),
 					settingsService: $c->get(self::GENERIC_SETTINGS_SERVICE)
+				);
+			}
+		);
+
+		// Store plane (ADR-080, ADR-114 Decision 4). `unlessLeafDefinesIt` is
+		// what makes this a migration rather than a flag day: dossiq ships its
+		// own Controller\StoreController today and keeps winning this alias
+		// until that class is deleted, so the engine's version takes over per
+		// app, on that app's own pull request.
+		self::aliasControllerUnlessLeafDefinesIt(
+			context: $context,
+			leafClass: $controllerNs . '\\StoreController',
+			factory: static function (ContainerInterface $c) use ($appId) {
+				$class = self::GENERIC_STORE_CONTROLLER;
+				return new $class(
+					appName: $appId,
+					request: $c->get('OCP\\IRequest'),
+					manifestLoader: $c->get(self::OBSERVABILITY_MANIFEST_LOADER),
+					storeService: $c->get(self::GENERIC_STORE_SERVICE),
+					installer: $c->get(self::GENERIC_STORE_INSTALLER),
+					userSession: $c->get('OCP\\IUserSession'),
+					groupManager: $c->get('OCP\\IGroupManager'),
+					logger: $c->get('Psr\\Log\\LoggerInterface')
 				);
 			}
 		);

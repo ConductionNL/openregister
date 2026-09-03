@@ -151,6 +151,25 @@ class Routes {
 			// Observability (ADR-006 / ADR-040).
 			['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
 			['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
+
+			// Store plane (ADR-080, ADR-114 Decision 4). Declaring these here
+			// is only HALF the wiring: `Bootstrap::register()` must also alias
+			// the leaf app's `Controller\StoreController` at the engine's
+			// GenericStoreController, or the router resolves a class that does
+			// not exist and every store request 500s at dispatch time.
+			//
+			// An app that declares no `store` block in its manifest still gets
+			// these routes, and the controller answers `not_configured` for
+			// them. That is deliberate: a route table that varies per app by
+			// manifest content would make the SPA catch-all's position depend
+			// on configuration, and the catch-all's position is load-bearing.
+			['name' => 'store#search', 'url' => '/api/store/items', 'verb' => 'GET'],
+			[
+				'name' => 'store#install',
+				'url' => '/api/store/items/{slug}/install',
+				'verb' => 'POST',
+				'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]'],
+			],
 		];
 	}//end canonicalRoutes()
 
