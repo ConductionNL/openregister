@@ -36,6 +36,17 @@
 - [x] 4.3 `find` by uuid returns the organisation.
 - [x] 4.4 Seeding on a clean row creates the schema WITH its properties and
       links it to the directory register.
+- [x] 4.5 THE PREMISE ITSELF, which the rest of this list does not prove. A
+      leaf property repointed to `{"$ref": "nc-organisation"}` resolves:
+      `publication.organization` read plain returns the raw uuid, and read with
+      `_extend[]=organization` inlines the organisation's identity facet from
+      OpenRegister's own record. That is exactly what the leaf `organization`
+      schemas were there to provide.
+
+      Worth stating separately because everything above only proves the
+      projection can be READ. A projection that reads fine and cannot be
+      `$ref`'d would have satisfied every other check on this list and been
+      useless for the one thing it exists to do.
 
 ⚠️ `ensureSchema()` reuses an existing schema and never updates it, by design.
 A property added to `SCHEMA_PROPERTIES` therefore does NOT reach an instance
