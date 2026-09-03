@@ -480,13 +480,6 @@
           "icon": "DatabaseOutline",
           "route": "avg",
           "order": 100
-        },
-        {
-          "id": "Reports",
-          "label": "Reports",
-          "icon": "ChartBoxOutline",
-          "route": "reports",
-          "order": 101
         }
       ]
     },
@@ -570,7 +563,15 @@
       "icon": "BookOpenVariantOutline",
       "href": "https://openregister.conduction.nl",
       "section": "footer",
-      "order": 1
+      "order": 90
+    },
+    {
+      "id": "Reports",
+      "label": "Reports",
+      "icon": "ChartBoxOutline",
+      "route": "reports",
+      "section": "footer",
+      "order": 95
     },
     {
       "id": "FeaturesRoadmapMenu",
@@ -578,7 +579,7 @@
       "icon": "MapMarkerPath",
       "route": "features-roadmap",
       "section": "footer",
-      "order": 2
+      "order": 100
     },
     {
       "id": "Flows",
