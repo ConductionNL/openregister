@@ -172,7 +172,31 @@ permissions:
 
 jobs:
   quality:
-    if: github.event_name != 'push' || github.event.created != true
+    # SECOND CLAUSE: skip the run a STANDING release PR triggers.
+    #
+    # `Release: merge development into beta` is permanently open with
+    # `head_ref: development`, so every push to development fires this
+    # workflow TWICE on the SAME sha — once for `push`, once for that PR's
+    # `pull_request` event. The concurrency block above deliberately gives
+    # them separate lanes so the push run is not cancelled, which is right,
+    # and the consequence is that both run to completion.
+    #
+    # The PR run is the redundant one, not the push run: its head sha IS
+    # development's, which the push run already decided, and the push run
+    # carries jobs the PR run does not (Coverage Baseline Check, SBOM,
+    # Features Extract). Measured 2026-09-03: runs 33747123932 (push) and
+    # 33747129312 (pull_request), same sha b8eb72e2, four seconds apart.
+    #
+    # 20 of the fleet's 21 apps carry `beta` in `pull_request.branches` and
+    # so pay this on every development push. Removing `beta` from that list
+    # would also work and is worse: the `release/v*` and `sync/main-to-beta`
+    # PRs genuinely need their run, and they target `beta` too.
+    #
+    # A `development -> main` promotion PR is skipped by the same clause, for
+    # the same reason and just as correctly.
+    if: >-
+      (github.event_name != 'push' || github.event.created != true)
+      && (github.event_name != 'pull_request' || github.head_ref != 'development')
     uses: ConductionNL/.github/.github/workflows/quality.yml@main
     with:
       app-name: openregister
