@@ -2,7 +2,7 @@
     "openapi": "3.0.3",
     "info": {
         "title": "openregister",
-        "version": "2.0.14-unstable.20260901212512",
+        "version": "2.0.15-unstable.20260904215503",
         "description": "Open Register",
         "license": {
             "name": "EUPL-1.2"
