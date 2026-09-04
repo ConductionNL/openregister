@@ -83,6 +83,17 @@ class GenericStoreService {
 	public const OUTCOME_INVALID = 'store_invalid_response';
 
 	/**
+	 * Outcome: the source refused because a rate limit is in force.
+	 *
+	 * 🔴 NOT INTERCHANGEABLE WITH `store_unreachable`. The remedy differs and
+	 * the reader acts on it: rate limited means wait, or add a credential to
+	 * raise the limit; unreachable means the network or the registry is
+	 * broken. Reporting the first as the second sends somebody to debug a
+	 * network that is fine.
+	 */
+	public const OUTCOME_RATE_LIMITED = 'rate_limited';
+
+	/**
 	 * Connect + request timeout (seconds) for every remote fetch.
 	 */
 	private const TIMEOUT = 10;

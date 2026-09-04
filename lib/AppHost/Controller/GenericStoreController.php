@@ -48,6 +48,7 @@ use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\AppHost\Store\FederatedStoreCatalog;
 use OCA\OpenRegister\AppHost\Store\GenericStoreInstaller;
+use OCA\OpenRegister\AppHost\Store\Source\GitHubStoreSource;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -92,6 +93,13 @@ class GenericStoreController extends Controller {
 	 * @param GenericStoreService   $storeService   Guarded remote discovery.
 	 * @param GenericStoreInstaller $installer      Declarative component install.
 	 * @param FederatedStoreCatalog $catalog        Configuration browse and install.
+	 * @param GitHubStoreSource     $gitHubSource  GitHub discovery source.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Each collaborator is one
+	 * discovery or install path the engine owns on a leaf app's behalf, and the
+	 * count grew because the plane absorbed work the apps used to do
+	 * themselves. Grouping them behind a locator would hide which paths exist
+	 * from the one file that has to choose between them.
 	 * @param IUserSession          $userSession    Current session.
 	 * @param IGroupManager         $groupManager   Admin check for install.
 	 * @param LoggerInterface       $logger         PSR logger.
@@ -103,6 +111,7 @@ class GenericStoreController extends Controller {
 		private readonly GenericStoreService $storeService,
 		private readonly GenericStoreInstaller $installer,
 		private readonly FederatedStoreCatalog $catalog,
+		private readonly GitHubStoreSource $gitHubSource,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
@@ -161,7 +170,7 @@ class GenericStoreController extends Controller {
 
 		try {
 			$descriptor = $this->descriptor(store: $store);
-			$result = $this->searchFor(descriptor: $descriptor, query: $query, kind: $kind);
+			$result = $this->searchFor(store: $store, descriptor: $descriptor, query: $query, kind: $kind);
 		} catch (Throwable $e) {
 			// Detail to the log, generic outcome to the browser: a registry's
 			// internals are not the caller's business.
@@ -283,6 +292,7 @@ class GenericStoreController extends Controller {
 	 * rows. Selected by declaration, never by probing: an app that declares
 	 * none makes no discovery call at all.
 	 *
+	 * @param StoreManifest   $store      The calling app's declared store block.
 	 * @param StoreDescriptor $descriptor The calling app's store parameters.
 	 * @param string|null     $query      Optional free-text search term.
 	 * @param string|null     $kind       Optional kind filter.
@@ -291,7 +301,24 @@ class GenericStoreController extends Controller {
 	 *
 	 * @spec openspec/changes/store-over-federated-config/specs/apphost-store-plane/spec.md#scenario-an-app-that-declares-no-types-keeps-the-object-store
 	 */
-	private function searchFor(StoreDescriptor $descriptor, ?string $query, ?string $kind): array {
+	private function searchFor(
+		StoreManifest $store,
+		StoreDescriptor $descriptor,
+		?string $query,
+		?string $kind
+	): array {
+		// The declared source is checked FIRST. A github store has no registry
+		// URL at all, so falling through to the OpenRegister path would report
+		// it as `not_configured` — true of a registry it never declared, and
+		// useless to whoever has to act on it.
+		if ($store->source === 'github') {
+			return $this->gitHubSource->search(
+				manifest: $store,
+				query: ($query ?? ''),
+				kind: $kind
+			);
+		}
+
 		if ($descriptor->isFederated() === true) {
 			return $this->catalog->search(descriptor: $descriptor, query: $query, kind: $kind);
 		}
