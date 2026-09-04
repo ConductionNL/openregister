@@ -390,9 +390,13 @@ class FlowEngineStreamWalkTest extends TestCase {
 		$dispatcher = new StreamWalkDispatcher(failOn: 'hearing');
 		$result = $this->walk($this->splitFlow(), $dispatcher, $this->fakeWalk());
 
-		$this->assertSame(FlowEngine::STATUS_STOPPED, $result['status']);
+		// `failed`, not `stopped`: a broken step is not a deliberate end, and
+		// this walk must agree with the single-stream one about that or which
+		// walk ran would decide whether the wreck is queryable.
+		$this->assertSame(FlowEngine::STATUS_FAILED, $result['status']);
+		$this->assertSame('boom', $result['error']);
 		$this->assertCount(1, $this->seen['ended']);
-		$this->assertSame(FlowRun::STATUS_STOPPED, $this->seen['ended'][0][1]);
+		$this->assertSame(FlowRun::STATUS_FAILED, $this->seen['ended'][0][1]);
 	}//end testATerminalStepFailureEndsTheStreamAndTheRun()
 
 	public function testASingleStreamFlowWalksExactlyAsTheLegacyWalk(): void {

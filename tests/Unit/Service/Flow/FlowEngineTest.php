@@ -299,10 +299,16 @@ class FlowEngineTest extends TestCase {
 
 		$result = $this->runFlow($flow, $dispatcher);
 
-		$this->assertSame(FlowEngine::STATUS_STOPPED, $result['status']);
+		// The POLICY is `stop` — end the run rather than carry on. The run's
+		// terminal STATUS is `failed`, because a step broke; `stopped` is
+		// reserved for an end an author asked for. Both used to be `stopped`,
+		// which made a wreck and a guard branch the same row.
+		$this->assertSame(FlowEngine::STATUS_FAILED, $result['status']);
 		$this->assertSame(['first'], $dispatcher->dispatched);
 		$this->assertSame('failed', $result['log'][0]['status']);
 		$this->assertSame('step blew up', $result['log'][0]['error']);
+		// And on the envelope key `persistResult()` writes to the column.
+		$this->assertSame('step blew up', $result['error']);
 	}//end testOnErrorStopHaltsTheRunAndRecordsTheFailure()
 
 	public function testOnErrorContinueCarriesOnPastAFailedStep(): void {
@@ -325,9 +331,11 @@ class FlowEngineTest extends TestCase {
 		$result = $this->runFlow($flow, $dispatcher);
 
 		$this->assertSame(FlowEngine::STATUS_DEAD_LETTER, $result['status']);
+		// Its own state, but still a failure, so it still says what broke.
+		$this->assertSame('step blew up', $result['error']);
 	}//end testOnErrorDeadLetterEndsTheRunInItsOwnState()
 
-	public function testAnUnknownErrorPolicyFailsSafeByStopping(): void {
+	public function testAnUnknownErrorPolicyFailsSafeByEndingTheRun(): void {
 		// A typo in `onError` must not silently mean "continue".
 		$dispatcher = new RecordingDispatcher(failOn: 'first');
 		$flow = $this->linearFlow();
@@ -335,15 +343,16 @@ class FlowEngineTest extends TestCase {
 
 		$result = $this->runFlow($flow, $dispatcher);
 
-		$this->assertSame(FlowEngine::STATUS_STOPPED, $result['status']);
-	}//end testAnUnknownErrorPolicyFailsSafeByStopping()
+		$this->assertSame(FlowEngine::STATUS_FAILED, $result['status']);
+	}//end testAnUnknownErrorPolicyFailsSafeByEndingTheRun()
 
-	public function testTheDefaultErrorPolicyIsStop(): void {
+	public function testTheDefaultErrorPolicyEndsTheRunAsFailed(): void {
 		$dispatcher = new RecordingDispatcher(failOn: 'first');
 		$result = $this->runFlow($this->linearFlow(), $dispatcher);
 
-		$this->assertSame(FlowEngine::STATUS_STOPPED, $result['status']);
-	}//end testTheDefaultErrorPolicyIsStop()
+		$this->assertSame(FlowEngine::STATUS_FAILED, $result['status']);
+		$this->assertSame('step blew up', $result['error']);
+	}//end testTheDefaultErrorPolicyEndsTheRunAsFailed()
 
 	public function testAMalformedFlowFailsLoudlyRatherThanSilently(): void {
 		// x-openregister-flows swallows by design; this engine must not.

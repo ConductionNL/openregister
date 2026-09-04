@@ -970,7 +970,15 @@ class FlowEngine {
 				if ($policy !== self::ON_ERROR_CONTINUE) {
 					// Terminal for the run: the failed stream ends with the
 					// reason, every other stream ends with the run.
-					$terminal = self::STATUS_STOPPED;
+					//
+					// `failed`, not `stopped` — the same distinction
+					// {@see self::outcomeForFailedStep()} explains for the
+					// single-stream walk, and it has to be made in BOTH places
+					// or which walk happened to run decides whether a wreck is
+					// queryable. The stream row already carried the message;
+					// the RUN row is what a query reads, so the envelope
+					// carries it too and `persistResult()` puts it on `error`.
+					$terminal = self::STATUS_FAILED;
 					if ($policy === self::ON_ERROR_DEAD_LETTER) {
 						$terminal = self::STATUS_DEAD_LETTER;
 					}
@@ -981,7 +989,13 @@ class FlowEngine {
 					$streams->endStream(id: $streamId, status: $terminal, error: $e->getMessage(), claimed: $claimed, enabled: false);
 					$streams->finalize(enabled: false, forcedTerminal: $terminal);
 
-					return ['status' => $terminal, 'log' => $log, 'context' => $context, 'items' => $items];
+					return [
+						'status' => $terminal,
+						'log' => $log,
+						'context' => $context,
+						'items' => $items,
+						'error' => $e->getMessage(),
+					];
 				}
 
 				// `continue`: the marking advances (leaving the token would spin
@@ -1162,6 +1176,25 @@ class FlowEngine {
 	 * policy so a typo fails safe), or null when the policy is `continue` and
 	 * the walk should go on. The failure is logged either way.
 	 *
+	 * 🔴 THE POLICY SAYS WHETHER TO END THE RUN; IT DOES NOT SAY THE RUN ENDED
+	 * WELL. `onError: stop` used to return `stopped` with no `error`, which is
+	 * byte-for-byte what a deliberate Stop node returns — so a run killed by a
+	 * broken step and a run an author ended on purpose were the same row. The
+	 * only trace of the difference was the last entry of the JSON `log`, which
+	 * no query reaches: `SELECT ... WHERE status = 'stopped'` cannot tell a
+	 * healthy guard branch from a wreck. Measured on dossiq's shipped `Case
+	 * behandeling` flow, where nine runs died on `status_not_found_on_case_type`
+	 * and every one of them read as a clean end.
+	 *
+	 * So a step failure ends the run as `failed`, with the step's message on the
+	 * `error` column. Both were already in the vocabulary and used elsewhere
+	 * ({@see FlowRun::STATUS_FAILED}, ranked most-severe in
+	 * {@see FlowRunCommit::SEVERITY}); this path simply was not reaching for
+	 * them. `stopped` goes back to meaning what {@see SubFlowNode::itemsFrom()}
+	 * already documents it to mean — a deliberate, successful end — which also
+	 * stops a sub-flow whose step failed from handing its stale items to its
+	 * parent as though it had finished.
+	 *
 	 * @param array $step The step configuration.
 	 * @param Throwable $error The failure.
 	 * @param string $name The transition name.
@@ -1198,11 +1231,23 @@ class FlowEngine {
 		);
 
 		if ($policy === self::ON_ERROR_DEAD_LETTER) {
-			return ['status' => self::STATUS_DEAD_LETTER, 'log' => $log, 'context' => $context, 'items' => $items];
+			return [
+				'status' => self::STATUS_DEAD_LETTER,
+				'log' => $log,
+				'context' => $context,
+				'items' => $items,
+				'error' => $error->getMessage(),
+			];
 		}
 
 		if ($policy !== self::ON_ERROR_CONTINUE) {
-			return ['status' => self::STATUS_STOPPED, 'log' => $log, 'context' => $context, 'items' => $items];
+			return [
+				'status' => self::STATUS_FAILED,
+				'log' => $log,
+				'context' => $context,
+				'items' => $items,
+				'error' => $error->getMessage(),
+			];
 		}
 
 		return null;
