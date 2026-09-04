@@ -47,6 +47,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost\Store;
 
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -61,10 +62,12 @@ class GenericStoreInstaller {
 	 * Constructor.
 	 *
 	 * @param ObjectService   $objectService The OpenRegister write path.
+	 * @param IAppConfig      $appConfig     The declaring app's config store.
 	 * @param LoggerInterface $logger        PSR logger, server-side detail only.
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
+		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -89,57 +92,160 @@ class GenericStoreInstaller {
 		$failed = false;
 
 		foreach ($this->components(item: $item) as $component) {
-			$slug = (string)($component['schema'] ?? '');
-			$object = ($component['object'] ?? null);
-
-			if ($store->isInstallable(slug: $slug) === false) {
+			$result = $this->installComponent(store: $store, component: $component);
+			if ($result['status'] !== 'installed') {
 				$failed = true;
-				$report[] = [
-					'schema' => $slug,
-					'status' => 'refused',
-					'message' => 'This app does not allow the store to write into that schema.',
-				];
-				continue;
 			}
 
-			if (is_array($object) === false) {
-				$failed = true;
-				$report[] = [
-					'schema' => $slug,
-					'status' => 'refused',
-					'message' => 'The component declares no object to install.',
-				];
-				continue;
-			}
-
-			try {
-				$this->objectService->saveObject(
-					object: $this->asNewObject(object: $object),
-					register: $store->localRegister,
-					schema: $slug
-				);
-				$report[] = ['schema' => $slug, 'status' => 'installed', 'message' => ''];
-			} catch (Throwable $e) {
-				$failed = true;
-				$this->logger->error(
-					message: sprintf(
-						'[AppHost\\Store] installing %s for %s failed: %s',
-						$slug,
-						$store->appId,
-						$e->getMessage()
-					),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				$report[] = [
-					'schema' => $slug,
-					'status' => 'error',
-					'message' => 'The component could not be written.',
-				];
-			}
+			$report[] = $result;
 		}
 
 		return ['success' => ($failed === false && $report !== []), 'components' => $report];
 	}//end install()
+
+	/**
+	 * Install one component, whatever operation it declares.
+	 *
+	 * An unrecognised `op` is refused for THAT component only. A component
+	 * whose operation this server does not understand is the registry's
+	 * mistake, not a reason to deny an administrator the components it does
+	 * understand.
+	 *
+	 * @param StoreManifest        $store     The declared store block.
+	 * @param array<string, mixed> $component One component of the item.
+	 *
+	 * @return array<string, string> The per-component report row.
+	 *
+	 * @spec openspec/changes/store-plane-install-ops/specs/apphost-store-plane/spec.md#requirement-a-component-must-declare-its-install-operation-defaulting-to-writing-an-object
+	 */
+	private function installComponent(StoreManifest $store, array $component): array {
+		$op = (string)($component['op'] ?? StoreManifest::DEFAULT_INSTALL_OP);
+
+		if ($op === 'setAppConfig') {
+			return $this->setAppConfig(store: $store, component: $component);
+		}
+
+		if ($op !== StoreManifest::DEFAULT_INSTALL_OP) {
+			return [
+				'schema' => (string)($component['schema'] ?? ''),
+				'status' => 'refused',
+				'message' => 'This server does not understand that install operation.',
+			];
+		}
+
+		return $this->writeObject(store: $store, component: $component);
+	}//end installComponent()
+
+	/**
+	 * Write a component's object into an allowed schema.
+	 *
+	 * @param StoreManifest        $store     The declared store block.
+	 * @param array<string, mixed> $component One component of the item.
+	 *
+	 * @return array<string, string>
+	 */
+	private function writeObject(StoreManifest $store, array $component): array {
+		$slug = (string)($component['schema'] ?? '');
+		$object = ($component['object'] ?? null);
+
+		if ($store->isInstallable(slug: $slug) === false) {
+			return [
+				'schema' => $slug,
+				'status' => 'refused',
+				'message' => 'This app does not allow the store to write into that schema.',
+			];
+		}
+
+		if (is_array($object) === false) {
+			return [
+				'schema' => $slug,
+				'status' => 'refused',
+				'message' => 'The component declares no object to install.',
+			];
+		}
+
+		try {
+			$this->objectService->saveObject(
+				object: $this->asNewObject(object: $object),
+				register: $store->localRegister,
+				schema: $slug
+			);
+			return ['schema' => $slug, 'status' => 'installed', 'message' => ''];
+		} catch (Throwable $e) {
+			$this->logger->error(
+				message: sprintf(
+					'[AppHost\\Store] installing %s for %s failed: %s',
+					$slug,
+					$store->appId,
+					$e->getMessage()
+				),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return [
+				'schema' => $slug,
+				'status' => 'error',
+				'message' => 'The component could not be written.',
+			];
+		}
+	}//end writeObject()
+
+	/**
+	 * Write an allowlisted config key into the DECLARING app's namespace.
+	 *
+	 * 🔴 The app id comes from the manifest, never from the component. A
+	 * registry naming another app's namespace would otherwise be writing into
+	 * an app that never opted into a store at all.
+	 *
+	 * @param StoreManifest        $store     The declared store block.
+	 * @param array<string, mixed> $component One component of the item.
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/changes/store-plane-install-ops/specs/apphost-store-plane/spec.md#requirement-a-config-write-must-be-allowlisted-by-key-and-scoped-to-the-declaring-app
+	 */
+	private function setAppConfig(StoreManifest $store, array $component): array {
+		$key = (string)($component['key'] ?? '');
+
+		if ($store->isConfigurable(key: $key) === false) {
+			return [
+				'schema' => $key,
+				'status' => 'refused',
+				'message' => 'This app does not allow the store to write that setting.',
+			];
+		}
+
+		$value = ($component['value'] ?? null);
+		if (is_scalar($value) === false) {
+			// Config is a flat key-value store. Serialising a structure into it
+			// produces a value the app later reads back as a string it never
+			// wrote.
+			return [
+				'schema' => $key,
+				'status' => 'refused',
+				'message' => 'A setting must be a boolean, string or number.',
+			];
+		}
+
+		try {
+			$this->appConfig->setValueString($store->appId, $key, (string)$value);
+			return ['schema' => $key, 'status' => 'installed', 'message' => ''];
+		} catch (Throwable $e) {
+			$this->logger->error(
+				message: sprintf(
+					'[AppHost\\Store] setting %s for %s failed: %s',
+					$key,
+					$store->appId,
+					$e->getMessage()
+				),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return [
+				'schema' => $key,
+				'status' => 'error',
+				'message' => 'The setting could not be written.',
+			];
+		}
+	}//end setAppConfig()
 
 	/**
 	 * Read the components a resolved item declares.

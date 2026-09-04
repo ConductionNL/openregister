@@ -333,8 +333,8 @@ class GenericStoreController extends Controller {
 	private function mayInstall(StoreManifest $store, ?IUser $user): bool {
 		$action = $store->installAction();
 		if ($action !== null) {
-			// permitsInstall() answers false for an action posture by design,
-			// so this is the only arm that can grant one.
+			// StoreManifest answers false for an action posture by design, so
+			// this is the only arm that can grant one.
 			return ($user !== null
 				&& $this->actionAuthorizer->can(appId: $this->appName, action: $action, user: $user));
 		}

@@ -38,6 +38,7 @@ use OCA\OpenRegister\AppHost\Store\GenericStoreInstaller;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -50,6 +51,9 @@ use RuntimeException;
 class GenericStoreInstallerTest extends TestCase {
 	/** @var ObjectService&MockObject */
 	private $objectService;
+
+	/** @var IAppConfig&MockObject */
+	private $appConfig;
 
 	/** @var LoggerInterface&MockObject */
 	private $logger;
@@ -71,8 +75,10 @@ class GenericStoreInstallerTest extends TestCase {
 			->onlyMethods(['saveObject'])
 			->getMock();
 		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->appConfig = $this->createMock(IAppConfig::class);
 		$this->installer = new GenericStoreInstaller(
 			objectService: $this->objectService,
+			appConfig: $this->appConfig,
 			logger: $this->logger
 		);
 	}//end setUp()
@@ -523,5 +529,131 @@ class GenericStoreInstallerTest extends TestCase {
 
 		$this->assertFalse($manifest->isInstallable('caseType'));
 		$this->assertFalse($manifest->isInstallable('anything'));
+	}
+
+	/**
+	 * An allowlisted config key is written into the DECLARING app's namespace.
+	 *
+	 * @return void
+	 */
+	public function testAnAllowlistedConfigKeyIsWritten(): void {
+		$store = StoreManifest::fromManifest('integriq', [
+			'store' => ['schema' => 'catalog_item', 'configurable' => ['enableSoapAdapter']],
+		]);
+		$this->appConfig->expects($this->once())
+			->method('setValueString')
+			->with('integriq', 'enableSoapAdapter', '1');
+
+		$report = $this->installer->install($store, [
+			'components' => [
+				['op' => 'setAppConfig', 'key' => 'enableSoapAdapter', 'value' => true],
+			],
+		]);
+
+		$this->assertTrue($report['success']);
+		$this->assertSame('installed', $report['components'][0]['status']);
+	}
+
+	/**
+	 * 🔴 A key outside the allowlist is refused.
+	 *
+	 * An app's config namespace holds registry URLs, tokens and feature flags,
+	 * so an unallowlisted write is a remote actor toggling whatever it names.
+	 *
+	 * @return void
+	 */
+	public function testAConfigKeyOutsideTheAllowlistIsRefused(): void {
+		$store = StoreManifest::fromManifest('integriq', [
+			'store' => ['schema' => 'catalog_item', 'configurable' => ['enableSoapAdapter']],
+		]);
+		$this->appConfig->expects($this->never())->method('setValueString');
+
+		$report = $this->installer->install($store, [
+			'components' => [
+				['op' => 'setAppConfig', 'key' => 'store_registry_token', 'value' => 'stolen'],
+			],
+		]);
+
+		$this->assertFalse($report['success']);
+		$this->assertSame('refused', $report['components'][0]['status']);
+	}
+
+	/**
+	 * 🔴 An absent `configurable` list refuses every key.
+	 *
+	 * The empty-means-refuse default, matching `installable`. An app that
+	 * declares a store and forgets the list gets refused config writes rather
+	 * than an open door onto its own settings.
+	 *
+	 * @return void
+	 */
+	public function testAnAbsentConfigurableListRefusesEveryKey(): void {
+		$store = StoreManifest::fromManifest('integriq', ['store' => ['schema' => 'catalog_item']]);
+		$this->appConfig->expects($this->never())->method('setValueString');
+
+		$report = $this->installer->install($store, [
+			'components' => [['op' => 'setAppConfig', 'key' => 'anything', 'value' => true]],
+		]);
+
+		$this->assertSame('refused', $report['components'][0]['status']);
+	}
+
+	/**
+	 * A structured value is refused rather than silently serialised.
+	 *
+	 * @return void
+	 */
+	public function testAStructuredConfigValueIsRefused(): void {
+		$store = StoreManifest::fromManifest('integriq', [
+			'store' => ['schema' => 'catalog_item', 'configurable' => ['someKey']],
+		]);
+		$this->appConfig->expects($this->never())->method('setValueString');
+
+		$report = $this->installer->install($store, [
+			'components' => [['op' => 'setAppConfig', 'key' => 'someKey', 'value' => ['a' => 1]]],
+		]);
+
+		$this->assertSame('refused', $report['components'][0]['status']);
+	}
+
+	/**
+	 * An unknown op is refused for that component, and the rest still install.
+	 *
+	 * @return void
+	 */
+	public function testAnUnknownOpDoesNotAbortTheOtherComponents(): void {
+		$store = StoreManifest::fromManifest('demo', [
+			'store' => ['schema' => 'template', 'installable' => ['caseType']],
+		]);
+		$this->objectService->expects($this->once())->method('saveObject');
+
+		$report = $this->installer->install($store, [
+			'components' => [
+				['op' => 'summonDaemon', 'schema' => 'caseType'],
+				['schema' => 'caseType', 'object' => ['title' => 'A case type']],
+			],
+		]);
+
+		$this->assertFalse($report['success']);
+		$this->assertSame('refused', $report['components'][0]['status']);
+		$this->assertSame('installed', $report['components'][1]['status']);
+	}
+
+	/**
+	 * A component with no op still writes an object, exactly as before.
+	 *
+	 * @return void
+	 */
+	public function testAComponentWithNoOpStillWritesAnObject(): void {
+		$store = StoreManifest::fromManifest('demo', [
+			'store' => ['schema' => 'template', 'installable' => ['caseType']],
+		]);
+		$this->objectService->expects($this->once())->method('saveObject');
+
+		$report = $this->installer->install($store, [
+			'components' => [['schema' => 'caseType', 'object' => ['title' => 'A case type']]],
+		]);
+
+		$this->assertTrue($report['success']);
 	}
 }
