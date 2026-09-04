@@ -348,8 +348,7 @@ class CredentialBrokerService {
 	 * @throws CredentialAccessDeniedException When Guard 1 or 2 fails, or an inject-only credential has no stored secret.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
-	 * @spec openspec/specs/credential-broker/spec.md
-	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-broker/spec.md#requirement-a-token-set-is-never-resolved-app-side
 	 */
 	public function resolveInjectable(
 		string $credentialId,

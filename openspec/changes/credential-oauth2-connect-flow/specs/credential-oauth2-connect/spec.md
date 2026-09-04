@@ -147,6 +147,36 @@ For a provider whose catalogue entry declares client metadata served by the inst
 - **THEN** the credential carries the client identifier and a `clientCredentialRef`
 - **AND** the client secret appears only in the custody leaf
 
+#### Scenario: A reconnect does not register a second application
+
+- **WHEN** a connection whose credential already carries a client identifier is re-authorised
+- **THEN** no new application is registered at the account's server
+- **AND** the existing client identifier and `clientCredentialRef` are reused
+
+### Requirement: A connection records the account it speaks for
+
+Where a provider's catalogue entry declares an identity call, the connect flow SHALL make that one call immediately after the token set is stored and SHALL record the returned account identifier, handle and display name as non-secret metadata on the credential. The call SHALL go through the broker's own constrained proxy, so it is bounded by the same allow-rules and host-lock as any other call on that credential, and the catalogue SHALL only declare an identity call that its own allow-rules already permit.
+
+A failure of this call SHALL NOT undo or alter the connection: the credential stands, the stored token set is untouched, and the failure is logged. A connection is a working connection whether or not its label could be read.
+
+`@e2e exclude the identity answer comes from a live third-party account; asserted by PHPUnit against a mocked broker`
+
+#### Scenario: The handle is read once and shown on the connection
+
+- **WHEN** a connection is minted for a provider that declares an identity call
+- **THEN** the credential's `account` carries the handle the provider returned
+- **AND** the connections panel shows that handle rather than a placeholder
+
+#### Scenario: A provider that declares no identity call is not asked
+
+- **WHEN** a connection is minted for a provider with no identity declaration
+- **THEN** no additional call is made, and the connection carries the name the person gave it
+
+#### Scenario: A failed identity call leaves a working connection alone
+
+- **WHEN** the identity call is refused, unreachable, or answers with something that is not JSON
+- **THEN** the stored token set is unchanged and the connection remains usable
+
 ### Requirement: A person can connect, see and repair a connection from personal settings
 
 OpenRegister's personal settings SHALL offer a "Connect account" action for every catalogue provider that is an OAuth2 token set, SHALL list the caller's existing connections with a status chip reading active, expired or relink needed, and SHALL offer a Reconnect action on a connection that needs one. The panel SHALL never display a token, a client secret, or an authorization code.

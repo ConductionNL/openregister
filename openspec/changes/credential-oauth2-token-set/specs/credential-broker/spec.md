@@ -31,3 +31,19 @@ A provider catalogue entry MAY carry a `kind` field and, when that kind is `oaut
 
 - **WHEN** `request()` is called for an `inject_only` provider
 - **THEN** it is denied exactly as before, whatever kind the entry declares
+
+### Requirement: A token set is never resolved app-side
+
+`CredentialBrokerService::resolveInjectable()` SHALL refuse a credential whose catalogue entry declares the `oauth2-token-set` kind, and SHALL decide that on the kind rather than on the entry's `inject_only` flag. A refusal SHALL return the same "call `request()` instead" signal every other proxied credential returns, so a caller learns nothing about why. The stored document for this kind is a whole token set including a long-lived refresh token, and handing it to an app is the case ADR-064 decision #8 closes.
+
+`@e2e exclude in-process resolution path with no HTTP route; asserted by PHPUnit`
+
+#### Scenario: A token set marked inject-only is still refused
+
+- **WHEN** an `oauth2-token-set` entry also carries `inject_only: true`
+- **THEN** `resolveInjectable()` resolves nothing and `request()` denies as well, so the credential fails closed on both paths
+
+#### Scenario: An ordinary inject-only secret is unaffected
+
+- **WHEN** `resolveInjectable()` is called for an entry with no `kind`
+- **THEN** it behaves exactly as before, so an OpenConnector source still receives its client secret

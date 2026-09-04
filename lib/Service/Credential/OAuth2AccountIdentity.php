@@ -80,7 +80,7 @@ class OAuth2AccountIdentity {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
+	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-a-connection-records-the-account-it-speaks-for
 	 */
 	public function record(
 		array $provider,
