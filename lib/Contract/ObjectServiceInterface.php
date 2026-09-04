@@ -399,6 +399,16 @@ interface ObjectServiceInterface {
 	 * @param string|int $schema   Schema id, uuid or slug, resolved within the register.
 	 *
 	 * @return int The number of rows written.
+	 *
+	 * @contract-shift announced — openregister#3406 names the fleet test doubles that
+	 * must declare this method or fatal at class load: pipelinq
+	 * tests/Stubs/Service/ObjectService.php (with its paired
+	 * tests/Stubs/Contract/ObjectServiceInterface.php) and shillinq
+	 * tests/Unit/Service/Support/{InMemoryObjectServiceStub,DuckObjectServiceAdapter}.php.
+	 * createMock() sites are unaffected. The break lands on the
+	 * `conduction/hydra-gates` RELEASE carrying this contract, not on this
+	 * merge, because leaf apps read it from vendor/: land the doubles before
+	 * the release, or pin.
 	 */
 	public function appendObjectsRaw(array $objects, string|int $register, string|int $schema): int;
 
@@ -412,6 +422,16 @@ interface ObjectServiceInterface {
 	 * @param string|int $schema   Schema id, uuid or slug, resolved within the register.
 	 *
 	 * @return int The number of rows removed.
+	 *
+	 * @contract-shift announced — openregister#3406 names the fleet test doubles that
+	 * must declare this method or fatal at class load: pipelinq
+	 * tests/Stubs/Service/ObjectService.php (with its paired
+	 * tests/Stubs/Contract/ObjectServiceInterface.php) and shillinq
+	 * tests/Unit/Service/Support/{InMemoryObjectServiceStub,DuckObjectServiceAdapter}.php.
+	 * createMock() sites are unaffected. The break lands on the
+	 * `conduction/hydra-gates` RELEASE carrying this contract, not on this
+	 * merge, because leaf apps read it from vendor/: land the doubles before
+	 * the release, or pin.
 	 */
 	public function purgeExpiredObjectsRaw(string|int $register, string|int $schema): int;
 
