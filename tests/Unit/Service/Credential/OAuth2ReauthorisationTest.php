@@ -31,8 +31,10 @@ namespace Unit\Service\Credential;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\OAuth2AccountIdentity;
 use OCA\OpenRegister\Service\Credential\OAuth2ClientResolver;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectService;
+use OCA\OpenRegister\Service\Credential\OAuth2InstanceClient;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshService;
 use OCA\OpenRegister\Service\Credential\OAuth2TokenSet;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
@@ -53,6 +55,9 @@ class OAuth2ReauthorisationTest extends TestCase {
 
 	/** @var array<int, array<string, mixed>> Token sets persisted onto an existing credential. */
 	private array $persists = [];
+
+	/** @var array<int, string> The allowedApps the last mint was given. */
+	private array $mintedApps = [];
 
 	protected function setUp(): void {
 		$this->mints = 0;
@@ -130,6 +135,12 @@ class OAuth2ReauthorisationTest extends TestCase {
 		$this->assertSame('minted-uuid', $credentialId);
 		$this->assertSame(1, $this->mints);
 		$this->assertSame([], $this->persists);
+
+		// openregister is granted alongside whatever the start asked for, because it
+		// is the app that reads the connected account's identity right afterwards and
+		// the allowedApps guard would otherwise deny that call. Leaving it off
+		// produces no error, just a connection that never learns whose it is.
+		$this->assertSame(['pipelinq', 'openregister'], $this->mintedApps);
 	}
 
 	public function testAProviderThatIsNotAnOAuth2ConnectionIsRefused(): void {
@@ -217,8 +228,9 @@ class OAuth2ReauthorisationTest extends TestCase {
 
 		$broker = $this->createMock(CredentialBrokerService::class);
 		$broker->method('mint')->willReturnCallback(
-			function (): ObjectEntity {
+			function (string $name, string $provider, string $owner, array $allowedApps = []): ObjectEntity {
 				$this->mints++;
+				$this->mintedApps = $allowedApps;
 				$minted = new ObjectEntity();
 				$minted->setUuid('minted-uuid');
 				return $minted;
@@ -249,6 +261,8 @@ class OAuth2ReauthorisationTest extends TestCase {
 			broker: $broker,
 			clients: $clients,
 			refresh: $refresh,
+			instanceClients: $this->createMock(OAuth2InstanceClient::class),
+			identities: $this->createMock(OAuth2AccountIdentity::class),
 			objectService: $objectService,
 			clientService: $clientService,
 			logger: $this->createMock(LoggerInterface::class)

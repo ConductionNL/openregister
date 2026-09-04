@@ -15,14 +15,17 @@
  * and, where one is pinned, the instance host are refused if they would change,
  * because that would be re-pointing a credential rather than repairing it.
  *
- * A MASTODON APPLICATION IS REGISTERED AT CONNECT TIME. Mastodon has no central
- * application registry, so the tenant's own callback is registered at the account's
- * own server. The issued client secret goes to the custody leaf as its own brokered
- * credential; only the non-secret client id reaches the connection object.
- *
  * A FAILED EXCHANGE LEAVES NOTHING BEHIND. Nothing is written until the token
  * response is in hand, so a provider refusal produces no half-made connection for
  * somebody to find later and wonder about.
+ *
+ * Two provider-specific jobs live BESIDE this rather than in it, and both are
+ * reached through here so a caller has one connect seam rather than three:
+ * {@see OAuth2InstanceClient} registers the OAuth2 application that a provider with
+ * no central registry has no other way to get, and {@see OAuth2AccountIdentity} asks
+ * the provider whose account was just connected. Each is a whole external exchange
+ * with its own failure posture, and folding them in here made one class that did
+ * three different things to three different servers.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Credential
@@ -77,6 +80,8 @@ class OAuth2ConnectService {
 	 * @param CredentialBrokerService $broker Mints the credential and its metadata object.
 	 * @param OAuth2ClientResolver $clients Resolves the client id and secret for the exchange.
 	 * @param OAuth2RefreshService $refresh Persists a token set and mirrors its non-secret metadata.
+	 * @param OAuth2InstanceClient $instanceClients Registers or reuses a per-instance OAuth2 application.
+	 * @param OAuth2AccountIdentity $identities Reads and records whose account was connected.
 	 * @param ObjectService $objectService Loads the credential being re-authorised.
 	 * @param IClientService $clientService NC HTTP client factory.
 	 * @param LoggerInterface $logger Secret-free diagnostics.
@@ -88,11 +93,34 @@ class OAuth2ConnectService {
 		private readonly CredentialBrokerService $broker,
 		private readonly OAuth2ClientResolver $clients,
 		private readonly OAuth2RefreshService $refresh,
+		private readonly OAuth2InstanceClient $instanceClients,
+		private readonly OAuth2AccountIdentity $identities,
 		private readonly ObjectService $objectService,
 		private readonly IClientService $clientService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
+
+	/**
+	 * Make sure a per-instance provider has a client before the person is sent onward.
+	 *
+	 * Delegated to {@see OAuth2InstanceClient}, which owns the register-at-most-once
+	 * rule; it stays on this service's surface so the controller talks to one connect
+	 * seam rather than to every collaborator behind it.
+	 *
+	 * @param array<string, mixed> $provider The catalogue provider entry.
+	 * @param array<string, mixed> $claims The claims assembled so far.
+	 * @param string $redirectUri The callback to register.
+	 *
+	 * @return array<string, mixed> The claims, carrying a client id and its credentialRef.
+	 *
+	 * @throws RuntimeException When the account's server refuses the registration.
+	 *
+	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
+	 */
+	public function ensureInstanceClient(array $provider, array $claims, string $redirectUri): array {
+		return $this->instanceClients->ensure(provider: $provider, claims: $claims, redirectUri: $redirectUri);
+	}//end ensureInstanceClient()
 
 	/**
 	 * Resolve a provider entry, refusing anything that is not an OAuth2 token set.
@@ -117,101 +145,6 @@ class OAuth2ConnectService {
 
 		return $provider;
 	}//end oauth2Provider()
-
-	/**
-	 * Make sure a per-instance provider has a client before the person is sent onward.
-	 *
-	 * Mastodon has no central application registry, so there is nothing to bring: the
-	 * client has to be created at the account's OWN server, and it has to exist before
-	 * the authorization URL is built, because that URL carries its client id. This is
-	 * therefore a step of `start()` rather than of the callback.
-	 *
-	 * It registers at most once per connection. A tenant that brought its own
-	 * application is left alone, and a RE-AUTHORISATION reuses the client already
-	 * pinned to the credential: registering a second application on every reconnect
-	 * would leave a trail of live clients on the person's own server, each holding a
-	 * secret nothing will ever revoke.
-	 *
-	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param array<string, mixed> $claims The claims assembled so far.
-	 * @param string $redirectUri The callback to register.
-	 *
-	 * @return array<string, mixed> The claims, carrying a client id and its credentialRef.
-	 *
-	 * @throws RuntimeException When the account's server refuses the registration.
-	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
-	 */
-	public function ensureInstanceClient(array $provider, array $claims, string $redirectUri): array {
-		$oauth2 = ($provider['oauth2'] ?? []);
-		if (is_array($oauth2) === false || trim((string)($oauth2['registrationEndpoint'] ?? '')) === '') {
-			return $claims;
-		}
-
-		if (trim((string)($claims['cl'] ?? '')) !== '' || trim((string)($claims['cr'] ?? '')) !== '') {
-			return $claims;
-		}
-
-		$stored = $this->storedClient(credentialId: trim((string)($claims['cid'] ?? '')));
-		if ($stored !== null) {
-			return array_merge($claims, $stored);
-		}
-
-		$registered = $this->registerInstanceApplication(
-			provider: $provider,
-			instanceBaseUrl: (string)$this->pinnedHost(claims: $claims),
-			redirectUri: $redirectUri,
-			scopes: $this->scopesOf(claims: $claims, provider: $provider),
-			owner: (string)($claims['u'] ?? ''),
-			scope: (string)($claims['s'] ?? 'personal'),
-			organisation: ($claims['o'] ?? null)
-		);
-
-		return array_merge(
-			$claims,
-			['cl' => $registered['clientId'], 'cr' => $registered['clientCredentialRef']]
-		);
-	}//end ensureInstanceClient()
-
-	/**
-	 * The client a credential already carries, when a re-authorisation names one.
-	 *
-	 * @param string $credentialId The credential being re-authorised, or an empty string.
-	 *
-	 * @return array{cl: string, cr: string}|null The stored client, or null when there is none.
-	 *
-	 * @spec exclude private lookup; the reuse rule is stated on ensureInstanceClient()
-	 */
-	private function storedClient(string $credentialId): ?array {
-		if ($credentialId === '') {
-			return null;
-		}
-
-		try {
-			$entity = $this->objectService->find(
-				id: $credentialId,
-				register: CredentialBrokerService::REGISTER,
-				schema: CredentialBrokerService::SCHEMA,
-				_rbac: false,
-				_multitenancy: false,
-				_render: false
-			);
-		} catch (Throwable $missing) {
-			return null;
-		}
-
-		if ($entity instanceof ObjectEntity === false) {
-			return null;
-		}
-
-		$data = $entity->jsonSerialize();
-		$clientId = trim((string)($data['clientId'] ?? ''));
-		if ($clientId === '') {
-			return null;
-		}
-
-		return ['cl' => $clientId, 'cr' => trim((string)($data['clientCredentialRef'] ?? ''))];
-	}//end storedClient()
 
 	/**
 	 * Build the authorization URL a person is sent to.
@@ -341,7 +274,7 @@ class OAuth2ConnectService {
 		if ($existing !== null) {
 			$credentialId = (string)$claims['cid'];
 			$this->refresh->persist(credentialId: $credentialId, scope: $scope, set: $tokenSet, extraMetadata: ['status' => 'active']);
-			$this->recordAccount(
+			$this->identities->record(
 				provider: $provider,
 				credentialId: $credentialId,
 				scope: $scope,
@@ -360,7 +293,7 @@ class OAuth2ConnectService {
 			instanceBaseUrl: $instanceBaseUrl
 		);
 
-		$this->recordAccount(
+		$this->identities->record(
 			provider: $provider,
 			credentialId: $credentialId,
 			scope: $scope,
@@ -370,183 +303,6 @@ class OAuth2ConnectService {
 
 		return $credentialId;
 	}//end complete()
-
-	/**
-	 * Ask the provider who the connection belongs to, and record the answer.
-	 *
-	 * A credential that holds a live token and cannot say WHOSE it is cannot be
-	 * audited: the owner sees a row saying "Mastodon" and has no way to tell which of
-	 * their two accounts it speaks for, and neither does anyone reviewing the
-	 * instance later. So the handle is fetched once, here, at the only moment it is
-	 * guaranteed to be knowable.
-	 *
-	 * The call goes through {@see CredentialBrokerService::request()} rather than
-	 * straight out, which matters more than it looks: the path is already an
-	 * allow-rule on the entry, so the identity fetch is bounded by exactly the same
-	 * guards as every other call on this credential, and a catalogue that named a
-	 * path outside its own rules would fail closed instead of quietly reaching
-	 * further.
-	 *
-	 * BEST EFFORT, ALWAYS. The connection itself is already made and already works;
-	 * undoing it because a cosmetic label could not be read would trade something
-	 * that matters for something that does not. One case is known and expected
-	 * rather than accidental: `request()` deliberately refuses to admit an
-	 * organisation-scoped credential on an asserted user id, so an organisation
-	 * connect records no handle. That is the owner guard working, not a bug, and it
-	 * costs a label rather than a capability.
-	 *
-	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param string $credentialId The credential just minted or repaired.
-	 * @param string $scope The credential scope.
-	 * @param OAuth2TokenSet $set The token set just stored.
-	 * @param string $owner The credential's owner, asserted for this sessionless call.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
-	 */
-	private function recordAccount(
-		array $provider,
-		string $credentialId,
-		string $scope,
-		OAuth2TokenSet $set,
-		string $owner,
-	): void {
-		$identity = ($provider['identity'] ?? null);
-		if (is_array($identity) === false || trim((string)($identity['path'] ?? '')) === '') {
-			return;
-		}
-
-		try {
-			$response = $this->broker->request(
-				credentialId: $credentialId,
-				appId: 'openregister',
-				method: (string)($identity['method'] ?? 'GET'),
-				path: (string)$identity['path'],
-				actingUserId: $owner
-			);
-
-			$decoded = json_decode($response['body'], true);
-			if (is_array($decoded) === false) {
-				return;
-			}
-
-			$this->refresh->persist(
-				credentialId: $credentialId,
-				scope: $scope,
-				set: $set->withAccount(
-					id: $this->fieldAt(payload: $decoded, path: (string)($identity['idField'] ?? '')),
-					handle: $this->fieldAt(payload: $decoded, path: (string)($identity['handleField'] ?? '')),
-					displayName: $this->fieldAt(payload: $decoded, path: (string)($identity['displayNameField'] ?? ''))
-				)
-			);
-		} catch (Throwable $failure) {
-			$this->logger->warning(
-				'[OAuth2ConnectService] could not read the connected account for ' . $credentialId . ': ' . $failure->getMessage()
-			);
-		}//end try
-	}//end recordAccount()
-
-	/**
-	 * Read one scalar out of a decoded response by dotted path.
-	 *
-	 * @param array<string, mixed> $payload The decoded response.
-	 * @param string $path The dotted field path, or an empty string.
-	 *
-	 * @return string The value, or an empty string when it is absent or not a scalar.
-	 *
-	 * @spec exclude private response accessor with no behaviour of its own
-	 */
-	private function fieldAt(array $payload, string $path): string {
-		if ($path === '') {
-			return '';
-		}
-
-		$cursor = $payload;
-		foreach (explode('.', $path) as $segment) {
-			if (is_array($cursor) === false || array_key_exists($segment, $cursor) === false) {
-				return '';
-			}
-
-			$cursor = $cursor[$segment];
-		}
-
-		if (is_scalar($cursor) === false) {
-			return '';
-		}
-
-		return (string)$cursor;
-	}//end fieldAt()
-
-	/**
-	 * Register an application at an account's own server, for a per-instance provider.
-	 *
-	 * The issued client secret goes straight to the broker as its own credential; the
-	 * caller never keeps it, and only the non-secret client id reaches the connection.
-	 *
-	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param string $instanceBaseUrl The pinned, already-validated host.
-	 * @param string $redirectUri The callback to register.
-	 * @param array<int, string> $scopes The scopes to register for.
-	 * @param string $owner The user the client-secret credential is minted for.
-	 * @param string $scope The credential scope for the client-secret credential.
-	 * @param string|null $organisation The owning organisation, for an organisation-scoped connection.
-	 *
-	 * @return array{clientId: string, clientCredentialRef: string} The client id and the secret's credentialRef.
-	 *
-	 * @throws RuntimeException When the server refuses the registration.
-	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
-	 */
-	public function registerInstanceApplication(
-		array $provider,
-		string $instanceBaseUrl,
-		string $redirectUri,
-		array $scopes,
-		string $owner,
-		string $scope,
-		?string $organisation = null,
-	): array {
-		$endpoint = $this->endpoint(
-			oauth2: $provider['oauth2'],
-			key: 'registrationEndpoint',
-			instanceBaseUrl: $instanceBaseUrl
-		);
-
-		try {
-			$response = $this->clientService->newClient()->post(
-				$endpoint,
-				[
-					'body' => [
-						'client_name' => 'Nextcloud OpenRegister',
-						'redirect_uris' => $redirectUri,
-						'scopes' => implode((string)($provider['oauth2']['scopeSeparator'] ?? ' '), $scopes),
-					],
-					'headers' => ['Accept' => 'application/json'],
-					'timeout' => 20,
-				]
-			);
-			$decoded = json_decode((string)$response->getBody(), true);
-		} catch (Throwable $failure) {
-			throw new RuntimeException(message: 'application registration failed: ' . $failure::class, previous: $failure);
-		}
-
-		if (is_array($decoded) === false || is_string(($decoded['client_id'] ?? null)) === false) {
-			throw new RuntimeException(message: 'application registration returned no client id');
-		}
-
-		$minted = $this->broker->mint(
-			name: 'OAuth2 client for ' . $instanceBaseUrl,
-			provider: 'generic-oauth2',
-			owner: $owner,
-			allowedApps: ['openregister'],
-			secret: (string)($decoded['client_secret'] ?? ''),
-			scope: $scope,
-			organisation: $organisation
-		);
-
-		return ['clientId' => (string)$decoded['client_id'], 'clientCredentialRef' => (string)$minted->getUuid()];
-	}//end registerInstanceApplication()
 
 	/**
 	 * Revoke a connection upstream where the provider has a revoke endpoint.

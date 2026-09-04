@@ -1,19 +1,17 @@
 <?php
 
 /**
- * OAuth2InstanceClientTest — registering an application at somebody else's server,
- * and learning whose account came back.
+ * OAuth2InstanceClientTest — registering an application at somebody else's server.
  *
- * Two steps that are easy to write and never call, and that fail silently when
- * nobody does. A Mastodon connect with no application registered would build an
- * authorization URL naming an empty client id, and the person would meet a confused
- * error on their own server rather than here. A connect that never asks who the
- * account belongs to leaves a credential holding a live token and unable to say
- * whose, which is a connection nobody can audit.
+ * A Mastodon connect with no application registered builds an authorization URL
+ * naming an empty client id, and the person meets a confused error on their own
+ * server rather than here. So the first assertion is simply that it happens at all,
+ * because a registration method with no caller is the shape this started as.
  *
- * The registration assertions are therefore about how OFTEN it happens as much as
- * whether: registering again on every reconnect would leave a trail of live
- * applications on the person's own server, each holding a secret nothing will revoke.
+ * The rest are about how OFTEN. Registering again on every reconnect would leave a
+ * trail of live applications on a person's own server, each holding a client secret
+ * that nothing will ever revoke and nobody will ever look at, and no test that only
+ * checked the happy path would notice.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Service\Credential
@@ -36,21 +34,16 @@ namespace Unit\Service\Credential;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
-use OCA\OpenRegister\Service\Credential\OAuth2ClientResolver;
-use OCA\OpenRegister\Service\Credential\OAuth2ConnectService;
-use OCA\OpenRegister\Service\Credential\OAuth2RefreshService;
-use OCA\OpenRegister\Service\Credential\OAuth2TokenSet;
-use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
+use OCA\OpenRegister\Service\Credential\OAuth2InstanceClient;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
- * @covers \OCA\OpenRegister\Service\Credential\OAuth2ConnectService
+ * @covers \OCA\OpenRegister\Service\Credential\OAuth2InstanceClient
  */
 class OAuth2InstanceClientTest extends TestCase {
 	/** @var array<int, string> Every URL the service POSTed to. */
@@ -59,37 +52,25 @@ class OAuth2InstanceClientTest extends TestCase {
 	/** @var array<int, array<string, mixed>> Every credential minted. */
 	private array $mints = [];
 
-	/** @var array<int, array<string, mixed>> Every brokered call made on the new credential. */
-	private array $brokered = [];
-
-	/** @var array<int, OAuth2TokenSet> Every token set persisted. */
-	private array $persisted = [];
-
 	protected function setUp(): void {
 		$this->posts = [];
 		$this->mints = [];
-		$this->brokered = [];
-		$this->persisted = [];
 	}
 
 	public function testAMastodonConnectRegistersAnApplicationAtTheAccountsOwnServer(): void {
-		$service = $this->makeService();
-
-		$claims = $service->ensureInstanceClient(
+		$claims = $this->makeClient()->ensure(
 			provider: $this->mastodon(),
 			claims: $this->claims(),
 			redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
 		);
 
-		$this->assertSame('https://mastodon.example/api/v1/apps', $this->posts[0]);
+		$this->assertSame(['https://mastodon.example/api/v1/apps'], $this->posts);
 		$this->assertSame('REGISTERED_CLIENT_ID', $claims['cl']);
 		$this->assertSame('minted-uuid', $claims['cr']);
 	}
 
 	public function testTheIssuedClientSecretBecomesItsOwnBrokeredCredential(): void {
-		$service = $this->makeService();
-
-		$service->ensureInstanceClient(
+		$this->makeClient()->ensure(
 			provider: $this->mastodon(),
 			claims: $this->claims(),
 			redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
@@ -103,9 +84,7 @@ class OAuth2InstanceClientTest extends TestCase {
 	}
 
 	public function testATenantThatBroughtItsOwnApplicationIsLeftAlone(): void {
-		$service = $this->makeService();
-
-		$claims = $service->ensureInstanceClient(
+		$claims = $this->makeClient()->ensure(
 			provider: $this->mastodon(),
 			claims: array_merge($this->claims(), ['cl' => 'TENANT_CLIENT_ID', 'cr' => 'tenant-ref']),
 			redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
@@ -116,7 +95,7 @@ class OAuth2InstanceClientTest extends TestCase {
 	}
 
 	public function testAReconnectReusesTheApplicationAlreadyPinnedToTheCredential(): void {
-		$service = $this->makeService(
+		$client = $this->makeClient(
 			existing: [
 				'provider' => 'mastodon',
 				'clientId' => 'EXISTING_CLIENT_ID',
@@ -124,7 +103,7 @@ class OAuth2InstanceClientTest extends TestCase {
 			]
 		);
 
-		$claims = $service->ensureInstanceClient(
+		$claims = $client->ensure(
 			provider: $this->mastodon(),
 			claims: array_merge($this->claims(), ['cid' => 'existing-uuid']),
 			redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
@@ -136,10 +115,8 @@ class OAuth2InstanceClientTest extends TestCase {
 	}
 
 	public function testAProviderWithACentralRegistryRegistersNothing(): void {
-		$service = $this->makeService();
-
-		$claims = $service->ensureInstanceClient(
-			provider: ['identifier' => 'x', 'kind' => 'oauth2-token-set', 'oauth2' => ['tokenEndpoint' => 'https://api.x.com/2/oauth2/token']],
+		$claims = $this->makeClient()->ensure(
+			provider: ['identifier' => 'x', 'oauth2' => ['tokenEndpoint' => 'https://api.x.com/2/oauth2/token']],
 			claims: $this->claims(),
 			redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
 		);
@@ -149,63 +126,36 @@ class OAuth2InstanceClientTest extends TestCase {
 	}
 
 	public function testAServerThatIssuesNoClientIdIsRefusedRatherThanHalfConnected(): void {
-		$service = $this->makeService(registration: ['error' => 'unauthorized']);
+		$client = $this->makeClient(registration: ['error' => 'unauthorized']);
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('no client id');
 
-		$service->ensureInstanceClient(
+		$client->ensure(
 			provider: $this->mastodon(),
 			claims: $this->claims(),
 			redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
 		);
 	}
 
-	public function testTheConnectedAccountsHandleIsReadOnceAndRecorded(): void {
-		$service = $this->makeService();
+	public function testAnUnreachableServerIsReportedWithoutQuotingItsAnswer(): void {
+		// A registration failure can quote the server's own words, and those words can
+		// contain the request that was made. Only the class name travels.
+		$client = $this->makeClient(postThrows: new RuntimeException('Connection refused to https://mastodon.example/api/v1/apps'));
 
-		$service->complete(
-			claims: array_merge($this->claims(), ['cid' => '', 'cl' => 'CLIENT_ID_HERE']),
-			code: 'AUTH_CODE_HERE',
-			verifier: 'VERIFIER_HERE',
-			redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
-		);
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('application registration failed');
 
-		$this->assertCount(1, $this->brokered);
-		$this->assertSame('/api/v1/accounts/verify_credentials', $this->brokered[0]['path']);
-		$this->assertSame('GET', $this->brokered[0]['method']);
-
-		$recorded = end($this->persisted);
-		$this->assertSame(
-			['id' => '42', 'handle' => 'example@mastodon.example', 'displayName' => 'Example Reisbureau'],
-			$recorded->getAccount()
-		);
-	}
-
-	public function testAnIdentityCallThatFailsDoesNotUndoAWorkingConnection(): void {
-		$service = $this->makeService(identityFails: true);
-
-		$credentialId = $service->complete(
-			claims: array_merge($this->claims(), ['cid' => '', 'cl' => 'CLIENT_ID_HERE']),
-			code: 'AUTH_CODE_HERE',
-			verifier: 'VERIFIER_HERE',
-			redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
-		);
-
-		$this->assertSame('minted-uuid', $credentialId, 'the connection stands even when its label could not be read');
-	}
-
-	public function testOpenregisterIsAlwaysGrantedSoItCanReadTheAccountItJustConnected(): void {
-		$service = $this->makeService();
-
-		$service->complete(
-			claims: array_merge($this->claims(), ['cid' => '', 'cl' => 'CLIENT_ID_HERE', 'a' => ['pipelinq']]),
-			code: 'AUTH_CODE_HERE',
-			verifier: 'VERIFIER_HERE',
-			redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
-		);
-
-		$this->assertSame(['pipelinq', 'openregister'], $this->mints[0]['allowedApps']);
+		try {
+			$client->ensure(
+				provider: $this->mastodon(),
+				claims: $this->claims(),
+				redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
+			);
+		} catch (RuntimeException $refused) {
+			$this->assertStringNotContainsString('Connection refused', $refused->getMessage());
+			throw $refused;
+		}
 	}
 
 	/**
@@ -224,7 +174,6 @@ class OAuth2InstanceClientTest extends TestCase {
 			'cl' => '',
 			'cr' => '',
 			'cid' => '',
-			'nm' => 'Mastodon company account',
 		];
 	}
 
@@ -239,21 +188,10 @@ class OAuth2InstanceClientTest extends TestCase {
 			'kind' => 'oauth2-token-set',
 			'baseUrlFrom' => 'instanceBaseUrl',
 			'oauth2' => [
-				'authorizationEndpoint' => '/oauth/authorize',
-				'tokenEndpoint' => '/oauth/token',
 				'registrationEndpoint' => '/api/v1/apps',
 				'endpointsRelativeToInstance' => true,
-				'clientAuth' => 'client_secret_post',
 				'scopeSeparator' => ' ',
-				'pkce' => 'S256',
 				'defaultScopes' => ['read:accounts'],
-			],
-			'identity' => [
-				'method' => 'GET',
-				'path' => '/api/v1/accounts/verify_credentials',
-				'idField' => 'id',
-				'handleField' => 'acct',
-				'displayNameField' => 'display_name',
 			],
 		];
 	}
@@ -263,19 +201,16 @@ class OAuth2InstanceClientTest extends TestCase {
 	 *
 	 * @param array<string, mixed>|null $existing The credential a reconnect targets.
 	 * @param array<string, mixed>|null $registration The app-registration response.
-	 * @param boolean $identityFails Whether the identity call throws.
+	 * @param \Throwable|null $postThrows What the HTTP client throws instead of answering.
 	 *
-	 * @return OAuth2ConnectService The service under test.
+	 * @return OAuth2InstanceClient The service under test.
 	 */
-	private function makeService(
+	private function makeClient(
 		?array $existing = null,
 		?array $registration = null,
-		bool $identityFails = false,
-	): OAuth2ConnectService {
+		?\Throwable $postThrows = null,
+	): OAuth2InstanceClient {
 		$registration ??= ['client_id' => 'REGISTERED_CLIENT_ID', 'client_secret' => 'YOUR_CLIENT_SECRET_HERE'];
-
-		$catalogue = $this->createMock(ProviderCatalogue::class);
-		$catalogue->method('get')->willReturn($this->mastodon());
 
 		$objectService = $this->createMock(ObjectService::class);
 		if ($existing === null) {
@@ -296,76 +231,33 @@ class OAuth2InstanceClientTest extends TestCase {
 				array $allowedApps = [],
 				?string $secret = null,
 			): ObjectEntity {
-				$this->mints[] = [
-					'provider' => $provider,
-					'owner' => $owner,
-					'allowedApps' => $allowedApps,
-					'secret' => $secret,
-				];
+				$this->mints[] = ['provider' => $provider, 'allowedApps' => $allowedApps, 'secret' => $secret];
 				$minted = new ObjectEntity();
 				$minted->setUuid('minted-uuid');
 				return $minted;
 			}
 		);
-		$broker->method('request')->willReturnCallback(
-			function (string $credentialId, string $appId, string $method, string $path) use ($identityFails): array {
-				$this->brokered[] = ['credentialId' => $credentialId, 'appId' => $appId, 'method' => $method, 'path' => $path];
-				if ($identityFails === true) {
-					throw new RuntimeException('the provider is having a day');
-				}
-
-				return [
-					'status' => 200,
-					'headers' => [],
-					'body' => (string)json_encode(
-						['id' => '42', 'acct' => 'example@mastodon.example', 'display_name' => 'Example Reisbureau']
-					),
-				];
-			}
-		);
-
-		$refresh = $this->createMock(OAuth2RefreshService::class);
-		$refresh->method('persist')->willReturnCallback(
-			function (string $credentialId, string $scope, OAuth2TokenSet $set): void {
-				$this->persisted[] = $set;
-			}
-		);
-
-		$clients = $this->createMock(OAuth2ClientResolver::class);
-		$clients->method('resolve')->willReturn(['clientId' => 'CLIENT_ID_HERE', 'clientSecret' => 'YOUR_CLIENT_SECRET_HERE']);
-
-		// The body is chosen by the URL rather than by call order: a registration and a
-		// token exchange are two different endpoints, and a test that scripted them by
-		// position would pass or fail on the order the service happened to call them
-		// in rather than on which endpoint it called.
-		$token = (string)json_encode(
-			['access_token' => 'ACCESS_TOKEN_HERE', 'refresh_token' => 'REFRESH_TOKEN_HERE', 'expires_in' => 3600]
-		);
 
 		$client = $this->createMock(IClient::class);
 		$client->method('post')->willReturnCallback(
-			function (string $url) use ($registration, $token): IResponse {
+			function (string $url) use ($registration, $postThrows): IResponse {
 				$this->posts[] = $url;
+				if ($postThrows !== null) {
+					throw $postThrows;
+				}
 
 				$response = $this->createMock(IResponse::class);
-				$response->method('getBody')->willReturn(
-					str_contains($url, '/api/v1/apps') === true ? (string)json_encode($registration) : $token
-				);
-
+				$response->method('getBody')->willReturn((string)json_encode($registration));
 				return $response;
 			}
 		);
 		$clientService = $this->createMock(IClientService::class);
 		$clientService->method('newClient')->willReturn($client);
 
-		return new OAuth2ConnectService(
-			catalogue: $catalogue,
+		return new OAuth2InstanceClient(
 			broker: $broker,
-			clients: $clients,
-			refresh: $refresh,
 			objectService: $objectService,
-			clientService: $clientService,
-			logger: $this->createMock(LoggerInterface::class)
+			clientService: $clientService
 		);
 	}
 }

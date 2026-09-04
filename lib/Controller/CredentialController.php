@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCA\OpenRegister\Service\Credential\CredentialRelinkRequiredException;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
+use OCA\OpenRegister\Service\Credential\CredentialUpdateRequest;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
@@ -349,16 +350,10 @@ class CredentialController extends Controller {
 		$data = $existing->getObject();
 		$scope = $this->scopeOf(data: $data);
 
-		$nameParam = $this->request->getParam('name');
-		if (is_string($nameParam) === true && trim($nameParam) !== '') {
-			$data['name'] = trim($nameParam);
-		}
+		$update = new CredentialUpdateRequest(request: $this->request);
+		$data = $update->applyTo(data: $data);
 
-		if ($this->request->getParam('allowedApps') !== null) {
-			$data['allowedApps'] = $this->normaliseAllowedApps(value: $this->request->getParam('allowedApps', []));
-		}
-
-		if ($this->wouldRepointHost(data: $data) === true) {
+		if ($update->wouldRepointHost(data: $data) === true) {
 			return new JSONResponse(['message' => 'Invalid credential request'], Http::STATUS_BAD_REQUEST);
 		}
 
@@ -373,19 +368,9 @@ class CredentialController extends Controller {
 			return new JSONResponse(['message' => 'Unable to update credential'], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
-		$secret = $this->request->getParam('secret');
-		if (is_string($secret) === true) {
-			// Garbage-in prevention: this rotation path writes straight to the
-			// vault and does NOT go through CredentialBrokerService::mint(), so
-			// it needs its own trim (credential-broker-upstream-diagnostics D3)
-			// — a copy-pasted secret with a trailing newline previously reached
-			// the vault byte-for-byte and later failed header injection at call
-			// time with no usable diagnostic.
-			$secret = trim($secret);
-		}
-
-		if (is_string($secret) === true && $secret !== '') {
-			$this->credentialStore->put($id, $secret, $scope);
+		$rotated = $update->rotatedSecret();
+		if ($rotated !== null) {
+			$this->credentialStore->put($id, $rotated, $scope);
 		}
 
 		return new JSONResponse($this->serialise(object: $saved));
@@ -756,31 +741,6 @@ class CredentialController extends Controller {
 
 		return new JSONResponse($result);
 	}//end sessionBrokerRequest()
-
-	/**
-	 * Whether this update would move a credential's pinned host.
-	 *
-	 * `instanceBaseUrl` is the HOST-LOCK of a per-account credential, not a setting:
-	 * changing it would re-point an existing credential at another server while
-	 * keeping its allowedApps, its shares, and every credentialRef pointing at it. It
-	 * is written once, at mint, and refused ever after. An update that merely repeats
-	 * the stored value is accepted, so a client round-tripping the whole object is not
-	 * punished for doing so.
-	 *
-	 * @param array<string, mixed> $data The stored credential's property bag.
-	 *
-	 * @return boolean True when the request proposes a different host.
-	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
-	 */
-	private function wouldRepointHost(array $data): bool {
-		$proposed = $this->request->getParam('instanceBaseUrl');
-		if (is_string($proposed) === false || trim($proposed) === '') {
-			return false;
-		}
-
-		return trim($proposed) !== (string)($data['instanceBaseUrl'] ?? '');
-	}//end wouldRepointHost()
 
 	/**
 	 * Read the non-secret connection metadata a create request may carry.

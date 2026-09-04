@@ -50,6 +50,7 @@ namespace OCA\OpenRegister\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectService;
+use OCA\OpenRegister\Service\Credential\OAuth2Endpoints;
 use OCA\OpenRegister\Service\Credential\OAuth2InstanceHost;
 use OCA\OpenRegister\Service\Credential\OAuth2RelayGuard;
 use OCA\OpenRegister\Service\Credential\OAuth2StateService;
@@ -63,7 +64,6 @@ use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\RedirectResponse;
 use OCP\IRequest;
-use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\Security\Bruteforce\IThrottler;
 use Psr\Log\LoggerInterface;
@@ -74,9 +74,10 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A connect endpoint is by nature the
  * seam between the connect service, the flow state, the relay guard, the throttler
- * and the URL generator, plus the response types it returns. Three collaborators were
- * already moved out into {@see OAuth2ConnectionRepository} while writing this; what
- * remains is what a connect genuinely touches.
+ * and this instance's own endpoints, plus the response types it returns. The storage
+ * and authorization questions moved out into {@see OAuth2ConnectionRepository} and
+ * the URL ones into {@see OAuth2Endpoints}; what remains is what a connect genuinely
+ * touches.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The class is one request shape
  * with a long list of ways to refuse it, and every refusal is a separate branch on
  * purpose: a callback that answered fewer questions would be answering some of them
@@ -101,12 +102,22 @@ class CredentialOauth2Controller extends Controller {
 	 * @param OAuth2StateService $states Issues and redeems the signed state.
 	 * @param OAuth2RelayGuard $relay Decides where a relay may forward.
 	 * @param OAuth2ConnectionRepository $connections Loads, gates and disables a stored connection.
+	 * @param OAuth2Endpoints $endpoints This instance's own callback, metadata and return URLs.
 	 * @param IUserSession $userSession The current session.
-	 * @param IURLGenerator $urlGenerator Builds this instance's own callback and metadata URLs.
 	 * @param IThrottler $throttler Registers failed callback attempts (ADR-082).
 	 * @param LoggerInterface $logger Secret-free diagnostics.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Ten, of which two — `$appName`
+	 * and `$request` — are the framework's and cannot be removed from a Nextcloud
+	 * controller. The remaining eight are each a distinct role, and the list is
+	 * already the result of splitting two of them out: the storage and authorization
+	 * questions went to {@see OAuth2ConnectionRepository} and the URL ones to
+	 * {@see OAuth2Endpoints}. Bundling any two of what is left — the connect service,
+	 * the flow state and the relay guard in particular — would join things the design
+	 * deliberately keeps apart, because the relay's ignorance of the state's signature
+	 * is the security property, not an accident of layering.
 	 */
 	public function __construct(
 		string $appName,
@@ -115,8 +126,8 @@ class CredentialOauth2Controller extends Controller {
 		private readonly OAuth2StateService $states,
 		private readonly OAuth2RelayGuard $relay,
 		private readonly OAuth2ConnectionRepository $connections,
+		private readonly OAuth2Endpoints $endpoints,
 		private readonly IUserSession $userSession,
-		private readonly IURLGenerator $urlGenerator,
 		private readonly IThrottler $throttler,
 		private readonly LoggerInterface $logger,
 	) {
@@ -166,13 +177,13 @@ class CredentialOauth2Controller extends Controller {
 			$claims = $this->connect->ensureInstanceClient(
 				provider: $provider,
 				claims: $claims,
-				redirectUri: $this->ownCallbackUrl()
+				redirectUri: $this->endpoints->callbackUrl()
 			);
 			$issued = $this->states->issue(claims: $claims);
 			$url = $this->connect->authorizationUrl(
 				provider: $provider,
 				claims: $claims,
-				redirectUri: $this->ownCallbackUrl(),
+				redirectUri: $this->endpoints->callbackUrl(),
 				state: $issued['state'],
 				challenge: $issued['challenge']
 			);
@@ -207,7 +218,7 @@ class CredentialOauth2Controller extends Controller {
 		}
 
 		$destination = (string)($shape['cb'] ?? '');
-		if ($destination !== '' && rtrim($destination, '/') !== rtrim($this->ownCallbackUrl(), '/')) {
+		if ($destination !== '' && rtrim($destination, '/') !== rtrim($this->endpoints->callbackUrl(), '/')) {
 			return $this->forward(destination: $destination, code: $code, state: $state);
 		}
 
@@ -216,14 +227,14 @@ class CredentialOauth2Controller extends Controller {
 			return $this->refuse();
 		}
 
-		$returnUrl = $this->safeReturnUrl(candidate: (string)($redeemed['claims']['r'] ?? ''));
+		$returnUrl = $this->endpoints->safeReturnUrl(candidate: (string)($redeemed['claims']['r'] ?? ''));
 
 		try {
 			$this->connect->complete(
 				claims: $redeemed['claims'],
 				code: $code,
 				verifier: $redeemed['verifier'],
-				redirectUri: $this->ownCallbackUrl()
+				redirectUri: $this->endpoints->callbackUrl()
 			);
 		} catch (Throwable $failure) {
 			// Nothing was written: complete() mints only once the token response is
@@ -297,14 +308,14 @@ class CredentialOauth2Controller extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 60, period: 60)]
 	public function clientMetadata(): JSONResponse {
-		$metadataUrl = $this->urlGenerator->linkToRouteAbsolute('openregister.credentialOauth2.clientMetadata');
+		$metadataUrl = $this->endpoints->clientMetadataUrl();
 
 		return new JSONResponse(
 			[
 				'client_id' => $metadataUrl,
 				'client_name' => 'Nextcloud OpenRegister',
-				'client_uri' => $this->urlGenerator->getAbsoluteURL('/'),
-				'redirect_uris' => [$this->ownCallbackUrl()],
+				'client_uri' => $this->endpoints->instanceUrl(),
+				'redirect_uris' => [$this->endpoints->callbackUrl()],
 				'grant_types' => ['authorization_code', 'refresh_token'],
 				'response_types' => ['code'],
 				'scope' => 'atproto transition:generic',
@@ -404,8 +415,8 @@ class CredentialOauth2Controller extends Controller {
 			'cl' => $clientId,
 			'cr' => $clientRef,
 			'cid' => $reauthorise,
-			'r' => $this->safeReturnUrl(candidate: (string)$this->request->getParam('returnUrl', '')),
-			'cb' => $this->ownCallbackUrl(),
+			'r' => $this->endpoints->safeReturnUrl(candidate: (string)$this->request->getParam('returnUrl', '')),
+			'cb' => $this->endpoints->callbackUrl(),
 		];
 	}//end buildClaims()
 
@@ -451,51 +462,5 @@ class CredentialOauth2Controller extends Controller {
 
 		return $normalised;
 	}//end requestedAllowedApps()
-
-	/**
-	 * This instance's own callback URL.
-	 *
-	 * @return string The absolute callback URL.
-	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-a-relay-forwards-a-code-and-never-exchanges-it
-	 */
-	private function ownCallbackUrl(): string {
-		return $this->urlGenerator->linkToRouteAbsolute('openregister.credentialOauth2.callback');
-	}//end ownCallbackUrl()
-
-	/**
-	 * Reduce a proposed return URL to one on this instance.
-	 *
-	 * An attacker-chosen redirect target on a callback is an open redirect. The value
-	 * is taken at start from an authenticated caller, reduced to a path here, and then
-	 * carried inside the SIGNED state, so the callback only ever redirects to
-	 * somewhere the instance itself approved.
-	 *
-	 * @param string $candidate The proposed return URL.
-	 *
-	 * @return string An absolute URL on this instance.
-	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
-	 */
-	private function safeReturnUrl(string $candidate): string {
-		$fallback = $this->urlGenerator->linkToRouteAbsolute('settings.PersonalSettings.index', ['section' => 'additional']);
-
-		$candidate = trim($candidate);
-		if ($candidate === '') {
-			return $fallback;
-		}
-
-		$parts = parse_url($candidate);
-		if (is_array($parts) === false || isset($parts['host']) === true || isset($parts['scheme']) === true) {
-			return $fallback;
-		}
-
-		$path = (string)($parts['path'] ?? '');
-		if (str_starts_with($path, '/') === false) {
-			return $fallback;
-		}
-
-		return $this->urlGenerator->getAbsoluteURL($path);
-	}//end safeReturnUrl()
 
 }//end class

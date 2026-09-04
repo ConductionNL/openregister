@@ -33,6 +33,7 @@ namespace Unit\Controller;
 use OCA\OpenRegister\Controller\CredentialOauth2Controller;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectService;
+use OCA\OpenRegister\Service\Credential\OAuth2Endpoints;
 use OCA\OpenRegister\Service\Credential\OAuth2RelayGuard;
 use OCA\OpenRegister\Service\Credential\OAuth2StateService;
 use OCP\AppFramework\Http;
@@ -251,6 +252,9 @@ class CredentialOauth2ControllerTest extends TestCase {
 			}
 		);
 
+		// The real OAuth2Endpoints over a scripted URL generator rather than a mock of
+		// it: safeReturnUrl() is a security control, and a mock would assert only that
+		// the controller called something.
 		$urlGenerator = $this->createMock(IURLGenerator::class);
 		$urlGenerator->method('linkToRouteAbsolute')->willReturnCallback(
 			static function (string $route): string {
@@ -268,6 +272,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 		$urlGenerator->method('getAbsoluteURL')->willReturnCallback(
 			static fn (string $path): string => 'https://home.example' . $path
 		);
+		$endpoints = new OAuth2Endpoints(urlGenerator: $urlGenerator);
 
 		$session = $this->createMock(IUserSession::class);
 		if ($authenticated === true) {
@@ -285,8 +290,8 @@ class CredentialOauth2ControllerTest extends TestCase {
 			$states,
 			$relayGuard,
 			$this->createMock(OAuth2ConnectionRepository::class),
+			$endpoints,
 			$session,
-			$urlGenerator,
 			$throttler,
 			$this->createMock(LoggerInterface::class)
 		);
