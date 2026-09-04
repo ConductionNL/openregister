@@ -20,6 +20,8 @@
  *
  * ⚠️ SETTINGS ENTRIES ARE ATTACHED, NOT VISIBLE, inside a collapsed foldout.
  */
+import type { Page } from '@playwright/test'
+
 import { expect, test } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
@@ -27,6 +29,32 @@ import * as path from 'path'
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 
 test.use(fs.existsSync(STORAGE_STATE) ? { storageState: STORAGE_STATE } : {})
+
+/**
+ * Dismiss the first-run setup wizard if it is open.
+ *
+ * ⚠️ CnSetupWizard opens over the app and its modal wrapper intercepts
+ * pointer events, so a nav click resolves its locator and then times out
+ * after 30s. Playwright reports the link as "visible, enabled and stable"
+ * throughout, which reads like the navigation is broken rather than covered.
+ *
+ * Measured on a running instance: `document.elementFromPoint()` at the centre
+ * of the Reports link returned `DIV.modal-wrapper--large`, not the link.
+ *
+ * Tests that navigate by URL pass either way, which is what makes this easy to
+ * miss: only the click-through tests fail, and only while the wizard is up.
+ *
+ * @param page The page.
+ */
+async function dismissSetupWizard(page: Page): Promise<void> {
+	const modal = page.locator('[data-testid="cn-modal"]')
+	if ((await modal.count()) === 0) {
+		return
+	}
+
+	await modal.first().getByRole('button', { name: 'Close' }).click()
+	await expect(modal).toHaveCount(0, { timeout: 15_000 })
+}
 
 test.describe('app chrome (ADR-114)', () => {
 	test.beforeEach(async ({ page }) => {
@@ -36,6 +64,7 @@ test.describe('app chrome (ADR-114)', () => {
 		await expect(page.locator('[data-testid="cn-nav"]')).toBeVisible({
 			timeout: 30_000,
 		})
+		await dismissSetupWizard(page)
 	})
 
 	test('the footer reads Documentation, Reports, Features & roadmap, each with a glyph', async ({
