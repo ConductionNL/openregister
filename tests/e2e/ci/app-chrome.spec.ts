@@ -138,6 +138,10 @@ test.describe('app chrome (ADR-114)', () => {
 
 		const admin = nav.locator('[data-testid="cn-nav-admin-settings"]')
 		await expect(admin).toBeAttached()
+		// The testid rides the NcAppNavigationItem wrapper, which is an <li>.
+		// The href is on the anchor inside it, so assert it there: on the
+		// wrapper the attribute is simply absent and the failure reads as a
+		// wrong destination rather than a wrong locator.
 		await expect(admin.locator('a').first()).toHaveAttribute(
 			'href',
 			/\/settings\/admin\/openregister$/,

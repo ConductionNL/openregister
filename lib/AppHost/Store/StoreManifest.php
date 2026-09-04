@@ -75,6 +75,13 @@ class StoreManifest {
 	 * @param array<int, string>         $kinds       Kind quick-filters offered on the page.
 	 * @param array<string, string>      $cardFields  Remote field to card field map.
 	 * @param array<int, array<string, mixed>> $builtIn The app's own items, for the no-registry case.
+	 * @param array<int, string>         $types       Shareable configuration type ids this store surfaces.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) This is a value object
+	 * mirroring the manifest's `store` block one key to one parameter, so the
+	 * count is the block's, not a design choice. Grouping them into sub-objects
+	 * would put a translation layer between what an app declares and what the
+	 * engine reads, which is exactly where a silently dropped key hides.
 	 */
 	public function __construct(
 		public readonly string $appId,
@@ -86,6 +93,7 @@ class StoreManifest {
 		public readonly array $kinds = [],
 		public readonly array $cardFields = self::DEFAULT_CARD_FIELDS,
 		public readonly array $builtIn = [],
+		public readonly array $types = [],
 	) {
 	}//end __construct()
 
@@ -135,8 +143,40 @@ class StoreManifest {
 			kinds: self::stringList(value: ($block['kinds'] ?? [])),
 			cardFields: array_map(callback: static fn ($v): string => (string)$v, array: $cardFields),
 			builtIn: self::objectList(value: ($block['builtIn'] ?? [])),
+			// Shareable configuration type ids (store-over-federated-config).
+			// Declaring these selects federated discovery, where an item is a
+			// configuration set, a flow or a schema that marked itself
+			// shareable. An app that declares none keeps the remote objects
+			// API it has today, so nothing that ships now changes.
+			types: self::stringList(value: ($block['types'] ?? [])),
 		);
 	}//end fromManifest()
+
+	/**
+	 * The shareable configuration type ids this store surfaces.
+	 *
+	 * @return array<int, string> The declared type ids, in declaration order.
+	 *
+	 * @spec openspec/changes/store-over-federated-config/specs/apphost-store-plane/spec.md#requirement-a-store-must-be-able-to-offer-configuration-not-only-objects
+	 */
+	public function declaredTypes(): array {
+		return $this->types;
+	}//end declaredTypes()
+
+	/**
+	 * Whether this store exchanges configuration rather than objects.
+	 *
+	 * The two paths are selected by declaration, never by a runtime probe: an
+	 * app that declares types gets federated discovery, and one that declares
+	 * none never makes a discovery call at all.
+	 *
+	 * @return bool True when the app declared at least one shareable type.
+	 *
+	 * @spec openspec/changes/store-over-federated-config/specs/apphost-store-plane/spec.md#requirement-a-store-must-be-able-to-offer-configuration-not-only-objects
+	 */
+	public function isFederated(): bool {
+		return $this->types !== [];
+	}//end isFederated()
 
 	/**
 	 * Whether an install may write into this schema slug.
