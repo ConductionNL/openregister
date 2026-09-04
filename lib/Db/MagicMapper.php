@@ -7529,6 +7529,36 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end deleteObjectsBySchema()
 
 	/**
+	 * Hard-delete the rows of a register+schema table whose `_expires` has passed.
+	 *
+	 * The sweep for rows written through bulkUpsert() with an expiry, i.e. raw
+	 * appends. There is no soft-delete and no audit entry: those rows never had
+	 * either, and keeping expired telemetry as tombstones would defeat the
+	 * retention the expiry expresses. Rows with a NULL `_expires` are never
+	 * touched. A table that does not exist yet has nothing to purge and answers 0.
+	 *
+	 * @param Register $register The register context.
+	 * @param Schema   $schema   The schema context.
+	 *
+	 * @return int The number of rows removed.
+	 *
+	 * @throws Exception If the delete fails.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-raw-append-for-high-volume-writers
+	 */
+	public function purgeExpired(Register $register, Schema $schema): int {
+		if ($this->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
+			return 0;
+		}
+
+		return $this->bulkHandler->purgeExpired(
+			register: $register,
+			schema: $schema,
+			tableName: $this->getTableNameForRegisterSchema(register: $register, schema: $schema)
+		);
+	}//end purgeExpired()
+
+	/**
 	 * Batch delete objects by UUID list from a register+schema magic table.
 	 *
 	 * Performs a single SQL statement for all UUIDs instead of one-by-one.
