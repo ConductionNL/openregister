@@ -38,19 +38,67 @@ use PHPUnit\Framework\TestCase;
  * @group DB
  */
 class RawAppendIntegrationTest extends TestCase {
+	/**
+	 * The service under test, resolved from the real container.
+	 *
+	 * @var ObjectService
+	 */
 	private ObjectService $objectService;
+
+	/**
+	 * Resolves the register+schema table name the raw rows land in.
+	 *
+	 * @var MagicMapper
+	 */
 	private MagicMapper $mapper;
+
+	/**
+	 * Creates the throwaway register each test appends into.
+	 *
+	 * @var RegisterMapper
+	 */
 	private RegisterMapper $registerMapper;
+
+	/**
+	 * Creates the throwaway schema each test appends into.
+	 *
+	 * @var SchemaMapper
+	 */
 	private SchemaMapper $schemaMapper;
+
+	/**
+	 * Live connection used to read the table back and to clean up.
+	 *
+	 * @var IDBConnection
+	 */
 	private IDBConnection $db;
 
-	/** @var int[] IDs of schemas created during tests */
+	/**
+	 * IDs of schemas created during tests.
+	 *
+	 * @var int[]
+	 */
 	private array $createdSchemaIds = [];
-	/** @var int[] IDs of registers created during tests */
+
+	/**
+	 * IDs of registers created during tests.
+	 *
+	 * @var int[]
+	 */
 	private array $createdRegisterIds = [];
-	/** @var string[] Prefixed names of magic tables created during tests */
+
+	/**
+	 * Prefixed names of magic tables created during tests.
+	 *
+	 * @var string[]
+	 */
 	private array $createdTables = [];
 
+	/**
+	 * Resolve the service and mappers from the real container.
+	 *
+	 * @return void
+	 */
 	protected function setUp(): void {
 		parent::setUp();
 		$this->objectService = \OC::$server->get(ObjectService::class);
@@ -60,12 +108,17 @@ class RawAppendIntegrationTest extends TestCase {
 		$this->db = \OC::$server->get(IDBConnection::class);
 	}
 
+	/**
+	 * Drop every table, schema and register a test created.
+	 *
+	 * @return void
+	 */
 	protected function tearDown(): void {
 		foreach ($this->createdTables as $tableName) {
 			try {
 				$this->db->prepare("DROP TABLE IF EXISTS $tableName")->execute();
 			} catch (\Exception $e) {
-				// Table may not exist
+				// The table may not exist.
 			}
 		}
 
@@ -76,7 +129,7 @@ class RawAppendIntegrationTest extends TestCase {
 					->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 				$qb->executeStatement();
 			} catch (\Exception $e) {
-				// Already cleaned up
+				// Already cleaned up.
 			}
 		}
 
@@ -87,7 +140,7 @@ class RawAppendIntegrationTest extends TestCase {
 					->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 				$qb->executeStatement();
 			} catch (\Exception $e) {
-				// Already cleaned up
+				// Already cleaned up.
 			}
 		}
 
@@ -96,6 +149,8 @@ class RawAppendIntegrationTest extends TestCase {
 
 	/**
 	 * Create a schema with a couple of plain properties.
+	 *
+	 * @return Schema The persisted schema, tracked for cleanup.
 	 */
 	private function createTestSchema(): Schema {
 		$schema = $this->schemaMapper->createFromArray([
@@ -114,6 +169,10 @@ class RawAppendIntegrationTest extends TestCase {
 
 	/**
 	 * Create a register that carries the given schema, so slugs resolve within it.
+	 *
+	 * @param Schema $schema The schema the register carries.
+	 *
+	 * @return Register The persisted register, tracked for cleanup.
 	 */
 	private function createTestRegister(Schema $schema): Register {
 		$register = $this->registerMapper->createFromArray([
@@ -126,6 +185,14 @@ class RawAppendIntegrationTest extends TestCase {
 		return $register;
 	}
 
+	/**
+	 * Register the magic table for cleanup and hand back its unprefixed name.
+	 *
+	 * @param Register $register The register the rows land in.
+	 * @param Schema   $schema   The schema the rows land in.
+	 *
+	 * @return string The table name without the `oc_` prefix.
+	 */
 	private function trackTable(Register $register, Schema $schema): string {
 		$tableName = $this->mapper->getTableNameForRegisterSchema($register, $schema);
 		$this->createdTables[] = 'oc_' . $tableName;
@@ -135,6 +202,8 @@ class RawAppendIntegrationTest extends TestCase {
 
 	/**
 	 * Read `_uuid` => `_expires` for every row in the table.
+	 *
+	 * @param string $tableName The unprefixed magic table name.
 	 *
 	 * @return array<string, string|null>
 	 */
@@ -152,6 +221,15 @@ class RawAppendIntegrationTest extends TestCase {
 		return $rows;
 	}
 
+	/**
+	 * Count the audit-trail rows written for the given object UUIDs.
+	 *
+	 * Filters on `object_uuid`: the `object` column is the integer object id.
+	 *
+	 * @param string[] $uuids The object UUIDs to look for.
+	 *
+	 * @return int The number of audit-trail rows.
+	 */
 	private function countAuditRowsFor(array $uuids): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('id', 'cnt'))
@@ -164,50 +242,63 @@ class RawAppendIntegrationTest extends TestCase {
 		return $count;
 	}
 
+	/**
+	 * An expired row is purged; a future and an open-ended row survive; no audit trail is written.
+	 *
+	 * @return void
+	 */
 	public function testAppendThenPurgeRemovesOnlyTheExpiredRow(): void {
 		$schema = $this->createTestSchema();
-		$register = $this->createTestRegister($schema);
-		$tableName = $this->trackTable($register, $schema);
+		$register = $this->createTestRegister(schema: $schema);
+		$tableName = $this->trackTable(register: $register, schema: $schema);
+
+		$expired = (new \DateTimeImmutable('-1 day'))->format(DATE_ATOM);
+		$future = (new \DateTimeImmutable('+1 day'))->format(DATE_ATOM);
 
 		$written = $this->objectService->appendObjectsRaw(
 			objects: [
-				['uuid' => 'raw-expired', 'expires' => (new \DateTimeImmutable('-1 day'))->format(DATE_ATOM), 'name' => 'page_view', 'pagePath' => '/old', 'hits' => 1],
-				['uuid' => 'raw-future', 'expires' => (new \DateTimeImmutable('+1 day'))->format(DATE_ATOM), 'name' => 'page_view', 'pagePath' => '/new', 'hits' => 2],
+				['uuid' => 'raw-expired', 'expires' => $expired, 'name' => 'page_view', 'pagePath' => '/old', 'hits' => 1],
+				['uuid' => 'raw-future', 'expires' => $future, 'name' => 'page_view', 'pagePath' => '/new', 'hits' => 2],
 				['uuid' => 'raw-forever', 'name' => 'scroll', 'pagePath' => '/keep', 'hits' => 3],
 			],
 			register: $register,
 			schema: $schema
 		);
 
-		$this->assertSame(3, $written);
+		$this->assertSame(expected: 3, actual: $written);
 
-		$rows = $this->rowsByUuid($tableName);
+		$rows = $this->rowsByUuid(tableName: $tableName);
 		$uuids = array_keys($rows);
 		sort($uuids);
-		$this->assertSame(['raw-expired', 'raw-forever', 'raw-future'], $uuids);
-		$this->assertNotNull($rows['raw-expired'], 'An expiry passed by the caller lands in _expires.');
-		$this->assertNotNull($rows['raw-future']);
-		$this->assertNull($rows['raw-forever'], 'A row without an expiry keeps _expires NULL.');
+		$this->assertSame(expected: ['raw-expired', 'raw-forever', 'raw-future'], actual: $uuids);
+		$this->assertNotNull(actual: $rows['raw-expired'], message: 'An expiry passed by the caller lands in _expires.');
+		$this->assertNotNull(actual: $rows['raw-future']);
+		$this->assertNull(actual: $rows['raw-forever'], message: 'A row without an expiry keeps _expires NULL.');
 
 		// No audit trail for raw rows: that is the contract.
-		$this->assertSame(0, $this->countAuditRowsFor(['raw-expired', 'raw-future', 'raw-forever']));
+		$this->assertSame(expected: 0, actual: $this->countAuditRowsFor(uuids: ['raw-expired', 'raw-future', 'raw-forever']));
 
 		$purged = $this->objectService->purgeExpiredObjectsRaw(register: $register, schema: $schema);
-		$this->assertSame(1, $purged);
+		$this->assertSame(expected: 1, actual: $purged);
 
-		$remaining = $this->rowsByUuid($tableName);
-		$this->assertArrayNotHasKey('raw-expired', $remaining);
-		$this->assertArrayHasKey('raw-future', $remaining);
-		$this->assertArrayHasKey('raw-forever', $remaining);
+		$remaining = $this->rowsByUuid(tableName: $tableName);
+		$this->assertArrayNotHasKey(key: 'raw-expired', array: $remaining);
+		$this->assertArrayHasKey(key: 'raw-future', array: $remaining);
+		$this->assertArrayHasKey(key: 'raw-forever', array: $remaining);
 
 		// Idempotent: a second sweep finds nothing.
-		$this->assertSame(0, $this->objectService->purgeExpiredObjectsRaw(register: $register, schema: $schema));
+		$this->assertSame(expected: 0, actual: $this->objectService->purgeExpiredObjectsRaw(register: $register, schema: $schema));
 	}
 
+	/**
+	 * Register and schema slugs resolve to the same table as the entities do.
+	 *
+	 * @return void
+	 */
 	public function testSlugsResolveWithinTheRegister(): void {
 		$schema = $this->createTestSchema();
-		$register = $this->createTestRegister($schema);
-		$tableName = $this->trackTable($register, $schema);
+		$register = $this->createTestRegister(schema: $schema);
+		$tableName = $this->trackTable(register: $register, schema: $schema);
 
 		$written = $this->objectService->appendObjectsRaw(
 			objects: [['name' => 'page_view', 'pagePath' => '/slug', 'hits' => 1]],
@@ -215,15 +306,20 @@ class RawAppendIntegrationTest extends TestCase {
 			schema: $schema->getSlug()
 		);
 
-		$this->assertSame(1, $written);
-		$this->assertCount(1, $this->rowsByUuid($tableName));
+		$this->assertSame(expected: 1, actual: $written);
+		$this->assertCount(expectedCount: 1, haystack: $this->rowsByUuid(tableName: $tableName));
 	}
 
+	/**
+	 * Purging a schema nothing was ever appended to answers zero rather than failing.
+	 *
+	 * @return void
+	 */
 	public function testPurgeOnASchemaNothingWasAppendedToAnswersZero(): void {
 		$schema = $this->createTestSchema();
-		$register = $this->createTestRegister($schema);
-		$this->trackTable($register, $schema);
+		$register = $this->createTestRegister(schema: $schema);
+		$this->trackTable(register: $register, schema: $schema);
 
-		$this->assertSame(0, $this->objectService->purgeExpiredObjectsRaw(register: $register, schema: $schema));
+		$this->assertSame(expected: 0, actual: $this->objectService->purgeExpiredObjectsRaw(register: $register, schema: $schema));
 	}
 }
