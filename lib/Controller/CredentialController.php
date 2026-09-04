@@ -227,9 +227,23 @@ class CredentialController extends Controller {
 				continue;
 			}
 
+			// `kind` and `requiresInstanceBaseUrl` are the two things a picker needs to
+			// know to offer the right form, and neither is a secret: one says which
+			// shape of credential this provider takes, the other says whether the
+			// person has to name their own server. The allow-rules and the endpoints
+			// stay behind, as they always have: they are an internal guardrail, and
+			// publishing them would tell a caller exactly which paths to probe.
+			$kind = 'secret';
+			if (trim((string)($entry['kind'] ?? '')) === 'oauth2-token-set') {
+				$kind = 'oauth2-token-set';
+			}
+
 			$out[] = [
 				'identifier' => $identifier,
 				'title' => (string)($entry['title'] ?? $identifier),
+				'kind' => $kind,
+				'requiresInstanceBaseUrl' => (trim((string)($entry['baseUrlFrom'] ?? '')) !== ''),
+				'preview' => (($entry['preview'] ?? false) === true),
 			];
 		}
 
@@ -344,14 +358,7 @@ class CredentialController extends Controller {
 			$data['allowedApps'] = $this->normaliseAllowedApps(value: $this->request->getParam('allowedApps', []));
 		}
 
-		// `instanceBaseUrl` is the HOST-LOCK of a per-account credential, not a
-		// setting: changing it would re-point an existing credential at another
-		// server while keeping its allowedApps, its shares and every credentialRef
-		// pointing at it. It is written once, at mint, and refused here forever
-		// after. An update that merely repeats the stored value is accepted, so a
-		// client round-tripping the object is not punished for it.
-		$proposedHost = $this->request->getParam('instanceBaseUrl');
-		if (is_string($proposedHost) === true && trim($proposedHost) !== '' && trim($proposedHost) !== (string)($data['instanceBaseUrl'] ?? '')) {
+		if ($this->wouldRepointHost(data: $data) === true) {
 			return new JSONResponse(['message' => 'Invalid credential request'], Http::STATUS_BAD_REQUEST);
 		}
 
@@ -749,6 +756,31 @@ class CredentialController extends Controller {
 
 		return new JSONResponse($result);
 	}//end sessionBrokerRequest()
+
+	/**
+	 * Whether this update would move a credential's pinned host.
+	 *
+	 * `instanceBaseUrl` is the HOST-LOCK of a per-account credential, not a setting:
+	 * changing it would re-point an existing credential at another server while
+	 * keeping its allowedApps, its shares, and every credentialRef pointing at it. It
+	 * is written once, at mint, and refused ever after. An update that merely repeats
+	 * the stored value is accepted, so a client round-tripping the whole object is not
+	 * punished for doing so.
+	 *
+	 * @param array<string, mixed> $data The stored credential's property bag.
+	 *
+	 * @return boolean True when the request proposes a different host.
+	 *
+	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
+	 */
+	private function wouldRepointHost(array $data): bool {
+		$proposed = $this->request->getParam('instanceBaseUrl');
+		if (is_string($proposed) === false || trim($proposed) === '') {
+			return false;
+		}
+
+		return trim($proposed) !== (string)($data['instanceBaseUrl'] ?? '');
+	}//end wouldRepointHost()
 
 	/**
 	 * Read the non-secret connection metadata a create request may carry.

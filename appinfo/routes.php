@@ -52,6 +52,18 @@ return [
         ['name' => 'credential#registerApp',   'url' => '/api/credentials/apps/{appId}/register', 'verb' => 'POST',   'requirements' => ['appId' => '[a-z0-9_-]+']],
         ['name' => 'credential#brokerRequest', 'url' => '/api/credentials/{id}/request',           'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'credential#sessionBrokerRequest', 'url' => '/api/credentials/{id}/session-request', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // OAuth2 connect (credential-oauth2-connect-flow). `start` sits under the
+        // LITERAL `/api/credentials/oauth2/...` prefix, declared BEFORE any
+        // `/api/credentials/{id}` route above would need to be consulted, so a
+        // credential whose UUID happened to be the string `oauth2` could never
+        // swallow it. The callback is deliberately NOT under /api: it is the URL a
+        // provider redirects a BROWSER to, and it is the value registered with the
+        // provider, so it must stay short, stable and free of an API prefix that
+        // might later gain middleware a redirect cannot satisfy.
+        ['name' => 'credentialOauth2#start',          'url' => '/api/credentials/oauth2/start',     'verb' => 'POST'],
+        ['name' => 'credentialOauth2#disconnect',     'url' => '/api/credentials/oauth2/{id}',      'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'credentialOauth2#callback',       'url' => '/oauth2/callback',                  'verb' => 'GET'],
+        ['name' => 'credentialOauth2#clientMetadata', 'url' => '/oauth2/client-metadata.json',      'verb' => 'GET'],
 
         // Web Push channel (openregister-web-push-engine).
         // VAPID public key (browser subscribe key) + current-user subscription CRUD
