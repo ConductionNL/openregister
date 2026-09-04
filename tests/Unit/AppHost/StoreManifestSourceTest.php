@@ -130,4 +130,83 @@ class StoreManifestSourceTest extends TestCase {
 		$this->assertSame('openregister', $manifest->source);
 		$this->assertSame(['ignored-here'], $manifest->topics);
 	}
+
+	/**
+	 * A block that declares no posture keeps the strictest one.
+	 *
+	 * @return void
+	 */
+	public function testAbsentInstallAuthDefaultsToAdmin(): void {
+		$manifest = StoreManifest::fromManifest('demo', ['store' => ['schema' => 'template']]);
+
+		$this->assertSame('admin', $manifest->installAuth);
+		$this->assertTrue($manifest->isInstallAuthEnforceable());
+		$this->assertFalse($manifest->permitsInstall(isSignedIn: true, isAdmin: false));
+		$this->assertTrue($manifest->permitsInstall(isSignedIn: true, isAdmin: true));
+	}
+
+	/**
+	 * `authenticated` admits any signed-in user and no anonymous one.
+	 *
+	 * @return void
+	 */
+	public function testAuthenticatedPostureAdmitsSignedInUsersOnly(): void {
+		$manifest = StoreManifest::fromManifest('demo', [
+			'store' => ['schema' => 'template', 'installAuth' => 'authenticated'],
+		]);
+
+		$this->assertTrue($manifest->permitsInstall(isSignedIn: true, isAdmin: false));
+		$this->assertFalse(
+			$manifest->permitsInstall(isSignedIn: false, isAdmin: false),
+			'The weakest posture must still mean signed in.'
+		);
+	}
+
+	/**
+	 * 🔴 An unknown posture disables the store rather than falling back.
+	 *
+	 * Falling back to `admin` would silently REMOVE a capability from an app
+	 * that asked for a weaker gate: the store still works, for fewer people,
+	 * for no stated reason.
+	 *
+	 * @return void
+	 */
+	public function testUnknownInstallAuthDisablesTheStore(): void {
+		$manifest = StoreManifest::fromManifest('demo', [
+			'store' => ['schema' => 'template', 'installAuth' => 'everyone'],
+		]);
+
+		$this->assertFalse($manifest->enabled);
+	}
+
+	/**
+	 * An `action:` posture parses but is not yet enforceable.
+	 *
+	 * @return void
+	 */
+	public function testActionPostureParsesButIsNotEnforceable(): void {
+		$manifest = StoreManifest::fromManifest('demo', [
+			'store' => ['schema' => 'template', 'installAuth' => 'action:catalog.instantiate'],
+		]);
+
+		$this->assertTrue($manifest->enabled);
+		$this->assertSame('action:catalog.instantiate', $manifest->installAuth);
+		$this->assertFalse(
+			$manifest->isInstallAuthEnforceable(),
+			'Recognised is not the same as enforceable; the controller must refuse it.'
+		);
+	}
+
+	/**
+	 * A bare `action:` with no name is malformed.
+	 *
+	 * @return void
+	 */
+	public function testABareActionPrefixIsMalformed(): void {
+		$manifest = StoreManifest::fromManifest('demo', [
+			'store' => ['schema' => 'template', 'installAuth' => 'action:'],
+		]);
+
+		$this->assertFalse($manifest->enabled);
+	}
 }

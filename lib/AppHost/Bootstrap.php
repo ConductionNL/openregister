@@ -129,6 +129,11 @@ class Bootstrap {
 	 * The catalogue serving a store that exchanges configuration.
 	 */
 	private const FEDERATED_STORE_CATALOG = 'OCA\\OpenRegister\\AppHost\\Store\\FederatedStoreCatalog';
+
+	/**
+	 * The GitHub discovery source, for stores declaring `source: github`.
+	 */
+	private const GITHUB_STORE_SOURCE = 'OCA\\OpenRegister\\AppHost\\Store\\Source\\GitHubStoreSource';
 	private const GENERIC_SETTINGS_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\AppHostSettingsService';
 	private const GENERIC_ACTION_AUTH_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\GenericActionAuthService';
 	private const GENERIC_INITIALIZE_SETTINGS = 'OCA\\OpenRegister\\AppHost\\Repair\\GenericInitializeSettings';
@@ -295,6 +300,7 @@ class Bootstrap {
 					storeService: $c->get(self::GENERIC_STORE_SERVICE),
 					installer: $c->get(self::GENERIC_STORE_INSTALLER),
 					catalog: $c->get(self::FEDERATED_STORE_CATALOG),
+					gitHubSource: $c->get(self::GITHUB_STORE_SOURCE),
 					userSession: $c->get('OCP\\IUserSession'),
 					groupManager: $c->get('OCP\\IGroupManager'),
 					logger: $c->get('Psr\\Log\\LoggerInterface')

@@ -93,16 +93,16 @@ class GenericStoreController extends Controller {
 	 * @param GenericStoreService   $storeService   Guarded remote discovery.
 	 * @param GenericStoreInstaller $installer      Declarative component install.
 	 * @param FederatedStoreCatalog $catalog        Configuration browse and install.
-	 * @param GitHubStoreSource     $gitHubSource  GitHub discovery source.
+	 * @param GitHubStoreSource     $gitHubSource   GitHub discovery source.
+	 * @param IUserSession          $userSession    Current session.
+	 * @param IGroupManager         $groupManager   Admin check for install.
+	 * @param LoggerInterface       $logger         PSR logger.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Each collaborator is one
 	 * discovery or install path the engine owns on a leaf app's behalf, and the
 	 * count grew because the plane absorbed work the apps used to do
 	 * themselves. Grouping them behind a locator would hide which paths exist
 	 * from the one file that has to choose between them.
-	 * @param IUserSession          $userSession    Current session.
-	 * @param IGroupManager         $groupManager   Admin check for install.
-	 * @param LoggerInterface       $logger         PSR logger.
 	 */
 	public function __construct(
 		string $appName,
@@ -225,17 +225,12 @@ class GenericStoreController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function install(string $slug): JSONResponse {
-		// The admin check is an in-body guard rather than
-		// #[AuthorizedAdminSetting], because that attribute names a leaf app's
-		// settings CLASS and this controller serves every app. Same posture,
-		// resolved at request time instead of at annotation time.
+		// The gate is an in-body guard rather than #[AuthorizedAdminSetting],
+		// because that attribute names a leaf app's settings CLASS and this
+		// controller serves every app. Resolved at request time instead of at
+		// annotation time — which is also what lets the APP declare the
+		// posture rather than the engine assuming one.
 		$user = $this->userSession->getUser();
-		if ($user === null || $this->groupManager->isAdmin($user->getUID()) === false) {
-			return new JSONResponse(
-				data: ['success' => false, 'message' => 'Installing a store item requires an administrator.'],
-				statusCode: Http::STATUS_FORBIDDEN
-			);
-		}
 
 		if (preg_match(self::SLUG_PATTERN, $slug) !== 1) {
 			return new JSONResponse(
@@ -249,6 +244,39 @@ class GenericStoreController extends Controller {
 			return new JSONResponse(
 				data: ['success' => false, 'message' => 'This app declares no store.'],
 				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
+
+		// A posture this engine cannot yet enforce is REFUSED, never
+		// downgraded. `action:<name>` needs an ADR-023 resolver that lives in
+		// the leaf apps; until that lands, treating it as `authenticated`
+		// would quietly install on a weaker gate than the app asked for.
+		if ($store->isInstallAuthEnforceable() === false) {
+			$this->logger->error(
+				message: sprintf(
+					'[AppHost\\Store] %s declares an installAuth this engine cannot enforce: %s',
+					$this->appName,
+					$store->installAuth
+				),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return new JSONResponse(
+				data: ['success' => false, 'message' => 'This store declares an install posture this server cannot enforce.'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		// WHO may install is the app's declaration; WHAT may be written stays
+		// the `installable` allowlist, which the installer enforces regardless.
+		// Anonymous is refused on this same guard: `authenticated` is the
+		// weakest posture the vocabulary offers and it still means signed in.
+		if ($store->permitsInstall(
+			isSignedIn: ($user !== null),
+			isAdmin: ($user !== null && $this->groupManager->isAdmin($user->getUID()))
+		) === false) {
+			return new JSONResponse(
+				data: ['success' => false, 'message' => 'Installing a store item requires an administrator.'],
+				statusCode: Http::STATUS_FORBIDDEN
 			);
 		}
 

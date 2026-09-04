@@ -426,6 +426,10 @@ class GenericStoreControllerTest extends TestCase {
 	 */
 	public function testInstallRefusesANonAdministrator(): void {
 		$this->signIn(isAdmin: false);
+		// The store is loaded BEFORE the gate now, because the gate is the
+		// app's declaration rather than the engine's assumption. A default
+		// block declares no installAuth, so the posture is `admin`.
+		$this->manifestLoader->method('loadStore')->willReturn($this->enabledStore());
 		$this->storeService->expects($this->never())->method('resolve');
 		$this->installer->expects($this->never())->method('install');
 
@@ -435,12 +439,94 @@ class GenericStoreControllerTest extends TestCase {
 	}//end testInstallRefusesANonAdministrator()
 
 	/**
+	 * An `authenticated` store admits a signed-in non-administrator.
+	 *
+	 * This is the capability hermiq and buildiq would LOSE by migrating onto
+	 * an admin-only install, so it is asserted rather than assumed.
+	 *
+	 * @return void
+	 */
+	public function testAnAuthenticatedStoreAdmitsANonAdministrator(): void {
+		$this->signIn(isAdmin: false);
+		$this->manifestLoader->method('loadStore')->willReturn(
+			StoreManifest::fromManifest('demo', [
+				'store' => [
+					'schema' => 'template',
+					'installAuth' => 'authenticated',
+					'installable' => ['caseType'],
+				],
+			])
+		);
+		$this->storeService->method('resolve')->willReturn(['slug' => 'vth', 'components' => []]);
+		$this->installer->expects($this->once())
+			->method('install')
+			->willReturn(['success' => true, 'components' => []]);
+
+		$response = $this->controller('demo')->install(slug: 'vth');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+	}
+
+	/**
+	 * An anonymous caller is refused even by an `authenticated` store.
+	 *
+	 * 🔴 `authenticated` is the weakest posture the vocabulary offers, and it
+	 * still means signed in. If this ever passes, the weakest gate has become
+	 * no gate.
+	 *
+	 * @return void
+	 */
+	public function testAnAuthenticatedStoreStillRefusesAnonymous(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->manifestLoader->method('loadStore')->willReturn(
+			StoreManifest::fromManifest('demo', [
+				'store' => ['schema' => 'template', 'installAuth' => 'authenticated'],
+			])
+		);
+		$this->installer->expects($this->never())->method('install');
+
+		$this->assertSame(
+			Http::STATUS_FORBIDDEN,
+			$this->controller('demo')->install(slug: 'vth')->getStatus()
+		);
+	}
+
+	/**
+	 * A posture the engine cannot enforce is refused, never downgraded.
+	 *
+	 * 🔴 The regression this guards: silently treating `action:<name>` as
+	 * `authenticated` would install on a WEAKER gate than the app asked for,
+	 * and the store would look like it was working.
+	 *
+	 * @return void
+	 */
+	public function testAnUnenforceablePostureRefusesTheInstall(): void {
+		$this->signIn(isAdmin: true);
+		$this->manifestLoader->method('loadStore')->willReturn(
+			StoreManifest::fromManifest('demo', [
+				'store' => [
+					'schema' => 'template',
+					'installAuth' => 'action:catalog.instantiate',
+				],
+			])
+		);
+		$this->installer->expects($this->never())->method('install');
+
+		$this->assertSame(
+			Http::STATUS_FORBIDDEN,
+			$this->controller('demo')->install(slug: 'vth')->getStatus(),
+			'An action: posture must be refused until a resolver exists, not downgraded.'
+		);
+	}
+
+	/**
 	 * And an anonymous caller, on the same guard.
 	 *
 	 * @return void
 	 */
 	public function testInstallRefusesAnAnonymousCaller(): void {
 		$this->userSession->method('getUser')->willReturn(null);
+		$this->manifestLoader->method('loadStore')->willReturn($this->enabledStore());
 		$this->installer->expects($this->never())->method('install');
 
 		$this->assertSame(Http::STATUS_FORBIDDEN, $this->controller()->install(slug: 'vth')->getStatus());

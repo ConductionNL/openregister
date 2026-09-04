@@ -484,4 +484,44 @@ class GenericStoreInstallerTest extends TestCase {
 		);
 		$this->assertSame('openbuild', $explicit->localRegister);
 	}//end testLocalRegisterDefaultsToTheAppIdAndCanBeOverridden()
-}//end class
+
+	/**
+	 * 🔴 A loosened install posture does NOT widen the allowlist.
+	 *
+	 * `installAuth` decides WHO may install; `installable` decides WHAT an
+	 * install may write. The two keys sit side by side in the same block and
+	 * read like a pair. They are not one: relaxing the gate on the door does
+	 * not enlarge the room.
+	 *
+	 * @return void
+	 */
+	public function testAnAuthenticatedStoreStillRefusesADisallowedSchema(): void {
+		$manifest = StoreManifest::fromManifest('demo', [
+			'store' => [
+				'schema' => 'template',
+				'installAuth' => 'authenticated',
+				'installable' => ['caseType'],
+			],
+		]);
+
+		$this->assertTrue($manifest->isInstallable('caseType'));
+		$this->assertFalse(
+			$manifest->isInstallable('case'),
+			'A weaker install posture must not widen what may be written.'
+		);
+	}
+
+	/**
+	 * An empty allowlist still refuses everything, whatever the posture.
+	 *
+	 * @return void
+	 */
+	public function testAnAuthenticatedStoreWithAnEmptyAllowlistRefusesEverything(): void {
+		$manifest = StoreManifest::fromManifest('demo', [
+			'store' => ['schema' => 'template', 'installAuth' => 'authenticated'],
+		]);
+
+		$this->assertFalse($manifest->isInstallable('caseType'));
+		$this->assertFalse($manifest->isInstallable('anything'));
+	}
+}
