@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\CredentialOauth2Controller;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectService;
 use OCA\OpenRegister\Service\Credential\OAuth2Endpoints;
@@ -60,9 +61,13 @@ class CredentialOauth2ControllerTest extends TestCase {
 	/** @var integer How many times the connect service was asked to complete a flow. */
 	private int $completions = 0;
 
+	/** @var array<int, array<string, mixed>> Every local disable performed. */
+	private array $disables = [];
+
 	protected function setUp(): void {
 		$this->attempts = 0;
 		$this->completions = 0;
+		$this->disables = [];
 	}
 
 	public function testARelayForwardsToAnAllowListedTenantAndExchangesNothing(): void {
@@ -195,6 +200,63 @@ class CredentialOauth2ControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_UNAUTHORIZED, $controller->start()->getStatus());
 	}
 
+	public function testDisconnectRevokesUpstreamThenDisablesLocally(): void {
+		$controller = $this->makeController(
+			params: [],
+			manageable: ['provider' => 'mastodon', 'scope' => 'personal', 'owner' => 'alice']
+		);
+
+		$response = $controller->disconnect(id: 'cred-1');
+
+		$this->assertSame(['status' => 'disabled', 'revoked' => true], $response->getData());
+		$this->assertSame('', $this->disables[0]['lastError']);
+	}
+
+	public function testAnUnreachableProviderStillDisconnectsLocally(): void {
+		// The branch that matters. A provider that cannot be reached must never keep a
+		// tenant connected: the alternative is a credential nobody can switch off
+		// because somebody else's server is down.
+		$controller = $this->makeController(
+			params: [],
+			manageable: ['provider' => 'mastodon', 'scope' => 'personal', 'owner' => 'alice'],
+			revokeResult: null
+		);
+
+		$response = $controller->disconnect(id: 'cred-1');
+
+		$this->assertSame('disabled', $response->getData()['status']);
+		$this->assertFalse($response->getData()['revoked'], 'the answer says the upstream revoke did not happen');
+		$this->assertSame('revoke_failed', $this->disables[0]['lastError']);
+	}
+
+	public function testDisconnectRefusesAConnectionTheCallerMayNotManage(): void {
+		$controller = $this->makeController(params: [], manageable: null);
+
+		$response = $controller->disconnect(id: 'cred-1');
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		$this->assertSame([], $this->disables, 'nothing may be disabled for a caller who cannot manage it');
+	}
+
+	public function testDisconnectRefusesAnUnauthenticatedCaller(): void {
+		$controller = $this->makeController(params: [], authenticated: false);
+
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $controller->disconnect(id: 'cred-1')->getStatus());
+	}
+
+	public function testAFailedLocalDisableIsReportedRatherThanClaimedAsSuccess(): void {
+		$controller = $this->makeController(
+			params: [],
+			manageable: ['provider' => 'mastodon', 'scope' => 'personal', 'owner' => 'alice'],
+			disableFails: true
+		);
+
+		$this->assertSame(
+			Http::STATUS_INTERNAL_SERVER_ERROR,
+			$controller->disconnect(id: 'cred-1')->getStatus()
+		);
+	}
+
 	/**
 	 * Build the controller with scripted collaborators.
 	 *
@@ -204,6 +266,9 @@ class CredentialOauth2ControllerTest extends TestCase {
 	 * @param boolean $relayPermits Whether the relay guard permits the destination.
 	 * @param \Throwable|null $completeThrows A failure the connect service raises.
 	 * @param boolean $authenticated Whether a user session exists.
+	 * @param array<string, mixed>|null $manageable The stored connection a disconnect targets, or null when there is none.
+	 * @param string|null $revokeResult What the upstream revoke reports, or null to have it throw.
+	 * @param boolean $disableFails Whether the local disable fails.
 	 *
 	 * @return CredentialOauth2Controller The controller under test.
 	 */
@@ -214,6 +279,9 @@ class CredentialOauth2ControllerTest extends TestCase {
 		bool $relayPermits = false,
 		?\Throwable $completeThrows = null,
 		bool $authenticated = true,
+		?array $manageable = null,
+		?string $revokeResult = '',
+		bool $disableFails = false,
 	): CredentialOauth2Controller {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(
@@ -274,6 +342,37 @@ class CredentialOauth2ControllerTest extends TestCase {
 		);
 		$endpoints = new OAuth2Endpoints(urlGenerator: $urlGenerator);
 
+		$connections = $this->createMock(OAuth2ConnectionRepository::class);
+		if ($manageable === null) {
+			$connections->method('findManageable')->willReturn(null);
+		} else {
+			$entity = new ObjectEntity();
+			$entity->setUuid('cred-1');
+			$entity->setObject($manageable);
+			$connections->method('findManageable')->willReturn($entity);
+		}
+
+		$connections->method('disable')->willReturnCallback(
+			function (string $credentialId, array $data, string $lastError) use ($disableFails): void {
+				if ($disableFails === true) {
+					throw new RuntimeException('the object store is down');
+				}
+
+				$this->disables[] = ['credentialId' => $credentialId, 'lastError' => $lastError];
+			}
+		);
+
+		$connect->method('oauth2Provider')->willReturn(['identifier' => 'mastodon', 'kind' => 'oauth2-token-set']);
+		$connect->method('revokeUpstream')->willReturnCallback(
+			function () use ($revokeResult): string {
+				if ($revokeResult === null) {
+					throw new RuntimeException('the provider is unreachable');
+				}
+
+				return $revokeResult;
+			}
+		);
+
 		$session = $this->createMock(IUserSession::class);
 		if ($authenticated === true) {
 			$user = $this->createMock(\OCP\IUser::class);
@@ -289,7 +388,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 			$connect,
 			$states,
 			$relayGuard,
-			$this->createMock(OAuth2ConnectionRepository::class),
+			$connections,
 			$endpoints,
 			$session,
 			$throttler,
