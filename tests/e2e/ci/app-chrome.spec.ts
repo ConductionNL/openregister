@@ -67,7 +67,7 @@ test.describe('app chrome (ADR-114)', () => {
 		await dismissSetupWizard(page)
 	})
 
-	test('the footer reads Documentation, Reports, Features & roadmap, each with a glyph', async ({
+	test('the footer reads Documentation, Store, Reports, Features & roadmap, each with a glyph', async ({
 		page,
 	}) => {
 		const footer = page.locator(
@@ -83,11 +83,14 @@ test.describe('app chrome (ADR-114)', () => {
 		// ORDER is the rule, not the numbers. This app ran its footer at 1 and 2
 		// while pipelinq runs 160/200/230, and both read correctly; ADR-114
 		// fixes the sequence and leaves the numbers to the app.
-		const seen = texts.filter((t) => /Documentation|Reports|roadmap/i.test(t))
-		expect(seen.length).toBe(3)
+		const seen = texts.filter((t) =>
+			/Documentation|Store|Reports|roadmap/i.test(t),
+		)
+		expect(seen.length).toBe(4)
 		expect(seen[0]).toMatch(/Documentation/i)
-		expect(seen[1]).toMatch(/Reports/i)
-		expect(seen[2]).toMatch(/roadmap/i)
+		expect(seen[1]).toMatch(/Store/i)
+		expect(seen[2]).toMatch(/Reports/i)
+		expect(seen[3]).toMatch(/roadmap/i)
 
 		for (const row of await rows.all()) {
 			await expect(
@@ -123,6 +126,28 @@ test.describe('app chrome (ADR-114)', () => {
 		// footer; this asserts the move rather than only the arrival.
 		const main = page.locator('[data-testid="cn-nav"] .cn-app-nav__footer-list')
 		await expect(main.getByRole('link', { name: /^Reports$/ })).toHaveCount(1)
+	})
+
+	test('Store opens the hosted store surface, which this app writes no backend for', async ({
+		page,
+	}) => {
+		const footer = page.locator(
+			'[data-testid="cn-nav"] .cn-app-nav__footer-list',
+		)
+		await footer
+			.getByRole('link', { name: /^Store$/ })
+			.first()
+			.click()
+
+		await expect(page).toHaveURL(/\/apps\/openregister\/store(\?|$)/, {
+			timeout: 15_000,
+		})
+
+		// openregister HOSTS the store plane, so this page is declarative: the
+		// app ships no store controller of its own (ADR-080, ADR-114 Decision
+		// 4). With no registry configured it renders its own items and makes NO
+		// network call, so this must pass on a plain instance.
+		await expect(page.locator('[data-testid="cn-nav"]')).toBeVisible()
 	})
 
 	test('the settings foldout carries Personal settings, Admin settings and Flows', async ({

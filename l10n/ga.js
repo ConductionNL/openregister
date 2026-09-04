@@ -2825,7 +2825,9 @@ OC.L10N.register(
         "Complete": "Críochnaigh",
         "Complete: {outcome}": "Críochnaigh: {outcome}",
         "Could not load the task": "Níorbh fhéidir an tasc a lódáil",
-        "The task refused that action": "Dhiúltaigh an tasc don ghníomh sin"
+        "The task refused that action": "Dhiúltaigh an tasc don ghníomh sin",
+        "Store": "Siopa",
+        "Install registers, schemas and flows that other organisations have published.": "Suiteáil cláir, scéimeanna agus sruthanna a d'fhoilsigh eagraíochtaí eile."
     },
     "nplurals=5; plural=(n==1 ? 0 : n==2 ? 1 : n<7 ? 2 : n<11 ? 3 : 4);"
 )

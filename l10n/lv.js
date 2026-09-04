@@ -2825,7 +2825,9 @@ OC.L10N.register(
         "Complete": "Pabeigt",
         "Complete: {outcome}": "Pabeigt: {outcome}",
         "Could not load the task": "Neizdevās ielādēt uzdevumu",
-        "The task refused that action": "Uzdevums noraidīja šo darbību"
+        "The task refused that action": "Uzdevums noraidīja šo darbību",
+        "Store": "Veikals",
+        "Install registers, schemas and flows that other organisations have published.": "Instalējiet reģistrus, shēmas un plūsmas, ko publicējušas citas organizācijas."
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2);"
 )

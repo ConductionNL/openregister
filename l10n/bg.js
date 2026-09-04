@@ -2825,7 +2825,9 @@ OC.L10N.register(
         "Complete": "Завършване",
         "Complete: {outcome}": "Завършване: {outcome}",
         "Could not load the task": "Задачата не можа да се зареди",
-        "The task refused that action": "Задачата отказа това действие"
+        "The task refused that action": "Задачата отказа това действие",
+        "Store": "Магазин",
+        "Install registers, schemas and flows that other organisations have published.": "Инсталирайте регистри, схеми и потоци, публикувани от други организации."
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -28,6 +28,18 @@
   "version": "1.1.0",
   "pages": [
     {
+      "id": "Store",
+      "route": "/store",
+      "type": "store",
+      "title": "Store",
+      "config": {
+        "app": "openregister",
+        "title": "Store",
+        "description": "Install registers, schemas and flows that other organisations have published."
+      },
+      "_note": "ADR-114 Decision 4 / ADR-080. Declarative: openregister hosts the store plane itself, so this page writes no controller and the app ships no store backend of its own. With no registry configured it renders openregister's own items and makes NO network call."
+    },
+    {
       "id": "dashboard",
       "route": "/",
       "type": "custom",
@@ -356,6 +368,14 @@
       "_note": "MDM steward surface (ADR-045 follow-on #C): audit list of recent mergeOperation rows with an in-window reverse action, read through the generic object-read surface (design.md D2)."
     }
   ],
+  "store": {
+    "_note": "Configuration exchange, not rows. A configuration set carries the registers, schemas, objects, views, flows, sources and mappings that make one way of working hold together. `types` selects that path; an app declaring none keeps the remote objects API. There is deliberately NO `installable` allowlist: a set exists to introduce schemas the instance does not have YET, so listing schemas openregister already owns would refuse exactly the sets worth installing. The trust boundary for a bundle is its publisher, enforced by the engine's source allowlist and trusted-key check. ⚠️ An EMPTY `installable` would mean install NOTHING, not install anything — omitting the key and declaring an empty list are different things.",
+    "types": [
+      "openregister.configset",
+      "openregister.flows"
+    ],
+    "localRegister": "openregister"
+  },
   "menu": [
     {
       "id": "Dashboard",
@@ -564,6 +584,14 @@
       "href": "https://openregister.conduction.nl",
       "section": "footer",
       "order": 90
+    },
+    {
+      "id": "StoreMenu",
+      "label": "Store",
+      "icon": "StoreOutline",
+      "route": "Store",
+      "section": "footer",
+      "order": 92
     },
     {
       "id": "Reports",

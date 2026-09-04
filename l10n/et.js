@@ -2825,7 +2825,9 @@ OC.L10N.register(
         "Complete": "Lõpeta",
         "Complete: {outcome}": "Lõpeta: {outcome}",
         "Could not load the task": "Ülesannet ei õnnestunud laadida",
-        "The task refused that action": "Ülesanne keeldus sellest toimingust"
+        "The task refused that action": "Ülesanne keeldus sellest toimingust",
+        "Store": "Pood",
+        "Install registers, schemas and flows that other organisations have published.": "Paigalda registrid, skeemid ja voog, mille teised organisatsioonid on avaldanud."
     },
     "nplurals=2; plural=(n != 1);"
 )

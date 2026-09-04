@@ -2882,7 +2882,9 @@ OC.L10N.register(
         "Complete": "Afronden",
         "Complete: {outcome}": "Afronden: {outcome}",
         "Could not load the task": "Kon de taak niet laden",
-        "The task refused that action": "De taak weigerde die actie"
+        "The task refused that action": "De taak weigerde die actie",
+        "Store": "Store",
+        "Install registers, schemas and flows that other organisations have published.": "Installeer registers, schema's en flows die andere organisaties hebben gepubliceerd."
     },
     "nplurals=2; plural=(n != 1);"
 )

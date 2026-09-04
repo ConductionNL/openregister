@@ -2825,7 +2825,9 @@ OC.L10N.register(
         "Complete": "Tamamla",
         "Complete: {outcome}": "Tamamla: {outcome}",
         "Could not load the task": "Görev yüklenemedi",
-        "The task refused that action": "Görev bu eylemi reddetti"
+        "The task refused that action": "Görev bu eylemi reddetti",
+        "Store": "Mağaza",
+        "Install registers, schemas and flows that other organisations have published.": "Diğer kuruluşların yayımladığı kayıtları, şemaları ve akışları yükleyin."
     },
     "nplurals=2; plural=(n != 1);"
 )

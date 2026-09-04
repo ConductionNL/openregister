@@ -2888,7 +2888,9 @@
         "Complete": "Terminer",
         "Complete: {outcome}": "Terminer : {outcome}",
         "Could not load the task": "Impossible de charger la tâche",
-        "The task refused that action": "La tâche a refusé cette action"
+        "The task refused that action": "La tâche a refusé cette action",
+        "Store": "Boutique",
+        "Install registers, schemas and flows that other organisations have published.": "Installez des registres, schémas et flux publiés par d'autres organisations."
     },
     "pluralForm": "nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;",
     "plurals": {
