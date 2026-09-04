@@ -153,10 +153,19 @@ class Routes {
 			['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
 
 			// Store plane (ADR-080, ADR-114 Decision 4). Declaring these here
-			// is only HALF the wiring: `Bootstrap::register()` must also alias
-			// the leaf app's `Controller\StoreController` at the engine's
-			// GenericStoreController, or the router resolves a class that does
-			// not exist and every store request 500s at dispatch time.
+			// is only HALF the wiring: the leaf app's `Controller\StoreController`
+			// must ALSO be aliased at the engine's GenericStoreController, or
+			// the router resolves a class that does not exist and every store
+			// request 500s at dispatch time.
+			//
+			// 🔴 AND NOT EVERY ADOPTER CALLS `Bootstrap::register()`. This
+			// table is adopted independently of that bootstrap, and an app that
+			// binds its controllers by hand gets the routes and none of the
+			// bindings. Measured 2026-09-03 on a running instance: decidiq,
+			// filinq and planninq each returned HTTP 500 here, on a route none
+			// of them had asked for, while keepiq answered fine because it does
+			// call `register()`. Such an app needs exactly one line,
+			// `Bootstrap::aliasStoreController()`, which is public for this.
 			//
 			// An app that declares no `store` block in its manifest still gets
 			// these routes, and the controller answers `not_configured` for
