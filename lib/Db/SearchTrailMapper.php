@@ -1005,14 +1005,17 @@ class SearchTrailMapper extends QBMapper {
 			// Get the query builder.
 			$qb = $this->db->getQueryBuilder();
 
+			// DATE_ADD is MySQL/MariaDB only. Now that the hourly LogCleanUpTask
+			// calls this, a MySQL-only expression would fail every hour on a
+			// PostgreSQL install, so the interval is spelled per platform.
+			$expiresExpression = sprintf('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds);
+			if ($this->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform) {
+				$expiresExpression = sprintf("created + INTERVAL '%d seconds'", $retentionSeconds);
+			}
+
 			// Update search trails that don't have an expiry date set.
 			$qb->update($this->getTableName())
-				->set(
-					'expires',
-					$qb->createFunction(
-						sprintf('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds)
-					)
-				)
+				->set('expires', $qb->createFunction($expiresExpression))
 				->where($qb->expr()->isNull('expires'));
 
 			// Execute the update and return number of affected rows.
