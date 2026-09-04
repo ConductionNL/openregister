@@ -80,6 +80,36 @@ class StoreManifest {
 	public const SOURCES = ['openregister', 'github'];
 
 	/**
+	 * Install postures a store may declare.
+	 *
+	 * `admin` is an instance administrator. `authenticated` is any signed-in
+	 * user — hermiq and buildiq both rely on it, hermiq because the install
+	 * lands quarantined and the gate that matters is approval. `action:<name>`
+	 * defers to ADR-023, which is integriq's posture.
+	 *
+	 * 🔴 THIS DECIDES WHO, NEVER WHAT. `installable` remains the security
+	 * boundary: an `authenticated` install refuses every schema the allowlist
+	 * omits, exactly as an admin install does. The two keys sit side by side and
+	 * read like a pair; they are not one.
+	 *
+	 * @var array<int, string>
+	 */
+	public const INSTALL_AUTH = ['admin', 'authenticated'];
+
+	/**
+	 * Prefix of the ADR-023 action posture.
+	 */
+	public const INSTALL_AUTH_ACTION_PREFIX = 'action:';
+
+	/**
+	 * The posture assumed when a block declares none.
+	 *
+	 * Deliberately the STRICTEST of them. A block that says nothing gets the
+	 * gate it had before the key existed.
+	 */
+	public const DEFAULT_INSTALL_AUTH = 'admin';
+
+	/**
 	 * The source assumed when a block declares none.
 	 *
 	 * Every store declared before the discriminator existed keeps its behaviour
@@ -102,6 +132,7 @@ class StoreManifest {
 	 * @param array<int, string>         $types       Shareable configuration type ids this store surfaces.
 	 * @param string                     $source      Discovery source: one of self::SOURCES.
 	 * @param array<int, string>         $topics      GitHub topics searched when $source is `github`.
+	 * @param string                     $installAuth Who may install: see self::INSTALL_AUTH.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) This is a value object
 	 * mirroring the manifest's `store` block one key to one parameter, so the
@@ -122,6 +153,7 @@ class StoreManifest {
 		public readonly array $types = [],
 		public readonly string $source = self::DEFAULT_SOURCE,
 		public readonly array $topics = [],
+		public readonly string $installAuth = self::DEFAULT_INSTALL_AUTH,
 	) {
 	}//end __construct()
 
@@ -159,6 +191,15 @@ class StoreManifest {
 		// declaring none leaves it with nothing to search. That is a malformed
 		// block rather than an empty store: an empty store is a store that found
 		// nothing, which is a different thing to report.
+		// An unrecognised posture DISABLES the block. Falling back to `admin`
+		// would silently remove a capability from an app that asked for a weaker
+		// gate: the store still works, for fewer people, for no stated reason,
+		// which is harder to notice than an outright refusal.
+		$installAuth = (string)($block['installAuth'] ?? self::DEFAULT_INSTALL_AUTH);
+		if (self::isKnownInstallAuth(value: $installAuth) === false) {
+			return new self(appId: $appId, enabled: false);
+		}
+
 		$topics = self::stringList(value: ($block['topics'] ?? []));
 		if ($source === 'github' && $topics === []) {
 			return new self(appId: $appId, enabled: false);
@@ -191,6 +232,7 @@ class StoreManifest {
 			builtIn: self::objectList(value: ($block['builtIn'] ?? [])),
 			source: $source,
 			topics: $topics,
+			installAuth: $installAuth,
 			// Shareable configuration type ids (store-over-federated-config).
 			// Declaring these selects federated discovery, where an item is a
 			// configuration set, a flow or a schema that marked itself
@@ -275,4 +317,58 @@ class StoreManifest {
 
 		return array_values(array_filter($value, static fn ($e): bool => is_array($e) === true));
 	}//end objectList()
+	/**
+	 * Whether a declared install posture is one this engine understands.
+	 *
+	 * The `action:` arm is recognised here but NOT yet enforceable: resolving
+	 * an ADR-023 action needs a resolver that lives in the leaf apps. Until
+	 * that lands, isInstallAuthEnforceable() reports it as unenforceable and
+	 * the controller refuses the install rather than quietly downgrading it to
+	 * `authenticated`.
+	 *
+	 * @param string $value The declared posture.
+	 *
+	 * @return bool
+	 */
+	private static function isKnownInstallAuth(string $value): bool {
+		if (in_array(needle: $value, haystack: self::INSTALL_AUTH, strict: true) === true) {
+			return true;
+		}
+
+		return str_starts_with($value, self::INSTALL_AUTH_ACTION_PREFIX) === true
+			&& strlen($value) > strlen(self::INSTALL_AUTH_ACTION_PREFIX);
+	}//end isKnownInstallAuth()
+
+	/**
+	 * Whether this engine can enforce the declared posture today.
+	 *
+	 * @return bool
+	 */
+	public function isInstallAuthEnforceable(): bool {
+		return in_array(needle: $this->installAuth, haystack: self::INSTALL_AUTH, strict: true);
+	}//end isInstallAuthEnforceable()
+
+	/**
+	 * Whether an install by this user is permitted by the declared posture.
+	 *
+	 * 🔴 ANONYMOUS IS REFUSED WHATEVER THE POSTURE. `authenticated` is the
+	 * weakest gate the vocabulary offers, and it still means signed in.
+	 *
+	 * @param bool $isSignedIn Whether a user is signed in.
+	 * @param bool $isAdmin    Whether that user is an instance administrator.
+	 *
+	 * @return bool
+	 */
+	public function permitsInstall(bool $isSignedIn, bool $isAdmin): bool {
+		if ($isSignedIn === false) {
+			return false;
+		}
+
+		if ($this->installAuth === 'authenticated') {
+			return true;
+		}
+
+		return $isAdmin;
+	}//end permitsInstall()
+
 }//end class
