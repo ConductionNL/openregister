@@ -62,6 +62,46 @@ class BootstrapTest extends TestCase {
 		$this->assertSame('OCA\\OpenRegister\\Mcp\\IMcpToolProvider::petstore', $context->aliases[0]['alias']);
 	}//end testRegistersLeafControllerServiceNames()
 
+	/**
+	 * An app that binds its controllers by hand can still bind the store one.
+	 *
+	 * `Routes::standard()` declares /api/store/items for every adopter, but
+	 * the binding lives in this class. decidiq, filinq and planninq took the
+	 * route table without calling register(), and each returned HTTP 500 on a
+	 * route it had never asked for. This is the one call that fixes that, so
+	 * it has to work standing alone.
+	 *
+	 * @return void
+	 */
+	public function testAliasStoreControllerBindsWithoutTheFullBootstrap(): void {
+		$context = new RecordingRegistrationContext();
+
+		Bootstrap::aliasStoreController(
+			context: $context,
+			appId: 'petstore',
+			controllerNs: 'OCA\\PetStoreFixture\\Controller'
+		);
+
+		$this->assertContains('OCA\\PetStoreFixture\\Controller\\StoreController', $context->services);
+	}//end testAliasStoreControllerBindsWithoutTheFullBootstrap()
+
+	/**
+	 * A trailing separator on the namespace does not double the separator.
+	 *
+	 * @return void
+	 */
+	public function testAliasStoreControllerToleratesATrailingSeparator(): void {
+		$context = new RecordingRegistrationContext();
+
+		Bootstrap::aliasStoreController(
+			context: $context,
+			appId: 'petstore',
+			controllerNs: 'OCA\\PetStoreFixture\\Controller\\'
+		);
+
+		$this->assertContains('OCA\\PetStoreFixture\\Controller\\StoreController', $context->services);
+	}//end testAliasStoreControllerToleratesATrailingSeparator()
+
 	public function testStudlyCaseFallbackFromMultiWordAppId(): void {
 		// With no explicit namespace, a StudlyCase guess from the id is used.
 		//
