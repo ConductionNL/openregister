@@ -345,8 +345,22 @@ class StoreManifest {
 	 * @return bool
 	 */
 	public function isInstallAuthEnforceable(): bool {
-		return in_array(needle: $this->installAuth, haystack: self::INSTALL_AUTH, strict: true);
+		return $this->isKnownInstallAuth(value: $this->installAuth);
 	}//end isInstallAuthEnforceable()
+
+	/**
+	 * The ADR-023 action name this store gates its install on, if any.
+	 *
+	 * @return string|null The action name, or null when the posture is not an
+	 *                     action posture.
+	 */
+	public function installAction(): ?string {
+		if (str_starts_with($this->installAuth, self::INSTALL_AUTH_ACTION_PREFIX) === false) {
+			return null;
+		}
+
+		return substr($this->installAuth, strlen(self::INSTALL_AUTH_ACTION_PREFIX));
+	}//end installAction()
 
 	/**
 	 * Whether an install by this user is permitted by the declared posture.
@@ -366,6 +380,15 @@ class StoreManifest {
 
 		if ($this->installAuth === 'authenticated') {
 			return true;
+		}
+
+		// An action posture is NOT decided here. The matrix lives in the leaf
+		// app, so this object cannot see the answer; returning $isAdmin would
+		// quietly turn "the operators who hold this action" into "instance
+		// administrators", which is the capability loss this key exists to
+		// prevent. The controller resolves it and must not reach this line.
+		if ($this->installAction() !== null) {
+			return false;
 		}
 
 		return $isAdmin;

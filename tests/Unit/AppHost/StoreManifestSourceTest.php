@@ -180,21 +180,50 @@ class StoreManifestSourceTest extends TestCase {
 	}
 
 	/**
-	 * An `action:` posture parses but is not yet enforceable.
+	 * An `action:` posture exposes its action name and is enforceable.
 	 *
 	 * @return void
 	 */
-	public function testActionPostureParsesButIsNotEnforceable(): void {
+	public function testActionPostureExposesItsActionName(): void {
 		$manifest = StoreManifest::fromManifest('demo', [
 			'store' => ['schema' => 'template', 'installAuth' => 'action:catalog.instantiate'],
 		]);
 
 		$this->assertTrue($manifest->enabled);
-		$this->assertSame('action:catalog.instantiate', $manifest->installAuth);
+		$this->assertTrue($manifest->isInstallAuthEnforceable());
+		$this->assertSame('catalog.instantiate', $manifest->installAction());
+	}
+
+	/**
+	 * 🔴 The manifest REFUSES to answer for an action posture.
+	 *
+	 * The matrix lives in the leaf app, so this object cannot see the answer.
+	 * Returning $isAdmin would quietly turn "the operators who hold this
+	 * action" into "instance administrators" — exactly the capability loss
+	 * this key exists to prevent. The controller resolves it instead.
+	 *
+	 * @return void
+	 */
+	public function testAnActionPostureIsNotDecidedByTheManifest(): void {
+		$manifest = StoreManifest::fromManifest('demo', [
+			'store' => ['schema' => 'template', 'installAuth' => 'action:catalog.instantiate'],
+		]);
+
 		$this->assertFalse(
-			$manifest->isInstallAuthEnforceable(),
-			'Recognised is not the same as enforceable; the controller must refuse it.'
+			$manifest->permitsInstall(isSignedIn: true, isAdmin: true),
+			'Even an administrator must be decided by the leaf matrix, not assumed here.'
 		);
+	}
+
+	/**
+	 * A non-action posture reports no action name.
+	 *
+	 * @return void
+	 */
+	public function testANonActionPostureHasNoActionName(): void {
+		$manifest = StoreManifest::fromManifest('demo', ['store' => ['schema' => 'template']]);
+
+		$this->assertNull($manifest->installAction());
 	}
 
 	/**

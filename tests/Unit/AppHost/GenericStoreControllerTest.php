@@ -38,6 +38,7 @@ use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Store\FederatedStoreCatalog;
 use OCA\OpenRegister\AppHost\Store\GenericStoreInstaller;
 use OCA\OpenRegister\AppHost\Store\Source\GitHubStoreSource;
+use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
@@ -79,6 +80,9 @@ class GenericStoreControllerTest extends TestCase {
 	/** @var GitHubStoreSource&MockObject */
 	private $gitHubSource;
 
+	/** @var StoreActionAuthorizer&MockObject */
+	private $actionAuthorizer;
+
 	/** @var IUserSession&MockObject */
 	private $userSession;
 
@@ -108,6 +112,8 @@ class GenericStoreControllerTest extends TestCase {
 			->disableOriginalConstructor()->onlyMethods(['search', 'resolve', 'install'])->getMock();
 		$this->gitHubSource = $this->getMockBuilder(GitHubStoreSource::class)
 			->disableOriginalConstructor()->onlyMethods(['search', 'sourceId'])->getMock();
+		$this->actionAuthorizer = $this->getMockBuilder(StoreActionAuthorizer::class)
+			->disableOriginalConstructor()->onlyMethods(['can'])->getMock();
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->request = $this->createMock(IRequest::class);
@@ -129,6 +135,7 @@ class GenericStoreControllerTest extends TestCase {
 			installer: $this->installer,
 			catalog: $this->catalog,
 			gitHubSource: $this->gitHubSource,
+			actionAuthorizer: $this->actionAuthorizer,
 			userSession: $this->userSession,
 			groupManager: $this->groupManager,
 			logger: $this->createMock(LoggerInterface::class)
@@ -492,31 +499,97 @@ class GenericStoreControllerTest extends TestCase {
 	}
 
 	/**
-	 * A posture the engine cannot enforce is refused, never downgraded.
-	 *
-	 * 🔴 The regression this guards: silently treating `action:<name>` as
-	 * `authenticated` would install on a WEAKER gate than the app asked for,
-	 * and the store would look like it was working.
+	 * An action posture asks the LEAF app, and installs when it says yes.
 	 *
 	 * @return void
 	 */
-	public function testAnUnenforceablePostureRefusesTheInstall(): void {
-		$this->signIn(isAdmin: true);
-		$this->manifestLoader->method('loadStore')->willReturn(
-			StoreManifest::fromManifest('demo', [
-				'store' => [
-					'schema' => 'template',
-					'installAuth' => 'action:catalog.instantiate',
-				],
-			])
+	public function testAnActionPostureInstallsWhenTheLeafMatrixAllowsIt(): void {
+		$this->signIn(isAdmin: false);
+		$this->manifestLoader->method('loadStore')->willReturn($this->actionStore());
+		$this->actionAuthorizer->expects($this->once())
+			->method('can')
+			->with('demo', 'catalog.instantiate', $this->anything())
+			->willReturn(true);
+		$this->storeService->method('resolve')->willReturn(['slug' => 'vth', 'components' => []]);
+		$this->installer->expects($this->once())
+			->method('install')
+			->willReturn(['success' => true, 'components' => []]);
+
+		$this->assertSame(
+			Http::STATUS_OK,
+			$this->controller('demo')->install(slug: 'vth')->getStatus()
 		);
+	}
+
+	/**
+	 * And refuses when it says no.
+	 *
+	 * @return void
+	 */
+	public function testAnActionPostureRefusesWhenTheLeafMatrixDeclines(): void {
+		$this->signIn(isAdmin: false);
+		$this->manifestLoader->method('loadStore')->willReturn($this->actionStore());
+		$this->actionAuthorizer->method('can')->willReturn(false);
+		$this->installer->expects($this->never())->method('install');
+
+		$this->assertSame(
+			Http::STATUS_FORBIDDEN,
+			$this->controller('demo')->install(slug: 'vth')->getStatus()
+		);
+	}
+
+	/**
+	 * 🔴 An administrator does NOT bypass the action matrix.
+	 *
+	 * The point of the posture is that the leaf app decides. An engine that
+	 * let admins through anyway would make the declaration decorative, and the
+	 * app could never gate an install MORE tightly than instance admin.
+	 *
+	 * @return void
+	 */
+	public function testAnAdministratorStillGoesThroughTheActionMatrix(): void {
+		$this->signIn(isAdmin: true);
+		$this->manifestLoader->method('loadStore')->willReturn($this->actionStore());
+		$this->actionAuthorizer->expects($this->once())->method('can')->willReturn(false);
 		$this->installer->expects($this->never())->method('install');
 
 		$this->assertSame(
 			Http::STATUS_FORBIDDEN,
 			$this->controller('demo')->install(slug: 'vth')->getStatus(),
-			'An action: posture must be refused until a resolver exists, not downgraded.'
+			'Being an administrator must not skip the action the app declared.'
 		);
+	}
+
+	/**
+	 * An anonymous caller never reaches the matrix at all.
+	 *
+	 * @return void
+	 */
+	public function testAnActionPostureRefusesAnonymousWithoutAsking(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->manifestLoader->method('loadStore')->willReturn($this->actionStore());
+		$this->actionAuthorizer->expects($this->never())->method('can');
+		$this->installer->expects($this->never())->method('install');
+
+		$this->assertSame(
+			Http::STATUS_FORBIDDEN,
+			$this->controller('demo')->install(slug: 'vth')->getStatus()
+		);
+	}
+
+	/**
+	 * A store gating install on an ADR-023 action.
+	 *
+	 * @return StoreManifest
+	 */
+	private function actionStore(): StoreManifest {
+		return StoreManifest::fromManifest('demo', [
+			'store' => [
+				'schema' => 'template',
+				'installAuth' => 'action:catalog.instantiate',
+				'installable' => ['caseType'],
+			],
+		]);
 	}
 
 	/**
