@@ -7,8 +7,19 @@
  * table, `_expires` really holds the expiry, and the purge really removes
  * only what has expired, with no audit trail written for any of it.
  *
- * @category Test
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Tests
  * @package  OCA\OpenRegister\Tests\Db
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Tests\Db;

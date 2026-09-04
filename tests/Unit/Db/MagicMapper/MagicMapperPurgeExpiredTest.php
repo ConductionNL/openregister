@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Unit tests for MagicMapper::purgeExpired().
  *
@@ -9,9 +7,22 @@ declare(strict_types=1);
  * that does not exist yet (a schema nothing has been appended to), and it
  * hands the handler the register+schema table name it resolves itself.
  *
- * @category Test
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Db\MagicMapper
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 

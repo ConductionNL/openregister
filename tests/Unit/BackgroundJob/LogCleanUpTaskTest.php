@@ -1,5 +1,23 @@
 <?php
 
+/**
+ * LogCleanUpTask tests: the hourly audit trail and search trail retention sweeps.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Tests
+ * @package  Unit\BackgroundJob
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
+ */
+
 declare(strict_types=1);
 
 namespace Unit\BackgroundJob;

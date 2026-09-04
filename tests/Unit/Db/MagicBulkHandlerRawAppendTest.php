@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Unit tests for the raw-append side of MagicBulkHandler.
  *
@@ -11,9 +9,22 @@ declare(strict_types=1);
  * schedule the row for deletion. Second, that purgeExpired() deletes by
  * register, schema and a passed `_expires`, and reports the count.
  *
- * @category Test
- * @package  OCA\OpenRegister\Tests\Unit\Db
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Tests
+ * @package  Unit\Db
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace Unit\Db;
 
