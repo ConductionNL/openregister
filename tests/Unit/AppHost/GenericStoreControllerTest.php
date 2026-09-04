@@ -308,6 +308,60 @@ class GenericStoreControllerTest extends TestCase {
 	}//end testFederatedSearchFailureIsContained()
 
 	/**
+	 * The app's own items ride back with the cards.
+	 *
+	 * They are declared ONCE, in the `store` block. StoreManifest parsed them
+	 * and nothing ever sent them anywhere, because CnStorePage's `builtIn`
+	 * prop is fed from the PAGE CONFIG — a second place to write the same
+	 * list. An app that declared them only in the `store` block rendered an
+	 * empty store while its manifest said otherwise. Measured on decidiq,
+	 * which declares four example sets and showed none.
+	 *
+	 * @return void
+	 */
+	public function testSearchServesTheBuiltInItemsTheManifestDeclares(): void {
+		$this->signIn();
+		$this->manifestLoader->method('loadStore')->willReturn(
+			StoreManifest::fromManifest(
+				appId: 'decidiq',
+				manifest: [
+					'store' => [
+						'types' => ['openregister.configset'],
+						'builtIn' => [
+							['slug' => 'municipality', 'title' => 'Municipality'],
+							['slug' => 'association', 'title' => 'Association or VvE'],
+						],
+					],
+				]
+			)
+		);
+		$this->catalog->method('search')->willReturn(['outcome' => 'ok', 'cards' => []]);
+
+		$data = $this->controller(appId: 'decidiq')->search()->getData();
+
+		$this->assertArrayHasKey('builtIn', $data);
+		$this->assertCount(2, $data['builtIn']);
+		$this->assertSame('municipality', $data['builtIn'][0]['slug']);
+	}//end testSearchServesTheBuiltInItemsTheManifestDeclares()
+
+	/**
+	 * With no store block at all there is nothing to ship, and the key is
+	 * still present so the page never has to null-check it.
+	 *
+	 * @return void
+	 */
+	public function testBuiltInIsAnEmptyListWhenNoStoreIsDeclared(): void {
+		$this->signIn();
+		$this->manifestLoader->method('loadStore')
+			->willReturn(new StoreManifest(appId: 'keepiq', enabled: false));
+
+		$data = $this->controller(appId: 'keepiq')->search()->getData();
+
+		$this->assertArrayHasKey('builtIn', $data);
+		$this->assertSame([], $data['builtIn']);
+	}//end testBuiltInIsAnEmptyListWhenNoStoreIsDeclared()
+
+	/**
 	 * An anonymous caller gets an explicit 401, not a login redirect.
 	 *
 	 * @return void
