@@ -2825,7 +2825,9 @@ OC.L10N.register(
         "Complete": "Finalizează",
         "Complete: {outcome}": "Finalizează: {outcome}",
         "Could not load the task": "Sarcina nu a putut fi încărcată",
-        "The task refused that action": "Sarcina a refuzat această acțiune"
+        "The task refused that action": "Sarcina a refuzat această acțiune",
+        "Store": "Magazin",
+        "Install registers, schemas and flows that other organisations have published.": "Instalați registre, scheme și fluxuri publicate de alte organizații."
     },
     "nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));"
 )

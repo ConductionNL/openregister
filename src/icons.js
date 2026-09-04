@@ -44,6 +44,7 @@ import RobotOutline from 'vue-material-design-icons/RobotOutline.vue'
 import ShieldAccountOutline from 'vue-material-design-icons/ShieldAccountOutline.vue'
 import ShieldLockOutline from 'vue-material-design-icons/ShieldLockOutline.vue'
 import SitemapOutline from 'vue-material-design-icons/SitemapOutline.vue'
+import StoreOutline from 'vue-material-design-icons/StoreOutline.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import TrayFull from 'vue-material-design-icons/TrayFull.vue'
 import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline.vue'
@@ -82,6 +83,7 @@ export default {
 	ShieldAccountOutline,
 	ShieldLockOutline,
 	SitemapOutline,
+	StoreOutline,
 	TextBoxOutline,
 	TrayFull,
 	ViewDashboardOutline,

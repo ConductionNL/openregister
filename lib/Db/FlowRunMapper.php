@@ -675,6 +675,41 @@ class FlowRunMapper extends QBMapper {
 	}//end hasActiveRun()
 
 	/**
+	 * How many runs this flow has EVER had, terminal ones included.
+	 *
+	 * {@see hasActiveRun} answers a different question — whether a run is going
+	 * right now — and a flow that ran to completion last year has none. Deleting
+	 * a flow is irreversible, so the guard that authorises it has to ask about
+	 * the flow's whole history, not its current activity.
+	 *
+	 * Used by {@see \OCA\OpenRegister\Repair\PurgePhantomMigratedFlows} as one
+	 * conjunct of the never-dispatched proof: a row with even one run row has
+	 * been part of something that happened and is never removed.
+	 *
+	 * @param string $flowId The flow's uuid.
+	 *
+	 * @return integer The number of run rows recorded against this flow.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	public function countRunsForFlow(string $flowId): int {
+		if (trim($flowId) === '') {
+			return 0;
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->createFunction('COUNT(*) AS `total`'))
+			->from($this->getTableName())
+			->where($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowId)));
+
+		$result = $qb->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+
+		return (int)($row['total'] ?? 0);
+	}//end countRunsForFlow()
+
+	/**
 	 * How many runs are still going, for one organisation.
 	 *
 	 * Separate from {@see findActive} because a widget shows a bounded list but

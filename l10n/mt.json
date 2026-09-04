@@ -2904,7 +2904,9 @@
         "Complete": "Lesti",
         "Complete: {outcome}": "Lesti: {outcome}",
         "Could not load the task": "Ma setax jitgħabba l-kompitu",
-        "The task refused that action": "Il-kompitu rrifjuta dik l-azzjoni"
+        "The task refused that action": "Il-kompitu rrifjuta dik l-azzjoni",
+        "Store": "Ħanut",
+        "Install registers, schemas and flows that other organisations have published.": "Installa reġistri, skemi u flussi ppubblikati minn organizzazzjonijiet oħra."
     },
     "pluralForm": "nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);",
     "plurals": {

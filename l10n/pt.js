@@ -2825,7 +2825,9 @@ OC.L10N.register(
         "Complete": "Concluir",
         "Complete: {outcome}": "Concluir: {outcome}",
         "Could not load the task": "Não foi possível carregar a tarefa",
-        "The task refused that action": "A tarefa recusou essa ação"
+        "The task refused that action": "A tarefa recusou essa ação",
+        "Store": "Loja",
+        "Install registers, schemas and flows that other organisations have published.": "Instale registos, esquemas e fluxos publicados por outras organizações."
     },
     "nplurals=2; plural=(n != 1);"
 )

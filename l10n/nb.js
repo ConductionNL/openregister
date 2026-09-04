@@ -2825,7 +2825,9 @@ OC.L10N.register(
         "Complete": "Fullfør",
         "Complete: {outcome}": "Fullfør: {outcome}",
         "Could not load the task": "Kunne ikke laste oppgaven",
-        "The task refused that action": "Oppgaven avviste den handlingen"
+        "The task refused that action": "Oppgaven avviste den handlingen",
+        "Store": "Butikk",
+        "Install registers, schemas and flows that other organisations have published.": "Installer registre, skjemaer og flyter som andre organisasjoner har publisert."
     },
     "nplurals=2; plural=(n != 1);"
 )

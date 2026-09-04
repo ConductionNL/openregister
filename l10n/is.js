@@ -2825,7 +2825,9 @@ OC.L10N.register(
         "Complete": "Ljúka",
         "Complete: {outcome}": "Ljúka: {outcome}",
         "Could not load the task": "Gat ekki hlaðið verkefninu",
-        "The task refused that action": "Verkefnið hafnaði þeirri aðgerð"
+        "The task refused that action": "Verkefnið hafnaði þeirri aðgerð",
+        "Store": "Verslun",
+        "Install registers, schemas and flows that other organisations have published.": "Settu upp skrár, skemu og flæði sem aðrar stofnanir hafa birt."
     },
     "nplurals=2; plural=(n != 1);"
 )

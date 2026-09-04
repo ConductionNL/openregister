@@ -2825,7 +2825,9 @@ OC.L10N.register(
         "Complete": "Slutför",
         "Complete: {outcome}": "Slutför: {outcome}",
         "Could not load the task": "Kunde inte läsa in uppgiften",
-        "The task refused that action": "Uppgiften nekade den åtgärden"
+        "The task refused that action": "Uppgiften nekade den åtgärden",
+        "Store": "Butik",
+        "Install registers, schemas and flows that other organisations have published.": "Installera register, scheman och flöden som andra organisationer har publicerat."
     },
     "nplurals=2; plural=(n != 1);"
 )

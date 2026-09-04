@@ -2904,7 +2904,9 @@
         "Complete": "Dokončaj",
         "Complete: {outcome}": "Dokončaj: {outcome}",
         "Could not load the task": "Naloge ni bilo mogoče naložiti",
-        "The task refused that action": "Naloga je zavrnila to dejanje"
+        "The task refused that action": "Naloga je zavrnila to dejanje",
+        "Store": "Trgovina",
+        "Install registers, schemas and flows that other organisations have published.": "Namestite registre, sheme in tokove, ki so jih objavile druge organizacije."
     },
     "pluralForm": "nplurals=4; plural=(n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3);",
     "plurals": {

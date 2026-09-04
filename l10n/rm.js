@@ -2825,7 +2825,9 @@ OC.L10N.register(
         "Complete": "Terminar",
         "Complete: {outcome}": "Terminar: {outcome}",
         "Could not load the task": "L'incumbensa n'ha betg pudì vegnir chargiada",
-        "The task refused that action": "L'incumbensa ha refusà questa acziun"
+        "The task refused that action": "L'incumbensa ha refusà questa acziun",
+        "Store": "Butia",
+        "Install registers, schemas and flows that other organisations have published.": "Installescha registers, schemas e process ch'autras organisaziuns han publitgà."
     },
     "nplurals=2; plural=(n != 1);"
 )

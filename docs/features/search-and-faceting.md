@@ -238,6 +238,16 @@ Recording is best-effort: a write failure logs a warning and the search returns
 normally, so analytics recording never degrades search availability. The settings
 round-trip through `GET`/`PATCH /api/settings/retention`.
 
+**Retention.** A third setting on the same page, `searchTrailRetention`
+(milliseconds, default `2592000000`, 30 days), says how long a trail entry is
+kept. The hourly `LogCleanUpTask` background job enforces it: entries are
+recorded without an expiry, so the job first stamps `expires` = `created` plus
+the retention on entries that have none, then deletes every entry whose expiry
+has passed. The same job tombstones expired audit trail rows; the two sweeps are
+independent, so a failure in one never skips the other. A value of `0` or lower
+keeps entries indefinitely. `POST /api/search-trails/cleanup` runs the same
+deletion on demand.
+
 **Standards**: BIO (audit logging), AVG/GDPR Article 30 (processing register context).
 
 ## Related Features

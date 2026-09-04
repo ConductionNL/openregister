@@ -256,6 +256,29 @@ Administrators MUST be able to configure retention-related settings through the 
 - **THEN** the settings MUST be persisted in app configuration
 - **AND** the DestructionCheckJob interval MUST be updated if `destructionCheckInterval` changed
 
+### Requirement: The hourly log cleanup job MUST enforce the configured search trail retention
+
+`LogCleanUpTask` runs hourly and MUST enforce `searchTrailRetention` (milliseconds, default `2592000000`, 30 days) on the search trail table, alongside the audit trail sweep it already performs. Search trail rows are inserted without an expiry, so the job MUST first stamp `expires` = `created` + retention on rows that have none, and then delete the rows whose `expires` has passed. The two sweeps MUST be independent: a failure in one MUST be logged and MUST NOT prevent the other from running, and each MUST log its own outcome. Before this requirement the setting was echoed to the admin UI and enforced by nothing; the only caller of the sweep was a manual admin endpoint.
+
+#### Scenario: Search trails past retention are deleted by the hourly job @e2e exclude hourly background job with no UI, covered by tests/Unit/BackgroundJob/LogCleanUpTaskTest.php
+- **GIVEN** `searchTrailRetention` is configured, or left at its default
+- **AND** search trail rows exist whose `created` plus the retention lies in the past
+- **WHEN** `LogCleanUpTask` runs
+- **THEN** rows without an `expires` are stamped `created` + retention
+- **AND** rows whose `expires` has passed are deleted
+- **AND** the job logs the outcome of the search trail sweep separately from the audit trail sweep
+
+#### Scenario: A failing audit sweep does not skip the search trail sweep @e2e exclude hourly background job with no UI, covered by tests/Unit/BackgroundJob/LogCleanUpTaskTest.php
+- **GIVEN** the audit trail sweep throws
+- **WHEN** `LogCleanUpTask` runs
+- **THEN** the error is logged
+- **AND** the search trail sweep still runs, and a throwing search trail sweep likewise leaves the audit sweep's outcome intact
+
+#### Scenario: A non-positive retention keeps search trails @e2e exclude hourly background job with no UI, covered by tests/Unit/BackgroundJob/LogCleanUpTaskTest.php
+- **GIVEN** `searchTrailRetention` is `0` or negative
+- **WHEN** `LogCleanUpTask` runs
+- **THEN** no expiry is stamped and nothing is deleted from the search trail table
+
 ### Requirement: Cascading destruction MUST respect referential integrity
 When an object is destroyed via an approved destruction list, the system MUST evaluate related objects according to the existing referential integrity cascade rules.
 

@@ -2888,7 +2888,9 @@
         "Complete": "Completa",
         "Complete: {outcome}": "Completa: {outcome}",
         "Could not load the task": "Impossibile caricare l'attività",
-        "The task refused that action": "L'attività ha rifiutato l'azione"
+        "The task refused that action": "L'attività ha rifiutato l'azione",
+        "Store": "Store",
+        "Install registers, schemas and flows that other organisations have published.": "Installa registri, schemi e flussi pubblicati da altre organizzazioni."
     },
     "pluralForm": "nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;",
     "plurals": {

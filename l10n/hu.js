@@ -2825,7 +2825,9 @@ OC.L10N.register(
         "Complete": "Befejezés",
         "Complete: {outcome}": "Befejezés: {outcome}",
         "Could not load the task": "A feladat nem tölthető be",
-        "The task refused that action": "A feladat elutasította a műveletet"
+        "The task refused that action": "A feladat elutasította a műveletet",
+        "Store": "Áruház",
+        "Install registers, schemas and flows that other organisations have published.": "Telepítsen más szervezetek által közzétett nyilvántartásokat, sémákat és folyamatokat."
     },
     "nplurals=2; plural=(n != 1);"
 )

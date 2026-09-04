@@ -4158,6 +4158,184 @@ class ObjectService implements ObjectServiceInterface
 
     }//end saveObjectsStreaming()
 
+
+    /**
+     * Append rows to a register+schema table with every safeguard switched OFF.
+     *
+     * THIS IS THE FAST PATH FOR HIGH-VOLUME, LOW-VALUE WRITERS such as traffic
+     * events and telemetry: chunked multi-row INSERT ... ON DUPLICATE KEY UPDATE
+     * statements straight into the magic table. It exists because the normal
+     * save path costs several queries and side effects PER ROW, and a collector
+     * receiving thousands of events a minute can afford neither.
+     *
+     * WHAT IS SKIPPED, on purpose and without exception:
+     *   - RBAC and multitenancy: nobody's permissions are checked. Rows carry
+     *     whatever `owner` / `organisation` the caller passes, or NULL, so they
+     *     may be invisible to tenant-scoped reads.
+     *   - Schema validation: property values are written as given. A value that
+     *     does not fit its column fails at the database; a property the table
+     *     has no column for is dropped.
+     *   - Audit trail: no create/update entry is written, so these rows have no
+     *     history, no revert and no hash chain.
+     *   - Lifecycle events: no ObjectCreated/ObjectUpdated events, so webhooks,
+     *     flows and the search index are not notified.
+     *   - Relations, files, computed fields, slugs, cascading and enrichment.
+     *
+     * THE CALLER TAKES THE AUTHORISATION RESPONSIBILITY. Calling this method is
+     * the same declaration as `_rbac: false` on the normal path (ADR-022): the
+     * caller has decided who may write here. Use saveObjects() for anything a
+     * person will edit, audit or revert.
+     *
+     * Each `$objects` entry is a plain associative array of property values,
+     * plus the optional metadata keys `uuid` (a v4 is generated when absent),
+     * `expires` (ISO 8601 string or DateTimeInterface; lands in the indexed
+     * `_expires` column that purgeExpiredObjectsRaw() sweeps), `owner` and
+     * `organisation`. `_created` and `_updated` are set to now. The service's
+     * current register/schema context is left untouched.
+     *
+     * @param array               $objects  Rows to append, as plain arrays.
+     * @param Register|string|int $register The register entity, id, uuid or slug.
+     * @param Schema|string|int   $schema   The schema entity, id, uuid or slug, resolved WITHIN the register.
+     *
+     * @return int The number of rows written.
+     *
+     * @throws OcpDoesNotExistException     When the register does not exist.
+     * @throws SchemaNotInRegisterException When the register does not carry the schema.
+     * @throws \OCP\DB\Exception            When the insert fails.
+     *
+     * @psalm-param   array<int, array<string, mixed>> $objects
+     * @phpstan-param array<int, array<string, mixed>> $objects
+     *
+     * @spec openspec/specs/data-import-export/spec.md#requirement-raw-append-for-high-volume-writers
+     */
+    public function appendObjectsRaw(array $objects, Register|string|int $register, Schema|string|int $schema): int
+    {
+        if ($objects === []) {
+            return 0;
+        }
+
+        [$registerEntity, $schemaEntity] = $this->resolveRawTarget(register: $register, schema: $schema);
+
+        $rows = array_map(
+            fn (array $object): array => $this->prepareRawRow(object: $object),
+            array_values($objects)
+        );
+
+        // The bulk upsert creates a missing table only after a failed statement;
+        // creating it up front keeps the first append on the same path as
+        // every later one.
+        $this->objectMapper->ensureTableForRegisterSchema(register: $registerEntity, schema: $schemaEntity);
+        $tableName = $this->objectMapper->getTableNameForRegisterSchema(register: $registerEntity, schema: $schemaEntity);
+
+        $written = $this->objectMapper->bulkUpsert(
+            objects: $rows,
+            register: $registerEntity,
+            schema: $schemaEntity,
+            tableName: $tableName,
+            needsPreUpdateState: false
+        );
+
+        return count($written);
+    }//end appendObjectsRaw()
+
+
+    /**
+     * Hard-delete the rows of a register+schema table whose expiry has passed.
+     *
+     * The sweep for appendObjectsRaw(). Rows with a NULL `_expires` are never
+     * touched. This BYPASSES soft-delete and the audit trail on purpose: raw
+     * rows never had an audit trail, so there is nothing to tombstone, and
+     * keeping expired telemetry as soft-deleted rows would defeat the
+     * retention the expiry expresses. Same responsibility model as the append:
+     * the caller has decided that this register+schema holds expiring raw rows.
+     *
+     * @param Register|string|int $register The register entity, id, uuid or slug.
+     * @param Schema|string|int   $schema   The schema entity, id, uuid or slug, resolved WITHIN the register.
+     *
+     * @return int The number of rows removed; 0 when the table does not exist yet.
+     *
+     * @throws OcpDoesNotExistException     When the register does not exist.
+     * @throws SchemaNotInRegisterException When the register does not carry the schema.
+     * @throws \OCP\DB\Exception            When the delete fails.
+     *
+     * @spec openspec/specs/data-import-export/spec.md#requirement-raw-append-for-high-volume-writers
+     */
+    public function purgeExpiredObjectsRaw(Register|string|int $register, Schema|string|int $schema): int
+    {
+        [$registerEntity, $schemaEntity] = $this->resolveRawTarget(register: $register, schema: $schema);
+
+        return $this->objectMapper->purgeExpired(register: $registerEntity, schema: $schemaEntity);
+    }//end purgeExpiredObjectsRaw()
+
+
+    /**
+     * Resolve a register and a schema for a raw operation without touching the service context.
+     *
+     * The register is the boundary: the schema is resolved among the schemas the
+     * register carries, never instance-wide, exactly as setRegister()/setSchema()
+     * do. Unlike those setters nothing is stored on `$this`, so a raw write from
+     * a background job cannot leak a register or a pending schema ref into the
+     * next caller's chain.
+     *
+     * @param Register|string|int $register The register entity, id, uuid or slug.
+     * @param Schema|string|int   $schema   The schema entity, id, uuid or slug.
+     *
+     * @return array{0: Register, 1: Schema} The resolved pair.
+     *
+     * @throws OcpDoesNotExistException     When the register does not exist.
+     * @throws SchemaNotInRegisterException When the register does not carry the schema.
+     *
+     * @spec openspec/specs/data-import-export/spec.md#requirement-raw-append-for-high-volume-writers
+     */
+    private function resolveRawTarget(Register|string|int $register, Schema|string|int $schema): array
+    {
+        if (($register instanceof Register) === false) {
+            $register = $this->registerMapper->find(id: $register, _rbac: false, _multitenancy: false);
+        }
+
+        if (($schema instanceof Schema) === false) {
+            $schema = $this->scopedSchemaResolver->resolveSchemaWithin(register: $register, schemaRef: $schema);
+        }
+
+        return [$register, $schema];
+    }//end resolveRawTarget()
+
+
+    /**
+     * Shape one caller-supplied row for the bulk handler.
+     *
+     * Metadata moves into `@self`, which is where the handler reads it from;
+     * everything else stays a property. Keys the caller did not pass are left
+     * to the handler's defaults: NULL owner and organisation, no expiry.
+     *
+     * @param array<string, mixed> $object A plain row as passed to appendObjectsRaw().
+     *
+     * @return array<string, mixed> The row in the handler's `@self` + properties shape.
+     *
+     * @spec openspec/specs/data-import-export/spec.md#requirement-raw-append-for-high-volume-writers
+     */
+    private function prepareRawRow(array $object): array
+    {
+        $self = ['uuid' => (string) ($object['uuid'] ?? Uuid::v4()->toRfc4122())];
+
+        foreach (['expires', 'owner', 'organisation'] as $metadataKey) {
+            if (array_key_exists($metadataKey, $object) === true) {
+                $self[$metadataKey] = $object[$metadataKey];
+            }
+        }
+
+        unset(
+            $object['uuid'],
+            $object['expires'],
+            $object['owner'],
+            $object['organisation'],
+            $object['@self'],
+            $object['object']
+        );
+
+        return ['@self' => $self] + $object;
+    }//end prepareRawRow()
+
     /**
      * Transform objects from serialized format to database format
      *

@@ -2944,6 +2944,28 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Listener\IntegrationGlobalScriptListener::class
 		);
 
+		// LeafScriptListener is the OTHER half of that, and without it the
+		// listener above delivers an empty promise for cross-app leaves. It
+		// installs and populates the registry with OpenRegister's OWN built-ins
+		// — it cannot contain a sibling app's Vue components, because those
+		// live in that app's bundle and Nextcloud serves only the current app's
+		// scripts.
+		//
+		// Measured 2026-09-04: no code path anywhere enqueued a providing app's
+		// bundle on a consuming page. Every addScript() here names
+		// 'openregister', nc-vue injects no scripts, and the providing apps
+		// register no template listener. So an ADR-066 leaf reached OCS
+		// discovery, satisfied gate-24 on both halves, and rendered NOTHING —
+		// `humaniq-hours` has been dark on dossiq case pages for as long as it
+		// has shipped.
+		//
+		// This enqueues each providing app's dedicated `leaves` entry, scoped
+		// to pages of apps that ship a register descriptor of their own.
+		$context->registerEventListener(
+			\OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
+			\OCA\OpenRegister\Listener\LeafScriptListener::class
+		);
+
 		// PushClientScriptListener loads the always-on, opt-in Web Push
 		// subscribe client on EVERY full-page render (openregister-web-push-engine).
 		// The client never prompts on load — it only subscribes on a user
