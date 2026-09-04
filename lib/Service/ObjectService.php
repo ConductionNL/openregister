@@ -4364,6 +4364,14 @@ class ObjectService implements ObjectServiceInterface
      * @throws SchemaNotInRegisterException When the register does not carry the schema.
      * @throws \OCP\DB\Exception            When the delete fails.
      *
+     * @orphaned-write-capability exclude Declared on ObjectServiceInterface, so
+     *          its callers are OTHER APPS and no in-repo call site can exist.
+     *          gate-57 counts `->purgeExpiredObjectsRaw(` across lib/ only. Do
+     *          NOT satisfy it by adding a route: this bypasses soft-delete and
+     *          the audit trail by design, and exposing it over HTTP would hand
+     *          any caller an unauditable hard delete of a whole register+schema.
+     *          The sweep belongs to the app that owns the expiring rows.
+     *
      * @spec openspec/specs/data-import-export/spec.md#requirement-raw-append-for-high-volume-writers
      */
     public function purgeExpiredObjectsRaw(Register|string|int $register, Schema|string|int $schema): int

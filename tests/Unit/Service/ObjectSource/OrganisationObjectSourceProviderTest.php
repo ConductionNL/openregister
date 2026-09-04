@@ -209,7 +209,8 @@ class OrganisationObjectSourceProviderTest extends TestCase {
 			organisationMapper: $this->createMock(\OCA\OpenRegister\Db\OrganisationMapper::class),
 			userSession: $this->createMock(\OCP\IUserSession::class),
 			groupManager: $this->createMock(\OCP\IGroupManager::class),
-			logger: $this->createMock(\Psr\Log\LoggerInterface::class)
+			logger: $this->createMock(\Psr\Log\LoggerInterface::class),
+			organisationService: $this->createMock(\OCA\OpenRegister\Service\OrganisationService::class)
 		);
 
 		$this->assertTrue($provider->isEnabled());
@@ -232,7 +233,8 @@ class OrganisationObjectSourceProviderTest extends TestCase {
 			organisationMapper: $this->createMock(\OCA\OpenRegister\Db\OrganisationMapper::class),
 			userSession: $userSession,
 			groupManager: $this->createMock(\OCP\IGroupManager::class),
-			logger: $this->createMock(\Psr\Log\LoggerInterface::class)
+			logger: $this->createMock(\Psr\Log\LoggerInterface::class),
+			organisationService: $this->createMock(\OCA\OpenRegister\Service\OrganisationService::class)
 		);
 
 		$this->assertSame(

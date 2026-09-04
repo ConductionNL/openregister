@@ -195,34 +195,128 @@ class SeedDirectoryVirtualSchemas implements IRepairStep {
 	/**
 	 * Find or create one virtual schema for a semantic-map row.
 	 *
-	 * @param array{register: string, schema: string, schemaOrg: string, provider: string, requiredApp: string|null} $row The semantic-map row.
+	 * @param array<string, mixed> $row One {@see NcEntitySemanticMap::ENTITIES} row.
 	 *
 	 * @return Schema The existing or newly created schema.
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-2.2
 	 */
 	private function ensureSchema(array $row): Schema {
+		$readOnly = (($row['writable'] ?? false) === false);
+
 		try {
-			return $this->schemaMapper->find($row['schema'], _rbac: false, _multitenancy: false);
+			$schema = $this->schemaMapper->find($row['schema'], _rbac: false, _multitenancy: false);
+
+			return $this->reconcileReadOnly(schema: $schema, readOnly: $readOnly);
 		} catch (Throwable $e) {
-			// Not found — create it as a read-only object-source-backed schema.
 			$properties = (self::SCHEMA_PROPERTIES[$row['schema']] ?? []);
 
 			return $this->schemaMapper->createFromArray(
 				object: [
 					'title' => $row['schema'],
 					'slug' => $row['schema'],
-					'description' => sprintf('Read-only virtual schema for Nextcloud %s (%s).', $row['schema'], $row['schemaOrg']),
+					'description' => sprintf(
+						'%s virtual schema for Nextcloud %s (%s).',
+						ucfirst($this->readOnlyLabel(readOnly: $readOnly)),
+						$row['schema'],
+						$row['schemaOrg']
+					),
 					'properties' => $properties,
 					'configuration' => [
 						'x-schema-org' => $row['schemaOrg'],
 						'x-openregister-object-source' => [
 							'provider' => $row['provider'],
-							'readOnly' => true,
+							'readOnly' => $readOnly,
 						],
 					],
 				]
 			);
 		}//end try
 	}//end ensureSchema()
+
+	/**
+	 * Bring an EXISTING virtual schema's `readOnly` annotation in step with the map.
+	 *
+	 * WITHOUT THIS THE FLAG ONLY EVER REACHES A FRESH INSTALL. `ensureSchema()`
+	 * returns early the moment the schema is found, so every instance that
+	 * already seeded `nc-organisation` would keep the `readOnly: true` it was
+	 * created with — and `delegateObjectSourceWrite()` reads exactly that
+	 * annotation. The provider would implement the write interface, the seed
+	 * would report success, and every write would still be refused, with nothing
+	 * naming the annotation as the reason.
+	 *
+	 * Only the `readOnly` key is touched. The rest of the configuration is
+	 * whatever the instance has, including anything an administrator set.
+	 *
+	 * @param Schema $schema   The existing schema.
+	 * @param bool   $readOnly What the map says it should be.
+	 *
+	 * @return Schema The schema, saved when it had drifted.
+	 *
+	 * @spec openspec/changes/the-organisation-projection-is-writable/specs/organisation-projection/spec.md#requirement-an-organisation-can-be-created-through-the-projection-req-orp-104
+	 */
+	private function reconcileReadOnly(Schema $schema, bool $readOnly): Schema {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$source = ($configuration['x-openregister-object-source'] ?? null);
+
+		if (is_array($source) === false || ($source['readOnly'] ?? null) === $readOnly) {
+			return $schema;
+		}
+
+		$source['readOnly'] = $readOnly;
+		$configuration['x-openregister-object-source'] = $source;
+		$schema->setConfiguration($configuration);
+
+		try {
+			$updated = $this->schemaMapper->update($schema);
+		} catch (Throwable $e) {
+			// LOUD, not swallowed. `run()` catches everything and degrades to a
+			// warning, which is right for "the seed could not create a schema" and
+			// wrong here: the schema exists and works, it just refuses writes, and
+			// the caller sees a generic "read-only projection" rejection with
+			// nothing pointing back at this annotation.
+			$this->logger->error(
+				sprintf(
+					'[SeedDirectoryVirtualSchemas] could not set %s to %s: %s. Writes through this schema '
+					.'will be refused until its x-openregister-object-source.readOnly is corrected.',
+					(string)$schema->getSlug(),
+					$this->readOnlyLabel(readOnly: $readOnly),
+					$e->getMessage()
+				)
+			);
+
+			return $schema;
+		}
+
+		$this->logger->info(
+			sprintf(
+				'[SeedDirectoryVirtualSchemas] %s is now %s',
+				(string)$schema->getSlug(),
+				$this->readOnlyLabel(readOnly: $readOnly)
+			)
+		);
+
+		if ($updated instanceof Schema === true) {
+			return $updated;
+		}
+
+		return $schema;
+	}//end reconcileReadOnly()
+
+	/**
+	 * Name a `readOnly` value for a log line or a schema description.
+	 *
+	 * @param bool $readOnly The flag.
+	 *
+	 * @return string The label, lowercase; `ucfirst()` it for sentence position.
+	 *
+	 * @spec openspec/changes/the-organisation-projection-is-writable/specs/organisation-projection/spec.md#requirement-an-organisation-can-be-created-through-the-projection-req-orp-104
+	 */
+	private function readOnlyLabel(bool $readOnly): string {
+		if ($readOnly === true) {
+			return 'read-only';
+		}
+
+		return 'writable';
+	}//end readOnlyLabel()
 }//end class
