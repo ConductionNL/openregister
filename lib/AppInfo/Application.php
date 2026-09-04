@@ -1473,7 +1473,8 @@ class Application extends App implements IBootstrap {
 					organisationMapper: $container->get('OCA\OpenRegister\Db\OrganisationMapper'),
 					userSession: $container->get('OCP\IUserSession'),
 					groupManager: $container->get('OCP\IGroupManager'),
-					logger: $container->get('Psr\Log\LoggerInterface')
+					logger: $container->get('Psr\Log\LoggerInterface'),
+					organisationService: $container->get('OCA\OpenRegister\Service\OrganisationService')
 				);
 			}
 		);
