@@ -372,6 +372,24 @@ class CredentialBrokerService {
 		// Only inject-only credentials may be resolved app-side; a proxy credential's secret
 		// stays inside OR — signal that with null so the caller routes to request() instead.
 		$provider = $this->resolveProvider(data: $data, credentialId: $credentialId);
+
+		// An OAuth2 token set is NEVER offered here, and the check is deliberately ABOVE
+		// the inject-only one rather than resting on it. A token set's whole point is that
+		// the refresh token — a long-lived credential the owner cannot revoke piecemeal —
+		// stays in custody, and ADR-064 decision #8 says so; handing the stored document
+		// to an app would give it exactly that, plus a JSON blob where it expected a
+		// bearer token. Resting on `inject_only` being false would make the guarantee an
+		// accident of how a catalogue entry happens to be written, so a future entry that
+		// set both flags would silently start leaking. Both paths then refuse such an
+		// entry, which is the right answer for a catalogue that contradicts itself.
+		if ($this->kindOf(provider: $provider) === self::KIND_OAUTH2_TOKEN_SET) {
+			$this->logger->warning(
+				'[CredentialBroker] resolveInjectable refused for the oauth2-token-set kind: ' . $credentialId
+			);
+
+			return null;
+		}
+
 		if ($this->isInjectOnly(provider: $provider) === false) {
 			return null;
 		}

@@ -239,6 +239,46 @@ class CredentialBrokerOAuth2Test extends TestCase {
 		$broker->request(credentialId: 'cred-1', appId: 'pipelinq', method: 'GET', path: '/anything');
 	}
 
+	public function testATokenSetIsNeverHandedToAnAppEvenWhenTheEntrySaysInjectOnly(): void {
+		// Both halves matter. The entry below is marked inject_only, which for any
+		// other kind means "resolveInjectable() is the way in" — so a refusal that
+		// merely rested on inject_only being false would hand this app a whole token
+		// set, refresh token included, which is the one thing ADR-064 decision #8
+		// says the broker must never do. The proxy path refuses the same entry
+		// (asserted above), so a catalogue that contradicts itself fails closed on
+		// both sides rather than opening one of them.
+		$broker = $this->makeBroker(
+			credData: ['provider' => 'x', 'owner' => 'alice', 'allowedApps' => ['pipelinq']],
+			provider: array_merge($this->oauth2Provider(), ['inject_only' => true]),
+			secret: '{"accessToken":"ACCESS_TOKEN_HERE","refreshToken":"REFRESH_TOKEN_HERE"}'
+		);
+
+		$this->assertNull(
+			$broker->resolveInjectable(credentialId: 'cred-1', appId: 'pipelinq'),
+			'an oauth2-token-set credential must never resolve app-side'
+		);
+	}
+
+	public function testAnOrdinaryInjectOnlySecretStillResolvesAppSide(): void {
+		// The regression half: the refusal above must be about the KIND, not about
+		// OAuth2 being in the provider's name. generic-oauth2 is how every existing
+		// OpenConnector source gets its client secret, and it carries no kind.
+		$broker = $this->makeBroker(
+			credData: ['provider' => 'generic-oauth2', 'owner' => 'alice', 'allowedApps' => ['pipelinq']],
+			provider: [
+				'identifier' => 'generic-oauth2',
+				'inject_only' => true,
+				'authScheme' => ['header' => 'Authorization', 'template' => 'Bearer {secret}'],
+			],
+			secret: 'YOUR_CLIENT_SECRET_HERE'
+		);
+
+		$this->assertSame(
+			'YOUR_CLIENT_SECRET_HERE',
+			$broker->resolveInjectable(credentialId: 'cred-1', appId: 'pipelinq')
+		);
+	}
+
 	/**
 	 * A host-locked OAuth2 catalogue entry.
 	 *

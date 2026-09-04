@@ -119,6 +119,101 @@ class OAuth2ConnectService {
 	}//end oauth2Provider()
 
 	/**
+	 * Make sure a per-instance provider has a client before the person is sent onward.
+	 *
+	 * Mastodon has no central application registry, so there is nothing to bring: the
+	 * client has to be created at the account's OWN server, and it has to exist before
+	 * the authorization URL is built, because that URL carries its client id. This is
+	 * therefore a step of `start()` rather than of the callback.
+	 *
+	 * It registers at most once per connection. A tenant that brought its own
+	 * application is left alone, and a RE-AUTHORISATION reuses the client already
+	 * pinned to the credential: registering a second application on every reconnect
+	 * would leave a trail of live clients on the person's own server, each holding a
+	 * secret nothing will ever revoke.
+	 *
+	 * @param array<string, mixed> $provider The catalogue provider entry.
+	 * @param array<string, mixed> $claims The claims assembled so far.
+	 * @param string $redirectUri The callback to register.
+	 *
+	 * @return array<string, mixed> The claims, carrying a client id and its credentialRef.
+	 *
+	 * @throws RuntimeException When the account's server refuses the registration.
+	 *
+	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
+	 */
+	public function ensureInstanceClient(array $provider, array $claims, string $redirectUri): array {
+		$oauth2 = ($provider['oauth2'] ?? []);
+		if (is_array($oauth2) === false || trim((string)($oauth2['registrationEndpoint'] ?? '')) === '') {
+			return $claims;
+		}
+
+		if (trim((string)($claims['cl'] ?? '')) !== '' || trim((string)($claims['cr'] ?? '')) !== '') {
+			return $claims;
+		}
+
+		$stored = $this->storedClient(credentialId: trim((string)($claims['cid'] ?? '')));
+		if ($stored !== null) {
+			return array_merge($claims, $stored);
+		}
+
+		$registered = $this->registerInstanceApplication(
+			provider: $provider,
+			instanceBaseUrl: (string)$this->pinnedHost(claims: $claims),
+			redirectUri: $redirectUri,
+			scopes: $this->scopesOf(claims: $claims, provider: $provider),
+			owner: (string)($claims['u'] ?? ''),
+			scope: (string)($claims['s'] ?? 'personal'),
+			organisation: ($claims['o'] ?? null)
+		);
+
+		return array_merge(
+			$claims,
+			['cl' => $registered['clientId'], 'cr' => $registered['clientCredentialRef']]
+		);
+	}//end ensureInstanceClient()
+
+	/**
+	 * The client a credential already carries, when a re-authorisation names one.
+	 *
+	 * @param string $credentialId The credential being re-authorised, or an empty string.
+	 *
+	 * @return array{cl: string, cr: string}|null The stored client, or null when there is none.
+	 *
+	 * @spec exclude private lookup; the reuse rule is stated on ensureInstanceClient()
+	 */
+	private function storedClient(string $credentialId): ?array {
+		if ($credentialId === '') {
+			return null;
+		}
+
+		try {
+			$entity = $this->objectService->find(
+				id: $credentialId,
+				register: CredentialBrokerService::REGISTER,
+				schema: CredentialBrokerService::SCHEMA,
+				_rbac: false,
+				_multitenancy: false,
+				_render: false
+			);
+		} catch (Throwable $missing) {
+			return null;
+		}
+
+		if ($entity instanceof ObjectEntity === false) {
+			return null;
+		}
+
+		$data = $entity->jsonSerialize();
+		$clientId = trim((string)($data['clientId'] ?? ''));
+		if ($clientId === '') {
+			return null;
+		}
+
+		return ['cl' => $clientId, 'cr' => trim((string)($data['clientCredentialRef'] ?? ''))];
+	}//end storedClient()
+
+	/**
 	 * Build the authorization URL a person is sent to.
 	 *
 	 * The OAuth2 client is resolved HERE rather than by the caller, so a controller
@@ -203,14 +298,23 @@ class OAuth2ConnectService {
 		$instanceBaseUrl = $this->pinnedHost(claims: $claims);
 
 		$existing = $this->existingCredential(claims: $claims, providerId: $providerId, instanceBaseUrl: $instanceBaseUrl);
-		$credentialData = [
-			'provider' => $providerId,
-			'clientId' => (string)($claims['cl'] ?? ''),
-			'clientCredentialRef' => (string)($claims['cr'] ?? ''),
-		];
-		if ($existing !== null) {
-			$credentialData = array_merge($existing, $credentialData);
-		}
+
+		// The claims win only where they SAY something. A re-authorisation whose
+		// claims carry no client is reusing the credential's own, and letting an
+		// empty claim overwrite it would strand a per-instance connection: the
+		// stored client id would be gone, and its secret would still be sitting on
+		// the account's own server with nothing left pointing at it.
+		$credentialData = array_merge(
+			($existing ?? []),
+			array_filter(
+				[
+					'provider' => $providerId,
+					'clientId' => trim((string)($claims['cl'] ?? '')),
+					'clientCredentialRef' => trim((string)($claims['cr'] ?? '')),
+				],
+				static fn (string $value): bool => $value !== ''
+			)
+		);
 
 		$client = $this->clients->resolve(
 			credential: $credentialData,
@@ -237,18 +341,142 @@ class OAuth2ConnectService {
 		if ($existing !== null) {
 			$credentialId = (string)$claims['cid'];
 			$this->refresh->persist(credentialId: $credentialId, scope: $scope, set: $tokenSet, extraMetadata: ['status' => 'active']);
+			$this->recordAccount(
+				provider: $provider,
+				credentialId: $credentialId,
+				scope: $scope,
+				set: $tokenSet,
+				owner: (string)($existing['owner'] ?? $claims['u'] ?? '')
+			);
 
 			return $credentialId;
 		}
 
-		return $this->mintNew(
+		$credentialId = $this->mintNew(
 			claims: $claims,
 			providerId: $providerId,
 			scope: $scope,
 			tokenSet: $tokenSet,
 			instanceBaseUrl: $instanceBaseUrl
 		);
+
+		$this->recordAccount(
+			provider: $provider,
+			credentialId: $credentialId,
+			scope: $scope,
+			set: $tokenSet,
+			owner: (string)($claims['u'] ?? '')
+		);
+
+		return $credentialId;
 	}//end complete()
+
+	/**
+	 * Ask the provider who the connection belongs to, and record the answer.
+	 *
+	 * A credential that holds a live token and cannot say WHOSE it is cannot be
+	 * audited: the owner sees a row saying "Mastodon" and has no way to tell which of
+	 * their two accounts it speaks for, and neither does anyone reviewing the
+	 * instance later. So the handle is fetched once, here, at the only moment it is
+	 * guaranteed to be knowable.
+	 *
+	 * The call goes through {@see CredentialBrokerService::request()} rather than
+	 * straight out, which matters more than it looks: the path is already an
+	 * allow-rule on the entry, so the identity fetch is bounded by exactly the same
+	 * guards as every other call on this credential, and a catalogue that named a
+	 * path outside its own rules would fail closed instead of quietly reaching
+	 * further.
+	 *
+	 * BEST EFFORT, ALWAYS. The connection itself is already made and already works;
+	 * undoing it because a cosmetic label could not be read would trade something
+	 * that matters for something that does not. One case is known and expected
+	 * rather than accidental: `request()` deliberately refuses to admit an
+	 * organisation-scoped credential on an asserted user id, so an organisation
+	 * connect records no handle. That is the owner guard working, not a bug, and it
+	 * costs a label rather than a capability.
+	 *
+	 * @param array<string, mixed> $provider The catalogue provider entry.
+	 * @param string $credentialId The credential just minted or repaired.
+	 * @param string $scope The credential scope.
+	 * @param OAuth2TokenSet $set The token set just stored.
+	 * @param string $owner The credential's owner, asserted for this sessionless call.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
+	 */
+	private function recordAccount(
+		array $provider,
+		string $credentialId,
+		string $scope,
+		OAuth2TokenSet $set,
+		string $owner,
+	): void {
+		$identity = ($provider['identity'] ?? null);
+		if (is_array($identity) === false || trim((string)($identity['path'] ?? '')) === '') {
+			return;
+		}
+
+		try {
+			$response = $this->broker->request(
+				credentialId: $credentialId,
+				appId: 'openregister',
+				method: (string)($identity['method'] ?? 'GET'),
+				path: (string)$identity['path'],
+				actingUserId: $owner
+			);
+
+			$decoded = json_decode($response['body'], true);
+			if (is_array($decoded) === false) {
+				return;
+			}
+
+			$this->refresh->persist(
+				credentialId: $credentialId,
+				scope: $scope,
+				set: $set->withAccount(
+					id: $this->fieldAt(payload: $decoded, path: (string)($identity['idField'] ?? '')),
+					handle: $this->fieldAt(payload: $decoded, path: (string)($identity['handleField'] ?? '')),
+					displayName: $this->fieldAt(payload: $decoded, path: (string)($identity['displayNameField'] ?? ''))
+				)
+			);
+		} catch (Throwable $failure) {
+			$this->logger->warning(
+				'[OAuth2ConnectService] could not read the connected account for ' . $credentialId . ': ' . $failure->getMessage()
+			);
+		}//end try
+	}//end recordAccount()
+
+	/**
+	 * Read one scalar out of a decoded response by dotted path.
+	 *
+	 * @param array<string, mixed> $payload The decoded response.
+	 * @param string $path The dotted field path, or an empty string.
+	 *
+	 * @return string The value, or an empty string when it is absent or not a scalar.
+	 *
+	 * @spec exclude private response accessor with no behaviour of its own
+	 */
+	private function fieldAt(array $payload, string $path): string {
+		if ($path === '') {
+			return '';
+		}
+
+		$cursor = $payload;
+		foreach (explode('.', $path) as $segment) {
+			if (is_array($cursor) === false || array_key_exists($segment, $cursor) === false) {
+				return '';
+			}
+
+			$cursor = $cursor[$segment];
+		}
+
+		if (is_scalar($cursor) === false) {
+			return '';
+		}
+
+		return (string)$cursor;
+	}//end fieldAt()
 
 	/**
 	 * Register an application at an account's own server, for a per-instance provider.
@@ -613,9 +841,24 @@ class OAuth2ConnectService {
 	private function allowedAppsOf(array $claims): array {
 		$apps = ($claims['a'] ?? []);
 		if (is_array($apps) === false) {
-			return [];
+			$apps = [];
 		}
 
-		return array_values(array_map('strval', $apps));
+		$apps = array_map('strval', $apps);
+
+		// OPENREGISTER IS ALWAYS ON THE LIST, and this is not a courtesy to itself.
+		// It is the app that reads the connected account's identity right after the
+		// mint, and that call goes through request(), whose allowedApps guard would
+		// otherwise deny it. Leaving it off would not produce an error a person sees:
+		// it would produce a connection that never learns whose account it holds, and
+		// a panel that says "not connected yet" beside a live token forever. It buys
+		// the app no reach the entry's own allow-rules do not already permit. The
+		// daily sweep is unaffected either way — it renews through the custody leaf
+		// and the token endpoint directly, never through the proxy.
+		if (in_array('openregister', $apps, true) === false) {
+			$apps[] = 'openregister';
+		}
+
+		return array_values($apps);
 	}//end allowedAppsOf()
 }//end class

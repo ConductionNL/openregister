@@ -31,13 +31,10 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\CredentialOauth2Controller;
-use OCA\OpenRegister\Service\Credential\CredentialStore;
-use OCA\OpenRegister\Service\Credential\OAuth2ClientResolver;
+use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectService;
 use OCA\OpenRegister\Service\Credential\OAuth2RelayGuard;
 use OCA\OpenRegister\Service\Credential\OAuth2StateService;
-use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\RedirectResponse;
@@ -287,10 +284,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 			$connect,
 			$states,
 			$relayGuard,
-			$this->createMock(OAuth2ClientResolver::class),
-			$this->createMock(CredentialStore::class),
-			$this->createMock(ObjectService::class),
-			$this->createMock(OrganisationService::class),
+			$this->createMock(OAuth2ConnectionRepository::class),
 			$session,
 			$urlGenerator,
 			$throttler,

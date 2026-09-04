@@ -93,13 +93,6 @@ class CredentialOauth2Controller extends Controller {
 	private const THROTTLE_ACTION = 'openregisterOauth2Callback';
 
 	/**
-	 * The organisation credential scope.
-	 *
-	 * @var string
-	 */
-	private const SCOPE_ORGANISATION = 'organisation';
-
-	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
@@ -166,6 +159,15 @@ class CredentialOauth2Controller extends Controller {
 		}
 
 		try {
+			// A per-instance provider has no application to bring, so one is created at
+			// the account's own server HERE, before the URL that names its client id is
+			// built. The client secret it issues goes straight to the broker as its own
+			// credential; only the non-secret client id travels on in the claims.
+			$claims = $this->connect->ensureInstanceClient(
+				provider: $provider,
+				claims: $claims,
+				redirectUri: $this->ownCallbackUrl()
+			);
 			$issued = $this->states->issue(claims: $claims);
 			$url = $this->connect->authorizationUrl(
 				provider: $provider,
