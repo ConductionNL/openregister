@@ -6,14 +6,14 @@ Defines how a tenant connects a provider account to the credential broker: the a
 
 ### Requirement: Starting a connection returns an authorization URL bound to the caller
 
-`POST /api/credentials/oauth2/start` SHALL be available to an authenticated user only. It SHALL accept a catalogue provider identifier whose entry declares `kind: "oauth2-token-set"`, the scopes to request, a desired credential scope of `personal` or `organisation`, an optional `credentialRef` naming a tenant-supplied `generic-oauth2` client secret, an optional instance host for a provider whose catalogue entry declares `baseUrlFrom`, an optional existing credential id to re-authorise, and a return URL. It SHALL return the provider's authorization URL carrying a PKCE challenge and a `state` value. An organisation-scoped start SHALL be refused unless the caller administers the organisation the credential would belong to.
+`POST /api/credentials/oauth2/start` SHALL be available to an authenticated user only. It SHALL accept a catalogue provider identifier whose entry declares `kind: "oauth2-token-set"`, the scopes to request, a desired credential scope of `personal` or `organisation`, an optional `credentialRef` naming a tenant-supplied `generic-oauth2` client secret, an optional instance host for a provider whose catalogue entry declares `baseUrlFrom`, an optional existing credential id to re-authorise, and a return URL. It SHALL return the provider's authorization URL carrying a `state` value, and a PKCE code challenge for every provider whose catalogue entry declares PKCE support. A code verifier SHALL be generated and held for every start, whether or not the provider consumes it. An organisation-scoped start SHALL be refused unless the caller administers the organisation the credential would belong to.
 
 `@e2e tests/e2e/credential-oauth2-connect.spec.ts`
 
 #### Scenario: A start returns a provider URL and never a secret
 
 - **WHEN** an authenticated user starts a connection for a supported provider
-- **THEN** the response carries the provider's authorization endpoint with the requested scopes, a code challenge and a `state`
+- **THEN** the response carries the provider's authorization endpoint with the requested scopes and a `state`, and a code challenge when the provider supports PKCE
 - **AND** it carries no client secret, no code verifier and no token
 
 #### Scenario: An unsupported provider is refused
