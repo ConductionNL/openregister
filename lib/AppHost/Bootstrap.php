@@ -134,6 +134,11 @@ class Bootstrap {
 	 * The GitHub discovery source, for stores declaring `source: github`.
 	 */
 	private const GITHUB_STORE_SOURCE = 'OCA\\OpenRegister\\AppHost\\Store\\Source\\GitHubStoreSource';
+
+	/**
+	 * Resolves an `installAuth: action:<name>` posture against the leaf app.
+	 */
+	private const STORE_ACTION_AUTHORIZER = 'OCA\\OpenRegister\\AppHost\\Store\\StoreActionAuthorizer';
 	private const GENERIC_SETTINGS_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\AppHostSettingsService';
 	private const GENERIC_ACTION_AUTH_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\GenericActionAuthService';
 	private const GENERIC_INITIALIZE_SETTINGS = 'OCA\\OpenRegister\\AppHost\\Repair\\GenericInitializeSettings';
@@ -301,6 +306,7 @@ class Bootstrap {
 					installer: $c->get(self::GENERIC_STORE_INSTALLER),
 					catalog: $c->get(self::FEDERATED_STORE_CATALOG),
 					gitHubSource: $c->get(self::GITHUB_STORE_SOURCE),
+					actionAuthorizer: $c->get(self::STORE_ACTION_AUTHORIZER),
 					userSession: $c->get('OCP\\IUserSession'),
 					groupManager: $c->get('OCP\\IGroupManager'),
 					logger: $c->get('Psr\\Log\\LoggerInterface')

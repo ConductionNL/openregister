@@ -49,6 +49,7 @@ use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\AppHost\Store\FederatedStoreCatalog;
 use OCA\OpenRegister\AppHost\Store\GenericStoreInstaller;
 use OCA\OpenRegister\AppHost\Store\Source\GitHubStoreSource;
+use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -56,6 +57,7 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -94,6 +96,7 @@ class GenericStoreController extends Controller {
 	 * @param GenericStoreInstaller $installer      Declarative component install.
 	 * @param FederatedStoreCatalog $catalog        Configuration browse and install.
 	 * @param GitHubStoreSource     $gitHubSource   GitHub discovery source.
+	 * @param StoreActionAuthorizer $actionAuthorizer ADR-023 action resolver.
 	 * @param IUserSession          $userSession    Current session.
 	 * @param IGroupManager         $groupManager   Admin check for install.
 	 * @param LoggerInterface       $logger         PSR logger.
@@ -112,6 +115,7 @@ class GenericStoreController extends Controller {
 		private readonly GenericStoreInstaller $installer,
 		private readonly FederatedStoreCatalog $catalog,
 		private readonly GitHubStoreSource $gitHubSource,
+		private readonly StoreActionAuthorizer $actionAuthorizer,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
@@ -266,14 +270,7 @@ class GenericStoreController extends Controller {
 			);
 		}
 
-		// WHO may install is the app's declaration; WHAT may be written stays
-		// the `installable` allowlist, which the installer enforces regardless.
-		// Anonymous is refused on this same guard: `authenticated` is the
-		// weakest posture the vocabulary offers and it still means signed in.
-		if ($store->permitsInstall(
-			isSignedIn: ($user !== null),
-			isAdmin: ($user !== null && $this->groupManager->isAdmin($user->getUID()))
-		) === false) {
+		if ($this->mayInstall(store: $store, user: $user) === false) {
 			return new JSONResponse(
 				data: ['success' => false, 'message' => 'Installing a store item requires an administrator.'],
 				statusCode: Http::STATUS_FORBIDDEN
@@ -311,6 +308,42 @@ class GenericStoreController extends Controller {
 			statusCode: Http::STATUS_OK
 		);
 	}//end install()
+
+	/**
+	 * Whether this caller may install, per the posture the app declared.
+	 *
+	 * WHO may install is the app's declaration; WHAT may be written stays the
+	 * `installable` allowlist, which the installer enforces regardless.
+	 * Anonymous is refused whatever the posture: `authenticated` is the weakest
+	 * the vocabulary offers and it still means signed in.
+	 *
+	 * An action posture is resolved against the LEAF app's own ADR-023 matrix.
+	 * StoreManifest deliberately answers false for it, because that matrix is
+	 * not visible from there and assuming `admin` would turn "the operators who
+	 * hold this action" into "instance administrators" — the capability loss
+	 * this key exists to prevent.
+	 *
+	 * @param StoreManifest $store The declared store block.
+	 * @param IUser|null    $user  The signed-in user, or null.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/store-plane-action-auth/specs/apphost-store-plane/spec.md#requirement-an-action-posture-must-resolve-against-the-declaring-app
+	 */
+	private function mayInstall(StoreManifest $store, ?IUser $user): bool {
+		$action = $store->installAction();
+		if ($action !== null) {
+			// permitsInstall() answers false for an action posture by design,
+			// so this is the only arm that can grant one.
+			return ($user !== null
+				&& $this->actionAuthorizer->can(appId: $this->appName, action: $action, user: $user));
+		}
+
+		return $store->permitsInstall(
+			isSignedIn: ($user !== null),
+			isAdmin: ($user !== null && $this->groupManager->isAdmin($user->getUID()))
+		);
+	}//end mayInstall()
 
 	/**
 	 * Search whichever catalogue this app declared.
