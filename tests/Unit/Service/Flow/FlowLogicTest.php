@@ -43,6 +43,13 @@ class TrackingDispatcher implements FlowStepDispatcher {
 			throw new FlowStop(reason: (string)($step['config']['message'] ?? 'stopped'), isError: (($step['config']['error'] ?? false) === true));
 		}
 
+		// A step that BREAKS, as any node does when its work cannot be done —
+		// dossiq's setStatus refusing a status its case type does not carry,
+		// say. Distinct from the stop above: nobody asked for this end.
+		if ($type === 'boom') {
+			throw new \RuntimeException((string)($step['config']['message'] ?? 'step blew up'));
+		}
+
 		return $items;
 	}
 }
@@ -379,6 +386,59 @@ class FlowLogicTest extends TestCase {
 
 		$this->assertSame(FlowEngine::STATUS_FAILED, $result['status']);
 		$this->assertSame('invariant broken', $result['error']);
+	}
+
+	/**
+	 * A run wrecked by a broken step is not the same row as one an author ended.
+	 *
+	 * THE REGRESSION THIS EXISTS FOR. Both runs used to persist as
+	 * `status = 'stopped'`, `error = null` — identical in every column a query
+	 * can reach. The difference survived only in the last entry of the JSON
+	 * `log`, so `WHERE status = 'stopped'` returned a healthy guard branch and a
+	 * wreck side by side and nothing said which was which. Nine dossiq demo runs
+	 * died that way and read as clean ends.
+	 *
+	 * Asserted as ONE test over BOTH walks, deliberately: the property is a
+	 * DIFFERENCE, and two separate tests each asserting its own status would
+	 * both have passed on the broken code, which is how this shipped.
+	 */
+	public function testAFailedStepIsDistinguishableFromACleanStop(): void {
+		$clean = $this->walk(
+			[
+				'id' => 'clean',
+				'nodes' => [['id' => 'stop', 'type' => 'stop', 'config' => ['message' => 'nothing to do']]],
+				'edges' => [],
+			],
+			[FlowItems::item(json: ['a' => 1])],
+			new TrackingDispatcher()
+		);
+
+		$wrecked = $this->walk(
+			[
+				'id' => 'wrecked',
+				'nodes' => [['id' => 'move', 'type' => 'boom', 'config' => ['message' => 'status_not_found_on_case_type']]],
+				'edges' => [],
+			],
+			[FlowItems::item(json: ['a' => 1])],
+			new TrackingDispatcher()
+		);
+
+		// The two runs must not be the same row.
+		$this->assertNotSame(
+			$wrecked['status'],
+			$clean['status'],
+			'A run wrecked by a failing step must not carry the same status as one an author ended on purpose.'
+		);
+
+		// A deliberate end stays a deliberate end, with nothing on `error`.
+		$this->assertSame(FlowEngine::STATUS_STOPPED, $clean['status']);
+		$this->assertNull(($clean['error'] ?? null));
+
+		// The wreck is queryable AS a wreck, and says what broke — `error` is
+		// the column `persistResult()` writes, so this is what an operator
+		// filtering the runs table actually sees.
+		$this->assertSame(FlowEngine::STATUS_FAILED, $wrecked['status']);
+		$this->assertSame('status_not_found_on_case_type', $wrecked['error']);
 	}
 }
 
