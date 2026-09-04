@@ -2825,7 +2825,9 @@ OC.L10N.register(
         "Complete": "Valmis",
         "Complete: {outcome}": "Valmis: {outcome}",
         "Could not load the task": "Tehtävän lataus epäonnistui",
-        "The task refused that action": "Tehtävä hylkäsi toiminnon"
+        "The task refused that action": "Tehtävä hylkäsi toiminnon",
+        "Store": "Kauppa",
+        "Install registers, schemas and flows that other organisations have published.": "Asenna muiden organisaatioiden julkaisemia rekistereitä, skeemoja ja vuokaavioita."
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -2825,7 +2825,9 @@ OC.L10N.register(
         "Complete": "Përfundo",
         "Complete: {outcome}": "Përfundo: {outcome}",
         "Could not load the task": "Detyra nuk u ngarkua dot",
-        "The task refused that action": "Detyra e refuzoi atë veprim"
+        "The task refused that action": "Detyra e refuzoi atë veprim",
+        "Store": "Dyqani",
+        "Install registers, schemas and flows that other organisations have published.": "Instaloni regjistra, skema dhe rrjedha të publikuara nga organizata të tjera."
     },
     "nplurals=2; plural=(n != 1);"
 )

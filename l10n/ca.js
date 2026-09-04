@@ -2825,7 +2825,9 @@ OC.L10N.register(
         "Complete": "Completa",
         "Complete: {outcome}": "Completa: {outcome}",
         "Could not load the task": "No s'ha pogut carregar la tasca",
-        "The task refused that action": "La tasca ha rebutjat aquesta acció"
+        "The task refused that action": "La tasca ha rebutjat aquesta acció",
+        "Store": "Botiga",
+        "Install registers, schemas and flows that other organisations have published.": "Instal·leu registres, esquemes i fluxos publicats per altres organitzacions."
     },
     "nplurals=2; plural=(n != 1);"
 )

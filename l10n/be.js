@@ -2825,7 +2825,9 @@ OC.L10N.register(
         "Complete": "Завяршыць",
         "Complete: {outcome}": "Завяршыць: {outcome}",
         "Could not load the task": "Не ўдалося загрузіць задачу",
-        "The task refused that action": "Задача адхіліла гэта дзеянне"
+        "The task refused that action": "Задача адхіліла гэта дзеянне",
+        "Store": "Крама",
+        "Install registers, schemas and flows that other organisations have published.": "Усталюйце рэестры, схемы і патокі, апублікаваныя іншымі арганізацыямі."
     },
     "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);"
 )

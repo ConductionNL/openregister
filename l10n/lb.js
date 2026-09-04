@@ -2825,7 +2825,9 @@ OC.L10N.register(
         "Complete": "Ofschléissen",
         "Complete: {outcome}": "Ofschléissen: {outcome}",
         "Could not load the task": "D'Aufgab konnt net geluede ginn",
-        "The task refused that action": "D'Aufgab huet dës Aktioun refuséiert"
+        "The task refused that action": "D'Aufgab huet dës Aktioun refuséiert",
+        "Store": "Buttek",
+        "Install registers, schemas and flows that other organisations have published.": "Installéiert Registeren, Schemaen a Flows déi aner Organisatiounen publizéiert hunn."
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -2825,7 +2825,9 @@ OC.L10N.register(
         "Complete": "Ολοκλήρωση",
         "Complete: {outcome}": "Ολοκλήρωση: {outcome}",
         "Could not load the task": "Δεν ήταν δυνατή η φόρτωση της εργασίας",
-        "The task refused that action": "Η εργασία απέρριψε αυτήν την ενέργεια"
+        "The task refused that action": "Η εργασία απέρριψε αυτήν την ενέργεια",
+        "Store": "Κατάστημα",
+        "Install registers, schemas and flows that other organisations have published.": "Εγκαταστήστε μητρώα, σχήματα και ροές που έχουν δημοσιεύσει άλλοι οργανισμοί."
     },
     "nplurals=2; plural=(n != 1);"
 )

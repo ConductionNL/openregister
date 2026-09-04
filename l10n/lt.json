@@ -2888,7 +2888,9 @@
         "Complete": "Užbaigti",
         "Complete: {outcome}": "Užbaigti: {outcome}",
         "Could not load the task": "Nepavyko įkelti užduoties",
-        "The task refused that action": "Užduotis atmetė šį veiksmą"
+        "The task refused that action": "Užduotis atmetė šį veiksmą",
+        "Store": "Parduotuvė",
+        "Install registers, schemas and flows that other organisations have published.": "Įdiekite registrus, schemas ir srautus, kuriuos paskelbė kitos organizacijos."
     },
     "pluralForm": "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2);",
     "plurals": {

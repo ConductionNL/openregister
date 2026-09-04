@@ -2825,7 +2825,9 @@ OC.L10N.register(
         "Complete": "Zakończ",
         "Complete: {outcome}": "Zakończ: {outcome}",
         "Could not load the task": "Nie można wczytać zadania",
-        "The task refused that action": "Zadanie odrzuciło tę akcję"
+        "The task refused that action": "Zadanie odrzuciło tę akcję",
+        "Store": "Sklep",
+        "Install registers, schemas and flows that other organisations have published.": "Zainstaluj rejestry, schematy i przepływy opublikowane przez inne organizacje."
     },
     "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);"
 )

@@ -2825,7 +2825,9 @@ OC.L10N.register(
         "Complete": "Dokončiť",
         "Complete: {outcome}": "Dokončiť: {outcome}",
         "Could not load the task": "Úlohu sa nepodarilo načítať",
-        "The task refused that action": "Úloha túto akciu odmietla"
+        "The task refused that action": "Úloha túto akciu odmietla",
+        "Store": "Obchod",
+        "Install registers, schemas and flows that other organisations have published.": "Nainštalujte registre, schémy a toky zverejnené inými organizáciami."
     },
     "nplurals=4; plural=(n % 1 == 0 && n == 1 ? 0 : n % 1 == 0 && n >= 2 && n <= 4 ? 1 : n % 1 != 0 ? 2: 3);"
 )
