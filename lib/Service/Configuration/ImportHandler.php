@@ -2197,6 +2197,7 @@ class ImportHandler {
 						'mappings' => 0,
 						'seedObjects' => 0,
 					],
+					'unchanged' => ['objects' => 0],
 					'failed' => ['schemas' => []],
 				];
 			}//end if
@@ -2238,6 +2239,16 @@ class ImportHandler {
 			// that declare it are created without the link, so the damage
 			// surfaces layers away (empty `*_schema` config keys, a seed step
 			// that cannot resolve a schema) with nothing pointing back here.
+			// The entities this import LEFT ALONE because they are already
+			// present at the same or a newer version. Counted because a caller
+			// otherwise cannot tell "nothing needed doing" from "everything
+			// failed": both arrive as `objects: []`. dossiq's demo-data step
+			// read that ambiguity as failure and refused every re-install,
+			// breaking the promise its own UI makes ("safe to run more than
+			// once").
+			'unchanged' => [
+				'objects' => 0,
+			],
 			'failed' => [
 				'schemas' => [],
 			],
@@ -2880,8 +2891,12 @@ class ImportHandler {
 						}
 
 						if (version_compare($importedVersion, $existingVersion, '>') <= 0) {
-							// Debug: per object, and skipping an unchanged object
-							// is the DESIGNED behaviour of a re-import, not news.
+							// COUNTED, not just logged. Skipping an unchanged
+							// object is the DESIGNED behaviour of a re-import,
+							// but a debug line is invisible to the caller, and
+							// the caller is the one that has to tell an operator
+							// whether the import worked.
+							$result['unchanged']['objects']++;
 							$this->logger->debug(
 								message: '[ImportHandler] Skipped object update: imported version not higher',
 								context: [
