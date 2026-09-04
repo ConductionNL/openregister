@@ -79,7 +79,7 @@ class MagicSearchHandler {
 	 *
 	 * @var string[]
 	 */
-	private const COMPARISON_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne'];
+	private const COMPARISON_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne', 'isnull'];
 
 	/**
 	 * Metadata columns every magic table carries.
@@ -739,6 +739,24 @@ class MagicSearchHandler {
 	}//end buildSearchConditionSql()
 
 	/**
+	 * Whether an `isnull` operator value asks for IS NULL rather than IS NOT NULL.
+	 *
+	 * The operator is documented as a QUERY-STRING filter (`?afgehandeld_op_isnull=true`,
+	 * openspec/specs/zoeken-filteren), and a query string can only ever deliver
+	 * strings — so a strict `=== true` comparison against a PHP boolean can never
+	 * match, and reading the value as raw truthiness would make the string "false"
+	 * mean true. `FILTER_VALIDATE_BOOLEAN` accepts true/"true"/"1"/1/"on"/"yes" and
+	 * reads everything else, "false"/"0"/"" included, as false.
+	 *
+	 * @param mixed $value The raw operator value as the request layer delivered it.
+	 *
+	 * @return bool True when the caller asked for IS NULL.
+	 */
+	private function isNullOperatorAsksForNull(mixed $value): bool {
+		return filter_var($value, FILTER_VALIDATE_BOOLEAN) === true;
+	}//end isNullOperatorAsksForNull()
+
+	/**
 	 * Build object field filter SQL conditions for non-reserved query parameters
 	 *
 	 * Column identifiers are quoted via quoteIdentifier() so that schema properties
@@ -884,6 +902,18 @@ class MagicSearchHandler {
 							isPostgres: $isPostgres
 						);
 						$conditions[] = "{$colRef} <> " . $connection->quote((string)$value['ne']);
+					}
+
+					if (isset($value['isnull']) === true) {
+						// No column-ref cast: a null check is about the column's
+						// presence, not its type, and casting a NULL would only
+						// obscure it.
+						$predicate = 'IS NOT NULL';
+						if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
+							$predicate = 'IS NULL';
+						}
+
+						$conditions[] = "{$quotedCol} {$predicate}";
 					}
 				} elseif (empty($value) === false) {
 					$colRef = $this->buildFilterColumnRef(
@@ -1083,6 +1113,15 @@ class MagicSearchHandler {
 			if (empty($quoted) === false) {
 				$conditions[] = $column . ' NOT IN (' . implode(', ', $quoted) . ')';
 			}
+		}
+
+		if (isset($value['isnull']) === true) {
+			$predicate = 'IS NOT NULL';
+			if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
+				$predicate = 'IS NULL';
+			}
+
+			$conditions[] = $column . ' ' . $predicate;
 		}
 
 		return $conditions;
@@ -1477,6 +1516,14 @@ class MagicSearchHandler {
 				);
 			}
 		}
+
+		if (isset($value['isnull']) === true) {
+			if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
+				$qb->andWhere($qb->expr()->isNull($columnRef));
+			} else {
+				$qb->andWhere($qb->expr()->isNotNull($columnRef));
+			}
+		}
 	}//end applyMetadataOperators()
 
 	/**
@@ -1694,6 +1741,17 @@ class MagicSearchHandler {
 						isPostgres: $isPostgres
 					);
 					$qb->andWhere($qb->expr()->neq($columnRef, $qb->createNamedParameter($value['ne'])));
+				}
+
+				if (isset($value['isnull']) === true) {
+					// The bare column, not `buildFilterColumnRef`: a null check
+					// asks whether the column has a value at all, and a cast
+					// would only obscure that.
+					if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
+						$qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
+					} else {
+						$qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
+					}
 				}
 
 				continue;
