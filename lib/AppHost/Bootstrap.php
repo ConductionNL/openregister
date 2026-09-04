@@ -134,6 +134,7 @@ class Bootstrap {
 	 * The GitHub discovery source, for stores declaring `source: github`.
 	 */
 	private const GITHUB_STORE_SOURCE = 'OCA\\OpenRegister\\AppHost\\Store\\Source\\GitHubStoreSource';
+
 	private const GENERIC_SETTINGS_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\AppHostSettingsService';
 	private const GENERIC_ACTION_AUTH_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\GenericActionAuthService';
 	private const GENERIC_INITIALIZE_SETTINGS = 'OCA\\OpenRegister\\AppHost\\Repair\\GenericInitializeSettings';
@@ -288,25 +289,7 @@ class Bootstrap {
 		// own Controller\StoreController today and keeps winning this alias
 		// until that class is deleted, so the engine's version takes over per
 		// app, on that app's own pull request.
-		self::aliasControllerUnlessLeafDefinesIt(
-			context: $context,
-			leafClass: $controllerNs . '\\StoreController',
-			factory: static function (ContainerInterface $c) use ($appId) {
-				$class = self::GENERIC_STORE_CONTROLLER;
-				return new $class(
-					appName: $appId,
-					request: $c->get('OCP\\IRequest'),
-					manifestLoader: $c->get(self::OBSERVABILITY_MANIFEST_LOADER),
-					storeService: $c->get(self::GENERIC_STORE_SERVICE),
-					installer: $c->get(self::GENERIC_STORE_INSTALLER),
-					catalog: $c->get(self::FEDERATED_STORE_CATALOG),
-					gitHubSource: $c->get(self::GITHUB_STORE_SOURCE),
-					userSession: $c->get('OCP\\IUserSession'),
-					groupManager: $c->get('OCP\\IGroupManager'),
-					logger: $c->get('Psr\\Log\\LoggerInterface')
-				);
-			}
-		);
+		self::aliasStoreController(context: $context, appId: $appId, controllerNs: $controllerNs);
 
 		if ($observability === false) {
 			return;
@@ -340,6 +323,54 @@ class Bootstrap {
 			}
 		);
 	}//end registerControllers()
+
+	/**
+	 * Bind the store controller for one leaf app.
+	 *
+	 * 🔴 A ROUTE WITHOUT ITS CONTROLLER IS A DISPATCH-TIME 500, NOT A 404.
+	 *
+	 * `Routes::standard()` declares `/api/store/items` for EVERY app that
+	 * adopts the canonical table, but the binding lives here. An app that took
+	 * the route table and binds its controllers by hand, rather than calling
+	 * {@see self::register()}, therefore serves a route it cannot resolve.
+	 * Measured 2026-09-03 on a running instance: decidiq, filinq and planninq
+	 * each returned HTTP 500 on `/api/store/items`, on a route none of them
+	 * had asked for, while keepiq (which calls `register()`) answered fine.
+	 *
+	 * This is the one call such an app needs, and it is public for exactly
+	 * that reason. It stays a no-op when the leaf ships its own
+	 * `Controller\StoreController`, so calling it is always safe.
+	 *
+	 * @param IRegistrationContext $context      Leaf registration context.
+	 * @param string               $appId        Leaf app id.
+	 * @param string               $controllerNs Leaf controller namespace (e.g. `OCA\Decidiq\Controller`).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-leaf-app-must-declare-its-store-rather-than-implement-one
+	 */
+	public static function aliasStoreController(IRegistrationContext $context, string $appId, string $controllerNs): void {
+		self::aliasControllerUnlessLeafDefinesIt(
+			context: $context,
+			leafClass: rtrim($controllerNs, '\\') . '\\StoreController',
+			factory: static function (ContainerInterface $c) use ($appId) {
+				$class = self::GENERIC_STORE_CONTROLLER;
+				return new $class(
+					appName: $appId,
+					request: $c->get('OCP\\IRequest'),
+					manifestLoader: $c->get(self::OBSERVABILITY_MANIFEST_LOADER),
+					storeService: $c->get(self::GENERIC_STORE_SERVICE),
+					installer: $c->get(self::GENERIC_STORE_INSTALLER),
+					catalog: $c->get(self::FEDERATED_STORE_CATALOG),
+					gitHubSource: $c->get(self::GITHUB_STORE_SOURCE),
+					userSession: $c->get('OCP\\IUserSession'),
+					groupManager: $c->get('OCP\\IGroupManager'),
+					logger: $c->get('Psr\\Log\\LoggerInterface')
+				);
+			}
+		);
+
+	}//end aliasStoreController()
 
 	/**
 	 * Alias one leaf controller class name to a generic AppHost controller,
