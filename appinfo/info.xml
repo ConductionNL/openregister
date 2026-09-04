@@ -217,6 +217,27 @@ Vrij en open source onder de EUPL-licentie.
 			     Copies the register-authored ones across, disabled, leaving the
 			     register rows in place so the step stays reversible. -->
 			<step>OCA\OpenRegister\Repair\MigrateRegisterFlowsToTable</step>
+			<!-- CLEANS UP AFTER THE VERSION OF THE STEP ABOVE THAT DID NOT SCOPE
+			     ITS READ. It asked findAll() for register `flows` / schema `flow`
+			     at the TOP LEVEL of the config; ObjectService reads that pair
+			     from `filters` and nowhere else, so both keys were inert and the
+			     read ran against whatever register/schema the SHARED service was
+			     still carrying. saveObject() sets that context and never restores
+			     it, and ImportCredentialBrokerRegister saves two example objects
+			     through it four steps earlier — so the migration copied both
+			     `brokeredcredential` examples into openregister_flows: no nodes,
+			     no edges, no trigger, owner `__system__`.
+
+			     Post-migration ONLY. A fresh install runs the fixed migration,
+			     which cannot produce these rows, so listing this under <install>
+			     would be a guaranteed no-op.
+
+			     Removes a row ONLY on the full conjunction: openregister-owned,
+			     disabled, no nodes, no edges, no trigger/cron, never dispatched
+			     (lastRun* null AND zero run rows), AND its uuid still resolves to
+			     a register object whose schema is not `flow`. Anything ambiguous
+			     is REPORTED by uuid, not deleted. Idempotent. -->
+			<step>OCA\OpenRegister\Repair\PurgePhantomMigratedFlows</step>
 			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
 			<step>OCA\OpenRegister\Repair\SeedVocabularyRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>

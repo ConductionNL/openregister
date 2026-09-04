@@ -175,12 +175,23 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 		$moved = 0;
 		$already = 0;
 		$failed = 0;
+		$notFlows = 0;
 
 		foreach ($objects as $object) {
 			$row  = $this->normalise(row: $object);
 			$uuid = $row['uuid'];
 			if ($uuid === '') {
 				$failed++;
+				continue;
+			}
+
+			// The second, independent guard — see isFlowDefinition().
+			if ($this->isFlowDefinition(object: $row['data']) === false) {
+				$notFlows++;
+				$this->logger->warning(
+					'[MigrateRegisterFlowsToTable] refused ' . $uuid
+					. ': no nodes, no edges and no trigger, so it is not a flow definition'
+				);
 				continue;
 			}
 
@@ -211,13 +222,48 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 		// the defect this repairs stayed invisible.
 		$output->info(
 			sprintf(
-				'Register-authored flows: %d migrated, %d already in the table, %d failed (register rows left in place).',
+				'Register-authored flows: %d migrated, %d already in the table, %d not a flow definition, %d failed (register rows left in place).',
 				$moved,
 				$already,
+				$notFlows,
 				$failed
 			)
 		);
 	}//end run()
+
+	/**
+	 * Whether this object is a flow definition at all.
+	 *
+	 * 🔴 BOTH GUARDS, DELIBERATELY. Scoping the read (see registerFlows()) fixes
+	 * the wrong POPULATION being selected; this fixes a wrong ROW inside the
+	 * selected one being written. They fail independently, which is the point:
+	 * the scoping guard depends on shared, mutable service state staying correct
+	 * for the whole of an `occ upgrade`, and that state is exactly what broke.
+	 * This one depends on nothing but the row in front of it.
+	 *
+	 * The test is what the flow engine needs to do anything: a graph to walk
+	 * (`nodes` or `edges`) or something to start it (`trigger`). A row with none
+	 * of the three cannot run, cannot be made to run, and is not a flow — it is
+	 * whatever else the read handed us. It is not a completeness check: an empty
+	 * graph that already names a trigger is a half-authored flow and crosses.
+	 *
+	 * @param array<string, mixed> $object The register object's payload.
+	 *
+	 * @return boolean True when the payload is a flow definition.
+	 */
+	private function isFlowDefinition(array $object): bool {
+		if (empty($object['nodes']) === false) {
+			return true;
+		}
+
+		if (empty($object['edges']) === false) {
+			return true;
+		}
+
+		$trigger = ($object['trigger'] ?? null);
+
+		return is_string($trigger) === true && trim($trigger) !== '';
+	}//end isFlowDefinition()
 
 	/**
 	 * Every object in the flows register.
@@ -225,12 +271,38 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 	 * @return array<int, mixed> The rows, each an ObjectEntity (see normalise()).
 	 */
 	private function registerFlows(): array {
+		// 🔴 `register` / `schema` GO UNDER `filters`, AND NOWHERE ELSE.
+		//
+		// This step used to pass them at the top level of the config, which
+		// reads correctly and does nothing: `ObjectService::prepareFindAllConfig()`
+		// inspects `$config['filters']['register']` and `$config['filters']['schema']`
+		// and no other key, so `setRegister()` / `setSchema()` were never called
+		// and the read ran against whatever `$currentRegister` / `$currentSchema`
+		// the SHARED ObjectService instance was still carrying.
+		//
+		// MEASURED, not inferred. `saveObject()` sets that context and never
+		// restores it — `find()` does, in a `finally`; `saveObject()` has no such
+		// block. `ImportCredentialBrokerRegister` runs four repair steps ahead of
+		// this one and saves `credential_broker_register.json`'s two example
+		// objects through it. So this step inherited `credential-broker` /
+		// `brokeredcredential` and copied both examples into `openregister_flows`:
+		// empty nodes, empty edges, no trigger, `_owner` = `__system__` (which is
+		// only what OpenRegister stamps on a sessionless write, not a convention).
+		//
+		// Every other `findAll()` caller under `lib/` nests the pair. This step
+		// was the outlier, and `_rbac` / `_multitenancy` are off because a repair
+		// step has no session — `occ` runs as Anonymous, so a scoped read would
+		// return nothing at all.
 		$result = $this->objectService->findAll(
-			[
-				'register' => self::FLOW_REGISTER,
-				'schema'   => self::FLOW_SCHEMA,
-				'limit'    => 1000,
-			]
+			config: [
+				'filters' => [
+					'register' => self::FLOW_REGISTER,
+					'schema'   => self::FLOW_SCHEMA,
+				],
+				'limit'   => 1000,
+			],
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		// No `is_array($result)` guard: `findAll()` is typed to return an array,
