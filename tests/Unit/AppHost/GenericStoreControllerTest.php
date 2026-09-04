@@ -37,6 +37,7 @@ use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Store\FederatedStoreCatalog;
 use OCA\OpenRegister\AppHost\Store\GenericStoreInstaller;
+use OCA\OpenRegister\AppHost\Store\Source\GitHubStoreSource;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
@@ -75,6 +76,9 @@ class GenericStoreControllerTest extends TestCase {
 	/** @var FederatedStoreCatalog&MockObject */
 	private $catalog;
 
+	/** @var GitHubStoreSource&MockObject */
+	private $gitHubSource;
+
 	/** @var IUserSession&MockObject */
 	private $userSession;
 
@@ -102,6 +106,8 @@ class GenericStoreControllerTest extends TestCase {
 			->disableOriginalConstructor()->onlyMethods(['install'])->getMock();
 		$this->catalog = $this->getMockBuilder(FederatedStoreCatalog::class)
 			->disableOriginalConstructor()->onlyMethods(['search', 'resolve', 'install'])->getMock();
+		$this->gitHubSource = $this->getMockBuilder(GitHubStoreSource::class)
+			->disableOriginalConstructor()->onlyMethods(['search', 'sourceId'])->getMock();
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->request = $this->createMock(IRequest::class);
@@ -122,6 +128,7 @@ class GenericStoreControllerTest extends TestCase {
 			storeService: $this->storeService,
 			installer: $this->installer,
 			catalog: $this->catalog,
+			gitHubSource: $this->gitHubSource,
 			userSession: $this->userSession,
 			groupManager: $this->groupManager,
 			logger: $this->createMock(LoggerInterface::class)
@@ -165,6 +172,39 @@ class GenericStoreControllerTest extends TestCase {
 			manifest: ['store' => ['types' => ['openregister.configset', 'openregister.flows']]]
 		);
 	}//end federatedStore()
+
+	/**
+	 * A github store is searched against the GitHub source, not the registry.
+	 *
+	 * 🔴 The regression this guards: a github store has no registry URL, so
+	 * falling through to GenericStoreService reports `not_configured` — true
+	 * of a registry the app never declared, and useless to whoever has to act
+	 * on it. The registry service is told to expect ZERO calls, so a fall
+	 * through fails here rather than in a browser.
+	 *
+	 * @return void
+	 */
+	public function testAGithubStoreIsSearchedAgainstTheGithubSource(): void {
+		$this->signIn();
+		$this->manifestLoader->method('loadStore')->willReturn(
+			StoreManifest::fromManifest('demo', [
+				'store' => ['source' => 'github', 'topics' => ['demo-app']],
+			])
+		);
+
+		$this->storeService->expects($this->never())->method('search');
+		$this->catalog->expects($this->never())->method('search');
+		$this->gitHubSource->expects($this->once())
+			->method('search')
+			->willReturn(['outcome' => 'ok', 'cards' => [['slug' => 'conduction/demo-app']]]);
+
+		$response = $this->controller('demo')->search();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$data = $response->getData();
+		$this->assertSame('ok', $data['outcome']);
+		$this->assertSame('conduction/demo-app', $data['cards'][0]['slug']);
+	}
 
 	/**
 	 * An app declaring types is searched against the configuration catalogue.

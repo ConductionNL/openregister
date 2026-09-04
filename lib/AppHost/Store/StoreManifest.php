@@ -64,6 +64,30 @@ class StoreManifest {
 	];
 
 	/**
+	 * Discovery sources a store may declare.
+	 *
+	 * `openregister` reads another OpenRegister's objects endpoint at an
+	 * admin-configured URL, which is why that path is SSRF-guarded and refuses
+	 * redirects. `github` searches the repository API by topic at a COMPILE-TIME
+	 * host, so there is no URL for an app to influence and nothing to guard.
+	 *
+	 * An unknown value is malformed, never a fallback: defaulting to
+	 * `openregister` would silently point an app at a registry it never asked
+	 * for.
+	 *
+	 * @var array<int, string>
+	 */
+	public const SOURCES = ['openregister', 'github'];
+
+	/**
+	 * The source assumed when a block declares none.
+	 *
+	 * Every store declared before the discriminator existed keeps its behaviour
+	 * exactly, which is the only reason this default may exist at all.
+	 */
+	public const DEFAULT_SOURCE = 'openregister';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                     $appId       The calling leaf app id.
@@ -76,6 +100,8 @@ class StoreManifest {
 	 * @param array<string, string>      $cardFields  Remote field to card field map.
 	 * @param array<int, array<string, mixed>> $builtIn The app's own items, for the no-registry case.
 	 * @param array<int, string>         $types       Shareable configuration type ids this store surfaces.
+	 * @param string                     $source      Discovery source: one of self::SOURCES.
+	 * @param array<int, string>         $topics      GitHub topics searched when $source is `github`.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) This is a value object
 	 * mirroring the manifest's `store` block one key to one parameter, so the
@@ -94,6 +120,8 @@ class StoreManifest {
 		public readonly array $cardFields = self::DEFAULT_CARD_FIELDS,
 		public readonly array $builtIn = [],
 		public readonly array $types = [],
+		public readonly string $source = self::DEFAULT_SOURCE,
+		public readonly array $topics = [],
 	) {
 	}//end __construct()
 
@@ -115,6 +143,24 @@ class StoreManifest {
 	public static function fromManifest(string $appId, array $manifest): self {
 		$block = ($manifest['store'] ?? null);
 		if (is_array($block) === false) {
+			return new self(appId: $appId, enabled: false);
+		}
+
+		// An unknown source is MALFORMED, not a fallback. Reporting it as
+		// `openregister` would point the app at a registry it never declared, and
+		// the store would then answer `not_configured` for a reason that has
+		// nothing to do with what the app got wrong.
+		$source = (string)($block['source'] ?? self::DEFAULT_SOURCE);
+		if (in_array(needle: $source, haystack: self::SOURCES, strict: true) === false) {
+			return new self(appId: $appId, enabled: false);
+		}
+
+		// A github store is configured by its TOPICS, not by a registry URL, so
+		// declaring none leaves it with nothing to search. That is a malformed
+		// block rather than an empty store: an empty store is a store that found
+		// nothing, which is a different thing to report.
+		$topics = self::stringList(value: ($block['topics'] ?? []));
+		if ($source === 'github' && $topics === []) {
 			return new self(appId: $appId, enabled: false);
 		}
 
@@ -143,6 +189,8 @@ class StoreManifest {
 			kinds: self::stringList(value: ($block['kinds'] ?? [])),
 			cardFields: array_map(callback: static fn ($v): string => (string)$v, array: $cardFields),
 			builtIn: self::objectList(value: ($block['builtIn'] ?? [])),
+			source: $source,
+			topics: $topics,
 			// Shareable configuration type ids (store-over-federated-config).
 			// Declaring these selects federated discovery, where an item is a
 			// configuration set, a flow or a schema that marked itself
