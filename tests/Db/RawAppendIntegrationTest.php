@@ -156,7 +156,7 @@ class RawAppendIntegrationTest extends TestCase {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('id', 'cnt'))
 			->from('openregister_audit_trails')
-			->where($qb->expr()->in('object', $qb->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY)));
+			->where($qb->expr()->in('object_uuid', $qb->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY)));
 		$result = $qb->executeQuery();
 		$count = (int) $result->fetchOne();
 		$result->closeCursor();
