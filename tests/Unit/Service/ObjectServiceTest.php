@@ -715,6 +715,16 @@ class ObjectServiceTest extends TestCase {
 
 	/**
 	 * Test saveObject sets context from register and schema parameters.
+	 *
+	 * OBSERVED AT THE HANDLER, NOT ON THE INSTANCE AFTERWARDS.
+	 *
+	 * This used to read `currentRegister` / `currentSchema` off the service once
+	 * the save had returned, which asserted a LEAK rather than the intent: a
+	 * save's scope belongs to the save, and leaving it on a service shared for
+	 * the whole request is what let openregister#3408 copy two
+	 * `brokeredcredential` examples into the flow table. The intent — the write
+	 * runs in the scope its arguments name — is unchanged and is now checked
+	 * where it is actually observable.
 	 */
 	public function testSaveObjectSetsContextFromParameters(): void {
 		$schemaNoVal = new Schema();
@@ -727,7 +737,14 @@ class ObjectServiceTest extends TestCase {
 
 		$savedEntity = new ObjectEntity();
 		$savedEntity->setId(1);
-		$this->saveHandler->method('saveObject')->willReturn($savedEntity);
+
+		$handlerScope = null;
+		$this->saveHandler->method('saveObject')->willReturnCallback(
+			function ($register, $schema, ...$rest) use ($savedEntity, &$handlerScope): ObjectEntity {
+				$handlerScope = ['register' => $register, 'schema' => $schema];
+				return $savedEntity;
+			}
+		);
 		$this->renderHandler->method('renderEntity')->willReturn($savedEntity);
 
 		$this->service->saveObject(
@@ -736,8 +753,13 @@ class ObjectServiceTest extends TestCase {
 			schema: $schemaNoVal
 		);
 
-		$this->assertSame($this->register, $this->getProperty('currentRegister'));
-		$this->assertSame($schemaNoVal, $this->getProperty('currentSchema'));
+		$this->assertNotNull($handlerScope, 'The save never reached the handler.');
+		$this->assertSame($this->register, $handlerScope['register']);
+		$this->assertSame($schemaNoVal, $handlerScope['schema']);
+
+		// ...and it is not left behind for the next caller.
+		$this->assertNull($this->getProperty('currentRegister'));
+		$this->assertNull($this->getProperty('currentSchema'));
 	}
 
 	// ── 8. deleteObject() tests ─────────────────────────────────────────
@@ -1644,12 +1666,23 @@ class ObjectServiceTest extends TestCase {
 
 	/**
 	 * Test findSilent sets register and schema context when provided.
+	 *
+	 * Observed at the handler, for the same reason as
+	 * {@see testSaveObjectSetsContextFromParameters()}. `find()` has restored
+	 * its context since BUG-OBJ-13; `findSilent()` differs from it only in
+	 * skipping the audit row, so it now restores too.
 	 */
 	public function testFindSilentSetsContextWhenProvided(): void {
 		$entity = new ObjectEntity();
 		$entity->setId(1);
 
-		$this->getHandler->method('findSilent')->willReturn($entity);
+		$handlerScope = null;
+		$this->getHandler->method('findSilent')->willReturnCallback(
+			function ($id, $register = null, $schema = null, ...$rest) use ($entity, &$handlerScope): ObjectEntity {
+				$handlerScope = ['register' => $register, 'schema' => $schema];
+				return $entity;
+			}
+		);
 
 		$this->service->findSilent(
 			id: 'test-uuid',
@@ -1657,8 +1690,13 @@ class ObjectServiceTest extends TestCase {
 			schema: $this->schema
 		);
 
-		$this->assertSame($this->register, $this->getProperty('currentRegister'));
-		$this->assertSame($this->schema, $this->getProperty('currentSchema'));
+		$this->assertNotNull($handlerScope, 'The read never reached the handler.');
+		$this->assertSame($this->register, $handlerScope['register']);
+		$this->assertSame($this->schema, $handlerScope['schema']);
+
+		// ...and it is not left behind for the next caller.
+		$this->assertNull($this->getProperty('currentRegister'));
+		$this->assertNull($this->getProperty('currentSchema'));
 	}
 
 	// ── 31. Private: handleCascadingWithContextPreservation() tests ─────
