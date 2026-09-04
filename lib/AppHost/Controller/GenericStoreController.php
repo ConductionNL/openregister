@@ -157,7 +157,12 @@ class GenericStoreController extends Controller {
 			// not_configured rather than 404: the page then renders its
 			// (empty) built-in list instead of reading as a broken endpoint.
 			return new JSONResponse(
-				data: ['outcome' => GenericStoreService::OUTCOME_NOT_CONFIGURED, 'cards' => [], 'kinds' => []],
+				data: [
+					'outcome' => GenericStoreService::OUTCOME_NOT_CONFIGURED,
+					'cards' => [],
+					'kinds' => [],
+					'builtIn' => [],
+				],
 				statusCode: Http::STATUS_OK
 			);
 		}
@@ -183,7 +188,12 @@ class GenericStoreController extends Controller {
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return new JSONResponse(
-				data: ['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'cards' => [], 'kinds' => $store->kinds],
+				data: [
+					'outcome' => GenericStoreService::OUTCOME_UNREACHABLE,
+					'cards' => [],
+					'kinds' => $store->kinds,
+					'builtIn' => $store->builtIn,
+				],
 				statusCode: Http::STATUS_OK
 			);
 		}
@@ -200,11 +210,25 @@ class GenericStoreController extends Controller {
 			$kinds = $store->declaredTypes();
 		}
 
+		// 🔴 `builtIn` RIDES BACK FOR THE SAME REASON `kinds` DOES.
+		//
+		// An app declares its own items ONCE, in the `store` block beside the
+		// allowlist. StoreManifest parses them and, until now, nothing ever
+		// sent them anywhere: `CnStorePage`'s `builtIn` prop is fed from the
+		// PAGE CONFIG, which is a second place to write the same list. An app
+		// that declared them only in the `store` block therefore rendered an
+		// empty store while its manifest said otherwise.
+		//
+		// Measured on decidiq, which declares four example sets and showed
+		// none of them: the search response carried `outcome`, `cards` and
+		// `kinds`, and no `builtIn` key at all. ADR-080 Decision 4 exists to
+		// stop precisely that blank surface.
 		return new JSONResponse(
 			data: [
 				'outcome' => $result['outcome'],
 				'cards' => $result['cards'],
 				'kinds' => $kinds,
+				'builtIn' => $store->builtIn,
 			],
 			statusCode: Http::STATUS_OK
 		);
