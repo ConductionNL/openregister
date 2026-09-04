@@ -80,6 +80,26 @@ class StoreManifest {
 	public const SOURCES = ['openregister', 'github'];
 
 	/**
+	 * Config keys an install may write, when a component declares
+	 * `op: setAppConfig`.
+	 *
+	 * 🔴 A SECOND SECURITY BOUNDARY, NOT A CONVENIENCE. `installable` stops a
+	 * remote registry naming any schema the app owns; this stops it naming any
+	 * config key. An app's config namespace holds registry URLs, tokens and
+	 * feature flags, so an unallowlisted write is a remote actor toggling
+	 * whatever it names. An empty list refuses every key, exactly as an empty
+	 * `installable` refuses every schema.
+	 *
+	 * @var array<int, string>
+	 */
+	public const INSTALL_OPS = ['writeObject', 'setAppConfig'];
+
+	/**
+	 * The operation assumed when a component declares none.
+	 */
+	public const DEFAULT_INSTALL_OP = 'writeObject';
+
+	/**
 	 * Install postures a store may declare.
 	 *
 	 * `admin` is an instance administrator. `authenticated` is any signed-in
@@ -133,6 +153,7 @@ class StoreManifest {
 	 * @param string                     $source      Discovery source: one of self::SOURCES.
 	 * @param array<int, string>         $topics      GitHub topics searched when $source is `github`.
 	 * @param string                     $installAuth Who may install: see self::INSTALL_AUTH.
+	 * @param array<int, string>         $configurable Config keys an install may write.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) This is a value object
 	 * mirroring the manifest's `store` block one key to one parameter, so the
@@ -154,6 +175,7 @@ class StoreManifest {
 		public readonly string $source = self::DEFAULT_SOURCE,
 		public readonly array $topics = [],
 		public readonly string $installAuth = self::DEFAULT_INSTALL_AUTH,
+		public readonly array $configurable = [],
 	) {
 	}//end __construct()
 
@@ -233,6 +255,7 @@ class StoreManifest {
 			source: $source,
 			topics: $topics,
 			installAuth: $installAuth,
+			configurable: self::stringList(value: ($block['configurable'] ?? [])),
 			// Shareable configuration type ids (store-over-federated-config).
 			// Declaring these selects federated discovery, where an item is a
 			// configuration set, a flow or a schema that marked itself
@@ -393,5 +416,26 @@ class StoreManifest {
 
 		return $isAdmin;
 	}//end permitsInstall()
+
+	/**
+	 * Whether an install may write this config key.
+	 *
+	 * 🔴 An EMPTY allowlist refuses everything, never permits everything. An
+	 * app that declares a store and forgets `configurable` gets config writes
+	 * that are all refused, rather than an open door onto its own settings.
+	 *
+	 * @param string $key The config key a component names.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/store-plane-install-ops/specs/apphost-store-plane/spec.md#requirement-a-config-write-must-be-allowlisted-by-key-and-scoped-to-the-declaring-app
+	 */
+	public function isConfigurable(string $key): bool {
+		if ($key === '' || $this->configurable === []) {
+			return false;
+		}
+
+		return in_array(needle: $key, haystack: $this->configurable, strict: true);
+	}//end isConfigurable()
 
 }//end class
