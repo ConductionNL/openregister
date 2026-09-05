@@ -89,7 +89,6 @@ class PruneRetiredSchemasArchivalTest extends TestCase {
 		$this->command = new PruneRetiredSchemasCommand(
 			$this->schemaMapper,
 			$this->registerMapper,
-			$this->magicMapper,
 			$this->deletionService
 		);
 
@@ -136,13 +135,87 @@ class PruneRetiredSchemasArchivalTest extends TestCase {
 		$register->setSlug('archival-rig');
 		$register->setSchemas([self::SCHEMA_ID]);
 
-		$this->schemaMapper->method('findByApplicationAndSlug')->willReturn($schema);
+		// EVERY row under the pair, not the first: the command reads them all
+		// now, because the import unions schema ids and a slug can carry two.
+		$this->schemaMapper->method('findAllByApplicationAndSlug')->willReturn([$schema]);
 		$this->registerMapper->method('findAll')->willReturn([$register]);
-		$this->magicMapper->method('tableExistsForRegisterSchema')->willReturn(true);
-		$this->magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(2);
+		// The guard asks the DELETION service what it would remove, rather than
+		// running a second, narrower count of its own.
+		$this->deletionService->method('countObjectsCascadeWouldDelete')->willReturn(2);
 
 		return $schema;
 	}//end stubOneRetiredSchema()
+
+	/**
+	 * TWO rows under one (application, slug), which is what the import leaves.
+	 *
+	 * @return array<int, Schema> Both schemas, in id order.
+	 */
+	private function stubTwoRetiredSchemas(): array {
+		$first = $this->makeEntity(new Schema(), self::SCHEMA_ID);
+		$first->setSlug('document');
+		$second = $this->makeEntity(new Schema(), (self::SCHEMA_ID + 1));
+		$second->setSlug('document');
+
+		$register = $this->makeEntity(new Register(), self::REGISTER_ID);
+		$register->setSlug('archival-rig');
+		$register->setSchemas([self::SCHEMA_ID, (self::SCHEMA_ID + 1)]);
+
+		$this->schemaMapper->method('findAllByApplicationAndSlug')->willReturn([$first, $second]);
+		$this->registerMapper->method('findAll')->willReturn([$register]);
+		$this->deletionService->method('countObjectsCascadeWouldDelete')->willReturn(0);
+
+		return [$first, $second];
+	}//end stubTwoRetiredSchemas()
+
+	/**
+	 * Both rows are pruned, not the first one only.
+	 *
+	 * The import unions schema ids and never removes one, so a descriptor edit
+	 * leaves the old row behind and a later import can add a second under the
+	 * same pair — which is the situation this command exists for. It read one
+	 * row per run, so it removed one of two and printed `Pruned=1, skipped=0`.
+	 * Measured on a live instance: opencatalogi owned `document` at ids 39 and
+	 * 40, the command took 40 and left 39 answering every lookup.
+	 *
+	 * @return void
+	 */
+	public function testBothRowsUnderOneSlugArePruned(): void {
+		$this->stubTwoRetiredSchemas();
+
+		$this->deletionService->expects(self::exactly(2))
+			->method('cascadeDeleteSchema')
+			->willReturn(['deletedCount' => 0, 'tableDropped' => true]);
+
+		$tester = $this->runPrune(['--apply' => true]);
+
+		self::assertStringContainsString('Pruned=2', $tester->getDisplay());
+		self::assertStringContainsString('owns 2 rows under this slug', $tester->getDisplay());
+
+	}//end testBothRowsUnderOneSlugArePruned()
+
+	/**
+	 * When the guard's count and the delete's count disagree, say so.
+	 *
+	 * The guard read "0 objects, safe to delete" and the delete removed 2, on a
+	 * live instance. Whatever the cause, an operator who approved a deletion on
+	 * the strength of a dry run needs to be told the number was wrong rather
+	 * than left to infer it from a log line they will not read.
+	 *
+	 * @return void
+	 */
+	public function testACountMismatchIsReported(): void {
+		$this->stubOneRetiredSchema(archival: false);
+
+		$this->deletionService->method('cascadeDeleteSchema')
+			->willReturn(['deletedCount' => 7, 'tableDropped' => true]);
+
+		$tester = $this->runPrune(['--apply' => true, '--force' => true]);
+
+		self::assertStringContainsString('COUNT MISMATCH', $tester->getDisplay());
+		self::assertStringContainsString('the guard saw 2 object(s), the delete removed 7', $tester->getDisplay());
+
+	}//end testACountMismatchIsReported()
 
 	/**
 	 * Run the command with the given options.

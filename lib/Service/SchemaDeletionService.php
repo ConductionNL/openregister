@@ -300,6 +300,60 @@ class SchemaDeletionService {
 	}//end cascadeDeleteSchema()
 
 	/**
+	 * How many objects `cascadeDeleteSchema()` would destroy.
+	 *
+	 * THE GUARD AND THE DELETE MUST LOOK AT THE SAME ROWS. They did not: the
+	 * prune command counted through the registers that REFERENCE a schema and
+	 * through `MagicSearchHandler`, which applies RBAC. Both narrow the set.
+	 *
+	 * Under `occ` there is no session, so the RBAC filter reads as Anonymous and
+	 * rows nobody anonymous may see counted as zero. And a schema referenced by
+	 * no register counted zero by construction — which is exactly the state a
+	 * half-pruned schema is left in. Either way the operator read "0 objects,
+	 * safe to delete" and the delete dropped the table.
+	 *
+	 * This counts what the delete enumerates: every magic table resolved for the
+	 * schema, including ones whose register no longer references it.
+	 *
+	 * @param Schema $schema The schema to count for.
+	 *
+	 * @return int The number of objects a cascade delete would remove.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	public function countObjectsCascadeWouldDelete(Schema $schema): int {
+		$total = 0;
+
+		foreach ($this->resolveMagicTablesForSchema(schema: $schema) as $entry) {
+			if ($entry['register'] === null) {
+				// A table outliving its register: the delete drops it without
+				// reading it, so it removes an unknown number of rows. Counting
+				// it as at least one keeps the guard on the side of the data.
+				$total++;
+				continue;
+			}
+
+			try {
+				$total += $this->magicMapper->countObjectsInRegisterSchemaTable(
+					query: [
+						'_rbac' => false,
+						'_multitenancy' => false,
+						'_includeDeleted' => true,
+					],
+					register: $entry['register'],
+					schema: $schema
+				);
+			} catch (Throwable $e) {
+				// An unreadable table cannot be counted. Treat it as non-empty so
+				// the guard errs towards keeping data.
+				$total++;
+			}
+		}
+
+		return $total;
+	}//end countObjectsCascadeWouldDelete()
+
+	/**
 	 * Drop the schema's magic tables, but only when they hold no rows at all.
 	 *
 	 * Used by the plain (no-flag, zero-object) delete path so it stops leaving an
