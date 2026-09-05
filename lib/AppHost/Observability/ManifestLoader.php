@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Observability;
 
+use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -71,6 +72,32 @@ class ManifestLoader {
 
 		return ObservabilityManifest::fromManifest(appId: $appId, manifest: $manifest);
 	}//end load()
+
+	/**
+	 * Load the declarative `store` block for an app id.
+	 *
+	 * Reuses the same bundled-manifest read as `load()`, so there is exactly
+	 * one place that knows where a leaf app's manifest lives. A missing or
+	 * unreadable manifest yields a DISABLED store rather than a defaulted one:
+	 * the word Store promises a registry (ADR-080 Decision 4) and the engine
+	 * must not promise it on an app's behalf.
+	 *
+	 * @param string $appId The calling app's id.
+	 *
+	 * @return StoreManifest
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-leaf-app-must-declare-its-store-rather-than-implement-one
+	 */
+	public function loadStore(string $appId): StoreManifest {
+		$manifest = $this->loadBundledManifest(appId: $appId);
+		if ($manifest === null) {
+			return new StoreManifest(appId: $appId, enabled: false);
+		}
+
+		return StoreManifest::fromManifest(appId: $appId, manifest: $manifest);
+	}//end loadStore()
 
 	/**
 	 * Resolve the installed version of an app (for the implicit `{app}_info`).

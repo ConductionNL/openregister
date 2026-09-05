@@ -37,8 +37,6 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Db\DeployedWorkflow;
-use OCA\OpenRegister\Db\DeployedWorkflowMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
@@ -55,7 +53,6 @@ use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\TaskService;
-use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -219,19 +216,7 @@ class ImportHandler {
 	 */
 	private mixed $connectorConfigSvc = null;
 
-	/**
-	 * Workflow engine registry for resolving adapters during import.
-	 *
-	 * @var WorkflowEngineRegistry|null
-	 */
-	private ?WorkflowEngineRegistry $workflowRegistry = null;
 
-	/**
-	 * Deployed workflow mapper for tracking imported workflows.
-	 *
-	 * @var DeployedWorkflowMapper|null
-	 */
-	private ?DeployedWorkflowMapper $deployedWfMapper = null;
 
 	/**
 	 * Optional task service for seeding related VTODO items.
@@ -369,27 +354,7 @@ class ImportHandler {
 		$this->connectorConfigSvc = $service;
 	}//end setOpenConnectorConfigurationService()
 
-	/**
-	 * Set the WorkflowEngineRegistry dependency.
-	 *
-	 * @param WorkflowEngineRegistry $registry The workflow engine registry.
-	 *
-	 * @return void
-	 */
-	public function setWorkflowEngineRegistry(WorkflowEngineRegistry $registry): void {
-		$this->workflowRegistry = $registry;
-	}//end setWorkflowEngineRegistry()
 
-	/**
-	 * Set the DeployedWorkflowMapper dependency.
-	 *
-	 * @param DeployedWorkflowMapper $mapper The deployed workflow mapper.
-	 *
-	 * @return void
-	 */
-	public function setDeployedWorkflowMapper(DeployedWorkflowMapper $mapper): void {
-		$this->deployedWfMapper = $mapper;
-	}//end setDeployedWorkflowMapper()
 
 	/**
 	 * Inject the TaskService used by seed-related-items to create VTODO tasks.
@@ -2232,6 +2197,7 @@ class ImportHandler {
 						'mappings' => 0,
 						'seedObjects' => 0,
 					],
+					'unchanged' => ['objects' => 0],
 					'failed' => ['schemas' => []],
 				];
 			}//end if
@@ -2273,6 +2239,16 @@ class ImportHandler {
 			// that declare it are created without the link, so the damage
 			// surfaces layers away (empty `*_schema` config keys, a seed step
 			// that cannot resolve a schema) with nothing pointing back here.
+			// The entities this import LEFT ALONE because they are already
+			// present at the same or a newer version. Counted because a caller
+			// otherwise cannot tell "nothing needed doing" from "everything
+			// failed": both arrive as `objects: []`. dossiq's demo-data step
+			// read that ambiguity as failure and refused every re-install,
+			// breaking the promise its own UI makes ("safe to run more than
+			// once").
+			'unchanged' => [
+				'objects' => 0,
+			],
 			'failed' => [
 				'schemas' => [],
 			],
@@ -2627,26 +2603,6 @@ class ImportHandler {
 			}//end foreach
 		}//end if
 
-		// Process and import workflows if present (Phase 2: Workflow Deployment).
-		$deployedWorkflows = [];
-		if (($data['components']['workflows'] ?? null) !== null
-			&& is_array($data['components']['workflows']) === true
-		) {
-			$result = $this->processWorkflowDeployment(
-				workflows: $data['components']['workflows'],
-				result: $result,
-				deployedWorkflows: $deployedWorkflows,
-				importSource: $appId ?? 'manual'
-			);
-
-			// Phase 3: Hook Wiring — attach deployed workflows to schemas.
-			$result = $this->processWorkflowHookWiring(
-				workflows: $data['components']['workflows'],
-				deployedWorkflows: $deployedWorkflows,
-				result: $result
-			);
-		}//end if
-
 		// Process and import mappings if present.
 		if (($data['components']['mappings'] ?? null) !== null
 			&& is_array($data['components']['mappings']) === true
@@ -2935,8 +2891,12 @@ class ImportHandler {
 						}
 
 						if (version_compare($importedVersion, $existingVersion, '>') <= 0) {
-							// Debug: per object, and skipping an unchanged object
-							// is the DESIGNED behaviour of a re-import, not news.
+							// COUNTED, not just logged. Skipping an unchanged
+							// object is the DESIGNED behaviour of a re-import,
+							// but a debug line is invisible to the caller, and
+							// the caller is the one that has to tell an operator
+							// whether the import worked.
+							$result['unchanged']['objects']++;
 							$this->logger->debug(
 								message: '[ImportHandler] Skipped object update: imported version not higher',
 								context: [
@@ -3434,240 +3394,7 @@ class ImportHandler {
 		return null;
 	}//end findExistingSeedUuid()
 
-	/**
-	 * Process workflow deployment during import (Phase 2).
-	 *
-	 * Deploys workflows to their engines with hash-based idempotency.
-	 *
-	 * @param array<int, array<string, mixed>> $workflows Workflow entries from import JSON
-	 * @param array<string, mixed> $result Current import result array
-	 * @param array<string, DeployedWorkflow> $deployedWorkflows Map populated by reference
-	 * @param string $importSource Import source identifier
-	 *
-	 * @param-out array<int|string, DeployedWorkflow> $deployedWorkflows A workflow named
-	 *         with a canonical numeric string ("12") gets an INT key from PHP's array-key
-	 *         coercion, so the map that comes back out is not key-narrowable to string.
-	 *
-	 * @return array<string, mixed> Updated result array
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 */
-	private function processWorkflowDeployment(
-		array $workflows,
-		array $result,
-		array &$deployedWorkflows,
-		string $importSource,
-	): array {
-		if ($this->workflowRegistry === null || $this->deployedWfMapper === null) {
-			$this->logger->warning(
-				message: '[ImportHandler] Workflow import skipped — registry or mapper not configured',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return $result;
-		}
 
-		$this->logger->debug(
-			message: '[ImportHandler] Starting workflow deployment phase',
-			context: ['file' => __FILE__, 'line' => __LINE__, 'count' => count($workflows)]
-		);
-
-		foreach ($workflows as $entry) {
-			$name = $entry['name'] ?? null;
-			$engine = $entry['engine'] ?? null;
-
-			if ($name === null || $engine === null || isset($entry['workflow']) === false) {
-				$result['workflows']['failed'][] = [
-					'name' => $name ?? 'unknown',
-					'error' => 'Missing required fields (name, engine, workflow)',
-				];
-				continue;
-			}
-
-			$jsonFlags = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
-			$hash = hash('sha256', json_encode($entry['workflow'], $jsonFlags));
-			$existing = $this->deployedWfMapper->findByNameAndEngine(name: $name, engine: $engine);
-
-			if ($existing !== null && $existing->getSourceHash() === $hash) {
-				$result['workflows']['unchanged'][] = $name;
-				$deployedWorkflows[$name] = $existing;
-				continue;
-			}
-
-			$engines = $this->workflowRegistry->getEnginesByType(engineType: $engine);
-			if (count($engines) === 0) {
-				$result['workflows']['failed'][] = [
-					'name' => $name,
-					'engine' => $engine,
-					'error' => "No registered engine of type '{$engine}'",
-				];
-				continue;
-			}
-
-			try {
-				$adapter = $this->workflowRegistry->resolveAdapter(engine: $engines[0]);
-
-				if ($existing !== null) {
-					$engineId = $adapter->updateWorkflow(
-						workflowId: $existing->getEngineWorkflowId(),
-						workflowDefinition: $entry['workflow']
-					);
-					$existing->setEngineWorkflowId($engineId);
-					$existing->setSourceHash($hash);
-					$existing->setVersion($existing->getVersion() + 1);
-					$existing->setUpdated(new DateTime());
-					$this->deployedWfMapper->update($existing);
-
-					$result['workflows']['updated'][] = [
-						'name' => $name,
-						'engine' => $engine,
-						'version' => $existing->getVersion(),
-						'action' => 'updated',
-					];
-					$deployedWorkflows[$name] = $existing;
-				}
-
-				if ($existing === null) {
-					$engineId = $adapter->deployWorkflow(workflowDefinition: $entry['workflow']);
-					$deployed = $this->deployedWfMapper->createFromArray(
-						[
-							'name' => $name,
-							'engine' => $engine,
-							'engineWorkflowId' => $engineId,
-							'sourceHash' => $hash,
-							'importSource' => $importSource,
-							'version' => 1,
-						]
-					);
-
-					$result['workflows']['deployed'][] = [
-						'name' => $name,
-						'engine' => $engine,
-						'action' => 'created',
-					];
-					$deployedWorkflows[$name] = $deployed;
-				}//end if
-			} catch (Exception $e) {
-				$this->logger->error(
-					message: '[ImportHandler] Workflow deployment failed',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'name' => $name, 'error' => $e->getMessage()]
-				);
-				$result['workflows']['failed'][] = [
-					'name' => $name,
-					'engine' => $engine,
-					'error' => $e->getMessage(),
-				];
-			}//end try
-		}//end foreach
-
-		return $result;
-	}//end processWorkflowDeployment()
-
-	/**
-	 * Process workflow hook wiring during import (Phase 3).
-	 *
-	 * Attaches deployed workflows to schema hooks based on attachTo configuration.
-	 *
-	 * @param array<int, array<string, mixed>> $workflows Workflow entries from import JSON
-	 * @param array<string, DeployedWorkflow> $deployedWorkflows Map of deployed workflows
-	 * @param array<string, mixed> $result Current import result array
-	 *
-	 * @return array<string, mixed> Updated result array
-	 *
-	 * @spec openspec/specs/workflow-in-import/spec.md#requirement-schema-hook-wiring-during-import
-	 */
-	private function processWorkflowHookWiring(
-		array $workflows,
-		array $deployedWorkflows,
-		array $result,
-	): array {
-		if ($this->deployedWfMapper === null) {
-			return $result;
-		}
-
-		foreach ($workflows as $entry) {
-			if (isset($entry['attachTo']) === false) {
-				continue;
-			}
-
-			$name = $entry['name'] ?? null;
-			$attachTo = $entry['attachTo'];
-			$deployed = $deployedWorkflows[$name] ?? null;
-
-			if ($deployed === null) {
-				continue;
-			}
-
-			$schemaSlug = $attachTo['schema'] ?? null;
-			$event = $attachTo['event'] ?? null;
-
-			if ($schemaSlug === null || $event === null) {
-				$this->logger->warning(
-					message: "[ImportHandler] Workflow '{$name}' has incomplete attachTo",
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				continue;
-			}
-
-			$schema = $this->schemasMap[$schemaSlug] ?? null;
-			if ($schema === null) {
-				try {
-					$schema = $this->schemaMapper->findBySlug($schemaSlug);
-				} catch (Exception $e) {
-					$msg = "Cannot attach '{$name}' — schema '{$schemaSlug}' not found";
-					$this->logger->warning(
-						message: '[ImportHandler] ' . $msg,
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-					continue;
-				}
-			}
-
-			$deployed->setAttachedSchema($schemaSlug);
-			$deployed->setAttachedEvent($event);
-			$deployed->setUpdated(new DateTime());
-			$this->deployedWfMapper->update($deployed);
-
-			// Build hook entry and add it to the schema's hooks JSON array.
-			$hookEntry = [
-				'event' => $event,
-				'engine' => $deployed->getEngine(),
-				'workflowId' => $deployed->getEngineWorkflowId(),
-				'mode' => $attachTo['mode'] ?? 'sync',
-				'order' => (int)($attachTo['order'] ?? 0),
-				'timeout' => (int)($attachTo['timeout'] ?? 30),
-				'enabled' => true,
-				'onFailure' => $attachTo['onFailure'] ?? 'reject',
-				'onTimeout' => $attachTo['onTimeout'] ?? 'reject',
-				'onEngineDown' => $attachTo['onEngineDown'] ?? 'allow',
-			];
-
-			$hooks = ($schema->getHooks() ?? []);
-
-			// Avoid duplicate: remove existing hook with same workflowId + event.
-			$hooks = array_values(
-				array_filter(
-					$hooks,
-					static function (array $hook) use ($hookEntry): bool {
-						return !(($hook['workflowId'] ?? '') === $hookEntry['workflowId']
-							&& ($hook['event'] ?? '') === $hookEntry['event']);
-					}
-				)
-			);
-
-			$hooks[] = $hookEntry;
-			$schema->setHooks($hooks);
-			$this->schemaMapper->update($schema);
-
-			$msg = "Attached workflow '{$name}' to schema '{$schemaSlug}' on event '{$event}'";
-			$this->logger->debug(
-				message: '[ImportHandler] ' . $msg,
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-		}//end foreach
-
-		return $result;
-	}//end processWorkflowHookWiring()
 
 	/**
 	 * Import configuration from an app's JSON data.

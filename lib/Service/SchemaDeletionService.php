@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -56,6 +57,13 @@ use Throwable;
  *   participate in phase 1's transaction nor be rolled back. A drop failure
  *   therefore leaves an EMPTY orphan table, which is reported honestly as
  *   `tableDropped: false` — it never fails a request whose data work succeeded.
+ *
+ * ARCHIVAL IMMUTABILITY: a schema declaring `x-openregister-archival` holds records
+ * its operator is legally required to retain, so neither entry point will destroy its
+ * objects. `deleteObjectsBySchema()` refuses outright; `cascadeDeleteSchema()` refuses
+ * unless an operator authorises the destruction explicitly from the CLI. See
+ * {@see self::rejectIfArchivalImmutable()} for why the audit trail is not a substitute
+ * for the record.
  *
  * KNOWN LIMIT: the cascade is synchronous, and its audit writes are inherently
  * sequential (hash-chained, ADR-003). A schema with far more than ~10k objects will
@@ -128,17 +136,25 @@ class SchemaDeletionService {
 	 * its row is touched, because `MagicMapper::deleteObjectsBySchema()` returns
 	 * only a count and cannot tell us afterwards what it removed.
 	 *
+	 * ARCHIVAL SCHEMAS ARE REFUSED OUTRIGHT. Both callers are HTTP routes, and the
+	 * spec's answer for an HTTP caller is the same at every door: an archival record
+	 * leaves only through the retention cron or the `occ` purge. There is no override
+	 * parameter here on purpose — an override this method accepted would be reachable
+	 * over HTTP the moment a controller passed it through.
+	 *
 	 * @param int $registerId The register id.
 	 * @param int $schemaId The schema id.
 	 * @param bool $hardDelete True to remove the rows, false to soft-delete them.
 	 * @param string $triggeredBy Audit trigger context.
 	 *
+	 * @throws ArchivalImmutableException If the schema declares `x-openregister-archival`.
 	 * @throws \Exception If the register or schema cannot be resolved, or deletion fails.
 	 *
 	 * @return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int} The deletion result.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The hard/soft toggle mirrors the mapper primitive it wraps.
 	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
 	 * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
 	 */
 	public function deleteObjectsBySchema(
@@ -149,6 +165,8 @@ class SchemaDeletionService {
 	): array {
 		$register = $this->registerMapper->find(id: $registerId);
 		$schema = $this->schemaMapper->find(id: $schemaId);
+
+		$this->rejectIfArchivalImmutable(schema: $schema, operation: 'delete');
 
 		$result = $this->deleteObjectsOfPair(
 			register: $register,
@@ -177,15 +195,36 @@ class SchemaDeletionService {
 	 * still succeeds, because the caller's intent is already satisfied and DDL is not
 	 * rollbackable on MySQL/MariaDB.
 	 *
-	 * @param Schema $schema The schema to tear down.
+	 * ARCHIVAL SCHEMAS ARE REFUSED UNLESS THE CALLER OVERRIDES EXPLICITLY, and the
+	 * override is an argument rather than a default because the two callers do not
+	 * carry the same authority. `DELETE /api/schemas/{id}?deleteObjects=true` never
+	 * passes it: an HTTP caller cannot destroy a legally retained record, exactly as
+	 * at the other three doors. `occ openregister:schemas:prune-retired` passes it
+	 * only when the operator typed `--force-archival`, which is the same bargain
+	 * `occ openregister:objects:purge --force` already strikes — shell access is an
+	 * authorization boundary an HTTP request cannot cross, and the operator has to
+	 * name the archival records out loud rather than sweep them up inside a flag
+	 * they passed for another reason.
 	 *
+	 * @param Schema $schema The schema to tear down.
+	 * @param bool $archivalOverride True only when an operator has explicitly authorised
+	 *                               destroying a legally retained record from the CLI.
+	 *
+	 * @throws ArchivalImmutableException If the schema is archival and no override was given.
 	 * @throws \Exception If phase 1 fails (nothing is deleted).
 	 *
 	 * @return array{deletedCount: int, deletedUuids: array<int, string>, tableDropped: bool} The cascade result.
 	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The override is the caller's authority, and it has to be stated per call site.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
 	 * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
 	 */
-	public function cascadeDeleteSchema(Schema $schema): array {
+	public function cascadeDeleteSchema(Schema $schema, bool $archivalOverride = false): array {
+		if ($archivalOverride === false) {
+			$this->rejectIfArchivalImmutable(schema: $schema, operation: 'delete');
+		}
+
 		$schemaId = (int)$schema->getId();
 		$tables = $this->resolveMagicTablesForSchema(schema: $schema);
 
@@ -261,6 +300,60 @@ class SchemaDeletionService {
 	}//end cascadeDeleteSchema()
 
 	/**
+	 * How many objects `cascadeDeleteSchema()` would destroy.
+	 *
+	 * THE GUARD AND THE DELETE MUST LOOK AT THE SAME ROWS. They did not: the
+	 * prune command counted through the registers that REFERENCE a schema and
+	 * through `MagicSearchHandler`, which applies RBAC. Both narrow the set.
+	 *
+	 * Under `occ` there is no session, so the RBAC filter reads as Anonymous and
+	 * rows nobody anonymous may see counted as zero. And a schema referenced by
+	 * no register counted zero by construction — which is exactly the state a
+	 * half-pruned schema is left in. Either way the operator read "0 objects,
+	 * safe to delete" and the delete dropped the table.
+	 *
+	 * This counts what the delete enumerates: every magic table resolved for the
+	 * schema, including ones whose register no longer references it.
+	 *
+	 * @param Schema $schema The schema to count for.
+	 *
+	 * @return int The number of objects a cascade delete would remove.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	public function countObjectsCascadeWouldDelete(Schema $schema): int {
+		$total = 0;
+
+		foreach ($this->resolveMagicTablesForSchema(schema: $schema) as $entry) {
+			if ($entry['register'] === null) {
+				// A table outliving its register: the delete drops it without
+				// reading it, so it removes an unknown number of rows. Counting
+				// it as at least one keeps the guard on the side of the data.
+				$total++;
+				continue;
+			}
+
+			try {
+				$total += $this->magicMapper->countObjectsInRegisterSchemaTable(
+					query: [
+						'_rbac' => false,
+						'_multitenancy' => false,
+						'_includeDeleted' => true,
+					],
+					register: $entry['register'],
+					schema: $schema
+				);
+			} catch (Throwable $e) {
+				// An unreadable table cannot be counted. Treat it as non-empty so
+				// the guard errs towards keeping data.
+				$total++;
+			}
+		}
+
+		return $total;
+	}//end countObjectsCascadeWouldDelete()
+
+	/**
 	 * Drop the schema's magic tables, but only when they hold no rows at all.
 	 *
 	 * Used by the plain (no-flag, zero-object) delete path so it stops leaving an
@@ -323,6 +416,60 @@ class SchemaDeletionService {
 		}//end try
 
 	}//end dropEmptyTablesForSchema()
+
+	/**
+	 * Refuse to destroy the objects of a schema that holds legally retained records.
+	 *
+	 * THE ONE PLACE THIS SERVICE DECIDES A SCHEMA-WIDE DELETE IS NOT ALLOWED.
+	 *
+	 * The condition is not restated here: it is read from
+	 * {@see Schema::hasArchivalAnnotation()}, the single definition of "is archival"
+	 * that `ObjectService::deleteObject()`, `ObjectService::rejectIfArchivalImmutable()`,
+	 * `DeletedController::destroy()` and `occ openregister:objects:purge` all ask. A
+	 * fifth reading of the annotation is a fifth chance to disagree with the other four.
+	 *
+	 * The gate sits in this service rather than in its callers because this service is
+	 * the single implementation of "delete every object of a schema": both bulk routes,
+	 * the HTTP cascade and the prune CLI reach the destruction through here, so a future
+	 * caller inherits the refusal instead of having to remember it.
+	 *
+	 * WHY REFUSE RATHER THAN PERMIT-WITH-AUDIT. This service audits every object into the
+	 * hash-chained trail before dropping it, which is genuinely a design for deliberate
+	 * destruction — but an audit entry records that a record was destroyed, it is not the
+	 * record. A retention obligation is discharged by still holding the row, so the audit
+	 * trail cannot stand in for it, and the fact that this path destroys carefully is not
+	 * a reason to let it destroy here.
+	 *
+	 * @param Schema $schema The schema whose objects are about to be destroyed.
+	 * @param string $operation The operation name reported in the structured error body.
+	 *
+	 * @throws ArchivalImmutableException When the schema declares `x-openregister-archival`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
+	private function rejectIfArchivalImmutable(Schema $schema, string $operation): void {
+		if ($schema->hasArchivalAnnotation() === false) {
+			return;
+		}
+
+		$this->logger->warning(
+			message: '[SchemaDeletionService] Refused a schema-wide delete on an archival schema',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schemaId' => (int)$schema->getId(),
+				'schemaSlug' => $schema->getSlug(),
+				'operation' => $operation,
+			]
+		);
+
+		throw new ArchivalImmutableException(
+			schemaIdentifier: ($schema->getSlug() ?? (string)$schema->getId()),
+			operation: $operation
+		);
+	}//end rejectIfArchivalImmutable()
 
 	/**
 	 * Audit and delete every object of one register/schema magic table.

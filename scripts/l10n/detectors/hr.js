@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-/* eslint-disable n/no-process-exit */
+ 
 // Croatian register detector for openregister l10n.
 //
 // Measures the PROSE register only, because — like Catalan and Estonian — the
@@ -22,6 +21,10 @@
 // The unambiguous signals are the possessive stems (tvoj- / vaš-), the oblique
 // pronoun forms, and closed lists of high-frequency finite verbs.
 
+/**
+ *
+ * @param s
+ */
 function fold(s) {
 	return String(s).toLowerCase()
 }
@@ -107,6 +110,10 @@ const UNDETECTABLE = [
 	['Odaberi registar', 'same: "odaberi" is also the 3sg present of "odabrati"'],
 ]
 
+/**
+ *
+ * @param s
+ */
 function score(s) {
 	const t = fold(s)
 	let f = 0
@@ -118,6 +125,9 @@ function score(s) {
 	return { f, i }
 }
 
+/**
+ *
+ */
 function runControls() {
 	let fail = 0
 	for (const [s, want] of CONTROLS) {

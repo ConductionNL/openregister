@@ -37,6 +37,7 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\ReferentialIntegrityService
@@ -225,7 +226,8 @@ class ReferentialIntegrityIndexCacheTest extends TestCase {
 			$this->createMock(AuditTrailMapper::class),
 			$this->createMock(LoggerInterface::class),
 			$this->dbReturning($versionRows),
-			$this->cacheFactory
+			$this->cacheFactory,
+			$this->makeArchivalGuard()
 		);
 
 	}//end service()
@@ -541,4 +543,35 @@ class ReferentialIntegrityIndexCacheTest extends TestCase {
 
 	}//end testFutureStampBypassesCache()
 
+	/**
+	 * A real ArchivalRetentionGuard over schemas that declare no archival annotation.
+	 *
+	 * REAL, not a mock: the cascade's retention decision must come from the
+	 * production predicate Schema::hasArchivalAnnotation(). These fixtures are
+	 * ordinary schemas, so the guard lets every cascade through and these tests
+	 * keep asserting the behaviour they were written for.
+	 *
+	 * @param array<int, string> $archivalSchemas Schema identifiers that ARE archival.
+	 *
+	 * @return ArchivalRetentionGuard
+	 */
+	private function makeArchivalGuard(array $archivalSchemas = []): ArchivalRetentionGuard {
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('find')->willReturnCallback(
+			function ($id) use ($archivalSchemas): Schema {
+				$schema = new Schema();
+				$schema->setSlug((string)$id);
+				$configuration = [];
+				if (in_array((string)$id, $archivalSchemas, true) === true) {
+					$configuration['x-openregister-archival'] = ['retention' => ['default' => 'P10Y']];
+				}
+
+				$schema->setConfiguration($configuration);
+
+				return $schema;
+			}
+		);
+
+		return new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class));
+	}//end makeArchivalGuard()
 }//end class

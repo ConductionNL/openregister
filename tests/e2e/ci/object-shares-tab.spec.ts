@@ -1,3 +1,5 @@
+import type { APIRequestContext, Page } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -28,14 +30,8 @@
  * accounts come from the workflow's `playwright-seed-command`, shared with the
  * sibling spec — see the note there on why they are fixed rather than per-run.
  */
-import {
-	test,
-	expect,
-	request as pwRequest,
-	type APIRequestContext,
-	type Page,
-} from '@playwright/test'
-import { resolveBaseUrl } from '../base-url'
+import { expect, request as pwRequest, test } from '@playwright/test'
+import { resolveBaseUrl } from '../base-url.ts'
 
 const BASE = resolveBaseUrl()
 const ADMIN = process.env.ADMIN_USER || process.env.OR_USER || 'admin'
@@ -119,7 +115,7 @@ async function openSharesTab(
 	uuid: string,
 ) {
 	await page.goto(
-		`/index.php/apps/openregister/#/objects/${register}/${schema}/${uuid}`,
+		`/index.php/apps/openregister/objects/${register}/${schema}/${uuid}`,
 		{ waitUntil: 'domcontentloaded' },
 	)
 

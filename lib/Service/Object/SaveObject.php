@@ -43,6 +43,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ReferenceValidatedEvent;
 use OCA\OpenRegister\Event\ReferenceValidationFailedEvent;
 use OCA\OpenRegister\Exception\CircularReferenceException;
+use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -307,6 +308,7 @@ class SaveObject {
 	 * @param IEventDispatcher|null $eventDispatcher Event dispatcher (reference events)
 	 * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null $objectSourceRegistry Writable object-source provider registry
 	 * @param FieldEncryptionHandler|null $fieldEncryptionHandler Field-level encryption handler
+	 * @param \OCA\OpenRegister\Service\Flow\FlowRunContext|null $runContext The ambient flow-run stack, so the lock guard can tell which run is writing
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 *
@@ -341,6 +343,7 @@ class SaveObject {
 		private readonly ?IEventDispatcher $eventDispatcher = null,
 		private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry = null,
 		private readonly ?FieldEncryptionHandler $fieldEncryptionHandler = null,
+		private readonly ?\OCA\OpenRegister\Service\Flow\FlowRunContext $runContext = null,
 	) {
 		$this->twig = new Environment($arrayLoader);
 	}//end __construct()
@@ -516,6 +519,14 @@ class SaveObject {
 			$schemas = $this->schemaMapper->findAll();
 			// Cache all schemas by slug for future lookups.
 			foreach ($schemas as $schema) {
+				// A schema with no slug cannot be found BY slug, and feeding
+				// the null on to strtolower()/strcasecmp() is deprecated in
+				// PHP 8.1 and a TypeError in PHP 9. Skipping it is what the
+				// loop was already doing in effect, just noisily.
+				if ($schema->getSlug() === null) {
+					continue;
+				}
+
 				$schemaSlug = strtolower($schema->getSlug());
 				$schemaId = (string)$schema->getId();
 				// Cache the schema entity.
@@ -3174,21 +3185,38 @@ class SaveObject {
 			);
 
 			// Check if object is locked - prevent updates on locked objects.
-			$lockData = $existingObject->getLocked();
-			if ($lockData !== null && is_array($lockData) === true) {
-				$currentUser = $this->userSession->getUser();
-				$currentUserId = null;
-				if ($currentUser !== null) {
-					$currentUserId = $currentUser->getUID();
-				}
+			//
+			// This guard NEVER FIRED before the run-scoped-locking change. It
+			// read the holder from `$lockData['userId']`, and
+			// `ObjectEntity::lock()` has always written it under `user`, so
+			// `$lockOwner` was invariably null and the `!== null` test
+			// short-circuited every time. Every lock taken since the endpoint
+			// shipped was decorative on this path. It is fixed by delegating
+			// to the one production predicate instead of re-spelling the
+			// comparison here, which is what went wrong in the first place.
+			$currentUser = $this->userSession->getUser();
+			$currentUserId = null;
+			if ($currentUser !== null) {
+				$currentUserId = $currentUser->getUID();
+			}
 
-				$lockOwner = $lockData['userId'] ?? null;
+			// WHICH RUN IS WRITING, not just which user. A run-scoped lock
+			// refuses every caller but the holding run, so a guard that omits
+			// the run identity refuses THE RUN THAT TOOK THE LOCK: a flow
+			// locks a case at one step and is turned away by its own lock at
+			// the next. Ambient rather than a parameter because the write is
+			// routinely several calls deep in code that has never heard of
+			// flows; absent, it reads as a person, which is the fail-closed
+			// answer a run lock already gives.
+			$callerRun = $this->runContext?->currentRunUuid();
 
-				// If object is locked by someone other than the current user, prevent update.
-				if ($lockOwner !== null && $lockOwner !== $currentUserId) {
-					$unlockAdvice = 'Please unlock the object before attempting to update it.';
-					throw new Exception("Cannot update object: Object is locked by user '{$lockOwner}'. " . $unlockAdvice);
-				}
+			// A TYPED refusal, not a plain `Exception`. The message is unchanged,
+			// but the type is what lets a caller answer 423 instead of falling
+			// into a generic 500 — which is what PATCH and POST-patch did for a
+			// payload that was otherwise valid. The holder travels on the
+			// exception rather than being re-derived at each catch site.
+			if ($existingObject->isLockedBySomeoneElse(userId: $currentUserId, runUuid: $callerRun) === true) {
+				throw LockedException::forObject($existingObject);
 			}
 
 			return $existingObject;

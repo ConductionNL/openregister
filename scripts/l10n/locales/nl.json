@@ -112,6 +112,8 @@
     "sk-...": "A literal API-key prefix example shown verbatim; not prose.",
     "{count} widget(s)": "'widget' is an established loan; the rest is a placeholder and a parenthetical.",
     "{property} - {other}": "Placeholders and a dash only.",
-    "{title} in {register} / {schema}": "Placeholders plus the Dutch preposition 'in'."
+    "{title} in {register} / {schema}": "Placeholders plus the Dutch preposition 'in'.",
+    "Details": "Same spelling and meaning in Dutch; core nl keeps it.",
+    "Urgent": "Same spelling and meaning in Dutch (urgent)."
   }
 }

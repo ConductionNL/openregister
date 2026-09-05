@@ -89,6 +89,153 @@ class FlowTokenRouterEndpointsTest extends TestCase {
 	}//end branchingFlow()
 
 	/**
+	 * A transition double with a name and output places.
+	 *
+	 * @param string $name The node id.
+	 * @param array<int, string> $tos The output places.
+	 *
+	 * @return object The double.
+	 */
+	private function transition(string $name, array $tos): object {
+		return new class ($name, $tos) {
+			public function __construct(
+				private readonly string $name,
+				private readonly array $tos,
+			) {
+			}
+
+			public function getName(): string {
+				return $this->name;
+			}
+
+			public function getTos(): array {
+				return $this->tos;
+			}
+		};
+	}//end transition()
+
+	/**
+	 * An exit-id tag resolves to the exit's one place; a tag that already
+	 * names a place is left alone; a tag naming nothing known is left as-is.
+	 *
+	 * @return void
+	 */
+	public function testResolveOutputTagsMapsAnExitIdToItsPlace(): void {
+		$flow = $this->branchingFlow(['split']);
+		$transition = $this->transition('split', ['hi', 'lo']);
+
+		$items = $this->router->resolveOutputTags(
+			flow: $flow,
+			transition: $transition,
+			items: [
+				['json' => ['n' => 1], 'binary' => [], 'pairedItem' => null, 'output' => 'low'],
+				['json' => ['n' => 2], 'binary' => [], 'pairedItem' => null, 'output' => 'hi'],
+				['json' => ['n' => 3], 'binary' => [], 'pairedItem' => null, 'output' => 'unknowable'],
+				['json' => ['n' => 4], 'binary' => [], 'pairedItem' => null],
+				'not-an-item',
+			]
+		);
+
+		$this->assertSame('lo', $items[0]['output'], 'the exit id resolves to the exit\'s place');
+		$this->assertSame('hi', $items[1]['output'], 'a tag that already names a place is untouched');
+		$this->assertSame('unknowable', $items[2]['output'], 'an unroutable tag keeps its drop semantics');
+		$this->assertArrayNotHasKey('output', $items[3], 'an unrouted item stays unrouted');
+		$this->assertSame('not-an-item', $items[4], 'a non-item member is passed through');
+	}//end testResolveOutputTagsMapsAnExitIdToItsPlace()
+
+	/**
+	 * A tag naming an exit with SEVERAL places is removed: the whole exit was
+	 * taken, and an untagged item is broadcast to every taken place.
+	 *
+	 * @return void
+	 */
+	public function testResolveOutputTagsBroadcastsAcrossAMultiPlaceExit(): void {
+		$flow = [
+			'nodes' => [
+				['id' => 'split', 'type' => 'openregister.router', 'exits' => [['id' => 'both']]],
+				['id' => 'hi', 'type' => 'openregister.set-fields'],
+				['id' => 'lo', 'type' => 'openregister.set-fields'],
+			],
+			'edges' => [
+				['id' => 'a', 'from' => ['split'], 'fromExit' => 'both', 'to' => ['hi']],
+				['id' => 'b', 'from' => ['split'], 'fromExit' => 'both', 'to' => ['lo']],
+			],
+		];
+
+		$items = $this->router->resolveOutputTags(
+			flow: $flow,
+			transition: $this->transition('split', ['hi', 'lo']),
+			items: [['json' => ['n' => 1], 'binary' => [], 'pairedItem' => null, 'output' => 'both']]
+		);
+
+		$this->assertArrayNotHasKey('output', $items[0]);
+	}//end testResolveOutputTagsBroadcastsAcrossAMultiPlaceExit()
+
+	/**
+	 * takenExits: among unconditioned exits, the one the items are tagged for
+	 * wins over the declaration-order else; with no tag the else keeps it.
+	 *
+	 * @return void
+	 */
+	public function testTakenExitsHonoursTheItemsRoutingTag(): void {
+		$flow = [
+			'nodes' => [
+				['id' => 'split', 'type' => 'openregister.router', 'exits' => [['id' => 'first'], ['id' => 'second']]],
+				['id' => 'hi', 'type' => 'openregister.set-fields'],
+				['id' => 'lo', 'type' => 'openregister.set-fields'],
+			],
+			'edges' => [
+				['id' => 'a', 'from' => ['split'], 'fromExit' => 'first', 'to' => ['hi']],
+				['id' => 'b', 'from' => ['split'], 'fromExit' => 'second', 'to' => ['lo']],
+			],
+		];
+		$transition = $this->transition('split', ['hi', 'lo']);
+
+		$tagged = $this->router->takenExits(
+			flow: $flow,
+			transition: $transition,
+			items: [['json' => [], 'binary' => [], 'pairedItem' => null, 'output' => 'second']],
+			context: []
+		);
+		$this->assertSame(['lo'], $tagged, 'the tagged exit beats declaration order');
+
+		$untagged = $this->router->takenExits(
+			flow: $flow,
+			transition: $transition,
+			items: [['json' => [], 'binary' => [], 'pairedItem' => null]],
+			context: []
+		);
+		$this->assertSame(['hi'], $untagged, 'without a tag the declaration-order else keeps it');
+	}//end testTakenExitsHonoursTheItemsRoutingTag()
+
+	/**
+	 * takenExits skips what it cannot use: a non-array exit entry, and an exit
+	 * no edge leads out of. The remaining wired else still takes the token.
+	 *
+	 * @return void
+	 */
+	public function testTakenExitsSkipsMalformedAndUnwiredExits(): void {
+		$flow = [
+			'nodes' => [
+				['id' => 'split', 'type' => 'openregister.router', 'exits' => ['junk', ['id' => 'unwired'], ['id' => 'ok']]],
+				['id' => 'hi', 'type' => 'openregister.set-fields'],
+			],
+			'edges' => [
+				['id' => 'a', 'from' => ['split'], 'fromExit' => 'ok', 'to' => ['hi']],
+			],
+		];
+
+		$taken = $this->router->takenExits(
+			flow: $flow,
+			transition: $this->transition('split', ['hi']),
+			items: [['json' => [], 'binary' => [], 'pairedItem' => null]],
+			context: []
+		);
+
+		$this->assertSame(['hi'], $taken);
+	}//end testTakenExitsSkipsMalformedAndUnwiredExits()
+
+	/**
 	 * A LIST source resolves the places an exit reaches.
 	 *
 	 * @return void

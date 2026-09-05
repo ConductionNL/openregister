@@ -23,9 +23,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
-use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\UploadService;
@@ -375,11 +373,13 @@ class ConfigurationsController extends Controller {
 				throw new Exception('Failed to encode configuration data to JSON');
 			}
 
-			// Generate filename.
+			// Generate filename. `date()` rather than a DateTime instance: the
+			// two produce the same string from the same default timezone, and
+			// this was the class's fourteenth coupled type.
 			$filename = sprintf(
 				'configuration_%s_%s.json',
 				$configuration->getTitle() ?? 'unknown',
-				(new DateTime())->format('Y-m-d_His')
+				date('Y-m-d_His')
 			);
 
 			// Return as downloadable file.
@@ -435,23 +435,25 @@ class ConfigurationsController extends Controller {
 				return $jsonData;
 			}
 
-			// Create a Configuration entity from the JSON data.
-			// This is required for proper entity tracking in ImportHandler.
-			$configuration = new Configuration();
-			$configuration->setTitle($jsonData['info']['title'] ?? 'Imported Configuration');
-			$configuration->setDescription($jsonData['info']['description'] ?? '');
-			$configuration->setVersion($jsonData['info']['version'] ?? '1.0.0');
-			$configuration->setSourceType('upload');
-			$configuration->setApp($this->request->getParam('appId') ?? ($jsonData['x-openregister']['app'] ?? 'unknown'));
-			$configuration->setOwner($this->request->getParam('owner') ?? $this->userId);
-			$configuration->setCreated(new DateTime());
-			$configuration->setUpdated(new DateTime());
-			$configuration->setRegisters([]);
-			$configuration->setSchemas([]);
-			$configuration->setObjects([]);
-
-			// Persist the configuration entity so it appears in the configurations list.
-			$configuration = $this->configurationMapper->insert($configuration);
+			// Create and persist the Configuration entity from the JSON data.
+			// ImportHandler needs the entity for its tracking, and it has to be
+			// in the list afterwards, so it is built and inserted in one call.
+			//
+			// `created` and `updated` are NOT set here: the mapper stamps both
+			// on insert, so setting them was writing values it overwrote.
+			$configuration = $this->configurationMapper->createFromArray(
+				[
+					'title' => ($jsonData['info']['title'] ?? 'Imported Configuration'),
+					'description' => ($jsonData['info']['description'] ?? ''),
+					'version' => ($jsonData['info']['version'] ?? '1.0.0'),
+					'sourceType' => 'upload',
+					'app' => ($this->request->getParam('appId') ?? ($jsonData['x-openregister']['app'] ?? 'unknown')),
+					'owner' => ($this->request->getParam('owner') ?? $this->userId),
+					'registers' => [],
+					'schemas' => [],
+					'objects' => [],
+				]
+			);
 
 			// Import the data.
 			$force = $this->request->getParam('force') === 'true' || $this->request->getParam('force') === true;
@@ -465,9 +467,19 @@ class ConfigurationsController extends Controller {
 			);
 
 			// Link the imported registers, schemas and objects to the configuration.
-			$registerIds = array_map(static fn ($r) => $r->getId(), $result['registers']);
-			$schemaIds = array_map(static fn ($schema) => $schema->getId(), $result['schemas']);
-			$objectIds = array_map(static fn ($obj) => $obj->getId(), $result['objects']);
+			//
+			// `$result['objects']` IS NOT UNIFORMLY ENTITIES. ImportHandler
+			// appends an ObjectEntity in two places and a bare id in two others
+			// (`$result['objects'][] = $existingObject->getId()`), so a
+			// descriptor that carries seed objects reached
+			// `$obj->getId()` on an int and died with a TypeError. That is an
+			// `Error`, not an `Exception`, so the catch below did not see it
+			// either: the endpoint answered 500 with Nextcloud's HTML error page
+			// instead of the JSON it documents. Measured on stackiq's register,
+			// whose import was the only one of eighteen to fail this way.
+			$registerIds = self::idsOf(items: $result['registers']);
+			$schemaIds = self::idsOf(items: $result['schemas']);
+			$objectIds = self::idsOf(items: $result['objects']);
 
 			$configuration->setRegisters(array_values(array_unique($registerIds)));
 			$configuration->setSchemas(array_values(array_unique($schemaIds)));
@@ -480,8 +492,42 @@ class ConfigurationsController extends Controller {
 					'imported' => $result,
 				]
 			);
-		} catch (Exception $e) {
+		} catch (\Throwable $e) {
+			// Throwable, not Exception. A TypeError in this method is a bug in
+			// OpenRegister rather than bad input, and answering it with a 500
+			// HTML page hides which of the two it was — the caller cannot tell a
+			// malformed descriptor from a crash, and neither could the operator
+			// reading the response.
 			return new JSONResponse(data: ['error' => 'Failed to import configuration: ' . $e->getMessage()], statusCode: 400);
 		}//end try
 	}//end import()
+
+	/**
+	 * The ids of an import result list, whether it holds entities or ids.
+	 *
+	 * @param mixed $items Entities, ids, or a mix of the two.
+	 *
+	 * @return array<int, int|string> The ids, with anything unusable dropped.
+	 *
+	 * @spec openspec/changes/a-configuration-import-500s-on-a-descriptor-with-objects/specs/configuration-import/spec.md#requirement-the-import-endpoint-answers-in-json-req-cim-001
+	 */
+	private static function idsOf(mixed $items): array {
+		if (is_array($items) === false) {
+			return [];
+		}
+
+		$ids = [];
+		foreach ($items as $item) {
+			if (is_object($item) === true && method_exists($item, 'getId') === true) {
+				$ids[] = $item->getId();
+				continue;
+			}
+
+			if (is_int($item) === true || is_string($item) === true) {
+				$ids[] = $item;
+			}
+		}
+
+		return $ids;
+	}//end idsOf()
 }//end class

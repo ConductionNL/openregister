@@ -43,7 +43,6 @@ use OCP\AppFramework\Db\Entity;
  * Class CaseToken
  *
  * @method string|null getToken()
- * @method void getToken(?string $token)
  * @method void setToken(?string $token)
  * @method string|null getObjectUuid()
  * @method void setObjectUuid(?string $objectUuid)

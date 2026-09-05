@@ -486,75 +486,6 @@ class SearchQueryHandler {
 	}//end applyViewsToQuery()
 
 	/**
-	 * Clean and normalize query parameters
-	 *
-	 * Converts legacy query parameter formats to the standard format used by MagicMapper.
-	 * Handles ordering, operator suffixes (_in, _gt, _lt, etc.), and normalizes parameter names.
-	 *
-	 * @param array<string, mixed> $parameters Query parameters to clean.
-	 *
-	 * @return array<string, mixed> Cleaned query parameters
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple conditional paths for parameter normalization
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 */
-	public function cleanQuery(array $parameters): array {
-		$newParameters = [];
-
-		// 1. Handle ordering.
-		if (isset($parameters['ordering']) === true) {
-			$ordering = $parameters['ordering'];
-			$direction = 'ASC';
-			if (str_starts_with($ordering, '-') === true) {
-				$direction = 'DESC';
-			}
-
-			$field = ltrim($ordering, '-');
-			$newParameters['_order'] = [$field => $direction];
-			unset($parameters['ordering']);
-		}
-
-		// 2. Normalize keys: replace '__' with '_'.
-		$normalized = [];
-		foreach ($parameters as $key => $value) {
-			$normalized[str_replace('__', '_', $key)] = $value;
-		}
-
-		// 3. Process parameters (no nested loops).
-		foreach ($normalized as $key => $value) {
-			if (preg_match('/^(.*)_(in|gt|lt|gte|lte|isnull)$/', $key, $matches) === 1) {
-				// Suppress unused variable warning for $matches[0] (full match).
-				unset($matches[0]);
-				[$base, $suffix] = array_values($matches);
-
-				switch ($suffix) {
-					case 'in':
-					case 'gt':
-					case 'lt':
-					case 'gte':
-					case 'lte':
-						$newParameters[$base][$suffix] = $value;
-						break;
-
-					case 'isnull':
-						$newParameters[$base] = 'IS NOT NULL';
-						if ($value === true) {
-							$newParameters[$base] = 'IS NULL';
-						}
-						break;
-				}//end switch
-
-				continue;
-			}//end if
-
-			$newParameters[$key] = $value;
-		}//end foreach
-
-		return $newParameters;
-	}//end cleanQuery()
-
-	/**
 	 * Add pagination URLs to search results
 	 *
 	 * Generates next and previous page URLs based on current page and total pages.
@@ -664,9 +595,17 @@ class SearchQueryHandler {
 
 		// Register the deferred flush once per request; it runs after the
 		// response has been generated so the write cost is off the hot path.
+		// The callback is a closure rather than the `[$this, 'flushSearchTrails']`
+		// array form it replaced: a string method name is invisible to every
+		// static tool, so renaming the flush would break the registration with
+		// no error anywhere — trails would just stop being written.
 		if ($this->trailFlushRegistered === false) {
 			$this->trailFlushRegistered = true;
-			register_shutdown_function([$this, 'flushSearchTrails']);
+			register_shutdown_function(
+				function (): void {
+					$this->flushSearchTrails();
+				}
+			);
 		}
 	}//end logSearchTrail()
 

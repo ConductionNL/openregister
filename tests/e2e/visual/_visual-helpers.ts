@@ -1,3 +1,5 @@
+import type { Locator, Page } from '@playwright/test'
+
 /*
  * SPDX-License-Identifier: EUPL-1.2
  *
@@ -24,7 +26,7 @@
  * own baselines on first run, or (b) stay non-gating until baselined in the CI
  * environment. See tests/e2e/visual/README in-repo wiring notes.
  */
-import { expect, type Page, type Locator } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 /** Common screenshot options applied to every visual assertion. */
 export const SHOT_OPTIONS = {
@@ -188,7 +190,7 @@ export async function shootSurface(
 /**
  * Land on the app root, then reach a surface by CLICKING its sidebar nav link
  * (by visible label) and shoot it. Many of the Conduction SPAs reset a
- * deep-link `goto('…#/route')` back to the dashboard, so an in-app nav click
+ * deep-link `goto('…/route')` back to the dashboard, so an in-app nav click
  * is the reliable way to reach a non-default view. Falls back to a shot of
  * wherever we land if the link is absent, so a baseline is still produced.
  */

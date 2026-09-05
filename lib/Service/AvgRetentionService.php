@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
+use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -51,6 +52,10 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Retention-period-driven object retention enforcement.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One over, from the archival
+ * retention guard: the pass must ask whether a record is legally retained
+ * before it erases it, and that question has one owner.
  */
 class AvgRetentionService {
 	/**
@@ -60,6 +65,7 @@ class AvgRetentionService {
 	 * @param VerwerkingsactiviteitMapper $vrwMapper Catalog reader.
 	 * @param MagicMapper $objectMapper Object loader.
 	 * @param LoggerInterface $logger Logger.
+	 * @param ArchivalRetentionGuard $archivalGuard Refuses erasure of a legally retained record.
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
@@ -68,6 +74,7 @@ class AvgRetentionService {
 		private readonly VerwerkingsactiviteitMapper $vrwMapper,
 		private readonly MagicMapper $objectMapper,
 		private readonly LoggerInterface $logger,
+		private readonly ArchivalRetentionGuard $archivalGuard,
 	) {
 
 	}//end __construct()
@@ -81,10 +88,17 @@ class AvgRetentionService {
 	 *     "evaluatedActivities": <int>,
 	 *     "skippedActivities":   <int>,
 	 *     "objectsErased":       <int>,
+	 *     "objectsWithheld":     <int>,
+	 *     "withheld": [
+	 *       {"uuid": "...", "schema": "...", "ground": "ARCHIVAL_RETENTION_OBLIGATION",
+	 *        "message": "...", "basis": "...", "action": "..."},
+	 *       ...
+	 *     ],
 	 *     "dryRun":              bool,
 	 *     "perActivity": [
 	 *       {"uuid": "...", "naam": "...", "bewaartermijn": "P10Y",
-	 *        "cutoff": "<iso>", "matchedObjects": <int>, "erased": <int>},
+	 *        "cutoff": "<iso>", "matchedObjects": <int>, "erased": <int>,
+	 *        "withheld": [...]},
 	 *       ...
 	 *     ]
 	 *   }
@@ -109,6 +123,11 @@ class AvgRetentionService {
 			'evaluatedActivities' => 0,
 			'skippedActivities' => 0,
 			'objectsErased' => 0,
+			// RETENTION WINS OVER ERASURE. The archival obligation on a schema
+			// outlives this activity's bewaartermijn, so those records are left
+			// live and named here rather than counted as erased.
+			'objectsWithheld' => 0,
+			'withheld' => [],
 			'dryRun' => $dryRun,
 			'perActivity' => [],
 		];
@@ -127,6 +146,8 @@ class AvgRetentionService {
 
 			$summary['evaluatedActivities']++;
 			$summary['objectsErased'] += $perActivity['erased'];
+			$summary['objectsWithheld'] += count($perActivity['withheld']);
+			$summary['withheld'] = array_merge($summary['withheld'], $perActivity['withheld']);
 			$summary['perActivity'][] = $perActivity;
 		}
 
@@ -169,11 +190,14 @@ class AvgRetentionService {
 		);
 
 		$erased = 0;
+		$withheld = [];
 		if ($dryRun === false && $candidates !== []) {
-			$erased = $this->erasePastRetention(
+			$outcome = $this->erasePastRetention(
 				candidates: $candidates,
 				activity: $activity
 			);
+			$erased = $outcome['erased'];
+			$withheld = $outcome['withheld'];
 		}
 
 		return [
@@ -183,6 +207,7 @@ class AvgRetentionService {
 			'cutoff' => $cutoff->format('c'),
 			'matchedObjects' => count($candidates),
 			'erased' => $erased,
+			'withheld' => $withheld,
 		];
 
 	}//end processActivity()
@@ -294,14 +319,24 @@ class AvgRetentionService {
 	 * erasures; failures are logged and skipped so a single bad
 	 * object doesn't abort the whole pass.
 	 *
+	 * RETENTION WINS OVER ERASURE. This pass enforces the verwerkingsregister's
+	 * bewaartermijn, which is shorter than the archival obligation a schema
+	 * declares with `x-openregister-archival`. When the two disagree the
+	 * archival obligation wins: the record is left live and named in `withheld`,
+	 * so an operator reading the run sees a record kept rather than one erased.
+	 * Withholding one record does not stop the pass.
+	 *
+	 * USED TO RETURN A BARE INT, which is why a withheld record could not be told
+	 * apart from an erased one: there was no per-object channel at all.
+	 *
 	 * @param array<int, array<string, mixed>> $candidates Overdue objects.
 	 * @param Verwerkingsactiviteit $activity Owning activity.
 	 *
-	 * @return int
+	 * @return array{erased: int, withheld: array<int, array<string, mixed>>}
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
-	private function erasePastRetention(array $candidates, Verwerkingsactiviteit $activity): int {
+	private function erasePastRetention(array $candidates, Verwerkingsactiviteit $activity): array {
 		// New writes use the renamed `retentionPeriod` key (verwerkingsregister-i18n); already
 		// -persisted historical `deleted` blobs keep their old `bewaartermijn` key unrewritten —
 		// they are point-in-time compliance-evidence snapshots (see design.md). The `reason` tag
@@ -316,9 +351,16 @@ class AvgRetentionService {
 		];
 
 		$erased = 0;
+		$withheld = [];
 		foreach ($candidates as $candidate) {
 			$object = $this->loadCandidate(candidate: $candidate);
 			if ($object === null) {
+				continue;
+			}
+
+			$refusal = $this->archivalGuard->erasureRefusal(object: $object);
+			if ($refusal !== null) {
+				$withheld[] = $refusal;
 				continue;
 			}
 
@@ -336,7 +378,10 @@ class AvgRetentionService {
 			}
 		}
 
-		return $erased;
+		return [
+			'erased' => $erased,
+			'withheld' => $withheld,
+		];
 	}//end erasePastRetention()
 
 	/**

@@ -1,0 +1,244 @@
+{
+  "$comment": "ADR-037 register fragment (hitl-approval-rule-action). Declares the approval_request schema backing the human-in-the-loop `approval` rule action type and the Synchronization `sourceConfig.requiresApproval` batch gate. See openspec/changes/hitl-approval-rule-action/design.md#database-changes and specs/approval-workflow/spec.md. `consumedAt` is an addition beyond design.md's table, needed to implement synchronization-engine REQ-015's 'approved, unconsumed approval_request' / 'marked consumed on completion' language precisely — an approved request that gated a synchronization must not silently re-authorize a later run.",
+  "components": {
+    "registers": {
+      "integriq": {
+        "schemas": ["approval_request"]
+      }
+    },
+    "schemas": {
+      "approval_request": {
+        "slug": "approval_request",
+        "title": "Approval Request",
+        "icon": "CheckboxMarkedCircleOutline",
+        "version": "1.0.0",
+        "summary": "A suspended rule-pipeline or Synchronization run awaiting human approve/reject",
+        "description": "Persists the resumable context of a suspended endpoint rule-pipeline run (via the `approval` rule action type) or a gated Synchronization batch (`sourceConfig.requiresApproval`). See openspec/specs/approval-workflow/spec.md.",
+        "required": ["status", "approverGroup", "onReject", "onTimeout", "expiresAt"],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID assigned by OpenRegister",
+            "title": "UUID"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "approved", "rejected", "expired", "dead_letter", "error"],
+            "default": "pending",
+            "description": "State machine: pending -> approved|rejected|expired|dead_letter|error. See approval-workflow REQ-001/003/004/005.",
+            "title": "Status"
+          },
+          "endpointId": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/endpoint",
+            "x-openregister-onDelete": "SET_NULL",
+            "description": "FK to the suspended endpoint (endpoint-rule case; null for the Synchronization batch-gate case)",
+            "title": "Endpoint"
+          },
+          "ruleId": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/rule",
+            "x-openregister-onDelete": "SET_NULL",
+            "description": "FK to the `approval` rule that suspended the run (endpoint-rule case; null for the Synchronization batch-gate case)",
+            "title": "Rule"
+          },
+          "timing": {
+            "type": "string",
+            "enum": ["before"],
+            "default": "before",
+            "description": "Always 'before' for v1 (design.md Decision 1) — approval only gates pre-write.",
+            "title": "Timing"
+          },
+          "resumeOrder": {
+            "type": "integer",
+            "description": "The `order` of the approval rule (endpoint-rule case); resume continues with before-phase rules whose `order` is strictly greater. Not applicable to the Synchronization batch-gate case.",
+            "title": "Resume Order"
+          },
+          "snapshot": {
+            "type": "object",
+            "description": "FlowToken::__serialize() output (the 8-key request/response/syncInput/syncOutput array) with sensitive headers (at minimum Authorization) stripped. Empty for the Synchronization batch-gate case.",
+            "title": "Snapshot"
+          },
+          "synchronizationId": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/synchronization",
+            "x-openregister-onDelete": "SET_NULL",
+            "description": "FK to the gated Synchronization (batch-gate case); set instead of endpointId/ruleId. See synchronization-engine REQ-015.",
+            "title": "Synchronization"
+          },
+          "requesterUserId": {
+            "type": "string",
+            "description": "NC user id who triggered the original request, or null for unauthenticated/API-key callers",
+            "title": "Requester User ID"
+          },
+          "approverGroup": {
+            "type": "string",
+            "description": "NC group id resolved from the rule's/synchronization's configuration at suspension time",
+            "title": "Approver Group"
+          },
+          "onReject": {
+            "type": "string",
+            "enum": ["error", "skip", "dead_letter"],
+            "default": "error",
+            "description": "Outcome applied when the request is rejected",
+            "title": "On Reject"
+          },
+          "onTimeout": {
+            "type": "string",
+            "enum": ["error", "skip", "dead_letter"],
+            "default": "error",
+            "description": "Outcome applied when the request expires unresolved",
+            "title": "On Timeout"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "createdAt + configured TTL (default 24h)",
+            "title": "Expires At"
+          },
+          "approverUserId": {
+            "type": "string",
+            "description": "NC user id who approved/rejected the request",
+            "title": "Approver User ID"
+          },
+          "comment": {
+            "type": "string",
+            "description": "Approver comment; required on reject, optional on approve",
+            "title": "Comment"
+          },
+          "approvedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp the request was approved",
+            "title": "Approved At"
+          },
+          "rejectedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp the request was rejected",
+            "title": "Rejected At"
+          },
+          "resumeResult": {
+            "type": "string",
+            "enum": ["success", "error"],
+            "description": "Outcome of the resumed chain, for audit (approval-workflow REQ-003)",
+            "title": "Resume Result"
+          },
+          "consumedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Set when an approved Synchronization batch-gate request's write phase has completed (synchronization-engine REQ-015) — prevents an already-used approval from re-authorizing a later run.",
+            "title": "Consumed At"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp the request was created (suspension time)",
+            "title": "Created At"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At (OR)"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-notifications": {
+          "created": {
+            "trigger": {
+              "type": "created"
+            },
+            "enabled": true,
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "groups",
+                "groups": [
+                  "openconnector-ops"
+                ]
+              }
+            ],
+            "subject": {
+              "nl": "Nieuw goedkeuringsverzoek: {{approverGroup}}",
+              "en": "New approval request: {{approverGroup}}"
+            }
+          }
+        },
+        "x-openregister-seed": [
+          {
+            "@self": {
+              "register": "integriq",
+              "schema": "approval_request",
+              "slug": "approval-woo-publish-pending"
+            },
+            "status": "pending",
+            "approverGroup": "woo-approvers",
+            "requesterUserId": "admin",
+            "resumeOrder": 20,
+            "timing": "before",
+            "snapshot": {},
+            "onReject": "error",
+            "onTimeout": "dead_letter",
+            "createdAt": "2026-07-14T09:00:00+00:00",
+            "expiresAt": "2026-07-15T09:00:00+00:00"
+          },
+          {
+            "@self": {
+              "register": "integriq",
+              "schema": "approval_request",
+              "slug": "approval-berichtenbox-approved"
+            },
+            "status": "approved",
+            "approverGroup": "berichtenbox-approvers",
+            "requesterUserId": "admin",
+            "approverUserId": "admin",
+            "resumeOrder": 10,
+            "timing": "before",
+            "snapshot": {},
+            "onReject": "error",
+            "onTimeout": "dead_letter",
+            "comment": "Looks correct, approved",
+            "resumeResult": "success",
+            "createdAt": "2026-07-13T08:00:00+00:00",
+            "approvedAt": "2026-07-13T08:15:00+00:00",
+            "expiresAt": "2026-07-14T08:00:00+00:00"
+          },
+          {
+            "@self": {
+              "register": "integriq",
+              "schema": "approval_request",
+              "slug": "approval-woo-publish-rejected"
+            },
+            "status": "rejected",
+            "approverGroup": "woo-approvers",
+            "requesterUserId": "admin",
+            "approverUserId": "admin",
+            "resumeOrder": 20,
+            "timing": "before",
+            "snapshot": {},
+            "onReject": "error",
+            "onTimeout": "dead_letter",
+            "comment": "Missing legal basis field, please add and resubmit",
+            "createdAt": "2026-07-13T06:00:00+00:00",
+            "rejectedAt": "2026-07-13T07:00:00+00:00",
+            "expiresAt": "2026-07-14T06:00:00+00:00"
+          }
+        ],
+        "appendOnly": false,
+        "immutable": false
+      }
+    }
+  }
+}

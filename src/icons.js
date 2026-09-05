@@ -19,6 +19,7 @@ import Api from 'vue-material-design-icons/Api.vue'
 import ApplicationOutline from 'vue-material-design-icons/ApplicationOutline.vue'
 import BookOpenVariantOutline from 'vue-material-design-icons/BookOpenVariantOutline.vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
+import ClipboardListOutline from 'vue-material-design-icons/ClipboardListOutline.vue'
 import ClipboardPulseOutline from 'vue-material-design-icons/ClipboardPulseOutline.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
@@ -43,6 +44,7 @@ import RobotOutline from 'vue-material-design-icons/RobotOutline.vue'
 import ShieldAccountOutline from 'vue-material-design-icons/ShieldAccountOutline.vue'
 import ShieldLockOutline from 'vue-material-design-icons/ShieldLockOutline.vue'
 import SitemapOutline from 'vue-material-design-icons/SitemapOutline.vue'
+import StoreOutline from 'vue-material-design-icons/StoreOutline.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import TrayFull from 'vue-material-design-icons/TrayFull.vue'
 import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline.vue'
@@ -58,6 +60,7 @@ export default {
 	ChartBoxOutline,
 	ClipboardPulseOutline,
 	Cog,
+	ClipboardListOutline,
 	CogOutline,
 	ContentDuplicate,
 	DatabaseArrowRightOutline,
@@ -80,6 +83,7 @@ export default {
 	ShieldAccountOutline,
 	ShieldLockOutline,
 	SitemapOutline,
+	StoreOutline,
 	TextBoxOutline,
 	TrayFull,
 	ViewDashboardOutline,

@@ -8,18 +8,20 @@
  *   @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#<scenario-slug>
  *
  * Methodology: drive the real UI. The five MDM views live under the hash-mode
- * router (`/index.php/apps/openregister/#/<route>`); the shared
+ * router (`/index.php/apps/openregister/<route>`); the shared
  * RegisterSchemaSelector is now route-scoped, so when the self-seeding MDM
  * fixture (tests/e2e/mdm-seed.ts, run in globalSetup) has planted data, these
  * tests DEEP-LINK straight to the seeded register/schema
- * (`#/quality?register=<id>&schema=<id>`) and assert populated surfaces.
+ * (`/quality?register=<id>&schema=<id>`) and assert populated surfaces.
  * Without a seed (no pipelinq instance) they fall back to driving the selector
  * and degrade to test.skip(), so the suite still runs everywhere.
  */
 
-import { test, expect, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
-import { readMdmSeed } from '../mdm-seed'
+import { readMdmSeed } from '../mdm-seed.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 const seed = readMdmSeed()
@@ -31,7 +33,7 @@ function scopedQuery(): string {
 
 /** Navigate to a hash-mode OR route and wait for NC header + app content. */
 async function gotoApp(page: Page, route: string): Promise<void> {
-	await page.goto(`/index.php/apps/openregister/#${route}`, {
+	await page.goto(`/index.php/apps/openregister${route}`, {
 		waitUntil: 'domcontentloaded',
 	})
 	await page.waitForSelector('#header, header.header-appcontainer', {

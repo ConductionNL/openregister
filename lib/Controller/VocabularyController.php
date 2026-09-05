@@ -216,11 +216,20 @@ class VocabularyController extends Controller {
 		$offset = max(0, (int)$this->request->getParam('_offset', 0));
 
 		try {
+			// The pair goes UNDER `filters`. `ObjectService::prepareFindAllConfig()`
+			// reads `$config['filters']['register']` and
+			// `$config['filters']['schema']` and no other key, so a top-level pair
+			// is read by nothing: the read then ran on whatever register/schema
+			// the last write left on the shared service. See openregister#3408,
+			// where exactly this shape made a repair step copy two
+			// `brokeredcredential` examples into the flow table.
 			$all = $this->objectService->findAll(
 				config: [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA_CONCEPT,
-					'filters' => ['inScheme' => $schemeUuid],
+					'filters' => [
+						'register' => self::REGISTER,
+						'schema' => self::SCHEMA_CONCEPT,
+						'inScheme' => $schemeUuid,
+					],
 					'limit' => self::MAX_SCHEME_CONCEPTS,
 				]
 			);
@@ -296,11 +305,18 @@ class VocabularyController extends Controller {
 	 */
 	private function findOneBy(string $schema, array $filters): ?ObjectEntity {
 		try {
+			// The pair goes UNDER `filters` — see listConcepts() for why a
+			// top-level pair is inert. `$filters` is spread after the pair so a
+			// caller can never shadow the scope with a field of the same name.
 			$results = $this->objectService->findAll(
 				config: [
-					'register' => self::REGISTER,
-					'schema' => $schema,
-					'filters' => $filters,
+					'filters' => array_merge(
+						$filters,
+						[
+							'register' => self::REGISTER,
+							'schema' => $schema,
+						]
+					),
 					'limit' => 1,
 				]
 			);

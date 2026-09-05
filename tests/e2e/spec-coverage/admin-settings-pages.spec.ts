@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -16,19 +18,19 @@
  * @e2e openspec/specs/tenant-isolation-audit/spec.md
  * @e2e openspec/specs/data-import-export/spec.md
  */
-import { test, expect, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
 // Routes are imported by COMPONENT NAME (see tests/e2e/_page-routes.ts): the
 // binding records which page host each route mounts, which a bare path string
 // cannot say. Also what makes this suite legible to gate-26.
 import {
-	OrganisationsIndex,
 	ConfigurationsIndex,
-	WebhooksIndex,
-	WebhookLogsIndex,
 	EndpointsIndex,
+	OrganisationsIndex,
 	SearchTrailIndex,
-} from '../_page-routes'
+	WebhookLogsIndex,
+	WebhooksIndex,
+} from '../_page-routes.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 
@@ -81,7 +83,7 @@ function trackErrors(page: Page): { console: string[]; http: string[] } {
 async function gotoPage(page: Page, route: string): Promise<void> {
 	// HASH form — the router runs in hash mode (src/main.js); path-form
 	// deep-links render the dashboard instead of the target page.
-	await page.goto(`/index.php/apps/openregister/#${route}`, {
+	await page.goto(`/index.php/apps/openregister${route}`, {
 		waitUntil: 'domcontentloaded',
 	})
 	await page.waitForSelector('#header, header.header-appcontainer', {

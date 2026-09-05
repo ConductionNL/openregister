@@ -79,7 +79,7 @@ class MagicSearchHandler {
 	 *
 	 * @var string[]
 	 */
-	private const COMPARISON_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne'];
+	private const COMPARISON_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne', 'isnull'];
 
 	/**
 	 * Metadata columns every magic table carries.
@@ -739,6 +739,24 @@ class MagicSearchHandler {
 	}//end buildSearchConditionSql()
 
 	/**
+	 * Whether an `isnull` operator value asks for IS NULL rather than IS NOT NULL.
+	 *
+	 * The operator is documented as a QUERY-STRING filter (`?afgehandeld_op_isnull=true`,
+	 * openspec/specs/zoeken-filteren), and a query string can only ever deliver
+	 * strings — so a strict `=== true` comparison against a PHP boolean can never
+	 * match, and reading the value as raw truthiness would make the string "false"
+	 * mean true. `FILTER_VALIDATE_BOOLEAN` accepts true/"true"/"1"/1/"on"/"yes" and
+	 * reads everything else, "false"/"0"/"" included, as false.
+	 *
+	 * @param mixed $value The raw operator value as the request layer delivered it.
+	 *
+	 * @return bool True when the caller asked for IS NULL.
+	 */
+	private function isNullOperatorAsksForNull(mixed $value): bool {
+		return filter_var($value, FILTER_VALIDATE_BOOLEAN) === true;
+	}//end isNullOperatorAsksForNull()
+
+	/**
 	 * Build object field filter SQL conditions for non-reserved query parameters
 	 *
 	 * Column identifiers are quoted via quoteIdentifier() so that schema properties
@@ -884,6 +902,18 @@ class MagicSearchHandler {
 							isPostgres: $isPostgres
 						);
 						$conditions[] = "{$colRef} <> " . $connection->quote((string)$value['ne']);
+					}
+
+					if (isset($value['isnull']) === true) {
+						// No column-ref cast: a null check is about the column's
+						// presence, not its type, and casting a NULL would only
+						// obscure it.
+						$predicate = 'IS NOT NULL';
+						if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
+							$predicate = 'IS NULL';
+						}
+
+						$conditions[] = "{$quotedCol} {$predicate}";
 					}
 				} elseif (empty($value) === false) {
 					$colRef = $this->buildFilterColumnRef(
@@ -1031,29 +1061,70 @@ class MagicSearchHandler {
 	 * @return string[] Array of SQL conditions
 	 */
 	private function buildMetadataOperatorConditionsSql(string $column, array $value, object $connection): array {
-		$quoteList = static function (mixed $values) use ($connection): array {
-			if (is_array($values) === false) {
-				$values = [$values];
-			}
-
-			return array_map(
-				static fn (mixed $item): string => $connection->quote((string)$item),
-				$values
-			);
-		};
-
 		// No operator key at all: a bare list keeps its historical IN(...) meaning.
 		if (empty(array_intersect(array_keys($value), self::COMPARISON_OPERATORS)) === true) {
-			$quoted = $quoteList($value);
-			if (empty($quoted) === true) {
-				// An empty IN () is a syntax error and matches nothing by definition.
-				return ['1 = 0'];
-			}
-
-			return [$column . ' IN (' . implode(', ', $quoted) . ')'];
+			return [$this->metadataInConditionSql(column: $column, values: $value, connection: $connection)];
 		}
 
-		$conditions = [];
+		// Three families, in the order they have always been emitted. They were
+		// one method until phpmd counted 486 paths through it; each family is
+		// independent of the others, so splitting them changes nothing but the
+		// number of ways to read the code.
+		return array_merge(
+			$this->metadataComparisonConditionsSql(column: $column, value: $value, connection: $connection),
+			$this->metadataListConditionsSql(column: $column, value: $value, connection: $connection),
+			$this->metadataNullConditionsSql(column: $column, value: $value)
+		);
+	}//end buildMetadataOperatorConditionsSql()
+
+	/**
+	 * Quote every value in a bag, accepting a bare scalar as a one-item list
+	 *
+	 * @param mixed $values A list of values, or a single value
+	 * @param object $connection Database connection for value quoting
+	 *
+	 * @return string[] The quoted values
+	 */
+	private function quoteMetadataValues(mixed $values, object $connection): array {
+		if (is_array($values) === false) {
+			$values = [$values];
+		}
+
+		return array_map(
+			static fn (mixed $item): string => $connection->quote((string)$item),
+			$values
+		);
+	}//end quoteMetadataValues()
+
+	/**
+	 * `IN (...)` for one bag, or the always-false condition an empty bag means
+	 *
+	 * @param string $column Quoted column identifier
+	 * @param mixed $values A list of values, or a single value
+	 * @param object $connection Database connection for value quoting
+	 *
+	 * @return string One SQL condition
+	 */
+	private function metadataInConditionSql(string $column, mixed $values, object $connection): string {
+		$quoted = $this->quoteMetadataValues(values: $values, connection: $connection);
+		if (empty($quoted) === true) {
+			// An empty IN () is a syntax error and matches nothing by definition.
+			return '1 = 0';
+		}
+
+		return $column . ' IN (' . implode(', ', $quoted) . ')';
+	}//end metadataInConditionSql()
+
+	/**
+	 * The scalar comparison operators, in their emitted order
+	 *
+	 * @param string $column Quoted column identifier
+	 * @param array $value Operator bag
+	 * @param object $connection Database connection for value quoting
+	 *
+	 * @return string[] Array of SQL conditions
+	 */
+	private function metadataComparisonConditionsSql(string $column, array $value, object $connection): array {
 		$simple = [
 			'gte' => '>=',
 			'lte' => '<=',
@@ -1062,23 +1133,33 @@ class MagicSearchHandler {
 			'ne' => '<>',
 		];
 
+		$conditions = [];
 		foreach ($simple as $operator => $sqlOperator) {
 			if (isset($value[$operator]) === true) {
 				$conditions[] = "{$column} {$sqlOperator} " . $connection->quote((string)$value[$operator]);
 			}
 		}
 
+		return $conditions;
+	}//end metadataComparisonConditionsSql()
+
+	/**
+	 * The `in` and `notIn` operators
+	 *
+	 * @param string $column Quoted column identifier
+	 * @param array $value Operator bag
+	 * @param object $connection Database connection for value quoting
+	 *
+	 * @return string[] Array of SQL conditions
+	 */
+	private function metadataListConditionsSql(string $column, array $value, object $connection): array {
+		$conditions = [];
 		if (isset($value['in']) === true) {
-			$quoted = $quoteList($value['in']);
-			if (empty($quoted) === true) {
-				$conditions[] = '1 = 0';
-			} else {
-				$conditions[] = $column . ' IN (' . implode(', ', $quoted) . ')';
-			}
+			$conditions[] = $this->metadataInConditionSql(column: $column, values: $value['in'], connection: $connection);
 		}
 
 		if (isset($value['notIn']) === true) {
-			$quoted = $quoteList($value['notIn']);
+			$quoted = $this->quoteMetadataValues(values: $value['notIn'], connection: $connection);
 			// An empty NOT IN () is a syntax error and means "exclude nothing".
 			if (empty($quoted) === false) {
 				$conditions[] = $column . ' NOT IN (' . implode(', ', $quoted) . ')';
@@ -1086,7 +1167,28 @@ class MagicSearchHandler {
 		}
 
 		return $conditions;
-	}//end buildMetadataOperatorConditionsSql()
+	}//end metadataListConditionsSql()
+
+	/**
+	 * The `isnull` operator
+	 *
+	 * @param string $column Quoted column identifier
+	 * @param array $value Operator bag
+	 *
+	 * @return string[] Array of SQL conditions
+	 */
+	private function metadataNullConditionsSql(string $column, array $value): array {
+		if (isset($value['isnull']) === false) {
+			return [];
+		}
+
+		$predicate = 'IS NOT NULL';
+		if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
+			$predicate = 'IS NULL';
+		}
+
+		return [$column . ' ' . $predicate];
+	}//end metadataNullConditionsSql()
 
 	/**
 	 * Build SQL conditions for TMLO metadata JSON field filters.
@@ -1477,6 +1579,14 @@ class MagicSearchHandler {
 				);
 			}
 		}
+
+		if (isset($value['isnull']) === true) {
+			if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
+				$qb->andWhere($qb->expr()->isNull($columnRef));
+			} else {
+				$qb->andWhere($qb->expr()->isNotNull($columnRef));
+			}
+		}
 	}//end applyMetadataOperators()
 
 	/**
@@ -1694,6 +1804,17 @@ class MagicSearchHandler {
 						isPostgres: $isPostgres
 					);
 					$qb->andWhere($qb->expr()->neq($columnRef, $qb->createNamedParameter($value['ne'])));
+				}
+
+				if (isset($value['isnull']) === true) {
+					// The bare column, not `buildFilterColumnRef`: a null check
+					// asks whether the column has a value at all, and a cast
+					// would only obscure that.
+					if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
+						$qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
+					} else {
+						$qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
+					}
 				}
 
 				continue;

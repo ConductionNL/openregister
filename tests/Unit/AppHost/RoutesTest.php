@@ -52,11 +52,59 @@ class RoutesTest extends TestCase {
 				'preferences#setPreference',
 				'metrics#index',
 				'health#index',
+				'store#search',
+				'store#install',
 				'dashboard#catchAll',
 			],
 			$names
 		);
 	}//end testCanonicalRouteNamesMatchPetstoreReference()
+
+	/**
+	 * The store routes sit BEFORE the SPA catch-all.
+	 *
+	 * Not a restatement of the list above: that assertion would still pass if
+	 * the catch-all were merged first, and a `/{path}` route with `.+` matches
+	 * `api/store/items`. The catch-all's position is the reason the store
+	 * endpoints answer JSON rather than the Vue shell with HTTP 200.
+	 *
+	 * @return void
+	 */
+	public function testStoreRoutesPrecedeTheSpaCatchAll(): void {
+		$names = $this->names(Routes::standard());
+
+		$this->assertLessThan(
+			array_search('dashboard#catchAll', $names, true),
+			array_search('store#search', $names, true)
+		);
+		$this->assertLessThan(
+			array_search('dashboard#catchAll', $names, true),
+			array_search('store#install', $names, true)
+		);
+	}//end testStoreRoutesPrecedeTheSpaCatchAll()
+
+	/**
+	 * The install route bounds its slug at the router.
+	 *
+	 * A `{slug}` with no requirement accepts anything Symfony will match into
+	 * a single segment, and the value reaches the registry URL. The controller
+	 * guards it too; this is the outer bound.
+	 *
+	 * @return void
+	 */
+	public function testInstallRouteConstrainsTheSlug(): void {
+		$routes = Routes::standard()['routes'];
+		$install = null;
+		foreach ($routes as $route) {
+			if ($route['name'] === 'store#install') {
+				$install = $route;
+				break;
+			}
+		}
+
+		$this->assertNotNull($install);
+		$this->assertSame('[a-z0-9][a-z0-9-]*[a-z0-9]', $install['requirements']['slug']);
+	}//end testInstallRouteConstrainsTheSlug()
 
 	public function testSettingsUpdateRouteIsPutOnApiSettings(): void {
 		$routes = Routes::standard()['routes'];
@@ -72,8 +120,34 @@ class RoutesTest extends TestCase {
 
 		$this->assertSame('dashboard#catchAll', $last['name']);
 		$this->assertSame('/{path}', $last['url']);
-		$this->assertSame('.+', $last['requirements']['path']);
+		$this->assertSame('(?!api/).+', $last['requirements']['path']);
 	}//end testCatchAllIsLastAndHasPathRequirement()
+
+	/**
+	 * Being LAST in the `routes` array is not enough to keep the catch-all off
+	 * the API, which is the trap this guards. Nextcloud's RouteParser processes
+	 * `routes` BEFORE `resources` (RouteParser::parseDefaultRoutes) and Symfony
+	 * matches in insertion order, so the catch-all still registers ahead of
+	 * every route generated from a `resources` block. `.+` matches slashes, so
+	 * without the lookahead it answers the SPA shell for GET api/<resource> —
+	 * with HTTP 200, so a JSON caller silently receives HTML.
+	 *
+	 * Asserts the requirement as a REGEX against real paths rather than as a
+	 * string, so it keeps holding if the spelling is ever rewritten.
+	 */
+	public function testCatchAllRequirementExcludesApiPaths(): void {
+		$routes = Routes::standard()['routes'];
+		$last = end($routes);
+		$pattern = '#^' . $last['requirements']['path'] . '$#';
+
+		foreach (['api/taken', 'api/klanten', 'api/zrc/zaken', 'api/registers/1'] as $apiPath) {
+			$this->assertSame(0, preg_match($pattern, $apiPath), "catch-all must NOT match $apiPath");
+		}
+
+		foreach (['registers', 'schemas/12', 'features-roadmap', 'zaken/abc-123'] as $spaPath) {
+			$this->assertSame(1, preg_match($pattern, $spaPath), "catch-all MUST match $spaPath");
+		}
+	}//end testCatchAllRequirementExcludesApiPaths()
 
 	public function testIndexRouteIsGetSlash(): void {
 		$routes = Routes::standard()['routes'];

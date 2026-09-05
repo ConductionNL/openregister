@@ -37,13 +37,15 @@
  * Pattern reference: ADR-030 (hydra/openspec/architecture/).
  */
 
-import { test, expect, type Page } from '@playwright/test'
-import * as path from 'path'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 import * as fs from 'fs'
+import * as path from 'path'
 // Routes are imported by COMPONENT NAME (see tests/e2e/_page-routes.ts): the
 // binding records which page host each route mounts, which a bare path string
 // cannot say. Also what makes this suite legible to gate-26.
-import { AuditTrailIndex } from './_page-routes'
+import { AuditTrailIndex } from './_page-routes.ts'
 
 const SHOT_ROOT = path.resolve(
 	__dirname,
@@ -110,12 +112,12 @@ async function dismissOverlays(page: Page): Promise<void> {
 
 /** Navigate to an OR (or absolute) route and settle. */
 async function go(page: Page, route: string): Promise<void> {
-	// OR routes use HASH form — the router runs in hash mode (src/main.js);
-	// path-form deep-links render the dashboard instead of the target page.
+	// OR routes are real paths — src/main.js builds createWebHistory(routerBase())
+	// and dashboard#catchAll serves the shell on any sub-path.
 	const url =
 		route.startsWith('/apps/') || route.startsWith('/settings/')
 			? `/index.php${route}`
-			: `/index.php${APP}/#${route}`
+			: `/index.php${APP}${route}`
 	// `networkidle` NEVER settles on Nextcloud (ADR-074 rule 4): the
 	// notification long-poll keeps a request in flight for the life of the
 	// page, so this wait always ran to its timeout and the `.catch()` hid
@@ -293,7 +295,7 @@ test.describe('docs: user track', () => {
 		}
 
 		const route =
-			reg && sch ? `/#/tables?register=${reg}&schema=${sch}` : '/#/tables'
+			reg && sch ? `/tables?register=${reg}&schema=${sch}` : '/tables'
 		await go(page, route)
 		// Wait for the deep-linked register/schema selection to actually apply
 		// (SearchSideBar.applyQueryParamsFromRoute retries while the register

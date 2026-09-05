@@ -1,7 +1,5 @@
 #!/usr/bin/env node
-/* eslint-disable n/no-process-exit */
-/* eslint-disable no-console */
-/* eslint-disable n/shebang */
+ 
 /**
  * Harvest exact-key translation candidates for one locale from Nextcloud core and
  * from the sibling Conduction apps.

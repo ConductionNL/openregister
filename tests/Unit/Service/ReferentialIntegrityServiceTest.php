@@ -41,6 +41,7 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 
 /**
  * Unit tests for ReferentialIntegrityService
@@ -118,7 +119,8 @@ class ReferentialIntegrityServiceTest extends TestCase {
 			auditTrailMapper: $this->auditTrailMapper,
 			logger: $this->logger,
 			db: $this->createMock(IDBConnection::class),
-			cacheFactory: $this->createNullCacheFactory()
+			cacheFactory: $this->createNullCacheFactory(),
+			archivalGuard: $this->makeArchivalGuard()
 		);
 
 		$this->reflection = new \ReflectionClass($this->service);
@@ -1412,4 +1414,35 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		$this->assertContains('NO_ACTION', ReferentialIntegrityService::VALID_ON_DELETE_ACTIONS);
 		$this->assertCount(5, ReferentialIntegrityService::VALID_ON_DELETE_ACTIONS);
 	}//end testValidOnDeleteActionsConstant()
+	/**
+	 * A real ArchivalRetentionGuard over schemas that declare no archival annotation.
+	 *
+	 * REAL, not a mock: the cascade's retention decision must come from the
+	 * production predicate Schema::hasArchivalAnnotation(). These fixtures are
+	 * ordinary schemas, so the guard lets every cascade through and these tests
+	 * keep asserting the behaviour they were written for.
+	 *
+	 * @param array<int, string> $archivalSchemas Schema identifiers that ARE archival.
+	 *
+	 * @return ArchivalRetentionGuard
+	 */
+	private function makeArchivalGuard(array $archivalSchemas = []): ArchivalRetentionGuard {
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('find')->willReturnCallback(
+			function ($id) use ($archivalSchemas): Schema {
+				$schema = new Schema();
+				$schema->setSlug((string)$id);
+				$configuration = [];
+				if (in_array((string)$id, $archivalSchemas, true) === true) {
+					$configuration['x-openregister-archival'] = ['retention' => ['default' => 'P10Y']];
+				}
+
+				$schema->setConfiguration($configuration);
+
+				return $schema;
+			}
+		);
+
+		return new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class));
+	}//end makeArchivalGuard()
 }//end class

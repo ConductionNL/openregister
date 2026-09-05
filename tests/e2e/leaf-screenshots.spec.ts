@@ -14,15 +14,15 @@
  *   NEXTCLOUD_URL=http://localhost:8080 npx playwright test \
  *     tests/e2e/leaf-screenshots.spec.ts --project=chromium
  */
-import { test, expect } from '@playwright/test'
-import * as path from 'path'
+import { expect, test } from '@playwright/test'
 import * as fs from 'fs'
+import * as path from 'path'
 // The route is COMPOSED from the component binding (tests/e2e/_page-routes.ts)
 // rather than repeated as a template string here. The spec already drove this
 // page; what it could not say in executable code was WHICH page host it drove.
 // Importing the builder makes that binding load-bearing: change the manifest
 // route and this line changes with it.
-import { IntegrationsView } from './_page-routes'
+import { IntegrationsView } from './_page-routes.ts'
 
 const REGISTER = '21'
 const SCHEMA = '166'
@@ -49,7 +49,7 @@ test.describe('Per-leaf screenshot harness', () => {
 		await page.goto(
 			// HASH form — the router runs in hash mode (src/main.js); the
 			// path-form URL renders the dashboard instead of the integrations view.
-			`${baseURL}/index.php/apps/openregister/#${IntegrationsView(
+			`${baseURL}/index.php/apps/openregister${IntegrationsView(
 				REGISTER,
 				SCHEMA,
 				OBJECT_ID,

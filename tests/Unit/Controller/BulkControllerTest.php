@@ -9,6 +9,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -135,11 +136,65 @@ class BulkControllerTest extends TestCase {
 		$this->assertEquals(Http::STATUS_BAD_REQUEST, $result->getStatus());
 	}
 
-	public function testDeleteSuccess(): void {
+	/**
+	 * A UUID named twice is one deletion, and the counts still add up.
+	 *
+	 * `requested = deleted + skipped` is the whole point of this response, and a
+	 * repeated entry used to make it unsatisfiable: the service resolves each
+	 * UUID once, so a raw `count($uuids)` counted a row the loop only ever saw
+	 * once.
+	 *
+	 * @return void
+	 */
+	public function testDuplicateUuidIsRequestedOnce(): void {
+		$this->setupResolveSuccess();
+		$captured = [];
+		$this->objectService->method('deleteObjects')->willReturnCallback(
+			function (array $uuids) use (&$captured): array {
+				$captured = $uuids;
+
+				return [
+					'deleted_uuids' => $uuids,
+					'skipped_uuids' => [],
+					'skipped_reasons' => [],
+					'cascade_count' => 0,
+				];
+			}
+		);
+
+		$this->request->method('getParams')->willReturn([
+			'uuids' => ['uuid1', 'uuid1', 'uuid2'],
+		]);
+
+		$result = $this->controller->delete('1', '2');
+		$data = $result->getData();
+
+		$this->assertSame(['uuid1', 'uuid2'], $captured, 'the service is asked once per object');
+		$this->assertEquals(2, $data['requested_count']);
+		$this->assertEquals(
+			$data['requested_count'],
+			$data['deleted_count'] + $data['skipped_count'],
+			'requested must equal deleted + skipped'
+		);
+	}
+
+	/**
+	 * A batch that refused a row does not answer `success: true`.
+	 *
+	 * This assertion used to read the other way round, and that is the shape the
+	 * live defect wore: a 200 saying `success: true, requested_count: 1,
+	 * deleted_count: 0` over an object still sitting in its table. A row this
+	 * endpoint refused is a row the caller otherwise believes it deleted, so
+	 * `success` reports the shortfall — the same rule the bulk save path states
+	 * in writeBatch(). `testDeleteAllSuccessful()` below is the control: nothing
+	 * skipped still answers true.
+	 */
+	public function testDeleteReportsTheShortfallWhenARowIsRefused(): void {
 		$this->setupResolveSuccess();
 		$this->objectService->method('deleteObjects')->willReturn([
 			'deleted_uuids' => ['uuid1', 'uuid2'],
 			'skipped_uuids' => ['uuid3'],
+			'skipped_reasons' => ['uuid3' => ['error' => 'SCHEMA_ARCHIVAL_IMMUTABLE']],
 			'cascade_count' => 0,
 		]);
 
@@ -151,7 +206,7 @@ class BulkControllerTest extends TestCase {
 
 		$this->assertEquals(Http::STATUS_OK, $result->getStatus());
 		$data = $result->getData();
-		$this->assertTrue($data['success']);
+		$this->assertFalse($data['success']);
 		$this->assertEquals(2, $data['deleted_count']);
 		$this->assertEquals(['uuid1', 'uuid2'], $data['deleted_uuids']);
 		$this->assertEquals(3, $data['requested_count']);
@@ -159,7 +214,12 @@ class BulkControllerTest extends TestCase {
 		$this->assertEquals(['uuid3'], $data['skipped_uuids']);
 		$this->assertEquals(0, $data['cascade_count']);
 		$this->assertEquals(2, $data['total_affected']);
-		$this->assertEquals('Bulk delete operation completed successfully', $data['message']);
+		$this->assertStringContainsString('1 of 3 objects refused', $data['message']);
+		$this->assertSame(
+			'SCHEMA_ARCHIVAL_IMMUTABLE',
+			$data['skipped_reasons']['uuid3']['error'],
+			'the caller is told WHY the row survived, not just that it did'
+		);
 	}
 
 	public function testDeleteAllSuccessful(): void {
@@ -1020,6 +1080,64 @@ class BulkControllerTest extends TestCase {
 		$this->assertEquals(Http::STATUS_OK, $result->getStatus());
 		$data = $result->getData();
 		$this->assertTrue($data['hard_delete']);
+	}
+
+	/**
+	 * An archival schema is refused with the 403 contract body, not a 500.
+	 *
+	 * ARCHIVAL IMMUTABILITY (openregister#3428). The service refuses the delete by
+	 * throwing ArchivalImmutableException; without a dedicated catch the generic
+	 * handler below reported that deliberate refusal as
+	 * `500 Schema objects deletion failed`, which reads as a bug in the endpoint
+	 * rather than as the platform protecting a legally retained record.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
+	public function testDeleteSchemaOnAnArchivalSchemaIsRefusedWith403(): void {
+		$this->stubAdminUser();
+		$this->stubSchemaLookup(2);
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('deleteObjectsBySchema')->willThrowException(
+			new ArchivalImmutableException(schemaIdentifier: 'retained-case', operation: 'delete')
+		);
+
+		$this->request->method('getParams')->willReturn(['hardDelete' => true]);
+
+		$result = $this->controller->deleteSchema('1', '2');
+
+		$this->assertEquals(Http::STATUS_FORBIDDEN, $result->getStatus());
+		$data = $result->getData();
+		$this->assertSame('SCHEMA_ARCHIVAL_IMMUTABLE', $data['error']);
+		$this->assertSame('retained-case', $data['schema']);
+		$this->assertSame('delete', $data['operation']);
+	}
+
+	/**
+	 * The same refusal on the current (slug-resolving) delete-objects route.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
+	public function testDeleteSchemaObjectsOnAnArchivalSchemaIsRefusedWith403(): void {
+		$this->stubAdminUser();
+		$this->setupResolveSuccess();
+		$this->stubSchemaLookup(2);
+		$this->objectService->method('deleteObjectsBySchema')->willThrowException(
+			new ArchivalImmutableException(schemaIdentifier: 'retained-case', operation: 'delete')
+		);
+
+		$this->request->method('getParams')->willReturn(['hardDelete' => true]);
+
+		$result = $this->controller->deleteSchemaObjects('1', '2');
+
+		$this->assertEquals(Http::STATUS_FORBIDDEN, $result->getStatus());
+		$data = $result->getData();
+		$this->assertSame('SCHEMA_ARCHIVAL_IMMUTABLE', $data['error']);
+		$this->assertSame('delete', $data['operation']);
 	}
 
 	public function testDeleteSchemaException(): void {

@@ -144,8 +144,16 @@ class CacheHandler {
 	/**
 	 * Cache hit statistics
 	 *
+	 * `warmup_breakdown` is written by the name-cache warm-up for diagnostics
+	 * and is absent until that has run, so it is optional here. It was missing
+	 * from this shape entirely, which is why assigning it read as
+	 * InvalidPropertyAssignmentValue: the declaration described eight int keys
+	 * and the code stored a ninth holding an array.
+	 *
 	 * @var array{hits: int, misses: int, preloads: int, query_hits: int,
-	 *            query_misses: int, name_hits: int, name_misses: int, name_warmups: int}
+	 *            query_misses: int, name_hits: int, name_misses: int, name_warmups: int,
+	 *            warmup_breakdown?: array{organisations: int, objects_table: int,
+	 *                                     magic_tables: int, total_unique: int}}
 	 */
 	private array $stats = [
 		'hits' => 0,

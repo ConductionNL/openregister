@@ -35,8 +35,9 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
-use OCA\OpenRegister\Service\Flow\FlowRunAssignee;
+use OCA\OpenRegister\Exception\FlowSignalRefused;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Controller;
@@ -97,6 +98,14 @@ class FlowRunController extends Controller {
 	 *                                           caller; absent, the endpoint
 	 *                                           reports the surface unavailable
 	 *                                           rather than an empty run.
+	 * @param FlowRunSignalService|null $signalService The guarded signal seam the
+	 *                                                 resume endpoints delegate to.
+	 *                                                 Nullable and appended so no
+	 *                                                 construction site shifts;
+	 *                                                 absent, one is built on
+	 *                                                 demand from this
+	 *                                                 controller's own
+	 *                                                 collaborators.
 	 */
 	public function __construct(
 		string $appName,
@@ -112,6 +121,7 @@ class FlowRunController extends Controller {
 		// inserted anywhere else shifts every positional caller, and the
 		// resulting TypeError names the argument AFTER the one that moved.
 		private readonly ?AuditFlowAttribution $auditTrails = null,
+		private readonly ?FlowRunSignalService $signalService = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -213,26 +223,142 @@ class FlowRunController extends Controller {
 	 * `shared-credentials-and-flows`. Until that landed `index()` was unscoped and
 	 * returned every run on the instance to any authenticated user.
 	 *
+	 * An optional `subject` (a subject object uuid) narrows the list to the
+	 * runs anchored to that one object: a case detail page's view of the
+	 * engine. It narrows INSIDE the organisation scope and can never widen it;
+	 * the mapper applies both predicates, and the total counts the filtered
+	 * set. Without `subject` the read is bit-identical to what it was.
+	 *
 	 * @return JSONResponse `{results, total, limit}` — the live runs.
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function active(): JSONResponse {
-		$limit = min(50, max(1, (int)$this->request->getParam('limit', 10)));
+		$limit = $this->pageLimit();
+		$subject = $this->subjectFilter();
 		$organisation = $this->activeOrganisation();
 
 		if ($organisation === null) {
 			return new JSONResponse(['results' => [], 'total' => 0, 'limit' => $limit]);
 		}
 
-		$runs = $this->mapper->findActive(organisation: $organisation, limit: $limit);
-		$total = $this->mapper->countActive(organisation: $organisation);
+		$runs = $this->mapper->findActive(organisation: $organisation, limit: $limit, subject: $subject);
+		$total = $this->mapper->countActive(organisation: $organisation, subject: $subject);
 
+		return $this->page(runs: $runs, total: $total, limit: $limit);
+
+	}//end active()
+
+	/**
+	 * The finished runs on ONE subject object: a case page's run history.
+	 *
+	 * The other half of the case view. A flow that completed on a case must
+	 * not look like nothing ever happened, so this returns the terminal runs
+	 * (`FlowRun::TERMINAL`: completed, stopped, dead_letter, failed) anchored
+	 * to the given subject, newest first, bounded, with an honest total.
+	 *
+	 * The subject is REQUIRED. There is no org-wide "everything that ever
+	 * finished" here: `or-flow-active-runs` requires the history surface
+	 * (`index()`, with its per-caller visibility rule) to stay unchanged, and
+	 * this read exists beside it rather than as a loosening of it. A request
+	 * without a subject is refused, not answered widely.
+	 *
+	 * Authorization is the organisation scope, exactly as on `active()`: the
+	 * mapper's organisation predicate is unconditional, a caller with no
+	 * resolvable organisation reads nothing without a query being issued, and
+	 * a subject uuid from another tenant matches zero rows. Rows are the same
+	 * summarised shape as the live read, so a widget renders one list.
+	 *
+	 * @return JSONResponse `{results, total, limit}`, or 400 when no subject was given.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function completedForSubject(): JSONResponse {
+		$subject = $this->subjectFilter();
+		if ($subject === null) {
+			return new JSONResponse(
+				['error' => 'The completed-runs read needs a subject: pass the subject object uuid as `subject`.'],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$limit = $this->pageLimit();
+		$organisation = $this->activeOrganisation();
+
+		if ($organisation === null) {
+			return new JSONResponse(['results' => [], 'total' => 0, 'limit' => $limit]);
+		}
+
+		$runs = $this->mapper->findCompletedForSubject(organisation: $organisation, subject: $subject, limit: $limit);
+		$total = $this->mapper->countCompletedForSubject(organisation: $organisation, subject: $subject);
+
+		return $this->page(runs: $runs, total: $total, limit: $limit);
+
+	}//end completedForSubject()
+
+	/**
+	 * The bounded page size for the two case-widget reads, capped at 50.
+	 *
+	 * @return integer The limit.
+	 *
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
+	 */
+	private function pageLimit(): int {
+		return min(50, max(1, (int)$this->request->getParam('limit', 10)));
+	}//end pageLimit()
+
+	/**
+	 * The `subject` request parameter as a uuid, or null when none was given.
+	 *
+	 * Blank and non-string values count as absent: a filter that is not a
+	 * uuid cannot name a subject, and treating it as one would either match
+	 * nothing (misleading) or be coerced into something the caller did not
+	 * send (worse).
+	 *
+	 * @return string|null The subject object uuid.
+	 *
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
+	 */
+	private function subjectFilter(): ?string {
+		$subject = $this->request->getParam('subject');
+		if (is_string($subject) === false) {
+			return null;
+		}
+
+		$subject = trim($subject);
+		if ($subject === '') {
+			return null;
+		}
+
+		return $subject;
+	}//end subjectFilter()
+
+	/**
+	 * A bounded list of summarised runs plus its honest total.
+	 *
+	 * Shared by the live read and the completed read so the two cannot drift
+	 * apart on shape: the spec makes one row contract a requirement.
+	 *
+	 * @param array<int, FlowRun> $runs The page of runs.
+	 * @param integer $total How many runs matched in all.
+	 * @param integer $limit The page size that was applied.
+	 *
+	 * @return JSONResponse `{results, total, limit}`.
+	 *
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
+	 */
+	private function page(array $runs, int $total, int $limit): JSONResponse {
 		return new JSONResponse(
 			[
 				'results' => array_map(fn (FlowRun $run): array => $this->summarise(run: $run), $runs),
@@ -240,8 +366,7 @@ class FlowRunController extends Controller {
 				'limit' => $limit,
 			]
 		);
-
-	}//end active()
+	}//end page()
 
 	/**
 	 * The caller's active organisation uuid, or null when none resolves.
@@ -566,25 +691,95 @@ class FlowRunController extends Controller {
 			return $refusal;
 		}
 
-		$refusal = $this->refuseUnlessAssignee(run: $run);
+		$payload = $this->request->getParams();
+		// Routing artefacts, not part of what the signaller is telling the run.
+		unset($payload['uuid'], $payload['_route']);
+
+		// The guard and the delivery are ONE seam — the same one a PHP consumer
+		// calls — so who may answer is decided in exactly one place.
+		try {
+			$signalled = $this->signals()->signalRunAs(run: $run, payload: $payload, actorUid: $this->callerUid());
+		} catch (FlowSignalRefused $refused) {
+			return $this->refusalResponse(refused: $refused, run: $run, verb: 'resumed');
+		}
+
+		return new JSONResponse($signalled->jsonSerialize());
+	}//end resume()
+
+	/**
+	 * Deliver a signal addressed by BUSINESS KEY instead of run uuid.
+	 *
+	 * The caller that knows "the vote on proposal X closed" does not know a
+	 * run uuid; an await-signal step that declared a `correlationKey` made
+	 * its suspension addressable by that key. Resolution is FAIL-CLOSED in
+	 * both directions (flow-approval-consolidation design D-7):
+	 *
+	 * - zero matches is a 404 and the signal is NOT buffered: a run that
+	 *   suspends with that key later was never the addressee
+	 * - more than one match is a 409 and wakes NOTHING: picking one is
+	 *   picking wrong half the time, silently
+	 *
+	 * The authority is exactly {@see resume()}'s — the same flow-level check
+	 * and the same recorded-assignee check, on the resolved run. A
+	 * correlated signal cannot complete, claim or advance a user task: a run
+	 * suspended on a user-task node treats any signal as a nudge, and a
+	 * nudge is not an answer.
+	 *
+	 * @param string $key The business key.
+	 *
+	 * @return JSONResponse The signalled run, 404 when unmatched, 409 when
+	 *                      ambiguous or not suspended.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @contract tests/integration/openregister-integrations.postman_collection.json
+	 *
+	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function signalByKey(string $key): JSONResponse {
+		$key = trim($key);
+		$matches = [];
+		if ($key !== '') {
+			$matches = $this->mapper->findSuspendedByCorrelationKey(correlationKey: $key);
+		}
+
+		if ($matches === []) {
+			return new JSONResponse(
+				['error' => 'No suspended run is waiting for this key. The signal was not stored.'],
+				Http::STATUS_NOT_FOUND
+			);
+		}
+
+		if (count($matches) > 1) {
+			return new JSONResponse(
+				['error' => 'More than one suspended run carries this key. Nothing was signalled; address the run by its uuid instead.'],
+				Http::STATUS_CONFLICT
+			);
+		}
+
+		$run = $matches[0];
+
+		$refusal = $this->refuseUnlessRunnable(flowId: (string)$run->getFlowId());
 		if ($refusal !== null) {
 			return $refusal;
 		}
 
 		$payload = $this->request->getParams();
 		// Routing artefacts, not part of what the signaller is telling the run.
-		unset($payload['uuid'], $payload['_route']);
+		unset($payload['key'], $payload['_route']);
 
-		$signalled = $this->runner->signal(run: $run, payload: $payload);
-		if ($signalled === null) {
-			return new JSONResponse(
-				['error' => 'Only a suspended run can be resumed; this one is ' . $run->getStatus() . '.'],
-				Http::STATUS_CONFLICT
-			);
+		// Same seam as resume() and as every PHP consumer: one guard.
+		try {
+			$signalled = $this->signals()->signalRunAs(run: $run, payload: $payload, actorUid: $this->callerUid());
+		} catch (FlowSignalRefused $refused) {
+			return $this->refusalResponse(refused: $refused, run: $run, verb: 'signalled');
 		}
 
 		return new JSONResponse($signalled->jsonSerialize());
-	}//end resume()
+	}//end signalByKey()
 
 	/**
 	 * Refuse unless the caller may RUN this flow.
@@ -627,70 +822,66 @@ class FlowRunController extends Controller {
 	}//end refuseUnlessRunnable()
 
 	/**
-	 * Refuse when the awaiting step names an assignee and the caller is not it.
+	 * Translate the seam's typed refusal into this endpoint's HTTP contract.
 	 *
-	 * WHY THIS EXISTS. `AwaitSignalNode` has always RECORDED an `assignee` on
-	 * the suspension, and nothing ever read it back. The run-level check above
-	 * asks "may you run this flow?", which is a different question from "is
-	 * this decision yours to make": everyone who could run the flow could
-	 * approve a step assigned to someone else, and the recorded assignee made
-	 * it look otherwise. ADR-098 names this gap — "no task authz — anyone
-	 * reaching the resume endpoint can decide".
+	 * The GUARD lives in {@see FlowRunSignalService} — the same seam a PHP
+	 * consumer calls, so who may answer is decided in one place (ADR-098 named
+	 * the gap this closes: "no task authz — anyone reaching the resume endpoint
+	 * can decide"). What stays here is only the WORDING, which differs per
+	 * endpoint and is part of the existing HTTP contract.
 	 *
-	 * Scope, stated honestly: this closes the WHO of an already-recorded
-	 * assignment. It is not the task entity, inbox or definition versioning
-	 * ADR-098 describes, and a step with no assignee is unchanged — silence
-	 * still means anyone, because tightening that would break every existing
-	 * webhook and child-run signal, which are not human decisions at all.
+	 * A step with no assignee is unchanged — silence still means anyone,
+	 * because tightening that would break every existing webhook and child-run
+	 * signal, which are not human decisions at all.
 	 *
-	 * @param FlowRun $run The suspended run.
+	 * @param FlowSignalRefused $refused The seam's refusal.
+	 * @param FlowRun $run The run the signal addressed.
+	 * @param string $verb This endpoint's verb for the 409 wording ('resumed' or 'signalled').
 	 *
-	 * @return JSONResponse|null A 403 when the caller is not the assignee.
+	 * @return JSONResponse The 403 or 409 the refusal maps to.
+	 *
+	 * @spec openspec/changes/flow-engine-consumer-seams/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
 	 */
-	private function refuseUnlessAssignee(FlowRun $run): ?JSONResponse {
-		// The rule itself lives in FlowRunAssignee, because HTTP is no longer
-		// the only way to answer a step: a leaf app whose object completes a
-		// task resumes the run in-process through FlowRunService::signal(),
-		// which never passes this controller. One implementation, so the two
-		// paths cannot drift into disagreeing about who may answer.
-		$assignee = $this->assignees()->recordedFor(run: $run);
-		if ($assignee === '') {
-			return null;
-		}
+	private function refusalResponse(FlowSignalRefused $refused, FlowRun $run, string $verb): JSONResponse {
+		if ($refused->getReason() === FlowSignalRefused::NOT_ASSIGNEE) {
+			if ($refused->getActorUid() === null) {
+				return new JSONResponse(
+					['error' => 'This step is assigned; sign in as the assignee to answer it.'],
+					Http::STATUS_FORBIDDEN
+				);
+			}
 
-		$uid = $this->callerUid();
-
-		if ($this->assignees()->mayAnswer(run: $run, uid: $uid) === true) {
-			return null;
-		}
-
-		if ($uid === null) {
 			return new JSONResponse(
-				['error' => 'This step is assigned; sign in as the assignee to answer it.'],
+				['error' => 'This step is assigned to someone else.'],
 				Http::STATUS_FORBIDDEN
 			);
 		}
 
 		return new JSONResponse(
-			['error' => 'This step is assigned to someone else.'],
-			Http::STATUS_FORBIDDEN
+			['error' => 'Only a suspended run can be ' . $verb . '; this one is ' . $run->getStatus() . '.'],
+			Http::STATUS_CONFLICT
 		);
-	}//end refuseUnlessAssignee()
+	}//end refusalResponse()
 
 	/**
-	 * The assignee rule, made on demand when none was injected.
+	 * The guarded signal seam, made on demand when none was injected.
 	 *
 	 * Built locally rather than required as a constructor argument so adding it
-	 * breaks no existing construction site; it holds no state, so a locally
-	 * made one is indistinguishable from an injected one.
+	 * breaks no existing construction site. The refusal a locally-built seam
+	 * cannot log still reaches the caller as the 403 above, so nothing is
+	 * silent; the container-built instance audits too.
 	 *
-	 * @return FlowRunAssignee The rule.
+	 * @return FlowRunSignalService The seam.
 	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
+	 * @spec openspec/changes/flow-engine-consumer-seams/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
 	 */
-	private function assignees(): FlowRunAssignee {
-		return new FlowRunAssignee(groupManager: $this->groupManager);
-	}//end assignees()
+	private function signals(): FlowRunSignalService {
+		return ($this->signalService ?? new FlowRunSignalService(
+			mapper: $this->mapper,
+			runner: $this->runner,
+			groupManager: $this->groupManager
+		));
+	}//end signals()
 
 	/**
 	 * The current caller's uid, or null when anonymous.

@@ -43,6 +43,42 @@ class TrackingDispatcher implements FlowStepDispatcher {
 			throw new FlowStop(reason: (string)($step['config']['message'] ?? 'stopped'), isError: (($step['config']['error'] ?? false) === true));
 		}
 
+		// A step that BREAKS, as any node does when its work cannot be done —
+		// dossiq's setStatus refusing a status its case type does not carry,
+		// say. Distinct from the stop above: nobody asked for this end.
+		if ($type === 'boom') {
+			throw new \RuntimeException((string)($step['config']['message'] ?? 'step blew up'));
+		}
+
+		return $items;
+	}
+}
+
+/** Tags every item leaving the `route` step with one output, like RouterNode does. */
+class RouteTaggingDispatcher implements FlowStepDispatcher {
+	public array $ran = [];
+
+	public array $itemsSeen = [];
+
+	public function __construct(
+		private readonly string $tag,
+	) {
+	}
+
+	public function dispatch(array $step, array $items, array $context): array {
+		$type = (string)($step['type'] ?? '');
+		if ($type !== '') {
+			$this->ran[] = $type;
+			$this->itemsSeen[$type] = $items;
+		}
+
+		if ($type === 'route') {
+			return array_map(
+				fn (array $item): array => FlowItems::item(json: (array)($item['json'] ?? []), output: $this->tag),
+				$items
+			);
+		}
+
 		return $items;
 	}
 }
@@ -238,6 +274,81 @@ class FlowLogicTest extends TestCase {
 	}
 
 	/**
+	 * 🔴 D3 REGRESSION, the item loss: a routing step tags its items with the
+	 * EXIT ID its rule named (`output: "no"`), while the per-place delivery
+	 * compares tags against PLACE names (`onRejected`). Unresolved, the taken
+	 * branch fired with ZERO items — the run persisted `items: []`, losing the
+	 * seed and every earlier step's output, exactly the sync task-completion
+	 * repro (transitions all correct, items empty afterwards).
+	 *
+	 * @return void
+	 */
+	public function testAnItemTaggedWithAnExitIdLandsOnTheExitsPlace(): void {
+		$flow = [
+			'id' => 'route-items',
+			'nodes' => [
+				['id' => 'route', 'type' => 'route', 'exits' => [['id' => 'no'], ['id' => 'yes']]],
+				['id' => 'onRejected', 'type' => 'rejected'],
+				['id' => 'onApproved', 'type' => 'approved'],
+			],
+			'edges' => [
+				['id' => 'e2', 'from' => 'route', 'fromExit' => 'no', 'to' => 'onRejected'],
+				['id' => 'e3', 'from' => 'route', 'fromExit' => 'yes', 'to' => 'onApproved'],
+			],
+		];
+
+		$d = new RouteTaggingDispatcher(tag: 'no');
+		$result = $this->engine->run(
+			flow: $flow,
+			store: new MethodMarkingStore(false, 'marking'),
+			subject: new LogicSubject(),
+			dispatcher: $d,
+			context: [],
+			items: [FlowItems::item(json: ['name' => 'Case 7'])]
+		);
+
+		$this->assertSame(['route', 'rejected'], $d->ran, 'the rejection branch, and only it, fires');
+		$this->assertCount(1, $d->itemsSeen['rejected'], 'the routed item must ARRIVE on the taken branch');
+		$this->assertSame('Case 7', $d->itemsSeen['rejected'][0]['json']['name']);
+		$this->assertSame('Case 7', ($result['items'][0]['json']['name'] ?? null), 'the run must not persist empty items');
+	}//end testAnItemTaggedWithAnExitIdLandsOnTheExitsPlace()
+
+	/**
+	 * 🔴 D3 REGRESSION, the exit choice: among UNCONDITIONED exits the item's
+	 * routing tag decides, not declaration order. The tagged exit is declared
+	 * SECOND here — before the fix the token fell through to the first
+	 * declared exit while the node's own log said it routed the other way.
+	 *
+	 * @return void
+	 */
+	public function testTheTaggedExitBeatsDeclarationOrder(): void {
+		$flow = [
+			'id' => 'route-order',
+			'nodes' => [
+				['id' => 'route', 'type' => 'route', 'exits' => [['id' => 'yes'], ['id' => 'no']]],
+				['id' => 'onRejected', 'type' => 'rejected'],
+				['id' => 'onApproved', 'type' => 'approved'],
+			],
+			'edges' => [
+				['id' => 'e2', 'from' => 'route', 'fromExit' => 'no', 'to' => 'onRejected'],
+				['id' => 'e3', 'from' => 'route', 'fromExit' => 'yes', 'to' => 'onApproved'],
+			],
+		];
+
+		$d = new RouteTaggingDispatcher(tag: 'no');
+		$this->engine->run(
+			flow: $flow,
+			store: new MethodMarkingStore(false, 'marking'),
+			subject: new LogicSubject(),
+			dispatcher: $d,
+			context: [],
+			items: [FlowItems::item(json: ['name' => 'Case 7'])]
+		);
+
+		$this->assertSame(['route', 'rejected'], $d->ran, 'the token follows the routing decision, not declaration order');
+	}//end testTheTaggedExitBeatsDeclarationOrder()
+
+	/**
 	 * A Stop step ends the run as `stopped`, with its message in the log.
 	 */
 	public function testAStopStepEndsTheRunCleanly(): void {
@@ -275,6 +386,59 @@ class FlowLogicTest extends TestCase {
 
 		$this->assertSame(FlowEngine::STATUS_FAILED, $result['status']);
 		$this->assertSame('invariant broken', $result['error']);
+	}
+
+	/**
+	 * A run wrecked by a broken step is not the same row as one an author ended.
+	 *
+	 * THE REGRESSION THIS EXISTS FOR. Both runs used to persist as
+	 * `status = 'stopped'`, `error = null` — identical in every column a query
+	 * can reach. The difference survived only in the last entry of the JSON
+	 * `log`, so `WHERE status = 'stopped'` returned a healthy guard branch and a
+	 * wreck side by side and nothing said which was which. Nine dossiq demo runs
+	 * died that way and read as clean ends.
+	 *
+	 * Asserted as ONE test over BOTH walks, deliberately: the property is a
+	 * DIFFERENCE, and two separate tests each asserting its own status would
+	 * both have passed on the broken code, which is how this shipped.
+	 */
+	public function testAFailedStepIsDistinguishableFromACleanStop(): void {
+		$clean = $this->walk(
+			[
+				'id' => 'clean',
+				'nodes' => [['id' => 'stop', 'type' => 'stop', 'config' => ['message' => 'nothing to do']]],
+				'edges' => [],
+			],
+			[FlowItems::item(json: ['a' => 1])],
+			new TrackingDispatcher()
+		);
+
+		$wrecked = $this->walk(
+			[
+				'id' => 'wrecked',
+				'nodes' => [['id' => 'move', 'type' => 'boom', 'config' => ['message' => 'status_not_found_on_case_type']]],
+				'edges' => [],
+			],
+			[FlowItems::item(json: ['a' => 1])],
+			new TrackingDispatcher()
+		);
+
+		// The two runs must not be the same row.
+		$this->assertNotSame(
+			$wrecked['status'],
+			$clean['status'],
+			'A run wrecked by a failing step must not carry the same status as one an author ended on purpose.'
+		);
+
+		// A deliberate end stays a deliberate end, with nothing on `error`.
+		$this->assertSame(FlowEngine::STATUS_STOPPED, $clean['status']);
+		$this->assertNull(($clean['error'] ?? null));
+
+		// The wreck is queryable AS a wreck, and says what broke — `error` is
+		// the column `persistResult()` writes, so this is what an operator
+		// filtering the runs table actually sees.
+		$this->assertSame(FlowEngine::STATUS_FAILED, $wrecked['status']);
+		$this->assertSame('status_not_found_on_case_type', $wrecked['error']);
 	}
 }
 

@@ -273,6 +273,24 @@ class ProviderCatalogueTest extends TestCase {
 				continue;
 			}
 
+			// An entry whose API host belongs to the connected ACCOUNT rather than to
+			// the provider declares `baseUrlFrom` instead. That MOVES the lock rather
+			// than dropping it: the host is validated at mint, pinned onto the
+			// credential, and immutable afterwards, so the credential is locked to
+			// one server for its whole life. What must never happen is an entry
+			// carrying BOTH, because then two different values could each claim to be
+			// the lock and the answer would depend on which code path read it first.
+			$baseUrlFrom = trim((string)($entry['baseUrlFrom'] ?? ''));
+			if ($baseUrlFrom !== '') {
+				$this->assertArrayNotHasKey(
+					'baseUrl',
+					$entry,
+					$id . ' declares a per-credential host, so it must not also carry a fixed one'
+				);
+				$this->assertNotEmpty($entry['allowRules'] ?? [], $id . ' must still bound its calls with allow-rules');
+				continue;
+			}
+
 			$baseUrl = (string)($entry['baseUrl'] ?? '');
 
 			// resolveAndLockUrl() parses the host out of baseUrl and refuses any
@@ -282,6 +300,42 @@ class ProviderCatalogueTest extends TestCase {
 			$this->assertIsString(parse_url($baseUrl, PHP_URL_HOST), $id . ' must have a lockable host');
 		}
 	}//end testEveryProxyProviderIsHostLockedOverHttps()
+
+	public function testAnIdentityCallIsAlwaysOneTheEntryAlreadyPermits(): void {
+		// An `identity` block says which of a provider's calls answers "who is this".
+		// It must never be a way to reach a path the allow-rules do not already
+		// cover, because that would let the catalogue widen itself in a place nobody
+		// reviews as a permission.
+		$declared = 0;
+		foreach ($this->catalogue->all() as $id => $entry) {
+			$identity = ($entry['identity'] ?? null);
+			if (is_array($identity) === false) {
+				continue;
+			}
+
+			$declared++;
+			$path = (string)($identity['path'] ?? '');
+			$method = strtoupper((string)($identity['method'] ?? 'GET'));
+
+			$permitted = false;
+			foreach (($entry['allowRules'] ?? []) as $rule) {
+				if (strtoupper((string)($rule['method'] ?? '')) !== $method) {
+					continue;
+				}
+
+				$pattern = (string)($rule['pathPattern'] ?? '');
+				if ($pattern === $path || fnmatch($pattern, $path) === true) {
+					$permitted = true;
+					break;
+				}
+			}
+
+			$this->assertTrue($permitted, $id . ' declares an identity call its own allow-rules do not permit');
+			$this->assertNotSame('', (string)($identity['handleField'] ?? ''), $id . ' must say which field is the handle');
+		}
+
+		$this->assertGreaterThan(0, $declared, 'at least one provider must declare how to read its account identity');
+	}//end testAnIdentityCallIsAlwaysOneTheEntryAlreadyPermits()
 
 	public function testInjectOnlyProvidersCarryNoProxyAffordance(): void {
 		$injectOnly = 0;

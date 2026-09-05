@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
 use Psr\Log\LoggerInterface;
 use UnexpectedValueException;
@@ -108,10 +109,17 @@ class FlowNodeRegistry {
 	 *
 	 * @param IEventDispatcher $dispatcher Dispatches the contribution event.
 	 * @param LoggerInterface $logger The logger.
+	 * @param IURLGenerator|null $urls Resolves the fallback icon for a node
+	 *                                 whose own icon does not resolve. Optional
+	 *                                 so the registry stays constructible
+	 *                                 without a container; absent, such a node
+	 *                                 is served with no icon rather than being
+	 *                                 dropped.
 	 */
 	public function __construct(
 		private readonly IEventDispatcher $dispatcher,
 		private readonly LoggerInterface $logger,
+		private readonly ?IURLGenerator $urls = null,
 	) {
 
 	}//end __construct()
@@ -204,7 +212,7 @@ class FlowNodeRegistry {
 					'id' => $id,
 					'displayName' => $node->getDisplayName(),
 					'description' => $node->getDescription(),
-					'icon' => $node->getIcon(),
+					'icon' => $this->iconFor(node: $node, type: $id),
 					// ALWAYS present, and always one of trigger/step/end. An
 					// editor that had to infer this fell back to matching the
 					// id against a naming convention, which mis-labels every
@@ -250,18 +258,74 @@ class FlowNodeRegistry {
 
 				$palette[] = $entry;
 			} catch (\Throwable $e) {
-				// One node whose metadata throws (a missing icon, a broken
-				// translation) must not blank the whole palette — the author
-				// would lose every node, not just the bad one.
-				$this->logger->warning(
-					message: '[FlowNodeRegistry] Skipping a node whose palette metadata failed: ' . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__, 'type' => $id]
+				// One node whose metadata throws must not blank the whole
+				// palette — the author would lose every node, not just the bad
+				// one. A DROPPED NODE IS NOT A COSMETIC PROBLEM, though: it
+				// cannot be added to a flow at all, from anywhere, and the
+				// author is given no reason. So this is an error naming the
+				// type, not a warning, and the commonest cause — an icon the
+				// server does not ship — no longer reaches here at all
+				// ({@see self::iconFor()}).
+				$this->logger->error(
+					message: sprintf(
+						'[FlowNodeRegistry] DROPPED the node "%s" from the palette: its metadata threw (%s). It cannot be added to a flow until this is fixed.',
+						$id,
+						$e->getMessage()
+					),
+					context: ['file' => __FILE__, 'line' => __LINE__, 'type' => $id, 'exception' => $e]
 				);
 			}//end try
 		}//end foreach
 
 		return $palette;
 	}//end palette()
+
+	/**
+	 * A node's icon, or the app's own when the node's does not resolve.
+	 *
+	 * 🔴 A MISSING ICON USED TO DELETE THE NODE. `IURLGenerator::imagePath()`
+	 * throws for an image the server does not ship, `palette()` caught that
+	 * along with everything else, and the node simply was not in the
+	 * catalogue: `openregister.lock-object` and `openregister.unlock-object`
+	 * shipped pointing at `actions/lock.svg` and `actions/unlock.svg`, which
+	 * NEITHER NC 33 NOR NC 34 has, so neither node could be added to a flow
+	 * from the editor at all. Nothing failed; they were absent. Core's icon
+	 * set is not a stable API and the next node to name a retired icon would
+	 * have vanished the same way.
+	 *
+	 * So an icon is now resolved on its own, an unresolvable one is an ERROR
+	 * naming the type and the icon, and the node is served with the app's icon
+	 * instead of being dropped. A node the author can see and place with the
+	 * wrong picture is strictly better than a node that does not exist.
+	 *
+	 * @param IFlowNode $node The node.
+	 * @param string $type Its type id, for the message.
+	 *
+	 * @return string|null The icon path, the app's icon, or null when neither resolves.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function iconFor(IFlowNode $node, string $type): ?string {
+		try {
+			return $node->getIcon();
+		} catch (\Throwable $missing) {
+			$this->logger->error(
+				message: sprintf(
+					'[FlowNodeRegistry] The node "%s" names an icon this server does not have (%s); '
+					. 'it is served with the app icon instead. Point it at an image that exists.',
+					$type,
+					$missing->getMessage()
+				),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'type' => $type, 'exception' => $missing]
+			);
+		}
+
+		try {
+			return $this->urls?->imagePath('openregister', 'app-dark.svg');
+		} catch (\Throwable $noFallback) {
+			return null;
+		}
+	}//end iconFor()
 
 	/**
 	 * The links one run-log entry earns, from the node that wrote it.

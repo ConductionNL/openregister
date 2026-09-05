@@ -1,3 +1,5 @@
+import type { APIRequestContext } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -26,14 +28,14 @@
  * Everything created here is namespaced with a per-run prefix and removed in
  * afterAll (belt-and-braces; the delete test removes it in the happy path).
  */
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
-import { makeRunId } from '../_fixtures'
+import { makeRunId } from '../_fixtures.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '..', '.auth', 'admin.json')
 // HASH form — the router runs in hash mode (src/main.js); the path-form URL
 // renders the dashboard instead of the registers page.
-const REGISTERS_ROUTE = '/index.php/apps/openregister/#/registers'
+const REGISTERS_ROUTE = '/index.php/apps/openregister/registers'
 const API = '/index.php/apps/openregister/api'
 
 const RUN_ID = makeRunId()

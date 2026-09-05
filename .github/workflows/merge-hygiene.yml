@@ -33,7 +33,13 @@ jobs:
     name: Conflict markers and PHP syntax
     runs-on: ubuntu-latest
     steps:
+      # FULL HISTORY, deliberately. The migration/version check below compares
+      # this branch against the merge base with `development`, and a depth-1
+      # checkout has no merge base to find — it would report "no verdict" on
+      # every run, which is the silent skip the check exists to remove.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # Conflict markers, anywhere in the tree we author. A marker means a merge
       # was committed half-finished; every downstream signal from that commit is
@@ -68,6 +74,30 @@ jobs:
         with:
           php-version: '8.3'
           coverage: none
+
+      # A MIGRATION THAT SHIPS WITHOUT A VERSION BUMP REACHES NOBODY.
+      #
+      # Nextcloud runs an app's migrations only when appinfo/info.xml's
+      # <version> is greater than the installed_version it recorded. Equal
+      # versions mean `occ upgrade` answers "No upgrade required.", exits 0, and
+      # reads none of the migration files — no log line, no failure, and the
+      # feature that needed the table is simply absent.
+      #
+      # Measured on a throwaway NC 34 rig 2026-09-05: a migration added with the
+      # version left alone did not run, was not recorded, and
+      # `occ migrations:status openregister` reported "Pending Migrations: None"
+      # while showing 204 executed of 205 available. Bumping only <version>, with
+      # the code byte-identical, ran it. The version string is the whole gate.
+      #
+      # It lives here rather than in Code Quality because it needs the base ref
+      # and takes milliseconds — the same reason everything else in this file is
+      # here.
+      - name: A new migration moves the app version
+        run: |
+          set -euo pipefail
+          BASE="${{ github.event.pull_request.base.ref || 'development' }}"
+          git fetch --no-tags --prune origin "$BASE"
+          MIGRATION_VERSION_BASE_REF="origin/$BASE" php scripts/check-migration-version-bump.php
 
       # Every PHP file parses. A conflict marker is caught above, but so is any
       # other way a file can be committed unparseable — and this is the check

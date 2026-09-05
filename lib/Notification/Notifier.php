@@ -153,6 +153,8 @@ class Notifier implements INotifier {
 				return $this->prepareScheduledReportFailed(notification: $notification, l: $l);
 			case 'delegation_consent_requested':
 				return $this->prepareDelegationConsentRequested(notification: $notification, l: $l);
+			case 'credential_relink_needed':
+				return $this->prepareCredentialRelinkNeeded(notification: $notification, l: $l);
 			default:
 				// Unknown subject. Object-lifecycle subjects
 				// (object_created / object_updated / object_transitioned)
@@ -255,6 +257,62 @@ class Notifier implements INotifier {
 
 		return $notification;
 	}//end prepareHandoffDrainFailed()
+
+	/**
+	 * Render a connected account whose grant the provider has revoked.
+	 *
+	 * THIS CASE IS WHAT MAKES THE NOTIFICATION REAL. `IManager::notify()` accepts a
+	 * subject no notifier prepares and then drops it on the way to the screen, so a
+	 * relink announcement without an arm here would fire, be logged as sent, and be
+	 * seen by nobody. That is the shape of failure the whole relink lifecycle exists
+	 * to avoid: a connection that quietly stops working.
+	 *
+	 * Every word is server-authored, and the provider is a catalogue identifier
+	 * rather than anything a person typed. The message says what stopped, why it
+	 * cannot fix itself, and what to do, because a person meeting this in a
+	 * notification list has no other context for it.
+	 *
+	 * There is deliberately NO action button. Reconnecting means being sent to the
+	 * provider's own consent screen, which is a `POST` returning a URL to follow
+	 * rather than a link a notification can carry; a button that appeared to do it
+	 * and did not would be worse than the sentence that names the page.
+	 *
+	 * @param INotification $notification The notification to prepare.
+	 * @param mixed         $l            The localization instance.
+	 *
+	 * @return INotification The prepared notification.
+	 *
+	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
+	 */
+	private function prepareCredentialRelinkNeeded(INotification $notification, $l): INotification {
+		$provider = (string)($notification->getSubjectParameters()['provider'] ?? '');
+
+		$notification->setParsedSubject(
+			$l->t('Reconnect your %s account', [$provider])
+		);
+
+		$notification->setParsedMessage(
+			$l->t(
+				'The connection to %s is no longer accepted by the provider, so anything using it has '
+				. 'stopped. This cannot be repaired automatically: open Connected accounts in your '
+				. 'personal settings and reconnect the account.',
+				[$provider]
+			)
+		);
+
+		$notification->setLink(
+			$this->urlGenerator->linkToRouteAbsolute(
+				'settings.PersonalSettings.index',
+				['section' => 'additional']
+			)
+		);
+
+		$notification->setIcon(
+			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+		);
+
+		return $notification;
+	}//end prepareCredentialRelinkNeeded()
 
 	/**
 	 * Render a request to act on somebody's behalf.

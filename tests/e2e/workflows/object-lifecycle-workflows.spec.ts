@@ -1,3 +1,6 @@
+import type { APIRequestContext } from '@playwright/test'
+import type { SeededRegister, SeededSchema } from '../_fixtures.ts'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -35,20 +38,18 @@
  *   BUG-3  GET /api/objects/{register}/{schema}?_includeDeleted=true returns
  *          HTTP 500 (cannot list including soft-deleted objects).
  */
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
 import {
-	makeRunId,
+	createObject,
 	createRegister,
 	createSchema,
-	linkSchemaToRegister,
-	createObject,
 	deleteRegister,
 	deleteSchema,
+	linkSchemaToRegister,
+	makeRunId,
 	twoPropertySchema,
-	type SeededRegister,
-	type SeededSchema,
-} from '../_fixtures'
+} from '../_fixtures.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '..', '.auth', 'admin.json')
 const API = '/index.php/apps/openregister/api'
@@ -160,7 +161,7 @@ test.describe('workflow: audit-trail records create and update', () => {
 		const trails = await getTrails(request)
 		test.skip(trails.length === 0, 'no audit trail entries to render')
 
-		await page.goto(`${APP}/#/audit-trails`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP}/audit-trails`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main, .app-content').first()).toBeVisible({
 			timeout: 30_000,
 		})
@@ -298,7 +299,7 @@ test.describe('workflow: soft-delete then restore', () => {
 	})
 
 	test('UI: the Deleted view renders', async ({ page }) => {
-		await page.goto(`${APP}/#/deleted`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP}/deleted`, { waitUntil: 'domcontentloaded' })
 		// The Deleted view must at least mount. (BUG-1 is now fixed, so the list
 		// is populated by GET /api/deleted — asserted at the API level above.)
 		await expect(page.locator('main, .app-content').first()).toBeVisible({

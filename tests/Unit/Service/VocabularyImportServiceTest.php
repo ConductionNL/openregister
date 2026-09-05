@@ -55,6 +55,15 @@ class VocabularyImportServiceTest extends TestCase {
 	private int $sequence = 0;
 
 	/**
+	 * Every config array handed to ObjectService::findAll(), in call order.
+	 *
+	 * Recorded so the tests can assert what was ASKED, not only what came back.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private array $findAllCalls = [];
+
+	/**
 	 * @var ObjectService&MockObject
 	 */
 	private ObjectService $objectService;
@@ -69,6 +78,7 @@ class VocabularyImportServiceTest extends TestCase {
 	protected function setUp(): void {
 		$this->store = [];
 		$this->sequence = 0;
+		$this->findAllCalls = [];
 		$this->fixturesDir = __DIR__ . '/../../Fixtures/vocabulary';
 
 		$this->objectService = $this->createMock(ObjectService::class);
@@ -203,6 +213,107 @@ class VocabularyImportServiceTest extends TestCase {
 		$this->assertSame([$x->getUuid()], $y->getObject()['broader']);
 	}//end testImportCsvValueListCreatesSchemeAndConceptsWithBroaderRelation()
 
+	/**
+	 * EVERY read must name its scope where ObjectService actually looks.
+	 *
+	 * `prepareFindAllConfig()` reads `$config['filters']['register']` and
+	 * `$config['filters']['schema']`, and no other key. A pair at the TOP level
+	 * of the config is therefore read by nothing: `setRegister()`/`setSchema()`
+	 * are never called and `findAll()` hands the handler
+	 * `$this->currentRegister` / `$this->currentSchema` — leftover shared state
+	 * from whatever ran last on the same service instance.
+	 *
+	 * This importer used the top-level shape at both of its read sites. It was
+	 * the second of the three outliers openregister#3408 found while diagnosing
+	 * the flow migration, and was reported there rather than changed because it
+	 * was not in that defect's path and needed its own test. This is that test.
+	 *
+	 * It asserts the ARGUMENTS, not the result: the fake used to answer from
+	 * `$config['schema']`, so it replied correctly to a question the real
+	 * service is never asked, and every assertion about the returned objects
+	 * passed with the scope wired to nothing.
+	 *
+	 * @return void
+	 */
+	public function testEveryReadNamesItsScopeWhereObjectServiceReadsIt(): void {
+		$this->importFixture('sample-scheme.jsonld');
+		$this->importFixture('sample-scheme-updated.jsonld');
+
+		// A recording that stayed empty would satisfy every loop below, so the
+		// count is asserted first: this import performs identity lookups and a
+		// deprecation sweep, so there is no version of it that reads nothing.
+		$this->assertGreaterThan(
+			0,
+			count($this->findAllCalls),
+			'No findAll() call was recorded, so the assertions below prove nothing.'
+		);
+
+		foreach ($this->findAllCalls as $index => $config) {
+			$this->assertArrayNotHasKey(
+				'register',
+				$config,
+				"findAll() call #$index puts `register` at the top level, where nothing reads it."
+			);
+			$this->assertArrayNotHasKey(
+				'schema',
+				$config,
+				"findAll() call #$index puts `schema` at the top level, where nothing reads it."
+			);
+			$this->assertSame(
+				VocabularyImportService::REGISTER,
+				($config['filters']['register'] ?? null),
+				"findAll() call #$index does not scope its register under `filters`."
+			);
+			$this->assertContains(
+				($config['filters']['schema'] ?? null),
+				[VocabularyImportService::SCHEMA_SCHEME, VocabularyImportService::SCHEMA_CONCEPT],
+				"findAll() call #$index does not scope its schema under `filters`."
+			);
+		}
+	}//end testEveryReadNamesItsScopeWhereObjectServiceReadsIt()
+
+	/**
+	 * The deprecation sweep's FIRST page must be scoped, not just the later ones.
+	 *
+	 * `deprecateMissing()` pages through a scheme's concepts and writes a
+	 * `deprecated` flag as it goes. Its `saveObject()` names register and schema,
+	 * so under the old shape the write anchored the shared service on exactly the
+	 * pair the read wanted — and every page AFTER the first inherited a correct
+	 * context by accident. Only page one read whatever an unrelated caller had
+	 * left behind.
+	 *
+	 * That is what made the defect invisible: the loop appeared to work. This
+	 * pins the first read of the sweep specifically.
+	 *
+	 * @return void
+	 */
+	public function testTheDeprecationSweepScopesItsFirstPageAndNotOnlyThePagesAfterAWrite(): void {
+		$this->importFixture('sample-scheme.jsonld');
+
+		// The re-import is the run that deprecates the concept absent from the
+		// updated source, so its sweep is the one to inspect.
+		$this->findAllCalls = [];
+		$report = $this->importFixture('sample-scheme-updated.jsonld');
+		$this->assertSame(1, $report['deprecated'], 'Fixture must still exercise the deprecation sweep.');
+
+		$conceptReads = array_values(
+			array_filter(
+				$this->findAllCalls,
+				static fn (array $config): bool => (($config['filters']['schema'] ?? null)
+					=== VocabularyImportService::SCHEMA_CONCEPT)
+					&& isset($config['filters']['inScheme']) === true
+			)
+		);
+
+		$this->assertNotEmpty($conceptReads, 'The deprecation sweep performed no scoped concept read.');
+		$this->assertSame(
+			VocabularyImportService::REGISTER,
+			($conceptReads[0]['filters']['register'] ?? null),
+			'The sweep\'s FIRST page must carry its own scope; it cannot borrow one from a later write.'
+		);
+		$this->assertSame(0, ($conceptReads[0]['offset'] ?? 0), 'The first recorded sweep read must be page one.');
+	}//end testTheDeprecationSweepScopesItsFirstPageAndNotOnlyThePagesAfterAWrite()
+
 	// -------------------------------------------------------------------
 	// Fixture + fake-store helpers.
 	// -------------------------------------------------------------------
@@ -240,8 +351,39 @@ class VocabularyImportServiceTest extends TestCase {
 	 * @return array<int, ObjectEntity>
 	 */
 	private function fakeFindAll(array $config): array {
-		$schema = (string)($config['schema'] ?? '');
+		// A FAKE THAT ANSWERS ANY QUESTION CANNOT REPORT A WRONG ONE.
+		//
+		// This used to read `$config['schema']` — a key `ObjectService` never
+		// looks at. `prepareFindAllConfig()` reads `$config['filters']['register']`
+		// and `$config['filters']['schema']` and nothing else, so the fake was
+		// answering a question the real service is not asked, and the service's
+		// answer came from whatever register/schema the previous CALLER had left
+		// on it. Every test here passed either way, which is why the defect
+		// survived (openregister#3408).
+		//
+		// The fake now reads the scope from exactly where the service reads it,
+		// and refuses the read outright when the scope is absent — so a caller
+		// that goes back to the top-level shape fails here rather than being
+		// quietly served.
+		$this->findAllCalls[] = $config;
+
+		$register = ($config['filters']['register'] ?? null);
+		$schema = ($config['filters']['schema'] ?? null);
+		if ($register === null || $schema === null) {
+			throw new \RuntimeException(
+				'findAll() was called without filters.register / filters.schema; '
+				.'ObjectService reads the scope from nowhere else, so this read '
+				.'would have run on whatever context the last write left behind.'
+			);
+		}
+
+		$schema = (string)$schema;
+		// `register` and `schema` are reserved query context, not object fields.
+		// MagicSearchHandler::getReservedParams() strips them before filtering;
+		// leaving them in here would match every stored row against a field that
+		// does not exist and return nothing.
 		$filters = ($config['filters'] ?? []);
+		unset($filters['register'], $filters['schema']);
 		$limit = ($config['limit'] ?? null);
 		$offset = ($config['offset'] ?? 0);
 

@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-/* eslint-disable n/no-process-exit */
+ 
 // Icelandic (íslenska) register detector for openregister l10n.
 //
 // ICELANDIC HAD A T-V DISTINCTION AND IT IS NOW OBSOLETE. That is the fact to
@@ -116,6 +115,10 @@
 // JS \b is ASCII-only and would treat þ/ð/æ/ö/á/í as boundaries, so every guard
 // is (?<!\p{L}) … (?!\p{L}) with the u flag.
 
+/**
+ *
+ * @param s
+ */
 function fold(s) {
 	return String(s).toLowerCase()
 }
@@ -345,6 +348,10 @@ const UNDETECTABLE = [
 		+ 'thousands of nouns. Address is carried by the pronoun, which is matched'],
 ]
 
+/**
+ *
+ * @param s
+ */
 function score(s) {
 	const t = fold(s)
 	let f = 0
@@ -356,6 +363,9 @@ function score(s) {
 	return { f, i }
 }
 
+/**
+ *
+ */
 function runControls() {
 	let fail = 0
 	for (const [s, want] of CONTROLS) {

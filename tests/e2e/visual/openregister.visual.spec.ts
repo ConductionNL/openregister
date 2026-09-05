@@ -11,13 +11,13 @@
  * See _visual-helpers.ts for the platform-rendering caveat.
  */
 import { test } from '@playwright/test'
-import { shootSurface, shootByNav } from './_visual-helpers'
+import { shootSurface } from './_visual-helpers.ts'
 
 const APP = '/index.php/apps/openregister'
 
 test.describe('Open Register — visual baselines', () => {
 	test('dashboard', async ({ page }) => {
-		await shootSurface(page, `${APP}/#/`, 'dashboard.png')
+		await shootSurface(page, `${APP}/`, 'dashboard.png')
 	})
 
 	// NOTE: OpenRegister's in-app sidebar routes do not switch the rendered

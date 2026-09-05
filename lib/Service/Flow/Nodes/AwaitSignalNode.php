@@ -27,9 +27,9 @@
  *
  * WHAT COUNTS AS AN ANSWER. The payload posted to the resume endpoint lands at
  * `context.signal`. This node reads `decision` from it and writes the whole
- * payload onto every item under `signalKey`, so the steps after it can branch on
- * what was decided and see who decided it. A resume with no `decision` is a
- * nudge, not an answer: the node suspends again. That is what makes an
+ * payload into every item's record under `json.<signalKey>`, so the steps after
+ * it can branch on what was decided and see who decided it. A resume with no
+ * `decision` is a nudge, not an answer: the node suspends again. That is what makes an
  * accidental or duplicate POST harmless.
  *
  * REJECTION IS NOT FAILURE. A rejected approval is the flow working correctly —
@@ -57,10 +57,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use DateTime;
+use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
+use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -177,7 +179,7 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	public function configKeys(): array {
-		return ['question', 'assignee', 'signalKey', 'heartbeatMinutes', 'failOnReject'];
+		return ['question', 'assignee', 'signalKey', 'heartbeatMinutes', 'failOnReject', 'correlationKey'];
 	}//end configKeys()
 
 	/**
@@ -220,6 +222,14 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 				'type' => 'boolean',
 				'help' => $this->l10n->t('Off by default: being told "no" is usually the flow working, not breaking. Route on the answer instead.'),
 			],
+			[
+				'key' => 'correlationKey',
+				'label' => $this->l10n->t('Business key for the answer'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'Lets the caller answer by key instead of run id, like "vote:{{ proposalId }}". Leave empty to keep run-id addressing only.'
+				),
+			],
 		];
 	}//end configForm()
 
@@ -261,7 +271,7 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		$signal = $this->decisionFrom(context: $context);
 
 		if ($signal === null) {
-			$this->recordRequest(config: $config, context: $context);
+			$this->recordRequest(config: $config, context: $context, items: $items);
 
 			throw new FlowSuspension(
 				resumeAt: $this->heartbeatAt(config: $config),
@@ -291,15 +301,19 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			$key = 'signal';
 		}
 
-		// Onto every item rather than into the token, because the steps that
-		// follow route per item; a Switch cannot branch on something only the
-		// run holds.
+		// Into every item's record (`json`), not beside it, and not into the
+		// token: the steps that follow route per item and read `json.<key>`
+		// (FlowExpression::dataFor exposes json.*, and a rebuilding node like
+		// set-fields keeps only [json, binary]). A key at the envelope level
+		// is invisible to a Switch and silently dropped by the next rebuild.
 		foreach ($items as $index => $item) {
 			if (is_array($item) === false) {
 				continue;
 			}
 
-			$item[$key] = $signal;
+			$json = (array)($item[FlowItems::JSON] ?? []);
+			$json[$key] = $signal;
+			$item[FlowItems::JSON] = $json;
 			$items[$index] = $item;
 		}
 
@@ -348,12 +362,13 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 *
 	 * @param array $config The step configuration.
 	 * @param array $context Run-level metadata.
+	 * @param array $items The input items, for correlation-key resolution.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
-	private function recordRequest(array $config, array $context): void {
+	private function recordRequest(array $config, array $context, array $items): void {
 		$resume = ($context[FlowNodeResumeState::CONTEXT_KEY] ?? null);
 		if ($resume instanceof FlowNodeResumeState === false) {
 			return;
@@ -368,10 +383,54 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 				'askedAt' => (new DateTime())->format('c'),
 				'question' => trim((string)($config['question'] ?? '')),
 				'assignee' => trim((string)($config['assignee'] ?? '')),
+				'correlationKey' => $this->resolvedCorrelationKey(config: $config, items: $items),
 			]
 		);
 
 	}//end recordRequest()
+
+	/**
+	 * The business key this suspension can be addressed by, resolved once.
+	 *
+	 * Resolved from the step's config against the first item at SUSPENSION
+	 * time and stamped into the resume slot, from where the run service
+	 * copies it onto the run's indexed `correlation_key` column
+	 * (flow-approval-consolidation design D-7). Empty when the step declares
+	 * none: the run then keeps run-uuid addressing only, and behaves exactly
+	 * as before this capability existed.
+	 *
+	 * @param array $config The step configuration.
+	 * @param array $items The input items.
+	 *
+	 * @return string The resolved key, or the empty string.
+	 *
+	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FlowValueTemplate is the flow
+	 * engine's stateless value renderer; a factory would add a dependency to
+	 * say the same thing.
+	 */
+	private function resolvedCorrelationKey(array $config, array $items): string {
+		$declared = trim((string)($config['correlationKey'] ?? ''));
+		if ($declared === '') {
+			return '';
+		}
+
+		$representative = [];
+		foreach ($items as $item) {
+			if (is_array($item) === true) {
+				// An engine item wraps its payload under the json envelope;
+				// render against the payload, tolerating a bare array too.
+				$payload = ($item[FlowItems::JSON] ?? $item);
+				if (is_array($payload) === true) {
+					$representative = $payload;
+				}
+				break;
+			}
+		}
+
+		return trim((string)FlowValueTemplate::render(value: $declared, json: $representative));
+	}//end resolvedCorrelationKey()
 
 	/**
 	 * When to wake up and re-ask, absent an answer.

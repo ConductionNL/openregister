@@ -12,11 +12,21 @@
         },
         {
           "id": "demo-data",
-          "type": "run-action",
-          "action": "install-demo-data",
-          "title": "Demo data (optional)",
+          "type": "choice",
+          "display": "cards",
+          "optionsSource": "datasets",
+          "configKey": "demo_dataset",
+          "title": "Load example data?",
           "required": false,
-          "body": "Load a small example dataset so the lists, detail pages and dashboards show a working product straight away. The data is obviously sample data, it is safe to run more than once, and it can be removed afterwards. Skip this on a production install."
+          "body": "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install."
+        },
+        {
+          "id": "load-demo-data",
+          "type": "run-action",
+          "action": "load-demo-data",
+          "title": "Load the example data",
+          "required": false,
+          "body": "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards."
         },
         {
           "id": "done",
@@ -26,10 +36,19 @@
       ]
     },
   "version": "1.1.0",
-  "nav": {
-    "includePersonalSettings": false
-  },
   "pages": [
+    {
+      "id": "Store",
+      "route": "/store",
+      "type": "store",
+      "title": "Store",
+      "config": {
+        "app": "openregister",
+        "title": "Store",
+        "description": "Install registers, schemas and flows that other organisations have published."
+      },
+      "_note": "ADR-114 Decision 4 / ADR-080. Declarative: openregister hosts the store plane itself, so this page writes no controller and the app ships no store backend of its own. With no registry configured it renders openregister's own items and makes NO network call."
+    },
     {
       "id": "dashboard",
       "route": "/",
@@ -171,9 +190,10 @@
       "route": "/flows",
       "type": "index",
       "title": "Flows",
-      "_note": "Ordinary index over a NAMED SOURCE, not a custom page. A flow lives in OpenRegister's own native flow table rather than a register/schema pair, so an object-backed index had nothing to address and this used to be type:custom over FlowsIndex.vue. Named index sources (nextcloud-vue 2.20.0) close that: config.entitySource names the collection and the index loads it. Columns are stated here rather than left to the source's defaults because this is the ENGINE's cross-app surface — it passes no app filter and so needs the `app` column, which a leaf app's own flow list does not. Migrating also fixes a dead listener: FlowsIndex bound @rowClick while CnIndexPage emits row-click, so opening a flow by clicking its row never worked here.",
+      "_note": "Ordinary index over a NAMED SOURCE, not a custom page. A flow lives in OpenRegister's own native flow table rather than a register/schema pair, so an object-backed index had nothing to address and this used to be type:custom over FlowsIndex.vue. Named index sources (nextcloud-vue 2.20.0) close that: config.entitySource names the collection and the index loads it. Columns are stated here rather than left to the source's defaults because this is the ENGINE's cross-app surface — it passes no app filter and so needs the `app` column, which a leaf app's own flow list does not. Migrating also fixes a dead listener: FlowsIndex bound @rowClick while CnIndexPage emits row-click, so opening a flow by clicking its row never worked here. `rowRoute` names the flowDetail page (a route NAME, not a path): without it a named-source page has no schema, so CnPageRenderer never auto-wired editOpensDetail and row Edit opened an EMPTY modal instead of the flow editor.",
       "config": {
         "entitySource": "flows",
+        "rowRoute": "flowDetail",
         "columns": [
           {
             "key": "name",
@@ -210,6 +230,16 @@
       "sidebarComponent": "FlowDetailSidebar",
       "_note": "The shared `flow` page type: a direct-manipulation canvas over a node/edge document is not expressible as a widget grid, and the built-in detail type is record-shaped — but that no longer requires a custom page. CnFlowEditorPage mounts the same CnFlowDetail canvas this app wrapped by hand, including the router.replace that lets a newly created flow pick up its server-assigned id. Controls live in the sidebar so the canvas gets full width, and both halves share useFlowStore.",
       "config": {}
+    },
+    {
+      "id": "flow-task-inbox",
+      "route": "/flow-tasks",
+      "type": "index",
+      "title": "Tasks",
+      "_note": "The fleet task inbox (flow-task-inbox-projections 5.1): an ordinary index over the NAMED `tasks` source (nextcloud-vue 2.30.0, cn-tasks-entity-source). The source supplies columns, the scope quick filters and the row click, which leaves the SPA for /apps/openregister/flow-tasks/{uuid} by full URL — served below by flow-task-detail. Like `flows`, this is the engine's cross-app surface; the source's own defaults fit it, so no columns are restated here.",
+      "config": {
+        "entitySource": "tasks"
+      }
     },
     {
       "id": "webhooks",
@@ -348,6 +378,14 @@
       "_note": "MDM steward surface (ADR-045 follow-on #C): audit list of recent mergeOperation rows with an in-window reverse action, read through the generic object-read surface (design.md D2)."
     }
   ],
+  "store": {
+    "_note": "Configuration exchange, not rows. A configuration set carries the registers, schemas, objects, views, flows, sources and mappings that make one way of working hold together. `types` selects that path; an app declaring none keeps the remote objects API. There is deliberately NO `installable` allowlist: a set exists to introduce schemas the instance does not have YET, so listing schemas openregister already owns would refuse exactly the sets worth installing. The trust boundary for a bundle is its publisher, enforced by the engine's source allowlist and trusted-key check. ⚠️ An EMPTY `installable` would mean install NOTHING, not install anything — omitting the key and declaring an empty list are different things.",
+    "types": [
+      "openregister.configset",
+      "openregister.flows"
+    ],
+    "localRegister": "openregister"
+  },
   "menu": [
     {
       "id": "Dashboard",
@@ -472,13 +510,6 @@
           "icon": "DatabaseOutline",
           "route": "avg",
           "order": 100
-        },
-        {
-          "id": "Reports",
-          "label": "Reports",
-          "icon": "ChartBoxOutline",
-          "route": "reports",
-          "order": 101
         }
       ]
     },
@@ -562,7 +593,23 @@
       "icon": "BookOpenVariantOutline",
       "href": "https://openregister.conduction.nl",
       "section": "footer",
-      "order": 1
+      "order": 90
+    },
+    {
+      "id": "StoreMenu",
+      "label": "Store",
+      "icon": "StoreOutline",
+      "route": "Store",
+      "section": "footer",
+      "order": 92
+    },
+    {
+      "id": "Reports",
+      "label": "Reports",
+      "icon": "ChartBoxOutline",
+      "route": "reports",
+      "section": "footer",
+      "order": 95
     },
     {
       "id": "FeaturesRoadmapMenu",
@@ -570,7 +617,7 @@
       "icon": "MapMarkerPath",
       "route": "features-roadmap",
       "section": "footer",
-      "order": 2
+      "order": 100
     },
     {
       "id": "Flows",
@@ -579,6 +626,14 @@
       "route": "flows",
       "section": "main",
       "order": 45
+    },
+    {
+      "id": "Tasks",
+      "label": "Tasks",
+      "icon": "ClipboardListOutline",
+      "route": "flow-task-inbox",
+      "section": "main",
+      "order": 46
     }
   ],
   "observability": {

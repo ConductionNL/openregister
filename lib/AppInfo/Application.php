@@ -54,7 +54,6 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 // failed. The first person to actually reference one would have got a fatal at
 // boot, in the app's own bootstrap, from a line that looks like every other
 // import in the file.
-use OCA\OpenRegister\Db\DeployedWorkflowMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
@@ -67,7 +66,6 @@ use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Event\AgentCreatedEvent;
 use OCA\OpenRegister\Event\AgentUpdatedEvent;
-use OCA\OpenRegister\Event\ApprovalStepCompletedEvent;
 use OCA\OpenRegister\Event\ConfigurationCreatedEvent;
 use OCA\OpenRegister\Event\ConfigurationUpdatedEvent;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
@@ -91,7 +89,6 @@ use OCA\OpenRegister\Event\SourceCreatedEvent;
 use OCA\OpenRegister\Event\SourceUpdatedEvent;
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
 use OCA\OpenRegister\Federation\OpenRegisterCloudFederationProvider;
-use OCA\OpenRegister\Listener\ActionListener;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\AggregationThresholdListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
@@ -101,7 +98,6 @@ use OCA\OpenRegister\Listener\AuthorizationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
-use OCA\OpenRegister\Listener\EventCatalogListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
@@ -110,7 +106,6 @@ use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\GrantableRightsInvalidationListener;
 use OCA\OpenRegister\Listener\HandoffLifecycleListener;
 use OCA\OpenRegister\Listener\HandoffQueueDrainListener;
-use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Listener\LifecycleActionListener;
 use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
@@ -224,6 +219,7 @@ use OCA\OpenRegister\Service\ObjectSource\DeckObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\FederatedObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\FilesObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\GroupObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\OrganisationObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\ObjectSource\TablesColumnMapper;
 use OCA\OpenRegister\Service\ObjectSource\TablesObjectSourceProvider;
@@ -235,6 +231,7 @@ use OCA\OpenRegister\Service\ObjectSource\UserDirectoryObjectSourceProvider;
 use OCA\OpenRegister\Service\OpenProjectLinkService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PhotoLinkService;
+use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\Schema\SchemaDiffService;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
@@ -242,6 +239,7 @@ use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
+use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
@@ -268,7 +266,6 @@ use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrateg
 use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCA\OpenRegister\Service\WebPush\HexIconService;
-use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use OCA\OpenRegister\Service\XwikiLinkService;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
@@ -526,7 +523,11 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Service\Flow\FlowStepDispatcher::class,
 			static function ($c) {
 				return new RegistryStepDispatcher(
-					registry: $c->get(\OCA\OpenRegister\Service\Flow\FlowNodeRegistry::class)
+					registry: $c->get(\OCA\OpenRegister\Service\Flow\FlowNodeRegistry::class),
+					// The acting-identity scope IS container state, unlike the
+					// guard: a loop's body steps must scope a contributed node
+					// to the run's runAs exactly as top-level steps do.
+					scope: $c->get(\OCA\OpenRegister\Service\Flow\FlowRunAsScope::class)
 				);
 			}
 		);
@@ -822,6 +823,33 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
+		// The task inbox and the portal party resolver read the object store
+		// through AbstractObjectMapper, which the autowirer cannot build (it is
+		// abstract) and would silently default to null: an inbox row without
+		// subject context, and a portal task that can match nobody. Both are
+		// wired to the MagicMapper explicitly for that reason.
+		$context->registerService(
+			TaskInboxService::class,
+			function (ContainerInterface $container) {
+				return new TaskInboxService(
+					tasks: $container->get(\OCA\OpenRegister\Db\TaskMapper::class),
+					temporal: $container->get(\OCA\OpenRegister\Service\Task\TaskTemporalProjection::class),
+					logger: $container->get('Psr\Log\LoggerInterface'),
+					objects: $container->get(MagicMapper::class),
+					deliveries: $container->get(\OCA\OpenRegister\Db\PortalTaskDeliveryMapper::class)
+				);
+			}
+		);
+
+		$context->registerService(
+			PortalPartyResolver::class,
+			function (ContainerInterface $container) {
+				return new PortalPartyResolver(
+					objects: $container->get(MagicMapper::class)
+				);
+			}
+		);
+
 		// EntityRelationMapper is registered explicitly because it constructor-injects
 		// `IEventDispatcher` to dispatch `EntityRelationDecisionUpdatedEvent`. Every
 		// other event-dispatcher-dependent mapper in this method (SchemaMapper,
@@ -881,6 +909,7 @@ class Application extends App implements IBootstrap {
 					groupManager: $container->get('OCP\IGroupManager'),
 					logger: $container->get('Psr\Log\LoggerInterface'),
 					auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+					mountCache: $container->get('OCP\Files\Config\IUserMountCache'),
 					fileService: null
 				);
 			}
@@ -951,9 +980,6 @@ class Application extends App implements IBootstrap {
 			// Inject MagicMapper for routing seed data to correct magic table.
 			$importHandler->setObjectMapper($container->get(MagicMapper::class));
 
-			// Inject workflow dependencies for deploying workflows during import.
-			$importHandler->setWorkflowEngineRegistry($container->get(WorkflowEngineRegistry::class));
-			$importHandler->setDeployedWorkflowMapper($container->get(DeployedWorkflowMapper::class));
 
 			// Optional: services used by seed-related-items to attach files /
 			// notes / tasks. Wrapped in try/catch so a missing dependency
@@ -1033,8 +1059,6 @@ class Application extends App implements IBootstrap {
 					logger: $container->get('Psr\Log\LoggerInterface')
 				);
 
-				$exportHandler->setWorkflowEngineRegistry($container->get(WorkflowEngineRegistry::class));
-				$exportHandler->setDeployedWorkflowMapper($container->get(DeployedWorkflowMapper::class));
 
 				return $exportHandler;
 			}
@@ -1110,7 +1134,6 @@ class Application extends App implements IBootstrap {
 					searchTrailMapper: $container->get(SearchTrailMapper::class),
 					userManager: $container->get('OCP\IUserManager'),
 					db: $container->get('OCP\IDBConnection'),
-					setupHandler: null,
 					objectCacheService: null,
 					container: $container,
 					appName: 'openregister',
@@ -1181,11 +1204,24 @@ class Application extends App implements IBootstrap {
 		$context->registerService(
 			TaskService::class,
 			function (ContainerInterface $container) {
+				// The write-back gate is resolved lazily and best-effort: without
+				// it a PROJECTED VTODO's update is refused (fail closed), and
+				// standalone VTODOs are unaffected either way.
+				$gate = null;
+				try {
+					$gate = $container->get(\OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate::class);
+				} catch (\Throwable $e) {
+					$container->get('Psr\Log\LoggerInterface')->debug(
+						'[Application] TaskVtodoWriteBackGate unavailable for TaskService: ' . $e->getMessage()
+					);
+				}
+
 				return new TaskService(
 					calDavBackend: $container->get('OCA\DAV\CalDAV\CalDavBackend'),
 					userSession: $container->get('OCP\IUserSession'),
 					logger: $container->get('Psr\Log\LoggerInterface'),
-					urlGenerator: $container->get('OCP\IURLGenerator')
+					urlGenerator: $container->get('OCP\IURLGenerator'),
+					gate: $gate
 				);
 			}
 		);
@@ -1427,6 +1463,19 @@ class Application extends App implements IBootstrap {
 					groupManager: $container->get('OCP\IGroupManager'),
 					userSession: $container->get('OCP\IUserSession'),
 					logger: $container->get('Psr\Log\LoggerInterface')
+				);
+			}
+		);
+
+		$context->registerService(
+			OrganisationObjectSourceProvider::class,
+			function (ContainerInterface $container) {
+				return new OrganisationObjectSourceProvider(
+					organisationMapper: $container->get('OCA\OpenRegister\Db\OrganisationMapper'),
+					userSession: $container->get('OCP\IUserSession'),
+					groupManager: $container->get('OCP\IGroupManager'),
+					logger: $container->get('Psr\Log\LoggerInterface'),
+					organisationService: $container->get('OCA\OpenRegister\Service\OrganisationService')
 				);
 			}
 		);
@@ -2521,17 +2570,159 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ObjectCreatingEvent::class, FlowNodePreflightListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, FlowNodePreflightListener::class);
 
+		// Task cancellation propagation (flow-task-entity, design D-8): a run
+		// persisted in a terminal status terminates its open tasks, with the
+		// reason recorded. The event fires from FlowRunMapper::update() — the
+		// one choke point all terminal writes pass — and may fire repeatedly;
+		// the listener is idempotent, and a task with run_uuid null is
+		// structurally out of its reach.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\FlowRunTerminalEvent::class,
+			\OCA\OpenRegister\Listener\TaskRunTerminalListener::class
+		);
+
+		// Release layer 1 of run-scoped object locking: a run that holds object
+		// locks releases every one of them when it ends, on ANY of the four
+		// terminal statuses. Hooked here rather than in a node because a run
+		// that failed or was reaped never reaches another step, and that is
+		// exactly the run whose lock most needs releasing. Idempotent, and it
+		// never rethrows: the dispatch happens inside the run's own terminal
+		// write.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\FlowRunTerminalEvent::class,
+			\OCA\OpenRegister\Listener\FlowRunLockReleaseListener::class
+		);
+
+// The other direction (flow-user-task-node): a task the graph raised
+		// reached a terminal state, so its suspended run is woken and, per the
+		// node's `advance` budget, continued in-request. Fires AFTER the task's
+		// own transaction committed (the listener skips uncommitted dispatches);
+		// a failure here costs latency, never the completion.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
+			\OCA\OpenRegister\Listener\UserTaskTerminalListener::class
+		);
+
+		// Business-timer cancellation propagation (flow-business-timers, design
+		// D-9): a terminal task (TaskMapper, both write paths) or a terminal run
+		// (FlowRunMapper) cancels its open timers INSIDE the write that made the
+		// subject terminal, so no escalation goes out about finished work. The
+		// listener is idempotent and never deletes.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
+			\OCA\OpenRegister\Listener\FlowTimerSubjectTerminalListener::class
+		);
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\FlowRunTerminalEvent::class,
+			\OCA\OpenRegister\Listener\FlowTimerSubjectTerminalListener::class
+		);
+
+		// The portal reminder (flow-portal-task, design D-8): a preBreach rung
+		// of flow-business-timers on an EXTERNAL task becomes a reminder
+		// delivery request through the portal seam; a slaBreached rung stays
+		// inward. Registered by the event's NAME because the timers change is
+		// built in parallel and its event class may not be on this branch yet;
+		// the listener is duck-typed against the event's published surface, so
+		// the two merge in either order.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Listener\PortalTaskReminderListener::EVENT_CLASS,
+			\OCA\OpenRegister\Listener\PortalTaskReminderListener::class
+		);
+
+		// Task projections (flow-task-inbox-projections): a committed
+		// transition becomes a declarative notification and a VTODO in the
+		// assignee's calendar. Both run AFTER the commit and neither can fail
+		// the transition (design D-8). Withdrawal runs before delivery, so the
+		// notification listener is registered first.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTransitionedEvent::class,
+			\OCA\OpenRegister\Listener\TaskNotificationListener::class
+		);
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTransitionedEvent::class,
+			\OCA\OpenRegister\Listener\TaskCalendarProjectionListener::class
+		);
+
+		// Dismiss-on-terminality, on the same terminal-task event the
+		// user-task node listens to: no approve button and no open VTODO
+		// survives a terminal task, however it became terminal. Idempotent
+		// beside the transition listeners above: a second withdrawal finds
+		// nothing to withdraw and a second render finds nothing changed.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
+			\OCA\OpenRegister\Listener\TaskTerminalProjectionListener::class
+		);
+
+		// The safety-net write-back hook (design D-6): calendar writes that
+		// reached the backend without traversing the Sabre plugin are
+		// reverted to the engine's truth, and the actor is told why.
+		$context->registerEventListener(
+			\OCP\Calendar\Events\CalendarObjectUpdatedEvent::class,
+			\OCA\OpenRegister\Listener\TaskVtodoWriteBackListener::class
+		);
+		$context->registerEventListener(
+			\OCP\Calendar\Events\CalendarObjectDeletedEvent::class,
+			\OCA\OpenRegister\Listener\TaskVtodoWriteBackListener::class
+		);
+
+		// The case layer (flow-cmmn-case-semantics). A realisation ending (a task
+		// or a run) drives its plan item; an object change may satisfy a sentry;
+		// and a plan item reaching a terminal state is a catalog event fired
+		// against the anchoring object. Nothing under Service\Flow depends on
+		// Service\Case: these listeners are the only coupling, and it points one
+		// way. TaskTerminalEvent is dispatched by TaskService after the
+		// terminal transition commits (flow-user-task-node); the same
+		// reconciliation also runs on every case-plan evaluation, so a missed
+		// event costs latency, never correctness.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
+			\OCA\OpenRegister\Listener\CaseTaskTerminalListener::class
+		);
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\FlowRunTerminalEvent::class,
+			\OCA\OpenRegister\Listener\CaseRunTerminalListener::class
+		);
+		$context->registerEventListener(ObjectUpdatedEvent::class, \OCA\OpenRegister\Listener\CaseObjectEventListener::class);
+		$context->registerEventListener(ObjectTransitionedEvent::class, \OCA\OpenRegister\Listener\CaseObjectEventListener::class);
+		// Routed through FlowTriggerListener, the ONE object-trigger path (the
+		// branch that retired EventCatalogListener as a duplicate). The case
+		// branch moved with the retirement, and gains what the one path has:
+		// the subject's register/schema resolved to the SLUGS the trigger
+		// index stores — CaseItemTransitionedEvent::getSubject() answers the
+		// item's numeric ids — and the acting user attributed to the run.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\CaseItemTransitionedEvent::class,
+			\OCA\OpenRegister\Listener\FlowTriggerListener::class
+		);
+
+		// Business-timer cancellation propagation (flow-business-timers, design
+		// D-9): the SAME terminal event, and the run-terminal one, also cancel
+		// the subject's open business timers. TaskTerminalEvent fires right
+		// after the terminal write commits (see TaskService::transactional),
+		// FlowRunTerminalEvent inside the run's own write; the listener is
+		// idempotent and never deletes, and the invariant repair step counts
+		// anything a crash window leaves behind.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
+			\OCA\OpenRegister\Listener\FlowTimerSubjectTerminalListener::class
+		);
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\FlowRunTerminalEvent::class,
+			\OCA\OpenRegister\Listener\FlowTimerSubjectTerminalListener::class
+		);
+
 		// Lifecycle annotation listeners — see x-openregister-lifecycle.
 		// Order matters: initial state runs on creating; validation runs on updating.
 		$context->registerEventListener(ObjectCreatingEvent::class, LifecycleInitialStateListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, LifecycleValidationListener::class);
 
 		// Approval-chains declarative wiring — see x-openregister-approval-chains.
-		// Provisions ApprovalChain rows from the annotation (schema save), then
-		// gates any lifecycle transition it names until the provisioned chain's
-		// steps are all approved. Registered immediately after
-		// LifecycleValidationListener: transition legality must be established
-		// before approval-chain gating runs against it.
+		// The annotation is validated at schema save; the gate compiles it into
+		// a task template on demand and blocks any lifecycle transition it
+		// names until the object's approval SEQUENCE completes with an
+		// approving outcome (flow-approval-consolidation). Registered
+		// immediately after LifecycleValidationListener: transition legality
+		// must be established before approval gating runs against it.
 		// Declared flows (`x-openregister-flows`) are MATERIALISED into the flow
 		// store on schema save, because a flow lives in its own table rather
 		// than being read off the schema at runtime like every other
@@ -2544,7 +2735,18 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(SchemaCreatedEvent::class, ApprovalChainAnnotationInstaller::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, ApprovalChainAnnotationInstaller::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, ApprovalChainGateListener::class);
-		$context->registerEventListener(ApprovalStepCompletedEvent::class, ApprovalChainAdvanceListener::class);
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskSequenceCompletedEvent::class,
+			ApprovalChainAdvanceListener::class
+		);
+
+		// Sequence progression (flow-approval-consolidation): a committed
+		// terminal task that belongs to a sequence enables the next position,
+		// or closes the sequence, in the SAME request as the decision.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
+			\OCA\OpenRegister\Listener\TaskSequenceProgressListener::class
+		);
 
 		// Lifecycle action executor — see x-openregister-lifecycle.transitions[*].actions[].
 		// Runs the declared actions of a matched transition on the save path, so
@@ -2616,22 +2818,18 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ObjectUpdatedEvent::class, AnnotationNotificationListener::class);
 		$context->registerEventListener(ObjectTransitionedEvent::class, AnnotationNotificationListener::class);
 
-		// Object-CRUD flow triggers. These route through EventCatalogListener
-		// like every other catalog event, so there is ONE path from a dispatched
-		// event to a queued run — the action-list engine that used to handle
-		// create/update/delete separately is gone.
-		$context->registerEventListener(ObjectCreatedEvent::class, EventCatalogListener::class);
-		$context->registerEventListener(ObjectUpdatedEvent::class, EventCatalogListener::class);
-		$context->registerEventListener(ObjectDeletedEvent::class, EventCatalogListener::class);
-
-		// Additional flow-catalog triggers beyond CRUD (lock/unlock/revert/state
-		// transition). Routed by EventCatalogListener so create/update/delete are
-		// not double-handled. Each event carries the object, so its schema's flows
-		// run — see EventCatalogService for the trigger ids.
-		$context->registerEventListener(ObjectLockedEvent::class, EventCatalogListener::class);
-		$context->registerEventListener(ObjectUnlockedEvent::class, EventCatalogListener::class);
-		$context->registerEventListener(ObjectRevertedEvent::class, EventCatalogListener::class);
-		$context->registerEventListener(ObjectTransitionedEvent::class, EventCatalogListener::class);
+		// Object-lifecycle flow triggers have ONE listener: FlowTriggerListener,
+		// registered above with the other flow triggers. EventCatalogListener
+		// used to be registered here for the SAME seven events, each handler
+		// calling FlowTriggerService::fire() — every object event reached the
+		// trigger service twice. The double-fire was invisible only because both
+		// listeners fired the object's numeric register/schema ids against an
+		// index that holds slugs, so neither ever matched; the moment the
+		// vocabulary was fixed, two registrations would have queued every
+		// matched flow twice per event. FlowTriggerListener is the one kept
+		// because it is the superset: it attributes the acting user to the run
+		// and carries the transition's action/from/to as context, both of which
+		// EventCatalogListener dropped.
 
 		// Native Nextcloud Flow (workflowengine) composition — expose OR objects
 		// as a Flow entity and OR flows as a Flow operation. Guarded by
@@ -2713,14 +2911,6 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ObjectDeletedEvent::class, AggregationThresholdListener::class);
 		$context->registerEventListener(ObjectTransitionedEvent::class, AggregationThresholdListener::class);
 
-		// HookListener for schema hook execution on lifecycle events.
-		$context->registerEventListener(ObjectCreatingEvent::class, HookListener::class);
-		$context->registerEventListener(ObjectUpdatingEvent::class, HookListener::class);
-		$context->registerEventListener(ObjectDeletingEvent::class, HookListener::class);
-		$context->registerEventListener(ObjectCreatedEvent::class, HookListener::class);
-		$context->registerEventListener(ObjectUpdatedEvent::class, HookListener::class);
-		$context->registerEventListener(ObjectDeletedEvent::class, HookListener::class);
-
 		// WebhookEventListener for webhook delivery.
 		// OPS-2: register for EVERY event the listener's extractPayload() handles,
 		// not just create — otherwise update/delete/lock/revert/register/schema
@@ -2737,15 +2927,6 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(SchemaCreatedEvent::class, WebhookEventListener::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, WebhookEventListener::class);
 		$context->registerEventListener(SchemaDeletedEvent::class, WebhookEventListener::class);
-
-		// OPS-1: ActionListener drives the event-driven Actions feature. It is
-		// event-agnostic (resolves the payload from the dispatched event), so it
-		// must be wired to the object lifecycle events or configured Actions
-		// never fire.
-		$context->registerEventListener(ObjectCreatedEvent::class, ActionListener::class);
-		$context->registerEventListener(ObjectUpdatedEvent::class, ActionListener::class);
-		$context->registerEventListener(ObjectDeletedEvent::class, ActionListener::class);
-		$context->registerEventListener(ObjectTransitionedEvent::class, ActionListener::class);
 
 		// GraphQL subscription event listeners.
 		$context->registerEventListener(ObjectCreatedEvent::class, GraphQLSubscriptionListener::class);
@@ -2775,6 +2956,28 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(
 			\OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
 			\OCA\OpenRegister\Listener\IntegrationGlobalScriptListener::class
+		);
+
+		// LeafScriptListener is the OTHER half of that, and without it the
+		// listener above delivers an empty promise for cross-app leaves. It
+		// installs and populates the registry with OpenRegister's OWN built-ins
+		// — it cannot contain a sibling app's Vue components, because those
+		// live in that app's bundle and Nextcloud serves only the current app's
+		// scripts.
+		//
+		// Measured 2026-09-04: no code path anywhere enqueued a providing app's
+		// bundle on a consuming page. Every addScript() here names
+		// 'openregister', nc-vue injects no scripts, and the providing apps
+		// register no template listener. So an ADR-066 leaf reached OCS
+		// discovery, satisfied gate-24 on both halves, and rendered NOTHING —
+		// `humaniq-hours` has been dark on dossiq case pages for as long as it
+		// has shipped.
+		//
+		// This enqueues each providing app's dedicated `leaves` entry, scoped
+		// to pages of apps that ship a register descriptor of their own.
+		$context->registerEventListener(
+			\OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
+			\OCA\OpenRegister\Listener\LeafScriptListener::class
 		);
 
 		// PushClientScriptListener loads the always-on, opt-in Web Push
@@ -4256,6 +4459,7 @@ class Application extends App implements IBootstrap {
 			CalDavVtodoObjectSourceProvider::class,
 			UserDirectoryObjectSourceProvider::class,
 			GroupObjectSourceProvider::class,
+			OrganisationObjectSourceProvider::class,
 			ContactsObjectSourceProvider::class,
 			CalendarEventObjectSourceProvider::class,
 			FilesObjectSourceProvider::class,

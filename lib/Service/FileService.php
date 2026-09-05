@@ -872,23 +872,21 @@ class FileService {
 	 * saves that don't touch `@self.folder` because `setSelfMetadata`
 	 * only fires when `@self.folder` is present in the write payload.
 	 *
-	 * Re-running `assertFolderIsAccessible` on every save through
-	 * `ensureObjectFolder` makes the check apply uniformly. A
-	 * denial throws `FolderAccessDeniedException` (HTTP 403) at the
-	 * controller layer.
+	 * Re-running the check on every save through `ensureObjectFolder`
+	 * makes it apply uniformly. A denial throws
+	 * `FolderAccessDeniedException` (HTTP 403) at the controller layer.
 	 *
 	 * No-op when the object has no folder bound or the bound value
 	 * is non-numeric (legacy path-style folder, handled by the
 	 * auto-create branch in ensureObjectFolder).
 	 *
 	 * **Acting user resolution.** `$currentUser` is forwarded verbatim
-	 * to `assertFolderIsAccessible` and follows that method's
-	 * documented precedence: when non-null it is used as-is, otherwise
-	 * `IUserSession::getUser()` is consulted, otherwise the bind is
-	 * denied. Non-HTTP callers (cron, import pipelines, event listeners)
-	 * MUST pass an explicit `$currentUser` to avoid the
-	 * session-user-is-null → default-deny path; HTTP callers can omit
-	 * the argument and rely on session resolution.
+	 * and follows the documented precedence: when non-null it is used
+	 * as-is, otherwise `IUserSession::getUser()` is consulted, otherwise
+	 * the app's own principal is resolved when a system-operation scope
+	 * is active. Non-HTTP callers SHOULD still pass an explicit
+	 * `$currentUser` where they have one, so the check runs against the
+	 * identity the work is being done for rather than the app account.
 	 *
 	 * @param ObjectEntity $object The existing object whose folder must be re-validated.
 	 * @param IUser|null $currentUser Explicit acting user; falls back to session resolution.
@@ -896,6 +894,8 @@ class FileService {
 	 * @return void
 	 *
 	 * @throws \OCA\OpenRegister\Exception\FolderAccessDeniedException When the acting user cannot access the bound folder.
+	 *
+	 * @spec openspec/specs/self-folder-access-control/spec.md
 	 */
 	public function assertObjectFolderAccessible(ObjectEntity $object, ?IUser $currentUser = null): void {
 		$folder = $object->getFolder();
@@ -913,7 +913,16 @@ class FileService {
 			return;
 		}
 
-		$this->folderManagementHandler->assertFolderIsAccessible(
+		// `assertManagedFolderIsAccessible`, NOT `assertFolderIsAccessible`. The
+		// value being re-validated was written by OpenRegister, not supplied by
+		// this caller, so the question is whether it is a folder OpenRegister
+		// manages — not whether this particular user happens to be the one who
+		// created it. Asking the caller-supplied question here refused every
+		// later editor of a colleague's object and every sessionless repair
+		// step. The acting user's own mount is still tried first, and a binding
+		// pointing outside `Open Registers/` is still refused; see that method
+		// for the full rationale and the accepted residual case.
+		$this->folderManagementHandler->assertManagedFolderIsAccessible(
 			folderId: (string)$folder,
 			currentUser: $currentUser,
 			objectEntity: $object

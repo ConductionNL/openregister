@@ -181,24 +181,18 @@ step_verify_opencatalogi() {
         echo "$import_result"
     fi
 
-    # Check menus exist
-    local menus=$(api_call GET "/index.php/apps/opencatalogi/api/menus?_limit=100")
-    local menu_count=$(echo "$menus" | grep -o '"total":[0-9]*' | grep -o '[0-9]*')
-
-    if [ -n "$menu_count" ] && [ "$menu_count" -gt 0 ]; then
-        log_success "OpenCatalogi menus loaded: $menu_count menus found"
-    else
-        log_error "OpenCatalogi menus not loaded"
-    fi
-
-    # Check pages exist
-    local home_page=$(api_call GET "/index.php/apps/opencatalogi/api/pages/home")
-
-    if echo "$home_page" | grep -q '"title"'; then
-        log_success "OpenCatalogi home page exists"
-    else
-        log_error "OpenCatalogi home page not found"
-    fi
+    # The menu and page checks that stood here are GONE, not moved.
+    #
+    # OpenCatalogi retired its CMS (opencatalogi#1422): the `page` and `menu`
+    # schemas, both controllers and their 8 routes left with it, and pages and
+    # menus are Portaliq's now. This script was one of the four consumers that
+    # removal was confirmed against, so it asserted two endpoints that answer
+    # 404 by design.
+    #
+    # Not repointed at Portaliq's /api/content/{pages,menus} either: this step
+    # verifies OPENCATALOGI's configuration, and an assertion about a different
+    # app's content API here would fail for reasons this script cannot explain.
+    # Portaliq's own suite owns that.
 
     # Check publication register exists
     local registers=$(api_call GET "/index.php/apps/openregister/api/registers")

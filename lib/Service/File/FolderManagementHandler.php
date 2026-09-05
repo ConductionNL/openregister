@@ -30,6 +30,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\SystemOperationContext;
+use OCP\Files\Config\IUserMountCache;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
@@ -92,6 +94,8 @@ class FolderManagementHandler {
 	 * @param IGroupManager $groupManager Group manager for group operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 * @param AuditTrailMapper $auditTrailMapper Mapper for writing forensic audit-trail entries on folder-access denials.
+	 * @param IUserMountCache $mountCache Mount cache, used to recognise a folder OpenRegister manages
+	 *                                    without setting up the owning user's mounts.
 	 * @param FileService|null $fileService File service facade for cross-handler coordination
 	 *                                      (injected lazily to avoid circular dependency).
 	 */
@@ -103,6 +107,7 @@ class FolderManagementHandler {
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
 		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly IUserMountCache $mountCache,
 		private ?FileService $fileService = null,
 	) {
 	}//end __construct()
@@ -856,6 +861,14 @@ class FolderManagementHandler {
 	 * callers from the OpenRegister codebase MUST invoke this method as-is;
 	 * if a different access-check policy is needed, introduce a new method
 	 * rather than overriding this one.
+	 *
+	 * @spec openspec/specs/self-folder-access-control/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::isActive is a
+	 * process-scoped flag with no instance to inject; it is deliberately static so
+	 * the scope cannot be entered from request data. Annotated here with its reason
+	 * rather than added to phpmd.baseline.xml, where the same call in
+	 * MultiTenancyTrait and PermissionHandler is invisible.
 	 */
 	final public function assertFolderIsAccessible(
 		string $folderId,
@@ -863,6 +876,24 @@ class FolderManagementHandler {
 		ObjectEntity|string|null $objectEntity = null,
 	): Folder {
 		$actingUser = $currentUser ?? $this->getCurrentUser();
+
+		// A system operation has no user by definition, and until now that was
+		// indistinguishable here from an anonymous request. Both landed on the
+		// default-deny below, so a repair step or cron job saving an object
+		// with a bound folder could not run at all: the step caught the denial,
+		// logged "could not run", and `occ upgrade` still reported success.
+		//
+		// The scope is entered from PHP code only (never from request data) —
+		// the same signal `MultiTenancyTrait::hasRbacPermission()` and
+		// `PermissionHandler::hasPermission()` already trust for exactly this
+		// reason. Recognising it resolves the app's OWN principal and then runs
+		// the SAME four checks below against that principal's mount. The guard
+		// is not skipped and not widened: an anonymous request still has no
+		// principal to resolve and still falls through to the denial.
+		if ($actingUser === null && SystemOperationContext::isActive() === true) {
+			$actingUser = $this->resolveSystemPrincipal();
+		}
+
 		if ($actingUser === null) {
 			$this->logFolderAccessDenied(
 				folderId: $folderId,
@@ -922,6 +953,179 @@ class FolderManagementHandler {
 
 		return $node;
 	}//end assertFolderIsAccessible()
+
+	/**
+	 * Resolve the OpenRegister system principal for a sessionless system operation.
+	 *
+	 * Deliberately NOT `getUser()`: that helper prefers the session user and
+	 * only falls back to the system account, which is the right precedence for
+	 * file operations on behalf of a caller and the wrong one here. This method
+	 * is reached only when there is no session user at all, so it asks for the
+	 * app's own account directly.
+	 *
+	 * Returns null rather than throwing when the account cannot be resolved, so
+	 * the caller falls through to its own default-deny instead of replacing a
+	 * denial with a different exception.
+	 *
+	 * @return IUser|null The OpenRegister system account, or null when it cannot be resolved.
+	 *
+	 * @psalm-return   IUser|null
+	 * @phpstan-return IUser|null
+	 */
+	private function resolveSystemPrincipal(): ?IUser {
+		if ($this->fileService === null) {
+			return null;
+		}
+
+		try {
+			return $this->fileService->getUser();
+		} catch (Exception $e) {
+			$this->logger->warning(
+				message: '[FolderManagementHandler] System principal unavailable: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+	}//end resolveSystemPrincipal()
+
+	/**
+	 * Re-validate a binding OpenRegister itself stored, rather than one a caller supplied.
+	 *
+	 * `assertFolderIsAccessible()` answers "can the acting user read this node
+	 * through their own mount?", which is the right question for a
+	 * caller-supplied `@self.folder`: the caller names an arbitrary node id and
+	 * must prove they can already reach it, or a bind becomes a cross-tenant
+	 * escape hatch.
+	 *
+	 * It is the WRONG question for a value the app wrote itself. An object
+	 * folder is created under `Open Registers/` in whichever home the creating
+	 * identity had — `getOpenRegisterUserFolder()` resolves the session user
+	 * when there is one — and the compensating share back to other readers is
+	 * still a TODO. So the stored binding lands in ONE user's mount and nobody
+	 * else's, and re-validating it on every save asks every later editor to
+	 * prove they were the creator. Measured: a second user editing a colleague's
+	 * case is refused `folder_access_denied` / 403 on both PUT and PATCH, and a
+	 * repair step is refused the same way.
+	 *
+	 * This method therefore asks the question that fits a stored binding: is
+	 * this a folder OpenRegister manages? Only when the answer is no does the
+	 * full acting-user check run, and a binding that points anywhere outside
+	 * `Open Registers/` is still refused by it — which is exactly the planted
+	 * cross-tenant binding the re-validation was added (PR #1431) to catch,
+	 * since such a binding names a node in a private home.
+	 *
+	 * Known and accepted: a user may create a folder literally named
+	 * `Open Registers` in their own home and bind their own object inside it,
+	 * and that binding then reads as managed. It grants nothing — this method
+	 * decides whether a SAVE proceeds, not whether any file becomes readable;
+	 * file listing goes through the acting user's own mount and still shows
+	 * nothing. Passing the caller-supplied gate to create such a binding
+	 * already required the caller to be able to read that folder.
+	 *
+	 * @param string $folderId The stored numeric folder ID.
+	 * @param IUser|null $currentUser Explicit acting user; falls back to session resolution.
+	 * @param ObjectEntity|string|null $objectEntity Object the binding belongs to (audit context).
+	 *
+	 * @return void Nothing: this is an assertion, not a lookup. Handing back a
+	 *              `Folder` the acting user may not read would be the escape
+	 *              hatch the guard exists to close.
+	 *
+	 * @throws FolderAccessDeniedException When the binding is neither an OpenRegister-managed
+	 *                                     folder nor readable by the acting user.
+	 *
+	 * @internal `final` for the same reason `assertFolderIsAccessible()` is: the
+	 * default-deny invariant must not be weakenable by a subclass.
+	 *
+	 * @spec openspec/specs/self-folder-access-control/spec.md
+	 */
+	final public function assertManagedFolderIsAccessible(
+		string $folderId,
+		?IUser $currentUser = null,
+		ObjectEntity|string|null $objectEntity = null,
+	): void {
+		// The managed-tree question is asked FIRST, and not only because it is
+		// the cheaper one. `assertFolderIsAccessible()` writes a
+		// `folder_access_denied` audit row before every throw, so asking it
+		// first would stamp a denial into the forensic record for each save
+		// this method then goes on to ALLOW — an audit trail that reports
+		// refusals that never happened is worse than no audit at all.
+		//
+		// Nothing is lost by the order: a managed folder is accepted either
+		// way, and anything else still falls through to the full check below,
+		// which denies and audits exactly as it always did.
+		if ($this->isManagedFolder(folderId: $folderId) === true) {
+			return;
+		}
+
+		$this->assertFolderIsAccessible(
+			folderId: $folderId,
+			currentUser: $currentUser,
+			objectEntity: $objectEntity
+		);
+	}//end assertManagedFolderIsAccessible()
+
+	/**
+	 * Whether a folder id names a folder OpenRegister manages.
+	 *
+	 * Answered from the mount cache, NOT from `IRootFolder::getById()`. The
+	 * root-folder lookup returns nothing here: it needs the owning user's
+	 * mounts to have been set up, and the whole reason this method exists is
+	 * that the owner is somebody other than the acting user. Measured on the
+	 * rig — `getById()` on a folder that demonstrably exists answered `0`.
+	 *
+	 * `IUserMountCache::getMountsForFileId()` reads the cache directly, so it
+	 * resolves the node's home and internal path without mounting anything and
+	 * without granting the acting user any view of it. Nothing is returned:
+	 * this is a predicate, not a lookup, and handing back a `Folder` the caller
+	 * has no business reading would be exactly the escape hatch the guard
+	 * exists to close.
+	 *
+	 * @param string $folderId The stored numeric folder ID.
+	 *
+	 * @return bool True when the id names a folder inside an `Open Registers` tree.
+	 */
+	private function isManagedFolder(string $folderId): bool {
+		if (ctype_digit($folderId) === false) {
+			return false;
+		}
+
+		try {
+			$mounts = $this->mountCache->getMountsForFileId((int)$folderId);
+		} catch (Exception $e) {
+			$this->logger->debug(
+				message: '[FolderManagementHandler] Managed-folder lookup failed for ' . $folderId . ': ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return false;
+		}
+
+		foreach ($mounts as $mount) {
+			if ($this->isManagedFolderPath(path: $mount->getPath()) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end isManagedFolder()
+
+	/**
+	 * Whether a node path lies inside an OpenRegister-managed folder tree.
+	 *
+	 * Nextcloud node paths are `/<uid>/files/<path inside the home>`, so a
+	 * managed folder is `/<uid>/files/Open Registers` or anything beneath it.
+	 * The `<uid>` is deliberately unconstrained: object folders are created in
+	 * whichever home the creating identity had, so pinning it to the system
+	 * account would reject every folder created over HTTP.
+	 *
+	 * @param string $path The node path to test.
+	 *
+	 * @return bool True when the path is inside an `Open Registers` tree.
+	 */
+	private function isManagedFolderPath(string $path): bool {
+		$pattern = '#^/[^/]+/files/' . preg_quote(self::ROOT_FOLDER, '#') . '(/|$)#';
+
+		return preg_match($pattern, $path) === 1;
+	}//end isManagedFolderPath()
 
 	/**
 	 * Write a `folder_access_denied` entry to the audit trail.

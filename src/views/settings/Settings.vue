@@ -56,9 +56,6 @@
 		<!-- Push Notifications Status Section -->
 		<PushNotificationsConfiguration :pushStatus="pushStatus" />
 
-		<!-- n8n Workflow Configuration Section -->
-		<N8nConfiguration />
-
 		<!-- LLM Configuration Section -->
 		<LlmConfiguration />
 
@@ -86,7 +83,6 @@ import FlowConfiguration from './sections/FlowConfiguration.vue'
 import LlmConfiguration from './sections/LlmConfiguration.vue'
 import LogIntegrity from './sections/LogIntegrity.vue'
 import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
-import N8nConfiguration from './sections/N8nConfiguration.vue'
 import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
 import PermissionMatrix from './sections/PermissionMatrix.vue'
 import PushNotificationsConfiguration from './sections/PushNotificationsConfiguration.vue'
@@ -119,7 +115,6 @@ export default {
 		RetentionConfiguration,
 		LogIntegrity,
 		PushNotificationsConfiguration,
-		N8nConfiguration,
 		LlmConfiguration,
 		FileConfiguration,
 		ApiTokenConfiguration,

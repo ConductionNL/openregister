@@ -2718,6 +2718,29 @@ class Schema extends Entity implements JsonSerializable {
 	}//end isAppendOnly()
 
 	/**
+	 * Check whether this schema declares `x-openregister-archival`.
+	 *
+	 * An archival schema holds legally retained records: user-driven deletes are
+	 * rejected with HTTP 403 and error code SCHEMA_ARCHIVAL_IMMUTABLE, and rows
+	 * leave only through {@see \OCA\OpenRegister\BackgroundJob\ArchivalRetentionTask}
+	 * when they pass their retention, or through the administrative
+	 * `openregister:objects:purge --force` CLI path.
+	 *
+	 * This is the single definition of "is archival". Every gate MUST ask here
+	 * rather than re-reading the annotation, so a second delete route cannot
+	 * quietly disagree with the first.
+	 *
+	 * @return bool True if the schema declares the archival annotation.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
+	public function hasArchivalAnnotation(): bool {
+		$configuration = ($this->getConfiguration() ?? []);
+
+		return is_array($configuration['x-openregister-archival'] ?? null);
+	}//end hasArchivalAnnotation()
+
+	/**
 	 * String representation of the schema
 	 *
 	 * This magic method is required for proper entity handling in Nextcloud

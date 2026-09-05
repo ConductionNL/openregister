@@ -10,16 +10,18 @@
  * Methodology: drive the real UI. When the self-seeding MDM fixture
  * (tests/e2e/mdm-seed.ts, run in globalSetup) has planted a duplicate pair,
  * these tests DEEP-LINK to the seeded register/schema
- * (`#/duplicates?register=<id>&schema=<id>`) and run the full
+ * (`/duplicates?register=<id>&schema=<id>`) and run the full
  * duplicate→merge→reverse chain: launch the merge wizard from the candidate
  * pair, preview, provide a reason, execute, then reverse the resulting
  * operation from the Merge Operations view. Without a seed the suite degrades
  * to test.skip().
  */
 
-import { test, expect, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
-import { readMdmSeed } from '../mdm-seed'
+import { readMdmSeed } from '../mdm-seed.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 const seed = readMdmSeed()
@@ -31,7 +33,7 @@ function scopedQuery(): string {
 
 /** Navigate to a hash-mode OR route and wait for NC header + app content. */
 async function gotoApp(page: Page, route: string): Promise<void> {
-	await page.goto(`/index.php/apps/openregister/#${route}`, {
+	await page.goto(`/index.php/apps/openregister${route}`, {
 		waitUntil: 'domcontentloaded',
 	})
 	await page.waitForSelector('#header, header.header-appcontainer', {

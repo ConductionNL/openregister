@@ -49,6 +49,13 @@ use Twig\Loader\ArrayLoader;
  */
 class SaveObjectTest extends TestCase {
 	/** @var SaveObject */
+	/**
+	 * The ambient flow-run stack the guard reads.
+	 *
+	 * @var \OCA\OpenRegister\Service\Flow\FlowRunContext
+	 */
+	private \OCA\OpenRegister\Service\Flow\FlowRunContext $runContext;
+
 	private SaveObject $handler;
 
 	/** @var MagicMapper&MockObject */
@@ -113,6 +120,7 @@ class SaveObjectTest extends TestCase {
 
 		$arrayLoader = new ArrayLoader();
 
+		$this->runContext = new \OCA\OpenRegister\Service\Flow\FlowRunContext();
 		$this->handler = new SaveObject(
 			$this->objectEntityMapper,
 			$this->unifiedObjectMapper,
@@ -135,7 +143,15 @@ class SaveObjectTest extends TestCase {
 			$this->logger,
 			$this->createMock(\OCA\OpenRegister\Service\TmloService::class),
 			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			$arrayLoader
+			$arrayLoader,
+			null,
+			null,
+			null,
+			null,
+			null,
+			// The REAL ambient stack, so the lock guard is asked the same
+			// question production asks it: which run is writing.
+			$this->runContext
 		);
 	}
 
@@ -1775,10 +1791,37 @@ class SaveObjectTest extends TestCase {
 		$this->assertSame($entity, $result);
 	}
 
-	public function testFindAndValidateExistingObjectThrowsOnLockedObject(): void {
+	/**
+	 * Build a locked entity using the PRODUCTION writer.
+	 *
+	 * The two tests below used to hand-write `setLocked(['userId' => …])`, a
+	 * payload shape `ObjectEntity::lock()` has never produced. They passed,
+	 * and they are the reason the guard's `user` vs `userId` key mismatch
+	 * survived: the assertion agreed with the guard's own misreading instead
+	 * of with a lock the writer actually made. Going through `lock()` means
+	 * a future divergence between writer and reader fails here.
+	 *
+	 * @param string $holderUid The uid taking the lock.
+	 * @param string|null $runUuid The run taking the lock, for a run lock.
+	 *
+	 * @return ObjectEntity The locked entity.
+	 */
+	private function lockedEntity(string $holderUid, ?string $runUuid = null): ObjectEntity {
 		$entity = new ObjectEntity();
 		$entity->setUuid('test-uuid');
-		$entity->setLocked(['userId' => 'other-user']);
+
+		$holder = $this->createMock(IUser::class);
+		$holder->method('getUID')->willReturn($holderUid);
+		$holderSession = $this->createMock(IUserSession::class);
+		$holderSession->method('getUser')->willReturn($holder);
+
+		$entity->lock($holderSession, 'test-process', 3600, $runUuid);
+
+		return $entity;
+	}
+
+	public function testFindAndValidateExistingObjectThrowsOnLockedObject(): void {
+		$entity = $this->lockedEntity('other-user');
 
 		$this->objectEntityMapper->method('find')
 			->willReturn($entity);
@@ -1789,7 +1832,7 @@ class SaveObjectTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 
 		$this->expectException(Exception::class);
-		$this->expectExceptionMessage('Cannot update object: Object is locked');
+		$this->expectExceptionMessage('Cannot update object: Object is locked by other-user');
 
 		$this->invokePrivateMethod('findAndValidateExistingObject', [
 			'test-uuid', null, null, false, false,
@@ -1797,15 +1840,176 @@ class SaveObjectTest extends TestCase {
 	}
 
 	public function testFindAndValidateExistingObjectAllowsLockOwner(): void {
-		$entity = new ObjectEntity();
-		$entity->setUuid('test-uuid');
-		$entity->setLocked(['userId' => 'same-user']);
+		$entity = $this->lockedEntity('same-user');
 
 		$this->objectEntityMapper->method('find')
 			->willReturn($entity);
 
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('same-user');
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
+			'test-uuid', null, null, false, false,
+		]);
+
+		$this->assertSame($entity, $result);
+	}
+
+	/**
+	 * A person is refused while a FLOW RUN holds the lock, and the refusal
+	 * names the run so the reader knows what to go and look at.
+	 *
+	 * This is the case the guard exists for and could never express: before
+	 * run-scoped locking, ownership was the user alone, so a run executing as
+	 * `alice` was no obstacle to alice.
+	 */
+	public function testFindAndValidateExistingObjectRefusesAPersonWhileARunHoldsTheLock(): void {
+		$runUuid = 'run-aaaaaaaa-0000-0000-0000-000000000001';
+		$entity = $this->lockedEntity('alice', $runUuid);
+
+		$this->objectEntityMapper->method('find')
+			->willReturn($entity);
+
+		// The run's OWN runAs user, acting as a person.
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage($runUuid);
+
+		$this->invokePrivateMethod('findAndValidateExistingObject', [
+			'test-uuid', null, null, false, false,
+		]);
+	}
+
+	/**
+	 * THE HOLDING RUN MAY WRITE TO THE OBJECT IT LOCKED.
+	 *
+	 * The guard used to ask only "which user", so a run that had just taken a
+	 * lock was refused by its own lock at its next write — the lock step made
+	 * the flow that used it unable to proceed. The run identity is ambient,
+	 * exactly as attribution is, because the write is routinely several calls
+	 * deep inside code that has never heard of flows.
+	 *
+	 * @return void
+	 */
+	public function testTheHoldingRunMayWriteToItsOwnLockedObject(): void {
+		$runUuid = 'run-aaaaaaaa-0000-0000-0000-000000000001';
+		$entity = $this->lockedEntity('alice', $runUuid);
+
+		$this->objectEntityMapper->method('find')->willReturn($entity);
+
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$this->runContext->push($runUuid, 'lock-object', 1);
+		try {
+			$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
+				'test-uuid', null, null, false, false,
+			]);
+		} finally {
+			$this->runContext->pop();
+		}
+
+		$this->assertSame($entity, $result, 'a run was refused by the lock it holds');
+	}
+
+	/**
+	 * A DIFFERENT run is still refused, and the refusal names the holder.
+	 *
+	 * The control for the test above: admitting the holding run must not have
+	 * been done by admitting every run.
+	 *
+	 * @return void
+	 */
+	public function testADifferentRunIsStillRefused(): void {
+		$holder = 'run-aaaaaaaa-0000-0000-0000-000000000001';
+		$entity = $this->lockedEntity('alice', $holder);
+
+		$this->objectEntityMapper->method('find')->willReturn($entity);
+
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$this->runContext->push('run-bbbbbbbb-0000-0000-0000-000000000002', 'lock-object', 1);
+
+		// The refusal is captured rather than caught around a fail(): PHPUnit's
+		// fail() throws, and a catch broad enough for the guard's \Exception
+		// swallows it, so the test would report the wrong thing when it broke.
+		$refusal = null;
+		try {
+			$this->invokePrivateMethod('findAndValidateExistingObject', [
+				'test-uuid', null, null, false, false,
+			]);
+		} catch (Exception $refused) {
+			$refusal = $refused;
+		} finally {
+			$this->runContext->pop();
+		}
+
+		$this->assertNotNull($refusal, 'a second run wrote through another run\'s lock');
+		$this->assertStringContainsString($holder, $refusal->getMessage());
+	}
+
+	/**
+	 * A PERSON'S LOCK SURVIVES A RUN PASSING OVER THE OBJECT.
+	 *
+	 * A run writing as the person who holds the lock is not the holder: the
+	 * two are different kinds of holder and reading them as one is what let a
+	 * flow take over, and then release, a lock a person was relying on.
+	 *
+	 * @return void
+	 */
+	public function testARunIsRefusedByAPersonsLockEvenWhenItRunsAsThatPerson(): void {
+		$entity = $this->lockedEntity('alice');
+
+		$this->objectEntityMapper->method('find')->willReturn($entity);
+
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$this->runContext->push('run-aaaaaaaa-0000-0000-0000-000000000001', 'object-write', 1);
+
+		$refusal = null;
+		try {
+			$this->invokePrivateMethod('findAndValidateExistingObject', [
+				'test-uuid', null, null, false, false,
+			]);
+		} catch (Exception $refused) {
+			$refusal = $refused;
+		} finally {
+			$this->runContext->pop();
+		}
+
+		$this->assertNotNull($refusal, 'a run wrote through a person\'s lock and would go on to take it over');
+		$this->assertStringContainsString('alice', $refusal->getMessage());
+	}
+
+	/**
+	 * An expired lock refuses nobody: the TTL backstop, at the write guard.
+	 */
+	public function testFindAndValidateExistingObjectAllowsWhenTheLockHasExpired(): void {
+		$entity = new ObjectEntity();
+		$entity->setUuid('test-uuid');
+		$entity->setLocked(
+			[
+				'kind' => ObjectEntity::LOCK_KIND_RUN,
+				'runUuid' => 'run-aaaaaaaa-0000-0000-0000-000000000001',
+				'user' => 'alice',
+				'expiration' => (new \DateTime())->sub(new \DateInterval('PT10S'))->format('c'),
+			]
+		);
+
+		$this->objectEntityMapper->method('find')
+			->willReturn($entity);
+
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('carol');
 		$this->userSession->method('getUser')->willReturn($user);
 
 		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [

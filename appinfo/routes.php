@@ -19,6 +19,7 @@ return [
         // First-time setup wizard (ADR-042) - the standard CnSetupWizard contract.
         ['name' => 'setup#status',    'url' => '/api/setup/status',            'verb' => 'GET'],
         ['name' => 'setup#runAction', 'url' => '/api/setup/action/{actionId}', 'verb' => 'POST', 'requirements' => ['actionId' => '[a-z0-9\\-]+']],
+        ['name' => 'setup#saveConfig', 'url' => '/api/setup/config',           'verb' => 'POST'],
         ['name' => 'federation#objects', 'url' => '/api/federation/{shareToken}/objects',      'verb' => 'GET', 'requirements' => ['shareToken' => '[^/]+']],
         ['name' => 'federation#object',  'url' => '/api/federation/{shareToken}/objects/{id}', 'verb' => 'GET', 'requirements' => ['shareToken' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'federation#meta',    'url' => '/api/federation/{shareToken}/meta',         'verb' => 'GET', 'requirements' => ['shareToken' => '[^/]+']],
@@ -52,6 +53,18 @@ return [
         ['name' => 'credential#registerApp',   'url' => '/api/credentials/apps/{appId}/register', 'verb' => 'POST',   'requirements' => ['appId' => '[a-z0-9_-]+']],
         ['name' => 'credential#brokerRequest', 'url' => '/api/credentials/{id}/request',           'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'credential#sessionBrokerRequest', 'url' => '/api/credentials/{id}/session-request', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // OAuth2 connect (credential-oauth2-connect-flow). `start` sits under the
+        // LITERAL `/api/credentials/oauth2/...` prefix, declared BEFORE any
+        // `/api/credentials/{id}` route above would need to be consulted, so a
+        // credential whose UUID happened to be the string `oauth2` could never
+        // swallow it. The callback is deliberately NOT under /api: it is the URL a
+        // provider redirects a BROWSER to, and it is the value registered with the
+        // provider, so it must stay short, stable and free of an API prefix that
+        // might later gain middleware a redirect cannot satisfy.
+        ['name' => 'credentialOauth2#start',          'url' => '/api/credentials/oauth2/start',     'verb' => 'POST'],
+        ['name' => 'credentialOauth2#disconnect',     'url' => '/api/credentials/oauth2/{id}',      'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'credentialOauth2#callback',       'url' => '/oauth2/callback',                  'verb' => 'GET'],
+        ['name' => 'credentialOauth2#clientMetadata', 'url' => '/oauth2/client-metadata.json',      'verb' => 'GET'],
 
         // Web Push channel (openregister-web-push-engine).
         // VAPID public key (browser subscribe key) + current-user subscription CRUD
@@ -235,14 +248,6 @@ return [
         ['name' => 'Settings\ApiTokenSettings#testGitHubToken', 'url' => '/api/settings/api-tokens/test/github', 'verb' => 'POST'],
         ['name' => 'Settings\ApiTokenSettings#testGitLabToken', 'url' => '/api/settings/api-tokens/test/gitlab', 'verb' => 'POST'],
 
-        // n8n workflow integration.
-        ['name' => 'Settings\N8nSettings#getN8nSettings', 'url' => '/api/settings/n8n', 'verb' => 'GET'],
-        ['name' => 'Settings\N8nSettings#updateN8nSettings', 'url' => '/api/settings/n8n', 'verb' => 'POST'],
-        ['name' => 'Settings\N8nSettings#updateN8nSettings', 'url' => '/api/settings/n8n', 'verb' => 'PATCH'],
-        ['name' => 'Settings\N8nSettings#updateN8nSettings', 'url' => '/api/settings/n8n', 'verb' => 'PUT'],
-        ['name' => 'Settings\N8nSettings#testN8nConnection', 'url' => '/api/settings/n8n/test', 'verb' => 'POST'],
-        ['name' => 'Settings\N8nSettings#initializeN8n', 'url' => '/api/settings/n8n/initialize', 'verb' => 'POST'],
-        ['name' => 'Settings\N8nSettings#getWorkflows', 'url' => '/api/settings/n8n/workflows', 'verb' => 'GET'],
 
         // Statistics endpoint.
         ['name' => 'settings#getStatistics', 'url' => '/api/settings/statistics', 'verb' => 'GET'],
@@ -550,6 +555,10 @@ return [
         // The VERSION number is `\d+`, not `[^/]+`. Without that,
         // `/versions/publish` would match `version` with the literal string
         // "publish" and return a 404 for a route that exists.
+        // Adoption: the CALLER becomes the owner of a shipped, ownerless flow.
+        // A deliberate act with its own verb — `owner` is not an editable field
+        // on PUT, so this is the only path from imported to dispatchable.
+        ['name' => 'flow#adopt',     'url' => '/api/flows/{id}/adopt',               'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#versions',  'url' => '/api/flows/{id}/versions',            'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#version',   'url' => '/api/flows/{id}/versions/{version}',  'verb' => 'GET',  'requirements' => ['id' => '[^/]+', 'version' => '\d+']],
         ['name' => 'flow#publish',   'url' => '/api/flows/{id}/publish',             'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
@@ -795,15 +804,6 @@ return [
         ['name' => 'fileSidebar#getExtractionStatus',  'url' => '/api/files/{fileId}/extraction-status', 'verb' => 'GET',  'requirements' => ['fileId' => '[0-9]+']],
 
         // Action registry CRUD + utilities.
-        ['name' => 'actions#index',            'url' => '/api/actions',                          'verb' => 'GET'],
-        ['name' => 'actions#create',           'url' => '/api/actions',                          'verb' => 'POST'],
-        ['name' => 'actions#show',             'url' => '/api/actions/{id}',                     'verb' => 'GET',    'requirements' => ['id' => '[0-9]+']],
-        ['name' => 'actions#update',           'url' => '/api/actions/{id}',                     'verb' => 'PUT',    'requirements' => ['id' => '[0-9]+']],
-        ['name' => 'actions#patch',            'url' => '/api/actions/{id}',                     'verb' => 'PATCH',  'requirements' => ['id' => '[0-9]+']],
-        ['name' => 'actions#destroy',          'url' => '/api/actions/{id}',                     'verb' => 'DELETE', 'requirements' => ['id' => '[0-9]+']],
-        ['name' => 'actions#test',             'url' => '/api/actions/{id}/test',                'verb' => 'POST',   'requirements' => ['id' => '[0-9]+']],
-        ['name' => 'actions#logs',             'url' => '/api/actions/{id}/logs',                'verb' => 'GET',    'requirements' => ['id' => '[0-9]+']],
-        ['name' => 'actions#migrateFromHooks', 'url' => '/api/actions/migrate-hooks/{schemaId}', 'verb' => 'POST',   'requirements' => ['schemaId' => '[0-9]+']],
 
         ['name' => 'objects#index', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'GET'],
 
@@ -1232,37 +1232,11 @@ return [
 		['name' => 'migrationPacks#export', 'url' => '/api/migration-packs/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
 
 		// Workflow Engines - CRUD and health check.
-		['name' => 'workflowEngine#available', 'url' => '/api/engines/available', 'verb' => 'GET'],
-		['name' => 'workflowEngine#index', 'url' => '/api/engines', 'verb' => 'GET'],
-		['name' => 'workflowEngine#create', 'url' => '/api/engines', 'verb' => 'POST'],
-		['name' => 'workflowEngine#show', 'url' => '/api/engines/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'workflowEngine#update', 'url' => '/api/engines/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
-		['name' => 'workflowEngine#destroy', 'url' => '/api/engines/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
-		['name' => 'workflowEngine#health', 'url' => '/api/engines/{id}/health', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
-		['name' => 'workflowEngine#testHook', 'url' => '/api/engines/{id}/test-hook', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 
 		// Workflow Execution History - read/admin-delete persisted hook executions.
-		['name' => 'workflowExecution#index', 'url' => '/api/workflow-executions', 'verb' => 'GET'],
-		['name' => 'workflowExecution#show', 'url' => '/api/workflow-executions/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'workflowExecution#destroy', 'url' => '/api/workflow-executions/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 
 		// Scheduled Workflows - CRUD for TimedJob-driven workflow triggers.
-		['name' => 'scheduledWorkflow#index', 'url' => '/api/scheduled-workflows', 'verb' => 'GET'],
-		['name' => 'scheduledWorkflow#show', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'scheduledWorkflow#create', 'url' => '/api/scheduled-workflows', 'verb' => 'POST'],
-		['name' => 'scheduledWorkflow#update', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
-		['name' => 'scheduledWorkflow#destroy', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 
-		// Approval Chains - multi-step approval definitions and per-object progress.
-		['name' => 'approval#index', 'url' => '/api/approval-chains', 'verb' => 'GET'],
-		['name' => 'approval#show', 'url' => '/api/approval-chains/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#create', 'url' => '/api/approval-chains', 'verb' => 'POST'],
-		['name' => 'approval#update', 'url' => '/api/approval-chains/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#destroy', 'url' => '/api/approval-chains/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#objects', 'url' => '/api/approval-chains/{id}/objects', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#steps', 'url' => '/api/approval-steps', 'verb' => 'GET'],
-		['name' => 'approval#approve', 'url' => '/api/approval-steps/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#reject', 'url' => '/api/approval-steps/{id}/reject', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 
 		// MCP Discovery - Tiered API discovery for AI agents.
 		// CORS preflight (OPTIONS) is handled automatically by the @CORS annotation.
@@ -1338,12 +1312,85 @@ return [
 		// resolves routes in declaration order, so a later registration would be
 		// answered by `show('active')` → 404 for every request.
 		['name' => 'flowRun#active', 'url' => '/api/flow-runs/active', 'verb' => 'GET'],
+		// Finished runs on ONE subject object (flow-runs-subject-scope): the case
+		// page's run history. `subject` is REQUIRED (400 without it) and the read is
+		// organisation-scoped like `active`. Same ordering rule: it MUST stay above
+		// the `{uuid}` route or `show('completed')` answers it with a 404.
+		['name' => 'flowRun#completedForSubject', 'url' => '/api/flow-runs/completed', 'verb' => 'GET'],
 		['name' => 'flowRun#show', 'url' => '/api/flow-runs/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#objects', 'url' => '/api/flow-runs/{uuid}/objects', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#retry', 'url' => '/api/flow-runs/{uuid}/retry', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#resume', 'url' => '/api/flow-runs/{uuid}/resume', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		// Correlation-addressed signal delivery (flow-approval-consolidation):
+		// same authority as resume, addressed by business key instead of run
+		// uuid, fail-closed on zero and on more than one match. Registered on
+		// a literal segment so it can never shadow, or be shadowed by, the
+		// uuid-addressed routes.
+		['name' => 'flowRun#signalByKey', 'url' => '/api/flow-run-signals/{key}', 'verb' => 'POST', 'requirements' => ['key' => '[^/]+']],
 		// Interactive test run (or-flow-partial-run): run synchronously with optional startAt + pins + seed.
 		['name' => 'flowRun#test', 'url' => '/api/flow-runs/test', 'verb' => 'POST'],
+		// The fleet-generic task (flow-task-entity): the inbox and the
+		// lifecycle verbs. Named for the `flow-tasks` CAPABILITY, not for a
+		// flow requirement — a standalone task with run_uuid null is served
+		// here identically. `/api/tasks` itself belongs to the older CalDAV
+		// VTODO leaf (tasks#allUserTasks above), which is a different thing.
+		// Every verb's real authorization is TaskAuthorizationService inside
+		// the service; the route attribute is never the whole check.
+		// The one stable "open this task" address (flow-task-inbox-projections):
+		// the VTODO URL, the notification buttons and the rule actions all
+		// resolve here. It serves the SPA SHELL (history-mode router), and the
+		// SPA's `flow-task-detail` route (src/main.js) renders the task; the bare
+		// `/flow-tasks` inbox list needs no entry of its own because
+		// `dashboard#catchAll` below already shells every non-api sub-path.
+		['name' => 'task#open', 'url' => '/flow-tasks/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#index', 'url' => '/api/flow-tasks', 'verb' => 'GET'],
+		['name' => 'task#create', 'url' => '/api/flow-tasks', 'verb' => 'POST'],
+		['name' => 'task#show', 'url' => '/api/flow-tasks/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#audit', 'url' => '/api/flow-tasks/{uuid}/audit', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#offer', 'url' => '/api/flow-tasks/{uuid}/offer', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#claim', 'url' => '/api/flow-tasks/{uuid}/claim', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#unclaim', 'url' => '/api/flow-tasks/{uuid}/unclaim', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#assign', 'url' => '/api/flow-tasks/{uuid}/assign', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#reassign', 'url' => '/api/flow-tasks/{uuid}/reassign', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#delegate', 'url' => '/api/flow-tasks/{uuid}/delegate', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#resolve', 'url' => '/api/flow-tasks/{uuid}/resolve', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#complete', 'url' => '/api/flow-tasks/{uuid}/complete', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#cancel', 'url' => '/api/flow-tasks/{uuid}/cancel', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#checkItem', 'url' => '/api/flow-tasks/{uuid}/checklist/{itemId}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+', 'itemId' => '[^/]+']],
+
+		// The portal seam (flow-portal-task): a party OUTSIDE the instance,
+		// authenticated at portaliq's edge, acts here under a signed
+		// X-Portal-Subject assertion, never a Nextcloud session. The subject
+		// routes are PublicPage by design and authorized inside the service
+		// against the task's STORED party reference. The delivery routes are
+		// the operator's (administrator): portaliq settles what it sent.
+		// `deliveries` is registered before `{uuid}` so the literal wins.
+		['name' => 'portalTask#index', 'url' => '/api/portal-tasks', 'verb' => 'GET'],
+		['name' => 'portalTask#deliveries', 'url' => '/api/portal-tasks/deliveries', 'verb' => 'GET'],
+		['name' => 'portalTask#deliveryDelivered', 'url' => '/api/portal-tasks/deliveries/{uuid}/delivered', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'portalTask#deliveryFailed', 'url' => '/api/portal-tasks/deliveries/{uuid}/failed', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'portalTask#show', 'url' => '/api/portal-tasks/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'portalTask#complete', 'url' => '/api/portal-tasks/{uuid}/complete', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+
+		// The case layer (flow-cmmn-case-semantics): a plan of stages, human
+		// items and milestones anchored to an OpenRegister OBJECT. There is no
+		// case id: every plan route is keyed by the anchoring object's uuid, and
+		// the item verbs by the plan item's uuid. No CMMN XML route exists; the
+		// zaaktype import takes a document that is already in a register.
+		// Every verb's real authorization is CasePlanAuthorizationService
+		// inside the service; the route attribute is never the whole check.
+		// The two literal routes stay ABOVE `{objectUuid}` or they are swallowed.
+		['name' => 'case#items', 'url' => '/api/cases/items', 'verb' => 'GET'],
+		['name' => 'case#skeletonFromZaaktype', 'url' => '/api/cases/skeleton-from-zaaktype', 'verb' => 'POST'],
+		['name' => 'case#transition', 'url' => '/api/cases/items/{uuid}/transition', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'case#enable', 'url' => '/api/cases/items/{uuid}/enable', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'case#show', 'url' => '/api/cases/{objectUuid}', 'verb' => 'GET', 'requirements' => ['objectUuid' => '[^/]+']],
+		['name' => 'case#create', 'url' => '/api/cases/{objectUuid}', 'verb' => 'POST', 'requirements' => ['objectUuid' => '[^/]+']],
+		['name' => 'case#destroy', 'url' => '/api/cases/{objectUuid}', 'verb' => 'DELETE', 'requirements' => ['objectUuid' => '[^/]+']],
+		['name' => 'case#evaluate', 'url' => '/api/cases/{objectUuid}/evaluate', 'verb' => 'POST', 'requirements' => ['objectUuid' => '[^/]+']],
+		['name' => 'case#enableable', 'url' => '/api/cases/{objectUuid}/enableable', 'verb' => 'GET', 'requirements' => ['objectUuid' => '[^/]+']],
+		['name' => 'case#attach', 'url' => '/api/cases/{objectUuid}/items', 'verb' => 'POST', 'requirements' => ['objectUuid' => '[^/]+']],
+		['name' => 'case#complete', 'url' => '/api/cases/{objectUuid}/complete', 'verb' => 'POST', 'requirements' => ['objectUuid' => '[^/]+']],
 		// Delegation grants (or-delegation-grants): the consent surface. A grant
 		// store with no way to answer is a store that only ever says no, so these
 		// are what make every delegation refusal recoverable.
@@ -1366,5 +1413,24 @@ return [
 		['name' => 'federatedConfig#publicKey', 'url' => '/api/federated-config/public-key', 'verb' => 'GET'],
 		['name' => 'federatedConfig#trust', 'url' => '/api/federated-config/trust', 'verb' => 'GET'],
 		['name' => 'federatedConfig#setTrust', 'url' => '/api/federated-config/trust', 'verb' => 'PUT'],
+
+		// SPA catch-all — MUST stay last so every explicit route above keeps
+		// priority over the /{path} fallback. Without it only `/` served the
+		// shell, so any deep link (/registers, /schemas, a detail route) never
+		// reached the SPA at all — the #133 regression that forced this app back
+		// onto hash routing. Spelled inline rather than via
+		// \OCA\OpenRegister\AppHost\Routes::standard() because this file also
+		// declares a `resources` block the builder does not carry, and because
+		// this IS openregister — guarding a call to its own class would be odd.
+		// ⚠️ `(?!api/)` is load-bearing. Nextcloud's RouteParser processes the
+		// `routes` array BEFORE the `resources` array
+		// (RouteParser::parseDefaultRoutes), and Symfony matches in insertion
+		// order — so even as the LAST entry here this route still registers
+		// ahead of all nine `api/...` resource routes below. Without the
+		// lookahead `.+` (which matches slashes) would swallow
+		// GET /api/registers, /api/schemas and the rest, answering the SPA
+		// shell instead of JSON. The SPA never needs an `api/` path.
+		['name' => 'dashboard#catchAll', 'url' => '/{path}', 'verb' => 'GET',
+			'requirements' => ['path' => '(?!api/).+'], 'defaults' => ['path' => '']],
     ],
 ];

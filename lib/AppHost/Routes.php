@@ -151,6 +151,34 @@ class Routes {
 			// Observability (ADR-006 / ADR-040).
 			['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
 			['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
+
+			// Store plane (ADR-080, ADR-114 Decision 4). Declaring these here
+			// is only HALF the wiring: the leaf app's `Controller\StoreController`
+			// must ALSO be aliased at the engine's GenericStoreController, or
+			// the router resolves a class that does not exist and every store
+			// request 500s at dispatch time.
+			//
+			// 🔴 AND NOT EVERY ADOPTER CALLS `Bootstrap::register()`. This
+			// table is adopted independently of that bootstrap, and an app that
+			// binds its controllers by hand gets the routes and none of the
+			// bindings. Measured 2026-09-03 on a running instance: decidiq,
+			// filinq and planninq each returned HTTP 500 here, on a route none
+			// of them had asked for, while keepiq answered fine because it does
+			// call `register()`. Such an app needs exactly one line,
+			// `Bootstrap::aliasStoreController()`, which is public for this.
+			//
+			// An app that declares no `store` block in its manifest still gets
+			// these routes, and the controller answers `not_configured` for
+			// them. That is deliberate: a route table that varies per app by
+			// manifest content would make the SPA catch-all's position depend
+			// on configuration, and the catch-all's position is load-bearing.
+			['name' => 'store#search', 'url' => '/api/store/items', 'verb' => 'GET'],
+			[
+				'name' => 'store#install',
+				'url' => '/api/store/items/{slug}/install',
+				'verb' => 'POST',
+				'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]'],
+			],
 		];
 	}//end canonicalRoutes()
 
@@ -165,7 +193,18 @@ class Routes {
 			'name' => 'dashboard#catchAll',
 			'url' => '/{path}',
 			'verb' => 'GET',
-			'requirements' => ['path' => '.+'],
+			// ⚠️ `(?!api/)` is load-bearing for any adopter whose routes.php
+			// also declares a `resources` block. Nextcloud's RouteParser
+			// processes the `routes` array BEFORE the `resources` array
+			// (RouteParser::parseDefaultRoutes) and Symfony matches in
+			// insertion order, so this route registers ahead of every
+			// resource-generated route no matter that it is appended LAST
+			// here. `.+` matches slashes, so without the lookahead it
+			// swallows GET api/<resource> and answers the SPA shell with
+			// HTTP 200 — a JSON caller receives HTML and nothing errors
+			// loudly. zaakafhandelapp lost all seventeen of its ZGW resource
+			// routes that way. The SPA never needs an `api/` path.
+			'requirements' => ['path' => '(?!api/).+'],
 			'defaults' => ['path' => ''],
 		];
 	}//end catchAllRoute()

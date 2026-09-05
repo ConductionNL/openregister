@@ -44,10 +44,10 @@
  *    navigating to the admin settings page, clicking the Clear Cache
  *    button, confirming, and asserting the success state.
  */
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
-import { resolveBaseUrl } from '../base-url'
+import { resolveBaseUrl } from '../base-url.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 // ⚠️ Never `|| 'http://localhost:8080'` — that is the SHARED dev container.
@@ -90,7 +90,7 @@ test.describe('platform-administration-modals — LLM modal settings load', () =
 		expect(body, 'response body should be an object').toBeTruthy()
 		// 'enabled' key maps to llmEnabled
 		expect(
-			Object.prototype.hasOwnProperty.call(body, 'enabled'),
+			Object.hasOwn(body, 'enabled'),
 			'llm settings should have "enabled" key',
 		).toBe(true)
 		// openaiConfig and ollamaConfig sections must exist
