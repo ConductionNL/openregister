@@ -262,22 +262,37 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-step-takes-a-lock-or-parks-the-run-and-retries
 	 */
 	public function validateConfig(array $config): void {
-		foreach (['duration' => 'duration', 'waitSeconds' => 'waitSeconds'] as $key) {
-			if (array_key_exists($key, $config) === false || $config[$key] === null || $config[$key] === '') {
-				continue;
-			}
+		$this->requirePositiveSeconds(config: $config, key: 'duration');
+		$this->requirePositiveSeconds(config: $config, key: 'waitSeconds');
 
-			if (is_numeric($config[$key]) === false || (int)$config[$key] < 1) {
-				throw new UnexpectedValueException(
-					$this->l10n->t('A lock step\'s "%s" must be a whole number of seconds, at least 1.', [$key])
-				);
-			}
-		}
-
-		if (array_key_exists('uuid', $config) === true && is_string($config['uuid']) === false && $config['uuid'] !== null) {
+		$uuid = ($config['uuid'] ?? null);
+		if ($uuid !== null && is_string($uuid) === false) {
 			throw new UnexpectedValueException($this->l10n->t('A lock step\'s object must be text.'));
 		}
 	}//end validateConfig()
+
+	/**
+	 * Refuse a duration that is not a whole number of seconds.
+	 *
+	 * @param array $config The step configuration.
+	 * @param string $key The key to check.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the value cannot be a duration.
+	 */
+	private function requirePositiveSeconds(array $config, string $key): void {
+		$value = ($config[$key] ?? null);
+		if ($value === null || $value === '') {
+			return;
+		}
+
+		if (is_numeric($value) === false || (int)$value < 1) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('A lock step\'s "%s" must be a whole number of seconds, at least 1.', [$key])
+			);
+		}
+	}//end requirePositiveSeconds()
 
 	/**
 	 * Take the lock, or park the run and try again later.
@@ -315,7 +330,7 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		$owner = $this->resolveOwner(context: $context);
 		$targets = $this->resolveTargets(items: $items, config: $config);
 
-		$duration = $this->seconds($config, 'duration', self::DEFAULT_DURATION);
+		$duration = $this->seconds(config: $config, key: 'duration', default: self::DEFAULT_DURATION);
 		$process = trim((string)($config['process'] ?? ''));
 		if ($process === '') {
 			$process = sprintf('flow run %s', $runUuid);
@@ -412,12 +427,12 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		$backoff = (self::MIN_RETRY_SECONDS * (2 ** min($attempts - 1, 8)));
 		$backoff = min($backoff, self::MAX_RETRY_SECONDS);
 
-		$at = (new DateTime())->modify('+' . $backoff . ' seconds');
-		if ($at > $deadline) {
+		$attemptAt = (new DateTime())->modify('+' . $backoff . ' seconds');
+		if ($attemptAt > $deadline) {
 			return $deadline;
 		}
 
-		return $at;
+		return $attemptAt;
 	}//end nextAttemptAt()
 
 	/**
@@ -441,11 +456,16 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			}
 		}
 
-		$wait = $this->seconds($config, 'waitSeconds', self::DEFAULT_WAIT_SECONDS);
-		$deadline = (new DateTime())->modify('+' . $wait . ' seconds');
-		$resume->set(self::SLOT_DEADLINE, $deadline->format('c'));
+		$wait = $this->seconds(config: $config, key: 'waitSeconds', default: self::DEFAULT_WAIT_SECONDS);
+		$stamp = (new DateTime())->modify('+' . $wait . ' seconds')->format('c');
+		$resume->set(self::SLOT_DEADLINE, $stamp);
 
-		return $deadline;
+		// Return the value as PERSISTED, not as computed. `format('c')` drops
+		// sub-second precision, so the deadline this attempt compares against
+		// would otherwise be microseconds later than the one every subsequent
+		// attempt reads back, and the last retry could be scheduled just past
+		// the bound it is supposed to respect.
+		return new DateTime($stamp);
 	}//end deadline()
 
 	/**
@@ -480,6 +500,9 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * @return array<int, string> The distinct target uuids.
 	 *
 	 * @throws RuntimeException When a target cannot be resolved.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FlowValueTemplate is the engine's
+	 * stateless template renderer and every node calls it this way.
 	 */
 	private function resolveTargets(array $items, array $config): array {
 		$configured = ($config['uuid'] ?? null);
@@ -491,10 +514,9 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 				$json = [];
 			}
 
+			$uuid = trim((string)($json['uuid'] ?? ''));
 			if (is_string($configured) === true && trim($configured) !== '') {
 				$uuid = trim((string)FlowValueTemplate::render($configured, $json));
-			} else {
-				$uuid = trim((string)($json['uuid'] ?? ''));
 			}
 
 			if ($uuid === '') {

@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCA\OpenRegister\Service\Flow\FlowConsentParking;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCA\OpenRegister\Service\Flow\FlowTokenRouter;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -175,6 +176,7 @@ class FlowRunWorker extends TimedJob {
 	 * @param FlowClaimMapper|null $claims Place claims, for the abandoned-claim reaper.
 	 * @param FlowStreamMapper|null $streams Run streams, for failing an abandoned branch.
 	 * @param FlowLocator|null $flows Resolves the run's flow, for the abandoned step's `onError` policy.
+	 * @param RunLockRegistry|null $locks Run-held object locks, for the orphaned-lock sweep.
 	 */
 	public function __construct(
 		ITimeFactory $time,
@@ -186,6 +188,7 @@ class FlowRunWorker extends TimedJob {
 		private readonly ?FlowClaimMapper $claims = null,
 		private readonly ?FlowStreamMapper $streams = null,
 		private readonly ?FlowLocator $flows = null,
+		private readonly ?RunLockRegistry $locks = null,
 	) {
 		parent::__construct(time: $time);
 		// A FLOOR, not a schedule. `setInterval` says "not more often than
@@ -229,6 +232,7 @@ class FlowRunWorker extends TimedJob {
 			$this->advance(run: $run);
 		}
 
+		$this->sweepOrphanedLocks(now: $now);
 		$this->prune(now: $now);
 
 	}//end run()
@@ -717,4 +721,45 @@ class FlowRunWorker extends TimedJob {
 		}//end try
 
 	}//end prune()
+
+	/**
+	 * Release object locks whose holding run is terminal, gone or expired.
+	 *
+	 * Release layer 2. Layer 1, the `FlowRunTerminalEvent` listener, covers
+	 * every run that reaches a terminal status, and the reapers above do
+	 * eventually terminate a run whose worker was killed. What neither covers
+	 * is a release that itself failed, or a run row deleted out from under an
+	 * outstanding lock. This collects those.
+	 *
+	 * It reads the run-lock registry, not the objects: locks live in the
+	 * `_locked` column of magic tables, and an instance-wide scan over those
+	 * costs seconds just to PLAN. Never throws: a sweep that can fail the
+	 * whole worker pass would take the queue down with it, and the lock TTL is
+	 * still the backstop underneath.
+	 *
+	 * @param DateTime $now The pass clock.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-every-lock-a-run-holds-is-released-when-the-run-ends
+	 */
+	private function sweepOrphanedLocks(DateTime $now): void {
+		if ($this->locks === null) {
+			return;
+		}
+
+		try {
+			$released = $this->locks->sweepOrphaned(now: $now, limit: self::BATCH);
+			if ($released > 0) {
+				$this->logger->info(
+					sprintf('[FlowRunWorker] Swept %d orphaned object lock(s).', $released)
+				);
+			}
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'[FlowRunWorker] Orphaned-lock sweep failed: ' . $e->getMessage(),
+				['exception' => $e]
+			);
+		}//end try
+	}//end sweepOrphanedLocks()
 }//end class
