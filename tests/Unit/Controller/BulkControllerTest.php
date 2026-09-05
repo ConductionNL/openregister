@@ -9,6 +9,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -1079,6 +1080,64 @@ class BulkControllerTest extends TestCase {
 		$this->assertEquals(Http::STATUS_OK, $result->getStatus());
 		$data = $result->getData();
 		$this->assertTrue($data['hard_delete']);
+	}
+
+	/**
+	 * An archival schema is refused with the 403 contract body, not a 500.
+	 *
+	 * ARCHIVAL IMMUTABILITY (openregister#3428). The service refuses the delete by
+	 * throwing ArchivalImmutableException; without a dedicated catch the generic
+	 * handler below reported that deliberate refusal as
+	 * `500 Schema objects deletion failed`, which reads as a bug in the endpoint
+	 * rather than as the platform protecting a legally retained record.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
+	public function testDeleteSchemaOnAnArchivalSchemaIsRefusedWith403(): void {
+		$this->stubAdminUser();
+		$this->stubSchemaLookup(2);
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('deleteObjectsBySchema')->willThrowException(
+			new ArchivalImmutableException(schemaIdentifier: 'retained-case', operation: 'delete')
+		);
+
+		$this->request->method('getParams')->willReturn(['hardDelete' => true]);
+
+		$result = $this->controller->deleteSchema('1', '2');
+
+		$this->assertEquals(Http::STATUS_FORBIDDEN, $result->getStatus());
+		$data = $result->getData();
+		$this->assertSame('SCHEMA_ARCHIVAL_IMMUTABLE', $data['error']);
+		$this->assertSame('retained-case', $data['schema']);
+		$this->assertSame('delete', $data['operation']);
+	}
+
+	/**
+	 * The same refusal on the current (slug-resolving) delete-objects route.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
+	public function testDeleteSchemaObjectsOnAnArchivalSchemaIsRefusedWith403(): void {
+		$this->stubAdminUser();
+		$this->setupResolveSuccess();
+		$this->stubSchemaLookup(2);
+		$this->objectService->method('deleteObjectsBySchema')->willThrowException(
+			new ArchivalImmutableException(schemaIdentifier: 'retained-case', operation: 'delete')
+		);
+
+		$this->request->method('getParams')->willReturn(['hardDelete' => true]);
+
+		$result = $this->controller->deleteSchemaObjects('1', '2');
+
+		$this->assertEquals(Http::STATUS_FORBIDDEN, $result->getStatus());
+		$data = $result->getData();
+		$this->assertSame('SCHEMA_ARCHIVAL_IMMUTABLE', $data['error']);
+		$this->assertSame('delete', $data['operation']);
 	}
 
 	public function testDeleteSchemaException(): void {

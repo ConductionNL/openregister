@@ -7757,6 +7757,23 @@ class MagicMapper extends AbstractObjectMapper {
 					]
 				);
 
+				// ONLY CREATE A TABLE THAT IS ACTUALLY MISSING. `force: true` makes
+				// ensureTableForRegisterSchema() DROP an existing table before
+				// recreating it, which destroys every row with no audit entry — and
+				// the message test above is wider than its name: PostgreSQL says
+				// `column "x" of relation "y" does not exist` for a missing COLUMN
+				// (42703) as well as for a missing table (42P01), so a schema whose
+				// magic table was merely out of sync could reach this recovery and
+				// come back empty. If the table is there, the failure was something
+				// else, so surface it instead of resolving it destructively.
+				//
+				// Asked of the connection rather than of tableExistsForRegisterSchema(),
+				// whose positive answers are cached for TABLE_CACHE_TIMEOUT: a stale
+				// "yes" here would turn a genuine missing-table recovery into an error.
+				if ($this->db->tableExists($tableName) === true) {
+					throw $e;
+				}
+
 				// Create the table.
 				$this->ensureTableForRegisterSchema(register: $register, schema: $schema, force: true);
 

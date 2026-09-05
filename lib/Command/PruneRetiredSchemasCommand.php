@@ -117,8 +117,18 @@ class PruneRetiredSchemasCommand extends Command {
 				'force',
 				null,
 				InputOption::VALUE_NONE,
-				'Also delete a schema that still owns objects (DANGEROUS — drops those objects). '
+				'Also delete a schema that still owns objects. DANGEROUS: it drops those objects. '
 				. 'Has no effect without --apply.'
+			)
+			->addOption(
+				'force-archival',
+				null,
+				InputOption::VALUE_NONE,
+				'Also delete a schema declaring x-openregister-archival, destroying records the '
+				. 'operator may be legally required to retain. Deliberately separate from --force: '
+				. 'an operator pruning a retired schema that happens to hold a few leftover rows has '
+				. 'said nothing about retained records, and this flag is where they say it. Requires '
+				. '--force and --apply.'
 			);
 	}//end configure()
 
@@ -141,6 +151,7 @@ class PruneRetiredSchemasCommand extends Command {
 		$slugs = (array)$input->getOption('slug');
 		$apply = (bool)$input->getOption('apply');
 		$force = (bool)$input->getOption('force');
+		$forceArchival = (bool)$input->getOption('force-archival');
 		$dryRun = ($apply === false);
 
 		if ($appId === '') {
@@ -155,7 +166,7 @@ class PruneRetiredSchemasCommand extends Command {
 
 		if ($dryRun === true) {
 			$output->writeln(
-				'<comment>Running in DRY-RUN mode — nothing will be deleted. '
+				'<comment>Running in DRY-RUN mode. Nothing will be deleted. '
 				. 'Re-run with --apply to perform deletions.</comment>'
 			);
 		}
@@ -198,14 +209,36 @@ class PruneRetiredSchemasCommand extends Command {
 			if ($objectCount > 0 && $force === false) {
 				$skipped++;
 				$output->writeln(
-					'  <comment>SKIP — still owns objects. Re-run with --force to drop them, '
+					'  <comment>SKIP: still owns objects. Re-run with --force to drop them, '
 					. 'or migrate them first.</comment>'
 				);
 				continue;
 			}
 
+			// The archival refusal is answered here as well as in the service, so the
+			// operator is told which flag lifts it instead of reading a raw exception
+			// out of the FAILED branch below. The condition comes from the production
+			// predicate the other four delete doors read, not from a second reading of
+			// the annotation.
+			$isArchival = $schema->hasArchivalAnnotation();
+			if ($isArchival === true && $forceArchival === false) {
+				$skipped++;
+				$output->writeln(
+					'  <comment>SKIP: declares x-openregister-archival, so its objects are '
+					. 'legally retained records. Re-run with --force-archival to destroy them.</comment>'
+				);
+				continue;
+			}
+
+			$archivalNote = '';
+			if ($isArchival === true) {
+				$archivalNote = ' <comment>(ARCHIVAL RECORDS)</comment>';
+			}
+
 			if ($dryRun === true) {
-				$output->writeln(sprintf('  <comment>WOULD DELETE (objects=%d)</comment>', $objectCount));
+				$output->writeln(
+					sprintf('  <comment>WOULD DELETE (objects=%d)</comment>%s', $objectCount, $archivalNote)
+				);
 				continue;
 			}
 
@@ -222,7 +255,10 @@ class PruneRetiredSchemasCommand extends Command {
 			}
 
 			try {
-				$result = $this->deletionService->cascadeDeleteSchema(schema: $schema);
+				$result = $this->deletionService->cascadeDeleteSchema(
+					schema: $schema,
+					archivalOverride: $forceArchival
+				);
 			} catch (\Throwable $e) {
 				$skipped++;
 				$output->writeln(sprintf('  <error>FAILED: %s</error>', $e->getMessage()));
@@ -237,16 +273,17 @@ class PruneRetiredSchemasCommand extends Command {
 
 			$output->writeln(
 				sprintf(
-					'  <info>DELETED (objects removed=%d, table dropped=%s)</info>',
+					'  <info>DELETED (objects removed=%d, table dropped=%s)</info>%s',
 					(int)$result['deletedCount'],
-					$tableDropped
+					$tableDropped,
+					$archivalNote
 				)
 			);
 		}//end foreach
 
 		$suffix = '';
 		if ($dryRun === true) {
-			$suffix = ' (dry run — no writes performed)';
+			$suffix = ' (dry run, no writes performed)';
 		}
 
 		$output->writeln(

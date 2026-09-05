@@ -115,6 +115,59 @@ The gate SHALL read `Schema::hasArchivalAnnotation()`, which is the single defin
 - **WHEN** `DELETE /api/deleted` is called
 - **THEN** exactly one row SHALL be destroyed and the live row SHALL be counted as `failed`
 
+### Requirement: Schema-wide object deletion is refused on an archival schema
+
+`SchemaDeletionService` is the single implementation of "delete every object of a schema", reached by `POST /api/bulk/{register}/{schema}/delete-objects`, its legacy twin `/delete-schema`, `DELETE /api/schemas/{id}?deleteObjects=true` and `occ openregister:schemas:prune-retired`. It SHALL apply the archival gate that `ObjectService::deleteObject()` applies, reading `Schema::hasArchivalAnnotation()` rather than the annotation itself.
+
+`deleteObjectsBySchema()` SHALL refuse an archival schema unconditionally and SHALL expose no override parameter: both of its callers are HTTP routes, and an override they could pass through would put archival destruction back on the network. `cascadeDeleteSchema()` SHALL refuse unless the caller passes an explicit `archivalOverride`, which only `occ openregister:schemas:prune-retired --force-archival` passes — the same bargain `occ openregister:objects:purge --force` strikes, on the same reasoning that shell access is an authorization boundary an HTTP caller cannot cross.
+
+`--force-archival` SHALL be a distinct flag from `--force`. `--force` means "this schema still owns objects"; an operator pruning a retired test schema passes it without having said anything about retained records, so it MUST NOT authorise their destruction.
+
+The refusal SHALL surface as HTTP 403 with the `{ error: "SCHEMA_ARCHIVAL_IMMUTABLE", message, schema, operation, hint }` body, on both the bulk routes and the schema cascade — not as a 500, which would read as an endpoint bug rather than as the platform protecting a retained record.
+
+The audit trail SHALL NOT be treated as a substitute for the record. `SchemaDeletionService` writes a hash-chained audit entry per object before removing it, but an entry recording that a record was destroyed does not discharge an obligation to retain it.
+
+#### Scenario: Bulk delete-objects on an archival schema destroys nothing
+- **GIVEN** the `dossiq/retained-case` schema declares `x-openregister-archival` and its magic table holds 3 rows
+- **WHEN** `POST /api/bulk/{register}/retained-case/delete-objects` is called with `{"hardDelete": true}`
+- **THEN** the response SHALL be HTTP 403 with `error: "SCHEMA_ARCHIVAL_IMMUTABLE"` and `operation: "delete"`
+- **AND** all 3 rows SHALL still exist in the magic table
+- **AND** no `schema.cascade_delete` audit entry SHALL be written
+
+#### Scenario: A soft schema-wide delete is refused too
+- **WHEN** the same call is made with `{"hardDelete": false}`
+- **THEN** the response SHALL be HTTP 403 and no row SHALL be tombstoned
+
+#### Scenario: The HTTP schema cascade on an archival schema is refused
+- **WHEN** `DELETE /api/schemas/{id}?deleteObjects=true` names the archival schema
+- **THEN** the response SHALL be HTTP 403 with `error: "SCHEMA_ARCHIVAL_IMMUTABLE"`
+- **AND** no transaction SHALL be opened, no row removed, no magic table dropped, and the schema entity SHALL still exist
+
+#### Scenario: The prune CLI refuses without the archival flag
+- **WHEN** `occ openregister:schemas:prune-retired --app dossiq --slug retained-case --apply --force` names the archival schema
+- **THEN** the command SHALL skip it, SHALL name `x-openregister-archival` and `--force-archival`, and SHALL destroy nothing
+
+#### Scenario: The prune CLI proceeds with the archival flag and says so
+- **WHEN** the same command is re-run with `--force-archival`
+- **THEN** the cascade SHALL run and the output SHALL mark the schema as holding ARCHIVAL RECORDS
+
+#### Scenario: An ordinary schema is unaffected
+- **GIVEN** a schema that does NOT declare `x-openregister-archival`
+- **WHEN** any of these paths deletes its objects
+- **THEN** the deletion SHALL succeed exactly as before, reporting the count and the UUIDs
+
+### Requirement: A failed bulk upsert never resolves itself by dropping the table
+
+`MagicMapper::bulkUpsert()` recovers from a missing magic table by creating it and retrying. The recovery SHALL create only a table that is actually absent, verified against the live connection. It MUST NOT reach `ensureTableForRegisterSchema(force: true)` while the table exists, because that drops the table before recreating it and destroys every row with no audit entry.
+
+The message test that selects this recovery is wider than a missing table: PostgreSQL phrases a missing COLUMN (42703) as `column "x" of relation "y" does not exist`, which matches the same substring as a missing relation (42P01). A failure that is not a missing table SHALL be re-thrown.
+
+#### Scenario: An error naming an existing table is surfaced, not resolved destructively
+- **GIVEN** a populated magic table for a register/schema pair
+- **WHEN** `bulkUpsert()` fails with an error whose message contains `does not exist` while that table exists
+- **THEN** the original exception SHALL propagate
+- **AND** the table SHALL NOT be dropped and its rows SHALL remain
+
 ### Requirement: An administrative CLI purge is the only path that can destroy an archival record
 
 The platform SHALL ship `occ openregister:objects:purge <uuid>...`. It SHALL be dry-run by default and write only with `--apply`. Without `--force` it SHALL refuse an archival record and SHALL refuse a live (not soft-deleted) object. With `--force` it SHALL destroy either, and SHALL name the record as archival in its output.

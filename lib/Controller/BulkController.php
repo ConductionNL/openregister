@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\BulkSaveOutcome;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
+use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Service\ObjectService;
@@ -695,6 +696,10 @@ class BulkController extends Controller {
 					'hard_delete' => $hardDelete,
 				]
 			);
+		} catch (ArchivalImmutableException $e) {
+			// The schema holds legally retained records. Caught ahead of the generic
+			// handler below, which would have reported a deliberate refusal as a 500.
+			return new JSONResponse(data: $e->toResponseBody(), statusCode: Http::STATUS_FORBIDDEN);
 		} catch (Exception $e) {
 			return new JSONResponse(
 				data: ['error' => 'Schema objects deletion failed: ' . $e->getMessage()],
@@ -782,6 +787,10 @@ class BulkController extends Controller {
 					'hard_delete' => $hardDelete,
 				]
 			);
+		} catch (ArchivalImmutableException $e) {
+			// The schema holds legally retained records. Caught ahead of the generic
+			// handler below, which would have reported a deliberate refusal as a 500.
+			return new JSONResponse(data: $e->toResponseBody(), statusCode: Http::STATUS_FORBIDDEN);
 		} catch (Exception $e) {
 			return new JSONResponse(
 				data: ['error' => 'Objects deletion failed: ' . $e->getMessage()],
