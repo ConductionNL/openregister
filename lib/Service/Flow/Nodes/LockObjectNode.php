@@ -193,9 +193,15 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * The palette icon.
 	 *
 	 * @return string The icon path.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-node-the-engine-registers-is-offered-in-the-palette
 	 */
 	public function getIcon(): string {
-		return $this->urls->imagePath('core', 'actions/lock.svg');
+		// The APP's icon, not core's. `core/img/actions/lock.svg` does not
+		// exist in NC 33 or 34, `imagePath()` throws for an image the server
+		// does not ship, and this node was therefore absent from the editor's
+		// palette entirely. An icon the app ships cannot go missing under it.
+		return $this->urls->imagePath('openregister', 'lock.svg');
 	}//end getIcon()
 
 	/**

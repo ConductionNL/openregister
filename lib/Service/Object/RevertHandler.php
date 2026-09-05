@@ -37,6 +37,12 @@ use Psr\Container\ContainerInterface;
 /**
  * Class RevertHandler
  * Service for handling object reversion
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One collaborator over the
+ * threshold, and it is the ambient flow-run stack: a revert is a write, and a
+ * write guard that cannot name the caller's run refuses the run holding the
+ * lock. Splitting the class to avoid naming one more type would trade a real
+ * guard for a metric.
  */
 class RevertHandler {
 
@@ -154,7 +160,7 @@ class RevertHandler {
 		// Check if the object is locked. Ownership is decided by the one
 		// production predicate, so a run-held lock refuses the run's own
 		// runAs user here exactly as it does at every other guard.
-		if ($object->isLockedBySomeoneElse(userId: $this->container->get('userId')) === true) {
+		if ($object->isLockedBySomeoneElse(userId: $this->container->get('userId'), runUuid: $this->callerRunUuid()) === true) {
 			throw new LockedException(
 				message: sprintf('Object is locked by %s', (string)$object->describeLockHolder())
 			);
@@ -179,4 +185,35 @@ class RevertHandler {
 
 		return $savedObject;
 	}//end revert()
+
+	/**
+	 * The flow run this write is being made for, or null when a person is
+	 * writing.
+	 *
+	 * A run-scoped lock refuses every caller but the holding run, so a guard
+	 * that cannot name the caller's run refuses the run that took the lock.
+	 * Resolved from the container rather than injected because the ambient
+	 * stack is a shared service and this is the only thing here that needs it.
+	 *
+	 * A container that cannot serve it answers "a person", which is the
+	 * FAIL-CLOSED direction: a run lock refuses a caller with no run uuid, so
+	 * the worst outcome is a refusal, never a lock walked through.
+	 *
+	 * @return string|null The executing run's uuid, or null.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
+	 */
+	private function callerRunUuid(): ?string {
+		try {
+			$flowContext = $this->container->get(\OCA\OpenRegister\Service\Flow\FlowRunContext::class);
+		} catch (\Throwable $unavailable) {
+			return null;
+		}
+
+		if ($flowContext instanceof \OCA\OpenRegister\Service\Flow\FlowRunContext === false) {
+			return null;
+		}
+
+		return $flowContext->currentRunUuid();
+	}//end callerRunUuid()
 }//end class

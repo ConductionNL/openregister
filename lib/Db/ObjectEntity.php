@@ -1163,6 +1163,12 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *  - Run lock with no `runUuid`: held against everybody. A malformed lock
 	 *    fails CLOSED, because the alternative is silently converting a
 	 *    writer's bug into an open door.
+	 *  - User lock, run caller: held against the run. A run is not the person
+	 *    it runs as, in EITHER direction. Reading them as one holder let a run
+	 *    walk into a person's lock, take the extend branch and rewrite the
+	 *    payload as its own — and then release it at the end of the run. The
+	 *    person's lock was destroyed by a flow merely passing over the object,
+	 *    with no error and no audit of a displacement.
 	 *
 	 * @param string|null $userId The caller's user id, or null when anonymous.
 	 * @param string|null $runUuid The caller's flow-run uuid, when the caller is a run.
@@ -1187,6 +1193,15 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			}
 
 			return ($runUuid === null || trim($runUuid) !== trim($holder));
+		}
+
+		// A USER lock and a caller acting for a run: different holders, so the
+		// lock is held against it. The kinds are compared BEFORE the user id
+		// because they are what distinguishes the holders — a run under
+		// `alice` matching a lock alice took is exactly the confusion that let
+		// a flow take over a person's lock.
+		if ($runUuid !== null && trim($runUuid) !== '') {
+			return true;
 		}
 
 		return (($lock['user'] ?? null) !== $userId);

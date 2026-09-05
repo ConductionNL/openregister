@@ -2856,7 +2856,7 @@ class ObjectsController extends Controller {
 			// `lock()` actually writes; the service-layer guard read a key
 			// that never existed. Both now delegate to the same predicate, so
 			// there is one comparison rather than two spellings of it.
-			if ($existingObject->isLockedBySomeoneElse(userId: $this->container->get('userId')) === true) {
+			if ($existingObject->isLockedBySomeoneElse(userId: $this->container->get('userId'), runUuid: $this->callerRunUuid()) === true) {
 				// Return a "locked" error naming the holder.
 				return new JSONResponse(
 					data: [
@@ -2923,6 +2923,14 @@ class ObjectsController extends Controller {
 				// lock must survive somebody else's write: without this test
 				// an administrator's write would silently strip a run's lock
 				// as a side effect of a guard it had just passed.
+				//
+				// NO `runUuid` HERE, DELIBERATELY, and it is the one guard in
+				// this file that omits it. This decides a RELEASE, not a
+				// refusal: asking it as the run would make a run's own write
+				// drop the run's own lock the moment it saved — the lock is
+				// meant to outlive every write the run makes. Asked as a
+				// person, a run-held lock reads as somebody else's and is
+				// left alone, which is what this test is for.
 				if ($objectEntity->isLocked() === true
 					&& $objectEntity->isLockedBySomeoneElse(userId: $this->container->get('userId')) === false
 				) {
@@ -3152,6 +3160,14 @@ class ObjectsController extends Controller {
 				// lock must survive somebody else's write: without this test
 				// an administrator's write would silently strip a run's lock
 				// as a side effect of a guard it had just passed.
+				//
+				// NO `runUuid` HERE, DELIBERATELY, and it is the one guard in
+				// this file that omits it. This decides a RELEASE, not a
+				// refusal: asking it as the run would make a run's own write
+				// drop the run's own lock the moment it saved — the lock is
+				// meant to outlive every write the run makes. Asked as a
+				// person, a run-held lock reads as somebody else's and is
+				// left alone, which is what this test is for.
 				if ($objectEntity->isLocked() === true
 					&& $objectEntity->isLockedBySomeoneElse(userId: $this->container->get('userId')) === false
 				) {
@@ -3334,6 +3350,14 @@ class ObjectsController extends Controller {
 				// lock must survive somebody else's write: without this test
 				// an administrator's write would silently strip a run's lock
 				// as a side effect of a guard it had just passed.
+				//
+				// NO `runUuid` HERE, DELIBERATELY, and it is the one guard in
+				// this file that omits it. This decides a RELEASE, not a
+				// refusal: asking it as the run would make a run's own write
+				// drop the run's own lock the moment it saved — the lock is
+				// meant to outlive every write the run makes. Asked as a
+				// person, a run-held lock reads as somebody else's and is
+				// left alone, which is what this test is for.
 				if ($objectEntity->isLocked() === true
 					&& $objectEntity->isLockedBySomeoneElse(userId: $this->container->get('userId')) === false
 				) {
@@ -4844,4 +4868,35 @@ class ObjectsController extends Controller {
 			statusCode: FolderAccessDeniedException::HTTP_STATUS
 		);
 	}//end folderAccessDeniedResponse()
+
+	/**
+	 * The flow run this write is being made for, or null when a person is
+	 * writing.
+	 *
+	 * A run-scoped lock refuses every caller but the holding run, so a guard
+	 * that cannot name the caller's run refuses the run that took the lock.
+	 * Resolved from the container rather than injected because the ambient
+	 * stack is a shared service and this is the only thing here that needs it.
+	 *
+	 * A container that cannot serve it answers "a person", which is the
+	 * FAIL-CLOSED direction: a run lock refuses a caller with no run uuid, so
+	 * the worst outcome is a refusal, never a lock walked through.
+	 *
+	 * @return string|null The executing run's uuid, or null.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
+	 */
+	private function callerRunUuid(): ?string {
+		try {
+			$flowContext = $this->container->get(\OCA\OpenRegister\Service\Flow\FlowRunContext::class);
+		} catch (\Throwable $unavailable) {
+			return null;
+		}
+
+		if ($flowContext instanceof \OCA\OpenRegister\Service\Flow\FlowRunContext === false) {
+			return null;
+		}
+
+		return $flowContext->currentRunUuid();
+	}//end callerRunUuid()
 }//end class

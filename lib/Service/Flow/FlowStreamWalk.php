@@ -253,23 +253,33 @@ class FlowStreamWalk {
 	 * Petri net, but that transition is a wait, not work — counting it would
 	 * make every parked run read as `queued` and spin the worker.
 	 *
+	 * 🔴 THE ANSWER MUST DESCRIBE THE STATE AFTER THE THING BEING COMMITTED,
+	 * not the state the walk still holds in memory. It is called as an
+	 * ARGUMENT to `commitFiring()` and to `park()`, and both of those are what
+	 * move the stream — so at the moment this runs, `$this->streams` still has
+	 * the firing stream on the place the firing just consumed and `$this->parked`
+	 * does not yet know about the stream that is parking. Answering from that
+	 * stale picture said "no work remains" at EVERY ordinary mid-flow firing,
+	 * `FlowRunCommit::applyDerivedStatus()` then derived `completed` for a run
+	 * that was still working, `FlowRunMapper::update()` announced it, and
+	 * `FlowRunLockReleaseListener` released the run's object locks — the
+	 * defect this parameter pair exists to close. `$produced` and `$settling`
+	 * are how the caller says what its commit is about to change.
+	 *
 	 * @param array<int, object> $transitions The enabled transitions.
+	 * @param array<int, string> $produced The places the commit is about to put tokens on.
+	 * @param string|null $settling A stream whose current place is about to stop counting: it is parking, or ending.
 	 *
 	 * @return bool True when an unparked stream has an enabled transition.
 	 *
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-runs-status-must-stay-derivable-from-its-streams-with-no-new-value
 	 */
-	public function workRemains(array $transitions): bool {
-		$unparked = [];
-		foreach ($this->streams as $id => $stream) {
-			if (isset($this->parked[$id]) === false && $stream['place'] !== null) {
-				$unparked[$stream['place']] = true;
-			}
-		}
+	public function workRemains(array $transitions, array $produced = [], ?string $settling = null): bool {
+		$live = $this->livePlacesAfter(produced: $produced, settling: $settling);
 
 		foreach ($transitions as $transition) {
 			foreach ($transition->getFroms() as $from) {
-				if (isset($unparked[(string)$from]) === true) {
+				if (isset($live[(string)$from]) === true) {
 					return true;
 				}
 			}
@@ -277,6 +287,37 @@ class FlowStreamWalk {
 
 		return false;
 	}//end workRemains()
+
+	/**
+	 * The places a token will sit on once the caller's commit lands, excluding
+	 * the parked streams' — see {@see self::workRemains()} for why the answer
+	 * cannot be read off the walk's own picture.
+	 *
+	 * @param array<int, string> $produced The places the commit is about to mark.
+	 * @param string|null $settling A stream whose place stops counting.
+	 *
+	 * @return array<string, true> The places, as a set.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-runs-status-must-stay-derivable-from-its-streams-with-no-new-value
+	 */
+	private function livePlacesAfter(array $produced, ?string $settling): array {
+		$live = [];
+		foreach ($this->streams as $id => $stream) {
+			if ($id === $settling || isset($this->parked[$id]) === true) {
+				continue;
+			}
+
+			if ($stream['place'] !== null) {
+				$live[$stream['place']] = true;
+			}
+		}
+
+		foreach ($produced as $place) {
+			$live[(string)$place] = true;
+		}
+
+		return $live;
+	}//end livePlacesAfter()
 
 	/**
 	 * The ordinal path of a stream, for a log entry that is not a firing (a

@@ -938,7 +938,15 @@ class FlowEngine {
 					resumeAt: $suspension->getResumeAt(),
 					reason: $suspension->getMessage(),
 					claimed: $claimed,
-					enabled: $streams->workRemains(transitions: $workflow->getEnabledTransitions(subject: $subject))
+					// `settling`: this stream is the one parking, and the walk
+					// does not know that yet — its token still enables the very
+					// transition it is waiting ON. Counted, the park derives
+					// `queued` with no wake time, which a parallel worker picks
+					// up immediately.
+					enabled: $streams->workRemains(
+						transitions: $workflow->getEnabledTransitions(subject: $subject),
+						settling: $streamId
+					)
 				);
 				continue;
 			} catch (Throwable $e) {
@@ -1123,7 +1131,16 @@ class FlowEngine {
 			placeItems: $placeItems,
 			claimed: $claimed,
 			logEntry: $entry,
-			enabledAfter: $streams->workRemains(transitions: $workflow->getEnabledTransitions(subject: $subject)),
+			// The places this firing TAKES, handed over so the answer describes
+			// the marking AFTER the commit rather than the one the walk still
+			// holds: the stream picture is only re-read inside commitFiring().
+			// Without them every ordinary mid-flow firing reported "no work
+			// remains", the commit derived `completed` for a run that was still
+			// walking, and every terminal listener fired on it.
+			enabledAfter: $streams->workRemains(
+				transitions: $workflow->getEnabledTransitions(subject: $subject),
+				produced: $takenTos
+			),
 			streamStatus: FlowRun::STATUS_RUNNING,
 			streamError: $streamError
 		);

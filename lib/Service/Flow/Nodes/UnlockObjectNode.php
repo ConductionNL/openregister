@@ -123,9 +123,13 @@ class UnlockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 	 * The palette icon.
 	 *
 	 * @return string The icon path.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-node-the-engine-registers-is-offered-in-the-palette
 	 */
 	public function getIcon(): string {
-		return $this->urls->imagePath('core', 'actions/unlock.svg');
+		// The APP's icon: see LockObjectNode::getIcon(). `actions/unlock.svg`
+		// is not part of NC 33's or 34's core icon set either.
+		return $this->urls->imagePath('openregister', 'unlock.svg');
 	}//end getIcon()
 
 	/**

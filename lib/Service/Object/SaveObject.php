@@ -307,6 +307,7 @@ class SaveObject {
 	 * @param IEventDispatcher|null $eventDispatcher Event dispatcher (reference events)
 	 * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null $objectSourceRegistry Writable object-source provider registry
 	 * @param FieldEncryptionHandler|null $fieldEncryptionHandler Field-level encryption handler
+	 * @param \OCA\OpenRegister\Service\Flow\FlowRunContext|null $runContext The ambient flow-run stack, so the lock guard can tell which run is writing
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 *
@@ -341,6 +342,7 @@ class SaveObject {
 		private readonly ?IEventDispatcher $eventDispatcher = null,
 		private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry = null,
 		private readonly ?FieldEncryptionHandler $fieldEncryptionHandler = null,
+		private readonly ?\OCA\OpenRegister\Service\Flow\FlowRunContext $runContext = null,
 	) {
 		$this->twig = new Environment($arrayLoader);
 	}//end __construct()
@@ -3197,7 +3199,17 @@ class SaveObject {
 				$currentUserId = $currentUser->getUID();
 			}
 
-			if ($existingObject->isLockedBySomeoneElse(userId: $currentUserId) === true) {
+			// WHICH RUN IS WRITING, not just which user. A run-scoped lock
+			// refuses every caller but the holding run, so a guard that omits
+			// the run identity refuses THE RUN THAT TOOK THE LOCK: a flow
+			// locks a case at one step and is turned away by its own lock at
+			// the next. Ambient rather than a parameter because the write is
+			// routinely several calls deep in code that has never heard of
+			// flows; absent, it reads as a person, which is the fail-closed
+			// answer a run lock already gives.
+			$callerRun = $this->runContext?->currentRunUuid();
+
+			if ($existingObject->isLockedBySomeoneElse(userId: $currentUserId, runUuid: $callerRun) === true) {
 				$holder = (string)$existingObject->describeLockHolder();
 				$unlockAdvice = 'Please unlock the object before attempting to update it.';
 				throw new Exception("Cannot update object: Object is locked by {$holder}. " . $unlockAdvice);
