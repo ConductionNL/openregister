@@ -225,9 +225,23 @@ class RunLockRegistry {
 		}
 
 		try {
+			// EVERY scoping filter is off, deliberately, and each one is a way
+			// this sweep could quietly do nothing.
+			//
+			// `_rbac` / `_multitenancy`: both release layers run from a
+			// background job or `occ`, which have NO SESSION, so a scoped read
+			// resolves as Anonymous and answers "no such object". The sweep
+			// would then report zero locks to release and the lock would be
+			// held until its TTL, with no error anywhere. This is the same
+			// defect that made `prune-retired` count zero rows and delete
+			// schemas that held data (openregister#3440).
+			//
+			// `includeDeleted`: a soft-deleted object can still carry a live
+			// lock, and it is precisely the object nobody is watching. Leaving
+			// it out would strand that lock and its registry row forever.
 			$context = $this->magicMapper->findAcrossAllSources(
 				identifier: $objectUuid,
-				includeDeleted: false,
+				includeDeleted: true,
 				_rbac: false,
 				_multitenancy: false
 			);

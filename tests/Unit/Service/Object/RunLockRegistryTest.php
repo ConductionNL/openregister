@@ -230,6 +230,67 @@ final class RunLockRegistryTest extends TestCase {
 		$this->assertSame(0, $this->registry()->sweepOrphaned(now: new DateTime()));
 	}//end testTheSweepLeavesALiveRunsLockAlone()
 
+	/**
+	 * The release read is UNSCOPED, on every axis.
+	 *
+	 * Both release layers run from a background job or `occ`, neither of
+	 * which has a session. A read that applies RBAC resolves as Anonymous,
+	 * answers "no such object", and the sweep reports nothing to release
+	 * while the lock stays held until its TTL. There is no error to notice:
+	 * the symptom is a lock that is never released. This is the defect that
+	 * made `prune-retired` count zero rows and then delete schemas that held
+	 * data (openregister#3440), and it would be worse here because it fails
+	 * closed on a case rather than open on a delete.
+	 *
+	 * `includeDeleted` is on the same list: a soft-deleted object can still
+	 * carry a live lock, and it is exactly the object nobody is watching.
+	 *
+	 * @return void
+	 */
+	public function testTheReleaseReadAppliesNoScoping(): void {
+		$seen = [];
+		$this->magic->method('findAcrossAllSources')->willReturnCallback(
+			function (...$args) use (&$seen) {
+				// Positional order: identifier, includeDeleted, _rbac, _multitenancy.
+				$seen = $args;
+				return [
+					'object' => $this->lockedObject(self::RUN_A),
+					'register' => $this->createMock(Register::class),
+					'schema' => $this->createMock(Schema::class),
+				];
+			}
+		);
+		$this->rows->method('findByRun')->willReturn([$this->row(self::RUN_A)]);
+		$this->magic->method('unlockObjectEntity')->willReturn(new ObjectEntity());
+
+		$this->registry()->releaseRunLocks(runUuid: self::RUN_A);
+
+		$this->assertFalse($seen[2], 'the release read applies RBAC; under occ it will find nothing');
+		$this->assertFalse($seen[3], 'the release read applies multitenancy; under occ it will find nothing');
+		$this->assertTrue($seen[1], 'a soft-deleted object would strand its lock');
+	}//end testTheReleaseReadAppliesNoScoping()
+
+	/**
+	 * The sweep asks for orphans ONCE per pass and acts on what it gets.
+	 *
+	 * Regression guard for a sweep that dies inside its own catch. The first
+	 * `findOrphaned()` composed its two predicates as an orX() over a
+	 * createFunction(), which PostgreSQL rejected with "argument of OR must
+	 * be type boolean, not type record". The exception was swallowed by
+	 * `releaseRecorded()`'s catch and by the worker's, so the sweep logged a
+	 * warning and released nothing, every tick, forever. Caught on the rig,
+	 * never by a mock: the mapper is now two plain queries.
+	 *
+	 * @return void
+	 */
+	public function testTheSweepQueriesOrphansOncePerPass(): void {
+		$this->rows->expects($this->once())
+			->method('findOrphaned')
+			->willReturn([]);
+
+		$this->registry()->sweepOrphaned(now: new DateTime(), limit: 25);
+	}//end testTheSweepQueriesOrphansOncePerPass()
+
 	// ---------------------------------------------------------------
 	// Recording.
 	// ---------------------------------------------------------------

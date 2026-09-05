@@ -152,29 +152,75 @@ class RunObjectLockMapper extends QBMapper {
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-every-lock-a-run-holds-is-released-when-the-run-ends
 	 */
 	public function findOrphaned(DateTime $now, int $limit = 100): array {
+		// TWO plain queries rather than one composite.
+		//
+		// The obvious single query is an orX() of a `run_uuid NOT IN
+		// (sub-select)` built with createFunction() and an `expires_at <`
+		// comparison. On PostgreSQL that composes to `(a) OR (b)` where the
+		// createFunction half is not recognised as a boolean, and the whole
+		// sweep dies with "argument of OR must be type boolean, not type
+		// record" — which the sweep's own catch would have swallowed into a
+		// log line while releasing nothing, forever. Two readable queries and
+		// a merge cost one extra round trip per cron tick and cannot fail
+		// that way.
+		$byRun = $this->findNotHeldByAnActiveRun(limit: $limit);
+		$byExpiry = $this->findExpired(now: $now, limit: $limit);
+
+		$merged = [];
+		foreach (array_merge($byRun, $byExpiry) as $row) {
+			$merged[(string)$row->getId()] = $row;
+		}
+
+		return array_slice(array_values($merged), 0, $limit);
+	}//end findOrphaned()
+
+	/**
+	 * Locks whose holding run is terminal or no longer exists.
+	 *
+	 * @param int $limit Batch ceiling.
+	 *
+	 * @return array<int, RunObjectLock> The rows.
+	 */
+	private function findNotHeldByAnActiveRun(int $limit): array {
+		$qb = $this->db->getQueryBuilder();
 		$active = $this->db->getQueryBuilder();
 		$active->select('uuid')
 			->from('openregister_flow_runs')
-			->where($active->expr()->in('status', $active->createNamedParameter(FlowRun::ACTIVE, IQueryBuilder::PARAM_STR_ARRAY)));
+			->where(
+				$active->expr()->in(
+					'status',
+					$qb->createNamedParameter(FlowRun::ACTIVE, IQueryBuilder::PARAM_STR_ARRAY)
+				)
+			);
 
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->createFunction('run_uuid NOT IN (' . $active->getSQL() . ')'))
+			->setMaxResults($limit);
+
+		return $this->findEntities(query: $qb);
+	}//end findNotHeldByAnActiveRun()
+
+	/**
+	 * Rows whose underlying lock has expired anyway.
+	 *
+	 * @param DateTime $now The sweep's clock.
+	 * @param int $limit Batch ceiling.
+	 *
+	 * @return array<int, RunObjectLock> The rows.
+	 */
+	private function findExpired(DateTime $now, int $limit): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where(
-				$qb->expr()->orX(
-					// Not held by any ACTIVE run: terminal, or the row is gone.
-					$qb->createFunction('run_uuid NOT IN (' . $active->getSQL() . ')'),
-					// Or the lock has expired regardless.
-					$qb->expr()->lt('expires_at', $qb->createNamedParameter($now, IQueryBuilder::PARAM_DATETIME_MUTABLE))
+				$qb->expr()->lt(
+					'expires_at',
+					$qb->createNamedParameter($now, IQueryBuilder::PARAM_DATETIME_MUTABLE)
 				)
 			)
 			->setMaxResults($limit);
 
-		// The sub-select's placeholder must travel with the outer query.
-		foreach ($active->getParameters() as $key => $value) {
-			$qb->setParameter($key, $value, $active->getParameterTypes()[$key] ?? null);
-		}
-
 		return $this->findEntities(query: $qb);
-	}//end findOrphaned()
+	}//end findExpired()
 }//end class
