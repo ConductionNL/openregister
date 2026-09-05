@@ -1,5 +1,13 @@
 {
     "translations": {
+        "Load example data?": "Se încarcă datele de exemplu?",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Datele de exemplu umplu listele, paginile de detaliu și tablourile de bord, ca să vedeți imediat aplicația funcționând. Alegeți \"Niciunul\" pe o instalare de producție.",
+        "Load the example data": "Încarcă datele de exemplu",
+        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Încarcă ceea ce ați ales. Sunt vizibil date de exemplu, operațiunea se poate repeta fără risc, iar apoi le puteți șterge.",
+        "None, I will set this up myself": "Niciunul, configurez singur",
+        "Nothing is imported. You start with an empty app and add your own data.": "Nu se importă nimic. Începeți cu o aplicație goală și adăugați propriile date.",
+        "Example data": "Date de exemplu",
+        "Sample values for every schema this app supplies, generated from the schemas themselves. It shows the lists, detail pages and dashboards working rather than telling a story. Safe to run more than once, and you can delete it afterwards.": "Valori de exemplu pentru fiecare schemă pe care o aduce această aplicație, generate din schemele înseși. Arată listele, paginile de detaliu și tablourile de bord în funcțiune, în loc să spună o poveste. Se poate repeta fără risc și șterge apoi.",
         "from amount {amount}": "de la suma {amount}",
         "Gated transition: {transition}": "Tranziție supravegheată: {transition}",
         "Each declared chain provisions an ordered task sequence when its transition is attempted. Approvers decide in their task inbox, not here.": "Fiecare lanț declarat deschide o secvență ordonată de sarcini când tranziția este încercată. Aprobatorii decid în inboxul lor de sarcini, nu aici.",

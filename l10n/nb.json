@@ -1,5 +1,13 @@
 {
     "translations": {
+        "Load example data?": "Laste inn eksempeldata?",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Eksempeldata fyller listene, detaljsidene og dashbordene, så du ser appen virke med en gang. Velg \"Ingen\" på en produksjonsinstallasjon.",
+        "Load the example data": "Last inn eksempeldataene",
+        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Laster inn det du valgte. Dette er tydelig eksempeldata, handlingen kan gjentas uten risiko, og du kan slette dem etterpå.",
+        "None, I will set this up myself": "Ingen, jeg setter det opp selv",
+        "Nothing is imported. You start with an empty app and add your own data.": "Ingenting importeres. Du starter med en tom app og legger til dine egne data.",
+        "Example data": "Eksempeldata",
+        "Sample values for every schema this app supplies, generated from the schemas themselves. It shows the lists, detail pages and dashboards working rather than telling a story. Safe to run more than once, and you can delete it afterwards.": "Eksempelverdier for hvert skjema denne appen leverer, generert fra skjemaene selv. De viser listene, detaljsidene og dashbordene i drift i stedet for å fortelle en historie. Kan gjentas uten risiko og slettes etterpå.",
         "from amount {amount}": "fra beløp {amount}",
         "Gated transition: {transition}": "Overvåket overgang: {transition}",
         "Each declared chain provisions an ordered task sequence when its transition is attempted. Approvers decide in their task inbox, not here.": "Hver deklarerte kjede åpner en ordnet oppgavesekvens når overgangen forsøkes. Godkjennere beslutter i oppgaveinnboksen sin, ikke her.",

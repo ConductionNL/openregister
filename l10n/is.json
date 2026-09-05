@@ -1,5 +1,13 @@
 {
     "translations": {
+        "Load example data?": "Hlaða inn sýnigögnum?",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Sýnigögn fylla listana, upplýsingasíðurnar og mælaborðin, svo þú sérð forritið virka strax. Veldu \"Engin\" á framleiðsluuppsetningu.",
+        "Load the example data": "Hlaða inn sýnigögnunum",
+        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Hleður því sem þú valdir. Þetta eru augljóslega sýnigögn, óhætt er að keyra oftar en einu sinni og þú getur eytt þeim á eftir.",
+        "None, I will set this up myself": "Engin, ég set þetta upp sjálf",
+        "Nothing is imported. You start with an empty app and add your own data.": "Ekkert er flutt inn. Þú byrjar með tómt forrit og bætir við þínum eigin gögnum.",
+        "Example data": "Sýnigögn",
+        "Sample values for every schema this app supplies, generated from the schemas themselves. It shows the lists, detail pages and dashboards working rather than telling a story. Safe to run more than once, and you can delete it afterwards.": "Sýnigildi fyrir hvert skema sem þetta forrit færir með sér, búin til úr skemunum sjálfum. Þau sýna listana, upplýsingasíðurnar og mælaborðin í notkun frekar en að segja sögu. Óhætt að endurtaka og eyða á eftir.",
         "from amount {amount}": "frá upphæð {amount}",
         "Gated transition: {transition}": "Vöktuð umskipti: {transition}",
         "Each declared chain provisions an ordered task sequence when its transition is attempted. Approvers decide in their task inbox, not here.": "Hver skilgreind keðja opnar raðaða verkefnaröð þegar reynt er við umskiptin. Samþykkjendur ákveða í verkefnahólfinu sínu, ekki hér.",

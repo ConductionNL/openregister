@@ -1,5 +1,13 @@
 {
     "translations": {
+        "Load example data?": "Luchtaigh sonraí samplacha?",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Líonann sonraí samplacha na liostaí, na leathanaigh mhionsonraí agus na deais, ionas go bhfeicfidh tú an aip ag obair láithreach. Roghnaigh \"Ceann ar bith\" ar shuiteáil táirgthe.",
+        "Load the example data": "Luchtaigh na sonraí samplacha",
+        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Luchtaíonn sé an rud a roghnaigh tú. Is sonraí samplacha go soiléir iad, is féidir é a rith níos mó ná uair amháin gan bhaol, agus is féidir leat iad a scriosadh ina dhiaidh.",
+        "None, I will set this up myself": "Ceann ar bith, cuirfidh mé féin é seo ar bun",
+        "Nothing is imported. You start with an empty app and add your own data.": "Ní iompórtáiltear aon rud. Tosaíonn tú le haip fholamh agus cuireann tú do shonraí féin leis.",
+        "Example data": "Sonraí samplacha",
+        "Sample values for every schema this app supplies, generated from the schemas themselves. It shows the lists, detail pages and dashboards working rather than telling a story. Safe to run more than once, and you can delete it afterwards.": "Luachanna samplacha do gach scéimre a sholáthraíonn an aip seo, ginte ó na scéimrí féin. Taispeánann siad na liostaí, na leathanaigh mhionsonraí agus na deais ag obair seachas scéal a insint. Sábháilte le rith arís agus is féidir é a scriosadh ina dhiaidh.",
         "from amount {amount}": "ó mhéid {amount}",
         "Gated transition: {transition}": "Aistriú faoi gharda: {transition}",
         "Each declared chain provisions an ordered task sequence when its transition is attempted. Approvers decide in their task inbox, not here.": "Osclaíonn gach slabhra dearbhaithe seicheamh ordaithe tascanna nuair a dhéantar iarracht ar an aistriú. Cinneann ceadaitheoirí ina mbosca isteach tascanna, ní anseo.",

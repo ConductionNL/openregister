@@ -1,5 +1,13 @@
 {
     "translations": {
+        "Load example data?": "Beispieldaten laden?",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Beispieldaten füllen die Listen, Detailseiten und Dashboards, damit Sie die App sofort in Betrieb sehen. Wählen Sie \"Keine\" bei einer Produktivinstallation.",
+        "Load the example data": "Die Beispieldaten laden",
+        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Lädt, was Sie gewählt haben. Die Daten sind erkennbar Beispieldaten, der Vorgang kann mehrfach ausgeführt werden, und Sie können sie danach löschen.",
+        "None, I will set this up myself": "Keine, ich richte das selbst ein",
+        "Nothing is imported. You start with an empty app and add your own data.": "Es wird nichts importiert. Sie beginnen mit einer leeren App und fügen Ihre eigenen Daten hinzu.",
+        "Example data": "Beispieldaten",
+        "Sample values for every schema this app supplies, generated from the schemas themselves. It shows the lists, detail pages and dashboards working rather than telling a story. Safe to run more than once, and you can delete it afterwards.": "Beispielwerte für jedes Schema, das diese App mitbringt, aus den Schemata selbst erzeugt. Sie zeigen die Listen, Detailseiten und Dashboards in Betrieb, statt eine Geschichte zu erzählen. Mehrfach ausführbar, und Sie können sie danach löschen.",
         "from amount {amount}": "ab Betrag {amount}",
         "Gated transition: {transition}": "Bewachter Übergang: {transition}",
         "Each declared chain provisions an ordered task sequence when its transition is attempted. Approvers decide in their task inbox, not here.": "Jede deklarierte Kette eröffnet beim Versuch des Übergangs eine geordnete Aufgabensequenz. Freigebende entscheiden in ihrem Aufgabeneingang, nicht hier.",

@@ -1,5 +1,13 @@
 {
     "translations": {
+        "Load example data?": "Betöltsük a mintaadatokat?",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "A mintaadatok feltöltik a listákat, a részletoldalakat és az irányítópultokat, így azonnal működés közben látja az alkalmazást. Éles telepítésen válassza a \"Nincs\" lehetőséget.",
+        "Load the example data": "Mintaadatok betöltése",
+        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Betölti, amit választott. Ezek nyilvánvalóan mintaadatok, a művelet biztonságosan megismételhető, és utána törölheti őket.",
+        "None, I will set this up myself": "Nincs, magam állítom be",
+        "Nothing is imported. You start with an empty app and add your own data.": "Semmi nem kerül importálásra. Üres alkalmazással kezd, és a saját adatait adja hozzá.",
+        "Example data": "Mintaadatok",
+        "Sample values for every schema this app supplies, generated from the schemas themselves. It shows the lists, detail pages and dashboards working rather than telling a story. Safe to run more than once, and you can delete it afterwards.": "Mintaértékek minden sémához, amelyet ez az alkalmazás hoz magával, magukból a sémákból generálva. Működés közben mutatják a listákat, a részletoldalakat és az irányítópultokat, ahelyett hogy történetet mesélnének. Biztonságosan ismételhető és utána törölhető.",
         "from amount {amount}": "{amount} összegtől",
         "Gated transition: {transition}": "Őrzött átmenet: {transition}",
         "Each declared chain provisions an ordered task sequence when its transition is attempted. Approvers decide in their task inbox, not here.": "Minden deklarált lánc rendezett feladatsorozatot nyit, amikor az átmenetet megkísérlik. A jóváhagyók a feladat-bejövőjükben döntenek, nem itt.",

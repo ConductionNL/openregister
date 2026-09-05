@@ -1,5 +1,13 @@
 {
     "translations": {
+        "Load example data?": "Загрузить примеры данных?",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Примеры данных заполняют списки, страницы подробностей и панели, чтобы вы сразу увидели приложение в работе. На рабочей установке выберите \"Нет\".",
+        "Load the example data": "Загрузить примеры данных",
+        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Загружает то, что вы выбрали. Это явно примеры данных, действие можно безопасно повторить, а потом их можно удалить.",
+        "None, I will set this up myself": "Нет, я настрою это сам",
+        "Nothing is imported. You start with an empty app and add your own data.": "Ничего не импортируется. Вы начинаете с пустого приложения и добавляете свои данные.",
+        "Example data": "Примеры данных",
+        "Sample values for every schema this app supplies, generated from the schemas themselves. It shows the lists, detail pages and dashboards working rather than telling a story. Safe to run more than once, and you can delete it afterwards.": "Примеры значений для каждой схемы, которую поставляет это приложение, созданные из самих схем. Они показывают списки, страницы подробностей и панели в работе, а не рассказывают историю. Безопасно повторять и потом удалить.",
         "from amount {amount}": "от суммы {amount}",
         "Gated transition: {transition}": "Контролируемый переход: {transition}",
         "Each declared chain provisions an ordered task sequence when its transition is attempted. Approvers decide in their task inbox, not here.": "Каждая объявленная цепочка открывает упорядоченную последовательность задач при попытке перехода. Согласующие решают в своём ящике задач, а не здесь.",

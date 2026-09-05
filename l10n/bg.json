@@ -1,5 +1,13 @@
 {
     "translations": {
+        "Load example data?": "Да се заредят ли примерни данни?",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Примерните данни попълват списъците, страниците с подробности и таблата, за да видите приложението веднага в действие. Изберете \"Няма\" при производствена инсталация.",
+        "Load the example data": "Заредете примерните данни",
+        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Зарежда това, което сте избрали. Данните са явно примерни, действието може да се повтори безопасно и след това можете да ги изтриете.",
+        "None, I will set this up myself": "Няма, ще настроя това сам",
+        "Nothing is imported. You start with an empty app and add your own data.": "Нищо не се внася. Започвате с празно приложение и добавяте собствени данни.",
+        "Example data": "Примерни данни",
+        "Sample values for every schema this app supplies, generated from the schemas themselves. It shows the lists, detail pages and dashboards working rather than telling a story. Safe to run more than once, and you can delete it afterwards.": "Примерни стойности за всяка схема, която приложението предоставя, генерирани от самите схеми. Показват списъците, страниците с подробности и таблата в действие, вместо да разказват история. Безопасно за повторно изпълнение и може да се изтрие после.",
         "from amount {amount}": "от сума {amount}",
         "Gated transition: {transition}": "Контролиран преход: {transition}",
         "Each declared chain provisions an ordered task sequence when its transition is attempted. Approvers decide in their task inbox, not here.": "Всяка декларирана верига отваря подредена последователност от задачи при опит за прехода. Одобряващите решават в своята кутия със задачи, не тук.",

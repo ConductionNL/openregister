@@ -1,5 +1,13 @@
 {
     "translations": {
+        "Load example data?": "Charger des données d’exemple ?",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Les données d’exemple remplissent les listes, les pages de détail et les tableaux de bord, pour voir l’application fonctionner tout de suite. Choisissez \"Aucune\" sur une installation de production.",
+        "Load the example data": "Charger les données d’exemple",
+        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Charge ce que vous avez choisi. Ce sont visiblement des données d’exemple, l’opération peut être relancée sans risque, et vous pouvez les supprimer ensuite.",
+        "None, I will set this up myself": "Aucune, je configure moi-même",
+        "Nothing is imported. You start with an empty app and add your own data.": "Rien n’est importé. Vous commencez avec une application vide et ajoutez vos propres données.",
+        "Example data": "Données d’exemple",
+        "Sample values for every schema this app supplies, generated from the schemas themselves. It shows the lists, detail pages and dashboards working rather than telling a story. Safe to run more than once, and you can delete it afterwards.": "Des valeurs d’exemple pour chaque schéma fourni par cette application, générées à partir des schémas eux-mêmes. Elles montrent les listes, les pages de détail et les tableaux de bord en fonctionnement plutôt que de raconter une histoire. Relançable sans risque, et supprimable ensuite.",
         "from amount {amount}": "à partir du montant {amount}",
         "Gated transition: {transition}": "Transition contrôlée : {transition}",
         "Each declared chain provisions an ordered task sequence when its transition is attempted. Approvers decide in their task inbox, not here.": "Chaque chaîne déclarée ouvre une séquence de tâches ordonnée dès que la transition est tentée. Les approbateurs décident dans leur boîte de tâches, pas ici.",
