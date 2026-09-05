@@ -23,9 +23,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
-use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\UploadService;
@@ -375,11 +373,13 @@ class ConfigurationsController extends Controller {
 				throw new Exception('Failed to encode configuration data to JSON');
 			}
 
-			// Generate filename.
+			// Generate filename. `date()` rather than a DateTime instance: the
+			// two produce the same string from the same default timezone, and
+			// this was the class's fourteenth coupled type.
 			$filename = sprintf(
 				'configuration_%s_%s.json',
 				$configuration->getTitle() ?? 'unknown',
-				(new DateTime())->format('Y-m-d_His')
+				date('Y-m-d_His')
 			);
 
 			// Return as downloadable file.
@@ -435,23 +435,25 @@ class ConfigurationsController extends Controller {
 				return $jsonData;
 			}
 
-			// Create a Configuration entity from the JSON data.
-			// This is required for proper entity tracking in ImportHandler.
-			$configuration = new Configuration();
-			$configuration->setTitle($jsonData['info']['title'] ?? 'Imported Configuration');
-			$configuration->setDescription($jsonData['info']['description'] ?? '');
-			$configuration->setVersion($jsonData['info']['version'] ?? '1.0.0');
-			$configuration->setSourceType('upload');
-			$configuration->setApp($this->request->getParam('appId') ?? ($jsonData['x-openregister']['app'] ?? 'unknown'));
-			$configuration->setOwner($this->request->getParam('owner') ?? $this->userId);
-			$configuration->setCreated(new DateTime());
-			$configuration->setUpdated(new DateTime());
-			$configuration->setRegisters([]);
-			$configuration->setSchemas([]);
-			$configuration->setObjects([]);
-
-			// Persist the configuration entity so it appears in the configurations list.
-			$configuration = $this->configurationMapper->insert($configuration);
+			// Create and persist the Configuration entity from the JSON data.
+			// ImportHandler needs the entity for its tracking, and it has to be
+			// in the list afterwards, so it is built and inserted in one call.
+			//
+			// `created` and `updated` are NOT set here: the mapper stamps both
+			// on insert, so setting them was writing values it overwrote.
+			$configuration = $this->configurationMapper->createFromArray(
+				[
+					'title' => ($jsonData['info']['title'] ?? 'Imported Configuration'),
+					'description' => ($jsonData['info']['description'] ?? ''),
+					'version' => ($jsonData['info']['version'] ?? '1.0.0'),
+					'sourceType' => 'upload',
+					'app' => ($this->request->getParam('appId') ?? ($jsonData['x-openregister']['app'] ?? 'unknown')),
+					'owner' => ($this->request->getParam('owner') ?? $this->userId),
+					'registers' => [],
+					'schemas' => [],
+					'objects' => [],
+				]
+			);
 
 			// Import the data.
 			$force = $this->request->getParam('force') === 'true' || $this->request->getParam('force') === true;

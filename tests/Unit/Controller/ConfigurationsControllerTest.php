@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ConfigurationsController;
+use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\UploadService;
@@ -360,6 +361,49 @@ class ConfigurationsControllerTest extends TestCase {
 		$data = $result->getData();
 		$this->assertEquals('Import successful', $data['message']);
 		$this->assertArrayHasKey('imported', $data);
+	}
+
+	public function testImportBuildsTheConfigurationThroughTheMapper(): void {
+		// The entity used to be assembled here with `new Configuration()` and
+		// then inserted, and two of the setters wrote `created`/`updated` that
+		// the mapper stamps again on insert. It is one call now, so this pins
+		// the fields the import actually carries across.
+		$this->request->method('getUploadedFile')->willReturn(['tmp_name' => '/tmp/test.json']);
+		$this->request->method('getParam')
+			->willReturnMap([
+				['appId', null, null],
+				['owner', null, 'admin'],
+				['version', null, '1.0.0'],
+				['force', null, false],
+			]);
+		$this->request->method('getParams')->willReturn([]);
+
+		$jsonData = [
+			'info' => ['title' => 'Vergunningen', 'description' => 'Desc', 'version' => '2.1.0'],
+			'x-openregister' => ['app' => 'buildiq'],
+		];
+		$this->configurationService->method('getUploadedJson')->willReturn($jsonData);
+		$this->configurationService->method('importFromJson')->willReturn(['schemas' => [], 'registers' => [], 'objects' => []]);
+
+		$seen = null;
+		$this->configurationMapper->expects($this->once())
+			->method('createFromArray')
+			->willReturnCallback(function (array $data) use (&$seen): Configuration {
+				$seen = $data;
+
+				return new Configuration();
+			});
+
+		$this->controller->import();
+
+		$this->assertSame('Vergunningen', $seen['title']);
+		$this->assertSame('2.1.0', $seen['version']);
+		$this->assertSame('upload', $seen['sourceType']);
+		// No appId parameter, so the descriptor's own app is the fallback.
+		$this->assertSame('buildiq', $seen['app']);
+		$this->assertSame('admin', $seen['owner']);
+		$this->assertArrayNotHasKey('created', $seen, 'the mapper stamps created on insert');
+		$this->assertArrayNotHasKey('updated', $seen, 'the mapper stamps updated on insert');
 	}
 
 	public function testImportReturnsJsonResponseFromGetUploadedJson(): void {
