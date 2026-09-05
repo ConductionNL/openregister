@@ -465,9 +465,19 @@ class ConfigurationsController extends Controller {
 			);
 
 			// Link the imported registers, schemas and objects to the configuration.
-			$registerIds = array_map(static fn ($r) => $r->getId(), $result['registers']);
-			$schemaIds = array_map(static fn ($schema) => $schema->getId(), $result['schemas']);
-			$objectIds = array_map(static fn ($obj) => $obj->getId(), $result['objects']);
+			//
+			// `$result['objects']` IS NOT UNIFORMLY ENTITIES. ImportHandler
+			// appends an ObjectEntity in two places and a bare id in two others
+			// (`$result['objects'][] = $existingObject->getId()`), so a
+			// descriptor that carries seed objects reached
+			// `$obj->getId()` on an int and died with a TypeError. That is an
+			// `Error`, not an `Exception`, so the catch below did not see it
+			// either: the endpoint answered 500 with Nextcloud's HTML error page
+			// instead of the JSON it documents. Measured on stackiq's register,
+			// whose import was the only one of eighteen to fail this way.
+			$registerIds = self::idsOf(items: $result['registers']);
+			$schemaIds = self::idsOf(items: $result['schemas']);
+			$objectIds = self::idsOf(items: $result['objects']);
 
 			$configuration->setRegisters(array_values(array_unique($registerIds)));
 			$configuration->setSchemas(array_values(array_unique($schemaIds)));
@@ -480,8 +490,42 @@ class ConfigurationsController extends Controller {
 					'imported' => $result,
 				]
 			);
-		} catch (Exception $e) {
+		} catch (\Throwable $e) {
+			// Throwable, not Exception. A TypeError in this method is a bug in
+			// OpenRegister rather than bad input, and answering it with a 500
+			// HTML page hides which of the two it was — the caller cannot tell a
+			// malformed descriptor from a crash, and neither could the operator
+			// reading the response.
 			return new JSONResponse(data: ['error' => 'Failed to import configuration: ' . $e->getMessage()], statusCode: 400);
 		}//end try
 	}//end import()
+
+	/**
+	 * The ids of an import result list, whether it holds entities or ids.
+	 *
+	 * @param mixed $items Entities, ids, or a mix of the two.
+	 *
+	 * @return array<int, int|string> The ids, with anything unusable dropped.
+	 *
+	 * @spec openspec/changes/a-configuration-import-500s-on-a-descriptor-with-objects/specs/configuration-import/spec.md#requirement-the-import-endpoint-answers-in-json-req-cim-001
+	 */
+	private static function idsOf(mixed $items): array {
+		if (is_array($items) === false) {
+			return [];
+		}
+
+		$ids = [];
+		foreach ($items as $item) {
+			if (is_object($item) === true && method_exists($item, 'getId') === true) {
+				$ids[] = $item->getId();
+				continue;
+			}
+
+			if (is_int($item) === true || is_string($item) === true) {
+				$ids[] = $item;
+			}
+		}
+
+		return $ids;
+	}//end idsOf()
 }//end class
