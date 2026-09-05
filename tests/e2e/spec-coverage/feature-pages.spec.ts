@@ -127,6 +127,11 @@ async function expectButton(page: Page, name: RegExp): Promise<void> {
 		timeout: 12_000,
 	})
 }
+async function expectLink(page: Page, name: RegExp): Promise<void> {
+	await expect(page.getByRole('link', { name }).first()).toBeVisible({
+		timeout: 12_000,
+	})
+}
 
 test.describe('feature-pages — real UI render + actions', () => {
 	test.use({ storageState: STORAGE_STATE })
@@ -217,7 +222,12 @@ test.describe('feature-pages — real UI render + actions', () => {
 		const e = trackErrors(page)
 		await gotoPage(page, FeaturesRoadmapIndex)
 		await expectHeading(page, /^Features$|Your input is the roadmap/i)
-		await expectButton(page, /Suggest (a )?feature/i)
+		// A LINK, not a button. The in-product suggestion modal was retired in
+		// nextcloud-vue 2.36.4 (team decision 2026-09-04: the forge is where
+		// the conversation happens), and the CTA is now an anchor to the
+		// forge's feature-request issue form. `getByRole('button')` matched
+		// nothing from the moment openregister took that version.
+		await expectLink(page, /Suggest (a )?feature/i)
 		await expectButton(page, /Show roadmap/i)
 		expect(e.console, e.console.join(' | ')).toHaveLength(0)
 		expect(e.http, e.http.join(' | ')).toHaveLength(0)
