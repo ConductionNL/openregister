@@ -33,6 +33,8 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RunObjectLock;
+use OCA\OpenRegister\Db\RunObjectLockMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\LockedException;
@@ -69,6 +71,7 @@ class LockHandler {
 	 * @param IGroupManager $groupManager Group manager for admin checks
 	 * @param SchemaMapper $schemaMapper Schema mapper for resolving manage rules
 	 * @param IAppConfig $appConfig App config store for advisory (pre-creation) locks
+	 * @param RunObjectLockMapper|null $runLocks Registry of run-held locks, for the terminal listener and the sweep
 	 */
 	public function __construct(
 		private readonly MagicMapper $magicMapper,
@@ -78,6 +81,7 @@ class LockHandler {
 		private readonly IGroupManager $groupManager,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly IAppConfig $appConfig,
+		private readonly ?RunObjectLockMapper $runLocks = null,
 	) {
 	}//end __construct()
 
@@ -298,10 +302,13 @@ class LockHandler {
 	 * finding where any authenticated user could unlock any locked object.
 	 *
 	 * @param ObjectEntity $object The locked object the caller wants to unlock.
+	 * @param string|null $runUuid The flow run asking, when a run is asking.
 	 *
 	 * @return bool True if the caller may unlock this object.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-an-administrator-may-break-a-lock-and-the-break-is-recorded
 	 */
-	private function callerMayUnlock(ObjectEntity $object): bool {
+	private function callerMayUnlock(ObjectEntity $object, ?string $runUuid = null): bool {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return false;
@@ -309,15 +316,27 @@ class LockHandler {
 
 		$userId = $user->getUID();
 
-		// Admins always pass.
+		// Admins always pass. For a run lock this is the BREAK-LOCK route and
+		// the only one, so a wedged run cannot hold a case hostage; callers
+		// that mean to break a run's lock should use breakLock(), which
+		// records the displacement.
 		if ($this->groupManager->isAdmin($userId) === true) {
 			return true;
 		}
 
-		// Lock holder.
-		$lockInfo = $object->getLockInfo();
-		if (is_array($lockInfo) === true && ($lockInfo['user'] ?? null) === $userId) {
+		// The holder. For a run lock this admits only the holding run, and in
+		// particular NOT the run's own runAs user: a person must not be able
+		// to walk in behind the identity the run happens to execute as.
+		if ($object->isLockedBySomeoneElse(userId: $userId, runUuid: $runUuid) === false) {
 			return true;
+		}
+
+		// The object-owner and schema-manage routes are for USER locks only.
+		// Extending them to run locks would mean any case owner could quietly
+		// defeat the engine's mutual exclusion, which is the whole point of a
+		// run lock. They keep an administrator break as their escape hatch.
+		if ($object->getLockedByRun() !== null) {
+			return false;
 		}
 
 		// Object owner.
@@ -349,7 +368,14 @@ class LockHandler {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function lock(string $identifier, ?string $process = null, ?int $duration = null, bool $advisory = false): array {
+	public function lock(
+		string $identifier,
+		?string $process = null,
+		?int $duration = null,
+		bool $advisory = false,
+		?string $runUuid = null,
+		?string $nodeId = null,
+	): array {
 		$this->logger->debug(
 			message: '[LockHandler] Locking object',
 			context: [
@@ -395,8 +421,16 @@ class LockHandler {
 				entity: $objectBefore,
 				register: $context['register'],
 				schema: $context['schema'],
-				lockDuration: $duration
+				lockDuration: $duration,
+				process: $process,
+				runUuid: $runUuid
 			);
+
+			// Record a run's lock so the terminal listener and the sweep can
+			// find it without reading objects. Bookkeeping only: the payload
+			// on the object stays the sole authority for the write guard, so
+			// a failure to record must not undo a lock that was taken.
+			$this->recordRunLock(object: $objectAfter, runUuid: $runUuid, nodeId: $nodeId);
 
 			$lockResult = [
 				'uuid' => $objectAfter->getUuid(),
@@ -457,7 +491,12 @@ class LockHandler {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function unlock(string $identifier, bool $advisory = false): bool {
+	public function unlock(
+		string $identifier,
+		bool $advisory = false,
+		?string $runUuid = null,
+		bool $break = false,
+	): bool {
 		$this->logger->debug(
 			message: '[LockHandler] Unlocking object',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'identifier' => $identifier, 'advisory' => $advisory]
@@ -503,7 +542,7 @@ class LockHandler {
 				return true;
 			}
 
-			if ($this->callerMayUnlock(object: $objectBefore) === false) {
+			if ($break === false && $this->callerMayUnlock(object: $objectBefore, runUuid: $runUuid) === false) {
 				$this->logger->warning(
 					message: '[LockHandler] Unauthorized unlock attempt',
 					context: [
@@ -515,14 +554,41 @@ class LockHandler {
 				throw new Exception('User does not have permission to unlock this object');
 			}
 
+			// Capture the holder BEFORE the release, so a break can name what
+			// it displaced. After unlockObjectEntity() there is nothing to
+			// name.
+			$displaced = $objectBefore->describeLockHolder();
+			$displacedRun = $objectBefore->getLockedByRun();
+
 			// Use MagicMapper for unlock operation.
 			$objectAfter = $this->magicMapper->unlockObjectEntity(
 				entity: $objectBefore,
 				register: $context['register'],
-				schema: $context['schema']
+				schema: $context['schema'],
+				runUuid: $runUuid,
+				break: $break
 			);
 
-			// Record unlock action in audit trail.
+			if ($displacedRun !== null) {
+				$this->forgetRunLock(runUuid: $displacedRun, objectUuid: (string)$objectAfter->getUuid());
+			}
+
+			// Record unlock action in audit trail. A BREAK is recorded under
+			// its own action, naming the holder it displaced: an
+			// administrator overriding somebody else's lock is not the same
+			// event as a holder releasing their own, and an audit trail that
+			// cannot tell them apart cannot answer who took the case back.
+			if ($break === true) {
+				$this->auditTrailMapper->createAuditTrailEntry(
+					object: $objectAfter,
+					action: 'lock.broken',
+					context: [
+						'displacedHolder' => $displaced,
+						'displacedRun' => $displacedRun,
+					]
+				);
+			}
+
 			$this->auditTrailMapper->createAuditTrail(old: $objectBefore, new: $objectAfter, action: 'unlock');
 
 			$this->logger->info(
@@ -548,6 +614,106 @@ class LockHandler {
 			throw $e;
 		}//end try
 	}//end unlock()
+
+	/**
+	 * Break a lock as an administrator, and record the displacement.
+	 *
+	 * The escape hatch for a wedged run. A run lock refuses everybody by
+	 * design, holder, object owner and schema manager included, so without a
+	 * break a run that died in a way none of the three release layers caught
+	 * would hold a case until its TTL ran out. Restricted to administrators
+	 * and always audited: an override nobody can see afterwards is
+	 * indistinguishable from the lock never having worked.
+	 *
+	 * @param string $identifier Object ID or UUID.
+	 *
+	 * @return bool True when a lock was broken.
+	 *
+	 * @throws Exception If the caller is not an administrator.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-an-administrator-may-break-a-lock-and-the-break-is-recorded
+	 */
+	public function breakLock(string $identifier): bool {
+		$user = $this->userSession->getUser();
+		if ($user === null || $this->groupManager->isAdmin($user->getUID()) === false) {
+			throw new Exception('Only an administrator may break a lock');
+		}
+
+		return $this->unlock(identifier: $identifier, break: true);
+	}//end breakLock()
+
+	/**
+	 * Record a run's lock in the registry.
+	 *
+	 * Bookkeeping. A failure here is logged and swallowed: the lock itself is
+	 * already taken and is what the write guard reads, so failing the lock
+	 * because its index entry did not land would trade a working lock for no
+	 * lock at all. The TTL still bounds a lock whose row is missing.
+	 *
+	 * @param ObjectEntity $object The locked object.
+	 * @param string|null $runUuid The holding run, or null for a user lock.
+	 * @param string|null $nodeId The flow node that took it.
+	 *
+	 * @return void
+	 */
+	private function recordRunLock(ObjectEntity $object, ?string $runUuid, ?string $nodeId): void {
+		if ($runUuid === null || trim($runUuid) === '' || $this->runLocks === null) {
+			return;
+		}
+
+		try {
+			$payload = ($object->getLocked() ?? []);
+			$expires = null;
+			if (isset($payload['expiration']) === true) {
+				$expires = new DateTime((string)$payload['expiration']);
+			}
+
+			$row = new RunObjectLock();
+			$row->setRunUuid(trim($runUuid));
+			$row->setObjectUuid((string)$object->getUuid());
+			$row->setRegisterId((string)$object->getRegister());
+			$row->setSchemaId((string)$object->getSchema());
+			$row->setNodeId($nodeId);
+			$row->setLockedAt(new DateTime());
+			$row->setExpiresAt($expires);
+
+			$this->runLocks->record(lock: $row);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[LockHandler] Could not record a run lock; the lock itself stands',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'runUuid' => $runUuid,
+					'error' => $e->getMessage(),
+				]
+			);
+		}//end try
+	}//end recordRunLock()
+
+	/**
+	 * Forget a run's registry row after the lock is released.
+	 *
+	 * @param string $runUuid The run.
+	 * @param string $objectUuid The object.
+	 *
+	 * @return void
+	 */
+	private function forgetRunLock(string $runUuid, string $objectUuid): void {
+		if ($this->runLocks === null) {
+			return;
+		}
+
+		try {
+			$this->runLocks->forget(runUuid: $runUuid, objectUuid: $objectUuid);
+		} catch (\Throwable $e) {
+			// A row left behind is collected by the sweep on its own terms.
+			$this->logger->debug(
+				message: '[LockHandler] Could not forget a run lock row',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+		}
+	}//end forgetRunLock()
 
 	/**
 	 * Check if an object is locked
