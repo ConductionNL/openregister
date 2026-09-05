@@ -87,6 +87,8 @@ class RunLockRegistry {
 	 * @param string|null $nodeId The flow node that took it.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-every-lock-a-run-holds-is-released-when-the-run-ends
 	 */
 	public function record(ObjectEntity $object, ?string $runUuid, ?string $nodeId): void {
 		if ($runUuid === null || trim($runUuid) === '') {
@@ -125,6 +127,8 @@ class RunLockRegistry {
 	 * @param string $objectUuid The object.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-every-lock-a-run-holds-is-released-when-the-run-ends
 	 */
 	public function forget(string $runUuid, string $objectUuid): void {
 		try {

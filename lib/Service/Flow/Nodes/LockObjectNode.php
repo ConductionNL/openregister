@@ -180,6 +180,8 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * The palette description.
 	 *
 	 * @return string The description.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-step-takes-a-lock-or-parks-the-run-and-retries
 	 */
 	public function getDescription(): string {
 		return $this->l10n->t(
@@ -211,6 +213,8 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * Top-level configuration keys.
 	 *
 	 * @return array<int, string> The keys.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-step-takes-a-lock-or-parks-the-run-and-retries
 	 */
 	public function configKeys(): array {
 		return ['uuid', 'duration', 'waitSeconds', 'process'];
@@ -220,6 +224,8 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * The editor form.
 	 *
 	 * @return array<int, array<string, mixed>> The fields.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-step-takes-a-lock-or-parks-the-run-and-retries
 	 */
 	public function configForm(): array {
 		return [
