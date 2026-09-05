@@ -220,11 +220,6 @@
       <code><![CDATA[$operation = &$this->oas['paths'][$pathName][$method]]]></code>
     </UnsupportedPropertyReferenceUsage>
   </file>
-  <file src="lib/Service/Object/LockHandler.php">
-    <UnusedReturnValue>
-      <code><![CDATA[bool]]></code>
-    </UnusedReturnValue>
-  </file>
   <file src="lib/Service/Object/SaveObjects.php">
     <ImplicitToStringCast>
       <code><![CDATA[$registerId]]></code>

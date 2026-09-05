@@ -3182,21 +3182,25 @@ class SaveObject {
 			);
 
 			// Check if object is locked - prevent updates on locked objects.
-			$lockData = $existingObject->getLocked();
-			if ($lockData !== null && is_array($lockData) === true) {
-				$currentUser = $this->userSession->getUser();
-				$currentUserId = null;
-				if ($currentUser !== null) {
-					$currentUserId = $currentUser->getUID();
-				}
+			//
+			// This guard NEVER FIRED before the run-scoped-locking change. It
+			// read the holder from `$lockData['userId']`, and
+			// `ObjectEntity::lock()` has always written it under `user`, so
+			// `$lockOwner` was invariably null and the `!== null` test
+			// short-circuited every time. Every lock taken since the endpoint
+			// shipped was decorative on this path. It is fixed by delegating
+			// to the one production predicate instead of re-spelling the
+			// comparison here, which is what went wrong in the first place.
+			$currentUser = $this->userSession->getUser();
+			$currentUserId = null;
+			if ($currentUser !== null) {
+				$currentUserId = $currentUser->getUID();
+			}
 
-				$lockOwner = $lockData['userId'] ?? null;
-
-				// If object is locked by someone other than the current user, prevent update.
-				if ($lockOwner !== null && $lockOwner !== $currentUserId) {
-					$unlockAdvice = 'Please unlock the object before attempting to update it.';
-					throw new Exception("Cannot update object: Object is locked by user '{$lockOwner}'. " . $unlockAdvice);
-				}
+			if ($existingObject->isLockedBySomeoneElse(userId: $currentUserId) === true) {
+				$holder = (string)$existingObject->describeLockHolder();
+				$unlockAdvice = 'Please unlock the object before attempting to update it.';
+				throw new Exception("Cannot update object: Object is locked by {$holder}. " . $unlockAdvice);
 			}
 
 			return $existingObject;

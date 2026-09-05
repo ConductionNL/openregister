@@ -151,14 +151,13 @@ class RevertHandler {
 			);
 		}
 
-		// Check if the object is locked.
-		if ($object->isLocked() === true) {
-			$userId = $this->container->get('userId');
-			if ($object->getLockedBy() !== $userId) {
-				throw new LockedException(
-					message: sprintf('Object is locked by %s', $object->getLockedBy())
-				);
-			}
+		// Check if the object is locked. Ownership is decided by the one
+		// production predicate, so a run-held lock refuses the run's own
+		// runAs user here exactly as it does at every other guard.
+		if ($object->isLockedBySomeoneElse(userId: $this->container->get('userId')) === true) {
+			throw new LockedException(
+				message: sprintf('Object is locked by %s', (string)$object->describeLockHolder())
+			);
 		}
 
 		// Get the reverted object using AuditTrailMapper.

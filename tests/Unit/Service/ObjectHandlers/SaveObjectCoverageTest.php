@@ -569,9 +569,23 @@ class SaveObjectCoverageTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	private function lockAs(\OCA\OpenRegister\Db\ObjectEntity $entity, string $uid): void {
+		// Lock through the PRODUCTION writer. These fixtures used to hand-write
+		// setLocked(['userId' => ...]), a payload shape ObjectEntity::lock() has
+		// never produced, and they passed against a guard that read the same
+		// phantom key. That agreement is why the guard never fired on a real
+		// lock. Going through lock() means writer and reader can no longer
+		// diverge without this file failing.
+		$holder = $this->createMock(IUser::class);
+		$holder->method('getUID')->willReturn($uid);
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($holder);
+		$entity->lock($session, 'test-process', 3600);
+	}
+
 	public function testFindAndValidateExistingObjectThrowsWhenLockedByDifferentUser(): void {
 		$entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
-		$entity->setLocked(['userId' => 'other-user']);
+		$this->lockAs($entity, 'other-user');
 
 		$this->objectEntityMapper->method('find')
 			->willReturn($entity);
@@ -581,7 +595,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 
 		$this->expectException(Exception::class);
-		$this->expectExceptionMessage('Cannot update object: Object is locked by user');
+		$this->expectExceptionMessage('Cannot update object: Object is locked by other-user');
 
 		$this->invokePrivate('findAndValidateExistingObject', [
 			'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
@@ -599,7 +613,7 @@ class SaveObjectCoverageTest extends TestCase {
 	 */
 	public function testFindAndValidateExistingObjectAllowsLockBySameUser(): void {
 		$entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
-		$entity->setLocked(['userId' => 'current-user']);
+		$this->lockAs($entity, 'current-user');
 
 		$this->objectEntityMapper->method('find')
 			->willReturn($entity);
@@ -626,7 +640,7 @@ class SaveObjectCoverageTest extends TestCase {
 	 */
 	public function testFindAndValidateExistingObjectLockNoCurrentUser(): void {
 		$entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
-		$entity->setLocked(['userId' => 'some-user']);
+		$this->lockAs($entity, 'some-user');
 
 		$this->objectEntityMapper->method('find')
 			->willReturn($entity);

@@ -4064,6 +4064,10 @@ class ObjectService implements ObjectServiceInterface
      * @param bool        $advisory   When true, treat the identifier as a synthetic
      *                                pre-creation key and take the appConfig-backed
      *                                advisory lock without scanning object tables
+     * @param string|null $runUuid    Flow run taking the lock, for a run-scoped lock
+     *                                that refuses every other caller including the
+     *                                run's own runAs user
+     * @param string|null $nodeId     Flow node that took it, recorded for the sweep
      *
      * @return array Lock information
      *
@@ -4071,9 +4075,22 @@ class ObjectService implements ObjectServiceInterface
      *
      * @spec exclude One-line delegation to lock handler; lock behavior owned by object-lifecycle.
      */
-    public function lockObject(string $identifier, ?string $process=null, ?int $duration=null, bool $advisory=false): array
-    {
-        return $this->lockHandler->lock(identifier: $identifier, process: $process, duration: $duration, advisory: $advisory);
+    public function lockObject(
+        string $identifier,
+        ?string $process=null,
+        ?int $duration=null,
+        bool $advisory=false,
+        ?string $runUuid=null,
+        ?string $nodeId=null
+    ): array {
+        return $this->lockHandler->lock(
+            identifier: $identifier,
+            process: $process,
+            duration: $duration,
+            advisory: $advisory,
+            runUuid: $runUuid,
+            nodeId: $nodeId
+        );
     }//end lockObject()
 
     /**
@@ -4084,6 +4101,7 @@ class ObjectService implements ObjectServiceInterface
      * @param string|int $identifier The object to unlock
      * @param bool       $advisory   When true, release the appConfig-backed advisory
      *                               lock for this synthetic key without scanning tables
+     * @param string|null $runUuid   Flow run releasing the lock, for a run-scoped lock
      *
      * @return true True if unlocked successfully
      *
@@ -4091,10 +4109,30 @@ class ObjectService implements ObjectServiceInterface
      *
      * @spec exclude One-line delegation to lock handler; unlock behavior owned by object-lifecycle.
      */
-    public function unlockObject(string|int $identifier, bool $advisory=false): bool
+    public function unlockObject(string|int $identifier, bool $advisory=false, ?string $runUuid=null): bool
     {
-        return $this->lockHandler->unlock(identifier: (string) $identifier, advisory: $advisory);
+        return $this->lockHandler->unlock(
+            identifier: (string) $identifier,
+            advisory: $advisory,
+            runUuid: $runUuid
+        );
     }//end unlockObject()
+
+    /**
+     * Break a lock as an administrator, recording the displacement.
+     *
+     * @param string $identifier The object whose lock is to be broken
+     *
+     * @return bool True when a lock was broken
+     *
+     * @throws \Exception If the caller is not an administrator
+     *
+     * @spec exclude One-line delegation to lock handler; break behavior owned by the lock handler.
+     */
+    public function breakObjectLock(string $identifier): bool
+    {
+        return $this->lockHandler->breakLock(identifier: $identifier);
+    }//end breakObjectLock()
 
     /**
      * Bulk Save Operations Orchestrator (HIGH-PERFORMANCE BULK PROCESSING)

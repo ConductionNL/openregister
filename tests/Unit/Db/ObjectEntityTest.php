@@ -357,8 +357,17 @@ class ObjectEntityTest extends TestCase {
 		$session = $this->mockUserSession('user1');
 		$result = $this->entity->lock($session, 'editing', 3600);
 		$this->assertTrue($result);
-		// Note: lock uses named args which hit the Entity __call bug,
-		// so locked data may not actually be set. Testing the return value.
+
+		// The old comment here claimed the payload "may not actually be set"
+		// because of an Entity __call bug, and asserted only the return
+		// value. It is not true: lock() does write the payload, and a test
+		// that checks nothing about it is how the `user` vs `userId` key
+		// mismatch in SaveObject's guard went unnoticed for so long.
+		$payload = $this->entity->getLocked();
+		$this->assertSame('user1', $payload['user']);
+		$this->assertSame('editing', $payload['process']);
+		$this->assertSame(3600, $payload['duration']);
+		$this->assertSame(ObjectEntity::LOCK_KIND_USER, $payload['kind']);
 	}
 
 	public function testLockThrowsWithNoUser(): void {
@@ -373,8 +382,12 @@ class ObjectEntityTest extends TestCase {
 			'locked' => ['user' => 'user1', 'expiration' => $expiration->format('c')],
 		]);
 
+		// The refusal now NAMES the holder rather than saying "another user":
+		// a refusal that does not say who holds the lock leaves the reader
+		// with nowhere to go. See the run-scoped-object-locking spec,
+		// "A lock refuses a write and names its holder".
 		$this->expectException(Exception::class);
-		$this->expectExceptionMessage('Object is locked by another user');
+		$this->expectExceptionMessage('Object is locked by user1');
 		$this->entity->lock($this->mockUserSession('user2'));
 	}
 
