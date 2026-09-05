@@ -67,6 +67,7 @@ and no audited displacement.
 - **GIVEN** an object locked by run A executing as `alice`
 - **WHEN** `alice` evaluates the lock as a person, with no run uuid
 - **THEN** the lock MUST be held against her
+- @e2e tests/e2e/api-direct/flow-object-locking.spec.ts — a person's write is refused with 423 while a run holds the lock, the run's own runAs user included
 
 #### Scenario: A run may extend its own lock
 - **GIVEN** an object locked by run A
@@ -78,7 +79,7 @@ and no audited displacement.
 - **WHEN** a run executing as `alice` locks the same object
 - **THEN** the run MUST be refused, the payload MUST be unchanged, and the
   lock MUST still be a user lock when the run ends
-- @e2e exclude engine-internal, covered by ObjectEntityRunLockTest and the rig walk
+- @e2e tests/e2e/api-direct/flow-object-locking.spec.ts — a person's own lock survives a run passing over the object, and the run takes it once she releases
 
 ### Requirement: A lock refuses a write and names its holder
 
@@ -101,11 +102,13 @@ lock is meant to outlive every write the run makes.
 - **GIVEN** an object locked by a flow run
 - **WHEN** a person updates it over the API
 - **THEN** the write MUST be refused, and the message MUST name the holding run
+- @e2e tests/e2e/api-direct/flow-object-locking.spec.ts — a person's write is refused with 423 while a run holds the lock, the run's own runAs user included
 
 #### Scenario: The holder writes freely
 - **GIVEN** an object locked by a person
 - **WHEN** that same person updates it
 - **THEN** the write MUST succeed
+- @e2e tests/e2e/api-direct/flow-object-locking.spec.ts — a person's own lock survives a run passing over the object, and the run takes it once she releases
 
 #### Scenario: The holding run writes to the object it locked
 - **GIVEN** an object locked by run A
@@ -178,6 +181,7 @@ An empty firing SHALL take no lock and SHALL NOT suspend the run.
 - **GIVEN** a lock step whose recorded deadline has passed and whose target is still locked
 - **WHEN** it re-enters
 - **THEN** it MUST fail with a message naming the holding run, and MUST NOT take or break the lock
+- @e2e tests/e2e/api-direct/flow-object-locking.spec.ts — a second run bounces off the lock: it parks, then fails naming the holding run
 
 #### Scenario: An empty firing does not suspend
 - **GIVEN** a lock step reached with no items
@@ -216,12 +220,13 @@ The existing lock expiry SHALL remain in force as the final backstop.
 - **WHEN** the run is stored as `suspended`
 - **THEN** no terminal event MUST have been announced for it, and the lock MUST
   still be held by that run
-- @e2e exclude engine-internal, covered by RunLockReleaseTerminalityTest and the rig walk
+- @e2e tests/e2e/api-direct/flow-object-locking.spec.ts — an object is locked by its run, stays locked while the run is PARKED, and is released when the run ends
 
 #### Scenario: A completed run releases its locks
 - **GIVEN** a run holding a lock
 - **WHEN** the run completes
 - **THEN** the lock MUST be released
+- @e2e tests/e2e/api-direct/flow-object-locking.spec.ts — an object is locked by its run, stays locked while the run is PARKED, and is released when the run ends
 
 #### Scenario: A failed run releases its locks
 - **GIVEN** a run holding a lock
@@ -269,7 +274,8 @@ error naming the node.
 - **WHEN** the editor reads the node catalogue
 - **THEN** `openregister.lock-object` and `openregister.unlock-object` MUST both
   be present, each with an icon that resolves
-- @e2e exclude covered by the palette sweep in FlowNodePaletteIconsTest and the rig walk
+- @e2e tests/e2e/ci/flow-lock-nodes.spec.ts — the node catalogue serves both lock steps, each with an icon that resolves
+- @e2e tests/e2e/ci/flow-lock-nodes.spec.ts — both lock steps are offered in the editor palette and reach the canvas
 
 #### Scenario: A node with an unresolvable icon is reported, not deleted
 - **GIVEN** a registered node whose `getIcon()` names an image the server does not ship
