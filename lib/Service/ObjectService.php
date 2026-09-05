@@ -2492,14 +2492,10 @@ class ObjectService implements ObjectServiceInterface
             // Reject DELETE operations on archival-annotated schemas unless this
             // call originates from the retention sweep cron (which alone sets
             // $_retentionSweep true). User-driven deletes get a structured 403.
-            if ($_retentionSweep === false
-                && $this->currentSchema !== null
-                && $this->schemaHasArchivalAnnotation(schema: $this->currentSchema) === true
-            ) {
-                $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
-                throw new ArchivalImmutableException(
-                    schemaIdentifier: $schemaSlug,
-                    operation: 'delete'
+            if ($this->currentSchema !== null) {
+                $this->rejectIfArchivalImmutable(
+                    schema: $this->currentSchema,
+                    retentionSweep: $_retentionSweep
                 );
             }
 
@@ -2596,6 +2592,57 @@ class ObjectService implements ObjectServiceInterface
     {
         return $schema->hasArchivalAnnotation();
     }//end schemaHasArchivalAnnotation()
+
+    /**
+     * Refuse a delete on an archival-annotated schema.
+     *
+     * THE ONE PLACE THIS SERVICE DECIDES A DELETE IS NOT ALLOWED.
+     *
+     * `deleteObject()` and `deleteObjects()` destroy rows through different
+     * routes — the single-object path resolves its own scope and calls the
+     * delete handler once; the bulk loop resolves each row's scope itself and
+     * calls the handler per row. Only the first one used to ask this question,
+     * so `POST /api/bulk/{register}/{schema}/delete` was a third door onto the
+     * destruction that `DELETE /api/objects/...` answers with a 403 and
+     * `DELETE /api/deleted/{uuid}` has refused since openregister#3428. Both
+     * callers now go through here, so the rule has one definition per door and
+     * the doors read the same one.
+     *
+     * WHAT TO DO ABOUT AN UNRESOLVED SCHEMA IS THE CALLER'S DECISION, and the two
+     * callers genuinely differ, so this method takes a resolved Schema and each
+     * call site states its own policy. `deleteObject()` keeps skipping the gate
+     * when it has no schema in scope — a bare `deleteObject($uuid)` never had
+     * one and refusing those now would break every scopeless caller. The bulk
+     * loop refuses instead, because it resolves each ROW's own schema: failing
+     * to resolve one is not evidence the row is deletable, and falling back to
+     * the route's schema would gate a cross-table row on the wrong annotation.
+     *
+     * @param Schema $schema         Schema the row belongs to.
+     * @param bool   $retentionSweep True only for ArchivalRetentionTask, the sanctioned expiry path.
+     *
+     * @return void
+     *
+     * @throws ArchivalImmutableException When the delete is not permitted.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors deleteObject()'s $_retentionSweep parameter.
+     *
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+     */
+    private function rejectIfArchivalImmutable(Schema $schema, bool $retentionSweep): void
+    {
+        if ($retentionSweep === true) {
+            return;
+        }
+
+        if ($this->schemaHasArchivalAnnotation(schema: $schema) === false) {
+            return;
+        }
+
+        throw new ArchivalImmutableException(
+            schemaIdentifier: ($schema->getSlug() ?? (string) $schema->getId()),
+            operation: 'delete'
+        );
+    }//end rejectIfArchivalImmutable()
 
     /**
      * Reject an operation if the object has been transferred to e-Depot.
@@ -4509,24 +4556,49 @@ class ObjectService implements ObjectServiceInterface
     /**
      * Perform bulk delete operations on objects by UUID
      *
-     * This method handles both soft delete and hard delete based on the current state
-     * of the objects. If an object has no deleted value set, it performs a soft delete
-     * by setting the deleted timestamp. If an object already has a deleted value set,
-     * it performs a hard delete by removing the object from the database.
+     * EVERY DELETE HERE IS A SOFT DELETE. This docblock used to claim the loop
+     * escalated to a hard delete for a row already carrying a deleted timestamp;
+     * it does not, and never did — it calls `DeleteObject::deleteObject()` without
+     * `permanent: true`, which is the only thing that destroys a row. The claim
+     * was unfalsifiable while the loop ran zero iterations. Deleting a trashed row
+     * again re-tombstones it and reports success. Destroying a row for good is
+     * `DELETE /api/deleted/{uuid}` or `occ openregister:objects:purge`, both of
+     * which refuse an archival record (openregister#3428).
+     *
+     * EVERY REQUESTED UUID LANDS IN EXACTLY ONE OUTCOME BUCKET: the union of
+     * 'deleted_uuids' and 'skipped_uuids' is the submitted set. It used not to be
+     * — a UUID the permission filter removed, and a UUID whose handler answered
+     * false rather than throwing, left the loop in neither — so a caller could be
+     * told `requested 1, deleted 0, skipped 0` about a row that is still there.
      *
      * @param array $uuids         Array of object UUIDs to delete
      * @param bool  $_rbac         Whether to apply RBAC filtering
      * @param bool  $_multitenancy Whether to apply multi-organization filtering
      *
-     * @return array Associative array with 'deleted_uuids', 'skipped_uuids', and 'cascade_count' keys.
+     * @return array Associative array with 'deleted_uuids', 'skipped_uuids',
+     *               'skipped_reasons' and 'cascade_count' keys.
      *               'deleted_uuids' contains UUIDs of successfully deleted objects.
-     *               'skipped_uuids' contains UUIDs skipped due to RESTRICT or errors.
+     *               'skipped_uuids' contains UUIDs skipped by a gate, a RESTRICT
+     *               constraint or an error; it is the complement of 'deleted_uuids'.
+     *               'skipped_reasons' maps each skipped UUID to a structured
+     *               {error, message} pair, so an archival refusal is legible as
+     *               something other than a RESTRICT block.
      *               'cascade_count' contains total count of objects affected by cascade operations.
      *
      * @phpstan-param  array<int, string> $uuids
      * @psalm-param    array<int, string> $uuids
-     * @phpstan-return array{deleted_uuids: array<int, string>, skipped_uuids: array<int, string>, cascade_count: int}
-     * @psalm-return   array{deleted_uuids: array<int, string>, skipped_uuids: array<int, string>, cascade_count: int}
+     * @phpstan-return array{
+     *     deleted_uuids: array<int, string>,
+     *     skipped_uuids: array<int, string>,
+     *     skipped_reasons: array<string, array<string, mixed>>,
+     *     cascade_count: int
+     * }
+     * @psalm-return array{
+     *     deleted_uuids: array<int, string>,
+     *     skipped_uuids: array<int, string>,
+     *     skipped_reasons: array<string, array<string, mixed>>,
+     *     cascade_count: int
+     * }
      *
      * @spec exclude Bulk-delete loop over deleteHandler->deleteObject(); per-object RESTRICT/CASCADE behavior owned by referential-integrity.
      */
@@ -4534,7 +4606,12 @@ class ObjectService implements ObjectServiceInterface
     {
         $this->discardPendingSchemaRef();
         if (empty($uuids) === true) {
-            return ['deleted_uuids' => [], 'skipped_uuids' => [], 'cascade_count' => 0];
+            return [
+                'deleted_uuids'   => [],
+                'skipped_uuids'   => [],
+                'skipped_reasons' => [],
+                'cascade_count'   => 0,
+            ];
         }
 
         // Apply RBAC and multi-organization filtering if enabled.
@@ -4545,6 +4622,20 @@ class ObjectService implements ObjectServiceInterface
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy
             );
+        }
+
+        // EVERY REQUESTED UUID MUST LAND IN EXACTLY ONE OUTCOME BUCKET.
+        // A UUID the filter removes is a row the caller asked to delete and
+        // still believes it deleted. These used to vanish here: the endpoint
+        // reported `requested_count: 1, deleted_count: 0, skipped_count: 0`,
+        // which names no failure for a caller to act on. Report them as
+        // skipped, with the reason, so `requested = deleted + skipped` holds.
+        $skippedReasons = [];
+        foreach (array_diff($uuids, $filteredUuids) as $refusedUuid) {
+            $skippedReasons[$refusedUuid] = [
+                'error'   => 'OBJECT_NOT_PERMITTED',
+                'message' => 'Object is not visible to this user, or does not exist.',
+            ];
         }
 
         // PERF: resolve the scope AND the entity of every UUID with ONE batched
@@ -4562,7 +4653,7 @@ class ObjectService implements ObjectServiceInterface
         // referential integrity rules (CASCADE, SET_NULL, SET_DEFAULT, RESTRICT)
         // are enforced per object. Skips objects that fail (e.g., RESTRICT blocks).
         $deletedObjectIds  = [];
-        $skippedUuids      = [];
+        $skippedUuids      = array_keys($skippedReasons);
         $totalCascadeCount = 0;
         // BUG-OBJ-5: collect the distinct (registerId, schemaId) pairs of the
         // objects we actually delete so we can invalidate the per-schema query
@@ -4631,6 +4722,42 @@ class ObjectService implements ObjectServiceInterface
                     }
                 }
 
+                // ARCHIVAL IMMUTABILITY, ON THE THIRD DOOR.
+                // This loop calls the delete HANDLER directly, so it never went
+                // through deleteObject()'s gate: a schema declaring
+                // `x-openregister-archival` — refused with 403 by
+                // `DELETE /api/objects/...`, and by the purge route since
+                // openregister#3428 — was destroyed here without a word.
+                //
+                // The question is asked of the ROW's OWN schema, not of the
+                // route's. A bulk delete spans magic tables, so gating on the
+                // scope the controller happened to set would check somebody
+                // else's annotation. A row whose schema cannot be resolved is
+                // refused rather than deleted: an unresolvable schema is not
+                // evidence that a row is deletable. The refusal is per row, so
+                // the rest of the batch still runs.
+                $gateSchema = $this->loadRowSchema(
+                    schemaId: $deletedSchemaId,
+                    schemaCache: $schemaEntityCache
+                );
+                if ($gateSchema === null) {
+                    $skippedUuids[]        = $uuid;
+                    $skippedReasons[$uuid] = [
+                        'error'   => 'SCHEMA_UNRESOLVED',
+                        'message' => 'The schema of this object could not be resolved, '
+                            .'so its archival status could not be established.',
+                    ];
+                    continue;
+                }
+
+                try {
+                    $this->rejectIfArchivalImmutable(schema: $gateSchema, retentionSweep: false);
+                } catch (ArchivalImmutableException $archivalRefusal) {
+                    $skippedUuids[]        = $uuid;
+                    $skippedReasons[$uuid] = $archivalRefusal->toResponseBody();
+                    continue;
+                }
+
                 $result = $this->deleteHandler->deleteObject(
                     register: $handlerRegister,
                     schema: $handlerSchema,
@@ -4665,6 +4792,23 @@ class ObjectService implements ObjectServiceInterface
                         ];
                     }
                 }//end if
+
+                if ($result !== true) {
+                    // The handler reports some refusals by RETURN VALUE rather
+                    // than by throwing — a read-only object source declines this
+                    // way, and so does its own catch when the inner delete
+                    // fails. Without this branch the UUID left the loop in
+                    // neither bucket and the caller was told nothing at all.
+                    $this->logger->warning(
+                        message: '[ObjectService] Bulk delete handler refused object',
+                        context: ['uuid' => $uuid]
+                    );
+                    $skippedUuids[]        = $uuid;
+                    $skippedReasons[$uuid] = [
+                        'error'   => 'DELETE_REFUSED',
+                        'message' => 'The delete handler did not delete this object.',
+                    ];
+                }
             } catch (\OCA\OpenRegister\Exception\ReferentialIntegrityException $e) {
                 // RESTRICT blocks should not abort the entire bulk operation.
                 // Log and skip this object, continue with the rest.
@@ -4675,7 +4819,11 @@ class ObjectService implements ObjectServiceInterface
                         'blockers' => count($e->getAnalysis()->blockers),
                     ]
                 );
-                $skippedUuids[] = $uuid;
+                $skippedUuids[]        = $uuid;
+                $skippedReasons[$uuid] = [
+                    'error'   => 'REFERENTIAL_INTEGRITY_RESTRICT',
+                    'message' => $e->getMessage(),
+                ];
             } catch (\Exception $e) {
                 // Other failures (transaction rollback, etc.) are logged and skipped.
                 $this->logger->warning(
@@ -4685,7 +4833,11 @@ class ObjectService implements ObjectServiceInterface
                         'error' => $e->getMessage(),
                     ]
                 );
-                $skippedUuids[] = $uuid;
+                $skippedUuids[]        = $uuid;
+                $skippedReasons[$uuid] = [
+                    'error'   => 'DELETE_FAILED',
+                    'message' => $e->getMessage(),
+                ];
             }//end try
         }//end foreach
 
@@ -4726,9 +4878,10 @@ class ObjectService implements ObjectServiceInterface
         }//end if
 
         return [
-            'deleted_uuids' => $deletedObjectIds,
-            'skipped_uuids' => $skippedUuids,
-            'cascade_count' => $totalCascadeCount,
+            'deleted_uuids'   => $deletedObjectIds,
+            'skipped_uuids'   => $skippedUuids,
+            'skipped_reasons' => $skippedReasons,
+            'cascade_count'   => $totalCascadeCount,
         ];
     }//end deleteObjects()
 
@@ -4832,6 +4985,57 @@ class ObjectService implements ObjectServiceInterface
 
         return [$registerCache[$registerKey], $schemaCache[$schemaKey]];
     }//end loadDeleteScopeEntities()
+
+    /**
+     * Materialise the Schema a bulk-delete candidate actually belongs to.
+     *
+     * Separate from {@see loadDeleteScopeEntities()} because the archival gate
+     * needs the row's schema on BOTH delete paths, including the legacy one
+     * that hands the handler no pre-resolved entity — there the register may be
+     * unknown while the schema is not, and refusing the delete because the
+     * register did not materialise would be a refusal for the wrong reason.
+     *
+     * Shares the caller's per-operation schema cache, so a batch of rows on one
+     * schema costs one lookup. Returns null when the id is absent or does not
+     * resolve; the caller decides what that means.
+     *
+     * @param string|int|null $schemaId    The schema id carried by the resolved row.
+     * @param array           $schemaCache Cache of Schema entities keyed by int id.
+     *
+     * @return Schema|null The schema, or null when it cannot be established.
+     *
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+     */
+    private function loadRowSchema(string | int | null $schemaId, array &$schemaCache): ?Schema
+    {
+        if (is_numeric($schemaId) === false) {
+            return null;
+        }
+
+        $schemaKey = (int) $schemaId;
+        if (isset($schemaCache[$schemaKey]) === true) {
+            return $schemaCache[$schemaKey];
+        }
+
+        try {
+            $schemaCache[$schemaKey] = $this->schemaMapper->find(
+                $schemaKey,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\Throwable $schemaError) {
+            $this->logger->warning(
+                message: '[ObjectService] Bulk delete could not resolve the schema of a candidate row',
+                context: [
+                    'schemaId' => $schemaKey,
+                    'error'    => $schemaError->getMessage(),
+                ]
+            );
+            return null;
+        }
+
+        return $schemaCache[$schemaKey];
+    }//end loadRowSchema()
 
     /**
      * Delete all objects belonging to a specific schema
