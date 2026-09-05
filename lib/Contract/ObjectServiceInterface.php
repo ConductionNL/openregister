@@ -458,10 +458,11 @@ interface ObjectServiceInterface {
 	 *
 	 * @param string|int $identifier The object id or UUID.
 	 * @param bool       $advisory   Take an advisory (non-blocking) lock.
+	 * @param ?string    $runUuid    The flow run releasing the lock, for a run-scoped lock.
 	 *
 	 * @return bool True when the lock was released.
 	 */
-	public function unlockObject(string|int $identifier, bool $advisory=false): bool;
+	public function unlockObject(string|int $identifier, bool $advisory=false, ?string $runUuid=null): bool;
 
 	/**
 	 * Take a lock on an object.
@@ -470,6 +471,10 @@ interface ObjectServiceInterface {
 	 * @param ?string $process    A label for the process holding the lock.
 	 * @param ?int    $duration   Lock duration in seconds.
 	 * @param bool    $advisory   Take an advisory (non-blocking) lock.
+	 * @param ?string $runUuid    The flow run taking the lock. A run-scoped lock
+	 *                            refuses every other caller, the run's own runAs
+	 *                            user included.
+	 * @param ?string $nodeId     The flow node that took it, recorded for the sweep.
 	 *
 	 * @return array The resulting lock state.
 	 */
@@ -477,7 +482,9 @@ interface ObjectServiceInterface {
 		string $identifier,
 		?string $process=null,
 		?int $duration=null,
-		bool $advisory=false
+		bool $advisory=false,
+		?string $runUuid=null,
+		?string $nodeId=null
 	): array;
 
 	/**

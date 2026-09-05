@@ -2580,6 +2580,18 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Listener\TaskRunTerminalListener::class
 		);
 
+		// Release layer 1 of run-scoped object locking: a run that holds object
+		// locks releases every one of them when it ends, on ANY of the four
+		// terminal statuses. Hooked here rather than in a node because a run
+		// that failed or was reaped never reaches another step, and that is
+		// exactly the run whose lock most needs releasing. Idempotent, and it
+		// never rethrows: the dispatch happens inside the run's own terminal
+		// write.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\FlowRunTerminalEvent::class,
+			\OCA\OpenRegister\Listener\FlowRunLockReleaseListener::class
+		);
+
 // The other direction (flow-user-task-node): a task the graph raised
 		// reached a terminal state, so its suspended run is woken and, per the
 		// node's `advance` budget, continued in-request. Fires AFTER the task's

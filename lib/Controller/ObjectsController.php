@@ -2851,15 +2851,18 @@ class ObjectsController extends Controller {
 				return new JSONResponse(data: ['error' => 'Object not found in specified register/schema'], statusCode: 404);
 			}
 
-			// Check if the object is locked.
-			if ($existingObject->isLocked() === true
-				&& $existingObject->getLockedBy() !== $this->container->get('userId')
-			) {
-				// Return a "locked" error with the user who has the lock.
+			// Check if the object is locked. This was the ONE live lock guard
+			// in the codebase, because it read the holder under the key
+			// `lock()` actually writes; the service-layer guard read a key
+			// that never existed. Both now delegate to the same predicate, so
+			// there is one comparison rather than two spellings of it.
+			if ($existingObject->isLockedBySomeoneElse(userId: $this->container->get('userId')) === true) {
+				// Return a "locked" error naming the holder.
 				return new JSONResponse(
 					data: [
-						'error' => 'Object is locked by ' . $existingObject->getLockedBy(),
+						'error' => 'Object is locked by ' . (string)$existingObject->describeLockHolder(),
 						'lockedBy' => $existingObject->getLockedBy(),
+						'lockedByRun' => $existingObject->getLockedByRun(),
 					],
 					statusCode: 423
 				);
@@ -2916,7 +2919,13 @@ class ObjectsController extends Controller {
 			// locked" question is free here and the scan is pure waste — measured
 			// at ~780 ms of a ~1.3 s update.
 			try {
-				if ($objectEntity->isLocked() === true) {
+				// Release ONLY a lock this writer actually holds. A run-held
+				// lock must survive somebody else's write: without this test
+				// an administrator's write would silently strip a run's lock
+				// as a side effect of a guard it had just passed.
+				if ($objectEntity->isLocked() === true
+					&& $objectEntity->isLockedBySomeoneElse(userId: $this->container->get('userId')) === false
+				) {
 					$this->objectService->unlockObject($objectEntity->getUuid());
 				}
 			} catch (\Exception $e) {
@@ -3139,7 +3148,13 @@ class ObjectsController extends Controller {
 			// locked" question is free here and the scan is pure waste — measured
 			// at ~780 ms of a ~1.3 s update.
 			try {
-				if ($objectEntity->isLocked() === true) {
+				// Release ONLY a lock this writer actually holds. A run-held
+				// lock must survive somebody else's write: without this test
+				// an administrator's write would silently strip a run's lock
+				// as a side effect of a guard it had just passed.
+				if ($objectEntity->isLocked() === true
+					&& $objectEntity->isLockedBySomeoneElse(userId: $this->container->get('userId')) === false
+				) {
 					$this->objectService->unlockObject($objectEntity->getUuid());
 				}
 			} catch (\Exception $e) {
@@ -3315,7 +3330,13 @@ class ObjectsController extends Controller {
 			// locked" question is free here and the scan is pure waste — measured
 			// at ~780 ms of a ~1.3 s update.
 			try {
-				if ($objectEntity->isLocked() === true) {
+				// Release ONLY a lock this writer actually holds. A run-held
+				// lock must survive somebody else's write: without this test
+				// an administrator's write would silently strip a run's lock
+				// as a side effect of a guard it had just passed.
+				if ($objectEntity->isLocked() === true
+					&& $objectEntity->isLockedBySomeoneElse(userId: $this->container->get('userId')) === false
+				) {
 					$this->objectService->unlockObject($objectEntity->getUuid());
 				}
 			} catch (\Exception $e) {

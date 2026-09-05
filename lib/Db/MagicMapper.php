@@ -7624,6 +7624,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param Register $register The register context.
 	 * @param Schema $schema The schema context.
 	 * @param int|null $lockDuration Lock duration in seconds (null for default).
+	 * @param string|null $process What the lock was taken for.
+	 * @param string|null $runUuid Flow run taking the lock, for a run-scoped lock.
 	 *
 	 * @throws Exception If locking fails.
 	 *
@@ -7634,9 +7636,22 @@ class MagicMapper extends AbstractObjectMapper {
 		Register $register,
 		Schema $schema,
 		?int $lockDuration = null,
+		?string $process = null,
+		?string $runUuid = null,
 	): ObjectEntity {
 		// Lock using entity method.
-		$entity->lock(userSession: $this->userSession, process: 'MagicMapper lock', duration: $lockDuration);
+		//
+		// `$process` used to be dropped here: this method hardcoded the
+		// literal 'MagicMapper lock', so every caller's process tag was
+		// discarded before it reached the payload. integriq mints a fresh
+		// UUID per lock and passes it in, and no caller has ever been able to
+		// read back what a lock was taken FOR.
+		$entity->lock(
+			userSession: $this->userSession,
+			process: ($process ?? 'MagicMapper lock'),
+			duration: $lockDuration,
+			runUuid: $runUuid
+		);
 
 		// Update entity in table with locked field set.
 		$this->updateObjectEntity(entity: $entity, register: $register, schema: $schema);
@@ -7663,6 +7678,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param ObjectEntity $entity The object entity to unlock.
 	 * @param Register $register The register context.
 	 * @param Schema $schema The schema context.
+	 * @param string|null $runUuid Flow run releasing the lock, for a run-scoped lock.
+	 * @param bool $break Release regardless of holder (administrator break-lock).
 	 *
 	 * @throws Exception If unlocking fails.
 	 *
@@ -7672,9 +7689,11 @@ class MagicMapper extends AbstractObjectMapper {
 		ObjectEntity $entity,
 		Register $register,
 		Schema $schema,
+		?string $runUuid = null,
+		bool $break = false,
 	): ObjectEntity {
 		// Unlock using entity method.
-		$entity->unlock($this->userSession);
+		$entity->unlock($this->userSession, $runUuid, $break);
 
 		// Update entity in table with locked field cleared.
 		$this->updateObjectEntity(entity: $entity, register: $register, schema: $schema);
