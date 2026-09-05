@@ -277,17 +277,33 @@ class BulkController extends Controller {
 			$result = $this->objectService->deleteObjects($uuids);
 			$deletedUuids = $result['deleted_uuids'];
 			$skippedUuids = $result['skipped_uuids'];
+			$skippedReasons = ($result['skipped_reasons'] ?? []);
 			$cascadeCount = $result['cascade_count'];
+
+			// `success` REPORTS THE SHORTFALL, as the bulk save path already does
+			// (see writeBatch()). A row this endpoint refused is a row the caller
+			// still believes it deleted, and a constant `true` said exactly that:
+			// the live symptom of the filter bug was a 200 reading `success: true,
+			// requested_count: 1, deleted_count: 0` over an untouched object.
+			$message = 'Bulk delete operation completed successfully';
+			if (empty($skippedUuids) === false) {
+				$message = sprintf(
+					'Bulk delete completed with %d of %d objects refused; see skipped_reasons.',
+					count($skippedUuids),
+					count($uuids)
+				);
+			}
 
 			return new JSONResponse(
 				data: [
-					'success' => true,
-					'message' => 'Bulk delete operation completed successfully',
+					'success' => empty($skippedUuids),
+					'message' => $message,
 					'deleted_count' => count($deletedUuids),
 					'deleted_uuids' => $deletedUuids,
 					'requested_count' => count($uuids),
 					'skipped_count' => count($skippedUuids),
 					'skipped_uuids' => $skippedUuids,
+					'skipped_reasons' => $skippedReasons,
 					'cascade_count' => $cascadeCount,
 					'total_affected' => count($deletedUuids) + $cascadeCount,
 				]

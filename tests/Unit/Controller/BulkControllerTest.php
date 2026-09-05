@@ -135,11 +135,23 @@ class BulkControllerTest extends TestCase {
 		$this->assertEquals(Http::STATUS_BAD_REQUEST, $result->getStatus());
 	}
 
-	public function testDeleteSuccess(): void {
+	/**
+	 * A batch that refused a row does not answer `success: true`.
+	 *
+	 * This assertion used to read the other way round, and that is the shape the
+	 * live defect wore: a 200 saying `success: true, requested_count: 1,
+	 * deleted_count: 0` over an object still sitting in its table. A row this
+	 * endpoint refused is a row the caller otherwise believes it deleted, so
+	 * `success` reports the shortfall — the same rule the bulk save path states
+	 * in writeBatch(). `testDeleteAllSuccessful()` below is the control: nothing
+	 * skipped still answers true.
+	 */
+	public function testDeleteReportsTheShortfallWhenARowIsRefused(): void {
 		$this->setupResolveSuccess();
 		$this->objectService->method('deleteObjects')->willReturn([
 			'deleted_uuids' => ['uuid1', 'uuid2'],
 			'skipped_uuids' => ['uuid3'],
+			'skipped_reasons' => ['uuid3' => ['error' => 'SCHEMA_ARCHIVAL_IMMUTABLE']],
 			'cascade_count' => 0,
 		]);
 
@@ -151,7 +163,7 @@ class BulkControllerTest extends TestCase {
 
 		$this->assertEquals(Http::STATUS_OK, $result->getStatus());
 		$data = $result->getData();
-		$this->assertTrue($data['success']);
+		$this->assertFalse($data['success']);
 		$this->assertEquals(2, $data['deleted_count']);
 		$this->assertEquals(['uuid1', 'uuid2'], $data['deleted_uuids']);
 		$this->assertEquals(3, $data['requested_count']);
@@ -159,7 +171,12 @@ class BulkControllerTest extends TestCase {
 		$this->assertEquals(['uuid3'], $data['skipped_uuids']);
 		$this->assertEquals(0, $data['cascade_count']);
 		$this->assertEquals(2, $data['total_affected']);
-		$this->assertEquals('Bulk delete operation completed successfully', $data['message']);
+		$this->assertStringContainsString('1 of 3 objects refused', $data['message']);
+		$this->assertSame(
+			'SCHEMA_ARCHIVAL_IMMUTABLE',
+			$data['skipped_reasons']['uuid3']['error'],
+			'the caller is told WHY the row survived, not just that it did'
+		);
 	}
 
 	public function testDeleteAllSuccessful(): void {
