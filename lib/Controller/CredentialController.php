@@ -35,11 +35,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialRelinkRequiredException;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
+use OCA\OpenRegister\Service\Credential\CredentialUpdateRequest;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
@@ -225,9 +228,23 @@ class CredentialController extends Controller {
 				continue;
 			}
 
+			// `kind` and `requiresInstanceBaseUrl` are the two things a picker needs to
+			// know to offer the right form, and neither is a secret: one says which
+			// shape of credential this provider takes, the other says whether the
+			// person has to name their own server. The allow-rules and the endpoints
+			// stay behind, as they always have: they are an internal guardrail, and
+			// publishing them would tell a caller exactly which paths to probe.
+			$kind = 'secret';
+			if (trim((string)($entry['kind'] ?? '')) === 'oauth2-token-set') {
+				$kind = 'oauth2-token-set';
+			}
+
 			$out[] = [
 				'identifier' => $identifier,
 				'title' => (string)($entry['title'] ?? $identifier),
+				'kind' => $kind,
+				'requiresInstanceBaseUrl' => (trim((string)($entry['baseUrlFrom'] ?? '')) !== ''),
+				'preview' => (($entry['preview'] ?? false) === true),
 			];
 		}
 
@@ -296,8 +313,14 @@ class CredentialController extends Controller {
 				allowedApps: $allowed,
 				secret: $secret,
 				scope: $scope,
-				organisation: $organisation
+				organisation: $organisation,
+				metadata: $this->connectionMetadataParams()
 			);
+		} catch (InvalidArgumentException $invalid) {
+			// The only InvalidArgumentException a mint raises for a well-formed
+			// request is a rejected instance host, and that IS a bad request rather
+			// than a server fault: answering 500 would read as "try again later".
+			return new JSONResponse(['message' => 'Invalid credential request'], Http::STATUS_BAD_REQUEST);
 		} catch (Throwable $e) {
 			return new JSONResponse(['message' => 'Unable to create credential'], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
@@ -327,13 +350,11 @@ class CredentialController extends Controller {
 		$data = $existing->getObject();
 		$scope = $this->scopeOf(data: $data);
 
-		$nameParam = $this->request->getParam('name');
-		if (is_string($nameParam) === true && trim($nameParam) !== '') {
-			$data['name'] = trim($nameParam);
-		}
+		$update = new CredentialUpdateRequest(request: $this->request);
+		$data = $update->applyTo(data: $data);
 
-		if ($this->request->getParam('allowedApps') !== null) {
-			$data['allowedApps'] = $this->normaliseAllowedApps(value: $this->request->getParam('allowedApps', []));
+		if ($update->wouldRepointHost(data: $data) === true) {
+			return new JSONResponse(['message' => 'Invalid credential request'], Http::STATUS_BAD_REQUEST);
 		}
 
 		try {
@@ -347,19 +368,9 @@ class CredentialController extends Controller {
 			return new JSONResponse(['message' => 'Unable to update credential'], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
-		$secret = $this->request->getParam('secret');
-		if (is_string($secret) === true) {
-			// Garbage-in prevention: this rotation path writes straight to the
-			// vault and does NOT go through CredentialBrokerService::mint(), so
-			// it needs its own trim (credential-broker-upstream-diagnostics D3)
-			// — a copy-pasted secret with a trailing newline previously reached
-			// the vault byte-for-byte and later failed header injection at call
-			// time with no usable diagnostic.
-			$secret = trim($secret);
-		}
-
-		if (is_string($secret) === true && $secret !== '') {
-			$this->credentialStore->put($id, $secret, $scope);
+		$rotated = $update->rotatedSecret();
+		if ($rotated !== null) {
+			$this->credentialStore->put($id, $rotated, $scope);
 		}
 
 		return new JSONResponse($this->serialise(object: $saved));
@@ -653,6 +664,11 @@ class CredentialController extends Controller {
 				headers: $this->normaliseHeaders(value: $this->request->getParam('headers', [])),
 				body: $this->normaliseBody(value: $this->request->getParam('body'))
 			);
+		} catch (CredentialRelinkRequiredException $e) {
+			// A distinct status, because this is the one broker refusal a client can
+			// actually act on: reconnect the account. It stays static about WHY, so
+			// it is not an oracle for which guard or which provider error fired.
+			return new JSONResponse(['message' => 'Credential must be reconnected'], Http::STATUS_CONFLICT);
 		} catch (CredentialAccessDeniedException $e) {
 			return new JSONResponse(['message' => 'Request not permitted'], Http::STATUS_FORBIDDEN);
 		} catch (CredentialUpstreamException $e) {
@@ -710,6 +726,11 @@ class CredentialController extends Controller {
 				headers: $this->normaliseHeaders(value: $this->request->getParam('headers', [])),
 				body: $this->normaliseBody(value: $this->request->getParam('body'))
 			);
+		} catch (CredentialRelinkRequiredException $e) {
+			// A distinct status, because this is the one broker refusal a client can
+			// actually act on: reconnect the account. It stays static about WHY, so
+			// it is not an oracle for which guard or which provider error fired.
+			return new JSONResponse(['message' => 'Credential must be reconnected'], Http::STATUS_CONFLICT);
 		} catch (CredentialAccessDeniedException $e) {
 			return new JSONResponse(['message' => 'Request not permitted'], Http::STATUS_FORBIDDEN);
 		} catch (CredentialUpstreamException $e) {
@@ -720,6 +741,29 @@ class CredentialController extends Controller {
 
 		return new JSONResponse($result);
 	}//end sessionBrokerRequest()
+
+	/**
+	 * Read the non-secret connection metadata a create request may carry.
+	 *
+	 * Only the keys an OAuth2 connection needs are read; everything else in the body
+	 * is ignored here and dropped again by the broker's own allow-list, so the two
+	 * layers agree by construction rather than by memory.
+	 *
+	 * @return array<string, mixed> The proposed metadata, unvalidated (the broker validates).
+	 *
+	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-non-secret-connection-metadata-lives-on-the-credential-object
+	 */
+	private function connectionMetadataParams(): array {
+		$metadata = [];
+		foreach (['kind', 'status', 'instanceBaseUrl', 'clientId', 'clientCredentialRef'] as $key) {
+			$value = $this->request->getParam($key);
+			if (is_string($value) === true && trim($value) !== '') {
+				$metadata[$key] = trim($value);
+			}
+		}
+
+		return $metadata;
+	}//end connectionMetadataParams()
 
 	/**
 	 * Resolve the current user's id, or null when unauthenticated.
