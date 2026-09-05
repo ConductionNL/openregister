@@ -369,6 +369,9 @@ class RunLockReleaseTerminalityTest extends TestCase {
 		$this->assertCount(count(FlowRun::TERMINAL), $drivers, 'a driver names a status that is not terminal');
 
 		foreach (FlowRun::TERMINAL as $status) {
+			// A fresh run, walk and commit per outcome. Reusing one would let
+			// an earlier leg's release satisfy a later leg's assertion, which
+			// is the failure this whole file exists to rule out.
 			$this->setUp();
 			$flow = $this->flow();
 			if ($status === FlowRun::STATUS_DEAD_LETTER) {
