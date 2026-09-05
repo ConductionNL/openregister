@@ -142,6 +142,52 @@ final class ObjectEntityRunLockTest extends TestCase {
 		);
 	}//end testARunLockRefusesItsOwnRunAsUser()
 
+	/**
+	 * A PERSON'S LOCK SURVIVES A RUN PASSING OVER THE OBJECT.
+	 *
+	 * A run and the person it runs as are different holders, and reading them
+	 * as one holder was not merely a refusal that did not happen: `lock()`
+	 * took the EXTEND branch and rewrote the payload as a run lock. The
+	 * person's lock was then released when the run ended — destroyed by a flow
+	 * that merely passed over the object, with no error and no audited
+	 * displacement.
+	 *
+	 * @return void
+	 */
+	public function testAPersonsLockSurvivesARunPassingOverTheObject(): void {
+		$this->entity->lock($this->session('alice'), 'reviewing it myself', 3600, null);
+		$before = $this->entity->getLocked();
+
+		try {
+			$this->entity->lock($this->session('alice'), 'step-one', 3600, self::RUN_A);
+			$this->fail('a run took over a person\'s lock');
+		} catch (Exception $refused) {
+			$this->assertStringContainsString('alice', $refused->getMessage());
+		}
+
+		$this->assertSame($before, $this->entity->getLocked(), 'the run rewrote the person\'s lock');
+		$this->assertNull($this->entity->getLockedByRun(), 'the lock became a run lock');
+	}//end testAPersonsLockSurvivesARunPassingOverTheObject()
+
+	/**
+	 * The same thing at the predicate: a user lock is held AGAINST a run,
+	 * including a run executing as the holder.
+	 *
+	 * @return void
+	 */
+	public function testAUserLockIsHeldAgainstARunRunningAsItsHolder(): void {
+		$this->entity->lock($this->session('alice'), 'reviewing it myself', 3600, null);
+
+		$this->assertTrue(
+			$this->entity->isLockedBySomeoneElse(userId: 'alice', runUuid: self::RUN_A),
+			'a run inherited the lock of the person it runs as'
+		);
+		$this->assertFalse(
+			$this->entity->isLockedBySomeoneElse(userId: 'alice', runUuid: null),
+			'alice was refused her own lock'
+		);
+	}//end testAUserLockIsHeldAgainstARunRunningAsItsHolder()
+
 	// ---------------------------------------------------------------
 	// The record shape, and the records that already exist.
 	// ---------------------------------------------------------------

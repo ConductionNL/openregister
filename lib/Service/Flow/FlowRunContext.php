@@ -161,6 +161,40 @@ class FlowRunContext {
 	}//end current()
 
 	/**
+	 * The uuid of the run currently executing, or null outside any run.
+	 *
+	 * WHY A WRITE GUARD ASKS THIS. A run-scoped lock refuses every caller but
+	 * the holding run — the run's own `runAs` user included, which is the
+	 * point. A guard that cannot name the caller's run therefore refuses the
+	 * run that took the lock: the flow locks a case and is then refused by its
+	 * own lock at the next write. This is the seam that answers "which run is
+	 * writing", and it is ambient for the same reason attribution is: the
+	 * write may be several calls deep inside a leaf app that has never heard
+	 * of flows.
+	 *
+	 * Null outside a run, and null for a hop that is not attributable. Both
+	 * read as "a person is writing", which is the FAIL-CLOSED direction: a run
+	 * lock refuses a caller with no run uuid.
+	 *
+	 * @return string|null The executing run's uuid, or null.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
+	 */
+	public function currentRunUuid(): ?string {
+		$frame = $this->current();
+		if ($frame === null) {
+			return null;
+		}
+
+		$run = trim((string)$frame['run']);
+		if ($run === '') {
+			return null;
+		}
+
+		return $run;
+	}//end currentRunUuid()
+
+	/**
 	 * How deep the stack is. Test and diagnostic use only.
 	 *
 	 * Exposed so a test can assert the stack is EMPTY after a step rather than

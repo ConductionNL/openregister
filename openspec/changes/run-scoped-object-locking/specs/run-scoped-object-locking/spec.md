@@ -49,6 +49,14 @@ differs from the recorded one, **including a caller presenting the run's own
 `runAs` user id and no run uuid**. An expired lock SHALL be held against
 nobody.
 
+A run and the person it executes as are DIFFERENT HOLDERS, in both
+directions: a user lock SHALL be held against a caller presenting a run uuid,
+**including a run executing as the person who took it**. Without that, a run
+walking over a person's locked object did not merely pass the guard — it took
+the extend branch, rewrote the payload as its own run lock, and released it
+when the run ended, destroying a lock a person was relying on with no error
+and no audited displacement.
+
 #### Scenario: Two runs under one user conflict
 - **GIVEN** an object locked by run A executing as `alice`
 - **WHEN** run B, also executing as `alice`, evaluates the lock
@@ -65,6 +73,13 @@ nobody.
 - **WHEN** run A locks it again
 - **THEN** the lock MUST be extended rather than refused
 
+#### Scenario: A person's lock survives a run passing over the object
+- **GIVEN** an object locked by `alice` as a person
+- **WHEN** a run executing as `alice` locks the same object
+- **THEN** the run MUST be refused, the payload MUST be unchanged, and the
+  lock MUST still be a user lock when the run ends
+- @e2e exclude engine-internal, covered by ObjectEntityRunLockTest and the rig walk
+
 ### Requirement: A lock refuses a write and names its holder
 
 While a live lock is held against the caller, the system SHALL refuse to
@@ -73,6 +88,14 @@ When a run holds the lock the message SHALL name the run.
 
 The refusal SHALL apply on the service write path, not only at the HTTP
 controller: a lock that only the controller enforces is not a lock.
+
+Every refusal guard SHALL identify the caller by BOTH its user id and, when a
+flow run is executing, that run's uuid. The run identity is ambient — a write
+made for a run is routinely several calls deep inside code that has never
+heard of flows — and a guard that omits it refuses the run that took the
+lock, which makes the lock step unusable by the flow that used it. A guard
+that decides a RELEASE rather than a refusal SHALL NOT ask as the run: a run's
+lock is meant to outlive every write the run makes.
 
 #### Scenario: A person is refused while a run holds the lock
 - **GIVEN** an object locked by a flow run
@@ -83,6 +106,13 @@ controller: a lock that only the controller enforces is not a lock.
 - **GIVEN** an object locked by a person
 - **WHEN** that same person updates it
 - **THEN** the write MUST succeed
+
+#### Scenario: The holding run writes to the object it locked
+- **GIVEN** an object locked by run A
+- **WHEN** a step of run A updates it
+- **THEN** the write MUST succeed, while the same write made for run B or by a
+  person MUST be refused
+- @e2e exclude engine-internal, covered by SaveObjectTest and the rig walk
 
 #### Scenario: A successful write releases only the writer's own lock
 - **GIVEN** an object carrying a lock the writer does not hold
@@ -165,6 +195,13 @@ The engine SHALL release every lock a run holds on **any** terminal outcome:
 `completed`, `stopped`, `failed` and `dead_letter`. The release SHALL NOT
 depend on a node running, so a run that crashed or failed still releases.
 
+A run that has NOT ended SHALL keep every lock it holds. The status a run's
+commit path derives mid-pass is part of that guarantee: a run whose stored
+status is `suspended`, `queued` or `running` MUST NOT have been announced as
+terminal on the way there, because the announcement is what releases the
+locks — and a case that cannot stay locked while its flow works has no lock
+at all.
+
 The release SHALL be idempotent, since terminality can be observed more than
 once, and SHALL NOT propagate a failure into the run's own terminal write.
 
@@ -173,6 +210,13 @@ longer exists, for the case where a release did not happen. The sweep SHALL
 NOT require reading every object table.
 
 The existing lock expiry SHALL remain in force as the final backstop.
+
+#### Scenario: A parked run keeps its locks
+- **GIVEN** a run that has taken a lock and reached a step that waits
+- **WHEN** the run is stored as `suspended`
+- **THEN** no terminal event MUST have been announced for it, and the lock MUST
+  still be held by that run
+- @e2e exclude engine-internal, covered by RunLockReleaseTerminalityTest and the rig walk
 
 #### Scenario: A completed run releases its locks
 - **GIVEN** a run holding a lock
@@ -208,6 +252,31 @@ The existing lock expiry SHALL remain in force as the final backstop.
 - **GIVEN** a run lock whose expiry has passed and whose run never released it
 - **WHEN** any caller evaluates it
 - **THEN** the lock MUST be held against nobody
+
+### Requirement: A node the engine registers is offered in the palette
+
+Every node type the engine can execute SHALL appear in the node catalogue the
+editor reads. A node SHALL NOT be dropped from the catalogue because its icon
+does not resolve: `IURLGenerator::imagePath()` throws for an image the server
+does not ship, Nextcloud's core icon set is not a stable API, and a node that
+is missing from the catalogue cannot be added to a flow at all — a total
+failure produced by a cosmetic cause. A node whose icon cannot be resolved
+SHALL be served with the app's own icon, and the failure SHALL be logged as an
+error naming the node.
+
+#### Scenario: The lock and unlock nodes can be added to a flow
+- **GIVEN** an instance running any supported Nextcloud
+- **WHEN** the editor reads the node catalogue
+- **THEN** `openregister.lock-object` and `openregister.unlock-object` MUST both
+  be present, each with an icon that resolves
+- @e2e exclude covered by the palette sweep in FlowNodePaletteIconsTest and the rig walk
+
+#### Scenario: A node with an unresolvable icon is reported, not deleted
+- **GIVEN** a registered node whose `getIcon()` names an image the server does not ship
+- **WHEN** the catalogue is built
+- **THEN** the node MUST still be listed, with the app icon, and an error naming
+  the node MUST be logged
+- @e2e exclude covered by FlowNodePaletteIconsTest
 
 ## MODIFIED Requirements
 

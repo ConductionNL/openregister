@@ -195,7 +195,11 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * @return string The icon path.
 	 */
 	public function getIcon(): string {
-		return $this->urls->imagePath('core', 'actions/lock.svg');
+		// The APP's icon, not core's. `core/img/actions/lock.svg` does not
+		// exist in NC 33 or 34, `imagePath()` throws for an image the server
+		// does not ship, and this node was therefore absent from the editor's
+		// palette entirely. An icon the app ships cannot go missing under it.
+		return $this->urls->imagePath('openregister', 'lock.svg');
 	}//end getIcon()
 
 	/**
