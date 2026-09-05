@@ -75,6 +75,8 @@ class PurgeObjectCommand extends Command {
 	 * Configure the command.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:objects:purge')
@@ -110,6 +112,8 @@ class PurgeObjectCommand extends Command {
 	 * @param OutputInterface $output Console output.
 	 *
 	 * @return int 0 when every named object was handled, 1 when any was refused or failed.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$uuids = $input->getArgument('uuid');
