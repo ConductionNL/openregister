@@ -38,6 +38,7 @@
 		"post-update-cmd": [
 			"@composer bin all update --ansi"
 		],
+		"check:migration-version": "php scripts/check-migration-version-bump.php",
 		"lint": "find . -name \\*.php -not -path './vendor/*' -not -path './vendor-bin/*' -not -path './build/*' -print0 | xargs -0 -n1 php -l",
 		"cs:check": "php-cs-fixer fix --dry-run --diff",
 		"cs:fix": "php-cs-fixer fix",
@@ -84,7 +85,7 @@
 		"openapi": "generate-spec",
 		"check": "E=0; for CMD in lint phpcs psalm test:unit; do echo; echo \"=== $CMD ===\"; composer $CMD || E=1; done; echo; if [ $E -eq 0 ]; then echo \"ALL CHECKS PASSED\"; else echo \"SOME CHECKS FAILED (see above)\"; fi; exit $E",
 		"check:full": "E=0; for CMD in lint phpcs psalm phpstan test:all; do echo; echo \"=== $CMD ===\"; composer $CMD || E=1; done; echo; if [ $E -eq 0 ]; then echo \"ALL CHECKS PASSED\"; else echo \"SOME CHECKS FAILED (see above)\"; fi; exit $E",
-		"check:strict": "E=0; for CMD in lint phpcs phpmd psalm phpstan test:all; do echo; echo \"=== $CMD ===\"; composer $CMD || E=1; done; echo; if [ $E -eq 0 ]; then echo \"ALL CHECKS PASSED\"; else echo \"SOME CHECKS FAILED (see above)\"; fi; exit $E",
+		"check:strict": "E=0; for CMD in lint check:migration-version phpcs phpmd psalm phpstan test:all; do echo; echo \"=== $CMD ===\"; composer $CMD || E=1; done; echo; if [ $E -eq 0 ]; then echo \"ALL CHECKS PASSED\"; else echo \"SOME CHECKS FAILED (see above)\"; fi; exit $E",
 		"fix": [
 			"@cs:fix"
 		],
