@@ -55,6 +55,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RetentionService;
@@ -103,6 +104,7 @@ class DataSubjectRequestService {
 	 * @param DataSubjectDeadline $deadline EU art-12 deadline maths.
 	 * @param IUserSession $userSession Current user (erasure metadata).
 	 * @param LoggerInterface $logger Logger.
+	 * @param ArchivalRetentionGuard $archivalGuard Refuses erasure of a legally retained record.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
@@ -113,6 +115,7 @@ class DataSubjectRequestService {
 		private readonly DataSubjectDeadline $deadline,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
+		private readonly ArchivalRetentionGuard $archivalGuard,
 	) {
 
 	}//end __construct()
@@ -238,6 +241,13 @@ class DataSubjectRequestService {
 	 * are NEVER erased; they are reported in the `held` bucket so the caller
 	 * can surface a partial result rather than a false "complete".
 	 *
+	 * RETENTION WINS OVER ERASURE. A record on a schema declaring
+	 * `x-openregister-archival` is held by the Archiefwet, and art-17(3)(b)
+	 * stands down for it. Those rows are refused and reported in `withheld`,
+	 * each carrying its ground, the sentence to pass back to the requester, and
+	 * what the handler does next. Withholding one record never blocks the rest
+	 * of the request.
+	 *
 	 * @param string $subjectId Subject identifier value.
 	 * @param string|null $type Optional GdprEntity type filter.
 	 * @param string $eraseMode One of the ERASE_MODE_* constants.
@@ -269,6 +279,10 @@ class DataSubjectRequestService {
 			'erased' => [],
 			'held' => [],
 			'failed' => [],
+			// RETENTION WINS OVER ERASURE: records the Archiefwet keeps are
+			// refused, named here with their ground, and reported back with the
+			// rest of the answer to the data subject.
+			'withheld' => [],
 		];
 
 		foreach ($grouped as $entry) {
@@ -278,6 +292,21 @@ class DataSubjectRequestService {
 					'object' => $this->refOf(entry: $entry),
 					'error' => 'Object could not be loaded (not found or not authorised)',
 				];
+				continue;
+			}
+
+			// RETENTION WINS OVER ERASURE, AND THE SCHEMA IS WHERE THE OBLIGATION
+			// LIVES. `retentionGuard()` below reads the OBJECT's own
+			// `retention.archiefstatus` and the legal hold on it; neither says
+			// anything about `x-openregister-archival`, which is declared on the
+			// SCHEMA. So a record on an archival schema that had not yet been
+			// stamped `vernietigd` or `overgebracht` was erased here, past the
+			// guard whose docblock claims to cover "immutable archival status".
+			// It is asked of Schema::hasArchivalAnnotation() now, through the same
+			// definition the four HTTP delete doors use.
+			$refusal = $this->archivalGuard->erasureRefusal(object: $object);
+			if ($refusal !== null) {
+				$summary['withheld'][] = $refusal;
 				continue;
 			}
 
@@ -305,9 +334,18 @@ class DataSubjectRequestService {
 			);
 		}//end foreach
 
-		$summary['complete'] = ($summary['failed'] === []);
+		// A RUN THAT KEPT DATA BACK IS NOT A COMPLETE ERASURE. `complete` used to
+		// mean "nothing errored", so a request that lawfully held every single
+		// record still answered `complete: true` and the data subject was told
+		// their data was gone. Held and withheld rows now count against it too.
+		// The buckets stay separate because the answers differ: `failed` is
+		// retried, `held` waits for the hold to lift, `withheld` is explained.
+		$summary['complete'] = ($summary['failed'] === []
+			&& $summary['held'] === []
+			&& $summary['withheld'] === []);
 		$summary['failedCount'] = count($summary['failed']);
 		$summary['heldCount'] = count($summary['held']);
+		$summary['withheldCount'] = count($summary['withheld']);
 
 		return $summary;
 	}//end erase()

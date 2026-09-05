@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCP\ICacheFactory;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -148,6 +149,7 @@ class ReferentialIntegrityService {
 	 * @param LoggerInterface $logger Logger for debugging.
 	 * @param IDBConnection $db Database connection for raw SQL queries.
 	 * @param ICacheFactory $cacheFactory Distributed cache for the relation index.
+	 * @param ArchivalRetentionGuard $archivalGuard Decides whether a cascade target is legally retained.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -159,6 +161,7 @@ class ReferentialIntegrityService {
 		private readonly LoggerInterface $logger,
 		private readonly IDBConnection $db,
 		private readonly ICacheFactory $cacheFactory,
+		private readonly ArchivalRetentionGuard $archivalGuard,
 	) {
 	}//end __construct()
 
@@ -201,7 +204,9 @@ class ReferentialIntegrityService {
 	 * @param string|null $organisationId The active organisation ID.
 	 * @param string|null $triggerSchemaSlug Slug of the schema of the deleted object (for audit trail).
 	 *
-	 * @return void
+	 * @return array{retained: array<int, array<string, mixed>>} The cascade targets the
+	 *               archival obligation kept live, each naming the record and the ground.
+	 *               Empty when nothing was retained.
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple action types require distinct handling paths
 	 *
@@ -213,7 +218,7 @@ class ReferentialIntegrityService {
 		string $cascadeSource,
 		?string $organisationId = null,
 		?string $triggerSchemaSlug = null,
-	): void {
+	): array {
 		// 1. Apply SET_NULL targets first (objects survive with cleared reference).
 		foreach ($analysis->nullifyTargets as $target) {
 			$this->applySetNull(target: $target);
@@ -255,6 +260,14 @@ class ReferentialIntegrityService {
 		// 3. Apply CASCADE targets in batch (deepest first = reverse order).
 		$cascadeTargets = array_reverse($analysis->cascadeTargets);
 
+		// A RETAINED RECORD STAYS LIVE EVEN WHEN ITS PARENT GOES. The batch below
+		// soft-deletes with `hardDelete: false`, so an archival child of a
+		// non-archival parent used to be tombstoned by a delete aimed at somebody
+		// else. It is kept out of the batch now and named in the return value,
+		// and the parent delete still proceeds: a retained child refuses the
+		// cascade, it does not block the delete that reached it.
+		[$cascadeTargets, $retained] = $this->partitionRetainedTargets(cascadeTargets: $cascadeTargets);
+
 		if (empty($cascadeTargets) === false) {
 			$this->applyBatchCascadeDelete(
 				cascadeTargets: $cascadeTargets,
@@ -264,7 +277,68 @@ class ReferentialIntegrityService {
 				organisationId: $organisationId
 			);
 		}
+
+		return ['retained' => $retained];
 	}//end applyDeletionActions()
+
+	/**
+	 * Split cascade targets into the ones that may be deleted and the ones the law keeps.
+	 *
+	 * Asks {@see ArchivalRetentionGuard}, which asks
+	 * {@see \OCA\OpenRegister\Db\Schema::hasArchivalAnnotation()}. That is the
+	 * single definition of "is archival" and the four HTTP delete doors read the
+	 * same one, so the cascade cannot quietly disagree with them.
+	 *
+	 * A target referenced through two properties appears twice in the analysis
+	 * and is reported once, keyed by uuid, so the caller's count matches the
+	 * number of records it can go and look at.
+	 *
+	 * @param array<int, array<string, mixed>> $cascadeTargets Targets, already reversed.
+	 *
+	 * @return array{0: array<int, array<string, mixed>>, 1: array<int, array<string, mixed>>}
+	 *               [0] targets the cascade may delete, [1] one report per retained record.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
+	private function partitionRetainedTargets(array $cascadeTargets): array {
+		$proceed = [];
+		$reported = [];
+
+		foreach ($cascadeTargets as $target) {
+			$uuid = (string)($target['objectUuid'] ?? '');
+			if ($uuid === '') {
+				$proceed[] = $target;
+				continue;
+			}
+
+			if (isset($reported[$uuid]) === true) {
+				continue;
+			}
+
+			$refusal = $this->archivalGuard->cascadeRefusal(
+				uuid: $uuid,
+				schemaIdentifier: ($target['schema'] ?? null)
+			);
+			if ($refusal === null) {
+				$proceed[] = $target;
+				continue;
+			}
+
+			$reported[$uuid] = $refusal;
+			$this->logger->info(
+				message: '[ReferentialIntegrity] Kept a retained record out of a cascade',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'uuid' => $uuid,
+					'schema' => ($target['schema'] ?? null),
+					'ground' => $refusal['ground'],
+				]
+			);
+		}
+
+		return [$proceed, array_values($reported)];
+	}//end partitionRetainedTargets()
 
 	/**
 	 * Log a RESTRICT block event to the audit trail.

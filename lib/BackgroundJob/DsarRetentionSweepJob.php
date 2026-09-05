@@ -141,6 +141,9 @@ class DsarRetentionSweepJob extends TimedJob {
 					'purgedCount' => count($summary['purged']),
 					'skippedHeld' => count($summary['skippedHeld']),
 					'withinWindow' => $summary['withinWindow'],
+					// Cases the archival obligation kept. Without this the sweep
+					// log reads as if they simply were not due.
+					'withheldCount' => $summary['withheldCount'],
 				]
 			);
 		} catch (\Throwable $e) {
