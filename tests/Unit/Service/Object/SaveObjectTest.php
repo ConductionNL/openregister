@@ -1775,10 +1775,37 @@ class SaveObjectTest extends TestCase {
 		$this->assertSame($entity, $result);
 	}
 
-	public function testFindAndValidateExistingObjectThrowsOnLockedObject(): void {
+	/**
+	 * Build a locked entity using the PRODUCTION writer.
+	 *
+	 * The two tests below used to hand-write `setLocked(['userId' => …])`, a
+	 * payload shape `ObjectEntity::lock()` has never produced. They passed,
+	 * and they are the reason the guard's `user` vs `userId` key mismatch
+	 * survived: the assertion agreed with the guard's own misreading instead
+	 * of with a lock the writer actually made. Going through `lock()` means
+	 * a future divergence between writer and reader fails here.
+	 *
+	 * @param string $holderUid The uid taking the lock.
+	 * @param string|null $runUuid The run taking the lock, for a run lock.
+	 *
+	 * @return ObjectEntity The locked entity.
+	 */
+	private function lockedEntity(string $holderUid, ?string $runUuid = null): ObjectEntity {
 		$entity = new ObjectEntity();
 		$entity->setUuid('test-uuid');
-		$entity->setLocked(['userId' => 'other-user']);
+
+		$holder = $this->createMock(IUser::class);
+		$holder->method('getUID')->willReturn($holderUid);
+		$holderSession = $this->createMock(IUserSession::class);
+		$holderSession->method('getUser')->willReturn($holder);
+
+		$entity->lock($holderSession, 'test-process', 3600, $runUuid);
+
+		return $entity;
+	}
+
+	public function testFindAndValidateExistingObjectThrowsOnLockedObject(): void {
+		$entity = $this->lockedEntity('other-user');
 
 		$this->objectEntityMapper->method('find')
 			->willReturn($entity);
@@ -1789,7 +1816,7 @@ class SaveObjectTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 
 		$this->expectException(Exception::class);
-		$this->expectExceptionMessage('Cannot update object: Object is locked');
+		$this->expectExceptionMessage('Cannot update object: Object is locked by other-user');
 
 		$this->invokePrivateMethod('findAndValidateExistingObject', [
 			'test-uuid', null, null, false, false,
@@ -1797,15 +1824,70 @@ class SaveObjectTest extends TestCase {
 	}
 
 	public function testFindAndValidateExistingObjectAllowsLockOwner(): void {
-		$entity = new ObjectEntity();
-		$entity->setUuid('test-uuid');
-		$entity->setLocked(['userId' => 'same-user']);
+		$entity = $this->lockedEntity('same-user');
 
 		$this->objectEntityMapper->method('find')
 			->willReturn($entity);
 
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('same-user');
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
+			'test-uuid', null, null, false, false,
+		]);
+
+		$this->assertSame($entity, $result);
+	}
+
+	/**
+	 * A person is refused while a FLOW RUN holds the lock, and the refusal
+	 * names the run so the reader knows what to go and look at.
+	 *
+	 * This is the case the guard exists for and could never express: before
+	 * run-scoped locking, ownership was the user alone, so a run executing as
+	 * `alice` was no obstacle to alice.
+	 */
+	public function testFindAndValidateExistingObjectRefusesAPersonWhileARunHoldsTheLock(): void {
+		$runUuid = 'run-aaaaaaaa-0000-0000-0000-000000000001';
+		$entity = $this->lockedEntity('alice', $runUuid);
+
+		$this->objectEntityMapper->method('find')
+			->willReturn($entity);
+
+		// The run's OWN runAs user, acting as a person.
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage($runUuid);
+
+		$this->invokePrivateMethod('findAndValidateExistingObject', [
+			'test-uuid', null, null, false, false,
+		]);
+	}
+
+	/**
+	 * An expired lock refuses nobody: the TTL backstop, at the write guard.
+	 */
+	public function testFindAndValidateExistingObjectAllowsWhenTheLockHasExpired(): void {
+		$entity = new ObjectEntity();
+		$entity->setUuid('test-uuid');
+		$entity->setLocked(
+			[
+				'kind' => ObjectEntity::LOCK_KIND_RUN,
+				'runUuid' => 'run-aaaaaaaa-0000-0000-0000-000000000001',
+				'user' => 'alice',
+				'expiration' => (new \DateTime())->sub(new \DateInterval('PT10S'))->format('c'),
+			]
+		);
+
+		$this->objectEntityMapper->method('find')
+			->willReturn($entity);
+
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('carol');
 		$this->userSession->method('getUser')->willReturn($user);
 
 		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [

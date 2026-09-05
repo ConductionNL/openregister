@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNode;
 use OCA\OpenRegister\Service\Flow\Nodes\IterateNode;
+use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LoopNode;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
@@ -51,6 +52,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\SwitchNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
+use OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
@@ -74,6 +76,8 @@ class FlowNodeRegistrationListener implements IEventListener {
 	 * @param SwitchNode $switch The built-in "Switch" node.
 	 * @param EndNode $end The built-in "End" node.
 	 * @param MergeNode $merge The built-in "Merge" node.
+	 * @param LockObjectNode $lockObject The built-in "Lock an object" node.
+	 * @param UnlockObjectNode $unlockObject The built-in "Unlock an object" node.
 	 * @param LoopNode $loop The built-in "Loop over items" node.
 	 * @param SubFlowNode $subFlow The built-in "Run a flow" node.
 	 * @param RouterNode $router The built-in "Route items" node.
@@ -101,6 +105,8 @@ class FlowNodeRegistrationListener implements IEventListener {
 		private readonly SwitchNode $switch,
 		private readonly EndNode $end,
 		private readonly MergeNode $merge,
+		private readonly LockObjectNode $lockObject,
+		private readonly UnlockObjectNode $unlockObject,
 		private readonly LoopNode $loop,
 		private readonly SubFlowNode $subFlow,
 		private readonly RouterNode $router,
@@ -182,6 +188,12 @@ class FlowNodeRegistrationListener implements IEventListener {
 		// calls back, user task for a performer in the organisation, portal
 		// task for a party outside it.
 		$event->registerNode(node: $this->portalTask);
+
+		// Mutual exclusion. Both are ordinary STEPS: a lock step is work the
+		// run performs, and the release that matters is the engine's terminal
+		// hook rather than the unlock node, so neither is an end node.
+		$event->registerNode(node: $this->lockObject);
+		$event->registerNode(node: $this->unlockObject);
 
 		// Entry points. Registered like any other node so the palette can offer
 		// them and the preflight can check their config — a trigger is where a

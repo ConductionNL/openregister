@@ -1124,19 +1124,160 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	}//end getFormattedDate()
 
 	/**
+	 * Holder kind for a lock taken by a flow run.
+	 *
+	 * @var string
+	 */
+	public const LOCK_KIND_RUN = 'run';
+
+	/**
+	 * Holder kind for a lock taken by a person.
+	 *
+	 * A payload with no `kind` at all is read as this one, which is how every
+	 * lock written before run-scoped locking keeps its meaning without a
+	 * migration or a back-fill. No such record can be misclassified, because
+	 * no run has ever been able to take a lock.
+	 *
+	 * @var string
+	 */
+	public const LOCK_KIND_USER = 'user';
+
+	/**
+	 * Whether the live lock on this object is held AGAINST the given caller.
+	 *
+	 * This is the ONE production predicate for lock ownership. Every write
+	 * guard, every unlock authorization and every flow node calls it, and
+	 * nothing restates the comparison, tests included. It used to be spelled
+	 * three different ways in three places and two of them were wrong.
+	 *
+	 * The rules:
+	 *  - No live lock: held against nobody. An EXPIRED lock is not a lock.
+	 *  - User lock: held against everyone whose uid differs from the recorded
+	 *    one. This is the historical behaviour, unchanged.
+	 *  - Run lock: held against everyone whose run uuid differs from the
+	 *    recorded one, INCLUDING a caller presenting the run's own `runAs`
+	 *    user and no run uuid. That exclusion is the point: if the runAs user
+	 *    were admitted, a lock taken by a run under `alice` would be no
+	 *    obstacle to alice, and on an instance where flows run as one service
+	 *    account it would be no obstacle to anybody.
+	 *  - Run lock with no `runUuid`: held against everybody. A malformed lock
+	 *    fails CLOSED, because the alternative is silently converting a
+	 *    writer's bug into an open door.
+	 *
+	 * @param string|null $userId The caller's user id, or null when anonymous.
+	 * @param string|null $runUuid The caller's flow-run uuid, when the caller is a run.
+	 *
+	 * @return bool True when the caller must be refused.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
+	 */
+	public function isLockedBySomeoneElse(?string $userId, ?string $runUuid = null): bool {
+		if ($this->isLocked() === false) {
+			return false;
+		}
+
+		$lock = ($this->locked ?? []);
+		$kind = ($lock['kind'] ?? self::LOCK_KIND_USER);
+
+		if ($kind === self::LOCK_KIND_RUN) {
+			$holder = ($lock['runUuid'] ?? null);
+			if (is_string($holder) === false || trim($holder) === '') {
+				// Malformed run lock: admit nobody.
+				return true;
+			}
+
+			return ($runUuid === null || trim($runUuid) !== trim($holder));
+		}
+
+		return (($lock['user'] ?? null) !== $userId);
+	}//end isLockedBySomeoneElse()
+
+	/**
+	 * Describe the live lock's holder for a refusal message.
+	 *
+	 * A refusal that does not say who holds the lock leaves the reader with
+	 * nowhere to go, which is why the message is built here rather than at
+	 * each of the four guards.
+	 *
+	 * @return string|null The holder description, or null when not locked.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-refuses-a-write-and-names-its-holder
+	 */
+	public function describeLockHolder(): ?string {
+		if ($this->isLocked() === false) {
+			return null;
+		}
+
+		$lock = ($this->locked ?? []);
+		if (($lock['kind'] ?? self::LOCK_KIND_USER) !== self::LOCK_KIND_RUN) {
+			return (string)($lock['user'] ?? 'another user');
+		}
+
+		$run = trim((string)($lock['runUuid'] ?? ''));
+		if ($run === '') {
+			return 'a flow run that did not record its identity';
+		}
+
+		$runAs = trim((string)($lock['user'] ?? ''));
+		if ($runAs === '') {
+			return sprintf('flow run %s', $run);
+		}
+
+		return sprintf('flow run %s, running as %s', $run, $runAs);
+	}//end describeLockHolder()
+
+	/**
+	 * Get the flow run holding this object, when a run holds it.
+	 *
+	 * @return string|null The holding run's uuid, or null when the lock is a
+	 *                     user lock, malformed, expired or absent.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-records-whether-a-run-or-a-person-holds-it
+	 */
+	public function getLockedByRun(): ?string {
+		if ($this->isLocked() === false) {
+			return null;
+		}
+
+		$lock = ($this->locked ?? []);
+		if (($lock['kind'] ?? self::LOCK_KIND_USER) !== self::LOCK_KIND_RUN) {
+			return null;
+		}
+
+		$run = trim((string)($lock['runUuid'] ?? ''));
+		if ($run === '') {
+			return null;
+		}
+
+		return $run;
+	}//end getLockedByRun()
+
+	/**
 	 * Lock the object for a specific duration
+	 *
+	 * Passing `$runUuid` takes a RUN-scoped lock: one that refuses every
+	 * caller but that run, the run's own `runAs` user included. Omitting it
+	 * takes the user lock this method has always taken.
 	 *
 	 * @param IUserSession $userSession Current user session
 	 * @param string|null $process Optional process identifier
 	 * @param int|null $duration Lock duration in seconds (default: 1 hour)
+	 * @param string|null $runUuid Flow run taking the lock, for a run-scoped lock
 	 *
-	 * @throws Exception If object is already locked by another user
+	 * @throws Exception If the object is already locked by another holder
 	 *
 	 * @return true True if lock was successful
 	 *
 	 * @psalm-suppress PossiblyUnusedReturnValue
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
 	 */
-	public function lock(IUserSession $userSession, ?string $process = null, ?int $duration = 3600): bool {
+	public function lock(
+		IUserSession $userSession,
+		?string $process = null,
+		?int $duration = 3600,
+		?string $runUuid = null,
+	): bool {
 		$currentUser = $userSession->getUser();
 		if ($currentUser === null) {
 			throw new Exception('No user logged in');
@@ -1145,24 +1286,35 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		$userId = $currentUser->getUID();
 		$now = new DateTime();
 
-		// If already locked, check if it's the same user and not expired.
+		$kind = self::LOCK_KIND_USER;
+		if ($runUuid !== null && trim($runUuid) !== '') {
+			$kind = self::LOCK_KIND_RUN;
+			$runUuid = trim($runUuid);
+		}
+
+		// If already locked, check whether this caller is the holder.
 		if ($this->isLocked() === true) {
 			$lock = $this->getLocked();
 			if ($lock === null) {
 				throw new Exception('Lock data is missing');
 			}
 
-			// If locked by different user.
-			if ($lock['user'] !== $userId) {
-				throw new Exception('Object is locked by another user');
+			// Held against this caller. Note that two runs under ONE user land
+			// here now: ownership is no longer keyed on the user alone, so the
+			// second run is refused instead of silently extending the first's
+			// lock and being handed the object.
+			if ($this->isLockedBySomeoneElse(userId: $userId, runUuid: $runUuid) === true) {
+				throw new Exception(sprintf('Object is locked by %s', (string)$this->describeLockHolder()));
 			}
 
-			// If same user, extend the lock.
+			// Same holder: extend the lock.
 			$newExpiration = clone $now;
 			$newExpiration->add(new DateInterval('PT' . ($duration ?? 0) . 'S'));
 
 			$this->setLocked(
 				[
+					'kind' => $kind,
+					'runUuid' => ($runUuid ?? null),
 					'user' => $userId,
 					'process' => ($process ?? $lock['process']),
 					'created' => $lock['created'],
@@ -1179,6 +1331,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 
 		$this->setLocked(
 			[
+				'kind' => $kind,
+				'runUuid' => ($runUuid ?? null),
 				'user' => $userId,
 				'process' => $process,
 				'created' => $now->format('c'),
@@ -1194,32 +1348,50 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * Unlock the object
 	 *
 	 * @param IUserSession $userSession Current user session
+	 * @param string|null $runUuid Flow run releasing the lock, for a run-scoped lock
+	 * @param bool $break Release the lock regardless of who holds it. Reserved
+	 *                    for the administrator break-lock, which audits the
+	 *                    displacement at its call site.
 	 *
-	 * @throws Exception If object is locked by another user
+	 * @throws Exception If the object is locked by another holder
 	 *
 	 * @return true True if unlock was successful
 	 *
 	 * @psalm-suppress PossiblyUnusedReturnValue
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The break flag follows the established RBAC-bypass pattern.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
 	 */
-	public function unlock(IUserSession $userSession): bool {
+	public function unlock(IUserSession $userSession, ?string $runUuid = null, bool $break = false): bool {
 		if ($this->isLocked() === false) {
 			return true;
 		}
 
 		$currentUser = $userSession->getUser();
-		if ($currentUser === null) {
+		if ($currentUser === null && $break === false) {
+			// A break has no session requirement. The engine releases a run's
+			// locks from a terminal-event listener and from the cron sweep,
+			// and neither has a session: `occ` and background jobs run as
+			// nobody. Requiring a user there would mean the release layers
+			// that exist for crashed runs could never fire, which is the
+			// whole case they were built for. Authorization for a break lives
+			// at the call site (administrator, or the engine releasing a lock
+			// whose holding run it has already matched).
 			throw new Exception('No user logged in');
 		}
 
-		$userId = $currentUser->getUID();
+		$userId = $currentUser?->getUID();
 
 		// Check if locked by different user.
 		if ($this->locked === null) {
 			throw new Exception('Object is not locked');
 		}
 
-		if ($this->locked['user'] !== $userId) {
-			throw new Exception('Object is locked by another user');
+		if ($break === false
+			&& $this->isLockedBySomeoneElse(userId: $userId, runUuid: $runUuid) === true
+		) {
+			throw new Exception(sprintf('Object is locked by %s', (string)$this->describeLockHolder()));
 		}
 
 		$this->setLocked(null);
