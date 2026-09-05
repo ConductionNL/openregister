@@ -185,34 +185,10 @@ class LeafScriptListener implements IEventListener {
 
 		$apps = [];
 		foreach ($this->leaves->getDescriptors() as $descriptor) {
-			if (in_array(LeafDescriptor::KIND_RENDER_SURFACE, $descriptor->getKinds(), true) === false) {
-				// A data-provider leaf has no client half to load.
-				continue;
-			}
-
-			$providingApp = $descriptor->getRequiredApp();
-			if ($providingApp === null || $providingApp === $currentApp) {
-				// Built-in leaves ride on OpenRegister's own bundle, and an
-				// app's own leaf is already loaded by its own page. Loading a
-				// second copy would register the id twice, which the AD-13
-				// collision policy warns about in production and throws on in
-				// development.
-				continue;
-			}
-
-			if (in_array($providingApp, $apps, true) === true) {
+			$providingApp = $this->bundleAppFor(descriptor: $descriptor, currentApp: $currentApp);
+			if ($providingApp === null || in_array($providingApp, $apps, true) === true) {
 				// One app may contribute several leaves; its bundle carries all
 				// of them and must be enqueued once.
-				continue;
-			}
-
-			if ($this->appManager->isEnabledForUser($providingApp) === false) {
-				continue;
-			}
-
-			if ($this->hasLeafBundle(appId: $providingApp) === false) {
-				// Enqueuing a script that does not exist is a 404 in the page,
-				// so an app that ships no leaf entry is simply skipped.
 				continue;
 			}
 
@@ -221,6 +197,48 @@ class LeafScriptListener implements IEventListener {
 
 		return $apps;
 	}//end leafAppsFor()
+
+	/**
+	 * The app whose bundle one descriptor needs on this page, if any.
+	 *
+	 * Split out of `leafAppsFor()` so that method reads as "collect the apps"
+	 * and this one holds the four separate reasons a descriptor contributes
+	 * nothing. Keeping all four in the loop body put `leafAppsFor()` over both
+	 * the cyclomatic and the NPath threshold; the rule itself is unchanged.
+	 *
+	 * @param LeafDescriptor $descriptor The descriptor being considered.
+	 * @param string $currentApp The app whose page is rendering.
+	 *
+	 * @return string|null The providing app id, or null when nothing is needed.
+	 */
+	private function bundleAppFor(LeafDescriptor $descriptor, string $currentApp): ?string {
+		if (in_array(LeafDescriptor::KIND_RENDER_SURFACE, $descriptor->getKinds(), true) === false) {
+			// A data-provider leaf has no client half to load.
+			return null;
+		}
+
+		$providingApp = $descriptor->getRequiredApp();
+		if ($providingApp === null || $providingApp === $currentApp) {
+			// Built-in leaves ride on OpenRegister's own bundle, and an
+			// app's own leaf is already loaded by its own page. Loading a
+			// second copy would register the id twice, which the AD-13
+			// collision policy warns about in production and throws on in
+			// development.
+			return null;
+		}
+
+		if ($this->appManager->isEnabledForUser($providingApp) === false) {
+			return null;
+		}
+
+		if ($this->hasLeafBundle(appId: $providingApp) === false) {
+			// Enqueuing a script that does not exist is a 404 in the page,
+			// so an app that ships no leaf entry is simply skipped.
+			return null;
+		}
+
+		return $providingApp;
+	}//end bundleAppFor()
 
 	/**
 	 * The app whose page is being rendered, from the request path.
@@ -234,10 +252,11 @@ class LeafScriptListener implements IEventListener {
 	 */
 	private function currentAppId(): ?string {
 		$path = (string)$this->request->getPathInfo();
-		if (preg_match('#(?:^|/)apps/([a-z0-9_.-]+)(?:/|$)#', $path, $m) !== 1) {
+		if (preg_match('#(?:^|/)apps/([a-z0-9_.-]+)(?:/|$)#', $path, $matches) !== 1) {
 			return null;
 		}
-		return $m[1];
+
+		return $matches[1];
 	}//end currentAppId()
 
 	/**
