@@ -353,7 +353,13 @@ class LockHandler {
 	 *
 	 * @return array Lock result with locked details and uuid.
 	 *
-	 * @throws LockedException If the object is already locked by another holder.
+	 * @throws LockedException If a mapper-level lock refuses the acquire.
+	 * @throws \Exception If the object is already held by another holder.
+	 *                    `ObjectEntity::lock()` throws the global Exception,
+	 *                    not LockedException, so lock()'s outer handler needs
+	 *                    both arms. Declaring only the narrow one made PHPStan
+	 *                    read the broad catch as dead code when it is the arm
+	 *                    that actually fires on contention.
 	 */
 	private function lockStoredObject(
 		array $context,
