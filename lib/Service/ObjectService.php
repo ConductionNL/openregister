@@ -4556,10 +4556,14 @@ class ObjectService implements ObjectServiceInterface
     /**
      * Perform bulk delete operations on objects by UUID
      *
-     * This method handles both soft delete and hard delete based on the current state
-     * of the objects. If an object has no deleted value set, it performs a soft delete
-     * by setting the deleted timestamp. If an object already has a deleted value set,
-     * it performs a hard delete by removing the object from the database.
+     * EVERY DELETE HERE IS A SOFT DELETE. This docblock used to claim the loop
+     * escalated to a hard delete for a row already carrying a deleted timestamp;
+     * it does not, and never did — it calls `DeleteObject::deleteObject()` without
+     * `permanent: true`, which is the only thing that destroys a row. The claim
+     * was unfalsifiable while the loop ran zero iterations. Deleting a trashed row
+     * again re-tombstones it and reports success. Destroying a row for good is
+     * `DELETE /api/deleted/{uuid}` or `occ openregister:objects:purge`, both of
+     * which refuse an archival record (openregister#3428).
      *
      * EVERY REQUESTED UUID LANDS IN EXACTLY ONE OUTCOME BUCKET: the union of
      * 'deleted_uuids' and 'skipped_uuids' is the submitted set. It used not to be
