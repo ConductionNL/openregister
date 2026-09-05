@@ -177,6 +177,14 @@ class FlowRunWorker extends TimedJob {
 	 * @param FlowStreamMapper|null $streams Run streams, for failing an abandoned branch.
 	 * @param FlowLocator|null $flows Resolves the run's flow, for the abandoned step's `onError` policy.
 	 * @param RunLockRegistry|null $locks Run-held object locks, for the orphaned-lock sweep.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) This worker is the one
+	 * cron entry point for run lifecycle work, and each pass it makes needs a
+	 * different collaborator: reaping, claim release, stream failure, consent,
+	 * and now the orphaned-lock sweep. Every one after the fifth is nullable
+	 * with a default so an older DI graph still constructs it. Splitting the
+	 * worker to satisfy the count would buy a second cron job and a second
+	 * ordering to reason about, which is the more expensive of the two.
 	 */
 	public function __construct(
 		ITimeFactory $time,
