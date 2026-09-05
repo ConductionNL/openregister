@@ -1369,11 +1369,19 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		}
 
 		$currentUser = $userSession->getUser();
-		if ($currentUser === null) {
+		if ($currentUser === null && $break === false) {
+			// A break has no session requirement. The engine releases a run's
+			// locks from a terminal-event listener and from the cron sweep,
+			// and neither has a session: `occ` and background jobs run as
+			// nobody. Requiring a user there would mean the release layers
+			// that exist for crashed runs could never fire, which is the
+			// whole case they were built for. Authorization for a break lives
+			// at the call site (administrator, or the engine releasing a lock
+			// whose holding run it has already matched).
 			throw new Exception('No user logged in');
 		}
 
-		$userId = $currentUser->getUID();
+		$userId = $currentUser?->getUID();
 
 		// Check if locked by different user.
 		if ($this->locked === null) {

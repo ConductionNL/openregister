@@ -96,7 +96,7 @@ class RunObjectLockMapper extends QBMapper {
 			->from($this->getTableName())
 			->where($qb->expr()->eq('run_uuid', $qb->createNamedParameter($runUuid)));
 
-		return $this->findEntities($qb);
+		return $this->findEntities(query: $qb);
 	}//end findByRun()
 
 	/**
@@ -175,6 +175,6 @@ class RunObjectLockMapper extends QBMapper {
 			$qb->setParameter($key, $value, $active->getParameterTypes()[$key] ?? null);
 		}
 
-		return $this->findEntities($qb);
+		return $this->findEntities(query: $qb);
 	}//end findOrphaned()
 }//end class
