@@ -40,7 +40,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -64,7 +63,6 @@ class PruneRetiredSchemasCommand extends Command {
 	 *
 	 * @param SchemaMapper $schemaMapper Schema lookup mapper (app-scoped resolution).
 	 * @param RegisterMapper $registerMapper Register mapper, to unlink the retired id.
-	 * @param MagicMapper $magicMapper Magic table resolver, for the object-count guard.
 	 * @param SchemaDeletionService $deletionService Cascade teardown (objects, tables, row).
 	 *
 	 * @return void
@@ -74,7 +72,6 @@ class PruneRetiredSchemasCommand extends Command {
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
 		private readonly RegisterMapper $registerMapper,
-		private readonly MagicMapper $magicMapper,
 		private readonly SchemaDeletionService $deletionService,
 	) {
 		parent::__construct();
@@ -177,9 +174,21 @@ class PruneRetiredSchemasCommand extends Command {
 
 		foreach ($slugs as $slug) {
 			$slug = (string)$slug;
-			$schema = $this->schemaMapper->findByApplicationAndSlug(slug: $slug, application: $appId);
 
-			if ($schema === null) {
+			// EVERY row under this (application, slug), not the first.
+			//
+			// `findByApplicationAndSlug()` caps at one, which is correct where
+			// the pair is unique. It is not unique in practice, and this command
+			// exists because it is not: the import unions schema ids and never
+			// removes one, so a descriptor edit leaves the old row behind and a
+			// later import can add a second under the same pair. Reading one row
+			// meant removing one of two and reporting success. Measured on a live
+			// instance: opencatalogi owned two `document` rows (39 and 40), this
+			// pruned 40, printed `Pruned=1, skipped=0`, and left 39 answering
+			// every lookup.
+			$schemas = $this->schemaMapper->findAllByApplicationAndSlug(slug: $slug, application: $appId);
+
+			if ($schemas === []) {
 				$missing++;
 				$output->writeln(
 					sprintf(
@@ -191,8 +200,23 @@ class PruneRetiredSchemasCommand extends Command {
 				continue;
 			}
 
+			if (count($schemas) > 1) {
+				$output->writeln(
+					sprintf(
+						'<comment>"%s": app "%s" owns %d rows under this slug. All of them are handled below.</comment>',
+						$slug,
+						$appId,
+						count($schemas)
+					)
+				);
+			}
+
+			foreach ($schemas as $schema) {
 			$schemaId = (int)$schema->getId();
-			$objectCount = $this->countObjectsForSchema(schema: $schema);
+			// The count the DELETE would produce, from the deletion service that
+			// enumerates the tables — not a second, narrower count of its own.
+			// The guard and the delete disagreeing is the whole defect.
+			$objectCount = $this->deletionService->countObjectsCascadeWouldDelete(schema: $schema);
 			$linkedRegisters = $this->registersReferencing(schemaId: $schemaId);
 
 			$output->writeln(
@@ -279,6 +303,22 @@ class PruneRetiredSchemasCommand extends Command {
 					$archivalNote
 				)
 			);
+
+			// The count that gated the deletion and the count the deletion
+			// reports must agree. When they do not, the guard above passed on a
+			// number that did not describe what was destroyed, and the operator
+			// who read "0 object(s)" in the dry run needs to know that.
+			if ((int)$result['deletedCount'] !== $objectCount) {
+				$output->writeln(
+					sprintf(
+						'  <error>COUNT MISMATCH: the guard saw %d object(s), the delete removed %d. '
+						. 'The guard was wrong about what it was protecting.</error>',
+						$objectCount,
+						(int)$result['deletedCount']
+					)
+				);
+			}
+			}//end foreach
 		}//end foreach
 
 		$suffix = '';
@@ -336,38 +376,6 @@ class PruneRetiredSchemasCommand extends Command {
 		);
 	}//end unlinkSchemaId()
 
-	/**
-	 * Count objects a schema owns across every register that references it.
-	 *
-	 * @param Schema $schema The schema to count objects for.
-	 *
-	 * @return int Total object count across the schema's magic tables.
-	 *
-	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
-	 */
-	private function countObjectsForSchema(Schema $schema): int {
-		$total = 0;
-
-		foreach ($this->registersReferencing(schemaId: (int)$schema->getId()) as $register) {
-			if ($this->magicMapper->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
-				continue;
-			}
-
-			try {
-				$total += $this->magicMapper->countObjectsInRegisterSchemaTable(
-					query: [],
-					register: $register,
-					schema: $schema
-				);
-			} catch (\Throwable $e) {
-				// An unreadable magic table cannot be counted. Treat it as
-				// non-empty so the guard errs towards keeping data.
-				$total++;
-			}
-		}
-
-		return $total;
-	}//end countObjectsForSchema()
 
 	/**
 	 * Every register whose schema list references this schema id.
