@@ -637,10 +637,14 @@ class DeleteObjectTest extends TestCase {
 		);
 		$this->integrityService->method('canDelete')->willReturn($analysis);
 
+		// applyDeletionActions reports the cascade targets the archival obligation
+		// kept live. Nothing is retained here, so the mock answers with the empty
+		// report rather than an unshaped array.
 		$this->integrityService
 			->expects($this->once())
 			->method('applyDeletionActions')
-			->with($analysis, 'system', 'uuid-do-3', null, 'my-schema');
+			->with($analysis, 'system', 'uuid-do-3', null, 'my-schema')
+			->willReturn(['retained' => []]);
 
 		$this->withNoUser();
 		$this->withAuditTrailsEnabled(false);
