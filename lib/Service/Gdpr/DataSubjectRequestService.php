@@ -256,6 +256,8 @@ class DataSubjectRequestService {
 	 * @return array<string, mixed>
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 *
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md#requirement-erasure-honours-legal-hold-and-is-mode-parameterised
 	 */
 	public function erase(
 		string $subjectId,
