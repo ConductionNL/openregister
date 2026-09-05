@@ -12,11 +12,21 @@
         },
         {
           "id": "demo-data",
-          "type": "run-action",
-          "action": "install-demo-data",
-          "title": "Demo data (optional)",
+          "type": "choice",
+          "display": "cards",
+          "optionsSource": "datasets",
+          "configKey": "demo_dataset",
+          "title": "Load example data?",
           "required": false,
-          "body": "Load a small example dataset so the lists, detail pages and dashboards show a working product straight away. The data is obviously sample data, it is safe to run more than once, and it can be removed afterwards. Skip this on a production install."
+          "body": "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install."
+        },
+        {
+          "id": "load-demo-data",
+          "type": "run-action",
+          "action": "load-demo-data",
+          "title": "Load the example data",
+          "required": false,
+          "body": "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards."
         },
         {
           "id": "done",
