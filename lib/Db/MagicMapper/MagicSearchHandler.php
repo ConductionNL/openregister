@@ -1061,29 +1061,70 @@ class MagicSearchHandler {
 	 * @return string[] Array of SQL conditions
 	 */
 	private function buildMetadataOperatorConditionsSql(string $column, array $value, object $connection): array {
-		$quoteList = static function (mixed $values) use ($connection): array {
-			if (is_array($values) === false) {
-				$values = [$values];
-			}
-
-			return array_map(
-				static fn (mixed $item): string => $connection->quote((string)$item),
-				$values
-			);
-		};
-
 		// No operator key at all: a bare list keeps its historical IN(...) meaning.
 		if (empty(array_intersect(array_keys($value), self::COMPARISON_OPERATORS)) === true) {
-			$quoted = $quoteList($value);
-			if (empty($quoted) === true) {
-				// An empty IN () is a syntax error and matches nothing by definition.
-				return ['1 = 0'];
-			}
-
-			return [$column . ' IN (' . implode(', ', $quoted) . ')'];
+			return [$this->metadataInConditionSql(column: $column, values: $value, connection: $connection)];
 		}
 
-		$conditions = [];
+		// Three families, in the order they have always been emitted. They were
+		// one method until phpmd counted 486 paths through it; each family is
+		// independent of the others, so splitting them changes nothing but the
+		// number of ways to read the code.
+		return array_merge(
+			$this->metadataComparisonConditionsSql(column: $column, value: $value, connection: $connection),
+			$this->metadataListConditionsSql(column: $column, value: $value, connection: $connection),
+			$this->metadataNullConditionsSql(column: $column, value: $value)
+		);
+	}//end buildMetadataOperatorConditionsSql()
+
+	/**
+	 * Quote every value in a bag, accepting a bare scalar as a one-item list
+	 *
+	 * @param mixed $values A list of values, or a single value
+	 * @param object $connection Database connection for value quoting
+	 *
+	 * @return string[] The quoted values
+	 */
+	private function quoteMetadataValues(mixed $values, object $connection): array {
+		if (is_array($values) === false) {
+			$values = [$values];
+		}
+
+		return array_map(
+			static fn (mixed $item): string => $connection->quote((string)$item),
+			$values
+		);
+	}//end quoteMetadataValues()
+
+	/**
+	 * `IN (...)` for one bag, or the always-false condition an empty bag means
+	 *
+	 * @param string $column Quoted column identifier
+	 * @param mixed $values A list of values, or a single value
+	 * @param object $connection Database connection for value quoting
+	 *
+	 * @return string One SQL condition
+	 */
+	private function metadataInConditionSql(string $column, mixed $values, object $connection): string {
+		$quoted = $this->quoteMetadataValues(values: $values, connection: $connection);
+		if (empty($quoted) === true) {
+			// An empty IN () is a syntax error and matches nothing by definition.
+			return '1 = 0';
+		}
+
+		return $column . ' IN (' . implode(', ', $quoted) . ')';
+	}//end metadataInConditionSql()
+
+	/**
+	 * The scalar comparison operators, in their emitted order
+	 *
+	 * @param string $column Quoted column identifier
+	 * @param array $value Operator bag
+	 * @param object $connection Database connection for value quoting
+	 *
+	 * @return string[] Array of SQL conditions
+	 */
+	private function metadataComparisonConditionsSql(string $column, array $value, object $connection): array {
 		$simple = [
 			'gte' => '>=',
 			'lte' => '<=',
@@ -1092,40 +1133,62 @@ class MagicSearchHandler {
 			'ne' => '<>',
 		];
 
+		$conditions = [];
 		foreach ($simple as $operator => $sqlOperator) {
 			if (isset($value[$operator]) === true) {
 				$conditions[] = "{$column} {$sqlOperator} " . $connection->quote((string)$value[$operator]);
 			}
 		}
 
+		return $conditions;
+	}//end metadataComparisonConditionsSql()
+
+	/**
+	 * The `in` and `notIn` operators
+	 *
+	 * @param string $column Quoted column identifier
+	 * @param array $value Operator bag
+	 * @param object $connection Database connection for value quoting
+	 *
+	 * @return string[] Array of SQL conditions
+	 */
+	private function metadataListConditionsSql(string $column, array $value, object $connection): array {
+		$conditions = [];
 		if (isset($value['in']) === true) {
-			$quoted = $quoteList($value['in']);
-			if (empty($quoted) === true) {
-				$conditions[] = '1 = 0';
-			} else {
-				$conditions[] = $column . ' IN (' . implode(', ', $quoted) . ')';
-			}
+			$conditions[] = $this->metadataInConditionSql(column: $column, values: $value['in'], connection: $connection);
 		}
 
 		if (isset($value['notIn']) === true) {
-			$quoted = $quoteList($value['notIn']);
+			$quoted = $this->quoteMetadataValues(values: $value['notIn'], connection: $connection);
 			// An empty NOT IN () is a syntax error and means "exclude nothing".
 			if (empty($quoted) === false) {
 				$conditions[] = $column . ' NOT IN (' . implode(', ', $quoted) . ')';
 			}
 		}
 
-		if (isset($value['isnull']) === true) {
-			$predicate = 'IS NOT NULL';
-			if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
-				$predicate = 'IS NULL';
-			}
+		return $conditions;
+	}//end metadataListConditionsSql()
 
-			$conditions[] = $column . ' ' . $predicate;
+	/**
+	 * The `isnull` operator
+	 *
+	 * @param string $column Quoted column identifier
+	 * @param array $value Operator bag
+	 *
+	 * @return string[] Array of SQL conditions
+	 */
+	private function metadataNullConditionsSql(string $column, array $value): array {
+		if (isset($value['isnull']) === false) {
+			return [];
 		}
 
-		return $conditions;
-	}//end buildMetadataOperatorConditionsSql()
+		$predicate = 'IS NOT NULL';
+		if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
+			$predicate = 'IS NULL';
+		}
+
+		return [$column . ' ' . $predicate];
+	}//end metadataNullConditionsSql()
 
 	/**
 	 * Build SQL conditions for TMLO metadata JSON field filters.
