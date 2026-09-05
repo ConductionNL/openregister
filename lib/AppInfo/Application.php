@@ -909,6 +909,7 @@ class Application extends App implements IBootstrap {
 					groupManager: $container->get('OCP\IGroupManager'),
 					logger: $container->get('Psr\Log\LoggerInterface'),
 					auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+					mountCache: $container->get('OCP\Files\Config\IUserMountCache'),
 					fileService: null
 				);
 			}

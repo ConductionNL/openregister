@@ -43,6 +43,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ReferenceValidatedEvent;
 use OCA\OpenRegister\Event\ReferenceValidationFailedEvent;
 use OCA\OpenRegister\Exception\CircularReferenceException;
+use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -3209,10 +3210,13 @@ class SaveObject {
 			// answer a run lock already gives.
 			$callerRun = $this->runContext?->currentRunUuid();
 
+			// A TYPED refusal, not a plain `Exception`. The message is unchanged,
+			// but the type is what lets a caller answer 423 instead of falling
+			// into a generic 500 — which is what PATCH and POST-patch did for a
+			// payload that was otherwise valid. The holder travels on the
+			// exception rather than being re-derived at each catch site.
 			if ($existingObject->isLockedBySomeoneElse(userId: $currentUserId, runUuid: $callerRun) === true) {
-				$holder = (string)$existingObject->describeLockHolder();
-				$unlockAdvice = 'Please unlock the object before attempting to update it.';
-				throw new Exception("Cannot update object: Object is locked by {$holder}. " . $unlockAdvice);
+				throw LockedException::forObject($existingObject);
 			}
 
 			return $existingObject;
