@@ -269,6 +269,13 @@ class BulkController extends Controller {
 				);
 			}
 
+			// DEDUPLICATE BEFORE COUNTING. Naming the same object twice is one
+			// deletion, and the service resolves each UUID once — so counting the
+			// raw list as `requested_count` would leave `requested = deleted +
+			// skipped` unsatisfiable for a caller that repeated an entry, which is
+			// exactly the arithmetic this endpoint is supposed to make legible.
+			$uuids = array_values(array_unique($uuids));
+
 			// Set register and schema context using resolved IDs.
 			$this->objectService->setRegister((string)$resolved['register']);
 			$this->objectService->setSchema((string)$resolved['schema']);

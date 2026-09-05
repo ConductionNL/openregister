@@ -136,6 +136,48 @@ class BulkControllerTest extends TestCase {
 	}
 
 	/**
+	 * A UUID named twice is one deletion, and the counts still add up.
+	 *
+	 * `requested = deleted + skipped` is the whole point of this response, and a
+	 * repeated entry used to make it unsatisfiable: the service resolves each
+	 * UUID once, so a raw `count($uuids)` counted a row the loop only ever saw
+	 * once.
+	 *
+	 * @return void
+	 */
+	public function testDuplicateUuidIsRequestedOnce(): void {
+		$this->setupResolveSuccess();
+		$captured = [];
+		$this->objectService->method('deleteObjects')->willReturnCallback(
+			function (array $uuids) use (&$captured): array {
+				$captured = $uuids;
+
+				return [
+					'deleted_uuids' => $uuids,
+					'skipped_uuids' => [],
+					'skipped_reasons' => [],
+					'cascade_count' => 0,
+				];
+			}
+		);
+
+		$this->request->method('getParams')->willReturn([
+			'uuids' => ['uuid1', 'uuid1', 'uuid2'],
+		]);
+
+		$result = $this->controller->delete('1', '2');
+		$data = $result->getData();
+
+		$this->assertSame(['uuid1', 'uuid2'], $captured, 'the service is asked once per object');
+		$this->assertEquals(2, $data['requested_count']);
+		$this->assertEquals(
+			$data['requested_count'],
+			$data['deleted_count'] + $data['skipped_count'],
+			'requested must equal deleted + skipped'
+		);
+	}
+
+	/**
 	 * A batch that refused a row does not answer `success: true`.
 	 *
 	 * This assertion used to read the other way round, and that is the shape the
