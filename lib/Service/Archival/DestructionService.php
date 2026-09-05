@@ -212,7 +212,7 @@ class DestructionService {
 				'register' => $object->getRegister(),
 				'archiefactiedatum' => $actiedatum,
 				'classification' => $retention['classification'] ?? null,
-				'alreadySoftDeleted' => ($object->getDeleted() !== null),
+				'alreadySoftDeleted' => $object->isSoftDeleted(),
 			];
 		}//end foreach
 

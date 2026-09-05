@@ -76,6 +76,59 @@ When a schema declares `x-openregister-archival`, `ObjectService::deleteObject()
 - **THEN** the immutability gate SHALL be bypassed
 - **AND** the row SHALL be deleted via the standard `DeleteObject` handler with an audit-trail entry
 
+### Requirement: Purging an archival record is refused on the same terms as deleting one
+
+`DELETE /api/deleted/{uuid}` and `DELETE /api/deleted` permanently destroy rows rather than tombstoning them, so they SHALL apply the archival gate that `ObjectService::deleteObject()` applies. When the object's schema declares `x-openregister-archival`, the single-object route SHALL respond `403` with body `{ error: "SCHEMA_ARCHIVAL_IMMUTABLE", message, schema, operation: "purge", hint }`, and the bulk route SHALL count the object as `failed` rather than destroying it. Both routes SHALL fail closed: an object whose schema cannot be resolved SHALL be refused, because an unreadable annotation is indistinguishable from a retained record.
+
+The gate SHALL read `Schema::hasArchivalAnnotation()`, which is the single definition of the rule for both delete routes.
+
+#### Scenario: Purging a live archival record is refused
+- **GIVEN** the `dossiq/case` schema declares `x-openregister-archival`
+- **AND** an admin authenticates and a live `case` row exists with UUID `<uuid>`
+- **WHEN** `DELETE /api/deleted/<uuid>` is called
+- **THEN** the response SHALL be HTTP 403 with `error: "SCHEMA_ARCHIVAL_IMMUTABLE"`
+- **AND** the underlying row SHALL still exist in the magic table
+
+#### Scenario: Purging a soft-deleted archival record is refused
+- **GIVEN** a soft-deleted `case` row on the same archival schema
+- **WHEN** `DELETE /api/deleted/<uuid>` is called
+- **THEN** the response SHALL be HTTP 403 with `operation: "purge"`
+- **AND** the row SHALL still exist
+
+#### Scenario: Emptying the trash still works for an ordinary record
+- **GIVEN** a soft-deleted row on a schema that does NOT declare `x-openregister-archival`
+- **WHEN** `DELETE /api/deleted/<uuid>` is called
+- **THEN** the response SHALL be HTTP 200 and the row SHALL be destroyed
+
+### Requirement: A live object cannot be purged through the trash endpoints
+
+`DELETE /api/deleted/{uuid}` empties the TRASH. It SHALL refuse any object that is not soft-deleted, with HTTP 400 and `{ error: "Object is not deleted" }`. The soft-delete test SHALL be `ObjectEntity::isSoftDeleted()`; comparing `getDeleted()` with `null` SHALL NOT be used, because `ObjectEntity::$deleted` defaults to `[]` and the row hydrator skips NULL columns, so a live object answers `[]` and such a comparison never refuses anything.
+
+#### Scenario: Purging a live object is refused
+- **GIVEN** a live row on any schema
+- **WHEN** `DELETE /api/deleted/<uuid>` is called
+- **THEN** the response SHALL be HTTP 400 with `error: "Object is not deleted"`
+- **AND** the row SHALL still exist
+
+#### Scenario: Bulk purge skips live rows
+- **GIVEN** a request naming one live row and one soft-deleted non-archival row
+- **WHEN** `DELETE /api/deleted` is called
+- **THEN** exactly one row SHALL be destroyed and the live row SHALL be counted as `failed`
+
+### Requirement: An administrative CLI purge is the only path that can destroy an archival record
+
+The platform SHALL ship `occ openregister:objects:purge <uuid>...`. It SHALL be dry-run by default and write only with `--apply`. Without `--force` it SHALL refuse an archival record and SHALL refuse a live (not soft-deleted) object. With `--force` it SHALL destroy either, and SHALL name the record as archival in its output.
+
+This is deliberately a CLI surface: `occ` requires shell access to the server, which is an authorization boundary an HTTP caller cannot cross, and it is the sanctioned path for removing a record created in error or a test fixture on an archival schema.
+
+#### Scenario: Archival record refused without force
+- **WHEN** `occ openregister:objects:purge <uuid> --apply` names a row on an archival schema
+- **THEN** the command SHALL exit non-zero, SHALL name `x-openregister-archival`, and SHALL destroy nothing
+
+#### Scenario: Force purges an archival record
+- **WHEN** `occ openregister:objects:purge <uuid> --apply --force` names the same row
+- **THEN** the command SHALL exit zero, SHALL report the row as an ARCHIVAL RECORD, and the row SHALL be destroyed
+
 ### Requirement: RetentionConditionEvaluator parses the minimal condition DSL
 
 The platform SHALL ship `OCA\OpenRegister\Service\Archival\RetentionConditionEvaluator` exposing `evaluate(string $condition, array $row): bool`. The grammar SHALL be exactly `<field> <op> <literal>` with operators `<`, `<=`, `==`, `!=`, `>=`, `>` and literals: integer, float, single- or double-quoted string, `true`, `false`, `null`. A field absent from `$row` SHALL evaluate to `false` (no rule match). A malformed condition SHALL throw `\InvalidArgumentException` and SHALL NOT crash the cron — callers are responsible for catching and logging.

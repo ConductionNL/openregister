@@ -373,6 +373,10 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\PruneRetiredSchemasCommand</command>
 		<command>OCA\OpenRegister\Command\RelinkRegisterSchemasCommand</command>
 		<command>OCA\OpenRegister\Command\ReconcileMagicTablesCommand</command>
+		<!-- The sanctioned administrative purge. Every HTTP delete route refuses an
+		     archival record; this is the one path that can still destroy one, and it
+		     needs shell access plus an explicit force flag. -->
+		<command>OCA\OpenRegister\Command\PurgeObjectCommand</command>
 		<command>OCA\OpenRegister\Command\DedupeConfigurationsCommand</command>
 		<command>OCA\OpenRegister\Command\ResolverListCommand</command>
 		<command>OCA\OpenRegister\Command\TimeReconcileCommand</command>
