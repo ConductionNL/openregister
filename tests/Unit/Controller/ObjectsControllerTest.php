@@ -2736,6 +2736,85 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	// =========================================================================
+	// update() / patch() / postPatch() — one lock, one refusal
+	// =========================================================================
+
+	/**
+	 * Build a locked object and the mocks all three write doors need.
+	 *
+	 * @param string $holder The user holding the lock.
+	 *
+	 * @return \OCA\OpenRegister\Db\ObjectEntity The locked object the pre-read returns.
+	 */
+	private function arrangeLockedObject(string $holder): \OCA\OpenRegister\Db\ObjectEntity {
+		$this->setupAdminUser();
+
+		$existingObject = new \OCA\OpenRegister\Db\ObjectEntity();
+		$existingObject->setUuid('uuid-123');
+		$existingObject->setRegister(1);
+		$existingObject->setSchema(2);
+		$existingObject->setObject(['title' => 'Old']);
+		$existingObject->setLocked([
+			'user' => $holder,
+			'expiration' => (new \DateTime('+1 hour'))->format('c'),
+			'process' => 'editing',
+		]);
+
+		$this->request->method('getParams')->willReturn(['title' => 'Updated']);
+		$this->request->method('getHeader')->willReturn('application/json');
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('getRegister')->willReturn(1);
+		$this->objectService->method('getSchema')->willReturn(2);
+		$this->objectService->method('findSilent')->willReturn($existingObject);
+		$this->container->method('get')->willReturn('current-user');
+
+		return $existingObject;
+	}//end arrangeLockedObject()
+
+	/**
+	 * PUT, PATCH and POST-patch refuse a locked object IDENTICALLY.
+	 *
+	 * The asymmetry this pins: PUT answered 423 naming the holder while PATCH
+	 * and POST-patch reached validation first and answered 400 for a malformed
+	 * payload, or a bare 500 for a valid one — neither mentioning the lock.
+	 * Two doors to the same object gave two different answers, and the wrong
+	 * one sent the caller off to fix their payload.
+	 *
+	 * The comparison is on the WHOLE response (status and body together), so a
+	 * future divergence in either half fails here rather than being averaged
+	 * away by three separate assertions.
+	 *
+	 * `saveObject` is deliberately left unstubbed: reaching it at all means the
+	 * lock did not answer first.
+	 */
+	public function testAllThreeWriteDoorsRefuseALockedObjectIdentically(): void {
+		$this->arrangeLockedObject(holder: 'other-user');
+
+		$put = $this->controller->update('1', '2', 'uuid-123', $this->objectService);
+		$patch = $this->controller->patch('1', '2', 'uuid-123', $this->objectService);
+		$postPatch = $this->controller->postPatch('1', '2', 'uuid-123', $this->objectService);
+
+		$this->assertSame(423, $put->getStatus(), 'PUT must refuse a locked object with 423');
+		$this->assertSame(
+			[$put->getStatus(), $put->getData()],
+			[$patch->getStatus(), $patch->getData()],
+			'PATCH must give the SAME refusal as PUT'
+		);
+		$this->assertSame(
+			[$put->getStatus(), $put->getData()],
+			[$postPatch->getStatus(), $postPatch->getData()],
+			'POST-patch must give the SAME refusal as PUT'
+		);
+
+		// And that shared refusal must NAME the holder, not merely say "locked".
+		$body = $put->getData();
+		$this->assertSame('other-user', $body['lockedBy']);
+		$this->assertStringContainsString('other-user', (string)$body['error']);
+		$this->assertNull($body['lockedByRun']);
+	}//end testAllThreeWriteDoorsRefuseALockedObjectIdentically()
+
+	// =========================================================================
 	// update() — findSilent throws generic exception returns 500
 	// =========================================================================
 
