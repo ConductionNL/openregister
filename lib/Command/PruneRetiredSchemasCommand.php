@@ -117,7 +117,7 @@ class PruneRetiredSchemasCommand extends Command {
 				'force',
 				null,
 				InputOption::VALUE_NONE,
-				'Also delete a schema that still owns objects (DANGEROUS — drops those objects). '
+				'Also delete a schema that still owns objects. DANGEROUS: it drops those objects. '
 				. 'Has no effect without --apply.'
 			)
 			->addOption(
@@ -166,7 +166,7 @@ class PruneRetiredSchemasCommand extends Command {
 
 		if ($dryRun === true) {
 			$output->writeln(
-				'<comment>Running in DRY-RUN mode — nothing will be deleted. '
+				'<comment>Running in DRY-RUN mode. Nothing will be deleted. '
 				. 'Re-run with --apply to perform deletions.</comment>'
 			);
 		}
@@ -209,7 +209,7 @@ class PruneRetiredSchemasCommand extends Command {
 			if ($objectCount > 0 && $force === false) {
 				$skipped++;
 				$output->writeln(
-					'  <comment>SKIP — still owns objects. Re-run with --force to drop them, '
+					'  <comment>SKIP: still owns objects. Re-run with --force to drop them, '
 					. 'or migrate them first.</comment>'
 				);
 				continue;
@@ -224,7 +224,7 @@ class PruneRetiredSchemasCommand extends Command {
 			if ($isArchival === true && $forceArchival === false) {
 				$skipped++;
 				$output->writeln(
-					'  <comment>SKIP — declares x-openregister-archival, so its objects are '
+					'  <comment>SKIP: declares x-openregister-archival, so its objects are '
 					. 'legally retained records. Re-run with --force-archival to destroy them.</comment>'
 				);
 				continue;
@@ -283,7 +283,7 @@ class PruneRetiredSchemasCommand extends Command {
 
 		$suffix = '';
 		if ($dryRun === true) {
-			$suffix = ' (dry run — no writes performed)';
+			$suffix = ' (dry run, no writes performed)';
 		}
 
 		$output->writeln(
