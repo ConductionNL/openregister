@@ -80,6 +80,33 @@ class ObjectEntityTest extends TestCase {
 		$this->assertSame([], $this->entity->getGroups());
 	}
 
+	// --- soft-delete predicate ---
+
+	/**
+	 * The trap this predicate exists to close: `getDeleted()` answers `[]` for a
+	 * live object, so `=== null` is false for every object that has ever
+	 * existed. A guard written that way does not guard, and on
+	 * `DELETE /api/deleted/{uuid}` it permanently destroyed live records.
+	 */
+	public function testIsSoftDeletedIsFalseForALiveObjectEvenThoughGetDeletedIsNotNull(): void {
+		$this->assertNotNull($this->entity->getDeleted());
+		$this->assertSame([], $this->entity->getDeleted());
+		$this->assertFalse($this->entity->isSoftDeleted());
+	}
+
+	public function testIsSoftDeletedIsTrueOnceDeletionMetadataIsSet(): void {
+		$this->entity->setDeleted(['deleted' => '2026-01-01T00:00:00+00:00', 'deletedBy' => 'admin']);
+
+		$this->assertTrue($this->entity->isSoftDeleted());
+	}
+
+	public function testIsSoftDeletedIsFalseWhenDeletionMetadataIsClearedToNull(): void {
+		$this->entity->setDeleted(['deleted' => '2026-01-01T00:00:00+00:00']);
+		$this->entity->setDeleted(null);
+
+		$this->assertFalse($this->entity->isSoftDeleted());
+	}
+
 	// --- getter override ---
 
 	public function testGetterReturnsEmptyArrayForNullArrayFields(): void {

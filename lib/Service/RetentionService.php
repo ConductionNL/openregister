@@ -771,7 +771,7 @@ class RetentionService {
 				'register' => $object->getRegister(),
 				'archiefactiedatum' => $retention['archiefactiedatum'] ?? null,
 				'classification' => $retention['classification'] ?? null,
-				'softDeleted' => $object->getDeleted() !== null,
+				'softDeleted' => $object->isSoftDeleted(),
 				'wooGepubliceerd' => $isWooPublished,
 			];
 		}

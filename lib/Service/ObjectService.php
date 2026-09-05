@@ -2581,9 +2581,10 @@ class ObjectService implements ObjectServiceInterface
      * Check whether a schema declares an `x-openregister-archival` annotation.
      *
      * Used by the deleteObject() immutability gate to short-circuit
-     * user-driven deletes before any DB work. Reads from the schema's
-     * `configuration` array; absence of the key (or a non-array value)
-     * means archival enforcement does NOT apply.
+     * user-driven deletes before any DB work. Delegates to
+     * {@see Schema::hasArchivalAnnotation()}, which is the single definition of
+     * the rule: DeletedController's purge gate asks the same question of the
+     * same method, so the two delete routes cannot drift apart.
      *
      * @param Schema $schema Schema to inspect.
      *
@@ -2593,8 +2594,7 @@ class ObjectService implements ObjectServiceInterface
      */
     private function schemaHasArchivalAnnotation(Schema $schema): bool
     {
-        $configuration = ($schema->getConfiguration() ?? []);
-        return is_array($configuration['x-openregister-archival'] ?? null);
+        return $schema->hasArchivalAnnotation();
     }//end schemaHasArchivalAnnotation()
 
     /**

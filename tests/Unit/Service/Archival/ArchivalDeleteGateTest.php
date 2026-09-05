@@ -27,10 +27,12 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for the archival immutability gate in ObjectService.
  *
- * We test the gate logic directly (not via a full ObjectService mock stack)
- * because instantiating ObjectService requires 30+ DI arguments. Instead,
- * we use a small anonymous class that exposes the gate logic via an extracted
- * helper, verifying the exception shape and the sweep-flag bypass path.
+ * Instantiating ObjectService takes 30+ DI arguments, so the gate's CONDITION
+ * is exercised through the production predicate it actually calls,
+ * {@see Schema::hasArchivalAnnotation()}, rather than through a local copy of
+ * the `if`. An earlier version of this file reimplemented the condition in a
+ * private `runGate()` helper: it agreed with itself no matter what the shipped
+ * gate did, so it could not have failed if the gate had been deleted.
  */
 class ArchivalDeleteGateTest extends TestCase {
 
@@ -64,10 +66,8 @@ class ArchivalDeleteGateTest extends TestCase {
 	public function testGateThrowsForArchivalSchemaWithoutSweepFlag(): void {
 		$this->expectException(ArchivalImmutableException::class);
 
-		// Gate reads getConfiguration() — mock that, not the magic getSlug().
-		$schema = $this->createMock(Schema::class);
-		$schema->method('getConfiguration')
-			->willReturn(['x-openregister-archival' => ['retention' => ['default' => 'P30D']]]);
+		$schema = new Schema();
+		$schema->setConfiguration(['x-openregister-archival' => ['retention' => ['default' => 'P30D']]]);
 
 		$this->runGate(schema: $schema, retentionSweep: false);
 	}
@@ -76,9 +76,8 @@ class ArchivalDeleteGateTest extends TestCase {
 	 * Gate is bypassed when $_retentionSweep is true (cron path).
 	 */
 	public function testGatePassesWhenRetentionSweepIsTrue(): void {
-		$schema = $this->createMock(Schema::class);
-		$schema->method('getConfiguration')
-			->willReturn(['x-openregister-archival' => ['retention' => ['default' => 'P30D']]]);
+		$schema = new Schema();
+		$schema->setConfiguration(['x-openregister-archival' => ['retention' => ['default' => 'P30D']]]);
 
 		// Should not throw.
 		$this->runGate(schema: $schema, retentionSweep: true);
@@ -89,8 +88,8 @@ class ArchivalDeleteGateTest extends TestCase {
 	 * Gate is skipped for non-archival schemas regardless of sweep flag.
 	 */
 	public function testGateSkippedForNonArchivalSchema(): void {
-		$schema = $this->createMock(Schema::class);
-		$schema->method('getConfiguration')->willReturn(['x-openregister-lifecycle' => []]);
+		$schema = new Schema();
+		$schema->setConfiguration(['x-openregister-lifecycle' => []]);
 
 		$this->runGate(schema: $schema, retentionSweep: false);
 		$this->assertTrue(true);
@@ -107,14 +106,13 @@ class ArchivalDeleteGateTest extends TestCase {
 	 * @return void
 	 */
 	private function runGate(Schema $schema, bool $retentionSweep): void {
-		if ($retentionSweep === false) {
-			$config = $schema->getConfiguration() ?? [];
-			if (isset($config['x-openregister-archival']) === true) {
-				throw new ArchivalImmutableException(
-					schemaIdentifier: 'test-schema',
-					operation: 'delete'
-				);
-			}
+		// The condition comes from the production predicate, so deleting or
+		// breaking `Schema::hasArchivalAnnotation()` fails this test.
+		if ($retentionSweep === false && $schema->hasArchivalAnnotation() === true) {
+			throw new ArchivalImmutableException(
+				schemaIdentifier: 'test-schema',
+				operation: 'delete'
+			);
 		}
 	}//end runGate()
 }//end class

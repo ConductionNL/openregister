@@ -286,6 +286,13 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	/**
 	 * Deletion details if the object is deleted.
 	 *
+	 * ⚠️ This property defaults to `[]`, NOT `null`, and the row hydrator
+	 * (`MagicStatisticsHandler::convertRowToObjectEntity()`) skips every NULL
+	 * column rather than calling its setter — so a LIVE object never has
+	 * `setDeleted()` called on it and keeps this default. `getDeleted() === null`
+	 * is therefore false for every object that has ever existed, and a guard
+	 * written that way does not guard. Ask {@see self::isSoftDeleted()} instead.
+	 *
 	 * @var array|null Array describing deletion details
 	 */
 	protected ?array $deleted = [];
@@ -1317,6 +1324,23 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 
 		return $this;
 	}//end delete()
+
+	/**
+	 * Whether this object is in the trash.
+	 *
+	 * The one honest answer to "has this been soft-deleted?". The raw
+	 * `getDeleted()` accessor cannot be compared with `null`: the property
+	 * defaults to `[]` and the hydrator never overwrites that default for a
+	 * live row, so `getDeleted() === null` is false for every object, deleted
+	 * or not. Every guard that means "already in the trash" MUST call this.
+	 *
+	 * @return bool True when the object carries deletion metadata.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function isSoftDeleted(): bool {
+		return $this->deleted !== null && $this->deleted !== [];
+	}//end isSoftDeleted()
 
 	/**
 	 * Get the last log entry for this object (runtime only)
