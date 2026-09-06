@@ -2896,7 +2896,9 @@
         "Could not load the task": "Kunde inte läsa in uppgiften",
         "The task refused that action": "Uppgiften nekade den åtgärden",
         "Store": "Butik",
-        "Install registers, schemas and flows that other organisations have published.": "Installera register, scheman och flöden som andra organisationer har publicerat."
+        "Install registers, schemas and flows that other organisations have published.": "Installera register, scheman och flöden som andra organisationer har publicerat.",
+        "No such run": "Ingen sådan körning",
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Körningen finns inte, eller så får du inte se den. Raderar du ett flöde raderas även dess körningar."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

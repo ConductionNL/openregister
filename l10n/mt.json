@@ -2928,7 +2928,9 @@
         "Could not load the task": "Ma setax jitgħabba l-kompitu",
         "The task refused that action": "Il-kompitu rrifjuta dik l-azzjoni",
         "Store": "Ħanut",
-        "Install registers, schemas and flows that other organisations have published.": "Installa reġistri, skemi u flussi ppubblikati minn organizzazzjonijiet oħra."
+        "Install registers, schemas and flows that other organisations have published.": "Installa reġistri, skemi u flussi ppubblikati minn organizzazzjonijiet oħra.",
+        "No such run": "M'hemm l-ebda eżekuzzjoni bħal din",
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "L-eżekuzzjoni ma teżistix, jew m'għandekx permess taraha. Meta tħassar fluss, jitħassru wkoll l-eżekuzzjonijiet tiegħu."
     },
     "pluralForm": "nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);",
     "plurals": {

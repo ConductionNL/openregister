@@ -2896,7 +2896,9 @@
         "Could not load the task": "Gat ekki hlaðið verkefninu",
         "The task refused that action": "Verkefnið hafnaði þeirri aðgerð",
         "Store": "Verslun",
-        "Install registers, schemas and flows that other organisations have published.": "Settu upp skrár, skemu og flæði sem aðrar stofnanir hafa birt."
+        "Install registers, schemas and flows that other organisations have published.": "Settu upp skrár, skemu og flæði sem aðrar stofnanir hafa birt.",
+        "No such run": "Engin slík keyrsla",
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Keyrslan er ekki til, eða þú mátt ekki sjá hana. Ef flæði er eytt eyðast keyrslur þess líka."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

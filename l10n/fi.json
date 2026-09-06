@@ -2896,7 +2896,9 @@
         "Could not load the task": "Tehtävän lataus epäonnistui",
         "The task refused that action": "Tehtävä hylkäsi toiminnon",
         "Store": "Kauppa",
-        "Install registers, schemas and flows that other organisations have published.": "Asenna muiden organisaatioiden julkaisemia rekistereitä, skeemoja ja vuokaavioita."
+        "Install registers, schemas and flows that other organisations have published.": "Asenna muiden organisaatioiden julkaisemia rekistereitä, skeemoja ja vuokaavioita.",
+        "No such run": "Suoritusta ei löydy",
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Suoritusta ei ole, tai sinulla ei ole oikeutta nähdä sitä. Vuon poistaminen poistaa myös sen suoritukset."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

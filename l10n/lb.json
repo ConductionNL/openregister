@@ -2896,7 +2896,9 @@
         "Could not load the task": "D'Aufgab konnt net geluede ginn",
         "The task refused that action": "D'Aufgab huet dës Aktioun refuséiert",
         "Store": "Buttek",
-        "Install registers, schemas and flows that other organisations have published.": "Installéiert Registeren, Schemaen a Flows déi aner Organisatiounen publizéiert hunn."
+        "Install registers, schemas and flows that other organisations have published.": "Installéiert Registeren, Schemaen a Flows déi aner Organisatiounen publizéiert hunn.",
+        "No such run": "Keng esou Ausféierung",
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "D'Ausféierung existéiert net, oder Dir däerft se net gesinn. Wann e Flux geläscht gëtt, ginn och seng Ausféierunge geläscht."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

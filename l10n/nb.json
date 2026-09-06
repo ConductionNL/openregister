@@ -2896,7 +2896,9 @@
         "Could not load the task": "Kunne ikke laste oppgaven",
         "The task refused that action": "Oppgaven avviste den handlingen",
         "Store": "Butikk",
-        "Install registers, schemas and flows that other organisations have published.": "Installer registre, skjemaer og flyter som andre organisasjoner har publisert."
+        "Install registers, schemas and flows that other organisations have published.": "Installer registre, skjemaer og flyter som andre organisasjoner har publisert.",
+        "No such run": "Ingen slik kjøring",
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Kjøringen finnes ikke, eller du har ikke tilgang til å se den. Sletter du en flyt, slettes kjøringene dens også."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

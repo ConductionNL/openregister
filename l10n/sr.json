@@ -2912,7 +2912,9 @@
         "Could not load the task": "Задатак није могао да се учита",
         "The task refused that action": "Задатак је одбио ту радњу",
         "Store": "Продавница",
-        "Install registers, schemas and flows that other organisations have published.": "Инсталирајте регистре, шеме и токове које су објавиле друге организације."
+        "Install registers, schemas and flows that other organisations have published.": "Инсталирајте регистре, шеме и токове које су објавиле друге организације.",
+        "No such run": "Нема таквог извршавања",
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Извршавање не постоји или немате право да га видите. Брисањем тока бришу се и његова извршавања."
     },
     "pluralForm": "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);",
     "plurals": {
