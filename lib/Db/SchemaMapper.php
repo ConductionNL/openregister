@@ -562,6 +562,55 @@ class SchemaMapper extends QBMapper {
 	}//end findByApplicationAndSlug()
 
 	/**
+	 * EVERY schema an application owns under a slug, not just the first.
+	 *
+	 * `findByApplicationAndSlug()` caps at one row, which is correct where the
+	 * pair is treated as unique. It is not unique in practice: the import unions
+	 * schema ids and never removes one, so a descriptor edit that renames or
+	 * retires a schema leaves the old row behind and a later import can add a
+	 * second under the same pair.
+	 *
+	 * That is exactly the situation `openregister:schemas:prune-retired` exists
+	 * to clean up, and reading one row per run meant it removed one of two and
+	 * reported success. Measured on a live instance: opencatalogi owned two
+	 * `document` rows (ids 39 and 40), the command pruned 40, said
+	 * `Pruned=1, skipped=0`, and left 39 answering every lookup.
+	 *
+	 * @param string $slug        The schema slug, matched case-insensitively.
+	 * @param string $application The owning application id.
+	 *
+	 * @return array<int, Schema> Every matching schema, oldest id first.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	public function findAllByApplicationAndSlug(string $slug, string $application): array {
+		$this->traceRead(method: 'findAllByApplicationAndSlug');
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_schemas')
+			->where(
+				$qb->expr()->eq(
+					$qb->func()->lower('slug'),
+					$qb->createNamedParameter(value: strtolower($slug), type: IQueryBuilder::PARAM_STR)
+				)
+			)
+			->andWhere(
+				$qb->expr()->eq('application', $qb->createNamedParameter(value: $application, type: IQueryBuilder::PARAM_STR))
+			)
+			->orderBy('id', 'ASC');
+
+		$result = $qb->executeQuery();
+		$rows = $result->fetchAll();
+		$result->closeCursor();
+
+		return array_map(
+			fn (array $row): Schema => $this->resolveSchemaExtension(schema: Schema::fromRow($row)),
+			$rows
+		);
+	}//end findAllByApplicationAndSlug()
+
+	/**
 	 * Resolve a schema by slug, scoped to a set of schema ids.
 	 *
 	 * This is the runtime-resolution half of the cross-app slug-collision fix.

@@ -48,10 +48,19 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 	 *                                 callers with no run to guard — the flow
 	 *                                 tester and the node unit tests dispatch
 	 *                                 without one.
+	 * @param FlowRunAsScope|null $scope Executes a CONTRIBUTED node as the
+	 *                                   run's acting identity. Null only for a
+	 *                                   dispatcher built by hand with no
+	 *                                   container behind it — the flow tester
+	 *                                   and the node unit tests — which then
+	 *                                   runs every node bare, exactly like the
+	 *                                   nullable guard; all three production
+	 *                                   construction sites supply one.
 	 */
 	public function __construct(
 		private readonly FlowNodeRegistry $registry,
 		private readonly ?FlowRunGuard $guard = null,
+		private readonly ?FlowRunAsScope $scope = null,
 	) {
 
 	}//end __construct()
@@ -110,8 +119,14 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 		// and cannot reach another node's slot even by accident.
 		$scoped = $this->scopeResumeState(step: $step, context: $context);
 
+		// Scope the resume SIGNAL the same way. Without this, the payload that
+		// answered ONE node's question is readable by every wait node the
+		// resumed walk goes on to enter, and each of them completes on somebody
+		// else's answer instead of suspending with a question of its own.
+		$this->scopeSignal(context: $context, scoped: $scoped);
+
 		$startedAt = microtime(true);
-		$out = $node->execute(items: $items, config: $config, context: $context);
+		$out = $this->executeScoped(node: $node, items: $items, config: $config, context: $context);
 		$tookMs = (int)round((microtime(true) - $startedAt) * 1000);
 
 		// Reached only when the node RETURNED. A node that suspends throws, so
@@ -126,6 +141,56 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 
 		return $out;
 	}//end dispatch()
+
+	/**
+	 * Execute the node — a CONTRIBUTED one inside the run's acting identity.
+	 *
+	 * The engine's `runAs` used to reach a contributed node as a context key
+	 * and nothing more: unless the app built its own wrapper, every write the
+	 * node performed ran under the ambient session — which under the cron
+	 * worker is nobody, so it was refused as anonymous no matter whose rights
+	 * the run declared. dossiq shipped three broken nodes (and a fourth
+	 * handler) before building that wrapper. The identity is run-level state,
+	 * so the dispatcher applies it: every consumer inherits the scoping
+	 * instead of re-implementing it.
+	 *
+	 * WHO IS WRAPPED. A node whose class lives under `OCA\OpenRegister\` is
+	 * the engine's own and already scopes itself — `ObjectWriteNode` and
+	 * friends validate and wrap internally, with node-specific wording and
+	 * skip-when semantics — so wrapping it again would change the ambient
+	 * identity of nodes that deliberately run bare. Everything else is
+	 * contributed and runs inside {@see FlowRunAsScope}, which validates the
+	 * identity (exists, enabled — refused loudly otherwise) and NARROWS to it;
+	 * a contributed node that must manage its own identity declares
+	 * {@see IFlowSelfScopedNode}, the documented escape hatch.
+	 *
+	 * A context that names NO identity runs the node bare either way — the
+	 * interactive path — so a dispatcher walking a tester context changes
+	 * nothing.
+	 *
+	 * @param IFlowNode $node The resolved node.
+	 * @param array $items The input items.
+	 * @param array $config The step configuration.
+	 * @param array $context The node context.
+	 *
+	 * @return array The output items.
+	 *
+	 * @spec openspec/changes/flow-engine-consumer-seams/specs/flow-engine-consumer-seams/spec.md#requirement-a-contributed-node-executes-under-the-runs-acting-identity
+	 */
+	private function executeScoped(IFlowNode $node, array $items, array $config, array $context): array {
+		$engineOwned = str_starts_with(get_class($node), 'OCA\\OpenRegister\\');
+
+		if ($this->scope === null || $engineOwned === true || $node instanceof IFlowSelfScopedNode === true) {
+			return $node->execute(items: $items, config: $config, context: $context);
+		}
+
+		return (array)$this->scope->call(
+			context: $context,
+			operation: static function () use ($node, $items, $config, $context): array {
+				return $node->execute(items: $items, config: $config, context: $context);
+			}
+		);
+	}//end executeScoped()
 
 	/**
 	 * Put this node's resume slot into the context it is about to be called with.
@@ -158,6 +223,57 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 
 		return $scoped;
 	}//end scopeResumeState()
+
+	/**
+	 * Withhold the resume signal from every node except the one it answers.
+	 *
+	 * A signal wakes a RUN, but it answers one NODE: the one that suspended and
+	 * whose resume slot is still held. The walk's context is shared, so without
+	 * this gate every wait node the resumed walk re-enters AFTER the answered
+	 * one reads the same payload as its own answer and completes instead of
+	 * suspending — a flow with two approval steps auto-approves the second the
+	 * moment the first is granted, and a decision step downstream of an answered
+	 * task adopts the task's payload as its decision outcome. Observed live on
+	 * dossiq case flows (runs f8996ccc and ca50c56c, 2026-09-01): a DECISION
+	 * node's outcome held `{decision, node: "ask-indiener", taskId}` — an
+	 * applicant task's completion — and a second decision node inherited the
+	 * first decision's reference because it never suspended at all.
+	 *
+	 * The slot is the addressee test, not `$context['resuming']`: the run-wide
+	 * flag is true for every node of a resumed walk, while a held slot marks
+	 * exactly the node that suspended and has not yet been given its answer.
+	 * The dispatcher clears the slot when a node returns, so a wait node
+	 * re-entered later in the SAME walk (a loop) asks fresh rather than
+	 * re-reading a consumed answer. With no slot machinery at all (a
+	 * container-built dispatcher walking a tester context) the signal is
+	 * withheld too: with no slots there is no addressee, and withholding makes
+	 * the node suspend visibly where delivering would answer the wrong
+	 * question silently.
+	 *
+	 * The strip is LOCAL to this node's context copy — `dispatch()` receives
+	 * `$context` by value — so the walk keeps carrying the signal to the node
+	 * whose slot it answers, wherever in the round-robin that node is visited.
+	 *
+	 * @param array $context The node context, modified in place.
+	 * @param FlowNodeResumeState|null $scoped This node's resume slot, when it has one.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
+	 */
+	private function scopeSignal(array &$context, ?FlowNodeResumeState $scoped): void {
+		if (array_key_exists(FlowRunService::SIGNAL_CONTEXT_KEY, $context) === false) {
+			return;
+		}
+
+		if ($scoped !== null && $scoped->isResuming() === true) {
+			// This node is the one that suspended: the answer is its to read.
+			return;
+		}
+
+		unset($context[FlowRunService::SIGNAL_CONTEXT_KEY]);
+
+	}//end scopeSignal()
 
 	/**
 	 * Stop a step that took longer than its own `maxRuntimeSeconds`.

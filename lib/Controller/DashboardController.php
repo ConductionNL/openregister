@@ -174,6 +174,32 @@ class DashboardController extends Controller {
 	}//end page()
 
 	/**
+	 * Serve the SPA for deep links (Vue history mode). Delegates to {@see page()}.
+	 *
+	 * THIS IS THE FIX FOR #133. This app registered exactly one frontend route —
+	 * `dashboard#page` at `/` — and nothing that served the SPA shell for a deep
+	 * sub-path like /registers or /schemas. A bookmark or full-page load to one
+	 * of those therefore never reached the SPA, the router resolved the base
+	 * path instead, and the grouped index pages rendered empty (no Add button,
+	 * no list). The app was moved back to hash routing to work around it; with
+	 * this route the workaround is no longer needed.
+	 *
+	 * ⚠️ Probing an enumerated path does NOT prove a catch-all exists — probe a
+	 * nonsense one. /apps/openregister/zzz-nonsense returned 404 before this and
+	 * 401 after.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @return TemplateResponse
+	 *
+	 * @spec exclude Vue history-mode fallback — delegates to page(); pure framework plumbing, no domain logic.
+	 */
+	public function catchAll(): TemplateResponse {
+		return $this->page();
+	}//end catchAll()
+
+	/**
 	 * Retrieves dashboard data including registers with their schemas
 	 *
 	 * Returns JSON response containing dashboard data with registers and schemas.

@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaDeletionService;
@@ -414,6 +415,48 @@ class SchemasDestroySafetyTest extends TestCase {
 		$this->assertTrue($data['tableDropped']);
 
 	}//end testCascadeDeletesObjectsAndReportsWhatItRemoved()
+
+	/**
+	 * REQ (archival-annotation-vocabulary): the HTTP cascade cannot destroy a
+	 * legally retained record, and says so with the same 403 body as the other doors.
+	 *
+	 * ARCHIVAL IMMUTABILITY (openregister#3428). `?deleteObjects=true` was the
+	 * fourth delete door and the only one that never asked
+	 * `Schema::hasArchivalAnnotation()`: on an archival schema it answered 200,
+	 * destroyed every row AND dropped the magic table. There is no HTTP override —
+	 * `occ openregister:schemas:prune-retired --force-archival` is the sanctioned
+	 * path, because shell access is an authorization boundary a request cannot cross.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
+	public function testCascadeOnAnArchivalSchemaIsRefusedWith403(): void {
+		$schema = $this->makeSchema(42, 'retained-case');
+
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 2]);
+
+		$this->stubFlags(deleteObjects: 'true');
+
+		$this->schemaDeletionService
+			->method('cascadeDeleteSchema')
+			->willThrowException(
+				new ArchivalImmutableException(schemaIdentifier: 'retained-case', operation: 'delete')
+			);
+
+		$this->schemaMapper->expects($this->never())->method('delete');
+
+		$response = $this->controller->destroy(42);
+
+		$this->assertSame(403, $response->getStatus());
+
+		$data = $response->getData();
+		$this->assertSame('SCHEMA_ARCHIVAL_IMMUTABLE', $data['error']);
+		$this->assertSame('retained-case', $data['schema']);
+		$this->assertSame('delete', $data['operation']);
+
+	}//end testCascadeOnAnArchivalSchemaIsRefusedWith403()
 
 	/**
 	 * REQ + SCENARIO: "Cascade succeeds but the table drop fails".

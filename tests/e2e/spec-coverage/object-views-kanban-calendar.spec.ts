@@ -1,3 +1,6 @@
+import type { Page } from '@playwright/test'
+import type { SeededRegister, SeededSchema } from '../_fixtures.ts'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -21,19 +24,17 @@
  *
  * @e2e openspec/specs/saved-search-views/spec.md
  */
-import { test, expect, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
 import {
-	makeRunId,
+	createObject,
 	createRegister,
 	createSchema,
-	linkSchemaToRegister,
-	createObject,
-	deleteSchema,
 	deleteRegister,
-	type SeededRegister,
-	type SeededSchema,
-} from '../_fixtures'
+	deleteSchema,
+	linkSchemaToRegister,
+	makeRunId,
+} from '../_fixtures.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 const API = '/index.php/apps/openregister/api'

@@ -90,6 +90,13 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     44 lines over, from Guard 1c. The guard
  * chain is one security policy read top to bottom; moving a guard elsewhere is how a
  * caller ends up skipping it.
+ * @SuppressWarnings(PHPMD.TooManyMethods)          29 over a threshold of 25, from the
+ * three methods this change adds: one dispatch point, one catalogue reader, one host
+ * resolver. Splitting them off would put part of the guard chain in another class,
+ * which is the failure mode the ExcessiveClassLength note below already describes:
+ * a caller ends up skipping a guard because it did not know the other class existed.
+ * @SuppressWarnings(PHPMD.StaticAccess)             Two calls to {@see OAuth2InstanceHost},
+ * a stateless security predicate. Injecting it would make the host-lock substitutable.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The fail-closed guard chain
  *   (scope dispatch + owner/membership + allowedApps + provider rules + host-lock)
  *   is deliberately decomposed into small single-purpose guard methods so each
@@ -128,6 +135,20 @@ class CredentialBrokerService {
 	private const SCOPE_ORGANISATION = 'organisation';
 
 	/**
+	 * The pre-existing credential kind: one opaque string in one header.
+	 *
+	 * @var string
+	 */
+	private const KIND_SECRET = 'secret';
+
+	/**
+	 * The credential kind whose stored secret is a whole OAuth2 token set.
+	 *
+	 * @var string
+	 */
+	private const KIND_OAUTH2_TOKEN_SET = 'oauth2-token-set';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectService $objectService OR object CRUD (loads credential metadata).
@@ -144,6 +165,9 @@ class CredentialBrokerService {
 	 * @param ObjectGrantResolver|null $objectGrants Per-object grant resolver for Guard 1d; nullable so
 	 *                                               adding it is not a fatal at existing construction
 	 *                                               sites.
+	 * @param OAuth2RefreshService|null $oauth2Refresh Refreshes and rotates an `oauth2-token-set` credential's
+	 *                                                 stored token set; nullable for the same reason, and an
+	 *                                                 absent one denies rather than degrading.
 	 *
 	 * @return void
 	 */
@@ -165,6 +189,12 @@ class CredentialBrokerService {
 		private readonly ?IGroupManager $groupManager = null,
 		private readonly ?IUserManager $userManager = null,
 		private readonly ?ObjectGrantResolver $objectGrants = null,
+		// Nullable and trailing for the same reason as the three above: the eight
+		// existing construction sites must keep working, because a drifted
+		// constructor signature is a FATAL rather than a test failure. Absent, the
+		// oauth2-token-set injection path denies rather than falling back to
+		// treating the stored document as a bare secret.
+		private readonly ?OAuth2RefreshService $oauth2Refresh = null,
 	) {
 	}//end __construct()
 
@@ -239,13 +269,25 @@ class CredentialBrokerService {
 		}
 
 		$this->assertRuleAllowed(provider: $provider, method: $method, matchPath: $matchPath, credentialId: $credentialId);
-		$resolvedUrl = $this->resolveAndLockUrl(provider: $provider, path: $path, credentialId: $credentialId);
+		$resolvedUrl = $this->resolveAndLockUrl(
+			provider: $provider,
+			path: $path,
+			credentialId: $credentialId,
+			data: $data
+		);
 
-		// All guards passed — read the secret (from the scope's vault owner) and perform the call.
-		$secret = $this->credentialStore->get($credentialId, $scope);
-		if ($secret === null) {
-			$this->deny(reason: 'no secret stored for credential', credentialId: $credentialId);
-		}
+		// All guards passed — resolve the value to inject. For the pre-existing
+		// `secret` kind that is the stored secret verbatim; for `oauth2-token-set`
+		// it is the access token in force after any refresh the margin required.
+		// The dispatch is deliberately BELOW every guard, so a caller who is not
+		// admitted never causes a token endpoint to be contacted.
+		$secret = $this->injectionSecret(
+			data: $data,
+			provider: $provider,
+			credentialId: $credentialId,
+			scope: $scope,
+			actingUserId: $actingUserId
+		);
 
 		$requestHeaders = $this->injectAuth(provider: $provider, headers: $headers, secret: (string)$secret);
 
@@ -306,8 +348,7 @@ class CredentialBrokerService {
 	 * @throws CredentialAccessDeniedException When Guard 1 or 2 fails, or an inject-only credential has no stored secret.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
-	 * @spec openspec/specs/credential-broker/spec.md
-	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-broker/spec.md#requirement-a-token-set-is-never-resolved-app-side
 	 */
 	public function resolveInjectable(
 		string $credentialId,
@@ -330,6 +371,24 @@ class CredentialBrokerService {
 		// Only inject-only credentials may be resolved app-side; a proxy credential's secret
 		// stays inside OR — signal that with null so the caller routes to request() instead.
 		$provider = $this->resolveProvider(data: $data, credentialId: $credentialId);
+
+		// An OAuth2 token set is NEVER offered here, and the check is deliberately ABOVE
+		// the inject-only one rather than resting on it. A token set's whole point is that
+		// the refresh token — a long-lived credential the owner cannot revoke piecemeal —
+		// stays in custody, and ADR-064 decision #8 says so; handing the stored document
+		// to an app would give it exactly that, plus a JSON blob where it expected a
+		// bearer token. Resting on `inject_only` being false would make the guarantee an
+		// accident of how a catalogue entry happens to be written, so a future entry that
+		// set both flags would silently start leaking. Both paths then refuse such an
+		// entry, which is the right answer for a catalogue that contradicts itself.
+		if ($this->kindOf(provider: $provider) === self::KIND_OAUTH2_TOKEN_SET) {
+			$this->logger->warning(
+				'[CredentialBroker] resolveInjectable refused for the oauth2-token-set kind: ' . $credentialId
+			);
+
+			return null;
+		}
+
 		if ($this->isInjectOnly(provider: $provider) === false) {
 			return null;
 		}
@@ -380,14 +439,21 @@ class CredentialBrokerService {
 	 * @param string|null $secret The raw secret, or null/'' to mint metadata only (no vault write).
 	 * @param string $scope The ALREADY-RESOLVED scope (`personal`|`organisation`); selects the vault owner.
 	 * @param string|null $organisation The ALREADY-GATED owning organisation UUID; required for the organisation scope.
+	 * @param array<string, mixed> $metadata Additional NON-SECRET properties for an OAuth2 connection (`kind`, `status`,
+	 *                                       `scopes`, `account`, `expiresAt`, `instanceBaseUrl`, `clientId`,
+	 *                                       `clientCredentialRef`). Every key not on that list is DROPPED, so a caller
+	 *                                       cannot smuggle an arbitrary property, and `instanceBaseUrl` is validated
+	 *                                       here because this is the one moment it may be set.
 	 *
 	 * @return ObjectEntity The persisted credential entity (its `getUuid()` is the credential id / credentialRef).
 	 *
-	 * @throws \InvalidArgumentException When the name is empty, or an organisation-scoped mint carries no organisation.
+	 * @throws \InvalidArgumentException When the name is empty, an organisation-scoped mint carries no organisation,
+	 *                                   or the supplied instance host is not a safe public https origin.
 	 * @throws Throwable When the object save or the vault write fails (the orphaned object is removed first).
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
 	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
 	 */
 	public function mint(
 		string $name,
@@ -397,6 +463,7 @@ class CredentialBrokerService {
 		?string $secret = null,
 		string $scope = self::SCOPE_PERSONAL,
 		?string $organisation = null,
+		array $metadata = [],
 	): ObjectEntity {
 		$name = trim($name);
 		if ($name === '' || trim($provider) === '') {
@@ -412,13 +479,16 @@ class CredentialBrokerService {
 		// "metadata only, no vault write".
 		$secret = $this->trimmedSecret(secret: $secret);
 
-		$data = [
-			'name' => $name,
-			'provider' => $provider,
-			'owner' => $owner,
-			'allowedApps' => array_values($allowedApps),
-			'createdAt' => (new DateTimeImmutable())->format(DATE_ATOM),
-		];
+		$data = array_merge(
+			[
+				'name' => $name,
+				'provider' => $provider,
+				'owner' => $owner,
+				'allowedApps' => array_values($allowedApps),
+				'createdAt' => (new DateTimeImmutable())->format(DATE_ATOM),
+			],
+			self::connectionMetadata(metadata: $metadata)
+		);
 
 		// Only an organisation-scoped credential carries scope/organisation — a personal
 		// credential's property bag stays byte-for-byte what it has always been (design D1).
@@ -466,6 +536,40 @@ class CredentialBrokerService {
 
 		return $saved;
 	}//end mint()
+
+	/**
+	 * Reduce caller-supplied connection metadata to the properties a mint may set.
+	 *
+	 * An ALLOW-LIST rather than a filter of forbidden keys, because the failure mode
+	 * of a deny-list is a property nobody thought of. `instanceBaseUrl` is validated
+	 * here rather than trusted, because a mint is the one moment it may be written:
+	 * afterwards it is the credential's host-lock and the controller refuses to
+	 * change it.
+	 *
+	 * @param array<string, mixed> $metadata The caller's proposed metadata.
+	 *
+	 * @return array<string, mixed> The accepted subset.
+	 *
+	 * @throws InvalidArgumentException When `instanceBaseUrl` is not a safe public https origin.
+	 *
+	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
+	 */
+	public static function connectionMetadata(array $metadata): array {
+		$accepted = [];
+		$allowed = ['kind', 'status', 'scopes', 'account', 'expiresAt', 'lastRefreshedAt', 'lastError', 'clientId', 'clientCredentialRef'];
+		foreach ($allowed as $key) {
+			if (array_key_exists($key, $metadata) === true) {
+				$accepted[$key] = $metadata[$key];
+			}
+		}
+
+		$host = trim((string)($metadata['instanceBaseUrl'] ?? ''));
+		if ($host !== '') {
+			$accepted['instanceBaseUrl'] = OAuth2InstanceHost::normalise(candidate: $host);
+		}
+
+		return $accepted;
+	}//end connectionMetadata()
 
 	/**
 	 * Remove a credential metadata object whose vault write failed (mint rollback).
@@ -1040,6 +1144,123 @@ class CredentialBrokerService {
 	}//end resolveProvider()
 
 	/**
+	 * Resolve the value the provider's auth template is substituted with.
+	 *
+	 * ONE dispatch point for the whole broker, chosen by the CATALOGUE's kind rather
+	 * than by the credential object's mirrored one. The catalogue is read-only at
+	 * runtime and reviewed on release; the object is writable by its owner. If the
+	 * object chose the injection path, an owner could change what their own
+	 * credential does with an ordinary object write, which is the sort of thing an
+	 * allow-list is supposed to make impossible.
+	 *
+	 * @param array<string, mixed> $data The credential object's serialised data.
+	 * @param array<string, mixed> $provider The catalogue provider entry.
+	 * @param string $credentialId The credential UUID.
+	 * @param string $scope The credential scope (selects the custody-leaf owner).
+	 * @param string|null $actingUserId The asserted user for a sessionless in-process caller.
+	 *
+	 * @return string The value to substitute into the auth header template.
+	 *
+	 * @throws CredentialAccessDeniedException When nothing usable is stored, or the kind cannot be served.
+	 * @throws CredentialRelinkRequiredException When the credential's grant is gone.
+	 * @throws CredentialUpstreamException When a required refresh could not be completed.
+	 *
+	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-broker/spec.md#requirement-injection-is-selected-by-kind
+	 */
+	private function injectionSecret(
+		array $data,
+		array $provider,
+		string $credentialId,
+		string $scope,
+		?string $actingUserId,
+	): string {
+		if ($this->kindOf(provider: $provider) !== self::KIND_OAUTH2_TOKEN_SET) {
+			$secret = $this->credentialStore->get($credentialId, $scope);
+			if ($secret === null) {
+				$this->deny(reason: 'no secret stored for credential', credentialId: $credentialId);
+			}
+
+			return (string)$secret;
+		}
+
+		if (is_array(($provider['oauth2'] ?? null)) === false) {
+			$this->deny(reason: 'provider declares the oauth2-token-set kind but carries no oauth2 block', credentialId: $credentialId);
+		}
+
+		if ($this->oauth2Refresh === null) {
+			// Fail CLOSED. Without the refresh service the stored document is a
+			// token SET, not a bearer token, so falling through to the `secret`
+			// branch would inject a JSON blob into an Authorization header and read
+			// the provider's refusal as a credential problem.
+			$this->deny(reason: 'oauth2 refresh service is unavailable', credentialId: $credentialId);
+		}
+
+		return $this->oauth2Refresh->accessTokenFor(
+			credential: $data,
+			provider: $provider,
+			credentialId: $credentialId,
+			scope: $scope,
+			actingUserId: $actingUserId
+		);
+	}//end injectionSecret()
+
+	/**
+	 * Read a provider entry's credential kind, defaulting to the pre-existing one.
+	 *
+	 * @param array<string, mixed> $provider The catalogue provider entry.
+	 *
+	 * @return string Either `secret` or `oauth2-token-set`.
+	 *
+	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-credential-kind-is-declared-by-the-provider-catalogue-never-by-the-credential-object
+	 */
+	private function kindOf(array $provider): string {
+		$kind = trim((string)($provider['kind'] ?? ''));
+
+		if ($kind === self::KIND_OAUTH2_TOKEN_SET) {
+			return self::KIND_OAUTH2_TOKEN_SET;
+		}
+
+		return self::KIND_SECRET;
+	}//end kindOf()
+
+	/**
+	 * Resolve the base URL a call is host-locked to.
+	 *
+	 * Almost every entry declares a fixed `baseUrl`. The two whose API host belongs
+	 * to the connected ACCOUNT rather than to the provider declare
+	 * `baseUrlFrom: "instanceBaseUrl"` instead, and the host then comes from the
+	 * credential itself. That MOVES the lock rather than removing it: the value was
+	 * validated and pinned at mint and cannot be edited afterwards, so the credential
+	 * is locked to one host for its whole life, and every allow-rule still applies.
+	 *
+	 * @param array<string, mixed> $provider The catalogue provider entry.
+	 * @param array<string, mixed> $data The credential object's serialised data.
+	 * @param string $credentialId The credential UUID (for logging).
+	 *
+	 * @return string The base URL to resolve the caller's path against.
+	 *
+	 * @throws CredentialAccessDeniedException When a per-credential host is required and is missing or unsafe.
+	 *
+	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
+	 */
+	private function baseUrlFor(array $provider, array $data, string $credentialId): string {
+		$from = trim((string)($provider['baseUrlFrom'] ?? ''));
+		if ($from === '') {
+			return (string)($provider['baseUrl'] ?? '');
+		}
+
+		if ($from !== 'instanceBaseUrl') {
+			$this->deny(reason: 'unsupported baseUrlFrom "' . $from . '"', credentialId: $credentialId);
+		}
+
+		try {
+			return OAuth2InstanceHost::normalise(candidate: (string)($data['instanceBaseUrl'] ?? ''));
+		} catch (InvalidArgumentException $badHost) {
+			$this->deny(reason: 'per-credential host is unusable: ' . $badHost->getMessage(), credentialId: $credentialId);
+		}
+	}//end baseUrlFor()
+
+	/**
 	 * Guard 3 — assert method + normalised path match one of the provider's allow-rules.
 	 *
 	 * @param array<string, mixed> $provider The catalogue provider entry.
@@ -1082,6 +1303,7 @@ class CredentialBrokerService {
 	 * @param array<string, mixed> $provider The catalogue provider entry.
 	 * @param string $path The caller-supplied path (with any query).
 	 * @param string $credentialId The credential UUID (for logging).
+	 * @param array<string, mixed> $data The credential object's data, for an entry whose host is per credential.
 	 *
 	 * @return string The host-locked resolved URL.
 	 *
@@ -1089,8 +1311,8 @@ class CredentialBrokerService {
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
-	private function resolveAndLockUrl(array $provider, string $path, string $credentialId): string {
-		$baseUrl = (string)($provider['baseUrl'] ?? '');
+	private function resolveAndLockUrl(array $provider, string $path, string $credentialId, array $data = []): string {
+		$baseUrl = $this->baseUrlFor(provider: $provider, data: $data, credentialId: $credentialId);
 		$resolvedUrl = $baseUrl . $path;
 
 		$baseHost = parse_url($baseUrl, PHP_URL_HOST);

@@ -210,6 +210,93 @@ final class FlowItems {
 	}//end fromSubject()
 
 	/**
+	 * Refresh the subject's own fields on every item that IS the subject.
+	 *
+	 * The seam between two requirements that are compatible but easy to
+	 * conflate. Items survive the pause (flow-runs REQ-FR-003): resuming
+	 * continues from the stored list, never a fresh seed, so everything the
+	 * earlier steps produced is kept. But an item that is the run's SUBJECT
+	 * began as a trigger-time snapshot of it, and a step that branches on a
+	 * subject field after a human answered — "is the description filled in
+	 * now?" — must read the subject as it stands, not as it stood when the
+	 * run started. Without this, the shipped re-ask loop can never succeed:
+	 * the answer lands on the object, the re-check reads the frozen snapshot,
+	 * and the run strands.
+	 *
+	 * So: only items carrying the subject's identity are touched, and on
+	 * those the live subject's serialised fields are merged OVER the stale
+	 * snapshot. A key the live subject does not serialise — a task outcome
+	 * bag, a step's computed field — survives untouched, which is what keeps
+	 * REQ-FR-003 true. An item that is some OTHER object (a fan-out read)
+	 * carries its own identity and is never smeared with the subject's data.
+	 *
+	 * @param array<int, array<string, mixed>> $items The stored items.
+	 * @param object $subject The live subject.
+	 * @param string $subjectUuid The run's subject uuid, matching items by identity.
+	 *
+	 * @return array<int, array<string, mixed>> The items, subject fields refreshed.
+	 *
+	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md#requirement-resuming-carries-the-runs-own-items-req-fr-003
+	 */
+	public static function refreshSubjectProjection(array $items, object $subject, string $subjectUuid): array {
+		$subjectUuid = trim($subjectUuid);
+		if ($subjectUuid === '' || $items === []) {
+			return $items;
+		}
+
+		$live = (array)(self::fromSubject(subject: $subject)[0][self::JSON] ?? []);
+		if ($live === []) {
+			return $items;
+		}
+
+		foreach ($items as $index => $item) {
+			if (is_array($item) === false) {
+				continue;
+			}
+
+			$json = (array)($item[self::JSON] ?? []);
+			if (self::identityOf(json: $json) !== $subjectUuid) {
+				continue;
+			}
+
+			// Live wins on the subject's own keys; step-produced keys the
+			// subject does not serialise are kept as the run carried them.
+			$items[$index][self::JSON] = array_merge($json, $live);
+		}
+
+		return $items;
+	}//end refreshSubjectProjection()
+
+	/**
+	 * The object identity an item's record carries, if any.
+	 *
+	 * A subject-seeded item serialises its uuid as `@self.id` mirrored at the
+	 * top-level `id`; older shapes carried a flat `uuid`. An item with none of
+	 * these has no object identity and can never be "the subject".
+	 *
+	 * @param array $json The item's record.
+	 *
+	 * @return string The identity, or '' when the item carries none.
+	 *
+	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md#requirement-resuming-carries-the-runs-own-items-req-fr-003
+	 */
+	private static function identityOf(array $json): string {
+		$self = ($json['@self'] ?? null);
+		if (is_array($self) === true && trim((string)($self['id'] ?? '')) !== '') {
+			return trim((string)$self['id']);
+		}
+
+		foreach (['id', 'uuid'] as $key) {
+			$value = ($json[$key] ?? null);
+			if (is_string($value) === true && trim($value) !== '') {
+				return trim($value);
+			}
+		}
+
+		return '';
+	}//end identityOf()
+
+	/**
 	 * Read an already-set `pairedItem` index, falling back when absent.
 	 *
 	 * A dispatcher that tracked provenance itself keeps it; one that did not

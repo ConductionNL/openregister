@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-/* eslint-disable n/no-process-exit */
+ 
 // Bulgarian register detector for openregister l10n.
 //
 // Measures the PROSE register. Bulgarian labels take the VERBAL NOUN
@@ -52,6 +51,10 @@
 // JS \b is ASCII-only and would treat "ъ" as a boundary, so every guard is
 // (?<!\p{L}) … (?!\p{L}) with the u flag.
 
+/**
+ *
+ * @param s
+ */
 function fold(s) {
 	return String(s).toLowerCase()
 }
@@ -179,6 +182,10 @@ const UNDETECTABLE = [
 		+ 'of the sl "vas"/village caveat'],
 ]
 
+/**
+ *
+ * @param s
+ */
 function score(s) {
 	const t = fold(s)
 	let f = 0
@@ -190,6 +197,9 @@ function score(s) {
 	return { f, i }
 }
 
+/**
+ *
+ */
 function runControls() {
 	let fail = 0
 	for (const [s, want] of CONTROLS) {

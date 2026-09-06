@@ -153,51 +153,11 @@
       "count": 2
     }
   },
-  "src/components/workflow/ApprovalChainPanel.vue": {
-    "no-console": {
-      "count": 2
-    }
-  },
-  "src/components/workflow/ApprovalStepList.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 2
-    },
-    "jsdoc/require-param-type": {
-      "count": 2
-    },
-    "no-console": {
-      "count": 3
-    },
-    "vue/prefer-define-options": {
-      "count": 1
-    }
-  },
-  "src/components/workflow/ScheduledWorkflowPanel.vue": {
-    "jsdoc/require-param-type": {
-      "count": 1
-    },
-    "no-console": {
-      "count": 2
-    }
-  },
-  "src/components/workflow/WorkflowExecutionPanel.vue": {
-    "jsdoc/require-param-type": {
-      "count": 1
-    },
-    "no-console": {
-      "count": 1
-    }
-  },
   "src/dialogs/Dialogs.vue": {
     "vue/multi-word-component-names": {
       "count": 1
     },
     "vue/prefer-define-options": {
-      "count": 1
-    }
-  },
-  "src/dialogs/TestHookDialog.vue": {
-    "@typescript-eslint/no-unused-vars": {
       "count": 1
     }
   },
@@ -239,11 +199,6 @@
   },
   "src/dialogs/settings/ClearCacheDialog.vue": {
     "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    }
-  },
-  "src/dialogs/workflow/TestHookDialog.vue": {
-    "@typescript-eslint/no-unused-vars": {
       "count": 1
     }
   },
@@ -1745,11 +1700,6 @@
       "count": 1
     }
   },
-  "src/views/schemas/SchemaWorkflowTab.vue": {
-    "jsdoc/require-param-type": {
-      "count": 4
-    }
-  },
   "src/views/search/SearchIndex.vue": {
     "eqeqeq": {
       "count": 2
@@ -1829,17 +1779,6 @@
     },
     "vue/prefer-define-options": {
       "count": 1
-    }
-  },
-  "src/views/settings/sections/N8nConfiguration.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 2
-    },
-    "jsdoc/check-tag-names": {
-      "count": 1
-    },
-    "no-console": {
-      "count": 3
     }
   },
   "src/views/settings/sections/OrganisationConfiguration.vue": {

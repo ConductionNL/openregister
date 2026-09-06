@@ -47,12 +47,20 @@ class MigrateRegisterFlowsToTableTest extends TestCase {
 	/** @var array<int, string> */
 	private array $said = [];
 
+	/**
+	 * The config the step actually handed to `ObjectService::findAll()`.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private array $askedFor = [];
+
 	protected function setUp(): void {
 		$this->flowMapper    = $this->createMock(FlowMapper::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->output        = $this->createMock(IOutput::class);
 
 		$this->said = [];
+		$this->askedFor = [];
 		$this->output->method('info')->willReturnCallback(function (string $m): void {
 			$this->said[] = $m;
 		});
@@ -79,7 +87,12 @@ class MigrateRegisterFlowsToTableTest extends TestCase {
 	}
 
 	private function serve(array $objects): void {
-		$this->objectService->method('findAll')->willReturn(['results' => $objects]);
+		$this->objectService->method('findAll')->willReturnCallback(
+			function (array $config = []) use ($objects): array {
+				$this->askedFor = $config;
+				return ['results' => $objects];
+			}
+		);
 	}
 
 	private function summary(): string {
@@ -261,6 +274,148 @@ class MigrateRegisterFlowsToTableTest extends TestCase {
 		// that an ObjectEntity does not have.
 		$this->assertSame('admin', $captured->getOwner());
 		$this->assertSame('org-1', $captured->getOrganisation());
+		$this->assertStringContainsString('1 migrated', $this->summary());
+	}
+
+	/**
+	 * 🔴 THE READ MUST BE SCOPED, AND THE SCOPE MUST BE WHERE THE SERVICE LOOKS.
+	 *
+	 * The step asked for `['register' => 'flows', 'schema' => 'flow']` at the TOP
+	 * LEVEL of the config. `ObjectService::prepareFindAllConfig()` only reads
+	 * `$config['filters']['register']` and `$config['filters']['schema']`, so
+	 * those two keys were inert: `setRegister()` / `setSchema()` were never
+	 * called and `findAll()` ran against whatever `$currentRegister` /
+	 * `$currentSchema` the SHARED service instance happened to be carrying.
+	 *
+	 * That is not hypothetical. `saveObject()` sets the context and — unlike
+	 * `find()`, which restores it in a `finally` — never puts it back, and
+	 * `ImportCredentialBrokerRegister` runs four repair steps before this one and
+	 * saves two example objects through it. The context this step inherited was
+	 * therefore `credential-broker` / `brokeredcredential`, and it read those two
+	 * examples as if they were flows.
+	 *
+	 * Every other `findAll()` caller in `lib/` nests the pair under `filters`.
+	 * This step was the outlier, and no test looked at the argument, because
+	 * every fixture mocked `findAll()` to return rows regardless of what was
+	 * asked for. A mock that answers any question cannot report a wrong one.
+	 */
+	public function testTheReadIsScopedWhereTheServiceActuallyLooks(): void {
+		$this->serve([]);
+
+		$this->step->run($this->output);
+
+		$this->assertSame(
+			'flows',
+			($this->askedFor['filters']['register'] ?? null),
+			'the register must be requested under `filters`, which is the only place ObjectService reads it'
+		);
+		$this->assertSame(
+			'flow',
+			($this->askedFor['filters']['schema'] ?? null),
+			'and so must the schema — a top-level key here is silently ignored'
+		);
+	}
+
+	/**
+	 * 🔴 THE ROW THAT SHIPPED. Both of `credential_broker_register.json`'s
+	 * example objects landed in `openregister_flows` on a real instance: empty
+	 * nodes, empty edges, no trigger, no trigger schema, `_owner` = `__system__`
+	 * because the import that wrote them ran sessionless.
+	 *
+	 * They are not flows and can never become flows. They sit in the table
+	 * forever, appear wherever flows are listed, and — measured — misled a
+	 * diagnosis into reading `owner=__system__` as OpenRegister's own convention
+	 * for a shipped flow, which is an artefact, not a precedent.
+	 *
+	 * The scoping fix above stops the wrong POPULATION being read. This asserts
+	 * the second, independent guard: even handed such a row, the step must
+	 * refuse to write it. A row with no nodes, no edges and no trigger has
+	 * nothing to walk and nothing to start it.
+	 */
+	public function testACredentialBrokerExampleIsNeverWrittenAsAFlow(): void {
+		$example = new ObjectEntity();
+		$example->setUuid('brokered-1');
+		$example->setOwner('__system__');
+		$example->setObject(
+			[
+				'name' => 'Gemeente Example — GitHub publisher',
+				'provider' => 'github',
+				'owner' => '00000000-0000-0000-0000-000000000000',
+				'allowedApps' => ['hermiq'],
+				'createdAt' => '2026-01-01T00:00:00+00:00',
+			]
+		);
+
+		$this->objectService->method('findAll')->willReturn([$example]);
+		$this->flowMapper->method('findByUuid')->willThrowException(new DoesNotExistException('nope'));
+		$this->flowMapper->expects($this->never())->method('insert');
+
+		$this->step->run($this->output);
+
+		$this->assertStringContainsString('0 migrated', $this->summary());
+		$this->assertStringContainsString('1 not a flow', $this->summary());
+	}
+
+	/**
+	 * The negative control for the guard above: a genuine flow shares the
+	 * credential-broker row's whole silhouette apart from having a graph, and it
+	 * must still cross. A guard that also stopped this one would be trading one
+	 * silent defect for another.
+	 */
+	public function testAGenuineFlowStillCrossesAlongsideTheArtefact(): void {
+		$real = new ObjectEntity();
+		$real->setUuid('flow-1');
+		$real->setOwner('admin');
+		$real->setOrganisation('org-1');
+		$real->setObject(
+			[
+				'name' => 'Nightly sweep',
+				'trigger' => 'schedule',
+				'cron' => '* * * * *',
+				'nodes' => [['id' => 'a']],
+				'edges' => [['from' => 'a', 'to' => 'b']],
+			]
+		);
+
+		$artefact = new ObjectEntity();
+		$artefact->setUuid('brokered-1');
+		$artefact->setOwner('__system__');
+		$artefact->setObject(['name' => 'Reisbureau Example — GitLab discovery', 'provider' => 'gitlab']);
+
+		$this->objectService->method('findAll')->willReturn([$real, $artefact]);
+		$this->flowMapper->method('findByUuid')->willThrowException(new DoesNotExistException('nope'));
+
+		$written = [];
+		$this->flowMapper->expects($this->once())->method('insert')
+			->willReturnCallback(function (Flow $f) use (&$written): Flow {
+				$written[] = $f->getUuid();
+				return $f;
+			});
+
+		$this->step->run($this->output);
+
+		$this->assertSame(['flow-1'], $written);
+		$this->assertStringContainsString('1 migrated', $this->summary());
+		$this->assertStringContainsString('1 not a flow', $this->summary());
+	}
+
+	/**
+	 * A flow whose graph is still empty but which already names a trigger IS a
+	 * flow definition — a draft someone is part-way through authoring. The guard
+	 * is "nothing to walk AND nothing to start it", not "no nodes".
+	 */
+	public function testAnEmptyGraphWithATriggerIsStillAFlow(): void {
+		$draft = new ObjectEntity();
+		$draft->setUuid('draft-1');
+		$draft->setOwner('admin');
+		$draft->setObject(['name' => 'Half-written', 'trigger' => 'object.created', 'nodes' => [], 'edges' => []]);
+
+		$this->objectService->method('findAll')->willReturn([$draft]);
+		$this->flowMapper->method('findByUuid')->willThrowException(new DoesNotExistException('nope'));
+		$this->flowMapper->expects($this->once())->method('insert')->willReturnArgument(0);
+
+		$this->step->run($this->output);
+
 		$this->assertStringContainsString('1 migrated', $this->summary());
 	}
 

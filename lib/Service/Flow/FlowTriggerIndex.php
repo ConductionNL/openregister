@@ -58,12 +58,14 @@ class FlowTriggerIndex {
 	 *
 	 * @param FlowTriggerMapper $mapper The indexed trigger set.
 	 * @param FlowTriggerDerivation $derivation Nodes to triggers.
+	 * @param FlowTriggerSlugs $slugs Normalises a derived triple to the slugs matching runs on.
 	 * @param LoggerInterface $logger Diagnostics.
 	 * @param FlowPublishedGraph|null $published Resolves the published graph.
 	 */
 	public function __construct(
 		private readonly FlowTriggerMapper $mapper,
 		private readonly FlowTriggerDerivation $derivation,
+		private readonly FlowTriggerSlugs $slugs,
 		private readonly LoggerInterface $logger,
 		private readonly ?FlowPublishedGraph $published = null,
 	) {
@@ -105,7 +107,7 @@ class FlowTriggerIndex {
 			// trigger node has to actually unsubscribe it.
 			return $this->mapper->replaceFor(
 				flowUuid: $uuid,
-				triggers: $triggers,
+				triggers: $this->canonical(triggers: $triggers),
 				enabled: ($flow->getEnabled() === true)
 			);
 		} catch (Throwable $e) {
@@ -119,6 +121,38 @@ class FlowTriggerIndex {
 		}//end try
 
 	}//end reindex()
+
+	/**
+	 * The derived triggers, each register and schema resolved to its SLUG.
+	 *
+	 * A trigger node's config holds whatever its authoring surface put there —
+	 * an imported declaration writes slugs, the builder may write the numeric
+	 * id its select handed it. The MATCHING surface speaks slugs (the column
+	 * is `schema_slug`, and the fired subject is resolved to slugs the same
+	 * way), so the rows are normalised HERE, at the only writer, rather than
+	 * asking every matcher to try both vocabularies forever. Two nodes that
+	 * name the same triple through different identifiers collapse to one row.
+	 *
+	 * @param array<int, array{event: string, register: string, schema: string}> $triggers The derived triggers.
+	 *
+	 * @return array<int, array{event: string, register: string, schema: string}> The slug-keyed triggers.
+	 *
+	 * @spec openspec/changes/flow-trigger-canonical-slugs/specs/flow-engine/spec.md
+	 */
+	private function canonical(array $triggers): array {
+		$rows = [];
+		foreach ($triggers as $trigger) {
+			$row = [
+				'event' => (string)$trigger['event'],
+				'register' => $this->slugs->registerSlug(identifier: (string)$trigger['register']),
+				'schema' => $this->slugs->schemaSlug(identifier: (string)$trigger['schema']),
+			];
+
+			$rows[$row['event'] . '|' . $row['register'] . '|' . $row['schema']] = $row;
+		}
+
+		return array_values($rows);
+	}//end canonical()
 
 	/**
 	 * The flow as its PUBLISHED version sees it.

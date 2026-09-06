@@ -270,21 +270,20 @@ class ResponseGenerationHandler {
 					$config->model = $agentModel;
 				}
 
-				if (empty($openaiConfig['organizationId']) === false) {
-					/*
-					 * @psalm-suppress UndefinedPropertyAssignment LLPhant dynamic properties
-					 */
-
-					$config->organizationId = $openaiConfig['organizationId'];
-				}
+				// OrganizationId is NOT set here. LLPhant has no organization
+				// support of any kind, so the previous assignment created a
+				// dynamic property nothing ever read. Dropping it removes the
+				// pretence rather than the behaviour: there was none.
 
 				// Set temperature from agent or default (OpenAI).
 				if ($agent?->getTemperature() !== null) {
-					/*
-					 * @psalm-suppress UndefinedPropertyAssignment LLPhant dynamic properties
-					 */
-
-					$config->temperature = $agent->getTemperature();
+					// Through modelOptions, NOT a property. OpenAIChat reads
+					// $config->modelOptions and sends it as the API arguments;
+					// nothing in LLPhant ever reads a temperature property, so
+					// the old assignment created a dynamic property that was
+					// silently discarded and the agent's temperature never
+					// reached the model.
+					$config->modelOptions['temperature'] = $agent->getTemperature();
 				}
 			} elseif ($chatProvider === 'fireworks') {
 				// Fireworks uses OpenAIConfig.
@@ -313,11 +312,13 @@ class ResponseGenerationHandler {
 
 				// Set temperature from agent or default (Fireworks).
 				if ($agent?->getTemperature() !== null) {
-					/*
-					 * @psalm-suppress UndefinedPropertyAssignment LLPhant dynamic properties
-					 */
-
-					$config->temperature = $agent->getTemperature();
+					// Through modelOptions, NOT a property. OpenAIChat reads
+					// $config->modelOptions and sends it as the API arguments;
+					// nothing in LLPhant ever reads a temperature property, so
+					// the old assignment created a dynamic property that was
+					// silently discarded and the agent's temperature never
+					// reached the model.
+					$config->modelOptions['temperature'] = $agent->getTemperature();
 				}
 			}//end if
 

@@ -25,7 +25,6 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ExportHandler;
-use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -313,25 +312,4 @@ class ExportHandlerTest extends TestCase {
 		$this->assertEmpty($result['components']['mappings']);
 	}
 
-	// =========================================================================
-	// setWorkflowEngineRegistry / setDeployedWorkflowMapper
-	// =========================================================================
-
-	#[Test]
-	public function testSetWorkflowEngineRegistry(): void {
-		$registry = $this->createMock(WorkflowEngineRegistry::class);
-
-		// Should not throw
-		$this->handler->setWorkflowEngineRegistry($registry);
-		$this->assertTrue(true);
-	}
-
-	#[Test]
-	public function testSetDeployedWorkflowMapper(): void {
-		$mapper = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
-
-		// Should not throw
-		$this->handler->setDeployedWorkflowMapper($mapper);
-		$this->assertTrue(true);
-	}
 }

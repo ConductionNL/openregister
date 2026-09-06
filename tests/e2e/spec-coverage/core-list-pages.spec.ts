@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -18,18 +20,18 @@
  * @e2e openspec/specs/no-code-app-builder/spec.md
  * @e2e openspec/specs/frontend-app-bootstrap/spec.md
  */
-import { test, expect, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
 // Routes are imported by COMPONENT NAME (see tests/e2e/_page-routes.ts): the
 // binding records which page host each route mounts, which a bare path string
 // cannot say. Also what makes this suite legible to gate-26.
 import {
-	SchemasIndex,
-	TemplatesIndex,
-	SourcesIndex,
 	ApplicationsIndex,
 	ObjectsIndex,
-} from '../_page-routes'
+	SchemasIndex,
+	SourcesIndex,
+	TemplatesIndex,
+} from '../_page-routes.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 
@@ -100,11 +102,12 @@ function trackErrors(page: Page): { console: string[]; http: string[] } {
 
 /** Navigate to an OR route via the manifest shell and wait for content mount. */
 async function gotoPage(page: Page, route: string): Promise<void> {
-	// HASH form — the router runs in hash mode (src/main.js). A path-form
-	// deep-link (`/apps/openregister/registers`) is rewritten by the hash
-	// router to `/registers#/` and renders the DASHBOARD, not the target page
-	// (verified empirically 2026-07-27).
-	await page.goto(`/index.php/apps/openregister/#${route}`, {
+	// PATH form. This used to say the opposite: while the app was hash-routed a
+	// path-form deep-link resolved to the dashboard, so routes had to travel in
+	// the fragment. src/main.js now builds createWebHistory(routerBase()) and
+	// dashboard#catchAll serves the shell on any sub-path, so the path IS the
+	// route and a full-page load reaches the page it names.
+	await page.goto(`/index.php/apps/openregister${route}`, {
 		waitUntil: 'domcontentloaded',
 	})
 	await page.waitForSelector('#header, header.header-appcontainer', {

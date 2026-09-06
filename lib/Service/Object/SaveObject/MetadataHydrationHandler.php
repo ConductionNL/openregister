@@ -55,6 +55,8 @@ use Psr\Log\LoggerInterface;
  * Reason: Metadata hydration handles multiple complex scenarios for template processing
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 class MetadataHydrationHandler {
 	/**
@@ -278,6 +280,16 @@ class MetadataHydrationHandler {
 		// Simple field path - use existing method.
 		$value = $this->getValueFromPath(data: $data, path: $fieldPath);
 
+		// A translatable property holds a LANGUAGE MAP, not a value. Resolve it
+		// to one string before the json_encode below turns it into markup a
+		// person then reads on the page.
+		if (is_array($value) === true) {
+			$fromLanguageMap = $this->resolveLanguageMap(value: $value);
+			if ($fromLanguageMap !== null) {
+				return $fromLanguageMap;
+			}
+		}
+
 		// Convert arrays/objects to JSON string to satisfy the ?string return type.
 		if (is_array($value) === true) {
 			return json_encode($value);
@@ -285,6 +297,99 @@ class MetadataHydrationHandler {
 
 		return $value;
 	}//end extractMetadataValue()
+
+	/**
+	 * Resolve a translatable property's language map to a single string.
+	 *
+	 * 🔴 WITHOUT THIS, A TRANSLATABLE NAME FIELD IS SHOWN TO USERS AS RAW JSON.
+	 *
+	 * A property marked `translatable: true` stores `{"nl": "…", "en": "…"}`.
+	 * `extractMetadataValue()` must return a string, and it used to satisfy
+	 * that by `json_encode`-ing whatever array it was handed. So a schema whose
+	 * `objectNameField` names a translatable property stored the literal
+	 * `{"nl":"Rijkswaterstaat - Onderhoudscontract software 2026"}` in
+	 * `@self.name` — and every detail page renders `@self.name` as its
+	 * headline. Observed on pipelinq's lead page; `lead.title` is
+	 * `translatable: true` and is the `objectNameField`, and dossiq's
+	 * `case.title` is not translatable, which is exactly why its header reads
+	 * clean on the same component.
+	 *
+	 * WHICH LANGUAGE THIS PICKS, and why it is not a locale decision.
+	 * `@self.name` is a DENORMALISED display and search string written once at
+	 * save time, when there is no reader and so no locale to honour — under
+	 * `occ` there is not even a request. The authoritative value stays in the
+	 * property, and per-request resolution belongs to
+	 * {@see \OCA\OpenRegister\Service\Object\TranslationHandler::resolveTranslationsForRender()},
+	 * which reads the register's language list and the caller's Accept-Language.
+	 * So this deliberately bakes in NO language: it takes the FIRST key the
+	 * author declared, which is exact for the single-language maps that are
+	 * the common case and a defensible source-language convention otherwise.
+	 *
+	 * Returns null for an array that is not a language map, so a genuinely
+	 * structured value still falls through to `json_encode` as before.
+	 *
+	 * @param array $value The candidate value.
+	 *
+	 * @return string|null The resolved string, or null when this is not a language map.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function resolveLanguageMap(array $value): ?string {
+		if ($this->isLanguageKeyedObject(value: $value) === false) {
+			return null;
+		}
+
+		foreach ($value as $entry) {
+			// A nested map is not a language value; leave the whole thing to
+			// json_encode rather than reaching further in and guessing.
+			if (is_scalar($entry) === false) {
+				return null;
+			}
+
+			if (trim((string)$entry) !== '') {
+				return (string)$entry;
+			}
+		}
+
+		// Every language is present but empty. That is not a name, and falling
+		// through to json_encode would put `{"nl":""}` on the page, so let the
+		// caller's common-field fallback have its turn.
+		return null;
+	}//end resolveLanguageMap()
+
+	/**
+	 * Whether every key of an array is a BCP 47 language tag.
+	 *
+	 * Kept identical, deliberately, to TranslationHandler's own predicate: the
+	 * two must agree on what a language map IS, or a value one of them resolves
+	 * the other would encode. TranslationHandler cannot simply be injected
+	 * here — it is request-scoped through LanguageService, and this runs on the
+	 * save path, including from `occ` where there is no request at all.
+	 *
+	 * @param array $value The candidate value.
+	 *
+	 * @return bool True when the array is keyed by language tags.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function isLanguageKeyedObject(array $value): bool {
+		if (empty($value) === true) {
+			return false;
+		}
+
+		foreach (array_keys($value) as $key) {
+			if (is_string($key) === false) {
+				return false;
+			}
+
+			// BCP 47 language tag: 2-3 lowercase letters, optional subtags.
+			if (preg_match('/^[a-z]{2,3}(-[a-zA-Z0-9]{2,8})*$/', $key) !== 1) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end isLanguageKeyedObject()
 
 	/**
 	 * Processes a pipe-separated fallback chain and returns the first non-empty value.

@@ -39,7 +39,7 @@
  * ⚠️ THE ROUTER RUNS IN HASH MODE (`src/main.js`). These are hash routes: a
  * path-form deep link is rewritten by the hash router and renders the
  * DASHBOARD instead of the target page. Callers must compose them as
- * `…/apps/openregister/#${route}` — which every `gotoPage`/`gotoApp`/`go`
+ * `…/apps/openregister${route}` — which every `gotoPage`/`gotoApp`/`go`
  * helper in this suite already does.
  */
 
@@ -122,8 +122,9 @@ export const DeletedIndex = '/deleted'
 export const SchemaDetails = (id: string | number): string => `/schemas/${id}`
 
 /** `src/views/application/ApplicationDetails.vue` — single application, by id. */
-export const ApplicationDetails = (id: string | number): string =>
-	`/applications/${id}`
+export function ApplicationDetails(id: string | number): string {
+	return `/applications/${id}`
+}
 
 /** `src/views/flows/FlowDetailPage.vue` — single flow, by id. */
 export const FlowDetailPage = (id: string | number): string => `/flows/${id}`
@@ -136,8 +137,26 @@ export const ReportView = (id: string | number): string => `/reports/${id}`
  * host, which mounts one provider tab on its own rather than inside the
  * ObjectDetails sidebar. `tests/e2e/leaf-screenshots.spec.ts` drives it.
  */
-export const IntegrationsView = (
+export function IntegrationsView(
 	register: string | number,
 	schema: string | number,
 	objectId: string,
-): string => `/integrations/${register}/${schema}/${objectId}`
+): string {
+	return `/integrations/${register}/${schema}/${objectId}`
+}
+
+/**
+ * `src/views/task/FlowTaskDetail.vue` — one task at the fleet's one stable
+ * task address. Also the deep link every VTODO URL and notification button
+ * carries, so the FULL-PAGE load of this route is itself a scenario:
+ * `tests/e2e/task-inbox-page.spec.ts` reloads it cold and asserts the task
+ * renders (not the dashboard, which is where the old hash redirect landed).
+ */
+export const FlowTaskDetail = (uuid: string): string => `/flow-tasks/${uuid}`
+
+/**
+ * The task inbox (manifest page `flow-task-inbox`, `type: "index"` over the
+ * named `tasks` entity source — no app component of its own, so the binding
+ * here names the DETAIL component's sibling route rather than a view file).
+ */
+export const FlowTaskInbox = '/flow-tasks'

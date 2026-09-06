@@ -12,7 +12,7 @@
  *
  * Uses API-only approach. All mutations use RUN_ID prefix.
  */
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const RUN_ID = `e2e-${Date.now()}`
 

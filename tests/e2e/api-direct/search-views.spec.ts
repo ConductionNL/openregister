@@ -11,7 +11,7 @@
  * These are purely API-level tests. The larpingapp register (8/18) has
  * at least one seeded object with searchable string fields.
  */
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const RUN_ID = `e2e-${Date.now()}`
 const REGISTER_ID = '8'

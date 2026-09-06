@@ -200,3 +200,73 @@ app's install action needs the payload.
   `manifest` property
 - **WHEN** `resolve()` returns it
 - **THEN** the returned array MUST still contain `manifest`
+
+### Requirement: A leaf app MUST declare its store rather than implement one
+
+An adopting app SHALL declare a `store` block in `src/manifest.json` and SHALL
+NOT ship a store controller. The engine hosts `/api/store/items` and
+`/api/store/items/{slug}/install`, which the app aliases at
+`GenericStoreController` the same way it already aliases `/api/health` and
+`/api/metrics`.
+
+This amends ADR-080 Decision 3, which kept `install` per app. That decision
+rejected a cross-app controller BASE CLASS, whose three documented failures are
+all consequences of `extends` being resolved by the autoloader rather than the
+container. Route aliasing uses no inheritance, so none of them apply. The other
+half of Decision 3, that install semantics differ per app, is answered by making
+the difference data: the only thing that varied was which schemas an install may
+write.
+
+An app that aliases the routes but declares no block MUST report
+`not_configured`, not `404`. The page then renders its own items rather than
+reading as a broken endpoint.
+
+#### Scenario: An app with no store block reports not_configured
+
+- **GIVEN** an app whose manifest has no `store` key
+- **WHEN** `GET /api/store/items` is called by a signed-in user
+- **THEN** the response MUST be `200` with outcome `not_configured`
+- **AND** no network call MUST be made
+
+### Requirement: An install MUST refuse every schema the manifest does not allow
+
+The `installable` list is an allowlist and a security boundary. A registry is a
+third-party server, so an install MUST write only into the schema slugs the
+calling app declares. An absent or empty list MUST refuse **every** component
+rather than permit every component: an app that declares a store and omits the
+allowlist gets refusals, not an open door.
+
+A refusal MUST NOT abort the install. The remaining components still arrive and
+the per-component report names what did not, because an item that is half
+configuration and half records is the registry's mistake rather than a reason to
+deny an administrator the half they may have.
+
+#### Scenario: A component naming an undeclared schema is refused
+
+- **GIVEN** a manifest whose `installable` is `["caseType"]`
+- **WHEN** an item declares a component for schema `case`
+- **THEN** nothing MUST be written for it
+- **AND** the report MUST mark it `refused`
+
+#### Scenario: An empty allowlist refuses everything
+
+- **GIVEN** a manifest whose `store` block declares no `installable`
+- **WHEN** any component is installed
+- **THEN** every component MUST be refused
+
+### Requirement: An install MUST create a new object, never replace one
+
+Every identity key the remote payload carries (`id`, `uuid`, `@self`) MUST be
+stripped before the write. `ObjectService::saveObject()` resolves its target
+FROM the payload and the write is PUT-semantic, so a component carrying the uuid
+of a live local object would replace it and null every key the payload omits.
+
+The schema allowlist does not cover this: it governs which schema a component
+may write, never whether the write creates or replaces, so an entirely
+legitimate component is the attack.
+
+#### Scenario: A payload carrying a local uuid still creates
+
+- **GIVEN** a component whose object carries `id`, `uuid` and `@self`
+- **WHEN** it is installed
+- **THEN** the object handed to `saveObject()` MUST carry none of them

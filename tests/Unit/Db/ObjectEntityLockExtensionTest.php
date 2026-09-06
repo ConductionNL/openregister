@@ -113,7 +113,9 @@ class ObjectEntityLockExtensionTest extends TestCase {
 		$entity->lock($this->sessionFor('alice'), 'import', 600);
 
 		$this->expectException(Exception::class);
-		$this->expectExceptionMessage('Object is locked by another user');
+		// The refusal now NAMES the holder: a refusal that does not say who
+		// holds the lock leaves the reader with nowhere to go.
+		$this->expectExceptionMessage('Object is locked by alice');
 
 		$entity->lock($this->sessionFor('bob'), 'export', 600);
 	}//end testADifferentUserIsRefused()

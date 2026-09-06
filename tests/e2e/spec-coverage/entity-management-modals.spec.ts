@@ -22,12 +22,15 @@
  *   confirm-delete-on-a-single-agent                 (ffafd1c14, moved to hermiq)
  */
 
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import type { APIRequestContext } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
 // Routes are imported by COMPONENT NAME (see tests/e2e/_page-routes.ts): the
 // binding records which page host each route mounts, which a bare path string
 // cannot say. Also what makes this suite legible to gate-26.
-import { DeletedIndex } from '../_page-routes'
+import { DeletedIndex } from '../_page-routes.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 
@@ -77,13 +80,10 @@ async function deleteTestObject(
 }
 
 /** Navigate to the OR app route (hash form) and wait for NC header. */
-async function gotoApp(
-	page: import('@playwright/test').Page,
-	subpath: string,
-): Promise<void> {
+async function gotoApp(page: Page, subpath: string): Promise<void> {
 	// HASH form — the router runs in hash mode (src/main.js); path-form
 	// deep-links render the dashboard instead of the target page.
-	await page.goto(`/index.php/apps/openregister/#${subpath}`, {
+	await page.goto(`/index.php/apps/openregister${subpath}`, {
 		waitUntil: 'domcontentloaded',
 	})
 	await page.waitForSelector('#header, header.header-appcontainer', {
@@ -151,7 +151,7 @@ test.describe('entity-management-modals — copy-single-object-names-the-duplica
 		// register+schema pre-selected so the route watcher triggers
 		// applyQueryParamsFromRoute → performSearchWithFacets immediately.
 		await page.goto(
-			`/index.php/apps/openregister/#/tables?register=${REGISTER_ID}&schema=${SCHEMA_ID}`,
+			`/index.php/apps/openregister/tables?register=${REGISTER_ID}&schema=${SCHEMA_ID}`,
 			{ waitUntil: 'domcontentloaded' },
 		)
 		await page.waitForSelector('#header, header.header-appcontainer', {

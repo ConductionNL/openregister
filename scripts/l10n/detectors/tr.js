@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-/* eslint-disable n/no-process-exit */
+ 
 // Turkish register detector, used both to measure core and to gate my own patches.
 // Polarity: flags the DEVIATION. Core is formal (siz), so an informal hit is a defect.
 //
@@ -10,6 +9,10 @@
 //  2. Case folding: JS /i/ui does not match "İ", and 'İ'.toLowerCase() yields
 //     i + U+0307. Fold Turkish letters explicitly before matching.
 
+/**
+ *
+ * @param s
+ */
 function fold(s) {
 	return s.replace(/İ/g, 'i').replace(/I/g, 'ı').toLowerCase()
 }
@@ -39,6 +42,10 @@ const INFORMAL_RES = [
 	/(?<!\p{L})(?:sen|sana|senin|seni|senden|sende)(?!\p{L})/gu,
 ]
 
+/**
+ *
+ * @param s
+ */
 function score(s) {
 	const t = fold(s)
 	let f = 0
@@ -87,6 +94,9 @@ const UNDETECTABLE = [
 	['Takvimini aç', '"takvimini" = "your calendar" (2sg) and "the calendar of X" (3sg)'],
 ]
 
+/**
+ *
+ */
 function runControls() {
 	let fail = 0
 	for (const [s, want] of CONTROLS) {

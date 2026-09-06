@@ -38,11 +38,6 @@ namespace OCA\OpenRegister\Service\Dmn;
 class DecisionTableEvaluator {
 
 	/**
-	 * Hit policies fully implemented by this engine.
-	 *
-	 * @var string[]
-	 */
-	/**
 	 * The hit policies this evaluator implements.
 	 *
 	 * PRIORITY is here because openbuild's evaluator had it and dossiq's did
@@ -51,9 +46,13 @@ class DecisionTableEvaluator {
 	 * tables can already use it. This list is the union of the two, not the
 	 * intersection.
 	 *
+	 * Public so that {@see DecisionTableValidator} refuses exactly the
+	 * policies this class refuses. A second list would drift; the constant
+	 * cannot.
+	 *
 	 * @var array<int, string>
 	 */
-	private const IMPLEMENTED_HIT_POLICIES = ['UNIQUE', 'FIRST', 'COLLECT', 'PRIORITY', 'ANY'];
+	public const IMPLEMENTED_HIT_POLICIES = ['UNIQUE', 'FIRST', 'COLLECT', 'PRIORITY', 'ANY'];
 
 	/**
 	 * Common spellings of the declared column types, mapped onto this
@@ -401,6 +400,31 @@ class DecisionTableEvaluator {
 	}//end applyHitPolicy()
 
 	/**
+	 * The type a declared column type actually evaluates under.
+	 *
+	 * Applies {@see TYPE_ALIASES} and the string fallback in one place.
+	 * Public because {@see DecisionTableValidator} probes every rule cell
+	 * with a value of the column's effective type; if it normalised types
+	 * itself, the validator and the evaluator could disagree about what a
+	 * column means, which is the drift this method exists to prevent.
+	 *
+	 * @param string $type The declared column type, any spelling.
+	 *
+	 * @return string One of {@see UnaryTestEvaluator::VALID_TYPES}.
+	 *
+	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
+	 */
+	public static function effectiveType(string $type): string {
+		$lower = strtolower($type);
+		$lower = (self::TYPE_ALIASES[$lower] ?? $lower);
+		if (in_array($lower, UnaryTestEvaluator::VALID_TYPES, true) === false) {
+			return 'string';
+		}
+
+		return $lower;
+	}//end effectiveType()
+
+	/**
 	 * Normalise a decision table's `inputs`/`outputs` array into a clean
 	 * positional list of `{name, type}`.
 	 *
@@ -420,13 +444,7 @@ class DecisionTableEvaluator {
 				continue;
 			}
 
-			$type = strtolower((string)($field['type'] ?? 'string'));
-			$type = (self::TYPE_ALIASES[$type] ?? $type);
-			if (in_array($type, UnaryTestEvaluator::VALID_TYPES, true) === false) {
-				$type = 'string';
-			}
-
-			$result[] = ['name' => $name, 'type' => $type];
+			$result[] = ['name' => $name, 'type' => self::effectiveType(type: (string)($field['type'] ?? 'string'))];
 		}
 
 		return $result;

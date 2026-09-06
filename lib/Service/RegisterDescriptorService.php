@@ -133,11 +133,10 @@ class RegisterDescriptorService {
 				}
 
 				// ATTRIBUTED TO THE APP THAT DECLARES IT, not to the directory it
-				// was found in. `n8n_workflows.openregister.json` lives in
-				// OpenRegister's lib/Settings and declares `app: n8n` — it is n8n's
-				// register, shipped alongside. Filing it under `openregister` names
-				// the wrong owner, and an inventory exists to tell somebody whose
-				// problem a row is.
+				// was found in. A descriptor shipped inside OpenRegister's own
+				// lib/Settings may declare a different `app`, and filing it under
+				// `openregister` names the wrong owner. An inventory exists to tell
+				// somebody whose problem a row is.
 				$owner = (string)($descriptor['data']['x-openregister']['app'] ?? $appId);
 				if ($owner === '') {
 					$owner = $appId;
@@ -319,7 +318,7 @@ class RegisterDescriptorService {
 	 * A descriptor is recognised by SHAPE — an OpenAPI document carrying
 	 * `components.registers` — not by filename. The filenames vary across the
 	 * fleet (`flow_register.json`, `credential-providers.json`,
-	 * `n8n_workflows.openregister.json`), and a `*_register.json` glob would
+	 * `credential-providers.json`), and a `*_register.json` glob would
 	 * quietly omit the ones that do not match, shrinking the inventory instead of
 	 * failing. That is the same invisibility this service exists to fix, one
 	 * level up.

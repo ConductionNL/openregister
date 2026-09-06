@@ -155,8 +155,8 @@ class TagsController extends Controller {
 		string $id,
 	): JSONResponse {
 		try {
-			$this->objectService->setSchema($schema);
 			$this->objectService->setRegister($register);
+			$this->objectService->setSchema($schema);
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
 
@@ -194,8 +194,8 @@ class TagsController extends Controller {
 		string $id,
 	): JSONResponse {
 		try {
-			$this->objectService->setSchema($schema);
 			$this->objectService->setRegister($register);
+			$this->objectService->setSchema($schema);
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
 
@@ -245,8 +245,8 @@ class TagsController extends Controller {
 		string $tag,
 	): JSONResponse {
 		try {
-			$this->objectService->setSchema($schema);
 			$this->objectService->setRegister($register);
+			$this->objectService->setSchema($schema);
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
 

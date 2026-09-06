@@ -1102,8 +1102,16 @@ class EndpointServiceTest extends TestCase {
 				$this->assertSame('some warning', $log->getStatusMessage());
 				// Verify request data.
 				$this->assertSame(['method' => 'GET', 'path' => '/api/test', 'data' => ['key' => 'val'], 'headers' => ['X-Foo' => 'bar']], $log->getRequest());
-				// Note: setResponse uses named arg in source code (known issue),
-				// so response may be null. We verify it was attempted.
+				// The response, asserted rather than excused. This used to read
+				// "setResponse uses named arg in source code (known issue), so
+				// response may be null. We verify it was attempted" — and it
+				// verified nothing, so every endpoint log stored a null
+				// response and the suite stayed green.
+				$this->assertSame(
+					['statusCode' => 200, 'body' => ['items' => [1, 2, 3]]],
+					$log->getResponse(),
+					'the response must be stored on the log, not dropped'
+				);
 				// Verify timestamps.
 				$this->assertInstanceOf(\DateTime::class, $log->getCreated());
 				$this->assertInstanceOf(\DateTime::class, $log->getExpires());

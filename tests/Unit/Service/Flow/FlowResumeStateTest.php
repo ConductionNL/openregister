@@ -157,6 +157,45 @@ class FlowResumeStateTest extends TestCase {
 	}
 
 	/**
+	 * Slots survive every pass end the run can still advance from — a pass
+	 * that ends `queued` (an in-request advance whose sibling has enabled
+	 * work, a claim refused on contention) must not cost a parked node the
+	 * uuid of the task it is waiting on. Dropping it there was the heartbeat
+	 * wedge: the node asked again, and the original task's completion could
+	 * never address the slot again.
+	 *
+	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
+	 */
+	public function testSlotsAreStorableWhileTheRunIsLive(): void {
+		$state = new FlowResumeState();
+		$state->forNode(nodeId: 'ask')->set(key: 'taskUuid', value: 't-1');
+
+		$this->assertSame(['ask' => ['taskUuid' => 't-1']], $state->storableWhen(live: true));
+	}
+
+	/**
+	 * A terminal run drops its slots: anything still held belongs to a node
+	 * the run never came back to, and keeping it would put a stale cursor in
+	 * front of anyone reading the finished run.
+	 *
+	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
+	 */
+	public function testATerminalRunDropsItsSlots(): void {
+		$state = new FlowResumeState();
+		$state->forNode(nodeId: 'ask')->set(key: 'taskUuid', value: 't-1');
+
+		$this->assertNull($state->storableWhen(live: false));
+	}
+
+	/**
+	 * Nothing held is nothing stored, live or not — an empty bag must not
+	 * write an empty key into every run's context.
+	 */
+	public function testAnEmptyStateStoresNothing(): void {
+		$this->assertNull((new FlowResumeState())->storableWhen(live: true));
+	}
+
+	/**
 	 * The scoped view is what a node is handed, and it must not be able to
 	 * name another node's slot: there is no API on it that takes a node id.
 	 */

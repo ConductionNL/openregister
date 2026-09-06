@@ -1,3 +1,5 @@
+import type { APIRequestContext, Page } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -45,7 +47,7 @@
  *   NEXTCLOUD_URL=http://localhost:8080 npx playwright test \
  *     tests/e2e/integration-mount.spec.ts --project=chromium
  */
-import { test, expect, type APIRequestContext, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 /**
  * Fetch the registry's advertised providers from OCS capabilities. The
@@ -154,13 +156,13 @@ async function openObjectDetail(
 	baseURL: string,
 	triple: { register: string; schema: string; objectId: string },
 ): Promise<string[]> {
-	// vue-router runs in HASH mode (src/main.js, since the #133 fix). A
-	// path-form deep-link is rewritten by the hash router to `.../objects#/`
-	// and renders the dashboard — verified empirically 2026-07-27. The hash
-	// URL dispatches `objectDetail` (route name in the manifest) to
+	// vue-router runs in HISTORY mode (src/main.js). Hash mode was the #133
+	// workaround, and while it stood a path-form deep-link resolved to the
+	// dashboard; dashboard#catchAll now serves the shell on any sub-path, so
+	// the path URL dispatches `objectDetail` (route name in the manifest) to
 	// ObjectsIndex and its param-watch primes the object store.
 	await page.goto(
-		`${baseURL}/index.php/apps/openregister/#/objects/${triple.register}/${triple.schema}/${triple.objectId}`,
+		`${baseURL}/index.php/apps/openregister/objects/${triple.register}/${triple.schema}/${triple.objectId}`,
 		// `networkidle` never settles on Nextcloud (ADR-074 rule 4): the
 		// long-poll / notification channels keep a request in flight for the
 		// life of the page, so it always burns its timeout. The readiness

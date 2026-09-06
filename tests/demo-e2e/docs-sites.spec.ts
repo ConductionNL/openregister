@@ -1,4 +1,4 @@
-import { test, expect, request as pwRequest } from '@playwright/test'
+import { expect, request as pwRequest, test } from '@playwright/test'
 
 /**
  * The fleet's documentation sites, checked in a real browser.
@@ -95,7 +95,7 @@ test.describe('retired hostnames redirect', () => {
 				maxRedirects: 0,
 			})
 			expect(res.status()).toBe(301)
-			expect(res.headers()['location']).toBe(
+			expect(res.headers().location).toBe(
 				`https://${canonical}.conduction.nl${path}`,
 			)
 			await api.dispose()

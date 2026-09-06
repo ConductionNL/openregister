@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-/* eslint-disable n/no-process-exit */
+ 
 /**
  * Script-coverage sweep for a non-Latin locale — bg, sr, mk, be.
  *

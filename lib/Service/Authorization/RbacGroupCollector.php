@@ -48,10 +48,24 @@ class RbacGroupCollector {
 	 * `public` is a PSEUDO-principal denoting anonymous access; creating a real
 	 * Nextcloud group named `public` would be meaningless at best and would
 	 * suggest a membership-based grant that RBAC never consults.
+	 * `authenticated` is the same shape of pseudo-principal for "any logged-in
+	 * user". Three independent resolvers short-circuit it before any group test
+	 * — {@see \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler},
+	 * {@see \OCA\OpenRegister\Service\Object\PermissionHandler} and
+	 * {@see \OCA\OpenRegister\Service\PropertyRbacHandler} — so it is never
+	 * resolved through IGroupManager and a real group of that name grants
+	 * nothing extra. Leaving it out cost twice: provisioning created an empty
+	 * Nextcloud group called `authenticated`, and `occ openregister:declared-groups`
+	 * then reported the fleet's broadest working grant as "grants nobody
+	 * anything" — a false alarm that sends an operator hunting a bug that is not
+	 * there. Verified 2026-09-05 on a dev instance carrying both symptoms.
+	 *
+	 * The full set of virtual principals is exactly these three; a grep of the
+	 * three resolvers for special-cased principal strings finds no fourth.
 	 *
 	 * @var string[]
 	 */
-	public const RESERVED_PRINCIPALS = ['admin', 'public'];
+	public const RESERVED_PRINCIPALS = ['admin', 'public', 'authenticated'];
 
 	/**
 	 * Authorization keys that hold a role-name => group(s) map rather than an

@@ -24,6 +24,9 @@ use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
 use OCA\OpenRegister\Service\Flow\FlowTriggerDerivation;
 use OCA\OpenRegister\Service\Flow\FlowTriggerIndex;
+use OCA\OpenRegister\Service\Flow\FlowTriggerSlugs;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
@@ -53,9 +56,19 @@ class FlowTriggerIndexPublishedTest extends TestCase {
 		$published = $this->createMock(FlowPublishedGraph::class);
 		$published->method('graphOf')->willReturn($publishedGraph);
 
+		// The slug resolver's mappers resolve nothing here, so every identifier
+		// passes through unchanged — these tests are about WHICH version's
+		// nodes reach the index, not about the vocabulary they arrive in.
+		$slugs = new FlowTriggerSlugs(
+			$this->createMock(RegisterMapper::class),
+			$this->createMock(SchemaMapper::class),
+			new NullLogger()
+		);
+
 		return new FlowTriggerIndex(
 			$mapper,
 			new FlowTriggerDerivation(),
+			$slugs,
 			new NullLogger(),
 			$published
 		);

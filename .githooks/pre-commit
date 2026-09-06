@@ -43,4 +43,20 @@ if git diff --cached --name-only | grep -qE "^openspec/(specs/|features\.overlay
   fi
 fi
 
+# A NEW MIGRATION NEEDS A VERSION BUMP, and this is the cheapest place to be
+# told. Nextcloud reads an app's migration files only when appinfo/info.xml's
+# <version> is greater than the installed_version it recorded, so a migration
+# committed without a bump runs on no existing instance and says nothing about
+# it. CI (merge-hygiene) is the enforcement; this only tells you earlier.
+#
+# WARN ONLY, like everything else in this hook: a commit is a fine moment to
+# learn about it and a bad moment to be blocked, and the bump is often the last
+# thing you write. The gate on the PR is what actually holds the line.
+if git diff --cached --name-only --diff-filter=A | grep -q "^lib/Migration/.*\.php$"; then
+  if ! php scripts/check-migration-version-bump.php >/dev/null 2>&1; then
+    echo "pre-commit: WARNING — this change adds a migration without moving <version> in appinfo/info.xml." >&2
+    echo "            Run: php scripts/check-migration-version-bump.php" >&2
+  fi
+fi
+
 exit 0

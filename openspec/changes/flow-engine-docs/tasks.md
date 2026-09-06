@@ -25,7 +25,16 @@ code named beside it:
       iterate, batch, flow-state, wait, sub-flow, await-signal, end), one
       paragraph each: what it does, its config keys, a worked example;
       contributed nodes (openconnector, hermiq) noted as coming from their
-      apps' palettes with their own docs.
+      apps' palettes with their own docs. Fed from `flow-messaging-nodes`
+      (shipped): `openregister.send-notification` sends an in-app
+      notification (web-push riding along) to users, groups or an item
+      field, through the ADR-031 channel machinery;
+      `openregister.send-email` sends an email with the same recipients,
+      guardrails and placeholder syntax; `openregister.send-talk-message`
+      posts a Talk chat message as the run's acting user, who must already
+      be a participant. State the boundary beside them: notifications
+      notify, flows orchestrate, and API calls go through OpenConnector
+      sources — there is deliberately no send-webhook node.
 - [ ] **Approvals** — await-signal end to end: the question, who answers,
       how the answer routes downstream, the heartbeat, what happens when
       nobody answers (reaped as failed, flow schedulable again); telling

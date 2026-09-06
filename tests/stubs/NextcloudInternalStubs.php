@@ -562,3 +562,77 @@ if (class_exists(\OCA\DAV\CardDAV\CardDavBackend::class) === false) {
         public function getAddressBooksForPrincipal(string $principal): array { return []; }
     }');
 }//end if
+
+// -----------------------------------------------------------------
+// Sabre\DAV server classes (ship with the server's 3rdparty tree, loaded by
+// apps/dav; absent in the bare CI container). Enough surface for
+// TaskVtodoWriteBackPlugin to be constructed and its hooks invoked.
+// -----------------------------------------------------------------
+if (class_exists(\Sabre\DAV\ServerPlugin::class) === false) {
+	eval('namespace Sabre\DAV;
+    abstract class ServerPlugin {
+        abstract public function initialize(Server $server);
+        public function getPluginName() { return get_class($this); }
+    }');
+}//end if
+
+if (class_exists(\Sabre\DAV\Server::class) === false) {
+	eval('namespace Sabre\DAV;
+    class Server {
+        public $tree;
+        private array $plugins = [];
+        public function __construct($treeOrNode = null, $sapi = null) {}
+        public function on(string $eventName, callable $callBack, int $priority = 100) {}
+        public function addPlugin(ServerPlugin $plugin) { $this->plugins[$plugin->getPluginName()] = $plugin; }
+        public function getPlugin($name) { return $this->plugins[$name] ?? null; }
+    }');
+}//end if
+
+if (class_exists(\Sabre\DAV\Tree::class) === false) {
+	eval('namespace Sabre\DAV;
+    class Tree {
+        public function __construct($rootNode = null) {}
+        public function getNodeForPath($path) { return null; }
+    }');
+}//end if
+
+// The interfaces carry the REAL method sets, so a test double that satisfies
+// the stub also satisfies the server\'s Sabre (the in-container suite runs
+// against the real classes; an anonymous class that fit a hollow stub
+// fataled there).
+if (interface_exists(\Sabre\DAV\INode::class) === false) {
+	eval('namespace Sabre\DAV;
+    interface INode {
+        public function delete();
+        public function getName();
+        public function setName($name);
+        public function getLastModified();
+    }');
+}//end if
+
+if (interface_exists(\Sabre\DAV\IFile::class) === false) {
+	eval('namespace Sabre\DAV;
+    interface IFile extends INode {
+        public function put($data);
+        public function get();
+        public function getContentType();
+        public function getETag();
+        public function getSize();
+    }');
+}//end if
+
+if (interface_exists(\Sabre\DAV\ICollection::class) === false) {
+	eval('namespace Sabre\DAV;
+    interface ICollection extends INode {
+        public function createFile($name, $data = null);
+        public function createDirectory($name);
+        public function getChild($name);
+        public function getChildren();
+        public function childExists($name);
+    }');
+}//end if
+
+if (class_exists(\Sabre\DAV\Exception\Forbidden::class) === false) {
+	eval('namespace Sabre\DAV\Exception;
+    class Forbidden extends \Exception {}');
+}//end if

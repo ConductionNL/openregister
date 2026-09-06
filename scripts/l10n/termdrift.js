@@ -1,7 +1,5 @@
 #!/usr/bin/env node
-/* eslint-disable n/no-process-exit */
-/* eslint-disable no-console */
-/* eslint-disable n/shebang */
+ 
 /**
  * Terminology drift within one bundle: English words rendered two different ways.
  *
@@ -51,7 +49,12 @@ if (!loc) {
 	console.error('usage: termdrift.js <loc> [--min-keys=4] [--max-minority=0.34] [--top=40]')
 	process.exit(2)
 }
-const num = (flag, dflt) => {
+/**
+ *
+ * @param flag
+ * @param dflt
+ */
+function num (flag, dflt) {
 	const a = process.argv.find((x) => x.startsWith(`--${flag}=`))
 	return a ? Number(a.slice(flag.length + 3)) : dflt
 }

@@ -34,12 +34,14 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
+use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
@@ -2709,6 +2711,13 @@ class ObjectsController extends Controller {
 				],
 				statusCode: 422
 			);
+		} catch (LockedException $exception) {
+			// A lock taken between this handler's pre-read and the save reaches
+			// here as the service-layer guard's typed refusal. Caught before
+			// generic \Exception so it answers 423 naming the holder rather
+			// than falling into the hardcoded 500 that made a locked PATCH
+			// look like a server fault.
+			return $this->lockedResponse(exception: $exception);
 		} catch (FolderAccessDeniedException $exception) {
 			// MUST be caught before generic \Exception to avoid being absorbed as a 403 with
 			// a non-structured body. See the `self-folder-access-control` capability spec.
@@ -2851,18 +2860,14 @@ class ObjectsController extends Controller {
 				return new JSONResponse(data: ['error' => 'Object not found in specified register/schema'], statusCode: 404);
 			}
 
-			// Check if the object is locked.
-			if ($existingObject->isLocked() === true
-				&& $existingObject->getLockedBy() !== $this->container->get('userId')
-			) {
-				// Return a "locked" error with the user who has the lock.
-				return new JSONResponse(
-					data: [
-						'error' => 'Object is locked by ' . $existingObject->getLockedBy(),
-						'lockedBy' => $existingObject->getLockedBy(),
-					],
-					statusCode: 423
-				);
+			// Check if the object is locked. This used to be the ONE live lock
+			// guard in the codebase, written inline here; PATCH and POST-patch
+			// had none and answered 400 or 500 instead. The guard now lives in
+			// `lockRefusalResponse()` and all three doors call it, so there is
+			// one comparison and one refusal rather than three spellings.
+			$lockRefusal = $this->lockRefusalResponse(existingObject: $existingObject);
+			if ($lockRefusal !== null) {
+				return $lockRefusal;
 			}
 		} catch (DoesNotExistException $exception) {
 			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
@@ -2916,7 +2921,21 @@ class ObjectsController extends Controller {
 			// locked" question is free here and the scan is pure waste — measured
 			// at ~780 ms of a ~1.3 s update.
 			try {
-				if ($objectEntity->isLocked() === true) {
+				// Release ONLY a lock this writer actually holds. A run-held
+				// lock must survive somebody else's write: without this test
+				// an administrator's write would silently strip a run's lock
+				// as a side effect of a guard it had just passed.
+				//
+				// NO `runUuid` HERE, DELIBERATELY, and it is the one guard in
+				// this file that omits it. This decides a RELEASE, not a
+				// refusal: asking it as the run would make a run's own write
+				// drop the run's own lock the moment it saved — the lock is
+				// meant to outlive every write the run makes. Asked as a
+				// person, a run-held lock reads as somebody else's and is
+				// left alone, which is what this test is for.
+				if ($objectEntity->isLocked() === true
+					&& $objectEntity->isLockedBySomeoneElse(userId: $this->container->get('userId')) === false
+				) {
 					$this->objectService->unlockObject($objectEntity->getUuid());
 				}
 			} catch (\Exception $e) {
@@ -2953,6 +2972,13 @@ class ObjectsController extends Controller {
 				data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
 				statusCode: 422
 			);
+		} catch (LockedException $exception) {
+			// A lock taken between this handler's pre-read and the save reaches
+			// here as the service-layer guard's typed refusal. Caught before
+			// generic \Exception so it answers 423 naming the holder rather
+			// than falling into the hardcoded 500 that made a locked PATCH
+			// look like a server fault.
+			return $this->lockedResponse(exception: $exception);
 		} catch (FolderAccessDeniedException $exception) {
 			// MUST be caught before generic \Exception. See `self-folder-access-control` spec.
 			return $this->folderAccessDeniedResponse(exception: $exception);
@@ -3082,6 +3108,16 @@ class ObjectsController extends Controller {
 				return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 			}//end try
 
+			// The lock answers BEFORE the optimistic-concurrency check, before
+			// the merge and before validation, exactly as it does on PUT.
+			// Ordering is the whole point: a caller told their payload is
+			// invalid, or handed a bare 500, when the real answer is "alice
+			// holds this" has been sent to fix the wrong thing.
+			$lockRefusal = $this->lockRefusalResponse(existingObject: $existingObject);
+			if ($lockRefusal !== null) {
+				return $lockRefusal;
+			}
+
 			// Optimistic concurrency (fix-object-patch-lost-update): PATCH is a
 			// read-merge-write, so two concurrent PATCHes can silently clobber each
 			// other's untouched fields. A caller that read the object may pass the
@@ -3139,7 +3175,21 @@ class ObjectsController extends Controller {
 			// locked" question is free here and the scan is pure waste — measured
 			// at ~780 ms of a ~1.3 s update.
 			try {
-				if ($objectEntity->isLocked() === true) {
+				// Release ONLY a lock this writer actually holds. A run-held
+				// lock must survive somebody else's write: without this test
+				// an administrator's write would silently strip a run's lock
+				// as a side effect of a guard it had just passed.
+				//
+				// NO `runUuid` HERE, DELIBERATELY, and it is the one guard in
+				// this file that omits it. This decides a RELEASE, not a
+				// refusal: asking it as the run would make a run's own write
+				// drop the run's own lock the moment it saved — the lock is
+				// meant to outlive every write the run makes. Asked as a
+				// person, a run-held lock reads as somebody else's and is
+				// left alone, which is what this test is for.
+				if ($objectEntity->isLocked() === true
+					&& $objectEntity->isLockedBySomeoneElse(userId: $this->container->get('userId')) === false
+				) {
 					$this->objectService->unlockObject($objectEntity->getUuid());
 				}
 			} catch (\Exception $e) {
@@ -3188,6 +3238,13 @@ class ObjectsController extends Controller {
 				data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
 				statusCode: 422
 			);
+		} catch (LockedException $exception) {
+			// A lock taken between this handler's pre-read and the save reaches
+			// here as the service-layer guard's typed refusal. Caught before
+			// generic \Exception so it answers 423 naming the holder rather
+			// than falling into the hardcoded 500 that made a locked PATCH
+			// look like a server fault.
+			return $this->lockedResponse(exception: $exception);
 		} catch (FolderAccessDeniedException $exception) {
 			// MUST be caught before generic \Exception. See `self-folder-access-control` spec.
 			return $this->folderAccessDeniedResponse(exception: $exception);
@@ -3288,6 +3345,14 @@ class ObjectsController extends Controller {
 				return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 			}
 
+			// The lock answers BEFORE the merge and before validation, exactly
+			// as it does on PUT. Reached through the same guard, so the two
+			// doors to one object cannot drift apart again.
+			$lockRefusal = $this->lockRefusalResponse(existingObject: $existingObject);
+			if ($lockRefusal !== null) {
+				return $lockRefusal;
+			}
+
 			// Merge existing data with patch data (patch semantics).
 			$existingData = $existingObject->getObject();
 			$mergedData = array_merge($existingData ?? [], $patchData);
@@ -3315,7 +3380,21 @@ class ObjectsController extends Controller {
 			// locked" question is free here and the scan is pure waste — measured
 			// at ~780 ms of a ~1.3 s update.
 			try {
-				if ($objectEntity->isLocked() === true) {
+				// Release ONLY a lock this writer actually holds. A run-held
+				// lock must survive somebody else's write: without this test
+				// an administrator's write would silently strip a run's lock
+				// as a side effect of a guard it had just passed.
+				//
+				// NO `runUuid` HERE, DELIBERATELY, and it is the one guard in
+				// this file that omits it. This decides a RELEASE, not a
+				// refusal: asking it as the run would make a run's own write
+				// drop the run's own lock the moment it saved — the lock is
+				// meant to outlive every write the run makes. Asked as a
+				// person, a run-held lock reads as somebody else's and is
+				// left alone, which is what this test is for.
+				if ($objectEntity->isLocked() === true
+					&& $objectEntity->isLockedBySomeoneElse(userId: $this->container->get('userId')) === false
+				) {
 					$this->objectService->unlockObject($objectEntity->getUuid());
 				}
 			} catch (\Exception $e) {
@@ -3340,6 +3419,13 @@ class ObjectsController extends Controller {
 				data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
 				statusCode: 422
 			);
+		} catch (LockedException $exception) {
+			// A lock taken between this handler's pre-read and the save reaches
+			// here as the service-layer guard's typed refusal. Caught before
+			// generic \Exception so it answers 423 naming the holder rather
+			// than falling into the hardcoded 500 that made a locked PATCH
+			// look like a server fault.
+			return $this->lockedResponse(exception: $exception);
 		} catch (FolderAccessDeniedException $exception) {
 			// MUST be caught before generic \Exception so a @self.folder
 			// denial on the post-patch path returns 403 with the structured
@@ -3538,9 +3624,12 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	public function contracts(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
-		// Set the schema and register to the object service.
-		$objectService->setSchema(schema: $schema);
+		// REGISTER FIRST. `setSchema()` scopes its slug lookup to whatever
+		// register is currently set, and ObjectService is reused across many
+		// operations in one process, so naming the schema first resolves it
+		// against a register an unrelated call left behind.
 		$objectService->setRegister(register: $register);
+		$objectService->setSchema(schema: $schema);
 
 		// Get request parameters for filtering.
 		$requestParams = $this->request->getParams();
@@ -3753,9 +3842,12 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	public function used(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
-		// Set the schema and register to the object service.
-		$objectService->setSchema(schema: $schema);
+		// REGISTER FIRST. `setSchema()` scopes its slug lookup to whatever
+		// register is currently set, and ObjectService is reused across many
+		// operations in one process, so naming the schema first resolves it
+		// against a register an unrelated call left behind.
 		$objectService->setRegister(register: $register);
+		$objectService->setSchema(schema: $schema);
 
 		// Build search query from request parameters.
 		$queryParams = $this->request->getParams();
@@ -3911,8 +4003,8 @@ class ObjectsController extends Controller {
 	public function lock(string $register, string $schema, string $id): JSONResponse {
 		try {
 			// Set the schema and register to the object service.
-			$this->objectService->setSchema(schema: $schema);
 			$this->objectService->setRegister(register: $register);
+			$this->objectService->setSchema(schema: $schema);
 
 			$data = $this->request->getParams();
 			$process = ($data['process'] ?? null);
@@ -4817,4 +4909,108 @@ class ObjectsController extends Controller {
 			statusCode: FolderAccessDeniedException::HTTP_STATUS
 		);
 	}//end folderAccessDeniedResponse()
+
+	/**
+	 * The flow run this write is being made for, or null when a person is
+	 * writing.
+	 *
+	 * A run-scoped lock refuses every caller but the holding run, so a guard
+	 * that cannot name the caller's run refuses the run that took the lock.
+	 * Resolved from the container rather than injected because the ambient
+	 * stack is a shared service and this is the only thing here that needs it.
+	 *
+	 * A container that cannot serve it answers "a person", which is the
+	 * FAIL-CLOSED direction: a run lock refuses a caller with no run uuid, so
+	 * the worst outcome is a refusal, never a lock walked through.
+	 *
+	 * @return string|null The executing run's uuid, or null.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
+	 */
+	private function callerRunUuid(): ?string {
+		try {
+			$flowContext = $this->container->get(\OCA\OpenRegister\Service\Flow\FlowRunContext::class);
+		} catch (\Throwable $unavailable) {
+			return null;
+		}
+
+		if ($flowContext instanceof \OCA\OpenRegister\Service\Flow\FlowRunContext === false) {
+			return null;
+		}
+
+		return $flowContext->currentRunUuid();
+	}//end callerRunUuid()
+
+	/**
+	 * Refuse a write to a locked object, or return null when it may proceed.
+	 *
+	 * ONE guard for all three write doors. PUT carried this inline and PATCH
+	 * and POST-patch carried nothing, so the two doors to the same object gave
+	 * two different answers: 423 naming the holder on PUT, and on PATCH
+	 * whatever the payload happened to produce first — 400 from validation, or
+	 * 500 when the payload was valid and the service-layer guard's untyped
+	 * exception fell through to the generic handler. Neither said anything
+	 * about a lock.
+	 *
+	 * The condition is not restated here: `isLockedBySomeoneElse()` is the
+	 * single predicate (openregister#3454), run identity reaches it ambiently
+	 * through `FlowRunContext::currentRunUuid()`, and the refusal itself is
+	 * built by `LockedException::forObject()` so the words and the holder
+	 * fields are the same wherever a lock refuses a write.
+	 *
+	 * Callers MUST invoke this immediately after the existence pre-read and
+	 * BEFORE merging, validating or saving. A caller who is told their payload
+	 * is malformed when the real answer is "someone else holds this" has been
+	 * sent to fix the wrong thing.
+	 *
+	 * @param ObjectEntity $existingObject The object as stored, from the pre-read.
+	 *
+	 * @return JSONResponse|null The 423 refusal, or null when the caller may write.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-refuses-a-write-and-names-its-holder
+	 */
+	private function lockRefusalResponse(ObjectEntity $existingObject): ?JSONResponse {
+		try {
+			$callerUserId = $this->container->get('userId');
+		} catch (NotFoundExceptionInterface|ContainerExceptionInterface $unavailable) {
+			// No resolvable caller identity. A user lock is held against
+			// "nobody" just as it is against anyone who is not the holder, so
+			// the predicate still answers correctly with a null user id.
+			$callerUserId = null;
+		}
+
+		if ($existingObject->isLockedBySomeoneElse(userId: $callerUserId, runUuid: $this->callerRunUuid()) === false) {
+			return null;
+		}
+
+		return $this->lockedResponse(exception: LockedException::forObject($existingObject));
+	}//end lockRefusalResponse()
+
+	/**
+	 * Render a lock refusal as the canonical 423 response body.
+	 *
+	 * Kept separate from `lockRefusalResponse()` so a catch site that receives
+	 * a `LockedException` thrown further down (the service-layer guard in
+	 * `SaveObject::findAndValidateExistingObject()`) answers with the SAME body
+	 * rather than a second spelling of it.
+	 *
+	 * The `error` string keeps the wording PUT has always returned, because
+	 * clients match on it.
+	 *
+	 * @param LockedException $exception The refusal carrying the holder.
+	 *
+	 * @return JSONResponse The 423 response naming the lock holder.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-refuses-a-write-and-names-its-holder
+	 */
+	private function lockedResponse(LockedException $exception): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => 'Object is locked by ' . (string)$exception->getHolder(),
+				'lockedBy' => $exception->getLockedBy(),
+				'lockedByRun' => $exception->getLockedByRun(),
+			],
+			statusCode: LockedException::HTTP_STATUS
+		);
+	}//end lockedResponse()
 }//end class

@@ -16,7 +16,7 @@
  *
  * All mutations use RUN_ID prefix for cleanup isolation.
  */
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const RUN_ID = `e2e-${Date.now()}`
 
@@ -79,7 +79,7 @@ test.describe('openapi-generation — full OAS document', () => {
 // configurations — configuration sets CRUD
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('configurations — configuration sets REST lifecycle', () => {
-	let configId: number | null = null
+	const configId: number | null = null
 
 	test('GET /api/configurations lists configurations (any response, not just 5xx)', async ({
 		request,

@@ -546,11 +546,21 @@ class VocabularyImportService {
 		$offset = 0;
 
 		do {
+			// The pair goes UNDER `filters`. `prepareFindAllConfig()` reads
+			// `$config['filters']['register']` / `['schema']` and no other key, so
+			// a top-level pair scopes NOTHING — the read ran on whatever the last
+			// write left on the shared ObjectService. In this loop that was
+			// self-concealing: the `saveObject()` below anchors the service on
+			// exactly this pair, so page 1 read an arbitrary scope and every later
+			// page read the right one, by accident. openregister#3408 is what the
+			// same shape costs when no write happens to precede the read.
 			$results = $this->objectService->findAll(
 				config: [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA_CONCEPT,
-					'filters' => ['inScheme' => $schemeUuid],
+					'filters' => [
+						'register' => self::REGISTER,
+						'schema' => self::SCHEMA_CONCEPT,
+						'inScheme' => $schemeUuid,
+					],
 					'limit' => $limit,
 					'offset' => $offset,
 				]
@@ -596,11 +606,17 @@ class VocabularyImportService {
 	 * @return ObjectEntity|null The matching object, or null when absent.
 	 */
 	private function findByUri(string $schema, string $uri): ?ObjectEntity {
+		// The pair goes UNDER `filters` — see deprecateMissing() for why a
+		// top-level pair is inert. This one is the import's identity lookup: an
+		// unscoped read here answers "does this uri already exist?" from the
+		// wrong table, and the import creates a duplicate rather than updating.
 		$results = $this->objectService->findAll(
 			config: [
-				'register' => self::REGISTER,
-				'schema' => $schema,
-				'filters' => ['uri' => $uri],
+				'filters' => [
+					'register' => self::REGISTER,
+					'schema' => $schema,
+					'uri' => $uri,
+				],
 				'limit' => 1,
 			]
 		);

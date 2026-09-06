@@ -45,8 +45,7 @@ class DestructionServiceTest extends TestCase {
 
 		$this->objectMapper = $this->getMockBuilder(MagicMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['update'])
-			->addMethods(['findByUuid'])
+			->onlyMethods(['update', 'find'])
 			->getMock();
 		$this->legalHoldService = $this->createMock(LegalHoldService::class);
 		$this->appConfig = $this->createMock(IAppConfig::class);
@@ -151,7 +150,7 @@ class DestructionServiceTest extends TestCase {
 			'archiefactiedatum' => '2025-01-01',
 		]);
 		$mockObject->expects($this->once())->method('setRetention');
-		$this->objectMapper->method('findByUuid')->willReturn($mockObject);
+		$this->objectMapper->method('find')->willReturn($mockObject);
 		$this->objectMapper->method('update')->willReturn($mockObject);
 
 		$list = [
@@ -190,7 +189,7 @@ class DestructionServiceTest extends TestCase {
 			->getMock();
 		$mockObject->method('getRetention')->willReturn(['archiefactiedatum' => '2025-01-01']);
 		$mockObject->expects($this->once())->method('setRetention');
-		$this->objectMapper->method('findByUuid')->willReturn($mockObject);
+		$this->objectMapper->method('find')->willReturn($mockObject);
 		$this->objectMapper->method('update')->willReturn($mockObject);
 
 		$list = [

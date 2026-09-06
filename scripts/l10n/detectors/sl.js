@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-/* eslint-disable n/no-process-exit */
+ 
 // Slovenian register detector for openregister l10n.
 //
 // Measures the PROSE register only. Slovenian buttons take the bare 2sg
@@ -34,6 +33,10 @@
 // JS \b is ASCII-only and would treat "č" as a boundary, so every guard is
 // (?<!\p{L}) … (?!\p{L}) with the u flag.
 
+/**
+ *
+ * @param s
+ */
 function fold(s) {
 	return String(s).toLowerCase()
 }
@@ -147,6 +150,10 @@ const UNDETECTABLE = [
 		+ 'exactly two people and never appears in UI prose, so it is not matched'],
 ]
 
+/**
+ *
+ * @param s
+ */
 function score(s) {
 	const t = fold(s)
 	let f = 0
@@ -158,6 +165,9 @@ function score(s) {
 	return { f, i }
 }
 
+/**
+ *
+ */
 function runControls() {
 	let fail = 0
 	for (const [s, want] of CONTROLS) {

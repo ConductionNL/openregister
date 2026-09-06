@@ -328,6 +328,15 @@ const DEFAULT_LAYOUT = [
 		gridWidth: 6,
 		gridHeight: 4,
 	},
+	// Row 4 — the viewer's task inbox (flow-task-inbox-projections 5.1).
+	{
+		id: 10,
+		widgetId: 'my-tasks',
+		gridX: 0,
+		gridY: 12,
+		gridWidth: 6,
+		gridHeight: 4,
+	},
 ]
 
 /**
@@ -666,6 +675,23 @@ export default {
 					id: 'objects-chart',
 					title: t('openregister', 'Objects Distribution'),
 					type: 'custom',
+				},
+				{
+					// The library widget (CnTasksWidget, registered as the
+					// `tasks` dashboard type by nextcloud-vue 2.30.0): the
+					// viewer's open tasks read from the flow-tasks inbox,
+					// with claim and complete offered per row. No slot
+					// template on purpose — CnDashboardPage resolves the
+					// type from the dashboard widget registry and hands it
+					// this content.
+					id: 'my-tasks',
+					title: t('openregister', 'Tasks'),
+					type: 'tasks',
+					content: {
+						scope: 'assigned',
+						limit: 6,
+						pollSeconds: 30,
+					},
 				},
 			]
 		},

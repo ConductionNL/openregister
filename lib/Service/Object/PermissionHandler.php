@@ -1161,7 +1161,25 @@ class PermissionHandler {
 		$activeOrganisation = $this->getActiveOrganisationForContext();
 
 		// Get objects for permission checking.
-		$objects = $this->objectEntityMapper->findAll(ids: $uuids, includeDeleted: true);
+		//
+		// This must be the CROSS-TABLE lookup. `MagicMapper::findAll()` needs a
+		// Register AND a Schema entity to know which magic table to read, and
+		// returns `[]` — after a log warning and nothing else — when it has
+		// neither. This handler has neither, so asking it here resolved nothing
+		// for every input: the filter answered `[]` unconditionally, and its one
+		// caller, ObjectService::deleteObjects(), then ran zero loop iterations.
+		// `POST /api/bulk/{register}/{schema}/delete` accordingly deleted nothing
+		// and reported nothing, answering `requested 1, deleted 0, skipped 0`.
+		//
+		// A bulk delete is cross-table by nature — its UUIDs may sit in any magic
+		// table — which is why deleteObjects() already resolves the very same
+		// UUIDs through findMultipleAcrossAllMagicTables() a few lines later.
+		// Soft-deleted rows are included: bulk-deleting an already-trashed object
+		// is how it is destroyed for good.
+		$objects = $this->objectEntityMapper->findMultipleAcrossAllMagicTables(
+			uuids: $uuids,
+			includeDeleted: true
+		);
 
 		foreach ($objects as $object) {
 			$objectUuid = $object->getUuid();

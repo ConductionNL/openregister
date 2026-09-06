@@ -43,6 +43,7 @@ use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunStep;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
+use OCA\OpenRegister\Db\FlowStream;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -142,12 +143,24 @@ class FlowStepHistory {
 				continue;
 			}
 
+			// A firing committed by FlowRunCommit already has its step row,
+			// written inside the firing's own transaction at the stream's
+			// position. Writing it again here would double every firing.
+			if (($entry['recorded'] ?? false) === true) {
+				continue;
+			}
+
 			$step = new FlowRunStep();
 			$step->setRunUuid($runUuid);
 			$step->setFlowId((string)$run->getFlowId());
 			$step->setNodeId((string)($entry['transition'] ?? ''));
 			$step->setNodeType(($entry['type'] ?? null));
 			$step->setSequence($sequence);
+			// Branch identity when the walk knew it (a suspension, a stop, a
+			// terminal failure on a stream); a row from a pre-stream walk
+			// carries the root path, the single implicit stream.
+			$step->setStreamId(($entry['streamId'] ?? null));
+			$step->setOrdinalPath((string)($entry['ordinalPath'] ?? FlowStream::ROOT_PATH));
 			$step->setStatus((string)($entry['status'] ?? 'unknown'));
 			$step->setDurationMs(($entry['durationMs'] ?? null));
 			$step->setCreated(new DateTime());

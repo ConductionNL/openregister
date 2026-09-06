@@ -142,6 +142,10 @@ class AvgRetentionJob extends TimedJob {
 					'evaluatedActivities' => $summary['evaluatedActivities'],
 					'skippedActivities' => $summary['skippedActivities'],
 					'objectsErased' => $summary['objectsErased'],
+					// A record the archival obligation kept must be visible from
+					// the cron log. Counting it as erased, or not counting it at
+					// all, is how a refusal turns back into a silent skip.
+					'objectsWithheld' => $summary['objectsWithheld'],
 				]
 			);
 		} catch (\Throwable $e) {

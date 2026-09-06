@@ -1,6 +1,6 @@
 {
 	"@fortawesome/free-solid-svg-icons": "License is (CC-BY-4.0 AND MIT) — both are approved open-source licenses, compound AND expression not parsed by checker",
 	"smalot/pdfparser": "License is LGPL-3.0 — equivalent to LGPL-3.0-only which is on the allowlist, SPDX identifier variation not recognized by checker",
-	"apexcharts": "License is MIT — license-checker misreads logo URL as custom license, see https://github.com/apexcharts/apexcharts.js/blob/main/LICENSE",
+	"apexcharts": "NOT MIT. The last MIT release is 5.0.0 -- 5.1.0 onward is the ApexCharts dual-license (Community free only below USD 2M annual revenue; sublicensing under different terms not permitted). This app declares ^7.0.0. Conduction confirmed 2026-08-31 it is below USD 2M, so it qualifies for the Community tier. 🔴 UNRESOLVED: an OEM/Redistribution licence is separately required when embedding ApexCharts in a product used by other people, and is only waived for STATIC charts users cannot interact with -- RegisterDetail.vue and SchemaDetails.vue both set toolbar.show and zoom.enabled, and this app ships to third parties via the Nextcloud App Store. Escalated to the maintainers; do not read this override as a clearance for redistribution.",
 	"dompdf/dompdf": "License is LGPL-2.1 — equivalent to LGPL-2.1-or-later which is on the allowlist; configured hermetically (isRemoteEnabled=false / isPhpEnabled=false) at the single instantiation site PdfReportWriter:69"
 }

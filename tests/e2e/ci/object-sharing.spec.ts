@@ -1,3 +1,5 @@
+import type { APIRequestContext } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -20,13 +22,8 @@
  * object, and deletes the users at the end. It needs no `occ`, no docker, and no
  * pre-seeded data, which is what makes it safe to run on every push.
  */
-import {
-	test,
-	expect,
-	request as pwRequest,
-	type APIRequestContext,
-} from '@playwright/test'
-import { resolveBaseUrl } from '../base-url'
+import { expect, request as pwRequest, test } from '@playwright/test'
+import { resolveBaseUrl } from '../base-url.ts'
 
 const BASE = resolveBaseUrl()
 const ADMIN = process.env.ADMIN_USER || process.env.OR_USER || 'admin'

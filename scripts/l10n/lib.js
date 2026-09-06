@@ -32,10 +32,10 @@
  *      "not started" and "in progress" uniformly.
  */
 
+const { execFileSync } = require('child_process')
 const fs = require('fs')
 const path = require('path')
 const vm = require('vm')
-const { execFileSync } = require('child_process')
 
 /**
  * Load a single l10n/*.js file and return its app name, translations object,
@@ -421,6 +421,9 @@ function findKeyReferences(srcDir, app, key) {
 	return hits
 }
 
+/**
+ *
+ */
 function escapeRegex(s) {
 	return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
@@ -771,6 +774,9 @@ function localeFileRe(loc) {
 	return new RegExp(`^${escaped}(_[A-Za-z]{2,3})?\\.json$`)
 }
 
+/**
+ *
+ */
 function coreCatalogues(loc) {
 	const workspace = process.env.L10N_WORKSPACE || path.resolve(APP_ROOT, '..', '..')
 	const server = process.env.L10N_SERVER_DIR || path.join(workspace, 'server')

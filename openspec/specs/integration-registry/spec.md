@@ -272,3 +272,47 @@ mappers consume it unchanged.
   classification as before mock mode existed
 - @e2e exclude Backend real-path regression guard; verified by PHPUnit, not a browser flow.
 
+
+### Requirement: A leaf's client half MUST be loaded on consuming pages
+
+A cross-app leaf (ADR-066) ships in two halves: a server-side `LeafDescriptor`
+and the Vue components that render it. The components live in the PROVIDING
+app's bundle, and Nextcloud serves only the current app's scripts, so the system
+MUST enqueue a providing app's leaf bundle on the pages of apps that consume
+OpenRegister. Without it the descriptor reaches OCS discovery, satisfies the
+parity gate on both halves, and renders nothing.
+
+The bundle enqueued MUST be a dedicated `<app>-leaves` entry, never the app's
+main bundle: a main bundle carries a whole SPA and putting one on another app's
+page trades a feature for a performance regression.
+
+Loading MUST be skipped, silently and without enqueuing anything, when the
+providing app is disabled, ships no built `js/<app>-leaves.js`, or is the app
+whose page is rendering. It MUST be skipped for apps that ship no OpenRegister
+register descriptor of their own, which have no objects for a leaf to attach to.
+
+#### Scenario: A sibling app's leaf bundle is loaded on a consuming page
+- GIVEN planninq declares a `render-surface` leaf and ships `js/planninq-leaves.js`
+- AND pipelinq ships a register descriptor of its own
+- WHEN a pipelinq page is rendered for a logged-in user
+- THEN `planninq-leaves` MUST be enqueued
+- @e2e exclude Script enqueuing is asserted by PHPUnit against the decision rule; the rendered result is covered by pipelinq's projects-leaf spec.
+
+#### Scenario: A providing app with no built bundle is skipped
+- GIVEN planninq declares a leaf but ships no `js/planninq-leaves.js`
+- WHEN a pipelinq page is rendered
+- THEN nothing MUST be enqueued for planninq
+- AND the page MUST render normally
+- @e2e exclude Negative path; enqueuing a missing script is a 404 inside the consuming page, asserted by PHPUnit.
+
+#### Scenario: An app's own leaf is not loaded twice
+- GIVEN planninq declares a leaf and ships its bundle
+- WHEN a planninq page is rendered
+- THEN nothing MUST be enqueued, because planninq's own bundle already registered it
+- @e2e exclude Duplicate registration is an AD-13 collision, asserted by PHPUnit.
+
+#### Scenario: Apps without a register descriptor are left alone
+- GIVEN the Files app ships no OpenRegister register descriptor
+- WHEN a Files page is rendered
+- THEN no leaf bundle MUST be enqueued
+- @e2e exclude Scope rule, asserted by PHPUnit; a browser check would prove only one app at a time.

@@ -12,9 +12,9 @@
  *
  * Uses storageState from global-setup.
  */
-import { test, expect } from '@playwright/test'
-import * as path from 'path'
+import { expect, test } from '@playwright/test'
 import * as fs from 'fs'
+import * as path from 'path'
 
 const STORAGE_STATE = path.resolve(__dirname, '.auth/admin.json')
 
@@ -24,19 +24,19 @@ const STORAGE_STATE = path.resolve(__dirname, '.auth/admin.json')
 test.describe('frontend-app-bootstrap — navigation routes load', () => {
 	test.use({ storageState: STORAGE_STATE })
 
-	const routes: Array<{ name: string; hash: string }> = [
-		{ name: 'dashboard', hash: '/' },
-		{ name: 'registers', hash: '/registers' },
-		{ name: 'schemas', hash: '/schemas' },
-		{ name: 'objects', hash: '/objects' },
-		{ name: 'audit-trails', hash: '/audit-trails' },
-		{ name: 'sources', hash: '/sources' },
+	const routes: Array<{ name: string; route: string }> = [
+		{ name: 'dashboard', route: '/' },
+		{ name: 'registers', route: '/registers' },
+		{ name: 'schemas', route: '/schemas' },
+		{ name: 'objects', route: '/objects' },
+		{ name: 'audit-trails', route: '/audit-trails' },
+		{ name: 'sources', route: '/sources' },
 		// 'agents' removed — OR chat/agents surface decommissioned (ffafd1c14).
-		{ name: 'configurations', hash: '/configurations' },
+		{ name: 'configurations', route: '/configurations' },
 	]
 
 	for (const route of routes) {
-		test(`#${route.hash} renders without error`, async ({ page }) => {
+		test(`${route.route} renders without error`, async ({ page }) => {
 			const authFile = STORAGE_STATE
 			if (!fs.existsSync(authFile)) {
 				test.skip(
@@ -45,7 +45,7 @@ test.describe('frontend-app-bootstrap — navigation routes load', () => {
 				)
 			}
 			// Use domcontentloaded — the NC SPA keeps background XHR alive so networkidle never fires.
-			await page.goto(`/index.php/apps/openregister/#${route.hash}`, {
+			await page.goto(`/index.php/apps/openregister${route.route}`, {
 				waitUntil: 'domcontentloaded',
 			})
 
@@ -75,7 +75,7 @@ test.describe('built-in-dashboards — dashboard renders', () => {
 			test.skip(true, 'storageState not present')
 		}
 
-		await page.goto('/index.php/apps/openregister/#/', {
+		await page.goto('/index.php/apps/openregister/', {
 			waitUntil: 'domcontentloaded',
 		})
 
@@ -101,12 +101,12 @@ test.describe('built-in-dashboards — dashboard renders', () => {
 test.describe('features-roadmap — roadmap view renders', () => {
 	test.use({ storageState: STORAGE_STATE })
 
-	test('#/features-roadmap renders without error', async ({ page }) => {
+	test('/features-roadmap renders without error', async ({ page }) => {
 		if (!fs.existsSync(STORAGE_STATE)) {
 			test.skip(true, 'storageState not present')
 		}
 
-		await page.goto('/index.php/apps/openregister/#/features-roadmap', {
+		await page.goto('/index.php/apps/openregister/features-roadmap', {
 			waitUntil: 'domcontentloaded',
 		})
 
@@ -122,12 +122,12 @@ test.describe('features-roadmap — roadmap view renders', () => {
 test.describe('no-code-app-builder — applications view', () => {
 	test.use({ storageState: STORAGE_STATE })
 
-	test('#/applications renders the applications list', async ({ page }) => {
+	test('/applications renders the applications list', async ({ page }) => {
 		if (!fs.existsSync(STORAGE_STATE)) {
 			test.skip(true, 'storageState not present')
 		}
 
-		await page.goto('/index.php/apps/openregister/#/applications', {
+		await page.goto('/index.php/apps/openregister/applications', {
 			waitUntil: 'domcontentloaded',
 		})
 

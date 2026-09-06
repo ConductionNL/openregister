@@ -85,6 +85,23 @@ class DashboardControllerTest extends TestCase {
 		$this->assertInstanceOf(TemplateResponse::class, $result);
 	}
 
+	/**
+	 * The SPA catch-all serves the same shell as page().
+	 *
+	 * `dashboard#catchAll` at GET /{path} is what lets a deep link such as
+	 * /registers reach the SPA at all; before it, only `/` was routed and every
+	 * sub-path 404'd at the server, which is why this app ran on hash routing.
+	 * Asserting equality with page() rather than merely "returns a response"
+	 * pins the delegation, so a rewrite that stops delegating has to say so.
+	 */
+	public function testCatchAllServesTheSameShellAsPage(): void {
+		$result = $this->controller->catchAll();
+
+		$this->assertInstanceOf(TemplateResponse::class, $result);
+		$this->assertEquals($this->controller->page()->getTemplateName(), $result->getTemplateName());
+		$this->assertEquals($this->controller->page()->getRenderAs(), $result->getRenderAs());
+	}
+
 	public function testIndexSuccess(): void {
 		$this->request->method('getParams')->willReturn([]);
 		$this->dashboardService->method('getRegistersWithSchemas')->willReturn([]);

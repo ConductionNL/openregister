@@ -108,6 +108,47 @@ final class SchemaArchivalVocabularyTest extends TestCase {
 		self::assertContains('x-openregister-lifecycl', $schema->consumeDroppedAnnotationKeys());
 	}//end testUnknownAnnotationKeyStillDropped()
 
+	/**
+	 * `hasArchivalAnnotation()` is the single definition of the archival rule.
+	 * Both delete routes ask it, so it is pinned here rather than reimplemented
+	 * at each call site.
+	 *
+	 * @return void
+	 */
+	public function testHasArchivalAnnotationIsTrueWhenTheAnnotationIsDeclared(): void {
+		$schema = new Schema();
+		$schema->setConfiguration(['x-openregister-archival' => ['retention' => ['default' => 'P30D']]]);
+
+		self::assertTrue($schema->hasArchivalAnnotation());
+	}//end testHasArchivalAnnotationIsTrueWhenTheAnnotationIsDeclared()
+
+	/**
+	 * A schema with no configuration at all is not archival.
+	 *
+	 * @return void
+	 */
+	public function testHasArchivalAnnotationIsFalseWithoutTheAnnotation(): void {
+		$schema = new Schema();
+		$schema->setConfiguration(['x-openregister-lifecycle' => ['field' => 'status']]);
+
+		self::assertFalse($schema->hasArchivalAnnotation());
+
+		self::assertFalse((new Schema())->hasArchivalAnnotation());
+	}//end testHasArchivalAnnotationIsFalseWithoutTheAnnotation()
+
+	/**
+	 * A non-array value is not a valid annotation, so it does not make the
+	 * schema archival — the delete gates must not be armed by `"archival": true`.
+	 *
+	 * @return void
+	 */
+	public function testHasArchivalAnnotationIsFalseForANonArrayValue(): void {
+		$schema = new Schema();
+		$schema->setConfiguration(['x-openregister-archival' => true]);
+
+		self::assertFalse($schema->hasArchivalAnnotation());
+	}//end testHasArchivalAnnotationIsFalseForANonArrayValue()
+
 	public function testArchivalAndProcessingNotRecordedAsDroppedKeys(): void {
 		$schema = new Schema();
 		$this->invokeValidateConfigurationArray(

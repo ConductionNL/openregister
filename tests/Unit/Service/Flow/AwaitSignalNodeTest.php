@@ -16,6 +16,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -113,9 +114,28 @@ class AwaitSignalNodeTest extends TestCase {
 
 		$this->assertCount(2, $out);
 		foreach ($out as $item) {
-			$this->assertSame('approve', $item['signal']['decision']);
-			$this->assertSame('ruben', $item['signal']['by']);
+			$this->assertSame('approve', $item[FlowItems::JSON]['signal']['decision']);
+			$this->assertSame('ruben', $item[FlowItems::JSON]['signal']['by']);
 		}
+	}
+
+	/**
+	 * WHERE the answer lands is part of the contract: inside the item's record
+	 * (`json.<key>`), never beside it at the envelope level. The engine's
+	 * expression data (FlowExpression::dataFor) exposes `json.*` only, and a
+	 * rebuilding node keeps only `[json, binary]` — an envelope-level key is
+	 * invisible to a Switch and silently dropped by the next rebuild.
+	 */
+	public function testTheAnswerLandsInsideTheItemsRecordNotBesideIt(): void {
+		$out = $this->node->execute(
+			$this->items([['id' => 1]]),
+			['question' => 'Publish it?'],
+			[FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'approve']]
+		);
+
+		$this->assertArrayNotHasKey('signal', $out[0], 'the answer must not sit at the envelope level');
+		$this->assertSame('approve', $out[0][FlowItems::JSON]['signal']['decision']);
+		$this->assertSame(1, $out[0][FlowItems::JSON]['id'], 'the record itself is kept, not replaced');
 	}
 
 	/**
@@ -130,8 +150,8 @@ class AwaitSignalNodeTest extends TestCase {
 			[FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'approve']]
 		);
 
-		$this->assertSame('approve', $out[0]['legalReview']['decision']);
-		$this->assertArrayNotHasKey('signal', $out[0]);
+		$this->assertSame('approve', $out[0][FlowItems::JSON]['legalReview']['decision']);
+		$this->assertArrayNotHasKey('signal', $out[0][FlowItems::JSON]);
 	}
 
 	/**
@@ -177,7 +197,7 @@ class AwaitSignalNodeTest extends TestCase {
 			[FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'reject', 'reason' => 'not ready']]
 		);
 
-		$this->assertSame('reject', $out[0]['signal']['decision']);
+		$this->assertSame('reject', $out[0][FlowItems::JSON]['signal']['decision']);
 	}
 
 	/**
@@ -264,5 +284,33 @@ class AwaitSignalNodeTest extends TestCase {
 		foreach ($this->node->configForm() as $field) {
 			$this->assertContains($field['key'], $keys);
 		}
+	}
+
+	/**
+	 * The regression that motivated json-level placement: set-fields rebuilds
+	 * every item as `[json, binary]`, so an answer written at the envelope
+	 * level did not survive the very next step. The flow in
+	 * flow-user-task.spec.ts (two gates, then set-fields) read
+	 * `item.firstGate` as undefined for exactly this reason.
+	 */
+	public function testTheAnswerSurvivesASetFieldsRebuild(): void {
+		$answered = $this->node->execute(
+			$this->items([['id' => 1]]),
+			['question' => 'First gate?', 'signalKey' => 'firstGate'],
+			[FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'approved', 'mark' => 'first']]
+		);
+
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnArgument(0);
+		$setFields = new SetFieldsNode($l10n, $this->createMock(IURLGenerator::class));
+
+		$out = $setFields->execute($answered, ['set' => ['finished' => true]], []);
+
+		$this->assertTrue($out[0][FlowItems::JSON]['finished']);
+		$this->assertSame(
+			'first',
+			$out[0][FlowItems::JSON]['firstGate']['mark'] ?? null,
+			'the gate answer must survive the set-fields rebuild'
+		);
 	}
 }

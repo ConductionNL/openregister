@@ -158,11 +158,11 @@ class DefaultOrganisationCachingTest extends TestCase {
 
 		$cacheProperty = $reflection->getProperty('defaultOrgCache');
 		$cacheProperty->setAccessible(true);
-		$cacheProperty->setValue(null);
+		$cacheProperty->setValue(null, null);
 
 		$timestampProperty = $reflection->getProperty('defaultOrgCacheTs');
 		$timestampProperty->setAccessible(true);
-		$timestampProperty->setValue(null);
+		$timestampProperty->setValue(null, null);
 	}
 
 	/**
@@ -183,11 +183,11 @@ class DefaultOrganisationCachingTest extends TestCase {
 
 		$cacheProperty = $reflection->getProperty('defaultOrgCache');
 		$cacheProperty->setAccessible(true);
-		$cacheProperty->setValue($defaultOrg);
+		$cacheProperty->setValue(null, $defaultOrg);
 
 		$timestampProperty = $reflection->getProperty('defaultOrgCacheTs');
 		$timestampProperty->setAccessible(true);
-		$timestampProperty->setValue(time());
+		$timestampProperty->setValue(null, time());
 
 		// The mapper should NOT be called since cache is populated.
 		$this->organisationMapper
@@ -219,12 +219,12 @@ class DefaultOrganisationCachingTest extends TestCase {
 
 		$cacheProperty = $reflection->getProperty('defaultOrgCache');
 		$cacheProperty->setAccessible(true);
-		$cacheProperty->setValue($defaultOrg);
+		$cacheProperty->setValue(null, $defaultOrg);
 
 		// Set expired timestamp (older than cache timeout).
 		$timestampProperty = $reflection->getProperty('defaultOrgCacheTs');
 		$timestampProperty->setAccessible(true);
-		$timestampProperty->setValue(time() - 1000);
+		$timestampProperty->setValue(null, time() - 1000);
 
 		// Assert: Cache was set with expired timestamp.
 		$this->assertNotNull($cacheProperty->getValue());
@@ -247,11 +247,11 @@ class DefaultOrganisationCachingTest extends TestCase {
 
 		$cacheProperty = $reflection->getProperty('defaultOrgCache');
 		$cacheProperty->setAccessible(true);
-		$cacheProperty->setValue($defaultOrg);
+		$cacheProperty->setValue(null, $defaultOrg);
 
 		$timestampProperty = $reflection->getProperty('defaultOrgCacheTs');
 		$timestampProperty->setAccessible(true);
-		$timestampProperty->setValue(time());
+		$timestampProperty->setValue(null, time());
 
 		// Create a second service instance.
 		$organisationService2 = new OrganisationService(
@@ -290,11 +290,11 @@ class DefaultOrganisationCachingTest extends TestCase {
 
 		$cacheProperty = $reflection->getProperty('defaultOrgCache');
 		$cacheProperty->setAccessible(true);
-		$cacheProperty->setValue($defaultOrg);
+		$cacheProperty->setValue(null, $defaultOrg);
 
 		$timestampProperty = $reflection->getProperty('defaultOrgCacheTs');
 		$timestampProperty->setAccessible(true);
-		$timestampProperty->setValue(time());
+		$timestampProperty->setValue(null, time());
 
 		// Verify cache is populated.
 		$this->assertNotNull($cacheProperty->getValue());
@@ -332,11 +332,11 @@ class DefaultOrganisationCachingTest extends TestCase {
 
 		$cacheProperty = $reflection->getProperty('defaultOrgCache');
 		$cacheProperty->setAccessible(true);
-		$cacheProperty->setValue($defaultOrg);
+		$cacheProperty->setValue(null, $defaultOrg);
 
 		$timestampProperty = $reflection->getProperty('defaultOrgCacheTs');
 		$timestampProperty->setAccessible(true);
-		$timestampProperty->setValue(time());
+		$timestampProperty->setValue(null, time());
 
 		// The mapper should NOT be called since cache is populated.
 		$this->organisationMapper

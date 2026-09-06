@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCP\Files\File;
+use OCP\Files\Config\IUserMountCache;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\IGroupManager;
@@ -77,6 +78,11 @@ class FolderManagementHandlerAccessControlTest extends TestCase {
 	 */
 	private AuditTrailMapper $auditTrailMapper;
 
+	/**
+	 * @var IUserMountCache&MockObject
+	 */
+	private IUserMountCache $mountCache;
+
 	private FolderManagementHandler $handler;
 
 	protected function setUp(): void {
@@ -89,6 +95,7 @@ class FolderManagementHandlerAccessControlTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
+		$this->mountCache = $this->createMock(IUserMountCache::class);
 
 		$this->handler = new FolderManagementHandler(
 			rootFolder: $this->rootFolder,
@@ -97,7 +104,8 @@ class FolderManagementHandlerAccessControlTest extends TestCase {
 			userSession: $this->userSession,
 			groupManager: $this->groupManager,
 			logger: $this->logger,
-			auditTrailMapper: $this->auditTrailMapper
+			auditTrailMapper: $this->auditTrailMapper,
+			mountCache: $this->mountCache
 		);
 
 	}//end setUp()

@@ -492,8 +492,13 @@ class EndpointService {
 
 			// Set request/response data.
 			$log->setRequest($request);
+			// POSITIONAL, deliberately. setResponse() is magic — EndpointLog
+			// declares the property, not the method — so it goes through
+			// Entity::__call(array $args), where a NAMED argument lands under
+			// its name and $args[0] is never set. Every endpoint log was
+			// storing a null response.
 			$log->setResponse(
-				response: [
+				[
 					'statusCode' => $result['statusCode'],
 					'body' => $result['response'],
 				]

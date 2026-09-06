@@ -31,7 +31,6 @@ use OCA\OpenRegister\Controller\Settings\ApiTokenSettingsController;
 use OCA\OpenRegister\Controller\Settings\CacheSettingsController;
 use OCA\OpenRegister\Controller\Settings\FileSettingsController;
 use OCA\OpenRegister\Controller\Settings\LlmSettingsController;
-use OCA\OpenRegister\Controller\Settings\N8nSettingsController;
 use OCA\OpenRegister\Controller\WebhooksController;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\ChunkMapper;
@@ -1435,70 +1434,6 @@ class ControllersIntegrationTest2 extends TestCase {
 	}//end testFileSettingsControllerGetFileExtractionStats()
 
 	/**
-	 * Test N8nSettingsController::getN8nSettings
-	 *
-	 * @return void
-	 */
-	public function testN8nSettingsControllerGetSettings(): void {
-		$controller = $this->buildN8nSettingsController();
-		$response = $controller->getN8nSettings();
-
-		$this->assertSame(200, $response->getStatus());
-	}//end testN8nSettingsControllerGetSettings()
-
-	/**
-	 * Test N8nSettingsController::testN8nConnection with empty params
-	 *
-	 * @return void
-	 */
-	public function testN8nSettingsControllerTestConnectionEmpty(): void {
-		$this->request->method('getParams')->willReturn([
-			'url' => '',
-			'apiKey' => '',
-		]);
-
-		$controller = $this->buildN8nSettingsController();
-		$response = $controller->testN8nConnection();
-		$data = $response->getData();
-
-		$this->assertSame(400, $response->getStatus());
-		$this->assertFalse($data['success']);
-	}//end testN8nSettingsControllerTestConnectionEmpty()
-
-	/**
-	 * Test N8nSettingsController::initializeN8n when not configured
-	 *
-	 * @return void
-	 */
-	public function testN8nSettingsControllerInitializeNotConfigured(): void {
-		$this->request->method('getParams')->willReturn([
-			'project' => 'test-project',
-		]);
-
-		$controller = $this->buildN8nSettingsController();
-		$response = $controller->initializeN8n();
-		$data = $response->getData();
-
-		// Should fail because n8n is not configured.
-		$this->assertGreaterThanOrEqual(400, $response->getStatus());
-		$this->assertFalse($data['success']);
-	}//end testN8nSettingsControllerInitializeNotConfigured()
-
-	/**
-	 * Test N8nSettingsController::getWorkflows when not configured
-	 *
-	 * @return void
-	 */
-	public function testN8nSettingsControllerGetWorkflowsNotConfigured(): void {
-		$controller = $this->buildN8nSettingsController();
-		$response = $controller->getWorkflows();
-		$data = $response->getData();
-
-		// Should fail because n8n is not configured.
-		$this->assertGreaterThanOrEqual(400, $response->getStatus());
-	}//end testN8nSettingsControllerGetWorkflowsNotConfigured()
-
-	/**
 	 * Test LlmSettingsController::getLLMSettings
 	 *
 	 * @return void
@@ -2047,22 +1982,6 @@ class ControllersIntegrationTest2 extends TestCase {
 			$this->logger
 		);
 	}//end buildFileSettingsController()
-
-	/**
-	 * Build N8nSettingsController with real services
-	 *
-	 * @return N8nSettingsController
-	 */
-	private function buildN8nSettingsController(): N8nSettingsController {
-		return new N8nSettingsController(
-			'openregister',
-			$this->request,
-			\OC::$server->get(ConfigurationSettingsHandler::class),
-			\OC::$server->get(SettingsService::class),
-			$this->logger,
-			\OC::$server->get(IClientService::class)
-		);
-	}//end buildN8nSettingsController()
 
 	/**
 	 * Build LlmSettingsController with real services

@@ -25,6 +25,16 @@
  * Reporting matters more than converting here: a backfill that silently did
  * what it could would leave an operator believing the cutover was complete.
  *
+ * RE-RUNNING THIS STEP IS ALSO THE ROW-VOCABULARY REPAIR. The index used to
+ * store whatever a trigger node's config held — a numeric register/schema id
+ * from the builder, a slug from an imported declaration — while the fired
+ * subject arrived as ids, so only rows that happened to hold ids ever matched.
+ * `FlowTriggerIndex` now writes SLUGS canonically and the listener fires
+ * slugs, so this step's rebuild (post-migration, every upgrade) rewrites every
+ * existing row into the slug vocabulary: flows imported before the fix start
+ * firing without anyone re-saving them, and a row hand-inserted with ids is
+ * replaced by its reproducible slug form.
+ *
  * @category Repair
  * @package  OCA\OpenRegister\Repair
  *

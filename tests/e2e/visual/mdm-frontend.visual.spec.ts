@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -14,15 +16,15 @@
  * Baselines live in tests/e2e/visual/<spec>-snapshots/ and ARE committed.
  * See _visual-helpers.ts for the platform-rendering caveat.
  */
-import { test, expect, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import {
-	shootSurface,
-	waitForContentReady,
 	dismissSupportDialog,
-	freezePage,
-	SHOT_OPTIONS,
 	dynamicMasks,
-} from './_visual-helpers'
+	freezePage,
+	shootSurface,
+	SHOT_OPTIONS,
+	waitForContentReady,
+} from './_visual-helpers.ts'
 
 const APP = '/index.php/apps/openregister'
 
@@ -60,27 +62,23 @@ async function selectFirstRegisterAndSchema(page: Page): Promise<boolean> {
 test.describe('mdm-frontend — visual baselines', () => {
 	// QualityIndex (Data Quality dashboard).
 	test('QualityIndex', async ({ page }) => {
-		await shootSurface(page, `${APP}/#/quality`, 'QualityIndex.png')
+		await shootSurface(page, `${APP}/quality`, 'QualityIndex.png')
 	})
 
 	// DuplicatesIndex (Duplicate Candidates, read-only).
 	test('DuplicatesIndex', async ({ page }) => {
-		await shootSurface(page, `${APP}/#/duplicates`, 'DuplicatesIndex.png')
+		await shootSurface(page, `${APP}/duplicates`, 'DuplicatesIndex.png')
 	})
 
 	// MasterEntitiesIndex (master-entity list).
 	test('MasterEntitiesIndex', async ({ page }) => {
-		await shootSurface(
-			page,
-			`${APP}/#/master-entities`,
-			'MasterEntitiesIndex.png',
-		)
+		await shootSurface(page, `${APP}/master-entities`, 'MasterEntitiesIndex.png')
 	})
 
 	// GoldenRecordDetail (opened from MasterEntitiesIndex — not a standalone
 	// route, so this baseline drives the panel open before shooting).
 	test('GoldenRecordDetail', async ({ page }) => {
-		await page.goto(`${APP}/#/master-entities`, {
+		await page.goto(`${APP}/master-entities`, {
 			waitUntil: 'domcontentloaded',
 		})
 		await dismissSupportDialog(page)
@@ -113,6 +111,6 @@ test.describe('mdm-frontend — visual baselines', () => {
 
 	// QueueHealthIndex (Queue / sync health).
 	test('QueueHealthIndex', async ({ page }) => {
-		await shootSurface(page, `${APP}/#/queue-health`, 'QueueHealthIndex.png')
+		await shootSurface(page, `${APP}/queue-health`, 'QueueHealthIndex.png')
 	})
 })

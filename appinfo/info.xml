@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.0.12</version>
+    <version>2.0.15-unstable.20260905143606</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -129,27 +129,26 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\TransferCheckJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\SyncConfigurationsJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\SyncDataJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\ScheduledWorkflowJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledNotificationJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\ActionScheduleJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TenantDeprovisionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TenantPurgeJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TenantUsageSyncJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\ExecutionHistoryCleanupJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\FlowRunRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\AuditSealJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\AvgRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DsarRetentionSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ReportRenderJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\NotificationQueueFlushJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\TaskScheduledNotificationJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ArchivalRetentionTask</job>
 		<job>OCA\OpenRegister\BackgroundJob\FlowRunWorker</job>
 		<job>OCA\OpenRegister\BackgroundJob\FlowScheduleWorker</job>
+		<job>OCA\OpenRegister\BackgroundJob\FlowTimerWorker</job>
 		<job>OCA\OpenRegister\BackgroundJob\HandoffQueueDrainJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TemporalCalculationSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DsarDpiaDetectionJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\ScheduleReconcilerJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DbalIntrospectionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\OAuth2TokenRefreshJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledReportJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\GroupReconcilerJob</job>
 	</background-jobs>
@@ -219,6 +218,27 @@ Vrij en open source onder de EUPL-licentie.
 			     Copies the register-authored ones across, disabled, leaving the
 			     register rows in place so the step stays reversible. -->
 			<step>OCA\OpenRegister\Repair\MigrateRegisterFlowsToTable</step>
+			<!-- CLEANS UP AFTER THE VERSION OF THE STEP ABOVE THAT DID NOT SCOPE
+			     ITS READ. It asked findAll() for register `flows` / schema `flow`
+			     at the TOP LEVEL of the config; ObjectService reads that pair
+			     from `filters` and nowhere else, so both keys were inert and the
+			     read ran against whatever register/schema the SHARED service was
+			     still carrying. saveObject() sets that context and never restores
+			     it, and ImportCredentialBrokerRegister saves two example objects
+			     through it four steps earlier — so the migration copied both
+			     `brokeredcredential` examples into openregister_flows: no nodes,
+			     no edges, no trigger, owner `__system__`.
+
+			     Post-migration ONLY. A fresh install runs the fixed migration,
+			     which cannot produce these rows, so listing this under <install>
+			     would be a guaranteed no-op.
+
+			     Removes a row ONLY on the full conjunction: openregister-owned,
+			     disabled, no nodes, no edges, no trigger/cron, never dispatched
+			     (lastRun* null AND zero run rows), AND its uuid still resolves to
+			     a register object whose schema is not `flow`. Anything ambiguous
+			     is REPORTED by uuid, not deleted. Idempotent. -->
+			<step>OCA\OpenRegister\Repair\PurgePhantomMigratedFlows</step>
 			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
 			<step>OCA\OpenRegister\Repair\SeedVocabularyRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
@@ -240,6 +260,42 @@ Vrij en open source onder de EUPL-licentie.
 			     Post-migration, because it needs the flow_* columns the schema
 			     migration adds. -->
 			<step>OCA\OpenRegister\Repair\RechainAuditTrailForFlowAttribution</step>
+			<!-- Task fixtures (flow-task-entity, ADR-001): the five seed
+			     groups from the change's design.md, idempotent on uuid.
+			     OPT-IN: runs only when app config openregister/seed_demo_tasks
+			     is true, so a production instance never receives demo rows;
+			     a demo instance and the test environment switch it on.
+			     Post-migration because the step needs the openregister_tasks
+			     tables its own change's migration creates. -->
+			<step>OCA\OpenRegister\Repair\SeedTaskFixtures</step>
+			<!-- Business timers (flow-business-timers, ADR-001): the flow-timers
+			     register with its working-calendar and escalation-ladder schemas
+			     and seeded defaults (nl-national, nl-termijn-default), idempotent
+			     with force: false so administrator edits survive. Then the
+			     invariant check, which COUNTS orphaned or inconsistent timers and
+			     reports them rather than cancelling them. Post-migration because
+			     both need the openregister_flow_timers tables. -->
+			<step>OCA\OpenRegister\Repair\SeedFlowTimerRegister</step>
+			<step>OCA\OpenRegister\Repair\CheckFlowTimerInvariants</step>
+			<!-- Approval consolidation (flow-approval-consolidation): moves
+			     every approval chain, step set and in-flight decision onto
+			     task sequences, verifies the reconciliation and FAILS LOUDLY
+			     on any mismatch. Idempotent on the reconciliation columns.
+			     Post-migration because it needs openregister_task_sequences
+			     and the sequence columns on openregister_tasks. The legacy
+			     tables are kept; rollback is the
+			     openregister:approval:rollback-to-steps command. -->
+			<step>OCA\OpenRegister\Repair\MigrateApprovalChainsToTasks</step>
+			<step>OCA\OpenRegister\Repair\SeedCaseFixtures</step>
+			<!-- Business timers (flow-business-timers, ADR-001): the flow-timers
+			     register with its working-calendar and escalation-ladder schemas
+			     and seeded defaults (nl-national, nl-termijn-default), idempotent
+			     with force: false so administrator edits survive. Then the
+			     invariant check, which COUNTS orphaned or inconsistent timers and
+			     reports them rather than cancelling them. Post-migration because
+			     both need the openregister_flow_timers tables. -->
+			<step>OCA\OpenRegister\Repair\SeedFlowTimerRegister</step>
+			<step>OCA\OpenRegister\Repair\CheckFlowTimerInvariants</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
@@ -281,6 +337,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedVocabularyRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
 			<step>OCA\OpenRegister\Repair\SeedZgwZakenMigrationPack</step>
+			<step>OCA\OpenRegister\Repair\SeedFlowTimerRegister</step>
 		</install>
 	</repair-steps>
 
@@ -295,6 +352,9 @@ Vrij en open source onder de EUPL-licentie.
 		<!-- App-rename repair: re-points registers and schemas at a new owning
 		     app id. Only a DB connection, so the DI graph stays light. -->
 		<command>OCA\OpenRegister\Command\MigrateSchemaApplicationCommand</command>
+		<!-- The approval consolidation's reverse repair: an operator-run
+		     rollback tool, deliberately NOT a repair step. -->
+		<command>OCA\OpenRegister\Command\RollbackApprovalMigrationCommand</command>
 		<command>OCA\OpenRegister\Command\RechainAuditTrailCommand</command>
 		<!-- Read-only report: which RBAC groups this instance declares, and whether
 		     anyone belongs to them. Provisioning guarantees a declared group EXISTS;
@@ -310,8 +370,14 @@ Vrij en open source onder de EUPL-licentie.
 		<!-- field-level-object-encryption: encrypt existing plaintext values of a newly-flagged property. -->
 		<command>OCA\OpenRegister\Command\EncryptFieldCommand</command>
 		<command>OCA\OpenRegister\Command\DedupeRegistersCommand</command>
+		<command>OCA\OpenRegister\Command\AdoptLeafOrganisationsCommand</command>
+		<command>OCA\OpenRegister\Command\PruneRetiredSchemasCommand</command>
 		<command>OCA\OpenRegister\Command\RelinkRegisterSchemasCommand</command>
 		<command>OCA\OpenRegister\Command\ReconcileMagicTablesCommand</command>
+		<!-- The sanctioned administrative purge. Every HTTP delete route refuses an
+		     archival record; this is the one path that can still destroy one, and it
+		     needs shell access plus an explicit force flag. -->
+		<command>OCA\OpenRegister\Command\PurgeObjectCommand</command>
 		<command>OCA\OpenRegister\Command\DedupeConfigurationsCommand</command>
 		<command>OCA\OpenRegister\Command\ResolverListCommand</command>
 		<command>OCA\OpenRegister\Command\TimeReconcileCommand</command>
@@ -363,4 +429,14 @@ Vrij en open source onder de EUPL-licentie.
 	<contactsmenu>
 		<provider>OCA\OpenRegister\Contacts\ContactsMenuProvider</provider>
 	</contactsmenu>
+	<!-- The in-band write-back hook for projected task VTODOs
+	     (flow-task-inbox-projections, design D-6). apps/dav's PluginManager
+	     loads it into the Sabre server; it acts only on VTODOs carrying
+	     X-OPENREGISTER-TASK and refuses an unauthorized edit with a DAV 403
+	     before the client records it. -->
+	<sabre>
+		<plugins>
+			<plugin>OCA\OpenRegister\Dav\TaskVtodoWriteBackPlugin</plugin>
+		</plugins>
+	</sabre>
 </info>

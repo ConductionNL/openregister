@@ -152,10 +152,87 @@ class RateLimiter {
 		$key = $this->key(ruleId: $ruleId, recipient: $recipient);
 		$now = ($this->timeProvider)();
 
-		try {
-			$state = $this->cache->get($key);
-		} catch (\Throwable $e) {
+		$ruleTokens = $this->currentTokens(key: $key, bucketSize: $bucketSize, refillSeconds: $refillSeconds, now: $now);
+		if ($ruleTokens === null) {
 			return true;
+		}
+
+		if ($ruleTokens < 1.0) {
+			$this->logger->info(
+				sprintf(
+					'[NotificationRateLimiter] dropped rule="%s" recipient="%s" bucket=%d refillSeconds=%d',
+					$ruleId,
+					$recipient,
+					$bucketSize,
+					$refillSeconds
+				)
+			);
+			// Persist the new lastRefill so partial earnings don't
+			// get lost on the next call. The shared bucket is untouched:
+			// a refused dispatch messaged nobody.
+			$this->persist(key: $key, tokens: $ruleTokens, lastRefill: $now);
+			return false;
+		}
+
+		// The SHARED per-recipient budget. Bucket keys are caller-agnostic —
+		// the key is the recipient, nothing else — so a declarative rule and a
+		// flow send node draw from ONE budget by construction: the abuse being
+		// bounded is "how much this instance messages this person", not "per
+		// subsystem" or "per rule". Sized from the app-config defaults only;
+		// a single rule's generous per-rule override must not widen every
+		// caller's ceiling. Pseudo-recipients (broadcast channel keys such as
+		// `__webhook__`) are not people and stay outside the shared budget.
+		$sharedTokens = null;
+		$sharedKey = null;
+		[$sharedBucketSize, $sharedRefillSeconds] = $this->resolveLimits(perRuleOverride: null);
+		if (str_starts_with($recipient, '__') === false) {
+			$sharedKey = $this->sharedKey(recipient: $recipient);
+			$sharedTokens = $this->currentTokens(
+				key: $sharedKey,
+				bucketSize: $sharedBucketSize,
+				refillSeconds: $sharedRefillSeconds,
+				now: $now
+			);
+
+			if ($sharedTokens !== null && $sharedTokens < 1.0) {
+				$this->logger->info(
+					sprintf(
+						'[NotificationRateLimiter] dropped rule="%s" recipient="%s" by the shared per-recipient budget bucket=%d refillSeconds=%d',
+						$ruleId,
+						$recipient,
+						$sharedBucketSize,
+						$sharedRefillSeconds
+					)
+				);
+				$this->persist(key: $sharedKey, tokens: $sharedTokens, lastRefill: $now);
+				return false;
+			}
+		}
+
+		$this->persist(key: $key, tokens: ($ruleTokens - 1.0), lastRefill: $now);
+		if ($sharedKey !== null && $sharedTokens !== null) {
+			$this->persist(key: $sharedKey, tokens: ($sharedTokens - 1.0), lastRefill: $now);
+		}
+
+		return true;
+	}//end tryConsume()
+
+	/**
+	 * The refilled token count for a bucket, or null when the cache cannot
+	 * answer (the limiter then fails open, as everywhere else).
+	 *
+	 * @param string $key Cache key.
+	 * @param int $bucketSize Bucket capacity.
+	 * @param int $refillSeconds Seconds per earned token.
+	 * @param int $now Current unix timestamp.
+	 *
+	 * @return float|null The available tokens, or null to fail open.
+	 */
+	private function currentTokens(string $key, int $bucketSize, int $refillSeconds, int $now): ?float {
+		try {
+			$state = $this->cache?->get($key);
+		} catch (\Throwable $e) {
+			return null;
 		}//end try
 
 		$tokens = (float)$bucketSize;
@@ -175,26 +252,23 @@ class RateLimiter {
 			$tokens = min((float)$bucketSize, ($tokens + $earned));
 		}
 
-		if ($tokens < 1.0) {
-			$this->logger->info(
-				sprintf(
-					'[NotificationRateLimiter] dropped rule="%s" recipient="%s" bucket=%d refillSeconds=%d',
-					$ruleId,
-					$recipient,
-					$bucketSize,
-					$refillSeconds
-				)
-			);
-			// Persist the new lastRefill so partial earnings don't
-			// get lost on the next call.
-			$this->persist(key: $key, tokens: $tokens, lastRefill: $now);
-			return false;
-		}
+		return $tokens;
+	}//end currentTokens()
 
-		$tokens -= 1.0;
-		$this->persist(key: $key, tokens: $tokens, lastRefill: $now);
-		return true;
-	}//end tryConsume()
+	/**
+	 * The shared per-recipient budget's cache key. Deliberately blind to the
+	 * rule and to the caller: every subsystem that messages this recipient
+	 * lands on the same bucket.
+	 *
+	 * @param string $recipient Recipient identifier.
+	 *
+	 * @return string Cache key.
+	 *
+	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
+	 */
+	private function sharedKey(string $recipient): string {
+		return 'notification:rate:shared:' . sha1($recipient);
+	}//end sharedKey()
 
 	/**
 	 * Whether the limiter is enabled. Defaults to ON.

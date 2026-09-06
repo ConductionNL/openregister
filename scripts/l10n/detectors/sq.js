@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-/* eslint-disable n/no-process-exit */
+ 
 // Albanian (shqip) register detector for openregister l10n.
 //
 // CORE IS USABLE HERE. Nextcloud ships five sq catalogues in the scanned roots
@@ -89,6 +88,10 @@
 
 // Lowercase + whitespace. Case is NOT load-bearing in Albanian address: see the
 // header — `Ju` and `ju` are the same polite 2pl.
+/**
+ *
+ * @param s
+ */
 function fold(s) {
 	return String(s).toLowerCase().replace(/\s+/g, ' ')
 }
@@ -299,6 +302,10 @@ const UNDETECTABLE = [
 		+ '`yt`/`jote`/`tënd` carry the paradigm instead'],
 ]
 
+/**
+ *
+ * @param s
+ */
 function score(s) {
 	const t = fold(s)
 	let f = 0
@@ -310,6 +317,9 @@ function score(s) {
 	return { f, i }
 }
 
+/**
+ *
+ */
 function runControls() {
 	let fail = 0
 	for (const [s, want] of CONTROLS) {

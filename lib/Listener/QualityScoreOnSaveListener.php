@@ -143,28 +143,53 @@ class QualityScoreOnSaveListener implements IEventListener {
 			return;
 		}
 
+		$thresholds = ($quality['thresholds'] ?? []);
+		if (is_array($thresholds) === false) {
+			$thresholds = [];
+		}
+
+		$status = $this->scorer->status(score: $score, thresholds: $thresholds);
+
+		// The assessment goes in the `@self` envelope, always. It describes
+		// the object's data rather than the thing the object describes, and
+		// putting it there is what lets a schema be scored WITHOUT declaring
+		// `qualityScore` as an ordinary property — which used to put a number
+		// field the platform overwrites on save in front of whoever was
+		// filling the form.
+		$object->setQuality(
+			[
+				'score' => $score,
+				'status' => $status,
+				'scoredAt' => (new DateTimeImmutable())->format(DATE_ATOM),
+			]
+		);
+
+		// The body properties are still written, but ONLY where the schema
+		// actually declares them. Dropping the write outright would freeze the
+		// stored value of every schema that has one, and a score that silently
+		// stops updating reads exactly like a score that is simply good.
+		//
+		// A schema that has migrated to `@self.quality` declares neither, so
+		// this writes nothing and the object body stays clean.
+		$properties = ($schema->getProperties() ?? []);
+
 		$field = (string)($quality['field'] ?? self::DEFAULT_FIELD);
 		if ($field === '') {
 			$field = self::DEFAULT_FIELD;
 		}
 
-		if (($data[$field] ?? null) !== $score) {
+		if (array_key_exists($field, $properties) === true && ($data[$field] ?? null) !== $score) {
 			$data[$field] = $score;
 			$changed = true;
 		}
 
 		$statusField = (string)($quality['statusField'] ?? '');
-		if ($statusField !== '') {
-			$thresholds = ($quality['thresholds'] ?? []);
-			if (is_array($thresholds) === false) {
-				$thresholds = [];
-			}
-
-			$status = $this->scorer->status(score: $score, thresholds: $thresholds);
-			if (($data[$statusField] ?? null) !== $status) {
-				$data[$statusField] = $status;
-				$changed = true;
-			}
+		if ($statusField !== ''
+			&& array_key_exists($statusField, $properties) === true
+			&& ($data[$statusField] ?? null) !== $status
+		) {
+			$data[$statusField] = $status;
+			$changed = true;
 		}
 
 		if ($changed === true) {

@@ -25,6 +25,12 @@ class FlowMcpToolProviderTest extends TestCase {
 	private FlowRunMapper $mapper;
 	private IUserSession&MockObject $userSession;
 	private FlowMcpToolProvider $provider;
+	// Declared, not created on the fly. Assigning an undeclared property in
+	// setUp() is deprecated in PHP 8.2 and an error in PHP 9, and it also
+	// costs the type: an undeclared $flows is mixed, so nothing checks that
+	// the provider is handed a FlowService at all.
+	private \OCA\OpenRegister\Service\Flow\FlowService&MockObject $flows;
+	private \OCA\OpenRegister\Service\Flow\FlowNodePreflight&MockObject $preflight;
 
 	protected function setUp(): void {
 		$this->runner = $this->createMock(FlowRunService::class);

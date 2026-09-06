@@ -81,6 +81,16 @@ class DeleteObject {
 	private int $lastCascadeCount = 0;
 
 	/**
+	 * Cascade targets the archival obligation kept live during the last root delete.
+	 *
+	 * Reset at the start of each root deleteObject() invocation, exactly like
+	 * $lastCascadeCount, so a reader never picks up a previous delete's answer.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private array $lastRetainedTargets = [];
+
+	/**
 	 * Audit trail mapper
 	 *
 	 * @var AuditTrailMapper
@@ -591,6 +601,7 @@ class DeleteObject {
 		// Reset cascade count for root deletions.
 		if ($originalObjectId === null) {
 			$this->lastCascadeCount = 0;
+			$this->lastRetainedTargets = [];
 		}
 
 		// Resolve the lookup: when the caller has guaranteed a (register, schema)
@@ -880,7 +891,7 @@ class DeleteObject {
 				$triggerSlug = $contextSchema->getSlug();
 			}
 
-			$this->integrityService->applyDeletionActions(
+			$integrityResult = $this->integrityService->applyDeletionActions(
 				$analysis,
 				$userId,
 				$uuid,
@@ -888,10 +899,18 @@ class DeleteObject {
 				$triggerSlug
 			);
 
-			$cCount = count($analysis->cascadeTargets);
+			// A RETAINED RECORD STAYS LIVE EVEN WHEN ITS PARENT GOES, so it is not
+			// a cascade casualty and must not be counted as one. The count used to
+			// be `count($analysis->cascadeTargets)`, the number of rows the
+			// analysis WANTED to delete, which is now a different number from the
+			// rows the cascade actually took. Reporting the analysis figure would
+			// tell a bulk caller that a record it can still see was deleted.
+			$this->lastRetainedTargets = $integrityResult['retained'];
+
+			$cCount = (count($analysis->cascadeTargets) - count($this->lastRetainedTargets));
 			$nCount = count($analysis->nullifyTargets);
 			$dCount = count($analysis->defaultTargets);
-			$this->lastCascadeCount = ($cCount + $nCount + $dCount);
+			$this->lastCascadeCount = (max(0, $cCount) + $nCount + $dCount);
 
 			$this->runLegacyCascade(context: $context, object: $object, uuid: $uuid);
 
@@ -1314,6 +1333,21 @@ class DeleteObject {
 	public function getLastCascadeCount(): int {
 		return $this->lastCascadeCount;
 	}//end getLastCascadeCount()
+
+	/**
+	 * Get the cascade targets the archival obligation kept live in the last root delete.
+	 *
+	 * The parent delete proceeded; these records did not go with it. Each entry
+	 * names the record, the ground it was kept on and what the reader does next,
+	 * so a caller can report the retention rather than leave it to a log line.
+	 *
+	 * @return array<int, array<string, mixed>> One report per retained record, empty when none.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
+	public function getLastRetainedCascadeTargets(): array {
+		return $this->lastRetainedTargets;
+	}//end getLastRetainedCascadeTargets()
 
 	/**
 	 * Delegate a delete on an object-source schema to its writable provider.

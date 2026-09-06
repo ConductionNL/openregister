@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
@@ -1110,6 +1111,13 @@ class SchemasController extends Controller {
 				objectCount: $objectCount,
 				force: $force
 			);
+		} catch (ArchivalImmutableException $e) {
+			// The cascade refused: this schema holds legally retained records. An HTTP
+			// caller has no way to override that — `occ openregister:schemas:prune-retired
+			// --force-archival` is the sanctioned path, because shell access is an
+			// authorization boundary a request cannot cross. Caught ahead of the generic
+			// handler, which would have reported a deliberate refusal as a 500.
+			return new JSONResponse(data: $e->toResponseBody(), statusCode: Http::STATUS_FORBIDDEN);
 		} catch (\OCA\OpenRegister\Exception\ValidationException $e) {
 			// Return 409 Conflict for cascade protection (objects still attached).
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);

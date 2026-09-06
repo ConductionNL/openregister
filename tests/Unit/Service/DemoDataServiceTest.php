@@ -66,6 +66,67 @@ class DemoDataServiceTest extends TestCase {
 		$this->assertTrue($this->service()->isAvailable());
 	}
 
+	public function testDecliningIsOfferedEvenWhenNoDatasetShips(): void {
+		// 🔴 "NO THANKS" HAS TO BE SAYABLE. Every app in this fleet implemented a
+		// `skip-demo-data` action that no manifest step could reach, so the step
+		// stayed outstanding and CnAppRoot reopened the wizard over every page
+		// unless the operator imported data they did not want.
+		$choices = $this->service()->listChoices();
+
+		$this->assertSame(['none'], array_column($choices, 'id'));
+		$this->assertNotSame('', $choices[0]['description']);
+		$this->assertNotSame('', $choices[0]['icon']);
+	}
+
+	public function testTheShippedDatasetIsOfferedWithTheCountItActuallyCarries(): void {
+		// The card promises a number, so the number has to come from the file
+		// that will be imported rather than from a manifest that could disagree
+		// with it.
+		file_put_contents(
+			$this->descriptor(),
+			json_encode(['components' => ['objects' => [['a' => 1], ['b' => 2], ['c' => 3]]]])
+		);
+
+		$choices = $this->service()->listChoices();
+
+		$this->assertSame(['none', 'demo'], array_column($choices, 'id'));
+		$this->assertSame(3, $choices[1]['objectCount']);
+		$this->assertNotSame('', $choices[1]['label']);
+		$this->assertNotSame('', $choices[1]['description']);
+	}
+
+	public function testAMalformedDescriptorOffersNothingRatherThanAnImportThatCannotRun(): void {
+		file_put_contents($this->descriptor(), 'not json at all');
+
+		$this->assertSame(['none'], array_column($this->service()->listChoices(), 'id'));
+	}
+
+	public function testTheOfferedDescriptionCarriesNoNumber(): void {
+		// 🔴 THE WIZARD TRANSLATES A CARD'S DESCRIPTION BY LITERAL LOOKUP. A
+		// count interpolated into the sentence would make it untranslatable and
+		// leave a Dutch operator reading English. The count travels separately,
+		// as `objectCount`.
+		file_put_contents(
+			$this->descriptor(),
+			json_encode(['components' => ['objects' => [['a' => 1]]]])
+		);
+
+		$demo = $this->service()->listChoices()[1];
+
+		$this->assertDoesNotMatchRegularExpression('/\d/', $demo['description']);
+	}
+
+	public function testADescriptorWithNoObjectsBlockOffersTheSetWithNoCount(): void {
+		// A descriptor can ship schemas and no objects. That is a real dataset
+		// with nothing to count, not a broken file, so it stays on offer.
+		file_put_contents($this->descriptor(), json_encode(['components' => ['schemas' => []]]));
+
+		$choices = $this->service()->listChoices();
+
+		$this->assertSame(['none', 'demo'], array_column($choices, 'id'));
+		$this->assertSame(0, $choices[1]['objectCount']);
+	}
+
 	public function testInstallThrowsWhenNoDatasetShips(): void {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/No demo dataset/');

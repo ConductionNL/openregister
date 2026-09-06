@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Gdpr\Retention;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
 use OCA\OpenRegister\Service\RetentionService;
@@ -60,6 +61,7 @@ class RetentionSweepService {
 	 * @param DataSubjectRequestService $dsrService Reused evidence-PII scrub (erase pseudonymise).
 	 * @param ITimeFactory $time Time source for the `retainUntil` cut-off.
 	 * @param LoggerInterface $logger Logger.
+	 * @param ArchivalRetentionGuard $archivalGuard Refuses destruction of a legally retained case.
 	 */
 	public function __construct(
 		private readonly CaseObjectAccessor $accessor,
@@ -67,6 +69,7 @@ class RetentionSweepService {
 		private readonly DataSubjectRequestService $dsrService,
 		private readonly ITimeFactory $time,
 		private readonly LoggerInterface $logger,
+		private readonly ArchivalRetentionGuard $archivalGuard,
 	) {
 	}//end __construct()
 
@@ -78,9 +81,18 @@ class RetentionSweepService {
 	 * evidence PII via erase pseudonymise and hard-delete the dossier. Held or
 	 * immutable expired cases are reported as skipped and left intact.
 	 *
+	 * RETENTION WINS OVER ERASURE. A case on a schema declaring
+	 * `x-openregister-archival` is kept whatever its `retainUntil` says, and is
+	 * reported in `withheld` with the ground and the wording to pass on. The
+	 * refusal comes from
+	 * {@see \OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard}, so it
+	 * reads the same definition as every other delete door.
+	 *
 	 * @param bool $dryRun When true, report candidates without deleting/scrubbing.
 	 *
-	 * @return array{dryRun: bool, evaluated: int, purged: array<int, string>, skippedHeld: array<int, string>, withinWindow: int}
+	 * @return array{dryRun: bool, evaluated: int, purged: array<int, string>,
+	 *               skippedHeld: array<int, string>, withinWindow: int,
+	 *               withheld: array<int, array<string, mixed>>, withheldCount: int}
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Dry-run toggle mirrors AvgRetentionJob's contract.
 	 *
@@ -94,6 +106,9 @@ class RetentionSweepService {
 			'evaluated' => 0,
 			'purged' => [],
 			'skippedHeld' => [],
+			// RETENTION WINS OVER ERASURE: cases the Archiefwet keeps are named
+			// here with their ground, not silently swept.
+			'withheld' => [],
 			'withinWindow' => 0,
 		];
 
@@ -119,6 +134,22 @@ class RetentionSweepService {
 				continue;
 			}
 
+			// RETENTION WINS OVER ERASURE, AND THIS SWEEP HAD AN EXPLICIT BYPASS.
+			// `isProtected()` above reads the case's own legal hold and
+			// archiefstatus; it says nothing about `x-openregister-archival` on
+			// the case schema. Worse, the delete below hands
+			// `_retentionSweep: true` to ObjectService, which is exactly the flag
+			// that waves a row past the archival gate. So an archival case was
+			// hard-deleted here with no refusal anywhere in the chain. The gate is
+			// asked BEFORE the bypass is used, of the same
+			// Schema::hasArchivalAnnotation() the four HTTP doors ask. Refused
+			// cases are named in `withheld`; the rest of the sweep runs on.
+			$refusal = $this->archivalGuard->erasureRefusal(object: $case);
+			if ($refusal !== null) {
+				$summary['withheld'][] = $refusal;
+				continue;
+			}
+
 			if ($dryRun === true) {
 				$summary['purged'][] = $uuid;
 				continue;
@@ -127,6 +158,8 @@ class RetentionSweepService {
 			$this->purge(case: $case, data: $data);
 			$summary['purged'][] = $uuid;
 		}//end foreach
+
+		$summary['withheldCount'] = count($summary['withheld']);
 
 		return $summary;
 	}//end runSweep()

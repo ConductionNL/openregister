@@ -82,14 +82,26 @@ class FlowItemPlacement {
 	 * @param object $subject The subject holding the marking.
 	 * @param Definition $definition The definition (for the initial-place fallback).
 	 * @param array $items The seed items.
+	 * @param array<string, array>|null $stored The per-place items persisted by the last commit, or null when none.
 	 *
 	 * @return array<string, array> Items keyed by place.
 	 *
 	 * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
-	public function seedPlaceItems(Workflow $workflow, object $subject, Definition $definition, array $items): array {
+	public function seedPlaceItems(Workflow $workflow, object $subject, Definition $definition, array $items, ?array $stored = null): array {
 		$placeItems = [];
 		foreach (array_keys($workflow->getMarking(subject: $subject)->getPlaces()) as $place) {
+			// PER-PLACE items persisted by the last commit win: a stream that
+			// suspended holding two tokens resumes with each branch carrying
+			// the items ITS branch produced. The same-list-to-every-place seed
+			// below is kept for a run that predates the column (null), so an
+			// in-flight run's behaviour across the upgrade is identical.
+			if ($stored !== null && array_key_exists((string)$place, $stored) === true) {
+				$placeItems[(string)$place] = (array)$stored[(string)$place];
+				continue;
+			}
+
 			$placeItems[(string)$place] = $items;
 		}
 

@@ -10,7 +10,7 @@
  *
  * These are API tests verifying auth/security surface behaviors.
  */
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // auth-system — authentication method verification
@@ -49,7 +49,7 @@ test.describe('auth-system — authentication methods', () => {
 		expect(contentType, 'response must be JSON').toContain('application/json')
 		const body = (await resp.json()) as Record<string, unknown>
 		expect(body, 'response must have results array').toHaveProperty('results')
-		expect(Array.isArray(body['results']), 'results must be an array').toBe(true)
+		expect(Array.isArray(body.results), 'results must be an array').toBe(true)
 	})
 
 	test('wrong credentials return 401', async ({ request }) => {
@@ -110,20 +110,7 @@ test.describe('rbac-scopes — OAS scope generation', () => {
 		)
 		expect(resp.status()).toBe(200)
 		const body = await resp.json()
-		const paths = body.paths ?? {}
 		// Verify at least one path operation has a security block.
-		const hasSecurity = Object.values(paths).some((pathItem: unknown) => {
-			if (typeof pathItem !== 'object' || pathItem === null) return false
-			return Object.values(pathItem as Record<string, unknown>).some(
-				(op: unknown) => {
-					if (typeof op !== 'object' || op === null) return false
-					return (
-						'security' in (op as object)
-						|| 'x-security' in (op as object)
-					)
-				},
-			)
-		})
 		// Soft check: OAS security generation may be partially implemented.
 		// Just verify the shape is valid OpenAPI.
 		expect(body).toHaveProperty('paths')

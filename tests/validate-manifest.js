@@ -139,8 +139,8 @@ function loadAjv() {
 	// The canonical schema uses JSON Schema draft 2020-12. Standard Ajv (v7+)
 	// does not auto-load the 2020 meta-schema; we need the `ajv/dist/2020`
 	// entry point.
-	let Ajv2020 = null
-	let addFormats = null
+	let Ajv2020
+	let addFormats
 	try {
 		// Ajv 8+ ships the 2020 draft entry point.
 		Ajv2020 = require('ajv/dist/2020').default || require('ajv/dist/2020')

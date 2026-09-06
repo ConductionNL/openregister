@@ -7,6 +7,7 @@ namespace Unit\Service\Deferral;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Tests\Support\ShutdownFunctionSpy;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
 use OCP\IUser;
@@ -15,12 +16,14 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
+require_once __DIR__ . '/../../../Support/ShutdownFunctionSpy.php';
+
 /**
  * Chunked buffering, dedupe coalescing, kill switch and fail-soft capture.
  *
- * Every test drains its buffers (chunk flush or explicit flushAll) so the
- * service's register_shutdown_function flush is a guaranteed no-op after the
- * test process ends.
+ * The service's shutdown registration is intercepted by ShutdownFunctionSpy,
+ * so no test leaves a live shutdown callback behind and the registration
+ * itself is asserted on rather than assumed.
  */
 class ListenerDeferralServiceTest extends TestCase {
 	private IUserSession&MockObject $userSession;
@@ -31,6 +34,7 @@ class ListenerDeferralServiceTest extends TestCase {
 
 	protected function setUp(): void {
 		parent::setUp();
+		ShutdownFunctionSpy::reset();
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->organisation = $this->createMock(OrganisationService::class);
 		$this->jobList = $this->createMock(IJobList::class);
@@ -183,6 +187,70 @@ class ListenerDeferralServiceTest extends TestCase {
 
 		$this->assertSame('alice', $argument['userId']);
 		$this->assertNull($argument['organisationUuid']);
+	}
+
+	// ─── Shutdown registration ───────────────────────────────────────
+
+	/**
+	 * Buffering an entry registers the shutdown flush, exactly once per
+	 * request no matter how many entries or job classes follow.
+	 *
+	 * Without this the deferral is a black hole: `defer()` buffers, nothing
+	 * ever flushes, and every other test in this file still passes because
+	 * they all call `flushAll()` by hand.
+	 */
+	public function testDeferRegistersTheShutdownFlushExactlyOnce(): void {
+		$this->actAs('alice', 'org-1');
+		$service = $this->makeService();
+
+		// Well under the default chunk size, so only the shutdown flush can
+		// ever enqueue these.
+		$this->jobList->expects($this->never())->method('add');
+
+		$service->defer(jobClass: 'Some\\Job', entry: ['uuid' => 'a']);
+		$service->defer(jobClass: 'Some\\Job', entry: ['uuid' => 'b']);
+		$service->defer(jobClass: 'Other\\Job', entry: ['uuid' => 'c']);
+
+		$this->assertCount(1, ShutdownFunctionSpy::callbacks());
+	}
+
+	/**
+	 * The callback handed to the shutdown queue really is the flush: running
+	 * it enqueues the buffered work. Proves the registration points at
+	 * flushAll() and not at some other or stale callable.
+	 */
+	public function testRegisteredShutdownCallbackEnqueuesTheBufferedWork(): void {
+		$this->actAs('alice', 'org-1');
+		$service = $this->makeService();
+
+		$enqueued = [];
+		$this->jobList->method('add')
+			->willReturnCallback(function (string $jobClass, $argument) use (&$enqueued): void {
+				$enqueued[] = ['jobClass' => $jobClass, 'argument' => $argument];
+			});
+
+		$service->defer(jobClass: 'Some\\Job', entry: ['uuid' => 'a']);
+
+		// Still only buffered: nothing reached the job list yet.
+		$this->assertSame([], $enqueued);
+		$this->assertCount(1, ShutdownFunctionSpy::callbacks());
+
+		ShutdownFunctionSpy::runAll();
+
+		$this->assertCount(1, $enqueued);
+		$this->assertSame('Some\\Job', $enqueued[0]['jobClass']);
+		$this->assertSame('alice', $enqueued[0]['argument']['userId']);
+		$this->assertSame([['uuid' => 'a']], $enqueued[0]['argument']['entries']);
+	}
+
+	/**
+	 * No entry, no registration: an idle request must not pay for a shutdown
+	 * callback it has nothing to flush.
+	 */
+	public function testNoShutdownCallbackIsRegisteredWithoutADeferredEntry(): void {
+		$this->makeService();
+
+		$this->assertSame([], ShutdownFunctionSpy::callbacks());
 	}
 
 	public function testEnqueueFailureIsLoggedNotThrown(): void {
