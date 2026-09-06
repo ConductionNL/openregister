@@ -488,13 +488,38 @@ const DYNAMIC_KEYS = [
  * Every key reached dynamically: DYNAMIC_KEYS plus the src/manifest.json fields
  * that MainMenu.translate(key) passes straight to t().
  *
- * Only the fields CnAppNav actually resolves through its `translate` prop count:
- * `menu[].label` (recursively through `children`) and the two nav label
- * overrides. Anything else in the manifest is data, not UI copy — notably
- * `observability.metrics[].name` (Prometheus metric identifiers) and
- * `pages[].title`, which CnPageRenderer forwards to the page component as a raw
- * prop without translating it. Harvesting those made metric names look like
- * catalogue keys and would have put them in front of translators.
+ * Only fields that are actually resolved through a `translate` prop count.
+ * Anything else in the manifest is data, not UI copy — notably
+ * `observability.metrics[].name` (Prometheus metric identifiers), which made
+ * metric names look like catalogue keys and would have put them in front of
+ * translators.
+ *
+ * WHAT COUNTS, AND HOW IT WAS ESTABLISHED
+ * ---------------------------------------
+ * This function used to exclude `pages[].title` on the stated grounds that
+ * CnPageRenderer "forwards [it] to the page component as a raw prop without
+ * translating it". That is no longer true. Measured 2026-09-06 on integriq,
+ * which wires `<CnAppRoot :translate="translateForApp">` exactly as
+ * `src/App.vue` does here, against a Nextcloud 34 instance with the user set
+ * to `nl` and the app's `l10n/` deployed:
+ *
+ *   - `menu[].label` renders translated (Sources became "Bronnen").
+ *   - `pages[].title` renders translated: the page heading was
+ *     "StUF-berichten", not "StUF messages".
+ *   - report `cards[].label` / `cards[].description` render translated;
+ *     CnReportsPage builds `resolvedCards` with `this.tr(card.label)`.
+ *
+ * The cost of the stale exclusion is not cosmetic: live keys get reported
+ * UNUSED, and clean-l10n proposes deleting exactly what this function fails to
+ * claim. Deleting a translated page title removes the localised string and
+ * leaves the English source rendering correctly, so nothing fails and nobody
+ * notices.
+ *
+ * Adding a field here can only make the cleaner more conservative, never less.
+ * Verify a new one against the DOM rather than the source: the template renders
+ * `{{ card.label }}` and only `resolvedCards` shows the translation, so reading
+ * the component alone reproduces the wrong conclusion. The measurement also
+ * needs the app's `l10n/` deployed, which the built bundle does not carry.
  *
  * @param {string} repoRoot Absolute path to the app root.
  * @return {Set<string>} Keys that must count as used.
@@ -509,17 +534,30 @@ function collectDynamicKeys(repoRoot) {
 	} catch {
 		return out
 	}
+	const add = (value) => {
+		if (typeof value === 'string' && value.trim() !== '') out.add(value)
+	}
 	;(function collectMenu(items) {
 		if (!Array.isArray(items)) return
 		for (const item of items) {
 			if (!item || typeof item !== 'object') continue
-			if (typeof item.label === 'string') out.add(item.label)
+			add(item.label)
 			collectMenu(item.children)
 		}
 	})(manifest.menu)
 	for (const field of ['roadmapLabel', 'documentationLabel']) {
-		const v = manifest.nav?.[field]
-		if (typeof v === 'string') out.add(v)
+		add(manifest.nav?.[field])
+	}
+	if (Array.isArray(manifest.pages)) {
+		for (const page of manifest.pages) {
+			if (!page || typeof page !== 'object') continue
+			add(page.title)
+			for (const card of page.config?.cards ?? []) {
+				if (!card || typeof card !== 'object') continue
+				add(card.label)
+				add(card.description)
+			}
+		}
 	}
 	return out
 }
