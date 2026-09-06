@@ -227,6 +227,22 @@ routes.push({
 	props: true,
 })
 
+// The run deep link: /flow-runs/:uuid, for the same reason and on the same
+// terms as the task one above. A run has no screen of its own — the flow
+// editor's sidebar already shows the graph replay, the steps, the objects
+// and the log — but it needs an ADDRESS, because "open this run in a new
+// tab" is only middle-clickable, bookmarkable and pasteable when it is a
+// real href. The page resolves the run to its flow and hands over.
+//
+// Registered here for the same ranking reason: the manifest's
+// `/:pathMatch(.*)*` fallback would otherwise swallow a cold load.
+routes.push({
+	name: 'flow-run-detail',
+	path: '/flow-runs/:uuid',
+	component: () => import('./views/flows/FlowRunDetail.vue'),
+	props: true,
+})
+
 const router = createRouter({
 	history: createWebHistory(routerBase()),
 	routes,

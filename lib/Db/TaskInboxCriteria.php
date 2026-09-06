@@ -85,6 +85,15 @@ final class TaskInboxCriteria {
 	 * @param bool|null $isTerminal Restrict on terminality, or null for both.
 	 * @param string|null $priority Restrict to one priority.
 	 * @param string|null $objectUuid Restrict to tasks anchored to this object.
+	 * @param string|null $runUuid Restrict to the tasks one flow run raised.
+	 *                             ANCHORS the read the way `objectUuid` does:
+	 *                             the question is what the RUN asked, not what
+	 *                             it asked ME, so the scope narrowing is
+	 *                             dropped. Visibility is not — a caller still
+	 *                             sees only tasks they hold a sanctioned
+	 *                             relationship to, and for a run's own tasks
+	 *                             that relationship is `requester`, which the
+	 *                             engine stamps with the run's acting identity.
 	 * @param DateTime|null $overdueAt When set, only tasks whose `due_at` lies
 	 *                                 strictly before this instant — the
 	 *                                 derived-overdue filter, handed the clock
@@ -103,6 +112,7 @@ final class TaskInboxCriteria {
 		public readonly ?bool $isTerminal = null,
 		public readonly ?string $priority = null,
 		public readonly ?string $objectUuid = null,
+		public readonly ?string $runUuid = null,
 		public readonly ?DateTime $overdueAt = null,
 		public readonly string $sort = self::SORT_DUE,
 		public readonly bool $sortDescending = false,
