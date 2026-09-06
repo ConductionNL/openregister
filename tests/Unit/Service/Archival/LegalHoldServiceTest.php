@@ -43,7 +43,6 @@ class LegalHoldServiceTest extends TestCase {
 		$this->objectMapper = $this->getMockBuilder(MagicMapper::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['update'])
-			->addMethods(['findByUuid'])
 			->getMock();
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
 		$this->userSession = $this->createMock(IUserSession::class);

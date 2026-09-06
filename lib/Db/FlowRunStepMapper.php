@@ -59,10 +59,39 @@ class FlowRunStepMapper extends QBMapper {
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('run_uuid', $qb->createNamedParameter($runUuid)))
-			->orderBy('sequence', 'ASC');
+			// CANONICAL order: by stream ordinal, then position within the
+			// stream. A function of the path taken, never of which branch
+			// returned first, so two runs of one flow read identically. Rows
+			// written before streams existed carry the root path (back-filled)
+			// and reproduce their old sequence order exactly.
+			->orderBy('ordinal_path', 'ASC')
+			->addOrderBy('sequence', 'ASC')
+			->addOrderBy('id', 'ASC');
 
 		return $this->findEntities(query: $qb);
 	}//end findByRun()
+
+	/**
+	 * Every step of one run in WALL-CLOCK order — the real interleaving, for
+	 * an operator who asks for it. Never the default, and never what any
+	 * comparison between runs is built on.
+	 *
+	 * @param string $runUuid The run uuid.
+	 *
+	 * @return array<int, FlowRunStep> The steps, by timestamp then id.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-the-run-log-must-be-ordered-by-branch-never-by-completion
+	 */
+	public function findByRunByTimestamp(string $runUuid): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('run_uuid', $qb->createNamedParameter($runUuid)))
+			->orderBy('created', 'ASC')
+			->addOrderBy('id', 'ASC');
+
+		return $this->findEntities(query: $qb);
+	}//end findByRunByTimestamp()
 
 	/**
 	 * The highest sequence recorded for a run so far.

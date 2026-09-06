@@ -796,6 +796,45 @@ size-guard its input, and any cap applied SHALL be logged, never silent.
 - **THEN** its content is not loaded into memory
 - **AND** it is skipped with a logged, non-fatal outcome
 
+### Requirement: Raw append for high-volume writers
+
+The object service SHALL offer a raw append entry point, `appendObjectsRaw()`,
+for high-volume, low-value rows such as traffic events and telemetry, and a
+matching sweep, `purgeExpiredObjectsRaw()`. The raw append SHALL write straight
+into the register+schema table in chunked multi-row statements and SHALL skip
+RBAC, multitenancy, schema validation, the audit trail, lifecycle events, the
+search index, relations and files. The caller takes the authorisation
+responsibility, as with `_rbac: false` (ADR-022). Both entry points SHALL be
+part of `ObjectServiceInterface` so a leaf app can reach them without
+OpenRegister internals, and neither SHALL alter the service's current
+register/schema context.
+
+#### Scenario: Rows are appended without side effects @e2e exclude server-side PHP API with no UI, covered by the PHPUnit DB test tests/Db/RawAppendIntegrationTest.php
+- **GIVEN** a register and a schema the register carries
+- **WHEN** a caller passes three plain property maps to `appendObjectsRaw()`
+- **THEN** the register+schema table holds three rows, each with a uuid (generated when the caller passed none)
+- **AND** no audit trail entry, lifecycle event or search-index update is produced for them
+- **AND** the return value is the number of rows written
+
+#### Scenario: An expiry lands in the indexed expires column @e2e exclude server-side PHP API with no UI, covered by the PHPUnit DB test tests/Db/RawAppendIntegrationTest.php
+- **GIVEN** a row passed with an `expires` value
+- **WHEN** it is appended
+- **THEN** the row's `_expires` column holds that instant
+- **AND** a row passed without `expires` keeps `_expires` NULL
+
+#### Scenario: Expired rows are hard-deleted by the purge @e2e exclude server-side PHP API with no UI, covered by the PHPUnit DB test tests/Db/RawAppendIntegrationTest.php
+- **GIVEN** three appended rows of which one has an `expires` in the past
+- **WHEN** `purgeExpiredObjectsRaw()` runs for that register and schema
+- **THEN** exactly that row is removed, with no soft-delete marker and no audit entry
+- **AND** the return value is 1
+- **AND** a register+schema whose table does not exist yet answers 0
+
+#### Scenario: Identifiers resolve within the register @e2e exclude server-side PHP API with no UI, covered by the PHPUnit unit test tests/Unit/Service/ObjectServiceRawAppendTest.php
+- **GIVEN** a register slug and a schema slug
+- **WHEN** either raw entry point is called with them
+- **THEN** the schema is resolved among the schemas that register carries, never instance-wide
+- **AND** the service's current register and schema context is unchanged afterwards
+
 ### Requirement: Auto-create a missing register from a bundle (REQ-IMP-AC-01)
 
 The register-bundle import MUST create a missing register and its referenced

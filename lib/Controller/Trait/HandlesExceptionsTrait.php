@@ -127,6 +127,10 @@ trait HandlesExceptionsTrait {
 		// Forbidden → 403.
 		NotAuthorizedException::class => Http::STATUS_FORBIDDEN,
 		FolderAccessDeniedException::class => Http::STATUS_FORBIDDEN,
+		// Locked → 423. Untyped before this, so a lock refusal thrown from the
+		// service layer reached the generic 500 handler and told the caller
+		// nothing about the lock.
+		\OCA\OpenRegister\Exception\LockedException::class => Http::STATUS_LOCKED,
 		// Validation → 422 typed / 400 argument-shaped.
 		ValidationException::class => Http::STATUS_UNPROCESSABLE_ENTITY,
 		\OCA\OpenRegister\Exception\CustomValidationException::class => Http::STATUS_UNPROCESSABLE_ENTITY,

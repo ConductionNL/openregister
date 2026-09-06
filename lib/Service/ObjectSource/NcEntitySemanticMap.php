@@ -63,9 +63,15 @@ final class NcEntitySemanticMap {
 	 *  - `provider`    — the ObjectSourceProvider id that serves its objects;
 	 *  - `requiredApp` — the NC app that must be installed for the provider to be
 	 *                    usable (`null` = Nextcloud core, always available);
-	 *  - `application` — the register's `application` (drives the ADR-048 gate).
+	 *  - `application` — the register's `application` (drives the ADR-048 gate);
+	 *  - `writable`    — OPTIONAL, absent means read-only. Sets the schema's
+	 *                    `x-openregister-object-source.readOnly`, which is the
+	 *                    annotation the save/delete dispatch reads before it will
+	 *                    delegate a write. Only `nc-organisation` carries it.
 	 *
-	 * @var array<string, array{register: string, schema: string, schemaOrg: string, provider: string, requiredApp: string|null, application: string}>
+	 * @var array<string, array{register: string, schema: string, schemaOrg: string,
+	 *     provider: string, requiredApp: string|null, application: string,
+	 *     writable?: bool}>
 	 */
 	public const ENTITIES = [
 		'user' => [
@@ -83,6 +89,34 @@ final class NcEntitySemanticMap {
 			'provider' => 'group-source',
 			'requiredApp' => null,
 			'application' => 'openregister',
+		],
+		// OpenRegister's own organisation, projected so a leaf schema can point a
+		// `{"$ref": ...}` at it. Several apps declared their own `organization`
+		// SCHEMA precisely because there was nothing here to reference, and a
+		// schema slug is global per organisation, so those copies collide.
+		//
+		// `nc-`-prefixed for the reason the app-gated rows below are: it must not
+		// collide with the leaf-app `organization` schemas it exists to replace,
+		// which have to keep working until each app has migrated off them.
+		//
+		// WRITABLE, and the only row that is. A read-only projection cannot
+		// replace the leaf copies, because the apps that declared them CREATE
+		// organisations: stackiq's setup walkthrough says "Click New and save an
+		// organisation" and advances on `object-created`. The write goes through
+		// `OrganisationService::createOrganisation()`, so the slug, the owner and
+		// the admin-group RBAC grant are assigned as they are anywhere else, and
+		// `remove()` refuses outright.
+		//
+		// The other rows project someone else's system (a Nextcloud user, a Deck
+		// card) and stay read-only. This one projects OpenRegister's own entity.
+		'organisation' => [
+			'register' => self::DIRECTORY_REGISTER,
+			'schema' => 'nc-organisation',
+			'schemaOrg' => 'schema:Organization',
+			'provider' => 'organisation-source',
+			'requiredApp' => null,
+			'application' => 'openregister',
+			'writable' => true,
 		],
 		// App-gated rows — each lives on its OWN app-named register (application =
 		// register slug) so the ADR-048 app-enabled gate degrades the projection

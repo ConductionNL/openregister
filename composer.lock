@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e8d1e40030308144ae31c190012f7581",
+    "content-hash": "c0b042643db9431c7683bb92de4211ae",
     "packages": [
         {
             "name": "adbario/php-dot-notation",
@@ -6872,16 +6872,16 @@
         },
         {
             "name": "conduction/hydra-gates",
-            "version": "v1.10.0",
+            "version": "v1.15.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ConductionNL/.github.git",
-                "reference": "d143bc27aecbb44a66c843dba89d374628bf9eef"
+                "reference": "4db52393987b85957787e144bc82bfaf67f4860c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ConductionNL/.github/zipball/d143bc27aecbb44a66c843dba89d374628bf9eef",
-                "reference": "d143bc27aecbb44a66c843dba89d374628bf9eef",
+                "url": "https://api.github.com/repos/ConductionNL/.github/zipball/4db52393987b85957787e144bc82bfaf67f4860c",
+                "reference": "4db52393987b85957787e144bc82bfaf67f4860c",
                 "shasum": ""
             },
             "require": {
@@ -6920,9 +6920,9 @@
             "support": {
                 "docs": "https://github.com/ConductionNL/.github/blob/main/hydra-gates/README.md",
                 "issues": "https://github.com/ConductionNL/.github/issues",
-                "source": "https://github.com/ConductionNL/.github/tree/v1.10.0"
+                "source": "https://github.com/ConductionNL/.github/tree/v1.15.1"
             },
-            "time": "2026-08-27T16:18:04+00:00"
+            "time": "2026-09-05T12:26:12+00:00"
         },
         {
             "name": "consolidation/annotated-command",
@@ -13242,7 +13242,8 @@
     },
     "platform-dev": {},
     "platform-overrides": {
-        "php": "8.3"
+        "php": "8.3",
+        "ext-xsl": "1"
     },
     "plugin-api-version": "2.9.0"
 }

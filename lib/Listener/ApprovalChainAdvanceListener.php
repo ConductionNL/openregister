@@ -3,11 +3,13 @@
 /**
  * OpenRegister ApprovalChainAdvanceListener
  *
- * Subscribes to the existing `ApprovalStepCompletedEvent` and, when the
- * completed chain's schema declares `onApprove: advanceTransition` for that
- * chain, invokes `TransitionEngine::transition()` for the gated action — the
- * SAME action `ApprovalChainGateListener` blocked. Reuses the already-shipped
- * event and transition engine verbatim; no new mutate/save/dispatch logic.
+ * Subscribes to {@see TaskSequenceCompletedEvent} and, when the completed
+ * sequence's schema declares `onApprove: advanceTransition` for that chain,
+ * invokes `TransitionEngine::transition()` for the gated action — the SAME
+ * action `ApprovalChainGateListener` blocked. Only the subscription changed
+ * in the consolidation (flow-approval-consolidation task 3.3): the lookup
+ * and the fail-soft transition call are the retired implementation's,
+ * verbatim in behaviour.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -23,25 +25,24 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/specs/approval-workflow/spec.md
+ * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-010
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Event\ApprovalStepCompletedEvent;
+use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
 
 /**
- * Auto-advances a gated transition when its approval chain completes.
+ * Auto-advances a gated transition when its approval sequence completes.
  *
- * @template-implements IEventListener<ApprovalStepCompletedEvent>
+ * @template-implements IEventListener<TaskSequenceCompletedEvent>
  */
 class ApprovalChainAdvanceListener implements IEventListener {
 	/**
@@ -59,21 +60,21 @@ class ApprovalChainAdvanceListener implements IEventListener {
 	}//end __construct()
 
 	/**
-	 * Advance the gated transition when the completed chain declares it.
+	 * Advance the gated transition when the completed sequence declares it.
 	 *
 	 * @param Event $event Inbound dispatcher event.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/specs/approval-workflow/spec.md
+	 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-010
 	 */
 	public function handle(Event $event): void {
-		if (($event instanceof ApprovalStepCompletedEvent) === false) {
+		if (($event instanceof TaskSequenceCompletedEvent) === false) {
 			return;
 		}
 
-		$chain = $event->getChain();
-		$schemaId = $chain->getSchemaId();
+		$sequence = $event->getSequence();
+		$schemaId = $sequence->getSchemaId();
 		if ($schemaId === null) {
 			return;
 		}
@@ -92,7 +93,7 @@ class ApprovalChainAdvanceListener implements IEventListener {
 			return;
 		}
 
-		$entry = ($chains[(string)$chain->getName()] ?? null);
+		$entry = ($chains[(string)$sequence->getChainKey()] ?? null);
 		if (is_array($entry) === false) {
 			return;
 		}
@@ -102,7 +103,7 @@ class ApprovalChainAdvanceListener implements IEventListener {
 		}
 
 		$action = (string)($entry['transition'] ?? '');
-		$objectUuid = $event->getObjectUuid();
+		$objectUuid = (string)$sequence->getAnchorObjectUuid();
 		if ($action === '' || $objectUuid === '') {
 			return;
 		}
@@ -110,10 +111,10 @@ class ApprovalChainAdvanceListener implements IEventListener {
 		try {
 			$this->transitionEngine->transition(objectId: $objectUuid, action: $action);
 		} catch (\Throwable $e) {
-			// Fail-soft: the chain is correctly `approved` regardless. A failed
-			// auto-advance leaves the object at its pre-gate state; the gate
-			// listener will allow a subsequent manual transition attempt since
-			// every provisioned step is already approved.
+			// Fail-soft: the sequence is correctly `completed` regardless. A
+			// failed auto-advance leaves the object at its pre-gate state; the
+			// gate listener will allow a subsequent manual transition attempt
+			// since the sequence is already complete.
 			$this->logger->warning(
 				sprintf(
 					'[ApprovalChainAdvanceListener] auto-advance "%s" for object %s failed: %s',

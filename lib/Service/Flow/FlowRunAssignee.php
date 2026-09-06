@@ -74,17 +74,35 @@ class FlowRunAssignee {
 	 * several nodes across its life, so the one that matters is a slot that
 	 * ASKED (`askedAt`) and has not been answered.
 	 *
+	 * WITH A NODE ID, the addressed node's own slot decides. A run can await
+	 * several nodes at once, each with its own assignee, and the run-level scan
+	 * answers with the FIRST asked slot's — which refuses the second node's own
+	 * audience. A `nodeId` whose slot is NOT held falls through to the scan:
+	 * naming a node that asked nothing must not become a way around the guard
+	 * on the node that did.
+	 *
 	 * @param FlowRun $run The suspended run.
+	 * @param string|null $nodeId The node the answer addresses, when the caller knows it.
 	 *
 	 * @return string The assignee uid or group id; '' when the step is unassigned.
 	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
+	 * @spec openspec/changes/flow-engine-consumer-seams/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
 	 */
-	public function recordedFor(FlowRun $run): string {
+	public function recordedFor(FlowRun $run, ?string $nodeId = null): string {
 		$context = ($run->getContext() ?? []);
 		$slots = ($context[FlowResumeState::CONTEXT_KEY] ?? []);
 		if (is_array($slots) === false) {
 			return '';
+		}
+
+		$nodeId = trim((string)$nodeId);
+		if ($nodeId !== '') {
+			$slot = ($slots[$nodeId] ?? null);
+			if (is_array($slot) === true && isset($slot['askedAt']) === true) {
+				// The addressed node is asking; ITS record decides, including
+				// an empty one — an unassigned step is deliberately open.
+				return trim((string)($slot['assignee'] ?? ''));
+			}
 		}
 
 		foreach ($slots as $slot) {
@@ -110,13 +128,16 @@ class FlowRunAssignee {
 	 *
 	 * @param FlowRun     $run The suspended run.
 	 * @param string|null $uid The acting user, or null when there is no session.
+	 * @param string|null $nodeId The node the answer addresses, when the caller
+	 *                            knows it — see {@see recordedFor()} for how
+	 *                            addressing narrows and never loosens.
 	 *
 	 * @return boolean True when the answer may be accepted.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
-	public function mayAnswer(FlowRun $run, ?string $uid): bool {
-		$assignee = $this->recordedFor(run: $run);
+	public function mayAnswer(FlowRun $run, ?string $uid, ?string $nodeId = null): bool {
+		$assignee = $this->recordedFor(run: $run, nodeId: $nodeId);
 
 		// Unassigned is deliberately open — see the class docblock. This is the
 		// one branch that must NOT be tightened without changing the spec.

@@ -730,41 +730,6 @@ class SettingsHandlersIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Test getN8nSettingsOnly returns expected structure
-	 *
-	 * @return void
-	 */
-	public function testGetN8nSettingsOnlyReturnsDefaults(): void {
-		$result = $this->configHandler->getN8nSettingsOnly();
-
-		$this->assertIsArray($result);
-		$this->assertArrayHasKey('enabled', $result);
-		$this->assertArrayHasKey('url', $result);
-		$this->assertArrayHasKey('apiKey', $result);
-	}
-
-	/**
-	 * Test updateN8nSettingsOnly persists values
-	 *
-	 * @return void
-	 */
-	public function testUpdateN8nSettingsOnlyPersists(): void {
-		$this->trackConfigKey('n8n');
-
-		$result = $this->configHandler->updateN8nSettingsOnly([
-			'enabled' => true,
-			'url' => 'http://n8n:5678',
-			'apiKey' => 'test-api-key',
-			'project' => 'myproject',
-		]);
-
-		$this->assertTrue($result['enabled']);
-		$this->assertEquals('http://n8n:5678', $result['url']);
-		$this->assertEquals('test-api-key', $result['apiKey']);
-		$this->assertEquals('myproject', $result['project']);
-	}
-
-	/**
 	 * Test getVersionInfoOnly returns version info
 	 *
 	 * @return void

@@ -1,3 +1,5 @@
+import type { APIRequestContext } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -14,7 +16,7 @@
  * test object. Creates/modifies/deletes objects under a unique run-id
  * prefix to avoid collisions with other test agents.
  */
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
 
 const STORAGE_STATE = path.resolve(__dirname, '.auth/admin.json')
@@ -109,7 +111,7 @@ test.describe('frontend-app-bootstrap — app mount and data load', () => {
 	test('navigating to /registers renders the register list view', async ({
 		page,
 	}) => {
-		await page.goto('/index.php/apps/openregister/#/registers', {
+		await page.goto('/index.php/apps/openregister/registers', {
 			waitUntil: 'domcontentloaded',
 		})
 		// Don't wait for networkidle — NC SPA keeps background XHR alive indefinitely.
@@ -138,8 +140,8 @@ test.describe('frontend-app-bootstrap — app mount and data load', () => {
 test.describe('deep-link-registry — hash routes render correct views', () => {
 	test.use({ storageState: STORAGE_STATE })
 
-	test('#/registers route renders register list', async ({ page }) => {
-		await page.goto('/index.php/apps/openregister/#/registers', {
+	test('/registers route renders register list', async ({ page }) => {
+		await page.goto('/index.php/apps/openregister/registers', {
 			waitUntil: 'domcontentloaded',
 		})
 		// Should NOT redirect to a different page or show a 404.
@@ -149,8 +151,8 @@ test.describe('deep-link-registry — hash routes render correct views', () => {
 		})
 	})
 
-	test('#/schemas route renders schema list', async ({ page }) => {
-		await page.goto('/index.php/apps/openregister/#/schemas', {
+	test('/schemas route renders schema list', async ({ page }) => {
+		await page.goto('/index.php/apps/openregister/schemas', {
 			waitUntil: 'domcontentloaded',
 		})
 		expect(page.url()).toContain('/openregister/')
@@ -159,8 +161,8 @@ test.describe('deep-link-registry — hash routes render correct views', () => {
 		})
 	})
 
-	test('#/objects route renders object list', async ({ page }) => {
-		await page.goto('/index.php/apps/openregister/#/objects', {
+	test('/objects route renders object list', async ({ page }) => {
+		await page.goto('/index.php/apps/openregister/objects', {
 			waitUntil: 'domcontentloaded',
 		})
 		expect(page.url()).toContain('/openregister/')
@@ -169,7 +171,7 @@ test.describe('deep-link-registry — hash routes render correct views', () => {
 		})
 	})
 
-	test('#/objects/:register/:schema/:id deep-links to object detail', async ({
+	test('/objects/:register/:schema/:id deep-links to object detail', async ({
 		page,
 		request,
 	}) => {
@@ -177,7 +179,7 @@ test.describe('deep-link-registry — hash routes render correct views', () => {
 		test.skip(objectId === null, 'no live object found for deep-link test')
 
 		await page.goto(
-			`/index.php/apps/openregister/#/objects/${REGISTER_ID}/${SCHEMA_ID}/${objectId}`,
+			`/index.php/apps/openregister/objects/${REGISTER_ID}/${SCHEMA_ID}/${objectId}`,
 			{ waitUntil: 'domcontentloaded' },
 		)
 		expect(page.url()).toContain('/openregister/')

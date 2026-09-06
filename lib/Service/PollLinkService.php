@@ -425,11 +425,13 @@ class PollLinkService {
 				);
 			$insert->executeStatement();
 
+			// OCP\IDBConnection::lastInsertId(string $table) REQUIRES the table.
+			// The old fallback called it with no argument, so on exactly the
+			// drivers it was written for it raised ArgumentCountError, which the
+			// catch below reported as "Failed to create poll", a message that
+			// blames the insert rather than the retrieval. A zero here now falls
+			// through to the explicit throw, which says what actually happened.
 			$pollId = (int)$this->db->lastInsertId('oc_polls_polls_id_seq');
-			if ($pollId === 0) {
-				// Fallback for drivers without sequence support.
-				$pollId = (int)$this->db->lastInsertId();
-			}
 
 			if ($pollId === 0) {
 				throw new Exception('Failed to retrieve created poll id', 500);

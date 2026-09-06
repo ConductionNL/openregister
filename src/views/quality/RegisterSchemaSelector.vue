@@ -34,9 +34,9 @@ import { qualityStore } from '../../store/store.js'
  * committed to the `quality` Pinia store so switching between MDM views
  * preserves the selection (design.md D3).
  *
- * The selection is also mirrored into the hash-mode route query
+ * The selection is also mirrored into the route query
  * (`?register=&schema=`): a deep-link such as
- * `#/quality?register=16&schema=1207` pre-selects and loads with no clicks,
+ * `/quality?register=16&schema=1207` pre-selects and loads with no clicks,
  * and every in-UI selection change reflects back into the URL so the view is
  * bookmarkable and shareable (mdm-views-route-scoping). The store remains the
  * source of truth; the route is a mirror + entry point.

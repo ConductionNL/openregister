@@ -5,7 +5,7 @@ status: done
 # features-roadmap-menu Specification
 
 ## Purpose
-Adds a Features & Roadmap surface to an app — a dedicated route with a Features tab listing capabilities from a generated `docs/features.json` manifest and a Roadmap tab showing live GitHub issues sorted by reaction count, plus a "Suggest feature" modal that submits new requests. Markdown is rendered with strict DOMPurify sanitization, pipeline labels are filtered out, widgets and pages can declare a `specRef` to pre-fill and filter by capability, and admins can disable the whole feature via an app-config flag. The same manifest powers a public Docusaurus `/features` page, with a CI check keeping it in sync with the specs.
+Adds a Features & Roadmap surface to an app — a dedicated route with a Features tab listing capabilities from a generated `docs/features.json` manifest and a Roadmap tab showing live GitHub issues sorted by reaction count, plus a "Suggest feature" link to the forge's issue form. Markdown is rendered with strict DOMPurify sanitization, pipeline labels are filtered out, widgets and pages can declare a `specRef` to pre-fill and filter by capability, and admins can disable the whole feature via an app-config flag. The same manifest powers a public Docusaurus `/features` page, with a CI check keeping it in sync with the specs.
 ## Requirements
 ### Requirement: Full route, not side panel
 
@@ -35,8 +35,8 @@ The `CnFeaturesAndRoadmapLink` component SHALL be positioned as the first child 
 ### Requirement: Two tabs with i18n labels
 
 The route view SHALL render two tabs labelled "Features" and "Roadmap" in English, or
-"Functies" and "Planning" in Dutch. The tab labels, empty-state messages, modal fields,
-error messages, and toasts SHALL be translatable via Nextcloud's `t()` / `n()` helpers.
+"Functies" and "Planning" in Dutch. The tab labels, empty-state messages, the
+"Suggest feature" link, error messages, and toasts SHALL be translatable via Nextcloud's `t()` / `n()` helpers.
 English (en) and Dutch (nl) MUST be shipped at minimum.
 
 #### Scenario: Dutch locale shows Dutch tab labels
@@ -77,8 +77,7 @@ each item. Ties SHALL fall back to `created_at` descending.
 Each roadmap item's body SHALL be rendered as full GitHub-flavored markdown using the
 `marked` library. Rendered output MUST be sanitized with `DOMPurify` using a strict
 allowlist config that MUST exclude `<script>`, all `on*` attributes, `javascript:` URLs,
-`<iframe>`, and `<style>`. The same sanitizer configuration SHALL be used by the
-`SuggestFeatureModal` live preview.
+`<iframe>`, and `<style>`.
 
 #### Scenario: Markdown body renders as formatted HTML
 
@@ -137,92 +136,67 @@ The `useSpecRef()` composable SHALL support declaring a page's capability refere
 ### Requirement: Action menu integration
 
 Widgets and pages that declared a `specRef` SHALL expose a "Suggest feature" item in their
-`NcActions` menu. Clicking the item SHALL open the `SuggestFeatureModal` pre-filled with
-the active `specRef` in a hidden field. The helper exposed by `@conduction/nextcloud-vue`
-to inject this action into an existing `NcActions` SHALL be opt-in (available only when a
-non-empty `specRef` is present).
+`NcActions` menu, carrying the active `specRef`. The helper exposed by
+`@conduction/nextcloud-vue` to inject this action into an existing `NcActions` SHALL be
+opt-in (available only when a non-empty `specRef` is present).
+
+⚠️ **WHAT THE ITEM DOES IS UNSETTLED.** It opened `SuggestFeatureModal`, and that modal is
+gone (see "Suggest feature deep-link"). The helper still ships and still hands the slug to
+a callback, so the descriptor is buildable, but openregister mounts nothing behind it and
+no scenario below is exercised today. The obvious answer is the same forge deep-link with
+the slug carried into the form, and that is a decision nobody has taken yet rather than
+one this file should invent.
 
 #### Scenario: Widget with specRef exposes the action
 
 - **WHEN** a widget declares `specRef: 'catalog-management'` AND mounts an `NcActions` that
   wires in the shared helper
 - **THEN** the action menu SHALL include an item labelled "Suggest feature"
-- **AND** clicking it SHALL open `SuggestFeatureModal` with hidden field
-  `specRef="catalog-management"` pre-populated
+- **AND** the descriptor SHALL carry `specRef="catalog-management"`
 
 #### Scenario: Widget without specRef does NOT expose the action
 
 - **WHEN** a widget has no `specRef` declaration
 - **THEN** the action menu SHALL NOT include a "Suggest feature" item
 
-### Requirement: Suggest feature modal
+### Requirement: Suggest feature deep-link
 
-A modal form `SuggestFeatureModal` SHALL be available from (a) the Features & Roadmap
-route header as a "Suggest feature" button, and (b) any widget or page that declared a
-`specRef` via its action menu. The modal SHALL include: a required title field (3-200
-chars), a required markdown body textarea (min 10 chars), a live preview toggle that
-renders the body through the same `marked` + `DOMPurify` pipeline as roadmap items, a
-Submit button, and a Cancel button. When launched from a `specRef` context, the modal
-SHALL include the `specRef` as a hidden field. Submit SHALL POST to `/api/github/issues`
-with the CSRF token included.
+The Features & Roadmap route header SHALL carry a "Suggest feature" control that opens the
+forge's feature-request issue form for the app's repository, in a new tab with
+`rel="noopener noreferrer"`. It SHALL be a link rather than a button, because it navigates
+away rather than opening anything in the page. It SHALL be present only when a target URL
+resolves: the host's `suggestUrl` override when given, otherwise the form derived from the
+app's `repo` and `forge` (GitHub by default). No feature request SHALL be composed or
+submitted from inside the app.
 
-#### Scenario: Route-header launch has no specRef
+This replaces the in-product `SuggestFeatureModal`, which nextcloud-vue removed in 2.36.4
+(team decision 2026-09-04: the forge is where the conversation happens, in English). Three
+requirements went with it, and they are recorded here rather than deleted silently so that
+a reader of this file learns what happened rather than wondering:
 
-- **WHEN** a user clicks "Suggest feature" from the route header
-- **THEN** the modal SHALL open without any pre-filled `specRef`
+- **Suggest feature modal** — the modal, its title and body fields, its markdown preview,
+  and its submit gating.
+- **Submission success feedback** — the "Feature request submitted" toast carrying a link
+  to the created issue.
+- **Submission error handling** — the 401, 429, 503 and generic-failure messages and the
+  Retry button.
 
-#### Scenario: Widget launch pre-fills specRef
+The behaviour those requirements asked for now belongs to the forge's own issue form,
+which validates its structured fields and reports its own failures. `POST /api/github/issues`
+has no caller in the UI any more; the endpoint and its guards are unchanged and out of
+scope here.
 
-- **WHEN** a user clicks "Suggest feature" from a widget with `specRef: "catalog-management"`
-- **THEN** the modal SHALL open with hidden field `specRef="catalog-management"`
+#### Scenario: The header offers a link to the forge, not a form
 
-#### Scenario: Submit requires title and body
+- **WHEN** a user opens the Features & Roadmap route
+- **THEN** a link labelled "Suggest feature" SHALL be visible
+- **AND** its `href` SHALL be the feature-request issue form for the app's repository
+- **AND** it SHALL open in a new tab with `rel="noopener noreferrer"`
 
-- **WHEN** a user opens the modal and submits with empty title or a body shorter than 10
-  chars
-- **THEN** the Submit button SHALL be disabled OR SHALL show inline validation errors
-- **AND** no POST SHALL be issued
+#### Scenario: Nothing is submitted from the app
 
-### Requirement: Submission success feedback
-
-On a successful submission (HTTP 201 from the endpoint), the modal SHALL close and a
-Nextcloud toast SHALL appear with the localized text "Feature request submitted" (en) /
-"Functieverzoek verzonden" (nl) and a clickable link to the issue's `html_url` opening in
-a new tab with `rel="noopener noreferrer"`.
-
-#### Scenario: Success toast contains link
-
-- **WHEN** the submission endpoint responds HTTP 201 with `{number: 42, html_url: "https://github.com/.../42"}`
-- **THEN** the modal SHALL close
-- **AND** a toast SHALL appear containing the localized success message AND a link whose
-  `href` equals `https://github.com/.../42` and whose `target` is `_blank`
-
-### Requirement: Submission error handling
-
-The modal SHALL handle submission errors as follows:
-
-- On HTTP 401, the UI SHALL show a localized "Please sign in to submit a feature request"
-  message and SHALL NOT retry automatically.
-- On HTTP 429, the UI SHALL show a localized "Please wait <N>s before submitting another
-  request" message using the `retry_after` value from the response body.
-- On HTTP 503 with `error: "github_pat_not_configured"`, the UI SHALL show a localized
-  "Feature submission is not configured on this instance — please ask your administrator"
-  message.
-- On HTTP 500, network error, or any other failure mode, the UI SHALL show a localized
-  "Submission failed, try again" message and SHALL surface a Retry button that re-attempts
-  the POST with the same title, body, and specRef.
-
-#### Scenario: Rate-limited submission
-
-- **WHEN** the endpoint responds HTTP 429 with body `{error: "rate_limited", retry_after: 45}`
-- **THEN** the modal SHALL show the rate-limit message containing "45" as the remaining
-  seconds
-
-#### Scenario: Generic failure offers retry
-
-- **WHEN** the endpoint responds HTTP 500
-- **THEN** the modal SHALL show the generic failure message
-- **AND** a Retry button SHALL be visible
+- **WHEN** a user activates the "Suggest feature" control
+- **THEN** no POST SHALL be issued to `/api/github/issues`
 
 ### Requirement: specRef-aware filtering
 
@@ -305,17 +279,17 @@ The Features tab and Roadmap tab SHALL render localized, muted empty-state messa
 
 ### Requirement: i18n
 
-All UI strings — route title, tab labels, modal field labels, modal placeholders, empty states, toasts, error messages, and button labels — MUST be translatable via Nextcloud's `t()` / `n()` helpers, and Dutch (nl) plus English (en) translations MUST be shipped at minimum. The Docusaurus public page SHALL use Docusaurus's native i18n infrastructure and MUST ship nl + en at minimum.
+All UI strings — route title, tab labels, the "Suggest feature" link, empty states, toasts, error messages, and button labels — MUST be translatable via Nextcloud's `t()` / `n()` helpers, and Dutch (nl) plus English (en) translations MUST be shipped at minimum. The Docusaurus public page SHALL use Docusaurus's native i18n infrastructure and MUST ship nl + en at minimum.
 
 #### Scenario: Nl locale translates all route chrome
 
 - **WHEN** the Nextcloud UI locale is `nl` and the user opens the Features & Roadmap route
-- **THEN** the route title, both tab labels, the "Suggest feature" button, and the
-  modal's field labels SHALL all render in Dutch
+- **THEN** the route title, both tab labels and the "Suggest feature" link SHALL all
+  render in Dutch
 
 ### Requirement: Link safety
 
-All external links rendered by the in-app component and the Docusaurus public page MUST open with `target="_blank"` and `rel="noopener noreferrer"` attributes. This SHALL include feature `docsUrl` links, roadmap `html_url` links, and links in the success toast returned after a submission.
+All external links rendered by the in-app component and the Docusaurus public page MUST open with `target="_blank"` and `rel="noopener noreferrer"` attributes. This SHALL include feature `docsUrl` links, roadmap `html_url` links, and the "Suggest feature" link to the forge's issue form.
 
 #### Scenario: Feature docsUrl link safety
 
@@ -361,9 +335,6 @@ issue authors from embedding tracking-pixel images that leak the viewer's IP, re
 headers, and timing to attacker-controlled origins on every roadmap render.
 
 The same policy SHALL apply to `<image>` (SVG) and `<picture>`/`<source>` elements.
-
-The `SuggestFeatureModal` live-preview pane SHALL use the same configuration so the
-preview matches what will eventually render on the roadmap.
 
 #### Scenario: External image is stripped
 
@@ -414,7 +385,7 @@ key is absent. When the key is `false`, neither the navigation entry nor the
 navigation to the route SHALL render a localized "This feature has been disabled by your
 administrator" message instead of the tabs.
 
-The `SuggestFeatureModal`'s widget-level entry points (action menu items injected into
+The widget-level "Suggest feature" entry points (action menu items injected into
 widgets that declared `specRef`) SHALL also respect this flag — when `false`, the action
 menu item SHALL be hidden. The corresponding backend endpoints (`GET` and `POST` on
 `/api/github/issues`) SHALL also check the flag and return HTTP 403 with the structured

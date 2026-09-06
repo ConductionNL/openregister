@@ -1132,14 +1132,12 @@ Clean up old search trail entries.
 
 #### Retention Policy
 
-Configure search trail retention:
-
-```php
-// In app configuration
-'search_trail_retention_days' => 90,
-'search_trail_cleanup_enabled' => true,
-'search_trail_cleanup_schedule' => 'daily',
-```
+Search trail retention is the `searchTrailRetention` value on the Retention
+admin page (milliseconds, default `2592000000`, 30 days), read and written
+through `GET`/`PATCH /api/settings/retention`. The hourly `LogCleanUpTask`
+background job enforces it: rows without an expiry are stamped `created` plus
+the retention, and rows whose expiry has passed are deleted. There is no
+separate enable switch or schedule for the cleanup.
 
 #### Privacy Settings
 

@@ -1,3 +1,5 @@
+import type { APIRequestContext } from '@playwright/test'
+
 /**
  * Integration-registry E2E smoke — exercises every layer of the
  * pluggable-integration chain (ADR-019) against a live OpenRegister:
@@ -19,7 +21,7 @@
  * + `bootBuiltinIntegrationProviders` running), and admin:admin
  * available.
  */
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 /**
  * The 24 providers the registry SHOULD advertise once openregister

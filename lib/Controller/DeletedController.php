@@ -31,7 +31,9 @@ use DateTime;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -45,6 +47,12 @@ use OCP\IUserSession;
  * Controller for managing soft deleted objects
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One over, from the archival
+ * gate: refusing a retained record needs the Schema it is declared on and the
+ * ArchivalImmutableException that carries the wire contract. Both come from the
+ * sanctioned delete path, which is the point — the alternative to that coupling
+ * is a second, quietly different rule.
  */
 
 class DeletedController extends Controller {
@@ -143,6 +151,66 @@ class DeletedController extends Controller {
 			return false;
 		}
 	}//end userMayActOnDeletedObject()
+
+	/**
+	 * Resolve a soft-deleted object's schema, or null when it cannot be found.
+	 *
+	 * @param ObjectEntity $object The object whose schema to resolve.
+	 *
+	 * @return Schema|null The schema, or null when it cannot be resolved.
+	 */
+	private function resolveSchema(ObjectEntity $object): ?Schema {
+		$schemaId = $object->getSchema();
+		if ($schemaId === null || $schemaId === '') {
+			return null;
+		}
+
+		try {
+			return $this->schemaMapper->find((int)$schemaId);
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end resolveSchema()
+
+	/**
+	 * Refuse a purge when the object is a legally retained archival record.
+	 *
+	 * `DELETE /api/objects/{register}/{schema}/{id}` rejects a delete on an
+	 * archival schema with 403 SCHEMA_ARCHIVAL_IMMUTABLE
+	 * ({@see \OCA\OpenRegister\Service\ObjectService::deleteObject()}). Purging
+	 * is strictly more destructive than deleting, so it answers on the same
+	 * terms, from the same definition ({@see Schema::hasArchivalAnnotation()}) —
+	 * otherwise the trash is a second door onto the records the first door
+	 * exists to protect.
+	 *
+	 * Fails CLOSED: an object whose schema cannot be resolved is refused, since
+	 * an unresolvable schema is exactly the case where the annotation cannot be
+	 * read and the row might be retained.
+	 *
+	 * @param ObjectEntity $object The object being purged.
+	 *
+	 * @return ArchivalImmutableException|null The refusal, or null when the purge may proceed.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
+	private function archivalRefusal(ObjectEntity $object): ?ArchivalImmutableException {
+		$schema = $this->resolveSchema(object: $object);
+		if ($schema === null) {
+			return new ArchivalImmutableException(
+				schemaIdentifier: (string)($object->getSchema() ?? 'unknown'),
+				operation: 'purge'
+			);
+		}
+
+		if ($schema->hasArchivalAnnotation() === false) {
+			return null;
+		}
+
+		return new ArchivalImmutableException(
+			schemaIdentifier: ($schema->getSlug() ?? (string)$schema->getId()),
+			operation: 'purge'
+		);
+	}//end archivalRefusal()
 
 	/**
 	 * Helper method to extract request parameters for deleted objects
@@ -399,7 +467,7 @@ class DeletedController extends Controller {
 		try {
 			$object = $this->objectEntityMapper->find($id, null, null, true);
 
-			if ($object->getDeleted() === null || $object->getDeleted() === []) {
+			if ($object->isSoftDeleted() === false) {
 				return new JSONResponse(
 					data: [
 						'error' => 'Object is not deleted',
@@ -487,7 +555,7 @@ class DeletedController extends Controller {
 				$foundIds[] = $object->getUuid();
 
 				try {
-					if ($object->getDeleted() === null) {
+					if ($object->isSoftDeleted() === false) {
 						// Object exists but is not deleted.
 						$failed++;
 						continue;
@@ -563,7 +631,24 @@ class DeletedController extends Controller {
 		try {
 			$object = $this->objectEntityMapper->find(identifier: $id, register: null, schema: null, includeDeleted: true);
 
-			if ($object->getDeleted() === null) {
+			// An archival record is refused here on the same terms the normal
+			// delete path refuses it. Answered BEFORE the trash check, so a
+			// caller holding a live archival record is told the record is
+			// immutable rather than "not deleted yet" — which would read as an
+			// invitation to soft-delete it first and come back.
+			$refusal = $this->archivalRefusal(object: $object);
+			if ($refusal !== null) {
+				return new JSONResponse(
+					data: $refusal->toResponseBody(),
+					statusCode: 403
+				);
+			}
+
+			// A purge empties the TRASH. `getDeleted() === null` never answered
+			// that question — the property defaults to `[]` and a live row keeps
+			// that default — so this guard let every live object through and
+			// destroyed it. See ObjectEntity::isSoftDeleted().
+			if ($object->isSoftDeleted() === false) {
 				return new JSONResponse(
 					data: [
 						'error' => 'Object is not deleted',
@@ -658,7 +743,15 @@ class DeletedController extends Controller {
 				$foundIds[] = $object->getUuid();
 
 				try {
-					if ($object->getDeleted() === null) {
+					// An archival record is never purged, in bulk or singly.
+					// Counted as failed rather than aborting the batch, so one
+					// retained row does not strand the rest of the cleanup.
+					if ($this->archivalRefusal(object: $object) !== null) {
+						$failed++;
+						continue;
+					}
+
+					if ($object->isSoftDeleted() === false) {
 						// Object exists but is not deleted.
 						$failed++;
 						continue;

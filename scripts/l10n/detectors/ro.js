@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-/* eslint-disable n/no-process-exit */
+ 
 // Romanian register detector for openregister l10n.
 //
 // Measures the PROSE register: dumneavoastră / vă (formal 2pl) against tu (informal
@@ -62,6 +61,10 @@
 //      strings use the cedilla ("contactaţi", "fişiere") — so fold() normalises them.
 //      Without that, closed-list entries silently miss the legacy spellings.
 
+/**
+ *
+ * @param s
+ */
 function fold(s) {
 	// Normalise the legacy cedilla codepoints to the correct comma-below ones before
 	// lowercasing, so a closed list written in modern orthography still matches core's
@@ -184,6 +187,10 @@ const UNDETECTABLE = [
 	['Copiază', 'correct as a 3sg present ("it copies") in a table cell, where the label-position rule cannot tell it from a button'],
 ]
 
+/**
+ *
+ * @param s
+ */
 function score(s) {
 	const t = fold(s)
 	let f = 0
@@ -198,6 +205,9 @@ function score(s) {
 	return { f, i }
 }
 
+/**
+ *
+ */
 function runControls() {
 	let fail = 0
 	for (const [s, want] of CONTROLS) {

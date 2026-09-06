@@ -36,6 +36,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 
 class ReferentialIntegrityServiceCoverageTest extends TestCase {
 	private ReferentialIntegrityService $service;
@@ -59,7 +60,8 @@ class ReferentialIntegrityServiceCoverageTest extends TestCase {
 			$this->auditTrailMapper,
 			$this->logger,
 			$this->createMock(IDBConnection::class),
-			$this->createNullCacheFactory()
+			$this->createNullCacheFactory(),
+			$this->makeArchivalGuard()
 		);
 	}
 
@@ -448,4 +450,35 @@ class ReferentialIntegrityServiceCoverageTest extends TestCase {
 		// Should not throw
 		$this->service->logRestrictBlock('uuid', '1', $analysis, 'admin');
 	}
+	/**
+	 * A real ArchivalRetentionGuard over schemas that declare no archival annotation.
+	 *
+	 * REAL, not a mock: the cascade's retention decision must come from the
+	 * production predicate Schema::hasArchivalAnnotation(). These fixtures are
+	 * ordinary schemas, so the guard lets every cascade through and these tests
+	 * keep asserting the behaviour they were written for.
+	 *
+	 * @param array<int, string> $archivalSchemas Schema identifiers that ARE archival.
+	 *
+	 * @return ArchivalRetentionGuard
+	 */
+	private function makeArchivalGuard(array $archivalSchemas = []): ArchivalRetentionGuard {
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('find')->willReturnCallback(
+			function ($id) use ($archivalSchemas): Schema {
+				$schema = new Schema();
+				$schema->setSlug((string)$id);
+				$configuration = [];
+				if (in_array((string)$id, $archivalSchemas, true) === true) {
+					$configuration['x-openregister-archival'] = ['retention' => ['default' => 'P10Y']];
+				}
+
+				$schema->setConfiguration($configuration);
+
+				return $schema;
+			}
+		);
+
+		return new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class));
+	}//end makeArchivalGuard()
 }

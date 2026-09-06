@@ -1,3 +1,5 @@
+import type { APIRequestContext } from '@playwright/test'
+
 /**
  * Per-leaf verification harness — runs against a live OpenRegister and
  * records, per provider:
@@ -20,10 +22,10 @@
  *   NEXTCLOUD_URL=http://localhost:8080 npx playwright test \
  *     tests/e2e/leaf-verification.spec.ts --project=chromium
  */
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
-import { resolveBaseUrl } from '../base-url'
+import { resolveBaseUrl } from '../base-url.ts'
 
 interface ProviderReport {
 	id: string

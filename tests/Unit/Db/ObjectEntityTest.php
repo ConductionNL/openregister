@@ -80,6 +80,33 @@ class ObjectEntityTest extends TestCase {
 		$this->assertSame([], $this->entity->getGroups());
 	}
 
+	// --- soft-delete predicate ---
+
+	/**
+	 * The trap this predicate exists to close: `getDeleted()` answers `[]` for a
+	 * live object, so `=== null` is false for every object that has ever
+	 * existed. A guard written that way does not guard, and on
+	 * `DELETE /api/deleted/{uuid}` it permanently destroyed live records.
+	 */
+	public function testIsSoftDeletedIsFalseForALiveObjectEvenThoughGetDeletedIsNotNull(): void {
+		$this->assertNotNull($this->entity->getDeleted());
+		$this->assertSame([], $this->entity->getDeleted());
+		$this->assertFalse($this->entity->isSoftDeleted());
+	}
+
+	public function testIsSoftDeletedIsTrueOnceDeletionMetadataIsSet(): void {
+		$this->entity->setDeleted(['deleted' => '2026-01-01T00:00:00+00:00', 'deletedBy' => 'admin']);
+
+		$this->assertTrue($this->entity->isSoftDeleted());
+	}
+
+	public function testIsSoftDeletedIsFalseWhenDeletionMetadataIsClearedToNull(): void {
+		$this->entity->setDeleted(['deleted' => '2026-01-01T00:00:00+00:00']);
+		$this->entity->setDeleted(null);
+
+		$this->assertFalse($this->entity->isSoftDeleted());
+	}
+
 	// --- getter override ---
 
 	public function testGetterReturnsEmptyArrayForNullArrayFields(): void {
@@ -330,8 +357,17 @@ class ObjectEntityTest extends TestCase {
 		$session = $this->mockUserSession('user1');
 		$result = $this->entity->lock($session, 'editing', 3600);
 		$this->assertTrue($result);
-		// Note: lock uses named args which hit the Entity __call bug,
-		// so locked data may not actually be set. Testing the return value.
+
+		// The old comment here claimed the payload "may not actually be set"
+		// because of an Entity __call bug, and asserted only the return
+		// value. It is not true: lock() does write the payload, and a test
+		// that checks nothing about it is how the `user` vs `userId` key
+		// mismatch in SaveObject's guard went unnoticed for so long.
+		$payload = $this->entity->getLocked();
+		$this->assertSame('user1', $payload['user']);
+		$this->assertSame('editing', $payload['process']);
+		$this->assertSame(3600, $payload['duration']);
+		$this->assertSame(ObjectEntity::LOCK_KIND_USER, $payload['kind']);
 	}
 
 	public function testLockThrowsWithNoUser(): void {
@@ -346,8 +382,12 @@ class ObjectEntityTest extends TestCase {
 			'locked' => ['user' => 'user1', 'expiration' => $expiration->format('c')],
 		]);
 
+		// The refusal now NAMES the holder rather than saying "another user":
+		// a refusal that does not say who holds the lock leaves the reader
+		// with nowhere to go. See the run-scoped-object-locking spec,
+		// "A lock refuses a write and names its holder".
 		$this->expectException(Exception::class);
-		$this->expectExceptionMessage('Object is locked by another user');
+		$this->expectExceptionMessage('Object is locked by user1');
 		$this->entity->lock($this->mockUserSession('user2'));
 	}
 

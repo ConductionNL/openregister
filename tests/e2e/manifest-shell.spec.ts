@@ -27,12 +27,14 @@
  *
  * Uses storageState from global-setup.
  */
-import { test, expect, Page } from '@playwright/test'
-import * as path from 'path'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 import * as fs from 'fs'
+import * as path from 'path'
 
 const STORAGE_STATE = path.resolve(__dirname, '.auth/admin.json')
-const APP_BASE = '/index.php/apps/openregister/#'
+const APP_BASE = '/index.php/apps/openregister'
 
 function requireAuth() {
 	if (!fs.existsSync(STORAGE_STATE)) {
@@ -40,8 +42,8 @@ function requireAuth() {
 	}
 }
 
-async function gotoRoute(page: Page, hash: string) {
-	await page.goto(`${APP_BASE}${hash}`, { waitUntil: 'domcontentloaded' })
+async function gotoRoute(page: Page, route: string) {
+	await page.goto(`${APP_BASE}${route}`, { waitUntil: 'domcontentloaded' })
 	// App content shell must render for every manifest-driven route.
 	await expect(page.locator('main, .app-content').first()).toBeVisible({
 		timeout: 25_000,
@@ -82,7 +84,7 @@ test.describe('openregister-app-manifest — CnAppRoot shell mounts', () => {
 		// A non-root manifest route must resolve via the manifest-built router
 		// rather than redirecting away (catch-all only fires for unknown paths).
 		await gotoRoute(page, '/schemas')
-		await expect(page).toHaveURL(/#\/schemas$/)
+		await expect(page).toHaveURL(/\/apps\/openregister\/schemas$/)
 		await expect(page.locator('main, .app-content').first()).toBeVisible()
 	})
 })
@@ -153,7 +155,7 @@ test.describe('openregister-app-manifest — registry dispatch', () => {
 	}) => {
 		requireAuth()
 		await gotoRoute(page, '/registers')
-		await expect(page).toHaveURL(/#\/registers$/)
+		await expect(page).toHaveURL(/\/apps\/openregister\/registers$/)
 		await expect(page.locator('main, .app-content').first()).toBeVisible()
 	})
 
@@ -165,11 +167,13 @@ test.describe('openregister-app-manifest — registry dispatch', () => {
 		// A detail route with a param resolves via CnPageRenderer (props :id from
 		// the URL). RegisterDetail is store-driven: when no register is selected in
 		// the store (a cold deep-link), its mounted() guard bounces back to the
-		// list at #/registers. Either way the route resolved through the manifest
+		// list at /registers. Either way the route resolved through the manifest
 		// router into a registry component and the app-content shell renders — the
 		// scenario asserts the dispatch + shell, not that an unknown id stays put.
 		await gotoRoute(page, '/registers/e2e-probe-id')
-		await expect(page).toHaveURL(/#\/registers(\/e2e-probe-id)?$/)
+		await expect(page).toHaveURL(
+			/\/apps\/openregister\/registers(\/e2e-probe-id)?$/,
+		)
 		await expect(page.locator('main, .app-content').first()).toBeVisible()
 	})
 
@@ -177,7 +181,24 @@ test.describe('openregister-app-manifest — registry dispatch', () => {
 	test('every manifest index route resolves to a registry component', async ({
 		page,
 	}) => {
+		// ⚠️ 18 routes x a FULL page load. Under hash routing each gotoRoute()
+		// changed only the fragment, so the browser never left the page and the
+		// whole sweep fitted inside the default 30s. With history routing every
+		// one is a real navigation that boots the shell again: measured at
+		// ~4.5s per route in CI and ~13s on a local WSL box against the shared
+		// container. The sweep ran out of budget partway down the list and was
+		// reported against whichever route the clock stopped on (/deleted in
+		// CI), which reads as "that one route is broken" rather than "this test
+		// is now too slow".
+		test.setTimeout(300_000)
 		requireAuth()
+		// Eighteen routes, and since `feat(router): move openregister off hash
+		// routing` (#3270) each one is a full document load rather than a
+		// same-document hash change — the app boots eighteen times, not once.
+		// The default budget was sized for the cheap version and now runs out
+		// around the eleventh route, which surfaces as a teardown error
+		// ("session closed") against whichever route it happened to reach.
+		test.setTimeout(180_000)
 		// One representative route per top-level manifest destination. Each must
 		// resolve through CnPageRenderer → registry kind:"page" entry and render
 		// the app-content shell (lists may be empty against a fresh instance).
@@ -203,6 +224,23 @@ test.describe('openregister-app-manifest — registry dispatch', () => {
 			'/endpoints',
 			'/objects',
 		]
+		// Cheap server sweep FIRST. Under history routing the server has to
+		// answer every one of these paths itself (dashboard#catchAll), which is
+		// precisely what hash mode could never test — the route used to travel
+		// in the fragment and the server only ever saw `/`. Eighteen HTTP GETs
+		// cost about a second and, if the catch-all ever stops covering a path,
+		// they name it exactly instead of letting the browser loop time out on
+		// whichever route the clock happened to reach.
+		for (const r of routes) {
+			const res = await page.request.get(`${APP_BASE}${r}`, {
+				failOnStatusCode: false,
+			})
+			expect(
+				res.status(),
+				`the server must serve ${r} — if this is 404, dashboard#catchAll no longer covers it and the deep link is dead before the SPA ever boots`,
+			).toBe(200)
+		}
+
 		for (const r of routes) {
 			await gotoRoute(page, r)
 			await expect(

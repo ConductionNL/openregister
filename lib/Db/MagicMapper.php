@@ -2460,6 +2460,15 @@ class MagicMapper extends AbstractObjectMapper {
 				'type' => 'json',
 				'nullable' => true,
 			],
+			// Platform-owned quality assessment. Lives here rather than in the
+			// object body so a schema does not have to declare `qualityScore`
+			// as an ordinary property just to be scored — which put a number
+			// field the platform overwrites on every form the schema drives.
+			self::METADATA_PREFIX . 'quality' => [
+				'name' => self::METADATA_PREFIX . 'quality',
+				'type' => 'json',
+				'nullable' => true,
+			],
 			self::METADATA_PREFIX . 'deleted' => [
 				'name' => self::METADATA_PREFIX . 'deleted',
 				'type' => 'json',
@@ -3689,6 +3698,7 @@ class MagicMapper extends AbstractObjectMapper {
 			// which is what "not writable by this path" has to mean. Writes go
 			// through the dedicated authorization-management path.
 			'validation',
+			'quality',
 			'deleted',
 			'geo',
 			'retention',
@@ -3736,6 +3746,7 @@ class MagicMapper extends AbstractObjectMapper {
 				'locked',
 				'authorization',
 				'validation',
+				'quality',
 				'deleted',
 				'geo',
 				'retention',
@@ -7518,6 +7529,36 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end deleteObjectsBySchema()
 
 	/**
+	 * Hard-delete the rows of a register+schema table whose `_expires` has passed.
+	 *
+	 * The sweep for rows written through bulkUpsert() with an expiry, i.e. raw
+	 * appends. There is no soft-delete and no audit entry: those rows never had
+	 * either, and keeping expired telemetry as tombstones would defeat the
+	 * retention the expiry expresses. Rows with a NULL `_expires` are never
+	 * touched. A table that does not exist yet has nothing to purge and answers 0.
+	 *
+	 * @param Register $register The register context.
+	 * @param Schema   $schema   The schema context.
+	 *
+	 * @return int The number of rows removed.
+	 *
+	 * @throws Exception If the delete fails.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-raw-append-for-high-volume-writers
+	 */
+	public function purgeExpired(Register $register, Schema $schema): int {
+		if ($this->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
+			return 0;
+		}
+
+		return $this->bulkHandler->purgeExpired(
+			register: $register,
+			schema: $schema,
+			tableName: $this->getTableNameForRegisterSchema(register: $register, schema: $schema)
+		);
+	}//end purgeExpired()
+
+	/**
 	 * Batch delete objects by UUID list from a register+schema magic table.
 	 *
 	 * Performs a single SQL statement for all UUIDs instead of one-by-one.
@@ -7583,6 +7624,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param Register $register The register context.
 	 * @param Schema $schema The schema context.
 	 * @param int|null $lockDuration Lock duration in seconds (null for default).
+	 * @param string|null $process What the lock was taken for.
+	 * @param string|null $runUuid Flow run taking the lock, for a run-scoped lock.
 	 *
 	 * @throws Exception If locking fails.
 	 *
@@ -7593,9 +7636,22 @@ class MagicMapper extends AbstractObjectMapper {
 		Register $register,
 		Schema $schema,
 		?int $lockDuration = null,
+		?string $process = null,
+		?string $runUuid = null,
 	): ObjectEntity {
 		// Lock using entity method.
-		$entity->lock(userSession: $this->userSession, process: 'MagicMapper lock', duration: $lockDuration);
+		//
+		// `$process` used to be dropped here: this method hardcoded the
+		// literal 'MagicMapper lock', so every caller's process tag was
+		// discarded before it reached the payload. integriq mints a fresh
+		// UUID per lock and passes it in, and no caller has ever been able to
+		// read back what a lock was taken FOR.
+		$entity->lock(
+			userSession: $this->userSession,
+			process: ($process ?? 'MagicMapper lock'),
+			duration: $lockDuration,
+			runUuid: $runUuid
+		);
 
 		// Update entity in table with locked field set.
 		$this->updateObjectEntity(entity: $entity, register: $register, schema: $schema);
@@ -7622,6 +7678,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param ObjectEntity $entity The object entity to unlock.
 	 * @param Register $register The register context.
 	 * @param Schema $schema The schema context.
+	 * @param string|null $runUuid Flow run releasing the lock, for a run-scoped lock.
+	 * @param bool $break Release regardless of holder (administrator break-lock).
 	 *
 	 * @throws Exception If unlocking fails.
 	 *
@@ -7631,9 +7689,11 @@ class MagicMapper extends AbstractObjectMapper {
 		ObjectEntity $entity,
 		Register $register,
 		Schema $schema,
+		?string $runUuid = null,
+		bool $break = false,
 	): ObjectEntity {
 		// Unlock using entity method.
-		$entity->unlock($this->userSession);
+		$entity->unlock($this->userSession, $runUuid, $break);
 
 		// Update entity in table with locked field cleared.
 		$this->updateObjectEntity(entity: $entity, register: $register, schema: $schema);
@@ -7715,6 +7775,23 @@ class MagicMapper extends AbstractObjectMapper {
 						'error' => $message,
 					]
 				);
+
+				// ONLY CREATE A TABLE THAT IS ACTUALLY MISSING. `force: true` makes
+				// ensureTableForRegisterSchema() DROP an existing table before
+				// recreating it, which destroys every row with no audit entry — and
+				// the message test above is wider than its name: PostgreSQL says
+				// `column "x" of relation "y" does not exist` for a missing COLUMN
+				// (42703) as well as for a missing table (42P01), so a schema whose
+				// magic table was merely out of sync could reach this recovery and
+				// come back empty. If the table is there, the failure was something
+				// else, so surface it instead of resolving it destructively.
+				//
+				// Asked of the connection rather than of tableExistsForRegisterSchema(),
+				// whose positive answers are cached for TABLE_CACHE_TIMEOUT: a stale
+				// "yes" here would turn a genuine missing-table recovery into an error.
+				if ($this->db->tableExists($tableName) === true) {
+					throw $e;
+				}
 
 				// Create the table.
 				$this->ensureTableForRegisterSchema(register: $register, schema: $schema, force: true);

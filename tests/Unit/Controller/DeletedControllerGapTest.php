@@ -246,10 +246,14 @@ class DeletedControllerGapTest extends TestCase {
 		$deletedObject = new ObjectEntity();
 		$deletedObject->setDeleted(['deleted' => '2024-01-01']);
 		$deletedObject->setUuid('uuid-1');
+		$deletedObject->setSchema('10');
 
 		$notDeletedObject = new ObjectEntity();
-		// deleted is null by default
+		// Never deleted. NOTE: `getDeleted()` answers `[]` here, not null — the
+		// property's declared default, which the row hydrator never overwrites
+		// for a live row. The controller therefore asks isSoftDeleted().
 		$notDeletedObject->setUuid('uuid-2');
+		$notDeletedObject->setSchema('10');
 
 		$this->request->method('getParam')
 			->willReturnMap([
@@ -266,11 +270,10 @@ class DeletedControllerGapTest extends TestCase {
 		$this->assertEquals(200, $result->getStatus());
 		$data = $result->getData();
 		$this->assertTrue($data['success']);
-		// Entity.getDeleted() returns [] for null (not null), so === null check
-		// is false for non-deleted objects too, meaning they get "restored".
-		// Both objects are restored, only uuid-missing counts as notFound.
-		$this->assertEquals(2, $data['restored']);
-		$this->assertEquals(1, $data['failed']); // 1 not found
+		// Only the genuinely soft-deleted object is restored. uuid-2 is live and
+		// uuid-missing was never found, so both count as failed.
+		$this->assertEquals(1, $data['restored']);
+		$this->assertEquals(2, $data['failed']);
 		$this->assertEquals(1, $data['notFound']);
 		$this->assertStringContainsString('not found', $data['message']);
 	}
@@ -283,9 +286,11 @@ class DeletedControllerGapTest extends TestCase {
 		$deletedObject = new ObjectEntity();
 		$deletedObject->setDeleted(['deleted' => '2024-01-01']);
 		$deletedObject->setUuid('uuid-1');
+		$deletedObject->setSchema('10');
 
 		$notDeletedObject = new ObjectEntity();
 		$notDeletedObject->setUuid('uuid-2');
+		$notDeletedObject->setSchema('10');
 
 		$this->request->method('getParam')
 			->willReturnMap([
@@ -300,10 +305,10 @@ class DeletedControllerGapTest extends TestCase {
 		$this->assertEquals(200, $result->getStatus());
 		$data = $result->getData();
 		$this->assertTrue($data['success']);
-		// Same Entity behavior: getDeleted() returns [] not null,
-		// so === null check is false for both, both get deleted.
-		$this->assertEquals(2, $data['deleted']);
-		$this->assertEquals(1, $data['failed']); // 1 not found
+		// Only the genuinely soft-deleted object is purged. Purging uuid-2 would
+		// have destroyed a LIVE record — the defect this endpoint shipped with.
+		$this->assertEquals(1, $data['deleted']);
+		$this->assertEquals(2, $data['failed']);
 		$this->assertEquals(1, $data['notFound']);
 		$this->assertStringContainsString('not found', $data['message']);
 	}

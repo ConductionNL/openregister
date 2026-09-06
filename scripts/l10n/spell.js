@@ -1,7 +1,5 @@
 #!/usr/bin/env node
-/* eslint-disable n/no-process-exit */
-/* eslint-disable no-console */
-/* eslint-disable n/shebang */
+ 
 /**
  * Spell-sweep one bundle against a hunspell dictionary.
  *
@@ -38,9 +36,9 @@
 
 'use strict'
 
+const { execFileSync } = require('child_process')
 const fs = require('fs')
 const path = require('path')
-const { execFileSync } = require('child_process')
 const { loadJsTranslations, APP_ROOT, loadLocaleConfig } = require('./lib.js')
 
 const loc = process.argv[2]

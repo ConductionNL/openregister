@@ -17,9 +17,11 @@
  * first entity and degrades to test.skip().
  */
 
-import { test, expect, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
-import { readMdmSeed } from '../mdm-seed'
+import { readMdmSeed } from '../mdm-seed.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 const seed = readMdmSeed()
@@ -31,7 +33,7 @@ function scopedQuery(): string {
 
 /** Navigate to a hash-mode OR route and wait for NC header + app content. */
 async function gotoApp(page: Page, route: string): Promise<void> {
-	await page.goto(`/index.php/apps/openregister/#${route}`, {
+	await page.goto(`/index.php/apps/openregister${route}`, {
 		waitUntil: 'domcontentloaded',
 	})
 	await page.waitForSelector('#header, header.header-appcontainer', {

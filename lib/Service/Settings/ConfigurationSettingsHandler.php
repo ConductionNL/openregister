@@ -1279,69 +1279,7 @@ class ConfigurationSettingsHandler {
 		}//end try
 	}//end updateFileSettingsOnly()
 
-	/**
-	 * Get n8n workflow configuration settings only.
-	 *
-	 * Retrieves the n8n workflow automation integration settings.
-	 *
-	 * @return array n8n configuration.
-	 *
-	 * @throws \RuntimeException If n8n settings retrieval fails.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
-	 */
-	public function getN8nSettingsOnly(): array {
-		try {
-			$n8nConfig = $this->appConfig->getValueString($this->appName, 'n8n', '');
 
-			if (empty($n8nConfig) === true) {
-				// Return default configuration.
-				return [
-					'enabled' => false,
-					'url' => '',
-					'apiKey' => '',
-					'project' => 'openregister',
-				];
-			}
-
-			return json_decode($n8nConfig, true);
-		} catch (Exception $e) {
-			throw new RuntimeException('Failed to retrieve n8n settings: ' . $e->getMessage());
-		}
-	}//end getN8nSettingsOnly()
-
-	/**
-	 * Update n8n workflow configuration settings only.
-	 *
-	 * Updates the n8n workflow automation integration settings.
-	 *
-	 * @param array $n8nData n8n configuration data.
-	 *
-	 * @return (false|mixed|string)[] Updated n8n configuration.
-	 *
-	 * @throws \RuntimeException If n8n settings update fails.
-	 *
-	 * @psalm-return array{enabled: false|mixed, url: ''|mixed, apiKey: ''|mixed, project: 'openregister'|mixed}
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
-	 */
-	public function updateN8nSettingsOnly(array $n8nData): array {
-		try {
-			$n8nConfig = [
-				'enabled' => $n8nData['enabled'] ?? false,
-				'url' => $n8nData['url'] ?? '',
-				'apiKey' => $n8nData['apiKey'] ?? '',
-				'project' => $n8nData['project'] ?? 'openregister',
-			];
-
-			$this->appConfig->setValueString($this->appName, 'n8n', json_encode($n8nConfig));
-			return $n8nConfig;
-		} catch (Exception $e) {
-			throw new RuntimeException('Failed to update n8n settings: ' . $e->getMessage());
-		}
-	}//end updateN8nSettingsOnly()
 
 	/**
 	 * Get only version information.

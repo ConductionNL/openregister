@@ -142,7 +142,15 @@ class FileFormattingHandler {
 			'extension' => $file->getExtension(),
 			'size' => $file->getSize(),
 			'hash' => $file->getEtag(),
-			'published' => (new DateTime())->setTimestamp($file->getCreationTime())->format('c'),
+			// `published` reported the CREATION time, so every file that had ever
+			// existed looked published and nothing could be read as unpublished.
+			// It is the publication window now, filled from the OR-side row
+			// below, and null when the file was never published. The creation
+			// time it used to carry is kept under its own name.
+			'published' => null,
+			'depublished' => null,
+			'isPublished' => false,
+			'created' => (new DateTime())->setTimestamp($file->getCreationTime())->format('c'),
 			'modified' => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
 			'labels' => $this->fileService->getFileTags((string)$file->getId()),
 		];
@@ -169,6 +177,13 @@ class FileFormattingHandler {
 				if ($orFile !== null) {
 					$metadata['description'] = $orFile->getDescription();
 					$metadata['category'] = $orFile->getCategory();
+
+					// The publication window is public-safe: it is exactly what
+					// an anonymous caller is entitled to know about whether this
+					// file is published and until when.
+					$metadata['published'] = $orFile->getPublished()?->format('c');
+					$metadata['depublished'] = $orFile->getDepublished()?->format('c');
+					$metadata['isPublished'] = $orFile->isPublishedAt();
 					$orLabels = ($orFile->getLabels() ?? []);
 					if (empty($orLabels) === false) {
 						// Merge OR-managed labels into the existing tag-

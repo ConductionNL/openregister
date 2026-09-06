@@ -23,6 +23,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Gdpr;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectDeadline;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
@@ -87,6 +90,17 @@ class DataSubjectRequestServiceTest extends TestCase {
 	private $userSession;
 
 	/**
+	 * Schema mapper mock backing the real archival guard.
+	 *
+	 * Schemas are REAL entities, so the archival decision comes from the
+	 * production predicate Schema::hasArchivalAnnotation() and a test cannot
+	 * agree with itself about what "archival" means.
+	 *
+	 * @var SchemaMapper&MockObject
+	 */
+	private $schemaMapper;
+
+	/**
 	 * Subject under test.
 	 *
 	 * @var DataSubjectRequestService
@@ -110,6 +124,13 @@ class DataSubjectRequestServiceTest extends TestCase {
 		$user->method('getUID')->willReturn('handler1');
 		$this->userSession->method('getUser')->willReturn($user);
 
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		// Default: every schema resolves and is NOT archival, so the existing
+		// tests keep exercising the erasure path they were written for.
+		$this->schemaMapper->method('find')->willReturnCallback(
+			fn ($id) => $this->makeSchema(identifier: (string)$id, archival: false)
+		);
+
 		$this->service = new DataSubjectRequestService(
 			$this->db,
 			$this->objectMapper,
@@ -118,10 +139,38 @@ class DataSubjectRequestServiceTest extends TestCase {
 			$this->dsarService,
 			new DataSubjectDeadline(),
 			$this->userSession,
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			new ArchivalRetentionGuard(
+				$this->schemaMapper,
+				$this->createMock(LoggerInterface::class)
+			)
 		);
 
 	}//end setUp()
+
+	/**
+	 * Build a REAL Schema, archival or not.
+	 *
+	 * The annotation is written as data and read back by the production
+	 * predicate. Nothing here restates what "archival" means.
+	 *
+	 * @param string $identifier Schema slug.
+	 * @param bool $archival Whether to declare `x-openregister-archival`.
+	 *
+	 * @return Schema
+	 */
+	private function makeSchema(string $identifier, bool $archival): Schema {
+		$schema = new Schema();
+		$schema->setSlug($identifier);
+		$configuration = [];
+		if ($archival === true) {
+			$configuration['x-openregister-archival'] = ['retention' => ['default' => 'P10Y']];
+		}
+
+		$schema->setConfiguration($configuration);
+
+		return $schema;
+	}//end makeSchema()
 
 	/**
 	 * Wire the GdprEntity ⋈ entity_relations join to return $rows.
@@ -160,14 +209,15 @@ class DataSubjectRequestServiceTest extends TestCase {
 	 *
 	 * @param string $uuid Object uuid.
 	 * @param array<string, mixed> $payload Object payload.
+	 * @param string $schema Schema identifier the object belongs to.
 	 *
 	 * @return ObjectEntity
 	 */
-	private function buildObject(string $uuid, array $payload): ObjectEntity {
+	private function buildObject(string $uuid, array $payload, string $schema = 'schema'): ObjectEntity {
 		$object = new ObjectEntity();
 		$object->setUuid($uuid);
 		$object->setRegister('reg');
-		$object->setSchema('schema');
+		$object->setSchema($schema);
 		$object->setObject($payload);
 		return $object;
 	}//end buildObject()
@@ -231,8 +281,169 @@ class DataSubjectRequestServiceTest extends TestCase {
 	}//end testAssembleAccessExportBuildsBundle()
 
 	/**
+	 * RETENTION WINS OVER ERASURE, PER RECORD.
+	 *
+	 * An erasure request reaching a mixed set withholds ONLY the records held
+	 * under an archival obligation, and reports each one back with the ground
+	 * and the wording the handler passes to the data subject. The non-archival
+	 * record in the same request is still erased: one retained row must never
+	 * block a lawful erasure of the rest.
+	 *
+	 * The archival decision is made by the production predicate
+	 * Schema::hasArchivalAnnotation(), reading a real Schema built here. Break
+	 * that method and this test fails; it has no copy of the rule to fall back on.
+	 *
+	 * @return void
+	 */
+	public function testEraseWithholdsOnlyTheArchivalRecordsAndReportsThem(): void {
+		$this->wireIndexJoin(
+			[
+				['id' => 1, 'type' => 'email', 'value' => 'jane@example.org', 'category' => 'pii', 'detected_at' => '', 'object_id' => 10, 'object_uuid' => 'ordinary'],
+				['id' => 2, 'type' => 'email', 'value' => 'jane@example.org', 'category' => 'pii', 'detected_at' => '', 'object_id' => 20, 'object_uuid' => 'retained'],
+			]
+		);
+
+		$ordinary = $this->buildObject('ordinary', ['email' => 'jane@example.org'], 'contact');
+		$retained = $this->buildObject('retained', ['email' => 'jane@example.org'], 'besluit');
+		$this->objectMapper->method('find')->willReturnCallback(
+			static fn ($id) => ($id === 'ordinary') ? $ordinary : $retained
+		);
+
+		// `besluit` carries the archival annotation; `contact` does not.
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->schemaMapper->method('find')->willReturnCallback(
+			fn ($id) => $this->makeSchema(identifier: (string)$id, archival: ((string)$id === 'besluit'))
+		);
+		$this->rebuildServiceWithSchemaMapper();
+
+		// Nothing stands in the way except the archival obligation.
+		$this->retentionService->method('hasActiveLegalHold')->willReturn(false);
+		$this->retentionService->method('validateNotImmutable')->willReturn(null);
+
+		// EXACTLY ONE WRITE. The retained record is never handed to the audited
+		// save path at all, so it cannot be tombstoned on the way past.
+		$this->objectService->expects($this->once())->method('saveObject')->willReturnCallback(
+			function ($object) use ($ordinary) {
+				$this->assertSame($ordinary, $object);
+				return $ordinary;
+			}
+		);
+
+		$summary = $this->service->erase(
+			subjectId: 'jane@example.org',
+			eraseMode: DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT
+		);
+
+		$this->assertSame(2, $summary['matchedCount']);
+
+		// The lawful half of the request still ran.
+		$this->assertCount(1, $summary['erased']);
+
+		// The retained half is REFUSED, RECORDED and REPORTED.
+		$this->assertCount(1, $summary['withheld']);
+		$this->assertSame(1, $summary['withheldCount']);
+		$withheld = $summary['withheld'][0];
+		$this->assertSame('retained', $withheld['uuid']);
+		$this->assertSame('besluit', $withheld['schema']);
+		$this->assertSame(
+			ArchivalRetentionGuard::GROUND_ARCHIVAL,
+			$withheld['ground']
+		);
+
+		// The report carries words a handler can pass on, and a next step.
+		$this->assertSame(
+			'The law requires us to keep this record, so we did not erase it.',
+			$withheld['message']
+		);
+		$this->assertStringContainsString('art. 17(3)(b)', $withheld['basis']);
+		$this->assertStringContainsString('Archiefwet', $withheld['basis']);
+		$this->assertNotSame('', trim($withheld['action']));
+
+		// AND THE ANSWER IS NOT "DONE". Telling the data subject the erasure is
+		// complete while a record is still there is the failure this bucket exists
+		// to prevent.
+		$this->assertFalse($summary['complete']);
+
+		// The retained record was left exactly as it was: no erasure stamp on it.
+		$this->assertEmpty($retained->getDeleted());
+
+	}//end testEraseWithholdsOnlyTheArchivalRecordsAndReportsThem()
+
+	/**
+	 * A record whose schema cannot be resolved is left alone, under its own ground.
+	 *
+	 * FAILS CLOSED. An unresolvable schema is exactly the case where the
+	 * annotation cannot be read, so the record might be retained. It is reported
+	 * separately from a real archival hold, because the handler's next step
+	 * differs: repair the schema, then run the request again.
+	 *
+	 * @return void
+	 */
+	public function testEraseLeavesARecordAloneWhenItsSchemaCannotBeResolved(): void {
+		$this->wireIndexJoin(
+			[
+				['id' => 1, 'type' => 'email', 'value' => 'jane@example.org', 'category' => 'pii', 'detected_at' => '', 'object_id' => 10, 'object_uuid' => 'orphan'],
+			]
+		);
+
+		$orphan = $this->buildObject('orphan', ['email' => 'jane@example.org'], 'gone');
+		$this->objectMapper->method('find')->willReturn($orphan);
+
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->schemaMapper->method('find')->willThrowException(
+			new DoesNotExistException('schema gone')
+		);
+		$this->rebuildServiceWithSchemaMapper();
+
+		$this->retentionService->method('hasActiveLegalHold')->willReturn(false);
+		$this->retentionService->method('validateNotImmutable')->willReturn(null);
+
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$summary = $this->service->erase(
+			subjectId: 'jane@example.org',
+			eraseMode: DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT
+		);
+
+		$this->assertCount(0, $summary['erased']);
+		$this->assertCount(1, $summary['withheld']);
+		$this->assertSame(
+			ArchivalRetentionGuard::GROUND_UNRESOLVED,
+			$summary['withheld'][0]['ground']
+		);
+		$this->assertFalse($summary['complete']);
+		$this->assertEmpty($orphan->getDeleted());
+
+	}//end testEraseLeavesARecordAloneWhenItsSchemaCannotBeResolved()
+
+	/**
+	 * Rebuild the SUT after swapping in a differently-wired schema mapper.
+	 *
+	 * @return void
+	 */
+	private function rebuildServiceWithSchemaMapper(): void {
+		$this->service = new DataSubjectRequestService(
+			$this->db,
+			$this->objectMapper,
+			$this->objectService,
+			$this->retentionService,
+			$this->dsarService,
+			new DataSubjectDeadline(),
+			$this->userSession,
+			$this->createMock(LoggerInterface::class),
+			new ArchivalRetentionGuard(
+				$this->schemaMapper,
+				$this->createMock(LoggerInterface::class)
+			)
+		);
+	}//end rebuildServiceWithSchemaMapper()
+
+	/**
 	 * erase skips an object under legal hold (reported `held`, not erased)
 	 * and erases the unheld one.
+	 *
+	 * A run that held a record back is NOT complete. See the comment on the
+	 * `complete` assertion below for why that expectation was inverted.
 	 *
 	 * @return void
 	 */
@@ -271,7 +482,18 @@ class DataSubjectRequestServiceTest extends TestCase {
 		$this->assertCount(1, $summary['held']);
 		$this->assertSame('held', $summary['held'][0]['uuid']);
 		$this->assertSame('legal-hold', $summary['held'][0]['reason']);
-		$this->assertTrue($summary['complete']);
+
+		// CHANGED DELIBERATELY. This line used to read
+		// `assertTrue($summary['complete'])`, pinning as CORRECT a run that
+		// answered "complete" while a record it had refused was still sitting
+		// there. That is the same shape 4be2adc found in a controller test
+		// asserting `success === true` for a batch that had refused a row: the
+		// green came from the summary line, not from the data.
+		//
+		// An erasure is complete when the data is gone. A held record means it is
+		// not, so the request is partial and the handler has something to explain.
+		$this->assertFalse($summary['complete']);
+		$this->assertSame(1, $summary['heldCount']);
 
 	}//end testEraseRespectsLegalHold()
 

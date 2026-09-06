@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-/* eslint-disable n/no-process-exit */
+ 
 // Maltese (Malti) register detector for openregister l10n.
 //
 // THERE IS NO CORE EVIDENCE FOR THIS LOCALE. Nextcloud ships ZERO mt catalogues
@@ -61,6 +60,10 @@
 // and `tal-Awditjar`; the hyphen is a non-letter, so the guards match the stem
 // correctly with no special handling.
 
+/**
+ *
+ * @param s
+ */
 function fold(s) {
 	return String(s).toLowerCase()
 }
@@ -233,6 +236,10 @@ const UNDETECTABLE = [
 		+ 'that the formal count is zero'],
 ]
 
+/**
+ *
+ * @param s
+ */
 function score(s) {
 	const t = fold(s)
 	let f = 0
@@ -244,6 +251,9 @@ function score(s) {
 	return { f, i }
 }
 
+/**
+ *
+ */
 function runControls() {
 	let fail = 0
 	for (const [s, want] of CONTROLS) {
@@ -267,12 +277,12 @@ if (require.main === module) {
 	console.log(`controls: ${total - fail}/${total} pass`)
 	if (fail) process.exitCode = 1
 
+	const fs = require('fs')
 	// No core scan is possible: Nextcloud ships no mt catalogues at all, so
 	// scanCoreRegister would throw. Confirm that is STILL true rather than
 	// asserting it from a comment, then measure this bundle plus the sibling
 	// apps' frontend mt.js — the §6.4 fallback recorded in locales/mt.json.
 	const path = require('path')
-	const fs = require('fs')
 	const { coreCatalogues, loadJsTranslations, APP_ROOT, isIdentical } = require('../lib.js')
 	let core = null
 	try {

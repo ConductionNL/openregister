@@ -80,7 +80,6 @@ class DestructionCertificateContentTest extends TestCase {
 		$objectMapper = $this->getMockBuilder(MagicMapper::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['update'])
-			->addMethods(['findByUuid'])
 			->getMock();
 
 		$this->destructionService = new DestructionService(

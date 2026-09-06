@@ -28,13 +28,9 @@
  *   the-view-list-is-filtered-and-favorite-sorted                           — UI test
  */
 
-import {
-	test,
-	expect,
-	type APIRequestContext,
-	type Page,
-	type Route,
-} from '@playwright/test'
+import type { APIRequestContext, Page, Route } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
@@ -58,7 +54,7 @@ async function deleteView(request: APIRequestContext, id: number): Promise<void>
 async function gotoTablesPage(page: Page): Promise<void> {
 	// HASH form — the router runs in hash mode (src/main.js); the path-form
 	// URL renders the dashboard instead of the tables page.
-	await page.goto('/index.php/apps/openregister/#/tables', {
+	await page.goto('/index.php/apps/openregister/tables', {
 		waitUntil: 'domcontentloaded',
 	})
 	await page.waitForSelector('#header, header.header-appcontainer', {
@@ -814,7 +810,6 @@ test.describe('saved-search-views — the-view-list-is-filtered-and-favorite-sor
 			.evaluate(() => {
 				// Access Pinia store from the Vue app.
 				try {
-					// eslint-disable-next-line @typescript-eslint/no-explicit-any
 					const pinia = (window as any).__pinia
 					if (!pinia) return null
 					const stores = Object.values(pinia.state.value) as Record<

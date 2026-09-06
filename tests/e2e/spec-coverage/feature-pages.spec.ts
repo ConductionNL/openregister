@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -21,18 +23,18 @@
  * @e2e openspec/specs/built-in-dashboards/spec.md
  * @e2e openspec/specs/account-self-service/spec.md
  */
-import { test, expect, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
 // Routes are imported by COMPONENT NAME (see tests/e2e/_page-routes.ts): the
 // binding records which page host each route mounts, which a bare path string
 // cannot say. Also what makes this suite legible to gate-26.
 import {
-	FilesIndex,
 	AvgIndex,
-	ReportsIndex,
-	MyAccount,
 	FeaturesRoadmapIndex,
-} from '../_page-routes'
+	FilesIndex,
+	MyAccount,
+	ReportsIndex,
+} from '../_page-routes.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 
@@ -57,9 +59,6 @@ const NOISE = [
 	// every route. Filtered BY URL, not by status: any other 404 still fails.
 	'/apps/hermiq/',
 ]
-function isNoise(t: string): boolean {
-	return NOISE.some((n) => t.includes(n))
-}
 
 function trackErrors(
 	page: Page,
@@ -90,7 +89,7 @@ function trackErrors(
 async function gotoPage(page: Page, route: string): Promise<void> {
 	// HASH form — the router runs in hash mode (src/main.js); path-form
 	// deep-links render the dashboard instead of the target page.
-	await page.goto(`/index.php/apps/openregister/#${route}`, {
+	await page.goto(`/index.php/apps/openregister${route}`, {
 		waitUntil: 'domcontentloaded',
 	})
 	await page.waitForSelector('#header, header.header-appcontainer', {
@@ -125,6 +124,11 @@ async function expectHeading(page: Page, text: RegExp): Promise<void> {
 }
 async function expectButton(page: Page, name: RegExp): Promise<void> {
 	await expect(page.getByRole('button', { name }).first()).toBeVisible({
+		timeout: 12_000,
+	})
+}
+async function expectLink(page: Page, name: RegExp): Promise<void> {
+	await expect(page.getByRole('link', { name }).first()).toBeVisible({
 		timeout: 12_000,
 	})
 }
@@ -218,7 +222,12 @@ test.describe('feature-pages — real UI render + actions', () => {
 		const e = trackErrors(page)
 		await gotoPage(page, FeaturesRoadmapIndex)
 		await expectHeading(page, /^Features$|Your input is the roadmap/i)
-		await expectButton(page, /Suggest (a )?feature/i)
+		// A LINK, not a button. The in-product suggestion modal was retired in
+		// nextcloud-vue 2.36.4 (team decision 2026-09-04: the forge is where
+		// the conversation happens), and the CTA is now an anchor to the
+		// forge's feature-request issue form. `getByRole('button')` matched
+		// nothing from the moment openregister took that version.
+		await expectLink(page, /Suggest (a )?feature/i)
 		await expectButton(page, /Show roadmap/i)
 		expect(e.console, e.console.join(' | ')).toHaveLength(0)
 		expect(e.http, e.http.join(' | ')).toHaveLength(0)
@@ -244,7 +253,7 @@ test.describe('feature-pages — real UI render + actions', () => {
 		page,
 	}) => {
 		await gotoPage(page, '/registers')
-		await expect(page).toHaveURL(/#\/registers$/)
+		await expect(page).toHaveURL(/\/apps\/openregister\/registers$/)
 
 		// The manifest declares this entry in the `footer` section; CnAppNav
 		// renders footer entries as NcAppNavigationItem router-links.
@@ -254,7 +263,9 @@ test.describe('feature-pages — real UI render + actions', () => {
 		await expect(navEntry).toHaveCount(1)
 		await navEntry.first().click()
 
-		await expect(page).toHaveURL(/#\/features-roadmap$/, { timeout: 15_000 })
+		await expect(page).toHaveURL(/\/apps\/openregister\/features-roadmap$/, {
+			timeout: 15_000,
+		})
 
 		const view = page.locator('.cn-features-and-roadmap-view')
 		await expect(view).toBeVisible({ timeout: 15_000 })

@@ -2,7 +2,7 @@
 
 ## 1. Storage
 
-- [ ] 1.1 Migration: `openregister_flow_claims` (`run_uuid`, `place`, `owner`,
+- [x] 1.1 Migration: `openregister_flow_claims` (`run_uuid`, `place`, `owner`,
       `stream_id`, `transition`, `claimed_at`) with UNIQUE `(run_uuid, place)`
       — the unique index IS the lock — and an index on `claimed_at` for the
       reaper; `openregister_flow_streams` (`run_uuid`, `stream_id`,
@@ -12,13 +12,13 @@
       `place_items` (json, nullable) + `firings` (int, notnull, default 0) on
       `openregister_flow_runs`; `stream_id` + `ordinal_path` (string 255,
       nullable) on `openregister_flow_steps`.
-- [ ] 1.2 `lib/Db/FlowStream.php` + `FlowStreamMapper` (find by run, find by
+- [x] 1.2 `lib/Db/FlowStream.php` + `FlowStreamMapper` (find by run, find by
       run+stream, allocate the next sequence with the conditional-UPDATE shape
       of `lib/Db/SequenceMapper.php:84-93`) and `lib/Db/FlowClaim.php` +
       `FlowClaimMapper` (insert-or-refuse, release by owner, count held per
       run, find older than a cutoff). Stream status reuses `FlowRun`'s seven
       constants (`lib/Db/FlowRun.php:98-110`) rather than a second vocabulary.
-- [ ] 1.3 Repair step in the same migration: one stream per marked place on
+- [x] 1.3 Repair step in the same migration: one stream per marked place on
       every non-terminal run, ordinals in sorted place-name order,
       `next_sequence` from `highestSequence() + 1`
       (`lib/Db/FlowRunStepMapper.php:81-97`); existing step rows stamped with
@@ -28,14 +28,14 @@
 
 ## 2. Claim protocol
 
-- [ ] 2.1 `FlowPlaceClaims` — `acquire(run, streamId, transition, places)`
+- [x] 2.1 `FlowPlaceClaims` — `acquire(run, streamId, transition, places)`
       sorts `froms ∪ tos` bytewise, INSERTs each place in its OWN committed
       transaction, and on the first unique violation DELETEs what it already
       took and returns a refusal. It never waits and never retries in place.
       The commit-per-insert is load-bearing: taking a claim inside the firing's
       transaction would make a rival INSERT block on the row lock for the
       duration of the step (design.md Decision 1).
-- [ ] 2.2 Pass identity + cap enforcement: `owner` is a per-pass token
+- [x] 2.2 Pass identity + cap enforcement: `owner` is a per-pass token
       (instance, pid, pass uuid) stamped on every claim; a claim is refused
       when the run already holds `FlowConcurrency::DEFAULT_LIMIT`
       (`lib/Service/Flow/FlowConcurrency.php:72`) claims, clamped by
@@ -45,19 +45,19 @@
 
 ## 3. The commit path
 
-- [ ] 3.1 `FlowRunCommit` — one method holding the whole critical section:
+- [x] 3.1 `FlowRunCommit` — one method holding the whole critical section:
       `beginTransaction()`, `SELECT ... FOR UPDATE` the run row, recompute from
       the value read INSIDE the lock, apply the delta, write marking +
       `place_items` + the step row + the stream row + `firings + 1` + the
       derived status, `commit()`. No I/O and no user code inside it; the
       dispatch stays outside. `IDBConnection` transaction handling follows
       `lib/Service/SequenceService.php:76-115`.
-- [ ] 3.2 `FlowRunMarkingStore::setMarking()`
+- [x] 3.2 `FlowRunMarkingStore::setMarking()`
       (`lib/Service/Flow/FlowRunMarkingStore.php:102-105`) stops writing
       `$marking->getPlaces()` wholesale and takes a delta — one token off each
       `from`, one onto each taken `to`. The whole-value write is removed, not
       wrapped: leaving it reachable leaves the lost update reachable.
-- [ ] 3.3 Per-place items persisted: `place_items` written by the same
+- [x] 3.3 Per-place items persisted: `place_items` written by the same
       transaction as the marking, and `FlowItemPlacement::seedPlaceItems()`
       (`lib/Service/Flow/FlowItemPlacement.php:90-103`) reads it when present,
       falling back to today's same-list-to-every-place seed when null so an
@@ -65,22 +65,22 @@
 
 ## 4. The stream walk
 
-- [ ] 4.1 `FlowStreamScheduler` — round-robin over a run's advanceable streams
+- [x] 4.1 `FlowStreamScheduler` — round-robin over a run's advanceable streams
       rather than draining one to exhaustion, bounded by task 2.2's cap. A
       stream whose claim is refused yields to the next; a stream that parks
       yields; neither returns the run.
-- [ ] 4.2 `FlowEngine::run()` (`lib/Service/Flow/FlowEngine.php:310-546`)
+- [x] 4.2 `FlowEngine::run()` (`lib/Service/Flow/FlowEngine.php:310-546`)
       becomes a per-stream walk: `FlowSuspension` (`:474-493`) parks the
       stream that raised it and releases its claim instead of returning the
       run, and the empty-enabled-set exit (`:312-322`) no longer decides the
       run's fate. Terminality is decided only by `FlowRunCommit` from the
       marking it just wrote (design.md Decision 4).
-- [ ] 4.3 Stream lineage: a firing that marks K taken output places mints K
+- [x] 4.3 Stream lineage: a firing that marks K taken output places mints K
       child streams with `parent.0001 … parent.000K` in `getTos()` declaration
       order; a join folds its inputs back to their longest common prefix and
       resumes that stream's `next_sequence`; a path that would exceed the
       column fails the run with a named error rather than sorting wrongly.
-- [ ] 4.4 Derived run status written by `FlowRunCommit`: `running` while any
+- [x] 4.4 Derived run status written by `FlowRunCommit`: `running` while any
       stream holds a live claim, `queued` while any stream has an enabled
       transition, `suspended` when all are parked, else the most severe
       terminal (`failed` > `dead_letter` > `stopped` > `completed`).
@@ -91,7 +91,7 @@
 
 ## 5. Run-log ordering
 
-- [ ] 5.1 `FlowRunService::recordSteps()`
+- [x] 5.1 `FlowRunService::recordSteps()`
       (`lib/Service/Flow/FlowRunService.php:669-732`) stops reading
       `highestSequence() + 1` (`:677`) and takes its position from the stream
       row inside `FlowRunCommit`'s transaction, writing `stream_id` and
@@ -102,16 +102,16 @@
 
 ## 6. Bounds, oversight and recovery
 
-- [ ] 6.1 The transition ceiling becomes the persisted `firings` count checked
+- [x] 6.1 The transition ceiling becomes the persisted `firings` count checked
       against `MAX_TRANSITIONS` (`lib/Service/Flow/FlowEngine.php:103`),
       replacing the per-pass local at `:299`/`:325`, and keeping the existing
       failure message (`:335`) so a cycle that parks each lap now trips it.
-- [ ] 6.2 `assertOversightAllows()` (`FlowEngine.php:425`) is called per firing
+- [x] 6.2 `assertOversightAllows()` (`FlowEngine.php:425`) is called per firing
       inside the claim, never hoisted per pass and never cached. A refusal ends
       the RUN: unstarted streams do not start, a stream already inside
       `dispatch()` commits that firing and then stops, and the refusing check's
       id is recorded via `FlowStop::checkId()` (`:454-456`).
-- [ ] 6.3 `FlowRunWorker::reapStale()` (`lib/BackgroundJob/FlowRunWorker.php:226-275`)
+- [x] 6.3 `FlowRunWorker::reapStale()` (`lib/BackgroundJob/FlowRunWorker.php:226-275`)
       also releases claims older than its EXISTING cutoff (`:251-261`) — the
       same expression, not a second constant — fails the abandoned stream
       naming the branch, applies the run's error policy to its siblings, and
@@ -119,7 +119,7 @@
 
 ## 7. Advance budget (ADR-098 D9)
 
-- [ ] 7.1 Task completion's `advance: 0 | N | "all"` advances the COMPLETING
+- [x] 7.1 Task completion's `advance: 0 | N | "all"` advances the COMPLETING
       stream only, taking claims through `FlowPlaceClaims` exactly as a worker
       does. A refused claim ENDS the advance and returns the run's state; a
       join consuming the completing branch's place is inside the budget;
@@ -136,7 +136,7 @@
       join with simultaneous arrivals fires exactly once reading both branches'
       items; a join enabled by the last commit of a finished pass is fired by
       the next pass and the run is never reported completed in between.
-- [ ] 8.2 Determinism and regression: two runs whose branches finish in
+- [x] 8.2 Determinism and regression: two runs whose branches finish in
       opposite orders produce identical canonical logs; the real interleaving
       is still readable by timestamp; a twelve-token marking holds at most five
       claims; a cap above the ceiling is clamped; and a single-stream flow

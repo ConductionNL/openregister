@@ -96,6 +96,18 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
+ * @method string|null getStatus()
+ * @method void setStatus(?string $status)
+ * @method string|null getStatusMessage()
+ * @method void setStatusMessage(?string $statusMessage)
+ * @method string|null getLastRunUuid()
+ * @method void setLastRunUuid(?string $lastRunUuid)
+ * @method string|null getLastRunStatus()
+ * @method void setLastRunStatus(?string $lastRunStatus)
+ * @method string|null getLastRunMessage()
+ * @method void setLastRunMessage(?string $lastRunMessage)
+ * @method DateTime|null getLastRunAt()
+ * @method void setLastRunAt(?DateTime $lastRunAt)
  *
  * An Entity mirrors its table one field per column, so the field count below is
  * the schema's rather than a design choice. Splitting it would need a second

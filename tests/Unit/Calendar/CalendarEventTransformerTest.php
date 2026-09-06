@@ -228,7 +228,7 @@ class CalendarEventTransformerTest extends TestCase {
 
 		$result = $this->transformer->transform($object, $this->schema, $config);
 
-		$this->assertSame('/apps/openregister/#/objects/5/12/abc-123', $result['objects'][0]['URL'][0]);
+		$this->assertSame('/apps/openregister/objects/5/12/abc-123', $result['objects'][0]['URL'][0]);
 	}
 
 	public function testCategoriesIncludeOpenRegisterAndSchemaName(): void {

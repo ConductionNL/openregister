@@ -134,29 +134,4 @@ class DeleteFileHandler {
 
 		return true;
 	}//end deleteFile()
-
-	/**
-	 * Delete multiple files.
-	 *
-	 * @param array $files Array of file nodes, paths, or IDs.
-	 * @param ObjectEntity|null $object Object entity (optional).
-	 *
-	 * @return (Node|bool|int|mixed|string)[][] Array of deletion results.
-	 *
-	 * @psalm-return list<array{error?: string, file: Node|int|mixed|string, success: bool}>
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function deleteFiles(array $files, ?ObjectEntity $object = null): array {
-		$results = [];
-		foreach ($files as $file) {
-			try {
-				$results[] = ['file' => $file, 'success' => $this->deleteFile(file: $file, object: $object)];
-			} catch (Exception $e) {
-				$results[] = ['file' => $file, 'success' => false, 'error' => $e->getMessage()];
-			}
-		}
-
-		return $results;
-	}//end deleteFiles()
 }//end class

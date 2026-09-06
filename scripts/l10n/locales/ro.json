@@ -68,7 +68,9 @@
 		"e.g., lib/settings/register.json": "A literal example file path shown verbatim; not prose.",
 		"Multitenancy": "Architecture term, used unchanged in Romanian technical language.",
 		"public": "Same spelling and meaning in Romanian.",
-		"Slug": "URL-slug term, used unchanged in Romanian developer language."
+		"Slug": "URL-slug term, used unchanged in Romanian developer language.",
+		"Normal": "Same spelling and meaning in Romanian (normal).",
+		"Urgent": "Same spelling and meaning in Romanian (urgent)."
 	},
 	"corrections": {
 		"Add Application": "Informal imperative 'Adaugă aplicație' replaced with the formal 'Adăugați aplicația'. The measured register for ro in this bundle is FORMAL and detectors/ro.js flags the 2nd-person-singular imperative; every other imperative here already uses the -ați/-eți form, so this was inconsistent with its own bundle.",

@@ -144,11 +144,32 @@ export default [
 			'no-console': 'off',
 			'n/no-process-exit': 'off',
 			'n/hashbang': 'off',
-			// `_` / `__` as a deliberate throwaway binding — `catch (_)`, a
-			// discarded destructuring slot. Narrow on purpose: the pattern matches
-			// UNDERSCORES ONLY, so a real name that happens to start with `_` is
-			// still reported. v9 drives plain `.js` through the CORE rule (the
-			// `@typescript-eslint` swap is per-file-type), so it is set here.
+			// Tests import devDependencies by definition; this rule is about what
+			// ships in the published package, which tests/ never does.
+			'n/no-unpublished-import': 'off',
+		},
+	},
+
+	{
+		// `_` / `__` as a deliberate throwaway binding — `catch (_)`, a discarded
+		// destructuring slot. Narrow on purpose: the pattern matches UNDERSCORES
+		// ONLY, so a real name that happens to start with `_` is still reported.
+		//
+		// 🔴 `.js` / `.mjs` ONLY, NOT `.ts`. The CORE rule is not TypeScript-aware:
+		// applied to a `.ts` file it reads the parameter NAMES inside a function
+		// TYPE as bindings and reports them unused. Measured on humaniq —
+		//
+		//   t?: (app: string, key: string) => string
+		//
+		// produced four `no-unused-vars` errors for `app` and `key`, which are
+		// documentation, not variables. The same mis-scoping made every unused
+		// `catch (e)` in a `.ts` spec report TWICE, once per rule.
+		//
+		// v9 already turns the core rule off for `.ts` and drives
+		// `@typescript-eslint/no-unused-vars` instead; naming `.ts` here switched
+		// it back on. TypeScript files are handled by the block below.
+		files: ['tests/**/*.js', 'tests/**/*.mjs'],
+		rules: {
 			'no-unused-vars': [
 				'error',
 				{
@@ -165,11 +186,116 @@ export default [
 					ignoreRestSiblings: true,
 				},
 			],
-			// Tests import devDependencies by definition; this rule is about what
-			// ships in the published package, which tests/ never does.
-			'n/no-unpublished-import': 'off',
 		},
 	},
+
+	{
+		// The TypeScript half of the block above. Same intent, same patterns, on
+		// the rule that actually understands the language: it knows a name inside
+		// a function type is not a binding, so type annotations stay quiet while a
+		// genuinely dead local is still reported.
+		files: ['tests/**/*.ts', 'tests/**/*.tsx'],
+		rules: {
+			'@typescript-eslint/no-unused-vars': [
+				'error',
+				{
+					varsIgnorePattern: '^_+$',
+					caughtErrors: 'all',
+					caughtErrorsIgnorePattern: '^_+$',
+					argsIgnorePattern: '^_',
+					ignoreRestSiblings: true,
+				},
+			],
+		},
+	},
+
+	{
+		// 🔴 Node-side CLI tooling under `scripts/`, which is COMMONJS. Flat
+		// config defaults every `.js` to ESM with browser-ish globals, so without
+		// this block eslint reports the CommonJS wrapper itself as undefined
+		// identifiers. Measured on this app: 52 of the 233 errors under
+		// `tests/` + `scripts/` were `no-undef`, ALL of them in `scripts/`, and
+		// all five names were the environment rather than a typo — `process` 23,
+		// `require` 20, `__dirname` 6, `__filename` 2, `module` 1.
+		//
+		// This is describing the environment, not relaxing a rule, and it is the
+		// same argument the test-globals block below makes: declaring them keeps
+		// `no-undef` able to do its real job, which is catching a genuinely
+		// misspelled identifier. Suppressing the rule instead would bury that.
+		//
+		// `no-console` is off because printing its report is what a CLI checker
+		// is FOR.
+		//
+		// 🔴 NO `n/*` ENTRIES HERE, DELIBERATELY. `eslint-plugin-n` is NOT
+		// registered for these files under eslint 10 + @nextcloud/eslint-config
+		// 9, so `'n/no-process-exit': 'off'` would be dead config that reads as
+		// if it were doing something. Measured both ways on this app: 0 `n/`
+		// findings with the entries and 0 without.
+		//
+		// What DID report was the opposite — four `scripts/*.js` carried
+		// `/* eslint-disable n/no-process-exit */` and `/* eslint-disable
+		// n/shebang */` left over from the eslintrc era, and an inline disable
+		// naming an unregistered plugin is itself an error ("Definition for rule
+		// 'n/shebang' was not found"). Those 8 comments are removed; do not add
+		// `n/*` rules back to replace them.
+		//
+		// ⚠️ `.js` and `.cjs` ONLY. A `scripts/*.mjs` is genuinely ESM and must
+		// keep the default `sourceType`, or `import` stops parsing there.
+		files: ['scripts/**/*.js', 'scripts/**/*.cjs'],
+		languageOptions: {
+			sourceType: 'commonjs',
+			globals: {
+				require: 'readonly',
+				module: 'writable',
+				exports: 'writable',
+				process: 'readonly',
+				__dirname: 'readonly',
+				__filename: 'readonly',
+				console: 'readonly',
+				Buffer: 'readonly',
+				global: 'readonly',
+				URL: 'readonly',
+				TextEncoder: 'readonly',
+				TextDecoder: 'readonly',
+			},
+		},
+		rules: {
+			'no-console': 'off',
+		},
+	},
+
+	{
+		// The ESM half of the block above. A `scripts/*.mjs` is genuinely a module
+		// and must keep the default `sourceType`, so it gets Node's globals but
+		// none of the CommonJS wrapper. Measured: `process` reported undefined 2x
+		// in hermiq's generate-opengemeenten-icons.mjs and 4x in openregister's
+		// l10n/runtime-check.mjs, which the `.js`/`.cjs` block deliberately does
+		// not match.
+		files: ['scripts/**/*.mjs', 'tests/**/*.mjs'],
+		languageOptions: {
+			globals: {
+				process: 'readonly',
+				console: 'readonly',
+				Buffer: 'readonly',
+				global: 'readonly',
+				URL: 'readonly',
+				TextEncoder: 'readonly',
+				TextDecoder: 'readonly',
+			},
+		},
+		rules: {
+			'no-console': 'off',
+		},
+	},
+
+	{
+		// eslint must not try to PARSE a shell script. `tests/e2e/seed.test.sh`
+		// matches the `**/*.test.*` glob some presets use, and eslint then reads
+		// it as JavaScript and reports "Parsing error: Unexpected character" —
+		// a finding about a file it should never have opened.
+		ignores: ['**/*.sh', '**/*.bash'],
+	},
+
 
 	{
 		// Test globals. Several apps keep their spec files INSIDE `src/`, which the

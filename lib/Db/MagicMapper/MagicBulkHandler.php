@@ -45,6 +45,7 @@ use Exception;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IConfig;
 use OCP\IDBConnection;
@@ -169,6 +170,7 @@ class MagicBulkHandler {
 			);
 
 			$preparedObject['_updated'] = $now->format('Y-m-d H:i:s');
+			$preparedObject = $this->withExpiry(prepared: $preparedObject, object: $object, selfData: $selfData);
 
 			$preparedObject['_name'] = $selfData['name'] ?? $object['name'] ?? null;
 			$preparedObject['_description'] = $selfData['description'] ?? $object['description'] ?? null;
@@ -223,6 +225,39 @@ class MagicBulkHandler {
 
 		return $prepared;
 	}//end prepareObjectsForDynamicTable()
+
+	/**
+	 * Copy an object's expiry into the prepared row's `_expires` column, when it has one.
+	 *
+	 * An expiry is METADATA, not a property: it lives in the metadata block
+	 * (`@self`, or the flat selfData shape whose properties sit under `object`)
+	 * and lands in the indexed `_expires` column that purgeExpired() sweeps. It
+	 * is deliberately NOT read from a bare property map: a schema is free to
+	 * declare its own `expires` property, and that must stay a plain data
+	 * column rather than silently scheduling the row for deletion. A row that
+	 * carries no expiry gets NO `_expires` key, so an upsert of an existing row
+	 * leaves its expiry alone; a row inserted without one keeps NULL and is
+	 * never purged.
+	 *
+	 * @param array $prepared The prepared row so far.
+	 * @param array $object   The object as passed to bulkUpsert().
+	 * @param array $selfData The object's metadata block.
+	 *
+	 * @return array The prepared row, with `_expires` set when the object carries an expiry.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-raw-append-for-high-volume-writers
+	 */
+	private function withExpiry(array $prepared, array $object, array $selfData): array {
+		$hasMetadataBlock = (($object['@self'] ?? null) !== null || isset($object['object']) === true);
+		$expiresValue = $selfData['expires'] ?? null;
+		if ($expiresValue === null || $hasMetadataBlock === false) {
+			return $prepared;
+		}
+
+		$prepared['_expires'] = $this->formatDateTimeForDatabase(value: $expiresValue, default: null);
+
+		return $prepared;
+	}//end withExpiry()
 
 	/**
 	 * Calculate optimal chunk size for bulk operations
@@ -919,4 +954,50 @@ class MagicBulkHandler {
 		$formatted = $this->dateTimeNormalizer->formatForDatabase($value);
 		return $formatted ?? $default;
 	}//end formatDateTimeForDatabase()
+
+	/**
+	 * Hard-delete every row of a register+schema table whose `_expires` has passed.
+	 *
+	 * The counterpart of a raw append: rows written through `bulkUpsert()` with an
+	 * expiry carry no audit trail, so there is nothing to tombstone and nothing to
+	 * soft-delete. They are simply removed. Rows with a NULL `_expires` are never
+	 * touched, and the comparison is done by the database clock (`NOW()`), the
+	 * same clock that `SearchTrailMapper::clearLogs()` sweeps by, so a PHP/DB
+	 * timezone mismatch cannot widen the window.
+	 *
+	 * @param Register $register  The register context.
+	 * @param Schema   $schema    The schema context.
+	 * @param string   $tableName The bare (unprefixed) table name to sweep.
+	 *
+	 * @return int The number of rows removed.
+	 *
+	 * @throws \OCP\DB\Exception If the delete fails.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-raw-append-for-high-volume-writers
+	 */
+	public function purgeExpired(Register $register, Schema $schema, string $tableName): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete($tableName)
+			->where($qb->expr()->eq('_register', $qb->createNamedParameter($register->getId(), IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('_schema', $qb->createNamedParameter($schema->getId(), IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->isNotNull('_expires'))
+			->andWhere($qb->expr()->lt('_expires', $qb->createFunction('NOW()')));
+
+		$purged = $qb->executeStatement();
+
+		// Info, not debug: this is destruction, and the count is the only record of it.
+		$this->logger->info(
+			message: '[MagicBulkHandler] Purged expired raw rows',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'register' => $register->getId(),
+				'schema' => $schema->getId(),
+				'table' => $tableName,
+				'purged' => $purged,
+			]
+		);
+
+		return $purged;
+	}//end purgeExpired()
 }//end class

@@ -178,6 +178,40 @@ class RbacGroupCollectorTest extends TestCase {
 	}//end testProvisionableDropsReservedPrincipals()
 
 	/**
+	 * `authenticated` is a virtual principal, not a group.
+	 *
+	 * MagicRbacHandler, PermissionHandler and PropertyRbacHandler all
+	 * short-circuit it before any IGroupManager lookup, so a real Nextcloud
+	 * group of that name grants nothing. Treating it as provisionable created
+	 * an empty group AND made `occ openregister:declared-groups` report the
+	 * broadest working grant on the instance as granting nobody anything.
+	 *
+	 * @return void
+	 */
+	public function testProvisionableDropsTheAuthenticatedPseudoPrincipal(): void {
+		$groups = $this->collector->provisionable(
+			groups: ['authenticated', 'behandelaars']
+		);
+
+		$this->assertSame(['behandelaars'], $groups);
+		$this->assertNotContains('authenticated', $groups);
+	}//end testProvisionableDropsTheAuthenticatedPseudoPrincipal()
+
+	/**
+	 * The reserved set is exactly the three virtual principals the RBAC
+	 * resolvers special-case. A fourth one added to a resolver without being
+	 * added here would be silently provisioned as a real group.
+	 *
+	 * @return void
+	 */
+	public function testReservedPrincipalsCoversEveryVirtualPrincipal(): void {
+		$this->assertSame(
+			['admin', 'public', 'authenticated'],
+			RbacGroupCollector::RESERVED_PRINCIPALS
+		);
+	}//end testReservedPrincipalsCoversEveryVirtualPrincipal()
+
+	/**
 	 * The authored scope map contributes group ids the derived floor cannot —
 	 * a group declared before any authorization block references it.
 	 *

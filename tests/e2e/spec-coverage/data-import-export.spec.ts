@@ -32,15 +32,13 @@
  * The test file still validates that the ImportRegister modal is
  * reachable and the objects view loads (supporting existing coverage).
  */
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
-import { resolveBaseUrl } from '../base-url'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 // ⚠️ No `|| 'http://localhost:8080'` — that is the SHARED dev container.
 // See ../base-url.ts.
-const BASE_URL = resolveBaseUrl()
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EXCLUDED scenario
@@ -66,7 +64,7 @@ test.describe('data-import-export — import dialog reachability', () => {
 
 		// The OR SPA uses Vue Router history mode with base /index.php/apps/openregister/
 		// The objects route is reached via the hash-anchor pattern used by the existing test suite
-		await page.goto('/index.php/apps/openregister/#/objects', {
+		await page.goto('/index.php/apps/openregister/objects', {
 			waitUntil: 'domcontentloaded',
 		})
 		// Nextcloud header must be visible
@@ -92,7 +90,7 @@ test.describe('data-import-export — import dialog reachability', () => {
 		if (!fs.existsSync(STORAGE_STATE)) test.skip(true, 'no auth state')
 
 		// Navigate to the registers view where the import action is available
-		await page.goto('/index.php/apps/openregister/#/registers', {
+		await page.goto('/index.php/apps/openregister/registers', {
 			waitUntil: 'domcontentloaded',
 		})
 		await expect(

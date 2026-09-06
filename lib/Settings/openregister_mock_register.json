@@ -60,6 +60,12 @@
         "title": "Vocabulary (demo)",
         "version": "1.0.0",
         "description": "Demo data for Vocabulary. Generated from the register's own schemas — see hydra-gates/scripts/lib/generate_mock_register.py."
+      },
+      "flow-timers": {
+        "slug": "flow-timers",
+        "title": "Flow Timers (demo)",
+        "version": "1.0.0",
+        "description": "Demo data for Flow Timers. Generated from the register's own schemas — see hydra-gates/scripts/lib/generate_mock_register.py."
       }
     },
     "schemas": {
@@ -2918,6 +2924,186 @@
         "version": "Voorbeeld Version 3",
         "source": "https://example.invalid/resource/2",
         "description": "Voorbeeld Description 3"
+      },
+      {
+        "@self": {
+          "register": "flow-timers",
+          "schema": "escalation-ladder",
+          "slug": "escalation-ladder-voorbeeld-title-1-1"
+        },
+        "slug": "Voorbeeld Slug 1",
+        "rungs": [
+          {
+            "trigger": "preBreach",
+            "offset": 0,
+            "offsetUnit": "hours",
+            "notifyRole": [
+              "Voorbeeld Notifyrole 1"
+            ],
+            "priority": "low",
+            "key": "Voorbeeld Key 1",
+            "escalateToRole": [
+              "Voorbeeld Escalatetorole 1"
+            ],
+            "message": "Voorbeeld Message 1"
+          }
+        ],
+        "title": "Voorbeeld Title 1",
+        "organisation": "Voorbeeld Organisation 1",
+        "roleBindings": {}
+      },
+      {
+        "@self": {
+          "register": "flow-timers",
+          "schema": "escalation-ladder",
+          "slug": "escalation-ladder-voorbeeld-title-2-2"
+        },
+        "slug": "Voorbeeld Slug 2",
+        "rungs": [
+          {
+            "trigger": "slaBreached",
+            "offset": 1,
+            "offsetUnit": "businessDays",
+            "notifyRole": [
+              "Voorbeeld Notifyrole 2"
+            ],
+            "priority": "medium",
+            "key": "Voorbeeld Key 2",
+            "escalateToRole": [
+              "Voorbeeld Escalatetorole 2"
+            ],
+            "message": "Voorbeeld Message 2"
+          }
+        ],
+        "title": "Voorbeeld Title 2",
+        "organisation": "Voorbeeld Organisation 2",
+        "roleBindings": {}
+      },
+      {
+        "@self": {
+          "register": "flow-timers",
+          "schema": "escalation-ladder",
+          "slug": "escalation-ladder-voorbeeld-title-3-3"
+        },
+        "slug": "Voorbeeld Slug 3",
+        "rungs": [
+          {
+            "trigger": "preBreach",
+            "offset": 2,
+            "offsetUnit": "calendarDays",
+            "notifyRole": [
+              "Voorbeeld Notifyrole 3"
+            ],
+            "priority": "high",
+            "key": "Voorbeeld Key 3",
+            "escalateToRole": [
+              "Voorbeeld Escalatetorole 3"
+            ],
+            "message": "Voorbeeld Message 3"
+          }
+        ],
+        "title": "Voorbeeld Title 3",
+        "organisation": "Voorbeeld Organisation 3",
+        "roleBindings": {}
+      },
+      {
+        "@self": {
+          "register": "flow-timers",
+          "schema": "working-calendar",
+          "slug": "working-calendar-voorbeeld-title-1-1"
+        },
+        "slug": "Voorbeeld Slug 1",
+        "workingWeekdays": [
+          1
+        ],
+        "hoursPerWorkingDay": 0.25,
+        "rules": [
+          {
+            "kind": "fixed",
+            "name": "Voorbeeld Name 1",
+            "month": 1,
+            "day": 1,
+            "offset": -100,
+            "observedShift": {
+              "whenWeekday": "monday",
+              "days": -6
+            }
+          }
+        ],
+        "title": "Voorbeeld Title 1",
+        "organisation": "Voorbeeld Organisation 1",
+        "exceptions": [
+          {
+            "date": "2026-03-01",
+            "name": "Voorbeeld Name 1"
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "flow-timers",
+          "schema": "working-calendar",
+          "slug": "working-calendar-voorbeeld-title-2-2"
+        },
+        "slug": "Voorbeeld Slug 2",
+        "workingWeekdays": [
+          2
+        ],
+        "hoursPerWorkingDay": 1.25,
+        "rules": [
+          {
+            "kind": "easter",
+            "name": "Voorbeeld Name 2",
+            "month": 2,
+            "day": 2,
+            "offset": -99,
+            "observedShift": {
+              "whenWeekday": "tuesday",
+              "days": -5
+            }
+          }
+        ],
+        "title": "Voorbeeld Title 2",
+        "organisation": "Voorbeeld Organisation 2",
+        "exceptions": [
+          {
+            "date": "2026-03-02",
+            "name": "Voorbeeld Name 2"
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "flow-timers",
+          "schema": "working-calendar",
+          "slug": "working-calendar-voorbeeld-title-3-3"
+        },
+        "slug": "Voorbeeld Slug 3",
+        "workingWeekdays": [
+          3
+        ],
+        "hoursPerWorkingDay": 2.25,
+        "rules": [
+          {
+            "kind": "observedShift",
+            "name": "Voorbeeld Name 3",
+            "month": 3,
+            "day": 3,
+            "offset": -98,
+            "observedShift": {
+              "whenWeekday": "wednesday",
+              "days": -4
+            }
+          }
+        ],
+        "title": "Voorbeeld Title 3",
+        "organisation": "Voorbeeld Organisation 3",
+        "exceptions": [
+          {
+            "date": "2026-03-03",
+            "name": "Voorbeeld Name 3"
+          }
+        ]
       }
     ]
   }

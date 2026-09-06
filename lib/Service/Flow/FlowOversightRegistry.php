@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -46,15 +47,66 @@ class FlowOversightRegistry {
 	private array $checks = [];
 
 	/**
+	 * Whether contributions have been collected.
+	 *
+	 * @var boolean
+	 */
+	private bool $discovered = false;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger Records a check that misbehaves.
+	 * @param IEventDispatcher|null $dispatcher Collects contributed checks by
+	 *                                          dispatching
+	 *                                          {@see RegisterFlowOversightEvent},
+	 *                                          the same way FlowNodeRegistry
+	 *                                          collects node types. Nullable so
+	 *                                          the registry stays constructible
+	 *                                          without a container — a test that
+	 *                                          registers its checks by hand needs
+	 *                                          no discovery — and defaulted LAST
+	 *                                          so existing positional
+	 *                                          constructions keep meaning what
+	 *                                          they meant.
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
+		private readonly ?IEventDispatcher $dispatcher = null,
 	) {
 
 	}//end __construct()
+
+	/**
+	 * Collect contributed checks once, lazily.
+	 *
+	 * THE GAP THIS CLOSES: the listeners for {@see RegisterFlowOversightEvent}
+	 * were registered on every boot, but nothing ever DISPATCHED the event —
+	 * `FlowNodeRegistry` dispatches its own registration event before first
+	 * use, and this registry had no equivalent. The result was an oversight
+	 * gate that was consulted on every hop and could never hold a check:
+	 * `firstRefusal()` iterated an empty list and consented, so the instance
+	 * kill switch (and every app-contributed check) was decorative. Observed
+	 * live 2026-09-01: `flow_kill_switch=1` plus a resume left a suspended run
+	 * suspended instead of stopping it, because no veto ever fired.
+	 *
+	 * Set BEFORE dispatching, exactly as FlowNodeRegistry::load() does: a
+	 * listener that resolves a service which itself consults this registry
+	 * would otherwise re-enter and dispatch again.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
+	 */
+	private function discover(): void {
+		if ($this->discovered === true || $this->dispatcher === null) {
+			return;
+		}
+
+		$this->discovered = true;
+		$this->dispatcher->dispatchTyped(new RegisterFlowOversightEvent(registry: $this));
+
+	}//end discover()
 
 	/**
 	 * Register an oversight check.
@@ -82,6 +134,8 @@ class FlowOversightRegistry {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
 	 */
 	public function all(): array {
+		$this->discover();
+
 		return $this->checks;
 	}//end all()
 
@@ -100,6 +154,8 @@ class FlowOversightRegistry {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
 	 */
 	public function firstRefusal(array $context): ?array {
+		$this->discover();
+
 		foreach ($this->checks as $id => $check) {
 			try {
 				$reason = $check->veto(context: $context);

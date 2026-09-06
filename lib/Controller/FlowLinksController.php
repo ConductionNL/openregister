@@ -261,8 +261,8 @@ class FlowLinksController extends Controller {
 	 *                               returns for other reasons, which the caller could no longer tell apart.
 	 */
 	private function validateObject(string $register, string $schema, string $id): ?ObjectEntity {
-		$this->objectService->setSchema($schema);
 		$this->objectService->setRegister($register);
+		$this->objectService->setSchema($schema);
 		$this->objectService->setObject($id);
 
 		return $this->objectService->getObject();

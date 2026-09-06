@@ -168,24 +168,27 @@ class DeletedControllerTest extends TestCase {
 	}
 
 	public function testDestroyObjectNotDeleted(): void {
-		// ObjectEntity::getter() converts null to [] for the 'deleted' field,
-		// but the controller's destroy() only checks === null (not === []),
-		// so a non-deleted object bypasses the guard and proceeds to delete.
-		// This matches the actual controller behavior (unlike restore() which
-		// checks both null and []).
+		// A purge empties the trash, so an object that is not IN the trash is
+		// refused. This test previously asserted 200 and explained why: the
+		// guard compared `getDeleted()` with null, and the property defaults to
+		// `[]`, so the guard never fired and destroyed live records. It now
+		// pins the intended contract instead of the defect.
 		$this->stubAdminUser();
 		$object = new ObjectEntity();
+		$object->setSchema('10');
 		$object->setDeleted(null);
 		$this->objectMapper->method('find')->willReturn($object);
 
 		$result = $this->controller->destroy('uuid-123');
 
-		$this->assertEquals(200, $result->getStatus());
+		$this->assertEquals(400, $result->getStatus());
+		$this->assertEquals('Object is not deleted', $result->getData()['error']);
 	}
 
 	public function testDestroySuccess(): void {
 		$this->stubAdminUser();
 		$object = new ObjectEntity();
+		$object->setSchema('10');
 		$object->setDeleted(['deleted' => '2024-01-01']);
 		$this->objectMapper->method('find')->willReturn($object);
 
@@ -309,6 +312,7 @@ class DeletedControllerTest extends TestCase {
 	public function testDestroyMultipleSuccess(): void {
 		$this->stubAdminUser();
 		$deletedObject = new ObjectEntity();
+		$deletedObject->setSchema('10');
 		$deletedObject->setDeleted(['deleted' => '2024-01-01']);
 		$deletedObject->setUuid('uuid-1');
 

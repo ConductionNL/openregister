@@ -184,7 +184,7 @@ class ArchivalController extends Controller {
 		}
 
 		try {
-			$object = $this->objectMapper->findByUuid($id);
+			$object = $this->objectMapper->find($id);
 			return new JSONResponse(
 				data: $object->jsonSerialize(),
 				statusCode: Http::STATUS_OK
@@ -221,7 +221,7 @@ class ArchivalController extends Controller {
 		$exclusionReasons = $params['exclusionReasons'] ?? [];
 
 		try {
-			$object = $this->objectMapper->findByUuid($id);
+			$object = $this->objectMapper->find($id);
 			$destructionList = $object->getObject() ?? [];
 
 			// Check for dual-approval requirement based on schema config.
@@ -304,7 +304,7 @@ class ArchivalController extends Controller {
 		}
 
 		try {
-			$object = $this->objectMapper->findByUuid($id);
+			$object = $this->objectMapper->find($id);
 			$destructionList = $object->getObject() ?? [];
 
 			$result = $this->destructionService->rejectList($destructionList, $reason);
@@ -389,7 +389,7 @@ class ArchivalController extends Controller {
 				);
 			}
 
-			$object = $this->objectMapper->findByUuid($objectId);
+			$object = $this->objectMapper->find($objectId);
 			$result = $this->legalHoldService->placeHold($object, $reason);
 
 			return new JSONResponse(
@@ -445,7 +445,7 @@ class ArchivalController extends Controller {
 		}
 
 		try {
-			$object = $this->objectMapper->findByUuid($id);
+			$object = $this->objectMapper->find($id);
 			$result = $this->legalHoldService->releaseHold($object, $reason);
 
 			return new JSONResponse(

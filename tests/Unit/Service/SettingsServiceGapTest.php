@@ -112,7 +112,6 @@ class SettingsServiceGapTest extends TestCase {
 			$db,
 			null,
 			null,
-			null,
 			'openregister',
 			null,
 			$this->searchBackendHandler,

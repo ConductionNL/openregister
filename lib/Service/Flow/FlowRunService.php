@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunStep;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStateMapper;
+use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Exception\FlowRunExpired;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
@@ -51,6 +52,14 @@ use Throwable;
  * The durable half of flow execution.
  *
  * @spec openspec/specs/flow-engine/spec.md
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) The run lifecycle — queue, execute, resume,
+ * signal, persist — plus the stream walk's wiring and the in-request advance; each is one
+ * entry into the same engine and belongs beside the others.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) 50 against 50, and the
+ * one branch is the version-pin refusal in advanceStream(): the same rule
+ * execute() enforces, applied to the completion path so a week-old task
+ * continues the graph its run was pinned to.
  */
 class FlowRunService {
 	/**
@@ -78,6 +87,39 @@ class FlowRunService {
 	public const SIGNAL_CONTEXT_KEY = 'signal';
 
 	/**
+	 * The context key the run's ACTING IDENTITY travels under.
+	 *
+	 * Stamped by {@see self::baseContextFor()} from the run — never from the
+	 * context, per ADR-099 — and read back by every node whose work needs the
+	 * run's rights. Exported so consumers reference one name instead of each
+	 * hard-coding the literal; the VALUE is frozen, because it is stored inside
+	 * every parked run's context and a rename would strand them.
+	 *
+	 * @var string
+	 */
+	public const RUN_AS_CONTEXT_KEY = 'runAs';
+
+	/**
+	 * The acting-identity scope handed to every dispatcher this service builds.
+	 *
+	 * Resolved lazily from the container and cached — see {@see identityScope()}.
+	 *
+	 * @var FlowRunAsScope|null
+	 */
+	private ?FlowRunAsScope $runAsScope = null;
+
+	/**
+	 * Whether the lazy resolution above has been attempted.
+	 *
+	 * A separate flag because null is ALSO a valid outcome: a harness container
+	 * that cannot build the scope answers null once rather than being asked on
+	 * every step.
+	 *
+	 * @var boolean
+	 */
+	private bool $runAsScopeResolved = false;
+
+	/**
 	 * Loads and writes back the state that belongs to the FLOW, not the run.
 	 *
 	 * A separate collaborator because it handles a different lifetime: the token
@@ -103,6 +145,12 @@ class FlowRunService {
 	 *                                      without it; history is then simply
 	 *                                      not recorded, never faked.
 	 * @param IAppConfig|null $appConfig Reads the instance-wide runtime
+	 * @param FlowStreamMapper|null $streamMapper Stream rows; with the two below, enables the stream walk.
+	 * @param FlowPlaceClaims|null $claims The claim protocol.
+	 * @param FlowRunCommit|null $commit The locked delta commit path.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected collaborators, appended so
+	 * the three test suites that construct this service positionally keep their slots.
 	 *                                   ceiling. Nullable on the same terms
 	 *                                   as $steps; absent, the compiled-in
 	 *                                   default applies.
@@ -116,6 +164,9 @@ class FlowRunService {
 		private readonly ContainerInterface $container,
 		private readonly ?FlowRunStepMapper $steps = null,
 		private readonly ?IAppConfig $appConfig = null,
+		private readonly ?FlowStreamMapper $streamMapper = null,
+		private readonly ?FlowPlaceClaims $claims = null,
+		private readonly ?FlowRunCommit $commit = null,
 	) {
 		// Built here rather than injected, deliberately: this service's
 		// constructor is called explicitly by three test suites, and inserting or
@@ -140,6 +191,152 @@ class FlowRunService {
 	private function stepHistory(): FlowStepHistory {
 		return new FlowStepHistory(steps: $this->steps, logger: $this->logger);
 	}//end stepHistory()
+
+	/**
+	 * The stream collaborator for a persisted run, or null when the three
+	 * parts are not wired (a test-constructed service) — the engine then
+	 * walks a single in-memory stream exactly as before.
+	 *
+	 * @param FlowRun $run The run about to be walked.
+	 * @param array $flow The resolved flow document (for a per-flow stream cap).
+	 * @param string|null $onlyStream Restrict the walk to one stream (an in-request advance).
+	 * @param int|null $budget Firings the walk may commit; null for unbounded.
+	 *
+	 * @return FlowStreamWalk|null The collaborator.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FlowPlaceClaims::newOwner() mints a pass token; no instance state.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
+	 */
+	private function streamWalkFor(FlowRun $run, array $flow, ?string $onlyStream = null, ?int $budget = null): ?FlowStreamWalk {
+		if ($this->streamMapper === null || $this->claims === null || $this->commit === null) {
+			return null;
+		}
+
+		$cap = null;
+		$limits = (array)($flow['limits'] ?? []);
+		if (array_key_exists('streams', $limits) === true) {
+			$cap = (int)$limits['streams'];
+		}
+
+		return new FlowStreamWalk(
+			run: $run,
+			claims: $this->claims,
+			commit: $this->commit,
+			streamMapper: $this->streamMapper,
+			owner: FlowPlaceClaims::newOwner(),
+			runCap: $cap,
+			onlyStream: $onlyStream,
+			budget: $budget
+		);
+	}//end streamWalkFor()
+
+	/**
+	 * Release the claims a failed walk still holds, so a pass that died inside
+	 * the engine does not leave its branches locked until the reaper's cutoff.
+	 * Best-effort: the run is being failed anyway, and the reaper remains the
+	 * backstop for a release that itself fails.
+	 *
+	 * @param FlowStreamWalk|null $walk The walk, when there was one.
+	 *
+	 * @return void
+	 */
+	private function releaseWalk(?FlowStreamWalk $walk): void {
+		if ($walk === null) {
+			return;
+		}
+
+		try {
+			$walk->finalize(enabled: false, forcedTerminal: FlowRun::STATUS_FAILED);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[FlowRunService] Could not release a failed walk\'s claims; the reaper will',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $walk->run()->getUuid(), 'error' => $e->getMessage()]
+			);
+		}
+	}//end releaseWalk()
+
+	/**
+	 * Advance ONE stream of a run in the calling request, within a budget.
+	 *
+	 * ADR-098 D9's advance budget follows the token: completing a task on one
+	 * branch may advance THAT branch — taking claims exactly as a worker does,
+	 * bounded by the ceiling, per-firing oversight and the runtime budget —
+	 * while its siblings are untouched. A sibling's claim ends the advance
+	 * and returns the run as it stands; the queue does the rest.
+	 *
+	 * `$budget` is `0` (nothing; the run is left queued), a count, or `"all"`
+	 * (bounded by the same three things a worker is).
+	 *
+	 * @param FlowRun $run The run, already resolved and pinned.
+	 * @param array $flow The pinned flow document.
+	 * @param object $subject The subject.
+	 * @param string $streamId The completing branch.
+	 * @param int|string $budget `0`, `N`, or `"all"`.
+	 *
+	 * @return FlowRun The run as it stands after the advance.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-completions-advance-budget-must-apply-to-the-completing-branch
+	 */
+	public function advanceStream(FlowRun $run, array $flow, object $subject, string $streamId, int|string $budget): FlowRun {
+		$firings = null;
+		if ($budget !== 'all') {
+			$firings = max(0, (int)$budget);
+		}
+
+		if ($firings === 0) {
+			$run->setStatus(FlowRun::STATUS_QUEUED);
+			$run->setUpdated(new DateTime());
+
+			return $this->mapper->update($run);
+		}
+
+		// 🔴 THE RUN'S PIN OUTRANKS THE CALLER'S DOCUMENT, here as in execute():
+		// a completion that lands a week after the run started must continue
+		// the graph the run was pinned to, not the one its author has since
+		// edited. An unpinned (draft test) run passes its document through.
+		$pinned = (new FlowPublishedGraph($this->container))->overlayOnto(run: $run, live: $flow);
+		if ($pinned === null) {
+			return $this->failUnresolvableVersion(run: $run);
+		}
+
+		$flow = $pinned;
+
+		// Resume-after-human-answer must see the subject as it stands: the
+		// answer the task asked for landed on the OBJECT, and the stored items
+		// still hold the trigger-time snapshot of it.
+		$this->refreshSubjectItems(run: $run, subject: $subject);
+
+		$walk = $this->streamWalkFor(run: $run, flow: $flow, onlyStream: $streamId, budget: $firings);
+		if ($walk === null) {
+			// Without the stream layer there is no branch to scope to; the
+			// queue advances the whole run on its next pass.
+			$run->setStatus(FlowRun::STATUS_QUEUED);
+			$run->setUpdated(new DateTime());
+
+			return $this->mapper->update($run);
+		}
+
+		$run->setStatus(FlowRun::STATUS_RUNNING);
+		$run->setUpdated(new DateTime());
+		$this->mapper->update($run);
+
+		$guard = $this->guardFor(run: $run, flow: $flow);
+		$context = $this->nodeContextFor(run: $run, resuming: true, guard: $guard);
+
+		$result = $this->engine->run(
+			flow: $flow,
+			store: new FlowRunMarkingStore(run: $run),
+			subject: $subject,
+			dispatcher: new RegistryStepDispatcher(registry: $this->registry, guard: $guard, scope: $this->identityScope()),
+			context: $context,
+			items: ($run->getItems() ?? []),
+			startAt: null,
+			streams: $walk
+		);
+
+		return $this->persistResult(run: $run, result: $result);
+	}//end advanceStream()
 
 	/**
 	 * Make an unattributed refusal visible on the flow, and stop a dead schedule.
@@ -237,7 +434,7 @@ class FlowRunService {
 		// Assignment, not coalesce: the run wins over anything the stored context
 		// carries. See the docblock — a context-supplied acting identity would be
 		// an authoring-time privilege escalation.
-		$context['runAs'] = $run->getRunAs();
+		$context[self::RUN_AS_CONTEXT_KEY] = $run->getRunAs();
 
 		return $context;
 	}//end baseContextFor()
@@ -282,6 +479,7 @@ class FlowRunService {
 		$context[FlowToken::CONTEXT_KEY] = FlowToken::fromArray(($context[FlowToken::CONTEXT_KEY] ?? null));
 		$context[FlowResumeState::CONTEXT_KEY] = FlowResumeState::fromArray(($context[FlowResumeState::CONTEXT_KEY] ?? null));
 		$context[FlowRunGuard::CONTEXT_KEY] = $guard;
+		$context[FlowStepReport::CONTEXT_KEY] = new FlowStepReport();
 
 		// ATTRIBUTION. Read BEFORE the walk: the audit rows are written during
 		// it, so the base has to be predicted. See {@see FlowStepHistory}.
@@ -292,6 +490,39 @@ class FlowRunService {
 
 		return $context;
 	}//end nodeContextFor()
+
+	/**
+	 * The acting-identity scope for the dispatchers this service builds.
+	 *
+	 * Resolved from the container rather than the constructor so adding it
+	 * breaks no existing construction site, and LAZILY because most of what
+	 * this service does (queueing, listing, signalling) never dispatches a
+	 * node. A container that cannot build one — the unit harness — answers
+	 * null, and the dispatcher then runs nodes bare, which is the harness's
+	 * existing contract; every production container can build it.
+	 *
+	 * @return FlowRunAsScope|null The scope, or null when the container cannot build one.
+	 *
+	 * @spec openspec/changes/flow-engine-consumer-seams/specs/flow-engine-consumer-seams/spec.md#requirement-a-contributed-node-executes-under-the-runs-acting-identity
+	 */
+	private function identityScope(): ?FlowRunAsScope {
+		if ($this->runAsScopeResolved === true) {
+			return $this->runAsScope;
+		}
+
+		$this->runAsScopeResolved = true;
+
+		try {
+			$scope = $this->container->get(FlowRunAsScope::class);
+			if ($scope instanceof FlowRunAsScope === true) {
+				$this->runAsScope = $scope;
+			}
+		} catch (Throwable $e) {
+			$this->runAsScope = null;
+		}
+
+		return $this->runAsScope;
+	}//end identityScope()
 
 
 
@@ -596,6 +827,17 @@ class FlowRunService {
 	 * walk ({@see self::persistResult()}), so a node reads the answer to ITS
 	 * question rather than one left behind by an earlier suspension.
 	 *
+	 * 🔴 THIS IS THE UNGUARDED PRIMITIVE, for trusted engine-internal delivery
+	 * only: it checks the run's STATUS and nothing about the CALLER, so calling
+	 * it directly is asserting "whoever I am acting for has already been
+	 * allowed to answer this". Everything outside the engine goes through
+	 * {@see FlowRunSignalService::signalAs()}, which applies the
+	 * recorded-assignee guard (group resolution included) and audits a refusal
+	 * — the HTTP resume endpoints use that same seam, so there is exactly one
+	 * guard. A consumer that calls this method instead has re-opened the gap
+	 * the seam exists to close, silently: the wrong person's answer arrives
+	 * correctly formatted.
+	 *
 	 * @param FlowRun $run The suspended run to wake.
 	 * @param array $payload What the signaller wants the run to know.
 	 *
@@ -663,6 +905,12 @@ class FlowRunService {
 		$flow = $pinned;
 
 		$resuming = ($run->getStatus() === FlowRun::STATUS_SUSPENDED);
+		if ($resuming === true) {
+			// Stored items win on resume (below), but the subject's own fields
+			// on them are a trigger-time snapshot: see refreshSubjectItems().
+			$this->refreshSubjectItems(run: $run, subject: $subject);
+		}
+
 		$run->setStatus(FlowRun::STATUS_RUNNING);
 		$run->setUpdated(new DateTime());
 		$this->mapper->update($run);
@@ -680,18 +928,21 @@ class FlowRunService {
 
 		$guard = $this->guardFor(run: $run, flow: $flow);
 		$context = $this->nodeContextFor(run: $run, resuming: $resuming, guard: $guard);
+		$walk = $this->streamWalkFor(run: $run, flow: $flow);
 
 		try {
 			$result = $this->engine->run(
 				flow: $flow,
 				store: new FlowRunMarkingStore(run: $run),
 				subject: $subject,
-				dispatcher: new RegistryStepDispatcher(registry: $this->registry, guard: $guard),
+				dispatcher: new RegistryStepDispatcher(registry: $this->registry, guard: $guard, scope: $this->identityScope()),
 				context: $context,
 				items: $items,
-				startAt: $start
+				startAt: $start,
+				streams: $walk
 			);
 		} catch (FlowRunExpired $e) {
+			$this->releaseWalk(walk: $walk);
 			// The run stopped ITSELF at a checkpoint, having used its budget.
 			// Recorded as a first-class outcome rather than folded into the crash
 			// path below: nothing went wrong with the work, and the message has to
@@ -713,6 +964,7 @@ class FlowRunService {
 
 			return $this->mapper->update($run);
 		} catch (Throwable $e) {
+			$this->releaseWalk(walk: $walk);
 			// The engine itself failing (rather than a step) is not something
 			// the run should be left `running` for — that status would make it
 			// look claimed by a worker forever.
@@ -730,6 +982,60 @@ class FlowRunService {
 
 		return $this->persistResult(run: $run, result: $result);
 	}//end execute()
+
+	/**
+	 * Refresh the subject's fields on a resumed run's stored items, in place.
+	 *
+	 * Both stores are refreshed because both are read on resume: the flat
+	 * `items` list feeds a legacy walk, and the per-place buffers are what
+	 * {@see FlowItemPlacement::seedPlaceItems()} prefers — the check node that
+	 * re-enters after a human answered reads ITS input place's buffer, and a
+	 * refresh that missed it would leave the stale snapshot exactly where the
+	 * branch decision is made.
+	 *
+	 * In place and before the walk's first persist, so the commit path — which
+	 * re-reads the run row under its lock — sees the refreshed buffers too.
+	 *
+	 * A subjectless run, or one whose stored items never carried the subject,
+	 * is untouched: {@see FlowItems::refreshSubjectProjection()} matches by
+	 * identity and only ever touches the item that IS the subject.
+	 *
+	 * @param FlowRun $run The resumed run, mutated in place.
+	 * @param object $subject The live subject, as the advancer just resolved it.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FlowItems::refreshSubjectProjection
+	 * is a pure function on value shapes; a factory to call it would add a
+	 * dependency to say the same thing.
+	 *
+	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md#requirement-resuming-carries-the-runs-own-items-req-fr-003
+	 */
+	private function refreshSubjectItems(FlowRun $run, object $subject): void {
+		$subjectUuid = trim((string)$run->getSubjectUuid());
+		if ($subjectUuid === '') {
+			return;
+		}
+
+		$run->setItems(FlowItems::refreshSubjectProjection(
+			items: ($run->getItems() ?? []),
+			subject: $subject,
+			subjectUuid: $subjectUuid
+		));
+
+		$stored = $run->getPlaceItems();
+		if (is_array($stored) === true && $stored !== []) {
+			foreach ($stored as $place => $bucket) {
+				$stored[$place] = FlowItems::refreshSubjectProjection(
+					items: (array)$bucket,
+					subject: $subject,
+					subjectUuid: $subjectUuid
+				);
+			}
+
+			$run->setPlaceItems($stored);
+		}
+	}//end refreshSubjectItems()
 
 	/**
 	 * Fail a run whose pinned version cannot be resolved.
@@ -785,6 +1091,7 @@ class FlowRunService {
 	 * @return FlowRun The updated run.
 	 *
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
 	 */
 	private function persistResult(FlowRun $run, array $result): FlowRun {
 		$status = (string)($result['status'] ?? FlowRun::STATUS_FAILED);
@@ -835,14 +1142,7 @@ class FlowRunService {
 		// other node also reads from.
 		unset($context[FlowNodeResumeState::CONTEXT_KEY]);
 
-		$resumeState = ($context[FlowResumeState::CONTEXT_KEY] ?? null);
-		unset($context[FlowResumeState::CONTEXT_KEY]);
-		if ($resumeState instanceof FlowResumeState === true) {
-			$storable = $resumeState->storableWhen(suspended: ($status === FlowRun::STATUS_SUSPENDED));
-			if ($storable !== null) {
-				$context[FlowResumeState::CONTEXT_KEY] = $storable;
-			}
-		}
+		$this->keepResumeSlots(context: $context, status: $status);
 
 		// A signal is consumed by the walk it woke. Kept, it would still be
 		// sitting there the NEXT time this run suspends on a signal, and that
@@ -868,12 +1168,101 @@ class FlowRunService {
 
 		$run->setResumeAt($resumeAt);
 
+		// The correlation key mirrors `resumeAt`: meaningful only while
+		// suspended, cleared on every other outcome so a finished run can
+		// never be the addressee of a business-key signal (design D-7).
+		$run->setCorrelationKey($this->correlationKeyFrom(context: $context, suspended: ($status === FlowRun::STATUS_SUSPENDED)));
+
 		$persisted = $this->mapper->update($run);
 
 		$this->recordLastRun(run: $persisted, status: $status);
 
 		return $persisted;
 	}//end persistResult()
+
+	/**
+	 * Fold the walk's per-node resume slots back into the storable context.
+	 *
+	 * 🔴 LIVE, NOT SUSPENDED. The rule used to be "only a suspended run has
+	 * anywhere to continue from", which quietly conflated NOT-SUSPENDED with
+	 * TERMINAL. A pass legitimately ends `queued` while a node parked in an
+	 * EARLIER pass is still waiting: the in-request advance of one branch
+	 * finalises `queued` whenever a sibling has enabled work, and a claim
+	 * refused on contention does the same. Dropping the slots there costs a
+	 * task-waiting node the uuid of the task it is waiting on — and that loss
+	 * IS the heartbeat wedge. The node's next wake finds an empty slot, so
+	 * (correctly, by its own idempotency guard) it asks again; from then on
+	 * the ORIGINAL task's completion can never address the node's slot, its
+	 * signal is refused against the new slot's recorded assignee, and the run
+	 * re-suspends on its heartbeat forever while a duplicate task sits in
+	 * somebody's inbox.
+	 *
+	 * A terminal run still drops them, for the reason it always did: anything
+	 * still held belongs to a node the run never came back to.
+	 *
+	 * @param array<string, mixed> $context The context being persisted, modified in place.
+	 * @param string $status The status the walk ended in.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
+	 */
+	private function keepResumeSlots(array &$context, string $status): void {
+		$resumeState = ($context[FlowResumeState::CONTEXT_KEY] ?? null);
+		unset($context[FlowResumeState::CONTEXT_KEY]);
+
+		if ($resumeState instanceof FlowResumeState === false) {
+			return;
+		}
+
+		$storable = $resumeState->storableWhen(live: (in_array($status, FlowRun::TERMINAL, true) === false));
+		if ($storable !== null) {
+			$context[FlowResumeState::CONTEXT_KEY] = $storable;
+		}
+
+	}//end keepResumeSlots()
+
+	/**
+	 * The correlation key a suspended run can be addressed by, or null.
+	 *
+	 * Read off the STORED resume-state slots the walk left behind: an
+	 * await-signal step that declared a `correlationKey` resolved it at
+	 * suspension and stamped it into its node slot. Copying it onto the
+	 * run's indexed column here is what makes delivery an index lookup
+	 * instead of a JSON scan (flow-approval-consolidation design D-7). The
+	 * first non-empty key wins; a run holding two suspended await steps with
+	 * keys is addressed by the earlier node's key.
+	 *
+	 * @param array<string, mixed> $context The context as it will be persisted.
+	 * @param bool $suspended Whether the run is suspending.
+	 *
+	 * @return string|null The key, or null when not suspended or none is set.
+	 *
+	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
+	 */
+	private function correlationKeyFrom(array $context, bool $suspended): ?string {
+		if ($suspended === false) {
+			return null;
+		}
+
+		$byNode = ($context[FlowResumeState::CONTEXT_KEY] ?? null);
+		if (is_array($byNode) === false) {
+			return null;
+		}
+
+		foreach ($byNode as $slot) {
+			if (is_array($slot) === false) {
+				continue;
+			}
+
+			$key = trim((string)($slot['correlationKey'] ?? ''));
+			if ($key !== '') {
+				return $key;
+			}
+		}
+
+		return null;
+	}//end correlationKeyFrom()
 
 	/**
 	 * Copy a finished run's outcome onto its flow.

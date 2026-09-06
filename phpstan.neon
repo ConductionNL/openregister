@@ -34,6 +34,13 @@ parameters:
         # hiding a finding.
         - lib/ContextChat/ContentProvider.php
 
+        # TaskVtodoWriteBackPlugin extends Sabre\DAV\ServerPlugin, which ships
+        # with the server's 3rdparty tree (apps/dav loads it), not with the
+        # sabre/vobject this app requires. Same shape as ContentProvider above:
+        # a class-level "extends unknown class" cannot be ignored or baselined,
+        # so the file is excluded; its behaviour is unit-tested against stubs.
+        - lib/Dav/TaskVtodoWriteBackPlugin.php
+
         # `vendor-bin` USED to be excluded by the shared base. It left the base in
         # conduction/hydra-gates v1.7.3, because a conditional path has no spelling
         # that is safe on both PHPStan majors: plain aborts 2.x (it validates the
@@ -45,6 +52,11 @@ parameters:
         - vendor-bin
 
     ignoreErrors:
+        # The shared base already ignores `unknown class OCA\DAV\...` (server-
+        # internal, not in nextcloud/ocp). A constructor-promoted parameter of
+        # that type is reported with a different spelling, `has invalid type`,
+        # which the base does not cover. Same class of finding, same reason.
+        - '#has invalid type OCA\\DAV\\#'
         # FilesSidebarListener guards on an OPTIONAL app's event class.
         #
         # The listener is registered for 'OCA\Files\Event\LoadAdditionalScriptsEvent'

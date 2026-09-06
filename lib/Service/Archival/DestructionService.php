@@ -212,7 +212,7 @@ class DestructionService {
 				'register' => $object->getRegister(),
 				'archiefactiedatum' => $actiedatum,
 				'classification' => $retention['classification'] ?? null,
-				'alreadySoftDeleted' => ($object->getDeleted() !== null),
+				'alreadySoftDeleted' => $object->isSoftDeleted(),
 			];
 		}//end foreach
 
@@ -505,7 +505,7 @@ class DestructionService {
 	 */
 	private function extendArchiveActionDate(string $uuid, string $extensionPeriod, string $reason): void {
 		try {
-			$object = $this->objectMapper->findByUuid($uuid);
+			$object = $this->objectMapper->find($uuid);
 			$retention = $object->getRetention() ?? [];
 
 			$currentDate = $retention['archiefactiedatum'] ?? null;

@@ -336,11 +336,14 @@ class OrganisationTest extends TestCase {
 	}
 
 	public function testSetActiveFalse(): void {
-		// Organisation::setActive() calls parent::setActive(active: $val) with named args,
-		// which triggers the Entity __call named-arg bug. The value is always truthy.
-		// This test documents the current actual behavior.
+		// An organisation CAN be deactivated. This test used to assert the
+		// opposite and called it "the current actual behavior": setActive()
+		// passed a named argument to Entity::__call(), which reads $args[0],
+		// so the value never arrived and every organisation stayed active.
+		// The OrganisationController endpoint for deactivating one could not
+		// work, and this test is what made that look intended.
 		$result = $this->organisation->setActive(false);
-		$this->assertTrue($this->organisation->isActive());
+		$this->assertFalse($this->organisation->isActive(), 'setActive(false) must deactivate');
 		$this->assertSame($this->organisation, $result);
 	}
 
@@ -365,10 +368,11 @@ class OrganisationTest extends TestCase {
 	}
 
 	public function testSetActiveFalsyStringZero(): void {
-		// Due to the named-arg bug in parent::setActive(), '0' is cast to false
-		// but the named arg causes it to be set as truthy string 'active'.
+		// '0' is a falsy string, and the setter casts it. The API sends
+		// strings, so this is the path a deactivation actually arrives on —
+		// which is why it mattered that the value was being dropped.
 		$this->organisation->setActive('0');
-		$this->assertTrue($this->organisation->isActive());
+		$this->assertFalse($this->organisation->isActive(), "'0' must deactivate");
 	}
 
 	public function testIsActiveWhenInternallyNull(): void {
@@ -613,5 +617,61 @@ class OrganisationTest extends TestCase {
 		$result1 = (string)$this->organisation;
 		$result2 = (string)$this->organisation;
 		$this->assertSame($result1, $result2);
+	}
+
+	/**
+	 * The chain-partner fields register their types under the PROPERTY name.
+	 *
+	 * Entity::__call() resolves a setter to lcfirst(substr($method, 3)) and
+	 * looks THAT up in _fieldTypes, so registering a snake_case column name
+	 * matches nothing and the cast silently never runs — qualityScore would
+	 * come back from the database as a string.
+	 *
+	 * @return void
+	 */
+	public function testChainPartnerFieldTypesAreRegistered(): void {
+		$fieldTypes = $this->organisation->getFieldTypes();
+
+		$this->assertSame('string', $fieldTypes['contactEmail']);
+		$this->assertSame('string', $fieldTypes['defaultPermissionLevel']);
+		$this->assertSame('integer', $fieldTypes['qualityScore']);
+		$this->assertSame('string', $fieldTypes['qualityStatus']);
+	}
+
+	/**
+	 * An unscored partner serialises as null, never as zero.
+	 *
+	 * A zero reads as "scored badly", which is a different claim from "never
+	 * assessed", and a chain-partner dashboard cannot tell them apart after
+	 * the fact.
+	 *
+	 * @return void
+	 */
+	public function testAnUnscoredPartnerSerialisesAsNullNotZero(): void {
+		$serialised = $this->organisation->jsonSerialize();
+
+		$this->assertNull($serialised['qualityScore']);
+		$this->assertNull($serialised['qualityStatus']);
+		$this->assertNull($serialised['contactEmail']);
+		$this->assertNull($serialised['defaultPermissionLevel']);
+	}
+
+	/**
+	 * The chain-partner fields round-trip through jsonSerialize.
+	 *
+	 * @return void
+	 */
+	public function testChainPartnerFieldsRoundTrip(): void {
+		$this->organisation->setContactEmail('post@gemeente.nl');
+		$this->organisation->setDefaultPermissionLevel('read');
+		$this->organisation->setQualityScore(72);
+		$this->organisation->setQualityStatus('adequate');
+
+		$serialised = $this->organisation->jsonSerialize();
+
+		$this->assertSame('post@gemeente.nl', $serialised['contactEmail']);
+		$this->assertSame('read', $serialised['defaultPermissionLevel']);
+		$this->assertSame(72, $serialised['qualityScore']);
+		$this->assertSame('adequate', $serialised['qualityStatus']);
 	}
 }

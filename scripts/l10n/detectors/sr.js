@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-/* eslint-disable n/no-process-exit */
+ 
 // Serbian register detector for openregister l10n.
 //
 // Measures the PROSE register only. Serbian buttons take the bare 2sg imperative
@@ -47,6 +46,10 @@
 // JS \b is ASCII-only and would treat "ђ" as a boundary, so every guard is
 // (?<!\p{L}) … (?!\p{L}) with the u flag.
 
+/**
+ *
+ * @param s
+ */
 function fold(s) {
 	return String(s).toLowerCase()
 }
@@ -196,7 +199,7 @@ const UNDETECTABLE = [
 		+ 'of before calling it a deviation: "унеси" is the 2sg IMPERATIVE of '
 		+ '"унети", not a 2sg present, so the whole string is two coordinated '
 		+ 'imperatives — which is the correct label convention, not a register '
-		+ 'slip. Its two siblings in the same `Select …` family DO carry 2sg '
+		+ 'slip. Its two siblings in the same `Select …` family DO carry 2sg '
 		+ 'presents ("имаш", "сачуваш") and were corrected; this one is left alone'],
 	['Дај ми то', 'bare "ми"/"ме" 1sg clitics are not address at all, so first-'
 		+ 'person phrasing of any register is invisible to this detector'],
@@ -205,6 +208,10 @@ const UNDETECTABLE = [
 		+ 'sentence scores formal only because of "желите"/"можете"'],
 ]
 
+/**
+ *
+ * @param s
+ */
 function score(s) {
 	const t = fold(s)
 	let f = 0
@@ -216,6 +223,9 @@ function score(s) {
 	return { f, i }
 }
 
+/**
+ *
+ */
 function runControls() {
 	let fail = 0
 	for (const [s, want] of CONTROLS) {

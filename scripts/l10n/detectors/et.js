@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-/* eslint-disable n/no-process-exit */
+ 
 // Estonian register detector for openregister l10n.
 //
 // Like Catalan, Estonian UI splits by string ROLE, so one global verdict would be
@@ -18,6 +17,10 @@
 // The unambiguous informal signals are the sina-series pronouns and the 2sg
 // present tense in -d, so those carry the verdict.
 
+/**
+ *
+ * @param s
+ */
 function fold(s) {
 	return String(s).toLowerCase()
 }
@@ -90,6 +93,10 @@ const UNDETECTABLE = [
 	['Sisesta oma salasõna', '"oma" is person-neutral, so only the bare imperative signals 2sg'],
 ]
 
+/**
+ *
+ * @param s
+ */
 function score(s) {
 	const t = fold(s)
 	let f = 0
@@ -101,6 +108,9 @@ function score(s) {
 	return { f, i }
 }
 
+/**
+ *
+ */
 function runControls() {
 	let fail = 0
 	for (const [s, want] of CONTROLS) {

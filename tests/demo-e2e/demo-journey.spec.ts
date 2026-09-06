@@ -1,4 +1,4 @@
-import { test, expect, request as pwRequest } from '@playwright/test'
+import { expect, request as pwRequest, test } from '@playwright/test'
 
 /**
  * The demo environment, checked the way its documentation says to check it.

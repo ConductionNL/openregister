@@ -14,7 +14,7 @@
  * Playwright suites (opencatalogi, launchpad, etc.) per the cross-app
  * hand-off pattern.
  */
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 test.describe('OAS — ETag short-circuit', () => {
 	test('GET /api/registers/oas returns 200 with ETag, 304 on If-None-Match', async ({

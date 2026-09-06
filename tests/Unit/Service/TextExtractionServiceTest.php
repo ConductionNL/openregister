@@ -1960,23 +1960,92 @@ class TextExtractionServiceTest extends TestCase {
 	// extractObject — full extraction path
 	// ────────────────────────────────────────────────────────
 
+	/**
+	 * Capture every message the service logs, at any level.
+	 *
+	 * extractObject() returns void, so its early return has no return value to
+	 * assert on and throws nothing. The only observable is a log line. The
+	 * three tests below used to assert on an exception message instead, which
+	 * could not fail twice over: the string they compared against is a LOG
+	 * message that never reaches an exception, and the assertion sat inside a
+	 * catch block that did not run, so PHPUnit reported them risky for
+	 * performing no assertions at all.
+	 *
+	 * @param array<int, string> $captured Filled with the messages logged.
+	 *
+	 * @return void
+	 */
+	private function captureLogMessages(array &$captured): void {
+		$record = static function (string|\Stringable $message) use (&$captured): void {
+			$captured[] = (string) $message;
+		};
+
+		foreach (['debug', 'info', 'warning', 'error'] as $level) {
+			$this->logger->method($level)->willReturnCallback($record);
+		}
+	}
+
+	/**
+	 * The shape processSourceChunks() actually returns.
+	 *
+	 * A bare createMock() answers [], which extractObject() then reads
+	 * 'entities_found' out of. That state cannot occur in production — the one
+	 * implementation always fills all three keys — so the mock is made to keep
+	 * the contract rather than the service made defensive about a fake.
+	 *
+	 * @return void
+	 */
+	private function entityPassSucceeds(): void {
+		$this->entityHandler->method('processSourceChunks')->willReturn(
+			[
+				'chunks_processed' => 0,
+				'entities_found' => 0,
+				'relations_created' => 0,
+			]
+		);
+	}
+
 	public function testExtractObjectWithNullUpdatedTimestamp(): void {
-		// Object with null getUpdated() — should use time() as fallback.
+		// An object whose getUpdated() is null falls back to time(), which is
+		// newer than any stored chunk, so extraction must proceed.
 		$object = new \OCA\OpenRegister\Db\ObjectEntity();
 		// Updated is null by default.
+		$object->setUuid('object-without-a-timestamp');
 
 		$this->objectMapper->method('find')->willReturn($object);
-		$this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(null);
+		// A REAL chunk timestamp, deliberately. A null one short-circuits
+		// isSourceUpToDate() before the fallback is ever consulted, so this
+		// test would pass with any fallback at all — including one that made
+		// the object look permanently up-to-date and skipped extraction
+		// forever. With a stored chunk at 100, `?? time()` proceeds and `?? 0`
+		// would not.
+		$this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(100);
+		$this->entityPassSucceeds();
 
-		// Since ObjectHandler is instantiated internally and we can't mock it,
-		// we verify the flow proceeds past the up-to-date check.
-		// It will fail at ObjectHandler, but that proves the timestamp logic works.
+		$logged = [];
+		$this->captureLogMessages($logged);
+
+		// ObjectHandler is built inline from the mocked mappers, so the call
+		// runs on into it. What happens there is not this test's claim; whether
+		// the up-to-date check let it through is.
 		try {
 			$this->service->extractObject(1, false);
-		} catch (\Throwable $e) {
-			// Expected — ObjectHandler needs real mappers.
-			$this->assertNotSame('Object already processed and up-to-date', $e->getMessage());
+		} catch (\Throwable) {
+			// Deliberately swallowed — the assertions below are the claim.
 		}
+
+		$this->assertNotContains(
+			'[TextExtractionService] Object already processed and up-to-date',
+			$logged,
+			'a null timestamp must not read as up-to-date',
+		);
+		// The control. Without it the assertion above passes just as happily
+		// when extraction never started for some unrelated reason.
+		$this->assertContains(
+			'[ObjectHandler] Extracting text from object',
+			$logged,
+			'extraction must actually have been attempted',
+		);
 	}
 
 	public function testExtractObjectForceReExtractIgnoresUpToDate(): void {
@@ -1985,19 +2054,38 @@ class TextExtractionServiceTest extends TestCase {
 
 		$object = new \OCA\OpenRegister\Db\ObjectEntity();
 		$object->setUpdated($updated);
+		$object->setUuid('object-with-newer-chunks');
 
 		$this->objectMapper->method('find')->willReturn($object);
-		// Chunks are newer, but force=true should bypass.
+		// Chunks are newer, so without force this object IS up-to-date.
 		$this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(200);
+		$this->entityPassSucceeds();
 
-		// Should proceed past the up-to-date check (will fail at ObjectHandler).
+		$logged = [];
+		$this->captureLogMessages($logged);
+
 		try {
 			$this->service->extractObject(1, true);
-		} catch (\Throwable $e) {
-			// Expected — ObjectHandler needs real infrastructure.
-			// The key assertion is that it did NOT return early.
-			$this->assertNotSame('Object already processed and up-to-date', $e->getMessage());
+		} catch (\Throwable) {
+			// Deliberately swallowed — the assertions below are the claim.
 		}
+
+		// Note for whoever breaks this next: the force bypass is implemented
+		// TWICE — the guard here in extractObject() and an early return at the
+		// top of isSourceUpToDate() — and either one alone is sufficient.
+		// Removing just one does NOT redden this test, because the behaviour it
+		// asserts is unchanged. That is correct for a test of the outcome, but
+		// it does mean neither site is individually covered.
+		$this->assertNotContains(
+			'[TextExtractionService] Object already processed and up-to-date',
+			$logged,
+			'force must bypass the up-to-date check',
+		);
+		$this->assertContains(
+			'[ObjectHandler] Extracting text from object',
+			$logged,
+			'extraction must actually have been attempted',
+		);
 	}
 
 	// ────────────────────────────────────────────────────────
@@ -2913,28 +3001,38 @@ class TextExtractionServiceTest extends TestCase {
 	// ────────────────────────────────────────────────────────
 
 	public function testExtractObjectEntityExtractionFailureLogsError(): void {
-		// This verifies the entity extraction catch block in extractObject.
-		// We need ObjectHandler to succeed but entityHandler to fail.
-		// Since ObjectHandler is created inline, we have to let it fail
-		// and verify the flow still proceeds.
+		// The catch around the entity handler is there so a failure in entity
+		// recognition does not throw away the chunks that were already
+		// persisted: the text is extracted and stored either way, and only the
+		// entity pass is lost. Reaching that block means driving the whole
+		// extraction, which the mocked mappers can do — ObjectHandler reads the
+		// object through them, so an object with real content is enough.
 		$updated = new DateTime();
 		$updated->setTimestamp(100);
 
 		$object = new \OCA\OpenRegister\Db\ObjectEntity();
 		$object->setUpdated($updated);
+		$object->setUuid('object-with-a-failing-entity-pass');
+		$object->setObject(['subject' => 'Een besluit over een handhavingszaak.']);
 
 		$this->objectMapper->method('find')->willReturn($object);
 		$this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(null);
 
-		// ObjectHandler will be created with real mappers (which are mocks).
-		// It will likely fail trying to get source metadata.
-		// We verify that the code gets past the up-to-date check.
-		try {
-			$this->service->extractObject(1, false);
-		} catch (\Throwable $e) {
-			// Expected — ObjectHandler needs real infrastructure.
-			$this->assertInstanceOf(\Throwable::class, $e);
-		}
+		$this->entityHandler->method('processSourceChunks')
+			->willThrowException(new Exception('entity recognition unavailable'));
+
+		$logged = [];
+		$this->captureLogMessages($logged);
+
+		// No try/catch. That the call RETURNS is half the assertion: a failing
+		// entity pass must not propagate out of extractObject.
+		$this->service->extractObject(1, false);
+
+		$this->assertContains(
+			'[TextExtractionService] Entity extraction failed',
+			$logged,
+			'a failing entity pass must be logged, not swallowed silently',
+		);
 	}
 
 	// ────────────────────────────────────────────────────────

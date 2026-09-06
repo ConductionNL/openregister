@@ -279,8 +279,15 @@ class NotesController extends Controller {
 		string $schema,
 		string $id,
 	): ?\OCA\OpenRegister\Db\ObjectEntity {
-		$this->objectService->setSchema($schema);
+		// REGISTER FIRST. `setSchema()` scopes its slug lookup to whatever
+		// register is currently set, and ObjectService is reused across many
+		// operations in one process — so setting the schema first resolves it
+		// against a register LEFT BEHIND by an unrelated call. Measured here:
+		// `/objects/dossiq/case/{id}/notes` threw `Schema slug "case" is not
+		// carried by register "buildiq"`, an app this request never mentioned.
+		// Naming the register first makes the boundary the caller's own.
 		$this->objectService->setRegister($register);
+		$this->objectService->setSchema($schema);
 		$this->objectService->setObject($id);
 
 		return $this->objectService->getObject();

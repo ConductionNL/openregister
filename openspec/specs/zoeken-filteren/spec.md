@@ -50,7 +50,13 @@ The system MUST support free-text search across all string-typed properties of r
 - **AND** results MUST be combined into a single paginated response with unified `total` count
 
 ### Requirement: Field-level filtering with comparison operators
-The system MUST support exact match, array containment, IN-list, null-check, and range comparison operators for filtering on individual schema properties. Filter parameters are passed as query parameters where the parameter name matches the schema property name. The `SearchQueryHandler.cleanQuery()` method MUST normalize operator suffixes (`_in`, `_gt`, `_lt`, `_gte`, `_lte`, `_isnull`) into structured filter objects.
+The system MUST support exact match, array containment, IN-list, NOT-IN-list, not-equal, null-check and range comparison operators for filtering on individual schema properties. Filter parameters are passed as query parameters where the parameter name matches the schema property name.
+
+An operator is expressed as a suffix on the parameter name: `?bedrag_gte=5000`, `?status_in[]=new`, `?assignee_isnull=true`. `SearchQueryHandler::buildSearchQuery()` reconstructs a suffixed key into a nested operator bag (`bedrag => ['gte' => '5000']`), and `MagicSearchHandler::COMPARISON_OPERATORS` is the list of operator names that reconstruction may produce: `gte`, `lte`, `gt`, `lt`, `in`, `notIn`, `ne`, `isnull`. A suffix outside that list is NOT an operator — it is read as part of a nested field path, contributes no condition, and the filter is silently ignored, so the set above is exhaustive and adding an operator means adding it there AND in each of the four condition builders.
+
+Operator values arrive as strings, because a query string carries nothing else. `isnull` MUST therefore be read with boolean coercion (`true`/`"true"`/`"1"`/`1`/`"on"`/`"yes"` mean IS NULL; everything else, `"false"`/`"0"`/`""` included, means IS NOT NULL). A strict comparison against a PHP boolean MUST NOT be used: no query string can satisfy it, and the resulting failure is silent and inverted.
+
+A filter value MAY also be the literal string `IS NULL` or `IS NOT NULL` (`?assignee=IS NULL`), which every condition builder matches by value. This sentinel and the `_isnull` suffix are two spellings of one predicate.
 
 #### Scenario: Exact match filter on a string property
 - **GIVEN** schema `meldingen` with property `status` (string)
@@ -67,14 +73,15 @@ The system MUST support exact match, array containment, IN-list, null-check, and
 #### Scenario: Greater-than and less-than range filters
 - **GIVEN** schema `subsidies` with property `bedrag` (number)
 - **WHEN** the user filters with `?bedrag_gte=5000&bedrag_lte=10000`
-- **THEN** `SearchQueryHandler.cleanQuery()` MUST normalize these into `bedrag: { gte: 5000, lte: 10000 }`
+- **THEN** the suffixes MUST reconstruct into `bedrag: { gte: 5000, lte: 10000 }`
 - **AND** only objects with `bedrag >= 5000 AND bedrag <= 10000` MUST be returned
 
 #### Scenario: Null-check filter
 - **GIVEN** schema `meldingen` with property `afgehandeld_op` (string, format: date)
 - **WHEN** the user filters with `?afgehandeld_op_isnull=true`
-- **THEN** `SearchQueryHandler.cleanQuery()` MUST convert this to `WHERE afgehandeld_op IS NULL`
+- **THEN** the query MUST carry `afgehandeld_op IS NULL`
 - **AND** only objects without an `afgehandeld_op` value MUST be returned
+- **AND** `?afgehandeld_op_isnull=false` MUST return exactly the complement
 
 #### Scenario: Filter on non-existent property returns empty results
 - **GIVEN** schema `meldingen` that does NOT have a property `nonexistent`
@@ -222,10 +229,17 @@ The system MUST support sorting by one or more fields via the `_order` parameter
 - **THEN** it MUST add `ORDER BY similarity(t._name::text, 'overlast') DESC`
 - **AND** if `pg_trgm` is not available, the `_relevance` sort MUST be silently skipped
 
-#### Scenario: Legacy ordering parameter
-- **GIVEN** a request with `?ordering=-aanmaakdatum` (legacy format)
-- **WHEN** `SearchQueryHandler.cleanQuery()` processes the parameter
-- **THEN** it MUST convert the leading `-` to `DESC` direction: `_order: { aanmaakdatum: DESC }`
+#### Scenario: Sort direction is expressed with `_order`
+- **GIVEN** a request with `?_order[aanmaakdatum]=DESC`
+- **WHEN** the search runs
+- **THEN** results MUST be ordered by `aanmaakdatum` descending
+
+The `?ordering=-aanmaakdatum` form this scenario used to describe is NOT supported.
+It was only ever implemented in `SearchQueryHandler::cleanQuery()`, which no
+production code called; over HTTP `ordering` is read as a filter on a property no
+schema declares, which adds `1 = 0` and returns **zero rows**. Measured on a live
+instance 2026-09-04: `?ordering=title` -> 0 of 13. The method has been deleted
+rather than left as a second, dead filter language.
 
 ### Requirement: Offset and page-based pagination
 The system MUST support pagination through `_limit`, `_offset`, and `_page` parameters. Page-based pagination MUST be 1-indexed. The response MUST include `total` (total matching count), `page` (current page), `pages` (total pages), `limit`, and `offset` fields. Navigation URLs (`next`, `prev`) MUST be generated when multiple pages exist.

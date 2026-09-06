@@ -206,3 +206,46 @@ Provenance MUST be visible via the schemas API.
 - THEN the property is flagged as a conflict requiring explicit per-property confirmation
 - AND it is not overwritten without that confirmation
 
+
+### Requirement: A schema retired from a descriptor MUST be removable from the instance
+
+Removing a schema from an app's register descriptor does not remove it from the
+instance. `ImportHandler` unions the freshly-imported schema ids into the
+register's existing list and prunes only the ids it has just shadowed by slug,
+so a retired schema keeps its row, its magic table and its place in the
+register's `schemas` array indefinitely. On a shared instance that is how a
+cross-app slug collision outlives the descriptor change intended to end it.
+
+OpenRegister MUST therefore offer an operator command that removes a named,
+app-owned schema: `openregister:schemas:prune-retired --app <appId> --slug <slug>`.
+
+The command MUST be scoped by owning application, so it can never reach a
+same-slug schema another app owns. It MUST be dry-run by default. It MUST
+refuse a schema that still owns objects unless `--force` is given. It MUST
+unlink the schema id from every referencing register before the row is deleted,
+matching both the integer and the string form of the id, because the stored list
+holds either depending on which import era wrote it.
+
+#### Scenario: A retired schema is removed with its table and its links
+- GIVEN app `filinq` owns schema `product`, which owns no objects
+- AND one register references that schema id
+- WHEN `openregister:schemas:prune-retired --app filinq --slug product --apply` runs
+- THEN the schema row is deleted and its magic table is dropped
+- AND the referencing register no longer lists that schema id
+
+#### Scenario: The command cannot reach another app's same-slug schema
+- GIVEN app `filinq` owns schema `product` and app `decidiq` owns a different schema also slugged `product`
+- WHEN the command runs with `--app filinq --slug product --apply`
+- THEN only filinq's schema is deleted
+- AND decidiq's schema is untouched
+
+#### Scenario: A schema that still owns objects is refused
+- GIVEN app `shillinq` owns schema `Account`, which owns 115 objects
+- WHEN the command runs with `--app shillinq --slug Account --apply` and no `--force`
+- THEN nothing is deleted
+- AND the command reports the object count and the `--force` escape
+
+#### Scenario: A slug the app does not own is reported, not failed
+- GIVEN app `filinq` owns no schema slugged `task`
+- WHEN the command runs with `--app filinq --slug task`
+- THEN it reports the slug as not found and exits successfully

@@ -85,6 +85,108 @@ class DemoDataService {
 	}//end isAvailable()
 
 	/**
+	 * The answer that means "plant nothing".
+	 *
+	 * 🔴 NOT THE ABSENCE OF AN ANSWER. An operator who declines has FINISHED the
+	 * step; a step that can never be marked done reopens the wizard over every
+	 * page (nextcloud-vue#806).
+	 *
+	 * @var string
+	 */
+	public const NONE_DATASET = 'none';
+
+	/**
+	 * The id of the dataset this app ships.
+	 *
+	 * @var string
+	 */
+	public const DEMO_DATASET = 'demo';
+
+	/**
+	 * Every answer the wizard's choice step may offer, declining included.
+	 *
+	 * 🔴 THE SERVER OWNS THIS LIST, AND THAT IS THE POINT. The step declares
+	 * `optionsSource: datasets` and no options of its own, so the label, the
+	 * description and the object count come from the descriptor that will
+	 * actually be imported. A manifest that restated them could disagree with
+	 * what lands, and nothing would notice.
+	 *
+	 * @return array<int, array{id: string, label: string, description: string, objectCount: integer, icon: string}> The answers.
+	 *
+	 * @spec exclude Demo-data choice list; ADR-111 rule 1 has no per-app behavioural spec.
+	 */
+	public function listChoices(): array {
+		$choices = [
+			[
+				'id'          => self::NONE_DATASET,
+				'label'       => 'None, I will set this up myself',
+				'description' => 'Nothing is imported. You start with an empty app and add your own data.',
+				'objectCount' => 0,
+				'icon'        => 'CloseCircleOutline',
+			],
+		];
+
+		$objects = $this->shippedObjectCount();
+		if ($objects !== null) {
+			$choices[] = [
+				'id'    => self::DEMO_DATASET,
+				'label' => 'Example data',
+				// 🔴 NO NUMBER IN THIS SENTENCE. The wizard runs a card's
+				// description through the app's translation function, which is a
+				// literal lookup, so an interpolated count would make the string
+				// untranslatable and leave a Dutch operator reading English. The
+				// count travels as `objectCount` and the card renders it as a
+				// stat, with a label the library translates.
+				'description' => (
+					'Sample values for every schema this app supplies, generated from the schemas '
+					. 'themselves. It shows the lists, detail pages and dashboards working rather '
+					. 'than telling a story. Safe to run more than once, and you can delete it '
+					. 'afterwards.'
+				),
+				'objectCount' => $objects,
+				'icon'        => 'DatabaseOutline',
+			];
+		}
+
+		return $choices;
+
+	}//end listChoices()
+
+	/**
+	 * How many objects the shipped descriptor carries, or null when it ships none.
+	 *
+	 * Counted from the FILE, so the card promises the number that will actually
+	 * be imported. A missing or malformed descriptor returns null and the app
+	 * then offers only "None" — honest, rather than an import that cannot run.
+	 *
+	 * @return integer|null The object count, or null when there is no usable descriptor.
+	 */
+	private function shippedObjectCount(): ?int {
+		$path = $this->descriptorPath();
+		if (is_file($path) === false) {
+			return null;
+		}
+
+		$raw = file_get_contents($path);
+		if ($raw === false) {
+			return null;
+		}
+
+		$data = json_decode($raw, true);
+		if (is_array($data) === false) {
+			return null;
+		}
+
+		$components = ($data['components'] ?? []);
+		if (is_array($components) === false || is_array(($components['objects'] ?? null)) === false) {
+			return 0;
+		}
+
+		return count($components['objects']);
+
+	}//end shippedObjectCount()
+
+	/**
 	 * Import the demo dataset.
 	 *
 	 * 🔴 THROWS RATHER THAN RETURNING A QUIET FAILURE. The caller reports the

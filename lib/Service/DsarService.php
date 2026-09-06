@@ -42,6 +42,7 @@ use DateTime;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
+use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -103,6 +104,9 @@ class DsarService {
 	 * @param IGroupManager $groupManager Group manager used
 	 *                                    by the in-service
 	 *                                    admin guard.
+	 * @param ArchivalRetentionGuard $archivalGuard Refuses erasure of a legally
+	 *                                              retained record and puts the
+	 *                                              refusal into words.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
@@ -112,6 +116,7 @@ class DsarService {
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 		private readonly IGroupManager $groupManager,
+		private readonly ArchivalRetentionGuard $archivalGuard,
 	) {
 
 	}//end __construct()
@@ -253,7 +258,26 @@ class DsarService {
 	 *       ['uuid' => '<object-uuid>', 'register' => '<...>', 'schema' => '<...>'],
 	 *       ...
 	 *     ],
+	 *     'withheld'     => [
+	 *       ['uuid' => '...', 'schema' => '...', 'ground' => 'ARCHIVAL_RETENTION_OBLIGATION',
+	 *        'message' => '...', 'basis' => '...', 'action' => '...'],
+	 *       ...
+	 *     ],
+	 *     'withheldCount' => <int>,
 	 *   ]
+	 *
+	 * RETENTION WINS OVER ERASURE. A record on a schema declaring
+	 * `x-openregister-archival` is kept under a legal obligation, and art-17(3)(b)
+	 * stands down for it. Those rows are refused, recorded and reported in
+	 * `withheld` with the ground and the wording to pass back to the data subject.
+	 * The refusal is decided by
+	 * {@see \OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard}, which asks
+	 * {@see \OCA\OpenRegister\Db\Schema::hasArchivalAnnotation()}, the same single
+	 * definition the four HTTP delete doors already use.
+	 *
+	 * Withholding one record never blocks the rest: every non-archival match in
+	 * the same request is still erased. A run that withheld anything reports
+	 * `complete: false`, because the data is still there.
 	 *
 	 * @param string $subject Subject identifier.
 	 * @param string|null $type Optional GdprEntity type filter.
@@ -293,11 +317,17 @@ class DsarService {
 			// BUG-SVC-2: objects whose erasure failed are collected here so the
 			// caller can report a partial failure instead of a false "complete".
 			'failed' => [],
+			// RETENTION WINS OVER ERASURE: records held under an archival
+			// obligation are refused, named here, and reported back with the
+			// rest of the answer. A refusal the requester never sees is a
+			// silent skip, which is what this bucket exists to prevent.
+			'withheld' => [],
 		];
 
 		if ($dryRun === true || $entries === []) {
 			$summary['complete'] = true;
 			$summary['failedCount'] = 0;
+			$summary['withheldCount'] = 0;
 			return $summary;
 		}
 
@@ -311,52 +341,99 @@ class DsarService {
 		];
 
 		foreach ($entries as $entry) {
-			$object = $this->loadObjectByEntry(entry: $entry);
-			if ($object === null) {
-				// BUG-SVC-2: a matched object we cannot load was NOT erased —
-				// record it as a failure rather than silently skipping it.
-				$summary['failed'][] = [
-					'object' => $entry,
-					'error' => 'Object could not be loaded for erasure',
-				];
-				$this->logger->warning(
-					message: '[DSAR] Matched object could not be loaded during vergetelheid',
-					context: ['object' => $entry]
-				);
-				continue;
-			}
-
-			$object->setDeleted($deletionData);
-			if ($dsarActivityUuid !== null) {
-				$object->setProcessingActivityId($dsarActivityUuid);
-			}
-
-			try {
-				$this->objectMapper->update(entity: $object);
-				$summary['erased'][] = [
-					'uuid' => $object->getUuid(),
-					'register' => $object->getRegister(),
-					'schema' => $object->getSchema(),
-				];
-			} catch (\Throwable $e) {
-				$summary['failed'][] = [
-					'object' => $entry,
-					'error' => $e->getMessage(),
-				];
-				$this->logger->warning(
-					message: '[DSAR] Soft-delete failed during vergetelheid',
-					context: ['object' => $entry, 'error' => $e->getMessage()]
-				);
-			}
+			$this->eraseOneEntry(
+				entry: $entry,
+				deletionData: $deletionData,
+				dsarActivityUuid: $dsarActivityUuid,
+				summary: $summary
+			);
 		}//end foreach
 
 		// BUG-SVC-2: surface partial completion so callers don't treat a run
 		// with failures as a fully-successful erasure.
-		$summary['complete'] = ($summary['failed'] === []);
+		//
+		// A WITHHELD RECORD MAKES THE ERASURE INCOMPLETE, exactly as a failure
+		// does. The row is still there, so reporting `complete: true` would tell
+		// the data subject their data is gone while the law keeps it. The two
+		// counts stay separate because the answers differ: a failure is retried,
+		// a withheld record is explained.
+		$summary['complete'] = ($summary['failed'] === [] && $summary['withheld'] === []);
 		$summary['failedCount'] = count($summary['failed']);
+		$summary['withheldCount'] = count($summary['withheld']);
 
 		return $summary;
 	}//end eraseObjectsForSubject()
+
+	/**
+	 * Erase one matched object, or record why it was not erased.
+	 *
+	 * EVERY ENTRY LANDS IN EXACTLY ONE BUCKET of `$summary`: `erased`, `failed`
+	 * or `withheld`. An entry that reached none of them would be a match the
+	 * caller is never told about.
+	 *
+	 * @param array<string, mixed> $entry The deduped match (object_id / object_uuid).
+	 * @param array<string, mixed> $deletionData Soft-delete metadata to stamp.
+	 * @param string|null $dsarActivityUuid Configured DSAR activity, when set.
+	 * @param array<string, mixed> $summary Run summary, mutated in place.
+	 *
+	 * @return void
+	 */
+	private function eraseOneEntry(
+		array $entry,
+		array $deletionData,
+		?string $dsarActivityUuid,
+		array &$summary,
+	): void {
+		$object = $this->loadObjectByEntry(entry: $entry);
+		if ($object === null) {
+			// BUG-SVC-2: a matched object we cannot load was NOT erased —
+			// record it as a failure rather than silently skipping it.
+			$summary['failed'][] = [
+				'object' => $entry,
+				'error' => 'Object could not be loaded for erasure',
+			];
+			$this->logger->warning(
+				message: '[DSAR] Matched object could not be loaded during vergetelheid',
+				context: ['object' => $entry]
+			);
+			return;
+		}
+
+		// RETENTION WINS OVER ERASURE. Vergetelheid is art-17, and art-17(3)(b)
+		// stands down for processing the law requires: an archival record is
+		// kept, the refusal is recorded, and it travels back in `withheld` so
+		// the officer answering the data subject can name it. The refusal is
+		// per row, so every non-archival match in the same request is still
+		// erased.
+		$refusal = $this->archivalGuard->erasureRefusal(object: $object);
+		if ($refusal !== null) {
+			$summary['withheld'][] = $refusal;
+			return;
+		}
+
+		$object->setDeleted($deletionData);
+		if ($dsarActivityUuid !== null) {
+			$object->setProcessingActivityId($dsarActivityUuid);
+		}
+
+		try {
+			$this->objectMapper->update(entity: $object);
+			$summary['erased'][] = [
+				'uuid' => $object->getUuid(),
+				'register' => $object->getRegister(),
+				'schema' => $object->getSchema(),
+			];
+		} catch (\Throwable $e) {
+			$summary['failed'][] = [
+				'object' => $entry,
+				'error' => $e->getMessage(),
+			];
+			$this->logger->warning(
+				message: '[DSAR] Soft-delete failed during vergetelheid',
+				context: ['object' => $entry, 'error' => $e->getMessage()]
+			);
+		}
+	}//end eraseOneEntry()
 
 	/**
 	 * Build a dedup key for a relation hit row.

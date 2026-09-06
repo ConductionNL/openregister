@@ -54,8 +54,11 @@ class ArchivalControllerTest extends TestCase {
 		// list (openregister#393 D3). Without it the real MagicMapper::update() runs.
 		$this->objectMapper = $this->getMockBuilder(MagicMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['update'])
-			->addMethods(['findByUuid'])
+			// `find` is stubbed with onlyMethods, NOT addMethods. addMethods
+			// invents a method the class does not have, which is how
+			// `findByUuid` passed here for so long while production raised
+			// `Call to undefined method` on every archival endpoint.
+			->onlyMethods(['update', 'find'])
 			->getMock();
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
@@ -230,7 +233,7 @@ class ArchivalControllerTest extends TestCase {
 		$object->method('jsonSerialize')->willReturn(['uuid' => 'dl-1', 'status' => 'in_review']);
 
 		$this->objectMapper
-			->method('findByUuid')
+			->method('find')
 			->with('dl-1')
 			->willReturn($object);
 
@@ -247,7 +250,7 @@ class ArchivalControllerTest extends TestCase {
 		$this->setUpArchivist();
 
 		$this->objectMapper
-			->method('findByUuid')
+			->method('find')
 			->willThrowException(new \Exception('Not found'));
 
 		$response = $this->controller->getDestructionList('non-existent');
@@ -273,7 +276,7 @@ class ArchivalControllerTest extends TestCase {
 		]);
 
 		$this->objectMapper
-			->method('findByUuid')
+			->method('find')
 			->with('dl-1')
 			->willReturn($object);
 
@@ -315,7 +318,7 @@ class ArchivalControllerTest extends TestCase {
 		]);
 
 		$this->objectMapper
-			->method('findByUuid')
+			->method('find')
 			->with('dl-1')
 			->willReturn($object);
 
@@ -349,7 +352,7 @@ class ArchivalControllerTest extends TestCase {
 		]);
 
 		$this->objectMapper
-			->method('findByUuid')
+			->method('find')
 			->with('dl-1')
 			->willReturn($object);
 
@@ -375,7 +378,7 @@ class ArchivalControllerTest extends TestCase {
 		$this->setUpArchivist();
 
 		$this->objectMapper
-			->method('findByUuid')
+			->method('find')
 			->willThrowException(new \Exception('Not found'));
 
 		$this->request->method('getParams')->willReturn([]);
@@ -402,7 +405,7 @@ class ArchivalControllerTest extends TestCase {
 		]);
 
 		$this->objectMapper
-			->method('findByUuid')
+			->method('find')
 			->with('dl-1')
 			->willReturn($object);
 
@@ -463,7 +466,7 @@ class ArchivalControllerTest extends TestCase {
 		]);
 
 		$this->objectMapper
-			->method('findByUuid')
+			->method('find')
 			->willThrowException(new \Exception('Not found'));
 
 		$response = $this->controller->rejectDestructionList('non-existent');
@@ -494,7 +497,7 @@ class ArchivalControllerTest extends TestCase {
 		]);
 
 		$this->objectMapper
-			->method('findByUuid')
+			->method('find')
 			->with('obj-1')
 			->willReturn($object);
 
@@ -589,7 +592,7 @@ class ArchivalControllerTest extends TestCase {
 		]);
 
 		$this->objectMapper
-			->method('findByUuid')
+			->method('find')
 			->willThrowException(new \Exception('Object not found'));
 
 		$response = $this->controller->createLegalHold();
@@ -619,7 +622,7 @@ class ArchivalControllerTest extends TestCase {
 		]);
 
 		$this->objectMapper
-			->method('findByUuid')
+			->method('find')
 			->with('obj-1')
 			->willReturn($object);
 
@@ -660,7 +663,7 @@ class ArchivalControllerTest extends TestCase {
 		]);
 
 		$this->objectMapper
-			->method('findByUuid')
+			->method('find')
 			->willThrowException(new \Exception('Object not found'));
 
 		$response = $this->controller->releaseLegalHold('obj-1');

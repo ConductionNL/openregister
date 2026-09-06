@@ -30,7 +30,6 @@ namespace OCA\OpenRegister\Service\Notification;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenRegister\BackgroundJob\WebPushDispatchJob;
 use OCA\OpenRegister\Db\DuplicateDispatchException;
 use OCA\OpenRegister\Db\NotificationDispatchLogMapper;
 use OCA\OpenRegister\Db\NotificationHistoryMapper;
@@ -78,13 +77,43 @@ use Psr\Log\LoggerInterface;
 class AnnotationNotificationDispatcher {
 
 	/**
-	 * Per-instance cache of resolved relation display names, keyed by UUID.
-	 * Avoids repeat ObjectService lookups when the same relation is
-	 * interpolated across a recipient fan-out.
+	 * The nc-notification channel unit — injected, or lazily built.
+	 * Nullable-and-lazy keeps every existing constructor call site working:
+	 * the shared units are appended OPTIONAL constructor parameters, and a
+	 * dispatcher constructed without them builds each from its own
+	 * dependencies on first use — the same objects, wired the same way.
 	 *
-	 * @var array<string, string|null>
+	 * @var NcNotificationSender|null
 	 */
-	private array $relationDisplayCache = [];
+	private ?NcNotificationSender $lazyNcSender = null;
+
+	/**
+	 * The email channel unit — injected, or lazily built.
+	 *
+	 * @var EmailSender|null
+	 */
+	private ?EmailSender $lazyEmailSender = null;
+
+	/**
+	 * The Talk channel unit — injected, or lazily built.
+	 *
+	 * @var TalkSender|null
+	 */
+	private ?TalkSender $lazyTalkSender = null;
+
+	/**
+	 * The shared recipient resolver — injected, or lazily built.
+	 *
+	 * @var NotificationRecipientResolver|null
+	 */
+	private ?NotificationRecipientResolver $lazyRecipientResolver = null;
+
+	/**
+	 * The dialect's placeholder evaluator — injected, or lazily built.
+	 *
+	 * @var NotificationTemplating|null
+	 */
+	private ?NotificationTemplating $lazyTemplating = null;
 
 	/**
 	 * Constructor.
@@ -115,6 +144,11 @@ class AnnotationNotificationDispatcher {
 	 * @param QueuedNotificationMapper|null $queuedNotificationMapper Durable queue mapper (quiet-hours + digest schedule).
 	 * @param DigestScheduleEvaluator|null $digestScheduleEvaluator Live evaluator for the `digest` fixed-time schedule.
 	 * @param ITimeFactory|null $timeFactory Time source for the delivery/digest gate.
+	 * @param NcNotificationSender|null $ncSender Shared nc-notification channel unit (lazily built when absent).
+	 * @param EmailSender|null $emailSender Shared email channel unit (lazily built when absent).
+	 * @param TalkSender|null $talkSender Shared Talk channel unit (lazily built when absent).
+	 * @param NotificationRecipientResolver|null $recipientResolver Shared recipient resolver (lazily built when absent).
+	 * @param NotificationTemplating|null $templating Shared placeholder evaluator (lazily built when absent).
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies.
 	 */
@@ -145,8 +179,130 @@ class AnnotationNotificationDispatcher {
 		private readonly ?QueuedNotificationMapper $queuedNotificationMapper = null,
 		private readonly ?DigestScheduleEvaluator $digestScheduleEvaluator = null,
 		private readonly ?ITimeFactory $timeFactory = null,
+		?NcNotificationSender $ncSender = null,
+		?EmailSender $emailSender = null,
+		?TalkSender $talkSender = null,
+		?NotificationRecipientResolver $recipientResolver = null,
+		?NotificationTemplating $templating = null,
 	) {
+		$this->lazyNcSender = $ncSender;
+		$this->lazyEmailSender = $emailSender;
+		$this->lazyTalkSender = $talkSender;
+		$this->lazyRecipientResolver = $recipientResolver;
+		$this->lazyTemplating = $templating;
 	}//end __construct()
+
+	/**
+	 * The nc-notification channel sender — injected, or built from this
+	 * dispatcher's own dependencies. One implementation either way; the flow
+	 * messaging service invokes the same class.
+	 *
+	 * @return NcNotificationSender The sender.
+	 *
+	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 */
+	private function ncSender(): NcNotificationSender {
+		$this->lazyNcSender ??= new NcNotificationSender(
+			notificationManager: $this->notificationManager,
+			logger: $this->logger,
+			userManager: $this->userManager,
+			jobList: $this->jobList
+		);
+
+		return $this->lazyNcSender;
+	}//end ncSender()
+
+	/**
+	 * The email channel sender — injected, or built from this dispatcher's
+	 * own dependencies.
+	 *
+	 * @return EmailSender The sender.
+	 *
+	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 */
+	private function emailSender(): EmailSender {
+		$this->lazyEmailSender ??= new EmailSender(
+			userManager: $this->userManager,
+			mailer: $this->mailer,
+			logger: $this->logger
+		);
+
+		return $this->lazyEmailSender;
+	}//end emailSender()
+
+	/**
+	 * The Talk channel sender — injected, or built from this dispatcher's
+	 * own dependencies.
+	 *
+	 * @return TalkSender The sender.
+	 *
+	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 */
+	private function talkSender(): TalkSender {
+		$this->lazyTalkSender ??= new TalkSender(
+			httpClient: $this->httpClient,
+			logger: $this->logger,
+			config: ($this->config ?? $this->systemConfig())
+		);
+
+		return $this->lazyTalkSender;
+	}//end talkSender()
+
+	/**
+	 * The recipient resolver — injected, or built from this dispatcher's own
+	 * dependencies.
+	 *
+	 * @return NotificationRecipientResolver The resolver.
+	 *
+	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 */
+	private function recipientResolver(): NotificationRecipientResolver {
+		$this->lazyRecipientResolver ??= new NotificationRecipientResolver(
+			userManager: $this->userManager,
+			groupManager: $this->groupManager,
+			logger: $this->logger,
+			serverContainer: $this->serverContainer
+		);
+
+		return $this->lazyRecipientResolver;
+	}//end recipientResolver()
+
+	/**
+	 * The dialect's placeholder evaluator — injected, or built from this
+	 * dispatcher's own dependencies.
+	 *
+	 * @return NotificationTemplating The evaluator.
+	 *
+	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 */
+	private function templating(): NotificationTemplating {
+		$this->lazyTemplating ??= new NotificationTemplating(
+			logger: $this->logger,
+			objectService: $this->objectService
+		);
+
+		return $this->lazyTemplating;
+	}//end templating()
+
+	/**
+	 * The system config, resolved through the server container for callers
+	 * that constructed the dispatcher with the legacy (no-IConfig) signature.
+	 *
+	 * @return IConfig|null The config service, or null when unresolvable.
+	 */
+	private function systemConfig(): ?IConfig {
+		try {
+			$config = $this->serverContainer->get(IConfig::class);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		if (($config instanceof IConfig) === false) {
+			return null;
+		}
+
+		return $config;
+	}//end systemConfig()
 
 	/**
 	 * Fire any notifications declared on the schema whose trigger matches.
@@ -1381,43 +1537,10 @@ class AnnotationNotificationDispatcher {
 			return;
 		}
 
-		try {
-			$client = $this->httpClient->newClient();
-			// Resolve the local OC URL — Talk's chat endpoint is internal
-			// to the NC instance, so we route via the configured overwrite
-			// host or fall back to the loopback. The injected IConfig
-			// dependency is preferred; the server container fallback
-			// exists for callers that constructed the dispatcher with
-			// the legacy (no-IConfig) signature.
-			$base = (string)$this->serverContainer->get(\OCP\IConfig::class)->getSystemValue('overwrite.cli.url', 'http://localhost');
-			if ($this->config !== null) {
-				$base = (string)$this->config->getSystemValue('overwrite.cli.url', 'http://localhost');
-			}
-
-			$base = rtrim($base, '/');
-			$url = $base . '/ocs/v2.php/apps/spreed/api/v1/chat/' . rawurlencode($token);
-
-			$client->post(
-				$url,
-				[
-					'headers' => [
-						'OCS-APIRequest' => 'true',
-						'Accept' => 'application/json',
-						'Content-Type' => 'application/x-www-form-urlencoded',
-					],
-					'body' => [
-						'message' => $message,
-						'actorType' => 'bots',
-						'actorId' => 'openregister',
-					],
-					'timeout' => 5,
-				]
-			);
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				sprintf('[AnnotationNotificationDispatcher] talk to "%s" failed: %s', $token, $e->getMessage())
-			);
-		}//end try
+		// The shared Talk send unit — the same class the flow messaging
+		// service invokes. The declarative path stays a best-effort bot
+		// broadcast, so the outcome is not escalated here.
+		$this->talkSender()->postAsBot(token: $token, message: $message);
 	}//end emitTalk()
 
 	/**
@@ -1828,322 +1951,29 @@ class AnnotationNotificationDispatcher {
 	 * recipient-resolution contract.
 	 */
 	private function resolveRecipients(array $recipientsSpec, array $data, ?ObjectEntity $object = null, array $context = []): array {
-		$uids = [];
-		foreach ($recipientsSpec as $r) {
-			if (is_array($r) === false) {
-				continue;
-			}
-
-			$kind = (string)($r['kind'] ?? '');
-			if ($kind === 'users') {
-				foreach ((array)($r['users'] ?? []) as $u) {
-					if (is_string($u) === true && $u !== '' && $this->userExists(uid: $u) === true) {
-						$uids[] = $u;
-					}
-				}
-
-				continue;
-			}
-
-			if ($kind === 'field') {
-				// The field's value comes from the object's stored data,
-				// which is writeable by anyone with `update` permission
-				// on the object. An attacker who controls the field
-				// could otherwise direct notifications at any uid string,
-				// including admins, with an attacker-shaped subject.
-				// Verify the value names a real Nextcloud user before
-				// adding it to the recipient list.
-				$field = (string)($r['field'] ?? '');
-				$value = ($data[$field] ?? null);
-				if (is_string($value) === true && $value !== '' && $this->userExists(uid: $value) === true) {
-					$uids[] = $value;
-				}
-
-				continue;
-			}
-
-			if ($kind === 'relation') {
-				// Resolve a typed relation (declared via x-openregister-relations).
-				// Reads $data[<relationFieldName>] which by convention holds
-				// either a string UID, an array of string UIDs, or an
-				// array of objects each carrying a userId field. Same
-				// attacker-controlled-input reasoning as the `field`
-				// kind above — every extracted uid is checked against
-				// IUserManager::userExists().
-				$relName = (string)($r['relation'] ?? '');
-				if ($relName === '') {
-					continue;
-				}
-
-				$value = ($data[$relName] ?? null);
-				foreach ($this->extractUidsFromRelation(value: $value) as $uid) {
-					if ($this->userExists(uid: $uid) === true) {
-						$uids[] = $uid;
-					}
-				}
-
-				continue;
-			}//end if
-
-			if ($kind === 'object-acl') {
-				if ($object !== null) {
-					$perm = (string)($r['permission'] ?? 'read');
-					foreach ($this->resolveObjectAclRecipients(object: $object, permission: $perm) as $uid) {
-						$uids[] = $uid;
-					}
-				}
-
-				continue;
-			}
-
-			if ($kind === 'expression') {
-				if ($object !== null) {
-					$resolverTag = (string)($r['resolver'] ?? '');
-					$resolved = $this->resolveExpressionRecipients(
-						resolverTag: $resolverTag,
-						object: $object,
-						context: $context
-					);
-					foreach ($resolved as $uid) {
-						$uids[] = $uid;
-					}
-				}
-
-				continue;
-			}
-
-			if ($kind === 'groups') {
-				foreach ((array)($r['groups'] ?? []) as $gid) {
-					if (is_string($gid) === false || $gid === '') {
-						continue;
-					}
-
-					try {
-						$group = $this->groupManager->get($gid);
-						if ($group === null) {
-							continue;
-						}
-
-						foreach ($group->getUsers() as $user) {
-							$uids[] = $user->getUID();
-						}
-					} catch (\Throwable $e) {
-						$this->logger->warning(
-							sprintf('[AnnotationNotificationDispatcher] group "%s" lookup failed: %s', $gid, $e->getMessage())
-						);
-					}
-				}
-			}//end if
-		}//end foreach
-
-		return array_values(array_unique($uids));
+		// The subsystem's ONE recipient resolver — the same class the flow
+		// messaging service expands its node recipients through.
+		return $this->recipientResolver()->resolve(
+			recipientsSpec: $recipientsSpec,
+			data: $data,
+			object: $object,
+			context: $context
+		);
 	}//end resolveRecipients()
-
-	/**
-	 * Resolve recipients from the object's per-object ACL.
-	 *
-	 * Reads `$object->getAuthorization()` (Schema entity carries the
-	 * permission map per object). Returns every uid (and group-member
-	 * uids) holding the requested permission level.
-	 *
-	 * v1 implementation: best-effort. Reads the object's `groups` and
-	 * `owner` fields directly. Per-object ACL granularity (read vs
-	 * manage) is treated as: `read` matches any user/group in the ACL;
-	 * `manage` matches only the object owner. A future iteration can
-	 * walk the full RBAC `OrObjectAclMapper` once that surface is
-	 * stable.
-	 *
-	 * @param ObjectEntity $object The object whose ACL should be read.
-	 * @param string $permission The required permission (`read` or `manage`).
-	 *
-	 * @return array<int, string>
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) resolveObjectAclRecipients() walks owner,
-	 * per-user, per-role, and per-group ACL entries; each entry type requires separate null-guards
-	 * and uid-extraction logic that cannot be merged without losing the distinction between
-	 * role-based and explicit-user grants.
-	 */
-	private function resolveObjectAclRecipients(ObjectEntity $object, string $permission): array {
-		$uids = [];
-		$owner = $object->getOwner();
-		if (is_string($owner) === true && $owner !== '') {
-			$uids[] = $owner;
-		}
-
-		if ($permission === 'manage') {
-			return $uids;
-		}
-
-		// Read permission: also include groups via getGroups(). The
-		// Entity base uses __call magic for accessors, so method_exists()
-		// is unreliable — fall through and let the magic call surface
-		// the value (or throw, which is caught below).
-		try {
-			$groupsRaw = $object->getGroups();
-			if (is_array($groupsRaw) === true) {
-				foreach ($groupsRaw as $gid) {
-					if (is_string($gid) === false || $gid === '') {
-						continue;
-					}
-
-					$group = $this->groupManager->get($gid);
-					if ($group === null) {
-						continue;
-					}
-
-					foreach ($group->getUsers() as $user) {
-						$uids[] = $user->getUID();
-					}
-				}
-			}
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				sprintf('[AnnotationNotificationDispatcher] object-acl read resolution failed: %s', $e->getMessage())
-			);
-		}//end try
-
-		return $uids;
-	}//end resolveObjectAclRecipients()
-
-	/**
-	 * Resolve recipients via a DI-tagged RecipientResolverInterface.
-	 *
-	 * Looks up the resolver via the injected IServerContainer so apps
-	 * can register their resolver class by FQCN and have NC autowire
-	 * its dependencies. Skips silently when the resolver doesn't exist
-	 * or doesn't implement the interface.
-	 *
-	 * The previous implementation reached for the `\OC::$server` static
-	 * accessor; this PR's ADR (`docs/development-notes/AUDIT_2026-05-01.md`)
-	 * bans that pattern in `lib/`. The injected container is functionally
-	 * equivalent without coupling to the static accessor.
-	 *
-	 * @param string $resolverTag DI tag (or FQCN) of the resolver service.
-	 * @param ObjectEntity $object The object whose recipients are being resolved.
-	 * @param array<string, mixed> $context Per-event context passed through to the resolver.
-	 *
-	 * @return array<int, string>
-	 */
-	private function resolveExpressionRecipients(string $resolverTag, ObjectEntity $object, array $context): array {
-		if ($resolverTag === '') {
-			return [];
-		}
-
-		try {
-			$resolver = $this->serverContainer->get($resolverTag);
-			if (($resolver instanceof RecipientResolverInterface) === false) {
-				$this->logger->warning(
-					sprintf('[AnnotationNotificationDispatcher] expression resolver "%s" does not implement RecipientResolverInterface', $resolverTag)
-				);
-				return [];
-			}
-
-			return array_values($resolver->resolve($object, $context));
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				sprintf('[AnnotationNotificationDispatcher] expression resolver "%s" failed: %s', $resolverTag, $e->getMessage())
-			);
-			return [];
-		}
-	}//end resolveExpressionRecipients()
 
 	/**
 	 * Verify that a uid corresponds to an actual Nextcloud user.
 	 *
-	 * Notification recipient lists pull strings from object data
-	 * (`field` / `relation` kinds) and from schema annotations
-	 * (`users` kind). Without this check, an attacker who can write
-	 * objects in a schema using `field` recipients could direct a
-	 * notification (with an attacker-shaped subject) at any uid string
-	 * — including admins. Backed by a per-request cache to keep the
-	 * cost flat across N recipients in a single dispatch.
+	 * Delegates to the shared recipient resolver, whose per-request cache and
+	 * only-cache-definitive-verdicts posture this method used to carry.
 	 *
 	 * @param string $uid Candidate Nextcloud user identifier.
 	 *
 	 * @return bool True when the uid corresponds to a real Nextcloud user.
 	 */
 	private function userExists(string $uid): bool {
-		if ($uid === '') {
-			return false;
-		}
-
-		if (isset($this->userExistsCache[$uid]) === true) {
-			return $this->userExistsCache[$uid];
-		}
-
-		// R06: only cache definitive verdicts. A `\Throwable` from
-		// IUserManager (transient DB/LDAP failure, momentary container
-		// hiccup) is NOT a definitive "user doesn't exist" — caching it
-		// would silently drop every notification for this uid for the
-		// rest of the request, even after the underlying problem
-		// clears. Log + return false WITHOUT writing to the cache so
-		// the next call within the same request retries the lookup.
-		try {
-			$exists = $this->userManager->userExists($uid);
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				sprintf('[AnnotationNotificationDispatcher] userExists check failed for "%s" (not cached, will retry): %s', $uid, $e->getMessage())
-			);
-			return false;
-		}
-
-		$this->userExistsCache[$uid] = (bool)$exists;
-		return $this->userExistsCache[$uid];
+		return $this->recipientResolver()->userExists(uid: $uid);
 	}//end userExists()
-
-	/**
-	 * Per-request cache for userExists() lookups.
-	 *
-	 * @var array<string, bool>
-	 */
-	private array $userExistsCache = [];
-
-	/**
-	 * Extract candidate UIDs from a relation value. The relation value
-	 * can be:
-	 *   - a string (treat as UID directly)
-	 *   - an array of strings (each treated as a UID)
-	 *   - an array of objects with a `userId` or `uid` field
-	 *   - any nested combination of the above
-	 *
-	 * @param mixed $value The raw relation value.
-	 *
-	 * @return array<int, string>
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) extractUidsFromRelation() handles six distinct
-	 * relation shapes (null, array-of-strings, array-of-objects with uid/id/userId, plain string);
-	 * each shape requires a separate extraction branch that cannot be unified.
-	 */
-	private function extractUidsFromRelation(mixed $value): array {
-		if ($value === null) {
-			return [];
-		}
-
-		if (is_string($value) === true && $value !== '') {
-			return [$value];
-		}
-
-		if (is_array($value) === false) {
-			return [];
-		}
-
-		$out = [];
-		foreach ($value as $entry) {
-			if (is_string($entry) === true && $entry !== '') {
-				$out[] = $entry;
-				continue;
-			}
-
-			if (is_array($entry) === true) {
-				$candidate = ($entry['userId'] ?? $entry['uid'] ?? $entry['user_id'] ?? null);
-				if (is_string($candidate) === true && $candidate !== '') {
-					$out[] = $candidate;
-				}
-			}
-		}
-
-		return $out;
-	}//end extractUidsFromRelation()
 
 	/**
 	 * Resolve a localized subject template against a recipient locale.
@@ -2395,87 +2225,10 @@ class AnnotationNotificationDispatcher {
 	 * @return string The interpolated string.
 	 */
 	private function interpolate(string $template, array $data, array $context): string {
-		return preg_replace_callback(
-			'/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/',
-			function (array $matches) use ($data, $context): string {
-				$key = $matches[1];
-				if (array_key_exists($key, $data) === true) {
-					if (is_scalar($data[$key]) === false) {
-						return '';
-					}
-
-					// Relation fields hold a UUID reference; show the related
-					// object's display name instead of the raw UUID so
-					// "{{client}}" reads "Acme Gemeente BV", not a UUID string.
-					$raw = (string)$data[$key];
-					$display = $this->resolveRelationDisplayName(value: $raw);
-
-					return htmlspecialchars(($display ?? $raw), ENT_QUOTES, 'UTF-8');
-				}
-
-				if (array_key_exists($key, $context) === true) {
-					if (is_scalar($context[$key]) === false) {
-						return '';
-					}
-
-					return htmlspecialchars((string)$context[$key], ENT_QUOTES, 'UTF-8');
-				}
-
-				return '';
-			},
-			$template
-		) ?? $template;
+		// The dialect's ONE placeholder evaluator — the same class the flow
+		// messaging service renders node templates through.
+		return $this->templating()->interpolate(template: $template, data: $data, context: $context);
 	}//end interpolate()
-
-	/**
-	 * Resolve a relation-reference UUID to the related object's display name.
-	 *
-	 * Notification subjects/bodies interpolate `{{prop}}` from the object's
-	 * data; a relation field holds a UUID, which reads poorly in a popup
-	 * ("Incoming call from 3b9f…"). When the value is UUID-shaped, resolve the
-	 * related object through OpenRegister (RBAC-scoped, mirroring the action
-	 * deeplink resolver) and return its name. Returns null — so the caller
-	 * keeps the raw value — for non-UUID values, an absent ObjectService, an
-	 * unresolvable id, or a nameless object. Cached per dispatcher instance to
-	 * avoid repeat lookups across a recipient fan-out.
-	 *
-	 * @param string $value The interpolated field value.
-	 *
-	 * @return string|null The related object's display name, or null to keep the raw value.
-	 *
-	 * @spec openspec/changes/openregister-notification-relation-names/specs/notificatie-engine/spec.md
-	 */
-	private function resolveRelationDisplayName(string $value): ?string {
-		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) !== 1) {
-			return null;
-		}
-
-		if ($this->objectService === null) {
-			return null;
-		}
-
-		if (array_key_exists($value, $this->relationDisplayCache) === true) {
-			return $this->relationDisplayCache[$value];
-		}
-
-		$name = null;
-		try {
-			$related = $this->objectService->find(id: $value, _rbac: true);
-			if ($related !== null) {
-				$candidate = $related->getName();
-				if (is_string($candidate) === true && $candidate !== '') {
-					$name = $candidate;
-				}
-			}
-		} catch (\Throwable $e) {
-			$this->logger->debug('[AnnotationNotificationDispatcher] relation display-name resolve failed: ' . $e->getMessage());
-			$name = null;
-		}
-
-		$this->relationDisplayCache[$value] = $name;
-
-		return $name;
-	}//end resolveRelationDisplayName()
 
 	/**
 	 * Map a trigger to the canonical INotification subject the Notifier
@@ -2547,9 +2300,10 @@ class AnnotationNotificationDispatcher {
 	 * @param array<string, mixed> $data The triggering object's data.
 	 * @param string $originApp The resolved origin app id.
 	 *
-	 * @return array<int, array{label: array<string,string>, primary: bool, url: string}>
+	 * @return array<int, array{label: array<string,string>, primary: bool, url: string, method: string}>
 	 *
 	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-binary-decision-is-decidable-from-the-notification
 	 */
 	private function resolveActions(array $spec, ObjectEntity $object, array $data, string $originApp): array {
 		$declared = ($spec['actions'] ?? null);
@@ -2584,11 +2338,108 @@ class AnnotationNotificationDispatcher {
 				'label' => $label,
 				'primary' => (bool)($action['primary'] ?? false),
 				'url' => $url,
+				// A `task-verb` target is a state-changing REQUEST and renders
+				// POST; every navigation kind keeps rendering GET.
+				'method' => $this->resolveActionMethod(target: ($action['target'] ?? [])),
 			];
 		}//end foreach
 
 		return $resolved;
 	}//end resolveActions()
+
+	/**
+	 * The HTTP method a resolved action is delivered with.
+	 *
+	 * Only a `task-verb` target is a state change. Even then, a verb whose
+	 * outcome requires a mandatory comment (a rejecting outcome) resolves to
+	 * the task form instead, which is a navigation and therefore GET.
+	 *
+	 * @param mixed $target The raw target spec.
+	 *
+	 * @return string `POST` or `GET`.
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-binary-decision-is-decidable-from-the-notification
+	 */
+	private function resolveActionMethod(mixed $target): string {
+		if (is_array($target) === false || (string)($target['kind'] ?? '') !== 'task-verb') {
+			return 'GET';
+		}
+
+		if ($this->taskVerbNeedsForm(target: $target) === true) {
+			return 'GET';
+		}
+
+		return 'POST';
+	}//end resolveActionMethod()
+
+	/**
+	 * Whether a `task-verb` action must open the form rather than act directly.
+	 *
+	 * `flow-tasks` refuses a rejecting or returning outcome without a
+	 * comment, so a button for such an outcome cannot complete the task by
+	 * itself; it opens the surface that collects the comment.
+	 *
+	 * @param array<string, mixed> $target The task-verb target.
+	 *
+	 * @return bool True when the form must be opened.
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-binary-decision-is-decidable-from-the-notification
+	 */
+	private function taskVerbNeedsForm(array $target): bool {
+		$outcome = ($target['outcome'] ?? null);
+		if (is_string($outcome) === false) {
+			return false;
+		}
+
+		return \OCA\OpenRegister\Service\Task\TaskState::isRejectingOutcome(outcome: $outcome);
+	}//end taskVerbNeedsForm()
+
+	/**
+	 * Resolve a `task-verb` target to the verb route, or to the task form
+	 * when the outcome needs a comment.
+	 *
+	 * The uuid comes from the adapter payload (`taskUuid`) or the entity
+	 * uuid; the verb is validated against the closed list by the validator,
+	 * and the route it lands on is authorized by TaskAuthorizationService
+	 * identically to any other caller. The notification is a transport,
+	 * never a bypass.
+	 *
+	 * @param array<string, mixed> $target The task-verb target.
+	 * @param ObjectEntity $object The triggering object.
+	 * @param array<string, mixed> $data The triggering object's data.
+	 *
+	 * @return string|null The absolute URL, or null when unresolvable (no url generator, no uuid).
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-binary-decision-is-decidable-from-the-notification
+	 */
+	private function resolveTaskVerbTarget(array $target, ObjectEntity $object, array $data): ?string {
+		if ($this->urlGenerator === null) {
+			return null;
+		}
+
+		$uuid = (string)($data['taskUuid'] ?? ($object->getUuid() ?? ''));
+		$verb = (string)($target['verb'] ?? '');
+		if ($uuid === '' || $verb === '' || preg_match('/^[a-z]+$/', $verb) !== 1) {
+			return null;
+		}
+
+		try {
+			if ($this->taskVerbNeedsForm(target: $target) === true) {
+				return $this->urlGenerator->linkToRouteAbsolute('openregister.task.open', ['uuid' => $uuid]);
+			}
+
+			$url = $this->urlGenerator->linkToRouteAbsolute('openregister.task.' . $verb, ['uuid' => $uuid]);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		$outcome = ($target['outcome'] ?? null);
+		if (is_string($outcome) === true && $outcome !== '') {
+			$url .= '?outcome=' . rawurlencode($outcome);
+		}
+
+		return $url;
+	}//end resolveTaskVerbTarget()
 
 	/**
 	 * Resolve a single action `target` to an absolute deeplink.
@@ -2601,6 +2452,8 @@ class AnnotationNotificationDispatcher {
 	 *    id is never trusted from the wire.
 	 *  - route: an originApp frontend route with {{prop}} interpolation (HTML-escaped).
 	 *  - url: an absolute URL, passed through verbatim.
+	 *  - task-verb: the task lifecycle verb route (POST), or the task form
+	 *    when the outcome requires a comment.
 	 *
 	 * @param mixed $target The raw target spec.
 	 * @param ObjectEntity $object The triggering object.
@@ -2610,6 +2463,8 @@ class AnnotationNotificationDispatcher {
 	 * @return string|null The resolved absolute URL, or null when unresolvable.
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per target kind.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) The fourth kind (task-verb)
+	 * adds one branch; each kind's resolution is a distinct contract.
 	 *
 	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
 	 */
@@ -2619,6 +2474,10 @@ class AnnotationNotificationDispatcher {
 		}
 
 		$kind = (string)($target['kind'] ?? '');
+
+		if ($kind === 'task-verb') {
+			return $this->resolveTaskVerbTarget(target: $target, object: $object, data: $data);
+		}
 
 		if ($kind === 'url') {
 			$href = (string)($target['href'] ?? '');
@@ -2851,32 +2710,23 @@ class AnnotationNotificationDispatcher {
 			return;
 		}
 
-		$objectUuid = (string)($object->getUuid() ?? '');
-		$tagSuffix = $ruleId;
-		if ($objectUuid !== '') {
-			$tagSuffix = $objectUuid;
-		}
-
-		$tag = sprintf('openregister-%s-%s', $ruleId, $tagSuffix);
-
-		foreach ($recipients as $uid) {
-			if (is_string($uid) === false || $uid === '' || $this->userExists(uid: $uid) === false) {
-				continue;
-			}
-
-			$this->jobList->add(
-				WebPushDispatchJob::class,
-				[
-					'uid' => $uid,
-					'ruleId' => $ruleId,
-					'originApp' => $originApp,
-					'title' => $subject,
-					'body' => $message,
-					'tag' => $tag,
-					'actions' => $actions,
-				]
-			);
-		}//end foreach
+		// The shared ride-along unit — the same class the flow messaging
+		// service rides web-push along with. Recipients are pre-verified here
+		// so the unit's own check is a second, cheap gate.
+		$this->ncSender()->enqueueWebPush(
+			recipients: array_values(
+				array_filter(
+					$recipients,
+					fn (mixed $uid): bool => is_string($uid) === true && $uid !== '' && $this->userExists(uid: $uid) === true
+				)
+			),
+			ruleId: $ruleId,
+			originApp: $originApp,
+			subject: $subject,
+			message: $message,
+			actions: $actions,
+			object: $object
+		);
 	}//end enqueueWebPush()
 
 	/**
@@ -2920,60 +2770,21 @@ class AnnotationNotificationDispatcher {
 		array $actions = [],
 		bool $webPushActive = false,
 	): void {
-		$objectUuid = (string)($object->getUuid() ?? '');
-		$tagSuffix = $name;
-		if ($objectUuid !== '') {
-			$tagSuffix = $objectUuid;
-		}
-
-		$linkParams = [
-			'objectTitle' => (string)($object->getName() ?? $objectUuid),
-			'registerId' => $object->getRegister(),
-			'schemaId' => $object->getSchema(),
-			'objectUuid' => $objectUuid,
-			// The resolved origin app drives the notifier icon (originApp hex
-			// composite) and the deeplink base for declared actions.
-			'originApp' => $originApp,
-			// Declared, server-resolved action buttons. The notifier renders
-			// these via addAction(); an empty array keeps the implicit "View".
-			'_actions' => $actions,
-			// Pre-interpolated notification BODY (distinct from the title).
-			// The notifier sets it via setParsedMessage() when non-empty;
-			// an empty string leaves the body unset (back-compat).
-			'_message' => $message,
-			// Stable notification tag used by the Service Worker / foreground
-			// client to COLLAPSE the web-push and the stock popup so the
-			// recipient never sees a duplicate. Keyed by (rule, object).
-			'_tag' => sprintf('openregister-%s-%s', $name, $tagSuffix),
-			// Foreground-suppression flag: when web-push is active for this
-			// rule, an open tab that holds an active push subscription
-			// declines to render the plain duplicate popup for this tag
-			// (see js/openregister-push-sw.js + src/webpush/register.js).
-			'_suppressForegroundPopup' => $webPushActive,
-		];
-
-		$objectRef = $name;
-		if ($objectUuid !== '') {
-			$objectRef = $objectUuid;
-		}
-
-		try {
-			$notification = $this->notificationManager->createNotification();
-			$notification
-				->setApp('openregister')
-				->setUser($uid)
-				->setDateTime(new DateTime())
-				->setObject('object', $objectRef)
-				->setSubject(
-					$subjectKey,
-					array_merge($context, $linkParams, ['_text' => $subject, 'notificationType' => $name])
-				);
-			$this->notificationManager->notify($notification);
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				sprintf('Notification "%s" to "%s" failed: %s', $name, $uid, $e->getMessage())
-			);
-		}
+		// The shared channel send unit — the same class the flow messaging
+		// service invokes. The declarative path stays best-effort, so the
+		// outcome is not escalated here; the unit already logs failures.
+		$this->ncSender()->send(
+			uid: $uid,
+			object: $object,
+			subjectKey: $subjectKey,
+			name: $name,
+			subject: $subject,
+			message: $message,
+			context: $context,
+			originApp: $originApp,
+			actions: $actions,
+			webPushActive: $webPushActive
+		);
 	}//end emitNotification()
 
 	/**
@@ -2990,29 +2801,11 @@ class AnnotationNotificationDispatcher {
 	 * @return void
 	 */
 	private function emitEmail(string $uid, string $subject, string $body): void {
-		try {
-			$user = $this->userManager->get($uid);
-			if ($user === null) {
-				return;
-			}
-
-			$to = $user->getEMailAddress();
-			if ($to === null || $to === '') {
-				return;
-			}
-
-			$msg = $this->mailer->createMessage();
-			$msg->setTo([$to => $user->getDisplayName()]);
-			$msg->setSubject($subject);
-			$msg->setPlainBody($body);
-			$this->mailer->send($msg);
-		} catch (\Throwable $e) {
-			// Don't escalate — email is best-effort. SMTP not configured
-			// is normal in dev containers.
-			$this->logger->debug(
-				sprintf('[AnnotationNotificationDispatcher] email to "%s" failed (%s)', $uid, $e->getMessage())
-			);
-		}//end try
+		// The shared channel send unit — the same class the flow messaging
+		// service invokes. The declarative path stays best-effort (SMTP not
+		// configured is normal in dev containers), so the outcome is not
+		// escalated here; the unit already logs failures.
+		$this->emailSender()->send(uid: $uid, subject: $subject, body: $body);
 	}//end emitEmail()
 
 	/**

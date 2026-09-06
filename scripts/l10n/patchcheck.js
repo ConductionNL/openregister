@@ -1,7 +1,5 @@
 #!/usr/bin/env node
-/* eslint-disable n/no-process-exit */
-/* eslint-disable no-console */
-/* eslint-disable n/shebang */
+ 
 /**
  * Run a locale's register detector over a patch's VALUES before it is applied, so
  * a register slip is caught while it is still cheap to fix rather than after 200

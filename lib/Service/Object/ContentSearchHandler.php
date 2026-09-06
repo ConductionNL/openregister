@@ -168,44 +168,34 @@ class ContentSearchHandler {
 			}
 		}
 
-		// Stable total across pages: use the distinct-chunk-owner set (grouped
-		// by entity_type+entity_id) as the chunk-arm upper bound BEFORE the
-		// room-clamped resolve loop. Without this, `$total` drifts across
-		// pages (page 1 appends 0 → reports metaTotal; page 3 appends N →
-		// reports metaTotal+N).
+		// RESOLVE FIRST, THEN COUNT AND PAGE. `$total` is the number of chunk
+		// owners this caller can actually SEE, and the page is a slice of that
+		// same resolved set.
 		//
-		// ACCEPTED OVER-COUNT — the upper bound is a THEORETICAL maximum:
-		// scope/register/schema mismatch, tenant/RBAC filtering, and unresolved
-		// file→object joins can each reduce the actually-appended count to zero
-		// without changing `$total`. In a multi-register corpus where the
-		// scope filters out most chunks, the client's `pages = ceil(total/limit)`
-		// will point at pages that render empty. This is the accepted
-		// trade-off for pagination stability across pages of the same query;
-		// the alternative (recompute `$total` per page from the actually-
-		// appended count) reintroduces the drift the fix is meant to close.
-		// Pre-filtering `$chunkHits` by scope + a batch `MagicMapper::findMany`
-		// would tighten the bound but requires the bulk mapper methods
-		// deferred with the batch-resolve refactor.
-		$distinctChunkOwners = [];
-		foreach ($chunkHits as $hit) {
-			$key = ($hit['entity_type'] ?? 'file') . ':' . ($hit['entity_id'] ?? '');
-			$distinctChunkOwners[$key] = true;
-		}
-
-		$chunkOwnerUpperBound = count($distinctChunkOwners);
-
+		// This used to count the distinct chunk-owner set BEFORE resolving, as
+		// a deliberate upper bound, to keep `$total` stable across pages.
+		// Stability was the right goal; the upper bound was the wrong way to
+		// reach it, because scope mismatch, RBAC, tenancy and a soft-deleted
+		// owner each drop a row from `results` without touching `$total`.
+		//
+		// Measured on the dev instance 2026-09-02, unauthenticated, against
+		// OpenCatalogi's #[PublicPage] search: a document that had been
+		// soft-deleted still answered `{"results":[],"total":1}`. An anonymous
+		// caller could therefore probe a phrase and learn from the count alone
+		// that a document containing it exists, while being correctly refused
+		// the document itself. A count is an answer, so it has to obey the same
+		// visibility rules as the rows.
+		//
+		// Resolving every candidate rather than only `$room` of them costs at
+		// most CHUNK_CANDIDATE_LIMIT resolves, which is the worst case this
+		// class already budgets for and documents on that constant. `$total`
+		// stays stable across pages because the resolved set is a property of
+		// the query, not of the page: page 1 and page 3 resolve the same
+		// candidates and report the same number.
 		$scope = $this->resolveScope(query: $query);
-		$appended = [];
-		$room = PHP_INT_MAX;
-		if ($limit > 0) {
-			$room = max(0, $limit - count($results));
-		}
 
+		$resolved = [];
 		foreach ($chunkHits as $hit) {
-			if (count($appended) >= $room) {
-				break;
-			}
-
 			$object = $this->resolveAndDedupeHit(
 				hit: $hit,
 				seenUuids: $seenUuids,
@@ -217,13 +207,22 @@ class ContentSearchHandler {
 				continue;
 			}
 
+			// Seed the dedupe set as we go: two chunks of the same document
+			// are one owner, and must be counted once.
 			$seenUuids[$object->getUuid()] = true;
-			$appended[] = $object;
+			$resolved[] = $object;
 		}//end foreach
+
+		$room = PHP_INT_MAX;
+		if ($limit > 0) {
+			$room = max(0, $limit - count($results));
+		}
+
+		$appended = array_slice($resolved, 0, $room);
 
 		return [
 			'results' => array_merge($results, $appended),
-			'total' => $total + $chunkOwnerUpperBound,
+			'total' => $total + count($resolved),
 		];
 	}//end augmentWithChunkMatches()
 

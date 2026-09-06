@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -36,7 +38,7 @@
  * @e2e openspec/specs/features-roadmap-menu/spec.md#submit-requires-title-and-body
  * @e2e openspec/specs/features-roadmap-menu/spec.md#default-behavior
  */
-import { test, expect, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
@@ -56,7 +58,7 @@ const FLAG_PATH =
  * deep-link renders the dashboard instead of the target page.
  */
 async function gotoRoadmapRoute(page: Page): Promise<void> {
-	await page.goto('/index.php/apps/openregister/#/features-roadmap', {
+	await page.goto('/index.php/apps/openregister/features-roadmap', {
 		waitUntil: 'domcontentloaded',
 	})
 	await page
@@ -146,42 +148,34 @@ test.describe('features-roadmap — behaviour, not just render', () => {
 	})
 
 	/**
-	 * The Suggest-feature form refuses to submit until it is valid, and issues
-	 * no request while invalid.
+	 * The header's Suggest-feature control is a LINK to the forge, and pressing
+	 * it submits nothing from inside the app.
 	 *
-	 * The requirement's THEN is "the Submit button SHALL be disabled OR SHALL
-	 * show inline validation errors AND no POST SHALL be issued". This asserts
-	 * the disabled branch, on a FOUR-STATE gradient measured live against
-	 * `CnSuggestFeatureModal.canSubmit`:
+	 * This replaced a four-state test of `CnSuggestFeatureModal.canSubmit`.
+	 * nextcloud-vue deleted that modal in 2.36.4 (team decision 2026-09-04: the
+	 * forge is where the conversation happens), so from the commit that took
+	 * ^2.36.4 the old test's very first line — a click on
+	 * `getByRole('button', {name: /Suggest feature/})` — matched nothing, and
+	 * this leg has been red on `development` on every push since.
 	 *
-	 *     empty                       -> disabled
-	 *     title only                  -> disabled
-	 *     all four text fields        -> disabled   (priority still unset)
-	 *     + priority selected         -> ENABLED
+	 * 🔴 THE ROLE IS THE ASSERTION, NOT PEDANTRY. The control navigates away
+	 * rather than opening anything in the page, so it is an `<a href>` and its
+	 * role is `link`. Asserting `button` here is exactly the mistake that made
+	 * the old test fail silently on a page that renders perfectly well.
 	 *
-	 * The final transition is the control: the same locator must flip. A modal
-	 * that failed to render, or a locator that matches nothing, is "disabled"
-	 * in all four states and therefore CANNOT pass this test.
+	 * ⚠️ The link is never followed: it targets a real issue form on a real
+	 * forge. The `href` is read and asserted instead, and `posts` proves the
+	 * app issues nothing of its own.
 	 *
-	 * ⚠️ Asserts on "Continue on <forge>", not "Send to Conduction". Both are
-	 * submit buttons, but the Conduction one is additionally gated on
-	 * `conductionSubmitEnabled`, which is false on a stock instance — so it
-	 * stays disabled even when the form is valid and would make the enable
-	 * transition unobservable. The forge button is gated on `canSubmit` alone,
-	 * which is exactly what this scenario is about.
-	 *
-	 * ⚠️ Nothing is ever submitted: a real submission opens a real issue on a
-	 * real forge. `posts` asserts that, rather than trusting it.
-	 *
-	 * @e2e openspec/specs/features-roadmap-menu/spec.md#submit-requires-title-and-body
+	 * @e2e openspec/specs/features-roadmap-menu/spec.md#the-header-offers-a-link-to-the-forge-not-a-form
 	 */
-	test('the suggest-feature form stays unsubmittable until every required field is filled, and issues no POST', async ({
+	test('the suggest-feature control links to the forge issue form and posts nothing', async ({
 		page,
 	}) => {
 		await stubRoadmap(page, { items: [] })
 
 		// Any POST at all to the issue endpoint fails the test — asserted at
-		// the end, so an early submit cannot slip through unnoticed.
+		// the end, so a stray submit cannot slip through unnoticed.
 		const posts: string[] = []
 		page.on('request', (r) => {
 			if (r.method() === 'POST' && r.url().includes('/api/github/issues')) {
@@ -190,58 +184,34 @@ test.describe('features-roadmap — behaviour, not just render', () => {
 		})
 
 		await gotoRoadmapRoute(page)
-		await page.getByRole('button', { name: /^\s*Suggest feature\s*$/i }).click()
 
-		const modal = page.locator('[data-testid-modal="cn-suggest-feature-modal"]')
-		await expect(modal).toBeVisible({ timeout: 20_000 })
+		const cta = page.getByRole('link', { name: /^\s*Suggest feature\s*$/i })
+		await expect(cta).toBeVisible({ timeout: 20_000 })
 
-		const submit = page.getByRole('button', { name: /Continue on/i })
-		const cancel = page.getByRole('button', { name: /^Cancel$/i })
+		// LIVENESS CONTROL: the sibling header control is still a BUTTON, so
+		// "link" above is a statement about this control rather than a page
+		// where getByRole happens to match anything asked of it.
+		await expect(
+			page.getByRole('button', { name: /Show roadmap|Show features/i }),
+		).toBeVisible()
 
-		// LIVENESS CONTROL: a sibling button in the same footer IS enabled, so
-		// "disabled" below is a decision about this control, not a symptom of a
-		// modal that never rendered.
-		await expect(cancel).toBeEnabled()
+		const href = await cta.getAttribute('href')
+		expect(
+			href,
+			'the CTA rendered without a target, so it navigates nowhere',
+		).toBeTruthy()
+		expect(
+			href,
+			`the CTA points at ${href}, which is not a feature-request issue form`,
+		).toMatch(/issues\/new/)
 
-		await expect(submit).toBeDisabled()
-
-		await page
-			.getByRole('textbox', { name: /^Title$/i })
-			.fill('Coverage: assert the suggest-feature validation gradient')
-		await expect(submit).toBeDisabled()
-
-		await page
-			.getByRole('textbox', { name: /^Problem$/i })
-			.fill('The submit gate was never exercised by a browser test.')
-		await page
-			.getByRole('textbox', { name: /Proposed solution/i })
-			.fill('Drive the four-state gradient and assert the final flip.')
-		await page
-			.getByRole('textbox', { name: /Who benefits/i })
-			.fill('Maintainers reading gate-19 numbers.')
-		// Still incomplete: `canSubmit` also requires a priority.
-		await expect(submit).toBeDisabled()
-
-		// Keyboard, not a click. The dropdown list is inside the dialog subtree,
-		// which intercepts pointer events on the option `<li>` and turns a click
-		// into a 60 s timeout that reads as a slow page rather than a wrong
-		// gesture. Arrow+Enter is a real user gesture and is not intercepted.
-		const combo = page
-			.locator('.v-select input[type="search"], .v-select .vs__search')
-			.first()
-		await combo.click()
-		await combo.press('ArrowDown')
-		await combo.press('Enter')
-
-		// THE CONTROL: the same locator flips.
-		await expect(submit).toBeEnabled({ timeout: 15_000 })
-
-		await cancel.click()
-		await expect(modal).toHaveCount(0)
+		// New tab, safely: the roadmap is a page an operator comes back to.
+		await expect(cta).toHaveAttribute('target', '_blank')
+		await expect(cta).toHaveAttribute('rel', /noopener/)
 
 		expect(
 			posts,
-			`the form issued ${posts.length} POST(s) to the issue endpoint: ${posts.join(', ')}`,
+			`the page issued ${posts.length} POST(s) to the issue endpoint: ${posts.join(', ')}`,
 		).toHaveLength(0)
 	})
 
@@ -284,10 +254,12 @@ test.describe('features-roadmap — behaviour, not just render', () => {
 		).not.toBe(403)
 
 		// ...and the route renders rather than showing a disabled notice.
+		// A LINK: the header CTA became an anchor to the forge's issue form
+		// when nextcloud-vue 2.36.4 removed the in-product modal.
 		await stubRoadmap(page, { items: [] })
 		await gotoRoadmapRoute(page)
 		await expect(
-			page.getByRole('button', { name: /^\s*Suggest feature\s*$/i }),
+			page.getByRole('link', { name: /^\s*Suggest feature\s*$/i }),
 		).toBeVisible()
 
 		try {

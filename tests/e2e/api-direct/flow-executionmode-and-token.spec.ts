@@ -1,3 +1,5 @@
+import type { APIRequestContext } from '@playwright/test'
+
 /**
  * Flow execution mode and the run-level flow token — end-to-end via the live API.
  *
@@ -19,7 +21,7 @@
  * @spec openspec/changes/openregister-flow-executionmode-and-token/specs/flow-execution-mode/spec.md
  * @spec openspec/changes/openregister-flow-executionmode-and-token/specs/flow-token/spec.md
  */
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const API = '/index.php/apps/openregister/api'
 const JSON_HEADERS = {
@@ -270,7 +272,7 @@ test.describe('Flow execution mode and token', () => {
 		expect(runs.length, 'the test run was persisted').toBeGreaterThan(0)
 		const stored = runs[0].context ?? {}
 		expect(
-			Object.prototype.hasOwnProperty.call(stored, 'token'),
+			Object.hasOwn(stored, 'token'),
 			'the persisted context carries the token the engine handed to the steps',
 		).toBeTruthy()
 	})

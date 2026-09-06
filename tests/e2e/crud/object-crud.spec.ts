@@ -1,3 +1,6 @@
+import type { APIRequestContext } from '@playwright/test'
+import type { SeededRegister, SeededSchema } from '../_fixtures.ts'
+
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -28,19 +31,17 @@
  * persisted data) as the render signal. The UI-create gap is tracked as
  * test.fixme rather than hidden.
  */
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import * as path from 'path'
 import {
-	makeRunId,
 	createRegister,
 	createSchema,
-	linkSchemaToRegister,
 	deleteRegister,
 	deleteSchema,
+	linkSchemaToRegister,
+	makeRunId,
 	twoPropertySchema,
-	type SeededRegister,
-	type SeededSchema,
-} from '../_fixtures'
+} from '../_fixtures.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '..', '.auth', 'admin.json')
 const API = '/index.php/apps/openregister/api'
@@ -125,7 +126,7 @@ test.describe('object-crud — create→read→update→delete with field-value 
 		test.skip(objectId === null, 'no object created')
 
 		// Deep-link to the object detail (path routing in the manifest-v2 shell).
-		await page.goto(`${APP}/#/objects/${register.id}/${schema.id}/${objectId}`, {
+		await page.goto(`${APP}/objects/${register.id}/${schema.id}/${objectId}`, {
 			waitUntil: 'domcontentloaded',
 		})
 		await expect(
@@ -171,7 +172,7 @@ test.describe('object-crud — create→read→update→delete with field-value 
 		expect(Number(fresh.count)).toBe(COUNT_UPDATED)
 
 		// The detail surface still resolves the (now-updated) object by uuid.
-		await page.goto(`${APP}/#/objects/${register.id}/${schema.id}/${objectId}`, {
+		await page.goto(`${APP}/objects/${register.id}/${schema.id}/${objectId}`, {
 			waitUntil: 'domcontentloaded',
 		})
 		await expect(

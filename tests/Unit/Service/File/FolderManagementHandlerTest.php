@@ -22,6 +22,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\FileService;
+use OCP\Files\Config\IUserMountCache;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
@@ -43,6 +44,11 @@ use Psr\Log\LoggerInterface;
  */
 class FolderManagementHandlerTest extends TestCase {
 	/** @var FolderManagementHandler */
+	/**
+	 * @var IUserMountCache&MockObject
+	 */
+	private IUserMountCache $mountCache;
+
 	private FolderManagementHandler $handler;
 
 	/** @var IRootFolder&MockObject */
@@ -82,6 +88,7 @@ class FolderManagementHandlerTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
+		$this->mountCache = $this->createMock(IUserMountCache::class);
 
 		// Common mock: user session returns a user
 		$this->mockUser = $this->createMock(IUser::class);
@@ -101,7 +108,8 @@ class FolderManagementHandlerTest extends TestCase {
 			$this->userSession,
 			$this->groupManager,
 			$this->logger,
-			$this->auditTrailMapper
+			$this->auditTrailMapper,
+			$this->mountCache
 		);
 	}
 
@@ -247,7 +255,8 @@ class FolderManagementHandlerTest extends TestCase {
 			$userSession,
 			$this->groupManager,
 			$this->logger,
-			$this->auditTrailMapper
+			$this->auditTrailMapper,
+			$this->mountCache
 		);
 
 		$this->expectException(Exception::class);

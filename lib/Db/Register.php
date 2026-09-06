@@ -24,6 +24,7 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use Exception;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 

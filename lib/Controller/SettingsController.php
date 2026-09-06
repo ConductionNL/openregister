@@ -665,7 +665,11 @@ class SettingsController extends Controller {
 				$row = $result->fetch();
 				$result->closeCursor();
 
-				if ($row !== false) {
+				// An is_array check, not `!== false`. fetch() can answer NULL
+				// as well as false, which passes a `!== false` guard and then
+				// warns on every offset read. Lines 476 and 644 of this file
+				// already use this idiom; this was the one site that did not.
+				if (is_array($row) === true) {
 					$diagnostics['vectors']['total'] = (int)$row['total'];
 					$diagnostics['vectors']['pgvectorPopulated'] = (int)$row['populated'];
 				}
@@ -876,8 +880,11 @@ class SettingsController extends Controller {
 			// (see RegisterMapper::getAllRegisterIdsWithSchema / MarkerLookupTrait).
 			$stmt = $qb->executeQuery();
 			$rows = [];
+			// Same reason as above, and here it matters more: a fetch() that
+			// answers NULL never satisfies `!== false`, so the loop would spin
+			// forever appending nulls rather than ending.
 			$row = $stmt->fetch();
-			while ($row !== false) {
+			while (is_array($row) === true) {
 				$rows[] = $row;
 				$row = $stmt->fetch();
 			}

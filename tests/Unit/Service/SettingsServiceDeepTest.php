@@ -117,7 +117,6 @@ class SettingsServiceDeepTest extends TestCase {
 			$searchTrailMapper,
 			$userManager,
 			$this->db,
-			null,
 			$objectCacheService,
 			$this->container,
 			'openregister',
