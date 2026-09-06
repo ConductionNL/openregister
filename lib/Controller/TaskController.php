@@ -189,6 +189,11 @@ class TaskController extends Controller {
 	 * @param string|null $isTerminal 'true'|'false' to restrict on terminality.
 	 * @param string|null $priority Restrict to one priority.
 	 * @param string|null $objectUuid Restrict to tasks anchored to this object.
+	 * @param string|null $runUuid Restrict to the tasks one flow run raised.
+	 *                             This ANCHORS the read rather than filtering
+	 *                             it: `scope` is ignored, because the run's
+	 *                             view asks what the run asked, not what it
+	 *                             asked the caller. Visibility still applies.
 	 * @param string|null $overdue 'true' to restrict to derived-overdue tasks.
 	 * @param string $sort dueAt|priority|created. A leading `-` inverts
 	 *                     the order (`-dueAt`), so sort and direction travel
@@ -208,6 +213,7 @@ class TaskController extends Controller {
 		?string $isTerminal = null,
 		?string $priority = null,
 		?string $objectUuid = null,
+		?string $runUuid = null,
 		?string $overdue = null,
 		string $sort = TaskInboxCriteria::SORT_DUE,
 		int $limit = 25,
@@ -247,6 +253,7 @@ class TaskController extends Controller {
 			isTerminal: $terminalFilter,
 			priority: $priority,
 			objectUuid: $objectUuid,
+			runUuid: $this->trimmedOrNull(value: $runUuid),
 			overdueAt: $overdueAt,
 			sort: $sortKey,
 			sortDescending: $descending,
@@ -638,6 +645,32 @@ class TaskController extends Controller {
 			return false;
 		}
 	}//end mayReadUuid()
+
+	/**
+	 * A query parameter that anchors a read, or null when it says nothing.
+	 *
+	 * 🔴 AN EMPTY STRING IS NOT AN ANCHOR. A query string carries
+	 * `?runUuid=` as `''`, never as null, and `''` reaching the criteria
+	 * would be applied as a real predicate — `run_uuid = ''` matches no row,
+	 * so a tab that forgot to fill the uuid in would report a run as having
+	 * asked nobody rather than reporting that it asked nothing of the server.
+	 *
+	 * @param string|null $value The raw parameter.
+	 *
+	 * @return string|null The trimmed value, or null when it is blank.
+	 */
+	private function trimmedOrNull(?string $value): ?string {
+		if ($value === null) {
+			return null;
+		}
+
+		$trimmed = trim($value);
+		if ($trimmed === '') {
+			return null;
+		}
+
+		return $trimmed;
+	}//end trimmedOrNull()
 
 	/**
 	 * The acting identity, or null without a session.

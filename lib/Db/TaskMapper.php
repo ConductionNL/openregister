@@ -587,7 +587,13 @@ class TaskMapper extends QBMapper {
 	 * @spec openspec/changes/flow-portal-task/specs/flow-tasks/spec.md#requirement-the-external-performer-type-is-portal-scoped-and-never-pooled
 	 */
 	private function applyExternalExclusion(IQueryBuilder $qb, TaskInboxCriteria $criteria): void {
-		if ($criteria->objectUuid !== null) {
+		if ($criteria->objectUuid !== null || $criteria->runUuid !== null) {
+			// The run anchor joins the object anchor for the same reason. A
+			// run that asked a resident through the portal DID ask somebody,
+			// and a run's task list that hid the ask would report the run as
+			// waiting on nothing. This is an audit view of one run, not an
+			// inbox and not a badge count, so the rule the exclusion exists
+			// to protect is untouched.
 			return;
 		}
 
@@ -677,6 +683,19 @@ class TaskMapper extends QBMapper {
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	private function applyScope(IQueryBuilder $qb, TaskInboxCriteria $criteria): void {
+		if ($criteria->runUuid !== null) {
+			// A RUN ANCHOR REPLACES THE SCOPE. The run's tab asks what this
+			// run asked, not what it asked me, and `scope` defaults to
+			// `assigned` — so leaving the narrowing in place would answer a
+			// different question and answer it with an empty list, which
+			// reads as "this run asked nobody". Visibility is deliberately
+			// NOT relaxed below: a caller still needs one of the sanctioned
+			// relationships, and for the tasks a run raised that
+			// relationship is `requester`, stamped by the engine with the
+			// run's acting identity.
+			return;
+		}
+
 		switch ($criteria->scope) {
 			case TaskInboxCriteria::SCOPE_ASSIGNED:
 				$qb->andWhere($qb->expr()->eq('assignee', $qb->createNamedParameter($criteria->uid)));
@@ -749,6 +768,10 @@ class TaskMapper extends QBMapper {
 
 		if ($criteria->objectUuid !== null) {
 			$qb->andWhere($qb->expr()->eq('object_uuid', $qb->createNamedParameter($criteria->objectUuid)));
+		}
+
+		if ($criteria->runUuid !== null) {
+			$qb->andWhere($qb->expr()->eq('run_uuid', $qb->createNamedParameter($criteria->runUuid)));
 		}
 
 		// Derived overdue as a filter: the SAME comparison
