@@ -447,7 +447,9 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	private function placeOutcome(array $items, array $config, Task $task): array {
 		$bag = FlowTaskBridge::outcomeBagFor(task: $task);
 		$metadata = ($task->getMetadata() ?? []);
-		$bag['answers'] = ($task->getResponses() ?? []);
+		// `answers` now comes from the bridge, which is where it always
+		// belonged: this node placing it and the user-task node not placing
+		// it is exactly how a form's values could be stored and never read.
 		$bag['files'] = ($task->getEvidence() ?? []);
 		$bag['party'] = $task->getAssignee();
 		$bag['cycle'] = (int)($metadata['cycle'] ?? 1);

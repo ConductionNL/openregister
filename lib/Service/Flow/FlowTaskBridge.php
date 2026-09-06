@@ -268,6 +268,24 @@ class FlowTaskBridge {
 	 * both are terminal, only one is an answer, and collapsing them would let
 	 * an expired approval read as an approval (D-6).
 	 *
+	 * 🔴 `answers` IS PART OF THE BAG, and was not. A step may declare a form;
+	 * the values are validated against the subject schema and written to
+	 * `task.responses`. Every hop of that had a test — the declaration is
+	 * refused if it names a field the schema lacks, the form is rendered, the
+	 * values are validated on completion, the row is stored. None of them
+	 * asked whether a LATER STEP could read the value, and none could: this
+	 * bag omitted the key while {@see PortalTaskNode} has placed one since it
+	 * was written. So every answer a person typed into a user-task form was
+	 * collected and then discarded.
+	 *
+	 * Placed HERE rather than in each node, so the two callers cannot drift
+	 * apart again — the asymmetry was the whole defect.
+	 *
+	 * ALWAYS PRESENT, sometimes empty. A missing key would make a downstream
+	 * `answers.reason` fail one way when the performer skipped the form and
+	 * another way when the step declared none, which teaches every author to
+	 * write two guards for one question.
+	 *
 	 * @param Task $task The terminal task.
 	 *
 	 * @return array<string, mixed> The outcome bag.
@@ -290,6 +308,7 @@ class FlowTaskBridge {
 			'rejected' => ($decided === true && TaskState::isRejectingOutcome(outcome: $outcome) === true),
 			'comment' => $task->getComment(),
 			'result' => $task->getResultText(),
+			'answers' => ($task->getResponses() ?? []),
 			'completedBy' => $task->getCompletedBy(),
 			'completedAt' => $task->getCompletedAt()?->format('c'),
 			'performerType' => $task->getPerformerType(),
