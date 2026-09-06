@@ -21,6 +21,16 @@
   run uuid that does not resolve is usually a stale link from a ticket or a
   notification, and silently landing somebody on the dashboard is the
   behaviour that makes a dead link impossible to diagnose.
+
+  @visual exclude this page has no screen to baseline. Both of its states are
+  transient by design: the spinner is replaced by the flow editor as soon as
+  the run resolves, and the failure state is one NcEmptyContent whose pixels
+  say nothing the flow editor's own baselines do not already cover. What is
+  worth testing here is behaviour, not appearance — that a cold load of
+  /flow-runs/{uuid} reaches the flow rather than the manifest's catch-all,
+  that Back does not bounce because the handover replaces rather than pushes,
+  and that an absent run says so at its own address. That belongs in a
+  behavioural spec under tests/e2e/, and it is not written yet.
 -->
 <template>
 	<NcAppContent>
@@ -91,6 +101,10 @@ export default {
 	methods: {
 		/**
 		 * Read the run, then hand over to its flow's editor.
+		 *
+		 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
+		 *   "the run uuid in the row is the deep link to it" — this is the
+		 *   resolver that makes that uuid an address a browser can open.
 		 *
 		 * @return {Promise<void>}
 		 */
