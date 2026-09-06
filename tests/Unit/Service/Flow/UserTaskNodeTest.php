@@ -462,6 +462,71 @@ class UserTaskNodeTest extends TestCase {
 	}//end testACompletedTaskContinuesWithTheOutcomeOnEveryItem()
 
 	/**
+	 * What the performer FILLED IN reaches the steps that follow.
+	 *
+	 * Asserted on the item leaving the node, not on the task row, and that
+	 * distinction is the whole point. A step could already declare a form,
+	 * the values were already validated against the subject schema and
+	 * already written to `task.responses`, and every one of those hops had a
+	 * test. None of them asked whether a LATER STEP could see the value, and
+	 * it could not: `FlowTaskBridge::outcomeBagFor()` had no `answers` key
+	 * while `PortalTaskNode` has placed one since it was written. So every
+	 * answer a person typed into a user-task form was collected, stored, and
+	 * then discarded.
+	 *
+	 * Storing is not reaching. This test asserts reaching.
+	 *
+	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-user-task-node/spec.md#requirement-the-outcome-is-written-onto-every-item-not-only-onto-the-run
+	 */
+	public function testWhatThePerformerFilledInReachesTheFollowingStep(): void {
+		$state = new FlowResumeState();
+		$state->forNode(nodeId: 'ask')->set(key: FlowTaskBridge::SLOT_TASK_UUID, value: 't-1');
+		$done = $this->task(state: Task::STATE_COMPLETED);
+		$done->setOutcome('approved');
+		$done->setResponses(['reason' => 'binnen mandaat', 'amount' => 250]);
+		$this->bridge->method('taskOrNull')->willReturn($done);
+
+		$out = $this->node->execute(
+			[FlowItems::item(json: ['id' => 1])],
+			$this->config(),
+			$this->context($state)
+		);
+
+		$bag = $out[0][FlowItems::JSON]['task'];
+		$this->assertArrayHasKey('answers', $bag, 'the form answers must leave the node');
+		$this->assertSame('binnen mandaat', $bag['answers']['reason']);
+		$this->assertSame(250, $bag['answers']['amount']);
+	}//end testWhatThePerformerFilledInReachesTheFollowingStep()
+
+	/**
+	 * A step with no form yields an EMPTY answers set, never a missing key.
+	 *
+	 * Otherwise a downstream expression reading `answers.reason` fails one
+	 * way when the form was skipped and another way when the step declared
+	 * none, and every author learns to write two guards for one question.
+	 *
+	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-user-task-node/spec.md#requirement-the-outcome-is-written-onto-every-item-not-only-onto-the-run
+	 */
+	public function testAStepWithNoFormStillCarriesAnEmptyAnswersSet(): void {
+		$state = new FlowResumeState();
+		$state->forNode(nodeId: 'ask')->set(key: FlowTaskBridge::SLOT_TASK_UUID, value: 't-1');
+		$done = $this->task(state: Task::STATE_COMPLETED);
+		$done->setOutcome('approved');
+		$done->setResponses(null);
+		$this->bridge->method('taskOrNull')->willReturn($done);
+
+		$out = $this->node->execute(
+			[FlowItems::item(json: ['id' => 1])],
+			$this->config(),
+			$this->context($state)
+		);
+
+		$bag = $out[0][FlowItems::JSON]['task'];
+		$this->assertArrayHasKey('answers', $bag, 'the key is always present');
+		$this->assertSame([], $bag['answers']);
+	}//end testAStepWithNoFormStillCarriesAnEmptyAnswersSet()
+
+	/**
 	 * A terminal read with no signal in hand is the heartbeat recovering a
 	 * missed wake — the completion's signal was refused or lost — and that
 	 * recovery is recorded on the task's audit, attributed to its completer.
