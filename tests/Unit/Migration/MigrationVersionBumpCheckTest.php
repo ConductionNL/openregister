@@ -105,7 +105,20 @@ class MigrationVersionBumpCheckTest extends TestCase {
 	}
 
 	/**
-	 * Run a shell command inside a directory, ignoring its output.
+	 * Run a shell command inside a directory, failing the test if it does not
+	 * succeed.
+	 *
+	 * THIS USED TO DISCARD BOTH THE OUTPUT AND THE EXIT CODE, and that is how
+	 * six tests spent a day reporting the wrong cause. The nextcloud container
+	 * the unit gate runs in ships no git, so every `git init` here failed with
+	 * "command not found", the fixture repository was never created, and the
+	 * check under test then said
+	 *
+	 *     /tmp/or-migration-gate-256a137d7fd3 is not a git repository
+	 *
+	 * which names the gate rather than the missing binary. A helper that hides
+	 * an exit code cannot tell "the tool is absent" from "the tool disagreed",
+	 * so it reports the second whatever happened.
 	 *
 	 * @param string $cmd The command.
 	 * @param string $cwd The working directory.
@@ -113,7 +126,15 @@ class MigrationVersionBumpCheckTest extends TestCase {
 	 * @return void
 	 */
 	private function sh(string $cmd, string $cwd): void {
-		exec('cd ' . escapeshellarg($cwd) . ' && ' . $cmd . ' >/dev/null 2>&1');
+		$out  = [];
+		$code = 0;
+		exec('cd ' . escapeshellarg($cwd) . ' && ' . $cmd . ' 2>&1', $out, $code);
+
+		$this->assertSame(
+			0,
+			$code,
+			'fixture setup failed: ' . $cmd . ' (exit ' . $code . ")\n" . implode("\n", $out)
+		);
 	}
 
 	/**
