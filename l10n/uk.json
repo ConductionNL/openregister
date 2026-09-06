@@ -2928,7 +2928,9 @@
         "Could not load the task": "Не вдалося завантажити завдання",
         "The task refused that action": "Завдання відхилило цю дію",
         "Store": "Магазин",
-        "Install registers, schemas and flows that other organisations have published.": "Встановлюйте реєстри, схеми та потоки, опубліковані іншими організаціями."
+        "Install registers, schemas and flows that other organisations have published.": "Встановлюйте реєстри, схеми та потоки, опубліковані іншими організаціями.",
+        "No such run": "Немає такого запуску",
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Запуск не існує, або ви не маєте права його бачити. Видалення потоку видаляє і його запуски."
     },
     "pluralForm": "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);",
     "plurals": {

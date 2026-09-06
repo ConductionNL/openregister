@@ -2896,7 +2896,9 @@
         "Could not load the task": "L'incumbensa n'ha betg pudì vegnir chargiada",
         "The task refused that action": "L'incumbensa ha refusà questa acziun",
         "Store": "Butia",
-        "Install registers, schemas and flows that other organisations have published.": "Installescha registers, schemas e process ch'autras organisaziuns han publitgà."
+        "Install registers, schemas and flows that other organisations have published.": "Installescha registers, schemas e process ch'autras organisaziuns han publitgà.",
+        "No such run": "Nagina tala execuziun",
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "L'execuziun n'exista betg, u Vus na dastgais betg la vesair. Sche Vus stizzais in flux, vegnan er sias execuziuns stizzadas."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

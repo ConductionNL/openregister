@@ -2896,7 +2896,9 @@
         "Could not load the task": "Задачата не можа да се зареди",
         "The task refused that action": "Задачата отказа това действие",
         "Store": "Магазин",
-        "Install registers, schemas and flows that other organisations have published.": "Инсталирайте регистри, схеми и потоци, публикувани от други организации."
+        "Install registers, schemas and flows that other organisations have published.": "Инсталирайте регистри, схеми и потоци, публикувани от други организации.",
+        "No such run": "Няма такова изпълнение",
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Изпълнението не съществува или нямате право да го видите. Изтриването на поток изтрива и изпълненията му."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

@@ -2912,7 +2912,9 @@
         "Could not load the task": "Sarcina nu a putut fi încărcată",
         "The task refused that action": "Sarcina a refuzat această acțiune",
         "Store": "Magazin",
-        "Install registers, schemas and flows that other organisations have published.": "Instalați registre, scheme și fluxuri publicate de alte organizații."
+        "Install registers, schemas and flows that other organisations have published.": "Instalați registre, scheme și fluxuri publicate de alte organizații.",
+        "No such run": "Nu există o astfel de execuție",
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Execuția nu există sau nu aveți dreptul să o vedeți. Ștergerea unui flux îi șterge și execuțiile."
     },
     "pluralForm": "nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));",
     "plurals": {

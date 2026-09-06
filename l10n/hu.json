@@ -2896,7 +2896,9 @@
         "Could not load the task": "A feladat nem tölthető be",
         "The task refused that action": "A feladat elutasította a műveletet",
         "Store": "Áruház",
-        "Install registers, schemas and flows that other organisations have published.": "Telepítsen más szervezetek által közzétett nyilvántartásokat, sémákat és folyamatokat."
+        "Install registers, schemas and flows that other organisations have published.": "Telepítsen más szervezetek által közzétett nyilvántartásokat, sémákat és folyamatokat.",
+        "No such run": "Nincs ilyen futás",
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "A futás nem létezik, vagy nem láthatja. Egy folyamat törlése a futásait is törli."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

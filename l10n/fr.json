@@ -2912,7 +2912,9 @@
         "Could not load the task": "Impossible de charger la tâche",
         "The task refused that action": "La tâche a refusé cette action",
         "Store": "Boutique",
-        "Install registers, schemas and flows that other organisations have published.": "Installez des registres, schémas et flux publiés par d'autres organisations."
+        "Install registers, schemas and flows that other organisations have published.": "Installez des registres, schémas et flux publiés par d'autres organisations.",
+        "No such run": "Aucune exécution trouvée",
+        "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "L'exécution n'existe pas, ou vous n'êtes pas autorisé à la voir. Supprimer un flux supprime ses exécutions."
     },
     "pluralForm": "nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;",
     "plurals": {
