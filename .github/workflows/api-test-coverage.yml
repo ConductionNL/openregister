@@ -131,6 +131,36 @@ jobs:
           # than 40 lines later where it reads as a dependency-install failure.
           docker exec nextcloud php /usr/local/bin/composer --version
 
+      - name: Provide git inside the container
+        # Same shape as the composer step above, and for the same reason: the
+        # unit suite runs INSIDE the nextcloud container, and that image ships
+        # no git.
+        #
+        # MigrationVersionBumpCheckTest builds a small repository per case and
+        # runs scripts/check-migration-version-bump.php over it, because a test
+        # that inspects THIS repository can only report whatever today's branch
+        # happens to look like. With no git the fixtures are never created, so
+        # all six repository cases failed with
+        #
+        #     /tmp/or-migration-gate-256a137d7fd3 is not a git repository
+        #
+        # which reads as a defect in the gate rather than an absent binary.
+        # Measured 2026-09-06: this job had failed on all eight development
+        # pushes since the gate landed in #3451, and `git --version` in the
+        # container answers `command not found`. With git present the class
+        # passes 8/8.
+        #
+        # apt rather than `docker cp` of the runner's binary: git is not a
+        # single file like the composer phar, and a copied binary would leave
+        # its shared libraries and helper programs behind.
+        run: |
+          set -e
+          docker exec -u root nextcloud bash -lc \
+            'apt-get update -qq && apt-get install -y -qq --no-install-recommends git'
+          # Prove it is usable HERE, as the user the suite runs as, rather than
+          # 40 lines later where it reads as a broken gate.
+          docker exec -u www-data nextcloud git --version
+
       - name: PHPUnit unit suite (in-container, HARD GATE)
         # The unit suite requires the full Nextcloud runtime — the OCP stubs
         # reference Doctrine\DBAL\* and OC\* internals that only resolve once
