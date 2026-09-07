@@ -232,9 +232,18 @@ test('both lock steps are offered in the editor palette and reach the canvas', a
 	// ── 3. PRESENT, AND ADDABLE ─────────────────────────────────────────────
 	for (const node of LOCK_NODES) {
 		const picker = await openPicker()
+		// MATCH THE NAME EXACTLY. `hasText` is a case-insensitive SUBSTRING
+		// match over the whole card — name, role word, description and
+		// catalogue id — and "Lock an object" is a substring of "Unlock an
+		// object", so the loose filter matched BOTH of the two steps this file
+		// exists to tell apart.
 		const offered = picker
 			.locator('[data-testid="flow-step-picker-item"]')
-			.filter({ hasText: node.label })
+			.filter({
+				has: page.locator('.cn-step-picker__name', {
+					hasText: new RegExp(`^${node.label}$`),
+				}),
+			})
 			.first()
 		await expect(
 			offered,
